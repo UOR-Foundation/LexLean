@@ -4147,6 +4147,93 @@ pub fn run(id: &str) {
             eprintln!(
                 "SP-15 plants refused:\n  wrong lemma: {wrong_lemma}\n  changed statement: {changed_statement}\n  forged program: {forged_program}\n  added axiom: {audit_refusal}\n  lying policy: {lying_policy}"
             );
+            // Lists of recursive types (#208): a record and an inductive
+            // holding one as a root parameter, `cons` onto one, and a closure
+            // whose encoder rows are chunked across commands, certified under
+            // the pinned Lean beside the production example.
+            let lists = P::copy_tests_project("preservation-certificates/lists");
+            let certified_lists = preservation::certificates(&lists);
+            let lists_workspace = preservation::staged(&lists, &certified_lists);
+            let lists_root = tempfile::Builder::new()
+                .prefix("lexlean-sp15-lists-")
+                .tempdir()
+                .expect("tempdir");
+            let lists_checked = preservation::check(&lists_workspace, lists_root.path());
+            assert!(
+                lists_checked.failure.is_none(),
+                "every certificate of the list roots verifies under the pinned Lean: {:?}",
+                lists_checked.failure
+            );
+            let lists_all: Vec<lexlean::production::certificate::Certificate> = certified_lists
+                .iter()
+                .flat_map(preservation::Certified::all)
+                .collect();
+            audit(&lists_checked.audit_output, &lists_all)
+                .expect("the audit of the list roots, every row's axioms included");
+            let certified_root = |name: &str| {
+                certified_lists
+                    .iter()
+                    .find(|entry| entry.root.ends_with(&format!(".{name}")))
+                    .unwrap_or_else(|| panic!("the list project has the root `{name}`"))
+            };
+            // The bundle the code generator has no code for: the row of a
+            // nested group's bundle left uncompiled while a compiled encoder
+            // applies it, which is the defect the compiled bundle removes.
+            let record = certified_root("probeStructure").certificate.clone();
+            let mut uncompiled = record.data.clone().expect("certificate A is data");
+            let mut bundles = 0;
+            for row in &mut uncompiled.declarations {
+                if row.name.contains(".__L_") {
+                    assert!(row.compiled, "the bundle is compiled");
+                    row.compiled = false;
+                    bundles += 1;
+                }
+            }
+            assert!(bundles > 0, "the record's certificate has a bundle");
+            let planted_module = format!("{}PlantUncompiledBundle", record.module);
+            let planted_text =
+                lexlean::backend::core::lean_text_legacy(&uncompiled, &planted_module)
+                    .expect("the planted module renders");
+            let output =
+                preservation::compile_text(lists_root.path(), &planted_module, &planted_text);
+            let joined = format!(
+                "{}{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+            assert!(
+                !output.status.success() && joined.contains("error"),
+                "an applied bundle left uncompiled is refused: {joined}"
+            );
+            // The payload of a consed nested list: the items row renamed to
+            // another encoder, so the lemma's equation no longer holds.
+            let consed = certified_root("consTy").certificate.clone();
+            let consed_data = consed.data.as_ref().expect("certificate A is data");
+            let items = format!("{}.__items_0", consed.module);
+            let mut renamed = consed_data.clone();
+            let mut replaced = 0;
+            for node in &mut renamed.nodes {
+                if let lexlean::ir::core::CoreNode::Const { n, .. } = node {
+                    if *n == items {
+                        *n = "LexLeanPreservation.encUnit".to_owned();
+                        replaced += 1;
+                    }
+                }
+            }
+            assert!(replaced > 0, "the cons certificate names the items row");
+            let planted_module = format!("{}PlantItems", consed.module);
+            let planted_text = lexlean::backend::core::lean_text_legacy(&renamed, &planted_module)
+                .expect("the planted module renders");
+            let output =
+                preservation::compile_text(lists_root.path(), &planted_module, &planted_text);
+            assert!(
+                !output.status.success(),
+                "a payload that is not the items row is refused by the kernel"
+            );
+            eprintln!(
+                "SP-15 list roots: {} certified; plants refused: uncompiled bundle ({bundles} rows), renamed items row ({replaced} places)",
+                certified_lists.len()
+            );
         }
         "SP-16" => {
             // Every certificate B of the four corpora is built as a core

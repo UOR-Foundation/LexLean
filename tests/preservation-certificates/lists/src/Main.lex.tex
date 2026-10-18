@@ -1,0 +1,147 @@
+\begin{lexlean}{Main}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{ name: Ty, type_parameters: [], parameters: [],
+  constructors: [{name: TUnit, fields: []}, {name: TOption, fields: [Ty]}, {name: TFn, fields: [(List Ty), Ty]}] }
+inductive{ name: Expr, type_parameters: [], parameters: [],
+  constructors: [{name: ELit, fields: [Nat]}, {name: EApp, fields: [Expr, (List Expr)]}] }
+structure{ name: S2, type_parameters: [], parameters: [], fields: [{name: ts, type: (List Ty)}] }
+inductive{ name: W, type_parameters: [], parameters: [],
+  constructors: [{name: MkW, fields: [(List Ty)]}] }
+definition{ name: probeStructure, parameters: [x : S2], result: Nat, body: 0, executable: true,
+  production: {effects: [allocation], targets: [rust-std]} }
+definition{ name: probeInductive, parameters: [x : W], result: Nat, body: 0, executable: true,
+  production: {effects: [allocation], targets: [rust-std]} }
+definition{ name: consTy, parameters: [h : Ty, r : (List Ty)], result: (List Ty), body: (cons h r),
+  executable: true, production: {effects: [allocation], targets: [rust-std]} }
+definition{ name: consUnit, parameters: [r : (List Ty)], result: (List Ty), body: (cons (ctor Ty.TUnit) r),
+  executable: true, production: {effects: [allocation], targets: [rust-std]} }
+definition{ name: singleton, parameters: [h : Ty], result: (List Ty), body: (cons h (nil Ty)),
+  executable: true, production: {effects: [allocation], targets: [rust-std]} }
+definition{ name: consExpr, parameters: [h : Expr, r : (List Expr)], result: (List Expr), body: (cons h r),
+  executable: true, production: {effects: [allocation], targets: [rust-std]} }
+definition{ name: f0, parameters: [x : Nat], result: Nat, body: (x + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f1, parameters: [x : Nat], result: Nat, body: ((f0 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f2, parameters: [x : Nat], result: Nat, body: ((f1 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f3, parameters: [x : Nat], result: Nat, body: ((f2 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f4, parameters: [x : Nat], result: Nat, body: ((f3 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f5, parameters: [x : Nat], result: Nat, body: ((f4 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f6, parameters: [x : Nat], result: Nat, body: ((f5 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f7, parameters: [x : Nat], result: Nat, body: ((f6 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f8, parameters: [x : Nat], result: Nat, body: ((f7 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f9, parameters: [x : Nat], result: Nat, body: ((f8 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f10, parameters: [x : Nat], result: Nat, body: ((f9 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f11, parameters: [x : Nat], result: Nat, body: ((f10 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f12, parameters: [x : Nat], result: Nat, body: ((f11 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f13, parameters: [x : Nat], result: Nat, body: ((f12 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f14, parameters: [x : Nat], result: Nat, body: ((f13 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f15, parameters: [x : Nat], result: Nat, body: ((f14 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f16, parameters: [x : Nat], result: Nat, body: ((f15 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f17, parameters: [x : Nat], result: Nat, body: ((f16 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f18, parameters: [x : Nat], result: Nat, body: ((f17 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f19, parameters: [x : Nat], result: Nat, body: ((f18 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f20, parameters: [x : Nat], result: Nat, body: ((f19 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f21, parameters: [x : Nat], result: Nat, body: ((f20 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f22, parameters: [x : Nat], result: Nat, body: ((f21 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f23, parameters: [x : Nat], result: Nat, body: ((f22 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f24, parameters: [x : Nat], result: Nat, body: ((f23 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f25, parameters: [x : Nat], result: Nat, body: ((f24 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f26, parameters: [x : Nat], result: Nat, body: ((f25 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f27, parameters: [x : Nat], result: Nat, body: ((f26 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f28, parameters: [x : Nat], result: Nat, body: ((f27 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f29, parameters: [x : Nat], result: Nat, body: ((f28 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f30, parameters: [x : Nat], result: Nat, body: ((f29 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f31, parameters: [x : Nat], result: Nat, body: ((f30 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f32, parameters: [x : Nat], result: Nat, body: ((f31 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f33, parameters: [x : Nat], result: Nat, body: ((f32 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f34, parameters: [x : Nat], result: Nat, body: ((f33 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f35, parameters: [x : Nat], result: Nat, body: ((f34 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f36, parameters: [x : Nat], result: Nat, body: ((f35 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f37, parameters: [x : Nat], result: Nat, body: ((f36 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f38, parameters: [x : Nat], result: Nat, body: ((f37 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f39, parameters: [x : Nat], result: Nat, body: ((f38 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f40, parameters: [x : Nat], result: Nat, body: ((f39 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f41, parameters: [x : Nat], result: Nat, body: ((f40 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f42, parameters: [x : Nat], result: Nat, body: ((f41 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f43, parameters: [x : Nat], result: Nat, body: ((f42 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f44, parameters: [x : Nat], result: Nat, body: ((f43 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f45, parameters: [x : Nat], result: Nat, body: ((f44 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f46, parameters: [x : Nat], result: Nat, body: ((f45 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f47, parameters: [x : Nat], result: Nat, body: ((f46 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f48, parameters: [x : Nat], result: Nat, body: ((f47 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f49, parameters: [x : Nat], result: Nat, body: ((f48 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f50, parameters: [x : Nat], result: Nat, body: ((f49 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f51, parameters: [x : Nat], result: Nat, body: ((f50 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f52, parameters: [x : Nat], result: Nat, body: ((f51 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f53, parameters: [x : Nat], result: Nat, body: ((f52 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f54, parameters: [x : Nat], result: Nat, body: ((f53 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f55, parameters: [x : Nat], result: Nat, body: ((f54 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f56, parameters: [x : Nat], result: Nat, body: ((f55 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f57, parameters: [x : Nat], result: Nat, body: ((f56 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f58, parameters: [x : Nat], result: Nat, body: ((f57 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: f59, parameters: [x : Nat], result: Nat, body: ((f58 x) + 1), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+definition{ name: closure, parameters: [t : Ty], result: Nat, body: (f59 0), executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]} }
+\end{semanticmodule}
+\end{lexlean}
