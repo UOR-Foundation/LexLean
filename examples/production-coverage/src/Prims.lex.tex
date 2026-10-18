@@ -90,5 +90,27 @@ definition{
   executable: true,
   production: {effects: [allocation, overflow], targets: [rust-std]}
 }
+
+definition{
+  name: widenings,
+  parameters: [u8 : UInt8, i8 : Int8, u16 : UInt16, i16 : Int16],
+  result: (Int * Nat),
+  body: ((prim subtract (prim subtract (prim to_int u8 : Int) (prim to_int i8 : Int) : Int) (prim subtract (prim to_int u16 : Int) (prim to_int i16 : Int) : Int) : Int), ((prim to_nat u8 : Nat) + (prim to_nat u16 : Nat))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core, rust-std]}
+}
+
+definition{
+  name: pixels,
+  parameters: [raw : Bytes, i : Nat],
+  result: (Option Int),
+  body: (match (prim index raw i : (Option UInt8))
+    | Option.none => (ctor Option.none [Int])
+    | Option.some b => (ctor Option.some [Int] (prim to_int b : Int))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
 \end{semanticmodule}
 \end{lexlean}

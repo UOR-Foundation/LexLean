@@ -14,7 +14,7 @@ namespace LexLeanStd.Text
 
 @[expose] public def spaceAt (subject : ByteArray) (position : Nat) : Bool := (match byteAt (subject) (position) with | Option.some byte => isSpace (byte) | Option.none => false)
 
-@[expose] public def sliceOr (subject : ByteArray) (start : Nat) (count : Nat) : ByteArray := (match (LexLeanRuntime.slice (subject) (start) (count) : Option (ByteArray)) with | Option.some piece => piece | Option.none => ByteArray.mk #[])
+@[expose] public def sliceOr (subject : ByteArray) (start : Nat) (count : Nat) : ByteArray := (match (LexLeanRuntime.slice (subject) (start) (count) : Option (ByteArray)) with | Option.some piece => piece | Option.none => _root_.ByteArray.mk #[])
 
 @[expose] public def startsWith (subject : ByteArray) («prefix» : ByteArray) : Bool := (match (LexLeanRuntime.slice (subject) (0) ((LexLeanRuntime.length («prefix») : Nat)) : Option (ByteArray)) with | Option.some head => (LexLeanRuntime.equal (head) («prefix») : Bool) | Option.none => false)
 
@@ -32,13 +32,13 @@ namespace LexLeanStd.Text
 
 @[expose] public def splitOn (subject : ByteArray) (delimiter : UInt8) : List (ByteArray) := (let total : Nat := (LexLeanRuntime.length (subject) : Nat); (let final : (Prod (Nat) ((Prod (Nat) (List (ByteArray))))) := ((LexLeanCollections.iterateUntil ((fun (state : (Prod (Nat) ((Prod (Nat) (List (ByteArray)))))) => splitStep (subject) (delimiter) (state))) (total) ((0, (0, ([] : List (ByteArray))))) : (Prod ((Prod (Nat) ((Prod (Nat) (List (ByteArray)))))) (Bool)))).1; (let start : Nat := ((final).2).1; reverse ((sliceOr (subject) (start) ((LexLeanRuntime.subtract (total) (start) : Nat)) :: ((final).2).2)))))
 
-@[expose] public def chomp (line : ByteArray) : ByteArray := (if endsWith (line) (ByteArray.mk #[13]) then sliceOr (line) (0) ((LexLeanRuntime.subtract ((LexLeanRuntime.length (line) : Nat)) (1) : Nat)) else line)
+@[expose] public def chomp (line : ByteArray) : ByteArray := (if endsWith (line) (_root_.ByteArray.mk #[(_root_.UInt8.ofNat (nat_lit 13))]) then sliceOr (line) (0) ((LexLeanRuntime.subtract ((LexLeanRuntime.length (line) : Nat)) (1) : Nat)) else line)
 
 @[expose] public def lineStep (subject : ByteArray) (state : (Prod (Nat) ((Prod (Nat) (List (ByteArray)))))) : Option ((Prod (Nat) ((Prod (Nat) (List (ByteArray)))))) := (let position : Nat := (state).1; (let start : Nat := ((state).2).1; (let pieces : List (ByteArray) := ((state).2).2; (match byteAt (subject) (position) with | Option.some byte => (if (LexLeanRuntime.equal (byte) ((10 : UInt8)) : Bool) then Option.some (((position + 1), ((position + 1), (chomp (sliceOr (subject) (start) ((LexLeanRuntime.subtract (position) (start) : Nat))) :: pieces)))) else Option.some (((position + 1), (start, pieces)))) | Option.none => Option.none))))
 
 @[expose] public def lines (subject : ByteArray) : List (ByteArray) := (let total : Nat := (LexLeanRuntime.length (subject) : Nat); (let final : (Prod (Nat) ((Prod (Nat) (List (ByteArray))))) := ((LexLeanCollections.iterateUntil ((fun (state : (Prod (Nat) ((Prod (Nat) (List (ByteArray)))))) => lineStep (subject) (state))) (total) ((0, (0, ([] : List (ByteArray))))) : (Prod ((Prod (Nat) ((Prod (Nat) (List (ByteArray)))))) (Bool)))).1; (let start : Nat := ((final).2).1; (let pieces : List (ByteArray) := ((final).2).2; (if (Nat.blt (start) (total)) then reverse ((sliceOr (subject) (start) ((LexLeanRuntime.subtract (total) (start) : Nat)) :: pieces)) else reverse (pieces))))))
 
-@[expose] public def joinWith (pieces : List (ByteArray)) (separator : ByteArray) : ByteArray := (match (LexLeanCollections.listFold ((fun (joined : Option (ByteArray)) (piece : ByteArray) => (match joined with | Option.none => Option.some (piece) | Option.some sofar => Option.some ((LexLeanRuntime.append ((LexLeanRuntime.append (sofar) (separator) : ByteArray)) (piece) : ByteArray))))) (Option.none) (pieces) : Option (ByteArray)) with | Option.some joined => joined | Option.none => ByteArray.mk #[])
+@[expose] public def joinWith (pieces : List (ByteArray)) (separator : ByteArray) : ByteArray := (match (LexLeanCollections.listFold ((fun (joined : Option (ByteArray)) (piece : ByteArray) => (match joined with | Option.none => Option.some (piece) | Option.some sofar => Option.some ((LexLeanRuntime.append ((LexLeanRuntime.append (sofar) (separator) : ByteArray)) (piece) : ByteArray))))) (Option.none) (pieces) : Option (ByteArray)) with | Option.some joined => joined | Option.none => _root_.ByteArray.mk #[])
 
 @[expose] public def matchAt (subject : ByteArray) (needle : ByteArray) (position : Nat) : Bool := (match (LexLeanRuntime.slice (subject) (position) ((LexLeanRuntime.length (needle) : Nat)) : Option (ByteArray)) with | Option.some window => (LexLeanRuntime.equal (window) (needle) : Bool) | Option.none => false)
 

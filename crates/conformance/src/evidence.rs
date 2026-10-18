@@ -12,20 +12,21 @@ use std::path::Path;
 use lexlean::verify::telemetry::VOCABULARY;
 
 /// Every JSON key of `value`, at any depth.
-fn collect_keys(value: &serde_json::Value, into: &mut BTreeSet<String>) {
-    match value {
-        serde_json::Value::Object(map) => {
-            for (key, inner) in map {
-                into.insert(key.clone());
-                collect_keys(inner, into);
+fn collect_keys(root: &serde_json::Value, into: &mut BTreeSet<String>) {
+    let mut stack = vec![root];
+    while let Some(value) = stack.pop() {
+        match value {
+            serde_json::Value::Object(map) => {
+                for (key, inner) in map {
+                    into.insert(key.clone());
+                    stack.push(inner);
+                }
             }
-        }
-        serde_json::Value::Array(rows) => {
-            for row in rows {
-                collect_keys(row, into);
+            serde_json::Value::Array(rows) => {
+                stack.extend(rows);
             }
+            _ => {}
         }
-        _ => {}
     }
 }
 
@@ -58,10 +59,7 @@ pub fn telemetry_in(verified: &Path) -> Result<Vec<String>, String> {
             continue;
         }
         let bytes = std::fs::read(entry.path()).map_err(|error| format!("{relative}: {error}"))?;
-        let value: serde_json::Value = serde_json::from_slice(&bytes)
-            .map_err(|error| format!("{relative}: not JSON: {error}"))?;
-        let mut keys = BTreeSet::new();
-        collect_keys(&value, &mut keys);
+        let keys = keys_in_json(&bytes, &relative)?;
         for key in VOCABULARY {
             if keys.contains(key) {
                 found.push(format!("{relative}: the telemetry key `{key}`"));
@@ -69,6 +67,57 @@ pub fn telemetry_in(verified: &Path) -> Result<Vec<String>, String> {
         }
     }
     Ok(found)
+}
+
+fn keys_in_json(bytes: &[u8], relative: &str) -> Result<BTreeSet<String>, String> {
+    let stack = bytes.len().saturating_mul(512).clamp(16 << 20, 4 << 30);
+    std::thread::scope(|scope| {
+        std::thread::Builder::new()
+            .stack_size(stack)
+            .spawn_scoped(scope, || {
+                let mut reader = serde_json::Deserializer::from_slice(bytes);
+                reader.disable_recursion_limit();
+                let value: serde_json::Value = serde::Deserialize::deserialize(&mut reader)
+                    .and_then(|value| reader.end().map(|()| value))
+                    .map_err(|error| format!("{relative}: not JSON: {error}"))?;
+                let mut keys = BTreeSet::new();
+                collect_keys(&value, &mut keys);
+                drop_deep(value);
+                Ok(keys)
+            })
+            .map_err(|error| format!("{relative}: {error}"))?
+            .join()
+            .map_err(|_| format!("{relative}: JSON reader panicked"))?
+    })
+}
+
+fn drop_deep(root: serde_json::Value) {
+    let mut stack = vec![root];
+    while let Some(value) = stack.pop() {
+        match value {
+            serde_json::Value::Object(mut map) => {
+                for (_, inner) in std::mem::take(&mut map) {
+                    if matches!(
+                        inner,
+                        serde_json::Value::Object(_) | serde_json::Value::Array(_)
+                    ) {
+                        stack.push(inner);
+                    }
+                }
+            }
+            serde_json::Value::Array(mut rows) => {
+                for inner in std::mem::take(&mut rows) {
+                    if matches!(
+                        inner,
+                        serde_json::Value::Object(_) | serde_json::Value::Array(_)
+                    ) {
+                        stack.push(inner);
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
 }
 
 #[cfg(test)]

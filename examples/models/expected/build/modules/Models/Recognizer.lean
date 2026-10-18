@@ -11,28 +11,28 @@ set_option maxHeartbeats 1000000000
 set_option linter.constructorNameAsVariable false
 namespace Models.Recognizer
 
-@[expose] public def hiddenWeights.bytes : ByteArray := ByteArray.mk #[4, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 4, 3, 254, 0, 0, 0, 0, 255, 0, 0, 2, 253, 1, 0, 0, 255, 0, 0, 0, 2, 2, 254, 1, 1, 1, 1, 1, 1, 1, 0, 252, 0, 2, 0, 3, 0]
+@[expose] public def hiddenWeights.bytes : ByteArray := (let __byte0 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 0); let __byte1 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 1); let __byte2 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 2); let __byte4 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 4); _root_.ByteArray.mk #[__byte4, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte4, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte4, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte4, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte4, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte4, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte4, (_root_.UInt8.ofNat (nat_lit 3)), (_root_.UInt8.ofNat (nat_lit 254)), __byte0, __byte0, __byte0, __byte0, (_root_.UInt8.ofNat (nat_lit 255)), __byte0, __byte0, __byte2, (_root_.UInt8.ofNat (nat_lit 253)), __byte1, __byte0, __byte0, (_root_.UInt8.ofNat (nat_lit 255)), __byte0, __byte0, __byte0, __byte2, __byte2, (_root_.UInt8.ofNat (nat_lit 254)), __byte1, __byte1, __byte1, __byte1, __byte1, __byte1, __byte1, __byte0, (_root_.UInt8.ofNat (nat_lit 252)), __byte0, __byte2, __byte0, (_root_.UInt8.ofNat (nat_lit 3)), __byte0])
 @[expose] public def hiddenWeights : List (List (Int)) := (((4 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int))))))))) :: (((0 : Int) :: ((4 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int))))))))) :: (((0 : Int) :: ((0 : Int) :: ((4 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int))))))))) :: (((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((4 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int))))))))) :: (((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((4 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int))))))))) :: (((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((4 : Int) :: ((0 : Int) :: ([] : List (Int))))))))) :: (((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((4 : Int) :: ([] : List (Int))))))))) :: (((3 : Int) :: ((-2 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((-1 : Int) :: ([] : List (Int))))))))) :: (((0 : Int) :: ((0 : Int) :: ((2 : Int) :: ((-3 : Int) :: ((1 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int))))))))) :: (((-1 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((2 : Int) :: ((2 : Int) :: ((-2 : Int) :: ([] : List (Int))))))))) :: (((1 : Int) :: ((1 : Int) :: ((1 : Int) :: ((1 : Int) :: ((1 : Int) :: ((1 : Int) :: ((1 : Int) :: ([] : List (Int))))))))) :: (((0 : Int) :: ((-4 : Int) :: ((0 : Int) :: ((2 : Int) :: ((0 : Int) :: ((3 : Int) :: ((0 : Int) :: ([] : List (Int))))))))) :: ([] : List (List (Int)))))))))))))))
 public theorem hiddenWeights.decoded : (LexLeanModels.tensorMatches 1 true hiddenWeights.flatten hiddenWeights.bytes && (hiddenWeights.length == 12) && (hiddenWeights.map List.length == List.replicate 12 7)) = true := by decide
 
-@[expose] public def hiddenBias.bytes : ByteArray := ByteArray.mk #[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 254, 255, 255, 255, 3, 0, 0, 0, 251, 255, 255, 255, 2, 0, 0, 0]
+@[expose] public def hiddenBias.bytes : ByteArray := (let __byte0 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 0); let __byte255 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 255); _root_.ByteArray.mk #[__byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, (_root_.UInt8.ofNat (nat_lit 1)), __byte0, __byte0, __byte0, (_root_.UInt8.ofNat (nat_lit 254)), __byte255, __byte255, __byte255, (_root_.UInt8.ofNat (nat_lit 3)), __byte0, __byte0, __byte0, (_root_.UInt8.ofNat (nat_lit 251)), __byte255, __byte255, __byte255, (_root_.UInt8.ofNat (nat_lit 2)), __byte0, __byte0, __byte0])
 @[expose] public def hiddenBias : List (Int) := ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((1 : Int) :: ((-2 : Int) :: ((3 : Int) :: ((-5 : Int) :: ((2 : Int) :: ([] : List (Int))))))))))))))
 public theorem hiddenBias.decoded : (LexLeanModels.tensorMatches 4 true hiddenBias hiddenBias.bytes && (hiddenBias.length == 12)) = true := by decide
 
-@[expose] public def outputWeights.bytes : ByteArray := ByteArray.mk #[2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 2, 2, 0, 2, 0, 0, 0, 0, 0, 2, 2, 2, 2, 0, 0, 2, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 2, 2, 0, 0, 0, 0, 0, 2, 0, 2, 2, 0, 2, 2, 0, 0, 0, 0, 0, 2, 0, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 2, 2, 2, 2, 0, 2, 2, 0, 0, 0, 0, 0]
+@[expose] public def outputWeights.bytes : ByteArray := (let __byte0 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 0); let __byte2 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 2); _root_.ByteArray.mk #[__byte2, __byte2, __byte2, __byte2, __byte2, __byte2, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte2, __byte2, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte2, __byte2, __byte0, __byte2, __byte2, __byte0, __byte2, __byte0, __byte0, __byte0, __byte0, __byte0, __byte2, __byte2, __byte2, __byte2, __byte0, __byte0, __byte2, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte2, __byte2, __byte0, __byte0, __byte2, __byte2, __byte0, __byte0, __byte0, __byte0, __byte0, __byte2, __byte0, __byte2, __byte2, __byte0, __byte2, __byte2, __byte0, __byte0, __byte0, __byte0, __byte0, __byte2, __byte0, __byte2, __byte2, __byte2, __byte2, __byte2, __byte0, __byte0, __byte0, __byte0, __byte0, __byte2, __byte2, __byte2, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte2, __byte2, __byte2, __byte2, __byte2, __byte2, __byte2, __byte0, __byte0, __byte0, __byte0, __byte0, __byte2, __byte2, __byte2, __byte2, __byte0, __byte2, __byte2, __byte0, __byte0, __byte0, __byte0, __byte0])
 @[expose] public def outputWeights : List (List (Int)) := (((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int)))))))))))))) :: (((0 : Int) :: ((2 : Int) :: ((2 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int)))))))))))))) :: (((2 : Int) :: ((2 : Int) :: ((0 : Int) :: ((2 : Int) :: ((2 : Int) :: ((0 : Int) :: ((2 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int)))))))))))))) :: (((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((0 : Int) :: ((0 : Int) :: ((2 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int)))))))))))))) :: (((0 : Int) :: ((2 : Int) :: ((2 : Int) :: ((0 : Int) :: ((0 : Int) :: ((2 : Int) :: ((2 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int)))))))))))))) :: (((2 : Int) :: ((0 : Int) :: ((2 : Int) :: ((2 : Int) :: ((0 : Int) :: ((2 : Int) :: ((2 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int)))))))))))))) :: (((2 : Int) :: ((0 : Int) :: ((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int)))))))))))))) :: (((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int)))))))))))))) :: (((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int)))))))))))))) :: (((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((0 : Int) :: ((2 : Int) :: ((2 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int)))))))))))))) :: ([] : List (List (Int)))))))))))))
 public theorem outputWeights.decoded : (LexLeanModels.tensorMatches 1 true outputWeights.flatten outputWeights.bytes && (outputWeights.length == 10) && (outputWeights.map List.length == List.replicate 10 12)) = true := by decide
 
-@[expose] public def outputBias.bytes : ByteArray := ByteArray.mk #[250, 255, 255, 255, 254, 255, 255, 255, 251, 255, 255, 255, 251, 255, 255, 255, 252, 255, 255, 255, 251, 255, 255, 255, 250, 255, 255, 255, 253, 255, 255, 255, 249, 255, 255, 255, 250, 255, 255, 255]
+@[expose] public def outputBias.bytes : ByteArray := (let __byte255 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 255); _root_.ByteArray.mk #[(_root_.UInt8.ofNat (nat_lit 250)), __byte255, __byte255, __byte255, (_root_.UInt8.ofNat (nat_lit 254)), __byte255, __byte255, __byte255, (_root_.UInt8.ofNat (nat_lit 251)), __byte255, __byte255, __byte255, (_root_.UInt8.ofNat (nat_lit 251)), __byte255, __byte255, __byte255, (_root_.UInt8.ofNat (nat_lit 252)), __byte255, __byte255, __byte255, (_root_.UInt8.ofNat (nat_lit 251)), __byte255, __byte255, __byte255, (_root_.UInt8.ofNat (nat_lit 250)), __byte255, __byte255, __byte255, (_root_.UInt8.ofNat (nat_lit 253)), __byte255, __byte255, __byte255, (_root_.UInt8.ofNat (nat_lit 249)), __byte255, __byte255, __byte255, (_root_.UInt8.ofNat (nat_lit 250)), __byte255, __byte255, __byte255])
 @[expose] public def outputBias : List (Int) := ((-6 : Int) :: ((-2 : Int) :: ((-5 : Int) :: ((-5 : Int) :: ((-4 : Int) :: ((-5 : Int) :: ((-6 : Int) :: ((-3 : Int) :: ((-7 : Int) :: ((-6 : Int) :: ([] : List (Int))))))))))))
 public theorem outputBias.decoded : (LexLeanModels.tensorMatches 4 true outputBias outputBias.bytes && (outputBias.length == 10)) = true := by decide
 
-@[expose] public def digitNames.bytes : ByteArray := ByteArray.mk #[122, 101, 114, 111, 10, 111, 110, 101, 10, 116, 119, 111, 10, 116, 104, 114, 101, 101, 10, 102, 111, 117, 114, 10, 102, 105, 118, 101, 10, 115, 105, 120, 10, 115, 101, 118, 101, 110, 10, 101, 105, 103, 104, 116, 10, 110, 105, 110, 101, 10]
+@[expose] public def digitNames.bytes : ByteArray := (let __byte10 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 10); let __byte101 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 101); let __byte105 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 105); let __byte110 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 110); let __byte111 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 111); _root_.ByteArray.mk #[(_root_.UInt8.ofNat (nat_lit 122)), __byte101, (_root_.UInt8.ofNat (nat_lit 114)), __byte111, __byte10, __byte111, __byte110, __byte101, __byte10, (_root_.UInt8.ofNat (nat_lit 116)), (_root_.UInt8.ofNat (nat_lit 119)), __byte111, __byte10, (_root_.UInt8.ofNat (nat_lit 116)), (_root_.UInt8.ofNat (nat_lit 104)), (_root_.UInt8.ofNat (nat_lit 114)), __byte101, __byte101, __byte10, (_root_.UInt8.ofNat (nat_lit 102)), __byte111, (_root_.UInt8.ofNat (nat_lit 117)), (_root_.UInt8.ofNat (nat_lit 114)), __byte10, (_root_.UInt8.ofNat (nat_lit 102)), __byte105, (_root_.UInt8.ofNat (nat_lit 118)), __byte101, __byte10, (_root_.UInt8.ofNat (nat_lit 115)), __byte105, (_root_.UInt8.ofNat (nat_lit 120)), __byte10, (_root_.UInt8.ofNat (nat_lit 115)), __byte101, (_root_.UInt8.ofNat (nat_lit 118)), __byte101, __byte110, __byte10, __byte101, __byte105, (_root_.UInt8.ofNat (nat_lit 103)), (_root_.UInt8.ofNat (nat_lit 104)), (_root_.UInt8.ofNat (nat_lit 116)), __byte10, __byte110, __byte105, __byte110, __byte101, __byte10])
 @[expose] public def digitNames : List (String) := ("zero" :: ("one" :: ("two" :: ("three" :: ("four" :: ("five" :: ("six" :: ("seven" :: ("eight" :: ("nine" :: ([] : List (String))))))))))))
 public theorem digitNames.decoded : LexLeanModels.linesMatch digitNames digitNames.bytes = true := by decide
 
-@[expose] public def banner.bytes : ByteArray := ByteArray.mk #[76, 76, 77, 0, 1]
-@[expose] public def banner : ByteArray := ByteArray.mk #[76, 76, 77, 0, 1]
+@[expose] public def banner.bytes : ByteArray := _root_.ByteArray.mk #[(_root_.UInt8.ofNat (nat_lit 76)), (_root_.UInt8.ofNat (nat_lit 76)), (_root_.UInt8.ofNat (nat_lit 77)), (_root_.UInt8.ofNat (nat_lit 0)), (_root_.UInt8.ofNat (nat_lit 1))]
+@[expose] public def banner : ByteArray := _root_.ByteArray.mk #[(_root_.UInt8.ofNat (nat_lit 76)), (_root_.UInt8.ofNat (nat_lit 76)), (_root_.UInt8.ofNat (nat_lit 77)), (_root_.UInt8.ofNat (nat_lit 0)), (_root_.UInt8.ofNat (nat_lit 1))]
 public theorem banner.decoded : banner = banner.bytes := rfl
 
 @[expose, reducible] public def Recognizes (glyph : Models.Glyphs.Glyph) (digit : Nat) : Prop := (digit = Models.Glyphs.digitOf (glyph))
@@ -139,5 +139,163 @@ public theorem DigitEvidence.digit_net_correct : LexLeanModels.SatisfiesTotal ((
 @[expose] public def RawDigitModel (__input : Models.Glyphs.Glyph) : Nat := Models.Recognizer.DigitNet (__input)
 
 @[expose] public def digitName (digit : Nat) : Option (String) := (LexLeanRuntime.index (digitNames) (digit) : Option (String))
+
+public structure Dyadic where
+  sign : Nat
+  mantissa : Int
+  exponent : Int
+
+@[expose] public def dyadicTriple (value : Option (Dyadic)) : Option ((Prod (Nat) ((Prod (Int) (Int))))) := (match value with | Option.none => Option.none | Option.some d => Option.some (((d).sign, ((d).mantissa, (d).exponent))))
+
+@[expose, reducible] public def DyadicMatches (observed : Option (Dyadic)) (sign : Nat) (mantissa : Int) (exponent : Int) : Prop := (dyadicTriple (observed) = Option.some ((sign, (mantissa, exponent))))
+
+@[expose] public def byteToInt (b : UInt8) : Int := (LexLeanRuntime.subtract ((if (LexLeanRuntime.equal ((LexLeanRuntime.bitAnd (b) ((1 : UInt8)) : UInt8)) ((0 : UInt8)) : Bool) then (0 : Int) else (1 : Int))) ((LexLeanRuntime.negate ((LexLeanRuntime.subtract ((if (LexLeanRuntime.equal ((LexLeanRuntime.bitAnd (b) ((2 : UInt8)) : UInt8)) ((0 : UInt8)) : Bool) then (0 : Int) else (2 : Int))) ((LexLeanRuntime.negate ((LexLeanRuntime.subtract ((if (LexLeanRuntime.equal ((LexLeanRuntime.bitAnd (b) ((4 : UInt8)) : UInt8)) ((0 : UInt8)) : Bool) then (0 : Int) else (4 : Int))) ((LexLeanRuntime.negate ((LexLeanRuntime.subtract ((if (LexLeanRuntime.equal ((LexLeanRuntime.bitAnd (b) ((8 : UInt8)) : UInt8)) ((0 : UInt8)) : Bool) then (0 : Int) else (8 : Int))) ((LexLeanRuntime.negate ((LexLeanRuntime.subtract ((if (LexLeanRuntime.equal ((LexLeanRuntime.bitAnd (b) ((16 : UInt8)) : UInt8)) ((0 : UInt8)) : Bool) then (0 : Int) else (16 : Int))) ((LexLeanRuntime.negate ((LexLeanRuntime.subtract ((if (LexLeanRuntime.equal ((LexLeanRuntime.bitAnd (b) ((32 : UInt8)) : UInt8)) ((0 : UInt8)) : Bool) then (0 : Int) else (32 : Int))) ((LexLeanRuntime.negate ((LexLeanRuntime.subtract ((if (LexLeanRuntime.equal ((LexLeanRuntime.bitAnd (b) ((64 : UInt8)) : UInt8)) ((0 : UInt8)) : Bool) then (0 : Int) else (64 : Int))) ((LexLeanRuntime.negate ((if (LexLeanRuntime.equal ((LexLeanRuntime.bitAnd (b) ((128 : UInt8)) : UInt8)) ((0 : UInt8)) : Bool) then (0 : Int) else (128 : Int))) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)
+
+@[expose] public def decodeBinary32 (bits : Int) : Option (Dyadic) := (if ((LexLeanCollections.lessThan (bits) ((0 : Int)) : Bool) || (LexLeanCollections.lessThan ((4294967295 : Int)) (bits) : Bool)) then Option.none else (let signBit : Int := (LexLeanRuntime.quotient (bits) ((2147483648 : Int)) ((0 : Int)) : Int); (let sign : Nat := (if (LexLeanCollections.lessThan ((0 : Int)) (signBit) : Bool) then 1 else 0); (let rest : Int := (LexLeanRuntime.remainder (bits) ((2147483648 : Int)) ((0 : Int)) : Int); (let biased : Int := (LexLeanRuntime.quotient (rest) ((8388608 : Int)) ((0 : Int)) : Int); (let fraction : Int := (LexLeanRuntime.remainder (rest) ((8388608 : Int)) ((0 : Int)) : Int); (if (!(LexLeanCollections.lessThan (biased) ((255 : Int)) : Bool)) then Option.none else (if (!(LexLeanCollections.lessThan ((0 : Int)) (biased) : Bool)) then Option.some (({ sign := sign, mantissa := fraction, exponent := (-149 : Int) } : Dyadic)) else Option.some (({ sign := sign, mantissa := (LexLeanRuntime.subtract ((8388608 : Int)) ((LexLeanRuntime.negate (fraction) : Int)) : Int), exponent := (LexLeanRuntime.subtract (biased) ((150 : Int)) : Int) } : Dyadic))))))))))
+
+@[expose] public def decodeBinary64 (bits : Int) : Option (Dyadic) := (if (LexLeanCollections.lessThan (bits) ((0 : Int)) : Bool) then (let rest : Int := (LexLeanRuntime.subtract ((LexLeanRuntime.subtract (bits) ((-4611686018427387904 : Int)) : Int)) ((-4611686018427387904 : Int)) : Int); (if (LexLeanCollections.lessThan (rest) ((0 : Int)) : Bool) then Option.none else (let biased : Int := (LexLeanRuntime.quotient (rest) ((4503599627370496 : Int)) ((0 : Int)) : Int); (let fraction : Int := (LexLeanRuntime.remainder (rest) ((4503599627370496 : Int)) ((0 : Int)) : Int); (if (!(LexLeanCollections.lessThan (biased) ((2047 : Int)) : Bool)) then Option.none else (if (!(LexLeanCollections.lessThan ((0 : Int)) (biased) : Bool)) then Option.some (({ sign := 1, mantissa := fraction, exponent := (-1074 : Int) } : Dyadic)) else Option.some (({ sign := 1, mantissa := (LexLeanRuntime.subtract ((4503599627370496 : Int)) ((LexLeanRuntime.negate (fraction) : Int)) : Int), exponent := (LexLeanRuntime.subtract (biased) ((1075 : Int)) : Int) } : Dyadic)))))))) else (let q0 : Int := (LexLeanRuntime.quotient (bits) ((4503599627370496 : Int)) ((0 : Int)) : Int); (if (!(LexLeanCollections.lessThan ((2047 : Int)) (q0) : Bool)) then (let fraction : Int := (LexLeanRuntime.remainder (bits) ((4503599627370496 : Int)) ((0 : Int)) : Int); (if (!(LexLeanCollections.lessThan (q0) ((2047 : Int)) : Bool)) then Option.none else (if (!(LexLeanCollections.lessThan ((0 : Int)) (q0) : Bool)) then Option.some (({ sign := 0, mantissa := fraction, exponent := (-1074 : Int) } : Dyadic)) else Option.some (({ sign := 0, mantissa := (LexLeanRuntime.subtract ((4503599627370496 : Int)) ((LexLeanRuntime.negate (fraction) : Int)) : Int), exponent := (LexLeanRuntime.subtract (q0) ((1075 : Int)) : Int) } : Dyadic))))) else (let rest : Int := (LexLeanRuntime.subtract ((LexLeanRuntime.subtract (bits) ((4611686018427387904 : Int)) : Int)) ((4611686018427387904 : Int)) : Int); (let biased : Int := (LexLeanRuntime.quotient (rest) ((4503599627370496 : Int)) ((0 : Int)) : Int); (if (!(LexLeanCollections.lessThan (biased) ((2047 : Int)) : Bool)) then Option.none else (let fraction : Int := (LexLeanRuntime.remainder (rest) ((4503599627370496 : Int)) ((0 : Int)) : Int); (if (!(LexLeanCollections.lessThan ((0 : Int)) (biased) : Bool)) then Option.some (({ sign := 1, mantissa := fraction, exponent := (-1074 : Int) } : Dyadic)) else Option.some (({ sign := 1, mantissa := (LexLeanRuntime.subtract ((4503599627370496 : Int)) ((LexLeanRuntime.negate (fraction) : Int)) : Int), exponent := (LexLeanRuntime.subtract (biased) ((1075 : Int)) : Int) } : Dyadic))))))))))
+
+@[expose] public def decodeBinary32Bytes (bytes : ByteArray) (offset : Nat) : Option (Dyadic) := (match (LexLeanRuntime.index (bytes) (offset) : Option (UInt8)) with | Option.none => Option.none | Option.some b0 => (match (LexLeanRuntime.index (bytes) ((offset + 1)) : Option (UInt8)) with | Option.none => Option.none | Option.some b1 => (match (LexLeanRuntime.index (bytes) ((offset + 2)) : Option (UInt8)) with | Option.none => Option.none | Option.some b2 => (match (LexLeanRuntime.index (bytes) ((offset + 3)) : Option (UInt8)) with | Option.none => Option.none | Option.some b3 => decodeBinary32 ((LexLeanRuntime.subtract (byteToInt (b0)) ((LexLeanRuntime.negate ((LexLeanRuntime.subtract ((LexLeanRuntime.multiply ((256 : Int)) (byteToInt (b1)) : Int)) ((LexLeanRuntime.negate ((LexLeanRuntime.subtract ((LexLeanRuntime.multiply ((65536 : Int)) (byteToInt (b2)) : Int)) ((LexLeanRuntime.negate ((LexLeanRuntime.multiply ((16777216 : Int)) (byteToInt (b3)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int))))))
+
+@[expose] public def decodeBinary64Bytes (bytes : ByteArray) (offset : Nat) : Option (Dyadic) := (match (LexLeanRuntime.index (bytes) (offset) : Option (UInt8)) with | Option.none => Option.none | Option.some b0 => (match (LexLeanRuntime.index (bytes) ((offset + 1)) : Option (UInt8)) with | Option.none => Option.none | Option.some b1 => (match (LexLeanRuntime.index (bytes) ((offset + 2)) : Option (UInt8)) with | Option.none => Option.none | Option.some b2 => (match (LexLeanRuntime.index (bytes) ((offset + 3)) : Option (UInt8)) with | Option.none => Option.none | Option.some b3 => (match (LexLeanRuntime.index (bytes) ((offset + 4)) : Option (UInt8)) with | Option.none => Option.none | Option.some b4 => (match (LexLeanRuntime.index (bytes) ((offset + 5)) : Option (UInt8)) with | Option.none => Option.none | Option.some b5 => (match (LexLeanRuntime.index (bytes) ((offset + 6)) : Option (UInt8)) with | Option.none => Option.none | Option.some b6 => (match (LexLeanRuntime.index (bytes) ((offset + 7)) : Option (UInt8)) with | Option.none => Option.none | Option.some b7 => (let v7 : Int := byteToInt (b7); (let low7 : Int := (if (LexLeanCollections.lessThan (v7) ((128 : Int)) : Bool) then v7 else (LexLeanRuntime.subtract (v7) ((128 : Int)) : Int)); (let low63 : Int := (LexLeanRuntime.subtract (byteToInt (b0)) ((LexLeanRuntime.negate ((LexLeanRuntime.subtract ((LexLeanRuntime.multiply ((256 : Int)) (byteToInt (b1)) : Int)) ((LexLeanRuntime.negate ((LexLeanRuntime.subtract ((LexLeanRuntime.multiply ((65536 : Int)) (byteToInt (b2)) : Int)) ((LexLeanRuntime.negate ((LexLeanRuntime.subtract ((LexLeanRuntime.multiply ((16777216 : Int)) (byteToInt (b3)) : Int)) ((LexLeanRuntime.negate ((LexLeanRuntime.subtract ((LexLeanRuntime.multiply ((4294967296 : Int)) (byteToInt (b4)) : Int)) ((LexLeanRuntime.negate ((LexLeanRuntime.subtract ((LexLeanRuntime.multiply ((1099511627776 : Int)) (byteToInt (b5)) : Int)) ((LexLeanRuntime.negate ((LexLeanRuntime.subtract ((LexLeanRuntime.multiply ((281474976710656 : Int)) (byteToInt (b6)) : Int)) ((LexLeanRuntime.negate ((LexLeanRuntime.multiply ((72057594037927936 : Int)) (low7) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int); (let signedBits : Int := (if (LexLeanCollections.lessThan (v7) ((128 : Int)) : Bool) then low63 else (LexLeanRuntime.subtract ((LexLeanRuntime.subtract (low63) ((4611686018427387904 : Int)) : Int)) ((4611686018427387904 : Int)) : Int)); decodeBinary64 (signedBits)))))))))))))
+
+@[expose] public def dyadicMul (a : Dyadic) (b : Dyadic) : Dyadic := ({ sign := (if (Nat.beq ((a).sign) ((b).sign)) then 0 else 1), mantissa := (LexLeanRuntime.multiply ((a).mantissa) ((b).mantissa) : Int), exponent := (LexLeanRuntime.subtract ((a).exponent) ((LexLeanRuntime.negate ((b).exponent) : Int)) : Int) } : Dyadic)
+
+@[expose] public def dyadicRoundShift (d : Dyadic) (shift : Int) : Int := (if (!(LexLeanCollections.lessThan ((0 : Int)) ((d).mantissa) : Bool)) then (0 : Int) else (let k : Int := (LexLeanRuntime.subtract ((d).exponent) ((LexLeanRuntime.negate (shift) : Int)) : Int); (let mag : Int := (if (!(LexLeanCollections.lessThan (k) ((0 : Int)) : Bool)) then (((LexLeanCollections.iterateUntil ((fun (st : (Prod (Int) (Int))) => (if (!(LexLeanCollections.lessThan ((0 : Int)) ((st).1) : Bool)) then Option.none else Option.some (((LexLeanRuntime.subtract ((st).1) ((1 : Int)) : Int), (LexLeanRuntime.multiply ((2 : Int)) ((st).2) : Int)))))) (512) ((k, (d).mantissa)) : (Prod ((Prod (Int) (Int))) (Bool)))).1).2 else (let s : Int := (LexLeanRuntime.negate (k) : Int); (let stepped : (Prod (Int) (Int)) := (((LexLeanCollections.iterateUntil ((fun (st : (Prod (Int) ((Prod (Int) (Int))))) => (if (!(LexLeanCollections.lessThan ((0 : Int)) ((st).1) : Bool)) then Option.none else (let qs : (Prod (Int) (Int)) := (st).2; Option.some (((LexLeanRuntime.subtract ((st).1) ((1 : Int)) : Int), ((LexLeanRuntime.quotient ((qs).1) ((2 : Int)) ((0 : Int)) : Int), (if ((!(LexLeanCollections.lessThan ((0 : Int)) ((qs).2) : Bool)) && (!(LexLeanCollections.lessThan ((0 : Int)) ((LexLeanRuntime.remainder ((qs).1) ((2 : Int)) ((0 : Int)) : Int)) : Bool))) then (0 : Int) else (1 : Int))))))))) (512) (((LexLeanRuntime.subtract (s) ((1 : Int)) : Int), ((d).mantissa, (0 : Int)))) : (Prod ((Prod (Int) ((Prod (Int) (Int))))) (Bool)))).1).2; (let half : Int := (stepped).1; (let sticky : Int := (stepped).2; (let baseMag : Int := (LexLeanRuntime.quotient (half) ((2 : Int)) ((0 : Int)) : Int); (let hb : Int := (LexLeanRuntime.remainder (half) ((2 : Int)) ((0 : Int)) : Int); (if (!(LexLeanCollections.lessThan ((0 : Int)) (hb) : Bool)) then baseMag else (if (LexLeanCollections.lessThan ((0 : Int)) (sticky) : Bool) then (LexLeanRuntime.subtract (baseMag) ((-1 : Int)) : Int) else (LexLeanRuntime.subtract (baseMag) ((LexLeanRuntime.negate ((LexLeanRuntime.remainder (baseMag) ((2 : Int)) ((0 : Int)) : Int)) : Int)) : Int)))))))))); (if (Nat.beq ((d).sign) (0)) then mag else (LexLeanRuntime.negate (mag) : Int)))))
+
+@[expose] public def dyadicRatioRound (a : Dyadic) (b : Dyadic) (c : Dyadic) (shift : Int) : Option (Int) := (if (!(LexLeanCollections.lessThan ((0 : Int)) ((c).mantissa) : Bool)) then Option.none else (if ((!(LexLeanCollections.lessThan ((0 : Int)) ((a).mantissa) : Bool)) || (!(LexLeanCollections.lessThan ((0 : Int)) ((b).mantissa) : Bool))) then Option.some ((0 : Int)) else (let product : Int := (LexLeanRuntime.multiply ((a).mantissa) ((b).mantissa) : Int); (let divisor : Int := (c).mantissa; (let k : Int := (LexLeanRuntime.subtract ((LexLeanRuntime.subtract ((LexLeanRuntime.subtract ((a).exponent) ((LexLeanRuntime.negate ((b).exponent) : Int)) : Int)) ((c).exponent) : Int)) ((LexLeanRuntime.negate (shift) : Int)) : Int); (let abSign : Nat := (if (Nat.beq ((a).sign) ((b).sign)) then 0 else 1); (let outSign : Nat := (if (Nat.beq (abSign) ((c).sign)) then 0 else 1); (if (!(LexLeanCollections.lessThan (k) ((0 : Int)) : Bool)) then (let initQ : Int := (LexLeanRuntime.quotient (product) (divisor) ((0 : Int)) : Int); (let initR : Int := (LexLeanRuntime.remainder (product) (divisor) ((0 : Int)) : Int); (let stepped : (Prod ((Prod (Int) ((Prod (Int) (Int))))) (Bool)) := (LexLeanCollections.iterateUntil ((fun (st : (Prod (Int) ((Prod (Int) (Int))))) => (if (!(LexLeanCollections.lessThan ((0 : Int)) ((st).1) : Bool)) then Option.none else (let qr : (Prod (Int) (Int)) := (st).2; (let r2 : Int := (LexLeanRuntime.multiply ((2 : Int)) ((qr).2) : Int); (let dq : Int := (LexLeanRuntime.quotient (r2) (divisor) ((0 : Int)) : Int); (let nr : Int := (LexLeanRuntime.remainder (r2) (divisor) ((0 : Int)) : Int); Option.some (((LexLeanRuntime.subtract ((st).1) ((1 : Int)) : Int), ((LexLeanRuntime.subtract ((LexLeanRuntime.multiply ((2 : Int)) ((qr).1) : Int)) ((LexLeanRuntime.negate (dq) : Int)) : Int), nr)))))))))) (512) ((k, (initQ, initR))) : (Prod ((Prod (Int) ((Prod (Int) (Int))))) (Bool))); (if (stepped).2 then (let qr : (Prod (Int) (Int)) := ((stepped).1).2; (let q : Int := (qr).1; (let r : Int := (qr).2; (let twoR : Int := (LexLeanRuntime.multiply ((2 : Int)) (r) : Int); (let rounded : Int := (if (LexLeanCollections.lessThan (twoR) (divisor) : Bool) then q else (if (LexLeanCollections.lessThan (divisor) (twoR) : Bool) then (LexLeanRuntime.subtract (q) ((-1 : Int)) : Int) else (LexLeanRuntime.subtract (q) ((LexLeanRuntime.negate ((LexLeanRuntime.remainder (q) ((2 : Int)) ((0 : Int)) : Int)) : Int)) : Int))); Option.some ((if (Nat.beq (outSign) (0)) then rounded else (LexLeanRuntime.negate (rounded) : Int)))))))) else Option.none)))) else (let s : Int := (LexLeanRuntime.negate (k) : Int); (let initQ : Int := (LexLeanRuntime.quotient (product) (divisor) ((0 : Int)) : Int); (let initSticky : Int := (if (!(LexLeanCollections.lessThan ((0 : Int)) ((LexLeanRuntime.remainder (product) (divisor) ((0 : Int)) : Int)) : Bool)) then (0 : Int) else (1 : Int)); (let stepped : (Prod ((Prod (Int) ((Prod (Int) (Int))))) (Bool)) := (LexLeanCollections.iterateUntil ((fun (st : (Prod (Int) ((Prod (Int) (Int))))) => (if (!(LexLeanCollections.lessThan ((0 : Int)) ((st).1) : Bool)) then Option.none else (let qs : (Prod (Int) (Int)) := (st).2; Option.some (((LexLeanRuntime.subtract ((st).1) ((1 : Int)) : Int), ((LexLeanRuntime.quotient ((qs).1) ((2 : Int)) ((0 : Int)) : Int), (if ((!(LexLeanCollections.lessThan ((0 : Int)) ((qs).2) : Bool)) && (!(LexLeanCollections.lessThan ((0 : Int)) ((LexLeanRuntime.remainder ((qs).1) ((2 : Int)) ((0 : Int)) : Int)) : Bool))) then (0 : Int) else (1 : Int))))))))) (512) (((LexLeanRuntime.subtract (s) ((1 : Int)) : Int), (initQ, initSticky))) : (Prod ((Prod (Int) ((Prod (Int) (Int))))) (Bool))); (if (stepped).2 then (let qs : (Prod (Int) (Int)) := ((stepped).1).2; (let half : Int := (qs).1; (let sticky : Int := (qs).2; (let q : Int := (LexLeanRuntime.quotient (half) ((2 : Int)) ((0 : Int)) : Int); (let hb : Int := (LexLeanRuntime.remainder (half) ((2 : Int)) ((0 : Int)) : Int); (let rounded : Int := (if (!(LexLeanCollections.lessThan ((0 : Int)) (hb) : Bool)) then q else (if (LexLeanCollections.lessThan ((0 : Int)) (sticky) : Bool) then (LexLeanRuntime.subtract (q) ((-1 : Int)) : Int) else (LexLeanRuntime.subtract (q) ((LexLeanRuntime.negate ((LexLeanRuntime.remainder (q) ((2 : Int)) ((0 : Int)) : Int)) : Int)) : Int))); Option.some ((if (Nat.beq (outSign) (0)) then rounded else (LexLeanRuntime.negate (rounded) : Int))))))))) else Option.none)))))))))))))
+
+@[expose] public def scaleRatioRound32 (aBits : Int) (bBits : Int) (cBits : Int) : Option (Int) := (match decodeBinary32 (aBits) with | Option.none => Option.none | Option.some a => (match decodeBinary32 (bBits) with | Option.none => Option.none | Option.some b => (match decodeBinary32 (cBits) with | Option.none => Option.none | Option.some c => dyadicRatioRound (a) (b) (c) ((32 : Int)))))
+
+@[expose] public def scaleMultipliersRound32 (inputScaleBits : Int) (weightScaleBits : List (Int)) (outputScaleBits : Int) : Option (List (Int)) := (let rev : Option (List (Int)) := (LexLeanCollections.listFold ((fun (acc : Option (List (Int))) (wBits : Int) => (match acc with | Option.none => Option.none | Option.some xs => (match scaleRatioRound32 (inputScaleBits) (wBits) (outputScaleBits) with | Option.none => Option.none | Option.some m => Option.some ((m :: xs)))))) (Option.some (([] : List (Int)))) (weightScaleBits) : Option (List (Int))); (match rev with | Option.none => Option.none | Option.some xs => Option.some ((LexLeanCollections.listFold ((fun (out : List (Int)) (x : Int) => (x :: out))) (([] : List (Int))) (xs) : List (Int)))))
+
+public theorem binary32_pos_zero : DyadicMatches (decodeBinary32 ((0 : Int))) (0) ((0 : Int)) ((-149 : Int)) := by
+  decide
+
+public theorem binary32_neg_zero : DyadicMatches (decodeBinary32 ((2147483648 : Int))) (1) ((0 : Int)) ((-149 : Int)) := by
+  decide
+
+public theorem binary32_min_subnormal : DyadicMatches (decodeBinary32 ((1 : Int))) (0) ((1 : Int)) ((-149 : Int)) := by
+  decide
+
+public theorem binary32_max_subnormal : DyadicMatches (decodeBinary32 ((8388607 : Int))) (0) ((8388607 : Int)) ((-149 : Int)) := by
+  decide
+
+public theorem binary32_min_normal : DyadicMatches (decodeBinary32 ((8388608 : Int))) (0) ((8388608 : Int)) ((-149 : Int)) := by
+  decide
+
+public theorem binary32_one : DyadicMatches (decodeBinary32 ((1065353216 : Int))) (0) ((8388608 : Int)) ((-23 : Int)) := by
+  decide
+
+public theorem binary32_neg_one_half : DyadicMatches (decodeBinary32 ((3217031168 : Int))) (1) ((12582912 : Int)) ((-23 : Int)) := by
+  decide
+
+public theorem binary32_unit_scale : DyadicMatches (decodeBinary32 ((998277249 : Int))) (0) ((8421505 : Int)) ((-31 : Int)) := by
+  decide
+
+public theorem binary32_max_normal : DyadicMatches (decodeBinary32 ((2139095039 : Int))) (0) ((16777215 : Int)) ((104 : Int)) := by
+  decide
+
+public theorem binary32_rejects_pos_inf : (dyadicTriple (decodeBinary32 ((2139095040 : Int))) = Option.none) := by
+  decide
+
+public theorem binary32_rejects_neg_inf : (dyadicTriple (decodeBinary32 ((4286578688 : Int))) = Option.none) := by
+  decide
+
+public theorem binary32_rejects_nan : (dyadicTriple (decodeBinary32 ((2143289344 : Int))) = Option.none) := by
+  decide
+
+public theorem binary32_rejects_negative_input : (dyadicTriple (decodeBinary32 ((-1 : Int))) = Option.none) := by
+  decide
+
+public theorem binary32_rejects_overflow_input : (dyadicTriple (decodeBinary32 ((4294967296 : Int))) = Option.none) := by
+  decide
+
+public theorem binary32_banner_subnormal : DyadicMatches (decodeBinary32Bytes (banner) (0)) (0) ((5065804 : Int)) ((-149 : Int)) := by
+  decide
+
+public theorem binary32_banner_normal : DyadicMatches (decodeBinary32Bytes (banner) (1)) (0) ((8408396 : Int)) ((-148 : Int)) := by
+  decide
+
+public theorem binary64_pos_zero : DyadicMatches (decodeBinary64 ((0 : Int))) (0) ((0 : Int)) ((-1074 : Int)) := by
+  decide
+
+public theorem binary64_neg_zero : DyadicMatches (decodeBinary64 ((-9223372036854775808 : Int))) (1) ((0 : Int)) ((-1074 : Int)) := by
+  decide
+
+public theorem binary64_max_subnormal : DyadicMatches (decodeBinary64 ((4503599627370495 : Int))) (0) ((4503599627370495 : Int)) ((-1074 : Int)) := by
+  decide
+
+public theorem binary64_min_normal : DyadicMatches (decodeBinary64 ((4503599627370496 : Int))) (0) ((4503599627370496 : Int)) ((-1074 : Int)) := by
+  decide
+
+public theorem binary64_min_subnormal : DyadicMatches (decodeBinary64 ((1 : Int))) (0) ((1 : Int)) ((-1074 : Int)) := by
+  decide
+
+public theorem binary64_one : DyadicMatches (decodeBinary64 ((4607182418800017408 : Int))) (0) ((4503599627370496 : Int)) ((-52 : Int)) := by
+  decide
+
+public theorem binary64_neg_one_half : DyadicMatches (decodeBinary64 ((-4613937818241073152 : Int))) (1) ((6755399441055744 : Int)) ((-52 : Int)) := by
+  decide
+
+public theorem binary64_max_normal : DyadicMatches (decodeBinary64 ((9218868437227405311 : Int))) (0) ((9007199254740991 : Int)) ((971 : Int)) := by
+  decide
+
+public theorem binary64_rejects_pos_inf : (dyadicTriple (decodeBinary64 ((9218868437227405312 : Int))) = Option.none) := by
+  decide
+
+public theorem binary64_rejects_neg_inf : (dyadicTriple (decodeBinary64 ((-4503599627370496 : Int))) = Option.none) := by
+  decide
+
+public theorem binary64_rejects_nan : (dyadicTriple (decodeBinary64 ((9221120237041090560 : Int))) = Option.none) := by
+  decide
+
+public theorem binary64_banner_first : DyadicMatches (decodeBinary64Bytes ((LexLeanRuntime.append (banner) (banner) : ByteArray)) (0)) (0) ((7964866531642444 : Int)) ((161 : Int)) := by
+  decide
+
+public theorem binary64_banner_last : DyadicMatches (decodeBinary64Bytes ((LexLeanRuntime.append (banner) (banner) : ByteArray)) (2)) (0) ((4588589715357773 : Int)) ((-1059 : Int)) := by
+  decide
+
+public theorem dyadic_round_shift_exact : (dyadicRoundShift (({ sign := 0, mantissa := (8388608 : Int), exponent := (-150 : Int) } : Dyadic)) ((150 : Int)) = (8388608 : Int)) := by
+  decide
+
+public theorem dyadic_round_shift_tie_even_down : (dyadicRoundShift (({ sign := 0, mantissa := (5 : Int), exponent := (-1 : Int) } : Dyadic)) ((0 : Int)) = (2 : Int)) := by
+  decide
+
+public theorem dyadic_round_shift_tie_even_up : (dyadicRoundShift (({ sign := 0, mantissa := (7 : Int), exponent := (-1 : Int) } : Dyadic)) ((0 : Int)) = (4 : Int)) := by
+  decide
+
+public theorem dyadic_round_shift_negative_tie_even : (dyadicRoundShift (({ sign := 1, mantissa := (7 : Int), exponent := (-1 : Int) } : Dyadic)) ((0 : Int)) = (-4 : Int)) := by
+  decide
+
+public theorem scale_ratio_exact_cancel : (scaleRatioRound32 ((998277249 : Int)) ((1000593162 : Int)) ((1008981770 : Int)) = Option.some ((8421505 : Int))) := by
+  decide
+
+public theorem scale_ratio_rounds_up : (scaleRatioRound32 ((998277249 : Int)) ((1000693826 : Int)) ((1017370378 : Int)) = Option.some ((4250229 : Int))) := by
+  decide
+
+public theorem scale_ratio_rounds_down : (scaleRatioRound32 ((1023410176 : Int)) ((1017370378 : Int)) ((1039516303 : Int)) = Option.some ((22369621 : Int))) := by
+  decide
+
+public theorem scale_ratio_tie_odd_to_even : (scaleRatioRound32 ((1065353217 : Int)) ((1069547520 : Int)) ((1140850688 : Int)) = Option.some ((12582914 : Int))) := by
+  decide
+
+public theorem scale_ratio_tie_even_stays_even : (scaleRatioRound32 ((1065353219 : Int)) ((1069547520 : Int)) ((1140850688 : Int)) = Option.some ((12582916 : Int))) := by
+  decide
+
+public theorem scale_ratio_negative_scale : (scaleRatioRound32 ((3145760897 : Int)) ((1000693826 : Int)) ((1017370378 : Int)) = Option.some ((-4250229 : Int))) := by
+  decide
+
+public theorem scale_ratio_subnormal_scales : (scaleRatioRound32 ((3 : Int)) ((1084227584 : Int)) ((2 : Int)) = Option.some ((32212254720 : Int))) := by
+  decide
+
+public theorem scale_ratio_rejects_zero_divisor : (scaleRatioRound32 ((1065353216 : Int)) ((1065353216 : Int)) ((0 : Int)) = Option.none) := by
+  decide
+
+public theorem scale_ratio_rejects_nonfinite : (scaleRatioRound32 ((1065353216 : Int)) ((2139095040 : Int)) ((1065353216 : Int)) = Option.none) := by
+  decide
+
+public theorem scale_multipliers_channel_batch : (scaleMultipliersRound32 ((998277249 : Int)) (((1000593162 : Int) :: ((1000693826 : Int) :: ([] : List (Int))))) ((1017370378 : Int)) = Option.some (((4210752 : Int) :: ((4250229 : Int) :: ([] : List (Int)))))) := by
+  decide
 
 end Models.Recognizer

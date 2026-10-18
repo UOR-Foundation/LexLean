@@ -510,7 +510,18 @@ pub fn audit_core(
                 row.name, row.kind
             ));
         }
-        if row.safety.is_some() {
+        // The only definitions that are not safe are the compiler's
+        // implementation records of a recursive definition of the module, which
+        // the differential evaluator runs: `f._unsafe_rec`, partial, beside the
+        // safe `f` the theorems are about. No safe declaration can name one, so
+        // no theorem depends on it.
+        let record = row.safety == Some(crate::ir::core::CoreSafety::Partial)
+            && matches!(row.kind, CoreDeclKind::Definition)
+            && row
+                .name
+                .strip_suffix("._unsafe_rec")
+                .is_some_and(|safe| module.declarations.iter().any(|other| other.name == safe));
+        if row.safety.is_some() && !record {
             return Err(format!("the row `{}` is not a safe definition", row.name));
         }
         if !matches!(row.policy, CoreAxiomPolicy::Exact(_)) {
@@ -651,38 +662,43 @@ fn ordered(user: &[(String, String)]) -> Result<Vec<(String, String)>, Diagnosti
 /// The text of the audit module: it prints the axioms of every library
 /// declaration and every certificate's root theorem.
 fn audit_text(library: &Library, certificates: &[Certificate]) -> String {
-    let mut text = String::new();
-    for module in &library.modules {
-        text.push_str(&format!("import {module}\n"));
-    }
-    for certificate in certificates {
-        text.push_str(&format!("import {}\n", certificate.module));
-    }
-    for declaration in &library.declaration {
-        text.push_str(&format!("#print axioms {}\n", declaration.name));
-    }
-    for certificate in certificates {
-        text.push_str(&format!("#print axioms {}\n", certificate.theorem));
-    }
+    use crate::backend::lean::{AuxiliaryCommand, AuxiliaryModule};
+    let mut imports: Vec<String> = library.modules.clone();
+    imports.extend(
+        certificates
+            .iter()
+            .map(|certificate| certificate.module.clone()),
+    );
+    let mut commands: Vec<AuxiliaryCommand> = library
+        .declaration
+        .iter()
+        .map(|declaration| AuxiliaryCommand::PrintAxioms(declaration.name.clone()))
+        .collect();
+    commands.extend(
+        certificates
+            .iter()
+            .map(|certificate| AuxiliaryCommand::PrintAxioms(certificate.theorem.clone())),
+    );
     // A certificate held as data pins the axioms of every row: the audit
     // prints them all, so a row whose policy lies is refused.
     for certificate in certificates {
         if let Some(data) = &certificate.data {
-            for row in &data.declarations {
-                if row.name != certificate.theorem {
-                    text.push_str(&format!("#print axioms {}\n", row.name));
-                }
-            }
+            commands.extend(
+                data.declarations
+                    .iter()
+                    .filter(|row| row.name != certificate.theorem)
+                    .map(|row| AuxiliaryCommand::PrintAxioms(row.name.clone())),
+            );
         }
     }
-    text.push_str(&format!("#print \"{VOCABULARY_MARKER}\"\n"));
-    for (name, statement) in VOCABULARY {
-        match statement {
-            Statement::Print => text.push_str(&format!("#print {name}\n")),
-            Statement::Check => text.push_str(&format!("#check @{name}\n")),
-        }
-    }
-    text
+    commands.push(AuxiliaryCommand::PrintMarker(VOCABULARY_MARKER.to_owned()));
+    commands.extend(VOCABULARY.iter().map(|(name, statement)| match statement {
+        Statement::Print => AuxiliaryCommand::PrintName((*name).to_owned()),
+        Statement::Check => AuxiliaryCommand::CheckName((*name).to_owned()),
+    }));
+    AuxiliaryModule { imports, commands }
+        .render_over_unheaded()
+        .0
 }
 
 /// Tokens no library module or certificate may contain: each either
@@ -1703,7 +1719,10 @@ pub fn record(roots: &[CertifiedRoot]) -> crate::artifact::canonical_json::Json 
                             ),
                             ("module", Json::Str(root.certificate.module.clone())),
                             ("theorem", Json::Str(root.certificate.theorem.clone())),
-                            ("byte_length", Json::from_usize(root.certificate.text.len())),
+                            (
+                                "byte_length",
+                                Json::from_usize(recorded_bytes(&root.certificate).len()),
+                            ),
                             (
                                 "program",
                                 Json::object(vec![
@@ -1717,7 +1736,7 @@ pub fn record(roots: &[CertifiedRoot]) -> crate::artifact::canonical_json::Json 
                             (
                                 "sha256",
                                 Json::Str(
-                                    Sha256Digest::of(root.certificate.text.as_bytes()).to_hex(),
+                                    Sha256Digest::of(recorded_bytes(&root.certificate)).to_hex(),
                                 ),
                             ),
                             (
@@ -1773,14 +1792,16 @@ pub fn record(roots: &[CertifiedRoot]) -> crate::artifact::canonical_json::Json 
                                                 ("theorem", Json::Str(certificate.theorem.clone())),
                                                 (
                                                     "byte_length",
-                                                    Json::from_usize(certificate.text.len()),
+                                                    Json::from_usize(
+                                                        recorded_bytes(certificate).len(),
+                                                    ),
                                                 ),
                                                 (
                                                     "sha256",
                                                     Json::Str(
-                                                        Sha256Digest::of(
-                                                            certificate.text.as_bytes(),
-                                                        )
+                                                        Sha256Digest::of(recorded_bytes(
+                                                            certificate,
+                                                        ))
                                                         .to_hex(),
                                                     ),
                                                 ),

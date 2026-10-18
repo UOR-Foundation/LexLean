@@ -829,29 +829,27 @@ fn enum_lines(name: &Type, variants: &[(u64, Vec<Type>)]) -> Vec<String> {
         .collect()
 }
 
-/// The canonical bytes of a crate: its profile's header and runtime, then
-/// every item in order, each followed by one blank line. The layout is
-/// fixed by this printer, so no formatter is involved.
-#[must_use]
-pub fn print(krate: &Crate) -> String {
-    let mut printer = Printer {
-        out: match krate.profile {
-            Profile::Core => format!(
-                "#![no_std]\n#![forbid(unsafe_code)]\n{}",
-                super::runtime::CORE
-            ),
-            Profile::Std => format!(
-                "#![forbid(unsafe_code)]\n{}{}",
-                super::runtime::CORE,
-                super::runtime::STD
-            ),
-        },
-    };
+/// The canonical bytes of a crate: its profile's attributes, which the
+/// package scaffold derives ([`super::scaffold`]), its runtime, then every
+/// item in order, each followed by one blank line. The layout is fixed by
+/// this printer, so no formatter is involved.
+///
+/// # Errors
+///
+/// Returns the reason the scaffold, or the production registry its
+/// attributes are derived from, cannot be read.
+pub fn print(krate: &Crate) -> Result<String, String> {
+    let mut out = super::scaffold::get()?.attributes(krate.profile)?;
+    out.push_str(super::runtime::CORE);
+    if krate.profile == Profile::Std {
+        out.push_str(super::runtime::STD);
+    }
+    let mut printer = Printer { out };
     for item in &krate.items {
         printer.out.push('\n');
         printer.item(item);
     }
-    printer.out
+    Ok(printer.out)
 }
 
 /// The canonical text of one expression.

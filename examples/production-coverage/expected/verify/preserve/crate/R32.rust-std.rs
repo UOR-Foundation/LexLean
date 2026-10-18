@@ -291,68 +291,36 @@ decimal!(u32, format_u32, parse_u32); decimal!(u64, format_u64, parse_u64);
 decimal!(i8, format_i8, parse_i8); decimal!(i16, format_i16, parse_i16);
 decimal!(i32, format_i32, parse_i32); decimal!(i64, format_i64, parse_i64);
 
-pub fn f0(v0: u64, v1: u64) -> R<(u64, (u64, u64))> {
-    Ok((f1(v0, 0u64)?, (f2(v0, v1), f3(v0, 0u64, v1)?)))
+#[derive(Clone)]
+pub enum Adt0 {
+    C0(u64, List<Adt0>),
 }
 
-pub fn f1(v0: u64, v1: u64) -> R<u64> {
-    let a1 = v0;
-    let a2 = 2u64;
-    if nat_lt(a1, a2) {
-        Ok(v1)
-    } else {
-        f1({
-            let a3 = v0;
-            let a4 = 2u64;
-            nat_sub(a3, a4)
-        }, {
-            let a5 = v1;
-            let a6 = 1u64;
-            nat_add(a5, a6)?
-        })
-    }
+pub fn f0(v0: u64) -> R<u64> {
+    f1(Adt0::C0(v0, List::cons(Adt0::C0(1u64, List::<Adt0>::nil()), List::<Adt0>::nil())))
 }
 
-pub fn f2(v0: u64, v1: u64) -> u64 {
-    let a7 = v1;
-    let a8 = 0u64;
-    if nat_eq(a7, a8) {
-        v0
-    } else {
-        let a9 = v0;
-        let a10 = v1;
-        if nat_lt(a9, a10) {
-            v0
-        } else {
-            f2({
-                let a11 = v0;
-                let a12 = v1;
-                nat_sub(a11, a12)
-            }, v1)
+pub fn f1(v0: Adt0) -> R<u64> {
+    let m1 = v0;
+    match m1 {
+        Adt0::C0(_, v2) => {
+            let a2 = 1u64;
+            let a3 = f2(v2)?;
+            nat_add(a2, a3)
         }
     }
 }
 
-pub fn f3(v0: u64, v1: u64, v2: u64) -> R<u64> {
-    let a13 = v1;
-    let a14 = v2;
-    if nat_lt(a13, a14) {
-        let a17 = v0;
-        let a18 = {
-            let a15 = v1;
-            let a16 = v1;
-            nat_add(a15, a16)?
-        };
-        if nat_le(a17, a18) {
-            Ok(v1)
-        } else {
-            f3(v0, {
-                let a19 = v1;
-                let a20 = 1u64;
-                nat_add(a19, a20)?
-            }, v2)
+pub fn f2(v0: List<Adt0>) -> R<u64> {
+    let m4 = v0;
+    match m4.uncons() {
+        None => {
+            Ok(0u64)
         }
-    } else {
-        Ok(v2)
+        Some((v1, v2)) => {
+            let a5 = f1(v1)?;
+            let a6 = f2(v2)?;
+            nat_add(a5, a6)
+        }
     }
 }

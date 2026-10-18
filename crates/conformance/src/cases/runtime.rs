@@ -24,11 +24,12 @@ pub fn run(id: &str) {
 }
 
 /// The runtime namespaces a generated module once carried a copy of.
-const NAMESPACES: [&str; 4] = [
+const NAMESPACES: [&str; 5] = [
     "LexLeanRuntime",
     "LexLeanCollections",
     "LexLeanModels",
     "LexLeanReasoning",
+    "LexLeanLaws",
 ];
 
 fn disk(path: &str) -> Result<String, String> {
@@ -847,6 +848,10 @@ fn rt_04() {
             "const PLANTED: &str = \"public def LexLeanRuntime.listFold {α : Type} (xs : List α) : Nat := xs.length\\n\";\n",
         ),
         (
+            "a declaration under the laws namespace",
+            "const PLANTED: &str = \"public def LexLeanLaws.sumNat (xs : List Nat) : Nat := xs.length\\n\";\n",
+        ),
+        (
             "a theorem under a runtime name",
             "const PLANTED: &str = \"theorem LexLeanReasoning.sound1 : True := trivial\";\n",
         ),
@@ -935,6 +940,20 @@ fn rt_04() {
         }
     }
     assert!(!owners.is_empty(), "the runtime modules declare constants");
+    // The gates' list of runtime namespaces is the shipped runtime's own: a
+    // module added to the runtime under a namespace the list lacks (the fifth
+    // module's `LexLeanLaws` was) would let a copy of it, in a generated
+    // module or in the compiler's source, pass every check above.
+    let declared: BTreeSet<&str> = owners
+        .keys()
+        .filter_map(|name| name.split('.').next())
+        .filter(|first| first.starts_with("LexLean"))
+        .collect();
+    assert_eq!(
+        declared,
+        NAMESPACES.iter().copied().collect::<BTreeSet<&str>>(),
+        "the runtime namespaces the gates know are the namespaces the shipped runtime declares"
+    );
     let root = repo_root();
     let mut generated = 0usize;
     let mut using = None;

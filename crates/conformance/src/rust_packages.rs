@@ -154,7 +154,9 @@ pub fn manifest(name: &str, program: &Program, entry: u64, profile: Profile) -> 
             },
         }],
         sources: vec![compiler_semantic_id()],
+        effects: Vec::new(),
     }
+    .showing_effects()
 }
 
 /// One committed package.
@@ -341,7 +343,9 @@ pub fn negatives() -> BTreeMap<String, (Vec<u8>, String)> {
             {
                 let mut out = manifest("booleans", &booleans, booleans_entry, Profile::Std);
                 out.exports[0].errors = Errors::Overflow;
-                out
+                // The effects state the invented overflow, so the refusal is
+                // the export's, not the effects'.
+                out.showing_effects()
             },
             "arithmetic mismatch: export `run` declares overflow, but function",
         ),

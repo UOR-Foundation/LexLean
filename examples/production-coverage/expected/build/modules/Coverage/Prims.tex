@@ -75,4 +75,20 @@
 \noindent Type: \texttt{(Prod (ByteArray) ((Prod (Option (String)) ((Prod (Ordering) ((Prod (Option (List (String))) ((Prod (String) ((Prod (Nat) (Bool))))))))))))}.\par
 \noindent Definition: \texttt{(let raw : ByteArray := (LexLeanRuntime.utf8Encode (s) : ByteArray); (raw, ((LexLeanRuntime.utf8Decode (raw) : Option (String)), ((LexLeanRuntime.compareBytes (raw) (ByteArray.mk \#[0, 255]) : Ordering), ((LexLeanRuntime.splitExact (s) (d) ((4 : UInt32)) : Option (List (String))), ((LexLeanRuntime.join ((s :: ("x\textbackslash{}"y" :: ([] : List (String))))) (d) : String), ((LexLeanRuntime.length (s) : Nat), ((LexLeanRuntime.equal (s) (d) : Bool) \&\& (LexLeanRuntime.equal ((LexLeanRuntime.compareBytes (raw) (raw) : Ordering)) ((LexLeanRuntime.compareBytes (ByteArray.mk \#[]) (ByteArray.mk \#[1]) : Ordering)) : Bool)))))))))}.\par
 \noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\subsection*{\texttt{widenings}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(u8 : UInt8) (i8 : Int8) (u16 : UInt16) (i16 : Int16)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-core, rust-std}; admitted effects: \texttt{overflow}.\par
+\noindent Type: \texttt{(Prod (Int) (Nat))}.\par
+\noindent Definition: \texttt{((LexLeanRuntime.subtract ((LexLeanRuntime.subtract ((toInt (u8) : Int)) ((toInt (i8) : Int)) : Int)) ((LexLeanRuntime.subtract ((toInt (u16) : Int)) ((toInt (i16) : Int)) : Int)) : Int), ((toNat (u8) : Nat) + (toNat (u16) : Nat)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{pixels}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(raw : ByteArray) (i : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{Option (Int)}.\par
+\noindent Definition: \texttt{(match (LexLeanRuntime.index (raw) (i) : Option (UInt8)) with | Option.none => Option.none | Option.some b => Option.some ((toInt (b) : Int)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
 \end{document}

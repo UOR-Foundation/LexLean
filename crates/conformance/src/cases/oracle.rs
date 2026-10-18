@@ -887,10 +887,11 @@ fn malformed_non_overlap_tables_are_refused() {
         "spec = \"lexlean/oracle-overlap/1\"",
         "spec = \"lexlean/oracle-overlap/2\"",
     );
-    refused("version = 3", "version = 0");
+    let mut value: toml::Value = text.parse().expect("the table is TOML");
+    let version = value["version"].as_integer().expect("version");
+    refused(&format!("version = {version}"), "version = 0");
     refused("kind = \"not-runtime\"", "kind = \"vendored\"");
     // A row with a blank reason.
-    let mut value: toml::Value = text.parse().expect("the table is TOML");
     value["construct"][0]["reason"] = toml::Value::String("  ".to_owned());
     differential::NonOverlapTable::parse(&value.to_string())
         .expect_err("a blank reason is refused");
@@ -1756,8 +1757,8 @@ fn plants() -> Vec<Plant> {
         Plant {
             name: "a split limit one too small",
             root: "Coverage.Prims.text",
-            edit: |s| replace_once(s, "let _x_74 = 4;", "let _x_74 = 3;"),
-            null: |s| replace_once(s, "let _x_74 = 4;", "let _x_74 = 2 + 2;"),
+            edit: |s| replace_once(s, "let _x_67 = 4;", "let _x_67 = 3;"),
+            null: |s| replace_once(s, "let _x_67 = 4;", "let _x_67 = 2 + 2;"),
             kind: Behavior,
             keys: &["outcome:value/value"],
         },
@@ -1860,7 +1861,7 @@ fn equivalents() -> Vec<Equivalent> {
             // equality says.
             name: "an equality made an inequality under a conjunction with false",
             root: "Coverage.Prims.text",
-            edit: |s| replace_once(s, "let _x_46 = (s == d);", "let _x_46 = (s != d);"),
+            edit: |s| replace_once(s, "let _x_43 = (s == d);", "let _x_43 = (s != d);"),
         },
     ]
 }
