@@ -181,6 +181,18 @@ inductive{
   ]
 }
 
+inductive{
+  name: Outcome,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: OFailed, fields: [Bytes]},
+    {name: OTyped, fields: [Ty]},
+    {name: OCovered, fields: [(List Shape)]},
+    {name: OFine, fields: []}
+  ]
+}
+
 structure{
   name: Program,
   type_parameters: [],
@@ -1508,271 +1520,166 @@ definition{
 }
 
 definition{
-  name: exprTy,
-  parameters: [program : Program, expr : Expr, scope : (List (Nat * Ty))],
-  result: (Result Ty Bytes),
+  name: walk,
+  parameters: [
+    program : Program,
+    expr : Expr,
+    scope : (List (Nat * Ty)),
+    mode : Nat,
+    expected : Ty,
+    subject : Ty,
+    what : Bytes,
+    position : Nat,
+    covered : (List Shape)
+  ],
+  result: Outcome,
   body: (match expr
-    | Expr.EValue ty value => (match (tyOk program ty)
+    | Expr.EValue ty value => (if (mode =? 0) then (match (tyOk program ty)
       | Result.ok done124 => (match (valueOk program value ty 0)
-        | Result.ok done123 => (ctor Result.ok [Ty, Bytes] ty)
-        | Result.error problem => (ctor Result.error [Ty, Bytes] problem))
-      | Result.error problem => (ctor Result.error [Ty, Bytes] problem))
-    | Expr.EVar name => (match (scopeFind scope name)
-      | Option.some found => (ctor Result.ok [Ty, Bytes] found)
-      | Option.none => (ctor Result.error [Ty, Bytes] (cat (text "local ") (cat (decimal name) (text " is unbound")))))
-    | Expr.ELet name ty bound body => (match (tyOk program ty)
-      | Result.ok done126 => (match (exprTy program bound scope)
-        | Result.ok actual => (match (expectTy actual ty (cat (text "the value bound to ") (decimal name)))
-          | Result.ok done125 => (exprTy program body (extendScope name ty scope))
-          | Result.error problem => (ctor Result.error [Ty, Bytes] problem))
-        | Result.error problem => (ctor Result.error [Ty, Bytes] problem))
-      | Result.error problem => (ctor Result.error [Ty, Bytes] problem))
-    | Expr.ECond condition thenBranch elseBranch => (match (exprTy program condition scope)
-      | Result.ok conditionTy => (match (expectTy conditionTy (ctor Ty.TBool) (text "a condition"))
-        | Result.ok done128 => (match (exprTy program thenBranch scope)
-          | Result.ok thenTy => (match (exprTy program elseBranch scope)
-            | Result.ok elseTy => (match (expectTy elseTy thenTy (text "the else branch"))
-              | Result.ok done127 => (ctor Result.ok [Ty, Bytes] thenTy)
-              | Result.error problem => (ctor Result.error [Ty, Bytes] problem))
-            | Result.error problem => (ctor Result.error [Ty, Bytes] problem))
-          | Result.error problem => (ctor Result.error [Ty, Bytes] problem))
-        | Result.error problem => (ctor Result.error [Ty, Bytes] problem))
-      | Result.error problem => (ctor Result.error [Ty, Bytes] problem))
-    | Expr.EMatch ty scrutinee arms => (match (tyOk program ty)
-      | Result.ok done129 => (match (exprTy program scrutinee scope)
-        | Result.ok scrutineeTy => (match (shapesOf program scrutineeTy)
-          | Result.ok required => (match (armsOk program arms scrutineeTy ty scope (nil Shape))
-            | Result.ok covered => (match (firstMissing required covered)
-              | Option.some missing => (ctor Result.error [Ty, Bytes] (cat (text "the match is not exhaustive: ") (cat (shapeDebug missing) (text " is not covered"))))
-              | Option.none => (ctor Result.ok [Ty, Bytes] ty))
-            | Result.error problem => (ctor Result.error [Ty, Bytes] problem))
-          | Result.error problem => (ctor Result.error [Ty, Bytes] problem))
-        | Result.error problem => (ctor Result.error [Ty, Bytes] problem))
-      | Result.error problem => (ctor Result.error [Ty, Bytes] problem))
-    | Expr.EBuild shape ty operands => (match (tyOk program ty)
-      | Result.ok done132 => (match (shapeFields program shape ty)
-        | Result.ok fields => (let what130 : Bytes := (cat (text "constructor ") (shapeDebug shape)); (if ((exprChainLength operands) =? (tyChainLength fields)) then (match (operandsOk program operands fields scope what130 0)
-          | Result.ok done131 => (ctor Result.ok [Ty, Bytes] ty)
-          | Result.error problem => (ctor Result.error [Ty, Bytes] problem)) else (ctor Result.error [Ty, Bytes] (cat what130 (cat (text " takes ") (cat (decimal (tyChainLength fields)) (cat (text " operand(s), received ") (decimal (exprChainLength operands)))))))))
-        | Result.error problem => (ctor Result.error [Ty, Bytes] problem))
-      | Result.error problem => (ctor Result.error [Ty, Bytes] problem))
-    | Expr.ECall function operands => (match (functionTypes program function)
-      | Option.none => (ctor Result.error [Ty, Bytes] (undeclaredFunction function))
-      | Option.some declared => (let what133 : Bytes := (cat (text "function ") (decimal function)); (if ((exprChainLength operands) =? (tyChainLength declared)) then (match (operandsOk program operands declared scope what133 0)
-        | Result.ok done134 => (ctor Result.ok [Ty, Bytes] (functionResult program function))
-        | Result.error problem => (ctor Result.error [Ty, Bytes] problem)) else (ctor Result.error [Ty, Bytes] (cat what133 (cat (text " takes ") (cat (decimal (tyChainLength declared)) (cat (text " operand(s), received ") (decimal (exprChainLength operands))))))))))
-    | Expr.EClosure function captures => (match (functionTypes program function)
-      | Option.none => (ctor Result.error [Ty, Bytes] (undeclaredFunction function))
-      | Option.some declared => (let total : Nat := (tyChainLength declared); (let given : Nat := (exprChainLength captures); (if (total <=? given) then (ctor Result.error [Ty, Bytes] (cat (text "closure of function ") (cat (decimal function) (cat (text " captures ") (cat (decimal given) (cat (text " of its ") (cat (decimal total) (text " parameters; at least one must remain")))))))) else (match (capturesOk program captures declared scope (cat (text "closure of function ") (decimal function)) 0)
-        | Result.ok remaining => (ctor Result.ok [Ty, Bytes] (closureTy remaining (functionResult program function)))
-        | Result.error problem => (ctor Result.error [Ty, Bytes] problem))))))
-    | Expr.EApply target operands => (match (exprTy program target scope)
-      | Result.ok targetTy => (if ((tyTag targetTy) =? 13) then (let what135 : Bytes := (text "an application"); (if ((exprChainLength operands) =? (tyChainLength (tyFirst targetTy))) then (match (operandsOk program operands (tyFirst targetTy) scope what135 0)
-        | Result.ok done136 => (ctor Result.ok [Ty, Bytes] (tySecond targetTy))
-        | Result.error problem => (ctor Result.error [Ty, Bytes] problem)) else (ctor Result.error [Ty, Bytes] (cat what135 (cat (text " takes ") (cat (decimal (tyChainLength (tyFirst targetTy))) (cat (text " operand(s), received ") (decimal (exprChainLength operands))))))))) else (ctor Result.error [Ty, Bytes] (text "only a function value can be applied")))
-      | Result.error problem => (ctor Result.error [Ty, Bytes] problem))
-    | Expr.EPrim operation operands => (match (exprTys program operands scope)
-      | Result.ok types => (primType operation types)
-      | Result.error problem => (ctor Result.error [Ty, Bytes] problem))
-    | Expr.EFirst value => (match (exprTy program value scope)
-      | Result.ok valueTy => (if ((tyTag valueTy) =? 11) then (ctor Result.ok [Ty, Bytes] (tyFirst valueTy)) else (ctor Result.error [Ty, Bytes] (cat (text "`first` of ") (tyDebug valueTy))))
-      | Result.error problem => (ctor Result.error [Ty, Bytes] problem))
-    | Expr.ESecond value => (match (exprTy program value scope)
-      | Result.ok valueTy => (if ((tyTag valueTy) =? 11) then (ctor Result.ok [Ty, Bytes] (tySecond valueTy)) else (ctor Result.error [Ty, Bytes] (cat (text "`second` of ") (tyDebug valueTy))))
-      | Result.error problem => (ctor Result.error [Ty, Bytes] problem))
-    | Expr.EField value index => (match (exprTy program value scope)
-      | Result.ok valueTy => (if ((tyTag valueTy) =? 12) then (let adt : Nat := (tyAdtIndex valueTy); (match (adtAt program adt)
-        | Option.none => (ctor Result.error [Ty, Bytes] (undeclaredAdt adt))
+        | Result.ok done123 => (ctor Outcome.OTyped ty)
+        | Result.error problem => (ctor Outcome.OFailed problem))
+      | Result.error problem => (ctor Outcome.OFailed problem)) else (ctor Outcome.OFailed (text "unreachable")))
+    | Expr.EVar name => (if (mode =? 0) then (match (scopeFind scope name)
+      | Option.some found => (ctor Outcome.OTyped found)
+      | Option.none => (ctor Outcome.OFailed (cat (text "local ") (cat (decimal name) (text " is unbound"))))) else (ctor Outcome.OFailed (text "unreachable")))
+    | Expr.ELet name ty bound body => (if (mode =? 0) then (match (tyOk program ty)
+      | Result.ok done126 => (match (walk program bound scope 0 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+        | Outcome.OTyped actual => (match (expectTy actual ty (cat (text "the value bound to ") (decimal name)))
+          | Result.ok done125 => (walk program body (extendScope name ty scope) 0 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+          | Result.error problem => (ctor Outcome.OFailed problem))
+        | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+        | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+        | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable")))
+      | Result.error problem => (ctor Outcome.OFailed problem)) else (ctor Outcome.OFailed (text "unreachable")))
+    | Expr.ECond condition thenBranch elseBranch => (if (mode =? 0) then (match (walk program condition scope 0 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+      | Outcome.OTyped conditionTy => (match (expectTy conditionTy (ctor Ty.TBool) (text "a condition"))
+        | Result.ok done128 => (match (walk program thenBranch scope 0 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+          | Outcome.OTyped thenTy => (match (walk program elseBranch scope 0 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+            | Outcome.OTyped elseTy => (match (expectTy elseTy thenTy (text "the else branch"))
+              | Result.ok done127 => (ctor Outcome.OTyped thenTy)
+              | Result.error problem => (ctor Outcome.OFailed problem))
+            | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+            | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+            | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable")))
+          | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+          | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+          | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable")))
+        | Result.error problem => (ctor Outcome.OFailed problem))
+      | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+      | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+      | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable"))) else (ctor Outcome.OFailed (text "unreachable")))
+    | Expr.EMatch ty scrutinee arms => (if (mode =? 0) then (match (tyOk program ty)
+      | Result.ok done129 => (match (walk program scrutinee scope 0 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+        | Outcome.OTyped scrutineeTy => (match (shapesOf program scrutineeTy)
+          | Result.ok required => (match (walk program arms scope 4 ty scrutineeTy (text "") 0 (nil Shape))
+            | Outcome.OCovered seen => (match (firstMissing required seen)
+              | Option.some missing => (ctor Outcome.OFailed (cat (text "the match is not exhaustive: ") (cat (shapeDebug missing) (text " is not covered"))))
+              | Option.none => (ctor Outcome.OTyped ty))
+            | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+            | Outcome.OTyped stray => (ctor Outcome.OFailed (text "unreachable"))
+            | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable")))
+          | Result.error problem => (ctor Outcome.OFailed problem))
+        | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+        | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+        | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable")))
+      | Result.error problem => (ctor Outcome.OFailed problem)) else (ctor Outcome.OFailed (text "unreachable")))
+    | Expr.EBuild shape ty operands => (if (mode =? 0) then (match (tyOk program ty)
+      | Result.ok done131 => (match (shapeFields program shape ty)
+        | Result.ok fields => (let what130 : Bytes := (cat (text "constructor ") (shapeDebug shape)); (if ((exprChainLength operands) =? (tyChainLength fields)) then (match (walk program operands scope 2 fields (ctor Ty.TNil) what130 0 (nil Shape))
+          | Outcome.OFine => (ctor Outcome.OTyped ty)
+          | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+          | Outcome.OTyped stray => (ctor Outcome.OFailed (text "unreachable"))
+          | Outcome.OCovered strays => (ctor Outcome.OFailed (text "unreachable"))) else (ctor Outcome.OFailed (cat what130 (cat (text " takes ") (cat (decimal (tyChainLength fields)) (cat (text " operand(s), received ") (decimal (exprChainLength operands)))))))))
+        | Result.error problem => (ctor Outcome.OFailed problem))
+      | Result.error problem => (ctor Outcome.OFailed problem)) else (ctor Outcome.OFailed (text "unreachable")))
+    | Expr.ECall function operands => (if (mode =? 0) then (match (functionTypes program function)
+      | Option.none => (ctor Outcome.OFailed (undeclaredFunction function))
+      | Option.some declared => (let what132 : Bytes := (cat (text "function ") (decimal function)); (if ((exprChainLength operands) =? (tyChainLength declared)) then (match (walk program operands scope 2 declared (ctor Ty.TNil) what132 0 (nil Shape))
+        | Outcome.OFine => (ctor Outcome.OTyped (functionResult program function))
+        | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+        | Outcome.OTyped stray => (ctor Outcome.OFailed (text "unreachable"))
+        | Outcome.OCovered strays => (ctor Outcome.OFailed (text "unreachable"))) else (ctor Outcome.OFailed (cat what132 (cat (text " takes ") (cat (decimal (tyChainLength declared)) (cat (text " operand(s), received ") (decimal (exprChainLength operands)))))))))) else (ctor Outcome.OFailed (text "unreachable")))
+    | Expr.EClosure function captures => (if (mode =? 0) then (match (functionTypes program function)
+      | Option.none => (ctor Outcome.OFailed (undeclaredFunction function))
+      | Option.some declared => (let total : Nat := (tyChainLength declared); (let given : Nat := (exprChainLength captures); (if (total <=? given) then (ctor Outcome.OFailed (cat (text "closure of function ") (cat (decimal function) (cat (text " captures ") (cat (decimal given) (cat (text " of its ") (cat (decimal total) (text " parameters; at least one must remain")))))))) else (match (walk program captures scope 3 declared (ctor Ty.TNil) (cat (text "closure of function ") (decimal function)) 0 (nil Shape))
+        | Outcome.OTyped remaining => (ctor Outcome.OTyped (closureTy remaining (functionResult program function)))
+        | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+        | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+        | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable"))))))) else (ctor Outcome.OFailed (text "unreachable")))
+    | Expr.EApply target operands => (if (mode =? 0) then (match (walk program target scope 0 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+      | Outcome.OTyped targetTy => (if ((tyTag targetTy) =? 13) then (let what133 : Bytes := (text "an application"); (if ((exprChainLength operands) =? (tyChainLength (tyFirst targetTy))) then (match (walk program operands scope 2 (tyFirst targetTy) (ctor Ty.TNil) what133 0 (nil Shape))
+        | Outcome.OFine => (ctor Outcome.OTyped (tySecond targetTy))
+        | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+        | Outcome.OTyped stray => (ctor Outcome.OFailed (text "unreachable"))
+        | Outcome.OCovered strays => (ctor Outcome.OFailed (text "unreachable"))) else (ctor Outcome.OFailed (cat what133 (cat (text " takes ") (cat (decimal (tyChainLength (tyFirst targetTy))) (cat (text " operand(s), received ") (decimal (exprChainLength operands))))))))) else (ctor Outcome.OFailed (text "only a function value can be applied")))
+      | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+      | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+      | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable"))) else (ctor Outcome.OFailed (text "unreachable")))
+    | Expr.EPrim operation operands => (if (mode =? 0) then (match (walk program operands scope 1 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+      | Outcome.OTyped types => (match (primType operation types)
+        | Result.ok result => (ctor Outcome.OTyped result)
+        | Result.error problem => (ctor Outcome.OFailed problem))
+      | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+      | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+      | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable"))) else (ctor Outcome.OFailed (text "unreachable")))
+    | Expr.EFirst value => (if (mode =? 0) then (match (walk program value scope 0 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+      | Outcome.OTyped valueTy => (if ((tyTag valueTy) =? 11) then (ctor Outcome.OTyped (tyFirst valueTy)) else (ctor Outcome.OFailed (cat (text "`first` of ") (tyDebug valueTy))))
+      | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+      | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+      | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable"))) else (ctor Outcome.OFailed (text "unreachable")))
+    | Expr.ESecond value => (if (mode =? 0) then (match (walk program value scope 0 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+      | Outcome.OTyped valueTy => (if ((tyTag valueTy) =? 11) then (ctor Outcome.OTyped (tySecond valueTy)) else (ctor Outcome.OFailed (cat (text "`second` of ") (tyDebug valueTy))))
+      | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+      | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+      | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable"))) else (ctor Outcome.OFailed (text "unreachable")))
+    | Expr.EField value index => (if (mode =? 0) then (match (walk program value scope 0 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+      | Outcome.OTyped valueTy => (if ((tyTag valueTy) =? 12) then (let adt : Nat := (tyAdtIndex valueTy); (match (adtAt program adt)
+        | Option.none => (ctor Outcome.OFailed (undeclaredAdt adt))
         | Option.some constructors => (if ((tyChainLength constructors) =? 1) then (match (tyChainAt constructors 0)
           | Option.some only => (match (tyChainAt only index)
-            | Option.some found => (ctor Result.ok [Ty, Bytes] found)
-            | Option.none => (ctor Result.error [Ty, Bytes] (cat (text "ADT ") (cat (decimal adt) (cat (text " has no field ") (decimal index))))))
-          | Option.none => (ctor Result.error [Ty, Bytes] (text "unreachable"))) else (ctor Result.error [Ty, Bytes] (cat (text "`field` requires an ADT with exactly one constructor; ADT ") (cat (decimal adt) (cat (text " has ") (decimal (tyChainLength constructors))))))))) else (ctor Result.error [Ty, Bytes] (text "`field` requires an ADT value")))
-      | Result.error problem => (ctor Result.error [Ty, Bytes] problem))
-    | Expr.ENil => (ctor Result.error [Ty, Bytes] (text "unreachable"))
-    | Expr.ECons dummy0 dummy1 => (ctor Result.error [Ty, Bytes] (text "unreachable"))
-    | Expr.EArm dummy0 dummy1 dummy2 => (ctor Result.error [Ty, Bytes] (text "unreachable"))),
+            | Option.some found => (ctor Outcome.OTyped found)
+            | Option.none => (ctor Outcome.OFailed (cat (text "ADT ") (cat (decimal adt) (cat (text " has no field ") (decimal index))))))
+          | Option.none => (ctor Outcome.OFailed (text "unreachable"))) else (ctor Outcome.OFailed (cat (text "`field` requires an ADT with exactly one constructor; ADT ") (cat (decimal adt) (cat (text " has ") (decimal (tyChainLength constructors))))))))) else (ctor Outcome.OFailed (text "`field` requires an ADT value")))
+      | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+      | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+      | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable"))) else (ctor Outcome.OFailed (text "unreachable")))
+    | Expr.ENil => (if (mode =? 1) then (ctor Outcome.OTyped (ctor Ty.TNil)) else (if (mode =? 2) then (ctor Outcome.OFine) else (if (mode =? 3) then (ctor Outcome.OTyped expected) else (if (mode =? 4) then (ctor Outcome.OCovered covered) else (ctor Outcome.OFailed (text "unreachable"))))))
+    | Expr.ECons head tail => (if (mode =? 1) then (match (walk program head scope 0 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+      | Outcome.OTyped one => (match (walk program tail scope 1 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+        | Outcome.OTyped rest => (ctor Outcome.OTyped (consTy one rest))
+        | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+        | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+        | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable")))
+      | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+      | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+      | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable"))) else (if (mode =? 2) then (if (isNilTy expected) then (ctor Outcome.OFine) else (match (walk program head scope 0 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+      | Outcome.OTyped actual => (match (expectTy actual (tyFirst expected) (cat what (cat (text " operand ") (decimal position))))
+        | Result.ok done134 => (walk program tail scope 2 (tySecond expected) (ctor Ty.TNil) what (position + 1) (nil Shape))
+        | Result.error problem => (ctor Outcome.OFailed problem))
+      | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+      | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+      | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable")))) else (if (mode =? 3) then (if (isNilTy expected) then (ctor Outcome.OTyped (ctor Ty.TNil)) else (match (walk program head scope 0 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+      | Outcome.OTyped actual => (match (expectTy actual (tyFirst expected) (cat what (cat (text " operand ") (decimal position))))
+        | Result.ok done135 => (walk program tail scope 3 (tySecond expected) (ctor Ty.TNil) what (position + 1) (nil Shape))
+        | Result.error problem => (ctor Outcome.OFailed problem))
+      | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+      | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+      | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable")))) else (if (mode =? 4) then (match (walk program head scope 5 expected subject (text "") 0 covered)
+      | Outcome.OCovered updated => (walk program tail scope 4 expected subject (text "") 0 updated)
+      | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+      | Outcome.OTyped stray => (ctor Outcome.OFailed (text "unreachable"))
+      | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable"))) else (ctor Outcome.OFailed (text "unreachable"))))))
+    | Expr.EArm shape binders body => (if (mode =? 5) then (match (shapeFields program shape subject)
+      | Result.ok fields => (let named : Nat := (listLength [Nat] binders); (let bound : Nat := (tyChainLength fields); (if (named =? bound) then (if (hasRepeat binders) then (ctor Outcome.OFailed (cat (text "shape ") (cat (shapeDebug shape) (text " binds the same name twice")))) else (if (shapeIn covered shape) then (ctor Outcome.OFailed (cat (text "the arm for ") (cat (shapeDebug shape) (text " is unreachable")))) else (match (walk program body (bindAll binders fields scope) 0 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+        | Outcome.OTyped bodyTy => (match (expectTy bodyTy expected (text "an arm"))
+          | Result.ok done136 => (ctor Outcome.OCovered (consShape shape covered))
+          | Result.error problem => (ctor Outcome.OFailed problem))
+        | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+        | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+        | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable"))))) else (ctor Outcome.OFailed (cat (text "shape ") (cat (shapeDebug shape) (cat (text " binds ") (cat (decimal bound) (cat (text " value(s), the arm names ") (decimal named))))))))))
+      | Result.error problem => (ctor Outcome.OFailed problem)) else (ctor Outcome.OFailed (text "unreachable")))),
   executable: true,
-  mutual: CheckTerms,
   recursive_argument: expr
-}
-
-definition{
-  name: exprTys,
-  parameters: [program : Program, exprs : Expr, scope : (List (Nat * Ty))],
-  result: (Result Ty Bytes),
-  body: (match exprs
-    | Expr.ENil => (ctor Result.ok [Ty, Bytes] (ctor Ty.TNil))
-    | Expr.ECons head tail => (match (exprTy program head scope)
-      | Result.ok one => (match (exprTys program tail scope)
-        | Result.ok rest => (ctor Result.ok [Ty, Bytes] (consTy one rest))
-        | Result.error problem => (ctor Result.error [Ty, Bytes] problem))
-      | Result.error problem => (ctor Result.error [Ty, Bytes] problem))
-    | Expr.EValue dummy0 dummy1 => (ctor Result.ok [Ty, Bytes] (ctor Ty.TNil))
-    | Expr.EVar dummy0 => (ctor Result.ok [Ty, Bytes] (ctor Ty.TNil))
-    | Expr.ELet dummy0 dummy1 dummy2 dummy3 => (ctor Result.ok [Ty, Bytes] (ctor Ty.TNil))
-    | Expr.ECond dummy0 dummy1 dummy2 => (ctor Result.ok [Ty, Bytes] (ctor Ty.TNil))
-    | Expr.EMatch dummy0 dummy1 dummy2 => (ctor Result.ok [Ty, Bytes] (ctor Ty.TNil))
-    | Expr.EBuild dummy0 dummy1 dummy2 => (ctor Result.ok [Ty, Bytes] (ctor Ty.TNil))
-    | Expr.ECall dummy0 dummy1 => (ctor Result.ok [Ty, Bytes] (ctor Ty.TNil))
-    | Expr.EClosure dummy0 dummy1 => (ctor Result.ok [Ty, Bytes] (ctor Ty.TNil))
-    | Expr.EApply dummy0 dummy1 => (ctor Result.ok [Ty, Bytes] (ctor Ty.TNil))
-    | Expr.EPrim dummy0 dummy1 => (ctor Result.ok [Ty, Bytes] (ctor Ty.TNil))
-    | Expr.EFirst dummy0 => (ctor Result.ok [Ty, Bytes] (ctor Ty.TNil))
-    | Expr.ESecond dummy0 => (ctor Result.ok [Ty, Bytes] (ctor Ty.TNil))
-    | Expr.EField dummy0 dummy1 => (ctor Result.ok [Ty, Bytes] (ctor Ty.TNil))
-    | Expr.EArm dummy0 dummy1 dummy2 => (ctor Result.ok [Ty, Bytes] (ctor Ty.TNil))),
-  executable: true,
-  mutual: CheckTerms,
-  recursive_argument: exprs
-}
-
-definition{
-  name: operandsOk,
-  parameters: [
-    program : Program,
-    exprs : Expr,
-    expected : Ty,
-    scope : (List (Nat * Ty)),
-    what : Bytes,
-    index : Nat
-  ],
-  result: (Result Unit Bytes),
-  body: (match exprs
-    | Expr.ENil => (ctor Result.ok [Unit, Bytes] ())
-    | Expr.ECons head tail => (if (isNilTy expected) then (ctor Result.ok [Unit, Bytes] ()) else (match (exprTy program head scope)
-      | Result.ok actual => (match (expectTy actual (tyFirst expected) (cat what (cat (text " operand ") (decimal index))))
-        | Result.ok done137 => (operandsOk program tail (tySecond expected) scope what (index + 1))
-        | Result.error problem => (ctor Result.error [Unit, Bytes] problem))
-      | Result.error problem => (ctor Result.error [Unit, Bytes] problem)))
-    | Expr.EValue dummy0 dummy1 => (ctor Result.ok [Unit, Bytes] ())
-    | Expr.EVar dummy0 => (ctor Result.ok [Unit, Bytes] ())
-    | Expr.ELet dummy0 dummy1 dummy2 dummy3 => (ctor Result.ok [Unit, Bytes] ())
-    | Expr.ECond dummy0 dummy1 dummy2 => (ctor Result.ok [Unit, Bytes] ())
-    | Expr.EMatch dummy0 dummy1 dummy2 => (ctor Result.ok [Unit, Bytes] ())
-    | Expr.EBuild dummy0 dummy1 dummy2 => (ctor Result.ok [Unit, Bytes] ())
-    | Expr.ECall dummy0 dummy1 => (ctor Result.ok [Unit, Bytes] ())
-    | Expr.EClosure dummy0 dummy1 => (ctor Result.ok [Unit, Bytes] ())
-    | Expr.EApply dummy0 dummy1 => (ctor Result.ok [Unit, Bytes] ())
-    | Expr.EPrim dummy0 dummy1 => (ctor Result.ok [Unit, Bytes] ())
-    | Expr.EFirst dummy0 => (ctor Result.ok [Unit, Bytes] ())
-    | Expr.ESecond dummy0 => (ctor Result.ok [Unit, Bytes] ())
-    | Expr.EField dummy0 dummy1 => (ctor Result.ok [Unit, Bytes] ())
-    | Expr.EArm dummy0 dummy1 dummy2 => (ctor Result.ok [Unit, Bytes] ())),
-  executable: true,
-  mutual: CheckTerms,
-  recursive_argument: exprs
-}
-
-definition{
-  name: capturesOk,
-  parameters: [
-    program : Program,
-    exprs : Expr,
-    expected : Ty,
-    scope : (List (Nat * Ty)),
-    what : Bytes,
-    index : Nat
-  ],
-  result: (Result Ty Bytes),
-  body: (match exprs
-    | Expr.ENil => (ctor Result.ok [Ty, Bytes] expected)
-    | Expr.ECons head tail => (if (isNilTy expected) then (ctor Result.ok [Ty, Bytes] (ctor Ty.TNil)) else (match (exprTy program head scope)
-      | Result.ok actual => (match (expectTy actual (tyFirst expected) (cat what (cat (text " operand ") (decimal index))))
-        | Result.ok done => (capturesOk program tail (tySecond expected) scope what (index + 1))
-        | Result.error problem => (ctor Result.error [Ty, Bytes] problem))
-      | Result.error problem => (ctor Result.error [Ty, Bytes] problem)))
-    | Expr.EValue dummy0 dummy1 => (ctor Result.ok [Ty, Bytes] expected)
-    | Expr.EVar dummy0 => (ctor Result.ok [Ty, Bytes] expected)
-    | Expr.ELet dummy0 dummy1 dummy2 dummy3 => (ctor Result.ok [Ty, Bytes] expected)
-    | Expr.ECond dummy0 dummy1 dummy2 => (ctor Result.ok [Ty, Bytes] expected)
-    | Expr.EMatch dummy0 dummy1 dummy2 => (ctor Result.ok [Ty, Bytes] expected)
-    | Expr.EBuild dummy0 dummy1 dummy2 => (ctor Result.ok [Ty, Bytes] expected)
-    | Expr.ECall dummy0 dummy1 => (ctor Result.ok [Ty, Bytes] expected)
-    | Expr.EClosure dummy0 dummy1 => (ctor Result.ok [Ty, Bytes] expected)
-    | Expr.EApply dummy0 dummy1 => (ctor Result.ok [Ty, Bytes] expected)
-    | Expr.EPrim dummy0 dummy1 => (ctor Result.ok [Ty, Bytes] expected)
-    | Expr.EFirst dummy0 => (ctor Result.ok [Ty, Bytes] expected)
-    | Expr.ESecond dummy0 => (ctor Result.ok [Ty, Bytes] expected)
-    | Expr.EField dummy0 dummy1 => (ctor Result.ok [Ty, Bytes] expected)
-    | Expr.EArm dummy0 dummy1 dummy2 => (ctor Result.ok [Ty, Bytes] expected)),
-  executable: true,
-  mutual: CheckTerms,
-  recursive_argument: exprs
-}
-
-definition{
-  name: armsOk,
-  parameters: [
-    program : Program,
-    arms : Expr,
-    scrutinee : Ty,
-    expected : Ty,
-    scope : (List (Nat * Ty)),
-    covered : (List Shape)
-  ],
-  result: (Result (List Shape) Bytes),
-  body: (match arms
-    | Expr.ENil => (ctor Result.ok [(List Shape), Bytes] covered)
-    | Expr.ECons head tail => (match (armOk program head scrutinee expected scope covered)
-      | Result.ok updated => (armsOk program tail scrutinee expected scope updated)
-      | Result.error problem => (ctor Result.error [(List Shape), Bytes] problem))
-    | Expr.EValue dummy0 dummy1 => (ctor Result.ok [(List Shape), Bytes] covered)
-    | Expr.EVar dummy0 => (ctor Result.ok [(List Shape), Bytes] covered)
-    | Expr.ELet dummy0 dummy1 dummy2 dummy3 => (ctor Result.ok [(List Shape), Bytes] covered)
-    | Expr.ECond dummy0 dummy1 dummy2 => (ctor Result.ok [(List Shape), Bytes] covered)
-    | Expr.EMatch dummy0 dummy1 dummy2 => (ctor Result.ok [(List Shape), Bytes] covered)
-    | Expr.EBuild dummy0 dummy1 dummy2 => (ctor Result.ok [(List Shape), Bytes] covered)
-    | Expr.ECall dummy0 dummy1 => (ctor Result.ok [(List Shape), Bytes] covered)
-    | Expr.EClosure dummy0 dummy1 => (ctor Result.ok [(List Shape), Bytes] covered)
-    | Expr.EApply dummy0 dummy1 => (ctor Result.ok [(List Shape), Bytes] covered)
-    | Expr.EPrim dummy0 dummy1 => (ctor Result.ok [(List Shape), Bytes] covered)
-    | Expr.EFirst dummy0 => (ctor Result.ok [(List Shape), Bytes] covered)
-    | Expr.ESecond dummy0 => (ctor Result.ok [(List Shape), Bytes] covered)
-    | Expr.EField dummy0 dummy1 => (ctor Result.ok [(List Shape), Bytes] covered)
-    | Expr.EArm dummy0 dummy1 dummy2 => (ctor Result.ok [(List Shape), Bytes] covered)),
-  executable: true,
-  mutual: CheckTerms,
-  recursive_argument: arms
-}
-
-definition{
-  name: armOk,
-  parameters: [
-    program : Program,
-    arm : Expr,
-    scrutinee : Ty,
-    expected : Ty,
-    scope : (List (Nat * Ty)),
-    covered : (List Shape)
-  ],
-  result: (Result (List Shape) Bytes),
-  body: (match arm
-    | Expr.EArm shape binders body => (match (shapeFields program shape scrutinee)
-      | Result.ok fields => (let named : Nat := (listLength [Nat] binders); (let bound : Nat := (tyChainLength fields); (if (named =? bound) then (if (hasRepeat binders) then (ctor Result.error [(List Shape), Bytes] (cat (text "shape ") (cat (shapeDebug shape) (text " binds the same name twice")))) else (if (shapeIn covered shape) then (ctor Result.error [(List Shape), Bytes] (cat (text "the arm for ") (cat (shapeDebug shape) (text " is unreachable")))) else (match (exprTy program body (bindAll binders fields scope))
-        | Result.ok bodyTy => (match (expectTy bodyTy expected (text "an arm"))
-          | Result.ok done138 => (ctor Result.ok [(List Shape), Bytes] (consShape shape covered))
-          | Result.error problem => (ctor Result.error [(List Shape), Bytes] problem))
-        | Result.error problem => (ctor Result.error [(List Shape), Bytes] problem)))) else (ctor Result.error [(List Shape), Bytes] (cat (text "shape ") (cat (shapeDebug shape) (cat (text " binds ") (cat (decimal bound) (cat (text " value(s), the arm names ") (decimal named))))))))))
-      | Result.error problem => (ctor Result.error [(List Shape), Bytes] problem))
-    | Expr.EValue dummy0 dummy1 => (ctor Result.ok [(List Shape), Bytes] covered)
-    | Expr.EVar dummy0 => (ctor Result.ok [(List Shape), Bytes] covered)
-    | Expr.ELet dummy0 dummy1 dummy2 dummy3 => (ctor Result.ok [(List Shape), Bytes] covered)
-    | Expr.ECond dummy0 dummy1 dummy2 => (ctor Result.ok [(List Shape), Bytes] covered)
-    | Expr.EMatch dummy0 dummy1 dummy2 => (ctor Result.ok [(List Shape), Bytes] covered)
-    | Expr.EBuild dummy0 dummy1 dummy2 => (ctor Result.ok [(List Shape), Bytes] covered)
-    | Expr.ECall dummy0 dummy1 => (ctor Result.ok [(List Shape), Bytes] covered)
-    | Expr.EClosure dummy0 dummy1 => (ctor Result.ok [(List Shape), Bytes] covered)
-    | Expr.EApply dummy0 dummy1 => (ctor Result.ok [(List Shape), Bytes] covered)
-    | Expr.EPrim dummy0 dummy1 => (ctor Result.ok [(List Shape), Bytes] covered)
-    | Expr.EFirst dummy0 => (ctor Result.ok [(List Shape), Bytes] covered)
-    | Expr.ESecond dummy0 => (ctor Result.ok [(List Shape), Bytes] covered)
-    | Expr.EField dummy0 dummy1 => (ctor Result.ok [(List Shape), Bytes] covered)
-    | Expr.ENil => (ctor Result.ok [(List Shape), Bytes] covered)
-    | Expr.ECons dummy0 dummy1 => (ctor Result.ok [(List Shape), Bytes] covered)),
-  executable: true,
-  mutual: CheckTerms,
-  recursive_argument: arm
 }
 
 definition{
@@ -1857,9 +1764,11 @@ definition{
     | Result.error problem => (ctor Result.error [Unit, Bytes] (cat (text "function ") (cat (decimal index) (cat (text ": ") problem))))
     | Result.ok done1 => (match (tyOk program result)
       | Result.error problem => (ctor Result.error [Unit, Bytes] (cat (text "function ") (cat (decimal index) (cat (text ": ") problem))))
-      | Result.ok done2 => (match (exprTy program body (bindAll names types (nil (Nat * Ty))))
-        | Result.error problem => (ctor Result.error [Unit, Bytes] (cat (text "function ") (cat (decimal index) (cat (text ": ") problem))))
-        | Result.ok bodyTy => (match (expectTy bodyTy result (text "the body"))
+      | Result.ok done2 => (match (walk program body (bindAll names types (nil (Nat * Ty))) 0 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+        | Outcome.OFailed problem => (ctor Result.error [Unit, Bytes] (cat (text "function ") (cat (decimal index) (cat (text ": ") problem))))
+        | Outcome.OFine => (ctor Result.error [Unit, Bytes] (text "unreachable"))
+        | Outcome.OCovered stray => (ctor Result.error [Unit, Bytes] (text "unreachable"))
+        | Outcome.OTyped bodyTy => (match (expectTy bodyTy result (text "the body"))
           | Result.error problem => (ctor Result.error [Unit, Bytes] (cat (text "function ") (cat (decimal index) (cat (text ": ") problem))))
           | Result.ok done3 => (ctor Result.ok [Unit, Bytes] ())))))) else (ctor Result.error [Unit, Bytes] (cat (text "function ") (cat (decimal index) (cat (text ": ") (cat (decimal named) (cat (text " parameter names for ") (cat (decimal typed) (text " parameter types")))))))))))))),
   executable: true
@@ -1925,7 +1834,7 @@ definition{
   result: (Result Unit Bytes),
   body: (let program : Program := (record Program {spec := spec, adts := adts, parameters := parameters, types := types, results := results, bodies := bodies}); (match (functionTypes program entry)
     | Option.none => (ctor Result.error [Unit, Bytes] (undeclaredFunction entry))
-    | Option.some declared => (let yes139 : (Result Unit Bytes) := (valueOk program arguments declared 2); (let no140 : (Result Unit Bytes) := (ctor Result.error [Unit, Bytes] (cat (text "function ") (cat (decimal entry) (cat (text " takes ") (cat (decimal (tyChainLength declared)) (cat (text " argument(s), received ") (decimal (valueChainLength arguments)))))))); (if ((valueChainLength arguments) =? (tyChainLength declared)) then yes139 else no140))))),
+    | Option.some declared => (let yes137 : (Result Unit Bytes) := (valueOk program arguments declared 2); (let no138 : (Result Unit Bytes) := (ctor Result.error [Unit, Bytes] (cat (text "function ") (cat (decimal entry) (cat (text " takes ") (cat (decimal (tyChainLength declared)) (cat (text " argument(s), received ") (decimal (valueChainLength arguments)))))))); (if ((valueChainLength arguments) =? (tyChainLength declared)) then yes137 else no138))))),
   executable: true,
   production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
 }
