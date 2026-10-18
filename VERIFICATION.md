@@ -8096,9 +8096,22 @@ none is claimed.
 grep of `SPEC.md` for the path; it now recomputes the three IDs from disk
 (`RP-10`'s recomputation, shared) and finds, with either frozen file changed
 by one byte, the language-1.0 and 1.1 IDs unchanged and the 1.2 ID changed.
-The repository walkers skip any directory that holds a `CACHEDIR.TAG`: with
-a Cargo target directory named `target-check` in the checkout, `RT-01` and
-`SP-12` failed on its Lean files before and pass now.
+The repository walkers skip any directory that holds a `CACHEDIR.TAG` (including
+`xtask/src/audit.rs`, `crates/conformance/src/lib.rs`, and
+`crates/conformance/src/cases/oracle.rs`): with a Cargo target directory named
+`target-check` in the checkout, `RT-01` and `SP-12` failed on its Lean files
+before and pass now. Conversely (`RP-03`, #170), the tracked tree (`git ls-files`)
+holds no `CACHEDIR.TAG` file and no path component the walkers skip (`target`,
+`.git`, `.lexlean`, `.lake`, `node_modules`, or `expected` outside the
+sanctioned `expected/` oracle directories). Planted in the git index and
+restored after each run (`cargo test -p repo-conformance --test conformance
+conformance_rp_03 -- --exact`):
+
+1. A tracked `examples/collections/CACHEDIR.TAG`:
+   `left: ["examples/collections/CACHEDIR.TAG: tracked `CACHEDIR.TAG` would cause repository walkers to skip `examples/collections`"]`
+2. A tracked `.lexlean` directory outside the ignored roots
+   (`crates/lexlean/.lexlean/planted.lean`):
+   `left: ["crates/lexlean/.lexlean/planted.lean: tracked path has walker-skipped component `.lexlean`"]`
 
 ## The planted verification of the compiler project (Issue #145)
 

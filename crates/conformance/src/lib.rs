@@ -195,7 +195,9 @@ pub fn workspace_test_names_with_flags(root: &Path) -> (BTreeSet<String>, BTreeS
         for entry in entries.flatten() {
             let path = entry.path();
             if path.is_dir() {
-                if path.file_name().is_some_and(|name| name == "target") {
+                if path.file_name().is_some_and(|name| name == "target")
+                    || path.join("CACHEDIR.TAG").is_file()
+                {
                     continue;
                 }
                 stack.push(path);
