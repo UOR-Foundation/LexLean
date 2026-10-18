@@ -2,6 +2,8 @@
   "remainder": "rest",
   "parts": {
     "compiler": [
+      "BS-01",
+      "BS-02",
       "GC-02",
       "GN-02",
       "GN-03",
