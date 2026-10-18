@@ -698,7 +698,7 @@ fn windows(
         let (scan, reject) = runs(tally, path, window, 2_000_000, forbidden);
         corpus.scan.push(scan);
         if let Some(reject) = reject {
-            if path_hash(path) % WINDOW_REJECT_EVERY == 0 {
+            if path_hash(path).is_multiple_of(WINDOW_REJECT_EVERY) {
                 corpus.reject_rustc.push(reject.clone());
             }
             corpus.reject.push(reject);
@@ -737,7 +737,7 @@ fn wholes(
         }
         let (scan, reject) = runs(tally, path, source, 2_000_000, forbidden);
         scans.push(Heavy::from(scan));
-        if source.len() <= WHOLE_REJECT_CAP && path_hash(path) % REJECT_EVERY == 0 {
+        if source.len() <= WHOLE_REJECT_CAP && path_hash(path).is_multiple_of(REJECT_EVERY) {
             rejects.extend(reject.map(Heavy::from));
         }
     }
