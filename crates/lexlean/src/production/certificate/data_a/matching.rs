@@ -9,7 +9,56 @@ use crate::ir::semantic::{SemanticBranch, SemanticTerm, SemanticType, Step};
 use crate::production::kernel::{Given, Term};
 use crate::production::source::Constructor;
 
+/// The precomputed terms of one match arm, with the suffix of the arms after
+/// it.
+#[derive(Clone, Copy)]
+pub(super) struct PreArm {
+    shape: Term,
+    binders: Term,
+    body: Term,
+    rest: Term,
+}
+
 impl<'a> Writer<'_, 'a> {
+    /// Precompute the terms of each arm in `arms`, and the list of all arms
+    /// with the suffix after each position, right to left in $O(n)$.
+    pub(super) fn prepare_arms(&mut self, arms: &[Arm]) -> Result<(Term, Vec<PreArm>), String> {
+        let ty = self.ts("Arm");
+        let head = self.ts("Arm.arm");
+        let nil = self.b.konst0("List.nil");
+        let cons = self.b.konst0("List.cons");
+        let mut parts = Vec::with_capacity(arms.len());
+        let mut item_terms = Vec::with_capacity(arms.len());
+        for arm in arms {
+            let shape = self.shape_term(arm.shape);
+            let binders = self.numbers_term(&arm.binders);
+            let body = self.expr_term(&arm.body)?;
+            parts.push((shape, binders, body));
+            item_terms.push(self.b.apps(head, &[shape, binders, body]));
+        }
+        let mut list = self.b.app(nil, ty);
+        let mut pre = vec![
+            PreArm {
+                shape: 0,
+                binders: 0,
+                body: 0,
+                rest: 0,
+            };
+            arms.len()
+        ];
+        for index in (0..arms.len()).rev() {
+            let (shape, binders, body) = parts[index];
+            pre[index] = PreArm {
+                shape,
+                binders,
+                body,
+                rest: list,
+            };
+            list = self.b.apps(cons, &[ty, item_terms[index], list]);
+        }
+        Ok((list, pre))
+    }
+
     /// The derivation that the arm at `position` of `arms` is taken for the
     /// value `encoded`: the arm matches, binds `fields` over `env`, and its
     /// body is derived by `body`.
@@ -18,17 +67,13 @@ impl<'a> Writer<'_, 'a> {
         &mut self,
         env: Term,
         encoded: Term,
-        arms: &[Arm],
+        arms: &[PreArm],
         position: usize,
         fields: &[Term],
         extended: Term,
         body: Pf,
     ) -> Result<Pf, String> {
         let arm = arms.get(position).ok_or("a match lowered to fewer arms")?;
-        let shape = self.shape_term(arm.shape);
-        let binders = self.numbers_term(&arm.binders);
-        let body_expr = self.expr_term(&arm.body)?;
-        let rest = self.arms_list(&arms[position + 1..])?;
         let value_ty = self.value_ty();
         let list = self.b.list(value_ty, fields);
         let p = self.prog;
@@ -38,10 +83,10 @@ impl<'a> Writer<'_, 'a> {
                 ("p", p),
                 ("env", env),
                 ("v", encoded),
-                ("shape", shape),
-                ("binders", binders),
-                ("body", body_expr),
-                ("rest", rest),
+                ("shape", arm.shape),
+                ("binders", arm.binders),
+                ("body", arm.body),
+                ("rest", arm.rest),
                 ("fields", list),
                 ("env'", extended),
             ],
@@ -55,15 +100,11 @@ impl<'a> Writer<'_, 'a> {
         &mut self,
         env: Term,
         encoded: Term,
-        arms: &[Arm],
+        arms: &[PreArm],
         position: usize,
         later: Pf,
     ) -> Result<Pf, String> {
         let arm = arms.get(position).ok_or("a match lowered to fewer arms")?;
-        let shape = self.shape_term(arm.shape);
-        let binders = self.numbers_term(&arm.binders);
-        let body_expr = self.expr_term(&arm.body)?;
-        let rest = self.arms_list(&arms[position + 1..])?;
         let p = self.prog;
         self.apply(
             "convA_miss",
@@ -71,10 +112,10 @@ impl<'a> Writer<'_, 'a> {
                 ("p", p),
                 ("env", env),
                 ("v", encoded),
-                ("shape", shape),
-                ("binders", binders),
-                ("body", body_expr),
-                ("rest", rest),
+                ("shape", arm.shape),
+                ("binders", arm.binders),
+                ("body", arm.body),
+                ("rest", arm.rest),
             ],
             &[Given::Refl, Given::Proof(later.proof, later.ty)],
         )
@@ -184,6 +225,7 @@ impl<'a> Writer<'_, 'a> {
         let node = self.node_of(scope, whole);
         // Per constructor, in declaration order: the arm's width predicate,
         // value, and derivation, each abstracted over the arm's fields.
+        let (arms_term, pre_arms) = self.prepare_arms(arms)?;
         let mut fits_minors: Vec<(usize, Term)> = Vec::new();
         let mut value_minors: Vec<(usize, Term)> = Vec::new();
         let mut proof_minors: Vec<(usize, Term)> = Vec::new();
@@ -226,9 +268,9 @@ impl<'a> Writer<'_, 'a> {
                 self.constructor_value(&constructor, &scrutinee_ty, branch, &frees, scope)?;
             let encoded = self.b.app(scrutinee_enc, value);
             let mut proof =
-                self.arm_hit(env, encoded, arms, position, &fields, arm_env, body_pf)?;
+                self.arm_hit(env, encoded, &pre_arms, position, &fields, arm_env, body_pf)?;
             for earlier in (0..position).rev() {
-                proof = self.arm_miss(env, encoded, arms, earlier, proof)?;
+                proof = self.arm_miss(env, encoded, &pre_arms, earlier, proof)?;
             }
             let ctor_position = self.constructor_position(&constructor)?;
             let binders: Vec<(String, Term, Term)> = locals
@@ -315,7 +357,6 @@ impl<'a> Writer<'_, 'a> {
             .lam_over("__a", EXPLICIT, lean_scrutinee, bound, w_body);
         // ha : ∀ a, sv = a → ConvA p env (enc a) arms (Rel (G a) (W a)),
         // proved by cases on a with the arms' derivations as minors.
-        let arms_term = self.arms_list(arms)?;
         let encoded_bound = self.b.app(scrutinee_enc, bound);
         let g_a = self.b.app(g, bound);
         let w_a = self.b.app(w, bound);
@@ -445,8 +486,8 @@ impl<'a> Writer<'_, 'a> {
                 }
             }
         }
-        let arms_term = self.arms_list(arms)?;
-        let halves_term = self.arms_list(halves)?;
+        let (arms_term, pre_arms) = self.prepare_arms(arms)?;
+        let (halves_term, pre_halves) = self.prepare_arms(halves)?;
         // Per (first, second): the derivation of the program's arms, the
         // arm's predicate and its value.
         let mut proofs: Vec<[Term; 2]> = vec![[Term::default(); 2]; 2];
@@ -500,10 +541,11 @@ impl<'a> Writer<'_, 'a> {
             let fits = self.fits_of(body_pf)?;
             let value = self.src(&branch.body, &inner_scope)?;
             // The innermost Boolean, then the first, then the pair.
+            let (second_arms_term, pre_leaf_arms) = self.prepare_arms(leaf_arms)?;
             let leaf_hit = self.arm_hit(
                 pair_env,
                 second_encoded,
-                leaf_arms,
+                &pre_leaf_arms,
                 usize::from(second_value),
                 &[],
                 pair_env,
@@ -511,8 +553,13 @@ impl<'a> Writer<'_, 'a> {
             )?;
             let mut leaf_chain = leaf_hit;
             for earlier in (0..usize::from(second_value)).rev() {
-                leaf_chain =
-                    self.arm_miss(pair_env, second_encoded, leaf_arms, earlier, leaf_chain)?;
+                leaf_chain = self.arm_miss(
+                    pair_env,
+                    second_encoded,
+                    &pre_leaf_arms,
+                    earlier,
+                    leaf_chain,
+                )?;
             }
             let second_var_term = self.nat_u(second_var);
             let second_test = self.apply(
@@ -525,7 +572,6 @@ impl<'a> Writer<'_, 'a> {
                 ],
                 &[Given::Refl],
             )?;
-            let second_arms_term = self.arms_list(leaf_arms)?;
             let second_match_ty = self.ty_term(second_ty);
             let inner = self.apply(
                 "conv_match",
@@ -543,7 +589,7 @@ impl<'a> Writer<'_, 'a> {
             let half_hit = self.arm_hit(
                 pair_env,
                 first_encoded,
-                halves,
+                &pre_halves,
                 usize::from(first_value),
                 &[],
                 pair_env,
@@ -551,7 +597,8 @@ impl<'a> Writer<'_, 'a> {
             )?;
             let mut half_chain = half_hit;
             for earlier in (0..usize::from(first_value)).rev() {
-                half_chain = self.arm_miss(pair_env, first_encoded, halves, earlier, half_chain)?;
+                half_chain =
+                    self.arm_miss(pair_env, first_encoded, &pre_halves, earlier, half_chain)?;
             }
             let first_var_term = self.nat_u(first_var);
             let first_test = self.apply(
@@ -582,7 +629,7 @@ impl<'a> Writer<'_, 'a> {
             let top = self.arm_hit(
                 env,
                 encoded,
-                arms,
+                &pre_arms,
                 0,
                 &[first_encoded, second_encoded],
                 pair_env,

@@ -289,13 +289,16 @@ seeded-random byte literal in which all 256 values occur.
 | 65536 | 100000 | 37.1 s, heartbeats (`isDefEq`) | 49.2 s, heartbeats (`LCNF compiler`) |
 | 65536 | default | 33.3 s, heartbeats (`isDefEq`) | 42.7 s, recursion depth |
 
-Bisection at the default `maxRecDepth` (no `set_option`), by 16-byte steps
-between 1024 and 16384 bytes, one run per size, seeded-random bytes with all 256
-values present: the largest literal that elaborates is 6394 bytes under both
-renderings, and 6409 bytes fails under both (`maximum recursion depth has been
-reached`). Elaboration time at 4096 bytes is 2.0 s under both; at 6394 bytes it
-is 4.4 s for the `main` rendering and 3.3 s for the explicit one. The lowering
-does not move the largest elaborable literal.
+Bisection on a standalone scratch Lean file at Lean's default `maxRecDepth` (no
+`set_option`; generated semantic modules instead emit `set_option maxRecDepth
+100000`, `backend/semantic.rs`, which corresponds to the `100000` rows in the
+table above), by 16-byte steps between 1024 and 16384 bytes, one run per size,
+seeded-random bytes with all 256 values present: the largest literal that
+elaborates at the default depth is 6394 bytes under both renderings, and 6409
+bytes fails under both (`maximum recursion depth has been reached`). Elaboration
+time at 4096 bytes is 2.0 s under both; at 6394 bytes it is 4.4 s for the `main`
+rendering and 3.3 s for the explicit one. The lowering does not move the largest
+elaborable literal.
 
 No size succeeds under one rendering and fails under the other. Both fail at
 16384 bytes at the default depth and at 65536 bytes at either depth; the
@@ -5331,7 +5334,7 @@ Planted, one at a time in a focused copy of `examples/models/src/Recognizer.lex.
 
   ```text
   error[LLV7002]: Lean rejected `Models.Recognizer` (error): Tactic `decide` proved that the proposition
-    ...
+    scaleRatioRound32 1047092574 969894013 1000834620 = some 75739599
   is false
   ```
 
@@ -7590,7 +7593,7 @@ change.
 `RP-14` reads the profile out of the matrix. The examples leg must name
 exactly that width, budget, and hints file; the width and the hints must parse
 with the verifier's own functions (`Operational::parse_width`,
-`Operational::parse_hints`), and the hints must name `CensusCert4`; any other
+`Operational::parse_hints`), and the hints must name `Census`; any other
 leg must name none; each variable is set once, from the row; and no profile may
 come from `vars.` or `inputs.`.
 
@@ -8989,5 +8992,74 @@ error[LLS8002]: root `Production.Main.wide`: max_file_bytes exceeded in phase lo
 
 This is a finding about the fixture's premise, not a planted defect: the
 planted-defect evidence of the early refusal's bound is `conformance_sp_02`'s,
-which was not completed on any host before the train's CI run (the certificate
-A session's runs were killed twice by host restarts).
+which passed on the train's CI run and records both the early bound and the
+post-generation notation check (`SPEC.md` §17.17, #187):
+
+- **a root whose certificate passes lowering's lower bound and certificate B's
+  12-byte-per-node derivation floor (`NODE_BYTES` in `data_b/align.rs`) is
+  refused by the finished-certificate notation check (`record_source` against
+  `max_file_bytes`).** `tests/negative/certificate-generation-limit` sums 500
+  fields of a record: its 500 field reads take 250,000 pattern entries (`2,000,000`
+  bytes at lowering's 8-byte-per-slot floor, under the default `4,194,304`), and
+  its derivation's kernel nodes at `12` bytes each also stay under `4,194,304`
+  while record-read nodes average about `35` bytes in the recorded notation.
+  When `data_b::render` weighs the finished notation (`8,513,069` bytes, `2.03`
+  times `max_file_bytes`), it refuses with `LLS8002` before any file is staged
+  or Lean is started:
+
+  ```text
+  error[LLS8002]: root `Production.Main.sum500` (target `rust-core`): max_file_bytes exceeded in phase certificate-b: the certificate is 8513069 bytes, beyond the 4194304 bytes of max_file_bytes
+  ```
+
+  In `conformance_sp_02`, `record copy 100` regenerated under a quarter of its
+  recorded size is refused *during* derivation (`the derivation of a function is
+  at least … bytes, beyond the … bytes of max_file_bytes`), and certificates A
+  and E of every stress family regenerated under half their recorded size are
+  refused with `LLS8002` by the finished-certificate weight check.
+
+### undeclared environment variables in the compiler crate can fail (`CL-17`, #180 / #187)
+
+`conformance_cl_17` scans every `.rs` source under `crates/lexlean/src` (with
+comments and `#[cfg(test)]` items blanked) for `env::var`, `env::var_os`,
+`env::vars`, and `env::vars_os` and refuses any read outside §23.1's four
+operational variables (`WIDTH_VARIABLE`, `TELEMETRY_VARIABLE`, `HINTS_VARIABLE`,
+and `MEMORY_VARIABLE` in `verify/operational.rs`), `cli.rs`'s `"NO_COLOR"`
+presentation check, and the toolchain/process locators `"HOME"`, `"PATH"`, and
+`"ELAN_HOME"` in `verify/child.rs` and `verify/toolchain.rs`. On every run it
+plants `let _ = std::env::var("LEXLEAN_AXDBG");` on a copy of
+`production/certificate/data_a.rs` and requires the scan to report
+`production/certificate/data_a.rs`.
+
+## Census windows 4 and 10 as width-100 certificates (Issue #168)
+
+`CensusCert4` and `CensusCert10` each proved one window of 1,000 Gram types,
+`gramRange 4000 1000` and `gramRange 10000 1000`, by a single
+`of_decide_eq_true`, and their memory grew with the work of the whole window:
+on main run 39054719580
+`CensusCert4` took 1,419.3 s to elaborate and 2,248.5 s to replay at about
+15 GiB with 3.5 GiB of swap, and `CensusCert10` 114.6 s and 120.8 s at
+14.3 and 14.7 GiB with swap. Each window is now ten width-100 certificates,
+`CensusCert40` to `CensusCert49` and `CensusCert100` to `CensusCert109`, joined
+by `gramRange_append` as `CensusCert7` already was. The statements, the kernel
+`decide` proofs of each piece, and every importer are unchanged.
+
+Measured on run 39086315289 (the Atlas jobs of this tree):
+
+| Window | Elaboration (s) | Replay (s) | Largest piece (GiB) | Swap |
+| --- | ---: | ---: | ---: | --- |
+| 4 | 111.5 | 117.6 | 4.5 | none |
+| 10 | 118.1 | 115.4 | 5.6 | none |
+
+No `Census*` process swapped on that run; `Closure` and `ClosureOrbit` still
+did. The join wrote 347 normalized verification records, four for each of the
+twenty new modules beside the 267 before; they are this commit's
+`expected/verify`, and the hints of the 22 changed modules are that run's.
+
+### the census windows can fail
+
+A piece whose window is wrong, or a join that does not sum to the width of its
+window, is refused by the kernel when `CensusCert4` or `CensusCert10`
+elaborates, because each keeps the statement it had; a piece missing from the
+Atlas root is refused by `audit-atlas-exercise` (R4); a piece missing from the
+shard plan is refused by `cargo xtask ci-shards` and by the plan check of
+RP-14.

@@ -224,11 +224,12 @@ pub struct CorrespondenceRules {
 pub fn correspondence_rules() -> Result<CorrespondenceRules, String> {
     const CORR: &str = "LexLeanPreservation.Rust.Corr";
     const SOUND: &str = "LexLeanPreservation.Rust.sound";
-    let load = |module: &str| -> Result<crate::ir::core::CoreModule, String> {
-        let path = native_source_path(module).ok_or_else(|| format!("no source for `{module}`"))?;
-        let source = embedded_text(&path).map_err(|diagnostic| diagnostic.message)?;
-        crate::ir::core::CoreModule::from_source(source, "1.2")
-            .map_err(|reason| format!("{path}: {reason}"))
+    let native = native().map_err(|diagnostic| diagnostic.message.clone())?;
+    let load = |module: &str| -> Result<&crate::ir::core::CoreModule, String> {
+        native
+            .modules
+            .get(module)
+            .ok_or_else(|| format!("the library has no module `{module}`"))
     };
     let corr = load("LexLeanPreservation.RustCorr")?;
     let constructors: Vec<String> = corr

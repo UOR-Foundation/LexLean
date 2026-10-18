@@ -27,7 +27,17 @@
         "prefix"
       ],
       "elaborate": [
-        "LexLeanExample.CensusCert4"
+        "LexLeanExample.CensusCert4",
+        "LexLeanExample.CensusCert40",
+        "LexLeanExample.CensusCert41",
+        "LexLeanExample.CensusCert42",
+        "LexLeanExample.CensusCert43",
+        "LexLeanExample.CensusCert44",
+        "LexLeanExample.CensusCert45",
+        "LexLeanExample.CensusCert46",
+        "LexLeanExample.CensusCert47",
+        "LexLeanExample.CensusCert48",
+        "LexLeanExample.CensusCert49"
       ],
       "replay": []
     },
@@ -37,12 +47,32 @@
       ],
       "elaborate": [
         "LexLeanExample.CensusCert10",
+        "LexLeanExample.CensusCert100",
+        "LexLeanExample.CensusCert101",
+        "LexLeanExample.CensusCert102",
+        "LexLeanExample.CensusCert103",
+        "LexLeanExample.CensusCert104",
+        "LexLeanExample.CensusCert105",
+        "LexLeanExample.CensusCert106",
+        "LexLeanExample.CensusCert107",
+        "LexLeanExample.CensusCert108",
+        "LexLeanExample.CensusCert109",
         "LexLeanExample.CensusCert11",
         "LexLeanExample.CensusCert5",
         "LexLeanExample.CensusCert8"
       ],
       "replay": [
         "LexLeanExample.CensusCert10",
+        "LexLeanExample.CensusCert100",
+        "LexLeanExample.CensusCert101",
+        "LexLeanExample.CensusCert102",
+        "LexLeanExample.CensusCert103",
+        "LexLeanExample.CensusCert104",
+        "LexLeanExample.CensusCert105",
+        "LexLeanExample.CensusCert106",
+        "LexLeanExample.CensusCert107",
+        "LexLeanExample.CensusCert108",
+        "LexLeanExample.CensusCert109",
         "LexLeanExample.CensusCert11",
         "LexLeanExample.CensusCert5",
         "LexLeanExample.CensusCert8"
@@ -140,7 +170,17 @@
       ],
       "elaborate": [],
       "replay": [
-        "LexLeanExample.CensusCert4"
+        "LexLeanExample.CensusCert4",
+        "LexLeanExample.CensusCert40",
+        "LexLeanExample.CensusCert41",
+        "LexLeanExample.CensusCert42",
+        "LexLeanExample.CensusCert43",
+        "LexLeanExample.CensusCert44",
+        "LexLeanExample.CensusCert45",
+        "LexLeanExample.CensusCert46",
+        "LexLeanExample.CensusCert47",
+        "LexLeanExample.CensusCert48",
+        "LexLeanExample.CensusCert49"
       ]
     },
     "closure": {

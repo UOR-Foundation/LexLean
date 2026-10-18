@@ -322,6 +322,32 @@ pub fn assemble(
     Ok(out)
 }
 
+/// The whole `.lex.tex` source of a native core module, printed directly from
+/// its [`crate::ir::core::CoreModule`] without round-tripping through JSON.
+///
+/// # Errors
+///
+/// `data` that is not a well-formed core module of the current schema.
+pub(crate) fn assemble_core(
+    header: &SourceHeader<'_>,
+    data: &crate::ir::core::CoreModule,
+) -> Result<String, AuthoringError> {
+    let printed = crate::surface::core::print_module(data)
+        .map_err(|failure| error(format!("the module has no notation: {failure}"), None))?;
+    let mut out = format!("\\begin{{lexlean}}{{{}}}\n", header.name);
+    for glossary in header.glossaries {
+        out.push_str(&format!("\\useglossary{{{glossary}}}\n"));
+    }
+    for import in header.imports {
+        out.push_str(&format!("\\importmodule{{{import}}}\n"));
+    }
+    out.push_str(&format!(
+        "\\title{{{}}}\n\\begin{{{}}}\n{printed}\\end{{{}}}\n\\end{{lexlean}}\n",
+        header.title, CORE.environment, CORE.environment
+    ));
+    Ok(out)
+}
+
 #[cfg(test)]
 mod tests {
     use serde_json::json;

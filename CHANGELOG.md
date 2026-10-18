@@ -15,6 +15,18 @@ versions, and the entries below say what each tag does and does not claim.
 
 ## Unreleased
 
+- UOR Atlas, #168: the census windows `CensusCert4` and `CensusCert10`
+  (`gramRange 4000 1000 = true` and `gramRange 10000 1000 = true`, each one
+  `of_decide_eq_true`) are proved from ten width-100 certificates each,
+  `CensusCert40` to `CensusCert49` and `CensusCert100` to `CensusCert109`,
+  joined by `gramRange_append` exactly as `CensusCert7` is from
+  `CensusCert70` to `CensusCert79`. Their statements are unchanged and their
+  importers are untouched; the Atlas root imports the twenty pieces
+  (`audit-atlas-exercise`, R4). In `.github/verify-shards.json` the `cert4`
+  shard elaborates the window-4 modules and `cert4-replay` replays them, and
+  `census-a` takes the window-10 pieces beside `CensusCert10`; the join
+  compares 347 normalized records (was 267). Atlas `expected/build` and
+  `expected/verify` are regenerated; no language data moves.
 - CI cost, #131 (SPEC.md §8.3, §9.4, `RP-14`): `ci.yml` begins with a `plan`
   job (`.github/ci-plan.sh`) that decides what a run is from the event alone.
   A draft pull request runs the `rest` leg and no other job (about 23 runner
@@ -56,8 +68,13 @@ versions, and the entries below say what each tag does and does not claim.
   state. Certificates A and B are kernel data in which a repeated type is one
   node, so the chain verifies (it did not fit under `max_file_bytes` as text)
   and the lower bound counts no type node; what a small source still makes
-  large is the pairs of arms of a match, which the fixture now uses. The
-  fixture is refused with `LLS8002` in lowering, as before.
+  large is the pairs of arms of a match, which the fixture now uses. With
+  certificate A as kernel data, a pair of arms costs about 5.7 times its text
+  cost (`1018` against `180` sixteenths of a byte), so the widest match that
+  fits the default `max_file_bytes` falls from about `420` to `240`
+  constructors (`SP-02`, SPEC.md §17.17; a project with a wider match raises
+  `max_file_bytes`). The fixture is refused with `LLS8002` in lowering, as
+  before.
 - The preservation library's statement of
   `LexLeanTarget.TargetSemantics.fromOrdering.eq_1` is the one the elaborator
   makes for the generated module under the explicit byte-literal spelling
@@ -77,7 +94,7 @@ versions, and the entries below say what each tag does and does not claim.
   `Bytes` forms) to `(sign, mantissa, exponent)` over `nat` and `int`,
   rejecting out-of-width patterns and the non-finite biased exponents, and
   derives `round(a * b / c * 2^32)` scale ratios (ties to even) by exact
-  integer division; 43 theorems (39 in `Models.Recognizer`, 4 in `Models.Main`) are closed by `decide`. The change is to the
+  integer division; 47 theorems (43 in `Models.Recognizer`, 4 in `Models.Main`) are closed by `decide`. The change is to the
   `models` example and the register only: no compiler source moves.
 
 - Widening conversions (#114, SPEC.md §17.12 *Widening conversions*, `SM-32`,

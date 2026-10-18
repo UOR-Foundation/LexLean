@@ -2167,6 +2167,7 @@ impl<'g, 'a> Aligner<'g, 'a> {
         );
         let mut derivation = self.rule("mNil", g, fl, nil_jd, &[], &[])?;
         let mut indices = Vec::with_capacity(rarms.len());
+        let mut cursor = arms.len();
         for (pattern, block) in rarms.iter().rev() {
             self.refused()?;
             let (next, index, arm_term) = self.m_arm(
@@ -2175,6 +2176,7 @@ impl<'g, 'a> Aligner<'g, 'a> {
                 st,
                 view,
                 arms,
+                &mut cursor,
                 fm,
                 tau,
                 pattern,
@@ -2209,6 +2211,7 @@ impl<'g, 'a> Aligner<'g, 'a> {
         st: &Ty,
         view: bool,
         arms: &[Arm],
+        cursor: &mut usize,
         fm: bool,
         tau: &Ty,
         pattern: &Pat,
@@ -2220,9 +2223,11 @@ impl<'g, 'a> Aligner<'g, 'a> {
         let [st_term, view_term, arms_term, fm_term, tau_term] = fixed;
         let (idx_rest, rarms_rest) = suffix;
         let (shape, inner) = arm_outer(st, view, pattern)?;
-        let j = arms
+        let j = arms[..*cursor]
             .iter()
-            .position(|arm| arm.shape == shape)
+            .rposition(|arm| arm.shape == shape)
+            .inspect(|&found| *cursor = found)
+            .or_else(|| arms.iter().position(|arm| arm.shape == shape))
             .ok_or_else(|| format!("no arm has shape {shape:?}"))?;
         let arm = &arms[j];
         let types = self.checker.shape_fields(shape, st)?;

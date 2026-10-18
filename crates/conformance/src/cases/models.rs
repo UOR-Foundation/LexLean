@@ -660,9 +660,33 @@ fn md_02() {
     // proved to be their decoding.
     let build = support::rendered(&project);
     let lean = support::lean_text(&build, "Recognizer");
-    let banner = std::fs::read(project.root.join("artifacts/banner.bin").as_std_path())
-        .expect("banner bytes");
-    assert_eq!(embedded_artifact_octets(&lean, "banner"), banner);
+    for (module, name, path) in [
+        ("Recognizer", "banner", "artifacts/banner.bin"),
+        (
+            "Recognizer",
+            "hiddenWeights",
+            "artifacts/hidden-weights.bin",
+        ),
+        ("Recognizer", "hiddenBias", "artifacts/hidden-bias.bin"),
+        (
+            "Recognizer",
+            "outputWeights",
+            "artifacts/output-weights.bin",
+        ),
+        ("Recognizer", "outputBias", "artifacts/output-bias.bin"),
+        ("Recognizer", "digitNames", "artifacts/digit-names.txt"),
+        ("Triage", "triageWeights", "artifacts/triage-weights.bin"),
+        ("Triage", "triageBias", "artifacts/triage-bias.bin"),
+    ] {
+        let module_lean = support::lean_text(&build, module);
+        let expected_bytes =
+            std::fs::read(project.root.join(path).as_std_path()).expect("artifact bytes");
+        assert_eq!(
+            embedded_artifact_octets(&module_lean, name),
+            expected_bytes,
+            "{module}.{name}.bytes matches {path}"
+        );
+    }
     assert!(lean.contains("public theorem banner.decoded : banner = banner.bytes := rfl"));
     let weights = std::fs::read(
         project
@@ -676,7 +700,6 @@ fn md_02() {
         .map(u8::to_string)
         .collect::<Vec<_>>()
         .join(", ");
-    assert_eq!(embedded_artifact_octets(&lean, "hiddenWeights"), weights);
     assert!(lean.contains(
         "public theorem hiddenWeights.decoded : (LexLeanModels.tensorMatches 1 true hiddenWeights.flatten hiddenWeights.bytes && (hiddenWeights.length == 12) && (hiddenWeights.map List.length == List.replicate 12 7)) = true := by decide"
     ));
@@ -3531,6 +3554,8 @@ fn md_13() {
         let raw = (exp << 52) | frac;
         let bits = if index % 3 == 0 && raw > 0 {
             i128::from(raw) - (1_i128 << 63)
+        } else if index % 3 == 1 && raw > 0 {
+            i128::from(raw) + (1_i128 << 63)
         } else {
             i128::from(raw)
         };
