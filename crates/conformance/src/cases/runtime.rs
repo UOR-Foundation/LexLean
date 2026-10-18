@@ -407,12 +407,13 @@ struct Scan {
 }
 
 /// Whether the `r` at `index` opens a raw literal: it is not the end of a
-/// longer name, apart from the `b` of a raw byte string.
+/// longer name, apart from the `b` of a raw byte string or the `c` of a raw
+/// C string.
 fn opens_raw(bytes: &[u8], index: usize) -> bool {
     let name = |byte: u8| byte.is_ascii_alphanumeric() || byte == b'_';
     match index.checked_sub(1).map(|before| bytes[before]) {
         None => true,
-        Some(b'b') => index == 1 || !name(bytes[index - 2]),
+        Some(b'b' | b'c') => index == 1 || !name(bytes[index - 2]),
         Some(byte) => !name(byte),
     }
 }
@@ -579,12 +580,152 @@ fn scan(source: &str) -> Scan {
     Scan { literals, code }
 }
 
+/// Skip bracketed tokens (`[...]`, `(...)`, `{...}`) starting at `at` in `code`.
+fn skip_delimited(code: &[u8], mut at: usize) -> usize {
+    let mut depth = 0usize;
+    while at < code.len() {
+        match code[at] {
+            b'[' | b'(' | b'{' => depth += 1,
+            b']' | b')' | b'}' => {
+                depth = depth.saturating_sub(1);
+                if depth == 0 {
+                    return at + 1;
+                }
+            }
+            _ => {}
+        }
+        at += 1;
+    }
+    at
+}
+
+/// Whether `code[..limit]` holds only leading inner attributes (`#![...]`),
+/// whitespace, and `;`, so an inner attribute at `limit` belongs to the file
+/// itself rather than an inline module or block inside it.
+fn is_file_inner_attribute(code: &[u8], limit: usize) -> bool {
+    let mut at = 0;
+    while at < limit {
+        while at < limit && (code[at].is_ascii_whitespace() || code[at] == b';') {
+            at += 1;
+        }
+        if at >= limit {
+            return true;
+        }
+        if code[at..limit].starts_with(b"#!") {
+            at += 2;
+            while at < limit && code[at].is_ascii_whitespace() {
+                at += 1;
+            }
+            if at < limit && code[at] == b'[' {
+                at = skip_delimited(code, at);
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+    true
+}
+
+/// Advance past any further outer attributes (`#[...]`), visibility (`pub`,
+/// `pub(...)`), and item modifiers (`default`, `const`, `async`, `unsafe`,
+/// `extern`, `auto`), then return the position right after the item keyword if
+/// `#[cfg(test)]` is attached to an item (`mod`, `fn`, `use`, `impl`, `const`,
+/// `static`, `struct`, `enum`, `union`, `type`, `trait`, `extern`,
+/// `macro_rules!`). When `#[cfg(test)]` is on a struct field, enum variant,
+/// function parameter, match arm, or expression, returns `None`.
+fn item_keyword_after_attributes(code: &[u8], mut at: usize) -> Option<usize> {
+    let is_ident = |byte: u8| byte.is_ascii_alphanumeric() || byte == b'_';
+    let skip_ws = |code: &[u8], mut i: usize| {
+        while i < code.len() && code[i].is_ascii_whitespace() {
+            i += 1;
+        }
+        i
+    };
+    let read_word = |i: usize| {
+        let mut end = i;
+        while end < code.len() && is_ident(code[end]) {
+            end += 1;
+        }
+        (&code[i..end], end)
+    };
+    loop {
+        at = skip_ws(code, at);
+        if code[at..].starts_with(b"#[") {
+            at = skip_delimited(code, at + 1);
+        } else {
+            break;
+        }
+    }
+    at = skip_ws(code, at);
+    let (word, next) = read_word(at);
+    if word == b"pub" {
+        at = skip_ws(code, next);
+        if at < code.len() && code[at] == b'(' {
+            at = skip_delimited(code, at);
+        }
+    }
+    loop {
+        at = skip_ws(code, at);
+        let (word, next) = read_word(at);
+        if matches!(word, b"default" | b"async" | b"unsafe" | b"auto") {
+            at = next;
+            continue;
+        }
+        if word == b"const" {
+            let after = skip_ws(code, next);
+            let (following, _) = read_word(after);
+            if matches!(following, b"fn" | b"unsafe" | b"extern" | b"impl") {
+                at = next;
+                continue;
+            }
+        }
+        if word == b"extern" {
+            let after = skip_ws(code, next);
+            let (following, _) = read_word(after);
+            if following != b"crate" && after < code.len() && code[after] != b'{' {
+                at = after;
+                continue;
+            }
+        }
+        break;
+    }
+    at = skip_ws(code, at);
+    let (word, next) = read_word(at);
+    if matches!(
+        word,
+        b"mod"
+            | b"fn"
+            | b"use"
+            | b"impl"
+            | b"const"
+            | b"static"
+            | b"struct"
+            | b"enum"
+            | b"union"
+            | b"type"
+            | b"trait"
+            | b"extern"
+    ) {
+        return Some(next);
+    }
+    if word == b"macro_rules" {
+        let after = skip_ws(code, next);
+        if after < code.len() && code[after] == b'!' {
+            return Some(after + 1);
+        }
+    }
+    None
+}
+
 /// A source with its test items blanked, each by the line breaks it held so
 /// that every other line keeps its number: an item under `#[cfg(test)]` (a
-/// `mod`, a function, a `use`), wherever it stands, and the whole file when
-/// it opens with `#![cfg(test)]`. A unit test's fixture text is no part of
-/// what the compiler emits. What follows a test item is production code and
-/// stays, which a cut at the first test module would have dropped.
+/// `mod`, a function, a `use`, or any other item), wherever it stands, and the
+/// whole file when `#![cfg(test)]` is one of the file's leading inner
+/// attributes. A `#[cfg(test)]` on a struct field, enum variant, parameter, or
+/// match arm, or `#![cfg(test)]` inside an inline module, is not a file-level
+/// or item-level test gate and never blanks the production code after it.
 fn without_test_items(source: &str) -> String {
     let scanned = scan(source);
     let code = &scanned.code;
@@ -597,22 +738,37 @@ fn without_test_items(source: &str) -> String {
         }
     };
     let text = String::from_utf8_lossy(code).into_owned();
-    if text.contains("#![cfg(test)]") {
-        let whole = blanked.len();
-        erase(&mut blanked, 0, whole);
+    let mut inner_search = 0;
+    while let Some(found) = text[inner_search..].find("#![cfg(test)]") {
+        let attribute = inner_search + found;
+        if is_file_inner_attribute(code, attribute) {
+            let whole = blanked.len();
+            erase(&mut blanked, 0, whole);
+            return String::from_utf8(blanked).expect("blanking keeps ASCII and whole characters");
+        }
+        inner_search = attribute + "#![cfg(test)]".len();
     }
     let mut search = 0;
     while let Some(found) = text[search..].find("#[cfg(test)]") {
         let attribute = search + found;
-        // The item follows its attributes: up to the first `{` or `;` outside
-        // parentheses and brackets, then the matching `}`.
-        let mut at = attribute + "#[cfg(test)]".len();
+        let after_attr = attribute + "#[cfg(test)]".len();
+        let Some(mut at) = item_keyword_after_attributes(code, after_attr) else {
+            search = after_attr;
+            continue;
+        };
+        // The item follows its keyword: up to the first `{` or `;` outside
+        // parentheses and brackets, then the matching `}`, stopping if an
+        // enclosing `}` or `,` is reached first.
         let mut nesting = 0usize;
         let mut end = code.len();
         while at < code.len() {
             match code[at] {
                 b'(' | b'[' => nesting += 1,
                 b')' | b']' => nesting = nesting.saturating_sub(1),
+                b'}' | b',' if nesting == 0 => {
+                    end = at;
+                    break;
+                }
                 b';' if nesting == 0 => {
                     end = at + 1;
                     break;
@@ -640,20 +796,38 @@ fn without_test_items(source: &str) -> String {
             at += 1;
         }
         erase(&mut blanked, attribute, end);
-        search = end.max(attribute + 1);
+        search = end.max(after_attr);
     }
     String::from_utf8(blanked).expect("blanking keeps ASCII and whole characters")
 }
 
 /// What a line of Lean declares, when it declares: the text after the
-/// declaration keyword, once its attributes and modifiers are read.
+/// declaration keyword, once its inline comments, options, attributes, and
+/// modifiers are read.
 fn declaration(line: &str) -> Option<&str> {
     let mut rest = line.trim_start();
-    while rest.starts_with("@[") {
-        rest = rest
-            .split_once(']')
-            .map_or("", |(_, after)| after)
-            .trim_start();
+    loop {
+        if rest.starts_with("/-") {
+            rest = rest
+                .split_once("-/")
+                .map_or("", |(_, after)| after)
+                .trim_start();
+            continue;
+        }
+        if rest.starts_with("@[") {
+            rest = rest
+                .split_once(']')
+                .map_or("", |(_, after)| after)
+                .trim_start();
+            continue;
+        }
+        if let Some(after_set) = rest.strip_prefix("set_option ") {
+            if let Some((_, after_in)) = after_set.split_once(" in ") {
+                rest = after_in.trim_start();
+                continue;
+            }
+        }
+        break;
     }
     loop {
         let before = rest;
@@ -692,7 +866,9 @@ fn declaration(line: &str) -> Option<&str> {
 /// around it. A text that only names a runtime constant, as the Lean a
 /// generated module holds does, is not one.
 fn declares_under_runtime(text: &str) -> bool {
-    let under_runtime = |name: &str| {
+    let under_runtime = |raw: &str| {
+        let cleaned = raw.replace(['«', '»'], "");
+        let name = cleaned.strip_prefix("_root_.").unwrap_or(&cleaned);
         NAMESPACES
             .iter()
             .any(|namespace| name == *namespace || name.starts_with(&format!("{namespace}.")))
@@ -744,10 +920,18 @@ fn runtime_texts(source: &str) -> Vec<usize> {
     };
     for literal in &scanned.literals {
         if let Some(previous) = chain.last() {
-            // The same expression: little between the two, and no statement
-            // or block boundary.
-            let between = &source[previous.end..literal.start];
-            if between.len() > 64 || between.contains([';', '{', '}']) {
+            // The same expression: little code between the two (after comments
+            // are blanked), and no statement or block boundary.
+            let between = &scanned.code[previous.end..literal.start];
+            let non_ws = between
+                .iter()
+                .filter(|byte| !byte.is_ascii_whitespace())
+                .count();
+            if non_ws > 64
+                || between
+                    .iter()
+                    .any(|byte| matches!(byte, b';' | b'{' | b'}'))
+            {
                 flush(&mut chain, &mut found);
             }
         }
@@ -825,7 +1009,7 @@ fn rt_04() {
     // A planted runtime text is found wherever and however it is written:
     // raw or escaped, with a namespace line or only a qualified name, split
     // across literals or written over several lines, and in production code
-    // that follows a test module.
+    // that follows a test module or a non-item `#[cfg(test)]`.
     let semantic = std::fs::read_to_string(source_root.join("backend/semantic.rs").as_std_path())
         .expect("the semantic backend");
     assert_eq!(
@@ -863,6 +1047,10 @@ fn rt_04() {
             "const PLANTED: &str = concat!(\"public def LexLean\", \"Models.Sound1 : Prop := True\");\n",
         ),
         (
+            "literals joined by +",
+            "fn planted() -> String {\n    String::from(\"namespace LexLeanRuntime\\n\") + \"public def x : Nat := 0\\n\"\n}\n",
+        ),
+        (
             "an array of lines",
             "const PLANTED: [&str; 2] = [\"namespace LexLeanRuntime\", \"public def x : Nat := 0\"];\n",
         ),
@@ -873,6 +1061,26 @@ fn rt_04() {
         (
             "a literal continued over lines",
             "const PLANTED: &str = \"namespace LexLeanModels\\n\\\n    public def Sound1 : Prop := True\\n\";\n",
+        ),
+        (
+            "a struct with a #[cfg(test)] field followed by a runtime text",
+            "struct S {\n    #[cfg(test)]\n    a: u8,\n    b: u8,\n}\nconst PLANTED: &str = \"public def LexLeanRuntime.x : Nat := 0\";\n",
+        ),
+        (
+            "an enum with a #[cfg(test)] variant followed by a runtime text",
+            "enum E {\n    #[cfg(test)]\n    A,\n    B,\n}\nconst PLANTED: &str = \"public def LexLeanRuntime.x : Nat := 0\";\n",
+        ),
+        (
+            "a function with a #[cfg(test)] parameter followed by a runtime text",
+            "fn f(#[cfg(test)] a: u8, b: u8) -> u8 {\n    b\n}\nconst PLANTED: &str = \"public def LexLeanRuntime.x : Nat := 0\";\n",
+        ),
+        (
+            "a match arm after a #[cfg(test)] arm holding a runtime text",
+            "fn m(x: u8) -> &'static str {\n    match x {\n        #[cfg(test)]\n        0 => \"\",\n        _ => \"public def LexLeanRuntime.x : Nat := 0\",\n    }\n}\n",
+        ),
+        (
+            "an inline module with #![cfg(test)] followed by a runtime text",
+            "mod inline_tests {\n    #![cfg(test)]\n}\nconst PLANTED: &str = \"public def LexLeanRuntime.x : Nat := 0\";\n",
         ),
     ] {
         let planted = format!("{semantic}\n{plant}");
