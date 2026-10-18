@@ -1878,6 +1878,37 @@ definition{
 }
 
 definition{
+  name: blockC,
+  parameters: [st : St, cx : Cx, b : Expr, tail : Bool],
+  result: (Result St Bytes),
+  body: (match b
+    | Expr.ELit d0 d1 => (ctor Result.ok [St, Bytes] st)
+    | Expr.ERead d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
+    | Expr.EWrap d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
+    | Expr.ECall d0 d1 d2 d3 => (ctor Result.ok [St, Bytes] st)
+    | Expr.EApply d0 d1 d2 d3 => (ctor Result.ok [St, Bytes] st)
+    | Expr.EConstruct d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
+    | Expr.EPair d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
+    | Expr.EIf d0 d1 d2 d3 => (ctor Result.ok [St, Bytes] st)
+    | Expr.EMatch d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
+    | Expr.EBlockE d0 => (ctor Result.ok [St, Bytes] st)
+    | Expr.EProbe d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
+    | Expr.EBlock lets bodyTail => (let saved : (List Id) := (project st scope); (match (letsC st cx lets)
+      | Result.ok s1 => (match (exprC s1 cx bodyTail tail)
+      | Result.ok s2 => (ctor Result.ok [St, Bytes] (record St {bound := (project s2 bound), scope := saved, moved := (project s2 moved), parted := (project s2 parted), propagates := (project s2 propagates)}))
+      | Result.error problem33 => (ctor Result.error [St, Bytes] problem33))
+      | Result.error problem34 => (ctor Result.error [St, Bytes] problem34)))
+    | Expr.ENil => (ctor Result.ok [St, Bytes] st)
+    | Expr.ECons d0 d1 => (ctor Result.ok [St, Bytes] st)
+    | Expr.ELet d0 d1 d2 d3 d4 d5 => (ctor Result.ok [St, Bytes] st)
+    | Expr.EArm d0 d1 d2 => (ctor Result.ok [St, Bytes] st)),
+  axioms: [propext],
+  executable: true,
+  mutual: CheckExpr,
+  recursive_argument: b
+}
+
+definition{
   name: exprC,
   parameters: [st : St, cx : Cx, e : Expr, tail : Bool],
   result: (Result St Bytes),
@@ -2017,37 +2048,6 @@ definition{
   executable: true,
   mutual: CheckExpr,
   recursive_argument: e
-}
-
-definition{
-  name: blockC,
-  parameters: [st : St, cx : Cx, b : Expr, tail : Bool],
-  result: (Result St Bytes),
-  body: (match b
-    | Expr.ELit d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.ERead d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EWrap d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
-    | Expr.ECall d0 d1 d2 d3 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EApply d0 d1 d2 d3 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EConstruct d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EPair d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EIf d0 d1 d2 d3 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EMatch d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EBlockE d0 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EProbe d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EBlock lets bodyTail => (let saved : (List Id) := (project st scope); (match (letsC st cx lets)
-      | Result.ok s1 => (match (exprC s1 cx bodyTail tail)
-      | Result.ok s2 => (ctor Result.ok [St, Bytes] (record St {bound := (project s2 bound), scope := saved, moved := (project s2 moved), parted := (project s2 parted), propagates := (project s2 propagates)}))
-      | Result.error problem33 => (ctor Result.error [St, Bytes] problem33))
-      | Result.error problem34 => (ctor Result.error [St, Bytes] problem34)))
-    | Expr.ENil => (ctor Result.ok [St, Bytes] st)
-    | Expr.ECons d0 d1 => (ctor Result.ok [St, Bytes] st)
-    | Expr.ELet d0 d1 d2 d3 d4 d5 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EArm d0 d1 d2 => (ctor Result.ok [St, Bytes] st)),
-  axioms: [propext],
-  executable: true,
-  mutual: CheckExpr,
-  recursive_argument: b
 }
 
 definition{
@@ -2213,6 +2213,34 @@ definition{
 }
 
 definition{
+  name: applyBlock,
+  parameters: [types : (List (Id * Nat)), decl : Decl, b : Expr, tail : Bool],
+  result: (Result (List (Id * Nat)) Bytes),
+  body: (match b
+    | Expr.ELit d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.ERead d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.EWrap d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.ECall d0 d1 d2 d3 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.EApply d0 d1 d2 d3 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.EConstruct d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.EPair d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.EIf d0 d1 d2 d3 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.EMatch d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.EBlockE d0 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.EProbe d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.EBlock lets bodyTail => (match (applyLets types decl lets)
+      | Result.ok t1 => (applyExpr t1 decl bodyTail tail)
+      | Result.error problem45 => (ctor Result.error [(List (Id * Nat)), Bytes] problem45))
+    | Expr.ENil => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.ECons d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.ELet d0 d1 d2 d3 d4 d5 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.EArm d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)),
+  executable: true,
+  mutual: ApplyTypes,
+  recursive_argument: b
+}
+
+definition{
   name: applyExpr,
   parameters: [types : (List (Id * Nat)), decl : Decl, e : Expr, tail : Bool],
   result: (Result (List (Id * Nat)) Bytes),
@@ -2252,34 +2280,6 @@ definition{
   executable: true,
   mutual: ApplyTypes,
   recursive_argument: e
-}
-
-definition{
-  name: applyBlock,
-  parameters: [types : (List (Id * Nat)), decl : Decl, b : Expr, tail : Bool],
-  result: (Result (List (Id * Nat)) Bytes),
-  body: (match b
-    | Expr.ELit d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.ERead d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EWrap d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.ECall d0 d1 d2 d3 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EApply d0 d1 d2 d3 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EConstruct d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EPair d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EIf d0 d1 d2 d3 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EMatch d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EBlockE d0 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EProbe d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EBlock lets bodyTail => (match (applyLets types decl lets)
-      | Result.ok t1 => (applyExpr t1 decl bodyTail tail)
-      | Result.error problem45 => (ctor Result.error [(List (Id * Nat)), Bytes] problem45))
-    | Expr.ENil => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.ECons d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.ELet d0 d1 d2 d3 d4 d5 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EArm d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)),
-  executable: true,
-  mutual: ApplyTypes,
-  recursive_argument: b
 }
 
 definition{
