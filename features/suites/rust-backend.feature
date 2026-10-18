@@ -62,3 +62,27 @@ Feature: rust-backend
     Given the runtime text of both profiles, its library table, and its primitives
     When the text is scanned for every name it imports, calls, or writes as a path, a macro, or a type, and the scan is repeated with a library function added to the text, a row removed, a row the text does not use added, a row citing a name that is not a primitive, and a primitive no row cites
     Then every name the runtime uses is a row and every row is used, and each planted text or table is refused naming what it broke
+
+  @RB-10 @build
+  Scenario: The scaffolding of a Rust package is data and not renderer text: the edition, whether the crate is published, the lint gates, and every allowed lint with its Clippy group and reason are read from the language-1.2 semantic module `RustPackage`, `#![no_std]` is the production target row's `allocation = false`, and `#![forbid(lint)]` restates each gate on rustc's lints at `forbid`; a renderer source holding a string of the module, a module that is not the shape the reader accepts, and a `Cargo.toml` or crate header that differs from the module are refused.
+    Given the scaffold module, the production registry, and the sources of the renderer
+    When the module is decoded, every package of both profiles is rendered, the renderer's files are scanned for the module's strings, and the scan and the decoder are repeated with a manifest constant, a lint table, and a header constant added to a renderer file, and with the module's declarations, vocabulary, and bodies altered
+    Then the module decodes, `Cargo.toml` and the crate header are what the module and the registry give, no renderer file holds a string of the module, and each planted source or module is refused naming what it broke
+
+  @RB-11 @build
+  Scenario: Every lint a package allows states its Clippy group, none is in the `correctness` group, the module states the same as a theorem over the same list, which the reader checks by its shape and the module's project type-checks (`verify` replays its proof, this row does not), and the table of SPEC.md §17.16 equals the module's rows; an allowed lint in `correctness`, a specified row the module lacks, a module row the specification lacks, and a module without the theorem are refused.
+    Given the scaffold module and the lint table of the specification
+    When the module's rows are compared with the table, and the comparison and the decoder are repeated with a lint moved to `correctness`, a row dropped from each side, a row's group or reason changed, and the theorem removed or weakened, and the module's project is locked and checked
+    Then the rows equal the table in order, no row is in `correctness`, the project checks, and each planted module or table is refused naming the row or the theorem
+
+  @RB-12 @build
+  Scenario: The language-1.2 compiler-semantics ID covers the package scaffold: changing a lint row, the edition, or a gate of a copy of the embedded tree changes it, writing the module in its data form or reformatting its notation does not, and the module is outside the identities of languages 1.0 and 1.1.
+    Given the embedded tree and the files that §21.2 lists as introduced for language 1.2
+    When the identities of the three languages are recomputed over the tree and over copies with a lint row, the edition, and a gate of the scaffold module changed, with the module written as data, and with its notation reformatted
+    Then the recomputation of the unchanged tree equals each embedded identity, the language-1.2 identity differs for each changed copy and is equal for the rewritten ones, and the identities of languages 1.0 and 1.1 are equal for every copy
+
+  @RB-13 @build
+  Scenario: A package states the effects of its realization: `package.json` and `provenance.json` record them, ascending and registered, the production registry says that exhausting the stack aborts the process, and an unregistered or unordered list, or one that states allocation on `rust-core`, is refused.
+    Given a recursive program, an overflowing program, and a plain program, each in both profiles
+    When each is rendered with the effects its program shows, its provenance is read against the schema, and the render is repeated with an unregistered effect, an unordered list, and allocation on `rust-core`
+    Then each rendering's provenance states exactly the manifest's effects, the registry's recursion statement says the process aborts, and each planted manifest is refused as LLB6005 naming the effect

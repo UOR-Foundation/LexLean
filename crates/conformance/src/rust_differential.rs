@@ -683,7 +683,9 @@ pub fn manifest(differential: &Differential, profile: Profile) -> Manifest {
             })
             .collect(),
         sources: Vec::new(),
+        effects: Vec::new(),
     }
+    .showing_effects()
 }
 
 /// The observable outcome the denotation gives every run of `differential`,

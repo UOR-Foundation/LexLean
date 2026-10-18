@@ -12,7 +12,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
 
-use super::super::{Program, Ty};
+use super::super::{Expr as Term, Program, Ty};
 use super::ast::{self, Block, Callee, Expr, Ident, ItemDef, Lit, Origin, Pat, Type};
 use super::lower::{index, Lowering};
 use super::runtime::{self, Item};
@@ -21,6 +21,12 @@ use crate::artifact::content_id::Sha256Digest;
 
 /// The schema tag of a package manifest.
 pub const MANIFEST_SPEC: &str = "lexlean/rust-package/1";
+
+/// Where a package keeps its library: the path its `Cargo.toml` names and
+/// the file the renderer writes, one fact of the package's layout and not a
+/// free parameter of the scaffold (a path that differed would be a crate
+/// that does not build).
+pub const LIBRARY_PATH: &str = "src/lib.rs";
 
 /// The schema tag of a package's provenance.
 pub const PROVENANCE_SPEC: &str = "lexlean/rust-provenance/1";
@@ -82,6 +88,18 @@ pub struct Manifest {
     /// and records them; that they name the build stating the program is
     /// checked against the verified build (§17.16).
     pub sources: Vec<String>,
+    /// The effects (§17.13) the package states of itself, strictly ascending:
+    /// for a package a production root exports, the set eligibility requires
+    /// of the root on the profile; for a fixture, those its program shows
+    /// ([`shown_effects`]), never `allocation`. They are not the effects the
+    /// realization can exhibit (issue 105): an entry's argument check recurses
+    /// over a recursive argument type and the graph templates' `nat_add` fuel
+    /// bound can overflow, and neither is required of a root. A host that runs
+    /// a package whose effects include `recursion` gives it a stack its
+    /// input-dependent depth fits. The renderer checks the form (registered,
+    /// ascending) and that `rust-core` states no `allocation`; it does not
+    /// derive the list.
+    pub effects: Vec<String>,
 }
 
 /// A rendered package: its files by path.
@@ -246,7 +264,115 @@ pub fn holds_function(program: &Program, ty: &Ty) -> bool {
     walk(program, ty, &mut BTreeSet::new())
 }
 
+/// The functions an expression calls or builds a closure of.
+fn reaches(expr: &Term, out: &mut BTreeSet<u64>) {
+    let children: Vec<&Term> = match expr {
+        Term::Value { .. } | Term::Var { .. } => Vec::new(),
+        Term::Let { bound, body, .. } => vec![bound, body],
+        Term::Cond {
+            condition,
+            then_branch,
+            else_branch,
+        } => vec![condition, then_branch, else_branch],
+        Term::Match {
+            scrutinee, arms, ..
+        } => std::iter::once(scrutinee.as_ref())
+            .chain(arms.iter().map(|arm| &arm.body))
+            .collect(),
+        Term::Build { operands, .. } | Term::Prim { operands, .. } => operands.iter().collect(),
+        Term::Call { function, operands } => {
+            out.insert(*function);
+            operands.iter().collect()
+        }
+        Term::Closure { function, captures } => {
+            out.insert(*function);
+            captures.iter().collect()
+        }
+        Term::Apply { target, operands } => {
+            std::iter::once(target.as_ref()).chain(operands).collect()
+        }
+        Term::First { value } | Term::Second { value } | Term::Field { value, .. } => {
+            vec![value]
+        }
+    };
+    for child in children {
+        reaches(child, out);
+    }
+}
+
+/// Whether some function of `program` reaches itself through calls and
+/// closures: the recursion a package shows of itself.
+fn recurs(program: &Program) -> bool {
+    let edges: Vec<BTreeSet<u64>> = program
+        .functions
+        .iter()
+        .map(|function| {
+            let mut out = BTreeSet::new();
+            reaches(&function.body, &mut out);
+            out
+        })
+        .collect();
+    // Colors: 0 unseen, 1 on the path, 2 finished. The path is an explicit
+    // stack, so a long chain of functions does not deepen the call stack.
+    let mut color = vec![0u8; edges.len()];
+    for root in 0..edges.len() {
+        if color[root] != 0 {
+            continue;
+        }
+        let mut path = vec![(root, edges[root].iter().copied().collect::<Vec<_>>())];
+        color[root] = 1;
+        while let Some((node, pending)) = path.last_mut() {
+            let node = *node;
+            match pending.pop() {
+                None => {
+                    color[node] = 2;
+                    path.pop();
+                }
+                Some(next) => match usize::try_from(next).ok().filter(|at| *at < edges.len()) {
+                    None => {}
+                    Some(at) if color[at] == 1 => return true,
+                    Some(at) if color[at] == 0 => {
+                        color[at] = 1;
+                        path.push((at, edges[at].iter().copied().collect()));
+                    }
+                    Some(_) => {}
+                },
+            }
+        }
+    }
+    false
+}
+
+/// The effects a package's own program shows of itself, ascending: what a
+/// package that no production root exports states of itself. It is not a
+/// check on a root's effects, and finer than them: it sees the argument check
+/// a root's entry carries recurse over a recursive type, and the graph
+/// templates' `nat_add` fuel bound overflow, neither of which the root's
+/// eligibility reports. The program is a canonical one.
+#[must_use]
+pub fn shown_effects(program: &Program, exports: &[Export]) -> Vec<String> {
+    let mut out = BTreeSet::new();
+    if exports
+        .iter()
+        .any(|export| export.errors == Errors::Overflow)
+    {
+        out.insert("overflow".to_owned());
+    }
+    if recurs(program) {
+        out.insert("recursion".to_owned());
+    }
+    out.into_iter().collect()
+}
+
 impl Manifest {
+    /// The manifest with `effects` those its program shows of itself
+    /// ([`shown_effects`]), for a package no production root exports.
+    #[must_use]
+    pub fn showing_effects(mut self) -> Self {
+        self.effects = shown_effects(&self.program, &self.exports);
+        self
+    }
+
     /// Read a manifest from JSON.
     ///
     /// # Errors
@@ -396,63 +522,51 @@ fn sha256(bytes: &[u8]) -> String {
     Sha256Digest::of(bytes).to_hex()
 }
 
-/// The Clippy lints of the default set a package allows, each with the
-/// reason its advice would make the rendering depart from the calculus
-/// (SPEC.md §17.16): every other lint of the default set is denied.
-pub const ALLOWED_LINTS: &[(&str, &str)] = &[
-    (
-        "type_complexity",
-        "asks for a type alias: a generated type is exactly its calculus type, and an alias is a name with no calculus counterpart",
-    ),
-    (
-        "too_many_arguments",
-        "asks to group parameters into a struct: a function takes exactly its calculus parameters, and the struct is a type with no calculus counterpart",
-    ),
-    (
-        "large_enum_variant",
-        "asks to box a large variant: boxing changes the representation and allocates, which rust-core cannot and the calculus does not",
-    ),
-    (
-        "result_large_err",
-        "asks to box a large error: boxing changes the representation and allocates, which rust-core cannot and the calculus does not",
-    ),
-    (
-        "result_unit_err",
-        "asks for an error type in place of unit: a function returns exactly its calculus result type, and the error type has no calculus counterpart",
-    ),
-    (
-        "single_match",
-        "asks for `if let` or `if` in place of a match with an empty arm: every calculus match states an arm for every shape, and `if let` leaves one implicit",
-    ),
-    (
-        "manual_unwrap_or",
-        "asks for a library combinator in place of the program's own match: the combinator is outside the closed runtime",
-    ),
-    (
-        "manual_unwrap_or_default",
-        "asks for a library combinator in place of the program's own match: the combinator is outside the closed runtime",
-    ),
-    (
-        "manual_map",
-        "asks for `Option::map` and a Rust closure in place of the program's own match: a calculus closure is defunctionalized, never a Rust closure",
-    ),
-    (
-        "manual_ok_err",
-        "asks for a library combinator in place of the program's own match: the combinator is outside the closed runtime",
-    ),
-];
+/// The Cargo manifest of a package, printed over the scaffold record
+/// ([`super::scaffold`]): rustc's warnings and every Clippy lint of the
+/// default set are denied, except the record's allowed lints. This is a
+/// printer for Cargo's tables; every value it prints is the record's.
+fn cargo_toml(manifest: &Manifest) -> Result<String, String> {
+    Ok(cargo_toml_of(
+        super::scaffold::get()?,
+        &manifest.name,
+        &manifest.version,
+    ))
+}
 
-/// The Cargo manifest of a package. Its lint table is the package's lint
-/// gate: rustc's warnings and every Clippy lint of the default set are
-/// denied, except [`ALLOWED_LINTS`].
-fn cargo_toml(manifest: &Manifest) -> String {
+/// The Cargo manifest a package named `name` at `version` has under
+/// `scaffold`.
+#[must_use]
+pub fn cargo_toml_of(scaffold: &super::scaffold::Scaffold, name: &str, version: &str) -> String {
+    let gate = |gate: &super::scaffold::Gate| {
+        if gate.priority == 0 {
+            format!("{} = \"{}\"\n", gate.lint, gate.level.as_str())
+        } else {
+            format!(
+                "{} = {{ level = \"{}\", priority = {} }}\n",
+                gate.lint,
+                gate.level.as_str(),
+                gate.priority
+            )
+        }
+    };
     let mut out = format!(
-        "[package]\nname = \"{}\"\nversion = \"{}\"\nedition = \"2021\"\npublish = false\n\n[lib]\npath = \"src/lib.rs\"\n\n[lints.rust]\nunsafe_code = \"forbid\"\nwarnings = \"deny\"\n\n[lints.clippy]\nall = {{ level = \"deny\", priority = -1 }}\n",
-        manifest.name, manifest.version
+        "[package]\nname = \"{}\"\nversion = \"{}\"\nedition = \"{}\"\npublish = {}\n\n[lib]\npath = \"{}\"\n\n[lints.rust]\n",
+        name, version, scaffold.edition, scaffold.publish, LIBRARY_PATH
     );
-    for (lint, _) in ALLOWED_LINTS {
-        out.push_str(lint);
-        out.push_str(" = \"allow\"\n");
+    for rustc in &scaffold.rustc {
+        out.push_str(&gate(rustc));
+    }
+    out.push_str("\n[lints.clippy]\n");
+    for clippy in &scaffold.clippy {
+        out.push_str(&gate(clippy));
+    }
+    for row in &scaffold.allowed {
+        out.push_str(&gate(&super::scaffold::Gate {
+            lint: row.lint.clone(),
+            level: super::scaffold::Level::Allow,
+            priority: 0,
+        }));
     }
     out
 }
@@ -507,6 +621,20 @@ pub fn lower(manifest: &Manifest) -> Result<(ast::Crate, Program, Profile), Stri
     if manifest.sources.windows(2).any(|pair| pair[0] >= pair[1]) {
         return fail("sources are strictly ascending");
     }
+    let registry = crate::production::registry()?;
+    if let Some(unknown) = manifest
+        .effects
+        .iter()
+        .find(|effect| !registry.effects.contains_key(effect.as_str()))
+    {
+        return fail(format!("`{unknown}` is not a registered effect"));
+    }
+    if manifest.effects.windows(2).any(|pair| pair[0] >= pair[1]) {
+        return fail("effects are strictly ascending");
+    }
+    if profile == Profile::Core && manifest.effects.iter().any(|effect| effect == "allocation") {
+        return fail("hidden allocation: a rust-core package states the effect `allocation`");
+    }
     let program = manifest.program.canonical()?;
     let mut lowering = Lowering::new(&program, profile).map_err(|reason| {
         if reason.contains("requires heap allocation") {
@@ -540,8 +668,8 @@ pub fn lower(manifest: &Manifest) -> Result<(ast::Crate, Program, Profile), Stri
 /// needs heap allocation its profile does not provide.
 pub fn package(manifest: &Manifest) -> Result<Package, String> {
     let (krate, program, profile) = lower(manifest)?;
-    let library = ast::print(&krate).into_bytes();
-    let cargo = cargo_toml(manifest).into_bytes();
+    let library = ast::print(&krate)?.into_bytes();
+    let cargo = cargo_toml(manifest)?.into_bytes();
     let runtime = match profile {
         Profile::Core => runtime::CORE.to_owned(),
         Profile::Std => format!("{}{}", runtime::CORE, runtime::STD),
@@ -555,13 +683,14 @@ pub fn package(manifest: &Manifest) -> Result<Package, String> {
         "compiler_semantics": crate::compiler_semantics_id_for(crate::LANGUAGE_1_2).to_hex(),
         "runtime": sha256(runtime.as_bytes()),
         "sources": manifest.sources,
+        "effects": manifest.effects,
         "exports": manifest.exports.iter().map(|export| serde_json::json!({
             "name": export.name,
             "function": export.function,
         })).collect::<Vec<_>>(),
         "files": {
             "Cargo.toml": sha256(&cargo),
-            "src/lib.rs": sha256(&library),
+            (LIBRARY_PATH): sha256(&library),
         },
     });
     let provenance =
@@ -570,7 +699,7 @@ pub fn package(manifest: &Manifest) -> Result<Package, String> {
             .to_file_bytes();
     let mut files = BTreeMap::new();
     files.insert("Cargo.toml".to_owned(), cargo);
-    files.insert("src/lib.rs".to_owned(), library);
+    files.insert(LIBRARY_PATH.to_owned(), library);
     files.insert("provenance.json".to_owned(), provenance);
     Ok(Package { files })
 }

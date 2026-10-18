@@ -187,4 +187,270 @@
 \noindent Type: \texttt{Option (String)}.\par
 \noindent Definition: \texttt{(LexLeanRuntime.index (digitNames) (digit) : Option (String))}.\par
 \noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{Dyadic}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{sign}: \texttt{Nat}.\par
+\noindent Field \texttt{mantissa}: \texttt{Int}.\par
+\noindent Field \texttt{exponent}: \texttt{Int}.\par
+\subsection*{\texttt{dyadicTriple}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : Option (Dyadic))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option ((Prod (Nat) ((Prod (Int) (Int)))))}.\par
+\noindent Definition: \texttt{(match value with | Option.none => Option.none | Option.some d => Option.some (((d).sign, ((d).mantissa, (d).exponent))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{DyadicMatches}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(observed : Option (Dyadic)) (sign : Nat) (mantissa : Int) (exponent : Int)}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(dyadicTriple (observed) = Option.some ((sign, (mantissa, exponent))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{byteToInt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(b : UInt8)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Int}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.subtract ((if (LexLeanRuntime.equal ((LexLeanRuntime.bitAnd (b) ((1 : UInt8)) : UInt8)) ((0 : UInt8)) : Bool) then (0 : Int) else (1 : Int))) ((LexLeanRuntime.negate ((LexLeanRuntime.subtract ((if (LexLeanRuntime.equal ((LexLeanRuntime.bitAnd (b) ((2 : UInt8)) : UInt8)) ((0 : UInt8)) : Bool) then (0 : Int) else (2 : Int))) ((LexLeanRuntime.negate ((LexLeanRuntime.subtract ((if (LexLeanRuntime.equal ((LexLeanRuntime.bitAnd (b) ((4 : UInt8)) : UInt8)) ((0 : UInt8)) : Bool) then (0 : Int) else (4 : Int))) ((LexLeanRuntime.negate ((LexLeanRuntime.subtract ((if (LexLeanRuntime.equal ((LexLeanRuntime.bitAnd (b) ((8 : UInt8)) : UInt8)) ((0 : UInt8)) : Bool) then (0 : Int) else (8 : Int))) ((LexLeanRuntime.negate ((LexLeanRuntime.subtract ((if (LexLeanRuntime.equal ((LexLeanRuntime.bitAnd (b) ((16 : UInt8)) : UInt8)) ((0 : UInt8)) : Bool) then (0 : Int) else (16 : Int))) ((LexLeanRuntime.negate ((LexLeanRuntime.subtract ((if (LexLeanRuntime.equal ((LexLeanRuntime.bitAnd (b) ((32 : UInt8)) : UInt8)) ((0 : UInt8)) : Bool) then (0 : Int) else (32 : Int))) ((LexLeanRuntime.negate ((LexLeanRuntime.subtract ((if (LexLeanRuntime.equal ((LexLeanRuntime.bitAnd (b) ((64 : UInt8)) : UInt8)) ((0 : UInt8)) : Bool) then (0 : Int) else (64 : Int))) ((LexLeanRuntime.negate ((if (LexLeanRuntime.equal ((LexLeanRuntime.bitAnd (b) ((128 : UInt8)) : UInt8)) ((0 : UInt8)) : Bool) then (0 : Int) else (128 : Int))) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{decodeBinary32}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(bits : Int)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Dyadic)}.\par
+\noindent Definition: \texttt{(if ((LexLeanCollections.lessThan (bits) ((0 : Int)) : Bool) || (LexLeanCollections.lessThan ((4294967295 : Int)) (bits) : Bool)) then Option.none else (let signBit : Int := (LexLeanRuntime.quotient (bits) ((2147483648 : Int)) ((0 : Int)) : Int); (let sign : Nat := (if (LexLeanCollections.lessThan ((0 : Int)) (signBit) : Bool) then 1 else 0); (let rest : Int := (LexLeanRuntime.remainder (bits) ((2147483648 : Int)) ((0 : Int)) : Int); (let biased : Int := (LexLeanRuntime.quotient (rest) ((8388608 : Int)) ((0 : Int)) : Int); (let fraction : Int := (LexLeanRuntime.remainder (rest) ((8388608 : Int)) ((0 : Int)) : Int); (if (!(LexLeanCollections.lessThan (biased) ((255 : Int)) : Bool)) then Option.none else (if (!(LexLeanCollections.lessThan ((0 : Int)) (biased) : Bool)) then Option.some ((\{ sign := sign, mantissa := fraction, exponent := (-149 : Int) \} : Dyadic)) else Option.some ((\{ sign := sign, mantissa := (LexLeanRuntime.subtract ((8388608 : Int)) ((LexLeanRuntime.negate (fraction) : Int)) : Int), exponent := (LexLeanRuntime.subtract (biased) ((150 : Int)) : Int) \} : Dyadic))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{decodeBinary64}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(bits : Int)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Dyadic)}.\par
+\noindent Definition: \texttt{(if (LexLeanCollections.lessThan (bits) ((0 : Int)) : Bool) then (let rest : Int := (LexLeanRuntime.subtract ((LexLeanRuntime.subtract (bits) ((-4611686018427387904 : Int)) : Int)) ((-4611686018427387904 : Int)) : Int); (if (LexLeanCollections.lessThan (rest) ((0 : Int)) : Bool) then Option.none else (let biased : Int := (LexLeanRuntime.quotient (rest) ((4503599627370496 : Int)) ((0 : Int)) : Int); (let fraction : Int := (LexLeanRuntime.remainder (rest) ((4503599627370496 : Int)) ((0 : Int)) : Int); (if (!(LexLeanCollections.lessThan (biased) ((2047 : Int)) : Bool)) then Option.none else (if (!(LexLeanCollections.lessThan ((0 : Int)) (biased) : Bool)) then Option.some ((\{ sign := 1, mantissa := fraction, exponent := (-1074 : Int) \} : Dyadic)) else Option.some ((\{ sign := 1, mantissa := (LexLeanRuntime.subtract ((4503599627370496 : Int)) ((LexLeanRuntime.negate (fraction) : Int)) : Int), exponent := (LexLeanRuntime.subtract (biased) ((1075 : Int)) : Int) \} : Dyadic)))))))) else (let q0 : Int := (LexLeanRuntime.quotient (bits) ((4503599627370496 : Int)) ((0 : Int)) : Int); (if (!(LexLeanCollections.lessThan ((2047 : Int)) (q0) : Bool)) then (let fraction : Int := (LexLeanRuntime.remainder (bits) ((4503599627370496 : Int)) ((0 : Int)) : Int); (if (!(LexLeanCollections.lessThan (q0) ((2047 : Int)) : Bool)) then Option.none else (if (!(LexLeanCollections.lessThan ((0 : Int)) (q0) : Bool)) then Option.some ((\{ sign := 0, mantissa := fraction, exponent := (-1074 : Int) \} : Dyadic)) else Option.some ((\{ sign := 0, mantissa := (LexLeanRuntime.subtract ((4503599627370496 : Int)) ((LexLeanRuntime.negate (fraction) : Int)) : Int), exponent := (LexLeanRuntime.subtract (q0) ((1075 : Int)) : Int) \} : Dyadic))))) else (let rest : Int := (LexLeanRuntime.subtract ((LexLeanRuntime.subtract (bits) ((4611686018427387904 : Int)) : Int)) ((4611686018427387904 : Int)) : Int); (let biased : Int := (LexLeanRuntime.quotient (rest) ((4503599627370496 : Int)) ((0 : Int)) : Int); (if (!(LexLeanCollections.lessThan (biased) ((2047 : Int)) : Bool)) then Option.none else (let fraction : Int := (LexLeanRuntime.remainder (rest) ((4503599627370496 : Int)) ((0 : Int)) : Int); (if (!(LexLeanCollections.lessThan ((0 : Int)) (biased) : Bool)) then Option.some ((\{ sign := 1, mantissa := fraction, exponent := (-1074 : Int) \} : Dyadic)) else Option.some ((\{ sign := 1, mantissa := (LexLeanRuntime.subtract ((4503599627370496 : Int)) ((LexLeanRuntime.negate (fraction) : Int)) : Int), exponent := (LexLeanRuntime.subtract (biased) ((1075 : Int)) : Int) \} : Dyadic))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{decodeBinary32Bytes}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(bytes : ByteArray) (offset : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Dyadic)}.\par
+\noindent Definition: \texttt{(match (LexLeanRuntime.index (bytes) (offset) : Option (UInt8)) with | Option.none => Option.none | Option.some b0 => (match (LexLeanRuntime.index (bytes) ((offset + 1)) : Option (UInt8)) with | Option.none => Option.none | Option.some b1 => (match (LexLeanRuntime.index (bytes) ((offset + 2)) : Option (UInt8)) with | Option.none => Option.none | Option.some b2 => (match (LexLeanRuntime.index (bytes) ((offset + 3)) : Option (UInt8)) with | Option.none => Option.none | Option.some b3 => decodeBinary32 ((LexLeanRuntime.subtract (byteToInt (b0)) ((LexLeanRuntime.negate ((LexLeanRuntime.subtract ((LexLeanRuntime.multiply ((256 : Int)) (byteToInt (b1)) : Int)) ((LexLeanRuntime.negate ((LexLeanRuntime.subtract ((LexLeanRuntime.multiply ((65536 : Int)) (byteToInt (b2)) : Int)) ((LexLeanRuntime.negate ((LexLeanRuntime.multiply ((16777216 : Int)) (byteToInt (b3)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{decodeBinary64Bytes}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(bytes : ByteArray) (offset : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Dyadic)}.\par
+\noindent Definition: \texttt{(match (LexLeanRuntime.index (bytes) (offset) : Option (UInt8)) with | Option.none => Option.none | Option.some b0 => (match (LexLeanRuntime.index (bytes) ((offset + 1)) : Option (UInt8)) with | Option.none => Option.none | Option.some b1 => (match (LexLeanRuntime.index (bytes) ((offset + 2)) : Option (UInt8)) with | Option.none => Option.none | Option.some b2 => (match (LexLeanRuntime.index (bytes) ((offset + 3)) : Option (UInt8)) with | Option.none => Option.none | Option.some b3 => (match (LexLeanRuntime.index (bytes) ((offset + 4)) : Option (UInt8)) with | Option.none => Option.none | Option.some b4 => (match (LexLeanRuntime.index (bytes) ((offset + 5)) : Option (UInt8)) with | Option.none => Option.none | Option.some b5 => (match (LexLeanRuntime.index (bytes) ((offset + 6)) : Option (UInt8)) with | Option.none => Option.none | Option.some b6 => (match (LexLeanRuntime.index (bytes) ((offset + 7)) : Option (UInt8)) with | Option.none => Option.none | Option.some b7 => (let v7 : Int := byteToInt (b7); (let low7 : Int := (if (LexLeanCollections.lessThan (v7) ((128 : Int)) : Bool) then v7 else (LexLeanRuntime.subtract (v7) ((128 : Int)) : Int)); (let low63 : Int := (LexLeanRuntime.subtract (byteToInt (b0)) ((LexLeanRuntime.negate ((LexLeanRuntime.subtract ((LexLeanRuntime.multiply ((256 : Int)) (byteToInt (b1)) : Int)) ((LexLeanRuntime.negate ((LexLeanRuntime.subtract ((LexLeanRuntime.multiply ((65536 : Int)) (byteToInt (b2)) : Int)) ((LexLeanRuntime.negate ((LexLeanRuntime.subtract ((LexLeanRuntime.multiply ((16777216 : Int)) (byteToInt (b3)) : Int)) ((LexLeanRuntime.negate ((LexLeanRuntime.subtract ((LexLeanRuntime.multiply ((4294967296 : Int)) (byteToInt (b4)) : Int)) ((LexLeanRuntime.negate ((LexLeanRuntime.subtract ((LexLeanRuntime.multiply ((1099511627776 : Int)) (byteToInt (b5)) : Int)) ((LexLeanRuntime.negate ((LexLeanRuntime.subtract ((LexLeanRuntime.multiply ((281474976710656 : Int)) (byteToInt (b6)) : Int)) ((LexLeanRuntime.negate ((LexLeanRuntime.multiply ((72057594037927936 : Int)) (low7) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int)) : Int); (let signedBits : Int := (if (LexLeanCollections.lessThan (v7) ((128 : Int)) : Bool) then low63 else (LexLeanRuntime.subtract ((LexLeanRuntime.subtract (low63) ((4611686018427387904 : Int)) : Int)) ((4611686018427387904 : Int)) : Int)); decodeBinary64 (signedBits)))))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{dyadicMul}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(a : Dyadic) (b : Dyadic)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Dyadic}.\par
+\noindent Definition: \texttt{(\{ sign := (if (Nat.beq ((a).sign) ((b).sign)) then 0 else 1), mantissa := (LexLeanRuntime.multiply ((a).mantissa) ((b).mantissa) : Int), exponent := (LexLeanRuntime.subtract ((a).exponent) ((LexLeanRuntime.negate ((b).exponent) : Int)) : Int) \} : Dyadic)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{dyadicRoundShift}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(d : Dyadic) (shift : Int)}.\par
+\noindent Closure 1: binds \texttt{(st)}, captures \texttt{()}.\par
+\noindent Closure 2: binds \texttt{(st)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Int}.\par
+\noindent Definition: \texttt{(if (!(LexLeanCollections.lessThan ((0 : Int)) ((d).mantissa) : Bool)) then (0 : Int) else (let k : Int := (LexLeanRuntime.subtract ((d).exponent) ((LexLeanRuntime.negate (shift) : Int)) : Int); (let mag : Int := (if (!(LexLeanCollections.lessThan (k) ((0 : Int)) : Bool)) then (((LexLeanCollections.iterateUntil ((fun (st : (Prod (Int) (Int))) => (if (!(LexLeanCollections.lessThan ((0 : Int)) ((st).1) : Bool)) then Option.none else Option.some (((LexLeanRuntime.subtract ((st).1) ((1 : Int)) : Int), (LexLeanRuntime.multiply ((2 : Int)) ((st).2) : Int)))))) (512) ((k, (d).mantissa)) : (Prod ((Prod (Int) (Int))) (Bool)))).1).2 else (let s : Int := (LexLeanRuntime.negate (k) : Int); (let stepped : (Prod (Int) (Int)) := (((LexLeanCollections.iterateUntil ((fun (st : (Prod (Int) ((Prod (Int) (Int))))) => (if (!(LexLeanCollections.lessThan ((0 : Int)) ((st).1) : Bool)) then Option.none else (let qs : (Prod (Int) (Int)) := (st).2; Option.some (((LexLeanRuntime.subtract ((st).1) ((1 : Int)) : Int), ((LexLeanRuntime.quotient ((qs).1) ((2 : Int)) ((0 : Int)) : Int), (if ((!(LexLeanCollections.lessThan ((0 : Int)) ((qs).2) : Bool)) \&\& (!(LexLeanCollections.lessThan ((0 : Int)) ((LexLeanRuntime.remainder ((qs).1) ((2 : Int)) ((0 : Int)) : Int)) : Bool))) then (0 : Int) else (1 : Int))))))))) (512) (((LexLeanRuntime.subtract (s) ((1 : Int)) : Int), ((d).mantissa, (0 : Int)))) : (Prod ((Prod (Int) ((Prod (Int) (Int))))) (Bool)))).1).2; (let half : Int := (stepped).1; (let sticky : Int := (stepped).2; (let baseMag : Int := (LexLeanRuntime.quotient (half) ((2 : Int)) ((0 : Int)) : Int); (let hb : Int := (LexLeanRuntime.remainder (half) ((2 : Int)) ((0 : Int)) : Int); (if (!(LexLeanCollections.lessThan ((0 : Int)) (hb) : Bool)) then baseMag else (if (LexLeanCollections.lessThan ((0 : Int)) (sticky) : Bool) then (LexLeanRuntime.subtract (baseMag) ((-1 : Int)) : Int) else (LexLeanRuntime.subtract (baseMag) ((LexLeanRuntime.negate ((LexLeanRuntime.remainder (baseMag) ((2 : Int)) ((0 : Int)) : Int)) : Int)) : Int)))))))))); (if (Nat.beq ((d).sign) (0)) then mag else (LexLeanRuntime.negate (mag) : Int)))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{dyadicRatioRound}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(a : Dyadic) (b : Dyadic) (c : Dyadic) (shift : Int)}.\par
+\noindent Closure 1: binds \texttt{(st)}, captures \texttt{(divisor)}.\par
+\noindent Closure 2: binds \texttt{(st)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Int)}.\par
+\noindent Definition: \texttt{(if (!(LexLeanCollections.lessThan ((0 : Int)) ((c).mantissa) : Bool)) then Option.none else (if ((!(LexLeanCollections.lessThan ((0 : Int)) ((a).mantissa) : Bool)) || (!(LexLeanCollections.lessThan ((0 : Int)) ((b).mantissa) : Bool))) then Option.some ((0 : Int)) else (let product : Int := (LexLeanRuntime.multiply ((a).mantissa) ((b).mantissa) : Int); (let divisor : Int := (c).mantissa; (let k : Int := (LexLeanRuntime.subtract ((LexLeanRuntime.subtract ((LexLeanRuntime.subtract ((a).exponent) ((LexLeanRuntime.negate ((b).exponent) : Int)) : Int)) ((c).exponent) : Int)) ((LexLeanRuntime.negate (shift) : Int)) : Int); (let abSign : Nat := (if (Nat.beq ((a).sign) ((b).sign)) then 0 else 1); (let outSign : Nat := (if (Nat.beq (abSign) ((c).sign)) then 0 else 1); (if (!(LexLeanCollections.lessThan (k) ((0 : Int)) : Bool)) then (let initQ : Int := (LexLeanRuntime.quotient (product) (divisor) ((0 : Int)) : Int); (let initR : Int := (LexLeanRuntime.remainder (product) (divisor) ((0 : Int)) : Int); (let stepped : (Prod ((Prod (Int) ((Prod (Int) (Int))))) (Bool)) := (LexLeanCollections.iterateUntil ((fun (st : (Prod (Int) ((Prod (Int) (Int))))) => (if (!(LexLeanCollections.lessThan ((0 : Int)) ((st).1) : Bool)) then Option.none else (let qr : (Prod (Int) (Int)) := (st).2; (let r2 : Int := (LexLeanRuntime.multiply ((2 : Int)) ((qr).2) : Int); (let dq : Int := (LexLeanRuntime.quotient (r2) (divisor) ((0 : Int)) : Int); (let nr : Int := (LexLeanRuntime.remainder (r2) (divisor) ((0 : Int)) : Int); Option.some (((LexLeanRuntime.subtract ((st).1) ((1 : Int)) : Int), ((LexLeanRuntime.subtract ((LexLeanRuntime.multiply ((2 : Int)) ((qr).1) : Int)) ((LexLeanRuntime.negate (dq) : Int)) : Int), nr)))))))))) (512) ((k, (initQ, initR))) : (Prod ((Prod (Int) ((Prod (Int) (Int))))) (Bool))); (if (stepped).2 then (let qr : (Prod (Int) (Int)) := ((stepped).1).2; (let q : Int := (qr).1; (let r : Int := (qr).2; (let twoR : Int := (LexLeanRuntime.multiply ((2 : Int)) (r) : Int); (let rounded : Int := (if (LexLeanCollections.lessThan (twoR) (divisor) : Bool) then q else (if (LexLeanCollections.lessThan (divisor) (twoR) : Bool) then (LexLeanRuntime.subtract (q) ((-1 : Int)) : Int) else (LexLeanRuntime.subtract (q) ((LexLeanRuntime.negate ((LexLeanRuntime.remainder (q) ((2 : Int)) ((0 : Int)) : Int)) : Int)) : Int))); Option.some ((if (Nat.beq (outSign) (0)) then rounded else (LexLeanRuntime.negate (rounded) : Int)))))))) else Option.none)))) else (let s : Int := (LexLeanRuntime.negate (k) : Int); (let initQ : Int := (LexLeanRuntime.quotient (product) (divisor) ((0 : Int)) : Int); (let initSticky : Int := (if (!(LexLeanCollections.lessThan ((0 : Int)) ((LexLeanRuntime.remainder (product) (divisor) ((0 : Int)) : Int)) : Bool)) then (0 : Int) else (1 : Int)); (let stepped : (Prod ((Prod (Int) ((Prod (Int) (Int))))) (Bool)) := (LexLeanCollections.iterateUntil ((fun (st : (Prod (Int) ((Prod (Int) (Int))))) => (if (!(LexLeanCollections.lessThan ((0 : Int)) ((st).1) : Bool)) then Option.none else (let qs : (Prod (Int) (Int)) := (st).2; Option.some (((LexLeanRuntime.subtract ((st).1) ((1 : Int)) : Int), ((LexLeanRuntime.quotient ((qs).1) ((2 : Int)) ((0 : Int)) : Int), (if ((!(LexLeanCollections.lessThan ((0 : Int)) ((qs).2) : Bool)) \&\& (!(LexLeanCollections.lessThan ((0 : Int)) ((LexLeanRuntime.remainder ((qs).1) ((2 : Int)) ((0 : Int)) : Int)) : Bool))) then (0 : Int) else (1 : Int))))))))) (512) (((LexLeanRuntime.subtract (s) ((1 : Int)) : Int), (initQ, initSticky))) : (Prod ((Prod (Int) ((Prod (Int) (Int))))) (Bool))); (if (stepped).2 then (let qs : (Prod (Int) (Int)) := ((stepped).1).2; (let half : Int := (qs).1; (let sticky : Int := (qs).2; (let q : Int := (LexLeanRuntime.quotient (half) ((2 : Int)) ((0 : Int)) : Int); (let hb : Int := (LexLeanRuntime.remainder (half) ((2 : Int)) ((0 : Int)) : Int); (let rounded : Int := (if (!(LexLeanCollections.lessThan ((0 : Int)) (hb) : Bool)) then q else (if (LexLeanCollections.lessThan ((0 : Int)) (sticky) : Bool) then (LexLeanRuntime.subtract (q) ((-1 : Int)) : Int) else (LexLeanRuntime.subtract (q) ((LexLeanRuntime.negate ((LexLeanRuntime.remainder (q) ((2 : Int)) ((0 : Int)) : Int)) : Int)) : Int))); Option.some ((if (Nat.beq (outSign) (0)) then rounded else (LexLeanRuntime.negate (rounded) : Int))))))))) else Option.none)))))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{scaleRatioRound32}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(aBits : Int) (bBits : Int) (cBits : Int)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Int)}.\par
+\noindent Definition: \texttt{(match decodeBinary32 (aBits) with | Option.none => Option.none | Option.some a => (match decodeBinary32 (bBits) with | Option.none => Option.none | Option.some b => (match decodeBinary32 (cBits) with | Option.none => Option.none | Option.some c => dyadicRatioRound (a) (b) (c) ((32 : Int)))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{scaleMultipliersRound32}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(inputScaleBits : Int) (weightScaleBits : List (Int)) (outputScaleBits : Int)}.\par
+\noindent Closure 1: binds \texttt{(acc, wBits)}, captures \texttt{(inputScaleBits, outputScaleBits)}.\par
+\noindent Closure 2: binds \texttt{(out, x)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (List (Int))}.\par
+\noindent Definition: \texttt{(let rev : Option (List (Int)) := (LexLeanCollections.listFold ((fun (acc : Option (List (Int))) (wBits : Int) => (match acc with | Option.none => Option.none | Option.some xs => (match scaleRatioRound32 (inputScaleBits) (wBits) (outputScaleBits) with | Option.none => Option.none | Option.some m => Option.some ((m :: xs)))))) (Option.some (([] : List (Int)))) (weightScaleBits) : Option (List (Int))); (match rev with | Option.none => Option.none | Option.some xs => Option.some ((LexLeanCollections.listFold ((fun (out : List (Int)) (x : Int) => (x :: out))) (([] : List (Int))) (xs) : List (Int)))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{binary32\_pos\_zero}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{DyadicMatches (decodeBinary32 ((0 : Int))) (0) ((0 : Int)) ((-149 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{binary32\_neg\_zero}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{DyadicMatches (decodeBinary32 ((2147483648 : Int))) (1) ((0 : Int)) ((-149 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{binary32\_min\_subnormal}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{DyadicMatches (decodeBinary32 ((1 : Int))) (0) ((1 : Int)) ((-149 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{binary32\_max\_subnormal}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{DyadicMatches (decodeBinary32 ((8388607 : Int))) (0) ((8388607 : Int)) ((-149 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{binary32\_min\_normal}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{DyadicMatches (decodeBinary32 ((8388608 : Int))) (0) ((8388608 : Int)) ((-149 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{binary32\_one}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{DyadicMatches (decodeBinary32 ((1065353216 : Int))) (0) ((8388608 : Int)) ((-23 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{binary32\_neg\_one\_half}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{DyadicMatches (decodeBinary32 ((3217031168 : Int))) (1) ((12582912 : Int)) ((-23 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{binary32\_unit\_scale}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{DyadicMatches (decodeBinary32 ((998277249 : Int))) (0) ((8421505 : Int)) ((-31 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{binary32\_max\_normal}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{DyadicMatches (decodeBinary32 ((2139095039 : Int))) (0) ((16777215 : Int)) ((104 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{binary32\_rejects\_pos\_inf}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(dyadicTriple (decodeBinary32 ((2139095040 : Int))) = Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{binary32\_rejects\_neg\_inf}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(dyadicTriple (decodeBinary32 ((4286578688 : Int))) = Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{binary32\_rejects\_nan}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(dyadicTriple (decodeBinary32 ((2143289344 : Int))) = Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{binary32\_rejects\_negative\_input}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(dyadicTriple (decodeBinary32 ((-1 : Int))) = Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{binary32\_rejects\_overflow\_input}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(dyadicTriple (decodeBinary32 ((4294967296 : Int))) = Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{binary32\_banner\_subnormal}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{DyadicMatches (decodeBinary32Bytes (banner) (0)) (0) ((5065804 : Int)) ((-149 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{binary32\_banner\_normal}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{DyadicMatches (decodeBinary32Bytes (banner) (1)) (0) ((8408396 : Int)) ((-148 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{binary64\_pos\_zero}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{DyadicMatches (decodeBinary64 ((0 : Int))) (0) ((0 : Int)) ((-1074 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{binary64\_neg\_zero}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{DyadicMatches (decodeBinary64 ((-9223372036854775808 : Int))) (1) ((0 : Int)) ((-1074 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{binary64\_max\_subnormal}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{DyadicMatches (decodeBinary64 ((4503599627370495 : Int))) (0) ((4503599627370495 : Int)) ((-1074 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{binary64\_min\_normal}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{DyadicMatches (decodeBinary64 ((4503599627370496 : Int))) (0) ((4503599627370496 : Int)) ((-1074 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{binary64\_min\_subnormal}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{DyadicMatches (decodeBinary64 ((1 : Int))) (0) ((1 : Int)) ((-1074 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{binary64\_one}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{DyadicMatches (decodeBinary64 ((4607182418800017408 : Int))) (0) ((4503599627370496 : Int)) ((-52 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{binary64\_neg\_one\_half}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{DyadicMatches (decodeBinary64 ((-4613937818241073152 : Int))) (1) ((6755399441055744 : Int)) ((-52 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{binary64\_max\_normal}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{DyadicMatches (decodeBinary64 ((9218868437227405311 : Int))) (0) ((9007199254740991 : Int)) ((971 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{binary64\_rejects\_pos\_inf}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(dyadicTriple (decodeBinary64 ((9218868437227405312 : Int))) = Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{binary64\_rejects\_neg\_inf}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(dyadicTriple (decodeBinary64 ((-4503599627370496 : Int))) = Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{binary64\_rejects\_nan}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(dyadicTriple (decodeBinary64 ((9221120237041090560 : Int))) = Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{binary64\_banner\_first}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{DyadicMatches (decodeBinary64Bytes ((LexLeanRuntime.append (banner) (banner) : ByteArray)) (0)) (0) ((7964866531642444 : Int)) ((161 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{binary64\_banner\_last}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{DyadicMatches (decodeBinary64Bytes ((LexLeanRuntime.append (banner) (banner) : ByteArray)) (2)) (0) ((4588589715357773 : Int)) ((-1059 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{dyadic\_round\_shift\_exact}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(dyadicRoundShift ((\{ sign := 0, mantissa := (8388608 : Int), exponent := (-150 : Int) \} : Dyadic)) ((150 : Int)) = (8388608 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{dyadic\_round\_shift\_tie\_even\_down}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(dyadicRoundShift ((\{ sign := 0, mantissa := (5 : Int), exponent := (-1 : Int) \} : Dyadic)) ((0 : Int)) = (2 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{dyadic\_round\_shift\_tie\_even\_up}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(dyadicRoundShift ((\{ sign := 0, mantissa := (7 : Int), exponent := (-1 : Int) \} : Dyadic)) ((0 : Int)) = (4 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{dyadic\_round\_shift\_negative\_tie\_even}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(dyadicRoundShift ((\{ sign := 1, mantissa := (7 : Int), exponent := (-1 : Int) \} : Dyadic)) ((0 : Int)) = (-4 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{scale\_ratio\_exact\_cancel}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(scaleRatioRound32 ((998277249 : Int)) ((1000593162 : Int)) ((1008981770 : Int)) = Option.some ((8421505 : Int)))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{scale\_ratio\_rounds\_up}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(scaleRatioRound32 ((998277249 : Int)) ((1000693826 : Int)) ((1017370378 : Int)) = Option.some ((4250229 : Int)))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{scale\_ratio\_rounds\_down}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(scaleRatioRound32 ((1023410176 : Int)) ((1017370378 : Int)) ((1039516303 : Int)) = Option.some ((22369621 : Int)))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{scale\_ratio\_tie\_odd\_to\_even}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(scaleRatioRound32 ((1065353217 : Int)) ((1069547520 : Int)) ((1140850688 : Int)) = Option.some ((12582914 : Int)))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{scale\_ratio\_tie\_even\_stays\_even}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(scaleRatioRound32 ((1065353219 : Int)) ((1069547520 : Int)) ((1140850688 : Int)) = Option.some ((12582916 : Int)))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{scale\_ratio\_negative\_scale}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(scaleRatioRound32 ((3145760897 : Int)) ((1000693826 : Int)) ((1017370378 : Int)) = Option.some ((-4250229 : Int)))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{scale\_ratio\_subnormal\_scales}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(scaleRatioRound32 ((3 : Int)) ((1084227584 : Int)) ((2 : Int)) = Option.some ((32212254720 : Int)))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{scale\_ratio\_rejects\_zero\_divisor}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(scaleRatioRound32 ((1065353216 : Int)) ((1065353216 : Int)) ((0 : Int)) = Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{scale\_ratio\_rejects\_nonfinite}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(scaleRatioRound32 ((1065353216 : Int)) ((2139095040 : Int)) ((1065353216 : Int)) = Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{scale\_multipliers\_channel\_batch}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(scaleMultipliersRound32 ((998277249 : Int)) (((1000593162 : Int) :: ((1000693826 : Int) :: ([] : List (Int))))) ((1017370378 : Int)) = Option.some (((4210752 : Int) :: ((4250229 : Int) :: ([] : List (Int))))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
 \end{document}

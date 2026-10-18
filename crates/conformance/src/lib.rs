@@ -21,6 +21,8 @@ pub mod inventory;
 pub mod lcnf_adapter;
 pub mod lcnf_extract;
 pub mod lcnf_registry;
+mod lean_list;
+pub mod lean_literals;
 mod lx;
 pub mod machine;
 pub mod meta;

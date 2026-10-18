@@ -809,12 +809,15 @@ jobs:
           - { os: macos-15, target: aarch64-apple-darwin }
           - { os: windows-2022, target: x86_64-pc-windows-msvc }
     runs-on: ${{ matrix.os }}
-    # The Intel macOS runner takes 51 to 61 minutes for this job, which is the
-    # limit it used to have: a leg cancelled at the limit says nothing about the
-    # code, and the only defence against it was to run the leg again. Twice the
-    # slowest observed time leaves the limit a bound on a hung job, not a race
-    # with the runner's speed.
-    timeout-minutes: 120
+    # The Intel macOS runner is the slowest host: 51 to 61 minutes for this job
+    # before certificates A and B were kernel data, and past 120 minutes (the
+    # limit it then had, cancelled) once the stress families of SP-02 and the
+    # 9000-arm match of SP-08 built them (the suite took 2.9 times as long on
+    # the arm Linux runner, 1064 to 3051 seconds). A leg cancelled at the limit
+    # says nothing about the code, and the only defence against it was to run
+    # the leg again. Twice the slowest observed time leaves the limit a bound on
+    # a hung job, not a race with the runner's speed.
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install the pinned Rust toolchain

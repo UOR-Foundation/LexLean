@@ -430,6 +430,25 @@ impl P {
         Self { temp, root }
     }
 
+    /// A fresh copy of the package scaffold's own project (SPEC.md §17.16),
+    /// without build output or a lock.
+    #[must_use]
+    pub fn package_project() -> Self {
+        let temp = tempfile::Builder::new()
+            .prefix("lexlean-package-case-")
+            .tempdir()
+            .expect("tempdir");
+        let source = repo_root().join("language/package-1.2/library");
+        assert!(source.is_dir(), "the scaffold project is required");
+        copy_tree(
+            source.as_std_path(),
+            temp.path(),
+            &[".lexlean", "lexlean.lock"],
+        );
+        let root = Utf8PathBuf::from_path_buf(temp.path().to_path_buf()).expect("utf8 tempdir");
+        Self { temp, root }
+    }
+
     /// A fresh copy of the runtime's own project (SPEC.md §17.12, *Runtime
     /// modules*), without build output or a lock.
     #[must_use]
