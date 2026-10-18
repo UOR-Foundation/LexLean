@@ -1466,6 +1466,79 @@ carries the header of the lifted budgets), and the derivation bound of
 after: the chain is shorter than the literal Lean splits under binders, and the
 root still exceeds `max_file_bytes` in phase certificates, `LLS8002`).
 
+### certificate A is kernel-term data and a defect in it is refused
+
+Planted, first (`SP-15`, #157): the seven LOWERING mutations of
+`conformance_sp_02` (Branches, Arithmetic, Overflow, Constructor, Buffer,
+Recursion, Literal) at the first, a middle, and the last site of
+`examples/production-coverage`, run by hand at commit `7653ed1e` with the
+developer lens `dev_plant`, since removed from the tree (the repository carries
+no ignored test; the record is the evidence): 20 plants. All 20 are caught,
+none accepted. 14 are rejected by the kernel inside the `__rel_<n>` row of the
+mutated function, and 6 are refused by the generator while it writes the
+certificate, because certificate A is derived from the source and the lowering
+in lockstep, so a lowering that no longer follows the source has no certificate
+to give to Lean (`Planted.refused`). The first line of each class:
+
+```text
+.../Planted/P0.lean:531:0: error: native core declaration 'LexLeanPreserve.Planted.P0.__rel_0':
+phase preservation: the lowering of || is not a cond
+phase preservation: the lowering of `low` is not a variable
+phase preservation: the lowering of `i` is not a variable
+phase preservation: the lowering of a literal is not a value
+phase preservation: a call of function 1 lowered to 2
+phase preservation: a call of function 2 lowered to 1
+```
+
+(The kernel line is the same shape for the other 13: Branches fn 6, Arithmetic
+×3, Overflow ×3, Constructor ×3, Recursion fn 21, Literal ×3, each naming
+`__rel_<function>`. The refused six are: Branches fn 0 and fn 3, Buffer ×2,
+Recursion fn 0 and fn 2.)
+
+Planted, second: five plants in the data of one certificate A of
+`examples/production` (`conformance_sp_15`, which prints them with `eprintln!`
+as "SP-15 plants refused"): a wrong lemma (`prim_natAdd` renamed
+`prim_natMul`), a changed statement (`Bool.true` renamed `Bool.false`), a
+forged program literal (one literal of the program row raised by one, on a
+fresh path), an added axiom (`sorryAx` as the root's proof), and a row whose
+policy lies about its axioms.
+
+```text
+wrong lemma: .../R2PlantWrongLemma.lean:525:0: error: native core declaration 'LexLeanPreserve.Cf5a58e441acc8b93ded11826c51cc7c8.R2.__rel_2':
+      (kernel) application type mismatch
+        LexLeanPreservation.conv_prim
+changed statement: .../R2PlantChangedStatement.lean:525:0: error: native core declaration 'LexLeanPreserve.Cf5a58e441acc8b93ded11826c51cc7c8.R2.__rel_1':
+      (kernel) application type mismatch
+        LexLeanPreservation.conv_apply
+forged program: .../R2PlantForgedProgram.lean:525:0: error: native core declaration 'LexLeanPreserve.Cf5a58e441acc8b93ded11826c51cc7c8.R2.__prog':
+      (kernel) application type mismatch
+        1
+added axiom: the forbidden constant `sorryAx`
+lying policy: the certificate row `LexLeanPreserve.Cf5a58e441acc8b93ded11826c51cc7c8.R2.__rel_1` depends on ["Classical.choice", "Quot.sound", "propext"], its policy pins []
+```
+
+The added axiom is refused by the data audit before any Lean runs. The lying
+policy compiles (that is not Lean's to refuse) and is refused by the audit
+module.
+
+Removed: the plants were not committed; every plant is applied to a copy in
+the test. With none planted, `conformance_sp_15` passes on the committed
+records (run on regenerated records: "test result: ok. 1 passed; 0 failed;
+... finished in 128.47s"; the certificate hex ID above is the one before the
+train's regeneration), and `conformance_sp_02` passes ("test result: ok. 1
+passed; 0 failed; ... finished in 7951.32s", on `7653ed1e2`). SP-15 also holds
+the source scan: it scans the sources that build certificate A
+(`production/certificate.rs` and `certificate/data_a*`) for Lean-syntax string
+literals and finds a planted template `format!("theorem {}0 : …")`, so the scan
+is armed.
+
+Behind "the largest scaling of each mixed shape fits": SP-02 passes, so at the
+largest scaling every shape's lower bound is at or below its certificate A. The
+tight one, measured by hand, is mixed shape 7 at 256: 5,879 expression nodes,
+certificate A 120,894 bytes in the notation, `COSTS_A` bound about 115.6k
+(5400 + 5879 × 300 / 16), 4.4% under. The other shapes' figures were not
+recorded separately.
+
 ### certificate B is kernel-term data and a defect in it is refused
 
 Certificate B of a root is a native core module the compiler builds
@@ -1806,6 +1879,13 @@ Planted: the cost of a pair of arms of certificate A raised from 180 to 500.
 Expected: the check that valid programs whose certificates fit are not refused
 (a match on 240 constructors, a string of 450 000 characters, at the default
 limits; certificate A is recorded in the notation, which is three times the Lean text of a wide match, so the match is 240 where it was 420) refuses the match.
+
+Not re-run since certificate A became kernel data (#157): the cost of a pair of
+arms is now 1018 sixteenths, so the figures of this plant and its quoted
+`LLS8002` line are the text certificate's. The current evidence that the bound
+refuses, and does not over-refuse, is the fixture `lowering-size-limit` (a
+match on 400 constructors, refused in lowering) and `conformance_sp_02`'s pass
+(the match on 240 constructors fits and is not refused).
 
 ```text
 Production.Main.r: lowering failed: Diagnostic { code: DiagnosticCode("LLS8002"), message: "root `Production.Main.r`: max_file_bytes exceeded in phase lowering: configured 4194304, its certificate A is at least 5524790 bytes (1265 program nodes)", primary: None, labels: [], notes: [], help: [], causes: [], detail: None }
