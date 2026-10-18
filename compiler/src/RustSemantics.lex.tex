@@ -109,7 +109,8 @@ definition{
         | Option.some scalar => (ctor Option.some [TargetSyntax::Value] (ctor TargetSyntax::Value.i64 scalar))))
     | RustSyntax::Lit.str text => (ctor Option.some [TargetSyntax::Value] (ctor TargetSyntax::Value.string text))
     | RustSyntax::Lit.bytes octets => (ctor Option.some [TargetSyntax::Value] (ctor TargetSyntax::Value.bytes octets))
-    | RustSyntax::Lit.ordering order => (ctor Option.some [TargetSyntax::Value] (ctor TargetSyntax::Value.ordering order))),
+    | RustSyntax::Lit.ordering order => (ctor Option.some [TargetSyntax::Value] (ctor TargetSyntax::Value.ordering order))
+    | RustSyntax::Lit.overflow => (ctor Option.some [TargetSyntax::Value] (ctor TargetSyntax::Value.unit))),
   axioms: [Quot.sound, propext]
 }
 
@@ -1185,6 +1186,74 @@ definition{
 }
 
 definition{
+  name: machinePrimitive,
+  parameters: [machine : RustSyntax::Machine],
+  result: TargetSyntax::Prim,
+  body: (match machine
+    | RustSyntax::Machine.checkedAdd ignoredWidth => (ctor TargetSyntax::Prim.checkedAdd)
+    | RustSyntax::Machine.checkedSub ignoredWidth => (ctor TargetSyntax::Prim.checkedSub)
+    | RustSyntax::Machine.checkedMul ignoredWidth => (ctor TargetSyntax::Prim.checkedMul)
+    | RustSyntax::Machine.checkedQuot ignoredWidth => (ctor TargetSyntax::Prim.checkedQuot)
+    | RustSyntax::Machine.checkedNeg ignoredWidth => (ctor TargetSyntax::Prim.checkedNeg)
+    | RustSyntax::Machine.checkedShl ignoredWidth => (ctor TargetSyntax::Prim.shiftLeft)
+    | RustSyntax::Machine.checkedShr ignoredWidth => (ctor TargetSyntax::Prim.shiftRight)
+    | RustSyntax::Machine.tryFrom target => (ctor TargetSyntax::Prim.convert target))
+}
+
+definition{
+  name: machineWidth,
+  parameters: [machine : RustSyntax::Machine],
+  result: (Option TargetSyntax::IntKind),
+  body: (match machine
+    | RustSyntax::Machine.checkedAdd kind => (ctor Option.some [TargetSyntax::IntKind] kind)
+    | RustSyntax::Machine.checkedSub kind => (ctor Option.some [TargetSyntax::IntKind] kind)
+    | RustSyntax::Machine.checkedMul kind => (ctor Option.some [TargetSyntax::IntKind] kind)
+    | RustSyntax::Machine.checkedQuot kind => (ctor Option.some [TargetSyntax::IntKind] kind)
+    | RustSyntax::Machine.checkedNeg kind => (ctor Option.some [TargetSyntax::IntKind] kind)
+    | RustSyntax::Machine.checkedShl kind => (ctor Option.some [TargetSyntax::IntKind] kind)
+    | RustSyntax::Machine.checkedShr kind => (ctor Option.some [TargetSyntax::IntKind] kind)
+    | RustSyntax::Machine.tryFrom ignoredTarget => (ctor Option.none [TargetSyntax::IntKind]))
+}
+
+definition{
+  name: machineShifts,
+  parameters: [machine : RustSyntax::Machine],
+  result: Bool,
+  body: (match machine
+    | RustSyntax::Machine.checkedAdd ignoredWidth => false
+    | RustSyntax::Machine.checkedSub ignoredWidth => false
+    | RustSyntax::Machine.checkedMul ignoredWidth => false
+    | RustSyntax::Machine.checkedQuot ignoredWidth => false
+    | RustSyntax::Machine.checkedNeg ignoredWidth => false
+    | RustSyntax::Machine.checkedShl ignoredWidth => true
+    | RustSyntax::Machine.checkedShr ignoredWidth => true
+    | RustSyntax::Machine.tryFrom ignoredTarget => false)
+}
+
+definition{
+  name: machineAccepts,
+  parameters: [machine : RustSyntax::Machine, values : (List TargetSyntax::Value)],
+  result: Bool,
+  body: (match (machineWidth machine)
+    | Option.none => true
+    | Option.some kind => (if (machineShifts machine) then (match values
+      | List.nil => false
+      | List.cons head ignoredRest => (hasWidth kind head)) else (allWidth kind values)))
+}
+
+definition{
+  name: runMachine,
+  parameters: [machine : RustSyntax::Machine, values : (List TargetSyntax::Value)],
+  result: ROutcome,
+  body: (if (machineAccepts machine values) then (match (TargetSemantics::primitive (machinePrimitive machine) values)
+    | TargetSemantics::Outcome.value computed ignoredSteps => (ctor ROutcome.value computed)
+    | TargetSemantics::Outcome.overflow ignoredOverflow => (ctor ROutcome.abort)
+    | TargetSemantics::Outcome.stuck => (ctor ROutcome.stuck)
+    | TargetSemantics::Outcome.exhausted => (ctor ROutcome.stuck)) else (ctor ROutcome.stuck)),
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+definition{
   name: propagated,
   parameters: [result : ROutcome],
   result: ROutcome,
@@ -1393,7 +1462,8 @@ definition{
       | RustSyntax::Expr.call callee operands propagate => (match (evalList remaining crate environment operands)
         | ROutcomes.values arguments => (returned (match callee
           | RustSyntax::Callee.function index => (invoke remaining crate (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.function) index) arguments)
-          | RustSyntax::Callee.runtime item => (runItem (project crate profile) item arguments)) propagate)
+          | RustSyntax::Callee.runtime item => (runItem (project crate profile) item arguments)
+          | RustSyntax::Callee.machine primitive => (runMachine primitive arguments)) propagate)
         | ROutcomes.raise => (ctor ROutcome.raise)
         | ROutcomes.abort => (ctor ROutcome.abort)
         | ROutcomes.stuck => (ctor ROutcome.stuck)

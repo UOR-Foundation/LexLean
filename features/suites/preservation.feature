@@ -122,3 +122,10 @@ Feature: preservation
     When every string literal outside test code is read by a lexer and tested for Lean syntax
     Then no literal is Lean syntax outside the allow-list, and the staged audit module is an auxiliary module of typed commands
     And a planted template in a production source and in the auxiliary module part of the backend is each reported, and a literal in test code is not
+
+  @SP-18 @build
+  Scenario: The declared Rust machine states a machine primitive as a callee and the overflow value as a literal: RustSyntax declares eight machine primitives (checked add, subtract, multiply, quotient, negation, shift left, and shift right of a width, and try-from to a width), the callee that names one, and the literal Overflow, and RustSemantics evaluates a call of a machine callee as the calculus primitive of the same name, with the Option value the calculus states, stuck on an operand of another width (the amount of a shift excepted), and the literal Overflow as the unit value that an Err(Overflow) carries, which the pinned Lean evaluates on the boundary values of the widths and refuses to evaluate to a wrong value.
+    Given the committed modules RustSyntax and RustSemantics of the compiler project, shipped as the calculus modules the certificates import
+    When RustSyntax is read for its machine primitives, its callees, and its literals, and the pinned Lean evaluates calls of every machine primitive and of the overflow literal on the boundary values of the widths
+    Then RustSyntax declares exactly the eight machine primitives, the callee that names one, and the literal Overflow, and each evaluation is the value the calculus primitive states
+    And a statement of a wrong value for the same call is refused by the pinned Lean

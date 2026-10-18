@@ -64,7 +64,8 @@ inductive{
     {name: fixed, fields: [TargetSyntax::IntKind, Int]},
     {name: str, fields: [String]},
     {name: bytes, fields: [Bytes]},
-    {name: ordering, fields: [TargetSyntax::Order]}
+    {name: ordering, fields: [TargetSyntax::Order]},
+    {name: overflow, fields: []}
   ]
 }
 
@@ -161,10 +162,30 @@ inductive{
 }
 
 inductive{
+  name: Machine,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: checkedAdd, fields: [TargetSyntax::IntKind]},
+    {name: checkedSub, fields: [TargetSyntax::IntKind]},
+    {name: checkedMul, fields: [TargetSyntax::IntKind]},
+    {name: checkedQuot, fields: [TargetSyntax::IntKind]},
+    {name: checkedNeg, fields: [TargetSyntax::IntKind]},
+    {name: checkedShl, fields: [TargetSyntax::IntKind]},
+    {name: checkedShr, fields: [TargetSyntax::IntKind]},
+    {name: tryFrom, fields: [TargetSyntax::IntKind]}
+  ]
+}
+
+inductive{
   name: Callee,
   type_parameters: [],
   parameters: [],
-  constructors: [{name: function, fields: [Nat]}, {name: runtime, fields: [Item]}]
+  constructors: [
+    {name: function, fields: [Nat]},
+    {name: runtime, fields: [Item]},
+    {name: machine, fields: [Machine]}
+  ]
 }
 
 inductive{

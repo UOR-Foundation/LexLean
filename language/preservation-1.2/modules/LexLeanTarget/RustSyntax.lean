@@ -50,6 +50,7 @@ public inductive Lit where
   | str (_ : String)
   | bytes (_ : ByteArray)
   | ordering (_ : LexLeanTarget.TargetSyntax.Order)
+  | overflow
 
 public inductive Ctor where
   | none (_ : RustType)
@@ -125,9 +126,20 @@ public inductive Item where
   | parseInt
   | parseFixed (_ : LexLeanTarget.TargetSyntax.IntKind)
 
+public inductive Machine where
+  | checkedAdd (_ : LexLeanTarget.TargetSyntax.IntKind)
+  | checkedSub (_ : LexLeanTarget.TargetSyntax.IntKind)
+  | checkedMul (_ : LexLeanTarget.TargetSyntax.IntKind)
+  | checkedQuot (_ : LexLeanTarget.TargetSyntax.IntKind)
+  | checkedNeg (_ : LexLeanTarget.TargetSyntax.IntKind)
+  | checkedShl (_ : LexLeanTarget.TargetSyntax.IntKind)
+  | checkedShr (_ : LexLeanTarget.TargetSyntax.IntKind)
+  | tryFrom (_ : LexLeanTarget.TargetSyntax.IntKind)
+
 public inductive Callee where
   | function (_ : Nat)
   | runtime (_ : Item)
+  | machine (_ : Machine)
 
 mutual
 public inductive Expr where
