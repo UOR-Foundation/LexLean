@@ -934,6 +934,88 @@ pub(crate) fn run(id: &str) {
                     assert!(stderr.is_empty());
                 },
             );
+
+            // §23.1: no source in `crates/lexlean/src` reads an environment
+            // variable beyond the four operational variables of §23.1
+            // (`LEXLEAN_VERIFY_WIDTH`, `LEXLEAN_VERIFY_HINTS`,
+            // `LEXLEAN_VERIFY_MEMORY_KIB`, `LEXLEAN_CI_TELEMETRY`, in
+            // `verify/operational.rs`) and the toolchain locator's ambient
+            // `HOME`, `PATH`, and `ELAN_HOME` (`verify/child.rs` and
+            // `verify/toolchain.rs`).
+            fn undeclared_env_reads(sources: &[(String, String)]) -> Vec<String> {
+                const ALLOWED: &[(&str, &str)] = &[
+                    ("verify/operational.rs", "WIDTH_VARIABLE"),
+                    ("verify/operational.rs", "TELEMETRY_VARIABLE"),
+                    ("verify/operational.rs", "HINTS_VARIABLE"),
+                    ("verify/operational.rs", "MEMORY_VARIABLE"),
+                    ("cli.rs", "\"NO_COLOR\""),
+                    ("verify/child.rs", "\"HOME\""),
+                    ("verify/child.rs", "\"PATH\""),
+                    ("verify/child.rs", "\"ELAN_HOME\""),
+                    ("verify/toolchain.rs", "\"ELAN_HOME\""),
+                    ("verify/toolchain.rs", "\"HOME\""),
+                ];
+                let mut offenders = Vec::new();
+                for (path, source) in sources {
+                    for (line_no, line) in source.lines().enumerate() {
+                        let code = line.split("//").next().unwrap_or("");
+                        for call in ["env::var_os(", "env::var(", "env::vars_os(", "env::vars("] {
+                            let mut rest = code;
+                            while let Some(at) = rest.find(call) {
+                                let after = &rest[at + call.len()..];
+                                let arg = after.split(')').next().unwrap_or("").trim();
+                                let allowed = (call == "env::var_os(" || call == "env::var(")
+                                    && ALLOWED
+                                        .iter()
+                                        .any(|(file, want)| path == *file && arg == *want);
+                                if !allowed {
+                                    offenders
+                                        .push(format!("{path}:{}: `{call}{arg})`", line_no + 1));
+                                }
+                                rest = after;
+                            }
+                        }
+                    }
+                }
+                offenders
+            }
+
+            let mut sources = Vec::new();
+            library_sources(
+                support::repo_root()
+                    .join("crates/lexlean/src")
+                    .as_std_path(),
+                &mut sources,
+            );
+            assert!(
+                sources.len() > 50,
+                "the scan reads the library, found {} files",
+                sources.len()
+            );
+            let offenders = undeclared_env_reads(&sources);
+            assert!(
+                offenders.is_empty(),
+                "§23.1: undeclared environment variable reads in crates/lexlean/src: {offenders:?}"
+            );
+            let mut planted = sources.clone();
+            let target_file = planted
+                .iter_mut()
+                .find(|(path, _)| path == "production/certificate/data_a.rs")
+                .expect("data_a.rs is scanned");
+            target_file
+                .1
+                .push_str("\nfn _planted() { let _ = std::env::var(\"LEXLEAN_AXDBG\"); }\n");
+            let caught = undeclared_env_reads(&planted);
+            assert_eq!(
+                caught.len(),
+                1,
+                "planted std::env::var outside §23.1 is caught: {caught:?}"
+            );
+            assert!(
+                caught[0].contains("production/certificate/data_a.rs")
+                    && caught[0].contains("LEXLEAN_AXDBG"),
+                "{caught:?}"
+            );
         }
         // §30.3: the exact version report.
         "CL-18" => {

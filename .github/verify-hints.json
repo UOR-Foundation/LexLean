@@ -76,8 +76,48 @@
     "wall_ms": 20849
   },
   "LexLeanExample.CensusCert10": {
-    "peak_rss_kib": 15590960,
-    "wall_ms": 114639
+    "peak_rss_kib": 1443088,
+    "wall_ms": 4518
+  },
+  "LexLeanExample.CensusCert100": {
+    "peak_rss_kib": 1437932,
+    "wall_ms": 1944
+  },
+  "LexLeanExample.CensusCert101": {
+    "peak_rss_kib": 3906756,
+    "wall_ms": 18504
+  },
+  "LexLeanExample.CensusCert102": {
+    "peak_rss_kib": 3259512,
+    "wall_ms": 13707
+  },
+  "LexLeanExample.CensusCert103": {
+    "peak_rss_kib": 3912776,
+    "wall_ms": 18870
+  },
+  "LexLeanExample.CensusCert104": {
+    "peak_rss_kib": 1520648,
+    "wall_ms": 1960
+  },
+  "LexLeanExample.CensusCert105": {
+    "peak_rss_kib": 1518372,
+    "wall_ms": 1932
+  },
+  "LexLeanExample.CensusCert106": {
+    "peak_rss_kib": 1520460,
+    "wall_ms": 1952
+  },
+  "LexLeanExample.CensusCert107": {
+    "peak_rss_kib": 2407780,
+    "wall_ms": 8046
+  },
+  "LexLeanExample.CensusCert108": {
+    "peak_rss_kib": 3898456,
+    "wall_ms": 18509
+  },
+  "LexLeanExample.CensusCert109": {
+    "peak_rss_kib": 5841916,
+    "wall_ms": 31295
   },
   "LexLeanExample.CensusCert11": {
     "peak_rss_kib": 12093836,
@@ -100,8 +140,48 @@
     "wall_ms": 4842
   },
   "LexLeanExample.CensusCert4": {
-    "peak_rss_kib": 15693400,
-    "wall_ms": 1307970
+    "peak_rss_kib": 1486624,
+    "wall_ms": 846
+  },
+  "LexLeanExample.CensusCert40": {
+    "peak_rss_kib": 4670592,
+    "wall_ms": 20395
+  },
+  "LexLeanExample.CensusCert41": {
+    "peak_rss_kib": 3833884,
+    "wall_ms": 15695
+  },
+  "LexLeanExample.CensusCert42": {
+    "peak_rss_kib": 2422704,
+    "wall_ms": 6363
+  },
+  "LexLeanExample.CensusCert43": {
+    "peak_rss_kib": 1549856,
+    "wall_ms": 1219
+  },
+  "LexLeanExample.CensusCert44": {
+    "peak_rss_kib": 1554216,
+    "wall_ms": 1193
+  },
+  "LexLeanExample.CensusCert45": {
+    "peak_rss_kib": 4765652,
+    "wall_ms": 20701
+  },
+  "LexLeanExample.CensusCert46": {
+    "peak_rss_kib": 4667372,
+    "wall_ms": 20105
+  },
+  "LexLeanExample.CensusCert47": {
+    "peak_rss_kib": 3641284,
+    "wall_ms": 13939
+  },
+  "LexLeanExample.CensusCert48": {
+    "peak_rss_kib": 3901196,
+    "wall_ms": 16048
+  },
+  "LexLeanExample.CensusCert49": {
+    "peak_rss_kib": 1551904,
+    "wall_ms": 1228
   },
   "LexLeanExample.CensusCert5": {
     "peak_rss_kib": 8578132,

@@ -38,7 +38,19 @@ versions, and the entries below say what each tag does and does not claim.
   `semantic_ir` and `latex_backend` versions move to 14 and 13, so every
   language-1.2 lock, golden, fixture, and verification record is
   regenerated. Text classifiers, adapters, composition, production, and the
-  end-to-end example remain for later slices. The register holds 416 IDs.
+  end-to-end example remain for later slices. The register holds 417 IDs.
+- UOR Atlas, #168: the census windows `CensusCert4` and `CensusCert10`
+  (`gramRange 4000 1000 = true` and `gramRange 10000 1000 = true`, each one
+  `of_decide_eq_true`) are proved from ten width-100 certificates each,
+  `CensusCert40` to `CensusCert49` and `CensusCert100` to `CensusCert109`,
+  joined by `gramRange_append` exactly as `CensusCert7` is from
+  `CensusCert70` to `CensusCert79`. Their statements are unchanged and their
+  importers are untouched; the Atlas root imports the twenty pieces
+  (`audit-atlas-exercise`, R4). In `.github/verify-shards.json` the `cert4`
+  shard elaborates the window-4 modules and `cert4-replay` replays them, and
+  `census-a` takes the window-10 pieces beside `CensusCert10`; the join
+  compares 347 normalized records (was 267). Atlas `expected/build` and
+  `expected/verify` are regenerated; no language data moves.
 - CI cost, #131 (SPEC.md §8.3, §9.4, `RP-14`): `ci.yml` begins with a `plan`
   job (`.github/ci-plan.sh`) that decides what a run is from the event alone.
   A draft pull request runs the `rest` leg and no other job (about 23 runner
@@ -49,6 +61,18 @@ versions, and the entries below say what each tag does and does not claim.
   the gate are the rows of `.github/vv-rows.json`, the matrix the plan hands
   to `vv`. `release.yml` still runs `just vv` whole and reads no earlier run.
   The register is unchanged: the statement of `RP-14` is extended.
+- The second component of the compiler's own pipeline as language-1.2 source:
+  the preservation lexer and token audit (SPEC.md §17.23, §17.17, `BS-02`, #92;
+  no new diagnostic code, no change to the language-1.2 identity).
+  `bootstrap/src/TokenAudit.lex.tex` imports `LexLeanStd.Text` via source
+  package and declares `lex` and `auditTokens` as production roots for
+  `rust-std`. `BS-02` runs 1,731 deterministic Lean 4 source vectors and 300
+  seeded combinations per root against the stage-0 Rust oracle
+  `production::preserve::{lex, audit_tokens}` under the calculus evaluator and
+  5,731 inputs per root under the pinned `rustc`, detects seven planted defects,
+  and, under the pinned Lean, compares the certified `audit_tokens` and `lex`
+  packages with the committed ones under `tests/production-export/bootstrap/`.
+  `BS-02` brings the register to 414 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or
@@ -68,8 +92,13 @@ versions, and the entries below say what each tag does and does not claim.
   state. Certificates A and B are kernel data in which a repeated type is one
   node, so the chain verifies (it did not fit under `max_file_bytes` as text)
   and the lower bound counts no type node; what a small source still makes
-  large is the pairs of arms of a match, which the fixture now uses. The
-  fixture is refused with `LLS8002` in lowering, as before.
+  large is the pairs of arms of a match, which the fixture now uses. With
+  certificate A as kernel data, a pair of arms costs about 5.7 times its text
+  cost (`1018` against `180` sixteenths of a byte), so the widest match that
+  fits the default `max_file_bytes` falls from about `420` to `240`
+  constructors (`SP-02`, SPEC.md §17.17; a project with a wider match raises
+  `max_file_bytes`). The fixture is refused with `LLS8002` in lowering, as
+  before.
 - The preservation library's statement of
   `LexLeanTarget.TargetSemantics.fromOrdering.eq_1` is the one the elaborator
   makes for the generated module under the explicit byte-literal spelling
@@ -89,7 +118,7 @@ versions, and the entries below say what each tag does and does not claim.
   `Bytes` forms) to `(sign, mantissa, exponent)` over `nat` and `int`,
   rejecting out-of-width patterns and the non-finite biased exponents, and
   derives `round(a * b / c * 2^32)` scale ratios (ties to even) by exact
-  integer division; 43 theorems (39 in `Models.Recognizer`, 4 in `Models.Main`) are closed by `decide`. The change is to the
+  integer division; 47 theorems (43 in `Models.Recognizer`, 4 in `Models.Main`) are closed by `decide`. The change is to the
   `models` example and the register only: no compiler source moves.
 
 - Widening conversions (#114, SPEC.md §17.12 *Widening conversions*, `SM-32`,
@@ -304,10 +333,12 @@ versions, and the entries below say what each tag does and does not claim.
   golden, fixture expectation, calculus package, production export, and
   verified record is regenerated. The register holds 391 IDs.
 
-- The runtime gates read what they claimed to (#154, follow-up to #144; no new
-  diagnostic code, no new ID). `RT-04` finds a Lean runtime text in any string
-  literal of the compiler's source outside unit-test items, in production code
-  after a test module, with or without a `namespace` line (a declaration
+- The runtime gates read what they claimed to (#154, #169, follow-ups to #144;
+  no new diagnostic code, no new ID). `RT-04` finds a Lean runtime text in any
+  string literal of the compiler's source outside unit-test items, in
+  production code after a test module or after a `#[cfg(test)]` that is not on
+  an item (or an inline `#![cfg(test)]`), with or without a `namespace` line (a
+  declaration
   under a runtime name is one), written whole or in literals joined by
   `concat!`, an array, `+` or `format!`; its statement now also asserts
   what it said of generated modules: every committed language-1.2 module
@@ -315,8 +346,10 @@ versions, and the entries below say what each tag does and does not claim.
   under a runtime namespace. `RT-02` recomputes the compiler-semantics IDs
   with each frozen file changed (1.0 and 1.1 unchanged, 1.2 changed). `RT-03`
   plants the second direction of the axiom check. Every directory that holds a
-  `CACHEDIR.TAG` is skipped by the repository walkers, so a build directory
-  beside the sources no longer reads as source. No compiled behavior changes.
+  `CACHEDIR.TAG` is skipped by every repository walker, so a build directory
+  beside the sources no longer reads as source, and `RP-03` (#170) asserts that
+  the tracked tree (`git ls-files`) holds no `CACHEDIR.TAG` and no walker-skipped
+  path component outside the sanctioned `expected/` oracle directories. No compiled behavior changes.
 - UOR Atlas is verified in CI as the parts of one run (SPEC.md §9.4, §22.11,
   `RP-14`, `VR-23`, #131; no new diagnostic code). The examples leg, 178
   minutes on `main` at 514e95ad (CI run 38716449420), was 156 minutes of

@@ -46,7 +46,7 @@ pub struct Finding {
 
 /// The literals that are Lean syntax and are not templates: the file they are
 /// in (a suffix of its path), the beginning of the literal, and why.
-pub const ALLOWED: [(&str, &str, &str); 10] = [
+pub const ALLOWED: [(&str, &str, &str); 9] = [
     (
         "production/certificate.rs",
         "«{segment}»",
@@ -66,11 +66,6 @@ pub const ALLOWED: [(&str, &str, &str); 10] = [
         "production/kernel/ext.rs",
         "(let {n} : {ty}",
         "the printout of a kernel let, read by developers in diagnostics",
-    ),
-    (
-        "production/certificate/data_a.rs",
-        "{full} : {}",
-        "a developer's printout of a row under LEXLEAN_SHOW, never written to a module",
     ),
     (
         "backend/lean.rs",

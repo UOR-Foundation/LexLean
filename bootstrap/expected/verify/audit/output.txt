@@ -61,6 +61,84 @@
 'LexLeanBoot.AxiomOutput.whiteEnding' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.AxiomOutput.whiteLength' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.AxiomOutput.zeroStep' does not depend on any axioms
+'LexLeanBoot.TokenAudit.AuditState' does not depend on any axioms
+'LexLeanBoot.TokenAudit.CommentState' does not depend on any axioms
+'LexLeanBoot.TokenAudit.LexState' does not depend on any axioms
+'LexLeanBoot.TokenAudit.Lexeme' does not depend on any axioms
+'LexLeanBoot.TokenAudit.LexemeKind' does not depend on any axioms
+'LexLeanBoot.TokenAudit.NameScan' does not depend on any axioms
+'LexLeanBoot.TokenAudit.QuotedScan' does not depend on any axioms
+'LexLeanBoot.TokenAudit.Segment' does not depend on any axioms
+'LexLeanBoot.TokenAudit.StringState' does not depend on any axioms
+'LexLeanBoot.TokenAudit.advanceScalars' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.advanceScalarsStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.auditIdent' does not depend on any axioms
+'LexLeanBoot.TokenAudit.auditTokens' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.byteIn' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.byteIs' does not depend on any axioms
+'LexLeanBoot.TokenAudit.byteOrZero' does not depend on any axioms
+'LexLeanBoot.TokenAudit.bytesInList' does not depend on any axioms
+'LexLeanBoot.TokenAudit.canStartIdent' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.controlCode' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.controlMessage' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.countRawHashes' does not depend on any axioms
+'LexLeanBoot.TokenAudit.countRawHashesStep' does not depend on any axioms
+'LexLeanBoot.TokenAudit.countScalars' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.countScalarsStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.dottedNext' does not depend on any axioms
+'LexLeanBoot.TokenAudit.dottedSegments' does not depend on any axioms
+'LexLeanBoot.TokenAudit.failLex' does not depend on any axioms
+'LexLeanBoot.TokenAudit.firstForbiddenConstant' does not depend on any axioms
+'LexLeanBoot.TokenAudit.hasClosingHashes' does not depend on any axioms
+'LexLeanBoot.TokenAudit.hasClosingHashesStep' does not depend on any axioms
+'LexLeanBoot.TokenAudit.hexDigit' does not depend on any axioms
+'LexLeanBoot.TokenAudit.idFirstWidth' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.idRestWidth' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.inRange' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.isAllowedOption' does not depend on any axioms
+'LexLeanBoot.TokenAudit.isAsciiAlpha' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.isAsciiDigit' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.isForbiddenConstant' does not depend on any axioms
+'LexLeanBoot.TokenAudit.isForbiddenToken' does not depend on any axioms
+'LexLeanBoot.TokenAudit.isGuillemetClose' does not depend on any axioms
+'LexLeanBoot.TokenAudit.isGuillemetOpen' does not depend on any axioms
+'LexLeanBoot.TokenAudit.isRadixDigit' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.letterLikeWidth' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.lex' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.listLength' does not depend on any axioms
+'LexLeanBoot.TokenAudit.nextOpensBracket' does not depend on any axioms
+'LexLeanBoot.TokenAudit.pushLexeme' does not depend on any axioms
+'LexLeanBoot.TokenAudit.reversed' does not depend on any axioms
+'LexLeanBoot.TokenAudit.scalarWidth' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.scanAfterDot' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.scanAfterInt' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.scanBlockComment' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.scanBlockCommentStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.scanCharLiteral' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.scanDigits' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.scanDigitsOnly' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.scanDigitsOnlyStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.scanDigitsStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.scanExponent' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.scanIdRest' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.scanIdRestStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.scanLineComment' does not depend on any axioms
+'LexLeanBoot.TokenAudit.scanLineCommentStep' does not depend on any axioms
+'LexLeanBoot.TokenAudit.scanNumber' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.scanQuotedSegment' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.scanQuotedStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.scanRawString' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.scanRawStringStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.scanSegments' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.scanSegmentsStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.scanString' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.scanStringStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.stepAudit' does not depend on any axioms
+'LexLeanBoot.TokenAudit.stepLex' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.stepLexAt' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.stepLexIdent' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.stepLexToken' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.TokenAudit.subScriptWidth' depends on axioms: [propext, Quot.sound]
 'LexLeanCollections.Key' does not depend on any axioms
 'LexLeanCollections.Key.casesOn' does not depend on any axioms
 'LexLeanCollections.Key.compare' does not depend on any axioms

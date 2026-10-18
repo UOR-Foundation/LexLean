@@ -1,0 +1,568 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{Segment}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{text}: \texttt{ByteArray}.\par
+\noindent Field \texttt{quoted}: \texttt{Bool}.\par
+\subsection*{\texttt{LexemeKind}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{Ident}: \texttt{(List (Segment))}.\par
+\noindent Constructor \texttt{Number}: \texttt{()}.\par
+\noindent Constructor \texttt{Literal}: \texttt{()}.\par
+\noindent Constructor \texttt{Command}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{Symbol}: \texttt{(ByteArray)}.\par
+\subsection*{\texttt{Lexeme}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{kind}: \texttt{LexemeKind}.\par
+\noindent Field \texttt{line}: \texttt{Nat}.\par
+\noindent Field \texttt{firstOnLine}: \texttt{Bool}.\par
+\noindent Field \texttt{start}: \texttt{Nat}.\par
+\subsection*{\texttt{CommentState}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{position}: \texttt{Nat}.\par
+\noindent Field \texttt{line}: \texttt{Nat}.\par
+\noindent Field \texttt{depth}: \texttt{Nat}.\par
+\noindent Field \texttt{failed}: \texttt{Bool}.\par
+\subsection*{\texttt{StringState}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{position}: \texttt{Nat}.\par
+\noindent Field \texttt{line}: \texttt{Nat}.\par
+\noindent Field \texttt{closed}: \texttt{Bool}.\par
+\noindent Field \texttt{failed}: \texttt{Bool}.\par
+\subsection*{\texttt{QuotedScan}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{position}: \texttt{Nat}.\par
+\noindent Field \texttt{closed}: \texttt{Bool}.\par
+\noindent Field \texttt{failed}: \texttt{Bool}.\par
+\noindent Field \texttt{valid}: \texttt{Bool}.\par
+\subsection*{\texttt{NameScan}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{position}: \texttt{Nat}.\par
+\noindent Field \texttt{segments}: \texttt{List (Segment)}.\par
+\noindent Field \texttt{done}: \texttt{Bool}.\par
+\noindent Field \texttt{error}: \texttt{Option (ByteArray)}.\par
+\subsection*{\texttt{LexState}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{position}: \texttt{Nat}.\par
+\noindent Field \texttt{line}: \texttt{Nat}.\par
+\noindent Field \texttt{firstOnLine}: \texttt{Bool}.\par
+\noindent Field \texttt{chars}: \texttt{Nat}.\par
+\noindent Field \texttt{lexemes}: \texttt{List (Lexeme)}.\par
+\noindent Field \texttt{error}: \texttt{Option (ByteArray)}.\par
+\subsection*{\texttt{AuditState}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{remaining}: \texttt{List (Lexeme)}.\par
+\noindent Field \texttt{attributeDepth}: \texttt{Nat}.\par
+\noindent Field \texttt{pending}: \texttt{Bool}.\par
+\noindent Field \texttt{error}: \texttt{Option (ByteArray)}.\par
+\subsection*{\texttt{listLength}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type parameters: \texttt{(Item)}.\par
+\noindent Parameters: \texttt{(items : List (Item))}.\par
+\noindent Closure 1: binds \texttt{(count, item)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (count : Nat) (\_item : Item) => (count + 1))) (0) (items) : Nat)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{reversed}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type parameters: \texttt{(Item)}.\par
+\noindent Parameters: \texttt{(items : List (Item))}.\par
+\noindent Closure 1: binds \texttt{(turned, item)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (Item)}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (turned : List (Item)) (item : Item) => (item :: turned))) (([] : List (Item))) (items) : List (Item))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{inRange}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(byte : UInt8) (low : UInt8) (high : UInt8)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match (LexLeanRuntime.checkedSubtract (byte) (low) : Option (UInt8)) with | Option.some \_ => (match (LexLeanRuntime.checkedSubtract (high) (byte) : Option (UInt8)) with | Option.some \_ => true | Option.none => false) | Option.none => false)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{byteOrZero}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{UInt8}.\par
+\noindent Definition: \texttt{(match LexLeanStd.Text.byteAt (subject) (position) with | Option.some byte => byte | Option.none => (0 : UInt8))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{byteIs}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat) (value : UInt8)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match LexLeanStd.Text.byteAt (subject) (position) with | Option.some byte => (LexLeanRuntime.equal (byte) (value) : Bool) | Option.none => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{byteIn}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat) (low : UInt8) (high : UInt8)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match LexLeanStd.Text.byteAt (subject) (position) with | Option.some byte => inRange (byte) (low) (high) | Option.none => false)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{isAsciiDigit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(byte : UInt8)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{inRange (byte) ((48 : UInt8)) ((57 : UInt8))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{isAsciiAlpha}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(byte : UInt8)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(let lower : Bool := inRange (byte) ((97 : UInt8)) ((122 : UInt8)); (let upper : Bool := inRange (byte) ((65 : UInt8)) ((90 : UInt8)); (if lower then true else upper)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{isRadixDigit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(byte : UInt8) (radix : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(let bin : Bool := inRange (byte) ((48 : UInt8)) ((49 : UInt8)); (let oct : Bool := inRange (byte) ((48 : UInt8)) ((55 : UInt8)); (let dec : Bool := inRange (byte) ((48 : UInt8)) ((57 : UInt8)); (let low : Bool := inRange (byte) ((97 : UInt8)) ((102 : UInt8)); (let high : Bool := inRange (byte) ((65 : UInt8)) ((70 : UInt8)); (if (Nat.beq (radix) (2)) then bin else (if (Nat.beq (radix) (8)) then oct else (if (Nat.beq (radix) (16)) then (if dec then true else (if low then true else high)) else dec))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{scalarWidth}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(let b0 : UInt8 := byteOrZero (subject) (position); (let ascii : Bool := inRange (b0) ((0 : UInt8)) ((127 : UInt8)); (if ascii then 1 else (let two : Bool := inRange (b0) ((128 : UInt8)) ((223 : UInt8)); (if two then 2 else (let three : Bool := inRange (b0) ((224 : UInt8)) ((239 : UInt8)); (if three then 3 else 4)))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{countScalarsStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (limit : Nat) (state : (Prod (Nat) (Nat)))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option ((Prod (Nat) (Nat)))}.\par
+\noindent Definition: \texttt{(let pos : Nat := (state).1; (let count : Nat := (state).2; (if (Nat.blt (pos) (limit)) then (let w : Nat := scalarWidth (subject) (pos); Option.some (((pos + w), (count + 1)))) else Option.none)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{countScalars}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (fromPos : Nat) (toPos : Nat)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{(subject, toPos)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(((LexLeanCollections.iterateUntil ((fun (state : (Prod (Nat) (Nat))) => countScalarsStep (subject) (toPos) (state))) ((LexLeanRuntime.subtract (toPos) (fromPos) : Nat)) ((fromPos, 0)) : (Prod ((Prod (Nat) (Nat))) (Bool)))).1).2}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{isGuillemetOpen}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(let c2 : Bool := byteIs (subject) (position) ((194 : UInt8)); (let ab : Bool := byteIs (subject) ((position + 1)) ((171 : UInt8)); (if c2 then ab else false)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{isGuillemetClose}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(let c2 : Bool := byteIs (subject) (position) ((194 : UInt8)); (let bb : Bool := byteIs (subject) ((position + 1)) ((187 : UInt8)); (if c2 then bb else false)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{controlCode}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (UInt8)}.\par
+\noindent Definition: \texttt{(if (Nat.blt (position) ((LexLeanRuntime.length (subject) : Nat))) then (let b0 : UInt8 := byteOrZero (subject) (position); (if inRange (b0) ((0 : UInt8)) ((31 : UInt8)) then Option.some (b0) else (if (LexLeanRuntime.equal (b0) ((127 : UInt8)) : Bool) then Option.some (b0) else (if (LexLeanRuntime.equal (b0) ((194 : UInt8)) : Bool) then (if byteIn (subject) ((position + 1)) ((128 : UInt8)) ((159 : UInt8)) then Option.some (byteOrZero (subject) ((position + 1))) else Option.none) else Option.none)))) else Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{hexDigit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(nibble : UInt8)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(let table : ByteArray := (LexLeanRuntime.utf8Encode ("0123456789ABCDEF") : ByteArray); (let idx : Nat := (if (LexLeanRuntime.equal (nibble) ((0 : UInt8)) : Bool) then 0 else (if (LexLeanRuntime.equal (nibble) ((1 : UInt8)) : Bool) then 1 else (if (LexLeanRuntime.equal (nibble) ((2 : UInt8)) : Bool) then 2 else (if (LexLeanRuntime.equal (nibble) ((3 : UInt8)) : Bool) then 3 else (if (LexLeanRuntime.equal (nibble) ((4 : UInt8)) : Bool) then 4 else (if (LexLeanRuntime.equal (nibble) ((5 : UInt8)) : Bool) then 5 else (if (LexLeanRuntime.equal (nibble) ((6 : UInt8)) : Bool) then 6 else (if (LexLeanRuntime.equal (nibble) ((7 : UInt8)) : Bool) then 7 else (if (LexLeanRuntime.equal (nibble) ((8 : UInt8)) : Bool) then 8 else (if (LexLeanRuntime.equal (nibble) ((9 : UInt8)) : Bool) then 9 else (if (LexLeanRuntime.equal (nibble) ((10 : UInt8)) : Bool) then 10 else (if (LexLeanRuntime.equal (nibble) ((11 : UInt8)) : Bool) then 11 else (if (LexLeanRuntime.equal (nibble) ((12 : UInt8)) : Bool) then 12 else (if (LexLeanRuntime.equal (nibble) ((13 : UInt8)) : Bool) then 13 else (if (LexLeanRuntime.equal (nibble) ((14 : UInt8)) : Bool) then 14 else 15))))))))))))))); LexLeanStd.Text.sliceOr (table) (idx) (1)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{controlMessage}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(code : UInt8)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(let high : UInt8 := (match (LexLeanRuntime.shiftRight (code) ((4 : UInt32)) : Option (UInt8)) with | Option.some shifted => shifted | Option.none => (0 : UInt8)); (let low : UInt8 := (LexLeanRuntime.bitAnd (code) ((15 : UInt8)) : UInt8); (let d1 : ByteArray := hexDigit (high); (let d2 : ByteArray := hexDigit (low); (LexLeanRuntime.append ((LexLeanRuntime.append ((LexLeanRuntime.utf8Encode ("a control character U+00") : ByteArray)) ((LexLeanRuntime.append (d1) (d2) : ByteArray)) : ByteArray)) ((LexLeanRuntime.utf8Encode (" in the text") : ByteArray)) : ByteArray)))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{letterLikeWidth}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(let b0 : UInt8 := byteOrZero (subject) (position); (let b1 : UInt8 := byteOrZero (subject) ((position + 1)); (let b2 : UInt8 := byteOrZero (subject) ((position + 2)); (let b3 : UInt8 := byteOrZero (subject) ((position + 3)); (if (LexLeanRuntime.equal (b0) ((206 : UInt8)) : Bool) then (if inRange (b1) ((145 : UInt8)) ((169 : UInt8)) then (if (LexLeanRuntime.equal (b1) ((160 : UInt8)) : Bool) then 0 else (if (LexLeanRuntime.equal (b1) ((163 : UInt8)) : Bool) then 0 else 2)) else (if inRange (b1) ((177 : UInt8)) ((191 : UInt8)) then (if (LexLeanRuntime.equal (b1) ((187 : UInt8)) : Bool) then 0 else 2) else 0)) else (if (LexLeanRuntime.equal (b0) ((207 : UInt8)) : Bool) then (if inRange (b1) ((128 : UInt8)) ((187 : UInt8)) then 2 else 0) else (if (LexLeanRuntime.equal (b0) ((225 : UInt8)) : Bool) then (if inRange (b1) ((188 : UInt8)) ((191 : UInt8)) then (if inRange (b2) ((128 : UInt8)) ((191 : UInt8)) then (if (LexLeanRuntime.equal (b1) ((191 : UInt8)) : Bool) then (if (LexLeanRuntime.equal (b2) ((191 : UInt8)) : Bool) then 0 else 3) else 3) else 0) else 0) else (if (LexLeanRuntime.equal (b0) ((226 : UInt8)) : Bool) then (if (LexLeanRuntime.equal (b1) ((132 : UInt8)) : Bool) then (if inRange (b2) ((128 : UInt8)) ((191 : UInt8)) then 3 else 0) else (if (LexLeanRuntime.equal (b1) ((133 : UInt8)) : Bool) then (if inRange (b2) ((128 : UInt8)) ((143 : UInt8)) then 3 else 0) else 0)) else (if (LexLeanRuntime.equal (b0) ((240 : UInt8)) : Bool) then (if (LexLeanRuntime.equal (b1) ((157 : UInt8)) : Bool) then (if (LexLeanRuntime.equal (b2) ((146 : UInt8)) : Bool) then (if inRange (b3) ((156 : UInt8)) ((191 : UInt8)) then 4 else 0) else (if inRange (b2) ((147 : UInt8)) ((149 : UInt8)) then (if inRange (b3) ((128 : UInt8)) ((191 : UInt8)) then 4 else 0) else (if (LexLeanRuntime.equal (b2) ((150 : UInt8)) : Bool) then (if inRange (b3) ((128 : UInt8)) ((159 : UInt8)) then 4 else 0) else 0))) else 0) else 0)))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{subScriptWidth}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(let b0 : UInt8 := byteOrZero (subject) (position); (let b1 : UInt8 := byteOrZero (subject) ((position + 1)); (let b2 : UInt8 := byteOrZero (subject) ((position + 2)); (if (LexLeanRuntime.equal (b0) ((225 : UInt8)) : Bool) then (if (LexLeanRuntime.equal (b1) ((181 : UInt8)) : Bool) then (if inRange (b2) ((162 : UInt8)) ((170 : UInt8)) then 3 else 0) else 0) else (if (LexLeanRuntime.equal (b0) ((226 : UInt8)) : Bool) then (if (LexLeanRuntime.equal (b1) ((130 : UInt8)) : Bool) then (if inRange (b2) ((128 : UInt8)) ((137 : UInt8)) then 3 else (if inRange (b2) ((144 : UInt8)) ((156 : UInt8)) then 3 else 0)) else 0) else 0)))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{idFirstWidth}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(let b0 : UInt8 := byteOrZero (subject) (position); (let isAlpha : Bool := isAsciiAlpha (b0); (let isUnder : Bool := (LexLeanRuntime.equal (b0) ((95 : UInt8)) : Bool); (let ll : Nat := letterLikeWidth (subject) (position); (if (Nat.blt (position) ((LexLeanRuntime.length (subject) : Nat))) then (if isAlpha then 1 else (if isUnder then 1 else ll)) else 0)))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{idRestWidth}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(let b0 : UInt8 := byteOrZero (subject) (position); (let isAlpha : Bool := isAsciiAlpha (b0); (let isDig : Bool := isAsciiDigit (b0); (let ll : Nat := letterLikeWidth (subject) (position); (let ss : Nat := subScriptWidth (subject) (position); (if (Nat.blt (position) ((LexLeanRuntime.length (subject) : Nat))) then (if isAlpha then 1 else (if isDig then 1 else (if (LexLeanRuntime.equal (b0) ((95 : UInt8)) : Bool) then 1 else (if (LexLeanRuntime.equal (b0) ((39 : UInt8)) : Bool) then 1 else (if (LexLeanRuntime.equal (b0) ((33 : UInt8)) : Bool) then 1 else (if (LexLeanRuntime.equal (b0) ((63 : UInt8)) : Bool) then 1 else (if (Nat.blt (0) (ll)) then ll else ss))))))) else 0))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{canStartIdent}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(let w : Nat := idFirstWidth (subject) (position); (let g : Bool := isGuillemetOpen (subject) (position); (if (Nat.blt (0) (w)) then true else g)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{scanIdRestStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Nat)}.\par
+\noindent Definition: \texttt{(let w : Nat := idRestWidth (subject) (position); (if (Nat.blt (0) (w)) then Option.some ((position + w)) else Option.none))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{scanIdRest}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (startPos : Nat)}.\par
+\noindent Closure 1: binds \texttt{(position)}, captures \texttt{(subject)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{((LexLeanCollections.iterateUntil ((fun (position : Nat) => scanIdRestStep (subject) (position))) ((LexLeanRuntime.subtract ((LexLeanRuntime.length (subject) : Nat)) (startPos) : Nat)) (startPos) : (Prod (Nat) (Bool)))).1}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{scanLineCommentStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (n : Nat) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Nat)}.\par
+\noindent Definition: \texttt{(if (Nat.blt (position) (n)) then (let isLf : Bool := byteIs (subject) (position) ((10 : UInt8)); (if isLf then Option.none else Option.some ((position + 1)))) else Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{scanLineComment}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (startPos : Nat)}.\par
+\noindent Closure 1: binds \texttt{(position)}, captures \texttt{(n, subject)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(let n : Nat := (LexLeanRuntime.length (subject) : Nat); ((LexLeanCollections.iterateUntil ((fun (position : Nat) => scanLineCommentStep (subject) (n) (position))) ((LexLeanRuntime.subtract (n) (startPos) : Nat)) (startPos) : (Prod (Nat) (Bool)))).1)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{scanBlockCommentStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (n : Nat) (s : CommentState)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (CommentState)}.\par
+\noindent Definition: \texttt{(let pos : Nat := (s).position; (let ln : Nat := (s).line; (let dep : Nat := (s).depth; (if (Nat.beq (dep) (0)) then Option.none else (if (s).failed then Option.none else (if (Nat.blt (pos) (n)) then (let b0 : UInt8 := byteOrZero (subject) (pos); (if (if (LexLeanRuntime.equal (b0) ((47 : UInt8)) : Bool) then byteIs (subject) ((pos + 1)) ((45 : UInt8)) else false) then Option.some ((\{ position := (pos + 2), line := ln, depth := (dep + 1), failed := false \} : CommentState)) else (if (if (LexLeanRuntime.equal (b0) ((45 : UInt8)) : Bool) then byteIs (subject) ((pos + 1)) ((47 : UInt8)) else false) then Option.some ((\{ position := (pos + 2), line := ln, depth := (LexLeanRuntime.subtract (dep) (1) : Nat), failed := false \} : CommentState)) else (if (LexLeanRuntime.equal (b0) ((10 : UInt8)) : Bool) then Option.some ((\{ position := (pos + 1), line := (ln + 1), depth := dep, failed := false \} : CommentState)) else Option.some ((\{ position := (pos + scalarWidth (subject) (pos)), line := ln, depth := dep, failed := false \} : CommentState)))))) else Option.some ((\{ position := pos, line := ln, depth := dep, failed := true \} : CommentState))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{scanBlockComment}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (startPos : Nat) (startLine : Nat)}.\par
+\noindent Closure 1: binds \texttt{(s)}, captures \texttt{(n, subject)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{CommentState}.\par
+\noindent Definition: \texttt{(let n : Nat := (LexLeanRuntime.length (subject) : Nat); ((LexLeanCollections.iterateUntil ((fun (s : CommentState) => scanBlockCommentStep (subject) (n) (s))) (((LexLeanRuntime.subtract (n) (startPos) : Nat) + 1)) ((\{ position := startPos, line := startLine, depth := 1, failed := false \} : CommentState)) : (Prod (CommentState) (Bool)))).1)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{scanStringStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (n : Nat) (s : StringState)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (StringState)}.\par
+\noindent Definition: \texttt{(let pos : Nat := (s).position; (let ln : Nat := (s).line; (if (s).closed then Option.none else (if (s).failed then Option.none else (if (Nat.blt (pos) (n)) then (let b0 : UInt8 := byteOrZero (subject) (pos); (if (LexLeanRuntime.equal (b0) ((92 : UInt8)) : Bool) then (if (Nat.blt ((pos + 1)) (n)) then (let w : Nat := scalarWidth (subject) ((pos + 1)); Option.some ((\{ position := ((pos + 1) + w), line := ln, closed := false, failed := false \} : StringState))) else Option.some ((\{ position := n, line := ln, closed := false, failed := true \} : StringState))) else (if (LexLeanRuntime.equal (b0) ((34 : UInt8)) : Bool) then Option.some ((\{ position := (pos + 1), line := ln, closed := true, failed := false \} : StringState)) else (if (LexLeanRuntime.equal (b0) ((10 : UInt8)) : Bool) then Option.some ((\{ position := (pos + 1), line := (ln + 1), closed := false, failed := false \} : StringState)) else (let w : Nat := scalarWidth (subject) (pos); Option.some ((\{ position := (pos + w), line := ln, closed := false, failed := false \} : StringState))))))) else Option.some ((\{ position := pos, line := ln, closed := false, failed := true \} : StringState)))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{scanString}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (startPos : Nat) (startLine : Nat)}.\par
+\noindent Closure 1: binds \texttt{(s)}, captures \texttt{(n, subject)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{StringState}.\par
+\noindent Definition: \texttt{(let n : Nat := (LexLeanRuntime.length (subject) : Nat); ((LexLeanCollections.iterateUntil ((fun (s : StringState) => scanStringStep (subject) (n) (s))) (((LexLeanRuntime.subtract (n) (startPos) : Nat) + 1)) ((\{ position := startPos, line := startLine, closed := false, failed := false \} : StringState)) : (Prod (StringState) (Bool)))).1)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{countRawHashesStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Nat)}.\par
+\noindent Definition: \texttt{(let isHash : Bool := byteIs (subject) (position) ((35 : UInt8)); (if isHash then Option.some ((position + 1)) else Option.none))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{countRawHashes}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (startPos : Nat)}.\par
+\noindent Closure 1: binds \texttt{(position)}, captures \texttt{(subject)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(let n : Nat := (LexLeanRuntime.length (subject) : Nat); (let endPos : Nat := ((LexLeanCollections.iterateUntil ((fun (position : Nat) => countRawHashesStep (subject) (position))) ((LexLeanRuntime.subtract (n) (startPos) : Nat)) (startPos) : (Prod (Nat) (Bool)))).1; (LexLeanRuntime.subtract (endPos) (startPos) : Nat)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{hasClosingHashesStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (startPos : Nat) (hashes : Nat) (state : (Prod (Nat) (Bool)))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option ((Prod (Nat) (Bool)))}.\par
+\noindent Definition: \texttt{(let k : Nat := (state).1; (let ok : Bool := (state).2; (if ok then (if (Nat.blt (k) (hashes)) then (let nextOk : Bool := byteIs (subject) ((startPos + k)) ((35 : UInt8)); Option.some (((k + 1), nextOk))) else Option.none) else Option.none)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{hasClosingHashes}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (startPos : Nat) (hashes : Nat)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{(hashes, startPos, subject)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(((LexLeanCollections.iterateUntil ((fun (state : (Prod (Nat) (Bool))) => hasClosingHashesStep (subject) (startPos) (hashes) (state))) (hashes) ((0, true)) : (Prod ((Prod (Nat) (Bool))) (Bool)))).1).2}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{scanRawStringStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (n : Nat) (hashes : Nat) (s : StringState)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (StringState)}.\par
+\noindent Definition: \texttt{(let pos : Nat := (s).position; (let ln : Nat := (s).line; (if (s).closed then Option.none else (if (s).failed then Option.none else (if (Nat.blt (pos) (n)) then (let b0 : UInt8 := byteOrZero (subject) (pos); (if (LexLeanRuntime.equal (b0) ((34 : UInt8)) : Bool) then (let matchHashes : Bool := hasClosingHashes (subject) ((pos + 1)) (hashes); (if matchHashes then Option.some ((\{ position := ((pos + 1) + hashes), line := ln, closed := true, failed := false \} : StringState)) else Option.some ((\{ position := (pos + 1), line := ln, closed := false, failed := false \} : StringState)))) else (if (LexLeanRuntime.equal (b0) ((10 : UInt8)) : Bool) then Option.some ((\{ position := (pos + 1), line := (ln + 1), closed := false, failed := false \} : StringState)) else (let w : Nat := scalarWidth (subject) (pos); Option.some ((\{ position := (pos + w), line := ln, closed := false, failed := false \} : StringState)))))) else Option.some ((\{ position := pos, line := ln, closed := false, failed := true \} : StringState)))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{scanRawString}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (startPos : Nat) (startLine : Nat) (hashes : Nat)}.\par
+\noindent Closure 1: binds \texttt{(s)}, captures \texttt{(hashes, n, subject)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{StringState}.\par
+\noindent Definition: \texttt{(let n : Nat := (LexLeanRuntime.length (subject) : Nat); ((LexLeanCollections.iterateUntil ((fun (s : StringState) => scanRawStringStep (subject) (n) (hashes) (s))) (((LexLeanRuntime.subtract (n) (startPos) : Nat) + 1)) ((\{ position := startPos, line := startLine, closed := false, failed := false \} : StringState)) : (Prod (StringState) (Bool)))).1)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{advanceScalarsStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (n : Nat) (count : Nat) (state : (Prod (Nat) ((Prod (Nat) (Bool)))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option ((Prod (Nat) ((Prod (Nat) (Bool)))))}.\par
+\noindent Definition: \texttt{(let pos : Nat := (state).1; (let step : Nat := ((state).2).1; (let ok : Bool := ((state).2).2; (if ok then (if (Nat.blt (step) (count)) then (if (Nat.blt (pos) (n)) then (let w : Nat := scalarWidth (subject) (pos); Option.some (((pos + w), ((step + 1), true)))) else Option.some ((pos, ((step + 1), false)))) else Option.none) else Option.none))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{advanceScalars}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (startPos : Nat) (count : Nat)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{(count, subject)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Nat)}.\par
+\noindent Definition: \texttt{(let final : (Prod (Nat) ((Prod (Nat) (Bool)))) := ((LexLeanCollections.iterateUntil ((fun (state : (Prod (Nat) ((Prod (Nat) (Bool))))) => advanceScalarsStep (subject) ((LexLeanRuntime.length (subject) : Nat)) (count) (state))) (count) ((startPos, (0, true))) : (Prod ((Prod (Nat) ((Prod (Nat) (Bool))))) (Bool)))).1; (if ((final).2).2 then Option.some ((final).1) else Option.none))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{scanCharLiteral}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (startPos : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Nat)}.\par
+\noindent Definition: \texttt{(let n : Nat := (LexLeanRuntime.length (subject) : Nat); (let p1 : Nat := (startPos + 1); (let b1 : UInt8 := byteOrZero (subject) (p1); (let p2 : Nat := (p1 + 1); (let esc : UInt8 := byteOrZero (subject) (p2); (let p3 : Nat := (p2 + scalarWidth (subject) (p2)); (let adv2 : Option (Nat) := advanceScalars (subject) (p3) (2); (let adv4 : Option (Nat) := advanceScalars (subject) (p3) (4); (let w1 : Nat := scalarWidth (subject) (p1); (let afterBody : Option (Nat) := (if (Nat.blt (p1) (n)) then (if (LexLeanRuntime.equal (b1) ((92 : UInt8)) : Bool) then (if (Nat.blt (p2) (n)) then (if (LexLeanRuntime.equal (esc) ((120 : UInt8)) : Bool) then adv2 else (if (LexLeanRuntime.equal (esc) ((117 : UInt8)) : Bool) then adv4 else Option.some (p3))) else Option.none) else (if (LexLeanRuntime.equal (b1) ((39 : UInt8)) : Bool) then Option.none else (if (LexLeanRuntime.equal (b1) ((10 : UInt8)) : Bool) then Option.none else Option.some ((p1 + w1))))) else Option.none); (match afterBody with | Option.some endPos => (let isQuote : Bool := byteIs (subject) (endPos) ((39 : UInt8)); (if isQuote then Option.some ((endPos + 1)) else Option.none)) | Option.none => Option.none)))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{scanDigitsOnlyStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Nat)}.\par
+\noindent Definition: \texttt{(let isDig : Bool := byteIn (subject) (position) ((48 : UInt8)) ((57 : UInt8)); (if isDig then Option.some ((position + 1)) else Option.none))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{scanDigitsOnly}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (startPos : Nat)}.\par
+\noindent Closure 1: binds \texttt{(position)}, captures \texttt{(subject)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(let n : Nat := (LexLeanRuntime.length (subject) : Nat); ((LexLeanCollections.iterateUntil ((fun (position : Nat) => scanDigitsOnlyStep (subject) (position))) ((LexLeanRuntime.subtract (n) (startPos) : Nat)) (startPos) : (Prod (Nat) (Bool)))).1)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{scanDigitsStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (n : Nat) (radix : Nat) (state : (Prod (Nat) ((Prod (Bool) (Bool)))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option ((Prod (Nat) ((Prod (Bool) (Bool)))))}.\par
+\noindent Definition: \texttt{(let pos : Nat := (state).1; (let needed : Bool := ((state).2).1; (let done : Bool := ((state).2).2; (if done then Option.none else (if (Nat.blt (pos) (n)) then (let b : UInt8 := byteOrZero (subject) (pos); (if (LexLeanRuntime.equal (b) ((95 : UInt8)) : Bool) then Option.some (((pos + 1), (true, false))) else (let okDig : Bool := isRadixDigit (b) (radix); (if okDig then Option.some (((pos + 1), (false, false))) else Option.some ((pos, (needed, true))))))) else Option.some ((pos, (needed, true))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{scanDigits}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (startPos : Nat) (radix : Nat) (neededInit : Bool)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{(n, radix, subject)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Nat)}.\par
+\noindent Definition: \texttt{(let n : Nat := (LexLeanRuntime.length (subject) : Nat); (let final : (Prod (Nat) ((Prod (Bool) (Bool)))) := ((LexLeanCollections.iterateUntil ((fun (state : (Prod (Nat) ((Prod (Bool) (Bool))))) => scanDigitsStep (subject) (n) (radix) (state))) (((LexLeanRuntime.subtract (n) (startPos) : Nat) + 1)) ((startPos, (neededInit, false))) : (Prod ((Prod (Nat) ((Prod (Bool) (Bool))))) (Bool)))).1; (if ((final).2).1 then Except.error ((LexLeanRuntime.utf8Encode ("a number has a digit separator or a radix prefix with no digit after it") : ByteArray)) else Except.ok ((final).1))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{scanExponent}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (expPos : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Nat)}.\par
+\noindent Definition: \texttt{(let p1 : Nat := (expPos + 1); (let hasPlus : Bool := byteIs (subject) (p1) ((43 : UInt8)); (let hasMinus : Bool := byteIs (subject) (p1) ((45 : UInt8)); (let digStart : Nat := (if hasPlus then (p1 + 1) else (if hasMinus then (p1 + 1) else p1)); (let hasDig : Bool := byteIn (subject) (digStart) ((48 : UInt8)) ((57 : UInt8)); (let digRes : Except (ByteArray) (Nat) := scanDigits (subject) (digStart) (10) (false); (if hasDig then digRes else Except.error ((LexLeanRuntime.utf8Encode ("a scientific literal has no exponent digits") : ByteArray)))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{scanAfterDot}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (posNow : Nat) (bareDot : Bool)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Nat)}.\par
+\noindent Definition: \texttt{(let isE : Bool := byteIs (subject) (posNow) ((101 : UInt8)); (let isCapE : Bool := byteIs (subject) (posNow) ((69 : UInt8)); (let expRes : Except (ByteArray) (Nat) := scanExponent (subject) (posNow); (let canId : Bool := canStartIdent (subject) (posNow); (if (if isE then true else isCapE) then expRes else (if (if bareDot then canId else false) then Except.error ((LexLeanRuntime.utf8Encode ("an identifier follows a decimal point") : ByteArray)) else Except.ok (posNow)))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{scanAfterInt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (afterInt : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Nat)}.\par
+\noindent Definition: \texttt{(let dot0 : Bool := byteIs (subject) (afterInt) ((46 : UInt8)); (let dot1 : Bool := byteIs (subject) ((afterInt + 1)) ((46 : UInt8)); (let digAfterDot : Bool := byteIn (subject) ((afterInt + 1)) ((48 : UInt8)) ((57 : UInt8)); (let isE : Bool := byteIs (subject) (afterInt) ((101 : UInt8)); (let isCapE : Bool := byteIs (subject) (afterInt) ((69 : UInt8)); (let bareDotRes : Except (ByteArray) (Nat) := scanAfterDot (subject) ((afterInt + 1)) (true); (let expHereRes : Except (ByteArray) (Nat) := scanAfterDot (subject) (afterInt) (false); (let fracRes : Except (ByteArray) (Nat) := (match scanDigits (subject) ((afterInt + 1)) (10) (false) with | Except.error msg => Except.error (msg) | Except.ok pFrac => scanAfterDot (subject) (pFrac) (false)); (if (if dot0 then dot1 else false) then Except.ok (afterInt) else (if dot0 then (if digAfterDot then fracRes else bareDotRes) else (if (if isE then true else isCapE) then expHereRes else Except.ok (afterInt))))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{scanNumber}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (startPos : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Nat)}.\par
+\noindent Definition: \texttt{(let c0 : UInt8 := byteOrZero (subject) (startPos); (let c1 : UInt8 := byteOrZero (subject) ((startPos + 1)); (let radix : Nat := (if (LexLeanRuntime.equal (c0) ((48 : UInt8)) : Bool) then (if (LexLeanRuntime.equal (c1) ((120 : UInt8)) : Bool) then 16 else (if (LexLeanRuntime.equal (c1) ((88 : UInt8)) : Bool) then 16 else (if (LexLeanRuntime.equal (c1) ((98 : UInt8)) : Bool) then 2 else (if (LexLeanRuntime.equal (c1) ((66 : UInt8)) : Bool) then 2 else (if (LexLeanRuntime.equal (c1) ((111 : UInt8)) : Bool) then 8 else (if (LexLeanRuntime.equal (c1) ((79 : UInt8)) : Bool) then 8 else 10)))))) else 10); (let radixRes : Except (ByteArray) (Nat) := scanDigits (subject) ((startPos + 2)) (radix) (true); (let endField : Nat := scanDigitsOnly (subject) (startPos); (let decRes : Except (ByteArray) (Nat) := (match scanDigits (subject) ((startPos + 1)) (10) (false) with | Except.error msg => Except.error (msg) | Except.ok afterInt => scanAfterInt (subject) (afterInt)); (if (!(Nat.beq (radix) (10))) then radixRes else (if (if (!(LexLeanRuntime.equal (c0) ((48 : UInt8)) : Bool)) then (if (Nat.blt (0) (startPos)) then byteIs (subject) ((LexLeanRuntime.subtract (startPos) (1) : Nat)) ((46 : UInt8)) else false) else false) then (if (if byteIs (subject) (endField) ((95 : UInt8)) then true else (if byteIs (subject) (endField) ((101 : UInt8)) then true else byteIs (subject) (endField) ((69 : UInt8)))) then Except.error ((LexLeanRuntime.utf8Encode ("a field index is followed by what could continue a number") : ByteArray)) else Except.ok (endField)) else decRes))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{scanQuotedStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (n : Nat) (s : QuotedScan)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (QuotedScan)}.\par
+\noindent Definition: \texttt{(let pos : Nat := (s).position; (let valid : Bool := (s).valid; (if (s).closed then Option.none else (if (s).failed then Option.none else (if (Nat.blt (pos) (n)) then (let isLf : Bool := byteIs (subject) (pos) ((10 : UInt8)); (if isLf then Option.some ((\{ position := pos, closed := false, failed := true, valid := valid \} : QuotedScan)) else (let isClose : Bool := isGuillemetClose (subject) (pos); (if isClose then Option.some ((\{ position := pos, closed := true, failed := false, valid := valid \} : QuotedScan)) else (let wRest : Nat := idRestWidth (subject) (pos); (if (Nat.blt (0) (wRest)) then Option.some ((\{ position := (pos + wRest), closed := false, failed := false, valid := valid \} : QuotedScan)) else (let isDot : Bool := byteIs (subject) (pos) ((46 : UInt8)); (if isDot then Option.some ((\{ position := (pos + 1), closed := false, failed := false, valid := valid \} : QuotedScan)) else (let wAny : Nat := scalarWidth (subject) (pos); Option.some ((\{ position := (pos + wAny), closed := false, failed := false, valid := false \} : QuotedScan))))))))))) else Option.some ((\{ position := pos, closed := false, failed := true, valid := valid \} : QuotedScan)))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{scanQuotedSegment}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (openPos : Nat)}.\par
+\noindent Closure 1: binds \texttt{(s)}, captures \texttt{(subject)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) ((Prod (Segment) (Nat)))}.\par
+\noindent Definition: \texttt{(let bodyStart : Nat := (openPos + 2); (let scanned : QuotedScan := ((LexLeanCollections.iterateUntil ((fun (s : QuotedScan) => scanQuotedStep (subject) ((LexLeanRuntime.length (subject) : Nat)) (s))) (((LexLeanRuntime.subtract ((LexLeanRuntime.length (subject) : Nat)) (bodyStart) : Nat) + 1)) ((\{ position := bodyStart, closed := false, failed := false, valid := true \} : QuotedScan)) : (Prod (QuotedScan) (Bool)))).1; (let nameBytes : ByteArray := LexLeanStd.Text.sliceOr (subject) (bodyStart) ((LexLeanRuntime.subtract ((scanned).position) (bodyStart) : Nat)); (if (scanned).closed then (if (if (Nat.blt (0) ((LexLeanRuntime.length (nameBytes) : Nat))) then (scanned).valid else false) then Except.ok (((\{ text := nameBytes, quoted := true \} : Segment), ((scanned).position + 2))) else Except.error ((LexLeanRuntime.append ((LexLeanRuntime.append ((LexLeanRuntime.utf8Encode ("the quoted name `") : ByteArray)) (nameBytes) : ByteArray)) ((LexLeanRuntime.utf8Encode ("` is not a name") : ByteArray)) : ByteArray))) else Except.error ((LexLeanRuntime.utf8Encode ("a quoted name is not closed") : ByteArray))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{scanSegmentsStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (s : NameScan)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (NameScan)}.\par
+\noindent Definition: \texttt{(let isOpen : Bool := isGuillemetOpen (subject) ((s).position); (let quotedRes : Except (ByteArray) ((Prod (Segment) (Nat))) := scanQuotedSegment (subject) ((s).position); (let endSeg : Nat := scanIdRest (subject) (((s).position + idFirstWidth (subject) ((s).position))); (let plainRes : Except (ByteArray) ((Prod (Segment) (Nat))) := Except.ok (((\{ text := LexLeanStd.Text.sliceOr (subject) ((s).position) ((LexLeanRuntime.subtract (endSeg) ((s).position) : Nat)), quoted := false \} : Segment), endSeg)); (if (s).done then Option.none else (match (if isOpen then quotedRes else plainRes) with | Except.error msg => Option.some ((\{ position := (s).position, segments := (s).segments, done := true, error := Option.some (msg) \} : NameScan)) | Except.ok pair => (let hasDot : Bool := byteIs (subject) ((pair).2) ((46 : UInt8)); (let canCont : Bool := canStartIdent (subject) (((pair).2 + 1)); (if (if hasDot then canCont else false) then Option.some ((\{ position := ((pair).2 + 1), segments := ((pair).1 :: (s).segments), done := false, error := Option.none \} : NameScan)) else Option.some ((\{ position := (pair).2, segments := ((pair).1 :: (s).segments), done := true, error := Option.none \} : NameScan)))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{scanSegments}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (startPos : Nat)}.\par
+\noindent Closure 1: binds \texttt{(s)}, captures \texttt{(subject)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) ((Prod (List (Segment)) (Nat)))}.\par
+\noindent Definition: \texttt{(let n : Nat := (LexLeanRuntime.length (subject) : Nat); (let scanned : NameScan := ((LexLeanCollections.iterateUntil ((fun (s : NameScan) => scanSegmentsStep (subject) (s))) (((LexLeanRuntime.subtract (n) (startPos) : Nat) + 1)) ((\{ position := startPos, segments := ([] : List (Segment)), done := false, error := Option.none \} : NameScan)) : (Prod (NameScan) (Bool)))).1; (match (scanned).error with | Option.some msg => Except.error (msg) | Option.none => (let revSegs : List (Segment) := reversed (Segment) ((scanned).segments); Except.ok ((revSegs, (scanned).position))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{pushLexeme}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(nextPos : Nat) (nextLine : Nat) (chs : Nat) (delta : Nat) (kind : LexemeKind) (itemLine : Nat) (firstOn : Bool) (lexs : List (Lexeme))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexState}.\par
+\noindent Definition: \texttt{(\{ position := nextPos, line := nextLine, firstOnLine := false, chars := (chs + delta), lexemes := ((\{ kind := kind, line := itemLine, firstOnLine := firstOn, start := chs \} : Lexeme) :: lexs), error := Option.none \} : LexState)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{failLex}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(pos : Nat) (ln : Nat) (firstOn : Bool) (chs : Nat) (lexs : List (Lexeme)) (msg : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexState}.\par
+\noindent Definition: \texttt{(\{ position := pos, line := ln, firstOnLine := firstOn, chars := chs, lexemes := lexs, error := Option.some (msg) \} : LexState)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{stepLexIdent}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (pos : Nat) (ln : Nat) (firstOn : Bool) (chs : Nat) (lexs : List (Lexeme))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexState}.\par
+\noindent Definition: \texttt{(match scanSegments (subject) (pos) with | Except.error msg => failLex (pos) (ln) (false) (chs) (lexs) (msg) | Except.ok pair => (match (pair).1 with | List.nil => (\{ position := (pair).2, line := ln, firstOnLine := false, chars := chs, lexemes := lexs, error := Option.none \} : LexState) | List.cons firstSeg restSegs => (match restSegs with | List.nil => (let hashes : Nat := countRawHashes (subject) ((pair).2); (let rState : StringState := scanRawString (subject) ((((pair).2 + hashes) + 1)) (ln) (hashes); (let rawOut : LexState := (if (rState).failed then failLex (pos) (ln) (false) (chs) (lexs) ((LexLeanRuntime.utf8Encode ("a raw string is not closed") : ByteArray)) else pushLexeme ((rState).position) ((rState).line) (chs) (countScalars (subject) (pos) ((rState).position)) (LexemeKind.Literal) (ln) (firstOn) (lexs)); (let interpFail : LexState := failLex (pos) (ln) (false) (chs) (lexs) ((LexLeanRuntime.utf8Encode ("an interpolated string holds code") : ByteArray)); (let identOut : LexState := pushLexeme ((pair).2) (ln) (chs) (countScalars (subject) (pos) ((pair).2)) (LexemeKind.Ident ((pair).1)) (ln) (firstOn) (lexs); (let isBanged : Bool := LexLeanStd.Text.endsWith ((firstSeg).text) ((LexLeanRuntime.utf8Encode ("!") : ByteArray)); (let isQuoteAfter : Bool := byteIs (subject) ((pair).2) ((34 : UInt8)); (let isRawQuote : Bool := byteIs (subject) (((pair).2 + hashes)) ((34 : UInt8)); (if (if (!(firstSeg).quoted) then (if (LexLeanRuntime.equal ((firstSeg).text) ((LexLeanRuntime.utf8Encode ("r") : ByteArray)) : Bool) then isRawQuote else false) else false) then rawOut else (if (if (!(firstSeg).quoted) then (if isBanged then isQuoteAfter else false) else false) then interpFail else identOut)))))))))) | List.cons \_ \_ => pushLexeme ((pair).2) (ln) (chs) (countScalars (subject) (pos) ((pair).2)) (LexemeKind.Ident ((pair).1)) (ln) (firstOn) (lexs))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{stepLexToken}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (b0 : UInt8) (pos : Nat) (ln : Nat) (firstOn : Bool) (chs : Nat) (lexs : List (Lexeme))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexState}.\par
+\noindent Definition: \texttt{(let sState : StringState := scanString (subject) ((pos + 1)) (ln); (let strOut : LexState := (if (sState).failed then failLex (pos) (ln) (false) (chs) (lexs) ((LexLeanRuntime.utf8Encode ("a string is not closed") : ByteArray)) else pushLexeme ((sState).position) ((sState).line) (chs) (countScalars (subject) (pos) ((sState).position)) (LexemeKind.Literal) (ln) (firstOn) (lexs)); (let charOut : LexState := (match scanCharLiteral (subject) (pos) with | Option.some endPos => pushLexeme (endPos) (ln) (chs) (countScalars (subject) (pos) (endPos)) (LexemeKind.Literal) (ln) (firstOn) (lexs) | Option.none => failLex (pos) (ln) (false) (chs) (lexs) ((LexLeanRuntime.utf8Encode ("a character literal is not closed") : ByteArray))); (let numOut : LexState := (match scanNumber (subject) (pos) with | Except.error msg => failLex (pos) (ln) (false) (chs) (lexs) (msg) | Except.ok endPos => pushLexeme (endPos) (ln) (chs) (countScalars (subject) (pos) (endPos)) (LexemeKind.Number) (ln) (firstOn) (lexs)); (let wCmd1 : Nat := idFirstWidth (subject) ((pos + 1)); (let endCmd : Nat := scanIdRest (subject) (((pos + 1) + wCmd1)); (let cmdOut : LexState := pushLexeme (endCmd) (ln) (chs) (countScalars (subject) (pos) (endCmd)) (LexemeKind.Command (LexLeanStd.Text.sliceOr (subject) (pos) ((LexLeanRuntime.subtract (endCmd) (pos) : Nat)))) (ln) (firstOn) (lexs); (let canId : Bool := canStartIdent (subject) (pos); (let idOut : LexState := stepLexIdent (subject) (pos) (ln) (firstOn) (chs) (lexs); (let wSym : Nat := scalarWidth (subject) (pos); (let symOut : LexState := pushLexeme ((pos + wSym)) (ln) (chs) (1) (LexemeKind.Symbol (LexLeanStd.Text.sliceOr (subject) (pos) (wSym))) (ln) (firstOn) (lexs); (let isDig : Bool := isAsciiDigit (b0); (if (LexLeanRuntime.equal (b0) ((34 : UInt8)) : Bool) then strOut else (if (LexLeanRuntime.equal (b0) ((39 : UInt8)) : Bool) then charOut else (if isDig then numOut else (if (if (LexLeanRuntime.equal (b0) ((35 : UInt8)) : Bool) then (Nat.blt (0) (wCmd1)) else false) then cmdOut else (if canId then idOut else symOut)))))))))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{stepLexAt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (pos : Nat) (ln : Nat) (firstOn : Bool) (chs : Nat) (lexs : List (Lexeme))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (LexState)}.\par
+\noindent Definition: \texttt{(let b0 : UInt8 := byteOrZero (subject) (pos); (let isDash2 : Bool := byteIs (subject) ((pos + 1)) ((45 : UInt8)); (let endLine : Nat := scanLineComment (subject) (pos); (let cState : CommentState := scanBlockComment (subject) ((pos + 2)) (ln); (let tokOut : LexState := stepLexToken (subject) (b0) (pos) (ln) (firstOn) (chs) (lexs); (if (LexLeanRuntime.equal (b0) ((10 : UInt8)) : Bool) then Option.some ((\{ position := (pos + 1), line := (ln + 1), firstOnLine := true, chars := (chs + 1), lexemes := lexs, error := Option.none \} : LexState)) else (if (if (LexLeanRuntime.equal (b0) ((32 : UInt8)) : Bool) then true else (if (LexLeanRuntime.equal (b0) ((9 : UInt8)) : Bool) then true else (LexLeanRuntime.equal (b0) ((13 : UInt8)) : Bool))) then Option.some ((\{ position := (pos + 1), line := ln, firstOnLine := firstOn, chars := (chs + 1), lexemes := lexs, error := Option.none \} : LexState)) else (match controlCode (subject) (pos) with | Option.some code => (let msg : ByteArray := controlMessage (code); Option.some (failLex (pos) (ln) (firstOn) (chs) (lexs) (msg))) | Option.none => (if (if (LexLeanRuntime.equal (b0) ((45 : UInt8)) : Bool) then isDash2 else false) then Option.some ((\{ position := endLine, line := ln, firstOnLine := firstOn, chars := (chs + countScalars (subject) (pos) (endLine)), lexemes := lexs, error := Option.none \} : LexState)) else (if (if (LexLeanRuntime.equal (b0) ((47 : UInt8)) : Bool) then isDash2 else false) then (if (cState).failed then Option.some (failLex (pos) (ln) (firstOn) (chs) (lexs) ((LexLeanRuntime.utf8Encode ("a comment is not closed") : ByteArray))) else Option.some ((\{ position := (cState).position, line := (cState).line, firstOnLine := firstOn, chars := (chs + countScalars (subject) (pos) ((cState).position)), lexemes := lexs, error := Option.none \} : LexState))) else Option.some (tokOut)))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{stepLex}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (n : Nat) (state : LexState)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (LexState)}.\par
+\noindent Definition: \texttt{(match (state).error with | Option.some \_ => Option.none | Option.none => (let nextOpt : Option (LexState) := stepLexAt (subject) ((state).position) ((state).line) ((state).firstOnLine) ((state).chars) ((state).lexemes); (if (Nat.blt ((state).position) (n)) then nextOpt else Option.none)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{lex}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(text : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(s)}, captures \texttt{(n, text)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{Except (ByteArray) (List (Lexeme))}.\par
+\noindent Definition: \texttt{(let n : Nat := (LexLeanRuntime.length (text) : Nat); (let finalState : LexState := ((LexLeanCollections.iterateUntil ((fun (s : LexState) => stepLex (text) (n) (s))) ((n + 1)) ((\{ position := 0, line := 0, firstOnLine := true, chars := 0, lexemes := ([] : List (Lexeme)), error := Option.none \} : LexState)) : (Prod (LexState) (Bool)))).1; (match (finalState).error with | Option.some msg => Except.error (msg) | Option.none => (let revLexs : List (Lexeme) := reversed (Lexeme) ((finalState).lexemes); Except.ok (revLexs)))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{bytesInList}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(needle : ByteArray) (items : List (ByteArray))}.\par
+\noindent Closure 1: binds \texttt{(found, item)}, captures \texttt{(needle)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (found : Bool) (item : ByteArray) => (if found then true else (LexLeanRuntime.equal (item) (needle) : Bool)))) (false) (items) : Bool)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{isForbiddenConstant}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(word : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(if (LexLeanRuntime.equal (word) ((LexLeanRuntime.utf8Encode ("ofReduceBool") : ByteArray)) : Bool) then true else (if (LexLeanRuntime.equal (word) ((LexLeanRuntime.utf8Encode ("ofReduceNat") : ByteArray)) : Bool) then true else (LexLeanRuntime.equal (word) ((LexLeanRuntime.utf8Encode ("sorryAx") : ByteArray)) : Bool)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{isForbiddenToken}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(word : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(let items : List (ByteArray) := ((LexLeanRuntime.utf8Encode ("sorry") : ByteArray) :: ((LexLeanRuntime.utf8Encode ("admit") : ByteArray) :: ((LexLeanRuntime.utf8Encode ("axiom") : ByteArray) :: ((LexLeanRuntime.utf8Encode ("opaque") : ByteArray) :: ((LexLeanRuntime.utf8Encode ("unsafe") : ByteArray) :: ((LexLeanRuntime.utf8Encode ("partial") : ByteArray) :: ((LexLeanRuntime.utf8Encode ("native\_decide") : ByteArray) :: ((LexLeanRuntime.utf8Encode ("kernel") : ByteArray) :: ((LexLeanRuntime.utf8Encode ("ofReduceBool") : ByteArray) :: ((LexLeanRuntime.utf8Encode ("ofReduceNat") : ByteArray) :: ((LexLeanRuntime.utf8Encode ("implemented\_by") : ByteArray) :: ((LexLeanRuntime.utf8Encode ("extern") : ByteArray) :: ((LexLeanRuntime.utf8Encode ("macro") : ByteArray) :: ((LexLeanRuntime.utf8Encode ("macro\_rules") : ByteArray) :: ((LexLeanRuntime.utf8Encode ("syntax") : ByteArray) :: ((LexLeanRuntime.utf8Encode ("elab") : ByteArray) :: ((LexLeanRuntime.utf8Encode ("elab\_rules") : ByteArray) :: ((LexLeanRuntime.utf8Encode ("notation") : ByteArray) :: ((LexLeanRuntime.utf8Encode ("infix") : ByteArray) :: ((LexLeanRuntime.utf8Encode ("infixl") : ByteArray) :: ((LexLeanRuntime.utf8Encode ("infixr") : ByteArray) :: ((LexLeanRuntime.utf8Encode ("prefix") : ByteArray) :: ((LexLeanRuntime.utf8Encode ("postfix") : ByteArray) :: ((LexLeanRuntime.utf8Encode ("\#eval") : ByteArray) :: ((LexLeanRuntime.utf8Encode ("run\_cmd") : ByteArray) :: ((LexLeanRuntime.utf8Encode ("run\_tac") : ByteArray) :: ((LexLeanRuntime.utf8Encode ("sorryAx") : ByteArray) :: ([] : List (ByteArray))))))))))))))))))))))))))))); bytesInList (word) (items))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{isAllowedOption}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(optionName : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(let items : List (ByteArray) := ((LexLeanRuntime.utf8Encode ("autoImplicit") : ByteArray) :: ((LexLeanRuntime.utf8Encode ("maxRecDepth") : ByteArray) :: ((LexLeanRuntime.utf8Encode ("maxHeartbeats") : ByteArray) :: ((LexLeanRuntime.utf8Encode ("synthInstance.maxHeartbeats") : ByteArray) :: ((LexLeanRuntime.utf8Encode ("linter.unusedVariables") : ByteArray) :: ((LexLeanRuntime.utf8Encode ("linter.unusedSimpArgs") : ByteArray) :: ([] : List (ByteArray)))))))); bytesInList (optionName) (items))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{dottedSegments}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(segments : List (Segment))}.\par
+\noindent Closure 1: binds \texttt{(acc, seg)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(let texts : List (ByteArray) := reversed (ByteArray) ((LexLeanCollections.listFold ((fun (acc : List (ByteArray)) (seg : Segment) => ((seg).text :: acc))) (([] : List (ByteArray))) (segments) : List (ByteArray))); LexLeanStd.Text.joinWith (texts) ((LexLeanRuntime.utf8Encode (".") : ByteArray)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{dottedNext}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(remaining : List (Lexeme))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match remaining with | List.nil => ByteArray.mk \#[] | List.cons nextLex \_ => (match (nextLex).kind with | LexemeKind.Ident segs => dottedSegments (segs) | LexemeKind.Number => ByteArray.mk \#[] | LexemeKind.Literal => ByteArray.mk \#[] | LexemeKind.Command \_ => ByteArray.mk \#[] | LexemeKind.Symbol \_ => ByteArray.mk \#[]))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{nextOpensBracket}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(remaining : List (Lexeme))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match remaining with | List.nil => false | List.cons nextLex \_ => (match (nextLex).kind with | LexemeKind.Ident \_ => false | LexemeKind.Number => false | LexemeKind.Literal => false | LexemeKind.Command \_ => false | LexemeKind.Symbol sym => (LexLeanRuntime.equal (sym) ((LexLeanRuntime.utf8Encode ("[") : ByteArray)) : Bool)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{firstForbiddenConstant}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(segments : List (Segment))}.\par
+\noindent Closure 1: binds \texttt{(found, seg)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (ByteArray)}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (found : Option (ByteArray)) (seg : Segment) => (match found with | Option.some hit => Option.some (hit) | Option.none => (let bad : Bool := isForbiddenConstant ((seg).text); (if bad then Option.some ((seg).text) else Option.none))))) (Option.none) (segments) : Option (ByteArray))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{auditIdent}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(segments : List (Segment)) (tail : List (Lexeme)) (attributeDepth : Nat) (pending : Bool) (imports : List (ByteArray))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{AuditState}.\par
+\noindent Definition: \texttt{(match firstForbiddenConstant (segments) with | Option.some badConst => (let full : ByteArray := dottedSegments (segments); (let msg : ByteArray := (LexLeanRuntime.append ((LexLeanRuntime.append ((LexLeanRuntime.append ((LexLeanRuntime.append ((LexLeanRuntime.utf8Encode ("the forbidden constant `") : ByteArray)) (badConst) : ByteArray)) ((LexLeanRuntime.utf8Encode ("` (in `") : ByteArray)) : ByteArray)) (full) : ByteArray)) ((LexLeanRuntime.utf8Encode ("`)") : ByteArray)) : ByteArray); (\{ remaining := tail, attributeDepth := attributeDepth, pending := pending, error := Option.some (msg) \} : AuditState))) | Option.none => (match segments with | List.nil => (\{ remaining := tail, attributeDepth := attributeDepth, pending := pending, error := Option.none \} : AuditState) | List.cons onlySeg restSegs => (match restSegs with | List.nil => (let badTok : Bool := isForbiddenToken ((onlySeg).text); (let activeTok : Bool := (if (!(onlySeg).quoted) then true else (Nat.blt (0) (attributeDepth))); (if (if badTok then activeTok else false) then (let msg : ByteArray := (LexLeanRuntime.append ((LexLeanRuntime.append ((LexLeanRuntime.utf8Encode ("the forbidden token `") : ByteArray)) ((onlySeg).text) : ByteArray)) ((LexLeanRuntime.utf8Encode ("`") : ByteArray)) : ByteArray); (\{ remaining := tail, attributeDepth := attributeDepth, pending := pending, error := Option.some (msg) \} : AuditState)) else (if (onlySeg).quoted then (\{ remaining := tail, attributeDepth := attributeDepth, pending := pending, error := Option.none \} : AuditState) else (if (if (LexLeanRuntime.equal ((onlySeg).text) ((LexLeanRuntime.utf8Encode ("attribute") : ByteArray)) : Bool) then nextOpensBracket (tail) else false) then (\{ remaining := tail, attributeDepth := attributeDepth, pending := true, error := Option.none \} : AuditState) else (if (LexLeanRuntime.equal ((onlySeg).text) ((LexLeanRuntime.utf8Encode ("set\_option") : ByteArray)) : Bool) then (let optName : ByteArray := dottedNext (tail); (let okOpt : Bool := isAllowedOption (optName); (if okOpt then (\{ remaining := tail, attributeDepth := attributeDepth, pending := pending, error := Option.none \} : AuditState) else (let msg : ByteArray := (LexLeanRuntime.append ((LexLeanRuntime.append ((LexLeanRuntime.utf8Encode ("the option `") : ByteArray)) (optName) : ByteArray)) ((LexLeanRuntime.utf8Encode ("` is not allowed") : ByteArray)) : ByteArray); (\{ remaining := tail, attributeDepth := attributeDepth, pending := pending, error := Option.some (msg) \} : AuditState))))) else (if (LexLeanRuntime.equal ((onlySeg).text) ((LexLeanRuntime.utf8Encode ("import") : ByteArray)) : Bool) then (let modName : ByteArray := dottedNext (tail); (let okMod : Bool := bytesInList (modName) (imports); (if okMod then (\{ remaining := tail, attributeDepth := attributeDepth, pending := pending, error := Option.none \} : AuditState) else (let msg : ByteArray := (LexLeanRuntime.append ((LexLeanRuntime.append ((LexLeanRuntime.utf8Encode ("the import of `") : ByteArray)) (modName) : ByteArray)) ((LexLeanRuntime.utf8Encode ("` is not allowed") : ByteArray)) : ByteArray); (\{ remaining := tail, attributeDepth := attributeDepth, pending := pending, error := Option.some (msg) \} : AuditState))))) else (\{ remaining := tail, attributeDepth := attributeDepth, pending := pending, error := Option.none \} : AuditState)))))))) | List.cons \_ \_ => (\{ remaining := tail, attributeDepth := attributeDepth, pending := pending, error := Option.none \} : AuditState))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{stepAudit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(imports : List (ByteArray)) (state : AuditState)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (AuditState)}.\par
+\noindent Definition: \texttt{(let dep : Nat := (state).attributeDepth; (let pend : Bool := (state).pending; (match (state).error with | Option.some \_ => Option.none | Option.none => (match (state).remaining with | List.nil => Option.none | List.cons current tail => (match (current).kind with | LexemeKind.Ident segs => (let nextSt : AuditState := auditIdent (segs) (tail) (dep) (pend) (imports); Option.some (nextSt)) | LexemeKind.Number => Option.some ((\{ remaining := tail, attributeDepth := dep, pending := pend, error := Option.none \} : AuditState)) | LexemeKind.Literal => Option.some ((\{ remaining := tail, attributeDepth := dep, pending := pend, error := Option.none \} : AuditState)) | LexemeKind.Command cmd => (let msg : ByteArray := (LexLeanRuntime.append ((LexLeanRuntime.append ((LexLeanRuntime.utf8Encode ("the command `") : ByteArray)) (cmd) : ByteArray)) ((LexLeanRuntime.utf8Encode ("`") : ByteArray)) : ByteArray); Option.some ((\{ remaining := tail, attributeDepth := dep, pending := pend, error := Option.some (msg) \} : AuditState))) | LexemeKind.Symbol sym => (if (if (LexLeanRuntime.equal (sym) ((LexLeanRuntime.utf8Encode ("@") : ByteArray)) : Bool) then nextOpensBracket (tail) else false) then Option.some ((\{ remaining := tail, attributeDepth := dep, pending := true, error := Option.none \} : AuditState)) else (if (LexLeanRuntime.equal (sym) ((LexLeanRuntime.utf8Encode ("[") : ByteArray)) : Bool) then (if pend then Option.some ((\{ remaining := tail, attributeDepth := 1, pending := false, error := Option.none \} : AuditState)) else (if (Nat.blt (0) (dep)) then Option.some ((\{ remaining := tail, attributeDepth := (dep + 1), pending := false, error := Option.none \} : AuditState)) else Option.some ((\{ remaining := tail, attributeDepth := 0, pending := false, error := Option.none \} : AuditState)))) else (if (LexLeanRuntime.equal (sym) ((LexLeanRuntime.utf8Encode ("]") : ByteArray)) : Bool) then (if (Nat.blt (0) (dep)) then Option.some ((\{ remaining := tail, attributeDepth := (LexLeanRuntime.subtract (dep) (1) : Nat), pending := pend, error := Option.none \} : AuditState)) else Option.some ((\{ remaining := tail, attributeDepth := dep, pending := pend, error := Option.none \} : AuditState))) else Option.some ((\{ remaining := tail, attributeDepth := dep, pending := pend, error := Option.none \} : AuditState))))))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{auditTokens}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(text : ByteArray) (imports : List (ByteArray))}.\par
+\noindent Closure 1: binds \texttt{(s)}, captures \texttt{(imports)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{Except (ByteArray) (Unit)}.\par
+\noindent Definition: \texttt{(match lex (text) with | Except.error msg => Except.error (msg) | Except.ok lexemes => (let count : Nat := listLength (Lexeme) (lexemes); (let finalState : AuditState := ((LexLeanCollections.iterateUntil ((fun (s : AuditState) => stepAudit (imports) (s))) ((count + 1)) ((\{ remaining := lexemes, attributeDepth := 0, pending := false, error := Option.none \} : AuditState)) : (Prod (AuditState) (Bool)))).1; (match (finalState).error with | Option.some msg => Except.error (msg) | Option.none => Except.ok (())))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\end{document}

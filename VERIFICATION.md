@@ -289,13 +289,16 @@ seeded-random byte literal in which all 256 values occur.
 | 65536 | 100000 | 37.1 s, heartbeats (`isDefEq`) | 49.2 s, heartbeats (`LCNF compiler`) |
 | 65536 | default | 33.3 s, heartbeats (`isDefEq`) | 42.7 s, recursion depth |
 
-Bisection at the default `maxRecDepth` (no `set_option`), by 16-byte steps
-between 1024 and 16384 bytes, one run per size, seeded-random bytes with all 256
-values present: the largest literal that elaborates is 6394 bytes under both
-renderings, and 6409 bytes fails under both (`maximum recursion depth has been
-reached`). Elaboration time at 4096 bytes is 2.0 s under both; at 6394 bytes it
-is 4.4 s for the `main` rendering and 3.3 s for the explicit one. The lowering
-does not move the largest elaborable literal.
+Bisection on a standalone scratch Lean file at Lean's default `maxRecDepth` (no
+`set_option`; generated semantic modules instead emit `set_option maxRecDepth
+100000`, `backend/semantic.rs`, which corresponds to the `100000` rows in the
+table above), by 16-byte steps between 1024 and 16384 bytes, one run per size,
+seeded-random bytes with all 256 values present: the largest literal that
+elaborates at the default depth is 6394 bytes under both renderings, and 6409
+bytes fails under both (`maximum recursion depth has been reached`). Elaboration
+time at 4096 bytes is 2.0 s under both; at 6394 bytes it is 4.4 s for the `main`
+rendering and 3.3 s for the explicit one. The lowering does not move the largest
+elaborable literal.
 
 No size succeeds under one rendering and fails under the other. Both fail at
 16384 bytes at the default depth and at 65536 bytes at either depth; the
@@ -5331,7 +5334,7 @@ Planted, one at a time in a focused copy of `examples/models/src/Recognizer.lex.
 
   ```text
   error[LLV7002]: Lean rejected `Models.Recognizer` (error): Tactic `decide` proved that the proposition
-    ...
+    scaleRatioRound32 1047092574 969894013 1000834620 = some 75739599
   is false
   ```
 
@@ -7590,7 +7593,7 @@ change.
 `RP-14` reads the profile out of the matrix. The examples leg must name
 exactly that width, budget, and hints file; the width and the hints must parse
 with the verifier's own functions (`Operational::parse_width`,
-`Operational::parse_hints`), and the hints must name `CensusCert4`; any other
+`Operational::parse_hints`), and the hints must name `Census`; any other
 leg must name none; each variable is set once, from the row; and no profile may
 come from `vars.` or `inputs.`.
 
@@ -8415,6 +8418,14 @@ found, are asserted by the case itself.
    literals).
 4. The same under a `format!` template
    (`public def LexLeanReasoning.{name} : Nat := 0`).
+5. Production code after a non-item `#[cfg(test)]` (#169): a struct with a
+   `#[cfg(test)]` field followed by
+   `const PLANTED_AFTER_CFG_TEST_FIELD: &str = "public def LexLeanRuntime.x : Nat := 0";`
+   appended to `backend/semantic.rs` (`without_test_items` blanks only items
+   under `#[cfg(test)]` and file-leading `#![cfg(test)]`, and the case itself
+   also plants the five shapes of #169 — a struct field, an enum variant, a
+   function parameter, a match arm, and an inline module with `#![cfg(test)]` —
+   as well as `+` concatenation).
 
 ```text
 thread 'conformance_rt_04' panicked at crates/conformance/src/cases/runtime.rs:765:5:
@@ -8423,6 +8434,7 @@ assertion `left == right` failed: the only Lean runtime text in the compiler is 
  right: [("backend/core_v2.rs", 34)]
   left: [("backend/core_v2.rs", 34), ("backend/semantic.rs", 2965)]     (2 and 3)
   left: [("backend/core_v2.rs", 34), ("backend/semantic.rs", 2966)]     (4)
+  left: [("backend/core_v2.rs", 83), ("backend/semantic.rs", 3191)]     (5)
 ```
 
 What the gate cannot see is said here and not left to a reader: a text built
@@ -8471,9 +8483,22 @@ none is claimed.
 grep of `SPEC.md` for the path; it now recomputes the three IDs from disk
 (`RP-10`'s recomputation, shared) and finds, with either frozen file changed
 by one byte, the language-1.0 and 1.1 IDs unchanged and the 1.2 ID changed.
-The repository walkers skip any directory that holds a `CACHEDIR.TAG`: with
-a Cargo target directory named `target-check` in the checkout, `RT-01` and
-`SP-12` failed on its Lean files before and pass now.
+The repository walkers skip any directory that holds a `CACHEDIR.TAG` (including
+`xtask/src/audit.rs`, `crates/conformance/src/lib.rs`, and
+`crates/conformance/src/cases/oracle.rs`): with a Cargo target directory named
+`target-check` in the checkout, `RT-01` and `SP-12` failed on its Lean files
+before and pass now. Conversely (`RP-03`, #170), the tracked tree (`git ls-files`)
+holds no `CACHEDIR.TAG` file and no path component the walkers skip (`target`,
+`.git`, `.lexlean`, `.lake`, `node_modules`, or `expected` outside the
+sanctioned `expected/` oracle directories). Planted in the git index and
+restored after each run (`cargo test -p repo-conformance --test conformance
+conformance_rp_03 -- --exact`):
+
+1. A tracked `examples/collections/CACHEDIR.TAG`:
+   `left: ["examples/collections/CACHEDIR.TAG: tracked `CACHEDIR.TAG` would cause repository walkers to skip `examples/collections`"]`
+2. A tracked `.lexlean` directory outside the ignored roots
+   (`crates/lexlean/.lexlean/planted.lean`):
+   `left: ["crates/lexlean/.lexlean/planted.lean: tracked path has walker-skipped component `.lexlean`"]`
 
 The fifth runtime module, `LexLeanRuntime.Laws` (#117), declares under the
 namespace `LexLeanLaws`, which the runtime cases' list of namespaces did not
@@ -8805,6 +8830,25 @@ mismatch (`LLV7013`); the module binds such a call to a `let` first, and
 spells a decimal without `iterate_until`. Lean's exact axiom policy was
 aligned declaration by declaration (`Quot.sound`, `propext` for the `UInt8`
 range checks and byte comparison, as the spike on #92 measured).
+### the bootstrap preservation lexer and token audit can fail its oracle (SPEC.md §17.23, §17.17)
+
+`BS-02` holds the two production roots of `LexLeanBoot.TokenAudit` (`bootstrap/src/TokenAudit.lex.tex`) to the stage-0 Rust oracle they replace, `production::preserve::lex` and `production::preserve::audit_tokens`. The corpus of 1,731 deterministic Lean 4 source vectors (accepted modules, rejected control characters, unclosed comments/strings/raw strings/char literals/quoted names, malformed radix/exponent/field-index numbers, interpolated strings, forbidden commands, forbidden tokens inside and outside `@[...]`/`attribute [...]`, qualified forbidden constants, disallowed options, and unlisted imports) and 300 seeded combinations per root run under the calculus evaluator; both roots' rendered `rust-std` packages, compiled by the pinned `rustc`, run 5,731 inputs each. The case passed locally with the production export under the pinned Lean (`audit_tokens` and `lex` committed under `tests/production-export/bootstrap/packages/rust-std/`), and makes each of these seven plants on a copy of `bootstrap/src/TokenAudit.lex.tex` on every run:
+
+- **a nested block comment does not increment depth** (`depth := (dep + 1)` -> `depth := dep`). `-- conformance_bs_02`:
+
+  ```text
+  BS-02: plant detected: a nested block comment does not increment depth: run 48 on "/- /- nested -/ theorem t : False := sorry\n": the program gives ok [...], the oracle error "a comment is not closed"
+  ```
+
+- **a hexadecimal literal rejects uppercase `A..F` digits** (`(inRange byte (65 : UInt8) (70 : UInt8))` -> `(inRange byte (65 : UInt8) (65 : UInt8))`): run 60 on `"def x := 0x1_Fsorry\n"`, the program gives `error "a number has a digit separator or a radix prefix with no digit after it"` where the oracle lexes `0x1_F` followed by `sorry`.
+- **an interpolated string is not refused** (`(if (if (not (project firstSeg quoted)) then (if isBanged then isQuoteAfter else false) else false)` -> `(if false`): run 44 on `"def s := s!\"{sorry}\"\n"`, the program lexes `s!` and `"{sorry}"` where the oracle refuses with `"an interpolated string holds code"`.
+- **a C1 control character (`U+0080..U+009F`) is not refused** (`(byteIn subject (position + 1) (128 : UInt8) (159 : UInt8))` -> `(byteIn subject (position + 1) (128 : UInt8) (128 : UInt8))`): run 97 on `"def x := 1\u{85}\n"`, the program lexes `\u{85}` as a symbol where the oracle refuses with `"a control character U+0085 in the text"`.
+- **a quoted forbidden attribute inside `@[...]` is not refused** (`(let activeTok : Bool := (if (not (project onlySeg quoted)) then true else (0 <? attributeDepth));` -> `(let activeTok : Bool := (not (project onlySeg quoted));`): run 23 on `"@[«implemented_by» g] def h := 1\n"`, the program gives `ok ()` where the oracle refuses with `"the forbidden token `implemented_by`"`.
+- **a qualified forbidden constant is not checked** (`(let bad : Bool := (isForbiddenConstant (project seg text));` -> `(let bad : Bool := false;`): run 20 on `"def x := Lean.ofReduceBool\n"`, the program gives `ok ()` where the oracle refuses with `"the forbidden constant `ofReduceBool` (in `Lean.ofReduceBool`)"`.
+- **an import of an unlisted module is accepted** (`(let okMod : Bool := (bytesInList modName imports);` -> `(let okMod : Bool := true;`): run 94 on `"import Mathlib\n"`, the program gives `ok ()` where the oracle refuses with `"the import of `Mathlib` is not allowed"`.
+
+Removed: the source was not changed (the plants are made on copies).
+
 ### source packages can fail
 
 The cases of the `packages` suite (`PK-01`..`PK-04`, SPEC.md §10.5) were written
@@ -8948,5 +8992,74 @@ error[LLS8002]: root `Production.Main.wide`: max_file_bytes exceeded in phase lo
 
 This is a finding about the fixture's premise, not a planted defect: the
 planted-defect evidence of the early refusal's bound is `conformance_sp_02`'s,
-which was not completed on any host before the train's CI run (the certificate
-A session's runs were killed twice by host restarts).
+which passed on the train's CI run and records both the early bound and the
+post-generation notation check (`SPEC.md` §17.17, #187):
+
+- **a root whose certificate passes lowering's lower bound and certificate B's
+  12-byte-per-node derivation floor (`NODE_BYTES` in `data_b/align.rs`) is
+  refused by the finished-certificate notation check (`record_source` against
+  `max_file_bytes`).** `tests/negative/certificate-generation-limit` sums 500
+  fields of a record: its 500 field reads take 250,000 pattern entries (`2,000,000`
+  bytes at lowering's 8-byte-per-slot floor, under the default `4,194,304`), and
+  its derivation's kernel nodes at `12` bytes each also stay under `4,194,304`
+  while record-read nodes average about `35` bytes in the recorded notation.
+  When `data_b::render` weighs the finished notation (`8,513,069` bytes, `2.03`
+  times `max_file_bytes`), it refuses with `LLS8002` before any file is staged
+  or Lean is started:
+
+  ```text
+  error[LLS8002]: root `Production.Main.sum500` (target `rust-core`): max_file_bytes exceeded in phase certificate-b: the certificate is 8513069 bytes, beyond the 4194304 bytes of max_file_bytes
+  ```
+
+  In `conformance_sp_02`, `record copy 100` regenerated under a quarter of its
+  recorded size is refused *during* derivation (`the derivation of a function is
+  at least … bytes, beyond the … bytes of max_file_bytes`), and certificates A
+  and E of every stress family regenerated under half their recorded size are
+  refused with `LLS8002` by the finished-certificate weight check.
+
+### undeclared environment variables in the compiler crate can fail (`CL-17`, #180 / #187)
+
+`conformance_cl_17` scans every `.rs` source under `crates/lexlean/src` (with
+comments and `#[cfg(test)]` items blanked) for `env::var`, `env::var_os`,
+`env::vars`, and `env::vars_os` and refuses any read outside §23.1's four
+operational variables (`WIDTH_VARIABLE`, `TELEMETRY_VARIABLE`, `HINTS_VARIABLE`,
+and `MEMORY_VARIABLE` in `verify/operational.rs`), `cli.rs`'s `"NO_COLOR"`
+presentation check, and the toolchain/process locators `"HOME"`, `"PATH"`, and
+`"ELAN_HOME"` in `verify/child.rs` and `verify/toolchain.rs`. On every run it
+plants `let _ = std::env::var("LEXLEAN_AXDBG");` on a copy of
+`production/certificate/data_a.rs` and requires the scan to report
+`production/certificate/data_a.rs`.
+
+## Census windows 4 and 10 as width-100 certificates (Issue #168)
+
+`CensusCert4` and `CensusCert10` each proved one window of 1,000 Gram types,
+`gramRange 4000 1000` and `gramRange 10000 1000`, by a single
+`of_decide_eq_true`, and their memory grew with the work of the whole window:
+on main run 39054719580
+`CensusCert4` took 1,419.3 s to elaborate and 2,248.5 s to replay at about
+15 GiB with 3.5 GiB of swap, and `CensusCert10` 114.6 s and 120.8 s at
+14.3 and 14.7 GiB with swap. Each window is now ten width-100 certificates,
+`CensusCert40` to `CensusCert49` and `CensusCert100` to `CensusCert109`, joined
+by `gramRange_append` as `CensusCert7` already was. The statements, the kernel
+`decide` proofs of each piece, and every importer are unchanged.
+
+Measured on run 39086315289 (the Atlas jobs of this tree):
+
+| Window | Elaboration (s) | Replay (s) | Largest piece (GiB) | Swap |
+| --- | ---: | ---: | ---: | --- |
+| 4 | 111.5 | 117.6 | 4.5 | none |
+| 10 | 118.1 | 115.4 | 5.6 | none |
+
+No `Census*` process swapped on that run; `Closure` and `ClosureOrbit` still
+did. The join wrote 347 normalized verification records, four for each of the
+twenty new modules beside the 267 before; they are this commit's
+`expected/verify`, and the hints of the 22 changed modules are that run's.
+
+### the census windows can fail
+
+A piece whose window is wrong, or a join that does not sum to the width of its
+window, is refused by the kernel when `CensusCert4` or `CensusCert10`
+elaborates, because each keeps the statement it had; a piece missing from the
+Atlas root is refused by `audit-atlas-exercise` (R4); a piece missing from the
+shard plan is refused by `cargo xtask ci-shards` and by the plan check of
+RP-14.

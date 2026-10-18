@@ -768,14 +768,21 @@ fn audit_edges() -> Vec<(String, Vec<String>)> {
     out
 }
 
-/// The corpus of audit outputs: the committed vectors, the edges, then seeded
-/// random outputs up to `runs`.
-fn audit_corpus(runs: usize) -> Vec<Run> {
-    let mut seeded = Seeded(0x9e37_79b9_7f4a_7c15 ^ 0x0061_7564_6974);
+/// The deterministic audit-output vectors: the committed golden vectors and the
+/// boundary edges.
+fn audit_vectors() -> Vec<Run> {
     let (mut out, _, _) = vectors();
     for (stdout, expected) in audit_edges() {
         out.push(audit_run(&stdout, &expected));
     }
+    out
+}
+
+/// The corpus of audit outputs: the committed vectors, the edges, then seeded
+/// random outputs up to `runs`.
+fn audit_corpus(runs: usize) -> Vec<Run> {
+    let mut seeded = Seeded(0x9e37_79b9_7f4a_7c15 ^ 0x0061_7564_6974);
+    let mut out = audit_vectors();
     while out.len() < runs {
         let (stdout, expected) = audit(&mut seeded);
         out.push(audit_run(&stdout, &expected));
@@ -783,10 +790,9 @@ fn audit_corpus(runs: usize) -> Vec<Run> {
     out
 }
 
-/// The corpus of names: the grammar's edges, every byte in first and in later
-/// position, then seeded random names.
-fn name_corpus(runs: usize) -> Vec<Run> {
-    let mut seeded = Seeded(0x0123_4567_89ab_cdef);
+/// The deterministic closed-Lean-name vectors: the grammar's edges and every
+/// single-byte UTF-8 character in first and in later position.
+fn name_vectors() -> Vec<Run> {
     let mut out = Vec::new();
     let one = |out: &mut Vec<Run>, raw: &str| {
         out.push((
@@ -851,18 +857,37 @@ fn name_corpus(runs: usize) -> Vec<Run> {
             one(&mut out, &format!("{character}a"));
         }
     }
+    out
+}
+
+/// The corpus of names: the grammar's edges, every byte in first and in later
+/// position, then seeded random names.
+fn name_corpus(runs: usize) -> Vec<Run> {
+    let mut seeded = Seeded(0x0123_4567_89ab_cdef);
+    let mut out = name_vectors();
     while out.len() < runs {
         let raw = name(&mut seeded);
-        one(&mut out, &raw);
+        out.push((
+            vec![text(&raw)],
+            serde_json::to_value(Value::Bool {
+                value: lexlean::ir::core::is_closed_lean_name(&raw),
+            })
+            .expect("a value is JSON"),
+        ));
     }
     out
 }
 
 /// The lowered program of one root of the checked project.
-fn lower(checked: &lexlean::link::CheckedProject, project: &P, root: &str) -> Lowered {
+fn lower(
+    checked: &lexlean::link::CheckedProject,
+    project: &P,
+    module: &str,
+    root: &str,
+) -> Lowered {
     let linked = linked_modules(checked);
     let roots = roots(checked).expect("the production roots");
-    let root = format!("{MODULE}.{root}");
+    let root = format!("{module}.{root}");
     let found = roots
         .iter()
         .find(|candidate| candidate.report.root == root)
@@ -901,15 +926,17 @@ fn readable(value: &Json) -> String {
                 format!("[{}]", items.join(", "))
             }
             Some("adt") => {
+                let constructor = map.get("constructor").and_then(Json::as_u64).unwrap_or(0);
                 let fields: Vec<String> = map["fields"]
                     .as_array()
                     .expect("fields")
                     .iter()
                     .map(readable)
                     .collect();
-                format!("{{{}}}", fields.join(", "))
+                format!("#{constructor}{{{}}}", fields.join(", "))
             }
             Some("none") => "none".to_owned(),
+            Some("unit") => "()".to_owned(),
             Some(kind @ ("ok" | "error" | "some")) => {
                 format!("{kind} {}", readable(&map["value"]))
             }
@@ -1014,6 +1041,457 @@ const PLANTS: [Plant; 7] = [
     },
 ];
 
+const TOKEN_MODULE: &str = "LexLeanBoot.TokenAudit";
+
+const TOKEN_ROOTS: [(&str, &[&str]); 2] = [
+    ("lex", &["allocation", "overflow", "recursion"]),
+    ("auditTokens", &["allocation", "overflow", "recursion"]),
+];
+
+const EVALUATOR_TOKEN_TEXTS: usize = 300;
+const RUSTC_TOKEN_TEXTS: usize = 4_000;
+
+fn nat_val(n: usize) -> Value {
+    Value::Nat {
+        value: n.to_string(),
+    }
+}
+
+fn bool_val(b: bool) -> Value {
+    Value::Bool { value: b }
+}
+
+fn lex_value(input: &str) -> Value {
+    match lexlean::production::preserve::lex(input) {
+        Ok(lexemes) => Value::Ok {
+            value: Box::new(list(
+                lexemes
+                    .iter()
+                    .map(|lexeme| {
+                        let kind = match &lexeme.kind {
+                            lexlean::production::preserve::LexemeKind::Ident(segments) => {
+                                Value::Adt {
+                                    constructor: 0,
+                                    fields: vec![list(
+                                        segments
+                                            .iter()
+                                            .map(|seg| Value::Adt {
+                                                constructor: 0,
+                                                fields: vec![text(&seg.text), bool_val(seg.quoted)],
+                                            })
+                                            .collect(),
+                                    )],
+                                }
+                            }
+                            lexlean::production::preserve::LexemeKind::Number => Value::Adt {
+                                constructor: 1,
+                                fields: vec![],
+                            },
+                            lexlean::production::preserve::LexemeKind::Literal => Value::Adt {
+                                constructor: 2,
+                                fields: vec![],
+                            },
+                            lexlean::production::preserve::LexemeKind::Command(cmd) => Value::Adt {
+                                constructor: 3,
+                                fields: vec![text(cmd)],
+                            },
+                            lexlean::production::preserve::LexemeKind::Symbol(ch) => {
+                                let mut buf = [0u8; 4];
+                                Value::Adt {
+                                    constructor: 4,
+                                    fields: vec![text(ch.encode_utf8(&mut buf))],
+                                }
+                            }
+                        };
+                        Value::Adt {
+                            constructor: 0,
+                            fields: vec![
+                                kind,
+                                nat_val(lexeme.line),
+                                bool_val(lexeme.first_on_line),
+                                nat_val(lexeme.start),
+                            ],
+                        }
+                    })
+                    .collect(),
+            )),
+        },
+        Err(msg) => Value::Error {
+            value: Box::new(text(&msg)),
+        },
+    }
+}
+
+fn token_audit_value(input: &str, imports: &[String]) -> Value {
+    let set: std::collections::BTreeSet<String> = imports.iter().cloned().collect();
+    match lexlean::production::preserve::audit_tokens(input, &set) {
+        Ok(()) => Value::Ok {
+            value: Box::new(Value::Unit),
+        },
+        Err(msg) => Value::Error {
+            value: Box::new(text(&msg)),
+        },
+    }
+}
+
+fn lex_run(input: &str) -> Run {
+    (
+        vec![text(input)],
+        serde_json::to_value(lex_value(input)).expect("a value is JSON"),
+    )
+}
+
+fn token_audit_run(input: &str, imports: &[String]) -> Run {
+    (
+        vec![text(input), texts(imports)],
+        serde_json::to_value(token_audit_value(input, imports)).expect("a value is JSON"),
+    )
+}
+
+/// The committed unit-test vectors, number-lexing prefixes, and shipped
+/// preservation library and calculus modules for `TokenAudit`.
+fn token_vectors() -> (Vec<Run>, Vec<Run>) {
+    let mut lex_runs = Vec::new();
+    let mut audit_runs = Vec::new();
+    let default_imports: Vec<String> = lexlean::production::preserve::TARGET_MODULES
+        .iter()
+        .map(|m| (*m).to_owned())
+        .collect();
+    let empty_imports: Vec<String> = Vec::new();
+
+    let mut add = |source: &str, imports: &[String]| {
+        lex_runs.push(lex_run(source));
+        audit_runs.push(token_audit_run(source, imports));
+    };
+
+    // 1. All unit vectors from `preserve.rs`.
+    for word in ["kernel", "prefix", "macro", "syntax", "extern", "notation"] {
+        add(
+            &format!("def f («{word}» : Nat) : Nat := «{word}»\n"),
+            &empty_imports,
+        );
+        add(
+            &format!("def f ({word} : Nat) : Nat := {word}\n"),
+            &empty_imports,
+        );
+        add(&format!("{word} foo := 1\n"), &empty_imports);
+    }
+    for source in [
+        "@[implemented_by f] def g := 1\n",
+        "theorem t : True := sorry\n",
+        "def x := Lean.ofReduceBool\n",
+        "def x := Lean.«ofReduceBool»\n",
+        "theorem z : False := «sorryAx» False true\n",
+        "@[«implemented_by» g] def h := 1\n",
+        "@[«extern» \"c\"] def h := 1\n",
+        "def x := «Lean».«ofReduceNat»\n",
+        "@[«macro» foo] def h := 1\n",
+        "@[simp, «implemented_by» g] def h := 1\n",
+        "def x := «a\ntheorem t : False := sorry\n",
+        "def «» := 1\n",
+        "def «a b» := 1\n",
+        "def s := \"unclosed\ntheorem t : False := sorry\n",
+        "/- unclosed\ntheorem t : False := sorry\n",
+        "def «sorry» := 1\n",
+        "def f («kernel» : Nat) := «kernel» + 1\n",
+        "def c1 := '\"'\ntheorem t3 : False := sorry\ndef c2 := '\"'\n",
+        "def s := r\"\\\"\ntheorem t : False := sorry\ndef u := r\"\\\"\n",
+        "def s := r#\"a\"#\ntheorem t : False := sorry\n",
+        "theorem t : False := sorry.1\n",
+        "theorem t : False := 0sorry\n",
+        "theorem t : False := sorry\u{3bb}x\n",
+        "theorem t : False := sorry\u{e9}\n",
+        "attribute [«implemented_by» g] h\n",
+        "attribute [simp, «extern» c] h\n",
+        "def s := s!\"{sorry}\"\n",
+        "def c := 'ab'\ntheorem t : False := sorry\n",
+        "def c := '\n",
+        "def x := 1\u{0}theorem t : False := sorry\n",
+        "/- /- nested -/ theorem t : False := sorry\n",
+        "def x : Float := 1e10axiom bad : False\ntheorem t : False := bad\n",
+        concat!("def x := 1.5e3un", "safe def y := 1\n"),
+        "def x := 1e10#evalIO.println \"pwn2\"\n",
+        "def x := 0b1sorry\n",
+        "def x := 0o7sorry\n",
+        "def x := 1e\n",
+        "def x := 1e+\n",
+        "def x := 0x\n",
+        "def x := 1_0axiom bad : False\n",
+        "def x := 0b1_0axiom bad : False\n",
+        "def x := 0o7_7axiom bad : False\n",
+        "def x := 0x1_Fsorry\n",
+        "def x := 1_000e5axiom bad : False\n",
+        "def x := 1.5_0axiom bad : False\n",
+        "def x := 0_0axiom bad : False\n",
+        "def x := 1__0axiom bad : False\n",
+        "def x := 1.e5axiom bad : False\n",
+        "def x := 1.5e+3axiom bad : False\n",
+        "def x := 1.5E-3axiom bad : False\n",
+        "def x := 1.axiom bad : False\n",
+        "def x := 1_\n",
+        "def x := 1_ + 1\n",
+        "def x := 0x_\n",
+        "def x := 1.foo\n",
+        "def x := 1._5\n",
+        "def x := p.1_0axiom bad : False\n",
+        "def x := p.1e5axiom bad : False\n",
+        "#evalIO.println \"pwned\"\n",
+        "#evalpwned\n",
+        "#printaxiom bad\n",
+        "#eval 1\n",
+        "def s := \"a -- b /- c «d \\\" 'e\"\n",
+        "def s := r\"a -- b\"\ndef t := r#\"a\"b\"#\n",
+        "def c := ['a', '\\n', '\\'', '\\x41', '\\u0041', '\"']\n",
+        "def x' := x'' + f' 1\n",
+        "/-- a doc comment: sorry -/ def f := 1\n/- nested /- sorry -/ sorry -/\n-- sorry\n",
+        "def «sorry» := 1\ndef x := sorry_ + sorryAlt + «sorry».1\n",
+        "def α₁ := β₂ + 0x1F + 1.5 + 2e3\n",
+        "def f := fun x => x.1.2 + Nat.succ' 1\n",
+        "def s := \"\\u00e9\"\n",
+        "def x := [1e10, 1E-3, 1.5e+3, 0xFF, 0b101, 0o17, 1e10 + 2, 0b101e]\n",
+        "def x := [1_000, 0b1_0, 0o7_7, 0x1_F, 1_000e5, 1.5_0, 0_0, 1.e5, 1., 1.5E-3]\n",
+        "def x := [1..2, 1.0, 0.5, p.1.val, p.2.1, p.10.2 + 1]\n",
+        "set_option debug.skipKernelTC true\n",
+        "set_option maxRecDepth 100000\n",
+        "import Mathlib\n",
+        "import LexLeanTarget.TargetSyntax\n",
+        "def x := 1\u{7f}\n",
+        "def x := 1\u{85}\n",
+        "def x := 1\u{9f}\n",
+        "def x := 1\u{a0}\n",
+        "def 𝒜 := 𝖟 + ℀ + ἀ + Ϛ + xᵢ\n",
+    ] {
+        add(source, &default_imports);
+    }
+
+    // 2. Number-lexing corpus of SP-09 (`numbers_are_read_as_lean_reads_them`).
+    let bases = [
+        "0", "1", "07", "10", "0x", "0X", "0x0", "0xF", "0x1_F", "0x_", "0b", "0B", "0b0", "0b1",
+        "0b2", "0b1_0", "0b_", "0o", "0O", "0o0", "0o7", "0o8", "0o7_7", "0o_", "1.5", "0.5", "1.",
+        "0.", "1e5", "1E5", "1e+5", "1E-5", "1.5e3", "1.e3", "p.1", "p.0", "p.12", "(p).1",
+    ];
+    let tails = [
+        "", "_", "_0", "_1", "0_", "1_", "__0", "0__0", "_0_", ".", ".5", ".e5", ".E5", ".5e5",
+        ".5e", ".5_0", ".5_", "._5", ".foo", "e5", "E5", "e-5", "E+5", "e+", "e", "e_5", "e5_0",
+        "e5_", "_0e5", "_0.5", "_0.e5", "..", "..1", "...", "F", "f", "a", "x", "b1", "o7", "e5.",
+        ".1", ".1.2", "_0.1",
+    ];
+    let mut cases: Vec<String> = Vec::new();
+    for base in bases {
+        for tail in tails {
+            cases.push(format!("def x := {base}{tail}axiom bad : False\n"));
+        }
+    }
+    cases.sort();
+    cases.dedup();
+    for case in &cases {
+        add(case, &default_imports);
+    }
+
+    // 3. Shipped preservation library and calculus modules (first 2,048 bytes of each
+    // so the evaluator completes quickly while exercising real generated/native Lean).
+    let library = lexlean::production::preserve::library().expect("the shipped registry");
+    let mut env_imports = default_imports.clone();
+    env_imports.push("Init".to_owned());
+    for module in &library.modules {
+        env_imports.push(format!(
+            "{}.{module}",
+            lexlean::production::preserve::LIBRARY_PREFIX
+        ));
+    }
+    for module in &library.modules {
+        let full = lexlean::production::preserve::module_text(module).expect("module text");
+        let snippet: String = full.chars().take(1_500).collect();
+        add(&snippet, &env_imports);
+    }
+
+    (lex_runs, audit_runs)
+}
+
+fn token_corpus(root: &str, count: usize) -> Vec<Run> {
+    let mut seeded = Seeded(0xB502_5EED_CAFE_F00D);
+    let mut out = Vec::new();
+    let atoms: &[&str] = &[
+        "def",
+        "theorem",
+        "fun",
+        "match",
+        "with",
+        "import",
+        "set_option",
+        "attribute",
+        "sorry",
+        "axiom",
+        "unsafe",
+        "partial",
+        "kernel",
+        "native_decide",
+        "implemented_by",
+        "extern",
+        "ofReduceBool",
+        "ofReduceNat",
+        "sorryAx",
+        "«sorry»",
+        "«kernel»",
+        "«implemented_by»",
+        "«ofReduceBool»",
+        "«»",
+        "«a b»",
+        "«a.b»",
+        "«unclosed",
+        "Lean.ofReduceBool",
+        "Lean.«ofReduceNat»",
+        "autoImplicit",
+        "maxRecDepth",
+        "maxHeartbeats",
+        "synthInstance.maxHeartbeats",
+        "linter.unusedVariables",
+        "linter.unusedSimpArgs",
+        "debug.skipKernelTC",
+        "Init",
+        "LexLeanTarget.TargetSyntax",
+        "Mathlib",
+        "x",
+        "x'",
+        "x₁",
+        "α",
+        "λ",
+        "Π",
+        "Σ",
+        "𝒜",
+        "0",
+        "1",
+        "42",
+        "0x1F",
+        "0b101",
+        "0o77",
+        "1_000",
+        "1.5",
+        "1.5e-3",
+        "1e10",
+        "1_",
+        "0x",
+        "1e",
+        "1.foo",
+        "p.1",
+        "p.1.2",
+        "p.1_0",
+        "p.1e5",
+        "1..2",
+        "\"hello\"",
+        "\"a\\\"b\\nc\"",
+        "\"unclosed",
+        "r\"raw\"",
+        "r#\"raw\"quote\"#",
+        "r#\"unclosed\"",
+        "s!\"{x}\"",
+        "'a'",
+        "'\\n'",
+        "'\\x41'",
+        "'\\u0041'",
+        "'ab'",
+        "'",
+        "-- line comment\n",
+        "/- block comment -/",
+        "/- nested /- inner -/ outer -/",
+        "/- unclosed",
+        "#eval",
+        "#check",
+        "#print",
+        "@[",
+        "]",
+        "[",
+        "(",
+        ")",
+        ":=",
+        ":",
+        ".",
+        ",",
+        "+",
+        "\n",
+        " ",
+        "\t",
+        "\r\n",
+        "\u{0}",
+        "\u{7f}",
+        "\u{85}",
+        "\u{a0}",
+    ];
+    let import_pool = [
+        "Init",
+        "LexLeanTarget.TargetSyntax",
+        "LexLeanTarget.TargetSemantics",
+        "LexLeanPreservation.Core",
+    ];
+    while out.len() < count {
+        let pieces = 1 + seeded.below(8);
+        let mut text_buf = String::new();
+        for _ in 0..pieces {
+            text_buf.push_str(seeded.pick(atoms));
+            if seeded.chance(40) {
+                text_buf.push(' ');
+            }
+        }
+        let mut imports = Vec::new();
+        for candidate in import_pool {
+            if seeded.chance(60) {
+                imports.push(candidate.to_owned());
+            }
+        }
+        if root == "lex" {
+            out.push(lex_run(&text_buf));
+        } else {
+            out.push(token_audit_run(&text_buf, &imports));
+        }
+    }
+    out
+}
+
+const TOKEN_PLANTS: [Plant; 7] = [
+    Plant {
+        label: "a nested block comment does not increment depth",
+        site: "depth := (dep + 1)",
+        replacement: "depth := dep",
+        root: "lex",
+    },
+    Plant {
+        label: "a hexadecimal literal rejects uppercase A..F digits",
+        site: "(inRange byte (65 : UInt8) (70 : UInt8))",
+        replacement: "(inRange byte (65 : UInt8) (65 : UInt8))",
+        root: "lex",
+    },
+    Plant {
+        label: "an interpolated string is not refused",
+        site: "(if (if (not (project firstSeg quoted)) then (if isBanged then isQuoteAfter else false) else false)",
+        replacement: "(if false",
+        root: "lex",
+    },
+    Plant {
+        label: "a C1 control character (U+0080..U+009F) is not refused",
+        site: "(byteIn subject (position + 1) (128 : UInt8) (159 : UInt8))",
+        replacement: "(byteIn subject (position + 1) (128 : UInt8) (128 : UInt8))",
+        root: "lex",
+    },
+    Plant {
+        label: "a quoted forbidden attribute inside @[...] is not refused",
+        site: "(let activeTok : Bool := (if (not (project onlySeg quoted)) then true else (0 <? attributeDepth));",
+        replacement: "(let activeTok : Bool := (not (project onlySeg quoted));",
+        root: "auditTokens",
+    },
+    Plant {
+        label: "a qualified forbidden constant is not checked",
+        site: "(let bad : Bool := (isForbiddenConstant (project seg text));",
+        replacement: "(let bad : Bool := false;",
+        root: "auditTokens",
+    },
+    Plant {
+        label: "an import of an unlisted module is accepted",
+        site: "(let okMod : Bool := (bytesInList modName imports);",
+        replacement: "(let okMod : Bool := true;",
+        root: "auditTokens",
+    },
+];
+
 /// Run the case for one `BS` conformance ID, on a stack sized for the
 /// interpreter, which recurses with the depth of the program it runs.
 ///
@@ -1098,12 +1576,16 @@ fn case(id: &str) {
                     "{root}: the declaration admits exactly the realized effects"
                 );
             }
-            // Every root lowers once; the evaluator runs the committed
-            // vectors and its corpus.
+            // Every root lowers once. On the normative host the evaluator runs
+            // the committed vectors and its seeded corpus; on every host the
+            // rendered rust-std package compiled by the pinned rustc runs the
+            // deterministic vectors (and on the normative host the full seeded
+            // corpus as well).
+            let on_normative_host = support::normative_host();
             let checked = support::checked_project(&project);
             let lowered: BTreeMap<&str, Lowered> = ROOTS
                 .iter()
-                .map(|(root, _)| (*root, lower(&checked, &project, root)))
+                .map(|(root, _)| (*root, lower(&checked, &project, MODULE, root)))
                 .collect();
             let (golden_runs, accepted, rejected) = vectors();
             assert!(
@@ -1117,30 +1599,33 @@ fn case(id: &str) {
                     name_corpus(names)
                 }
             };
-            let vector_count = golden_runs.len();
-            let disagreements = evaluate(&lowered["parseAuditOutput"], &golden_runs, 5);
-            assert!(
-                disagreements.is_empty(),
-                "the evaluator and verify::axiom disagree on the committed vectors: {disagreements:?}"
-            );
-            eprintln!(
-                "BS-01: {vector_count} committed vectors ({accepted} accepted, {rejected} rejected) agree under the evaluator"
-            );
-            for (root, _) in ROOTS {
-                let runs = corpus(root, EVALUATOR_AUDITS, EVALUATOR_NAMES);
-                let disagreements = evaluate(&lowered[root], &runs, 5);
+            if on_normative_host {
+                let vector_count = golden_runs.len();
+                let disagreements = evaluate(&lowered["parseAuditOutput"], &golden_runs, 5);
                 assert!(
                     disagreements.is_empty(),
-                    "{root}: the evaluator and the Rust oracle disagree: {disagreements:?}"
+                    "the evaluator and verify::axiom disagree on the committed vectors: {disagreements:?}"
                 );
                 eprintln!(
-                    "BS-01: {root}: {} evaluator runs agree ({:?})",
-                    runs.len(),
-                    started.elapsed()
+                    "BS-01: {vector_count} committed vectors ({accepted} accepted, {rejected} rejected) agree under the evaluator"
                 );
+                for (root, _) in ROOTS {
+                    let runs = corpus(root, EVALUATOR_AUDITS, EVALUATOR_NAMES);
+                    let disagreements = evaluate(&lowered[root], &runs, 5);
+                    assert!(
+                        disagreements.is_empty(),
+                        "{root}: the evaluator and the Rust oracle disagree: {disagreements:?}"
+                    );
+                    eprintln!(
+                        "BS-01: {root}: {} evaluator runs agree ({:?})",
+                        runs.len(),
+                        started.elapsed()
+                    );
+                }
             }
             // The rendered rust-std package of both roots, compiled by the
-            // pinned rustc, runs the large corpus.
+            // pinned rustc, runs the deterministic vectors on every host and
+            // the large seeded corpus on the normative host.
             let dir = tempfile::Builder::new()
                 .prefix("lexlean-bootstrap-")
                 .tempdir()
@@ -1158,7 +1643,13 @@ fn case(id: &str) {
                 let package =
                     target::package(&manifest.to_file_bytes().expect("canonical manifest"))
                         .unwrap_or_else(|failure| panic!("{root}: {failure:?}"));
-                let runs = corpus(root, RUSTC_AUDITS, RUSTC_NAMES);
+                let runs = if on_normative_host {
+                    corpus(root, RUSTC_AUDITS, RUSTC_NAMES)
+                } else if root == "parseAuditOutput" {
+                    audit_vectors()
+                } else {
+                    name_vectors()
+                };
                 let arguments: Vec<Vec<Value>> = runs
                     .iter()
                     .map(|(arguments, _)| arguments.clone())
@@ -1243,8 +1734,11 @@ fn case(id: &str) {
                     started.elapsed()
                 );
             }
-            // The gate is armed: each defect planted in a copy of the source
-            // is a disagreement with the oracle.
+            if !support::lean_backed("BS-01") {
+                return;
+            }
+            // The gate is armed on the normative host: each defect planted in a
+            // copy of the source is a disagreement with the oracle.
             for plant in &PLANTS {
                 let planted = P::bootstrap();
                 let source = planted.read_raw("src/AxiomOutput.lex.tex");
@@ -1259,7 +1753,7 @@ fn case(id: &str) {
                     &source.replacen(plant.site, plant.replacement, 1),
                 );
                 let checked = support::checked_project(&planted);
-                let low = lower(&checked, &planted, plant.root);
+                let low = lower(&checked, &planted, MODULE, plant.root);
                 let disagreements = evaluate(
                     &low,
                     &corpus(plant.root, EVALUATOR_AUDITS, EVALUATOR_NAMES),
@@ -1278,9 +1772,6 @@ fn case(id: &str) {
             // Under the pinned Lean, the production export certifies both
             // roots; its packages are the committed ones and realize the
             // programs the differential ran.
-            if !support::lean_backed("BS-01") {
-                return;
-            }
             let exported = harness::exported("bootstrap");
             let bundle = exported.bundle();
             let packages = harness::tree(&bundle.join("packages"));
@@ -1298,10 +1789,9 @@ fn case(id: &str) {
             }
             let mut realized = 0usize;
             for root in &exported.output.result.roots {
-                let member = root
-                    .root
-                    .strip_prefix(&format!("{MODULE}."))
-                    .unwrap_or_else(|| panic!("{} is a root of the module", root.root));
+                let Some(member) = root.root.strip_prefix(&format!("{MODULE}.")) else {
+                    continue;
+                };
                 for output in &root.outputs {
                     let package: Json = serde_json::from_slice(
                         &std::fs::read(
@@ -1323,6 +1813,299 @@ fn case(id: &str) {
             }
             assert_eq!(realized, ROOTS.len(), "one certified package per root");
             eprintln!("BS-01: passed in {:?}", started.elapsed());
+        }
+        // §17.23, §17.17: the second component, the preservation lexer and token audit.
+        "BS-02" => {
+            let started = Instant::now();
+            let project = P::bootstrap();
+            let checked = project.check_ok();
+            assert!(
+                checked.units.contains_key("TokenAudit")
+                    && checked.units.contains_key("LexLeanStd.Text"),
+                "TokenAudit and LexLeanStd.Text are linked modules of the project"
+            );
+            let built = project.build_ok();
+            let build_id = built.build_id.expect("built");
+            let report: Json = serde_json::from_slice(
+                &std::fs::read(
+                    project
+                        .build_dir(&build_id)
+                        .join("production/LexLeanBoot/TokenAudit.eligibility.json")
+                        .as_std_path(),
+                )
+                .expect("the eligibility report"),
+            )
+            .expect("the report is JSON");
+            let reported = report["roots"].as_array().expect("roots");
+            assert_eq!(
+                reported
+                    .iter()
+                    .map(|row| row["root"].as_str().expect("root").to_owned())
+                    .collect::<Vec<_>>(),
+                TOKEN_ROOTS
+                    .iter()
+                    .map(|(root, _)| format!("{TOKEN_MODULE}.{root}"))
+                    .collect::<Vec<_>>(),
+                "the two roots are TokenAudit's production roots, in order"
+            );
+            for (row, (root, effects)) in reported.iter().zip(TOKEN_ROOTS) {
+                let declared: Vec<&str> = row["declared_effects"]
+                    .as_array()
+                    .expect("declared effects")
+                    .iter()
+                    .map(|effect| effect.as_str().expect("an effect"))
+                    .collect();
+                assert_eq!(declared, effects, "{root}: the declared effects");
+                let targets = row["targets"].as_array().expect("targets");
+                assert_eq!(targets.len(), 1, "{root}: one target");
+                let target = &targets[0];
+                assert_eq!(target["target"], "rust-std", "{root}: the target");
+                assert_eq!(target["status"], "eligible", "{root}: eligible");
+                let realized: Vec<&str> = target["effects"]
+                    .as_array()
+                    .expect("effects")
+                    .iter()
+                    .map(|effect| effect["effect"].as_str().expect("an effect"))
+                    .collect();
+                assert_eq!(
+                    realized, effects,
+                    "{root}: the declaration admits exactly the realized effects"
+                );
+            }
+
+            let on_normative_host = support::normative_host();
+            let checked = support::checked_project(&project);
+            let lowered: BTreeMap<&str, Lowered> = TOKEN_ROOTS
+                .iter()
+                .map(|(root, _)| (*root, lower(&checked, &project, TOKEN_MODULE, root)))
+                .collect();
+            let (lex_vectors, audit_vectors) = token_vectors();
+            if on_normative_host {
+                let disagreements = evaluate(&lowered["lex"], &lex_vectors, 5);
+                assert!(
+                    disagreements.is_empty(),
+                    "lex: the evaluator and production::preserve::lex disagree on the vectors: {disagreements:?}"
+                );
+                let disagreements = evaluate(&lowered["auditTokens"], &audit_vectors, 5);
+                assert!(
+                    disagreements.is_empty(),
+                    "auditTokens: the evaluator and production::preserve::audit_tokens disagree on the vectors: {disagreements:?}"
+                );
+                eprintln!(
+                    "BS-02: {} lex vectors and {} auditTokens vectors agree under the evaluator ({:?})",
+                    lex_vectors.len(),
+                    audit_vectors.len(),
+                    started.elapsed()
+                );
+                for (root, _) in TOKEN_ROOTS {
+                    let runs = token_corpus(root, EVALUATOR_TOKEN_TEXTS);
+                    let disagreements = evaluate(&lowered[root], &runs, 5);
+                    assert!(
+                        disagreements.is_empty(),
+                        "{root}: the evaluator and the Rust oracle disagree: {disagreements:?}"
+                    );
+                    eprintln!(
+                        "BS-02: {root}: {} seeded evaluator runs agree ({:?})",
+                        runs.len(),
+                        started.elapsed()
+                    );
+                }
+            }
+
+            // Rendered rust-std packages under pinned rustc: the deterministic
+            // vectors run on every host, and the seeded corpus on the normative
+            // host.
+            let dir = tempfile::Builder::new()
+                .prefix("lexlean-bootstrap-tokens-")
+                .tempdir()
+                .expect("tempdir");
+            let mut crates = Vec::new();
+            let mut expected: BTreeMap<String, Vec<Json>> = BTreeMap::new();
+            for (root, _) in TOKEN_ROOTS {
+                let low = &lowered[root];
+                let manifest = rust_packages::manifest(
+                    &format!("boot_{}", snake(root)),
+                    &low.program,
+                    low.entry(),
+                    Profile::Std,
+                );
+                let package =
+                    target::package(&manifest.to_file_bytes().expect("canonical manifest"))
+                        .unwrap_or_else(|failure| panic!("{root}: {failure:?}"));
+                let mut runs = if root == "lex" {
+                    lex_vectors.clone()
+                } else {
+                    audit_vectors.clone()
+                };
+                if on_normative_host {
+                    runs.extend(token_corpus(root, RUSTC_TOKEN_TEXTS));
+                }
+                let arguments: Vec<Vec<Value>> = runs
+                    .iter()
+                    .map(|(arguments, _)| arguments.clone())
+                    .collect();
+                let arity = low.program.functions[usize::try_from(low.entry()).expect("entry")]
+                    .types
+                    .len();
+                let passing = vec![Passing::Own; arity];
+                let harness_source = rust_harness::render_calls(
+                    &low.program,
+                    Profile::Std,
+                    &manifest.name,
+                    &[Calls {
+                        entry: low.entry(),
+                        function: "run",
+                        passing: &passing,
+                        arguments: &arguments,
+                    }],
+                )
+                .expect("the differential harness");
+                expected.insert(
+                    manifest.name.clone(),
+                    runs.into_iter().map(|(_, expected)| expected).collect(),
+                );
+                crates.push(Built {
+                    name: manifest.name,
+                    files: package.files,
+                    harness: harness_source,
+                });
+            }
+            workspace(dir.path(), &crates);
+            let build = cargo_in(
+                dir.path(),
+                &["build", "--offline", "--workspace", "--quiet"],
+            );
+            assert!(
+                build.status.success(),
+                "a root's package does not build:\n{}",
+                String::from_utf8_lossy(&build.stderr)
+            );
+            eprintln!("BS-02: rustc built both packages ({:?})", started.elapsed());
+            for (name, outcomes) in &expected {
+                let binary = dir
+                    .path()
+                    .join("target/debug")
+                    .join(format!("run_{name}{}", std::env::consts::EXE_SUFFIX));
+                let ran = std::process::Command::new(&binary)
+                    .output()
+                    .expect("the differential runs");
+                assert!(
+                    ran.status.success(),
+                    "{name}: {}",
+                    String::from_utf8_lossy(&ran.stderr)
+                );
+                let stdout = String::from_utf8(ran.stdout).expect("utf8");
+                let printed: Vec<Json> = stdout
+                    .lines()
+                    .filter(|line| !line.starts_with("work "))
+                    .map(|line| {
+                        serde_json::from_str(line)
+                            .unwrap_or_else(|error| panic!("{name}: {error}: {line}"))
+                    })
+                    .collect();
+                assert_eq!(printed.len(), outcomes.len(), "{name}: one outcome per run");
+                let disagreements: Vec<String> = printed
+                    .iter()
+                    .zip(outcomes)
+                    .enumerate()
+                    .filter(|(_, (printed, expected))| printed != expected)
+                    .map(|(run, (printed, expected))| format!("run {run}: {printed} != {expected}"))
+                    .collect();
+                assert!(
+                    disagreements.is_empty(),
+                    "{name}: the rendering and the Rust oracle disagree on {} of {} runs: {:?}",
+                    disagreements.len(),
+                    outcomes.len(),
+                    &disagreements[..disagreements.len().min(5)]
+                );
+                eprintln!(
+                    "BS-02: {name}: {} rustc runs agree with the oracle ({:?})",
+                    outcomes.len(),
+                    started.elapsed()
+                );
+            }
+
+            if !support::lean_backed("BS-02") {
+                return;
+            }
+            // Planted defects in TokenAudit.lex.tex.
+            for plant in &TOKEN_PLANTS {
+                let planted = P::bootstrap();
+                let source = planted.read_raw("src/TokenAudit.lex.tex");
+                assert_eq!(
+                    source.matches(plant.site).count(),
+                    1,
+                    "{}: the plant site occurs once",
+                    plant.label
+                );
+                planted.write(
+                    "src/TokenAudit.lex.tex",
+                    &source.replacen(plant.site, plant.replacement, 1),
+                );
+                let checked = support::checked_project(&planted);
+                let low = lower(&checked, &planted, TOKEN_MODULE, plant.root);
+                let runs = if plant.root == "lex" {
+                    &lex_vectors
+                } else {
+                    &audit_vectors
+                };
+                let disagreements = evaluate(&low, runs, 1);
+                assert!(
+                    !disagreements.is_empty(),
+                    "{}: the planted defect is detected by the differential",
+                    plant.label
+                );
+                eprintln!(
+                    "BS-02: plant detected: {}: {}",
+                    plant.label, disagreements[0]
+                );
+            }
+
+            let exported = harness::exported("bootstrap");
+            let bundle = exported.bundle();
+            let packages = harness::tree(&bundle.join("packages"));
+            let committed = harness::tree(&harness::fixture_dir("bootstrap").join("packages"));
+            assert_eq!(
+                packages.keys().collect::<Vec<_>>(),
+                committed.keys().collect::<Vec<_>>(),
+                "the exported package files are the committed ones"
+            );
+            for (relative, content) in &packages {
+                assert!(
+                    committed.get(relative) == Some(content),
+                    "packages/{relative} differs from the committed package"
+                );
+            }
+            let mut realized = 0usize;
+            for root in &exported.output.result.roots {
+                let Some(member) = root.root.strip_prefix(&format!("{TOKEN_MODULE}.")) else {
+                    continue;
+                };
+                for output in &root.outputs {
+                    let package: Json = serde_json::from_slice(
+                        &std::fs::read(
+                            bundle
+                                .join(&output.package.directory)
+                                .join("package.json")
+                                .as_std_path(),
+                        )
+                        .expect("package.json"),
+                    )
+                    .expect("package JSON");
+                    assert_eq!(
+                        package["program"],
+                        serde_json::to_value(&lowered[member].program).expect("a program is JSON"),
+                        "{member}: the exported package realizes the program the differential ran"
+                    );
+                    realized += 1;
+                }
+            }
+            assert_eq!(
+                realized,
+                TOKEN_ROOTS.len(),
+                "one certified package per root"
+            );
+            eprintln!("BS-02: passed in {:?}", started.elapsed());
         }
         other => panic!("no bootstrap case is wired for {other}"),
     }

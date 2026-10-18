@@ -157,19 +157,27 @@ impl Builder {
 
     /// `term` with the free variable `free` bound by the binder around it.
     pub fn abstract_over(&mut self, term: Term, free: Term) -> Term {
+        let free_id = self.min_free[free];
+        if self.min_free[term] > free_id {
+            return term;
+        }
         let mut memo = HashMap::new();
-        self.abstract_memo(term, free, 0, &mut memo)
+        self.abstract_memo(term, free, free_id, 0, &mut memo)
     }
 
     fn abstract_memo(
         &mut self,
         term: Term,
         free: Term,
+        free_id: usize,
         depth: usize,
         memo: &mut HashMap<(Term, usize), Term>,
     ) -> Term {
         if term == free {
             return self.bvar(depth);
+        }
+        if self.min_free[term] > free_id {
+            return term;
         }
         if let Some(&done) = memo.get(&(term, depth)) {
             return done;
@@ -181,32 +189,32 @@ impl Builder {
             | CoreNode::Nat { .. }
             | CoreNode::String { .. } => term,
             CoreNode::App { f, x } => {
-                let f = self.abstract_memo(f, free, depth, memo);
-                let x = self.abstract_memo(x, free, depth, memo);
+                let f = self.abstract_memo(f, free, free_id, depth, memo);
+                let x = self.abstract_memo(x, free, free_id, depth, memo);
                 self.app(f, x)
             }
             CoreNode::Lambda { n, b, t, v } => {
-                let t = self.abstract_memo(t, free, depth, memo);
-                let v = self.abstract_memo(v, free, depth + 1, memo);
+                let t = self.abstract_memo(t, free, free_id, depth, memo);
+                let v = self.abstract_memo(v, free, free_id, depth + 1, memo);
                 self.lam(&n, b, t, v)
             }
             CoreNode::Forall { n, b, t, v } => {
-                let t = self.abstract_memo(t, free, depth, memo);
-                let v = self.abstract_memo(v, free, depth + 1, memo);
+                let t = self.abstract_memo(t, free, free_id, depth, memo);
+                let v = self.abstract_memo(v, free, free_id, depth + 1, memo);
                 self.pi(&n, b, t, v)
             }
             CoreNode::Let { n, t, v, body, d } => {
-                let t = self.abstract_memo(t, free, depth, memo);
-                let v = self.abstract_memo(v, free, depth, memo);
-                let body = self.abstract_memo(body, free, depth + 1, memo);
+                let t = self.abstract_memo(t, free, free_id, depth, memo);
+                let v = self.abstract_memo(v, free, free_id, depth, memo);
+                let body = self.abstract_memo(body, free, free_id, depth + 1, memo);
                 self.let_node(&n, t, v, body, d)
             }
             CoreNode::Mdata { m, x } => {
-                let x = self.abstract_memo(x, free, depth, memo);
+                let x = self.abstract_memo(x, free, free_id, depth, memo);
                 self.mdata_node(m, x)
             }
             CoreNode::Projection { n, s, i, x } => {
-                let x = self.abstract_memo(x, free, depth, memo);
+                let x = self.abstract_memo(x, free, free_id, depth, memo);
                 self.projection(&n, &s, i, x)
             }
         };
@@ -348,18 +356,29 @@ impl Builder {
         if map.is_empty() {
             return term;
         }
+        let max_free = if from.iter().all(|&f| self.min_free[f] != usize::MAX) {
+            from.iter().map(|&f| self.min_free[f]).max()
+        } else {
+            None
+        };
         let mut memo = HashMap::new();
-        self.substitute_memo(term, &map, &mut memo)
+        self.substitute_memo(term, &map, max_free, &mut memo)
     }
 
     fn substitute_memo(
         &mut self,
         term: Term,
         map: &HashMap<Term, Term>,
+        max_free: Option<usize>,
         memo: &mut HashMap<Term, Term>,
     ) -> Term {
         if let Some(&replacement) = map.get(&term) {
             return replacement;
+        }
+        if let Some(limit) = max_free {
+            if self.min_free[term] > limit {
+                return term;
+            }
         }
         if let Some(&done) = memo.get(&term) {
             return done;
@@ -371,32 +390,32 @@ impl Builder {
             | CoreNode::Nat { .. }
             | CoreNode::String { .. } => term,
             CoreNode::App { f, x } => {
-                let f = self.substitute_memo(f, map, memo);
-                let x = self.substitute_memo(x, map, memo);
+                let f = self.substitute_memo(f, map, max_free, memo);
+                let x = self.substitute_memo(x, map, max_free, memo);
                 self.app(f, x)
             }
             CoreNode::Lambda { n, b, t, v } => {
-                let t = self.substitute_memo(t, map, memo);
-                let v = self.substitute_memo(v, map, memo);
+                let t = self.substitute_memo(t, map, max_free, memo);
+                let v = self.substitute_memo(v, map, max_free, memo);
                 self.lam(&n, b, t, v)
             }
             CoreNode::Forall { n, b, t, v } => {
-                let t = self.substitute_memo(t, map, memo);
-                let v = self.substitute_memo(v, map, memo);
+                let t = self.substitute_memo(t, map, max_free, memo);
+                let v = self.substitute_memo(v, map, max_free, memo);
                 self.pi(&n, b, t, v)
             }
             CoreNode::Let { n, t, v, body, d } => {
-                let t = self.substitute_memo(t, map, memo);
-                let v = self.substitute_memo(v, map, memo);
-                let body = self.substitute_memo(body, map, memo);
+                let t = self.substitute_memo(t, map, max_free, memo);
+                let v = self.substitute_memo(v, map, max_free, memo);
+                let body = self.substitute_memo(body, map, max_free, memo);
                 self.let_node(&n, t, v, body, d)
             }
             CoreNode::Mdata { m, x } => {
-                let x = self.substitute_memo(x, map, memo);
+                let x = self.substitute_memo(x, map, max_free, memo);
                 self.mdata_node(m, x)
             }
             CoreNode::Projection { n, s, i, x } => {
-                let x = self.substitute_memo(x, map, memo);
+                let x = self.substitute_memo(x, map, max_free, memo);
                 self.projection(&n, &s, i, x)
             }
         };
@@ -534,8 +553,7 @@ impl Builder {
     /// Whether `term` mentions a free variable or a placeholder.
     #[must_use]
     pub fn has_placeholder(&self, term: Term) -> bool {
-        let mut seen = std::collections::HashSet::new();
-        self.placeholder_walk(term, &mut seen, true)
+        self.min_free[term] != usize::MAX || !self.meta_clean(term)
     }
 
     /// Whether `term` mentions a lemma's placeholder, a binder nothing solved.
@@ -599,40 +617,6 @@ impl Builder {
             }
         }
         status[&root]
-    }
-
-    fn placeholder_walk(
-        &self,
-        term: Term,
-        seen: &mut std::collections::HashSet<Term>,
-        free_too: bool,
-    ) -> bool {
-        if !seen.insert(term) {
-            return false;
-        }
-        match &self.nodes[term] {
-            CoreNode::Const { n, .. } => n.starts_with(META) || (free_too && n.starts_with(FREE)),
-            CoreNode::BVar { .. }
-            | CoreNode::Sort { .. }
-            | CoreNode::Nat { .. }
-            | CoreNode::String { .. } => false,
-            CoreNode::App { f, x } => {
-                self.placeholder_walk(*f, seen, free_too)
-                    || self.placeholder_walk(*x, seen, free_too)
-            }
-            CoreNode::Lambda { t, v, .. } | CoreNode::Forall { t, v, .. } => {
-                self.placeholder_walk(*t, seen, free_too)
-                    || self.placeholder_walk(*v, seen, free_too)
-            }
-            CoreNode::Let { t, v, body, .. } => {
-                self.placeholder_walk(*t, seen, free_too)
-                    || self.placeholder_walk(*v, seen, free_too)
-                    || self.placeholder_walk(*body, seen, free_too)
-            }
-            CoreNode::Mdata { x, .. } | CoreNode::Projection { x, .. } => {
-                self.placeholder_walk(*x, seen, free_too)
-            }
-        }
     }
 
     /// Assign the placeholders of `pattern` that `actual` has a term at, by
@@ -699,6 +683,9 @@ impl Builder {
     /// binder: the type of `conv_cond` states `P b` and the type of the
     /// application states the predicate's body.
     pub fn instantiate_beta(&mut self, body: Term, arg: Term) -> Term {
+        if self.loose_bound(body) == 0 {
+            return body;
+        }
         let mut memo = HashMap::new();
         self.beta_memo(body, arg, 0, &mut memo)
     }
@@ -712,6 +699,9 @@ impl Builder {
     ) -> Term {
         if let Some(&done) = memo.get(&(term, depth)) {
             return done;
+        }
+        if self.loose_bound(term) <= depth {
+            return term;
         }
         let out = match self.nodes[term].clone() {
             CoreNode::BVar { i } => {
@@ -766,16 +756,16 @@ impl Builder {
 
     /// `term` with every solved placeholder replaced, transitively.
     fn resolve(&mut self, term: Term, solved: &HashMap<usize, Term>) -> Term {
-        let map: HashMap<String, Term> = solved
-            .iter()
-            .map(|(id, value)| (format!("{META}{id}"), *value))
-            .collect();
+        if solved.is_empty() || self.meta_clean(term) {
+            return term;
+        }
+        let values_clean = solved.values().all(|&value| self.meta_clean(value));
         let mut out = term;
         for _ in 0..64 {
             let mut memo = HashMap::new();
-            let next = self.resolve_memo(out, &map, &mut memo);
-            if next == out {
-                return out;
+            let next = self.resolve_memo(out, solved, &mut memo);
+            if values_clean || next == out {
+                return next;
             }
             out = next;
         }
@@ -787,7 +777,7 @@ impl Builder {
     fn resolve_memo(
         &mut self,
         term: Term,
-        map: &HashMap<String, Term>,
+        solved: &HashMap<usize, Term>,
         memo: &mut HashMap<Term, Term>,
     ) -> Term {
         if let Some(&done) = memo.get(&term) {
@@ -797,44 +787,46 @@ impl Builder {
             return term;
         }
         let out = match self.nodes[term].clone() {
-            CoreNode::Const { n, .. } => map.get(&n).copied().unwrap_or(term),
+            CoreNode::Const { .. } => self
+                .meta_id(term)
+                .and_then(|id| solved.get(&id).copied())
+                .unwrap_or(term),
             CoreNode::BVar { .. }
             | CoreNode::Sort { .. }
             | CoreNode::Nat { .. }
             | CoreNode::String { .. } => term,
             CoreNode::App { f, x } => {
                 let (head, _) = self.spine(f);
-                let replaced_head = self.meta_id(head).is_some()
-                    || matches!(&self.nodes[head], CoreNode::Const { n, .. } if map.contains_key(n));
-                let f2 = self.resolve_memo(f, map, memo);
-                let x2 = self.resolve_memo(x, map, memo);
+                let replaced_head = self.meta_id(head).is_some();
+                let f2 = self.resolve_memo(f, solved, memo);
+                let x2 = self.resolve_memo(x, solved, memo);
                 match self.nodes[f2].clone() {
                     CoreNode::Lambda { v, .. } if replaced_head => self.instantiate_beta(v, x2),
                     _ => self.app(f2, x2),
                 }
             }
             CoreNode::Lambda { n, b, t, v } => {
-                let t = self.resolve_memo(t, map, memo);
-                let v = self.resolve_memo(v, map, memo);
+                let t = self.resolve_memo(t, solved, memo);
+                let v = self.resolve_memo(v, solved, memo);
                 self.lam(&n, b, t, v)
             }
             CoreNode::Forall { n, b, t, v } => {
-                let t = self.resolve_memo(t, map, memo);
-                let v = self.resolve_memo(v, map, memo);
+                let t = self.resolve_memo(t, solved, memo);
+                let v = self.resolve_memo(v, solved, memo);
                 self.pi(&n, b, t, v)
             }
             CoreNode::Let { n, t, v, body, d } => {
-                let t = self.resolve_memo(t, map, memo);
-                let v = self.resolve_memo(v, map, memo);
-                let body = self.resolve_memo(body, map, memo);
+                let t = self.resolve_memo(t, solved, memo);
+                let v = self.resolve_memo(v, solved, memo);
+                let body = self.resolve_memo(body, solved, memo);
                 self.let_node(&n, t, v, body, d)
             }
             CoreNode::Mdata { m, x } => {
-                let x = self.resolve_memo(x, map, memo);
+                let x = self.resolve_memo(x, solved, memo);
                 self.mdata_node(m, x)
             }
             CoreNode::Projection { n, s, i, x } => {
-                let x = self.resolve_memo(x, map, memo);
+                let x = self.resolve_memo(x, solved, memo);
                 self.projection(&n, &s, i, x)
             }
         };

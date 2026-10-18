@@ -1,8 +1,24 @@
 {
   "roots": [
     {
+      "name": "audit_tokens",
+      "root": "LexLeanBoot.TokenAudit.auditTokens",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "is_closed_lean_name",
       "root": "LexLeanBoot.AxiomOutput.isClosedLeanName",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "lex",
+      "root": "LexLeanBoot.TokenAudit.lex",
       "targets": [
         "rust-std"
       ],
@@ -18,3 +34,4 @@
     }
   ]
 }
+

@@ -532,6 +532,80 @@ pub(crate) fn run(id: &str) {
                     "{fixture}: the committed fixture project carries a build root; fixtures run from a temporary copy — remove it"
                 );
             }
+            // No tracked file is named `CACHEDIR.TAG` or sits under a path
+            // component the repository walkers skip (`target`, `.git`,
+            // `.lexlean`, `.lake`, `node_modules`, or `expected` outside the
+            // sanctioned `expected/` oracle directories), so no tracked subtree
+            // can hide from the walkers.
+            let is_sanctioned_expected = |parts: &[&str], index: usize| -> bool {
+                (index == 1 && matches!(parts[0], "bootstrap" | "compiler" | "stdlib"))
+                    || (index == 2 && parts[0] == "examples")
+                    || (index == 3
+                        && parts[0] == "tests"
+                        && matches!(parts[1], "negative" | "tooling"))
+                    || (index == 4 && parts[0] == "tests" && parts[1] == "fixtures")
+            };
+            let walker_skip_defect = |tracked: &str| -> Option<String> {
+                let parts: Vec<&str> = tracked.split('/').collect();
+                for (index, component) in parts.iter().copied().enumerate() {
+                    if component == "CACHEDIR.TAG" {
+                        return Some(format!(
+                            "{tracked}: tracked `CACHEDIR.TAG` would cause repository walkers to skip `{}`",
+                            parts[..index].join("/")
+                        ));
+                    }
+                    if matches!(
+                        component,
+                        "target" | ".git" | ".lexlean" | ".lake" | "node_modules"
+                    ) {
+                        return Some(format!(
+                            "{tracked}: tracked path has walker-skipped component `{component}`"
+                        ));
+                    }
+                    if component == "expected" && !is_sanctioned_expected(&parts, index) {
+                        return Some(format!(
+                            "{tracked}: tracked path has `expected` component outside sanctioned oracle directories"
+                        ));
+                    }
+                }
+                None
+            };
+            let ls_files = std::process::Command::new("git")
+                .args(["ls-files", "-z"])
+                .current_dir(root.as_std_path())
+                .output()
+                .expect("git ls-files runs in the repository");
+            assert!(ls_files.status.success(), "git ls-files succeeded");
+            let tracked: Vec<String> = ls_files
+                .stdout
+                .split(|byte| *byte == 0)
+                .filter(|entry| !entry.is_empty())
+                .map(|entry| String::from_utf8_lossy(entry).replace('\\', "/"))
+                .collect();
+            assert!(
+                tracked.len() > 1000,
+                "git ls-files returned {} tracked files",
+                tracked.len()
+            );
+            let defects: Vec<String> = tracked
+                .iter()
+                .filter_map(|path| walker_skip_defect(path))
+                .collect();
+            assert_eq!(
+                defects,
+                Vec::<String>::new(),
+                "§7 (RP-03): the tracked tree holds nothing the repository walkers skip"
+            );
+            for planted in [
+                "examples/collections/CACHEDIR.TAG",
+                "crates/lexlean/.lexlean/planted.lean",
+                "crates/lexlean/src/expected/planted.rs",
+            ] {
+                assert!(
+                    walker_skip_defect(planted).is_some(),
+                    "planted tracked path `{planted}` is refused by RP-03"
+                );
+            }
         }
         // §7, §8.4: shipped crates derive from `publish = false`, and the
         // shipped crate depends on no repository-only tooling.
@@ -682,7 +756,7 @@ pub(crate) fn run(id: &str) {
             let model = repo_model::Model::load(&root.join("model").into_std_path_buf())
                 .expect("the model loads");
             let table = spec_table();
-            assert_eq!(table.len(), 416, "§31 has 416 rows");
+            assert_eq!(table.len(), 417, "§31 has 417 rows");
             assert_eq!(model.ids.id.len(), table.len(), "register row count");
             for ((spec_id, spec_suite, spec_statement), row) in
                 table.iter().zip(model.ids.id.iter())
@@ -1449,7 +1523,7 @@ pub(crate) fn run(id: &str) {
                     ))
                     .expect("the committed hints are a hints file the verifier reads");
                     assert!(
-                        hints.contains_key("LexLeanExample.CensusCert4"),
+                        hints.contains_key("LexLeanExample.Census"),
                         "the hints cover the Atlas module that dominates the verification"
                     );
                 } else {
@@ -1750,7 +1824,7 @@ pub(crate) fn run(id: &str) {
             let join_job = job(&runs[crate::shards::JOIN]);
             assert!(
                 join_job.contains("grep -F \"verify-examples: uor-atlas verified (attestation \" ci-evidence/vv.txt")
-                    && join_job.contains("grep -F \"verify-examples: uor-atlas: 267 normalized verification records equal expected/verify (§29.5)\" ci-evidence/vv.txt"),
+                    && join_job.contains("grep -F \"verify-examples: uor-atlas: 347 normalized verification records equal expected/verify (§29.5)\" ci-evidence/vv.txt"),
                 "the join asserts that Atlas verified"
             );
             assert!(
