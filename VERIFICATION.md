@@ -8849,6 +8849,49 @@ range checks and byte comparison, as the spike on #92 measured).
 
 Removed: the source was not changed (the plants are made on copies).
 
+### the bootstrap primitive scanner can fail its oracle (SPEC.md §17.23, §12.2)
+
+`BS-03` holds the two production roots of `LexLeanBoot.PrimitiveScan`
+(`bootstrap/src/PrimitiveScan.lex.tex`) to the stage-0 Rust oracle they replace,
+`source::scan::scan` and `source::scan::reject_forbidden_atoms`. On every host
+the rendered `rust-std` packages, compiled by that host's pinned rustc, run
+the deterministic vectors, a 128-byte window and a 2,048-byte prefix of every
+committed `.lex.tex` source, and the whole sources up to 8,192 bytes (up to
+1,024 bytes and one source in four for `rejectAtoms`); on the normative host
+the lowered programs run under the calculus evaluator on the vectors, the
+windows, and 80 seeded texts, the packages run 2,500 seeded texts, and ten
+planted defects are each detected. A run compares every atom (class, text,
+byte, line, and column spans) or the rejection (code, message, span, help).
+Measured locally on the normative host (4 cores): 4,565 `scanSource` and 815
+`rejectAtoms` rustc runs agree, 907 evaluator runs per root agree, the corpora
+take 66 s to build, rustc 76 s to build the two packages, and the case took
+about 380 s before the Lean-backed export (shared by the cases of the bootstrap
+project in one process) and 877 s with it. The ten plants, each made on a copy
+of the source on every run (`-- conformance_bs_03`):
+
+- **a run of white space stops at a line feed** (`(if space then true else feed)`
+  -> `space`): run 1, `\begin{x} ab 12 + ℕ\n`.
+- **a backslash before any scalar below U+0100 is a control** (`nbAscii` over
+  `0..255`): run 5, `\ℕ`, which the oracle refuses with `LLL1004`.
+- **a column counts the bytes of a scalar**: run 1, the column after `ℕ`.
+- **the atom limit admits one atom more**: run 37, `a b c` with a limit of 4.
+- **a lone zero has a redundant leading zero**: run 13.
+- **a numeral after identifier material need not touch it**: run 147, an atom
+  list with a gap, which the scanner never produces and the case therefore adds.
+- **a leading zero inside a payload string is rejected**: run 106.
+- **a coremodule environment is not a payload**: run 130, a quoted `007` in a
+  `coremodule` body.
+- **an escaped backslash escapes the next scalar**: run 110.
+- **a brace opens no level of a payload**: run 118, a payload with an inner
+  brace.
+
+Removed: the source was not changed (the plants are made on copies).
+
+Authoring found no shape the certificate generator refused: `lexlean verify`
+passed on the first attempt apart from the exact axiom policy, which was
+aligned declaration by declaration (six declarations observe no axioms, the
+others `Quot.sound` and `propext`).
+
 ### source packages can fail
 
 The cases of the `packages` suite (`PK-01`..`PK-04`, SPEC.md §10.5) were written
