@@ -9070,9 +9070,11 @@ Each ID below had a case that passes but no record that the case can fail
 (§27.9). Each defect was planted alone in the named source, the named test run
 once with `cargo test -p repo-conformance --test conformance <test> --
 --exact`, the failure observed, and the plant restored with `git checkout`.
-The runs were on a Linux x86-64 host without the pinned Lean toolchain, so each
-planted defect is one that the case's platform-independent assertions reach
-before any Lean step; the signatures are the first panic message, trimmed.
+The first seventeen rows were run on a Linux x86-64 host without the pinned Lean
+toolchain, so each defect is one that the case's platform-independent assertions
+reach before any Lean step. The last eight rows (`DF-18` to `LM-02`) were run
+with `leanprover/lean4:v4.32.1` installed through `elan`. The signatures are
+the first panic message, trimmed.
 
 | ID | Planted defect | Expected failure signature |
 | --- | --- | --- |
@@ -9093,15 +9095,17 @@ before any Lean step; the signatures are the first panic message, trimmed.
 | `LM-03` | `ir/semantic/model.rs`: both `utf8_lines` carriage-return refusals made `false &&` | `check fails` (an artifact with a CR must be refused) |
 | `LM-13` | `text_laws.rs`: `LAWS_MODULE` names `LexLeanText.Laws` | `the shipped registry: ... LLI9001 ... the registry does not list `LexLeanText.Laws`` |
 | `PK-05` | `link.rs`: a linked module's `origin` is `None` | `the standard library's Text is a module of the project, from the package` (`left: None`, `right: Some("std")`) |
+| `DF-18` | `ir/semantic.rs`: the three-argument test of `Iterate`/`IterateUntil` made `false &&` | `expected "primitive IterateUntil expects 3 argument(s) (step, natural-number bound, initial state), received 2", got LLT4001: ... requires a typed initial state` |
+| `PF-19` | `ir/semantic.rs`: the `linear_arithmetic` prior-definition test made `false &&` | `check fails` (an unfolding of a non-prior definition must be refused) |
+| `TC-05` | `calculus/library.rs`: the `MapLookup` template builds the `map_contains` function | `fixture map-lookup: function 0: the body has type Bool, expected Option { value: String }` |
+| `NE-01` | `production/lcnf.rs`: `Renamer::bind` keeps Lean's name instead of the fresh one | `the production compiler input violates schemas/compiler-input.schema.json: ... `_uniq.19` does not match pattern `^v[0-9]+$`` |
+| `MD-03` | `ir/semantic/model.rs`: the validator order test uses `>` for `>=` | `expected LLT4006, found ["LLT4001"] (LLT4001: phase link: duplicate generated name `DigitContract.postcondition_sound`)` |
+| `MD-05` | `ir/semantic/model.rs`: a model declaration's interface mismatch is filtered out | `expected LLT4006, found ["LLT4009"] (... evidence `ReportEvidence` is about another contract or realization)` |
+| `MD-11` | `calculus/realization.rs`: the `term.checked_apply` table key renamed | `the realization table covers term.checked_apply` |
+| `LM-02` | `ir/semantic/language_model.rs`: the `in_range` law states `false` for `true` | `the module verifies with real Lean: ... LLV7002 ... Lean rejected `Models.Recognizer` (error): Type mismatch LexLeanText.in_range pieces __bytes` |
 
 Two first attempts were not caught and are not evidence: making
 `require_language_1_2` always succeed leaves `MD-01` green, because the
 declaration-level gate above is the one it exercises; and serializing the
 evidence `claims` away fails `MD-10` on the closed schema, not on the identity,
 so the identity plant above is the one recorded.
-
-Not recorded here: `DF-18`, `PF-19`, `TC-05`, `NE-01`, `MD-03`, `MD-05`,
-`MD-11`, and `LM-02`. Their cases call `verify_ok_backed` or `lean_backed`
-before their negative assertions, and on the normative host that requires the
-pinned toolchain, which the host of this record did not have. They need a plant
-run on a host that has it.
