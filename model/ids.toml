@@ -54,7 +54,7 @@ statement = "The specification conformance table and model register are bijectiv
 id = "RP-08"
 level = "build"
 suite = "repository"
-statement = "Repository source contains no unsanctioned deferral marker, stub, placeholder, ignored capability, or disabling feature."
+statement = "Repository source contains no unsanctioned deferral marker, stub, placeholder, ignored capability, or disabling feature; the deferral audit reads every text file of the repository, the root documents, workflows, scripts, devcontainer, API, oracle, and tooling data included, except a vendored authority copy whose bytes its checksum pins, and its markers include the phrases that put work in the future."
 
 [[id]]
 id = "RP-09"
@@ -2388,7 +2388,7 @@ statement = "A language-1.2 core module written in the authoring notation links 
 id = "AU-11"
 level = "build"
 suite = "authoring"
-statement = "Malformed core notation fails closed and never panics: an unclosed delimiter, a keyword used as a name, a label that is not the number of its node, a reference to a node not yet written, a numeral with a redundant leading zero, a statement that defines no node, a nesting beyond the bound, and every single-token deletion and duplication of a committed module fail with a registered code at a position in the notation or link to a module that decodes."
+statement = "Malformed core notation fails closed and never panics: an unclosed delimiter, a keyword used as a name, a label that is not the number of its node, a forward reference to a node, a numeral with a redundant leading zero, a statement that defines no node, a nesting beyond the bound, and every single-token deletion and duplication of a committed module fail with a registered code at a position in the notation or link to a module that decodes."
 
 [[id]]
 id = "AU-12"

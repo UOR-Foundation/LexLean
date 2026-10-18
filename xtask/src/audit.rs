@@ -858,7 +858,16 @@ pub fn audit_oracle_isolation(root: &Path) -> Result<(), Fail> {
 /// R4: nothing is deferred. The markers are spelled in halves so this gate
 /// can scan its own source; exempting the file would put a hole exactly
 /// where a deferral parked in a gate would sit.
-pub fn audit_deferral(root: &Path) -> Result<(), Fail> {
+///
+/// The scope is every text file of the repository the gate can read: the
+/// root documents, the workflows and the scripts and JSON beside them, the
+/// devcontainer, and the API, oracle, and tooling data, besides the crates and
+/// projects. A deferral parked in prose is as much a deferral as one in a
+/// comment, so the prose markers (phrases that put work in the future)
+/// are read as well (the list below spells them in halves). The one exception is a vendored authority copy: its bytes
+/// are the ones its SHA-256 pins (R6), so rewording it would falsify the
+/// citation, and the row that vendors it names the path.
+pub fn audit_deferral(root: &Path, model: &repo_model::Model) -> Result<(), Fail> {
     let markers = [
         concat!("TO", "DO"),
         concat!("FIX", "ME"),
@@ -867,7 +876,19 @@ pub fn audit_deferral(root: &Path) -> Result<(), Fail> {
         concat!("to", "do!"),
         concat!("for ", "now"),
         concat!("later ", "version"),
+        concat!("not ", "yet"),
+        concat!("later ", "release"),
+        concat!("in a ", "later"),
+        concat!("event", "ually"),
+        concat!("follow ", "in"),
     ];
+    let vendored: BTreeSet<PathBuf> = model
+        .authorities
+        .authority
+        .iter()
+        .filter_map(|row| row.vendored.as_ref())
+        .map(|path| root.join(path))
+        .collect();
     let mut files = Vec::new();
     gather(
         root,
@@ -884,13 +905,35 @@ pub fn audit_deferral(root: &Path) -> Result<(), Fail> {
             "compiler",
             "stdlib",
             "bootstrap",
+            "api",
+            "oracle",
+            "tooling",
+            ".github",
+            ".devcontainer",
         ],
         &[
-            ".rs", ".toml", ".json", ".md", ".feature", ".lex.tex", ".lean", ".txt", ".sh",
+            ".rs",
+            ".toml",
+            ".json",
+            ".md",
+            ".feature",
+            ".lex.tex",
+            ".lean",
+            ".txt",
+            ".sh",
+            ".yml",
+            "Dockerfile",
         ],
         &mut files,
     );
     root_tooling(root, &mut files);
+    // The root documents, which no directory above reaches.
+    for entry in std::fs::read_dir(root).into_iter().flatten().flatten() {
+        let path = entry.path();
+        if path.is_file() && path.extension().is_some_and(|extension| extension == "md") {
+            files.push(path);
+        }
+    }
     // Executables under fixture toolchains carry no extension.
     for entry in walkdir::WalkDir::new(root.join("tests"))
         .follow_links(false)
@@ -911,6 +954,9 @@ pub fn audit_deferral(root: &Path) -> Result<(), Fail> {
     let mut violations = Vec::new();
     let mut in_fence = false;
     for path in files {
+        if vendored.contains(&path) {
+            continue;
+        }
         let Ok(text) = std::fs::read_to_string(&path) else {
             continue;
         };

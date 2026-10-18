@@ -119,7 +119,7 @@ fn sirs_criteria(findings: &Expr) -> Expr {
     )
 }
 
-/// The guard of the rule deriving `derived`: it is not yet derived and its
+/// The guard of the rule deriving `derived`: it is not derived and its
 /// premises hold.
 fn guard(findings: &Expr, derived: u64) -> Expr {
     let premises = match derived {

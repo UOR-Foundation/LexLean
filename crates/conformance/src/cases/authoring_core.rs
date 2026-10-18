@@ -820,7 +820,7 @@ fn fails_closed() {
             one(&original, "@1 := Nat", "@2 := Nat"),
         ),
         (
-            "a reference to a node not yet written",
+            "a forward reference to a node",
             one(&original, "@1 := Nat", "@1 := @7"),
         ),
         (

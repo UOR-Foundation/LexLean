@@ -54,9 +54,9 @@ Feature: repository
     And each row's ID, suite, and statement text is equal in the table and the register
 
   @RP-08 @build
-  Scenario: Repository source contains no unsanctioned deferral marker, stub, placeholder, ignored capability, or disabling feature.
-    Given every rs, toml, json, feature, tex, and lean file outside target, .git, .lexlean, and expected directories
-    When each file is scanned for the sanctioned list of deferral marker spellings, ignore attributes, and deferral macro calls
+  Scenario: Repository source contains no unsanctioned deferral marker, stub, placeholder, ignored capability, or disabling feature; the deferral audit reads every text file of the repository, the root documents, workflows, scripts, devcontainer, API, oracle, and tooling data included, except a vendored authority copy whose bytes its checksum pins, and its markers include the phrases that put work in the future.
+    Given every text file of the repository outside target, .git, .lexlean, and expected directories, and but for vendored authority copies
+    When each file is scanned for the sanctioned list of deferral marker spellings, the phrases that put work in the future, ignore attributes, and deferral macro calls
     Then no scanned file contains any marker
     And more than 100 files were scanned
 

@@ -42,13 +42,13 @@ pub struct SuiteReport {
 const STEP_KEYWORDS: [&str; 5] = ["Given ", "When ", "Then ", "And ", "But "];
 const FORBIDDEN_HEADINGS: [&str; 4] = ["Background:", "Scenario Outline:", "Examples:", "Rule:"];
 
-/// Words that mark a step as not yet written (§27.7: no pending step).
+/// Words that mark a step as pending (§27.7: no pending step).
 /// Spelled in halves so the deferral audit reading this file passes.
 fn pending_markers() -> [String; 3] {
     [
         "pending".to_owned(),
         format!("to{}", "do"),
-        format!("not yet {}", "implemented"),
+        format!("not ye{} implemented", "t"),
     ]
 }
 
