@@ -2390,7 +2390,11 @@ fn equivalent_renderings() {
 
 /// The pinned files of a checkout, copied to `to`.
 fn copy_used(from: &Path, to: &Path, pin: &Pin) {
-    for entry in walkdir::WalkDir::new(from).into_iter().flatten() {
+    for entry in walkdir::WalkDir::new(from)
+        .into_iter()
+        .filter_entry(|entry| !support::holds_cache_tag(entry))
+        .flatten()
+    {
         let relative = entry.path().strip_prefix(from).expect("under root");
         let text = relative
             .components()

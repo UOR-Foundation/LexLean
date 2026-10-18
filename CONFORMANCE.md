@@ -448,7 +448,7 @@ the error registry does not sanction (R5, `ERRORS.md`).
 | --- | --- | --- |
 | `RP-01` | `build` | The repository, crate, executable, metadata, and licenses have the exact LexLean identity specified. |
 | `RP-02` | `build` | The repository is derived from the pinned UOR template commit and contains no inherited domain-specific claim logic. |
-| `RP-03` | `build` | The completed repository has the required file and crate layout. |
+| `RP-03` | `build` | The completed repository has the required file and crate layout, and the tracked tree holds no CACHEDIR.TAG or path component the repository walkers skip outside sanctioned expected/ oracle directories. |
 | `RP-04` | `build` | Only the lexlean crate is shipped and no shipped crate depends on repository-only tooling. |
 | `RP-05` | `build` | The just vv recipe runs every normative acceptance gate in the specified order. |
 | `RP-06` | `build` | CONFORMANCE.md and ERRORS.md are exact generated views of model files. |
