@@ -25,7 +25,7 @@ const MODULE: &str = "LexLeanBoot.AxiomOutput";
 /// effects its declaration admits, which are exactly the effects its closure
 /// realizes.
 const ROOTS: [(&str, &[&str]); 2] = [
-    ("isClosedLeanName", &["allocation", "overflow", "recursion"]),
+    ("isClosedLeanName", &["allocation", "overflow"]),
     ("parseAuditOutput", &["allocation", "overflow", "recursion"]),
 ];
 
@@ -1024,8 +1024,8 @@ const PLANTS: [Plant; 7] = [
 const TOKEN_MODULE: &str = "LexLeanBoot.TokenAudit";
 
 const TOKEN_ROOTS: [(&str, &[&str]); 2] = [
-    ("lex", &["allocation", "overflow", "recursion"]),
-    ("auditTokens", &["allocation", "overflow", "recursion"]),
+    ("lex", &["allocation", "overflow"]),
+    ("auditTokens", &["allocation", "overflow"]),
 ];
 
 const EVALUATOR_TOKEN_TEXTS: usize = 300;

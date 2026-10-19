@@ -300,3 +300,82 @@ pub(super) fn looped(
     };
     Some((renamed, outer))
 }
+
+use super::super::{Expr as Term, Function, Ty};
+
+/// Whether the calculus expression calls or closes over function `me`.
+fn names(me: u64, expr: &Term) -> bool {
+    let any = |exprs: &[Term]| exprs.iter().any(|expr| names(me, expr));
+    match expr {
+        Term::Value { .. } | Term::Var { .. } => false,
+        Term::Let { bound, body, .. } => names(me, bound) || names(me, body),
+        Term::Cond {
+            condition,
+            then_branch,
+            else_branch,
+        } => names(me, condition) || names(me, then_branch) || names(me, else_branch),
+        Term::Match {
+            scrutinee, arms, ..
+        } => names(me, scrutinee) || arms.iter().any(|arm| names(me, &arm.body)),
+        Term::Build { operands, .. } | Term::Prim { operands, .. } => any(operands),
+        Term::Call { function, operands } => *function == me || any(operands),
+        Term::Closure { function, captures } => *function == me || any(captures),
+        Term::Apply { target, operands } => names(me, target) || any(operands),
+        Term::First { value } | Term::Second { value } | Term::Field { value, .. } => {
+            names(me, value)
+        }
+    }
+}
+
+/// Collect the operands of every self call in tail position of `expr`, and
+/// say whether those are the only mentions of `me` in it.
+fn calls_in_tail<'a>(me: u64, expr: &'a Term, found: &mut Vec<&'a [Term]>) -> bool {
+    match expr {
+        Term::Call { function, operands } if *function == me => {
+            if operands.iter().any(|operand| names(me, operand)) {
+                return false;
+            }
+            found.push(operands);
+            true
+        }
+        Term::Let { bound, body, .. } => !names(me, bound) && calls_in_tail(me, body, found),
+        Term::Cond {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            !names(me, condition)
+                && calls_in_tail(me, then_branch, found)
+                && calls_in_tail(me, else_branch, found)
+        }
+        Term::Match {
+            scrutinee, arms, ..
+        } => !names(me, scrutinee) && arms.iter().all(|arm| calls_in_tail(me, &arm.body, found)),
+        other => !names(me, other),
+    }
+}
+
+/// Whether the rendering of function `me` is a loop: it calls itself, every
+/// such call is a tail call, and some call changes a parameter the body
+/// reads. This is [`looped`] decided on the calculus, so that the effect of a
+/// realization (`recursion`, §17.13) can be derived from the program and the
+/// lowering is held to it (it fails when the two disagree).
+#[must_use]
+pub fn loops(me: u64, function: &Function) -> bool {
+    let mut calls = Vec::new();
+    if !calls_in_tail(me, &function.body, &mut calls) || calls.is_empty() {
+        return false;
+    }
+    function
+        .parameters
+        .iter()
+        .zip(&function.types)
+        .enumerate()
+        .any(|(position, (name, ty))| {
+            *ty != Ty::Unit
+                && super::lower::mentions(&function.body, *name)
+                && calls.iter().any(|operands| {
+                    !matches!(&operands[position], Term::Var { name: passed } if passed == name)
+                })
+        })
+}

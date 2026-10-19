@@ -4065,13 +4065,23 @@ production stage. A `Nat` or `Int` value crossing a root boundary is
 represented in the target width, so a caller cannot supply a value outside it,
 and every value the realization computes outside it is the `overflow`
 failure, never a wrapped or truncated value. A primitive realized by a
-runtime item is a loop and carries no recursion; a primitive realized by a
+runtime item is a loop and carries no recursion. A primitive realized by a
 library template (§17.14: the map, set, fold, iteration, and graph
-primitives) carries it, because a template calls itself and so the depth of
-its calls is bounded only by its input. The registry states exactly that, and
-`conformance_tc_06` derives it from the realization table rather than
-trusting the row. A root whose closure applies such a primitive admits
-`recursion`, as does a root with a recursive definition.
+primitives) carries the recursion of the template's rendering: a template
+whose function calls itself only in tail position is rendered as a loop
+(§17.16) and uses no stack for the call, so the folds, the iterations, and the
+lookups (`list_fold`, `map_fold`, `set_fold`, `iterate`, `iterate_until`,
+`map_lookup`, `map_contains`, `set_contains`, `graph_successors`) carry none,
+while a template with a call whose result is used (an insertion, a removal, a
+union, an intersection, a difference, the key and value lists, and the graph
+searches) is rendered as a call and carries it, because the depth of its calls
+is bounded only by its input. The registry states exactly that, and
+`conformance_tc_06` derives it from the realization table and `RB-14` from the
+rendering, rather than trusting the row. A root whose closure applies a
+primitive that carries `recursion` admits it, as does a root with a recursive
+definition: the effect of a definition is the over-approximation the next
+paragraph states, so a definition whose calls are all tail calls is rendered
+as a loop and still requires it.
 
 The analysis is a conservative over-approximation of effects: it may require a
 root to admit an effect its realization never exhibits, and it never admits a
@@ -5544,10 +5554,20 @@ of a next state rebinds the state to that value and evaluates the loop again, an
 breaks with a value and has no labels. A body whose value is neither is stuck,
 and the loop recurses through `eval` with the fuel the body left, so a loop that
 does not end within the fuel is exhausted, never a wrong value. The renderer
-prints a loop as `{ let mut s = s; loop { match { body } { Ok(next) => { s = next; }
-Err(done) => break done, } } }`; the validator lets the body move the state, which
+prints a loop as `{ let mut s = s; loop { let step = { body }; match step { Ok(next) =>
+{ s = next; } Err(done) => break done, } } }`, binding the body's value first because
+Rust's lint gate refuses a block with bindings as a scrutinee; the validator lets the body move the state, which
 the loop's own binding holds, and nothing else, because the body runs again after
-every `Ok`. No lowering produces a loop yet. Every runtime
+every `Ok`. The lowering produces a loop for a function every self call of
+which is a tail call and some self call of which changes a parameter the body
+reads (`calculus::rust::loops` decides it on the calculus, and the lowering
+fails when it disagrees; `RB-14`): the parameters the self calls change are the
+state, a tuple nested to the right when there are several, held in a binding
+the function makes from them; each tail self call is `Ok` of the next state and
+every other tail value is `Err` of the value, so the loop breaks with the value
+the function returns; a parameter every self call passes on as it got it stays
+a parameter, which the body clones. A function with a self call that is not a
+tail call is rendered as a call. Every runtime
 item (`rust::runtime::Item`) is declared as the calculus
 primitive it realizes on the same operands (the successor as `nat_add` with
 one), fallible exactly when the renderer types it `R<T>`, and present in

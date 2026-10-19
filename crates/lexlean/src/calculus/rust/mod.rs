@@ -28,6 +28,7 @@ pub mod package;
 pub mod runtime;
 pub mod scaffold;
 mod tail;
+pub use tail::loops;
 pub mod validate;
 
 use std::collections::BTreeSet;

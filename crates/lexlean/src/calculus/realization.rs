@@ -1141,7 +1141,8 @@ pub fn construct_allocates(construct: &str) -> Result<bool, String> {
 
 /// Whether a realization element needs a call depth bounded only by its
 /// input (§17.13): the structural `recursion`, or a template whose instance
-/// calls itself, directly or through a closure of one of its own functions.
+/// calls itself, directly or through a closure of one of its own functions,
+/// by a call the rendering does not make a loop (a self tail call is one).
 /// A primitive realized by a runtime item is a loop, not a call.
 ///
 /// # Errors
@@ -1237,9 +1238,15 @@ fn calls_itself(functions: &[Function]) -> bool {
     }
     let edges: Vec<BTreeSet<u64>> = functions
         .iter()
-        .map(|function| {
+        .enumerate()
+        .map(|(position, function)| {
             let mut out = BTreeSet::new();
             names(&function.body, &mut out);
+            // A function whose self calls are all tail calls is rendered as a
+            // loop, which uses no stack: it does not call itself (§17.16).
+            if super::rust::loops(position as u64, function) {
+                out.remove(&(position as u64));
+            }
             out
         })
         .collect();

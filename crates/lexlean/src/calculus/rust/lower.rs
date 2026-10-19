@@ -2312,16 +2312,19 @@ impl<'a> Lowering<'a> {
                     block_of(body)
                 };
                 fold(&mut body);
-                let (parameters, mut body) = match super::tail::looped(
-                    position as u64,
-                    &parameters,
-                    &result,
-                    &body,
-                    &mut || self.fresh(),
-                ) {
-                    Some(looped) => looped,
-                    None => (parameters, body),
-                };
+                // The calculus decides whether a function is a loop, so that
+                // the effects of a realization can be derived from the
+                // program; the rewriting of the lowered body must agree.
+                let looped =
+                    super::tail::looped(position as u64, &parameters, &result, &body, &mut || {
+                        self.fresh()
+                    });
+                if looped.is_some() != super::tail::loops(position as u64, function) {
+                    return fail(format!(
+                        "function {position}: the lowering and the calculus disagree on whether its self calls are a loop"
+                    ));
+                }
+                let (parameters, mut body) = looped.unwrap_or((parameters, body));
                 super::moves::apply(&mut body);
                 (parameters, body)
             };

@@ -148,7 +148,7 @@ definition{
   body: ((second (first (prim iterate_until (fun [raw] (state : (Nat * Nat)) => (nameStep raw state)) (prim length raw : Nat) (0, 0) : ((Nat * Nat) * Bool)))) =? 1),
   axioms: [Quot.sound, propext],
   executable: true,
-  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+  production: {effects: [allocation, overflow], targets: [rust-std]}
 }
 
 definition{
