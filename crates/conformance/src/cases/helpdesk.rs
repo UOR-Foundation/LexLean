@@ -278,19 +278,30 @@ pub(super) fn run(id: &str) {
     let classify_program = lower_in(&checked, &project, "Helpdesk.Main", "classify");
     let plan_program = lower_in(&checked, &project, "Helpdesk.Main", "plan");
     let dispatch_program = lower_in(&checked, &project, "Helpdesk.Main", "dispatch");
-    let rendered = |lowered: &lexlean::production::lower::Lowered| format!("{:?}", lowered.program);
+    // What each root's closure reaches, by the declarations it realizes.
+    let closure = |root: &str, prefix: &str| -> bool {
+        roots(&checked)
+            .expect("roots")
+            .iter()
+            .find(|found| found.report.root == root)
+            .unwrap_or_else(|| panic!("`{root}` is a production root"))
+            .report
+            .runtime
+            .iter()
+            .any(|member| member.declaration.starts_with(prefix))
+    };
+    let models = "LexLeanStdModels.Scores.";
+    let reasoning = "LexLeanStdReasoning.Worklist.";
     assert!(
-        rendered(&classify_program).contains("Scores")
-            && !rendered(&classify_program).contains("Worklist"),
+        closure("Helpdesk.Main.classify", models) && !closure("Helpdesk.Main.classify", reasoning),
         "`classify` uses the model and not the reasoner"
     );
     assert!(
-        rendered(&plan_program).contains("Worklist") && !rendered(&plan_program).contains("Scores"),
+        closure("Helpdesk.Main.plan", reasoning) && !closure("Helpdesk.Main.plan", models),
         "`plan` uses the reasoner and not the model"
     );
     assert!(
-        rendered(&dispatch_program).contains("Scores")
-            && rendered(&dispatch_program).contains("Worklist"),
+        closure("Helpdesk.Main.dispatch", models) && closure("Helpdesk.Main.dispatch", reasoning),
         "`dispatch` uses both"
     );
 
