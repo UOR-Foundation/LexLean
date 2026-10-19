@@ -9957,3 +9957,113 @@ imposes and not a gap in the case that reaches them:
   certificates that the library and `cargo xtask check-calculus` read; no
   command takes one, and the one production path to `LLB6005` is a package the
   Rust profile cannot render, which no committed project builds.
+
+## Text classifiers, composition, and the no-prompt audit (LM-07, LM-08, LM-09, slice 3 of #30)
+
+`LM-07` (classifiers), `LM-08` (composition and adapters through the model
+constructs alone), and `LM-09` (no prompt is code) are `build` rows, validated
+against Lean's kernel and the compiler's own registries and not proved here.
+Lean's guarantees are the authority rows' (`model/authorities.toml`); the
+library's lemmas are checked by the pinned Lean when the generated module is
+decoded, and a classifier's, a window model's, and an adapter's generated
+theorems are checked by it again in each module that declares them.
+
+### What each case establishes
+
+- **`conformance_lm_07`** links classifiers `Words` (over the `longest_match`
+  tokenizer) and `Letters` (over the `byte_level` one) over a stateless
+  `list int -> nat` model, reads their elaboration (`features`,
+  `classifyTokens`, `classify`, and the laws `features_width`,
+  `features_total`, `features_fit`), checks the generated Lean applies the
+  library's `features` and proves by its four lemmas without splicing any,
+  refuses a non-tokenizer (`LLT4006`), an unknown model (`LLT4006`), an unsorted
+  policy (`LLT4006`), a model from `list uint32` (`LLT4006`), a model whose
+  postcondition is checked at run time (`LLT4006`), a stateful model
+  (`LLT4006`), and an unknown member (`LLT4001`); verifies the laws with the
+  pinned Lean; evaluates four classifications in the kernel; refuses a wrong
+  claim (`LLV7002`); and fails a classifier whose policy omits an axiom its
+  laws observe (`LLV7005`).
+- **`conformance_lm_08`** links a stateful model over the window `Last2` whose
+  step is `Last2.push` and whose contract's postcondition is
+  `fitsOption Last2.capacity pushed`, so that `Last2.push_bounded` is the whole
+  proof of its `satisfies_contract` evidence; composes it under `scan`; links
+  adapters over `string` that apply `Words.classify` and `Halt.generate`, whose
+  evidence is `Words.features_width` and `Digits.text_roundtrip`; reads the
+  schema's declaration kinds and asserts they are the nineteen of the language
+  (none for composition or adapters); refuses a model whose realization is a
+  classifier (`LLT4006`); verifies all of it with the pinned Lean, including the
+  kernel evaluation of the scan's stream; and fails an adapter whose
+  realization is not the contract's label (`LLV7002`).
+- **`conformance_lm_09`** reads `schemas/semantic-module-v2.schema.json` and
+  `language/production-1.2.toml`: the 56 operations of the schema's primitive
+  node are the 56 `primitive.*` rows of the registry, each is a variant of the
+  compiler's `SemanticPrimitive`, each is classified by the audit (18 may take
+  a `string` or `bytes` operand, and every one of those returns data), and none
+  of the four text declarations states a member that is a free `string` (a
+  string type no pattern, enumeration, or constant closes, found through
+  references). The audit is armed by those 18 operations; a planted
+  `eval_string` row in either registry, an unclassified operation, a missing
+  classification, a text member `prompt` of type string on each of the four
+  declarations, and one reached through a reference are each caught, with their
+  names, inside the case.
+
+### Where it was run
+
+Linux x86-64, `leanprover/lean4:v4.32.1` installed through `elan`,
+`LEXLEAN_VERIFY_WIDTH=2` and `LEXLEAN_VERIFY_MEMORY_KIB=12582912`. The change
+moves the language-1.2 compiler-semantics ID (the text library, the schema, and
+the `semantic_ir` and `latex_backend` versions), so the committed lock of
+`examples/models` is stale (`LLC0102`); the cases were run with that one lock
+rewritten by `lexlean lock` in the working tree, and the rewrite is not part of
+this change, because the maintainer regenerates every record in the identity
+wave. With it:
+
+```
+cargo test -p repo-conformance --test conformance conformance_lm_
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 419 filtered out; finished in 580.62s
+```
+
+The ten are `LM-01`..`LM-09` and `LM-13`. `LM-07` and `LM-08` narrow the
+example's entrypoint from `Main` to `Recognizer` and lock again in their own
+copy of the project, as the helper `narrowed` says, so that verifying one of
+them does not verify the rest of the example once more.
+
+### The cases can fail
+
+Each defect was planted alone in the named file, the named test run once with
+`cargo test -p repo-conformance --test conformance <test> -- --exact`, the
+failure observed, and the plant restored with `git checkout`. The signatures
+are the first panic message, trimmed.
+
+| ID | Planted defect | Expected failure signature |
+| --- | --- | --- |
+| `LM-07` | `ir/semantic/language_model.rs`: the stateful-model test of `check_text_classifier` made `false &&` | `expected "is stateful" under LLT4006, got LLT4006: phase link: text classifier `Remembering` model `RecentModel` does not take `list int`` |
+| `LM-07` | the same file: the open-runtime-checks test made `false &&` | `expected "needs runtime checks" under LLT4006, got LLT4006: phase link: text classifier `Words` model `RawDigitModel` does not take `list int`` |
+| `LM-07` | the same file: `features_width` states a width of `0` for `size` | `the module verifies with real Lean: ... LLV7002 ... Lean rejected `Models.Recognizer` (error): Type mismatch LexLeanText.features_width Digits.size __tokens ... but is expected to have type LexLeanRuntime.length (LexLeanText.features Digits.size __tokens) = 0` |
+| `LM-07` | the same file: `features_fit` proved by the `features_width` lemma | `the generated Lean proves by LexLeanText.features_fit` |
+| `LM-07` | the same file: the `byte_level` total law proved by the `longest_match` lemma | `the generated Lean proves by LexLeanText.features_total_text_bytes` |
+| `LM-08` | `ir/semantic/language_model.rs`: the window's generated law renamed `push_fits` | `check succeeds: ... LLT4001 ... proof application names a forward or missing theorem `Last2.push_bounded`` |
+| `LM-08` | the same file: `features_width` states a width of `0` for `size` | `the module verifies with real Lean: ... LLV7002 ... Lean rejected `Models.Recognizer` (error): Type mismatch LexLeanText.features_width Digits.size __tokens` |
+| `LM-09` | `language/production-1.2.toml`: a `primitive.eval_string` row | `the audit holds: primitive `eval_string` is in the production registry and not in the schema enumeration` |
+| `LM-09` | `schemas/semantic-module-v2.schema.json`: a `prompt` member of type string on `text_classifier` | `the audit holds: text declaration `text_classifier` member `prompt` is a free string` |
+
+Two attempts at planting a new declaration kind (`text_adapter`) in the schema
+were not evidence for `LM-08`: the schema is an input of the compiler-semantics
+ID, so the lock is stale (`LLC0102`) before the case reads the kinds. The
+kinds assertion is reached only in a tree whose records are current.
+
+### Gates run
+
+```
+cargo xtask validate-model         validate-model: documents current, 429 ids, 86 codes, meta-gate and audits clean (R1)
+cargo xtask validate-spec-links    validate-spec-links: 429 table rows bijective with the register (RP-07)
+cargo fmt --all -- --check         (no output)
+cargo clippy --workspace --all-targets -- -D warnings   (no output)
+cargo test --workspace --exclude repo-conformance --all-features
+```
+
+The last runs 204 unit tests of `lexlean` and the rest of the workspace; one
+test of `crates/lexlean/tests/property.rs`,
+`formatter_is_idempotent_on_every_example`, fails with `LLC0102` ("the compiler
+semantics changed since locking") on the committed lock of `examples/collections`,
+which is the stale record described above and is regenerated in the wave.
