@@ -9126,6 +9126,17 @@ assertion `left == right` failed: the runtime namespaces the gates know are the 
  right: {"LexLeanCollections", "LexLeanModels", "LexLeanReasoning", "LexLeanRuntime"}
 ```
 
+The identity wave (#219) regenerated the Atlas records from these shards with
+no run of the whole Atlas on one host: twelve parts (`prefix`, `cert4`,
+`census-a` to `census-d`, `cert4-replay`, `closure`, `pairs-a` to `pairs-d`)
+were produced in the maintainer's 15 GB container at `LEXLEAN_VERIFY_WIDTH=2`
+and `LEXLEAN_VERIFY_MEMORY_KIB=12582912`, and `orbit`, whose `ClosureOrbit`
+elaboration peaks above that container's cgroup, was the `atlas-part-orbit`
+artifact of the wave's first gate run (39243140976 on 621573a43, whose join
+was red for want of exactly these records); `verify-examples` in
+`join:uor-atlas` mode wrote the records from the thirteen parts, and the gate
+run of the head that carries them is their comparison.
+
 ## The planted verification of the compiler project (Issue #145)
 
 `conformance_rs_12` asks which diagnostic pinned Lean's refusal of the planted
