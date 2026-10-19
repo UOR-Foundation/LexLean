@@ -6,22 +6,22 @@
     "bootstrap/is_closed_lean_name": [
       {
         "input_bytes": 1000,
-        "debug": 327680,
+        "debug": 65536,
         "release": 65536
       },
       {
         "input_bytes": 10000,
-        "debug": 3211264,
+        "debug": 65536,
         "release": 65536
       },
       {
         "input_bytes": 40000,
-        "debug": 12845056,
+        "debug": 65536,
         "release": 65536
       },
       {
         "input_bytes": 80000,
-        "debug": 25624576,
+        "debug": 65536,
         "release": 65536
       }
     ]
