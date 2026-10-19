@@ -22,11 +22,11 @@ use lexlean::calculus::rust::package::Passing;
 use lexlean::calculus::rust::Profile;
 use lexlean::production::lower::Lowered;
 
-use super::{bytes, list, option, pair, snake, text, Run, Seeded};
+use super::{list, snake, text, Run, Seeded};
+use crate::production_export as harness;
 use crate::rust_build::{cargo_in, workspace, Built};
 use crate::rust_harness::{self, Calls};
 use crate::rust_packages;
-use crate::production_export as harness;
 use crate::support;
 
 /// `kindIndex` of the module: the declaration order of `IntKind`.
@@ -67,7 +67,9 @@ fn chain(nil: u64, cons: u64, items: Vec<Value>) -> Value {
     items
         .into_iter()
         .rev()
-        .fold(adt(nil, Vec::new()), |tail, head| adt(cons, vec![head, tail]))
+        .fold(adt(nil, Vec::new()), |tail, head| {
+            adt(cons, vec![head, tail])
+        })
 }
 
 fn ty_chain(items: Vec<Value>) -> Value {
@@ -284,9 +286,7 @@ fn enc_expr(expr: &Expr) -> Value {
             operands,
         } => adt(5, vec![enc_shape(*shape), enc_ty(ty), enc_exprs(operands)]),
         Expr::Call { function, operands } => adt(6, vec![nat(*function), enc_exprs(operands)]),
-        Expr::Closure { function, captures } => {
-            adt(7, vec![nat(*function), enc_exprs(captures)])
-        }
+        Expr::Closure { function, captures } => adt(7, vec![nat(*function), enc_exprs(captures)]),
         Expr::Apply { target, operands } => adt(8, vec![enc_expr(target), enc_exprs(operands)]),
         Expr::Prim {
             operation,
@@ -681,7 +681,10 @@ fn arguments_run(program: &Program, entry: u64, arguments: &[Value]) -> Run {
     let mut all = program_arguments(program);
     all.push(nat(entry));
     all.push(enc_values(arguments));
-    (all, verdict(check::check_arguments(program, entry, arguments)))
+    (
+        all,
+        verdict(check::check_arguments(program, entry, arguments)),
+    )
 }
 
 // ---------------------------------------------------------------- vectors
@@ -689,7 +692,6 @@ fn arguments_run(program: &Program, entry: u64, arguments: &[Value]) -> Run {
 /// A program from the repository with the entry and arguments it states, if
 /// any.
 struct Source {
-    label: String,
     program: Program,
     entry: Option<(u64, Vec<Value>)>,
 }
@@ -704,7 +706,10 @@ fn walk(dir: &std::path::Path, found: &mut Vec<std::path::PathBuf>) {
         let path = entry.path();
         let name = entry.file_name().to_string_lossy().into_owned();
         if path.is_dir() {
-            if !matches!(name.as_str(), "target" | ".git" | ".lexlean" | "node_modules") {
+            if !matches!(
+                name.as_str(),
+                "target" | ".git" | ".lexlean" | "node_modules"
+            ) {
                 walk(&path, found);
             }
         } else {
@@ -724,14 +729,10 @@ fn committed() -> Vec<Source> {
     walk(root, &mut files);
     let mut seen = BTreeSet::new();
     let mut out = Vec::new();
-    let mut admit = |label: String, program: Program, entry: Option<(u64, Vec<Value>)>| {
+    let mut admit = |program: Program, entry: Option<(u64, Vec<Value>)>| {
         let key = serde_json::to_string(&program).expect("a program is JSON");
         if seen.insert(key) {
-            out.push(Source {
-                label,
-                program,
-                entry,
-            });
+            out.push(Source { program, entry });
         }
     };
     for path in files {
@@ -751,11 +752,7 @@ fn committed() -> Vec<Source> {
             let bytes = std::fs::read(&path).expect("a fixture");
             let fixture: Fixture = serde_json::from_slice(&bytes)
                 .unwrap_or_else(|error| panic!("{relative}: {error}"));
-            admit(
-                relative,
-                fixture.program,
-                Some((fixture.entry, fixture.arguments)),
-            );
+            admit(fixture.program, Some((fixture.entry, fixture.arguments)));
         } else if name == "package.json"
             && (relative.starts_with("compiler/rust/")
                 || relative.starts_with("tests/production-export/"))
@@ -765,15 +762,15 @@ fn committed() -> Vec<Source> {
                     .expect("a manifest is JSON");
             let program: Program = serde_json::from_value(json["program"].clone())
                 .unwrap_or_else(|error| panic!("{relative}: {error}"));
-            admit(relative, program, None);
+            admit(program, None);
         } else if relative.contains("/preserve/program/R") {
             let mut json: Json =
                 serde_json::from_slice(&std::fs::read(&path).expect("a preserved program"))
                     .expect("a program is JSON");
             json["spec"] = json!(PROGRAM_SPEC);
-            let program: Program = serde_json::from_value(json)
-                .unwrap_or_else(|error| panic!("{relative}: {error}"));
-            admit(relative, program, None);
+            let program: Program =
+                serde_json::from_value(json).unwrap_or_else(|error| panic!("{relative}: {error}"));
+            admit(program, None);
         }
     }
     out
@@ -809,7 +806,6 @@ fn program_size(program: &Program) -> usize {
         .sum()
 }
 
-
 // ---------------------------------------------------------------- corpora
 
 fn program_of(adts: Vec<Vec<Vec<Ty>>>, functions: Vec<Function>) -> Program {
@@ -842,7 +838,10 @@ fn constant(ty: Ty, body: Expr) -> Function {
 /// The two declarations the type and shape corpora refer to: a type with two
 /// constructors, and a type with one.
 fn declared() -> Vec<Vec<Vec<Ty>>> {
-    vec![vec![vec![Ty::Nat, Ty::Bool], Vec::new()], vec![vec![Ty::Nat]]]
+    vec![
+        vec![vec![Ty::Nat, Ty::Bool], Vec::new()],
+        vec![vec![Ty::Nat]],
+    ]
 }
 
 fn kinds() -> [IntKind; 8] {
@@ -937,10 +936,12 @@ fn strings() -> Vec<String> {
 }
 
 fn hexes() -> Vec<String> {
-    ["", "00", "0a", "ff", "abc", "ABCD", "zz", "0g", "\u{e9}e", "00 ", "a", "deadbeef"]
-        .iter()
-        .map(|hex| (*hex).to_owned())
-        .collect()
+    [
+        "", "00", "0a", "ff", "abc", "ABCD", "zz", "0g", "\u{e9}e", "00 ", "a", "deadbeef",
+    ]
+    .iter()
+    .map(|hex| (*hex).to_owned())
+    .collect()
 }
 
 /// A literal of every constructor, with strings drawn from the corpora.
@@ -1034,7 +1035,10 @@ fn sample_values(seeded: &mut Seeded) -> Vec<Value> {
         },
         Value::Adt {
             constructor: 0,
-            fields: vec![Value::Nat { value: "1".into() }, Value::Bool { value: true }],
+            fields: vec![
+                Value::Nat { value: "1".into() },
+                Value::Bool { value: true },
+            ],
         },
         Value::Adt {
             constructor: 1,
@@ -1240,15 +1244,19 @@ fn all_prims() -> Vec<Prim> {
         Prim::FormatDecimal,
         Prim::Compare,
     ];
-    out.extend(kinds().iter().map(|target| Prim::Convert { target: *target }));
-    out.extend([Ty::Int, Ty::Nat, Ty::Bool, Ty::String].into_iter().map(|target| Prim::ParseDecimal { target }));
     out.extend(
         kinds()
             .iter()
-            .map(|width| Prim::ParseDecimal {
-                target: Ty::Fixed { width: *width },
-            }),
+            .map(|target| Prim::Convert { target: *target }),
     );
+    out.extend(
+        [Ty::Int, Ty::Nat, Ty::Bool, Ty::String]
+            .into_iter()
+            .map(|target| Prim::ParseDecimal { target }),
+    );
+    out.extend(kinds().iter().map(|width| Prim::ParseDecimal {
+        target: Ty::Fixed { width: *width },
+    }));
     out
 }
 
@@ -1566,7 +1574,14 @@ fn tweak(spelling: &str, seeded: &mut Seeded) -> String {
         0 => format!("0{spelling}"),
         1 => format!("-{spelling}"),
         2 => format!("{spelling}0"),
-        3 => spelling.chars().rev().skip(1).collect::<String>().chars().rev().collect(),
+        3 => spelling
+            .chars()
+            .rev()
+            .skip(1)
+            .collect::<String>()
+            .chars()
+            .rev()
+            .collect(),
         4 => format!("{spelling}x"),
         _ => spellings()[seeded.below(spellings().len())].clone(),
     }
@@ -1634,7 +1649,9 @@ fn mutate(program: &Program, seeded: &mut Seeded, values: &[Value], pool: &[Ty])
             // The place of a literal: its spelling changes.
             for _ in 0..8 {
                 let mut at = seeded.below(nodes);
-                if let Some(Expr::Value { value, .. }) = nth(&mut out.functions[function].body, &mut at) {
+                if let Some(Expr::Value { value, .. }) =
+                    nth(&mut out.functions[function].body, &mut at)
+                {
                     match value {
                         Value::Nat { value }
                         | Value::Int { value }
@@ -1820,8 +1837,11 @@ fn mutate(program: &Program, seeded: &mut Seeded, values: &[Value], pool: &[Ty])
 fn refusals() -> Vec<(Program, &'static str)> {
     let root = support::repo_root();
     let base: Json = serde_json::from_slice(
-        &std::fs::read(root.join("compiler/fixtures/adt-evaluation.json").as_std_path())
-            .expect("the committed fixture"),
+        &std::fs::read(
+            root.join("compiler/fixtures/adt-evaluation.json")
+                .as_std_path(),
+        )
+        .expect("the committed fixture"),
     )
     .expect("a fixture is JSON");
     let base = base["program"].clone();
@@ -2087,23 +2107,20 @@ fn outside_claim(verdict: &Json) -> bool {
         if character != '\\' {
             continue;
         }
-        match characters.next() {
-            Some('u') => {
-                let mut code = String::new();
-                for next in characters.by_ref() {
-                    if next == '{' {
-                        continue;
-                    }
-                    if next == '}' {
-                        break;
-                    }
-                    code.push(next);
+        if characters.next() == Some('u') {
+            let mut code = String::new();
+            for next in characters.by_ref() {
+                if next == '{' {
+                    continue;
                 }
-                if u32::from_str_radix(&code, 16).is_ok_and(|code| code > 0x9f) {
-                    return true;
+                if next == '}' {
+                    break;
                 }
+                code.push(next);
             }
-            Some(_) | None => {}
+            if u32::from_str_radix(&code, 16).is_ok_and(|code| code > 0x9f) {
+                return true;
+            }
         }
     }
     false
@@ -2129,7 +2146,10 @@ fn rustc_differential(roots: &[(&str, &Lowered, &[Run])], label: &str) -> usize 
         );
         let package = target::package(&manifest.to_file_bytes().expect("canonical manifest"))
             .unwrap_or_else(|failure| panic!("{root}: {failure:?}"));
-        let arguments: Vec<Vec<Value>> = runs.iter().map(|(arguments, _)| arguments.clone()).collect();
+        let arguments: Vec<Vec<Value>> = runs
+            .iter()
+            .map(|(arguments, _)| arguments.clone())
+            .collect();
         let arity = low.program.functions[usize::try_from(low.entry()).expect("entry")]
             .types
             .len();
@@ -2157,13 +2177,19 @@ fn rustc_differential(roots: &[(&str, &Lowered, &[Run])], label: &str) -> usize 
         });
     }
     workspace(dir.path(), &crates);
-    let build = cargo_in(dir.path(), &["build", "--offline", "--workspace", "--quiet"]);
+    let build = cargo_in(
+        dir.path(),
+        &["build", "--offline", "--workspace", "--quiet"],
+    );
     assert!(
         build.status.success(),
         "a root's package does not build:\n{}",
         String::from_utf8_lossy(&build.stderr)
     );
-    eprintln!("BS-04: {label}: rustc built the packages ({:?})", started.elapsed());
+    eprintln!(
+        "BS-04: {label}: rustc built the packages ({:?})",
+        started.elapsed()
+    );
     let mut total = 0;
     for (name, outcomes) in &expected {
         let binary = dir
@@ -2173,7 +2199,11 @@ fn rustc_differential(roots: &[(&str, &Lowered, &[Run])], label: &str) -> usize 
         let ran = std::process::Command::new(&binary)
             .output()
             .expect("the differential runs");
-        assert!(ran.status.success(), "{name}: {}", String::from_utf8_lossy(&ran.stderr));
+        assert!(
+            ran.status.success(),
+            "{name}: {}",
+            String::from_utf8_lossy(&ran.stderr)
+        );
         let stdout = String::from_utf8(ran.stdout).expect("utf8");
         let printed: Vec<Json> = stdout
             .lines()
@@ -2330,7 +2360,6 @@ const PLANTS: [super::Plant; 12] = [
         root: "checkArguments",
     },
 ];
-
 
 /// Programs aimed at one rule each, so that every check the planted defects
 /// remove is exercised by name whatever the seeds draw: a repeated binder, a
@@ -2544,7 +2573,10 @@ pub(super) fn case() {
     }
 
     let sources = committed();
-    let nodes: usize = sources.iter().map(|source| program_size(&source.program)).sum();
+    let nodes: usize = sources
+        .iter()
+        .map(|source| program_size(&source.program))
+        .sum();
     let checked = support::checked_project(&project);
     let lowered: BTreeMap<&str, Lowered> = ROOTS
         .iter()
@@ -2559,15 +2591,30 @@ pub(super) fn case() {
     let (vector_programs, vector_arguments) = vectors(&sources);
     // The chain is a faithful image of the list: decoding the arguments of
     // every vector returns the program the oracle read.
-    let every: Vec<Program> = sources.iter().map(|source| source.program.clone()).collect();
+    let every: Vec<Program> = sources
+        .iter()
+        .map(|source| source.program.clone())
+        .collect();
     for program in &every {
-        assert_eq!(&dec_program(&program_arguments(program)), program, "list to chain and back");
+        assert_eq!(
+            &dec_program(&program_arguments(program)),
+            program,
+            "list to chain and back"
+        );
     }
     for (arguments, _) in vector_programs.iter().chain(&vector_arguments) {
         let program = dec_program(&arguments[..6]);
-        assert_eq!(program_arguments(&program), arguments[..6], "chain to list and back");
+        assert_eq!(
+            program_arguments(&program),
+            arguments[..6],
+            "chain to list and back"
+        );
         if let Some(extra) = arguments.get(7) {
-            assert_eq!(enc_values(&dec_values(extra)), *extra, "argument chain round trip");
+            assert_eq!(
+                enc_values(&dec_values(extra)),
+                *extra,
+                "argument chain round trip"
+            );
         }
     }
     eprintln!(
@@ -2588,7 +2635,11 @@ pub(super) fn case() {
         rustc_differential(
             &[
                 ("checkProgram", &lowered["checkProgram"], &vector_programs),
-                ("checkArguments", &lowered["checkArguments"], &vector_arguments),
+                (
+                    "checkArguments",
+                    &lowered["checkArguments"],
+                    &vector_arguments,
+                ),
             ],
             "vectors",
         );
@@ -2684,7 +2735,10 @@ pub(super) fn case() {
             &format!("seeded argument chunk {at}"),
         );
     }
-    eprintln!("BS-04: {total} seeded rustc runs agree with the oracle ({:?})", started.elapsed());
+    eprintln!(
+        "BS-04: {total} seeded rustc runs agree with the oracle ({:?})",
+        started.elapsed()
+    );
     // The gate is armed: each defect planted in a copy of the source is a
     // disagreement with the oracle.
     let mut detection: BTreeMap<&str, Vec<Run>> = BTreeMap::new();
@@ -2721,7 +2775,10 @@ pub(super) fn case() {
             "{}: the planted defect is detected by the differential",
             plant.label
         );
-        eprintln!("BS-04: plant detected: {}: {}", plant.label, disagreements[0]);
+        eprintln!(
+            "BS-04: plant detected: {}: {}",
+            plant.label, disagreements[0]
+        );
     }
     // Under the pinned Lean, the production export certifies both roots;
     // its packages are the committed ones and realize the programs the
