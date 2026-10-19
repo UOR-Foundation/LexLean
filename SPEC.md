@@ -3956,7 +3956,11 @@ reaches a model only as the tokens `encodeText` makes of it.
    (`fitsOption` of `W.capacity`, a function of the laws library, which a
    statement may name like any registered function) composes under `scan` like
    any stateful model, its `satisfies_contract` evidence proved by the
-   generated `W.push_bounded`.
+   generated `W.push_bounded`. The proof is of the postcondition and not of
+   an invariant's preservation: a preservation obligation has the premise
+   `Invariant state →` and a theorem's `apply` proof is one `exact`, and the
+   proof language has no `Option` case on a non-local (the push), so the
+   invariant form has no `apply` proof from `push_bounded` today.
    An adapter is a model over `string` whose realization applies
    `C.classify` of a classifier or `G.generate` of a generator, and whose
    `satisfies_contract` evidence is proved from the generated laws of that
