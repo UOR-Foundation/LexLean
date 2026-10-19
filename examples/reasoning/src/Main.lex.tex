@@ -260,7 +260,7 @@ definition{
     | Result.ok level => level
     | Result.error failure => 9),
   executable: true,
-  production: {effects: [overflow, recursion], targets: [rust-core]}
+  production: {effects: [overflow], targets: [rust-core]}
 }
 
 definition{
@@ -278,7 +278,7 @@ definition{
     | Result.ok level => level
     | Result.error failure => 9),
   executable: true,
-  production: {effects: [overflow, recursion], targets: [rust-core]}
+  production: {effects: [overflow], targets: [rust-core]}
 }
 
 definition{
@@ -296,7 +296,7 @@ definition{
     | Result.ok explained => (prim length (second explained) : Nat)
     | Result.error failure => 0),
   executable: true,
-  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+  production: {effects: [allocation, overflow], targets: [rust-std]}
 }
 
 definition{
@@ -317,7 +317,7 @@ definition{
   result: Nat,
   body: (match (Screening::Dose.verdict w) | Result.ok dose => dose | Result.error failure => 9),
   executable: true,
-  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+  production: {effects: [allocation, overflow], targets: [rust-std]}
 }
 
 definition{
@@ -335,7 +335,7 @@ definition{
     | Result.ok level => level
     | Result.error failure => 9),
   executable: true,
-  production: {effects: [overflow, recursion], targets: [rust-core]}
+  production: {effects: [overflow], targets: [rust-core]}
 }
 
 definition{
@@ -344,7 +344,7 @@ definition{
   result: Nat,
   body: (match (Screening::Screen.verdict w) | Result.ok dose => dose | Result.error failure => 9),
   executable: true,
-  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+  production: {effects: [allocation, overflow], targets: [rust-std]}
 }
 
 definition{
@@ -355,7 +355,7 @@ definition{
     | Result.ok left => left
     | Result.error failure => 9),
   executable: true,
-  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+  production: {effects: [allocation, overflow], targets: [rust-std]}
 }
 
 theorem{

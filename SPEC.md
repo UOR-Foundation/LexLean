@@ -4065,13 +4065,32 @@ production stage. A `Nat` or `Int` value crossing a root boundary is
 represented in the target width, so a caller cannot supply a value outside it,
 and every value the realization computes outside it is the `overflow`
 failure, never a wrapped or truncated value. A primitive realized by a
-runtime item is a loop and carries no recursion; a primitive realized by a
+runtime item is a loop and carries no recursion. A primitive realized by a
 library template (§17.14: the map, set, fold, iteration, and graph
-primitives) carries it, because a template calls itself and so the depth of
-its calls is bounded only by its input. The registry states exactly that, and
-`conformance_tc_06` derives it from the realization table rather than
-trusting the row. A root whose closure applies such a primitive admits
-`recursion`, as does a root with a recursive definition.
+primitives) carries the recursion of the template's rendering: a template
+whose function calls itself only in tail position is rendered as a loop
+(§17.16) and uses no stack for the call, so the folds, the iterations, and the
+lookups (`list_fold`, `map_fold`, `set_fold`, `iterate`, `iterate_until`,
+`map_lookup`, `map_contains`, `set_contains`, `graph_successors`) carry none,
+while a template with a call whose result is used (an insertion, a removal, a
+union, an intersection, a difference, the key and value lists, and the graph
+searches) is rendered as a call and carries it, because the depth of its calls
+is bounded only by its input. The registry states exactly that, and
+`conformance_tc_06` derives it from the realization table and `RB-14` from the
+rendering, rather than trusting the row. A function all of whose self calls are
+tail calls is rendered as a loop (§17.16) and does not recurse, whether it is a
+template or a definition of the project, so the registry's `recursion` for a
+recursive definition (`declaration.definition.recursive`) means *recursion
+unless the lowering makes every such definition a loop*. Eligibility therefore
+lowers the closure of a root whose walk found the effect, with the report the
+walk produced, and requires `recursion` of the root only if the lowered program
+recurses: some function of it is reachable from itself through calls and
+closures other than the self tail calls rendered as loops
+(`realization::program_recurses`). A root that does not lower there keeps the
+registry's answer, which never admits less. A root whose closure applies a
+primitive that carries `recursion`, or has a definition that recurses by a call
+that is not a tail call or that is mutual, admits it; a declaration may admit
+more than the analysis requires, as for every effect.
 
 The analysis is a conservative over-approximation of effects: it may require a
 root to admit an effect its realization never exhibits, and it never admits a
@@ -4827,7 +4846,7 @@ input-dependent depth fits, and exhausting a stack aborts the process.
 `language/semantics-1.2.toml` records the SHA-256 of each profile's runtime
 (`rust_runtime_core`, `rust_runtime_std`) and the digest of the renderer's
 sources (`rust_renderer`: one §21.1 frame per file of
-`rust::RENDERER_FILES`, the eight files of `calculus/rust/`, labeled by its
+`rust::RENDERER_FILES`, the nine files of `calculus/rust/`, labeled by its
 name, under the domain `lexlean-rust-renderer-v1`). Unit tests of the runtime
 and the renderer and the conformance suite check both records, so neither
 the runtime nor any rendering can change without changing LexLean's
@@ -5544,10 +5563,22 @@ of a next state rebinds the state to that value and evaluates the loop again, an
 breaks with a value and has no labels. A body whose value is neither is stuck,
 and the loop recurses through `eval` with the fuel the body left, so a loop that
 does not end within the fuel is exhausted, never a wrong value. The renderer
-prints a loop as `{ let mut s = s; loop { match { body } { Ok(next) => { s = next; }
-Err(done) => break done, } } }`; the validator lets the body move the state, which
+prints a loop as `{ let mut s = s; loop { let step = { body }; match step { Ok(next) =>
+{ s = next; } Err(done) => break done, } } }`, binding the body's value first because
+Rust's lint gate refuses a block with bindings as a scrutinee; the validator lets the body move the state, which
 the loop's own binding holds, and nothing else, because the body runs again after
-every `Ok`. No lowering produces a loop yet. Every runtime
+every `Ok`. The lowering produces a loop for a function every self call of
+which is a tail call and some self call of which changes a parameter the body
+reads (`calculus::rust::loops` decides it on the calculus, and the lowering
+fails when it disagrees; `RB-14`): the parameters the self calls change are the
+state, a tuple nested to the right when there are several and the parameter
+itself when there is one, held in a binding the function makes from them
+(the changed parameters are renamed in the signature, and the body begins by
+binding the original names from it); each tail self call is `Ok` of the next state and
+every other tail value is `Err` of the value, so the loop breaks with the value
+the function returns; a parameter every self call passes on as it got it stays
+a parameter, which the body clones. A function with a self call that is not a
+tail call is rendered as a call. Every runtime
 item (`rust::runtime::Item`) is declared as the calculus
 primitive it realizes on the same operands (the successor as `nat_add` with
 one), fallible exactly when the renderer types it `R<T>`, and present in
@@ -9826,6 +9857,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RB-11` | `rust-backend` | Every lint a package allows states its Clippy group, none is in the `correctness` group, the module states the same as a theorem over the same list, which the reader checks by its shape and the module's project type-checks (`verify` replays its proof, this row does not), and the table of SPEC.md §17.16 equals the module's rows; an allowed lint in `correctness`, a specified row the module lacks, a module row the specification lacks, and a module without the theorem are refused. | §17.16 |
 | `RB-12` | `rust-backend` | The language-1.2 compiler-semantics ID covers the package scaffold: changing a lint row, the edition, or a gate of a copy of the embedded tree changes it, writing the module in its data form or reformatting its notation does not, and the module is outside the identities of languages 1.0 and 1.1. | §17.16, §21.2 |
 | `RB-13` | `rust-backend` | A package states the effects of its realization: `package.json` and `provenance.json` record them, ascending and registered, the production registry says that exhausting the stack aborts the process, and an unregistered or unordered list, or one that states allocation on `rust-core`, is refused. | §17.13, §17.16 |
+| `RB-14` | `rust-backend` | A library template whose self calls are all tail calls is rendered as a loop over its accumulator that breaks with its result, so that the production rows of the primitives it realizes carry no `recursion`, while a template with a call that is not a tail call is rendered as a call and keeps the effect; a rendering that states a self call where a loop is possible, and a row whose `recursion` differs from its rendering, are refused. | §17.13, §17.14, §17.16 |
 | `GN-01` | `gnaf` | Every committed GNAF request and fixture is canonical, validates against the GNAF schemas whose calculus definitions are the target program schema's, and states its components' universe identity; a malformed request, an invalid reference, plan, or realized program, a reference without a value on a domain argument, or a wrong universe identity fails closed with LLB6006, and a machine or request beyond the host's capacity fails closed with LLS8002. | §17.15, §26.3 |
 | `GN-02` | `gnaf` | The GNAF model is a kernel-checked LexLean definition, Lean's kernel reduces the universe, the system statuses, and the answer of every committed request to what the host transcription computes, and a wrong answer, an answer computed from a universe with a system omitted, a tie with a member dropped, and a universe with a system omitted are rejected by Lean. | §17.15 |
 | `GN-03` | `gnaf` | Candidate membership is the grammar's expansion, which a kernel-checked theorem proves equal to the grammar's well-formed selectors for every grammar, independent of evaluation and fixed by a universe identity before any optimizer, and optimizer-defined, discovered, cached, and internal-plan universes and missing, self-referential, or optimizer-citing completeness evidence are rejected. | §17.15 |
@@ -9953,7 +9985,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-03` | `language-models` | Text that is not valid UTF-8 is refused and never tokenized: an artifact whose bytes do not decode under the `utf8_lines` schema — invalid UTF-8, a CR, or a missing final LF — fails by its artifact rules before any byte is decoded, and a text offered to `encodeText` that is not valid UTF-8 is refused rather than transcoded. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 417.
+**Total required capability IDs:** 418.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

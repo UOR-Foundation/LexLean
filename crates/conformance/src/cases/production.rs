@@ -286,26 +286,26 @@ const REGISTRY_ROWS: [(&str, &str, bool, &[&str], bool); 148] = [
     ("primitive.format_decimal", "runtime", true, &[], false),
     ("primitive.map_insert", "runtime", true, &[], true),
     ("primitive.map_remove", "runtime", true, &[], true),
-    ("primitive.map_lookup", "runtime", false, &[], true),
-    ("primitive.map_contains", "runtime", false, &[], true),
+    ("primitive.map_lookup", "runtime", false, &[], false),
+    ("primitive.map_contains", "runtime", false, &[], false),
     ("primitive.map_size", "runtime", false, &[], false),
     ("primitive.map_keys", "runtime", true, &[], true),
     ("primitive.map_values", "runtime", true, &[], true),
     ("primitive.map_entries", "runtime", false, &[], false),
-    ("primitive.map_fold", "runtime", false, &[], true),
+    ("primitive.map_fold", "runtime", false, &[], false),
     ("primitive.set_insert", "runtime", true, &[], true),
     ("primitive.set_remove", "runtime", true, &[], true),
-    ("primitive.set_contains", "runtime", false, &[], true),
+    ("primitive.set_contains", "runtime", false, &[], false),
     ("primitive.set_size", "runtime", false, &[], false),
     ("primitive.set_elements", "runtime", false, &[], false),
     ("primitive.set_union", "runtime", true, &[], true),
     ("primitive.set_intersection", "runtime", true, &[], true),
     ("primitive.set_difference", "runtime", true, &[], true),
-    ("primitive.set_fold", "runtime", false, &[], true),
-    ("primitive.list_fold", "runtime", false, &[], true),
-    ("primitive.iterate", "runtime", false, &[], true),
-    ("primitive.iterate_until", "runtime", false, &[], true),
-    ("primitive.graph_successors", "runtime", false, &[], true),
+    ("primitive.set_fold", "runtime", false, &[], false),
+    ("primitive.list_fold", "runtime", false, &[], false),
+    ("primitive.iterate", "runtime", false, &[], false),
+    ("primitive.iterate_until", "runtime", false, &[], false),
+    ("primitive.graph_successors", "runtime", false, &[], false),
     ("primitive.graph_reachable", "runtime", true, &[], true),
     ("primitive.graph_topological", "runtime", true, &[], true),
     ("primitive.less_than", "runtime", false, &[], false),
@@ -606,11 +606,6 @@ pub fn run(id: &str) {
                 r#"{"arguments":[{"kind":"var","name":"number"},{"kind":"nat","value":"0"}],"function":{"module":"Kernel","name":"countdown"},"kind":"call"}"#,
                 r#"{"kind":"var","name":"number"}"#,
             );
-            mutated.edit(
-                MAIN,
-                r#""effects":["overflow","recursion"]"#,
-                r#""effects":[]"#,
-            );
             let mutated_report = main_report(&mutated);
             let halvings = root(&mutated_report, "halvings");
             assert_eq!(closure(halvings), ["Production.Main.halvings"]);
@@ -695,21 +690,69 @@ pub fn run(id: &str) {
                 "{error}"
             );
             assert!(error.to_string().contains("primitive.multiply"), "{error}");
-            // A primitive realized by a library template carries `recursion`
-            // (§17.13): a root that iterates and does not admit it is refused,
-            // the stack depth of the template's calls being its input's.
-            let iterating = P::copy_example("production-coverage");
-            iterating.edit(
+            // A primitive realized by a library template carries the
+            // recursion of its rendering (§17.13, §17.16): a root that
+            // searches a graph, whose template recurses through calls that are
+            // not tail calls, and does not admit `recursion` is refused, the
+            // stack depth of those calls being its input's.
+            let searching = P::copy_example("production-coverage");
+            searching.edit(
                 "src/Colls.lex.tex",
-                r#""name":"iterations","parameters":[{"name":"n","type":{"kind":"nat"}},{"name":"start","type":{"kind":"nat"}}],"production":{"effects":["allocation","overflow","recursion"]"#,
-                r#""name":"iterations","parameters":[{"name":"n","type":{"kind":"nat"}},{"name":"start","type":{"kind":"nat"}}],"production":{"effects":["allocation","overflow"]"#,
+                r#""name":"stringGraph","parameters":[{"name":"g","type":{"key":{"kind":"string"},"kind":"map","value":{"element":{"kind":"string"},"kind":"set"}}}],"production":{"effects":["allocation","overflow","recursion"]"#,
+                r#""name":"stringGraph","parameters":[{"name":"g","type":{"key":{"kind":"string"},"kind":"map","value":{"element":{"kind":"string"},"kind":"set"}}}],"production":{"effects":["allocation","overflow"]"#,
             );
-            let error = iterating.check_fails_with("LLT4005");
+            let error = searching.check_fails_with("LLT4005");
             let text = error.to_string();
             assert!(
-                text.contains("`Coverage.Colls.iterations`")
+                text.contains("`Coverage.Colls.stringGraph`")
                     && text.contains("realizes effect `recursion`, which the root does not admit"),
                 "{text}"
+            );
+            // A primitive rendered as a loop carries none: `iterations`
+            // iterates and the committed example, which declares no
+            // `recursion` for it, checks.
+            let iterating = P::copy_example("production-coverage");
+            assert!(
+                iterating
+                    .read("src/Colls.lex.tex")
+                    .contains(r#""name":"iterations","parameters":[{"name":"n","type":{"kind":"nat"}},{"name":"start","type":{"kind":"nat"}}],"production":{"effects":["allocation","overflow"]"#),
+                "iterations admits no recursion"
+            );
+            iterating.check_ok();
+            // A definition of the project is a loop when all its self calls
+            // are tail calls (§17.13): `halvings` halves a number to zero by
+            // a tail call and declares no `recursion`, and the example checks.
+            // `sumAll` adds after its recursive call, so removing the effect
+            // from it is refused.
+            let tail = P::copy_example("production");
+            let text = tail.read(MAIN);
+            let after = |text: &str, name: &str| {
+                let at = text
+                    .find(&format!(r#""name":"{name}","parameters""#))
+                    .unwrap_or_else(|| panic!("the example has {name}"));
+                let end = at + text[at..].find(r#""result""#).expect("a result");
+                (at, end)
+            };
+            let (at, end) = after(&text, "halvings");
+            assert!(
+                !text[at..end].contains("recursion"),
+                "halvings admits no recursion"
+            );
+            tail.check_ok();
+            let (at, end) = after(&text, "sumAll");
+            assert!(
+                text[at..end].contains(r#""recursion""#),
+                "sumAll admits recursion"
+            );
+            let kept = text[at..end].replacen(r#","recursion""#, "", 1);
+            let mutated = P::copy_example("production");
+            mutated.write(MAIN, &format!("{}{}{}", &text[..at], kept, &text[end..]));
+            let error = mutated.check_fails_with("LLT4005");
+            assert!(
+                error
+                    .to_string()
+                    .contains("realizes effect `recursion`, which the root does not admit"),
+                "{error}"
             );
         }
         "PD-06" => {
