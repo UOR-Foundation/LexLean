@@ -322,22 +322,35 @@ pub fn f1(v0: u64) -> R<Option<u64>> {
     }
 }
 
-pub fn f2(v0: Fn0, v1: u64, v2: u64) -> R<(u64, bool)> {
-    let m5 = v1;
-    if m5 == 0 {
-        Ok((v2, false))
-    } else {
-        let v3 = m5 - 1;
-        let m7 = {
-            let c6: Fn0 = v0.clone();
-            c6.apply(v2)?
-        };
-        match m7 {
-            None => {
-                Ok((v2, true))
-            }
-            Some(v4) => {
-                f2(v0, v3, v4)
+pub fn f2(v0: Fn0, p9: u64, p10: u64) -> R<(u64, bool)> {
+    let m8 = (p9, p10);
+    {
+        let mut m8 = m8;
+        loop {
+            let step = {
+                let (v1, v2) = m8;
+                let m5 = v1;
+                if m5 == 0 {
+                    Err::<(u64, u64), R<(u64, bool)>>(Ok((v2, false)))
+                } else {
+                    let v3 = m5 - 1;
+                    let m7 = {
+                        let c6: Fn0 = v0.clone();
+                        c6.apply(v2)?
+                    };
+                    match m7 {
+                        None => {
+                            Err::<(u64, u64), R<(u64, bool)>>(Ok((v2, true)))
+                        }
+                        Some(v4) => {
+                            Ok::<(u64, u64), R<(u64, bool)>>((v3, v4))
+                        }
+                    }
+                }
+            };
+            match step {
+                Ok(next) => { m8 = next; }
+                Err(done) => break done,
             }
         }
     }

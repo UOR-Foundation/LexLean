@@ -959,52 +959,91 @@ pub fn f16(v0: (u64, u64)) -> u64 {
     length_list(a166)
 }
 
-pub fn f17(v0: Fn2, v1: List<Adt1>, v2: List<Adt1>) -> List<Adt1> {
-    let m167 = v2;
-    match m167.uncons() {
-        None => {
-            v1
-        }
-        Some((v3, v4)) => {
-            f17(v0.clone(), {
-                let c168: Fn2 = v0;
-                c168.apply(v1, v3)
-            }, v4)
-        }
-    }
-}
-
-pub fn f18(v0: Fn1, v1: List<Adt1>, v2: List<u64>) -> List<Adt1> {
-    let m169 = v2;
-    match m169.uncons() {
-        None => {
-            v1
-        }
-        Some((v3, v4)) => {
-            f18(v0.clone(), {
-                let c170: Fn1 = v0;
-                c170.apply(v1, v3)
-            }, v4)
-        }
-    }
-}
-
-pub fn f19(v0: Fn0, v1: u64, v2: Adt2) -> R<(Adt2, bool)> {
-    let m171 = v1;
-    if m171 == 0 {
-        Ok((v2, false))
-    } else {
-        let v3 = m171 - 1;
-        let m173 = {
-            let c172: Fn0 = v0.clone();
-            c172.apply(v2.clone())?
-        };
-        match m173 {
-            None => {
-                Ok((v2, true))
+pub fn f17(v0: Fn2, p170: List<Adt1>, p171: List<Adt1>) -> List<Adt1> {
+    let m169 = (p170, p171);
+    {
+        let mut m169 = m169;
+        loop {
+            let step = {
+                let (v1, v2) = m169;
+                let m167 = v2;
+                match m167.uncons() {
+                    None => {
+                        Err::<(List<Adt1>, List<Adt1>), List<Adt1>>(v1)
+                    }
+                    Some((v3, v4)) => {
+                        Ok::<(List<Adt1>, List<Adt1>), List<Adt1>>(({
+                            let c168: Fn2 = v0.clone();
+                            c168.apply(v1, v3)
+                        }, v4))
+                    }
+                }
+            };
+            match step {
+                Ok(next) => { m169 = next; }
+                Err(done) => break done,
             }
-            Some(v4) => {
-                f19(v0, v3, v4)
+        }
+    }
+}
+
+pub fn f18(v0: Fn1, p175: List<Adt1>, p176: List<u64>) -> List<Adt1> {
+    let m174 = (p175, p176);
+    {
+        let mut m174 = m174;
+        loop {
+            let step = {
+                let (v1, v2) = m174;
+                let m172 = v2;
+                match m172.uncons() {
+                    None => {
+                        Err::<(List<Adt1>, List<u64>), List<Adt1>>(v1)
+                    }
+                    Some((v3, v4)) => {
+                        Ok::<(List<Adt1>, List<u64>), List<Adt1>>(({
+                            let c173: Fn1 = v0.clone();
+                            c173.apply(v1, v3)
+                        }, v4))
+                    }
+                }
+            };
+            match step {
+                Ok(next) => { m174 = next; }
+                Err(done) => break done,
+            }
+        }
+    }
+}
+
+pub fn f19(v0: Fn0, p181: u64, p182: Adt2) -> R<(Adt2, bool)> {
+    let m180 = (p181, p182);
+    {
+        let mut m180 = m180;
+        loop {
+            let step = {
+                let (v1, v2) = m180;
+                let m177 = v1;
+                if m177 == 0 {
+                    Err::<(u64, Adt2), R<(Adt2, bool)>>(Ok((v2, false)))
+                } else {
+                    let v3 = m177 - 1;
+                    let m179 = {
+                        let c178: Fn0 = v0.clone();
+                        c178.apply(v2.clone())?
+                    };
+                    match m179 {
+                        None => {
+                            Err::<(u64, Adt2), R<(Adt2, bool)>>(Ok((v2, true)))
+                        }
+                        Some(v4) => {
+                            Ok::<(u64, Adt2), R<(Adt2, bool)>>((v3, v4))
+                        }
+                    }
+                }
+            };
+            match step {
+                Ok(next) => { m180 = next; }
+                Err(done) => break done,
             }
         }
     }

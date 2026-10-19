@@ -295,21 +295,34 @@ pub fn f0(v0: u64) -> R<u64> {
     f1(v0, 0u64)
 }
 
-pub fn f1(v0: u64, v1: u64) -> R<u64> {
-    let a1 = v0;
-    let a2 = 2u64;
-    if nat_lt(a1, a2) {
-        Ok(v1)
-    } else {
-        f1({
-            let a3 = v0;
-            let a4 = 2u64;
-            nat_sub(a3, a4)
-        }, {
-            let a5 = v1;
-            let a6 = 1u64;
-            nat_add(a5, a6)?
-        })
+pub fn f1(p8: u64, p9: u64) -> R<u64> {
+    let m7 = (p8, p9);
+    {
+        let mut m7 = m7;
+        loop {
+            let step = {
+                let (v0, v1) = m7;
+                let a1 = v0;
+                let a2 = 2u64;
+                if nat_lt(a1, a2) {
+                    Err::<(u64, u64), R<u64>>(Ok(v1))
+                } else {
+                    Ok::<(u64, u64), R<u64>>(({
+                        let a3 = v0;
+                        let a4 = 2u64;
+                        nat_sub(a3, a4)
+                    }, {
+                        let a5 = v1;
+                        let a6 = 1u64;
+                        nat_add(a5, a6)?
+                    }))
+                }
+            };
+            match step {
+                Ok(next) => { m7 = next; }
+                Err(done) => break done,
+            }
+        }
     }
 }
 

@@ -316,36 +316,49 @@ pub fn f0(v0: List<Bytes>, v1: Bytes) -> Bytes {
     }
 }
 
-pub fn f1(v0: Fn0, v1: Option<Bytes>, v2: List<Bytes>) -> Option<Bytes> {
-    let m2 = v2;
-    match m2.uncons() {
-        None => {
-            v1
-        }
-        Some((v3, v4)) => {
-            f1(v0.clone(), {
-                let c3: Fn0 = v0;
-                c3.apply(v1, v3)
-            }, v4)
+pub fn f1(v0: Fn0, p5: Option<Bytes>, p6: List<Bytes>) -> Option<Bytes> {
+    let m4 = (p5, p6);
+    {
+        let mut m4 = m4;
+        loop {
+            let step = {
+                let (v1, v2) = m4;
+                let m2 = v2;
+                match m2.uncons() {
+                    None => {
+                        Err::<(Option<Bytes>, List<Bytes>), Option<Bytes>>(v1)
+                    }
+                    Some((v3, v4)) => {
+                        Ok::<(Option<Bytes>, List<Bytes>), Option<Bytes>>(({
+                            let c3: Fn0 = v0.clone();
+                            c3.apply(v1, v3)
+                        }, v4))
+                    }
+                }
+            };
+            match step {
+                Ok(next) => { m4 = next; }
+                Err(done) => break done,
+            }
         }
     }
 }
 
 pub fn f2(v0: Bytes, v1: Option<Bytes>, v2: Bytes) -> Option<Bytes> {
-    let m4 = v1;
-    match m4 {
+    let m7 = v1;
+    match m7 {
         None => {
             Some(v2)
         }
         Some(v3) => {
             Some({
-                let a7 = {
-                    let a5 = v3;
-                    let a6 = v0;
-                    append_bytes(a5, a6)
+                let a10 = {
+                    let a8 = v3;
+                    let a9 = v0;
+                    append_bytes(a8, a9)
                 };
-                let a8 = v2;
-                append_bytes(a7, a8)
+                let a11 = v2;
+                append_bytes(a10, a11)
             })
         }
     }

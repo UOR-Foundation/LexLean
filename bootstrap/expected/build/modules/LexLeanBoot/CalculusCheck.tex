@@ -1,0 +1,859 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{IntKind}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{U8}: \texttt{()}.\par
+\noindent Constructor \texttt{U16}: \texttt{()}.\par
+\noindent Constructor \texttt{U32}: \texttt{()}.\par
+\noindent Constructor \texttt{U64}: \texttt{()}.\par
+\noindent Constructor \texttt{I8}: \texttt{()}.\par
+\noindent Constructor \texttt{I16}: \texttt{()}.\par
+\noindent Constructor \texttt{I32}: \texttt{()}.\par
+\noindent Constructor \texttt{I64}: \texttt{()}.\par
+\subsection*{\texttt{OrderingValue}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{OLt}: \texttt{()}.\par
+\noindent Constructor \texttt{OEq}: \texttt{()}.\par
+\noindent Constructor \texttt{OGt}: \texttt{()}.\par
+\subsection*{\texttt{Ty}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{TUnit}: \texttt{()}.\par
+\noindent Constructor \texttt{TBool}: \texttt{()}.\par
+\noindent Constructor \texttt{TNat}: \texttt{()}.\par
+\noindent Constructor \texttt{TInt}: \texttt{()}.\par
+\noindent Constructor \texttt{TFixed}: \texttt{(IntKind)}.\par
+\noindent Constructor \texttt{TString}: \texttt{()}.\par
+\noindent Constructor \texttt{TBytes}: \texttt{()}.\par
+\noindent Constructor \texttt{TOrdering}: \texttt{()}.\par
+\noindent Constructor \texttt{TOption}: \texttt{(Ty)}.\par
+\noindent Constructor \texttt{TResult}: \texttt{(Ty, Ty)}.\par
+\noindent Constructor \texttt{TList}: \texttt{(Ty)}.\par
+\noindent Constructor \texttt{TPair}: \texttt{(Ty, Ty)}.\par
+\noindent Constructor \texttt{TAdt}: \texttt{(Nat)}.\par
+\noindent Constructor \texttt{TFn}: \texttt{(Ty, Ty)}.\par
+\noindent Constructor \texttt{TNil}: \texttt{()}.\par
+\noindent Constructor \texttt{TCons}: \texttt{(Ty, Ty)}.\par
+\subsection*{\texttt{Value}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{VUnit}: \texttt{()}.\par
+\noindent Constructor \texttt{VBool}: \texttt{(Bool)}.\par
+\noindent Constructor \texttt{VNat}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{VInt}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{VU8}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{VU16}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{VU32}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{VU64}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{VI8}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{VI16}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{VI32}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{VI64}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{VString}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{VBytes}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{VOrdering}: \texttt{(OrderingValue)}.\par
+\noindent Constructor \texttt{VNone}: \texttt{()}.\par
+\noindent Constructor \texttt{VSome}: \texttt{(Value)}.\par
+\noindent Constructor \texttt{VOk}: \texttt{(Value)}.\par
+\noindent Constructor \texttt{VError}: \texttt{(Value)}.\par
+\noindent Constructor \texttt{VList}: \texttt{(Value)}.\par
+\noindent Constructor \texttt{VPair}: \texttt{(Value, Value)}.\par
+\noindent Constructor \texttt{VAdt}: \texttt{(Nat, Value)}.\par
+\noindent Constructor \texttt{VClosure}: \texttt{(Nat, Value)}.\par
+\noindent Constructor \texttt{VNil}: \texttt{()}.\par
+\noindent Constructor \texttt{VCons}: \texttt{(Value, Value)}.\par
+\subsection*{\texttt{Shape}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{SNone}: \texttt{()}.\par
+\noindent Constructor \texttt{SSome}: \texttt{()}.\par
+\noindent Constructor \texttt{SOk}: \texttt{()}.\par
+\noindent Constructor \texttt{SError}: \texttt{()}.\par
+\noindent Constructor \texttt{SNil}: \texttt{()}.\par
+\noindent Constructor \texttt{SCons}: \texttt{()}.\par
+\noindent Constructor \texttt{SZero}: \texttt{()}.\par
+\noindent Constructor \texttt{SSucc}: \texttt{()}.\par
+\noindent Constructor \texttt{SPair}: \texttt{()}.\par
+\noindent Constructor \texttt{STrue}: \texttt{()}.\par
+\noindent Constructor \texttt{SFalse}: \texttt{()}.\par
+\noindent Constructor \texttt{SUnit}: \texttt{()}.\par
+\noindent Constructor \texttt{SLt}: \texttt{()}.\par
+\noindent Constructor \texttt{SEq}: \texttt{()}.\par
+\noindent Constructor \texttt{SGt}: \texttt{()}.\par
+\noindent Constructor \texttt{SAdt}: \texttt{(Nat)}.\par
+\subsection*{\texttt{Prim}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{NatAdd}: \texttt{()}.\par
+\noindent Constructor \texttt{NatSub}: \texttt{()}.\par
+\noindent Constructor \texttt{NatMul}: \texttt{()}.\par
+\noindent Constructor \texttt{NatQuot}: \texttt{()}.\par
+\noindent Constructor \texttt{NatRem}: \texttt{()}.\par
+\noindent Constructor \texttt{NatEq}: \texttt{()}.\par
+\noindent Constructor \texttt{NatLe}: \texttt{()}.\par
+\noindent Constructor \texttt{NatLt}: \texttt{()}.\par
+\noindent Constructor \texttt{IntAdd}: \texttt{()}.\par
+\noindent Constructor \texttt{IntSub}: \texttt{()}.\par
+\noindent Constructor \texttt{IntMul}: \texttt{()}.\par
+\noindent Constructor \texttt{IntNeg}: \texttt{()}.\par
+\noindent Constructor \texttt{IntQuot}: \texttt{()}.\par
+\noindent Constructor \texttt{IntRem}: \texttt{()}.\par
+\noindent Constructor \texttt{CheckedAdd}: \texttt{()}.\par
+\noindent Constructor \texttt{CheckedSub}: \texttt{()}.\par
+\noindent Constructor \texttt{CheckedMul}: \texttt{()}.\par
+\noindent Constructor \texttt{CheckedNeg}: \texttt{()}.\par
+\noindent Constructor \texttt{CheckedQuot}: \texttt{()}.\par
+\noindent Constructor \texttt{BitAnd}: \texttt{()}.\par
+\noindent Constructor \texttt{BitOr}: \texttt{()}.\par
+\noindent Constructor \texttt{BitXor}: \texttt{()}.\par
+\noindent Constructor \texttt{BitNot}: \texttt{()}.\par
+\noindent Constructor \texttt{ShiftLeft}: \texttt{()}.\par
+\noindent Constructor \texttt{ShiftRight}: \texttt{()}.\par
+\noindent Constructor \texttt{Equal}: \texttt{()}.\par
+\noindent Constructor \texttt{BoolNot}: \texttt{()}.\par
+\noindent Constructor \texttt{BoolAnd}: \texttt{()}.\par
+\noindent Constructor \texttt{BoolOr}: \texttt{()}.\par
+\noindent Constructor \texttt{Append}: \texttt{()}.\par
+\noindent Constructor \texttt{Length}: \texttt{()}.\par
+\noindent Constructor \texttt{Index}: \texttt{()}.\par
+\noindent Constructor \texttt{Slice}: \texttt{()}.\par
+\noindent Constructor \texttt{Utf8Encode}: \texttt{()}.\par
+\noindent Constructor \texttt{Utf8Decode}: \texttt{()}.\par
+\noindent Constructor \texttt{CompareBytes}: \texttt{()}.\par
+\noindent Constructor \texttt{SplitExact}: \texttt{()}.\par
+\noindent Constructor \texttt{Join}: \texttt{()}.\par
+\noindent Constructor \texttt{FormatDecimal}: \texttt{()}.\par
+\noindent Constructor \texttt{Compare}: \texttt{()}.\par
+\noindent Constructor \texttt{Convert}: \texttt{(IntKind)}.\par
+\noindent Constructor \texttt{ParseDecimal}: \texttt{(Ty)}.\par
+\subsection*{\texttt{Expr}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{EValue}: \texttt{(Ty, Value)}.\par
+\noindent Constructor \texttt{EVar}: \texttt{(Nat)}.\par
+\noindent Constructor \texttt{ELet}: \texttt{(Nat, Ty, Expr, Expr)}.\par
+\noindent Constructor \texttt{ECond}: \texttt{(Expr, Expr, Expr)}.\par
+\noindent Constructor \texttt{EMatch}: \texttt{(Ty, Expr, Expr)}.\par
+\noindent Constructor \texttt{EBuild}: \texttt{(Shape, Ty, Expr)}.\par
+\noindent Constructor \texttt{ECall}: \texttt{(Nat, Expr)}.\par
+\noindent Constructor \texttt{EClosure}: \texttt{(Nat, Expr)}.\par
+\noindent Constructor \texttt{EApply}: \texttt{(Expr, Expr)}.\par
+\noindent Constructor \texttt{EPrim}: \texttt{(Prim, Expr)}.\par
+\noindent Constructor \texttt{EFirst}: \texttt{(Expr)}.\par
+\noindent Constructor \texttt{ESecond}: \texttt{(Expr)}.\par
+\noindent Constructor \texttt{EField}: \texttt{(Expr, Nat)}.\par
+\noindent Constructor \texttt{ENil}: \texttt{()}.\par
+\noindent Constructor \texttt{ECons}: \texttt{(Expr, Expr)}.\par
+\noindent Constructor \texttt{EArm}: \texttt{(Shape, List (Nat), Expr)}.\par
+\subsection*{\texttt{Outcome}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{OFailed}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{OTyped}: \texttt{(Ty)}.\par
+\noindent Constructor \texttt{OCovered}: \texttt{(List (Shape))}.\par
+\noindent Constructor \texttt{OFine}: \texttt{()}.\par
+\subsection*{\texttt{Program}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{spec}: \texttt{ByteArray}.\par
+\noindent Field \texttt{adts}: \texttt{Ty}.\par
+\noindent Field \texttt{parameters}: \texttt{List (List (Nat))}.\par
+\noindent Field \texttt{types}: \texttt{Ty}.\par
+\noindent Field \texttt{results}: \texttt{Ty}.\par
+\noindent Field \texttt{bodies}: \texttt{Expr}.\par
+\subsection*{\texttt{text}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(literal : String)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.utf8Encode (literal) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{cat}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : ByteArray) (right : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.append (left) (right) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{quoted}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(name : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{cat (text ("`")) (cat (name) (text ("`")))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{listLength}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type parameters: \texttt{(Item)}.\par
+\noindent Parameters: \texttt{(items : List (Item))}.\par
+\noindent Closure 1: binds \texttt{(count, item)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (count : Nat) (\_item : Item) => (count + 1))) (0) (items) : Nat)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{byteIs}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat) (value : UInt8)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match LexLeanStd.Text.byteAt (subject) (position) with | Option.some byte => (LexLeanRuntime.equal (byte) (value) : Bool) | Option.none => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{zeroStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Nat)}.\par
+\noindent Definition: \texttt{(if byteIs (subject) (position) ((48 : UInt8)) then Option.some ((position + 1)) else Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{significant}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(digits : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(position)}, captures \texttt{(digits)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(let zeros : Nat := ((LexLeanCollections.iterateUntil ((fun (position : Nat) => zeroStep (digits) (position))) ((LexLeanRuntime.length (digits) : Nat)) (0) : (Prod (Nat) (Bool)))).1; LexLeanStd.Text.sliceOr (digits) (zeros) ((LexLeanRuntime.subtract ((LexLeanRuntime.length (digits) : Nat)) (zeros) : Nat)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{digit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(number : Nat) (place : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanStd.Text.sliceOr (text ("0123456789")) ((LexLeanRuntime.remainder ((LexLeanRuntime.quotient (number) (place) (0) : Nat)) (10) (0) : Nat)) (1)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{decimal}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(number : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(let zero : ByteArray := text ("0"); (let digits : ByteArray := significant ((LexLeanRuntime.append (digit (number) (10000000000000000000)) ((LexLeanRuntime.append (digit (number) (1000000000000000000)) ((LexLeanRuntime.append (digit (number) (100000000000000000)) ((LexLeanRuntime.append (digit (number) (10000000000000000)) ((LexLeanRuntime.append (digit (number) (1000000000000000)) ((LexLeanRuntime.append (digit (number) (100000000000000)) ((LexLeanRuntime.append (digit (number) (10000000000000)) ((LexLeanRuntime.append (digit (number) (1000000000000)) ((LexLeanRuntime.append (digit (number) (100000000000)) ((LexLeanRuntime.append (digit (number) (10000000000)) ((LexLeanRuntime.append (digit (number) (1000000000)) ((LexLeanRuntime.append (digit (number) (100000000)) ((LexLeanRuntime.append (digit (number) (10000000)) ((LexLeanRuntime.append (digit (number) (1000000)) ((LexLeanRuntime.append (digit (number) (100000)) ((LexLeanRuntime.append (digit (number) (10000)) ((LexLeanRuntime.append (digit (number) (1000)) ((LexLeanRuntime.append (digit (number) (100)) ((LexLeanRuntime.append (digit (number) (10)) (digit (number) (1)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)); (if (Nat.beq (number) (0)) then zero else digits)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tyTag}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(ty : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match ty with | Ty.TUnit => 0 | Ty.TBool => 1 | Ty.TNat => 2 | Ty.TInt => 3 | Ty.TFixed \_ => 4 | Ty.TString => 5 | Ty.TBytes => 6 | Ty.TOrdering => 7 | Ty.TOption \_ => 8 | Ty.TResult \_ \_ => 9 | Ty.TList \_ => 10 | Ty.TPair \_ \_ => 11 | Ty.TAdt \_ => 12 | Ty.TFn \_ \_ => 13 | Ty.TNil => 14 | Ty.TCons \_ \_ => 15)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tyFirstOption}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(ty : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Ty)}.\par
+\noindent Definition: \texttt{(match ty with | Ty.TUnit => Option.none | Ty.TBool => Option.none | Ty.TNat => Option.none | Ty.TInt => Option.none | Ty.TFixed \_ => Option.none | Ty.TString => Option.none | Ty.TBytes => Option.none | Ty.TOrdering => Option.none | Ty.TOption value => Option.some (value) | Ty.TResult ok \_ => Option.some (ok) | Ty.TList element => Option.some (element) | Ty.TPair left \_ => Option.some (left) | Ty.TAdt \_ => Option.none | Ty.TFn parameters \_ => Option.some (parameters) | Ty.TNil => Option.none | Ty.TCons head \_ => Option.some (head))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tySecondOption}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(ty : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Ty)}.\par
+\noindent Definition: \texttt{(match ty with | Ty.TUnit => Option.none | Ty.TBool => Option.none | Ty.TNat => Option.none | Ty.TInt => Option.none | Ty.TFixed \_ => Option.none | Ty.TString => Option.none | Ty.TBytes => Option.none | Ty.TOrdering => Option.none | Ty.TOption \_ => Option.none | Ty.TResult \_ error => Option.some (error) | Ty.TList \_ => Option.none | Ty.TPair \_ right => Option.some (right) | Ty.TAdt \_ => Option.none | Ty.TFn \_ result => Option.some (result) | Ty.TNil => Option.none | Ty.TCons \_ tail => Option.some (tail))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tyFirst}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(ty : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Ty}.\par
+\noindent Definition: \texttt{(match tyFirstOption (ty) with | Option.some found => found | Option.none => Ty.TUnit)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tySecond}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(ty : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Ty}.\par
+\noindent Definition: \texttt{(match tySecondOption (ty) with | Option.some found => found | Option.none => Ty.TUnit)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tyAdtIndex}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(ty : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match ty with | Ty.TUnit => 0 | Ty.TBool => 0 | Ty.TNat => 0 | Ty.TInt => 0 | Ty.TFixed \_ => 0 | Ty.TString => 0 | Ty.TBytes => 0 | Ty.TOrdering => 0 | Ty.TOption \_ => 0 | Ty.TResult \_ \_ => 0 | Ty.TList \_ => 0 | Ty.TPair \_ \_ => 0 | Ty.TAdt index => index | Ty.TFn \_ \_ => 0 | Ty.TNil => 0 | Ty.TCons \_ \_ => 0)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tyWidth}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(ty : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{IntKind}.\par
+\noindent Definition: \texttt{(match ty with | Ty.TUnit => IntKind.U8 | Ty.TBool => IntKind.U8 | Ty.TNat => IntKind.U8 | Ty.TInt => IntKind.U8 | Ty.TFixed width => width | Ty.TString => IntKind.U8 | Ty.TBytes => IntKind.U8 | Ty.TOrdering => IntKind.U8 | Ty.TOption \_ => IntKind.U8 | Ty.TResult \_ \_ => IntKind.U8 | Ty.TList \_ => IntKind.U8 | Ty.TPair \_ \_ => IntKind.U8 | Ty.TAdt \_ => IntKind.U8 | Ty.TFn \_ \_ => IntKind.U8 | Ty.TNil => IntKind.U8 | Ty.TCons \_ \_ => IntKind.U8)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{isNilTy}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(ty : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(Nat.beq (tyTag (ty)) (14))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{kindIndex}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : IntKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match kind with | IntKind.U8 => 0 | IntKind.U16 => 1 | IntKind.U32 => 2 | IntKind.U64 => 3 | IntKind.I8 => 4 | IntKind.I16 => 5 | IntKind.I32 => 6 | IntKind.I64 => 7)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{kindSigned}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : IntKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match kind with | IntKind.U8 => false | IntKind.U16 => false | IntKind.U32 => false | IntKind.U64 => false | IntKind.I8 => true | IntKind.I16 => true | IntKind.I32 => true | IntKind.I64 => true)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tyChainLength}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(ty : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match ty with | Ty.TUnit => 0 | Ty.TBool => 0 | Ty.TNat => 0 | Ty.TInt => 0 | Ty.TFixed \_ => 0 | Ty.TString => 0 | Ty.TBytes => 0 | Ty.TOrdering => 0 | Ty.TOption \_ => 0 | Ty.TResult \_ \_ => 0 | Ty.TList \_ => 0 | Ty.TPair \_ \_ => 0 | Ty.TAdt \_ => 0 | Ty.TFn \_ \_ => 0 | Ty.TNil => 0 | Ty.TCons \_ tail => (let rest : Nat := tyChainLength (tail); (1 + rest)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tyChainAt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(ty : Ty) (<U+00AB>at<U+00BB> : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Ty)}.\par
+\noindent Definition: \texttt{(match ty with | Ty.TUnit => Option.none | Ty.TBool => Option.none | Ty.TNat => Option.none | Ty.TInt => Option.none | Ty.TFixed \_ => Option.none | Ty.TString => Option.none | Ty.TBytes => Option.none | Ty.TOrdering => Option.none | Ty.TOption \_ => Option.none | Ty.TResult \_ \_ => Option.none | Ty.TList \_ => Option.none | Ty.TPair \_ \_ => Option.none | Ty.TAdt \_ => Option.none | Ty.TFn \_ \_ => Option.none | Ty.TNil => Option.none | Ty.TCons head tail => (match <U+00AB>at<U+00BB> with | Nat.zero => Option.some (head) | Nat.succ previous => tyChainAt (tail) (previous)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{exprChainLength}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(expr : Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match expr with | Expr.EValue \_ \_ => 0 | Expr.EVar \_ => 0 | Expr.ELet \_ \_ \_ \_ => 0 | Expr.ECond \_ \_ \_ => 0 | Expr.EMatch \_ \_ \_ => 0 | Expr.EBuild \_ \_ \_ => 0 | Expr.ECall \_ \_ => 0 | Expr.EClosure \_ \_ => 0 | Expr.EApply \_ \_ => 0 | Expr.EPrim \_ \_ => 0 | Expr.EFirst \_ => 0 | Expr.ESecond \_ => 0 | Expr.EField \_ \_ => 0 | Expr.ENil => 0 | Expr.EArm \_ \_ \_ => 0 | Expr.ECons \_ tail => (let rest : Nat := exprChainLength (tail); (1 + rest)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{valueChainLength}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : Value)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match value with | Value.VUnit => 0 | Value.VBool \_ => 0 | Value.VNat \_ => 0 | Value.VInt \_ => 0 | Value.VU8 \_ => 0 | Value.VU16 \_ => 0 | Value.VU32 \_ => 0 | Value.VU64 \_ => 0 | Value.VI8 \_ => 0 | Value.VI16 \_ => 0 | Value.VI32 \_ => 0 | Value.VI64 \_ => 0 | Value.VString \_ => 0 | Value.VBytes \_ => 0 | Value.VOrdering \_ => 0 | Value.VNone => 0 | Value.VSome \_ => 0 | Value.VOk \_ => 0 | Value.VError \_ => 0 | Value.VList \_ => 0 | Value.VPair \_ \_ => 0 | Value.VAdt \_ \_ => 0 | Value.VClosure \_ \_ => 0 | Value.VNil => 0 | Value.VCons \_ tail => (let rest : Nat := valueChainLength (tail); (1 + rest)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tyEq}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : Ty) (right : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match left with | Ty.TUnit => (Nat.beq (tyTag (right)) (0)) | Ty.TBool => (Nat.beq (tyTag (right)) (1)) | Ty.TNat => (Nat.beq (tyTag (right)) (2)) | Ty.TInt => (Nat.beq (tyTag (right)) (3)) | Ty.TString => (Nat.beq (tyTag (right)) (5)) | Ty.TBytes => (Nat.beq (tyTag (right)) (6)) | Ty.TOrdering => (Nat.beq (tyTag (right)) (7)) | Ty.TNil => (Nat.beq (tyTag (right)) (14)) | Ty.TFixed width => (if (Nat.beq (tyTag (right)) (4)) then (Nat.beq (kindIndex (width)) (kindIndex (tyWidth (right)))) else false) | Ty.TOption value => (let same : Bool := tyEq (value) (tyFirst (right)); (if (Nat.beq (tyTag (right)) (8)) then same else false)) | Ty.TResult ok error => (let okSame : Bool := tyEq (ok) (tyFirst (right)); (let errorSame : Bool := tyEq (error) (tySecond (right)); (if (Nat.beq (tyTag (right)) (9)) then (if okSame then errorSame else false) else false))) | Ty.TList element => (let same : Bool := tyEq (element) (tyFirst (right)); (if (Nat.beq (tyTag (right)) (10)) then same else false)) | Ty.TPair left2 right2 => (let leftSame : Bool := tyEq (left2) (tyFirst (right)); (let rightSame : Bool := tyEq (right2) (tySecond (right)); (if (Nat.beq (tyTag (right)) (11)) then (if leftSame then rightSame else false) else false))) | Ty.TAdt index => (if (Nat.beq (tyTag (right)) (12)) then (Nat.beq (index) (tyAdtIndex (right))) else false) | Ty.TFn parameters result => (let parametersSame : Bool := tyEq (parameters) (tyFirst (right)); (let resultSame : Bool := tyEq (result) (tySecond (right)); (if (Nat.beq (tyTag (right)) (13)) then (if parametersSame then resultSame else false) else false))) | Ty.TCons head tail => (let headSame : Bool := tyEq (head) (tyFirst (right)); (let tailSame : Bool := tyEq (tail) (tySecond (right)); (if (Nat.beq (tyTag (right)) (15)) then (if headSame then tailSame else false) else false))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{orderable}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(ty : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match ty with | Ty.TNat => true | Ty.TInt => true | Ty.TBool => true | Ty.TString => true | Ty.TFixed \_ => true | Ty.TPair left right => (let leftOk : Bool := orderable (left); (let rightOk : Bool := orderable (right); (if leftOk then rightOk else false))) | Ty.TUnit => false | Ty.TBytes => false | Ty.TOrdering => false | Ty.TNil => false | Ty.TOption \_ => false | Ty.TResult \_ \_ => false | Ty.TList \_ => false | Ty.TAdt \_ => false | Ty.TFn \_ \_ => false | Ty.TCons \_ \_ => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{shapeTag}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(shape : Shape)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match shape with | Shape.SNone => 0 | Shape.SSome => 1 | Shape.SOk => 2 | Shape.SError => 3 | Shape.SNil => 4 | Shape.SCons => 5 | Shape.SZero => 6 | Shape.SSucc => 7 | Shape.SPair => 8 | Shape.STrue => 9 | Shape.SFalse => 10 | Shape.SUnit => 11 | Shape.SLt => 12 | Shape.SEq => 13 | Shape.SGt => 14 | Shape.SAdt \_ => 15)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{shapeArg}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(shape : Shape)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match shape with | Shape.SNone => 0 | Shape.SSome => 0 | Shape.SOk => 0 | Shape.SError => 0 | Shape.SNil => 0 | Shape.SCons => 0 | Shape.SZero => 0 | Shape.SSucc => 0 | Shape.SPair => 0 | Shape.STrue => 0 | Shape.SFalse => 0 | Shape.SUnit => 0 | Shape.SLt => 0 | Shape.SEq => 0 | Shape.SGt => 0 | Shape.SAdt constructor => constructor)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{shapeEq}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : Shape) (right : Shape)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(if (Nat.beq (shapeTag (left)) (shapeTag (right))) then (Nat.beq (shapeArg (left)) (shapeArg (right))) else false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{shapeIn}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(shapes : List (Shape)) (shape : Shape)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match shapes with | List.nil => false | List.cons head tail => (let here : Bool := shapeEq (head) (shape); (let later : Bool := shapeIn (tail) (shape); (if here then true else later))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{natIn}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (Nat)) (item : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match items with | List.nil => false | List.cons head tail => (let later : Bool := natIn (tail) (item); (if (Nat.beq (head) (item)) then true else later)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{hasRepeat}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (Nat))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match items with | List.nil => false | List.cons head tail => (let repeats : Bool := hasRepeat (tail); (let seen : Bool := natIn (tail) (head); (if seen then true else repeats))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{listAt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type parameters: \texttt{(Item)}.\par
+\noindent Parameters: \texttt{(items : List (Item)) (index : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Item)}.\par
+\noindent Definition: \texttt{(match items with | List.nil => Option.none | List.cons head tail => (match index with | Nat.zero => Option.some (head) | Nat.succ previous => listAt (Item) (tail) (previous)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{consTy}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(head : Ty) (tail : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Ty}.\par
+\noindent Definition: \texttt{Ty.TCons (head) (tail)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{closureTy}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(parameters : Ty) (result : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Ty}.\par
+\noindent Definition: \texttt{Ty.TFn (parameters) (result)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{consShape}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(head : Shape) (tail : List (Shape))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (Shape)}.\par
+\noindent Definition: \texttt{(head :: tail)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{kindDebug}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : IntKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match kind with | IntKind.U8 => text ("U8") | IntKind.U16 => text ("U16") | IntKind.U32 => text ("U32") | IntKind.U64 => text ("U64") | IntKind.I8 => text ("I8") | IntKind.I16 => text ("I16") | IntKind.I32 => text ("I32") | IntKind.I64 => text ("I64"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{kindName}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : IntKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match kind with | IntKind.U8 => text ("u8") | IntKind.U16 => text ("u16") | IntKind.U32 => text ("u32") | IntKind.U64 => text ("u64") | IntKind.I8 => text ("i8") | IntKind.I16 => text ("i16") | IntKind.I32 => text ("i32") | IntKind.I64 => text ("i64"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{orderingDebug}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : OrderingValue)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match value with | OrderingValue.OLt => text ("Lt") | OrderingValue.OEq => text ("Eq") | OrderingValue.OGt => text ("Gt"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{boolDebug}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : Bool)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(if value then text ("true") else text ("false"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{hexNibble}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(n : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanStd.Text.sliceOr (text ("0123456789abcdef")) (n) (1)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{hexByte}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(n : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(let single : ByteArray := hexNibble (n); (let double : ByteArray := cat (hexNibble ((LexLeanRuntime.quotient (n) (16) (0) : Nat))) (hexNibble ((LexLeanRuntime.remainder (n) (16) (0) : Nat))); (if (Nat.blt (n) (16)) then single else double)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{unicodeEscape}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(n : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{cat (text ("\textbackslash{}\textbackslash{}u\{")) (cat (hexByte (n)) (text ("\}")))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{byteNat}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match LexLeanStd.Text.byteAt (subject) (position) with | Option.some byte => (toNat (byte) : Nat) | Option.none => 256)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{escapePiece}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat) (byte : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (Nat) (ByteArray))}.\par
+\noindent Definition: \texttt{(let following : Nat := byteNat (subject) ((position + 1)); (if (Nat.beq (byte) (34)) then (1, text ("\textbackslash{}\textbackslash{}\textbackslash{}"")) else (if (Nat.beq (byte) (92)) then (1, text ("\textbackslash{}\textbackslash{}\textbackslash{}\textbackslash{}")) else (if (Nat.beq (byte) (10)) then (1, text ("\textbackslash{}\textbackslash{}n")) else (if (Nat.beq (byte) (13)) then (1, text ("\textbackslash{}\textbackslash{}r")) else (if (Nat.beq (byte) (9)) then (1, text ("\textbackslash{}\textbackslash{}t")) else (if (Nat.beq (byte) (0)) then (1, text ("\textbackslash{}\textbackslash{}0")) else (if (Nat.blt (byte) (32)) then (1, unicodeEscape (byte)) else (if (Nat.beq (byte) (127)) then (1, unicodeEscape (byte)) else (if (Nat.beq (byte) (194)) then (if (Nat.ble (128) (following)) then (if (Nat.ble (following) (159)) then (2, unicodeEscape (following)) else (1, LexLeanStd.Text.sliceOr (subject) (position) (1))) else (1, LexLeanStd.Text.sliceOr (subject) (position) (1))) else (1, LexLeanStd.Text.sliceOr (subject) (position) (1))))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{escapeStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (state : (Prod (Nat) (ByteArray)))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option ((Prod (Nat) (ByteArray)))}.\par
+\noindent Definition: \texttt{(let position : Nat := (state).1; (let byte : Nat := byteNat (subject) (position); (if (Nat.beq (byte) (256)) then Option.none else (let piece : (Prod (Nat) (ByteArray)) := escapePiece (subject) (position) (byte); Option.some (((position + (piece).1), cat ((state).2) ((piece).2)))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{strDebug}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{(subject)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{cat (text ("\textbackslash{}"")) (cat ((((LexLeanCollections.iterateUntil ((fun (state : (Prod (Nat) (ByteArray))) => escapeStep (subject) (state))) ((LexLeanRuntime.length (subject) : Nat)) ((0, ByteArray.mk \#[])) : (Prod ((Prod (Nat) (ByteArray))) (Bool)))).1).2) (text ("\textbackslash{}"")))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{tyDebug}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(ty : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match ty with | Ty.TUnit => text ("Unit") | Ty.TBool => text ("Bool") | Ty.TNat => text ("Nat") | Ty.TInt => text ("Int") | Ty.TFixed width => cat (text ("Fixed \{ width: ")) (cat (kindDebug (width)) (text (" \}"))) | Ty.TString => text ("String") | Ty.TBytes => text ("Bytes") | Ty.TOrdering => text ("Ordering") | Ty.TOption value => cat (text ("Option \{ value: ")) (cat (tyDebug (value)) (text (" \}"))) | Ty.TResult ok error => cat (text ("Result \{ ok: ")) (cat (tyDebug (ok)) (cat (text (", error: ")) (cat (tyDebug (error)) (text (" \}"))))) | Ty.TList element => cat (text ("List \{ element: ")) (cat (tyDebug (element)) (text (" \}"))) | Ty.TPair left right => cat (text ("Pair \{ left: ")) (cat (tyDebug (left)) (cat (text (", right: ")) (cat (tyDebug (right)) (text (" \}"))))) | Ty.TAdt index => cat (text ("Adt \{ index: ")) (cat (decimal (index)) (text (" \}"))) | Ty.TFn parameters result => cat (text ("Fn \{ parameters: [")) (cat (tyDebug (parameters)) (cat (text ("], result: ")) (cat (tyDebug (result)) (text (" \}"))))) | Ty.TNil => text ("") | Ty.TCons head tail => (let headText : ByteArray := tyDebug (head); (let rest : ByteArray := tyDebug (tail); (if isNilTy (tail) then headText else cat (headText) (cat (text (", ")) (rest))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tyList}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(ty : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{cat (text ("[")) (cat (tyDebug (ty)) (text ("]")))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{shapeDebug}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(shape : Shape)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match shape with | Shape.SNone => text ("None") | Shape.SSome => text ("Some") | Shape.SOk => text ("Ok") | Shape.SError => text ("Error") | Shape.SNil => text ("Nil") | Shape.SCons => text ("Cons") | Shape.SZero => text ("Zero") | Shape.SSucc => text ("Succ") | Shape.SPair => text ("Pair") | Shape.STrue => text ("True") | Shape.SFalse => text ("False") | Shape.SUnit => text ("Unit") | Shape.SLt => text ("Lt") | Shape.SEq => text ("Eq") | Shape.SGt => text ("Gt") | Shape.SAdt constructor => cat (text ("Adt \{ constructor: ")) (cat (decimal (constructor)) (text (" \}"))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{primDebug}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(operation : Prim)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match operation with | Prim.NatAdd => text ("NatAdd") | Prim.NatSub => text ("NatSub") | Prim.NatMul => text ("NatMul") | Prim.NatQuot => text ("NatQuot") | Prim.NatRem => text ("NatRem") | Prim.NatEq => text ("NatEq") | Prim.NatLe => text ("NatLe") | Prim.NatLt => text ("NatLt") | Prim.IntAdd => text ("IntAdd") | Prim.IntSub => text ("IntSub") | Prim.IntMul => text ("IntMul") | Prim.IntNeg => text ("IntNeg") | Prim.IntQuot => text ("IntQuot") | Prim.IntRem => text ("IntRem") | Prim.CheckedAdd => text ("CheckedAdd") | Prim.CheckedSub => text ("CheckedSub") | Prim.CheckedMul => text ("CheckedMul") | Prim.CheckedNeg => text ("CheckedNeg") | Prim.CheckedQuot => text ("CheckedQuot") | Prim.BitAnd => text ("BitAnd") | Prim.BitOr => text ("BitOr") | Prim.BitXor => text ("BitXor") | Prim.BitNot => text ("BitNot") | Prim.ShiftLeft => text ("ShiftLeft") | Prim.ShiftRight => text ("ShiftRight") | Prim.Equal => text ("Equal") | Prim.BoolNot => text ("BoolNot") | Prim.BoolAnd => text ("BoolAnd") | Prim.BoolOr => text ("BoolOr") | Prim.Append => text ("Append") | Prim.Length => text ("Length") | Prim.Index => text ("Index") | Prim.Slice => text ("Slice") | Prim.Utf8Encode => text ("Utf8Encode") | Prim.Utf8Decode => text ("Utf8Decode") | Prim.CompareBytes => text ("CompareBytes") | Prim.SplitExact => text ("SplitExact") | Prim.Join => text ("Join") | Prim.FormatDecimal => text ("FormatDecimal") | Prim.Compare => text ("Compare") | Prim.Convert target => cat (text ("Convert \{ target: ")) (cat (kindDebug (target)) (text (" \}"))) | Prim.ParseDecimal target => cat (text ("ParseDecimal \{ target: ")) (cat (tyDebug (target)) (text (" \}"))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{isNilValue}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : Value)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match value with | Value.VUnit => false | Value.VBool \_ => false | Value.VNat \_ => false | Value.VInt \_ => false | Value.VU8 \_ => false | Value.VU16 \_ => false | Value.VU32 \_ => false | Value.VU64 \_ => false | Value.VI8 \_ => false | Value.VI16 \_ => false | Value.VI32 \_ => false | Value.VI64 \_ => false | Value.VString \_ => false | Value.VBytes \_ => false | Value.VOrdering \_ => false | Value.VNone => false | Value.VSome \_ => false | Value.VOk \_ => false | Value.VError \_ => false | Value.VList \_ => false | Value.VPair \_ \_ => false | Value.VAdt \_ \_ => false | Value.VClosure \_ \_ => false | Value.VNil => true | Value.VCons \_ \_ => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{valDebug}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : Value)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match value with | Value.VUnit => text ("Unit") | Value.VBool flag => cat (text ("Bool \{ value: ")) (cat (boolDebug (flag)) (text (" \}"))) | Value.VNat digits => cat (text ("Nat \{ value: ")) (cat (strDebug (digits)) (text (" \}"))) | Value.VInt digits => cat (text ("Int \{ value: ")) (cat (strDebug (digits)) (text (" \}"))) | Value.VU8 digits => cat (text ("U8 \{ value: ")) (cat (strDebug (digits)) (text (" \}"))) | Value.VU16 digits => cat (text ("U16 \{ value: ")) (cat (strDebug (digits)) (text (" \}"))) | Value.VU32 digits => cat (text ("U32 \{ value: ")) (cat (strDebug (digits)) (text (" \}"))) | Value.VU64 digits => cat (text ("U64 \{ value: ")) (cat (strDebug (digits)) (text (" \}"))) | Value.VI8 digits => cat (text ("I8 \{ value: ")) (cat (strDebug (digits)) (text (" \}"))) | Value.VI16 digits => cat (text ("I16 \{ value: ")) (cat (strDebug (digits)) (text (" \}"))) | Value.VI32 digits => cat (text ("I32 \{ value: ")) (cat (strDebug (digits)) (text (" \}"))) | Value.VI64 digits => cat (text ("I64 \{ value: ")) (cat (strDebug (digits)) (text (" \}"))) | Value.VString contents => cat (text ("String \{ value: ")) (cat (strDebug (contents)) (text (" \}"))) | Value.VBytes hex => cat (text ("Bytes \{ hex: ")) (cat (strDebug (hex)) (text (" \}"))) | Value.VOrdering order => cat (text ("Ordering \{ value: ")) (cat (orderingDebug (order)) (text (" \}"))) | Value.VNone => text ("None") | Value.VSome inner => cat (text ("Some \{ value: ")) (cat (valDebug (inner)) (text (" \}"))) | Value.VOk inner => cat (text ("Ok \{ value: ")) (cat (valDebug (inner)) (text (" \}"))) | Value.VError inner => cat (text ("Error \{ value: ")) (cat (valDebug (inner)) (text (" \}"))) | Value.VList items => cat (text ("List \{ items: [")) (cat (valDebug (items)) (text ("] \}"))) | Value.VPair left right => cat (text ("Pair \{ left: ")) (cat (valDebug (left)) (cat (text (", right: ")) (cat (valDebug (right)) (text (" \}"))))) | Value.VAdt constructor fields => cat (text ("Adt \{ constructor: ")) (cat (decimal (constructor)) (cat (text (", fields: [")) (cat (valDebug (fields)) (text ("] \}"))))) | Value.VClosure function captures => cat (text ("Closure \{ function: ")) (cat (decimal (function)) (cat (text (", captures: [")) (cat (valDebug (captures)) (text ("] \}"))))) | Value.VNil => text ("") | Value.VCons head tail => (let headText : ByteArray := valDebug (head); (let rest : ByteArray := valDebug (tail); (if isNilValue (tail) then headText else cat (headText) (cat (text (", ")) (rest))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{digitAt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(let n : Nat := byteNat (subject) (position); (if (Nat.blt (47) (n)) then (Nat.blt (n) (58)) else false))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{digitStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Nat)}.\par
+\noindent Definition: \texttt{(if digitAt (subject) (position) then Option.some ((position + 1)) else Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{allDigits}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(position)}, captures \texttt{(subject)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(Nat.beq (((LexLeanCollections.iterateUntil ((fun (position : Nat) => digitStep (subject) (position))) ((LexLeanRuntime.length (subject) : Nat)) (0) : (Prod (Nat) (Bool)))).1) ((LexLeanRuntime.length (subject) : Nat)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{hexDigitAt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(let n : Nat := byteNat (subject) (position); (if (Nat.blt (47) (n)) then (if (Nat.blt (n) (58)) then true else (if (Nat.blt (96) (n)) then (Nat.blt (n) (103)) else false)) else false))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{hexStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Nat)}.\par
+\noindent Definition: \texttt{(if hexDigitAt (subject) (position) then Option.some ((position + 1)) else Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{allHex}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(position)}, captures \texttt{(subject)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(Nat.beq (((LexLeanCollections.iterateUntil ((fun (position : Nat) => hexStep (subject) (position))) ((LexLeanRuntime.length (subject) : Nat)) (0) : (Prod (Nat) (Bool)))).1) ((LexLeanRuntime.length (subject) : Nat)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{startsWithByte}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (value : UInt8)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{byteIs (subject) (0) (value)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{bytesLess}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : ByteArray) (right : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.equal ((LexLeanRuntime.compareBytes (left) (right) : Ordering)) ((LexLeanRuntime.compareBytes (ByteArray.mk \#[]) (ByteArray.mk \#[1]) : Ordering)) : Bool)}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{magnitudeAtMost}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(digits : ByteArray) (limit : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(let shorter : Bool := (Nat.blt ((LexLeanRuntime.length (digits) : Nat)) ((LexLeanRuntime.length (limit) : Nat))); (let same : Bool := (Nat.beq ((LexLeanRuntime.length (digits) : Nat)) ((LexLeanRuntime.length (limit) : Nat))); (let above : Bool := bytesLess (limit) (digits); (if shorter then true else (if same then (!above) else false)))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{Decimal}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{negative}: \texttt{Bool}.\par
+\noindent Field \texttt{digits}: \texttt{ByteArray}.\par
+\subsection*{\texttt{decimalAt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(negative : Bool) (digits : String)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Decimal}.\par
+\noindent Definition: \texttt{(\{ negative := negative, digits := text (digits) \} : Decimal)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{decimalAtMost}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : Decimal) (right : Decimal)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(let downward : Bool := magnitudeAtMost ((right).digits) ((left).digits); (let upward : Bool := magnitudeAtMost ((left).digits) ((right).digits); (if (left).negative then (if (right).negative then downward else true) else (if (right).negative then false else upward))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{kindLow}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : IntKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Decimal}.\par
+\noindent Definition: \texttt{(match kind with | IntKind.U8 => decimalAt (false) ("0") | IntKind.U16 => decimalAt (false) ("0") | IntKind.U32 => decimalAt (false) ("0") | IntKind.U64 => decimalAt (false) ("0") | IntKind.I8 => decimalAt (true) ("128") | IntKind.I16 => decimalAt (true) ("32768") | IntKind.I32 => decimalAt (true) ("2147483648") | IntKind.I64 => decimalAt (true) ("9223372036854775808"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{kindHigh}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : IntKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Decimal}.\par
+\noindent Definition: \texttt{(match kind with | IntKind.U8 => decimalAt (false) ("255") | IntKind.U16 => decimalAt (false) ("65535") | IntKind.U32 => decimalAt (false) ("4294967295") | IntKind.U64 => decimalAt (false) ("18446744073709551615") | IntKind.I8 => decimalAt (false) ("127") | IntKind.I16 => decimalAt (false) ("32767") | IntKind.I32 => decimalAt (false) ("2147483647") | IntKind.I64 => decimalAt (false) ("9223372036854775807"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{canonicalDigits}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(digits : ByteArray) (literal : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(if (Nat.blt (0) ((LexLeanRuntime.length (digits) : Nat))) then (if allDigits (digits) then (if (LexLeanRuntime.equal (digits) (text ("0")) : Bool) then (!(LexLeanRuntime.equal (literal) (text ("-0")) : Bool)) else (!byteIs (digits) (0) ((48 : UInt8)))) else false) else false)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{parseDecimal}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(literal : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Decimal)}.\par
+\noindent Definition: \texttt{(let negative : Bool := byteIs (literal) (0) ((45 : UInt8)); (let digits : ByteArray := (let rest : ByteArray := LexLeanStd.Text.sliceOr (literal) (1) ((LexLeanRuntime.subtract ((LexLeanRuntime.length (literal) : Nat)) (1) : Nat)); (if negative then rest else literal)); (let canonical : Bool := canonicalDigits (digits) (literal); (let fitsPositive : Bool := magnitudeAtMost (digits) (text ("170141183460469231731687303715884105727")); (let fitsNegative : Bool := magnitudeAtMost (digits) (text ("170141183460469231731687303715884105728")); (if canonical then (if (if negative then fitsNegative else fitsPositive) then Except.ok ((\{ negative := negative, digits := digits \} : Decimal)) else Except.error (cat (quoted (literal)) (text (" is outside every realized integer")))) else Except.error (cat (quoted (literal)) (text (" is not a canonical decimal")))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{fixedLiteral}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(literal : ByteArray) (kind : IntKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Unit)}.\par
+\noindent Definition: \texttt{(match parseDecimal (literal) with | Except.ok number => (let low : Decimal := kindLow (kind); (let high : Decimal := kindHigh (kind); (let above : Bool := decimalAtMost (low) (number); (let below : Bool := decimalAtMost (number) (high); (if above then (if below then Except.ok (()) else Except.error (cat (literal) (cat (text (" is outside ")) (kindName (kind))))) else Except.error (cat (literal) (cat (text (" is outside ")) (kindName (kind))))))))) | Except.error problem => Except.error (problem))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{natLiteral}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(literal : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Unit)}.\par
+\noindent Definition: \texttt{(match parseDecimal (literal) with | Except.ok number => (let fits : Bool := magnitudeAtMost ((number).digits) (text ("18446744073709551615")); (if (number).negative then Except.error (cat (text ("nat literal ")) (cat (literal) (text (" is outside the 64-bit realization")))) else (if fits then Except.ok (()) else Except.error (cat (text ("nat literal ")) (cat (literal) (text (" is outside the 64-bit realization"))))))) | Except.error problem => Except.error (problem))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{bytesLiteral}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(hex : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Unit)}.\par
+\noindent Definition: \texttt{(if (Nat.beq ((LexLeanRuntime.remainder ((LexLeanRuntime.length (hex) : Nat)) (2) (0) : Nat)) (0)) then (if allHex (hex) then Except.ok (()) else Except.error (cat (text ("byte literal `")) (cat (hex) (text ("` is not even-length lowercase hexadecimal"))))) else Except.error (cat (text ("byte literal `")) (cat (hex) (text ("` is not even-length lowercase hexadecimal")))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{adtAt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(program : Program) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Ty)}.\par
+\noindent Definition: \texttt{tyChainAt ((program).adts) (position)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{functionTypes}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(program : Program) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Ty)}.\par
+\noindent Definition: \texttt{tyChainAt ((program).types) (position)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{functionResult}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(program : Program) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Ty}.\par
+\noindent Definition: \texttt{(match tyChainAt ((program).results) (position) with | Option.some found => found | Option.none => Ty.TUnit)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{undeclaredAdt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(index : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{cat (text ("ADT ")) (cat (decimal (index)) (text (" is not declared")))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{undeclaredFunction}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(index : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{cat (text ("function ")) (cat (decimal (index)) (text (" is not declared")))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tyOk}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(program : Program) (ty : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Unit)}.\par
+\noindent Definition: \texttt{(match ty with | Ty.TUnit => Except.ok (()) | Ty.TBool => Except.ok (()) | Ty.TNat => Except.ok (()) | Ty.TInt => Except.ok (()) | Ty.TString => Except.ok (()) | Ty.TBytes => Except.ok (()) | Ty.TOrdering => Except.ok (()) | Ty.TNil => Except.ok (()) | Ty.TFixed \_ => Except.ok (()) | Ty.TOption value => tyOk (program) (value) | Ty.TResult ok error => (match tyOk (program) (ok) with | Except.ok \_ => tyOk (program) (error) | Except.error problem => Except.error (problem)) | Ty.TList element => tyOk (program) (element) | Ty.TPair left right => (match tyOk (program) (left) with | Except.ok \_ => tyOk (program) (right) | Except.error problem => Except.error (problem)) | Ty.TAdt index => (match adtAt (program) (index) with | Option.some \_ => Except.ok (()) | Option.none => Except.error (undeclaredAdt (index))) | Ty.TFn parameters result => (if isNilTy (parameters) then Except.error (text ("a function type takes at least one parameter")) else (match tyOk (program) (parameters) with | Except.ok \_ => tyOk (program) (result) | Except.error problem => Except.error (problem))) | Ty.TCons head tail => (match tyOk (program) (head) with | Except.ok \_ => tyOk (program) (tail) | Except.error problem => Except.error (problem)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{expectTy}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(actual : Ty) (expected : Ty) (what : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Unit)}.\par
+\noindent Definition: \texttt{(let yes1 : Except (ByteArray) (Unit) := Except.ok (()); (let no2 : Except (ByteArray) (Unit) := Except.error (cat (what) (cat (text (" has type ")) (cat (tyDebug (actual)) (cat (text (", expected ")) (tyDebug (expected)))))); (if tyEq (actual) (expected) then yes1 else no2)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{ctorFields}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(program : Program) (adt : Nat) (constructor : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Ty)}.\par
+\noindent Definition: \texttt{(match adtAt (program) (adt) with | Option.none => Except.error (undeclaredAdt (adt)) | Option.some declaration => (match tyChainAt (declaration) (constructor) with | Option.some fields => Except.ok (fields) | Option.none => Except.error (cat (text ("ADT ")) (cat (decimal (adt)) (cat (text (" has no constructor ")) (decimal (constructor)))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{valueOk}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(program : Program) (value : Value) (ty : Ty) (mode : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Unit)}.\par
+\noindent Definition: \texttt{(match value with | Value.VUnit => (let yes3 : Except (ByteArray) (Unit) := Except.ok (()); (let no4 : Except (ByteArray) (Unit) := Except.error (cat (text ("the literal ")) (cat (valDebug (Value.VUnit)) (cat (text (" does not have type ")) (tyDebug (ty))))); (if (Nat.beq (tyTag (ty)) (0)) then yes3 else no4))) | Value.VBool flag => (let yes5 : Except (ByteArray) (Unit) := Except.ok (()); (let no6 : Except (ByteArray) (Unit) := Except.error (cat (text ("the literal ")) (cat (valDebug (Value.VBool (flag))) (cat (text (" does not have type ")) (tyDebug (ty))))); (if (Nat.beq (tyTag (ty)) (1)) then yes5 else no6))) | Value.VNat digits => (let yes7 : Except (ByteArray) (Unit) := natLiteral (digits); (let no8 : Except (ByteArray) (Unit) := Except.error (cat (text ("the literal ")) (cat (valDebug (Value.VNat (digits))) (cat (text (" does not have type ")) (tyDebug (ty))))); (if (Nat.beq (tyTag (ty)) (2)) then yes7 else no8))) | Value.VInt digits => (let yes9 : Except (ByteArray) (Unit) := fixedLiteral (digits) (IntKind.I64); (let no10 : Except (ByteArray) (Unit) := Except.error (cat (text ("the literal ")) (cat (valDebug (Value.VInt (digits))) (cat (text (" does not have type ")) (tyDebug (ty))))); (if (Nat.beq (tyTag (ty)) (3)) then yes9 else no10))) | Value.VU8 digits => (let yes11 : Except (ByteArray) (Unit) := fixedLiteral (digits) (IntKind.U8); (let no12 : Except (ByteArray) (Unit) := Except.error (cat (text ("the literal ")) (cat (valDebug (Value.VU8 (digits))) (cat (text (" does not have type ")) (tyDebug (ty))))); (if (if (Nat.beq (tyTag (ty)) (4)) then (Nat.beq (kindIndex (tyWidth (ty))) (0)) else false) then yes11 else no12))) | Value.VU16 digits => (let yes13 : Except (ByteArray) (Unit) := fixedLiteral (digits) (IntKind.U16); (let no14 : Except (ByteArray) (Unit) := Except.error (cat (text ("the literal ")) (cat (valDebug (Value.VU16 (digits))) (cat (text (" does not have type ")) (tyDebug (ty))))); (if (if (Nat.beq (tyTag (ty)) (4)) then (Nat.beq (kindIndex (tyWidth (ty))) (1)) else false) then yes13 else no14))) | Value.VU32 digits => (let yes15 : Except (ByteArray) (Unit) := fixedLiteral (digits) (IntKind.U32); (let no16 : Except (ByteArray) (Unit) := Except.error (cat (text ("the literal ")) (cat (valDebug (Value.VU32 (digits))) (cat (text (" does not have type ")) (tyDebug (ty))))); (if (if (Nat.beq (tyTag (ty)) (4)) then (Nat.beq (kindIndex (tyWidth (ty))) (2)) else false) then yes15 else no16))) | Value.VU64 digits => (let yes17 : Except (ByteArray) (Unit) := fixedLiteral (digits) (IntKind.U64); (let no18 : Except (ByteArray) (Unit) := Except.error (cat (text ("the literal ")) (cat (valDebug (Value.VU64 (digits))) (cat (text (" does not have type ")) (tyDebug (ty))))); (if (if (Nat.beq (tyTag (ty)) (4)) then (Nat.beq (kindIndex (tyWidth (ty))) (3)) else false) then yes17 else no18))) | Value.VI8 digits => (let yes19 : Except (ByteArray) (Unit) := fixedLiteral (digits) (IntKind.I8); (let no20 : Except (ByteArray) (Unit) := Except.error (cat (text ("the literal ")) (cat (valDebug (Value.VI8 (digits))) (cat (text (" does not have type ")) (tyDebug (ty))))); (if (if (Nat.beq (tyTag (ty)) (4)) then (Nat.beq (kindIndex (tyWidth (ty))) (4)) else false) then yes19 else no20))) | Value.VI16 digits => (let yes21 : Except (ByteArray) (Unit) := fixedLiteral (digits) (IntKind.I16); (let no22 : Except (ByteArray) (Unit) := Except.error (cat (text ("the literal ")) (cat (valDebug (Value.VI16 (digits))) (cat (text (" does not have type ")) (tyDebug (ty))))); (if (if (Nat.beq (tyTag (ty)) (4)) then (Nat.beq (kindIndex (tyWidth (ty))) (5)) else false) then yes21 else no22))) | Value.VI32 digits => (let yes23 : Except (ByteArray) (Unit) := fixedLiteral (digits) (IntKind.I32); (let no24 : Except (ByteArray) (Unit) := Except.error (cat (text ("the literal ")) (cat (valDebug (Value.VI32 (digits))) (cat (text (" does not have type ")) (tyDebug (ty))))); (if (if (Nat.beq (tyTag (ty)) (4)) then (Nat.beq (kindIndex (tyWidth (ty))) (6)) else false) then yes23 else no24))) | Value.VI64 digits => (let yes25 : Except (ByteArray) (Unit) := fixedLiteral (digits) (IntKind.I64); (let no26 : Except (ByteArray) (Unit) := Except.error (cat (text ("the literal ")) (cat (valDebug (Value.VI64 (digits))) (cat (text (" does not have type ")) (tyDebug (ty))))); (if (if (Nat.beq (tyTag (ty)) (4)) then (Nat.beq (kindIndex (tyWidth (ty))) (7)) else false) then yes25 else no26))) | Value.VString contents => (let yes27 : Except (ByteArray) (Unit) := Except.ok (()); (let no28 : Except (ByteArray) (Unit) := Except.error (cat (text ("the literal ")) (cat (valDebug (Value.VString (contents))) (cat (text (" does not have type ")) (tyDebug (ty))))); (if (Nat.beq (tyTag (ty)) (5)) then yes27 else no28))) | Value.VBytes hex => (let yes29 : Except (ByteArray) (Unit) := bytesLiteral (hex); (let no30 : Except (ByteArray) (Unit) := Except.error (cat (text ("the literal ")) (cat (valDebug (Value.VBytes (hex))) (cat (text (" does not have type ")) (tyDebug (ty))))); (if (Nat.beq (tyTag (ty)) (6)) then yes29 else no30))) | Value.VOrdering order => (let yes31 : Except (ByteArray) (Unit) := Except.ok (()); (let no32 : Except (ByteArray) (Unit) := Except.error (cat (text ("the literal ")) (cat (valDebug (Value.VOrdering (order))) (cat (text (" does not have type ")) (tyDebug (ty))))); (if (Nat.beq (tyTag (ty)) (7)) then yes31 else no32))) | Value.VNone => (let yes33 : Except (ByteArray) (Unit) := Except.ok (()); (let no34 : Except (ByteArray) (Unit) := Except.error (cat (text ("the literal ")) (cat (valDebug (Value.VNone)) (cat (text (" does not have type ")) (tyDebug (ty))))); (if (Nat.beq (tyTag (ty)) (8)) then yes33 else no34))) | Value.VSome inner => (let yes35 : Except (ByteArray) (Unit) := valueOk (program) (inner) (tyFirst (ty)) (0); (let no36 : Except (ByteArray) (Unit) := Except.error (cat (text ("the literal ")) (cat (valDebug (Value.VSome (inner))) (cat (text (" does not have type ")) (tyDebug (ty))))); (if (Nat.beq (tyTag (ty)) (8)) then yes35 else no36))) | Value.VOk inner => (let yes37 : Except (ByteArray) (Unit) := valueOk (program) (inner) (tyFirst (ty)) (0); (let no38 : Except (ByteArray) (Unit) := Except.error (cat (text ("the literal ")) (cat (valDebug (Value.VOk (inner))) (cat (text (" does not have type ")) (tyDebug (ty))))); (if (Nat.beq (tyTag (ty)) (9)) then yes37 else no38))) | Value.VError inner => (let yes39 : Except (ByteArray) (Unit) := valueOk (program) (inner) (tySecond (ty)) (0); (let no40 : Except (ByteArray) (Unit) := Except.error (cat (text ("the literal ")) (cat (valDebug (Value.VError (inner))) (cat (text (" does not have type ")) (tyDebug (ty))))); (if (Nat.beq (tyTag (ty)) (9)) then yes39 else no40))) | Value.VList items => (let yes41 : Except (ByteArray) (Unit) := valueOk (program) (items) (tyFirst (ty)) (1); (let no42 : Except (ByteArray) (Unit) := Except.error (cat (text ("the literal ")) (cat (valDebug (Value.VList (items))) (cat (text (" does not have type ")) (tyDebug (ty))))); (if (Nat.beq (tyTag (ty)) (10)) then yes41 else no42))) | Value.VPair left right => (let onLeft : Except (ByteArray) (Unit) := valueOk (program) (left) (tyFirst (ty)) (0); (let onRight : Except (ByteArray) (Unit) := valueOk (program) (right) (tySecond (ty)) (0); (let yes43 : Except (ByteArray) (Unit) := (match onLeft with | Except.ok \_ => onRight | Except.error problem => Except.error (problem)); (let no44 : Except (ByteArray) (Unit) := Except.error (cat (text ("the literal ")) (cat (valDebug (Value.VPair (left) (right))) (cat (text (" does not have type ")) (tyDebug (ty))))); (if (Nat.beq (tyTag (ty)) (11)) then yes43 else no44))))) | Value.VAdt constructor fields => (let yes47 : Except (ByteArray) (Unit) := (match ctorFields (program) (tyAdtIndex (ty)) (constructor) with | Except.error problem => Except.error (problem) | Except.ok declared => (let inner : Except (ByteArray) (Unit) := valueOk (program) (fields) (declared) (2); (let yes45 : Except (ByteArray) (Unit) := inner; (let no46 : Except (ByteArray) (Unit) := Except.error (cat (text ("constructor ")) (cat (decimal (constructor)) (cat (text (" of ADT ")) (cat (decimal (tyAdtIndex (ty))) (cat (text (" takes ")) (cat (decimal (tyChainLength (declared))) (cat (text (" fields, the literal has ")) (decimal (valueChainLength (fields)))))))))); (if (Nat.beq (valueChainLength (fields)) (tyChainLength (declared))) then yes45 else no46))))); (let no48 : Except (ByteArray) (Unit) := Except.error (cat (text ("the literal ")) (cat (valDebug (Value.VAdt (constructor) (fields))) (cat (text (" does not have type ")) (tyDebug (ty))))); (if (Nat.beq (tyTag (ty)) (12)) then yes47 else no48))) | Value.VClosure \_ \_ => Except.error (text ("a closure has no literal form; build it with `closure`")) | Value.VNil => Except.ok (()) | Value.VCons head tail => (let element : Ty := (if (Nat.beq (mode) (2)) then tyFirst (ty) else ty); (let later : Ty := (if (Nat.beq (mode) (2)) then tySecond (ty) else ty); (let onHead : Except (ByteArray) (Unit) := valueOk (program) (head) (element) (0); (let onTail : Except (ByteArray) (Unit) := valueOk (program) (tail) (later) (mode); (if (Nat.beq (mode) (0)) then Except.ok (()) else (if (if (Nat.beq (mode) (2)) then isNilTy (ty) else false) then Except.ok (()) else (match onHead with | Except.ok \_ => onTail | Except.error problem => Except.error (problem)))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{shapeFields}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(program : Program) (shape : Shape) (ty : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Ty)}.\par
+\noindent Definition: \texttt{(match shape with | Shape.SNone => (let yes49 : Except (ByteArray) (Ty) := Except.ok (Ty.TNil); (let no50 : Except (ByteArray) (Ty) := Except.error (cat (text ("shape ")) (cat (shapeDebug (shape)) (cat (text (" does not belong to type ")) (tyDebug (ty))))); (if (Nat.beq (tyTag (ty)) (8)) then yes49 else no50))) | Shape.SSome => (let yes51 : Except (ByteArray) (Ty) := Except.ok (Ty.TCons (tyFirst (ty)) (Ty.TNil)); (let no52 : Except (ByteArray) (Ty) := Except.error (cat (text ("shape ")) (cat (shapeDebug (shape)) (cat (text (" does not belong to type ")) (tyDebug (ty))))); (if (Nat.beq (tyTag (ty)) (8)) then yes51 else no52))) | Shape.SOk => (let yes53 : Except (ByteArray) (Ty) := Except.ok (Ty.TCons (tyFirst (ty)) (Ty.TNil)); (let no54 : Except (ByteArray) (Ty) := Except.error (cat (text ("shape ")) (cat (shapeDebug (shape)) (cat (text (" does not belong to type ")) (tyDebug (ty))))); (if (Nat.beq (tyTag (ty)) (9)) then yes53 else no54))) | Shape.SError => (let yes55 : Except (ByteArray) (Ty) := Except.ok (Ty.TCons (tySecond (ty)) (Ty.TNil)); (let no56 : Except (ByteArray) (Ty) := Except.error (cat (text ("shape ")) (cat (shapeDebug (shape)) (cat (text (" does not belong to type ")) (tyDebug (ty))))); (if (Nat.beq (tyTag (ty)) (9)) then yes55 else no56))) | Shape.SNil => (let yes57 : Except (ByteArray) (Ty) := Except.ok (Ty.TNil); (let no58 : Except (ByteArray) (Ty) := Except.error (cat (text ("shape ")) (cat (shapeDebug (shape)) (cat (text (" does not belong to type ")) (tyDebug (ty))))); (if (Nat.beq (tyTag (ty)) (10)) then yes57 else no58))) | Shape.SCons => (let yes59 : Except (ByteArray) (Ty) := Except.ok (Ty.TCons (tyFirst (ty)) (Ty.TCons (ty) (Ty.TNil))); (let no60 : Except (ByteArray) (Ty) := Except.error (cat (text ("shape ")) (cat (shapeDebug (shape)) (cat (text (" does not belong to type ")) (tyDebug (ty))))); (if (Nat.beq (tyTag (ty)) (10)) then yes59 else no60))) | Shape.SZero => (let yes61 : Except (ByteArray) (Ty) := Except.ok (Ty.TNil); (let no62 : Except (ByteArray) (Ty) := Except.error (cat (text ("shape ")) (cat (shapeDebug (shape)) (cat (text (" does not belong to type ")) (tyDebug (ty))))); (if (Nat.beq (tyTag (ty)) (2)) then yes61 else no62))) | Shape.SSucc => (let yes63 : Except (ByteArray) (Ty) := Except.ok (Ty.TCons (Ty.TNat) (Ty.TNil)); (let no64 : Except (ByteArray) (Ty) := Except.error (cat (text ("shape ")) (cat (shapeDebug (shape)) (cat (text (" does not belong to type ")) (tyDebug (ty))))); (if (Nat.beq (tyTag (ty)) (2)) then yes63 else no64))) | Shape.SPair => (let yes65 : Except (ByteArray) (Ty) := Except.ok (Ty.TCons (tyFirst (ty)) (Ty.TCons (tySecond (ty)) (Ty.TNil))); (let no66 : Except (ByteArray) (Ty) := Except.error (cat (text ("shape ")) (cat (shapeDebug (shape)) (cat (text (" does not belong to type ")) (tyDebug (ty))))); (if (Nat.beq (tyTag (ty)) (11)) then yes65 else no66))) | Shape.STrue => (let yes67 : Except (ByteArray) (Ty) := Except.ok (Ty.TNil); (let no68 : Except (ByteArray) (Ty) := Except.error (cat (text ("shape ")) (cat (shapeDebug (shape)) (cat (text (" does not belong to type ")) (tyDebug (ty))))); (if (Nat.beq (tyTag (ty)) (1)) then yes67 else no68))) | Shape.SFalse => (let yes69 : Except (ByteArray) (Ty) := Except.ok (Ty.TNil); (let no70 : Except (ByteArray) (Ty) := Except.error (cat (text ("shape ")) (cat (shapeDebug (shape)) (cat (text (" does not belong to type ")) (tyDebug (ty))))); (if (Nat.beq (tyTag (ty)) (1)) then yes69 else no70))) | Shape.SUnit => (let yes71 : Except (ByteArray) (Ty) := Except.ok (Ty.TNil); (let no72 : Except (ByteArray) (Ty) := Except.error (cat (text ("shape ")) (cat (shapeDebug (shape)) (cat (text (" does not belong to type ")) (tyDebug (ty))))); (if (Nat.beq (tyTag (ty)) (0)) then yes71 else no72))) | Shape.SLt => (let yes73 : Except (ByteArray) (Ty) := Except.ok (Ty.TNil); (let no74 : Except (ByteArray) (Ty) := Except.error (cat (text ("shape ")) (cat (shapeDebug (shape)) (cat (text (" does not belong to type ")) (tyDebug (ty))))); (if (Nat.beq (tyTag (ty)) (7)) then yes73 else no74))) | Shape.SEq => (let yes75 : Except (ByteArray) (Ty) := Except.ok (Ty.TNil); (let no76 : Except (ByteArray) (Ty) := Except.error (cat (text ("shape ")) (cat (shapeDebug (shape)) (cat (text (" does not belong to type ")) (tyDebug (ty))))); (if (Nat.beq (tyTag (ty)) (7)) then yes75 else no76))) | Shape.SGt => (let yes77 : Except (ByteArray) (Ty) := Except.ok (Ty.TNil); (let no78 : Except (ByteArray) (Ty) := Except.error (cat (text ("shape ")) (cat (shapeDebug (shape)) (cat (text (" does not belong to type ")) (tyDebug (ty))))); (if (Nat.beq (tyTag (ty)) (7)) then yes77 else no78))) | Shape.SAdt constructor => (let fields : Except (ByteArray) (Ty) := ctorFields (program) (tyAdtIndex (ty)) (constructor); (let yes79 : Except (ByteArray) (Ty) := fields; (let no80 : Except (ByteArray) (Ty) := Except.error (cat (text ("shape ")) (cat (shapeDebug (shape)) (cat (text (" does not belong to type ")) (tyDebug (ty))))); (if (Nat.beq (tyTag (ty)) (12)) then yes79 else no80)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{adtShapes}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(constructors : Ty) (start : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (Shape)}.\par
+\noindent Definition: \texttt{(match constructors with | Ty.TUnit => ([] : List (Shape)) | Ty.TBool => ([] : List (Shape)) | Ty.TNat => ([] : List (Shape)) | Ty.TInt => ([] : List (Shape)) | Ty.TFixed \_ => ([] : List (Shape)) | Ty.TString => ([] : List (Shape)) | Ty.TBytes => ([] : List (Shape)) | Ty.TOrdering => ([] : List (Shape)) | Ty.TOption \_ => ([] : List (Shape)) | Ty.TResult \_ \_ => ([] : List (Shape)) | Ty.TList \_ => ([] : List (Shape)) | Ty.TPair \_ \_ => ([] : List (Shape)) | Ty.TAdt \_ => ([] : List (Shape)) | Ty.TFn \_ \_ => ([] : List (Shape)) | Ty.TNil => ([] : List (Shape)) | Ty.TCons \_ tail => consShape (Shape.SAdt (start)) (adtShapes (tail) ((start + 1))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{shapesOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(program : Program) (ty : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (List (Shape))}.\par
+\noindent Definition: \texttt{(match ty with | Ty.TUnit => Except.ok ((Shape.SUnit :: ([] : List (Shape)))) | Ty.TBool => Except.ok ((Shape.STrue :: (Shape.SFalse :: ([] : List (Shape))))) | Ty.TNat => Except.ok ((Shape.SZero :: (Shape.SSucc :: ([] : List (Shape))))) | Ty.TInt => Except.error (cat (text ("a value of type ")) (cat (tyDebug (ty)) (text (" cannot be matched")))) | Ty.TFixed \_ => Except.error (cat (text ("a value of type ")) (cat (tyDebug (ty)) (text (" cannot be matched")))) | Ty.TString => Except.error (cat (text ("a value of type ")) (cat (tyDebug (ty)) (text (" cannot be matched")))) | Ty.TBytes => Except.error (cat (text ("a value of type ")) (cat (tyDebug (ty)) (text (" cannot be matched")))) | Ty.TOrdering => Except.ok ((Shape.SLt :: (Shape.SEq :: (Shape.SGt :: ([] : List (Shape)))))) | Ty.TOption \_ => Except.ok ((Shape.SNone :: (Shape.SSome :: ([] : List (Shape))))) | Ty.TResult \_ \_ => Except.ok ((Shape.SOk :: (Shape.SError :: ([] : List (Shape))))) | Ty.TList \_ => Except.ok ((Shape.SNil :: (Shape.SCons :: ([] : List (Shape))))) | Ty.TPair \_ \_ => Except.ok ((Shape.SPair :: ([] : List (Shape)))) | Ty.TAdt index => (match adtAt (program) (index) with | Option.none => Except.error (undeclaredAdt (index)) | Option.some declaration => Except.ok (adtShapes (declaration) (0))) | Ty.TFn \_ \_ => Except.error (cat (text ("a value of type ")) (cat (tyDebug (ty)) (text (" cannot be matched")))) | Ty.TNil => Except.error (cat (text ("a value of type ")) (cat (tyDebug (ty)) (text (" cannot be matched")))) | Ty.TCons \_ \_ => Except.error (cat (text ("a value of type ")) (cat (tyDebug (ty)) (text (" cannot be matched")))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{firstMissing}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(required : List (Shape)) (covered : List (Shape))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Shape)}.\par
+\noindent Definition: \texttt{(match required with | List.nil => Option.none | List.cons head tail => (let later : Option (Shape) := firstMissing (tail) (covered); (let yes81 : Option (Shape) := later; (let no82 : Option (Shape) := Option.some (head); (if shapeIn (covered) (head) then yes81 else no82)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{exactly}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(operation : Prim) (expected : Ty) (types : Ty) (result : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Ty)}.\par
+\noindent Definition: \texttt{(let yes83 : Except (ByteArray) (Ty) := Except.ok (result); (let no84 : Except (ByteArray) (Ty) := Except.error (cat (text ("primitive ")) (cat (primDebug (operation)) (cat (text (" takes ")) (cat (tyList (expected)) (cat (text (", received ")) (tyList (types))))))); (if tyEq (types) (expected) then yes83 else no84)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{inapplicable}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(operation : Prim) (types : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Ty)}.\par
+\noindent Definition: \texttt{Except.error (cat (text ("primitive ")) (cat (primDebug (operation)) (cat (text (" does not apply to ")) (tyList (types)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{primType}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(operation : Prim) (types : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Ty)}.\par
+\noindent Definition: \texttt{(let headTy : Ty := tyFirst (types); (let lead : Ty := (if isNilTy (types) then Ty.TUnit else headTy); (match operation with | Prim.NatAdd => exactly (operation) (Ty.TCons (Ty.TNat) (Ty.TCons (Ty.TNat) (Ty.TNil))) (types) (Ty.TNat) | Prim.NatSub => exactly (operation) (Ty.TCons (Ty.TNat) (Ty.TCons (Ty.TNat) (Ty.TNil))) (types) (Ty.TNat) | Prim.NatMul => exactly (operation) (Ty.TCons (Ty.TNat) (Ty.TCons (Ty.TNat) (Ty.TNil))) (types) (Ty.TNat) | Prim.NatQuot => exactly (operation) (Ty.TCons (Ty.TNat) (Ty.TCons (Ty.TNat) (Ty.TCons (Ty.TNat) (Ty.TNil)))) (types) (Ty.TNat) | Prim.NatRem => exactly (operation) (Ty.TCons (Ty.TNat) (Ty.TCons (Ty.TNat) (Ty.TCons (Ty.TNat) (Ty.TNil)))) (types) (Ty.TNat) | Prim.NatEq => exactly (operation) (Ty.TCons (Ty.TNat) (Ty.TCons (Ty.TNat) (Ty.TNil))) (types) (Ty.TBool) | Prim.NatLe => exactly (operation) (Ty.TCons (Ty.TNat) (Ty.TCons (Ty.TNat) (Ty.TNil))) (types) (Ty.TBool) | Prim.NatLt => exactly (operation) (Ty.TCons (Ty.TNat) (Ty.TCons (Ty.TNat) (Ty.TNil))) (types) (Ty.TBool) | Prim.IntAdd => exactly (operation) (Ty.TCons (Ty.TInt) (Ty.TCons (Ty.TInt) (Ty.TNil))) (types) (Ty.TInt) | Prim.IntSub => exactly (operation) (Ty.TCons (Ty.TInt) (Ty.TCons (Ty.TInt) (Ty.TNil))) (types) (Ty.TInt) | Prim.IntMul => exactly (operation) (Ty.TCons (Ty.TInt) (Ty.TCons (Ty.TInt) (Ty.TNil))) (types) (Ty.TInt) | Prim.IntNeg => exactly (operation) (Ty.TCons (Ty.TInt) (Ty.TNil)) (types) (Ty.TInt) | Prim.IntQuot => exactly (operation) (Ty.TCons (Ty.TInt) (Ty.TCons (Ty.TInt) (Ty.TCons (Ty.TInt) (Ty.TNil)))) (types) (Ty.TInt) | Prim.IntRem => exactly (operation) (Ty.TCons (Ty.TInt) (Ty.TCons (Ty.TInt) (Ty.TCons (Ty.TInt) (Ty.TNil)))) (types) (Ty.TInt) | Prim.CheckedAdd => (let yes85 : Except (ByteArray) (Ty) := exactly (operation) (Ty.TCons (lead) (Ty.TCons (lead) (Ty.TNil))) (types) (Ty.TOption (lead)); (let no86 : Except (ByteArray) (Ty) := inapplicable (operation) (types); (if (Nat.beq (tyTag (lead)) (4)) then yes85 else no86))) | Prim.CheckedSub => (let yes87 : Except (ByteArray) (Ty) := exactly (operation) (Ty.TCons (lead) (Ty.TCons (lead) (Ty.TNil))) (types) (Ty.TOption (lead)); (let no88 : Except (ByteArray) (Ty) := inapplicable (operation) (types); (if (Nat.beq (tyTag (lead)) (4)) then yes87 else no88))) | Prim.CheckedMul => (let yes89 : Except (ByteArray) (Ty) := exactly (operation) (Ty.TCons (lead) (Ty.TCons (lead) (Ty.TNil))) (types) (Ty.TOption (lead)); (let no90 : Except (ByteArray) (Ty) := inapplicable (operation) (types); (if (Nat.beq (tyTag (lead)) (4)) then yes89 else no90))) | Prim.CheckedQuot => (let yes91 : Except (ByteArray) (Ty) := exactly (operation) (Ty.TCons (lead) (Ty.TCons (lead) (Ty.TNil))) (types) (Ty.TOption (lead)); (let no92 : Except (ByteArray) (Ty) := inapplicable (operation) (types); (if (Nat.beq (tyTag (lead)) (4)) then yes91 else no92))) | Prim.CheckedNeg => (let yes93 : Except (ByteArray) (Ty) := exactly (operation) (Ty.TCons (lead) (Ty.TNil)) (types) (Ty.TOption (lead)); (let no94 : Except (ByteArray) (Ty) := inapplicable (operation) (types); (if (if (Nat.beq (tyTag (lead)) (4)) then kindSigned (tyWidth (lead)) else false) then yes93 else no94))) | Prim.BitAnd => (let yes95 : Except (ByteArray) (Ty) := exactly (operation) (Ty.TCons (lead) (Ty.TCons (lead) (Ty.TNil))) (types) (lead); (let no96 : Except (ByteArray) (Ty) := inapplicable (operation) (types); (if (Nat.beq (tyTag (lead)) (4)) then yes95 else no96))) | Prim.BitOr => (let yes97 : Except (ByteArray) (Ty) := exactly (operation) (Ty.TCons (lead) (Ty.TCons (lead) (Ty.TNil))) (types) (lead); (let no98 : Except (ByteArray) (Ty) := inapplicable (operation) (types); (if (Nat.beq (tyTag (lead)) (4)) then yes97 else no98))) | Prim.BitXor => (let yes99 : Except (ByteArray) (Ty) := exactly (operation) (Ty.TCons (lead) (Ty.TCons (lead) (Ty.TNil))) (types) (lead); (let no100 : Except (ByteArray) (Ty) := inapplicable (operation) (types); (if (Nat.beq (tyTag (lead)) (4)) then yes99 else no100))) | Prim.BitNot => (let yes101 : Except (ByteArray) (Ty) := exactly (operation) (Ty.TCons (lead) (Ty.TNil)) (types) (lead); (let no102 : Except (ByteArray) (Ty) := inapplicable (operation) (types); (if (Nat.beq (tyTag (lead)) (4)) then yes101 else no102))) | Prim.ShiftLeft => (let yes103 : Except (ByteArray) (Ty) := exactly (operation) (Ty.TCons (lead) (Ty.TCons (Ty.TFixed (IntKind.U32)) (Ty.TNil))) (types) (Ty.TOption (lead)); (let no104 : Except (ByteArray) (Ty) := inapplicable (operation) (types); (if (Nat.beq (tyTag (lead)) (4)) then yes103 else no104))) | Prim.ShiftRight => (let yes105 : Except (ByteArray) (Ty) := exactly (operation) (Ty.TCons (lead) (Ty.TCons (Ty.TFixed (IntKind.U32)) (Ty.TNil))) (types) (Ty.TOption (lead)); (let no106 : Except (ByteArray) (Ty) := inapplicable (operation) (types); (if (Nat.beq (tyTag (lead)) (4)) then yes105 else no106))) | Prim.Equal => (let yes107 : Except (ByteArray) (Ty) := exactly (operation) (Ty.TCons (lead) (Ty.TCons (lead) (Ty.TNil))) (types) (Ty.TBool); (let no108 : Except (ByteArray) (Ty) := inapplicable (operation) (types); (if (if (Nat.beq (tyTag (lead)) (2)) then true else (if (Nat.beq (tyTag (lead)) (1)) then true else (if (Nat.beq (tyTag (lead)) (4)) then true else (if (Nat.beq (tyTag (lead)) (5)) then true else (if (Nat.beq (tyTag (lead)) (6)) then true else (if (Nat.beq (tyTag (lead)) (7)) then true else false)))))) then yes107 else no108))) | Prim.BoolNot => exactly (operation) (Ty.TCons (Ty.TBool) (Ty.TNil)) (types) (Ty.TBool) | Prim.BoolAnd => exactly (operation) (Ty.TCons (Ty.TBool) (Ty.TCons (Ty.TBool) (Ty.TNil))) (types) (Ty.TBool) | Prim.BoolOr => exactly (operation) (Ty.TCons (Ty.TBool) (Ty.TCons (Ty.TBool) (Ty.TNil))) (types) (Ty.TBool) | Prim.Append => (let yes109 : Except (ByteArray) (Ty) := exactly (operation) (Ty.TCons (lead) (Ty.TCons (lead) (Ty.TNil))) (types) (lead); (let no110 : Except (ByteArray) (Ty) := inapplicable (operation) (types); (if (if (Nat.beq (tyTag (lead)) (10)) then true else (if (Nat.beq (tyTag (lead)) (6)) then true else false)) then yes109 else no110))) | Prim.Length => (let yes111 : Except (ByteArray) (Ty) := exactly (operation) (Ty.TCons (lead) (Ty.TNil)) (types) (Ty.TNat); (let no112 : Except (ByteArray) (Ty) := inapplicable (operation) (types); (if (if (Nat.beq (tyTag (lead)) (10)) then true else (if (Nat.beq (tyTag (lead)) (6)) then true else (if (Nat.beq (tyTag (lead)) (5)) then true else false))) then yes111 else no112))) | Prim.Index => (let onList : Except (ByteArray) (Ty) := exactly (operation) (Ty.TCons (lead) (Ty.TCons (Ty.TNat) (Ty.TNil))) (types) (Ty.TOption (tyFirst (lead))); (let onBytes : Except (ByteArray) (Ty) := exactly (operation) (Ty.TCons (Ty.TBytes) (Ty.TCons (Ty.TNat) (Ty.TNil))) (types) (Ty.TOption (Ty.TFixed (IntKind.U8))); (if (Nat.beq (tyTag (lead)) (10)) then onList else (if (Nat.beq (tyTag (lead)) (6)) then onBytes else Except.error (cat (text ("primitive Index of ")) (tyDebug (lead))))))) | Prim.Slice => (let yes113 : Except (ByteArray) (Ty) := exactly (operation) (Ty.TCons (lead) (Ty.TCons (Ty.TNat) (Ty.TCons (Ty.TNat) (Ty.TNil)))) (types) (Ty.TOption (lead)); (let no114 : Except (ByteArray) (Ty) := inapplicable (operation) (types); (if (if (Nat.beq (tyTag (lead)) (10)) then true else (if (Nat.beq (tyTag (lead)) (6)) then true else false)) then yes113 else no114))) | Prim.Utf8Encode => exactly (operation) (Ty.TCons (Ty.TString) (Ty.TNil)) (types) (Ty.TBytes) | Prim.Utf8Decode => exactly (operation) (Ty.TCons (Ty.TBytes) (Ty.TNil)) (types) (Ty.TOption (Ty.TString)) | Prim.CompareBytes => exactly (operation) (Ty.TCons (Ty.TBytes) (Ty.TCons (Ty.TBytes) (Ty.TNil))) (types) (Ty.TOrdering) | Prim.SplitExact => exactly (operation) (Ty.TCons (Ty.TString) (Ty.TCons (Ty.TString) (Ty.TCons (Ty.TFixed (IntKind.U32)) (Ty.TNil)))) (types) (Ty.TOption (Ty.TList (Ty.TString))) | Prim.Join => exactly (operation) (Ty.TCons (Ty.TList (Ty.TString)) (Ty.TCons (Ty.TString) (Ty.TNil))) (types) (Ty.TString) | Prim.FormatDecimal => (let yes115 : Except (ByteArray) (Ty) := exactly (operation) (Ty.TCons (lead) (Ty.TNil)) (types) (Ty.TString); (let no116 : Except (ByteArray) (Ty) := inapplicable (operation) (types); (if (if (Nat.beq (tyTag (lead)) (3)) then true else (if (Nat.beq (tyTag (lead)) (4)) then true else false)) then yes115 else no116))) | Prim.Compare => (let yes117 : Except (ByteArray) (Ty) := exactly (operation) (Ty.TCons (lead) (Ty.TCons (lead) (Ty.TNil))) (types) (Ty.TOrdering); (let no118 : Except (ByteArray) (Ty) := inapplicable (operation) (types); (if orderable (lead) then yes117 else no118))) | Prim.Convert target => (let yes119 : Except (ByteArray) (Ty) := exactly (operation) (Ty.TCons (lead) (Ty.TNil)) (types) (Ty.TOption (Ty.TFixed (target))); (let no120 : Except (ByteArray) (Ty) := inapplicable (operation) (types); (if (if (Nat.beq (tyTag (lead)) (3)) then true else (if (Nat.beq (tyTag (lead)) (4)) then true else false)) then yes119 else no120))) | Prim.ParseDecimal target => (let targetTag : Nat := tyTag (target); (let yes121 : Except (ByteArray) (Ty) := exactly (operation) (Ty.TCons (Ty.TString) (Ty.TNil)) (types) (Ty.TOption (target)); (let no122 : Except (ByteArray) (Ty) := inapplicable (operation) (types); (if (if (Nat.beq (targetTag) (3)) then true else (Nat.beq (targetTag) (4))) then yes121 else no122)))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{extendScope}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(name : Nat) (ty : Ty) (scope : List ((Prod (Nat) (Ty))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List ((Prod (Nat) (Ty)))}.\par
+\noindent Definition: \texttt{((name, ty) :: scope)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{scopeFind}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(scope : List ((Prod (Nat) (Ty)))) (name : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Ty)}.\par
+\noindent Definition: \texttt{(match scope with | List.nil => Option.none | List.cons head tail => (let later : Option (Ty) := scopeFind (tail) (name); (if (Nat.beq ((head).1) (name)) then Option.some ((head).2) else later)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{bindAll}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(binders : List (Nat)) (tys : Ty) (scope : List ((Prod (Nat) (Ty))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List ((Prod (Nat) (Ty)))}.\par
+\noindent Definition: \texttt{(match binders with | List.nil => scope | List.cons binder more => (let deeper : List ((Prod (Nat) (Ty))) := bindAll (more) (tySecond (tys)) (extendScope (binder) (tyFirst (tys)) (scope)); (if isNilTy (tys) then scope else deeper)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{walk}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(program : Program) (expr : Expr) (scope : List ((Prod (Nat) (Ty)))) (mode : Nat) (expected : Ty) (subject : Ty) (what : ByteArray) (position : Nat) (covered : List (Shape))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Outcome}.\par
+\noindent Definition: \texttt{(match expr with | Expr.EValue ty value => (if (Nat.beq (mode) (0)) then (match tyOk (program) (ty) with | Except.ok \_ => (match valueOk (program) (value) (ty) (0) with | Except.ok \_ => Outcome.OTyped (ty) | Except.error problem => Outcome.OFailed (problem)) | Except.error problem => Outcome.OFailed (problem)) else Outcome.OFailed (text ("unreachable"))) | Expr.EVar name => (if (Nat.beq (mode) (0)) then (match scopeFind (scope) (name) with | Option.some found => Outcome.OTyped (found) | Option.none => Outcome.OFailed (cat (text ("local ")) (cat (decimal (name)) (text (" is unbound"))))) else Outcome.OFailed (text ("unreachable"))) | Expr.ELet name ty bound body => (if (Nat.beq (mode) (0)) then (match tyOk (program) (ty) with | Except.ok \_ => (match walk (program) (bound) (scope) (0) (Ty.TNil) (Ty.TNil) (text ("")) (0) (([] : List (Shape))) with | Outcome.OTyped actual => (match expectTy (actual) (ty) (cat (text ("the value bound to ")) (decimal (name))) with | Except.ok \_ => walk (program) (body) (extendScope (name) (ty) (scope)) (0) (Ty.TNil) (Ty.TNil) (text ("")) (0) (([] : List (Shape))) | Except.error problem => Outcome.OFailed (problem)) | Outcome.OFailed problem => Outcome.OFailed (problem) | Outcome.OCovered \_ => Outcome.OFailed (text ("unreachable")) | Outcome.OFine => Outcome.OFailed (text ("unreachable"))) | Except.error problem => Outcome.OFailed (problem)) else Outcome.OFailed (text ("unreachable"))) | Expr.ECond condition thenBranch elseBranch => (if (Nat.beq (mode) (0)) then (match walk (program) (condition) (scope) (0) (Ty.TNil) (Ty.TNil) (text ("")) (0) (([] : List (Shape))) with | Outcome.OTyped conditionTy => (match expectTy (conditionTy) (Ty.TBool) (text ("a condition")) with | Except.ok \_ => (match walk (program) (thenBranch) (scope) (0) (Ty.TNil) (Ty.TNil) (text ("")) (0) (([] : List (Shape))) with | Outcome.OTyped thenTy => (match walk (program) (elseBranch) (scope) (0) (Ty.TNil) (Ty.TNil) (text ("")) (0) (([] : List (Shape))) with | Outcome.OTyped elseTy => (match expectTy (elseTy) (thenTy) (text ("the else branch")) with | Except.ok \_ => Outcome.OTyped (thenTy) | Except.error problem => Outcome.OFailed (problem)) | Outcome.OFailed problem => Outcome.OFailed (problem) | Outcome.OCovered \_ => Outcome.OFailed (text ("unreachable")) | Outcome.OFine => Outcome.OFailed (text ("unreachable"))) | Outcome.OFailed problem => Outcome.OFailed (problem) | Outcome.OCovered \_ => Outcome.OFailed (text ("unreachable")) | Outcome.OFine => Outcome.OFailed (text ("unreachable"))) | Except.error problem => Outcome.OFailed (problem)) | Outcome.OFailed problem => Outcome.OFailed (problem) | Outcome.OCovered \_ => Outcome.OFailed (text ("unreachable")) | Outcome.OFine => Outcome.OFailed (text ("unreachable"))) else Outcome.OFailed (text ("unreachable"))) | Expr.EMatch ty scrutinee arms => (if (Nat.beq (mode) (0)) then (match tyOk (program) (ty) with | Except.ok \_ => (match walk (program) (scrutinee) (scope) (0) (Ty.TNil) (Ty.TNil) (text ("")) (0) (([] : List (Shape))) with | Outcome.OTyped scrutineeTy => (match shapesOf (program) (scrutineeTy) with | Except.ok required => (match walk (program) (arms) (scope) (4) (ty) (scrutineeTy) (text ("")) (0) (([] : List (Shape))) with | Outcome.OCovered seen => (match firstMissing (required) (seen) with | Option.some missing => Outcome.OFailed (cat (text ("the match is not exhaustive: ")) (cat (shapeDebug (missing)) (text (" is not covered")))) | Option.none => Outcome.OTyped (ty)) | Outcome.OFailed problem => Outcome.OFailed (problem) | Outcome.OTyped \_ => Outcome.OFailed (text ("unreachable")) | Outcome.OFine => Outcome.OFailed (text ("unreachable"))) | Except.error problem => Outcome.OFailed (problem)) | Outcome.OFailed problem => Outcome.OFailed (problem) | Outcome.OCovered \_ => Outcome.OFailed (text ("unreachable")) | Outcome.OFine => Outcome.OFailed (text ("unreachable"))) | Except.error problem => Outcome.OFailed (problem)) else Outcome.OFailed (text ("unreachable"))) | Expr.EBuild shape ty operands => (if (Nat.beq (mode) (0)) then (match tyOk (program) (ty) with | Except.ok \_ => (match shapeFields (program) (shape) (ty) with | Except.ok fields => (let what130 : ByteArray := cat (text ("constructor ")) (shapeDebug (shape)); (if (Nat.beq (exprChainLength (operands)) (tyChainLength (fields))) then (match walk (program) (operands) (scope) (2) (fields) (Ty.TNil) (what130) (0) (([] : List (Shape))) with | Outcome.OFine => Outcome.OTyped (ty) | Outcome.OFailed problem => Outcome.OFailed (problem) | Outcome.OTyped \_ => Outcome.OFailed (text ("unreachable")) | Outcome.OCovered \_ => Outcome.OFailed (text ("unreachable"))) else Outcome.OFailed (cat (what130) (cat (text (" takes ")) (cat (decimal (tyChainLength (fields))) (cat (text (" operand(s), received ")) (decimal (exprChainLength (operands))))))))) | Except.error problem => Outcome.OFailed (problem)) | Except.error problem => Outcome.OFailed (problem)) else Outcome.OFailed (text ("unreachable"))) | Expr.ECall function operands => (if (Nat.beq (mode) (0)) then (match functionTypes (program) (function) with | Option.none => Outcome.OFailed (undeclaredFunction (function)) | Option.some declared => (let what132 : ByteArray := cat (text ("function ")) (decimal (function)); (if (Nat.beq (exprChainLength (operands)) (tyChainLength (declared))) then (match walk (program) (operands) (scope) (2) (declared) (Ty.TNil) (what132) (0) (([] : List (Shape))) with | Outcome.OFine => Outcome.OTyped (functionResult (program) (function)) | Outcome.OFailed problem => Outcome.OFailed (problem) | Outcome.OTyped \_ => Outcome.OFailed (text ("unreachable")) | Outcome.OCovered \_ => Outcome.OFailed (text ("unreachable"))) else Outcome.OFailed (cat (what132) (cat (text (" takes ")) (cat (decimal (tyChainLength (declared))) (cat (text (" operand(s), received ")) (decimal (exprChainLength (operands)))))))))) else Outcome.OFailed (text ("unreachable"))) | Expr.EClosure function captures => (if (Nat.beq (mode) (0)) then (match functionTypes (program) (function) with | Option.none => Outcome.OFailed (undeclaredFunction (function)) | Option.some declared => (let total : Nat := tyChainLength (declared); (let given : Nat := exprChainLength (captures); (if (Nat.ble (total) (given)) then Outcome.OFailed (cat (text ("closure of function ")) (cat (decimal (function)) (cat (text (" captures ")) (cat (decimal (given)) (cat (text (" of its ")) (cat (decimal (total)) (text (" parameters; at least one must remain")))))))) else (match walk (program) (captures) (scope) (3) (declared) (Ty.TNil) (cat (text ("closure of function ")) (decimal (function))) (0) (([] : List (Shape))) with | Outcome.OTyped remaining => Outcome.OTyped (closureTy (remaining) (functionResult (program) (function))) | Outcome.OFailed problem => Outcome.OFailed (problem) | Outcome.OCovered \_ => Outcome.OFailed (text ("unreachable")) | Outcome.OFine => Outcome.OFailed (text ("unreachable"))))))) else Outcome.OFailed (text ("unreachable"))) | Expr.EApply target operands => (if (Nat.beq (mode) (0)) then (match walk (program) (target) (scope) (0) (Ty.TNil) (Ty.TNil) (text ("")) (0) (([] : List (Shape))) with | Outcome.OTyped targetTy => (if (Nat.beq (tyTag (targetTy)) (13)) then (let what133 : ByteArray := text ("an application"); (if (Nat.beq (exprChainLength (operands)) (tyChainLength (tyFirst (targetTy)))) then (match walk (program) (operands) (scope) (2) (tyFirst (targetTy)) (Ty.TNil) (what133) (0) (([] : List (Shape))) with | Outcome.OFine => Outcome.OTyped (tySecond (targetTy)) | Outcome.OFailed problem => Outcome.OFailed (problem) | Outcome.OTyped \_ => Outcome.OFailed (text ("unreachable")) | Outcome.OCovered \_ => Outcome.OFailed (text ("unreachable"))) else Outcome.OFailed (cat (what133) (cat (text (" takes ")) (cat (decimal (tyChainLength (tyFirst (targetTy)))) (cat (text (" operand(s), received ")) (decimal (exprChainLength (operands))))))))) else Outcome.OFailed (text ("only a function value can be applied"))) | Outcome.OFailed problem => Outcome.OFailed (problem) | Outcome.OCovered \_ => Outcome.OFailed (text ("unreachable")) | Outcome.OFine => Outcome.OFailed (text ("unreachable"))) else Outcome.OFailed (text ("unreachable"))) | Expr.EPrim operation operands => (if (Nat.beq (mode) (0)) then (match walk (program) (operands) (scope) (1) (Ty.TNil) (Ty.TNil) (text ("")) (0) (([] : List (Shape))) with | Outcome.OTyped types => (match primType (operation) (types) with | Except.ok result => Outcome.OTyped (result) | Except.error problem => Outcome.OFailed (problem)) | Outcome.OFailed problem => Outcome.OFailed (problem) | Outcome.OCovered \_ => Outcome.OFailed (text ("unreachable")) | Outcome.OFine => Outcome.OFailed (text ("unreachable"))) else Outcome.OFailed (text ("unreachable"))) | Expr.EFirst value => (if (Nat.beq (mode) (0)) then (match walk (program) (value) (scope) (0) (Ty.TNil) (Ty.TNil) (text ("")) (0) (([] : List (Shape))) with | Outcome.OTyped valueTy => (if (Nat.beq (tyTag (valueTy)) (11)) then Outcome.OTyped (tyFirst (valueTy)) else Outcome.OFailed (cat (text ("`first` of ")) (tyDebug (valueTy)))) | Outcome.OFailed problem => Outcome.OFailed (problem) | Outcome.OCovered \_ => Outcome.OFailed (text ("unreachable")) | Outcome.OFine => Outcome.OFailed (text ("unreachable"))) else Outcome.OFailed (text ("unreachable"))) | Expr.ESecond value => (if (Nat.beq (mode) (0)) then (match walk (program) (value) (scope) (0) (Ty.TNil) (Ty.TNil) (text ("")) (0) (([] : List (Shape))) with | Outcome.OTyped valueTy => (if (Nat.beq (tyTag (valueTy)) (11)) then Outcome.OTyped (tySecond (valueTy)) else Outcome.OFailed (cat (text ("`second` of ")) (tyDebug (valueTy)))) | Outcome.OFailed problem => Outcome.OFailed (problem) | Outcome.OCovered \_ => Outcome.OFailed (text ("unreachable")) | Outcome.OFine => Outcome.OFailed (text ("unreachable"))) else Outcome.OFailed (text ("unreachable"))) | Expr.EField value index => (if (Nat.beq (mode) (0)) then (match walk (program) (value) (scope) (0) (Ty.TNil) (Ty.TNil) (text ("")) (0) (([] : List (Shape))) with | Outcome.OTyped valueTy => (if (Nat.beq (tyTag (valueTy)) (12)) then (let adt : Nat := tyAdtIndex (valueTy); (match adtAt (program) (adt) with | Option.none => Outcome.OFailed (undeclaredAdt (adt)) | Option.some constructors => (if (Nat.beq (tyChainLength (constructors)) (1)) then (match tyChainAt (constructors) (0) with | Option.some only => (match tyChainAt (only) (index) with | Option.some found => Outcome.OTyped (found) | Option.none => Outcome.OFailed (cat (text ("ADT ")) (cat (decimal (adt)) (cat (text (" has no field ")) (decimal (index)))))) | Option.none => Outcome.OFailed (text ("unreachable"))) else Outcome.OFailed (cat (text ("`field` requires an ADT with exactly one constructor; ADT ")) (cat (decimal (adt)) (cat (text (" has ")) (decimal (tyChainLength (constructors))))))))) else Outcome.OFailed (text ("`field` requires an ADT value"))) | Outcome.OFailed problem => Outcome.OFailed (problem) | Outcome.OCovered \_ => Outcome.OFailed (text ("unreachable")) | Outcome.OFine => Outcome.OFailed (text ("unreachable"))) else Outcome.OFailed (text ("unreachable"))) | Expr.ENil => (if (Nat.beq (mode) (1)) then Outcome.OTyped (Ty.TNil) else (if (Nat.beq (mode) (2)) then Outcome.OFine else (if (Nat.beq (mode) (3)) then Outcome.OTyped (expected) else (if (Nat.beq (mode) (4)) then Outcome.OCovered (covered) else Outcome.OFailed (text ("unreachable")))))) | Expr.ECons head tail => (if (Nat.beq (mode) (1)) then (match walk (program) (head) (scope) (0) (Ty.TNil) (Ty.TNil) (text ("")) (0) (([] : List (Shape))) with | Outcome.OTyped one => (match walk (program) (tail) (scope) (1) (Ty.TNil) (Ty.TNil) (text ("")) (0) (([] : List (Shape))) with | Outcome.OTyped rest => Outcome.OTyped (consTy (one) (rest)) | Outcome.OFailed problem => Outcome.OFailed (problem) | Outcome.OCovered \_ => Outcome.OFailed (text ("unreachable")) | Outcome.OFine => Outcome.OFailed (text ("unreachable"))) | Outcome.OFailed problem => Outcome.OFailed (problem) | Outcome.OCovered \_ => Outcome.OFailed (text ("unreachable")) | Outcome.OFine => Outcome.OFailed (text ("unreachable"))) else (if (Nat.beq (mode) (2)) then (if isNilTy (expected) then Outcome.OFine else (match walk (program) (head) (scope) (0) (Ty.TNil) (Ty.TNil) (text ("")) (0) (([] : List (Shape))) with | Outcome.OTyped actual => (match expectTy (actual) (tyFirst (expected)) (cat (what) (cat (text (" operand ")) (decimal (position)))) with | Except.ok \_ => walk (program) (tail) (scope) (2) (tySecond (expected)) (Ty.TNil) (what) ((position + 1)) (([] : List (Shape))) | Except.error problem => Outcome.OFailed (problem)) | Outcome.OFailed problem => Outcome.OFailed (problem) | Outcome.OCovered \_ => Outcome.OFailed (text ("unreachable")) | Outcome.OFine => Outcome.OFailed (text ("unreachable")))) else (if (Nat.beq (mode) (3)) then (if isNilTy (expected) then Outcome.OTyped (Ty.TNil) else (match walk (program) (head) (scope) (0) (Ty.TNil) (Ty.TNil) (text ("")) (0) (([] : List (Shape))) with | Outcome.OTyped actual => (match expectTy (actual) (tyFirst (expected)) (cat (what) (cat (text (" operand ")) (decimal (position)))) with | Except.ok \_ => walk (program) (tail) (scope) (3) (tySecond (expected)) (Ty.TNil) (what) ((position + 1)) (([] : List (Shape))) | Except.error problem => Outcome.OFailed (problem)) | Outcome.OFailed problem => Outcome.OFailed (problem) | Outcome.OCovered \_ => Outcome.OFailed (text ("unreachable")) | Outcome.OFine => Outcome.OFailed (text ("unreachable")))) else (if (Nat.beq (mode) (4)) then (match walk (program) (head) (scope) (5) (expected) (subject) (text ("")) (0) (covered) with | Outcome.OCovered updated => walk (program) (tail) (scope) (4) (expected) (subject) (text ("")) (0) (updated) | Outcome.OFailed problem => Outcome.OFailed (problem) | Outcome.OTyped \_ => Outcome.OFailed (text ("unreachable")) | Outcome.OFine => Outcome.OFailed (text ("unreachable"))) else Outcome.OFailed (text ("unreachable")))))) | Expr.EArm shape binders body => (if (Nat.beq (mode) (5)) then (match shapeFields (program) (shape) (subject) with | Except.ok fields => (let named : Nat := listLength (Nat) (binders); (let bound : Nat := tyChainLength (fields); (if (Nat.beq (named) (bound)) then (if hasRepeat (binders) then Outcome.OFailed (cat (text ("shape ")) (cat (shapeDebug (shape)) (text (" binds the same name twice")))) else (if shapeIn (covered) (shape) then Outcome.OFailed (cat (text ("the arm for ")) (cat (shapeDebug (shape)) (text (" is unreachable")))) else (match walk (program) (body) (bindAll (binders) (fields) (scope)) (0) (Ty.TNil) (Ty.TNil) (text ("")) (0) (([] : List (Shape))) with | Outcome.OTyped bodyTy => (match expectTy (bodyTy) (expected) (text ("an arm")) with | Except.ok \_ => Outcome.OCovered (consShape (shape) (covered)) | Except.error problem => Outcome.OFailed (problem)) | Outcome.OFailed problem => Outcome.OFailed (problem) | Outcome.OCovered \_ => Outcome.OFailed (text ("unreachable")) | Outcome.OFine => Outcome.OFailed (text ("unreachable"))))) else Outcome.OFailed (cat (text ("shape ")) (cat (shapeDebug (shape)) (cat (text (" binds ")) (cat (decimal (bound)) (cat (text (" value(s), the arm names ")) (decimal (named)))))))))) | Except.error problem => Outcome.OFailed (problem)) else Outcome.OFailed (text ("unreachable"))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{checkCtors}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(program : Program) (constructors : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Unit)}.\par
+\noindent Definition: \texttt{(match constructors with | Ty.TUnit => Except.ok (()) | Ty.TBool => Except.ok (()) | Ty.TNat => Except.ok (()) | Ty.TInt => Except.ok (()) | Ty.TFixed \_ => Except.ok (()) | Ty.TString => Except.ok (()) | Ty.TBytes => Except.ok (()) | Ty.TOrdering => Except.ok (()) | Ty.TOption \_ => Except.ok (()) | Ty.TResult \_ \_ => Except.ok (()) | Ty.TList \_ => Except.ok (()) | Ty.TPair \_ \_ => Except.ok (()) | Ty.TAdt \_ => Except.ok (()) | Ty.TFn \_ \_ => Except.ok (()) | Ty.TNil => Except.ok (()) | Ty.TCons head tail => (match tyOk (program) (head) with | Except.ok \_ => checkCtors (program) (tail) | Except.error problem => Except.error (problem)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{checkAdts}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(program : Program) (adts : Ty) (index : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Unit)}.\par
+\noindent Definition: \texttt{(match adts with | Ty.TUnit => Except.ok (()) | Ty.TBool => Except.ok (()) | Ty.TNat => Except.ok (()) | Ty.TInt => Except.ok (()) | Ty.TFixed \_ => Except.ok (()) | Ty.TString => Except.ok (()) | Ty.TBytes => Except.ok (()) | Ty.TOrdering => Except.ok (()) | Ty.TOption \_ => Except.ok (()) | Ty.TResult \_ \_ => Except.ok (()) | Ty.TList \_ => Except.ok (()) | Ty.TPair \_ \_ => Except.ok (()) | Ty.TAdt \_ => Except.ok (()) | Ty.TFn \_ \_ => Except.ok (()) | Ty.TNil => Except.ok (()) | Ty.TCons declaration tail => (if isNilTy (declaration) then Except.error (cat (text ("ADT ")) (cat (decimal (index)) (text (" has no constructor")))) else (match checkCtors (program) (declaration) with | Except.ok \_ => checkAdts (program) (tail) ((index + 1)) | Except.error problem => Except.error (cat (text ("ADT ")) (cat (decimal (index)) (cat (text (": ")) (problem)))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{functionNames}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(program : Program) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (Nat)}.\par
+\noindent Definition: \texttt{(match listAt (List (Nat)) ((program).parameters) (position) with | Option.some found => found | Option.none => ([] : List (Nat)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{functionTypesOr}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(program : Program) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Ty}.\par
+\noindent Definition: \texttt{(match functionTypes (program) (position) with | Option.some found => found | Option.none => Ty.TNil)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{checkFunction}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(program : Program) (body : Expr) (index : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Unit)}.\par
+\noindent Definition: \texttt{(let names : List (Nat) := functionNames (program) (index); (let types : Ty := functionTypesOr (program) (index); (let result : Ty := functionResult (program) (index); (let named : Nat := listLength (Nat) (names); (let typed : Nat := tyChainLength (types); (if (Nat.beq (named) (typed)) then (if hasRepeat (names) then Except.error (cat (text ("function ")) (cat (decimal (index)) (cat (text (": ")) (text ("a parameter name repeats"))))) else (match tyOk (program) (types) with | Except.error problem => Except.error (cat (text ("function ")) (cat (decimal (index)) (cat (text (": ")) (problem)))) | Except.ok \_ => (match tyOk (program) (result) with | Except.error problem => Except.error (cat (text ("function ")) (cat (decimal (index)) (cat (text (": ")) (problem)))) | Except.ok \_ => (match walk (program) (body) (bindAll (names) (types) (([] : List ((Prod (Nat) (Ty)))))) (0) (Ty.TNil) (Ty.TNil) (text ("")) (0) (([] : List (Shape))) with | Outcome.OFailed problem => Except.error (cat (text ("function ")) (cat (decimal (index)) (cat (text (": ")) (problem)))) | Outcome.OFine => Except.error (text ("unreachable")) | Outcome.OCovered \_ => Except.error (text ("unreachable")) | Outcome.OTyped bodyTy => (match expectTy (bodyTy) (result) (text ("the body")) with | Except.error problem => Except.error (cat (text ("function ")) (cat (decimal (index)) (cat (text (": ")) (problem)))) | Except.ok \_ => Except.ok (())))))) else Except.error (cat (text ("function ")) (cat (decimal (index)) (cat (text (": ")) (cat (decimal (named)) (cat (text (" parameter names for ")) (cat (decimal (typed)) (text (" parameter types"))))))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{checkFunctions}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(program : Program) (bodies : Expr) (index : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Unit)}.\par
+\noindent Definition: \texttt{(match bodies with | Expr.ENil => Except.ok (()) | Expr.ECons head tail => (match checkFunction (program) (head) (index) with | Except.ok \_ => checkFunctions (program) (tail) ((index + 1)) | Except.error problem => Except.error (problem)) | Expr.EValue \_ \_ => Except.ok (()) | Expr.EVar \_ => Except.ok (()) | Expr.ELet \_ \_ \_ \_ => Except.ok (()) | Expr.ECond \_ \_ \_ => Except.ok (()) | Expr.EMatch \_ \_ \_ => Except.ok (()) | Expr.EBuild \_ \_ \_ => Except.ok (()) | Expr.ECall \_ \_ => Except.ok (()) | Expr.EClosure \_ \_ => Except.ok (()) | Expr.EApply \_ \_ => Except.ok (()) | Expr.EPrim \_ \_ => Except.ok (()) | Expr.EFirst \_ => Except.ok (()) | Expr.ESecond \_ => Except.ok (()) | Expr.EField \_ \_ => Except.ok (()) | Expr.EArm \_ \_ \_ => Except.ok (()))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{checkProgram}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(spec : ByteArray) (adts : Ty) (parameters : List (List (Nat))) (types : Ty) (results : Ty) (bodies : Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{Except (ByteArray) (Unit)}.\par
+\noindent Definition: \texttt{(let program : Program := (\{ spec := spec, adts := adts, parameters := parameters, types := types, results := results, bodies := bodies \} : Program); (if (LexLeanRuntime.equal ((program).spec) (text ("lexlean/target-program/1")) : Bool) then (match checkAdts (program) ((program).adts) (0) with | Except.ok \_ => checkFunctions (program) ((program).bodies) (0) | Except.error problem => Except.error (problem)) else Except.error (cat (text ("target program has spec ")) (quoted ((program).spec)))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{checkArguments}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(spec : ByteArray) (adts : Ty) (parameters : List (List (Nat))) (types : Ty) (results : Ty) (bodies : Expr) (entry : Nat) (arguments : Value)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{Except (ByteArray) (Unit)}.\par
+\noindent Definition: \texttt{(let program : Program := (\{ spec := spec, adts := adts, parameters := parameters, types := types, results := results, bodies := bodies \} : Program); (match functionTypes (program) (entry) with | Option.none => Except.error (undeclaredFunction (entry)) | Option.some declared => (let yes137 : Except (ByteArray) (Unit) := valueOk (program) (arguments) (declared) (2); (let no138 : Except (ByteArray) (Unit) := Except.error (cat (text ("function ")) (cat (decimal (entry)) (cat (text (" takes ")) (cat (decimal (tyChainLength (declared))) (cat (text (" argument(s), received ")) (decimal (valueChainLength (arguments)))))))); (if (Nat.beq (valueChainLength (arguments)) (tyChainLength (declared))) then yes137 else no138)))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\end{document}

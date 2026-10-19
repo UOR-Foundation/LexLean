@@ -537,37 +537,63 @@ pub fn f16(v0: (u64, u64), v1: (u64, u64)) -> Result<u64, (bool, bool)> {
     }
 }
 
-pub fn f17(v0: Fn1, v1: Option<Adt0>, v2: List<u64>) -> Option<Adt0> {
-    let m38 = v2;
-    match m38.uncons() {
-        None => {
-            v1
-        }
-        Some((v3, v4)) => {
-            f17(v0.clone(), {
-                let c39: Fn1 = v0;
-                c39.apply(v1, v3)
-            }, v4)
+pub fn f17(v0: Fn1, p41: Option<Adt0>, p42: List<u64>) -> Option<Adt0> {
+    let m40 = (p41, p42);
+    {
+        let mut m40 = m40;
+        loop {
+            let step = {
+                let (v1, v2) = m40;
+                let m38 = v2;
+                match m38.uncons() {
+                    None => {
+                        Err::<(Option<Adt0>, List<u64>), Option<Adt0>>(v1)
+                    }
+                    Some((v3, v4)) => {
+                        Ok::<(Option<Adt0>, List<u64>), Option<Adt0>>(({
+                            let c39: Fn1 = v0.clone();
+                            c39.apply(v1, v3)
+                        }, v4))
+                    }
+                }
+            };
+            match step {
+                Ok(next) => { m40 = next; }
+                Err(done) => break done,
+            }
         }
     }
 }
 
-pub fn f18(v0: Fn0, v1: u64, v2: (u64, u64)) -> ((u64, u64), bool) {
-    let m40 = v1;
-    if m40 == 0 {
-        (v2, false)
-    } else {
-        let v3 = m40 - 1;
-        let m42 = {
-            let c41: Fn0 = v0.clone();
-            c41.apply(v2)
-        };
-        match m42 {
-            None => {
-                (v2, true)
-            }
-            Some(v4) => {
-                f18(v0, v3, v4)
+pub fn f18(v0: Fn0, p47: u64, p48: (u64, u64)) -> ((u64, u64), bool) {
+    let m46 = (p47, p48);
+    {
+        let mut m46 = m46;
+        loop {
+            let step = {
+                let (v1, v2) = m46;
+                let m43 = v1;
+                if m43 == 0 {
+                    Err::<(u64, (u64, u64)), ((u64, u64), bool)>((v2, false))
+                } else {
+                    let v3 = m43 - 1;
+                    let m45 = {
+                        let c44: Fn0 = v0.clone();
+                        c44.apply(v2)
+                    };
+                    match m45 {
+                        None => {
+                            Err::<(u64, (u64, u64)), ((u64, u64), bool)>((v2, true))
+                        }
+                        Some(v4) => {
+                            Ok::<(u64, (u64, u64)), ((u64, u64), bool)>((v3, v4))
+                        }
+                    }
+                }
+            };
+            match step {
+                Ok(next) => { m46 = next; }
+                Err(done) => break done,
             }
         }
     }

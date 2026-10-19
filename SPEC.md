@@ -4068,13 +4068,32 @@ production stage. A `Nat` or `Int` value crossing a root boundary is
 represented in the target width, so a caller cannot supply a value outside it,
 and every value the realization computes outside it is the `overflow`
 failure, never a wrapped or truncated value. A primitive realized by a
-runtime item is a loop and carries no recursion; a primitive realized by a
+runtime item is a loop and carries no recursion. A primitive realized by a
 library template (§17.14: the map, set, fold, iteration, and graph
-primitives) carries it, because a template calls itself and so the depth of
-its calls is bounded only by its input. The registry states exactly that, and
-`conformance_tc_06` derives it from the realization table rather than
-trusting the row. A root whose closure applies such a primitive admits
-`recursion`, as does a root with a recursive definition.
+primitives) carries the recursion of the template's rendering: a template
+whose function calls itself only in tail position is rendered as a loop
+(§17.16) and uses no stack for the call, so the folds, the iterations, and the
+lookups (`list_fold`, `map_fold`, `set_fold`, `iterate`, `iterate_until`,
+`map_lookup`, `map_contains`, `set_contains`, `graph_successors`) carry none,
+while a template with a call whose result is used (an insertion, a removal, a
+union, an intersection, a difference, the key and value lists, and the graph
+searches) is rendered as a call and carries it, because the depth of its calls
+is bounded only by its input. The registry states exactly that, and
+`conformance_tc_06` derives it from the realization table and `RB-14` from the
+rendering, rather than trusting the row. A function all of whose self calls are
+tail calls is rendered as a loop (§17.16) and does not recurse, whether it is a
+template or a definition of the project, so the registry's `recursion` for a
+recursive definition (`declaration.definition.recursive`) means *recursion
+unless the lowering makes every such definition a loop*. Eligibility therefore
+lowers the closure of a root whose walk found the effect, with the report the
+walk produced, and requires `recursion` of the root only if the lowered program
+recurses: some function of it is reachable from itself through calls and
+closures other than the self tail calls rendered as loops
+(`realization::program_recurses`). A root that does not lower there keeps the
+registry's answer, which never admits less. A root whose closure applies a
+primitive that carries `recursion`, or has a definition that recurses by a call
+that is not a tail call or that is mutual, admits it; a declaration may admit
+more than the analysis requires, as for every effect.
 
 The analysis is a conservative over-approximation of effects: it may require a
 root to admit an effect its realization never exhibits, and it never admits a
@@ -4681,6 +4700,11 @@ and no call to it propagates. The length of a sequence cannot exceed
    own origin, whose width (a fixed-width runtime function's or literal's)
    differs from its origin's, or whose origin the program does not use; and
    a type the crate names whose row names no element the program uses. The
+   pair and result constructs that a loop's state and break carry (`type:pair`,
+   `type:result`, `destructure:pair`, `construct:pair`, `construct:ok`,
+   `construct:err`) name `expr:call` among their origins, so they are admitted
+   in any program that calls, not only where a self tail call is rendered as
+   a loop: the rule is coarser there by that much. The
    origin is derived from the term being lowered, independently of the
    construct chosen for it, so a call of `nat_mul` lowered from a `nat_add`
    term, or a `u16` addition lowered from a `u8` one, is refused even in a
@@ -4830,7 +4854,7 @@ input-dependent depth fits, and exhausting a stack aborts the process.
 `language/semantics-1.2.toml` records the SHA-256 of each profile's runtime
 (`rust_runtime_core`, `rust_runtime_std`) and the digest of the renderer's
 sources (`rust_renderer`: one §21.1 frame per file of
-`rust::RENDERER_FILES`, the eight files of `calculus/rust/`, labeled by its
+`rust::RENDERER_FILES`, the nine files of `calculus/rust/`, labeled by its
 name, under the domain `lexlean-rust-renderer-v1`). Unit tests of the runtime
 and the renderer and the conformance suite check both records, so neither
 the runtime nor any rendering can change without changing LexLean's
@@ -5046,6 +5070,19 @@ recorded in (`record_source`):
 A derivation of certificate B is built without recursion in the number of a
 match's arms, so a limit that allows thousands of arms cannot overflow the
 stack (`conformance_sp_08` derives 9000 on a 2 MiB stack).
+
+The lowered program is bounded in depth too, by a limit of the implementation
+and not a rule of the language. The program is written as canonical JSON and
+read back (`Program::to_file_bytes`) by code that recurses with its nesting, so
+a program whose JSON nests deeper than 512 arrays and objects (about 250 nested
+expressions, measured on the serialized text) is `LLS8002` in phase lowering,
+naming the depth it has, before anything is generated from it (the negative
+fixture `lowering-depth-limit`, a root calling a chain of 509 generic
+definitions whose instances nest a pair one level deeper each, is refused at
+515). The reason is the stack that round trip runs on: a debug build takes about
+a quarter of 2 MiB at the limit, which a test builds and checks. Raising it is a
+change to the constant `PROGRAM_JSON_DEPTH` and to that test, and carries no
+promise of a later lift.
 
 The roots of a project are bounded together, in two places. A closure member
 of the eligibility report (§17.13, a build artifact) records its shortest call
@@ -5547,10 +5584,23 @@ of a next state rebinds the state to that value and evaluates the loop again, an
 breaks with a value and has no labels. A body whose value is neither is stuck,
 and the loop recurses through `eval` with the fuel the body left, so a loop that
 does not end within the fuel is exhausted, never a wrong value. The renderer
-prints a loop as `{ let mut s = s; loop { match { body } { Ok(next) => { s = next; }
-Err(done) => break done, } } }`; the validator lets the body move the state, which
+prints a loop as `{ let mut s = s; loop { let step = { body }; match step { Ok(next) =>
+{ s = next; } Err(done) => break done, } } }`, binding the body's value first because
+Rust's lint gate refuses a block with bindings as a scrutinee; the validator lets the body move the state, which
 the loop's own binding holds, and nothing else, because the body runs again after
-every `Ok`. No lowering produces a loop yet. Every runtime
+every `Ok`. The lowering produces a loop for a function every self call of
+which is a tail call and some self call of which changes a parameter the body
+reads (`calculus::rust::loops` decides it on the calculus, and the lowering
+fails when it disagrees; `RB-14`): the parameters the self calls change are the
+state, a tuple nested to the right when there are several and the parameter
+itself when there is one, held in a binding the function makes from them
+(the changed parameters are renamed in the signature, and the body begins by
+binding the original names from it); each tail self call is `Ok` of the next state and
+every other tail value is `Err` of the value, so the loop breaks with the value
+the function returns; a parameter every self call passes on as it got it stays
+a parameter, which the body clones. A function with a self call that is not a
+tail call, or with a parameter nothing reads (which the loop's state could
+not carry), is rendered as a call. Every runtime
 item (`rust::runtime::Item`) is declared as the calculus
 primitive it realizes on the same operands (the successor as `nat_add` with
 one), fallible exactly when the renderer types it `R<T>`, and present in
@@ -5767,6 +5817,33 @@ definitional equality, the statement the text certificate stated.
 reads each record back, verifies the production example under the pinned Lean,
 and plants a wrong lemma application, a changed statement, a forged program
 literal, an added axiom, and a row whose policy lies, each refused.
+
+**A function rendered as a loop** (`SP-20`). The renderer writes a function whose
+self calls are all tail calls as a loop (§17.16), so the crate no longer holds
+the recursive body that the calculus function corresponds to. `FunOK` is
+therefore the disjunction of two statements: `FunOK0`, the one above, and
+`FunLoop`, that the crate's body is the loop form `loopOf` of an ordinary
+recursive body, with the Boolean checks of `loopCheckOf` (the renamed
+parameters and the kept ones are distinct, the originals of the changed
+parameters are none of the kept ones, the kept ones are locals, and the loop
+body mentions no renamed parameter) closed by evaluation, together with the
+`Corr` derivation for that recursive body. The recursive body, how each
+parameter is carried (changed, kept, or dropped), the state and result types,
+and the numbers of the holder and of the renamed parameters are the witnesses
+of `FunLoop`. `funSem_loop` proves the simulation of such a function from the
+simulation of the recursive body, the iteration of the loop on the iteration
+of the calls, and `funSem_of` takes the second disjunct to it; `Corr`, its
+recursor, and `sound` are untouched. The aligner recovers the witnesses by
+inverting the rendering of loops, which reads the holder bound to the state,
+the destructuring that begins the loop body, the renamed parameters, and the
+`Ok` and `Err` wraps of the tails, and then requires the library's form of the
+recovered body, transliterated, to be exactly the crate's function: a loop that
+is not in the image of the rendering is refused with *Certificate B rejected*
+(`LLV7015`) and the reason, not aligned by guess. Two things of the recursive
+body leave no trace in the loop form and are chosen: a kept parameter is read
+by `Clone`, which the library accepts as it accepts every read, and the
+argument of a dropped parameter is recovered only when it is a temporary the
+block binds.
 
 **No Lean text template in the production compiler.** The staged audit module
 is an auxiliary module of typed commands (`#print axioms`, `#print "marker"`,
@@ -7317,6 +7394,17 @@ the host that wrote it. It is evidence at level `build` for the stacks the
 suite gives, and it is not a stack bound for any program, input, or host: a
 package states `recursion` and no more (§17.16), and the host that runs it
 still gives the call a stack its depth fits.
+
+The fourth component is the target calculus's checker (§17.14, step 4 of issue 92), the module `CalculusCheck` (`BS-04`), with two production roots for `rust-std`:
+
+| Root | Oracle |
+| --- | --- |
+| `checkProgram (spec : Bytes) (adts : Ty) (parameters : List (List Nat)) (types : Ty) (results : Ty) (bodies : Expr) : Result Unit Bytes` | `calculus::check::check` |
+| `checkArguments (…the same six…, entry : Nat) (arguments : Value) : Result Unit Bytes` | `calculus::check::check_arguments` |
+
+The roots take a program as calculus data and not as its canonical JSON: reading a program (`Program::parse`, `canonical`, `load`) belongs to the front end (step 7 of the plan) and is not part of the row. `Ty`, `Value`, and `Expr` are three inductives that mirror `Ty`, `Value`, and `Expr` of `calculus/mod.rs`, constructor for constructor and in order, with `Shape`, `Prim`, `IntKind`, and the ordering value; a list of a recursive type is a *chain* of the type's own `Nil` and `Cons` constructors (the `Fn` parameters and the constructors, fields, and parameter types of a declaration are chains of `Ty`; a literal's items and fields chains of `Value`; operands, captures, and arms chains of `Expr`, whose `Arm` is a constructor of it). The chain is the list: `adts` is the chain of the declarations, each the chain of its constructors, each the chain of its field types; `types` the chain of the functions' parameter-type chains, `results` the chain of their result types, `bodies` the chain of their bodies, and `parameters` their parameter names, a `List (List Nat)`. A result is `Result.ok ()` or `Result.error` of the oracle's reason as UTF-8 bytes. The chains are not a style: certificate A (§17.17) cannot take as a root parameter, nor build in a definition, a `List` of a recursive type, and its commands cut a nested recursive group's rows in a large closure (issue 208); the case therefore decodes the arguments of every vector back to the program the oracle read (`list ↔ chain`, on the 175 committed programs and on every vector) and compares it with it. The oracle's reasons are reproduced to the byte, including the `{:?}` spelling of types, shapes, primitives, and literals, and the base-ten spelling of an index, a count, and an integer bound by decimal comparison; the one part they do not reproduce is Rust's `Debug` for a `str`, which escapes by the Unicode tables of `char::is_printable` and `Grapheme_Extend`: a string literal spelled in a reason is escaped as Rust escapes ASCII and `U+0080`..`U+009F` and copied for every other scalar, so a reason that spells a scalar beyond `U+009F` as `\u{…}` (such as `U+00A0` or a combining mark) is outside the claim, and the corpora leave those runs out (the fixed point, step 7, replaces the oracle's escaping by a closed escaping on both sides).
+
+`BS-04` holds both roots to the oracle. The counts here are the case's own report at the change's head on its base (b5871e8b9), and the committed corpus grows with the repository. On every host the rendered `rust-std` packages of both roots, compiled by the pinned rustc, run the 1,756 vectors of `checkProgram` (1,483 refused) and the 303 of `checkArguments` (129 refused): the 175 distinct programs committed in the repository, each read by the oracle's reader (the fixtures of `compiler/fixtures/`, the programs of the committed Rust packages, and the lowered programs a verification record preserves, among them the two roots' own), the refusals of `TC-02` as the edits that test makes, one program for each rule a planted defect removes, and the literal, primitive, and shape corpora at a fixed seed; the arguments are those of the committed fixtures, as stated and mutated. On the normative host the lowered programs of both roots under the calculus evaluator (§17.14) agree on the same vectors and on 4,722 seeded programs (3,933 refused) and 403 seeded argument runs (202 refused), mutations at the level of the data (a retyped operand, a dropped, duplicated, or reshaped arm, a changed binder, an undeclared function or declaration, a closure over every parameter, an operand dropped or added, each primitive at wrong operand types, a literal respelled or out of range, a specification changed), the rendered packages agree on 9,296 more under rustc, in harnesses of at most 1,000 runs, and twelve planted defects in the source are each detected by the same differential. Under the pinned Lean, the production export (§24.7) certifies both roots beside those of the other components under `tests/production-export/bootstrap/`.
 
 ## 18. Lean backend
 
@@ -10039,6 +10127,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RB-11` | `rust-backend` | Every lint a package allows states its Clippy group, none is in the `correctness` group, the module states the same as a theorem over the same list, which the reader checks by its shape and the module's project type-checks (`verify` replays its proof, this row does not), and the table of SPEC.md §17.16 equals the module's rows; an allowed lint in `correctness`, a specified row the module lacks, a module row the specification lacks, and a module without the theorem are refused. | §17.16 |
 | `RB-12` | `rust-backend` | The language-1.2 compiler-semantics ID covers the package scaffold: changing a lint row, the edition, or a gate of a copy of the embedded tree changes it, writing the module in its data form or reformatting its notation does not, and the module is outside the identities of languages 1.0 and 1.1. | §17.16, §21.2 |
 | `RB-13` | `rust-backend` | A package states the effects of its realization: `package.json` and `provenance.json` record them, ascending and registered, the production registry says that exhausting the stack aborts the process, and an unregistered or unordered list, or one that states allocation on `rust-core`, is refused. | §17.13, §17.16 |
+| `RB-14` | `rust-backend` | A library template whose self calls are all tail calls is rendered as a loop over its accumulator that breaks with its result, so that the production rows of the primitives it realizes carry no `recursion`, while a template with a call that is not a tail call is rendered as a call and keeps the effect; a rendering that states a self call where a loop is possible, and a row whose `recursion` differs from its rendering, are refused. | §17.13, §17.14, §17.16 |
 | `GN-01` | `gnaf` | Every committed GNAF request and fixture is canonical, validates against the GNAF schemas whose calculus definitions are the target program schema's, and states its components' universe identity; a malformed request, an invalid reference, plan, or realized program, a reference without a value on a domain argument, or a wrong universe identity fails closed with LLB6006, and a machine or request beyond the host's capacity fails closed with LLS8002. | §17.15, §26.3 |
 | `GN-02` | `gnaf` | The GNAF model is a kernel-checked LexLean definition, Lean's kernel reduces the universe, the system statuses, and the answer of every committed request to what the host transcription computes, and a wrong answer, an answer computed from a universe with a system omitted, a tie with a member dropped, and a universe with a system omitted are rejected by Lean. | §17.15 |
 | `GN-03` | `gnaf` | Candidate membership is the grammar's expansion, which a kernel-checked theorem proves equal to the grammar's well-formed selectors for every grammar, independent of evaluation and fixed by a universe identity before any optimizer, and optimizer-defined, discovered, cached, and internal-plan universes and missing, self-referential, or optimizer-citing completeness evidence are rejected. | §17.15 |
@@ -10077,6 +10166,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SP-17` | `preservation` | No Lean source text template remains in the production compiler: a lexer-level scan of the Rust sources under crates/lexlean/src/production/ and of the probe and audit-module part of crates/lexlean/src/backend/lean.rs reads every string literal outside test code and finds none that is Lean syntax, which is a literal holding a Lean symbol (`:=`, `=>`, `→`, `∀`, `∃`, `⟨`, `⟩`, `(.`, `«`, `#print`, `#check`, `#eval`, `@[`, a `fun` binder), a Lean command line (`import`, `namespace`, `set_option`, `universe`, `open`), or a declaration (`theorem`, `def`, `example`, `instance`, `structure`, `inductive`, `abbrev`) with a type or a body, apart from a short allow-list of the printouts of kernel terms that developers read and the closed commands of the auxiliary module renderer; the staged audit module is an auxiliary module of typed commands that the backend renders; and a planted template in a production source, in the auxiliary module part of the backend, and in a module the scan sees as test code is each reported, the last not. | §17.17, §22.2 |
 | `SP-18` | `preservation` | The declared Rust machine states a machine primitive as a callee and the overflow value as a literal: RustSyntax declares eight machine primitives (checked add, subtract, multiply, quotient, negation, shift left, and shift right of a width, and try-from to a width), the callee that names one, and the literal Overflow, and RustSemantics evaluates a call of a machine callee as the calculus primitive of the same name, with the Option value the calculus states, stuck on an operand of another width (the amount of a shift excepted), and the literal Overflow as the unit value that an Err(Overflow) carries, which the pinned Lean evaluates on the boundary values of the widths and refuses to evaluate to a wrong value. | §17.14, §17.16 |
 | `SP-19` | `preservation` | The declared Rust machine states a loop over a state with a break value: RustSyntax declares the expression Loop of a state binding and a body block, and RustSemantics evaluates it by running the body in the environment of the state, rebinding the state to the payload of an Ok result and running the loop again, ending with the payload of an Err result as the value of the loop, stuck on a body whose value is neither, and exhausted rather than wrong when the fuel runs out, which the pinned Lean evaluates on a countdown and refuses to evaluate to a wrong value. | §17.14, §17.16 |
+| `SP-20` | `preservation` | Certificate B certifies a function the renderer writes as a loop: the library's FunOK states a function either by the correspondence for the body the crate holds or by FunLoop, that the crate's body is the loop form of an ordinary recursive body (the library's loopOf, with its Boolean checks of the renamed parameters, the kept parameters, and the freshness of the renamed names decided by evaluation) together with the correspondence for that recursive body, which funSem_of turns into the simulation through funSem_loop with the correspondence, its recursor, and the soundness theorem unchanged, and the aligner recovers the recursive body by inverting the rendering of loops (the renamed parameters, the destructuring of the state, and the Ok and Err wraps), so that for every loop of every renderer fixture in each profile and of every production root of the committed examples in each of its targets the loop form of the recovered body, computed by the library's form transliterated, is the crate's function, certificate B of the fixtures rendered as loops compiles under the pinned Lean with exactly the axioms Classical.choice, Quot.sound, and propext, and a loop that is not the loop form of any recursive body is refused, whether its state has another type, its body does not take the state apart, an end is not an Err, a renamed parameter is read by the body, a pattern rebinds a kept parameter, or the state holds a parameter the function does not have. | §17.16, §17.17 |
 | `MD-01` | `models` | Language 1.2 artifact, contract, realization, evidence, and model declarations, the checked_apply term, the contract_violation type, and the less_than primitive belong to the closed lexlean/semantic-module/2 schema and its snapshot schema, are rejected under language 1.1 before either backend runs, and admit no member outside the closed schema, such as prompt text, a free-form description, or raw model configuration. | §17.12 |
 | `MD-02` | `models` | A model artifact is admitted only from a configured, content-addressed, confined project file whose SHA-256 and byte length equal its declaration and whose bytes decode under its declared closed schema to its declared type and role; a missing artifact or a digest or length mismatch fails with LLR3007, a schema, type, or role violation fails with LLR3008, and the generated Lean embeds the exact bytes with a kernel-checked theorem that the typed value is their decoding. | §17.12, §10.1, §26.3 |
 | `MD-03` | `models` | A contract names typed input, output, and optional state interfaces and prior proposition-valued predicates of exactly those interface signatures, and each runtime validator is an executable Boolean definition of the same signature linked to its predicate by a statement-exact soundness theorem and an optional completeness theorem that Lean restates against the fixed model semantics; any mismatch fails with LLT4006. | §17.12 |
@@ -10161,6 +10251,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `BS-01` | `bootstrap` | The axiom-output parser of SPEC.md §22.5 is language-1.2 source in the `bootstrap/` project: `parseAuditOutput` and the closed Lean-name check `isClosedLeanName` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle on the committed golden vectors and boundary edges; on the normative host, both roots' lowered programs under the calculus evaluator agree with the Rust oracle on every committed golden vector and a seeded corpus, the rendered packages under the pinned rustc agree with the oracle on the large seeded corpus of generated, wrapped, and mutated audit outputs and names with no disagreement, a planted defect in the source is detected, and the certified packages the production export publishes for the project are the committed ones. | §17.23, §22.5 |
 | `BS-02` | `bootstrap` | The preservation lexer and token audit of SPEC.md §17.17 are language-1.2 source in the `bootstrap/` project: `lex` and `auditTokens` of `TokenAudit` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle `production::preserve::{lex, audit_tokens}` on every lexeme, position, and rejection message for the first 1,500 characters of every module of the shipped preservation library and calculus modules, the number-lexing corpus, and every token-audit unit vector; on the normative host, both roots' lowered programs under the calculus evaluator agree with the Rust oracle on those vectors and a seeded corpus, the rendered packages under the pinned rustc agree with the oracle on the large seeded corpus of generated and mutated Lean texts with no disagreement, a planted defect in the source is detected, and the certified packages the production export publishes for the project are the committed ones. | §17.17, §17.23 |
 | `BS-03` | `bootstrap` | The primitive scanner of SPEC.md §12.2 is language-1.2 source in the `bootstrap/` project: `scanSource` and `rejectAtoms` of `PrimitiveScan` are production roots eligible for `rust-std` with exactly their declared effects; on every host of the matrix, both roots' rendered `rust-std` packages under that host's pinned rustc agree with the Rust oracle `source::scan::{scan, reject_forbidden_atoms}` on every atom with its class, text, and byte, line, and column spans and on every rejection with its code, message, span, and help, for the deterministic vectors (the oracle's unit inputs, the atom limit at N and N+1, atom lists with gaps, payload strings, and notation bodies), a 128-byte window and a 2,048-byte prefix of every committed `.lex.tex` source, and the whole of each such source up to 8,192 bytes (up to 1,024 bytes, one source in four, for `rejectAtoms`); on the normative host, both roots' lowered programs under the calculus evaluator agree with the oracle on the vectors and the 128-byte windows and on 80 seeded texts, the packages agree on 2,500 seeded texts, each of ten planted defects in the source is detected, and the certified packages the production export publishes for the project are the committed ones. | §12.2, §17.23 |
+| `BS-04` | `bootstrap` | The target calculus's checker of SPEC.md §17.14 (`lexlean::calculus::check`), for a program given as calculus data, each list of a recursive type carried as a chain of that type's own `Nil` and `Cons` constructors and decoded back to the program on every vector (reading a program from its canonical JSON is not part of this row), is language-1.2 source in the `bootstrap/` project: `checkProgram` and `checkArguments` of `CalculusCheck` are production roots eligible for `rust-std` with exactly their declared effects; on the normative host the lowered programs of both roots under the calculus evaluator agree with the Rust checker on acceptance and on the rejection message to the byte for every committed target program and the refusal edits of `TC-02` and for a seeded corpus of data-level mutations, and each planted defect in the source is detected; on every host the rendered `rust-std` packages of both roots under the pinned rustc agree with the Rust checker on the deterministic vectors, and on the normative host also on a larger seeded corpus with no disagreement; strings whose Rust `Debug` spelling escapes a non-ASCII scalar other than `U+0080`..`U+009F` are outside the claim; and the certified packages the production export publishes for the project are the committed ones. | §17.14, §17.23 |
 | `PK-01` | `packages` | A language-1.2 project that declares a source package by its identifier, version, kind `path`, and the member directory a `lexlean-workspace.toml` lists locks it by the tree digest of its manifest and source files, its manifest digest, its version, its module prefix, and its own packages, and the configuration and the lock read back to the bytes written; a project without a source package keeps its bytes, and a package of another kind, a source package in another language, a changed byte or version (LLC0105), an undeclared package (LLC0106), a module prefix claimed twice (LLC0107), a project or a package outside the workspace (LLC0108), a path that escapes it, and a symlink (LLS8001) are each refused with the named code. | §10.5, §11.1, §25.1 |
 | `PK-02` | `packages` | A module of a project imports only modules of its own project and modules of the packages the project declares, and a module of a package only modules of itself and of the packages its own manifest declares: a package module is a module of the importing project under its own module prefix, a module of a package the project does not declare fails with LLR3009, and an import cycle through a package fails with LLR3003. | §10.5, §15.1 |
 | `PK-03` | `packages` | An importing project builds and verifies under the pinned Lean offline, and its package modules are generated, elaborated, replayed with `leanchecker`, and audited for their exact axioms under the package's module prefix with the package as their origin in the records; the source ID of the project changes with the pins, and no file of the package is written by `fmt`, `build`, or `verify`. | §10.5, §21.3, §22 |
@@ -10171,7 +10262,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-03` | `language-models` | Text that is not valid UTF-8 is refused and never tokenized: an artifact whose bytes do not decode under the `utf8_lines` schema — invalid UTF-8, a CR, or a missing final LF — fails by its artifact rules before any byte is decoded, and a text offered to `encodeText` that is not valid UTF-8 is refused rather than transcoded. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 426.
+**Total required capability IDs:** 429.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

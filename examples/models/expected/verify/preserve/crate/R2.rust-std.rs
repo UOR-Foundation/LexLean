@@ -439,50 +439,63 @@ pub fn f8(v0: Adt1) -> u64 {
     }
 }
 
-pub fn f9(v0: Fn0, v1: (Option<(Adt1, i64)>, List<Adt1>), v2: List<i64>) -> (Option<(Adt1, i64)>, List<Adt1>) {
-    let m5 = v2;
-    match m5.uncons() {
-        None => {
-            v1
-        }
-        Some((v3, v4)) => {
-            f9(v0.clone(), {
-                let c6: Fn0 = v0;
-                c6.apply(v1, v3)
-            }, v4)
+pub fn f9(v0: Fn0, p8: (Option<(Adt1, i64)>, List<Adt1>), p9: List<i64>) -> (Option<(Adt1, i64)>, List<Adt1>) {
+    let m7 = (p8, p9);
+    {
+        let mut m7 = m7;
+        loop {
+            let step = {
+                let (v1, v2) = m7;
+                let m5 = v2;
+                match m5.uncons() {
+                    None => {
+                        Err::<((Option<(Adt1, i64)>, List<Adt1>), List<i64>), (Option<(Adt1, i64)>, List<Adt1>)>(v1)
+                    }
+                    Some((v3, v4)) => {
+                        Ok::<((Option<(Adt1, i64)>, List<Adt1>), List<i64>), (Option<(Adt1, i64)>, List<Adt1>)>(({
+                            let c6: Fn0 = v0.clone();
+                            c6.apply(v1, v3)
+                        }, v4))
+                    }
+                }
+            };
+            match step {
+                Ok(next) => { m7 = next; }
+                Err(done) => break done,
+            }
         }
     }
 }
 
 pub fn f10(v0: (Option<(Adt1, i64)>, List<Adt1>), v1: i64) -> (Option<(Adt1, i64)>, List<Adt1>) {
-    let m8 = {
-        let (_, h7) = v0.clone();
-        h7
+    let m11 = {
+        let (_, h10) = v0.clone();
+        h10
     };
-    match m8.uncons() {
+    match m11.uncons() {
         None => {
             v0
         }
         Some((v2, v3)) => {
             ({
-                let m10 = {
-                    let (h9, _) = v0;
-                    h9
+                let m13 = {
+                    let (h12, _) = v0;
+                    h12
                 };
-                match m10 {
+                match m13 {
                     None => {
                         Some((v2, v1))
                     }
                     Some(v4) => {
-                        let m14 = {
-                            let a12 = {
-                                let (_, h11) = v4.clone();
-                                h11
+                        let m17 = {
+                            let a15 = {
+                                let (_, h14) = v4.clone();
+                                h14
                             };
-                            let a13 = v1;
-                            compare(a12, a13)
+                            let a16 = v1;
+                            compare(a15, a16)
                         };
-                        if match m14 {
+                        if match m17 {
                             Ordering::Less => {
                                 true
                             }
@@ -506,13 +519,13 @@ pub fn f10(v0: (Option<(Adt1, i64)>, List<Adt1>), v1: i64) -> (Option<(Adt1, i64
 
 pub fn f11(v0: Adt0) -> R<List<i64>> {
     let v1: List<i64> = f14(v0);
-    let (h15, _) = f15(Fn1::F16(v1), (List::<i64>::nil(), f17()), f18())?;
-    Ok(h15)
+    let (h18, _) = f15(Fn1::F16(v1), (List::<i64>::nil(), f17()), f18())?;
+    Ok(h18)
 }
 
 pub fn f12(v0: Adt1) -> bool {
-    let m16 = v0;
-    match m16 {
+    let m19 = v0;
+    match m19 {
         Adt1::C0 => {
             false
         }
@@ -526,8 +539,8 @@ pub fn f12(v0: Adt1) -> bool {
 }
 
 pub fn f13(v0: Adt1) -> bool {
-    let m17 = v0;
-    match m17 {
+    let m20 = v0;
+    match m20 {
         Adt1::C0 => {
             false
         }
@@ -544,48 +557,61 @@ pub fn f14(v0: Adt0) -> List<i64> {
     f19(v0)
 }
 
-pub fn f15(v0: Fn1, v1: (List<i64>, List<i64>), v2: List<List<i64>>) -> R<(List<i64>, List<i64>)> {
-    let m18 = v2;
-    match m18.uncons() {
-        None => {
-            Ok(v1)
-        }
-        Some((v3, v4)) => {
-            f15(v0.clone(), {
-                let c19: Fn1 = v0;
-                c19.apply(v1, v3)?
-            }, v4)
+pub fn f15(v0: Fn1, p24: (List<i64>, List<i64>), p25: List<List<i64>>) -> R<(List<i64>, List<i64>)> {
+    let m23 = (p24, p25);
+    {
+        let mut m23 = m23;
+        loop {
+            let step = {
+                let (v1, v2) = m23;
+                let m21 = v2;
+                match m21.uncons() {
+                    None => {
+                        Err::<((List<i64>, List<i64>), List<List<i64>>), R<(List<i64>, List<i64>)>>(Ok(v1))
+                    }
+                    Some((v3, v4)) => {
+                        Ok::<((List<i64>, List<i64>), List<List<i64>>), R<(List<i64>, List<i64>)>>(({
+                            let c22: Fn1 = v0.clone();
+                            c22.apply(v1, v3)?
+                        }, v4))
+                    }
+                }
+            };
+            match step {
+                Ok(next) => { m23 = next; }
+                Err(done) => break done,
+            }
         }
     }
 }
 
 pub fn f16(v0: List<i64>, v1: (List<i64>, List<i64>), v2: List<i64>) -> R<(List<i64>, List<i64>)> {
-    let m21 = {
-        let (_, h20) = v1.clone();
-        h20
+    let m27 = {
+        let (_, h26) = v1.clone();
+        h26
     };
-    match m21.uncons() {
+    match m27.uncons() {
         None => {
             Ok(v1)
         }
         Some((v3, v4)) => {
             Ok(({
-                let a27 = {
-                    let (h22, _) = v1;
-                    h22
+                let a33 = {
+                    let (h28, _) = v1;
+                    h28
                 };
-                let a28 = List::cons({
-                    let a25 = v3;
-                    let a26 = {
-                        let a24 = {
-                            let (h23, _) = f20(Fn2::F21, (0i64, v0), v2)?;
-                            h23
+                let a34 = List::cons({
+                    let a31 = v3;
+                    let a32 = {
+                        let a30 = {
+                            let (h29, _) = f20(Fn2::F21, (0i64, v0), v2)?;
+                            h29
                         };
-                        int_neg(a24)?
+                        int_neg(a30)?
                     };
-                    int_sub(a25, a26)?
+                    int_sub(a31, a32)?
                 }, List::<i64>::nil());
-                append_list(a27, a28)
+                append_list(a33, a34)
             }, v4))
         }
     }
@@ -600,8 +626,8 @@ pub fn f18() -> List<List<i64>> {
 }
 
 pub fn f19(v0: Adt0) -> List<i64> {
-    let m29 = v0;
-    match m29 {
+    let m35 = v0;
+    match m35 {
         Adt0::C0 => {
             List::cons(0i64, List::cons(0i64, List::cons(0i64, List::<i64>::nil())))
         }
@@ -629,45 +655,58 @@ pub fn f19(v0: Adt0) -> List<i64> {
     }
 }
 
-pub fn f20(v0: Fn2, v1: (i64, List<i64>), v2: List<i64>) -> R<(i64, List<i64>)> {
-    let m30 = v2;
-    match m30.uncons() {
-        None => {
-            Ok(v1)
-        }
-        Some((v3, v4)) => {
-            f20(v0.clone(), {
-                let c31: Fn2 = v0;
-                c31.apply(v1, v3)?
-            }, v4)
+pub fn f20(v0: Fn2, p39: (i64, List<i64>), p40: List<i64>) -> R<(i64, List<i64>)> {
+    let m38 = (p39, p40);
+    {
+        let mut m38 = m38;
+        loop {
+            let step = {
+                let (v1, v2) = m38;
+                let m36 = v2;
+                match m36.uncons() {
+                    None => {
+                        Err::<((i64, List<i64>), List<i64>), R<(i64, List<i64>)>>(Ok(v1))
+                    }
+                    Some((v3, v4)) => {
+                        Ok::<((i64, List<i64>), List<i64>), R<(i64, List<i64>)>>(({
+                            let c37: Fn2 = v0.clone();
+                            c37.apply(v1, v3)?
+                        }, v4))
+                    }
+                }
+            };
+            match step {
+                Ok(next) => { m38 = next; }
+                Err(done) => break done,
+            }
         }
     }
 }
 
 pub fn f21(v0: (i64, List<i64>), v1: i64) -> R<(i64, List<i64>)> {
-    let m33 = {
-        let (_, h32) = v0.clone();
-        h32
+    let m42 = {
+        let (_, h41) = v0.clone();
+        h41
     };
-    match m33.uncons() {
+    match m42.uncons() {
         None => {
             Ok(v0)
         }
         Some((v2, v3)) => {
             Ok(({
-                let a38 = {
-                    let (h34, _) = v0;
-                    h34
+                let a47 = {
+                    let (h43, _) = v0;
+                    h43
                 };
-                let a39 = {
-                    let a37 = {
-                        let a35 = v1;
-                        let a36 = v2;
-                        int_mul(a35, a36)?
+                let a48 = {
+                    let a46 = {
+                        let a44 = v1;
+                        let a45 = v2;
+                        int_mul(a44, a45)?
                     };
-                    int_neg(a37)?
+                    int_neg(a46)?
                 };
-                int_sub(a38, a39)?
+                int_sub(a47, a48)?
             }, v3))
         }
     }

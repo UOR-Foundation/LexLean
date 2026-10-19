@@ -1,6 +1,9 @@
 {
   "remainder": "rest",
   "parts": {
+    "bootstrap-check": [
+      "BS-04"
+    ],
     "compiler": [
       "BS-01",
       "BS-02",

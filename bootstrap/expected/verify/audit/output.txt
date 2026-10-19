@@ -61,6 +61,114 @@
 'LexLeanBoot.AxiomOutput.whiteEnding' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.AxiomOutput.whiteLength' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.AxiomOutput.zeroStep' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.Decimal' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.Expr' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.IntKind' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.OrderingValue' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.Outcome' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.Prim' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.Program' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.Shape' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.Ty' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.Value' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.adtAt' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.adtShapes' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.allDigits' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.CalculusCheck.allHex' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.CalculusCheck.bindAll' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.boolDebug' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.byteIs' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.byteNat' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.CalculusCheck.bytesLess' depends on axioms: [propext]
+'LexLeanBoot.CalculusCheck.bytesLiteral' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.CalculusCheck.canonicalDigits' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.CalculusCheck.cat' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.checkAdts' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.checkArguments' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.CalculusCheck.checkCtors' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.checkFunction' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.CalculusCheck.checkFunctions' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.CalculusCheck.checkProgram' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.CalculusCheck.closureTy' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.consShape' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.consTy' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.ctorFields' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.decimal' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.decimalAt' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.decimalAtMost' depends on axioms: [propext]
+'LexLeanBoot.CalculusCheck.digit' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.digitAt' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.CalculusCheck.digitStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.CalculusCheck.escapePiece' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.CalculusCheck.escapeStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.CalculusCheck.exactly' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.expectTy' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.exprChainLength' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.extendScope' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.firstMissing' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.fixedLiteral' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.CalculusCheck.functionNames' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.functionResult' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.functionTypes' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.functionTypesOr' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.hasRepeat' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.hexByte' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.hexDigitAt' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.CalculusCheck.hexNibble' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.hexStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.CalculusCheck.inapplicable' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.isNilTy' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.isNilValue' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.kindDebug' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.kindHigh' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.kindIndex' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.kindLow' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.kindName' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.kindSigned' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.listAt' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.listLength' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.magnitudeAtMost' depends on axioms: [propext]
+'LexLeanBoot.CalculusCheck.natIn' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.natLiteral' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.CalculusCheck.orderable' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.orderingDebug' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.parseDecimal' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.CalculusCheck.primDebug' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.primType' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.quoted' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.scopeFind' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.shapeArg' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.shapeDebug' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.shapeEq' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.shapeFields' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.shapeIn' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.shapeTag' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.shapesOf' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.significant' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.startsWithByte' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.strDebug' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.CalculusCheck.text' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.tyAdtIndex' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.tyChainAt' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.tyChainLength' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.tyDebug' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.tyEq' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.tyFirst' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.tyFirstOption' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.tyList' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.tyOk' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.tySecond' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.tySecondOption' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.tyTag' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.tyWidth' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.undeclaredAdt' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.undeclaredFunction' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.unicodeEscape' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.valDebug' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.CalculusCheck.valueChainLength' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.valueOk' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.CalculusCheck.walk' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.CalculusCheck.zeroStep' does not depend on any axioms
 'LexLeanBoot.PrimitiveScan.Atom' does not depend on any axioms
 'LexLeanBoot.PrimitiveScan.AtomClass' does not depend on any axioms
 'LexLeanBoot.PrimitiveScan.CheckState' does not depend on any axioms

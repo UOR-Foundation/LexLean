@@ -37,6 +37,7 @@ mod reasoning;
 mod repository;
 mod runtime;
 mod rust_backend;
+mod rust_loops;
 mod rust_scaffold;
 mod security;
 mod semantic_ir;

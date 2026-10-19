@@ -30,10 +30,12 @@ const MODULE: &str = "LexLeanStd.Sha256";
 /// The members in the order the module declares them, each with the effects
 /// its declaration admits, which are exactly the effects its closure
 /// realizes: `Bytes` and the round-constant list allocate, the positions are
-/// `Nat` arithmetic realized in 64 bits, and `iterate` is a library template.
+/// `Nat` arithmetic realized in 64 bits, and `iterate` is a library template
+/// whose self call is a tail call, rendered as a loop (`RB-14`), so neither
+/// closure recurses.
 const MEMBERS: [(&str, &[&str]); 2] = [
-    ("sha256", &["allocation", "overflow", "recursion"]),
-    ("sha256Hex", &["allocation", "overflow", "recursion"]),
+    ("sha256", &["allocation", "overflow"]),
+    ("sha256Hex", &["allocation", "overflow"]),
 ];
 
 /// Seeded messages per member under the evaluator, beside every vector.

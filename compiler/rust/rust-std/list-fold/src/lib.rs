@@ -321,17 +321,30 @@ pub fn f1(v0: u64, v1: u64, v2: Str) -> R<u64> {
     nat_add(a4, a5)
 }
 
-pub fn f2(v0: Fn0, v1: u64, v2: List<Str>) -> R<u64> {
-    let m6 = v2;
-    match m6.uncons() {
-        None => {
-            Ok(v1)
-        }
-        Some((v3, v4)) => {
-            f2(v0.clone(), {
-                let c7: Fn0 = v0;
-                c7.apply(v1, v3)?
-            }, v4)
+pub fn f2(v0: Fn0, p9: u64, p10: List<Str>) -> R<u64> {
+    let m8 = (p9, p10);
+    {
+        let mut m8 = m8;
+        loop {
+            let step = {
+                let (v1, v2) = m8;
+                let m6 = v2;
+                match m6.uncons() {
+                    None => {
+                        Err::<(u64, List<Str>), R<u64>>(Ok(v1))
+                    }
+                    Some((v3, v4)) => {
+                        Ok::<(u64, List<Str>), R<u64>>(({
+                            let c7: Fn0 = v0.clone();
+                            c7.apply(v1, v3)?
+                        }, v4))
+                    }
+                }
+            };
+            match step {
+                Ok(next) => { m8 = next; }
+                Err(done) => break done,
+            }
         }
     }
 }
