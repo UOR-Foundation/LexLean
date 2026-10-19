@@ -23,7 +23,10 @@ and Unreleased holds what has landed since.
   label, and the `$id` of every schema under `schemas/`, `api/schemas/` and
   `tooling/schemas/` name the organization. The schema identifiers are inputs
   of every language's compiler-semantics ID, so every identity moves; the
-  records bound to them are regenerated in this wave.
+  records bound to them are regenerated in this wave. The five API schemas
+  keep their spec versions: `api/schemas/versions.toml` records their new
+  digests, since only the host in their `$id` changed, not the contract
+  (`PX-12`).
 - Language 1.2 refuses the data form, #149 (SPEC.md §17.11, §17.21.1,
   `AU-13`). A module that states `\semanticdata{…}`, `\toolingdata{…}` or
   `\coredata{…}` is refused with `LLP2003` at its data argument, naming the

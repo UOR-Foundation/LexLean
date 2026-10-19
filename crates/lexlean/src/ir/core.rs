@@ -1136,9 +1136,11 @@ impl CoreModule {
                 "derived core declaration `{name}` is not a theorem, a definition, or an abbreviation"
             ));
         }
+        // The notation states the universe parameters of a row with its
+        // type, so a derived row written with a type is refused for the type.
         for (stated, what) in [
-            (declaration.levels.is_some(), "universe parameters"),
             (declaration.r#type.is_some(), "a type"),
+            (declaration.levels.is_some(), "universe parameters"),
             (declaration.value.is_some(), "a value"),
             (declaration.reducibility.is_some(), "reducibility metadata"),
             (declaration.inductive.is_some(), "inductive metadata"),

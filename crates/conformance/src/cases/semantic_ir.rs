@@ -1448,16 +1448,18 @@ pub(crate) fn run(id: &str) {
 
             // The discriminator is routed by the project language in both
             // directions: /1 under 1.2 and /2 under 1.1 are rejected.
+            // The notation names the schema of the language, so a /1 module
+            // under 1.2 is the data form, which language 1.2 refuses before it
+            // reads the tag (AU-13).
             let v1_under_12 = P::language_1_2_example();
             v1_under_12.edit(
                 "src/Main.lex.tex",
                 "lexlean/semantic-module/2",
                 "lexlean/semantic-module/1",
             );
-            let error = v1_under_12.check_fails_with("LLT4001");
-            assert!(error
-                .to_string()
-                .contains("requires `lexlean/semantic-module/2`"));
+            let error = v1_under_12.check_fails_with("LLP2003");
+            assert!(error.to_string().contains("authoring notation"), "{error}");
+            no_backend(&v1_under_12);
             let v2_under_11 = P::semantic_example();
             v2_under_11.edit(
                 "src/Support.lex.tex",
@@ -2452,11 +2454,34 @@ pub(crate) fn run(id: &str) {
                     "is not a natural number",
                 ),
             ] {
+                // Language 1.2 reads the notation (AU-13): a copy the notation
+                // says reaches the decoder through the linker; one it cannot
+                // say (another schema, a name outside the grammar) is handed
+                // to the decoder as data, and the project, which can only
+                // hold it as data, is refused before any build output.
                 let source = module(edit);
-                let refused = project_in("1.2", &source);
-                let error = refused.check_fails_with("LLI9001");
-                assert!(error.to_string().contains(message), "{what}: {error}");
-                refused.assert_no_backend_output_with("LLI9001");
+                let data = source
+                    .split_once("\\coredata{")
+                    .and_then(|(_, rest)| rest.rsplit_once("}\n\\end{coremodule}"))
+                    .map(|(payload, _)| payload)
+                    .expect("the copy's payload");
+                let (code, refused) = if lexlean::sdk::to_notation(&source).is_ok() {
+                    ("LLI9001", project_in("1.2", &source))
+                } else {
+                    let error = lexlean::ir::core::CoreModule::parse(data, "1.2").expect_err(what);
+                    assert!(error.contains(message), "{what}: {error}");
+                    ("LLP2003", project_in("1.2", &source))
+                };
+                let error = refused.check_fails_with(code);
+                if code == "LLI9001" {
+                    assert!(error.to_string().contains(message), "{what}: {error}");
+                } else {
+                    assert!(
+                        error.to_string().contains("authoring notation"),
+                        "{what}: {error}"
+                    );
+                }
+                refused.assert_no_backend_output_with(code);
             }
             // An expression deeper than `max_scope_depth` is a resource limit,
             // refused before the printer, which recurses by depth, can run.
@@ -2650,9 +2675,14 @@ pub(crate) fn run(id: &str) {
                 &lexlean::surface::core::parse_module(&text).expect("reads back"),
                 core
             );
-            // The linker refuses a derived row that states what the
+            // The decoder refuses a derived row that states what the
             // construction decides, and a row that is not derived but states
-            // no type, before any build output.
+            // no type, as data: the message names what the row states.
+            let payload = |edit: &dyn Fn(&mut serde_json::Value)| -> String {
+                let mut planted = data.clone();
+                edit(&mut planted);
+                serde_json::to_string(&planted).expect("canonical JSON")
+            };
             for (what, edit, message) in [
                 (
                     "a derived row that states a type",
@@ -2691,10 +2721,64 @@ pub(crate) fn run(id: &str) {
                     "requires",
                 ),
             ] {
-                let refused = project_of(&module(edit));
-                let error = refused.check_fails_with("LLI9001");
+                let error =
+                    lexlean::ir::core::CoreModule::parse(&payload(edit), "1.2").expect_err(what);
+                assert!(error.contains(message), "{what}: {error}");
+            }
+            // The linker refuses the same copies before any build output, in
+            // the notation, which is what language 1.2 reads (AU-13). A typed
+            // row's universe parameters are the notation's, so a derived row
+            // written with a type is refused for the type; a derived row
+            // written with universe parameters alone, or with a value alone,
+            // is not a row the notation reads (`LLP2001`); and the first
+            // schema has no notation, so that copy is the data form language
+            // 1.2 refuses (`LLP2003`).
+            let notation = lexlean::sdk::to_notation(&module(&|_| {})).expect("the notation");
+            let row = "theorem V2Fixture.one.eq_1 {";
+            assert!(notation.contains(row), "{notation}");
+            for (what, source, code, message) in [
+                (
+                    "a derived row that states a type",
+                    notation.replacen(row, "theorem V2Fixture.one.eq_1 : @0 {", 1),
+                    "LLI9001",
+                    "states a type",
+                ),
+                (
+                    "a derived row that states a value",
+                    notation.replacen(row, "theorem V2Fixture.one.eq_1 := @1 {", 1),
+                    "LLP2001",
+                    "a declaration or a node begins its line",
+                ),
+                (
+                    "a derived row that states universe parameters",
+                    notation.replacen(row, "theorem V2Fixture.one.eq_1.{u} {", 1),
+                    "LLP2001",
+                    "a row without a type states no universe parameters",
+                ),
+                (
+                    "a derived row that is not a declaration of a constant",
+                    notation.replacen(row, "inductive V2Fixture.one.eq_1 {", 1),
+                    "LLI9001",
+                    "is not a theorem, a definition, or an abbreviation",
+                ),
+                (
+                    "a row that states no type and is not derived",
+                    notation.replacen("  derived: true,\n", "", 1),
+                    "LLI9001",
+                    "states no type or no universe parameters and is not derived",
+                ),
+                (
+                    "a derived row in the first schema",
+                    module(&|data| data["spec"] = "lexlean/core-module/1".into()),
+                    "LLP2003",
+                    "authoring notation",
+                ),
+            ] {
+                assert_ne!(source, notation, "{what}: the copy differs");
+                let refused = project_of(&source);
+                let error = refused.check_fails_with(code);
                 assert!(error.to_string().contains(message), "{what}: {error}");
-                refused.assert_no_backend_output_with("LLI9001");
+                refused.assert_no_backend_output_with(code);
             }
             // The shipped preservation library states what the pinned Lean
             // makes as derived rows and nothing else as one.

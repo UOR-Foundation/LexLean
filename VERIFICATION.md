@@ -9783,10 +9783,13 @@ still check (builds with source maps that name the notation, `fmt` the identity
 on it), and the equivalence of the two forms is carried by the SDK's
 conversions (`AU-08`, `AU-13`). The plants of other cases that edited the data
 form of a language-1.2 module (`DF-15`, `SP-02`, `SP-12`, `GC-11`, `RT-01`,
-`TL-01`, `CF-18`) now hand the compiler the notation of the edit, or the
-decoder the data directly where the notation cannot say it (a spec tag of
-another schema, the canonical bytes of a tooling module, an empty arity); the
-fixture `tests/negative/semantic-module-v1-under-1.2` is a fixture of this
+`TL-01`, `CF-18`, and `SM-34` from the identity wave that joined the two) now
+hand the compiler the notation of the edit, or the decoder the data directly
+where the notation cannot say it (a spec tag of another schema, the canonical
+bytes of a tooling module, an empty arity, a derived core row written with a
+type, a value, or universe parameters: the notation states a row's universe
+parameters with its type, so the decoder names a derived row's type before its
+parameters); the fixture `tests/negative/semantic-module-v1-under-1.2` is a fixture of this
 refusal and expects `LLP2003`.
 
 Not run for this record: the records the change regenerates (the maintainer's

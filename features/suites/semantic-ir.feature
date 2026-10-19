@@ -162,7 +162,7 @@ Feature: semantic-ir
     When it is checked, snapshotted, rendered, and verified, and copies are changed to language 1.1 or to the other module discriminator
     Then the 1.2 snapshot uses lexlean/semantic-snapshot/2 and validates against the v2 module and snapshot schemas
     And the generated Lean contains the fixed let lowering and verifies with real Lean
-    And the language-1.1 copy, a /1 module under 1.2, and a /2 module under 1.1 fail with LLT4001 before any build root exists
+    And the language-1.1 copy and a /2 module under 1.1 fail with LLT4001, and a /1 module under 1.2 is the data form, which fails with LLP2003, before any build root exists
     And a mistyped, shadowing, or self-referential let binder is rejected and the 1.1 snapshot keeps lexlean/semantic-snapshot/1
 
   @SM-24 @build
@@ -241,5 +241,5 @@ Feature: semantic-ir
     Given a language-1.2 native core module with a definition and its equation theorem as a derived row, which states no universe parameters, type, or value
     When it is linked, written in the notation and read back, built, and verified, and copies state a type, a value, or universe parameters on the derived row, give it another name, another kind, or a name the pinned Lean does not reserve
     Then the pinned Lean verifies the module whose theorem is the one its own action makes, and the notation of the derived row has no type
-    And a copy that states what the construction decides fails with LLI9001 before any build output, and each other copy fails with LLV7002, naming the row the construction does not make as stated
+    And a copy that states what the construction decides fails with LLI9001, or with LLP2001 where the notation does not read it, before any build output, and each other copy fails with LLV7002, naming the row the construction does not make as stated
     And every row of the shipped preservation library that carries a sparse casesOn record or is named like an equation, an unfolding equation, a splitter, or an else equation is a derived row, and no derived row is anything else
