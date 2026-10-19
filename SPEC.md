@@ -7061,6 +7061,69 @@ planted defects in the source are each detected by the same differential, and
 the production export (§24.7) certifies both roots beside `AxiomOutput` under
 `tests/production-export/bootstrap/`.
 
+The third component is the Rust crate validator (§17.16), the module
+`RustValidate`, with two production roots for `rust-std`:
+
+| Root | Oracle |
+| --- | --- |
+| `validateCrate (krate : Crate) : Result Unit Bytes` | `calculus::rust::validate::validate` |
+| `correspondCrate (krate : Crate) (elements : List Bytes) : Result Unit Bytes` | `calculus::rust::validate::correspond` |
+
+A `Crate` is the closed Rust AST (`calculus::rust::ast`) as first-order data
+(§17.13 rule 1): whether the profile is `rust-core`, and the items as a chain,
+each sort carrying its lists as its own `Nil`/`Cons` chain. A literal is
+read for its kind and width and a runtime function for its row of the table
+the module transcribes from `runtime::Item` (path, failure, heap use, width),
+so the payload of a literal is not data. `Result.error` carries the oracle's
+message to the byte, including the `{:?}` of a `Type`, of an `Option<IntKind>`,
+and of a slice of strings. `validateCrate` checks, in the order of the oracle,
+that each enum, `apply`, and function is declared once, that every type a crate
+names is declared and, in `rust-core`, has no heap component (and no heap
+construct or runtime function appears), that every name is bound once per
+function and in scope, that a value is moved at most once on every path
+(including the components of a pair, and the alternatives of an `if` and a
+`match`), that a fallible call propagates exactly where its function is
+fallible, and that each `apply` arm states the failure of the function it calls.
+`correspondCrate` lists the constructs a crate emits instance by instance and
+checks each against the 97 rows of the correspondence table, the element it was
+lowered from, its width, and the elements the program uses; a repeated
+instance is kept once, which does not change which one the oracle reports
+first. Lowering, printing, packaging, and the choice of profile are not part of
+the claim, and a crate whose exported name or origin element holds a non-ASCII
+or non-printable scalar is outside it.
+
+`BS-05` holds both roots to the oracle. The crates are those the renderer
+lowers (`rust::lower`) from the 156 distinct programs among the 239 committed
+package manifests of `compiler/rust` and `tests/production-export` and the 122
+fixtures of `compiler/fixtures` (215 distinct crates over both profiles, with
+the `elements` the renderer realizes), a rule corpus that reaches each of the
+45 refusals a crate of the closed AST can reach three times (123 `validateCrate`
+runs and 12 `correspondCrate` runs; the refusal that a construct has no row of
+the table cannot be reached), and 17 crates by hand for the merge of moved sets
+at an `if` and a `match`; that is 355 runs of `validateCrate` and 227 of
+`correspondCrate`. On every host, the rendered `rust-std` packages of both
+roots (§17.16), compiled by the pinned rustc, are run on all of them. On the
+normative host, the lowered programs of both roots are run under the calculus
+evaluator (§17.14) on the crates of at most 400 expressions (200 of the 215;
+the larger ones are the compiler's own packages and are held to the oracle by
+the compiled run) with the rule corpus, and on 500 seeded mutants of the
+crates of at most 80 expressions (a node replaced by another of the crate, a
+name, type, pattern, constructor, callee, origin, or width changed, an item or
+binding or arm dropped, doubled, or swapped, a call's propagation flipped, a
+dispatch arm restated, the profile exchanged, and the elements of the program
+changed); the rendered packages are also run on 2,000 further seeded mutants
+per root. The outcome of a run is the result and, for a refusal, the message,
+and one difference fails the case. Ten planted defects in the source (a heap
+type admitted under `rust-core`, a name bound twice accepted, the moves of
+earlier match arms forgotten, a component moved after its whole accepted, an
+undeclared ADT type accepted, a `?` in an infallible function accepted, a
+fallible call without propagation accepted, an `apply` arm's failure not
+compared with its function's, a correspondence row narrowed, and the width of a
+runtime call not compared) are each detected by the same differential, and
+under the pinned Lean the production export (§24.7) certifies both roots beside
+the others, whose packages are the committed ones under
+`tests/production-export/bootstrap/`.
+
 ## 18. Lean backend
 
 ### 18.1 Output contract
@@ -9876,7 +9939,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SL-01` | `stdlib` | The standard library's `Text` module is language-1.2 source whose seven members over `Bytes` (`startsWith`, `endsWith`, `trim`, `lines`, `splitOn`, `joinWith`, `find`) are production roots eligible for `rust-std` with exactly their declared effects; each member's lowered program under the calculus evaluator and its rendered `rust-std` package under the pinned rustc agree with Rust's `starts_with`, `ends_with`, `trim_ascii`, `lines`, `split`, `join`, and `find` on a seeded corpus; a planted defect in a member is detected; and the certified packages the production export publishes for it are the committed ones. | §17.22 |
 | `BS-01` | `bootstrap` | The axiom-output parser of SPEC.md §22.5 is language-1.2 source in the `bootstrap/` project: `parseAuditOutput` and the closed Lean-name check `isClosedLeanName` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle on the committed golden vectors and boundary edges; on the normative host, both roots' lowered programs under the calculus evaluator agree with the Rust oracle on every committed golden vector and a seeded corpus, the rendered packages under the pinned rustc agree with the oracle on the large seeded corpus of generated, wrapped, and mutated audit outputs and names with no disagreement, a planted defect in the source is detected, and the certified packages the production export publishes for the project are the committed ones. | §17.23, §22.5 |
 | `BS-02` | `bootstrap` | The preservation lexer and token audit of SPEC.md §17.17 are language-1.2 source in the `bootstrap/` project: `lex` and `auditTokens` of `TokenAudit` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle `production::preserve::{lex, audit_tokens}` on every lexeme, position, and rejection message for the first 1,500 characters of every module of the shipped preservation library and calculus modules, the number-lexing corpus, and every token-audit unit vector; on the normative host, both roots' lowered programs under the calculus evaluator agree with the Rust oracle on those vectors and a seeded corpus, the rendered packages under the pinned rustc agree with the oracle on the large seeded corpus of generated and mutated Lean texts with no disagreement, a planted defect in the source is detected, and the certified packages the production export publishes for the project are the committed ones. | §17.17, §17.23 |
-| `BS-05` | `bootstrap` | The Rust crate validator of SPEC.md §17.16 is language-1.2 source in the `bootstrap/` project: `validateCrate` and `correspondCrate` of `RustValidate` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle `calculus::rust::validate::{validate, correspond}` on the exact outcome and message for the crate the oracle lowers from each committed program and for the committed refused crates; on the normative host, both roots' lowered programs under the calculus evaluator agree with the oracle on those crates and a seeded mutation corpus, the rendered packages under the pinned rustc agree with the oracle on the large seeded corpus, a planted defect in the source is detected, and the certified packages the production export publishes for the project are the committed ones; lowering, printing, packaging, and crates naming a non-ASCII or non-printable scalar are outside the claim. | §17.16, §17.23 |
+| `BS-05` | `bootstrap` | The Rust crate validator of SPEC.md §17.16 is language-1.2 source in the `bootstrap/` project: `validateCrate` and `correspondCrate` of `RustValidate` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle `calculus::rust::validate::{validate, correspond}` on the exact outcome and message for the 215 distinct crates the renderer lowers from the 156 distinct programs among the 239 committed package manifests and 122 fixtures, for 123 `validateCrate` and 12 `correspondCrate` runs that reach each of the 45 reachable refusals three times, and for 17 hand-built crates of the merge of moved sets (355 `validateCrate` and 227 `correspondCrate` runs); on the normative host, both roots' lowered programs under the calculus evaluator agree with the oracle on the crates of at most 400 expressions (200) with the rule runs and on 500 seeded mutants of the crates of at most 80 expressions, the rendered packages under the pinned rustc agree on 2,000 further seeded mutants per root, ten planted defects in the source are each detected, and the certified packages the production export publishes for the project are the committed ones; lowering, printing, packaging, and crates naming a non-ASCII or non-printable scalar are outside the claim. | §17.16, §17.23 |
 | `PK-01` | `packages` | A language-1.2 project that declares a source package by its identifier, version, kind `path`, and the member directory a `lexlean-workspace.toml` lists locks it by the tree digest of its manifest and source files, its manifest digest, its version, its module prefix, and its own packages, and the configuration and the lock read back to the bytes written; a project without a source package keeps its bytes, and a package of another kind, a source package in another language, a changed byte or version (LLC0105), an undeclared package (LLC0106), a module prefix claimed twice (LLC0107), a project or a package outside the workspace (LLC0108), a path that escapes it, and a symlink (LLS8001) are each refused with the named code. | §10.5, §11.1, §25.1 |
 | `PK-02` | `packages` | A module of a project imports only modules of its own project and modules of the packages the project declares, and a module of a package only modules of itself and of the packages its own manifest declares: a package module is a module of the importing project under its own module prefix, a module of a package the project does not declare fails with LLR3009, and an import cycle through a package fails with LLR3003. | §10.5, §15.1 |
 | `PK-03` | `packages` | An importing project builds and verifies under the pinned Lean offline, and its package modules are generated, elaborated, replayed with `leanchecker`, and audited for their exact axioms under the package's module prefix with the package as their origin in the records; the source ID of the project changes with the pins, and no file of the package is written by `fmt`, `build`, or `verify`. | §10.5, §21.3, §22 |

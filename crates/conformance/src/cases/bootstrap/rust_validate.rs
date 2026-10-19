@@ -65,7 +65,9 @@ fn chain(nil: u64, cons: u64, items: Vec<Value>) -> Value {
     items
         .into_iter()
         .rev()
-        .fold(adt(nil, Vec::new()), |tail, head| adt(cons, vec![head, tail]))
+        .fold(adt(nil, Vec::new()), |tail, head| {
+            adt(cons, vec![head, tail])
+        })
 }
 
 /// `Id`: local, holder, operand, callee, boxed, part, capture, param,
@@ -89,10 +91,7 @@ fn enc_ident(ident: &Ident) -> Value {
 fn enc_origin(origin: &Origin) -> Value {
     adt(
         0,
-        vec![
-            text(&origin.element),
-            option(origin.width.map(enc_kind)),
-        ],
+        vec![text(&origin.element), option(origin.width.map(enc_kind))],
     )
 }
 
@@ -107,7 +106,10 @@ fn enc_type(ty: &Type) -> Value {
     let leaf = |kind: u64| adt(0, vec![adt(kind, Vec::new())]);
     let unary = |kind: u64, inner: &Type| adt(2, vec![adt(kind, Vec::new()), enc_type(inner)]);
     let binary = |kind: u64, left: &Type, right: &Type| {
-        adt(3, vec![adt(kind, Vec::new()), enc_type(left), enc_type(right)])
+        adt(
+            3,
+            vec![adt(kind, Vec::new()), enc_type(left), enc_type(right)],
+        )
     };
     let named = |kind: u64, n: u64| adt(4, vec![adt(kind, Vec::new()), nat(n)]);
     match ty {
@@ -153,7 +155,10 @@ fn enc_ctor(ctor: &Ctor) -> Value {
         Ctor::Some => adt(1, Vec::new()),
         Ctor::Ok(ok, error) => adt(2, vec![enc_type(ok), enc_type(error)]),
         Ctor::Err(ok, error) => adt(3, vec![enc_type(ok), enc_type(error)]),
-        Ctor::Adt { adt: n, constructor } => adt(4, vec![nat(*n), nat(*constructor)]),
+        Ctor::Adt {
+            adt: n,
+            constructor,
+        } => adt(4, vec![nat(*n), nat(*constructor)]),
         Ctor::Closure { fn_type, function } => adt(5, vec![nat(*fn_type), nat(*function)]),
         Ctor::Cons => adt(6, Vec::new()),
         Ctor::Nil(ty) => adt(7, vec![enc_type(ty)]),
@@ -190,7 +195,8 @@ fn enc_pat(pat: &Pat) -> Value {
 /// `Rt`, a structure: the variant of `runtime::Item` in its declaration
 /// order, and the width of a fixed-width one.
 fn enc_item(item: Item) -> Value {
-    let family = |index: u64, kind: Option<IntKind>| adt(0, vec![nat(index), option(kind.map(enc_kind))]);
+    let family =
+        |index: u64, kind: Option<IntKind>| adt(0, vec![nat(index), option(kind.map(enc_kind))]);
     match item {
         Item::NatAdd => family(0, None),
         Item::NatSub => family(1, None),
@@ -273,9 +279,11 @@ fn enc_args(args: &[Expr]) -> Value {
 
 /// A block (11): lets as a chain of `ELet`, then the tail.
 fn enc_block(block: &Block) -> Value {
-    let lets = block.lets.iter().rev().fold(adt(12, Vec::new()), |rest, binding| {
-        enc_let(binding, rest)
-    });
+    let lets = block
+        .lets
+        .iter()
+        .rev()
+        .fold(adt(12, Vec::new()), |rest, binding| enc_let(binding, rest));
     adt(11, vec![lets, enc_expr(&block.tail)])
 }
 
@@ -287,7 +295,10 @@ fn enc_let(binding: &Let, rest: Value) -> Value {
         vec![
             enc_pat(&binding.pat),
             boolean(binding.ty.is_some()),
-            binding.ty.as_ref().map_or_else(|| enc_type(&Type::Unit), enc_type),
+            binding
+                .ty
+                .as_ref()
+                .map_or_else(|| enc_type(&Type::Unit), enc_type),
             enc_expr(&binding.value),
             enc_origin(&binding.at),
             rest,
@@ -296,9 +307,11 @@ fn enc_let(binding: &Let, rest: Value) -> Value {
 }
 
 fn enc_arms(arms: &[(Pat, Block)]) -> Value {
-    arms.iter().rev().fold(adt(12, Vec::new()), |rest, (pat, body)| {
-        adt(15, vec![enc_pat(pat), enc_block(body), rest])
-    })
+    arms.iter()
+        .rev()
+        .fold(adt(12, Vec::new()), |rest, (pat, body)| {
+            adt(15, vec![enc_pat(pat), enc_block(body), rest])
+        })
 }
 
 /// `Expr`: lit, read (move, clone, copy, deref, unbox), wrap (not, box,
@@ -307,13 +320,22 @@ fn enc_arms(arms: &[(Pat, Block)]) -> Value {
 /// and cons, the let, and the arm.
 fn enc_expr(expr: &Expr) -> Value {
     let read = |kind: u64, ident: &Ident, at: &Origin| {
-        adt(1, vec![adt(kind, Vec::new()), enc_ident(ident), enc_origin(at)])
+        adt(
+            1,
+            vec![adt(kind, Vec::new()), enc_ident(ident), enc_origin(at)],
+        )
     };
     let wrap = |kind: u64, inner: &Expr, at: &Origin| {
-        adt(2, vec![adt(kind, Vec::new()), enc_expr(inner), enc_origin(at)])
+        adt(
+            2,
+            vec![adt(kind, Vec::new()), enc_expr(inner), enc_origin(at)],
+        )
     };
     let probe = |kind: u64, ident: &Ident, at: &Origin| {
-        adt(10, vec![adt(kind, Vec::new()), enc_ident(ident), enc_origin(at)])
+        adt(
+            10,
+            vec![adt(kind, Vec::new()), enc_ident(ident), enc_origin(at)],
+        )
     };
     match expr {
         Expr::Lit(literal, at) => adt(0, vec![enc_lit(literal), enc_origin(at)]),
@@ -390,9 +412,12 @@ fn enc_expr(expr: &Expr) -> Value {
 
 /// `Row`: nil, cons (the variant number, its field types as a `Ty` chain).
 fn enc_row(variants: &[(u64, Vec<Type>)]) -> Value {
-    variants.iter().rev().fold(adt(0, Vec::new()), |rest, (number, fields)| {
-        adt(1, vec![nat(*number), enc_types(fields), rest])
-    })
+    variants
+        .iter()
+        .rev()
+        .fold(adt(0, Vec::new()), |rest, (number, fields)| {
+            adt(1, vec![nat(*number), enc_types(fields), rest])
+        })
 }
 
 /// `Dis`: nil, cons (function, captures, the function's failure, the rest).
@@ -414,9 +439,12 @@ fn enc_dispatch(arms: &[Dispatch]) -> Value {
 
 /// `Par`: nil, cons (pattern, type, the rest).
 fn enc_params(parameters: &[(Pat, Type)]) -> Value {
-    parameters.iter().rev().fold(adt(0, Vec::new()), |rest, (pat, ty)| {
-        adt(1, vec![enc_pat(pat), enc_type(ty), rest])
-    })
+    parameters
+        .iter()
+        .rev()
+        .fold(adt(0, Vec::new()), |rest, (pat, ty)| {
+            adt(1, vec![enc_pat(pat), enc_type(ty), rest])
+        })
 }
 
 /// `Def`: enum, apply, function, nil, cons.
@@ -481,13 +509,12 @@ fn enc_crate(krate: &Crate) -> Value {
     )
 }
 
-
 // ------------------------------------------------------------------ oracle
 
 use lexlean::calculus::rust::{self, validate, Profile};
 use lexlean::calculus::{Fixture, Program};
 use lexlean::production::lower::Lowered;
-use serde_json::{json, Value as Json};
+use serde_json::Value as Json;
 
 /// What the oracle makes of a crate, as the root returns it: `ok ()` or the
 /// reason's text.
@@ -523,7 +550,6 @@ fn correspond_run(krate: &Crate, elements: &BTreeSet<String>) -> Run {
 
 /// A committed target program and where it was read from.
 struct Source {
-    label: String,
     program: Program,
 }
 
@@ -537,7 +563,10 @@ fn walk(dir: &std::path::Path, found: &mut Vec<std::path::PathBuf>) {
         let path = entry.path();
         let name = entry.file_name().to_string_lossy().into_owned();
         if path.is_dir() {
-            if !matches!(name.as_str(), "target" | ".git" | ".lexlean" | "node_modules") {
+            if !matches!(
+                name.as_str(),
+                "target" | ".git" | ".lexlean" | "node_modules"
+            ) {
                 walk(&path, found);
             }
         } else {
@@ -557,10 +586,10 @@ fn committed() -> (Vec<Source>, usize, usize, usize) {
     let mut seen = BTreeSet::new();
     let mut out = Vec::new();
     let (mut manifests, mut fixtures) = (0, 0);
-    let mut admit = |label: String, program: Program| {
+    let mut admit = |program: Program| {
         let key = serde_json::to_string(&program).expect("a program is JSON");
         if seen.insert(key) {
-            out.push(Source { label, program });
+            out.push(Source { program });
         }
     };
     for path in files {
@@ -581,7 +610,7 @@ fn committed() -> (Vec<Source>, usize, usize, usize) {
             let fixture: Fixture = serde_json::from_slice(&bytes)
                 .unwrap_or_else(|error| panic!("{relative}: {error}"));
             fixtures += 1;
-            admit(relative, fixture.program);
+            admit(fixture.program);
         } else if name == "package.json"
             && (relative.starts_with("compiler/rust/")
                 || relative.starts_with("tests/production-export/"))
@@ -592,7 +621,7 @@ fn committed() -> (Vec<Source>, usize, usize, usize) {
             let program: Program = serde_json::from_value(json["program"].clone())
                 .unwrap_or_else(|error| panic!("{relative}: {error}"));
             manifests += 1;
-            admit(relative, program);
+            admit(program);
         }
     }
     let distinct = out.len();
@@ -602,8 +631,6 @@ fn committed() -> (Vec<Source>, usize, usize, usize) {
 /// A crate the oracle lowers from a committed program, with the elements the
 /// program uses, and the program it came from.
 struct Rendered {
-    label: String,
-    profile: Profile,
     krate: Crate,
     elements: BTreeSet<String>,
 }
@@ -616,14 +643,10 @@ fn rendered(sources: &[Source]) -> Vec<Rendered> {
             let Ok(krate) = rust::lower(&source.program, profile) else {
                 continue;
             };
-            let elements = rust::realized(&source.program, profile).expect("a lowered program is realized");
+            let elements =
+                rust::realized(&source.program, profile).expect("a lowered program is realized");
             if seen.insert(format!("{krate:?}")) {
-                out.push(Rendered {
-                    label: format!("{} ({profile:?})", source.label),
-                    profile,
-                    krate,
-                    elements,
-                });
+                out.push(Rendered { krate, elements });
             }
         }
     }
@@ -640,7 +663,7 @@ const ROOTS: [(&str, &[&str]); 2] = [
 
 /// A mutable reference to one node of the closed AST, of one class.
 enum Node<'a> {
-    Item(&'a mut ItemDef),
+    Item,
     Block(&'a mut Block),
     Let(&'a mut Let),
     Expr(&'a mut Expr),
@@ -670,7 +693,7 @@ enum Class {
 
 fn class_of(node: &Node<'_>) -> Class {
     match node {
-        Node::Item(_) => Class::Item,
+        Node::Item => Class::Item,
         Node::Block(_) => Class::Block,
         Node::Let(_) => Class::Let,
         Node::Expr(_) => Class::Expr,
@@ -810,7 +833,7 @@ fn visit_expr(expr: &mut Expr, f: &mut Visitor<'_>) {
 
 fn visit_crate(krate: &mut Crate, f: &mut Visitor<'_>) {
     for item in &mut krate.items {
-        f(Node::Item(item));
+        f(Node::Item);
         match item {
             ItemDef::Enum { name, variants, at } => {
                 visit_ty(name, f);
@@ -924,11 +947,7 @@ fn pool_of(krate: &Crate) -> Pool {
                 exprs.push(expr.clone());
             }
         }
-        Node::Ty(ty) => {
-            if types.len() < 80 {
-                types.push(ty.clone());
-            }
-        }
+        Node::Ty(ty) if types.len() < 80 => types.push(ty.clone()),
         _ => {}
     });
     idents.push(Ident::Local(99));
@@ -1034,7 +1053,9 @@ fn mutate_once(krate: &mut Crate, seeded: &mut Seeded, pool: &Pool) -> bool {
             let at = seeded.below(count.max(1));
             let mut changed = false;
             edit_at(krate, Class::Expr, at, &mut |node| {
-                if let Node::Expr(Expr::Call { propagate, .. } | Expr::Apply { propagate, .. }) = node {
+                if let Node::Expr(Expr::Call { propagate, .. } | Expr::Apply { propagate, .. }) =
+                    node
+                {
                     *propagate = !*propagate;
                     changed = true;
                 }
@@ -1144,11 +1165,14 @@ fn mutate_once(krate: &mut Crate, seeded: &mut Seeded, pool: &Pool) -> bool {
                             }
                             Pat::Tuple(items)
                         }
-                        (3, Pat::Adt {
-                            adt,
-                            constructor,
-                            mut fields,
-                        }) => {
+                        (
+                            3,
+                            Pat::Adt {
+                                adt,
+                                constructor,
+                                mut fields,
+                            },
+                        ) => {
                             if fields.is_empty() || number == 0 {
                                 fields.push(Pat::Wild);
                             } else {
@@ -1160,7 +1184,14 @@ fn mutate_once(krate: &mut Crate, seeded: &mut Seeded, pool: &Pool) -> bool {
                                 fields,
                             }
                         }
-                        (4, Pat::Adt { adt, constructor, fields }) => Pat::Adt {
+                        (
+                            4,
+                            Pat::Adt {
+                                adt,
+                                constructor,
+                                fields,
+                            },
+                        ) => Pat::Adt {
                             adt: adt + number,
                             constructor: constructor + number,
                             fields,
@@ -1318,7 +1349,13 @@ fn mutate_once(krate: &mut Crate, seeded: &mut Seeded, pool: &Pool) -> bool {
                         (1, inner) => Expr::Not(Box::new(inner), origin),
                         (2, inner) => Expr::Box(Box::new(inner), Origin::of("indirection")),
                         (3, inner) => Expr::Widen(Box::new(inner), origin),
-                        (_, Expr::Succeed(inner, _) | Expr::Box(inner, _) | Expr::Not(inner, _) | Expr::Widen(inner, _)) => *inner,
+                        (
+                            _,
+                            Expr::Succeed(inner, _)
+                            | Expr::Box(inner, _)
+                            | Expr::Not(inner, _)
+                            | Expr::Widen(inner, _),
+                        ) => *inner,
                         (_, other) => other,
                     };
                 }
@@ -1631,7 +1668,9 @@ fn template_of(run: &Run) -> Option<&'static str> {
         .step_by(2)
         .map(|at| u8::from_str_radix(&hex[at..at + 2], 16).expect("hex digit"))
         .collect();
-    Some(classify(&String::from_utf8(raw).expect("a refusal is text")))
+    Some(classify(
+        &String::from_utf8(raw).expect("a refusal is text"),
+    ))
 }
 
 /// How often each template occurs among `runs`.
@@ -1663,7 +1702,9 @@ fn weight(krate: &Crate) -> usize {
 
 /// The crates with at most `limit` expressions: the evaluator's share.
 fn small(all: &[Rendered], limit: usize) -> Vec<&Rendered> {
-    all.iter().filter(|rendered| weight(&rendered.krate) <= limit).collect()
+    all.iter()
+        .filter(|rendered| weight(&rendered.krate) <= limit)
+        .collect()
 }
 
 /// The elements a correspondence run is given: the program's, with one
@@ -1733,7 +1774,10 @@ fn rule_vectors(bases: &[&Rendered], each: usize) -> (Vec<Run>, Vec<Run>) {
             .chain(seen_correspond.iter())
             .map(|(template, count)| (*template, *count))
             .collect();
-        if REACHABLE.iter().all(|template| both.get(template).is_some_and(|count| *count >= each)) {
+        if REACHABLE
+            .iter()
+            .all(|template| both.get(template).is_some_and(|count| *count >= each))
+        {
             break;
         }
     }
@@ -1856,15 +1900,6 @@ fn branch_crates() -> Vec<Crate> {
     out
 }
 
-/// What the deterministic vectors are made of.
-struct Vectors {
-    /// Runs of `validateCrate` and `correspondCrate` on the crates the
-    /// oracle lowers from the committed programs, all accepted.
-    accepted: (Vec<Run>, Vec<Run>),
-    /// The same crates the evaluator takes: those within the expression cap.
-    rules: (Vec<Run>, Vec<Run>),
-}
-
 fn refused(runs: &[Run]) -> usize {
     runs.iter().filter(|run| run.1["kind"] == "error").count()
 }
@@ -1965,12 +2000,22 @@ fn rustc_differential(roots: &[(&str, &Lowered, &[Run])], label: &str) -> usize 
     }
     std::fs::write(
         dir.path().join("Cargo.toml"),
-        format!("[workspace]\nresolver = \"2\"\nmembers = [{}]\n", members.join(", ")),
+        format!(
+            "[workspace]\nresolver = \"2\"\nmembers = [{}]\n",
+            members.join(", ")
+        ),
     )
     .expect("workspace manifest");
     let build = cargo_in(
         dir.path(),
-        &["build", "--offline", "--workspace", "--quiet", "--jobs", "2"],
+        &[
+            "build",
+            "--offline",
+            "--workspace",
+            "--quiet",
+            "--jobs",
+            "2",
+        ],
     );
     assert!(
         build.status.success(),
@@ -1991,16 +2036,25 @@ fn rustc_differential(roots: &[(&str, &Lowered, &[Run])], label: &str) -> usize 
         let ran = std::process::Command::new(&path)
             .output()
             .expect("the differential runs");
-        assert!(ran.status.success(), "{binary}: {}", String::from_utf8_lossy(&ran.stderr));
+        assert!(
+            ran.status.success(),
+            "{binary}: {}",
+            String::from_utf8_lossy(&ran.stderr)
+        );
         let stdout = String::from_utf8(ran.stdout).expect("utf8");
         let printed: Vec<Json> = stdout
             .lines()
             .filter(|line| !line.starts_with("work "))
             .map(|line| {
-                serde_json::from_str(line).unwrap_or_else(|error| panic!("{binary}: {error}: {line}"))
+                serde_json::from_str(line)
+                    .unwrap_or_else(|error| panic!("{binary}: {error}: {line}"))
             })
             .collect();
-        assert_eq!(printed.len(), outcomes.len(), "{binary}: one outcome per run");
+        assert_eq!(
+            printed.len(),
+            outcomes.len(),
+            "{binary}: one outcome per run"
+        );
         let disagreements: Vec<String> = printed
             .iter()
             .zip(outcomes)
@@ -2167,59 +2221,7 @@ const EVALUATOR_MUTANTS: usize = 500;
 const RUSTC_MUTANTS: usize = 2_000;
 const RULES_EACH: usize = 3;
 
-fn json_depth(text: &str) -> usize {
-    let (mut depth, mut deepest, mut quoted, mut escaped) = (0usize, 0usize, false, false);
-    for byte in text.bytes() {
-        if quoted {
-            match (escaped, byte) {
-                (true, _) => escaped = false,
-                (false, b'\\') => escaped = true,
-                (false, b'"') => quoted = false,
-                _ => {}
-            }
-            continue;
-        }
-        match byte {
-            b'"' => quoted = true,
-            b'[' | b'{' => {
-                depth += 1;
-                deepest = deepest.max(depth);
-            }
-            b']' | b'}' => depth -= 1,
-            _ => {}
-        }
-    }
-    deepest
-}
-
-fn depth_probe() {
-    let project = support::P::bootstrap();
-    let checked = support::checked_project(&project);
-    for root in ["validateCrate", "correspondCrate"] {
-        let low = super::lower(&checked, &project, MODULE, root);
-        let mut depths: Vec<(usize, usize, usize)> = low
-            .program
-            .functions
-            .iter()
-            .enumerate()
-            .map(|(index, function)| {
-                let text = serde_json::to_string(function).expect("function JSON");
-                (json_depth(&text), index, text.len())
-            })
-            .collect();
-        for index in [61usize] {
-            eprintln!("BS-05: {root}: function {index} is {:?}", low.layout.functions.get(index));
-        }
-        depths.sort_unstable_by(|a, b| b.cmp(a));
-        eprintln!("BS-05: {root}: {} functions; deepest (depth, index, bytes): {:?}", depths.len(), &depths[..depths.len().min(12)]);
-    }
-}
-
 pub(super) fn case() {
-    if std::env::var("BS05_DEPTH").is_ok() {
-        depth_probe();
-        return;
-    }
     let started = std::time::Instant::now();
     let project = support::P::bootstrap();
     let checked_units = project.check_ok();
@@ -2244,7 +2246,10 @@ pub(super) fn case() {
         "refusals no rule vector reaches: {:?}",
         uncovered(&counts)
     );
-    let accepted_validate: Vec<Run> = all.iter().map(|rendered| validate_run(&rendered.krate)).collect();
+    let accepted_validate: Vec<Run> = all
+        .iter()
+        .map(|rendered| validate_run(&rendered.krate))
+        .collect();
     let accepted_correspond: Vec<Run> = all
         .iter()
         .map(|rendered| correspond_run(&rendered.krate, &rendered.elements))
@@ -2366,7 +2371,10 @@ pub(super) fn case() {
     // disagreement with the oracle.
     let mut detection: BTreeMap<&str, Vec<Run>> = BTreeMap::new();
     detection.insert("validateCrate", merged(&[&rule_validate, &seeded_validate]));
-    detection.insert("correspondCrate", merged(&[&rule_correspond, &seeded_correspond]));
+    detection.insert(
+        "correspondCrate",
+        merged(&[&rule_correspond, &seeded_correspond]),
+    );
     for plant in &PLANTS {
         let planted = support::P::bootstrap();
         let source = planted.read_raw("src/RustValidate.lex.tex");
@@ -2388,7 +2396,10 @@ pub(super) fn case() {
             "{}: the planted defect is detected by the differential",
             plant.label
         );
-        eprintln!("BS-05: plant detected: {}: {}", plant.label, disagreements[0]);
+        eprintln!(
+            "BS-05: plant detected: {}: {}",
+            plant.label, disagreements[0]
+        );
     }
     // Under the pinned Lean, the production export certifies both roots;
     // its packages are the committed ones and realize the programs the
@@ -2416,7 +2427,11 @@ pub(super) fn case() {
         let Some(member) = root.root.strip_prefix(&format!("{MODULE}.")) else {
             continue;
         };
-        let low = if member == "validateCrate" { &validate_root } else { &correspond_root };
+        let low = if member == "validateCrate" {
+            &validate_root
+        } else {
+            &correspond_root
+        };
         for output in &root.outputs {
             let package: Json = serde_json::from_slice(
                 &std::fs::read(
