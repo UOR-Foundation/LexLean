@@ -10,6 +10,17 @@ This record is the evidence that the migration lost nothing, in the manner of
 
 ## What was migrated
 
+This record describes the module as it was first migrated, at commit
+`b4be399a6`: the counts below (17 declarations, 824 DAG nodes) are the first
+oracle's own output, and running its `export.lean` and `flags.lean` from
+commit `54594e1a0` under `leanprover/lean4:v4.32.1` prints `LexLeanText:
+decls=17 nodes=824` and `17 7` again. They are not the committed module's
+counts: slice 1 went on to extend the module (the vocabulary and piece
+functions `idBound` and `pieceBytes`, `Good`, `allBelow`, and the private
+names of #91), and the module on `main` holds 118 declarations, which is what
+the pipeline reports for its oracle source in the second record below. The
+equivalence of the committed module is the second record's, not this one's.
+
 `LexLeanText` — the text laws — authored once at
 `tests/text-laws/oracle/src/LexLeanText.lean` (recoverable from checkpoint
 commit `54594e1a0`), proved under `leanprover/lean4:v4.32.1` with no `sorry`, no

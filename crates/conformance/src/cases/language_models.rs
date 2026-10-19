@@ -428,8 +428,19 @@ fn integer(representation: &str, value: i64) -> serde_json::Value {
     json!({"kind": "integer", "representation": representation, "value": value.to_string()})
 }
 
-/// A list literal of `int` scores.
+/// A list of `int` scores: a literal up to 32 scores, and above that the
+/// `append` of its two halves, so that the canonical JSON of a long list
+/// stays within the depth the module data allows.
 fn scores(values: &[i64]) -> serde_json::Value {
+    if values.len() > 32 {
+        let (left, right) = values.split_at(values.len() / 2);
+        return json!({
+            "kind": "primitive",
+            "operation": "append",
+            "arguments": [scores(left), scores(right)],
+            "result": score_list(),
+        });
+    }
     values.iter().rev().fold(
         json!({"kind": "nil", "element": {"kind": "int"}}),
         |tail, value| json!({"kind": "cons", "head": integer("int", *value), "tail": tail}),
@@ -951,49 +962,217 @@ fn lm_05() {
         "LLT4006",
         "is not a prior model",
     );
+    // The scorer is applied on every step, so its interface is closed: a
+    // model that threads a state, a model whose evidence leaves a runtime
+    // check, and a model of another shape are each refused.
+    let scored_by = |model: &str, extra: Vec<serde_json::Value>| {
+        let mut declarations = extra;
+        declarations.push(generator("Refused", "Last2", model, "stopTwo", 3, greedy()));
+        generating_with(declarations)
+    };
+    let shaped = |name: &str,
+                  input: serde_json::Value,
+                  output: serde_json::Value,
+                  body: serde_json::Value| {
+        vec![
+            json!({
+                "kind": "definition",
+                "name": format!("{name}Holds"),
+                "parameters": [
+                    {"name": "context", "type": input},
+                    {"name": "scores", "type": output},
+                ],
+                "result": {"kind": "prop"},
+                "body": {
+                    "kind": "eq",
+                    "left": {"kind": "nat", "value": "1"},
+                    "right": {"kind": "nat", "value": "1"},
+                },
+            }),
+            json!({
+                "kind": "contract",
+                "name": format!("{name}Contract"),
+                "input": {"name": "context", "type": input},
+                "output": {"name": "scores", "type": output},
+                "postcondition": member(&format!("{name}Holds")),
+            }),
+            json!({
+                "kind": "realization",
+                "name": name,
+                "input": {"name": "context", "type": input},
+                "output": output,
+                "descriptor": {"kind": "deterministic", "body": body},
+            }),
+            json!({
+                "kind": "model",
+                "name": format!("{name}Model"),
+                "contract": {"member": member(&format!("{name}Contract"))},
+                "realization": {"member": member(name)},
+            }),
+        ]
+    };
+    let mut counting = shaped("Counting", token_list(), score_list(), scores(&[1]));
+    counting[0]["parameters"] = json!([
+        {"name": "count", "type": {"kind": "int"}},
+        {"name": "context", "type": token_list()},
+        {"name": "after", "type": {"kind": "int"}},
+        {"name": "scores", "type": score_list()},
+    ]);
+    counting[1]["state"] = json!({"name": "count", "next": "after", "type": {"kind": "int"}});
+    counting[2]["state"] =
+        json!({"name": "count", "type": {"kind": "int"}, "initial": integer("int", 0)});
+    counting[2]["descriptor"]["body"] = pair(json!({"kind": "var", "name": "count"}), scores(&[1]));
+    refused(
+        &scored_by("CountingModel", counting),
+        "LLT4006",
+        "is stateful",
+    );
+    let mut unproved = scorer("Unproved", &[0, 5, 1]);
+    unproved.pop();
+    unproved.pop();
+    unproved.pop();
+    unproved.push(json!({
+        "kind": "model",
+        "name": "UnprovedModel",
+        "contract": {"member": member("UnprovedContract")},
+        "realization": {"member": member("Unproved")},
+    }));
+    refused(
+        &scored_by("UnprovedModel", unproved),
+        "LLT4006",
+        "needs runtime checks its evidence does not discharge",
+    );
+    refused(
+        &scored_by(
+            "CountModel",
+            shaped(
+                "Count",
+                token_list(),
+                json!({"kind": "nat"}),
+                json!({"kind": "nat", "value": "1"}),
+            ),
+        ),
+        "LLT4006",
+        "does not map `list uint32` to `list int`",
+    );
+    refused(
+        &scored_by(
+            "ByteScoresModel",
+            shaped("ByteScores", score_list(), score_list(), scores(&[1])),
+        ),
+        "LLT4006",
+        "does not map `list uint32` to `list int`",
+    );
     if !support::lean_backed("LM-05") {
         return;
     }
     // The loop runs in the kernel: each generator reaches its own end.
     let prompt = || token_literal(&[7]);
     let ends = |generator: &str| product(token_list(), named_type(&format!("{generator}.End")));
-    let project = generating_with(vec![
+    // `generate` runs there too: the prompt is encoded, the tokens are
+    // generated, and the output is decoded, which fails when the generated
+    // bytes are not UTF-8. `Echo` scores token 98 (the byte `b`) highest and
+    // `Garble` token 255 (a byte no UTF-8 text contains).
+    let spiked = |size: usize, at: usize| {
+        let mut values = vec![0; size];
+        values[at] = 1;
+        values
+    };
+    let mut speech = scorer("Letter", &spiked(99, 98));
+    speech.extend(scorer("High", &spiked(256, 255)));
+    speech.push(generator(
+        "Echo",
+        "Last2",
+        "LetterModel",
+        "stopTwo",
+        2,
+        greedy(),
+    ));
+    speech.push(generator(
+        "Garble",
+        "Last2",
+        "HighModel",
+        "stopTwo",
+        1,
+        greedy(),
+    ));
+    let text = |value: &str| json!({"kind": "string", "value": value});
+    let string_type = json!({"kind": "string"});
+    let texts =
+        |generator: &str| product(string_type.clone(), named_type(&format!("{generator}.End")));
+    let decoding = [
         evaluates(
-            "haltStops",
-            call("Halt.generateTokens", vec![prompt()]),
+            "haltSaysNothing",
+            call("Halt.generate", vec![text("a")]),
             generated_ok(
                 "Halt",
-                ends("Halt"),
-                pair(token_literal(&[]), outcome("Halt", "End", "stop")),
+                texts("Halt"),
+                pair(text(""), outcome("Halt", "End", "stop")),
             ),
         ),
         evaluates(
-            "runExhausts",
-            call("Run.generateTokens", vec![prompt()]),
+            "echoSpeaks",
+            call("Echo.generate", vec![text("a")]),
             generated_ok(
-                "Run",
-                ends("Run"),
-                pair(
-                    token_literal(&[1, 1, 1]),
-                    outcome("Run", "End", "exhausted"),
-                ),
+                "Echo",
+                texts("Echo"),
+                pair(text("bb"), outcome("Echo", "End", "exhausted")),
             ),
         ),
         evaluates(
-            "overflowRefuses",
-            call("Overflow.generateTokens", vec![prompt()]),
-            generated_error("Overflow", ends("Overflow"), "context_overflow"),
+            "garbleIsNotText",
+            call("Garble.generate", vec![text("a")]),
+            generated_error("Garble", texts("Garble"), "invalid_utf8"),
         ),
-        evaluates(
-            "muteHasNoToken",
-            call("Mute.generateTokens", vec![prompt()]),
-            generated_error("Mute", ends("Mute"), "unknown_token"),
-        ),
-    ]);
+    ];
+    // Decoding bytes to a string goes through the classical axiom the
+    // library's UTF-8 decoder uses, so the policy of these facts names it.
+    speech.extend(decoding.into_iter().map(|mut fact| {
+        fact["axioms"] = json!(["Classical.choice", "Quot.sound", "propext"]);
+        fact
+    }));
+    let project = generating_with(
+        speech
+            .into_iter()
+            .chain(vec![
+                evaluates(
+                    "haltStops",
+                    call("Halt.generateTokens", vec![prompt()]),
+                    generated_ok(
+                        "Halt",
+                        ends("Halt"),
+                        pair(token_literal(&[]), outcome("Halt", "End", "stop")),
+                    ),
+                ),
+                evaluates(
+                    "runExhausts",
+                    call("Run.generateTokens", vec![prompt()]),
+                    generated_ok(
+                        "Run",
+                        ends("Run"),
+                        pair(
+                            token_literal(&[1, 1, 1]),
+                            outcome("Run", "End", "exhausted"),
+                        ),
+                    ),
+                ),
+                evaluates(
+                    "overflowRefuses",
+                    call("Overflow.generateTokens", vec![prompt()]),
+                    generated_error("Overflow", ends("Overflow"), "context_overflow"),
+                ),
+                evaluates(
+                    "muteHasNoToken",
+                    call("Mute.generateTokens", vec![prompt()]),
+                    generated_error("Mute", ends("Mute"), "unknown_token"),
+                ),
+            ])
+            .collect(),
+    );
     project.check_ok();
     let _guard = support::env_shared();
     let rows = attested(&support::verify_ok(&project));
-    for name in ["Halt", "Run", "Overflow", "Mute"] {
+    for name in ["Halt", "Run", "Overflow", "Mute", "Echo", "Garble"] {
         for law in ["bounded", "context_bounded"] {
             assert_ok(&rows, &format!("{LEAN_MODULE}.{name}.{law}"));
         }
@@ -1003,6 +1182,9 @@ fn lm_05() {
         "runExhausts",
         "overflowRefuses",
         "muteHasNoToken",
+        "haltSaysNothing",
+        "echoSpeaks",
+        "garbleIsNotText",
     ] {
         assert_ok(&rows, &format!("{LEAN_MODULE}.{fact}"));
     }

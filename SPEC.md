@@ -3896,13 +3896,18 @@ reaches a model only as the tokens `encodeText` makes of it.
    `W.refuses` under `refuse` (a context that does not fit is not admitted).
 5. **Bounds** (`LLT4016`). A window's capacity and a generator's
    `max_tokens` are at least 1: a text component never runs unbounded or
-   with an unstated bound.
+   with an unstated bound. The schema admits any non-negative integer there
+   and the compiler refuses 0 with `LLT4016`, so the one rule is stated by
+   the code that enforces it; a negative value is a schema violation
+   (`LLT4001`).
 6. **Text generators** (`LLT4006`). `{"kind":"text_generator","name":G,
    "tokenizer":T,"window":W,"scorer":{"member":M},"max_tokens":k,"stop":s,
    "policy":P}` names a prior tokenizer, a prior context window, a prior
    stateless model whose contract maps `list uint32` to `list int` and whose
    evidence discharges every runtime check (it is applied on every step),
-   and a prior definition of one `uint32` token. It elaborates to `G.score`,
+   and a prior definition of one `uint32` token. The scorer's width is not
+   compared with the vocabulary size when linking: a choice outside the
+   vocabulary is the runtime `unknown_token`. It elaborates to `G.score`,
    the scorer; the closed inductives `G.End` (`stop`, `exhausted`) and
    `G.Failure` (`unknown_token`, `context_overflow`, `invalid_utf8`), the
    members of `text_failure`; `G.run`, the library's loop: the window admits
