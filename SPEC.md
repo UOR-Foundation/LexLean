@@ -5578,7 +5578,8 @@ binding the original names from it); each tail self call is `Ok` of the next sta
 every other tail value is `Err` of the value, so the loop breaks with the value
 the function returns; a parameter every self call passes on as it got it stays
 a parameter, which the body clones. A function with a self call that is not a
-tail call is rendered as a call. Every runtime
+tail call, or with a parameter nothing reads (which the loop's state could
+not carry), is rendered as a call. Every runtime
 item (`rust::runtime::Item`) is declared as the calculus
 primitive it realizes on the same operands (the successor as `nat_add` with
 one), fallible exactly when the renderer types it `R<T>`, and present in
