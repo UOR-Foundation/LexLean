@@ -3049,6 +3049,8 @@ fn analyse_root(
                     walk.effects.remove("recursion");
                 }
             }
+            // The registry's answer stands for a root that does not lower
+            // here (the comment above), so this arm does nothing by decision.
             Err(_) => {}
         }
     }

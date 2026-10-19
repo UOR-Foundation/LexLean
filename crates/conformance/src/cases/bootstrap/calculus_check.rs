@@ -2582,12 +2582,6 @@ pub(super) fn case() {
         .iter()
         .map(|(root, _)| (*root, super::lower(&checked, &project, MODULE, root)))
         .collect();
-    if std::env::var("BS04_ORIGINS").is_ok() {
-        for (index, origin) in lowered["checkProgram"].layout.functions.iter().enumerate() {
-            eprintln!("ORIGIN {index} {origin:?}");
-        }
-        return;
-    }
     let (vector_programs, vector_arguments) = vectors(&sources);
     // The chain is a faithful image of the list: decoding the arguments of
     // every vector returns the program the oracle read.
@@ -2626,24 +2620,19 @@ pub(super) fn case() {
         refused(&vector_arguments),
         started.elapsed()
     );
-    if std::env::var("BS04_QUICK").is_ok() {
-        eprintln!("BS-04: quick run: skipping the rustc differential on the vectors");
-    }
     // On every host: the rendered rust-std packages of both roots, compiled
     // by that host's pinned rustc, agree with the oracle on the vectors.
-    if std::env::var("BS04_QUICK").is_err() {
-        rustc_differential(
-            &[
-                ("checkProgram", &lowered["checkProgram"], &vector_programs),
-                (
-                    "checkArguments",
-                    &lowered["checkArguments"],
-                    &vector_arguments,
-                ),
-            ],
-            "vectors",
-        );
-    }
+    rustc_differential(
+        &[
+            ("checkProgram", &lowered["checkProgram"], &vector_programs),
+            (
+                "checkArguments",
+                &lowered["checkArguments"],
+                &vector_arguments,
+            ),
+        ],
+        "vectors",
+    );
     if !support::normative_host() {
         eprintln!(
             "BS-04: platform-bound host: the evaluator, the seeded corpora, and the planted defects run on the normative host ({:?})",
@@ -2653,14 +2642,10 @@ pub(super) fn case() {
     }
     // On the normative host: the evaluator agrees on the vectors and the
     // seeded corpora, and the larger corpus runs under rustc.
-    let evaluate_all = std::env::var("BS04_SKIP_EVALUATOR").is_err();
     for (root, runs) in [
         ("checkProgram", &vector_programs),
         ("checkArguments", &vector_arguments),
     ] {
-        if !evaluate_all {
-            break;
-        }
         let disagreements = super::evaluate(&lowered[root], runs, 5);
         assert!(
             disagreements.is_empty(),
@@ -2685,9 +2670,6 @@ pub(super) fn case() {
         ("checkProgram", &seeded_programs),
         ("checkArguments", &seeded_arguments),
     ] {
-        if !evaluate_all {
-            break;
-        }
         let disagreements = super::evaluate(&lowered[root], runs, 5);
         assert!(
             disagreements.is_empty(),
@@ -2702,10 +2684,6 @@ pub(super) fn case() {
         refused(&seeded_arguments),
         started.elapsed()
     );
-    if std::env::var("BS04_QUICK").is_ok() {
-        return;
-    }
-    let skip_rustc = std::env::var("BS04_SKIP_RUSTC").is_ok();
     let (large_programs, large_arguments) = corpora(
         &sources,
         0x0B54_0044,
@@ -2715,21 +2693,13 @@ pub(super) fn case() {
         RUSTC_ARGUMENTS,
     );
     let mut total = 0;
-    for (at, programs) in large_programs
-        .chunks(RUSTC_CHUNK)
-        .enumerate()
-        .filter(|_| !skip_rustc)
-    {
+    for (at, programs) in large_programs.chunks(RUSTC_CHUNK).enumerate() {
         total += rustc_differential(
             &[("checkProgram", &lowered["checkProgram"], programs)],
             &format!("seeded program chunk {at}"),
         );
     }
-    for (at, arguments) in large_arguments
-        .chunks(RUSTC_ARGUMENT_CHUNK)
-        .enumerate()
-        .filter(|_| !skip_rustc)
-    {
+    for (at, arguments) in large_arguments.chunks(RUSTC_ARGUMENT_CHUNK).enumerate() {
         total += rustc_differential(
             &[("checkArguments", &lowered["checkArguments"], arguments)],
             &format!("seeded argument chunk {at}"),

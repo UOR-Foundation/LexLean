@@ -418,10 +418,10 @@ pub fn lower_root(
         },
     };
     audit_boundary(&lowered).map_err(internal)?;
-    // The program is serialized and read back as canonical JSON, whose reader
-    // refuses nesting beyond `PROGRAM_JSON_DEPTH`. A program the writer
-    // produced and the reader refuses is a limit, not a defect: say so here,
-    // before anything is generated from it.
+    // The program's canonical JSON is measured here: the reader on this path
+    // is unbounded (`parse_unbounded`), so this check is the one place that
+    // holds a program to `PROGRAM_JSON_DEPTH`. A program past it is a limit,
+    // not a defect: say so before anything is generated from it.
     let depth = json_depth(
         &serde_json::to_string(&lowered.program)
             .map_err(|error| internal(format!("the lowered program is not JSON: {error}")))?,
