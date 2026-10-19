@@ -2087,10 +2087,11 @@ const PLANTS: [super::Plant; 10] = [
         replacement: "(let differs : Bool := false;",
         root: "validateCrate",
     },
-    // A correspondence row loses an element it names.
+    // A correspondence row loses an element it names (`expr:var`, which
+    // `expr:match` replaces).
     super::Plant {
         label: "correspondence row narrowed",
-        site: "(cons ((text \"read\"), (cons (text \"expr:var\") (cons (text \"expr:match\")",
+        site: "(cons ((text \"read\"), (cons (text \"expr:var\")",
         replacement: "(cons ((text \"read\"), (cons (text \"expr:match\")",
         root: "correspondCrate",
     },
