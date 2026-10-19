@@ -1159,7 +1159,7 @@ fn assert_data_statement(
     // The binders.
     let parameters = &entry.program.functions[0].parameters;
     let mut binders = Vec::new();
-    let mut body = row.r#type;
+    let mut body = row.r#type.expect("a certificate row states its type");
     while let CoreNode::Forall { n, t, v, .. } = node(body) {
         binders.push((n.clone(), *t));
         body = *v;
@@ -1344,7 +1344,7 @@ fn assert_data_statement(
     }
     // No binder the composition adds is a name a parameter could be.
     let own_names: BTreeSet<&str> = own.iter().map(|(binder, _)| binder.as_str()).collect();
-    for index in reachable(data, row.r#type)
+    for index in reachable(data, row.r#type.expect("a certificate row states its type"))
         .into_iter()
         .chain(reachable(data, row.value.expect("a proof")))
     {
@@ -1949,7 +1949,7 @@ pub fn run(id: &str) {
             let planted = |edit: &dyn Fn(&str) -> String| {
                 preserve::check_native_sources(&|path| {
                     if path == first_path {
-                        Ok(edit(&original))
+                        Ok(support::notation_text(&edit(&original)))
                     } else {
                         std::fs::read_to_string(repo_root().join(path).as_std_path())
                             .map_err(|error| format!("{path}: {error}"))
@@ -2194,7 +2194,9 @@ pub fn run(id: &str) {
             let planted = |edit: &dyn Fn(&str) -> Option<String>| {
                 preserve::check_native_sources(&|path| {
                     if path == first_path {
-                        edit(&original).ok_or_else(|| format!("{path}: no such file"))
+                        edit(&original)
+                            .map(|text| support::notation_text(&text))
+                            .ok_or_else(|| format!("{path}: no such file"))
                     } else {
                         std::fs::read_to_string(repo_root().join(path).as_std_path())
                             .map_err(|error| format!("{path}: {error}"))
@@ -2210,7 +2212,9 @@ pub fn run(id: &str) {
                 ))
             })
             .expect_err("a first-schema module carrying second-schema data is refused");
-            assert!(error.contains("requires"), "{error}");
+            // The notation names the schema of the language, so a first-schema
+            // payload is data, which language 1.2 refuses before it reads the tag.
+            assert!(error.contains("authoring notation"), "{error}");
             let error =
                 planted(&|text| Some(text.replace("\"kind\":\"exact\"", "\"kind\":\"allow\"")))
                     .expect_err("an inexact policy is refused");
@@ -3943,6 +3947,80 @@ pub fn run(id: &str) {
                 !templates(&format!("format!(\"theorem {}0 : …\")", "__rel_")).is_empty(),
                 "the template scan finds a planted template"
             );
+            // Lists of recursive types (#208): a record and an inductive
+            // holding one as a root parameter, `cons` onto one, and a closure
+            // whose encoder rows would be chunked apart, as certificates A, B
+            // and E built as data.
+            let lists = P::copy_tests_project("preservation-certificates/lists");
+            let certified_lists = preservation::certificates(&lists);
+            // The members of a safe compiled mutual group are compiled
+            // together by the runtime, from the members present in the
+            // command, so they must be rendered into one command.
+            let commands_of = |rendered: &lexlean::ir::core::CoreModule,
+                               data: &lexlean::ir::core::CoreModule,
+                               module: &str|
+             -> usize {
+                let text = lexlean::backend::core::lean_text_legacy(rendered, module)
+                    .expect("the module renders");
+                let commands: Vec<&str> = text
+                    .split("LexLeanCore.Runtime.decodeAndAdd")
+                    .skip(1)
+                    .collect();
+                let mut straddling = 0;
+                for row in &data.declarations {
+                    let Some(all) = row.all.as_ref().filter(|all| all.len() > 1) else {
+                        continue;
+                    };
+                    if !row.compiled || row.safety.is_some() {
+                        continue;
+                    }
+                    // The payload is a Lean string literal, so its quotes are
+                    // escaped in the text.
+                    let holding = |name: &str| {
+                        commands.iter().position(|command| {
+                            command.contains(&format!("\\\"name\\\":\\\"{name}\\\""))
+                        })
+                    };
+                    let first = holding(&row.name);
+                    assert!(first.is_some(), "{module}: `{}` is in a command", row.name);
+                    if all.iter().any(|member| holding(member) != first) {
+                        straddling += 1;
+                    }
+                }
+                straddling
+            };
+            let mut groups = 0;
+            let mut largest = 0;
+            for entry in &certified_lists {
+                let certificate = &entry.certificate;
+                let data = certificate.data.as_ref().expect("certificate A is data");
+                assert_eq!(
+                    commands_of(data, data, &certificate.module),
+                    0,
+                    "{}: a safe mutual group is split across commands",
+                    certificate.module
+                );
+                let ungrouped = {
+                    let mut ungrouped = data.clone();
+                    for row in &mut ungrouped.declarations {
+                        if row.all.as_ref().is_some_and(|all| all.len() > 1) && row.safety.is_none()
+                        {
+                            groups += 1;
+                            row.all = Some(vec![row.name.clone()]);
+                        }
+                    }
+                    ungrouped
+                };
+                // Armed: the same rows scheduled one by one straddle a
+                // command in the closure the project exists for.
+                let split = commands_of(&ungrouped, data, &certificate.module);
+                largest = largest.max(split);
+            }
+            assert!(groups > 0, "the list roots have safe mutual groups");
+            assert!(
+                largest > 0,
+                "without the group, the closure's encoder rows are chunked apart"
+            );
             if !support::lean_backed("SP-15") {
                 return;
             }
@@ -4146,6 +4224,89 @@ pub fn run(id: &str) {
             );
             eprintln!(
                 "SP-15 plants refused:\n  wrong lemma: {wrong_lemma}\n  changed statement: {changed_statement}\n  forged program: {forged_program}\n  added axiom: {audit_refusal}\n  lying policy: {lying_policy}"
+            );
+            // The same list roots, certified under the pinned Lean beside the
+            // production example.
+            let lists_workspace = preservation::staged(&lists, &certified_lists);
+            let lists_root = tempfile::Builder::new()
+                .prefix("lexlean-sp15-lists-")
+                .tempdir()
+                .expect("tempdir");
+            let lists_checked = preservation::check(&lists_workspace, lists_root.path());
+            assert!(
+                lists_checked.failure.is_none(),
+                "every certificate of the list roots verifies under the pinned Lean: {:?}",
+                lists_checked.failure
+            );
+            let lists_all: Vec<lexlean::production::certificate::Certificate> = certified_lists
+                .iter()
+                .flat_map(preservation::Certified::all)
+                .collect();
+            audit(&lists_checked.audit_output, &lists_all)
+                .expect("the audit of the list roots, every row's axioms included");
+            let certified_root = |name: &str| {
+                certified_lists
+                    .iter()
+                    .find(|entry| entry.root.ends_with(&format!(".{name}")))
+                    .unwrap_or_else(|| panic!("the list project has the root `{name}`"))
+            };
+            // The bundle the code generator has no code for: the row of a
+            // nested group's bundle left uncompiled while a compiled encoder
+            // applies it, which is the defect the compiled bundle removes.
+            let record = certified_root("probeStructure").certificate.clone();
+            let mut uncompiled = record.data.clone().expect("certificate A is data");
+            let mut bundles = 0;
+            for row in &mut uncompiled.declarations {
+                if row.name.contains(".__L_") {
+                    assert!(row.compiled, "the bundle is compiled");
+                    row.compiled = false;
+                    bundles += 1;
+                }
+            }
+            assert!(bundles > 0, "the record's certificate has a bundle");
+            let planted_module = format!("{}PlantUncompiledBundle", record.module);
+            let planted_text =
+                lexlean::backend::core::lean_text_legacy(&uncompiled, &planted_module)
+                    .expect("the planted module renders");
+            let output =
+                preservation::compile_text(lists_root.path(), &planted_module, &planted_text);
+            let joined = format!(
+                "{}{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+            assert!(
+                !output.status.success() && joined.contains("error"),
+                "an applied bundle left uncompiled is refused: {joined}"
+            );
+            // The payload of a consed nested list: the items row renamed to
+            // another encoder, so the lemma's equation no longer holds.
+            let consed = certified_root("consTy").certificate.clone();
+            let consed_data = consed.data.as_ref().expect("certificate A is data");
+            let items = format!("{}.__items_0", consed.module);
+            let mut renamed = consed_data.clone();
+            let mut replaced = 0;
+            for node in &mut renamed.nodes {
+                if let lexlean::ir::core::CoreNode::Const { n, .. } = node {
+                    if *n == items {
+                        *n = "LexLeanPreservation.encUnit".to_owned();
+                        replaced += 1;
+                    }
+                }
+            }
+            assert!(replaced > 0, "the cons certificate names the items row");
+            let planted_module = format!("{}PlantItems", consed.module);
+            let planted_text = lexlean::backend::core::lean_text_legacy(&renamed, &planted_module)
+                .expect("the planted module renders");
+            let output =
+                preservation::compile_text(lists_root.path(), &planted_module, &planted_text);
+            assert!(
+                !output.status.success(),
+                "a payload that is not the items row is refused by the kernel"
+            );
+            eprintln!(
+                "SP-15 list roots: {} certified; plants refused: uncompiled bundle ({bundles} rows), renamed items row ({replaced} places)",
+                certified_lists.len()
             );
         }
         "SP-16" => {
@@ -4634,6 +4795,480 @@ pub fn run(id: &str) {
                 assert!(
                     source.contains(&format!("\"{beginning}")),
                     "the allow-list entry {file} `{beginning}` ({reason}) matches nothing"
+                );
+            }
+        }
+        // §17.14, §17.16: the machine's primitives and the overflow literal.
+        "SP-18" => {
+            let read = |file: &str| {
+                support::module_json(
+                    &std::fs::read_to_string(
+                        repo_root().join("compiler/src").join(file).as_std_path(),
+                    )
+                    .unwrap_or_else(|error| panic!("compiler/src/{file}: {error}")),
+                )
+            };
+            let (syntax, semantics) = (read("RustSyntax.lex.tex"), read("RustSemantics.lex.tex"));
+            let constructors = |module: &Json, name: &str| -> Vec<(String, usize)> {
+                module["declarations"]
+                    .as_array()
+                    .and_then(|all| all.iter().find(|declaration| declaration["name"] == name))
+                    .unwrap_or_else(|| panic!("`{name}` is declared"))["constructors"]
+                    .as_array()
+                    .expect("constructors")
+                    .iter()
+                    .map(|constructor| {
+                        (
+                            constructor["name"].as_str().expect("a name").to_owned(),
+                            constructor["fields"].as_array().expect("fields").len(),
+                        )
+                    })
+                    .collect()
+            };
+            let expected = |names: &[(&str, usize)]| -> Vec<(String, usize)> {
+                names
+                    .iter()
+                    .map(|(name, fields)| ((*name).to_owned(), *fields))
+                    .collect()
+            };
+            assert_eq!(
+                constructors(&syntax, "Machine"),
+                expected(&[
+                    ("checkedAdd", 1),
+                    ("checkedSub", 1),
+                    ("checkedMul", 1),
+                    ("checkedQuot", 1),
+                    ("checkedNeg", 1),
+                    ("checkedShl", 1),
+                    ("checkedShr", 1),
+                    ("tryFrom", 1),
+                ]),
+                "the machine's primitives, each at a width"
+            );
+            assert_eq!(
+                constructors(&syntax, "Callee"),
+                expected(&[("function", 1), ("runtime", 1), ("machine", 1)]),
+                "a callee is a function, a runtime item, or a machine primitive"
+            );
+            assert!(
+                constructors(&syntax, "Lit").contains(&("overflow".to_owned(), 0)),
+                "the literal Overflow is declared"
+            );
+            for name in [
+                "machinePrimitive",
+                "machineWidth",
+                "machineShifts",
+                "machineAccepts",
+                "runMachine",
+            ] {
+                assert!(
+                    semantics["declarations"].as_array().is_some_and(|all| all
+                        .iter()
+                        .any(|declaration| declaration["name"] == name)),
+                    "`{name}` is declared by the machine"
+                );
+            }
+            if !support::lean_backed("SP-18") {
+                return;
+            }
+            // The pinned Lean evaluates the machine, over the shipped modules
+            // the certificates import. Each claim is a kernel-checked `rfl`.
+            let header = "import LexLeanTarget.RustSemantics\nopen LexLeanTarget LexLeanTarget.RustSyntax LexLeanTarget.RustSemantics LexLeanTarget.TargetSyntax\n\ndef machineCrate : Crate := { profile := Profile.std, items := [] }\n";
+            let claims = [
+                "runMachine (Machine.checkedAdd IntKind.u8) [Value.u8 200, Value.u8 55] = ROutcome.value (Value.some (Value.u8 255))",
+                "runMachine (Machine.checkedAdd IntKind.u8) [Value.u8 200, Value.u8 56] = ROutcome.value Value.none",
+                "runMachine (Machine.checkedAdd IntKind.u8) [Value.u8 1, Value.u16 1] = ROutcome.stuck",
+                "runMachine (Machine.checkedSub IntKind.u8) [Value.u8 0, Value.u8 1] = ROutcome.value Value.none",
+                "runMachine (Machine.checkedMul IntKind.i8) [Value.i8 100, Value.i8 2] = ROutcome.value Value.none",
+                "runMachine (Machine.checkedQuot IntKind.u8) [Value.u8 7, Value.u8 0] = ROutcome.value Value.none",
+                "runMachine (Machine.checkedQuot IntKind.u8) [Value.u8 7, Value.u8 2] = ROutcome.value (Value.some (Value.u8 3))",
+                "runMachine (Machine.checkedNeg IntKind.i8) [Value.i8 (-128)] = ROutcome.value Value.none",
+                "runMachine (Machine.checkedShl IntKind.u8) [Value.u8 1, Value.u32 7] = ROutcome.value (Value.some (Value.u8 128))",
+                "runMachine (Machine.checkedShl IntKind.u8) [Value.u8 1, Value.u32 8] = ROutcome.value Value.none",
+                "runMachine (Machine.checkedShr IntKind.u8) [Value.u8 128, Value.u32 7] = ROutcome.value (Value.some (Value.u8 1))",
+                "runMachine (Machine.checkedShl IntKind.u8) [Value.u16 1, Value.u32 1] = ROutcome.stuck",
+                "runMachine (Machine.tryFrom IntKind.u8) [Value.u16 300] = ROutcome.value Value.none",
+                "runMachine (Machine.tryFrom IntKind.u8) [Value.u16 200] = ROutcome.value (Value.some (Value.u8 200))",
+                "literal Lit.overflow = some Value.unit",
+                "eval 4 machineCrate [] (Expr.call (Callee.machine (Machine.checkedAdd IntKind.u8)) [Expr.lit (Lit.fixed IntKind.u8 200), Expr.lit (Lit.fixed IntKind.u8 55)] false) = ROutcome.value (Value.some (Value.u8 255))",
+                "eval 4 machineCrate [] (Expr.call (Callee.machine (Machine.checkedAdd IntKind.u8)) [Expr.lit (Lit.fixed IntKind.u8 200), Expr.lit (Lit.fixed IntKind.u8 56)] false) = ROutcome.value Value.none",
+                "eval 2 machineCrate [] (Expr.lit Lit.overflow) = ROutcome.value Value.unit",
+                "eval 3 machineCrate [] (Expr.construct (Ctor.err RustType.unit RustType.unit) [Expr.lit Lit.overflow]) = ROutcome.value (Value.error Value.unit)",
+            ];
+            let shipped = preservation::shipped();
+            let compile = |name: &str, text: &str| {
+                let directory = tempfile::tempdir().expect("a directory");
+                let source = directory.path().join(format!("{name}.lean"));
+                std::fs::write(&source, text).expect("write");
+                preservation::pinned_with(
+                    "lean",
+                    directory.path(),
+                    std::slice::from_ref(&shipped.build),
+                )
+                .arg(&source)
+                .output()
+                .expect("lean runs")
+            };
+            let mut text = header.to_owned();
+            for claim in claims {
+                text.push_str(&format!("example : {claim} := rfl\n"));
+            }
+            let output = compile("Machine", &text);
+            assert!(
+                output.status.success(),
+                "the machine does not evaluate as stated:\n{}",
+                preservation::joined(&output)
+            );
+            // A wrong value for the same call is refused, so that the check
+            // above is not one that accepts anything.
+            for wrong in [
+                "runMachine (Machine.checkedAdd IntKind.u8) [Value.u8 200, Value.u8 56] = ROutcome.value (Value.some (Value.u8 0))",
+                "runMachine (Machine.checkedShl IntKind.u8) [Value.u16 1, Value.u32 1] = ROutcome.value Value.none",
+                "literal Lit.overflow = some (Value.bool false)",
+                "eval 4 machineCrate [] (Expr.call (Callee.machine (Machine.checkedSub IntKind.u8)) [Expr.lit (Lit.fixed IntKind.u8 0), Expr.lit (Lit.fixed IntKind.u8 1)] false) = ROutcome.value (Value.some (Value.u8 255))",
+            ] {
+                let refused = compile("Wrong", &format!("{header}example : {wrong} := rfl\n"));
+                assert!(
+                    !refused.status.success(),
+                    "Lean accepts the wrong statement `{wrong}`"
+                );
+            }
+        }
+        // §17.14, §17.16: the loop over a state.
+        "SP-19" => {
+            let syntax = support::module_json(
+                &std::fs::read_to_string(
+                    repo_root()
+                        .join("compiler/src/RustSyntax.lex.tex")
+                        .as_std_path(),
+                )
+                .expect("compiler/src/RustSyntax.lex.tex"),
+            );
+            let expression = syntax["declarations"]
+                .as_array()
+                .and_then(|all| all.iter().find(|declaration| declaration["name"] == "Expr"))
+                .expect("`Expr` is declared");
+            let found = expression["constructors"]
+                .as_array()
+                .expect("constructors")
+                .iter()
+                .find(|constructor| constructor["name"] == "loop")
+                .expect("the expression Loop is declared");
+            assert_eq!(
+                found["fields"].as_array().map(Vec::len),
+                Some(2),
+                "a loop is a state binding and a body block"
+            );
+            if !support::lean_backed("SP-19") {
+                return;
+            }
+            let header = "import LexLeanTarget.RustSemantics\nopen LexLeanTarget LexLeanTarget.RustSyntax LexLeanTarget.RustSemantics LexLeanTarget.TargetSyntax\n\ndef loopCrate : Crate := { profile := Profile.std, items := [] }\ndef st : Ident := Ident.generated IdentKind.binding 0\ndef stop : Block := Block.mk [] (Expr.construct (Ctor.err RustType.nat RustType.nat) [Expr.copy st])\ndef step : Block := Block.mk [] (Expr.construct (Ctor.ok RustType.nat RustType.nat) [Expr.predecessor st])\ndef countdown : RustSyntax.Expr := Expr.loop st (Block.mk [] (Expr.cond (Expr.isZero st) stop step))\ndef neither : RustSyntax.Expr := Expr.loop st (Block.mk [] (Expr.lit Lit.unit))\n";
+            let claims = [
+                "eval 40 loopCrate [(st, Value.nat 3)] countdown = ROutcome.value (Value.nat 0)",
+                "eval 40 loopCrate [(st, Value.nat 0)] countdown = ROutcome.value (Value.nat 0)",
+                "eval 2 loopCrate [(st, Value.nat 3)] countdown = ROutcome.exhausted",
+                "eval 40 loopCrate [(st, Value.nat 3)] neither = ROutcome.stuck",
+            ];
+            let shipped = preservation::shipped();
+            let compile = |name: &str, text: &str| {
+                let directory = tempfile::tempdir().expect("a directory");
+                let source = directory.path().join(format!("{name}.lean"));
+                std::fs::write(&source, text).expect("write");
+                preservation::pinned_with(
+                    "lean",
+                    directory.path(),
+                    std::slice::from_ref(&shipped.build),
+                )
+                .arg(&source)
+                .output()
+                .expect("lean runs")
+            };
+            let mut text = header.to_owned();
+            for claim in claims {
+                text.push_str(&format!("example : {claim} := rfl\n"));
+            }
+            let output = compile("Loop", &text);
+            assert!(
+                output.status.success(),
+                "the loop does not evaluate as stated:\n{}",
+                preservation::joined(&output)
+            );
+            for wrong in [
+                "eval 40 loopCrate [(st, Value.nat 3)] countdown = ROutcome.value (Value.nat 1)",
+                "eval 2 loopCrate [(st, Value.nat 3)] countdown = ROutcome.value (Value.nat 0)",
+                "eval 40 loopCrate [(st, Value.nat 3)] neither = ROutcome.value Value.unit",
+            ] {
+                let refused = compile("Wrong", &format!("{header}example : {wrong} := rfl\n"));
+                assert!(
+                    !refused.status.success(),
+                    "Lean accepts the wrong statement `{wrong}`"
+                );
+            }
+        }
+        // §17.16, §17.17: certificate B of a function rendered as a loop.
+        "SP-20" => {
+            use lexlean::calculus::rust::ast::{Block, Crate, Ctor, Expr, Ident, ItemDef, Pat};
+            use lexlean::production::certificate::data_b::loopform::{self, Position};
+            let read = |path: &str| {
+                std::fs::read_to_string(repo_root().join(path).as_std_path()).expect("a source")
+            };
+            // The library states the disjunct, the form, and the theorem.
+            let declared = |path: &str| -> BTreeSet<String> {
+                support::module_json(&read(path))["declarations"]
+                    .as_array()
+                    .expect("declarations")
+                    .iter()
+                    .filter_map(|declaration| declaration["name"].as_str().map(str::to_owned))
+                    .collect()
+            };
+            let corr = declared("language/preservation-1.2/library/src/RustCorr.lex.tex");
+            let sound = declared("language/preservation-1.2/library/src/RustSound.lex.tex");
+            for name in [
+                "LexLeanPreservation.Rust.FunOK0",
+                "LexLeanPreservation.Rust.FunOK",
+                "LexLeanPreservation.Rust.FunLoop",
+                "LexLeanPreservation.Rust.Loop.loopOf",
+                "LexLeanPreservation.Rust.Loop.loopCheckOf",
+            ] {
+                assert!(corr.contains(name), "RustCorr declares `{name}`");
+            }
+            for name in [
+                "LexLeanPreservation.Rust.funSem_loop",
+                "LexLeanPreservation.Rust.funSem_of",
+                "LexLeanPreservation.Rust.sound",
+            ] {
+                assert!(sound.contains(name), "RustSound declares `{name}`");
+            }
+            // Every loop of every rendering is the loop form of the recursive
+            // body the aligner recovers from it: the rendering's own loops (the
+            // renderer fixtures in each profile, and the production roots of
+            // the committed examples in each of their targets) are read back
+            // and rebuilt by the library's form transliterated, and the two
+            // are the same function.
+            let mut crates: Vec<(String, Crate)> = preservation::fixture_renderings()
+                .into_iter()
+                .map(|rendering| {
+                    (
+                        format!("{} ({})", rendering.fixture, rendering.target),
+                        rendering.krate,
+                    )
+                })
+                .collect();
+            let fixtures = crates.len();
+            for example in ["production", "production-coverage", "models", "reasoning"] {
+                let project = P::copy_example(example);
+                let checked = support::checked_project_fresh(&project);
+                let modules = linked_modules(&checked);
+                let limits = support::limits(&project);
+                for root in roots(&checked).expect("the eligibility reports") {
+                    let lowered =
+                        lower_root(&modules, &root.module, &root.name, root.report, &limits)
+                            .unwrap_or_else(|diagnostic| panic!("lowering failed: {diagnostic:?}"));
+                    for row in &root.report.targets {
+                        let profile = lexlean::calculus::rust::Profile::named(&row.target)
+                            .expect("a Rust profile");
+                        let krate = lexlean::calculus::rust::lower(&lowered.program, profile)
+                            .expect("a rendering");
+                        crates.push((format!("{example}/{} ({})", root.name, row.target), krate));
+                    }
+                }
+            }
+            assert!(
+                crates.len() > fixtures,
+                "the committed examples have production roots"
+            );
+            let mut loops = Vec::new();
+            for (name, krate) in &crates {
+                for item in &krate.items {
+                    let ItemDef::Function {
+                        name: Ident::Function(at),
+                        parameters,
+                        body,
+                        ..
+                    } = item
+                    else {
+                        continue;
+                    };
+                    if matches!(body.tail, Expr::Loop { .. }) {
+                        let recursive = loopform::recover(*at, parameters, body)
+                            .unwrap_or_else(|reason| panic!("{name}: function {at}: {reason}"));
+                        loops.push((
+                            name.clone(),
+                            *at,
+                            parameters.clone(),
+                            body.clone(),
+                            recursive,
+                        ));
+                    }
+                }
+            }
+            // Armed by the first loop: a rendering without one proves nothing.
+            assert!(
+                !loops.is_empty(),
+                "some committed program is rendered as a loop"
+            );
+            let positions: Vec<&Position> = loops
+                .iter()
+                .flat_map(|(_, _, _, _, recursive)| recursive.positions.iter())
+                .collect();
+            assert!(
+                positions
+                    .iter()
+                    .any(|position| matches!(position, Position::Changed))
+                    && positions
+                        .iter()
+                        .any(|position| matches!(position, Position::Kept(_))),
+                "the loops change a parameter and keep another"
+            );
+            // A loop that is not the loop form of any recursive body is
+            // refused, for each way it may differ: a state that is not the one
+            // the continuing results hold, a body that does not take the state
+            // apart, an end that is not an `Err`, a renamed parameter the body
+            // reads, a pattern that rebinds a kept parameter, and a state held
+            // by a parameter the function does not have.
+            fn tails(block: &mut Block, visit: &mut dyn FnMut(&mut Expr)) {
+                match &mut block.tail {
+                    Expr::If {
+                        then_branch,
+                        else_branch,
+                        ..
+                    } => {
+                        tails(then_branch, visit);
+                        tails(else_branch, visit);
+                    }
+                    Expr::Match { arms, .. } => {
+                        arms.iter_mut().for_each(|(_, body)| tails(body, visit))
+                    }
+                    Expr::Block(inner) => tails(inner, visit),
+                    other => visit(other),
+                }
+            }
+            type Mutant = (usize, Vec<(Pat, lexlean::calculus::rust::ast::Type)>, Block);
+            fn inner(body: &mut Block) -> &mut Block {
+                let Expr::Loop { body: looping, .. } = &mut body.tail else {
+                    panic!("a loop")
+                };
+                looping
+            }
+            let mut planted = [0_usize; 6];
+            for (name, at, parameters, body, recursive) in &loops {
+                let mut mutants: Vec<Mutant> = Vec::new();
+                // 0: the state type of the first continuing result.
+                let mut wrong_state = body.clone();
+                let mut changed = false;
+                tails(inner(&mut wrong_state), &mut |tail| {
+                    if let Expr::Construct {
+                        ctor: Ctor::Ok(state, _),
+                        ..
+                    } = tail
+                    {
+                        if !changed {
+                            *state = lexlean::calculus::rust::ast::Type::Unit;
+                            changed = true;
+                        }
+                    }
+                });
+                if changed {
+                    mutants.push((0, parameters.clone(), wrong_state));
+                }
+                // 1: the state is not taken apart.
+                let mut whole = body.clone();
+                inner(&mut whole).lets.remove(0);
+                mutants.push((1, parameters.clone(), whole));
+                // 2: an end that is not an `Err`.
+                let mut bare = body.clone();
+                let mut stripped = false;
+                tails(inner(&mut bare), &mut |tail| {
+                    if let Expr::Construct {
+                        ctor: Ctor::Err(..),
+                        args,
+                        ..
+                    } = tail
+                    {
+                        if !stripped && args.len() == 1 {
+                            *tail = args[0].clone();
+                            stripped = true;
+                        }
+                    }
+                });
+                if stripped {
+                    mutants.push((2, parameters.clone(), bare));
+                }
+                // 3: a renamed parameter the body reads.
+                if let Some(Position::Changed) = recursive.positions.first() {
+                    let mut reads = body.clone();
+                    let renamed = Ident::Param(recursive.renamed[0]);
+                    inner(&mut reads).tail = Expr::Block(Box::new(Block {
+                        lets: Vec::new(),
+                        tail: Expr::Move(
+                            renamed,
+                            lexlean::calculus::rust::ast::Origin::of("expr:call"),
+                        ),
+                    }));
+                    mutants.push((3, parameters.clone(), reads));
+                }
+                // 4: a pattern that rebinds a kept parameter.
+                if let Some(kept) = recursive
+                    .positions
+                    .iter()
+                    .find_map(|position| match position {
+                        Position::Kept(name) => Some(name.clone()),
+                        Position::Changed | Position::Dropped => None,
+                    })
+                {
+                    let mut rebinds = body.clone();
+                    let looping = inner(&mut rebinds);
+                    let binding = looping.lets[0].clone();
+                    looping.lets.push(lexlean::calculus::rust::ast::Let {
+                        pat: Pat::Bind(kept),
+                        ..binding
+                    });
+                    mutants.push((4, parameters.clone(), rebinds));
+                }
+                // 5: a parameter the state does not hold.
+                let mut extra = parameters.clone();
+                if let Some((pattern, _)) = extra
+                    .iter_mut()
+                    .find(|(pattern, _)| matches!(pattern, Pat::Wild | Pat::Bind(Ident::Local(_))))
+                {
+                    *pattern = Pat::Bind(Ident::Param(u64::MAX));
+                    mutants.push((5, extra, body.clone()));
+                }
+                for (kind, mutated_parameters, mutated_body) in mutants {
+                    planted[kind] += 1;
+                    assert!(
+                        loopform::recover(*at, &mutated_parameters, &mutated_body).is_err(),
+                        "{name}: function {at}: the mutation {kind} of a loop is accepted"
+                    );
+                }
+            }
+            assert!(
+                planted.iter().all(|count| *count > 0),
+                "every kind of break is planted at least once: {planted:?}"
+            );
+            if !support::lean_backed("SP-20") {
+                return;
+            }
+            // The pinned Lean accepts certificate B of every loop the renderer
+            // fixtures render, over the shipped library, with exactly the
+            // axioms the audit states.
+            let renderings: Vec<_> = preservation::fixture_renderings()
+                .into_iter()
+                .filter(|rendering| {
+                    rendering.krate.items.iter().any(|item| {
+                        matches!(item, ItemDef::Function { body, .. } if matches!(body.tail, Expr::Loop { .. }))
+                    })
+                })
+                .collect();
+            assert!(!renderings.is_empty(), "some fixture is rendered as a loop");
+            let checked = preservation::check_renderings(&renderings, Vec::new());
+            for rendering in &renderings {
+                assert!(
+                    checked
+                        .audit_output
+                        .contains(&rendering.certificate.theorem),
+                    "`{}` is audited",
+                    rendering.certificate.theorem
                 );
             }
         }

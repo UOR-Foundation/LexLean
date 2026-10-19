@@ -54,7 +54,7 @@ statement = "The specification conformance table and model register are bijectiv
 id = "RP-08"
 level = "build"
 suite = "repository"
-statement = "Repository source contains no unsanctioned deferral marker, stub, placeholder, ignored capability, or disabling feature."
+statement = "Repository source contains no unsanctioned deferral marker, stub, placeholder, ignored capability, or disabling feature; the deferral audit reads every text file of the repository, the root documents, workflows, scripts, devcontainer, API, oracle, and tooling data included, except a vendored authority copy whose bytes its checksum pins, and its markers include the phrases that put work in the future."
 
 [[id]]
 id = "RP-09"
@@ -91,6 +91,17 @@ id = "RP-14"
 level = "build"
 suite = "repository"
 statement = "The normative CI job runs every recipe of just vv in parallel legs that each start from a clean checkout on the standard ubuntu-24.04 runner, each recipe exactly once but bdd, which runs once per part of its committed plan on the row that names the part, the examples leg at the verification resource profile its matrix row names and without UOR Atlas, which the Atlas jobs of the same run verify as the shards of the committed plan and a join at that profile, every process once and nothing across runs, and the other legs at the default, with no cache, path filter, or skipped recipe, and each job uploads its CI evidence; a plan job decides what a run is from the event alone: a draft pull request runs the rest leg and no other job, a ready pull request, a request, and a push to main run every job, and a push to main that merges a head whose tree it equals runs none when the whole gate passed on that head, and runs the whole gate when any job of that run did not pass, was skipped, or is missing."
+
+[[id]]
+id = "RP-15"
+level = "build"
+suite = "repository"
+statement = "Every match over a closed semantic enum (the IR, the production realization calculus, and its Rust AST) that names at least five of the enum's variants names all of them, with no wildcard or binding catch-all arm, so that a variant added to the enum is a compile error in each Lean, LaTeX, validation, charge, and calculus consumer and never a silent fallback; the audit rejects a catch-all planted in each consumer group and fails when a consumer it must read has no such match left."
+[[id]]
+id = "RP-16"
+level = "build"
+suite = "repository"
+statement = "The development container installs, at image build, exactly the Rust toolchain that rust-toolchain.toml pins and exactly the Lean toolchain that lean-toolchain pins and selects no other default, so that nothing is fetched when a session starts, and a Dockerfile that names another version of either, installs a second toolchain, or selects an unpinned default is refused."
 
 [[id]]
 id = "CF-01"
@@ -684,7 +695,13 @@ statement = "Language 1.2 widening conversions, to_int from every fixed-width in
 id = "SM-33"
 level = "build"
 suite = "semantic-ir"
-statement = "A version 2 core-module row whose name the pinned Lean reserves is not submitted as data: the decoder runs the pinned Lean's own action for the name and refuses the module when the action does not make the name or makes a constant whose kind, levels, type, or value differ from the row's."
+statement = "A version 2 core-module row that states its type and value and whose name the pinned Lean reserves is not submitted as data: the decoder runs the pinned Lean's own action for the name and refuses the module when the action does not make the name or makes a constant whose kind, levels, type, or value differ from the row's."
+
+[[id]]
+id = "SM-34"
+level = "build"
+suite = "semantic-ir"
+statement = "A version 2 core-module row may be derived, stating its name, kind, and extension state, and for a sparse casesOn its recipe, and no universe parameters, type, or value: the decoder makes the constant with the pinned Lean's own construction at the row's place in the order, and refuses the module when the name is not one the pinned Lean reserves and the row states no sparse casesOn recipe, when the construction does not make the name, or when the constant it makes is not a theorem, definition, or abbreviation as the row says; the notation writes a derived row without a type, the schema and the linker refuse a derived row that states what the construction decides, a stored row is still checked against the construction, the decoder checks that the constructors a recipe names are constructors of the type and are named once, that the module states every sparse casesOn its construction makes, and that every derived sparse casesOn is referred to by the type or value of a row, and the content of a derived row is checked by its uses alone, so that a recipe naming other valid constructors of the type is not distinguished where the use accepts it; and the shipped preservation library states every row that carries a sparse casesOn record or is named like an equation, an unfolding equation, a splitter, or an else equation as a derived row."
 
 [[id]]
 id = "DF-01"
@@ -1599,6 +1616,12 @@ suite = "production"
 statement = "The eligibility analysis classifies every semantic construct by an explicit exhaustive match, and the exhaustiveness audit rejects a planted wildcard arm, rest pattern, implicit-default binding form, or unnamed IR variant."
 
 [[id]]
+id = "PD-08"
+level = "build"
+suite = "production"
+statement = "Every root that a conformance harness runs on a corpus and that admits `recursion` has a measured stack bound in `tests/stack-bounds.json`, whose rows are exactly the recursive packages of the committed `bootstrap` and `stdlib` exports, and the stack of the harness thread (`rust_harness::HARNESS_STACK`) and of the evaluator thread is at least the largest recorded bound times the stated headroom of 4, so that a harness stack below that bound is refused and a harness binary run on a quarter of its bound aborts instead of finishing; the bounds are measurements of the cases' own inputs on one host, evidence and not a guarantee for another host or input."
+
+[[id]]
 id = "NE-01"
 level = "build"
 suite = "extraction"
@@ -1753,6 +1776,12 @@ id = "RB-13"
 level = "build"
 suite = "rust-backend"
 statement = "A package states the effects of its realization: `package.json` and `provenance.json` record them, ascending and registered, the production registry says that exhausting the stack aborts the process, and an unregistered or unordered list, or one that states allocation on `rust-core`, is refused."
+
+[[id]]
+id = "RB-14"
+level = "build"
+suite = "rust-backend"
+statement = "A library template whose self calls are all tail calls is rendered as a loop over its accumulator that breaks with its result, so that the production rows of the primitives it realizes carry no `recursion`, while a template with a call that is not a tail call is rendered as a call and keeps the effect; a rendering that states a self call where a loop is possible, and a row whose `recursion` differs from its rendering, are refused."
 
 [[id]]
 id = "GN-01"
@@ -1969,6 +1998,24 @@ id = "SP-17"
 level = "build"
 suite = "preservation"
 statement = "No Lean source text template remains in the production compiler: a lexer-level scan of the Rust sources under crates/lexlean/src/production/ and of the probe and audit-module part of crates/lexlean/src/backend/lean.rs reads every string literal outside test code and finds none that is Lean syntax, which is a literal holding a Lean symbol (`:=`, `=>`, `→`, `∀`, `∃`, `⟨`, `⟩`, `(.`, `«`, `#print`, `#check`, `#eval`, `@[`, a `fun` binder), a Lean command line (`import`, `namespace`, `set_option`, `universe`, `open`), or a declaration (`theorem`, `def`, `example`, `instance`, `structure`, `inductive`, `abbrev`) with a type or a body, apart from a short allow-list of the printouts of kernel terms that developers read and the closed commands of the auxiliary module renderer; the staged audit module is an auxiliary module of typed commands that the backend renders; and a planted template in a production source, in the auxiliary module part of the backend, and in a module the scan sees as test code is each reported, the last not."
+
+[[id]]
+id = "SP-18"
+level = "build"
+suite = "preservation"
+statement = "The declared Rust machine states a machine primitive as a callee and the overflow value as a literal: RustSyntax declares eight machine primitives (checked add, subtract, multiply, quotient, negation, shift left, and shift right of a width, and try-from to a width), the callee that names one, and the literal Overflow, and RustSemantics evaluates a call of a machine callee as the calculus primitive of the same name, with the Option value the calculus states, stuck on an operand of another width (the amount of a shift excepted), and the literal Overflow as the unit value that an Err(Overflow) carries, which the pinned Lean evaluates on the boundary values of the widths and refuses to evaluate to a wrong value."
+
+[[id]]
+id = "SP-19"
+level = "build"
+suite = "preservation"
+statement = "The declared Rust machine states a loop over a state with a break value: RustSyntax declares the expression Loop of a state binding and a body block, and RustSemantics evaluates it by running the body in the environment of the state, rebinding the state to the payload of an Ok result and running the loop again, ending with the payload of an Err result as the value of the loop, stuck on a body whose value is neither, and exhausted rather than wrong when the fuel runs out, which the pinned Lean evaluates on a countdown and refuses to evaluate to a wrong value."
+
+[[id]]
+id = "SP-20"
+level = "build"
+suite = "preservation"
+statement = "Certificate B certifies a function the renderer writes as a loop: the library's FunOK states a function either by the correspondence for the body the crate holds or by FunLoop, that the crate's body is the loop form of an ordinary recursive body (the library's loopOf, with its Boolean checks of the renamed parameters, the kept parameters, and the freshness of the renamed names decided by evaluation) together with the correspondence for that recursive body, which funSem_of turns into the simulation through funSem_loop with the correspondence, its recursor, and the soundness theorem unchanged, and the aligner recovers the recursive body by inverting the rendering of loops (the renamed parameters, the destructuring of the state, and the Ok and Err wraps), so that for every loop of every renderer fixture in each profile and of every production root of the committed examples in each of its targets the loop form of the recovered body, computed by the library's form transliterated, is the crate's function, certificate B of the fixtures rendered as loops compiles under the pinned Lean with exactly the axioms Classical.choice, Quot.sound, and propext, and a loop that is not the loop form of any recursive body is refused, whether its state has another type, its body does not take the state apart, an end is not an Err, a renamed parameter is read by the body, a pattern rebinds a kept parameter, or the state holds a parameter the function does not have."
 
 [[id]]
 id = "MD-01"
@@ -2334,7 +2381,7 @@ statement = "Every value of the closed semantic-module schema has one notation a
 id = "AU-02"
 level = "build"
 suite = "authoring"
-statement = "A language-1.2 semantic module written in the authoring notation links to exactly the module its data form links to, with the same semantic ID and the same generated Lean and LaTeX byte for byte and source maps that relate each declaration to its text in the notation; fmt writes a module written as data in the notation, to the committed bytes, and leaves the notation unchanged, and the notation under language 1.1 is refused with LLP2003."
+statement = "A language-1.2 semantic module written in the authoring notation builds, with source maps that relate each declaration to its text in the notation; fmt leaves the notation unchanged and restores its canonical layout from another layout, and the notation under language 1.1 is refused with LLP2003; its data form is not a language-1.2 source (AU-13)."
 
 [[id]]
 id = "AU-03"
@@ -2352,7 +2399,7 @@ statement = "No language-1.2 source of the product is written as data: every com
 id = "AU-05"
 level = "build"
 suite = "authoring"
-statement = "A language-1.2 tooling module written in the authoring notation links to exactly the module its data form links to, with the same semantic ID and the same generated Lean and LaTeX byte for byte and source maps that relate each declaration to its text in the notation; the notation and the canonical JSON of every committed tooling module are in bijection and the notation is its own canonical form; fmt writes a tooling module written as data as exactly the committed notation and leaves the notation unchanged; and malformed notation, and every single-token deletion and duplication of a committed tooling module, fails with a position or decodes, and nothing panics."
+statement = "A language-1.2 tooling module written in the authoring notation renders, with source maps that relate each declaration to its text in the notation; the notation and the canonical JSON of every committed tooling module are in bijection and the notation is its own canonical form; fmt leaves the notation unchanged; and malformed notation, and every single-token deletion and duplication of a committed tooling module, fails with a position or decodes, and nothing panics."
 
 [[id]]
 id = "AU-06"
@@ -2382,19 +2429,25 @@ statement = "Every core module of the closed schema has one notation and the not
 id = "AU-10"
 level = "build"
 suite = "authoring"
-statement = "A language-1.2 core module written in the authoring notation links to exactly the module its data form links to, with the same semantic ID and the same generated Lean and LaTeX byte for byte and source maps that name the notation; fmt writes a core module written as data as the notation and leaves the notation unchanged; and the notation under language 1.0 and 1.1 is refused with LLP2003."
+statement = "A language-1.2 core module written in the authoring notation builds, with source maps that name the notation; fmt leaves the notation unchanged and restores its canonical layout from another layout; and the notation under language 1.0 and 1.1 is refused with LLP2003; its data form is not a language-1.2 source (AU-13)."
 
 [[id]]
 id = "AU-11"
 level = "build"
 suite = "authoring"
-statement = "Malformed core notation fails closed and never panics: an unclosed delimiter, a keyword used as a name, a label that is not the number of its node, a reference to a node not yet written, a numeral with a redundant leading zero, a statement that defines no node, a nesting beyond the bound, and every single-token deletion and duplication of a committed module fail with a registered code at a position in the notation or link to a module that decodes."
+statement = "Malformed core notation fails closed and never panics: an unclosed delimiter, a keyword used as a name, a label that is not the number of its node, a forward reference to a node, a numeral with a redundant leading zero, a statement that defines no node, a nesting beyond the bound, and every single-token deletion and duplication of a committed module fail with a registered code at a position in the notation or link to a module that decodes."
 
 [[id]]
 id = "AU-12"
 level = "build"
 suite = "authoring"
 statement = "A core module written with names for its statements and its variables reads to exactly the module its canonical notation reads to, and the canonical notation keeps the names of the binders and writes the numbers of the statements: a variable is written by the name of its binder exactly when no nearer binder has the name, a constant a binder in scope is named like is written as a string, a theorem added to the certification library by name reads to the committed module and is written as the committed bytes, and an unknown or repeated statement name and a variable given universe levels are refused with a position."
+
+[[id]]
+id = "AU-13"
+level = "build"
+suite = "authoring"
+statement = "Under language 1.2 a module written with a data argument (`\\semanticdata{…}`, `\\toolingdata{…}`, or `\\coredata{…}`) is refused with LLP2003 at the position of the data argument and naming the authoring notation, whichever of the three environments holds it; fmt does not rewrite it and reports the same refusal; lexlean::sdk::to_data_form is the one conversion into the data form and to_notation the one out of it; and the data form is still accepted under language 1.1, where the semantic example links, and is still the form of the Atlas under language 1.0."
 
 [[id]]
 id = "RT-01"
@@ -2427,6 +2480,12 @@ suite = "stdlib"
 statement = "The standard library's `Text` module is language-1.2 source whose seven members over `Bytes` (`startsWith`, `endsWith`, `trim`, `lines`, `splitOn`, `joinWith`, `find`) are production roots eligible for `rust-std` with exactly their declared effects; each member's lowered program under the calculus evaluator and its rendered `rust-std` package under the pinned rustc agree with Rust's `starts_with`, `ends_with`, `trim_ascii`, `lines`, `split`, `join`, and `find` on a seeded corpus; a planted defect in a member is detected; and the certified packages the production export publishes for it are the committed ones."
 
 [[id]]
+id = "SL-02"
+level = "build"
+suite = "stdlib"
+statement = "The standard library's `Sha256` module is language-1.2 source stating FIPS 180-4 SHA-256 over `UInt32` bit operations and `iterate` (modular addition by widening to `UInt64`, rotation as two shifts, padding read by position, the message schedule as a sixteen-word window, sixty-four rounds over the round-constant list), whose roots `sha256 : Bytes -> Digest` and `sha256Hex : Bytes -> Bytes` are production roots eligible for `rust-std` with exactly their declared effects; the lowered program under the calculus evaluator and the rendered `rust-std` package under the pinned rustc compute the FIPS 180-4 example digests and every NIST CAVP SHA-256 short- and long-message vector, and agree with the `sha2` crate on a seeded corpus whose lengths cover every padding boundary, a disagreement failing closed and never resolved by adopting the oracle's digest; a planted one-bit error in the round function is detected; and the certified packages the production export publishes for the two roots are the committed ones."
+
+[[id]]
 id = "BS-01"
 level = "build"
 suite = "bootstrap"
@@ -2439,6 +2498,17 @@ suite = "bootstrap"
 statement = "The preservation lexer and token audit of SPEC.md §17.17 are language-1.2 source in the `bootstrap/` project: `lex` and `auditTokens` of `TokenAudit` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle `production::preserve::{lex, audit_tokens}` on every lexeme, position, and rejection message for the first 1,500 characters of every module of the shipped preservation library and calculus modules, the number-lexing corpus, and every token-audit unit vector; on the normative host, both roots' lowered programs under the calculus evaluator agree with the Rust oracle on those vectors and a seeded corpus, the rendered packages under the pinned rustc agree with the oracle on the large seeded corpus of generated and mutated Lean texts with no disagreement, a planted defect in the source is detected, and the certified packages the production export publishes for the project are the committed ones."
 
 [[id]]
+id = "BS-03"
+level = "build"
+suite = "bootstrap"
+statement = "The primitive scanner of SPEC.md §12.2 is language-1.2 source in the `bootstrap/` project: `scanSource` and `rejectAtoms` of `PrimitiveScan` are production roots eligible for `rust-std` with exactly their declared effects; on every host of the matrix, both roots' rendered `rust-std` packages under that host's pinned rustc agree with the Rust oracle `source::scan::{scan, reject_forbidden_atoms}` on every atom with its class, text, and byte, line, and column spans and on every rejection with its code, message, span, and help, for the deterministic vectors (the oracle's unit inputs, the atom limit at N and N+1, atom lists with gaps, payload strings, and notation bodies), a 128-byte window and a 2,048-byte prefix of every committed `.lex.tex` source, and the whole of each such source up to 8,192 bytes (up to 1,024 bytes, one source in four, for `rejectAtoms`); on the normative host, both roots' lowered programs under the calculus evaluator agree with the oracle on the vectors and the 128-byte windows and on 80 seeded texts, the packages agree on 2,500 seeded texts, each of ten planted defects in the source is detected, and the certified packages the production export publishes for the project are the committed ones."
+
+[[id]]
+id = "BS-04"
+level = "build"
+suite = "bootstrap"
+statement = "The target calculus's checker of SPEC.md §17.14 (`lexlean::calculus::check`), for a program given as calculus data, each list of a recursive type carried as a chain of that type's own `Nil` and `Cons` constructors and decoded back to the program on every vector (reading a program from its canonical JSON is not part of this row), is language-1.2 source in the `bootstrap/` project: `checkProgram` and `checkArguments` of `CalculusCheck` are production roots eligible for `rust-std` with exactly their declared effects; on the normative host the lowered programs of both roots under the calculus evaluator agree with the Rust checker on acceptance and on the rejection message to the byte for every committed target program and the refusal edits of `TC-02` and for a seeded corpus of data-level mutations, and each planted defect in the source is detected; on every host the rendered `rust-std` packages of both roots under the pinned rustc agree with the Rust checker on the deterministic vectors, and on the normative host also on a larger seeded corpus with no disagreement; strings whose Rust `Debug` spelling escapes a non-ASCII scalar other than `U+0080`..`U+009F` are outside the claim; and the certified packages the production export publishes for the project are the committed ones."
+
 id = "BS-05"
 level = "build"
 suite = "bootstrap"

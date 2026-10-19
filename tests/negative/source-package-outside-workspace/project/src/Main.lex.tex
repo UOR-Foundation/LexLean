@@ -1,0 +1,17 @@
+\begin{lexlean}{Main}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{PkgLib.Util}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: appValue,
+  parameters: [n : Nat],
+  result: Nat,
+  body: (PkgLib.Util::quadPlusOne n),
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core, rust-std]}
+}
+
+theorem{name: app_value_two, parameters: [], statement: ((appValue 2) = 9), proof: reflexivity{}}
+\end{semanticmodule}
+\end{lexlean}

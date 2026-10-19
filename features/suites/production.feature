@@ -50,3 +50,10 @@ Feature: production
     When the exhaustiveness audit reads it against `crates/lexlean/src/ir/semantic.rs`
     Then it passes and every IR variant is named
     And a planted wildcard arm, rest pattern, `if let`, or unnamed `SemanticInteger::UInt64` each fails the audit
+
+  @PD-08 @build
+  Scenario: Every root that a conformance harness runs on a corpus and that admits `recursion` has a measured stack bound in `tests/stack-bounds.json`, whose rows are exactly the recursive packages of the committed `bootstrap` and `stdlib` exports, and the stack of the harness thread (`rust_harness::HARNESS_STACK`) and of the evaluator thread is at least the largest recorded bound times the stated headroom of 4, so that a harness stack below that bound is refused and a harness binary run on a quarter of its bound aborts instead of finishing; the bounds are measurements of the cases' own inputs on one host, evidence and not a guarantee for another host or input.
+    Given the committed `bootstrap` and `stdlib` production exports, the stack bounds recorded in `tests/stack-bounds.json`, and the harness thread stacks of the conformance suite
+    When every recursive package of those exports is matched to its row, each harness stack is compared with the largest bound times the headroom, and the rendered harness of `isClosedLeanName` is run on a stack at that product and on a quarter of its own bound
+    Then every recursive package has a row, no row is stale, and every harness stack covers its bound with the headroom
+    And a harness stack below a bound is refused, and the harness on a quarter of its bound aborts

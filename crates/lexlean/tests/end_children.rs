@@ -834,7 +834,7 @@ fn scenario_concurrent() {
                         started.push(child.id());
                         mine.push((child, guard));
                     }
-                    // Refused: the host has ended the children and not yet
+                    // Refused: the host has ended the children and has not
                     // re-enabled new ones.
                     Err(lexlean::verify::lifeline::CannotStart::Shutdown) => {
                         std::thread::sleep(Duration::from_micros(100));

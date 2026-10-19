@@ -18,7 +18,7 @@ definition{
   result: Nat,
   body: (prim map_fold (fun [bonus] (acc : Nat) (key : Nat) (value : Nat) => ((acc + key) + (value + bonus))) 0 m : Nat),
   executable: true,
-  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+  production: {effects: [allocation, overflow], targets: [rust-std]}
 }
 
 definition{
@@ -36,7 +36,7 @@ definition{
   result: (Nat * Int),
   body: ((prim list_fold (fun (a : Nat) (x : Nat) => (a + x)) 0 xs : Nat), (prim set_fold (fun (a : Int) (x : Int) => (prim subtract a x : Int)) (5 : Int) s : Int)),
   executable: true,
-  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+  production: {effects: [allocation, overflow], targets: [rust-std]}
 }
 
 definition{
@@ -45,7 +45,7 @@ definition{
   result: (Nat * (Nat * Bool)),
   body: ((prim iterate (fun (x : Nat) => (x + 1)) n start : Nat), (prim iterate_until (fun (x : Nat) => (if (x <? 10) then (ctor Option.some [Nat] (x + 2)) else (ctor Option.none [Nat]))) n start : (Nat * Bool))),
   executable: true,
-  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+  production: {effects: [allocation, overflow], targets: [rust-std]}
 }
 
 definition{
@@ -86,7 +86,7 @@ definition{
   body: ((prim map_lookup a k : (Option Bool)), ((prim map_lookup i j : (Option Nat)), ((prim map_lookup b c : (Option Nat)), ((prim map_lookup d e : (Option Nat)), (prim map_lookup u w : (Option Nat)))))),
   axioms: [Classical.choice, Quot.sound, propext],
   executable: true,
-  production: {effects: [allocation, recursion], targets: [rust-std]}
+  production: {effects: [allocation], targets: [rust-std]}
 }
 
 definition{

@@ -18,6 +18,15 @@
     "hints": ""
   },
   {
+    "part": "bdd-bootstrap-check",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-check",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
     "part": "bdd-compiler",
     "recipes": "bdd",
     "examples_part": "",
@@ -31,6 +40,15 @@
     "recipes": "bdd",
     "examples_part": "",
     "bdd_part": "preservation",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-preservation-lists",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "preservation-lists",
     "width": "",
     "memory_kib": "",
     "hints": ""

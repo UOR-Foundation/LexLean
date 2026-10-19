@@ -387,6 +387,21 @@ impl P {
         Self { temp, root }
     }
 
+    /// A fresh copy of a committed project under `tests/`, without build
+    /// output or expected oracles.
+    #[must_use]
+    pub fn copy_tests_project(path: &str) -> Self {
+        let temp = tempfile::Builder::new()
+            .prefix("lexlean-tests-project-")
+            .tempdir()
+            .expect("tempdir");
+        let source = repo_root().join("tests").join(path);
+        assert!(source.is_dir(), "committed project `{path}` is required");
+        copy_tree(source.as_std_path(), temp.path(), &[".lexlean", "expected"]);
+        let root = Utf8PathBuf::from_path_buf(temp.path().to_path_buf()).expect("utf8 tempdir");
+        Self { temp, root }
+    }
+
     /// A fresh copy of the committed source-package workspace
     /// (`tests/packages/workspace`, SPEC.md §10.5): `root` is the member
     /// project `member` (`app`, `lib`, or `base`), and the workspace itself is
@@ -675,8 +690,36 @@ impl P {
         self.write("src/Main.lex.tex", &main);
     }
 
-    /// Overwrite a project file.
+    /// Overwrite a project file. A language-1.2 module given as data is
+    /// written in the notation, the one form that language admits (SPEC.md
+    /// §17.21.1): [`Self::read`] presents the notation as data so that a case
+    /// can quote and edit it by fragment, and this is its inverse. Data that
+    /// the notation cannot carry (a payload that is not a module) is written
+    /// as it is, to be refused.
     pub fn write(&self, relative: &str, content: &str) {
+        let content = if relative.ends_with(".lex.tex")
+            && self.language().as_deref() == Some("1.2")
+            && lexlean::surface::module::locate(content).is_some_and(|found| found.data.is_some())
+        {
+            lexlean::sdk::to_notation(content).unwrap_or_else(|_| content.to_owned())
+        } else {
+            content.to_owned()
+        };
+        self.write_raw(relative, &content);
+    }
+
+    /// The `language` the project's `lexlean.toml` states.
+    fn language(&self) -> Option<String> {
+        std::fs::read_to_string(self.root.join("lexlean.toml").as_std_path())
+            .ok()?
+            .lines()
+            .find_map(|line| line.strip_prefix("language = "))
+            .map(|value| value.trim().trim_matches('"').to_owned())
+    }
+
+    /// Overwrite a project file with exactly `content`, whatever form the
+    /// module in it is written in.
+    pub fn write_raw(&self, relative: &str, content: &str) {
         let path = self.root.join(relative);
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent.as_std_path()).expect("parent");
@@ -1272,6 +1315,17 @@ pub fn checked_project(project: &P) -> lexlean::link::CheckedProject {
     let inner =
         lexlean::project::Project::load(&project.root.join("lexlean.toml")).expect("project loads");
     let (lock, packages) = lexlean::lock::read_current_lock(&inner).expect("lock current");
+    lexlean::link::check_project(&inner, &Selection::Entrypoints, &lock, packages)
+        .expect("check_project")
+}
+
+/// The checked project for a fixture under a lock computed now, for a case
+/// that reads the lowering of a committed example and not the identity its
+/// committed lock records.
+pub fn checked_project_fresh(project: &P) -> lexlean::link::CheckedProject {
+    let inner =
+        lexlean::project::Project::load(&project.root.join("lexlean.toml")).expect("project loads");
+    let (lock, packages) = lexlean::lock::compute_lock(&inner, false).expect("the lock computes");
     lexlean::link::check_project(&inner, &Selection::Entrypoints, &lock, packages)
         .expect("check_project")
 }
@@ -2511,6 +2565,19 @@ pub fn is_notation_module(text: &str) -> bool {
 pub fn as_data_text(text: &str) -> String {
     if is_notation_module(text) {
         module_as_data(text)
+    } else {
+        text.to_owned()
+    }
+}
+
+/// `text` with a module written as data written in the notation, the form
+/// language 1.2 reads (SPEC.md §17.21.1); any other text, and data the
+/// notation cannot carry, as it is. The inverse of [`as_data_text`], for a case
+/// that edits the data form and hands the result to the compiler.
+#[must_use]
+pub fn notation_text(text: &str) -> String {
+    if lexlean::surface::module::locate(text).is_some_and(|found| found.data.is_some()) {
+        lexlean::sdk::to_notation(text).unwrap_or_else(|_| text.to_owned())
     } else {
         text.to_owned()
     }

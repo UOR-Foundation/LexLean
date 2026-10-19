@@ -1,9 +1,13 @@
 {
   "remainder": "rest",
   "parts": {
+    "bootstrap-check": [
+      "BS-04"
+    ],
     "compiler": [
       "BS-01",
       "BS-02",
+      "BS-03",
       "BS-05",
       "GC-02",
       "GN-02",
@@ -176,6 +180,9 @@
       "VR-21",
       "VR-22",
       "VR-23"
+    ],
+    "preservation-lists": [
+      "SP-15"
     ]
   }
 }

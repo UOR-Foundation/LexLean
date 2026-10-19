@@ -1212,7 +1212,7 @@ fn calculus_definitions() -> serde_json::Map<String, Json> {
 }
 
 pub(crate) fn schema_id(name: &str) -> String {
-    format!("https://github.com/afflom/lexlean/schemas/{name}")
+    format!("https://github.com/UOR-Foundation/LexLean/schemas/{name}")
 }
 
 pub(crate) fn closed(properties: Json) -> Json {

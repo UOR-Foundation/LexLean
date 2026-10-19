@@ -432,7 +432,7 @@ jobs:
             echo "\`release-check.txt\` records what SPEC.md §30 refuses at this version."
             echo "§2.3 fixes \`1.0.0\` as the first release satisfying the complete"
             echo "specification, so this tag does not claim that criterion; the report names"
-            echo "each part of it that does not yet hold. See CHANGELOG.md."
+            echo "each part of it that does not hold. See CHANGELOG.md."
           } > notes.md
           gh release create "${GITHUB_REF_NAME}" \
             --title "lexlean ${VERSION}" \

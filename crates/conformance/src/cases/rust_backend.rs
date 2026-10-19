@@ -58,6 +58,7 @@ fn edit_first(krate: &mut Crate, edit: &mut dyn FnMut(&mut Expr) -> bool) -> boo
                 scrutinee, arms, ..
             } => expr(scrutinee, edit) || arms.iter_mut().any(|(_, body)| block(body, edit)),
             Expr::Block(inner) => block(inner, edit),
+            Expr::Loop { body, .. } => block(body, edit),
             _ => false,
         }
     }
@@ -266,6 +267,7 @@ const AST_SHAPES: &[&str] = &[
     "expr:predecessor",
     "expr:widen",
     "expr:succeed",
+    "expr:loop",
     "lit:string-escaped",
     "capture:copy",
     "capture:clone",
@@ -315,6 +317,7 @@ fn ast_shapes(krate: &Crate, out: &mut BTreeSet<&'static str>) {
             Expr::Predecessor(_) => "expr:predecessor",
             Expr::Widen(..) => "expr:widen",
             Expr::Succeed(..) => "expr:succeed",
+            Expr::Loop { .. } => "expr:loop",
         });
         match node {
             Expr::Not(inner, _)
@@ -344,7 +347,7 @@ fn ast_shapes(krate: &Crate, out: &mut BTreeSet<&'static str>) {
                 expr(scrutinee, out);
                 arms.iter().for_each(|(_, body)| block(body, out));
             }
-            Expr::Block(body) => block(body, out),
+            Expr::Block(body) | Expr::Loop { body, .. } => block(body, out),
             _ => {}
         }
     }
@@ -1498,6 +1501,8 @@ pub fn run(id: &str) {
         // §17.16: the runtime's library surface is closed, and each name on
         // it is a primitive, stated over primitives, or an AST construct.
         "RB-10" | "RB-11" | "RB-12" | "RB-13" => super::rust_scaffold::run(id),
+        // §17.13, §17.16: a tail-recursive template renders as a loop.
+        "RB-14" => super::rust_loops::run(id),
         "RB-09" => {
             use lexlean::calculus::rust::runtime::{CORE, STD};
             use lexlean::calculus::rust_library::{

@@ -534,7 +534,26 @@ const fn fixed(ty: &SemanticType) -> Option<(SemanticInteger, bool, u32)> {
         SemanticType::Int32 => (SemanticInteger::Int32, true, 32),
         SemanticType::UInt64 => (SemanticInteger::UInt64, false, 64),
         SemanticType::Int64 => (SemanticInteger::Int64, true, 64),
-        _ => return None,
+        SemanticType::Type
+        | SemanticType::Parameter { .. }
+        | SemanticType::Nat
+        | SemanticType::Bool
+        | SemanticType::Prop
+        | SemanticType::Unit
+        | SemanticType::Int
+        | SemanticType::String
+        | SemanticType::Bytes
+        | SemanticType::Ordering
+        | SemanticType::Option { .. }
+        | SemanticType::Result { .. }
+        | SemanticType::List { .. }
+        | SemanticType::Named { .. }
+        | SemanticType::Product { .. }
+        | SemanticType::Function { .. }
+        | SemanticType::Map { .. }
+        | SemanticType::Set { .. }
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure => return None,
     })
 }
 
@@ -626,7 +645,42 @@ mod tests {
                     other => panic!("unexpected {other:?}"),
                 }
             }
-            other => panic!("unexpected {other:?}"),
+            other @ (SemanticTerm::Var { .. }
+            | SemanticTerm::String { .. }
+            | SemanticTerm::Bytes { .. }
+            | SemanticTerm::Bool { .. }
+            | SemanticTerm::Unit
+            | SemanticTerm::Nil { .. }
+            | SemanticTerm::Cons { .. }
+            | SemanticTerm::Record { .. }
+            | SemanticTerm::Constructor { .. }
+            | SemanticTerm::InstanceValue { .. }
+            | SemanticTerm::Project { .. }
+            | SemanticTerm::Call { .. }
+            | SemanticTerm::Match { .. }
+            | SemanticTerm::Eq { .. }
+            | SemanticTerm::Le { .. }
+            | SemanticTerm::Lt { .. }
+            | SemanticTerm::Beq { .. }
+            | SemanticTerm::Ble { .. }
+            | SemanticTerm::Blt { .. }
+            | SemanticTerm::And { .. }
+            | SemanticTerm::PropAnd { .. }
+            | SemanticTerm::Or { .. }
+            | SemanticTerm::Not { .. }
+            | SemanticTerm::Implies { .. }
+            | SemanticTerm::Iff { .. }
+            | SemanticTerm::Forall { .. }
+            | SemanticTerm::Pair { .. }
+            | SemanticTerm::First { .. }
+            | SemanticTerm::Second { .. }
+            | SemanticTerm::Lambda { .. }
+            | SemanticTerm::Apply { .. }
+            | SemanticTerm::FunctionRef { .. }
+            | SemanticTerm::MapLiteral { .. }
+            | SemanticTerm::SetLiteral { .. }
+            | SemanticTerm::GraphLiteral { .. }
+            | SemanticTerm::CheckedApply { .. }) => panic!("unexpected {other:?}"),
         }
     }
 

@@ -1,0 +1,43 @@
+{
+  "spec": "lexlean/stack-bounds/1",
+  "headroom": 4,
+  "granule": 65536,
+  "scaling": {
+    "bootstrap/parse_audit_output": [
+      {
+        "input_bytes": 11500,
+        "debug": 327680,
+        "release": 131072
+      },
+      {
+        "input_bytes": 46000,
+        "debug": 1048576,
+        "release": 327680
+      },
+      {
+        "input_bytes": 92000,
+        "debug": 2097152,
+        "release": 655360
+      },
+      {
+        "input_bytes": 184000,
+        "debug": 4128768,
+        "release": 1245184
+      }
+    ]
+  },
+  "rows": {
+    "bootstrap/check_arguments": {
+      "debug": 4915200
+    },
+    "bootstrap/check_program": {
+      "debug": 13697024
+    },
+    "bootstrap/evaluator": {
+      "debug": 21037056
+    },
+    "bootstrap/parse_audit_output": {
+      "debug": 6291456
+    }
+  }
+}

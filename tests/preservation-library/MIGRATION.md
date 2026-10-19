@@ -187,3 +187,236 @@ regenerated:
 
 Every language-1.2 lock, golden, fixture expectation, and verified record was
 regenerated; the goldens and locks of languages 1.0 and 1.1 are unchanged.
+
+## Derived rows (#91 stage 2)
+
+The library stored, for every row the pinned Lean makes itself (the 6,890 rows
+whose names it reserves, which are the equations, unfolding equations, and
+splitters of matchers and definitions and the `else_eq` of sparse `casesOn`
+constants, and the 313 sparse `casesOn` constants), the type and value Lean made,
+and the decoder compared them with what its construction made. A copy of what
+Lean makes goes stale when a type of the calculus changes and nothing outside Lean
+can rewrite it, so these rows are now *derived* (SPEC.md §17.10, `SM-34`): a row
+states its name, kind, and extension state, and for a sparse `casesOn` its record,
+and no universe parameters, type, value, reducibility metadata, or group. The
+decoder makes the constant at the row's place in the order.
+
+**How.** The one-time converter is the oracle of checkpoint commit
+`d87385f92` (`tests/preservation-library/oracle-derived/`, removed from the
+release tree by the commit that follows it). It reads each of the 13 native
+modules, checks that the module is the canonical notation of itself, marks as
+derived every row whose name ends `eq_<n>`, `eq_def`, `splitter`, or `else_eq`
+or that carries a sparse record, drops what the construction decides, removes the
+nodes no remaining row reaches (renumbering the rest in order), checks that the
+module validates and that its notation reads back to it, and writes the notation.
+`lexlean fmt --check` holds the 13 modules canonical.
+
+| module | rows derived | nodes before | nodes after | source bytes before | source bytes after |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `Core` | 121 | 37,821 | 31,011 | 1,218,748 | 968,302 |
+| `Values` | 0 | 2,391 | 2,391 | 70,609 | 70,609 |
+| `Primitives` | 15 | 5,614 | 5,358 | 153,500 | 146,765 |
+| `Fixed` | 3 | 14,674 | 14,632 | 512,246 | 510,964 |
+| `Keys` | 424 | 18,870 | 4,605 | 796,856 | 211,428 |
+| `Templates` | 20 | 37,054 | 35,439 | 829,853 | 765,497 |
+| `Validate` | 35 | 13,051 | 10,309 | 322,612 | 238,989 |
+| `RustBase` | 220 | 48,164 | 32,780 | 1,595,627 | 1,074,826 |
+| `RustCorr` | 184 | 86,704 | 45,828 | 2,880,189 | 1,250,898 |
+| `RustLemmas` | 5,635 | 571,074 | 390,732 | 24,353,232 | 17,219,467 |
+| `RustMatches` | 511 | 243,840 | 157,737 | 9,147,820 | 5,419,902 |
+| `RustSound` | 14 | 12,277 | 9,815 | 418,463 | 338,719 |
+| `Compose` | 21 | 4,580 | 3,813 | 162,717 | 140,680 |
+| total | 7,203 | 1,096,114 | 744,450 | 42,462,472 | 28,357,046 |
+
+The Lean the compiler generates from the library falls from 82,856,219 to
+57,115,996 bytes.
+
+**Equivalence.** The environment the derived rows make is the environment the
+stored rows made. The Lean `lexlean build` generates from the library before and
+after the change was compiled by the pinned Lean 4.32.1 and exported with the
+exporter, `flags.lean`, `probe.lean`, `canon.py`, and `compare.py` of checkpoint
+`d54dbf85` (above), unchanged. The comparison is of the two re-exports, not of the
+new re-export with the committed sources: that checkpoint's exporter predates the
+runtime library (#90) and the later moves of the library, and its re-export of
+the unchanged library already differs from the committed data in all 13 modules
+(the imports, the order of the rows of `Keys` and `RustLemmas`, rows that name
+runtime constants, and the `else_eq` of sparse constants), so it can establish the
+equality of two re-exports and not the equality of one with the committed
+sources.
+
+Result: the two re-exports have the same 9,247 declarations in the same order in
+the same 13 modules, and every module's data, declaration by declaration, is equal
+as trees of kernel terms: kind, universe parameters, type, value, reducibility
+hints and transparency, tags, structure, class, instance, projection, matcher,
+no-confusion, simplification, equation-record, inlining, sparse-`casesOn`, and
+`grind` state, compiled flags, and exact axioms. 9,213 rows are equal in every
+byte of their terms; 34 rows (10 in `RustLemmas`, 24 in `RustMatches`), all sparse
+`casesOn` constants, are equal up to the hygienic names of bound variables, as
+before. The modules' imports are equal beyond the two imports the decoder adds
+(`Lean` and `Lean.Meta.Constructions.SparseCasesOn`) in both. The attribute probe
+(inlining kind, sparse record with its type, major position, arity and
+constructors, `grind` registration, matcher information, specialization,
+noncomputability, of every constant) prints 1,088 identical lines for both
+environments.
+
+**Verification.** `lexlean lock && lexlean verify` in a copy of the project of
+`tests/negative/preservation-drift` stages the library into the certificate
+environment, compiles it, replays each module through `leanchecker`, and audits
+the axioms of the 7,740 declarations audited by name against their policies, and
+reports `verified 2 modules`. Derived rows keep their axiom policy, so the audit
+reads the same rows as before. A certificate cites no derived row: the library
+states no type of it, and a certificate that tried would be refused by the
+builder naming the row.
+
+**What this change did not do.** The language-1.2 compiler-semantics ID moves
+with the library and the schema. Its locks, goldens, fixtures, calculus and
+production records, and verified records were not regenerated here: they are
+regenerated once, with the rest of the train, so every test that reads a committed
+lock reports `LLC0102` until then.
+
+## Authored proofs repaired for `Callee.machine` and `Lit.overflow` (#91 stage 2, `SP-18`)
+
+`RustSyntax` gained a callee and a literal: `Callee.machine` over the eight
+primitives of `Machine`, and `Lit.overflow`. Every row the pinned Lean makes
+itself is derived (above), so the 7,203 of them are made for the new modules and
+nothing stored goes stale. Five authored declarations are one case short, as hh
+measured on #91:
+
+| declaration | module | what the new constructor changes in its proof |
+| --- | --- | --- |
+| `stable` | `RustBase` | 20 applications of `eval.match_3` take a third alternative, and its `Callee.casesOn` a third arm |
+| `rc_call_function` | `RustLemmas` | 2 applications of `eval.match_3` take a third alternative |
+| `rc_call_runtime` | `RustLemmas` | 2 applications of `eval.match_3` take a third alternative |
+| `rc_call_halt` | `RustLemmas` | 4 applications of `eval.match_3` take a third alternative |
+| `rc_negate` | `RustLemmas` | its `Lit.casesOn` takes a ninth arm |
+
+**How.** The one-time tool is the oracle of checkpoint commit `37468a723`
+(`tests/preservation-library/oracle-machine/`, removed from the release tree by the
+commit that follows it). It edits kernel terms; it adds no Lean. The new alternative
+of the matcher is `fun primitive => runMachine primitive <operands>`, the operands
+those of the alternative for `Callee.runtime`. The new arm of `Callee.casesOn` is the
+arm for `runtime` over a primitive instead of an item, since the proof of that case
+does not depend on what the callee runs: both sides of the goal are the same
+`returned (…) prop`. The new arm of `Lit.casesOn` is the arm for `unit` with
+`Lit.overflow` in its place: `negateR` writes a literal that is not a Boolean as
+`Expr.not` of it, so the case closes with the hypothesis about `Expr.not` of the
+literal. A
+declaration's statement is not edited.
+
+**What it established.**
+
+- Each of the five is needed: with the other four repaired and any one left as it
+  was, `RustBase` or `RustLemmas` is refused at that declaration (`stable`,
+  `rc_call_function`, `rc_call_runtime`, `rc_call_halt`, and `rc_negate`, each in
+  its own run). With all five repaired, the 13 modules compile over the new
+  modules with no error, so these five are the whole set.
+- Nothing else changed. Compared as trees of kernel terms, the old and new
+  `RustBase` and `RustLemmas` (358 and 6,040 declarations, including their derived
+  rows) differ in exactly these five declarations; the other 11 modules are
+  byte-identical, and the statement of each of the five is the tree it was.
+- The result verifies. `lexlean lock && lexlean verify` in a copy of the project of
+  `tests/negative/preservation-drift` compiles the library over the regenerated
+  modules, replays every module, and audits the exact axioms of the 7,740 declarations
+  audited by name (`verified 2 modules`), and the compiler project verifies with the
+  regenerated `RustSyntax` and `RustSemantics` (`verified 17 modules`).
+
+`RustBase` has 33,911 nodes after (32,780) and `RustLemmas` 392,182 (390,732), the
+edited values being copies. The shipped copies of `RustSyntax` and `RustSemantics`
+in `language/preservation-1.2/modules/` are regenerated from `compiler/src`; their
+golden under `compiler/expected/` is not, with the rest of the records bound to the
+compiler-semantics ID.
+
+## Authored proofs repaired for `Expr.loop` (#91 stage 3, `SP-19`)
+
+`Expr` gained a constructor, `loop` over an `Ident` and a `Block`, and
+`RustSemantics.eval` an arm that recurses through `eval` itself, so the mutual group
+and the statement of `stable` are the ones they were. Every declaration that does
+`Expr.casesOn` is one case short. The oracle is checkpoint commit `a549a3d48`
+(`tests/preservation-library/oracle-loop/`, removed by the commit that follows it).
+
+| module | declarations | repair |
+| --- | --- | --- |
+| `RustBase` | `stable` | an arm for `loop` made from the arm for `block` with its proof replaced by an application of `stable_loop`; `stable_loop` and the derived row `eval.eq_23` are added before it |
+| `RustLemmas` | `rc_read`, `rcb_flat`, `foldStep_spec`, `rc_negate`, `rc_negate_halt` | an arm for `loop` made from a donor constructor's arm, whose proof uses its fields only through the constructor |
+| `RustLemmas` | `rc_litValue.match_1` | a matcher alternative for `loop` (its type, value, arm of `Expr.casesOn`, and record), and the alternative passed at each application |
+| `RustMatches` | `ctorOf_eq`, `loadOf_spec`, `rc_partRead`, `rebuildArg_rc`, `rebuild_value` | the same donor arm |
+
+`stable_loop` is the one new proof. It is Lean, compiled over the new machine modules,
+exported with the exporter of checkpoint `d54dbf85`, and grafted in; its text is:
+
+```lean
+theorem stable_loop (n : Nat)
+    (ihE : ∀ (c : Crate) (env : List (Ident × Value)) (e : RustSyntax.Expr),
+      eval n c env e ≠ ROutcome.exhausted → eval (n + 1) c env e = eval n c env e)
+    (ihB : ∀ (c : Crate) (env : List (Ident × Value)) (b : Block),
+      evalBlock n c env b ≠ ROutcome.exhausted → evalBlock (n + 1) c env b = evalBlock n c env b)
+    (c : Crate) (env : List (Ident × Value)) (s : Ident) (b : Block)
+    (h : eval (n + 1) c env (RustSyntax.Expr.loop s b) ≠ ROutcome.exhausted) :
+    eval (n + 1 + 1) c env (RustSyntax.Expr.loop s b) = eval (n + 1) c env (RustSyntax.Expr.loop s b) := by
+  rw [eval, eval] at *
+  have hb : evalBlock n c env b ≠ ROutcome.exhausted := by
+    intro hx; rw [hx] at h; exact h rfl
+  rw [ihB c env b hb]
+  generalize evalBlock n c env b = r at *
+  cases r with
+  | value step =>
+    cases step <;> simp at h ⊢
+    all_goals first | rfl | skip
+    exact ihE c _ _ h
+  | _ => rfl
+```
+
+A declaration's statement is not edited, and the 13 modules compile over the loop-extended
+machine modules with no error. What was not run: the compiler project's `verify` needs the
+records the maintainer regenerates, and reports that the compiler semantics changed since
+locking.
+
+## The loop form certified (#91 stage 4, `SP-20`)
+
+The renderer writes a function whose self calls are all tail calls as a loop, so the crate no
+longer holds the body the calculus function corresponds to. `FunOK` is now `FunOK0 ∨ FunLoop`:
+`FunOK0` is the statement `FunOK` was, and `FunLoop` states that the crate's body is `loopOf` of
+an ordinary recursive body, with the Boolean checks of `loopCheckOf` and the `Corr` derivation of
+that body. `Corr`, its recursor, and `sound` are untouched; the soundness of the new disjunct is
+`funSem_loop`, and `funSem_of` is `Or.casesOn` over the two. The oracle is checkpoint commit
+`448aa180c` (the Lean sources, `tests/preservation-library/oracle-loopcorr/lean/`, 2,707 lines,
+198 declarations, no `sorry`) and the commit that follows it (the graft and surgery tools,
+`oracle-loopcorr/src/bin/`), both removed by the commit after them.
+
+| module | rows | change |
+| --- | --- | --- |
+| `RustCorr` | 149, before `FunOK` | `Pos`, `carried`, `pack`, `rtE`/`rtB`/`rtArms`, `loopParams`, `loopParts`, `loopOf`, `loopCheck`, `loopCheckOf`, and `FunLoop`, exported from Lean over the committed library |
+| `RustCorr` | `FunOK`, `CrateOK` | `FunOK` becomes `FunOK0` (its value unchanged) and a new `FunOK p c A f := Or (FunOK0 p c A f) (FunLoop p c A f)`; `CrateOK`'s height and axiom set follow |
+| `RustSound` | 751, before `funSem_of._simp_1_14` | the relational layer for the loop, the relevance and glue lemmas, `funSem_loop` with its exact axioms (`Classical.choice`, `Quot.sound`, `propext`) |
+| `RustSound` | `funSem_of` | the existential case analysis is the first arm of an `Or.casesOn` over the two disjuncts; the second is `funSem_loop` |
+
+`funSem_loop`'s statement:
+
+```lean
+theorem funSem_loop {p : TargetSyntax.Program} {c : RCrate} {A : Flags} {n f : Nat}
+    (hS : ∀ (Γ : Ctx) (fl : Bool) (j : Jd), Corr p c A Γ fl j → Sem p c A n Γ fl j)
+    (h : FunLoop p c A f) : FunSem p c A n f
+```
+
+Found on the way, each fixed where it was found:
+
+- The exporter names a private auxiliary declaration after the module it was elaborated in; a row
+  grafted into another module is renamed to the host module (`_private.LexLeanPreservation.<host>.#0`),
+  or the decoder cannot reproduce it.
+- A name with an apostrophe (`All2.imp'`) cannot be parsed from the audit's output, which quotes
+  names with it; the lemma is `All2.mono`.
+- The decoder cannot realize a sparse `casesOn` over an inductive declared in the same module
+  (`Pos`), because the realization base environment has no `Pos.casesOn`; `keptNames` is written
+  with its constructors spelled out. A decoder that realizes the same-module recursor is the
+  change that would remove the restriction; it is not made here.
+- `compileRows` compiles a mutual group in the command that adds its last member, so a command
+  boundary inside a group failed (`patBinders`/`patBindersList`). This change requires #212, which
+  keeps a compiled mutual group in one command.
+
+Run: the 13 modules compile with no error over the pinned Lean 4.32.1 (`RustCorr` 10 s,
+`RustLemmas` 64 s, `RustMatches` 14 s, `RustSound` 13 s, `Compose` 4 s), the library audit is
+satisfied for every row, and `conformance_sp_20` compiles certificate B of the fixtures rendered
+as loops over it. What was not run: the compiler project's `verify` and every case that reads a
+committed lock, golden, or export report that the compiler semantics changed since locking; the
+maintainer regenerates those records.
+

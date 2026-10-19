@@ -34,6 +34,7 @@
 )]
 
 mod align;
+pub mod loopform;
 mod syntax;
 
 use std::collections::BTreeMap;
@@ -90,9 +91,10 @@ impl<'g, 'a> Aligner<'g, 'a> {
         Ok(self.w.b.apps(refl, &[parts[0], parts[1]]))
     }
 
-    /// The type `FunOK` states of function `index`, over the unfolded
-    /// definition.
-    fn fun_ok_body(&mut self, index: u64) -> Result<K, String> {
+    /// The two disjuncts `FunOK` states of function `index`, as the
+    /// applications of `FunOK0` (the function the crate states directly) and
+    /// `FunLoop` (the loop form of a recursive body) they are.
+    fn fun_ok_halves(&mut self, index: u64) -> Result<(K, K), String> {
         let (module, declaration) = preserve::native_declaration(&format!("{RUST}.FunOK"))?;
         let value = declaration
             .value
@@ -102,6 +104,27 @@ impl<'g, 'a> Aligner<'g, 'a> {
         for argument in [self.p, self.c, self.a, f] {
             let CoreNode::Lambda { v, .. } = self.w.b.node(term).clone() else {
                 return Err("FunOK is not a function of its four arguments".to_owned());
+            };
+            term = self.w.b.instantiate_beta(v, argument);
+        }
+        self.disjuncts(term)
+    }
+
+    /// An application of a library definition, unfolded one step over its
+    /// arguments.
+    fn unfold(&mut self, application: K) -> Result<K, String> {
+        let (head, arguments) = self.w.b.spine(application);
+        let CoreNode::Const { n, .. } = self.w.b.node(head).clone() else {
+            return Err("an unfolded application is not a constant application".to_owned());
+        };
+        let (module, declaration) = preserve::native_declaration(&n)?;
+        let value = declaration
+            .value
+            .ok_or_else(|| format!("`{n}` is declared without a value"))?;
+        let mut term = self.w.b.import(module, value);
+        for argument in arguments {
+            let CoreNode::Lambda { v, .. } = self.w.b.node(term).clone() else {
+                return Err(format!("`{n}` takes fewer arguments than it is applied to"));
             };
             term = self.w.b.instantiate_beta(v, argument);
         }
@@ -146,6 +169,11 @@ impl<'g, 'a> Aligner<'g, 'a> {
         }
     }
 
+    fn and_type(&mut self, left: K, right: K) -> K {
+        let and = self.w.b.konst("And");
+        self.w.b.apps(and, &[left, right])
+    }
+
     fn and_intro(&mut self, left: K, right: K, proof_left: K, proof_right: K) -> K {
         let intro = self.w.b.konst("And.intro");
         self.w
@@ -171,13 +199,20 @@ impl<'g, 'a> Aligner<'g, 'a> {
                 _ => None,
             })
             .ok_or_else(|| format!("the crate does not render function {index}"))?;
-        let statement = self.fun_ok_body(index)?;
+        let (direct, looping) = self.fun_ok_halves(index)?;
+        if matches!(body.tail, crate::calculus::rust::ast::Expr::Loop { .. }) {
+            let recursive = loopform::recover(index, parameters, body)?;
+            let statement = self.unfold(looping)?;
+            let proof = self.loop_case(index, function, parameters, body, &recursive, statement)?;
+            return Ok(self.or_inr(direct, looping, proof));
+        }
+        let statement = self.unfold(direct)?;
         let fn_term = self.w.function_term(function)?;
         let empty_parameter = function
             .types
             .iter()
             .position(|ty| self.uninh(&self.empty.clone(), ty));
-        self.exists_intro(statement, fn_term, |this, at| {
+        let proof = self.exists_intro(statement, fn_term, |this, at| {
             let (found, rest) = this.conjuncts(at)?;
             let refl = this.refl_of(found)?;
             let (left, right) = this.disjuncts(rest)?;
@@ -192,6 +227,107 @@ impl<'g, 'a> Aligner<'g, 'a> {
                 }
             };
             Ok(this.and_intro(found, rest, refl, choice))
+        })?;
+        Ok(self.or_inl(direct, looping, proof))
+    }
+
+    /// The disjunct of a function rendered as a loop: the recursive body it is
+    /// the loop form of, how each parameter is carried, and the derivation of
+    /// the correspondence for that body.
+    fn loop_case(
+        &mut self,
+        index: u64,
+        function: &Function,
+        parameters: &[(
+            crate::calculus::rust::ast::Pat,
+            crate::calculus::rust::ast::Type,
+        )],
+        body: &crate::calculus::rust::ast::Block,
+        recursive: &loopform::Recursive,
+        statement: K,
+    ) -> Result<K, String> {
+        let patterns: Vec<crate::calculus::rust::ast::Pat> = recursive
+            .parameters
+            .iter()
+            .map(|(pattern, _)| pattern.clone())
+            .collect();
+        let empty = self.ctx_empty();
+        let scope = self.param_ctx(&empty, &function.parameters, &function.types, &patterns)?;
+        let fallible = self.fallible_fn(index);
+        let derivation = self.bg(
+            &scope,
+            fallible,
+            fallible,
+            &function.body,
+            &function.result,
+            &recursive.body.lets,
+            &recursive.body.tail,
+        )?;
+        let fn_term = self.w.function_term(function)?;
+        let recursive_parameters = self.w.rs_parameters(&recursive.parameters);
+        let result = self.krate_result(index)?;
+        let lets = self.w.rs_lets(&recursive.body.lets);
+        let tail = self.w.rs_expr(&recursive.body.tail);
+        let gamma = scope.term();
+        let positions = {
+            let pos = self.rust_const("Loop.Pos");
+            let items: Vec<K> = recursive
+                .positions
+                .iter()
+                .map(|position| match position {
+                    loopform::Position::Changed => self.rust_const("Loop.Pos.changed"),
+                    loopform::Position::Kept(name) => {
+                        let kept = self.rust_const("Loop.Pos.kept");
+                        let name = self.w.rs_ident(name);
+                        self.w.b.app(kept, name)
+                    }
+                    loopform::Position::Dropped => self.rust_const("Loop.Pos.dropped"),
+                })
+                .collect();
+            self.w.b.list(pos, &items)
+        };
+        let state = self.w.rs_type(&recursive.state);
+        let done = self.w.rs_type(&recursive.done);
+        let holder = self.w.nat_u(recursive.holder);
+        let renamed = {
+            let nat = self.w.b.konst("Nat");
+            let items: Vec<K> = recursive.renamed.iter().map(|k| self.w.nat_u(*k)).collect();
+            self.w.b.list(nat, &items)
+        };
+        let looped_parameters = self.w.rs_parameters(parameters);
+        let looped_body = self.w.rs_block(body);
+        let witnesses = [
+            fn_term,
+            recursive_parameters,
+            result,
+            lets,
+            tail,
+            gamma,
+            positions,
+            state,
+            done,
+            holder,
+            renamed,
+            looped_parameters,
+            looped_body,
+        ];
+        self.nested_exists(statement, &witnesses, &mut |this, innermost| {
+            // Five equations that evaluation decides, then the derivation.
+            let mut stated = Vec::new();
+            let mut rest = innermost;
+            for _ in 0..5 {
+                let (head, tail) = this.conjuncts(rest)?;
+                stated.push(head);
+                rest = tail;
+            }
+            let mut proof = derivation.proof;
+            let mut right = rest;
+            for equation in stated.iter().rev() {
+                let refl = this.refl_of(*equation)?;
+                proof = this.and_intro(*equation, right, refl, proof);
+                right = this.and_type(*equation, right);
+            }
+            Ok(proof)
         })
     }
 
@@ -745,7 +881,10 @@ pub fn restated_over(data: &CoreModule, module: &str, krate: &Crate) -> Result<C
     let mut writer = Writer::new(&mut generator, module);
     let own = format!("{module}.krate");
     for row in &data.declarations {
-        let ty = writer.b.import(data, row.r#type);
+        let Some(root) = row.r#type else {
+            return Err(format!("the row `{}` states no type", row.name));
+        };
+        let ty = writer.b.import(data, root);
         let value = match row.value {
             Some(_) if row.name == own => writer.rs_crate(krate),
             Some(value) => writer.b.import(data, value),

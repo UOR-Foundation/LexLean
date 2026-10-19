@@ -162,7 +162,7 @@ Feature: semantic-ir
     When it is checked, snapshotted, rendered, and verified, and copies are changed to language 1.1 or to the other module discriminator
     Then the 1.2 snapshot uses lexlean/semantic-snapshot/2 and validates against the v2 module and snapshot schemas
     And the generated Lean contains the fixed let lowering and verifies with real Lean
-    And the language-1.1 copy, a /1 module under 1.2, and a /2 module under 1.1 fail with LLT4001 before any build root exists
+    And the language-1.1 copy and a /2 module under 1.1 fail with LLT4001, and a /1 module under 1.2 is the data form, which fails with LLP2003, before any build root exists
     And a mistyped, shadowing, or self-referential let binder is rejected and the 1.1 snapshot keeps lexlean/semantic-snapshot/1
 
   @SM-24 @build
@@ -230,8 +230,16 @@ Feature: semantic-ir
     And each misuse fails with LLT4001 before any build output
 
   @SM-33 @build
-  Scenario: A version 2 core-module row whose name the pinned Lean reserves is not submitted as data: the decoder runs the pinned Lean's own action for the name and refuses the module when the action does not make the name or makes a constant whose kind, levels, type, or value differ from the row's.
+  Scenario: A version 2 core-module row that states its type and value and whose name the pinned Lean reserves is not submitted as data: the decoder runs the pinned Lean's own action for the name and refuses the module when the action does not make the name or makes a constant whose kind, levels, type, or value differ from the row's.
     Given a language-1.2 native core module with a definition and the equation theorem the pinned Lean reserves for it
     When it is verified, and copies give the theorem another proof of the same statement or a reserved name the construction does not make
     Then the pinned Lean verifies the module whose theorem is the one its own action makes
     And each copy fails with LLV7002, naming the row the construction does not make as stated
+
+  @SM-34 @build
+  Scenario: A version 2 core-module row may be derived, stating its name, kind, and extension state, and for a sparse casesOn its recipe, and no universe parameters, type, or value: the decoder makes the constant with the pinned Lean's own construction at the row's place in the order, and refuses the module when the name is not one the pinned Lean reserves and the row states no sparse casesOn recipe, when the construction does not make the name, or when the constant it makes is not a theorem, definition, or abbreviation as the row says; the notation writes a derived row without a type, the schema and the linker refuse a derived row that states what the construction decides, a stored row is still checked against the construction, the decoder checks that the constructors a recipe names are constructors of the type and are named once, that the module states every sparse casesOn its construction makes, and that every derived sparse casesOn is referred to by the type or value of a row, and the content of a derived row is checked by its uses alone, so that a recipe naming other valid constructors of the type is not distinguished where the use accepts it; and the shipped preservation library states every row that carries a sparse casesOn record or is named like an equation, an unfolding equation, a splitter, or an else equation as a derived row.
+    Given a language-1.2 native core module with a definition and its equation theorem as a derived row, which states no universe parameters, type, or value
+    When it is linked, written in the notation and read back, built, and verified, and copies state a type, a value, or universe parameters on the derived row, give it another name, another kind, or a name the pinned Lean does not reserve
+    Then the pinned Lean verifies the module whose theorem is the one its own action makes, and the notation of the derived row has no type
+    And a copy that states what the construction decides fails with LLI9001, or with LLP2001 where the notation does not read it, before any build output, and each other copy fails with LLV7002, naming the row the construction does not make as stated
+    And every row of the shipped preservation library that carries a sparse casesOn record or is named like an equation, an unfolding equation, a splitter, or an else equation is a derived row, and no derived row is anything else

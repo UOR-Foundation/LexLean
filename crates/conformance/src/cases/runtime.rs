@@ -132,7 +132,7 @@ fn rt_01() {
                 assert!(text.contains(from), "{path} lacks {from:?}");
                 // Every occurrence: a generated row's policy is not checked,
                 // so a plant of one occurrence could miss the checked rows.
-                Ok(text.replace(from, to))
+                Ok(support::notation_text(&text.replace(from, to)))
             } else {
                 Ok(text)
             }

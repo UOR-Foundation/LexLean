@@ -844,7 +844,7 @@ impl LseWalk<'_, '_, '_> {
                 let (function_term, function_ty) = self.walk(function, None)?;
                 // Type the explicit arguments through the function's
                 // telescope; implicit binders become metas that argument
-                // types solve, so a literal in a later argument receives
+                // types solve, so a literal in a following argument receives
                 // its type (§15.5, §17.6).
                 let mut explicit_types: Vec<Option<Term>> = Vec::new();
                 let mut result_ty: Option<Term> = None;

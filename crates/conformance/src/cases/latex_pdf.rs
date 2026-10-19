@@ -628,7 +628,7 @@ math = "(token write18)"
                 assert_eq!(error.code.as_str(), "LLB6004", "`{bad}` is refused");
             }
             // And it is refused when the configuration is loaded, not only
-            // when a provider eventually runs: an output that can never
+            // when a provider runs: an output that can never
             // satisfy the protocol is a configuration error (§19.7).
             for bad in ["../{stem}.pdf", "sub/{stem}.pdf"] {
                 let configured = P::example();

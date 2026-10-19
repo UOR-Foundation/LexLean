@@ -479,7 +479,7 @@
 \noindent Parameters: \texttt{(text : ByteArray)}.\par
 \noindent Closure 1: binds \texttt{(s)}, captures \texttt{(n, text)}.\par
 \noindent Execution: executable, non-escaping closures only.\par
-\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
 \noindent Type: \texttt{Except (ByteArray) (List (Lexeme))}.\par
 \noindent Definition: \texttt{(let n : Nat := (LexLeanRuntime.length (text) : Nat); (let finalState : LexState := ((LexLeanCollections.iterateUntil ((fun (s : LexState) => stepLex (text) (n) (s))) ((n + 1)) ((\{ position := 0, line := 0, firstOnLine := true, chars := 0, lexemes := ([] : List (Lexeme)), error := Option.none \} : LexState)) : (Prod (LexState) (Bool)))).1; (match (finalState).error with | Option.some msg => Except.error (msg) | Option.none => (let revLexs : List (Lexeme) := reversed (Lexeme) ((finalState).lexemes); Except.ok (revLexs)))))}.\par
 \noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
@@ -561,7 +561,7 @@
 \noindent Parameters: \texttt{(text : ByteArray) (imports : List (ByteArray))}.\par
 \noindent Closure 1: binds \texttt{(s)}, captures \texttt{(imports)}.\par
 \noindent Execution: executable, non-escaping closures only.\par
-\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
 \noindent Type: \texttt{Except (ByteArray) (Unit)}.\par
 \noindent Definition: \texttt{(match lex (text) with | Except.error msg => Except.error (msg) | Except.ok lexemes => (let count : Nat := listLength (Lexeme) (lexemes); (let finalState : AuditState := ((LexLeanCollections.iterateUntil ((fun (s : AuditState) => stepAudit (imports) (s))) ((count + 1)) ((\{ remaining := lexemes, attributeDepth := 0, pending := false, error := Option.none \} : AuditState)) : (Prod (AuditState) (Bool)))).1; (match (finalState).error with | Option.some msg => Except.error (msg) | Option.none => Except.ok (())))))}.\par
 \noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par

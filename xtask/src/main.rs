@@ -1256,7 +1256,7 @@ fn check_fixtures(root: &Path, write: bool) -> Result<(), Fail> {
 mod tests {
     use super::normalize_process_record;
 
-    /// RP-15: a committed process record keeps the toolchain-relative path
+    /// VR-12: a committed process record keeps the toolchain-relative path
     /// of the executable it ran, and only the host prefix is dropped.
     #[test]
     fn toolchain_argv_keeps_the_relative_path() {

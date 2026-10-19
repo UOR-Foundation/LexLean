@@ -325,24 +325,37 @@ pub fn f1(v0: Adt0) -> Adt0 {
     }
 }
 
-pub fn f2(v0: Adt0) -> Adt0 {
-    let m7 = v0;
-    match m7 {
-        Adt0::C0(v1) => {
-            Adt0::C0(v1)
-        }
-        Adt0::C1(r10, r11) => {
-            let v2 = (*r10).clone();
-            let v3 = (*r11).clone();
-            let m8 = v2;
-            match m8 {
-                Adt0::C0(_) => {
-                    f2(v3)
+pub fn f2(p13: Adt0) -> Adt0 {
+    let m12 = p13;
+    {
+        let mut m12 = m12;
+        loop {
+            let step = {
+                let v0 = m12;
+                let m7 = v0;
+                match m7 {
+                    Adt0::C0(v1) => {
+                        Err::<Adt0, Adt0>(Adt0::C0(v1))
+                    }
+                    Adt0::C1(r10, r11) => {
+                        let v2 = (*r10).clone();
+                        let v3 = (*r11).clone();
+                        let m8 = v2;
+                        match m8 {
+                            Adt0::C0(_) => {
+                                Ok::<Adt0, Adt0>(v3)
+                            }
+                            Adt0::C1(r9, _) => {
+                                let v5 = (*r9).clone();
+                                Ok::<Adt0, Adt0>(Adt0::C1(std::rc::Rc::new(v5), std::rc::Rc::new(v3)))
+                            }
+                        }
+                    }
                 }
-                Adt0::C1(r9, _) => {
-                    let v5 = (*r9).clone();
-                    f2(Adt0::C1(std::rc::Rc::new(v5), std::rc::Rc::new(v3)))
-                }
+            };
+            match step {
+                Ok(next) => { m12 = next; }
+                Err(done) => break done,
             }
         }
     }

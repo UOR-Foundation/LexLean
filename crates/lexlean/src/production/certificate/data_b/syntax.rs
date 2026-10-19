@@ -451,6 +451,11 @@ impl Writer<'_, '_> {
                 let inner = self.rs_block(inner);
                 self.rs_apply("Expr.block", &[inner])
             }
+            Expr::Loop { state, body } => {
+                let state = self.rs_ident(state);
+                let body = self.rs_block(body);
+                self.rs_apply("Expr.loop", &[state, body])
+            }
             Expr::Uncons(held) => read(self, "uncons", held),
             Expr::IsZero(held, _) => read(self, "isZero", held),
             Expr::NonZero(held, _) => read(self, "nonZero", held),

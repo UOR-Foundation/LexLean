@@ -9,6 +9,22 @@
       "version": "1.0.0"
     },
     {
+      "name": "check_arguments",
+      "root": "LexLeanBoot.CalculusCheck.checkArguments",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "check_program",
+      "root": "LexLeanBoot.CalculusCheck.checkProgram",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "correspond_crate",
       "root": "LexLeanBoot.RustValidate.correspondCrate",
       "targets": [
@@ -41,6 +57,22 @@
       "version": "1.0.0"
     },
     {
+      "name": "reject_atoms",
+      "root": "LexLeanBoot.PrimitiveScan.rejectAtoms",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "scan_source",
+      "root": "LexLeanBoot.PrimitiveScan.scanSource",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "validate_crate",
       "root": "LexLeanBoot.RustValidate.validateCrate",
       "targets": [
@@ -50,4 +82,3 @@
     }
   ]
 }
-
