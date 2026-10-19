@@ -17,6 +17,13 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- The repository's own URL is `https://github.com/UOR-Foundation/LexLean`
+  (#34, D1): the `repository` and `homepage` fields of the workspace manifest,
+  SPEC.md §1 and §2.3, the README, the image's `org.opencontainers.image.source`
+  label, and the `$id` of every schema under `schemas/`, `api/schemas/` and
+  `tooling/schemas/` name the organization. The schema identifiers are inputs
+  of every language's compiler-semantics ID, so every identity moves; the
+  records bound to them are regenerated in this wave.
 - Language 1.2 refuses the data form, #149 (SPEC.md §17.11, §17.21.1,
   `AU-13`). A module that states `\semanticdata{…}`, `\toolingdata{…}` or
   `\coredata{…}` is refused with `LLP2003` at its data argument, naming the

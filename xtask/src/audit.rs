@@ -1376,7 +1376,7 @@ fn audit_schema_directory(directory: &Path) -> Result<usize, Fail> {
             .unwrap_or_default()
             .to_string_lossy()
             .to_string();
-        let identity = format!("https://github.com/afflom/lexlean/schemas/{name}");
+        let identity = format!("https://github.com/UOR-Foundation/LexLean/schemas/{name}");
         if !canonical.contains(&identity) {
             return Err(format!("{}: missing its $id `{identity}`", path.display()).into());
         }

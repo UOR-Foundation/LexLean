@@ -1,6 +1,6 @@
 # LexLean Repository and Project Specification
 
-**Repository:** `https://github.com/afflom/lexlean`  
+**Repository:** `https://github.com/UOR-Foundation/LexLean`  
 **Project name:** LexLean  
 **Rust crate and executable:** `lexlean`  
 **Specification identifier:** `LEXLEAN-SPEC-1`  
@@ -13,7 +13,7 @@
 
 ## 1. Normative force
 
-This document is the complete implementation contract for `github.com/afflom/lexlean`.
+This document is the complete implementation contract for `github.com/UOR-Foundation/LexLean`.
 
 The key words **MUST**, **MUST NOT**, **REQUIRED**, **SHALL**, **SHALL NOT**, **SHOULD**, **SHOULD NOT**, and **MAY** are normative. A behavior not authorized by this specification is not part of LexLean language 1.0, 1.1, or 1.2.
 
@@ -39,7 +39,7 @@ The repository MUST NOT ship a partial implementation under the LexLean 1.0 lang
 The repository name is **LexLean** and its canonical GitHub location is:
 
 ```text
-https://github.com/afflom/lexlean
+https://github.com/UOR-Foundation/LexLean
 ```
 
 The Cargo package, library crate, and executable are all named `lexlean`.
@@ -68,8 +68,8 @@ version = "0.3.0"
 edition = "2021"
 rust-version = "1.97"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/afflom/lexlean"
-homepage = "https://github.com/afflom/lexlean"
+repository = "https://github.com/UOR-Foundation/LexLean"
+homepage = "https://github.com/UOR-Foundation/LexLean"
 authors = ["Alex Flom"]
 keywords = ["lean", "latex", "formal-methods", "compiler", "proof"]
 categories = ["compilers", "development-tools"]
