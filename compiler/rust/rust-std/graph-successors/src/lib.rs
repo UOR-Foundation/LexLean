@@ -307,34 +307,47 @@ pub fn f1(v0: List<(u64, List<u64>)>, v1: u64) -> List<u64> {
     }
 }
 
-pub fn f2(v0: List<(u64, List<u64>)>, v1: u64) -> Option<List<u64>> {
-    let m2 = v0;
-    match m2.uncons() {
-        None => {
-            None::<List<u64>>
-        }
-        Some((v2, v3)) => {
-            let m6 = {
-                let a4 = v1;
-                let a5 = {
-                    let (h3, _) = v2;
-                    h3
-                };
-                compare(a4, a5)
+pub fn f2(p9: List<(u64, List<u64>)>, v1: u64) -> Option<List<u64>> {
+    let m8 = p9;
+    {
+        let mut m8 = m8;
+        loop {
+            let step = {
+                let v0 = m8;
+                let m2 = v0;
+                match m2.uncons() {
+                    None => {
+                        Err::<List<(u64, List<u64>)>, Option<List<u64>>>(None::<List<u64>>)
+                    }
+                    Some((v2, v3)) => {
+                        let m6 = {
+                            let a4 = v1;
+                            let a5 = {
+                                let (h3, _) = v2;
+                                h3
+                            };
+                            compare(a4, a5)
+                        };
+                        match m6 {
+                            Ordering::Less => {
+                                Err::<List<(u64, List<u64>)>, Option<List<u64>>>(None::<List<u64>>)
+                            }
+                            Ordering::Equal => {
+                                Err::<List<(u64, List<u64>)>, Option<List<u64>>>(Some({
+                                    let (_, h7) = v2;
+                                    h7
+                                }))
+                            }
+                            Ordering::Greater => {
+                                Ok::<List<(u64, List<u64>)>, Option<List<u64>>>(v3)
+                            }
+                        }
+                    }
+                }
             };
-            match m6 {
-                Ordering::Less => {
-                    None::<List<u64>>
-                }
-                Ordering::Equal => {
-                    Some({
-                        let (_, h7) = v2;
-                        h7
-                    })
-                }
-                Ordering::Greater => {
-                    f2(v3, v1)
-                }
+            match step {
+                Ok(next) => { m8 = next; }
+                Err(done) => break done,
             }
         }
     }

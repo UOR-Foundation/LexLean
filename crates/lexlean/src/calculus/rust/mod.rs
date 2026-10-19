@@ -27,6 +27,8 @@ pub mod moves;
 pub mod package;
 pub mod runtime;
 pub mod scaffold;
+mod tail;
+pub use tail::loops;
 pub mod validate;
 
 use std::collections::BTreeSet;
@@ -194,7 +196,7 @@ pub fn observable(outcome: &super::Outcome) -> Option<serde_json::Value> {
 
 /// The source files of the renderer, by name in `calculus/rust/`, in the
 /// order [`renderer_digest`] frames them.
-pub const RENDERER_FILES: [&str; 8] = [
+pub const RENDERER_FILES: [&str; 9] = [
     "ast.rs",
     "lower.rs",
     "mod.rs",
@@ -202,6 +204,7 @@ pub const RENDERER_FILES: [&str; 8] = [
     "package.rs",
     "runtime.rs",
     "scaffold.rs",
+    "tail.rs",
     "validate.rs",
 ];
 
@@ -227,7 +230,7 @@ mod tests {
     /// compiler-semantics ID.
     #[test]
     fn the_compiler_semantics_records_the_renderer() {
-        let sources: [&[u8]; 8] = [
+        let sources: [&[u8]; 9] = [
             include_bytes!("ast.rs"),
             include_bytes!("lower.rs"),
             include_bytes!("mod.rs"),
@@ -235,6 +238,7 @@ mod tests {
             include_bytes!("package.rs"),
             include_bytes!("runtime.rs"),
             include_bytes!("scaffold.rs"),
+            include_bytes!("tail.rs"),
             include_bytes!("validate.rs"),
         ];
         let files: Vec<(&str, &[u8])> = RENDERER_FILES.into_iter().zip(sources).collect();

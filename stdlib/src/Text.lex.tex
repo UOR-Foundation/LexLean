@@ -82,7 +82,7 @@ definition{
   result: Bytes,
   body: (let end : Nat := (trimEnd subject); (let start : Nat := (trimStart subject end); (sliceOr subject start (prim subtract end start : Nat)))),
   executable: true,
-  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+  production: {effects: [allocation, overflow], targets: [rust-std]}
 }
 
 definition{
@@ -109,7 +109,7 @@ definition{
   result: (List Bytes),
   body: (let total : Nat := (prim length subject : Nat); (let final : (Nat * (Nat * (List Bytes))) := (first (prim iterate_until (fun [delimiter, subject] (state : (Nat * (Nat * (List Bytes)))) => (splitStep subject delimiter state)) total (0, (0, (nil Bytes))) : ((Nat * (Nat * (List Bytes))) * Bool))); (let start : Nat := (first (second final)); (reverse (cons (sliceOr subject start (prim subtract total start : Nat)) (second (second final))))))),
   executable: true,
-  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+  production: {effects: [allocation, overflow], targets: [rust-std]}
 }
 
 definition{
@@ -136,7 +136,7 @@ definition{
   result: (List Bytes),
   body: (let total : Nat := (prim length subject : Nat); (let final : (Nat * (Nat * (List Bytes))) := (first (prim iterate_until (fun [subject] (state : (Nat * (Nat * (List Bytes)))) => (lineStep subject state)) total (0, (0, (nil Bytes))) : ((Nat * (Nat * (List Bytes))) * Bool))); (let start : Nat := (first (second final)); (let pieces : (List Bytes) := (second (second final)); (if (start <? total) then (reverse (cons (sliceOr subject start (prim subtract total start : Nat)) pieces)) else (reverse pieces)))))),
   executable: true,
-  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+  production: {effects: [allocation, overflow], targets: [rust-std]}
 }
 
 definition{
@@ -149,7 +149,7 @@ definition{
     | Option.some joined => joined
     | Option.none => 0x),
   executable: true,
-  production: {effects: [allocation, recursion], targets: [rust-std]}
+  production: {effects: [allocation], targets: [rust-std]}
 }
 
 definition{
@@ -168,7 +168,7 @@ definition{
   result: (Option Nat),
   body: (let total : Nat := (prim length subject : Nat); (let size : Nat := (prim length needle : Nat); (let position : Nat := (first (prim iterate_until (fun [needle, size, subject, total] (position : Nat) => (if (matchAt subject needle position) then (ctor Option.none [Nat]) else (if ((position + size) <? total) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat])))) (total + 1) 0 : (Nat * Bool))); (if (matchAt subject needle position) then (ctor Option.some [Nat] position) else (ctor Option.none [Nat]))))),
   executable: true,
-  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+  production: {effects: [allocation, overflow], targets: [rust-std]}
 }
 \end{semanticmodule}
 \end{lexlean}

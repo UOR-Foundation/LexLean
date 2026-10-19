@@ -1435,22 +1435,35 @@ pub fn f40(v0: Adt0, v1: u64) -> bool {
     bool_and(a271, a272)
 }
 
-pub fn f41(v0: Fn0, v1: u64, v2: Adt4) -> R<(Adt4, bool)> {
-    let m273 = v1;
-    if m273 == 0 {
-        Ok((v2, false))
-    } else {
-        let v3 = m273 - 1;
-        let m275 = {
-            let c274: Fn0 = v0.clone();
-            c274.apply(v2.clone())?
-        };
-        match m275 {
-            None => {
-                Ok((v2, true))
-            }
-            Some(v4) => {
-                f41(v0, v3, v4)
+pub fn f41(v0: Fn0, p277: u64, p278: Adt4) -> R<(Adt4, bool)> {
+    let m276 = (p277, p278);
+    {
+        let mut m276 = m276;
+        loop {
+            let step = {
+                let (v1, v2) = m276;
+                let m273 = v1;
+                if m273 == 0 {
+                    Err::<(u64, Adt4), R<(Adt4, bool)>>(Ok((v2, false)))
+                } else {
+                    let v3 = m273 - 1;
+                    let m275 = {
+                        let c274: Fn0 = v0.clone();
+                        c274.apply(v2.clone())?
+                    };
+                    match m275 {
+                        None => {
+                            Err::<(u64, Adt4), R<(Adt4, bool)>>(Ok((v2, true)))
+                        }
+                        Some(v4) => {
+                            Ok::<(u64, Adt4), R<(Adt4, bool)>>((v3, v4))
+                        }
+                    }
+                }
+            };
+            match step {
+                Ok(next) => { m276 = next; }
+                Err(done) => break done,
             }
         }
     }

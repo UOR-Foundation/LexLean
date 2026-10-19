@@ -267,6 +267,7 @@ const AST_SHAPES: &[&str] = &[
     "expr:predecessor",
     "expr:widen",
     "expr:succeed",
+    "expr:loop",
     "lit:string-escaped",
     "capture:copy",
     "capture:clone",
@@ -316,10 +317,6 @@ fn ast_shapes(krate: &Crate, out: &mut BTreeSet<&'static str>) {
             Expr::Predecessor(_) => "expr:predecessor",
             Expr::Widen(..) => "expr:widen",
             Expr::Succeed(..) => "expr:succeed",
-            // Not in AST_SHAPES: no lowering produces a loop until the
-            // scalar items are expressed over it (#91), so no package can
-            // be required to emit one yet. The shape is named so that the
-            // first package that does is counted.
             Expr::Loop { .. } => "expr:loop",
         });
         match node {
@@ -1504,6 +1501,8 @@ pub fn run(id: &str) {
         // §17.16: the runtime's library surface is closed, and each name on
         // it is a primitive, stated over primitives, or an AST construct.
         "RB-10" | "RB-11" | "RB-12" | "RB-13" => super::rust_scaffold::run(id),
+        // §17.13, §17.16: a tail-recursive template renders as a loop.
+        "RB-14" => super::rust_loops::run(id),
         "RB-09" => {
             use lexlean::calculus::rust::runtime::{CORE, STD};
             use lexlean::calculus::rust_library::{

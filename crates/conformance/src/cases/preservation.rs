@@ -5005,6 +5005,273 @@ pub fn run(id: &str) {
                 );
             }
         }
+        // §17.16, §17.17: certificate B of a function rendered as a loop.
+        "SP-20" => {
+            use lexlean::calculus::rust::ast::{Block, Crate, Ctor, Expr, Ident, ItemDef, Pat};
+            use lexlean::production::certificate::data_b::loopform::{self, Position};
+            let read = |path: &str| {
+                std::fs::read_to_string(repo_root().join(path).as_std_path()).expect("a source")
+            };
+            // The library states the disjunct, the form, and the theorem.
+            let declared = |path: &str| -> BTreeSet<String> {
+                support::module_json(&read(path))["declarations"]
+                    .as_array()
+                    .expect("declarations")
+                    .iter()
+                    .filter_map(|declaration| declaration["name"].as_str().map(str::to_owned))
+                    .collect()
+            };
+            let corr = declared("language/preservation-1.2/library/src/RustCorr.lex.tex");
+            let sound = declared("language/preservation-1.2/library/src/RustSound.lex.tex");
+            for name in [
+                "LexLeanPreservation.Rust.FunOK0",
+                "LexLeanPreservation.Rust.FunOK",
+                "LexLeanPreservation.Rust.FunLoop",
+                "LexLeanPreservation.Rust.Loop.loopOf",
+                "LexLeanPreservation.Rust.Loop.loopCheckOf",
+            ] {
+                assert!(corr.contains(name), "RustCorr declares `{name}`");
+            }
+            for name in [
+                "LexLeanPreservation.Rust.funSem_loop",
+                "LexLeanPreservation.Rust.funSem_of",
+                "LexLeanPreservation.Rust.sound",
+            ] {
+                assert!(sound.contains(name), "RustSound declares `{name}`");
+            }
+            // Every loop of every rendering is the loop form of the recursive
+            // body the aligner recovers from it: the rendering's own loops (the
+            // renderer fixtures in each profile, and the production roots of
+            // the committed examples in each of their targets) are read back
+            // and rebuilt by the library's form transliterated, and the two
+            // are the same function.
+            let mut crates: Vec<(String, Crate)> = preservation::fixture_renderings()
+                .into_iter()
+                .map(|rendering| {
+                    (
+                        format!("{} ({})", rendering.fixture, rendering.target),
+                        rendering.krate,
+                    )
+                })
+                .collect();
+            let fixtures = crates.len();
+            for example in ["production", "production-coverage", "models", "reasoning"] {
+                let project = P::copy_example(example);
+                let checked = support::checked_project_fresh(&project);
+                let modules = linked_modules(&checked);
+                let limits = support::limits(&project);
+                for root in roots(&checked).expect("the eligibility reports") {
+                    let lowered =
+                        lower_root(&modules, &root.module, &root.name, root.report, &limits)
+                            .unwrap_or_else(|diagnostic| panic!("lowering failed: {diagnostic:?}"));
+                    for row in &root.report.targets {
+                        let profile = lexlean::calculus::rust::Profile::named(&row.target)
+                            .expect("a Rust profile");
+                        let krate = lexlean::calculus::rust::lower(&lowered.program, profile)
+                            .expect("a rendering");
+                        crates.push((format!("{example}/{} ({})", root.name, row.target), krate));
+                    }
+                }
+            }
+            assert!(
+                crates.len() > fixtures,
+                "the committed examples have production roots"
+            );
+            let mut loops = Vec::new();
+            for (name, krate) in &crates {
+                for item in &krate.items {
+                    let ItemDef::Function {
+                        name: Ident::Function(at),
+                        parameters,
+                        body,
+                        ..
+                    } = item
+                    else {
+                        continue;
+                    };
+                    if matches!(body.tail, Expr::Loop { .. }) {
+                        let recursive = loopform::recover(*at, parameters, body)
+                            .unwrap_or_else(|reason| panic!("{name}: function {at}: {reason}"));
+                        loops.push((
+                            name.clone(),
+                            *at,
+                            parameters.clone(),
+                            body.clone(),
+                            recursive,
+                        ));
+                    }
+                }
+            }
+            // Armed by the first loop: a rendering without one proves nothing.
+            assert!(
+                !loops.is_empty(),
+                "some committed program is rendered as a loop"
+            );
+            let positions: Vec<&Position> = loops
+                .iter()
+                .flat_map(|(_, _, _, _, recursive)| recursive.positions.iter())
+                .collect();
+            assert!(
+                positions
+                    .iter()
+                    .any(|position| matches!(position, Position::Changed))
+                    && positions
+                        .iter()
+                        .any(|position| matches!(position, Position::Kept(_))),
+                "the loops change a parameter and keep another"
+            );
+            // A loop that is not the loop form of any recursive body is
+            // refused, for each way it may differ: a state that is not the one
+            // the continuing results hold, a body that does not take the state
+            // apart, an end that is not an `Err`, a renamed parameter the body
+            // reads, a pattern that rebinds a kept parameter, and a state held
+            // by a parameter the function does not have.
+            fn tails(block: &mut Block, visit: &mut dyn FnMut(&mut Expr)) {
+                match &mut block.tail {
+                    Expr::If {
+                        then_branch,
+                        else_branch,
+                        ..
+                    } => {
+                        tails(then_branch, visit);
+                        tails(else_branch, visit);
+                    }
+                    Expr::Match { arms, .. } => {
+                        arms.iter_mut().for_each(|(_, body)| tails(body, visit))
+                    }
+                    Expr::Block(inner) => tails(inner, visit),
+                    other => visit(other),
+                }
+            }
+            type Mutant = (usize, Vec<(Pat, lexlean::calculus::rust::ast::Type)>, Block);
+            fn inner(body: &mut Block) -> &mut Block {
+                let Expr::Loop { body: looping, .. } = &mut body.tail else {
+                    panic!("a loop")
+                };
+                looping
+            }
+            let mut planted = [0_usize; 6];
+            for (name, at, parameters, body, recursive) in &loops {
+                let mut mutants: Vec<Mutant> = Vec::new();
+                // 0: the state type of the first continuing result.
+                let mut wrong_state = body.clone();
+                let mut changed = false;
+                tails(inner(&mut wrong_state), &mut |tail| {
+                    if let Expr::Construct {
+                        ctor: Ctor::Ok(state, _),
+                        ..
+                    } = tail
+                    {
+                        if !changed {
+                            *state = lexlean::calculus::rust::ast::Type::Unit;
+                            changed = true;
+                        }
+                    }
+                });
+                if changed {
+                    mutants.push((0, parameters.clone(), wrong_state));
+                }
+                // 1: the state is not taken apart.
+                let mut whole = body.clone();
+                inner(&mut whole).lets.remove(0);
+                mutants.push((1, parameters.clone(), whole));
+                // 2: an end that is not an `Err`.
+                let mut bare = body.clone();
+                let mut stripped = false;
+                tails(inner(&mut bare), &mut |tail| {
+                    if let Expr::Construct {
+                        ctor: Ctor::Err(..),
+                        args,
+                        ..
+                    } = tail
+                    {
+                        if !stripped && args.len() == 1 {
+                            *tail = args[0].clone();
+                            stripped = true;
+                        }
+                    }
+                });
+                if stripped {
+                    mutants.push((2, parameters.clone(), bare));
+                }
+                // 3: a renamed parameter the body reads.
+                if let Some(Position::Changed) = recursive.positions.first() {
+                    let mut reads = body.clone();
+                    let renamed = Ident::Param(recursive.renamed[0]);
+                    inner(&mut reads).tail = Expr::Block(Box::new(Block {
+                        lets: Vec::new(),
+                        tail: Expr::Move(
+                            renamed,
+                            lexlean::calculus::rust::ast::Origin::of("expr:call"),
+                        ),
+                    }));
+                    mutants.push((3, parameters.clone(), reads));
+                }
+                // 4: a pattern that rebinds a kept parameter.
+                if let Some(kept) = recursive
+                    .positions
+                    .iter()
+                    .find_map(|position| match position {
+                        Position::Kept(name) => Some(name.clone()),
+                        Position::Changed | Position::Dropped => None,
+                    })
+                {
+                    let mut rebinds = body.clone();
+                    let looping = inner(&mut rebinds);
+                    let binding = looping.lets[0].clone();
+                    looping.lets.push(lexlean::calculus::rust::ast::Let {
+                        pat: Pat::Bind(kept),
+                        ..binding
+                    });
+                    mutants.push((4, parameters.clone(), rebinds));
+                }
+                // 5: a parameter the state does not hold.
+                let mut extra = parameters.clone();
+                if let Some((pattern, _)) = extra
+                    .iter_mut()
+                    .find(|(pattern, _)| matches!(pattern, Pat::Wild | Pat::Bind(Ident::Local(_))))
+                {
+                    *pattern = Pat::Bind(Ident::Param(u64::MAX));
+                    mutants.push((5, extra, body.clone()));
+                }
+                for (kind, mutated_parameters, mutated_body) in mutants {
+                    planted[kind] += 1;
+                    assert!(
+                        loopform::recover(*at, &mutated_parameters, &mutated_body).is_err(),
+                        "{name}: function {at}: the mutation {kind} of a loop is accepted"
+                    );
+                }
+            }
+            assert!(
+                planted.iter().all(|count| *count > 0),
+                "every kind of break is planted at least once: {planted:?}"
+            );
+            if !support::lean_backed("SP-20") {
+                return;
+            }
+            // The pinned Lean accepts certificate B of every loop the renderer
+            // fixtures render, over the shipped library, with exactly the
+            // axioms the audit states.
+            let renderings: Vec<_> = preservation::fixture_renderings()
+                .into_iter()
+                .filter(|rendering| {
+                    rendering.krate.items.iter().any(|item| {
+                        matches!(item, ItemDef::Function { body, .. } if matches!(body.tail, Expr::Loop { .. }))
+                    })
+                })
+                .collect();
+            assert!(!renderings.is_empty(), "some fixture is rendered as a loop");
+            let checked = preservation::check_renderings(&renderings, Vec::new());
+            for rendering in &renderings {
+                assert!(
+                    checked
+                        .audit_output
+                        .contains(&rendering.certificate.theorem),
+                    "`{}` is audited",
+                    rendering.certificate.theorem
+                );
+            }
+        }
         _ => panic!("no preservation case is wired for {id}"),
     }
 }

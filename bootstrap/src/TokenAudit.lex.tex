@@ -685,7 +685,7 @@ definition{
     | Option.none => (let revLexs : (List Lexeme) := (reversed [Lexeme] (project finalState lexemes)); (ctor Result.ok [(List Lexeme), Bytes] revLexs))))),
   axioms: [Quot.sound, propext],
   executable: true,
-  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+  production: {effects: [allocation, overflow], targets: [rust-std]}
 }
 
 definition{
@@ -816,7 +816,7 @@ definition{
       | Option.none => (ctor Result.ok [Unit, Bytes] ()))))),
   axioms: [Quot.sound, propext],
   executable: true,
-  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+  production: {effects: [allocation, overflow], targets: [rust-std]}
 }
 \end{semanticmodule}
 \end{lexlean}

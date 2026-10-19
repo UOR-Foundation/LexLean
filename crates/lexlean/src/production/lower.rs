@@ -241,6 +241,42 @@ struct Lowerer<'a> {
 /// Marks a failure that is a resource limit, not a defect.
 pub const LIMIT: &str = "limit: ";
 
+/// The deepest nesting of arrays and objects a lowered program may have when
+/// it is serialized (`Program::to_file_bytes`), which reads its own text back
+/// recursively. The reader has no limit of its own on this path, so the limit
+/// is stated here: a program whose JSON nests deeper is refused with
+/// `LLS8002`, not read on whatever stack it finds. 512 levels, about 250
+/// nested expressions, take about 450 KiB of a debug build's stack, a quarter
+/// of the 2 MiB a test thread has (a test checks this).
+pub const PROGRAM_JSON_DEPTH: usize = 512;
+
+/// The nesting depth of the arrays and objects of JSON text: the number of
+/// brackets open at the deepest point, with strings (and their escapes) skipped.
+#[must_use]
+pub fn json_depth(text: &str) -> usize {
+    let (mut depth, mut deepest) = (0_usize, 0_usize);
+    let (mut in_string, mut escaped) = (false, false);
+    for byte in text.bytes() {
+        if in_string {
+            if escaped {
+                escaped = false;
+            } else if byte == b'\\' {
+                escaped = true;
+            } else if byte == b'"' {
+                in_string = false;
+            }
+        } else if byte == b'"' {
+            in_string = true;
+        } else if byte == b'[' || byte == b'{' {
+            depth += 1;
+            deepest = deepest.max(depth);
+        } else if byte == b']' || byte == b'}' {
+            depth = depth.saturating_sub(1);
+        }
+    }
+    deepest
+}
+
 /// Lower one eligible root. A failure is a compiler defect: eligibility
 /// already admitted every construct the closure reaches.
 ///
@@ -382,6 +418,23 @@ pub fn lower_root(
         },
     };
     audit_boundary(&lowered).map_err(internal)?;
+    // The program's canonical JSON is measured here: the reader on this path
+    // is unbounded (`parse_unbounded`), so this check is the one place that
+    // holds a program to `PROGRAM_JSON_DEPTH`. A program past it is a limit,
+    // not a defect: say so before anything is generated from it.
+    let depth = json_depth(
+        &serde_json::to_string(&lowered.program)
+            .map_err(|error| internal(format!("the lowered program is not JSON: {error}")))?,
+    );
+    if depth > PROGRAM_JSON_DEPTH {
+        return Err(Diagnostic::new(
+            code!("LLS8002"),
+            format!(
+                "root `{}`: program_json_depth exceeded in phase lowering: at most {PROGRAM_JSON_DEPTH}, the lowered program nests {depth} deep",
+                report.root
+            ),
+        ));
+    }
     // The certificates are generated as text from the program; refuse before
     // generating them when a lower bound on the largest already exceeds the
     // largest file the project allows. A program whose certificates fit is
@@ -3726,5 +3779,64 @@ impl Source<'_> {
             | SemanticTerm::Iff { left: _, right: _ }
             | SemanticTerm::Forall { binder: _, body: _ } => SemanticType::Prop,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{json_depth, PROGRAM_JSON_DEPTH};
+    use crate::calculus::{Expr, Function, Program, Ty};
+
+    fn chain(levels: usize) -> Program {
+        let mut body = Expr::Var { name: 0 };
+        for _ in 0..levels {
+            body = Expr::First {
+                value: Box::new(body),
+            };
+        }
+        Program {
+            spec: "lexlean/program/1".to_owned(),
+            adts: Vec::new(),
+            functions: vec![Function {
+                parameters: vec![0],
+                types: vec![Ty::Nat],
+                result: Ty::Nat,
+                body,
+            }],
+        }
+    }
+
+    fn depth_of(program: &Program) -> usize {
+        json_depth(&serde_json::to_string(program).expect("serializes"))
+    }
+
+    #[test]
+    fn depth_counts_open_brackets_and_skips_strings() {
+        assert_eq!(json_depth("0"), 0);
+        assert_eq!(json_depth("[[[0]]]"), 3);
+        assert_eq!(json_depth(r#"{"a":[1,{"b":[]}],"c":{}}"#), 4);
+        assert_eq!(json_depth(r#"{"[[[[":"]]]]\"[[[","k":"\\"}"#), 1);
+    }
+
+    #[test]
+    fn a_program_at_the_limit_round_trips_on_a_two_mebibyte_stack() {
+        // The deepest chain within the limit, found by growing it.
+        let mut levels = 1;
+        while depth_of(&chain(levels + 1)) <= PROGRAM_JSON_DEPTH {
+            levels += 1;
+        }
+        let program = chain(levels);
+        let depth = depth_of(&program);
+        assert!(
+            depth <= PROGRAM_JSON_DEPTH && depth + 4 > PROGRAM_JSON_DEPTH,
+            "the chain is at the limit: {depth}"
+        );
+        let bytes = std::thread::Builder::new()
+            .stack_size(2 << 20)
+            .spawn(move || program.to_file_bytes())
+            .expect("a thread")
+            .join()
+            .expect("the round trip does not overflow");
+        assert!(!bytes.is_empty());
     }
 }

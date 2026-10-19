@@ -28,6 +28,7 @@ use super::{
     registry, BoundaryRow, CallPath, ClosureMember, Disposition, EffectRow, ModuleReport,
     ReasoningRow, Registry, RootReport, TargetRow,
 };
+use crate::config::Limits;
 use crate::ir::semantic::{
     MemberRef, SemanticAssignment, SemanticBranch, SemanticConstructor, SemanticDeclaration,
     SemanticEdge, SemanticField, SemanticInteger, SemanticMapEntry, SemanticModule,
@@ -2931,6 +2932,7 @@ fn analyse_root(
     production: &SemanticProduction,
     modules: &BTreeMap<String, LinkedModule<'_>>,
     budget: &ReportBudget,
+    limits: &Limits,
 ) -> Result<RootReport, AnalysisError> {
     let registry = registry().map_err(AnalysisError::Internal)?;
     let mut walk = Walk {
@@ -3029,6 +3031,39 @@ fn analyse_root(
                 }
             }
             None => break,
+        }
+    }
+
+    // The registry says `recursion` of a recursive definition, which is a
+    // property of its rendering: a function whose self calls are all tail
+    // calls is rendered as a loop and uses no stack (§17.13, §17.16). So
+    // when the walk found the effect, the closure is lowered and the effect
+    // is required only if the lowered program recurses. A root that does not
+    // lower here keeps the registry's answer, which never admits less.
+    if walk.effects.contains_key("recursion") && walk.violations.is_empty() {
+        let provisional = RootReport {
+            root: root.clone(),
+            declared_effects: production.effects.clone(),
+            runtime: walk
+                .member_order
+                .iter()
+                .filter_map(|instance| walk.members.get(instance).cloned())
+                .collect(),
+            types: walk.types.clone(),
+            erased: walk.erased.clone(),
+            constructs: walk.constructs.clone(),
+            targets: Vec::new(),
+            reasoning: Vec::new(),
+        };
+        match super::lower::lower_root(modules, module, name, &provisional, limits) {
+            Ok(lowered) => {
+                if !crate::calculus::realization::program_recurses(&lowered.program) {
+                    walk.effects.remove("recursion");
+                }
+            }
+            // The registry's answer stands for a root that does not lower
+            // here (the comment above), so this arm does nothing by decision.
+            Err(_) => {}
         }
     }
 
@@ -3284,6 +3319,7 @@ pub fn analyse_module(
     modules: &BTreeMap<String, LinkedModule<'_>>,
     max_report_bytes: u64,
     written_before: u64,
+    limits: &Limits,
 ) -> Result<Option<ModuleReport>, AnalysisError> {
     let linked = match modules.get(module) {
         Some(linked) => linked,
@@ -3318,6 +3354,7 @@ pub fn analyse_module(
                     production,
                     modules,
                     &budget,
+                    limits,
                 )?;
                 // The bytes the root takes in the report, as written: the
                 // walk's own count is a lower bound that stops a single root
@@ -3543,7 +3580,20 @@ mod tests {
                 semantic: &semantic,
             },
         )]);
-        match analyse_module("Main", &modules, u64::MAX, 0) {
+        let limits = crate::config::Limits {
+            max_file_bytes: 4_194_304,
+            max_total_source_bytes: 67_108_864,
+            max_primitive_atoms: 2_000_000,
+            max_token_lattice_edges: 4_000_000,
+            max_parse_states: 4_000_000,
+            max_ir_nodes: 2_000_000,
+            max_scope_depth: 1024,
+            max_import_depth: 128,
+            max_diagnostics: 256,
+            max_child_output_bytes: 16_777_216,
+            child_timeout_ms: 300_000,
+        };
+        match analyse_module("Main", &modules, u64::MAX, 0, &limits) {
             Ok(report) => panic!("the root is reported eligible: {report:?}"),
             Err(AnalysisError::Ineligible(reason)) => reason,
             Err(AnalysisError::Internal(reason) | AnalysisError::Limit(reason)) => {

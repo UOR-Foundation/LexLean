@@ -321,54 +321,80 @@ pub fn f0(v0: u64, v1: u64) -> R<(u64, (u64, bool))> {
     Ok((f1(Fn0::F2, v0, v1)?, f3(Fn1::F4, v0, v1)?))
 }
 
-pub fn f1(v0: Fn0, v1: u64, v2: u64) -> R<u64> {
-    let m1 = v1;
-    if m1 == 0 {
-        Ok(v2)
-    } else {
-        let v3 = m1 - 1;
-        f1(v0.clone(), v3, {
-            let c2: Fn0 = v0;
-            c2.apply(v2)?
-        })
+pub fn f1(v0: Fn0, p4: u64, p5: u64) -> R<u64> {
+    let m3 = (p4, p5);
+    {
+        let mut m3 = m3;
+        loop {
+            let step = {
+                let (v1, v2) = m3;
+                let m1 = v1;
+                if m1 == 0 {
+                    Err::<(u64, u64), R<u64>>(Ok(v2))
+                } else {
+                    let v3 = m1 - 1;
+                    Ok::<(u64, u64), R<u64>>((v3, {
+                        let c2: Fn0 = v0.clone();
+                        c2.apply(v2)?
+                    }))
+                }
+            };
+            match step {
+                Ok(next) => { m3 = next; }
+                Err(done) => break done,
+            }
+        }
     }
 }
 
 pub fn f2(v0: u64) -> R<u64> {
-    let a3 = v0;
-    let a4 = 1u64;
-    nat_add(a3, a4)
+    let a6 = v0;
+    let a7 = 1u64;
+    nat_add(a6, a7)
 }
 
-pub fn f3(v0: Fn1, v1: u64, v2: u64) -> R<(u64, bool)> {
-    let m5 = v1;
-    if m5 == 0 {
-        Ok((v2, false))
-    } else {
-        let v3 = m5 - 1;
-        let m7 = {
-            let c6: Fn1 = v0.clone();
-            c6.apply(v2)?
-        };
-        match m7 {
-            None => {
-                Ok((v2, true))
-            }
-            Some(v4) => {
-                f3(v0, v3, v4)
+pub fn f3(v0: Fn1, p12: u64, p13: u64) -> R<(u64, bool)> {
+    let m11 = (p12, p13);
+    {
+        let mut m11 = m11;
+        loop {
+            let step = {
+                let (v1, v2) = m11;
+                let m8 = v1;
+                if m8 == 0 {
+                    Err::<(u64, u64), R<(u64, bool)>>(Ok((v2, false)))
+                } else {
+                    let v3 = m8 - 1;
+                    let m10 = {
+                        let c9: Fn1 = v0.clone();
+                        c9.apply(v2)?
+                    };
+                    match m10 {
+                        None => {
+                            Err::<(u64, u64), R<(u64, bool)>>(Ok((v2, true)))
+                        }
+                        Some(v4) => {
+                            Ok::<(u64, u64), R<(u64, bool)>>((v3, v4))
+                        }
+                    }
+                }
+            };
+            match step {
+                Ok(next) => { m11 = next; }
+                Err(done) => break done,
             }
         }
     }
 }
 
 pub fn f4(v0: u64) -> R<Option<u64>> {
-    let a8 = v0;
-    let a9 = 10u64;
-    if nat_lt(a8, a9) {
+    let a14 = v0;
+    let a15 = 10u64;
+    if nat_lt(a14, a15) {
         Ok(Some({
-            let a10 = v0;
-            let a11 = 2u64;
-            nat_add(a10, a11)?
+            let a16 = v0;
+            let a17 = 2u64;
+            nat_add(a16, a17)?
         }))
     } else {
         Ok(None::<u64>)
