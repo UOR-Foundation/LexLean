@@ -934,22 +934,35 @@ pub fn f37(_: Adt0, v1: u64) -> bool {
     nat_eq(a191, a192)
 }
 
-pub fn f38(v0: Fn0, v1: u64, v2: Adt1) -> R<(Adt1, bool)> {
-    let m193 = v1;
-    if m193 == 0 {
-        Ok((v2, false))
-    } else {
-        let v3 = m193 - 1;
-        let m195 = {
-            let c194: Fn0 = v0.clone();
-            c194.apply(v2.clone())?
-        };
-        match m195 {
-            None => {
-                Ok((v2, true))
-            }
-            Some(v4) => {
-                f38(v0, v3, v4)
+pub fn f38(v0: Fn0, p197: u64, p198: Adt1) -> R<(Adt1, bool)> {
+    let m196 = (p197, p198);
+    {
+        let mut m196 = m196;
+        loop {
+            let step = {
+                let (v1, v2) = m196;
+                let m193 = v1;
+                if m193 == 0 {
+                    Err::<(u64, Adt1), R<(Adt1, bool)>>(Ok((v2, false)))
+                } else {
+                    let v3 = m193 - 1;
+                    let m195 = {
+                        let c194: Fn0 = v0.clone();
+                        c194.apply(v2.clone())?
+                    };
+                    match m195 {
+                        None => {
+                            Err::<(u64, Adt1), R<(Adt1, bool)>>(Ok((v2, true)))
+                        }
+                        Some(v4) => {
+                            Ok::<(u64, Adt1), R<(Adt1, bool)>>((v3, v4))
+                        }
+                    }
+                }
+            };
+            match step {
+                Ok(next) => { m196 = next; }
+                Err(done) => break done,
             }
         }
     }

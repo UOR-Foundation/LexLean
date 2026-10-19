@@ -110,7 +110,7 @@
 \noindent Parameters: \texttt{(raw : ByteArray)}.\par
 \noindent Closure 1: binds \texttt{(state)}, captures \texttt{(raw)}.\par
 \noindent Execution: executable, non-escaping closures only.\par
-\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
 \noindent Type: \texttt{Bool}.\par
 \noindent Definition: \texttt{(Nat.beq ((((LexLeanCollections.iterateUntil ((fun (state : (Prod (Nat) (Nat))) => nameStep (raw) (state))) ((LexLeanRuntime.length (raw) : Nat)) ((0, 0)) : (Prod ((Prod (Nat) (Nat))) (Bool)))).1).2) (1))}.\par
 \noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par

@@ -67,7 +67,7 @@
 \noindent Kind: \texttt{definition}.\par
 \noindent Parameters: \texttt{(subject : ByteArray)}.\par
 \noindent Execution: executable, non-escaping closures only.\par
-\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
 \noindent Type: \texttt{ByteArray}.\par
 \noindent Definition: \texttt{(let <U+00AB>end<U+00BB> : Nat := trimEnd (subject); (let start : Nat := trimStart (subject) (<U+00AB>end<U+00BB>); sliceOr (subject) (start) ((LexLeanRuntime.subtract (<U+00AB>end<U+00BB>) (start) : Nat))))}.\par
 \noindent Axiom policy: \texttt{none}.\par
@@ -91,7 +91,7 @@
 \noindent Parameters: \texttt{(subject : ByteArray) (delimiter : UInt8)}.\par
 \noindent Closure 1: binds \texttt{(state)}, captures \texttt{(delimiter, subject)}.\par
 \noindent Execution: executable, non-escaping closures only.\par
-\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
 \noindent Type: \texttt{List (ByteArray)}.\par
 \noindent Definition: \texttt{(let total : Nat := (LexLeanRuntime.length (subject) : Nat); (let final : (Prod (Nat) ((Prod (Nat) (List (ByteArray))))) := ((LexLeanCollections.iterateUntil ((fun (state : (Prod (Nat) ((Prod (Nat) (List (ByteArray)))))) => splitStep (subject) (delimiter) (state))) (total) ((0, (0, ([] : List (ByteArray))))) : (Prod ((Prod (Nat) ((Prod (Nat) (List (ByteArray)))))) (Bool)))).1; (let start : Nat := ((final).2).1; reverse ((sliceOr (subject) (start) ((LexLeanRuntime.subtract (total) (start) : Nat)) :: ((final).2).2)))))}.\par
 \noindent Axiom policy: \texttt{none}.\par
@@ -114,7 +114,7 @@
 \noindent Parameters: \texttt{(subject : ByteArray)}.\par
 \noindent Closure 1: binds \texttt{(state)}, captures \texttt{(subject)}.\par
 \noindent Execution: executable, non-escaping closures only.\par
-\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
 \noindent Type: \texttt{List (ByteArray)}.\par
 \noindent Definition: \texttt{(let total : Nat := (LexLeanRuntime.length (subject) : Nat); (let final : (Prod (Nat) ((Prod (Nat) (List (ByteArray))))) := ((LexLeanCollections.iterateUntil ((fun (state : (Prod (Nat) ((Prod (Nat) (List (ByteArray)))))) => lineStep (subject) (state))) (total) ((0, (0, ([] : List (ByteArray))))) : (Prod ((Prod (Nat) ((Prod (Nat) (List (ByteArray)))))) (Bool)))).1; (let start : Nat := ((final).2).1; (let pieces : List (ByteArray) := ((final).2).2; (if (Nat.blt (start) (total)) then reverse ((sliceOr (subject) (start) ((LexLeanRuntime.subtract (total) (start) : Nat)) :: pieces)) else reverse (pieces))))))}.\par
 \noindent Axiom policy: \texttt{none}.\par
@@ -123,7 +123,7 @@
 \noindent Parameters: \texttt{(pieces : List (ByteArray)) (separator : ByteArray)}.\par
 \noindent Closure 1: binds \texttt{(joined, piece)}, captures \texttt{(separator)}.\par
 \noindent Execution: executable, non-escaping closures only.\par
-\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, recursion}.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation}.\par
 \noindent Type: \texttt{ByteArray}.\par
 \noindent Definition: \texttt{(match (LexLeanCollections.listFold ((fun (joined : Option (ByteArray)) (piece : ByteArray) => (match joined with | Option.none => Option.some (piece) | Option.some sofar => Option.some ((LexLeanRuntime.append ((LexLeanRuntime.append (sofar) (separator) : ByteArray)) (piece) : ByteArray))))) (Option.none) (pieces) : Option (ByteArray)) with | Option.some joined => joined | Option.none => ByteArray.mk \#[])}.\par
 \noindent Axiom policy: \texttt{none}.\par
@@ -139,7 +139,7 @@
 \noindent Parameters: \texttt{(subject : ByteArray) (needle : ByteArray)}.\par
 \noindent Closure 1: binds \texttt{(position)}, captures \texttt{(needle, size, subject, total)}.\par
 \noindent Execution: executable, non-escaping closures only.\par
-\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
 \noindent Type: \texttt{Option (Nat)}.\par
 \noindent Definition: \texttt{(let total : Nat := (LexLeanRuntime.length (subject) : Nat); (let size : Nat := (LexLeanRuntime.length (needle) : Nat); (let position : Nat := ((LexLeanCollections.iterateUntil ((fun (position : Nat) => (if matchAt (subject) (needle) (position) then Option.none else (if (Nat.blt ((position + size)) (total)) then Option.some ((position + 1)) else Option.none)))) ((total + 1)) (0) : (Prod (Nat) (Bool)))).1; (if matchAt (subject) (needle) (position) then Option.some (position) else Option.none))))}.\par
 \noindent Axiom policy: \texttt{none}.\par
