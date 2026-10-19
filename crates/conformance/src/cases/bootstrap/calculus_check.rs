@@ -2543,6 +2543,7 @@ pub(super) fn case() {
     if std::env::var("BS04_QUICK").is_ok() {
         return;
     }
+    let skip_rustc = std::env::var("BS04_SKIP_RUSTC").is_ok();
     let (large_programs, large_arguments) = corpora(
         &sources,
         0x0B54_0044,
@@ -2552,13 +2553,21 @@ pub(super) fn case() {
         RUSTC_ARGUMENTS,
     );
     let mut total = 0;
-    for (at, programs) in large_programs.chunks(RUSTC_CHUNK).enumerate() {
+    for (at, programs) in large_programs
+        .chunks(RUSTC_CHUNK)
+        .enumerate()
+        .filter(|_| !skip_rustc)
+    {
         total += rustc_differential(
             &[("checkProgram", &lowered["checkProgram"], programs)],
             &format!("seeded program chunk {at}"),
         );
     }
-    for (at, arguments) in large_arguments.chunks(RUSTC_ARGUMENT_CHUNK).enumerate() {
+    for (at, arguments) in large_arguments
+        .chunks(RUSTC_ARGUMENT_CHUNK)
+        .enumerate()
+        .filter(|_| !skip_rustc)
+    {
         total += rustc_differential(
             &[("checkArguments", &lowered["checkArguments"], arguments)],
             &format!("seeded argument chunk {at}"),
@@ -2568,14 +2577,16 @@ pub(super) fn case() {
     // The gate is armed: each defect planted in a copy of the source is a
     // disagreement with the oracle.
     let mut detection: BTreeMap<&str, Vec<Run>> = BTreeMap::new();
+    // The cheap runs first: a planted defect is found at the first run that
+    // disagrees, and the committed programs are the slow ones.
     detection.insert("checkProgram", {
-        let mut runs = vector_programs.clone();
-        runs.extend(seeded_programs.iter().cloned());
+        let mut runs = seeded_programs.clone();
+        runs.extend(vector_programs.iter().cloned());
         runs
     });
     detection.insert("checkArguments", {
-        let mut runs = vector_arguments.clone();
-        runs.extend(seeded_arguments.iter().cloned());
+        let mut runs = seeded_arguments.clone();
+        runs.extend(vector_arguments.iter().cloned());
         runs
     });
     for plant in &PLANTS {
