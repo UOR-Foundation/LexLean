@@ -1,10 +1,12 @@
 {
   "remainder": "rest",
   "parts": {
+    "bootstrap-check": [
+      "BS-04"
+    ],
     "compiler": [
       "BS-01",
       "BS-02",
-      "BS-04",
       "GC-02",
       "GN-02",
       "GN-03",
