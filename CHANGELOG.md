@@ -49,6 +49,19 @@ versions, and the entries below say what each tag does and does not claim.
   and, under the pinned Lean, compares the certified `audit_tokens` and `lex`
   packages with the committed ones under `tests/production-export/bootstrap/`.
   `BS-02` brings the register to 414 IDs.
+- The target calculus's checker as language-1.2 source (SPEC.md §17.23, §17.14,
+  `BS-04`, #92; no new diagnostic code, no change to the language-1.2
+  identity). `bootstrap/src/CalculusCheck.lex.tex` declares `checkProgram` and
+  `checkArguments` as production roots for `rust-std`, for a program given as
+  calculus data (reading its canonical JSON is not part of the row), each list
+  of a recursive type carried as a chain of the type's own constructors
+  because certificate A cannot certify a `List` of a recursive type (#208).
+  `BS-04` runs the 175 committed target programs and 1,756 + 303 vectors under
+  the pinned `rustc` on every host, and on the normative host the evaluator on
+  the same vectors and on 4,722 + 403 seeded runs, 9,296 more under `rustc`,
+  twelve planted defects, and the certified packages against the committed
+  ones. The Rust reasons are reproduced to the byte but for Rust's `Debug` of
+  a string with a scalar beyond U+009F, which is outside the claim.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or

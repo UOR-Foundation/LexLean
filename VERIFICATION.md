@@ -8849,6 +8849,27 @@ range checks and byte comparison, as the spike on #92 measured).
 
 Removed: the source was not changed (the plants are made on copies).
 
+### the bootstrap calculus checker can fail its oracle (SPEC.md §17.23, §17.14)
+
+`BS-04` holds the two production roots of `LexLeanBoot.CalculusCheck` (`bootstrap/src/CalculusCheck.lex.tex`) to the stage-0 Rust oracle they replace, `calculus::check::check` and `calculus::check::check_arguments`, for a program given as calculus data. The case decodes the arguments of every vector back to the program the oracle read (each list of a recursive type is a chain of its type's own constructors, a faithful image of the list that certificate A can take, #208), runs the 175 committed target programs, the refusals of `TC-02`, one program for each rule a planted defect removes, and the literal, primitive, and shape corpora under the rendered `rust-std` packages on every host, and on the normative host under the calculus evaluator, with 4,722 seeded programs and 403 seeded argument runs and 9,296 more under `rustc`. A run compares the result and the reason to the byte; the runs whose reason spells a scalar beyond U+009F as `\u{…}` are outside the claim and left out (the reasons of Rust's `Debug` for a string past the tables of the module). The case makes each of these twelve plants on a copy of `bootstrap/src/CalculusCheck.lex.tex` on every normative run:
+
+- **the exhaustiveness of a match is not checked** (`(firstMissing required seen)` -> `(ctor Option.none [Shape])`): run 3, the program gives `ok ()` where the oracle says `function 0: the match is not exhaustive: Adt { constructor: 2 } is not covered`.
+- **a second arm for one shape is accepted** (`(if (shapeIn covered shape) then` -> `(if false then`): run 4, `ok ()` where the oracle says `the arm for Adt { constructor: 0 } is unreachable`.
+- **a closure may capture every parameter** (`(total <=? given)` -> `(total <? given)`): run 19, the program's `closure of function 2 operand 1 has type List { element: Nat }, expected Nat` where the oracle says `captures 2 of its 2 parameters; at least one must remain`.
+- **a nat literal may be one past the largest u64** (`18446744073709551615` -> `…616` in the literal check): run 14, `ok ()` where the oracle says `nat literal 18446744073709551616 is outside the 64-bit realization`.
+- **`-0` is a canonical decimal**: run 13, `ok ()` where the oracle says `` `-0` is not a canonical decimal ``.
+- **an arm may bind one name twice** (`(hasRepeat binders)` -> `false`): run 23, `ok ()` where the oracle says `shape Pair binds the same name twice`.
+- **`field` is accepted on a type with several constructors**: run 10, `ok ()` where the oracle says `` `field` requires an ADT with exactly one constructor; ADT 0 has 3 ``.
+- **a byte literal may have an odd length**: run 15, `ok ()` where the oracle says ``byte literal `abc` is not even-length lowercase hexadecimal``.
+- **a shift takes a u64 count**: run 27, the program refuses `[U8, U32]` with `primitive ShiftLeft takes [Fixed { width: U8 }, Fixed { width: U64 }]` where the oracle accepts.
+- **the tail of a list is typed as its element**: run 29, `primitive Length does not apply to [Nat]` where the oracle accepts.
+- **DEL (U+007F) is not escaped in a spelled string**: run 30, the program spells `\u{7f}` as the raw control character, the oracle as `\\u{7f}`.
+- **the argument count of an entry is not checked** (`checkArguments`): run 103, `ok ()` where the oracle says `function 0 takes 2 argument(s), received 1`.
+
+Removed: the source was not changed (the plants are made on copies).
+
+Authoring found four shapes certificate A and certificate B do not accept, each reduced on a scratch project before being avoided in the source (reported as issue 208): a structure or inductive holding a list of a recursive type as a root parameter, a `cons` of a recursive type's value in a definition, a mutual group or nested group whose rows the 64-declaration commands separate, and (certificate B) a match on a recursive type one of whose arms returns a bare binder of that type, which the module returns through an `Option`.
+
 ### source packages can fail
 
 The cases of the `packages` suite (`PK-01`..`PK-04`, SPEC.md §10.5) were written
