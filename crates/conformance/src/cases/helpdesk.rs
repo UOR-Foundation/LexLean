@@ -25,7 +25,11 @@ const THRESHOLD: i64 = 2;
 /// The weight of the diagonal of the `topic-weights` artifact.
 const WEIGHT: i64 = 3;
 /// The keywords of each topic: the features of `Router.features`.
-const KEYWORDS: [[&str; 2]; 3] = [["down", "outage"], ["invoice", "refund"], ["password", "login"]];
+const KEYWORDS: [[&str; 2]; 3] = [
+    ["down", "outage"],
+    ["invoice", "refund"],
+    ["password", "login"],
+];
 /// The topic names of `Reply.topicName`.
 const NAMES: [&str; 3] = ["outage", "billing", "access"];
 /// The steps `Drain` takes to clear the work of each topic (`Reply.workFor`
@@ -86,10 +90,10 @@ fn decide(request: &[u8]) -> Option<Option<usize>> {
             }
         })
         .collect();
-    let best = scores
-        .iter()
-        .enumerate()
-        .fold(0, |best, (index, score)| if scores[best] < *score { index } else { best });
+    let best = scores.iter().enumerate().fold(
+        0,
+        |best, (index, score)| if scores[best] < *score { index } else { best },
+    );
     let mut ordered = scores.clone();
     ordered.sort_unstable_by(|left, right| right.cmp(left));
     Some((ordered[0] - ordered[1] >= THRESHOLD).then_some(best))
@@ -281,8 +285,7 @@ pub(super) fn run(id: &str) {
         "`classify` uses the model and not the reasoner"
     );
     assert!(
-        rendered(&plan_program).contains("Worklist")
-            && !rendered(&plan_program).contains("Scores"),
+        rendered(&plan_program).contains("Worklist") && !rendered(&plan_program).contains("Scores"),
         "`plan` uses the reasoner and not the model"
     );
     assert!(
@@ -295,8 +298,15 @@ pub(super) fn run(id: &str) {
     // and on the edge requests.
     let mut seeded = Seeded(0x9e37_79b9_7f4a_7c15);
     let mut requests: Vec<Vec<u8>> = [
-        "", "   ", "my site is down", "  refund my invoice  ", "forgot password", "invoice down",
-        "hello", "login login", "outage\n",
+        "",
+        "   ",
+        "my site is down",
+        "  refund my invoice  ",
+        "forgot password",
+        "invoice down",
+        "hello",
+        "login login",
+        "outage\n",
     ]
     .iter()
     .map(|text| text.as_bytes().to_vec())
@@ -319,7 +329,10 @@ pub(super) fn run(id: &str) {
         ("plan", &plan_program, &plan_corpus),
     ] {
         let wrong = disagreements(lowered, corpus);
-        assert!(wrong.is_empty(), "{name} disagrees with the oracle: {wrong:?}");
+        assert!(
+            wrong.is_empty(),
+            "{name} disagrees with the oracle: {wrong:?}"
+        );
     }
     // The corpus reaches every outcome: a refusal, an abstention, and each
     // topic.
@@ -341,7 +354,11 @@ pub(super) fn run(id: &str) {
 
     // Each plant is refused with exactly its code, before any backend runs.
     // A changed byte of a package, and a changed version of one.
-    let changed_byte = planted("std-models/src/Scores.lex.tex", "name: margin,", "name: margin2,");
+    let changed_byte = planted(
+        "std-models/src/Scores.lex.tex",
+        "name: margin,",
+        "name: margin2,",
+    );
     refused(&changed_byte, "LLC0105");
     let changed_version = planted(
         "examples/helpdesk/lexlean.toml",

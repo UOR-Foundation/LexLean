@@ -538,7 +538,11 @@ pub(crate) fn run(id: &str) {
             // sanctioned `expected/` oracle directories), so no tracked subtree
             // can hide from the walkers.
             let is_sanctioned_expected = |parts: &[&str], index: usize| -> bool {
-                (index == 1 && matches!(parts[0], "bootstrap" | "compiler" | "stdlib"))
+                (index == 1
+                    && matches!(
+                        parts[0],
+                        "bootstrap" | "compiler" | "std-models" | "std-reasoning" | "stdlib"
+                    ))
                     || (index == 2 && parts[0] == "examples")
                     || (index == 3
                         && parts[0] == "tests"

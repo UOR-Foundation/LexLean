@@ -1,0 +1,58 @@
+spec = "lexlean/project/1"
+name = "helpdesk"
+language = "1.2"
+module_prefix = "Helpdesk"
+source_roots = ["src"]
+entrypoints = ["src/Main.lex.tex"]
+build_root = ".lexlean"
+lockfile = "lexlean.lock"
+lean_workspace = "."
+lean_toolchain = "leanprover/lean4:v4.32.1"
+
+[[lexicon_source]]
+package = "helpdesk.titles"
+kind = "path"
+path = "glossary/helpdesk.titles"
+
+[[lexicon_source]]
+package = "lexlean.std.nat"
+kind = "builtin"
+
+[[artifact_source]]
+sha256 = "2f430142af6772adcb40669958d8c96e81380911a7f02622f4489553cc0f5e89"
+path = "artifacts/topic-weights.bin"
+
+[[artifact_source]]
+sha256 = "b0f66adc83641586656866813fd9dd0b8ebb63796075661ba45d1aa8089e1d44"
+path = "artifacts/topic-bias.bin"
+
+[[source_package]]
+package = "std"
+version = "1.0.0"
+kind = "path"
+path = "stdlib"
+
+[[source_package]]
+package = "std-models"
+version = "1.0.0"
+kind = "path"
+path = "std-models"
+
+[[source_package]]
+package = "std-reasoning"
+version = "1.0.0"
+kind = "path"
+path = "std-reasoning"
+
+[limits]
+max_file_bytes = 4194304
+max_total_source_bytes = 67108864
+max_primitive_atoms = 2000000
+max_token_lattice_edges = 4000000
+max_parse_states = 4000000
+max_ir_nodes = 2000000
+max_scope_depth = 1024
+max_import_depth = 128
+max_diagnostics = 256
+max_child_output_bytes = 16777216
+child_timeout_ms = 300000

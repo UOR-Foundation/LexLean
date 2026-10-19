@@ -145,7 +145,10 @@ fn package(spec: &Package) {
     {
         files += 1;
         assert!(
-            entry.path().extension().is_none_or(|extension| extension != "lean"),
+            entry
+                .path()
+                .extension()
+                .is_none_or(|extension| extension != "lean"),
             "{}: {} is Lean source",
             spec.id,
             entry.path().display()
@@ -174,7 +177,11 @@ fn package(spec: &Package) {
     let project = P::workspace_project(directory, &[directory]);
     project.fmt_check_ok();
     let (exit, _, stderr) = project.cli(&["lock", "--check"]);
-    assert_eq!(exit, 0, "{}: the committed lock is current: {stderr}", spec.id);
+    assert_eq!(
+        exit, 0,
+        "{}: the committed lock is current: {stderr}",
+        spec.id
+    );
     project.check_ok();
 
     // The falsifiable plant of each package, recorded in VERIFICATION.md.
@@ -223,7 +230,9 @@ fn package(spec: &Package) {
         .expect("attestation"),
     )
     .expect("the attestation is JSON");
-    let rows = attestation["declarations"].as_array().expect("declarations");
+    let rows = attestation["declarations"]
+        .as_array()
+        .expect("declarations");
     for name in spec.declarations {
         let full = format!("{}.{}.{name}", spec.prefix, spec.module);
         let row = rows

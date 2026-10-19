@@ -270,7 +270,7 @@ Every user-visible failure has a registered diagnostic code and a sanctioned exi
 
 ## 7. Repository layout
 
-The completed repository MUST have this layout. Additional files are allowed only when they have a defined role and are included by the repository audits; the tracked tree MUST NOT hold any `CACHEDIR.TAG` file or any path component the repository walkers skip (`target`, `.git`, `.lexlean`, `.lake`, `node_modules`, or `expected` outside the sanctioned `expected/` oracle directories under `bootstrap/`, `compiler/`, `stdlib/`, `examples/<example>/`, `tests/negative/<case>/`, `tests/tooling/<suite>/<case>/`, and `tests/fixtures/<suite>/<case>/`).
+The completed repository MUST have this layout. Additional files are allowed only when they have a defined role and are included by the repository audits; the tracked tree MUST NOT hold any `CACHEDIR.TAG` file or any path component the repository walkers skip (`target`, `.git`, `.lexlean`, `.lake`, `node_modules`, or `expected` outside the sanctioned `expected/` oracle directories under `bootstrap/`, `compiler/`, `std-models/`, `std-reasoning/`, `stdlib/`, `examples/<example>/`, `tests/negative/<case>/`, `tests/tooling/<suite>/<case>/`, and `tests/fixtures/<suite>/<case>/`).
 
 ```text
 .
