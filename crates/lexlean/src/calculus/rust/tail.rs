@@ -223,24 +223,10 @@ pub(super) fn looped(
     }
     let mut changed = Vec::new();
     for (position, (pattern, _)) in parameters.iter().enumerate() {
-        // A parameter nothing reads is no part of the state, and what a self
-        // call passes for it is not evaluated by the loop: it must be a read
-        // or a literal, which cannot fail.
+        // A parameter nothing reads cannot be recovered from the loop's
+        // state, so a function with one stays a call.
         let Pat::Bind(name) = pattern else {
-            if calls.iter().any(|args| {
-                !matches!(
-                    args[position],
-                    Expr::Lit(..)
-                        | Expr::Move(..)
-                        | Expr::Clone(..)
-                        | Expr::Copy(..)
-                        | Expr::Deref(..)
-                        | Expr::Unbox(..)
-                )
-            }) {
-                return None;
-            }
-            continue;
+            return None;
         };
         if calls.iter().any(|args| !passes(&args[position], name)) {
             changed.push(position);
@@ -374,22 +360,15 @@ pub fn loops(me: u64, function: &Function) -> bool {
     if !calls_in_tail(me, &function.body, &mut calls) || calls.is_empty() {
         return false;
     }
-    // A parameter nothing reads is no part of the state, and what a self call
-    // passes for it is not evaluated by the loop: it must be a read or a
-    // literal, which cannot fail.
+    // A parameter nothing reads cannot be recovered from the loop's state, so
+    // a function with one stays a call.
     let unread =
         |name: u64, ty: &Ty| *ty == Ty::Unit || !super::lower::mentions(&function.body, name);
     if function
         .parameters
         .iter()
         .zip(&function.types)
-        .enumerate()
-        .any(|(position, (name, ty))| {
-            unread(*name, ty)
-                && calls.iter().any(|operands| {
-                    !matches!(operands[position], Term::Value { .. } | Term::Var { .. })
-                })
-        })
+        .any(|(name, ty)| unread(*name, ty))
     {
         return false;
     }
