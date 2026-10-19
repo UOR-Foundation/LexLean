@@ -372,7 +372,8 @@ fn succeed(expr: Expr, unit: bool) -> Expr {
         | Expr::Succeed(..)
         | Expr::Lit(..)
         | Expr::Call { .. }
-        | Expr::Apply { .. }) => Expr::Succeed(Box::new(other), Origin::of("overflow")),
+        | Expr::Apply { .. }
+        | Expr::Loop { .. }) => Expr::Succeed(Box::new(other), Origin::of("overflow")),
     }
 }
 
