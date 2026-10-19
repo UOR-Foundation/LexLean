@@ -114,7 +114,16 @@ impl Checker<'_> {
                 self.ty(left)?;
                 self.ty(right)
             }
-            _ => Ok(()),
+            Type::Unit
+            | Type::Bool
+            | Type::Nat
+            | Type::Int
+            | Type::Fixed(..)
+            | Type::Ordering
+            | Type::Str
+            | Type::Bytes
+            | Type::Adt(..)
+            | Type::Fn(..) => Ok(()),
         }
     }
 
@@ -859,7 +868,16 @@ impl Found {
                 self.ty(left);
                 self.ty(right);
             }
-            _ => {}
+            Type::Unit
+            | Type::Bool
+            | Type::Nat
+            | Type::Int
+            | Type::Fixed(..)
+            | Type::Ordering
+            | Type::Str
+            | Type::Bytes
+            | Type::Adt(..)
+            | Type::Fn(..) => {}
         }
     }
 

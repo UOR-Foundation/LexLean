@@ -93,6 +93,10 @@ suite = "repository"
 statement = "The normative CI job runs every recipe of just vv in parallel legs that each start from a clean checkout on the standard ubuntu-24.04 runner, each recipe exactly once but bdd, which runs once per part of its committed plan on the row that names the part, the examples leg at the verification resource profile its matrix row names and without UOR Atlas, which the Atlas jobs of the same run verify as the shards of the committed plan and a join at that profile, every process once and nothing across runs, and the other legs at the default, with no cache, path filter, or skipped recipe, and each job uploads its CI evidence; a plan job decides what a run is from the event alone: a draft pull request runs the rest leg and no other job, a ready pull request, a request, and a push to main run every job, and a push to main that merges a head whose tree it equals runs none when the whole gate passed on that head, and runs the whole gate when any job of that run did not pass, was skipped, or is missing."
 
 [[id]]
+id = "RP-15"
+level = "build"
+suite = "repository"
+statement = "Every match over a closed semantic enum (the IR, the production realization calculus, and its Rust AST) that names at least five of the enum's variants names all of them, with no wildcard or binding catch-all arm, so that a variant added to the enum is a compile error in each Lean, LaTeX, validation, charge, and calculus consumer and never a silent fallback; the audit rejects a catch-all planted in each consumer group and fails when a consumer it must read has no such match left."
 id = "RP-16"
 level = "build"
 suite = "repository"

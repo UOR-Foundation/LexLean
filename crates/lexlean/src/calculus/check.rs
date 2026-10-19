@@ -257,7 +257,9 @@ impl Checker<'_> {
             Ty::Adt { index } => (0..self.adt(*index)?.constructors.len() as u64)
                 .map(|constructor| Shape::Adt { constructor })
                 .collect(),
-            other => return fail(format!("a value of type {other:?} cannot be matched")),
+            other @ (Ty::Int | Ty::Fixed { .. } | Ty::String | Ty::Bytes | Ty::Fn { .. }) => {
+                return fail(format!("a value of type {other:?} cannot be matched"))
+            }
         })
     }
 
@@ -469,7 +471,14 @@ fn orderable(ty: &Ty) -> bool {
     match ty {
         Ty::Nat | Ty::Int | Ty::Fixed { .. } | Ty::Bool | Ty::String => true,
         Ty::Pair { left, right } => orderable(left) && orderable(right),
-        _ => false,
+        Ty::Unit
+        | Ty::Bytes
+        | Ty::Ordering
+        | Ty::Option { .. }
+        | Ty::Result { .. }
+        | Ty::List { .. }
+        | Ty::Adt { .. }
+        | Ty::Fn { .. } => false,
     }
 }
 
@@ -590,7 +599,27 @@ fn prim_type(operation: &Prim, types: &[Ty]) -> Result<Ty, String> {
         Prim::ParseDecimal { target } if matches!(target, Ty::Int | Ty::Fixed { .. }) => {
             exactly(&[Ty::String], option(target.clone()))
         }
-        other => fail(format!("primitive {other:?} does not apply to {types:?}")),
+        other @ (Prim::CheckedAdd
+        | Prim::CheckedSub
+        | Prim::CheckedMul
+        | Prim::CheckedNeg
+        | Prim::CheckedQuot
+        | Prim::BitAnd
+        | Prim::BitOr
+        | Prim::BitXor
+        | Prim::BitNot
+        | Prim::ShiftLeft
+        | Prim::ShiftRight
+        | Prim::Equal
+        | Prim::Append
+        | Prim::Length
+        | Prim::Slice
+        | Prim::FormatDecimal
+        | Prim::Compare
+        | Prim::Convert { .. }
+        | Prim::ParseDecimal { .. }) => {
+            fail(format!("primitive {other:?} does not apply to {types:?}"))
+        }
     }
 }
 
@@ -684,7 +713,42 @@ pub fn kernel_opaque(program: &Program) -> Result<BTreeSet<&'static str>, String
                     Prim::CompareBytes => Some("compare_bytes"),
                     Prim::Utf8Encode => Some("utf8_encode"),
                     Prim::Join => Some("join"),
-                    _ => None,
+                    Prim::NatAdd
+                    | Prim::NatSub
+                    | Prim::NatMul
+                    | Prim::NatQuot
+                    | Prim::NatRem
+                    | Prim::NatEq
+                    | Prim::NatLe
+                    | Prim::NatLt
+                    | Prim::IntAdd
+                    | Prim::IntSub
+                    | Prim::IntMul
+                    | Prim::IntNeg
+                    | Prim::IntQuot
+                    | Prim::IntRem
+                    | Prim::CheckedAdd
+                    | Prim::CheckedSub
+                    | Prim::CheckedMul
+                    | Prim::CheckedNeg
+                    | Prim::CheckedQuot
+                    | Prim::BitAnd
+                    | Prim::BitOr
+                    | Prim::BitXor
+                    | Prim::BitNot
+                    | Prim::ShiftLeft
+                    | Prim::ShiftRight
+                    | Prim::Equal
+                    | Prim::BoolNot
+                    | Prim::BoolAnd
+                    | Prim::BoolOr
+                    | Prim::Append
+                    | Prim::Length
+                    | Prim::Index
+                    | Prim::Slice
+                    | Prim::Utf8Decode
+                    | Prim::Compare
+                    | Prim::Convert { .. } => None,
                 };
                 out.extend(opaque);
                 children.extend(operands);

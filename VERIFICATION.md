@@ -9703,3 +9703,77 @@ refusal and expects `LLP2003`.
 
 Not run for this record: the records the change regenerates (the maintainer's
 wave) and every Lean-backed case, which needs the pinned toolchain.
+
+## Classification matches are total (RP-15, Issue #33)
+
+`cargo xtask validate-model` runs `audit-classifications` (R8). It reads every
+Rust source of `crates/lexlean/src` and finds each `match` whose arms name five
+or more variants of one closed enum: the five IR enums everywhere, and the
+calculus and Rust AST enums beneath `calculus/`. Such a `match` is a
+classification, and it must name every variant: a `_` arm, or a bare binding
+arm (`other =>`), fails the audit, because either would give a variant added
+later a meaning nobody chose and switch off the compiler's own exhaustiveness
+check. Smaller matches are lookups and may default. A guarded catch-all is not
+one: the compiler ignores guards, so it still refuses an unnamed variant.
+
+It reads direct arm patterns only (`SemanticType::Nat`, or `Self::Nat` inside
+an `impl` of the enum). A `match` on a tuple of enums is a pairing and is not
+audited; serialization and the snapshot are `serde`-derived, so no
+hand-written `match` of theirs exists. `if let` and `matches!` over these enums
+are not read.
+
+It also fails when a consumer it must read has no classification left, so a
+refactor cannot move a consumer out from under it: the Lean and LaTeX backends
+(`backend/semantic.rs`), validation and charge (`ir/semantic.rs`), production
+eligibility, the calculus checker and realization table, and the Rust AST, its
+lowering, and its validator.
+
+At the time of writing it reads 137 sources and finds 244 classifications, all
+total. There is no exemption: every source is read alike.
+
+**What the 27 catch-alls it found became.** Each plain `_` arm lists the
+variants it took by default, and each binding arm is `name @ (A | B | ..)`, so
+the arm body is unchanged; rustc confirms the list is exactly the remaining
+variants. The Lean backend's `primitive` became one exhaustive `spelling` table
+of the 56 primitives. For the 25 in sources the compiler-semantics ID does not
+read, generated output is unchanged: `cargo xtask check-golden` and `cargo xtask
+check-calculus` pass, the `lexlean` unit tests pass, and `cargo clippy
+--workspace --all-targets --all-features -- -D warnings` is clean.
+
+**The renderer.** The other two, in `calculus/rust/lower.rs` and `validate.rs`,
+are sources the compiler-semantics ID reads: their bytes are recorded as
+`rust_renderer` in `language/semantics-1.2.toml` and checked by
+`the_compiler_semantics_records_the_renderer`. Editing them changed that digest,
+so the record moved (`6d1e0639...` to `c7fe1d8d...`) and the compiler-semantics
+ID moves with it. No record was regenerated: the committed locks and the
+expected outputs that carry the ID are stale until the maintainer's identity
+wave regenerates them once, and until then a committed lock fails `LLC0102`.
+
+**Planted.** Each was made alone in the named source, `cargo xtask
+validate-model` run, and the edit restored.
+
+```text
+backend/semantic.rs, `spelling`: the `GraphTopological` arm made `_ =>`
+gate failed: R8: crates/lexlean/src/backend/semantic.rs:355: a `match` naming 55 variants of `SemanticPrimitive` has a wildcard arm at line 497; ...
+
+backend/semantic.rs, `spelling`: the `LessThan` arm made `other =>`
+gate failed: R8: crates/lexlean/src/backend/semantic.rs:355: a `match` naming 55 variants of `SemanticPrimitive` has a binding catch-all arm at line 498; ...
+
+ir/semantic.rs, `type_node_count` (charge): `_ => 0,` added after the last arm
+gate failed: R8: crates/lexlean/src/ir/semantic.rs:2048: a `match` naming 28 variants of `SemanticType` has a wildcard arm at line 2079; ...
+
+calculus/rust/ast.rs, `lit`: the `Lit::Unit` arm made `_ =>`
+gate failed: R8: crates/lexlean/src/calculus/rust/ast.rs:458: a `match` naming 7 variants of `Lit` has a wildcard arm at line 459; ...
+```
+
+`conformance_rp_15` plants a wildcard, and then a binding arm, in a
+classification of each of ten consumer functions (`spelling` and
+`render_latex` of the backend, `infer_term` and `type_node_count` of
+validation and charge, `type_key` of eligibility, `prim_type` of the calculus
+checker, `in_place` of the realization table, `expr` of the Rust AST, `item` of
+its lowering, and `expr` of its validator) and observes the audit name the
+file. It empties and then removes each consumer and observes `would pass over`.
+`cargo test -p repo-model classification` covers the scanner
+itself: a total match, a wildcard, a binding, a guarded wildcard, a lookup,
+`Self::` paths, prose and literals, a tuple pairing, block bodies, and raw
+strings.
