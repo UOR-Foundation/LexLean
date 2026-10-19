@@ -55,6 +55,22 @@
         "rust-std"
       ],
       "version": "1.0.0"
+    },
+    {
+      "name": "sha256",
+      "root": "LexLeanStd.Sha256.sha256",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "sha256_hex",
+      "root": "LexLeanStd.Sha256.sha256Hex",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
     }
   ]
 }
