@@ -2332,15 +2332,126 @@ const PLANTS: [super::Plant; 12] = [
 ];
 
 
+/// Programs aimed at one rule each, so that every check the planted defects
+/// remove is exercised by name whatever the seeds draw: a repeated binder, a
+/// field of a type with several constructors, the count of a shift, the tail
+/// of a cons, and a string with a control character in a message.
+fn targeted() -> Vec<Program> {
+    let var = |name: u64| Expr::Var { name };
+    let function = |types: Vec<Ty>, result: Ty, body: Expr| Function {
+        parameters: (0..types.len() as u64).collect(),
+        types,
+        result,
+        body,
+    };
+    let pair = Ty::Pair {
+        left: Box::new(Ty::Nat),
+        right: Box::new(Ty::Nat),
+    };
+    let list = Ty::List {
+        element: Box::new(Ty::Nat),
+    };
+    let mut out = Vec::new();
+    for binders in [vec![1, 1], vec![1, 2]] {
+        out.push(program_of(
+            Vec::new(),
+            vec![function(
+                vec![pair.clone()],
+                Ty::Nat,
+                Expr::Match {
+                    ty: Ty::Nat,
+                    scrutinee: Box::new(var(0)),
+                    arms: vec![Arm {
+                        shape: Shape::Pair,
+                        binders,
+                        body: var(1),
+                    }],
+                },
+            )],
+        ));
+    }
+    for adt in [0, 1] {
+        out.push(program_of(
+            declared(),
+            vec![function(
+                vec![Ty::Adt { index: adt }],
+                Ty::Nat,
+                Expr::Field {
+                    value: Box::new(var(0)),
+                    index: 0,
+                },
+            )],
+        ));
+    }
+    for count in [IntKind::U32, IntKind::U64] {
+        let narrow = Ty::Fixed { width: IntKind::U8 };
+        out.push(program_of(
+            Vec::new(),
+            vec![function(
+                vec![narrow.clone(), Ty::Fixed { width: count }],
+                Ty::Option {
+                    value: Box::new(narrow),
+                },
+                Expr::Prim {
+                    operation: Prim::ShiftLeft,
+                    operands: vec![var(0), var(1)],
+                },
+            )],
+        ));
+    }
+    out.push(program_of(
+        Vec::new(),
+        vec![function(
+            vec![list.clone()],
+            Ty::Nat,
+            Expr::Match {
+                ty: Ty::Nat,
+                scrutinee: Box::new(var(0)),
+                arms: vec![
+                    Arm {
+                        shape: Shape::Nil,
+                        binders: Vec::new(),
+                        body: Expr::Value {
+                            ty: Ty::Nat,
+                            value: Value::Nat { value: "0".into() },
+                        },
+                    },
+                    Arm {
+                        shape: Shape::Cons,
+                        binders: vec![1, 2],
+                        body: Expr::Prim {
+                            operation: Prim::Length,
+                            operands: vec![var(2)],
+                        },
+                    },
+                ],
+            },
+        )],
+    ));
+    for string in ["del\u{7f}", "esc\u{1b}[0m", "bell\u{7}"] {
+        out.push(literal_program(
+            &Ty::Nat,
+            &Value::String {
+                value: string.to_owned(),
+            },
+        ));
+    }
+    out
+}
+
 /// The deterministic vectors every host runs: the committed programs, the
 /// refusals of `TC-02`, and the corpora at the fixed seed.
 fn vectors(sources: &[Source]) -> (Vec<Run>, Vec<Run>) {
     let mut seeded = Seeded(0x00C0_FFEE_0B54);
-    let mut programs: Vec<Program> = sources.iter().map(|source| source.program.clone()).collect();
-    programs.extend(refusals().into_iter().map(|(program, _)| program));
+    // The small vectors first and the committed programs last: a defect
+    // is found at the first run that disagrees, and the committed programs
+    // are the slow ones.
+    let mut programs: Vec<Program> = refusals().into_iter().map(|(program, _)| program).collect();
+    programs.extend(targeted());
     programs.extend(literal_corpus(&mut seeded, 400));
     programs.extend(prim_corpus(&mut seeded, 4));
     programs.extend(shape_corpus(&mut seeded));
+    programs.extend(sources.iter().map(|source| source.program.clone()));
     let mut program_runs: Vec<Run> = programs.iter().map(program_run).collect();
     program_runs.retain(|run| !outside_claim(&run.1));
     let mut argument_runs = argument_corpus(sources, &mut seeded, 200);
@@ -2580,13 +2691,13 @@ pub(super) fn case() {
     // The cheap runs first: a planted defect is found at the first run that
     // disagrees, and the committed programs are the slow ones.
     detection.insert("checkProgram", {
-        let mut runs = seeded_programs.clone();
-        runs.extend(vector_programs.iter().cloned());
+        let mut runs = vector_programs.clone();
+        runs.extend(seeded_programs.iter().cloned());
         runs
     });
     detection.insert("checkArguments", {
-        let mut runs = seeded_arguments.clone();
-        runs.extend(vector_arguments.iter().cloned());
+        let mut runs = vector_arguments.clone();
+        runs.extend(seeded_arguments.iter().cloned());
         runs
     });
     for plant in &PLANTS {
