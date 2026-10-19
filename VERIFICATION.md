@@ -10042,11 +10042,11 @@ the `semantic_ir` and `latex_backend` versions), so the committed lock of
 `examples/models` is stale (`LLC0102`); the cases were run with that one lock
 rewritten by `lexlean lock` in the working tree, and the rewrite is not part of
 this change, because the maintainer regenerates every record in the identity
-wave. With it:
+wave. With it, on the tree merged with the head of #176 (`8153ee5f7`):
 
 ```
 cargo test -p repo-conformance --test conformance conformance_lm_
-test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 419 filtered out; finished in 580.62s
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 419 filtered out; finished in 555.69s
 ```
 
 The ten are `LM-01`..`LM-09` and `LM-13`. `LM-07` and `LM-08` narrow the
