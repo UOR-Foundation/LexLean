@@ -2009,7 +2009,9 @@ fn elements_of(krate: &Crate) -> BTreeSet<String> {
 /// loop ends with is a fallible value, and the body is checked as a block that
 /// is not a tail. The mutants reach these rarely, so these make each rule a
 /// vector in both directions.
-#[allow(clippy::too_many_lines)]
+// The crates are listed in the order the rules are described, each one pushed beside
+// the reason it is there.
+#[allow(clippy::too_many_lines, clippy::vec_init_then_push)]
 fn loop_crates() -> Vec<Crate> {
     let at = Origin::of;
     let local = Ident::Local;
