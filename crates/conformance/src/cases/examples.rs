@@ -171,7 +171,7 @@ pub(crate) fn run(id: &str) {
         // exactly the one prescribed diagnostic code.
         "EX-07" => {
             let root = support::repo_root();
-            let prescribed: [(&str, &str); 277] = [
+            let prescribed: [(&str, &str); 278] = [
                 ("unknown-word", "LLL1004"),
                 ("unknown-symbol", "LLL1004"),
                 ("unknown-control", "LLL1004"),
@@ -204,6 +204,7 @@ pub(crate) fn run(id: &str) {
                 ("certificate-heartbeat-rejected", "LLV7013"),
                 ("certificate-resource-exhausted", "LLS8002"),
                 ("lowering-size-limit", "LLS8002"),
+                ("lowering-depth-limit", "LLS8002"),
                 ("certificate-size-limit", "LLS8002"),
                 ("certificate-generation-limit", "LLS8002"),
                 ("certificates-total-limit", "LLS8002"),

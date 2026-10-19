@@ -17,6 +17,11 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- A lowered program nested beyond `PROGRAM_JSON_DEPTH` (512 arrays and objects)
+  is refused with `LLS8002` in phase lowering, where `Program::to_file_bytes`
+  used to panic on any program nested beyond the canonical reader's 127 (#215,
+  R5); the round trip reads without that limit. Negative fixture
+  `lowering-depth-limit` (`EX-07`). No language data moves.
 - UOR Atlas, #168: the census windows `CensusCert4` and `CensusCert10`
   (`gramRange 4000 1000 = true` and `gramRange 10000 1000 = true`, each one
   `of_decide_eq_true`) are proved from ten width-100 certificates each,
