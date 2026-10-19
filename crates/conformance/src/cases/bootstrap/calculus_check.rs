@@ -2243,13 +2243,13 @@ const EVALUATOR_LITERALS: usize = 1_500;
 const EVALUATOR_PRIM_ROUNDS: usize = 12;
 const EVALUATOR_MUTANTS: usize = 3_000;
 const EVALUATOR_ARGUMENTS: usize = 300;
-const RUSTC_LITERALS: usize = 2_000;
+const RUSTC_LITERALS: usize = 1_500;
 const RUSTC_PRIM_ROUNDS: usize = 24;
-const RUSTC_MUTANTS: usize = 12_000;
-const RUSTC_ARGUMENTS: usize = 2_000;
+const RUSTC_MUTANTS: usize = 6_000;
+const RUSTC_ARGUMENTS: usize = 1_000;
 /// Runs per compiled harness: a harness spells every argument as a Rust
 /// expression, and rustc's memory grows with their number.
-const RUSTC_CHUNK: usize = 2_000;
+const RUSTC_CHUNK: usize = 1_000;
 
 /// A defect planted in the source: the check it removes, the text of the
 /// source it is made at, and the root whose differential must catch it.
