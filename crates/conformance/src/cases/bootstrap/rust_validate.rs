@@ -1740,6 +1740,122 @@ fn rule_vectors(bases: &[&Rendered], each: usize) -> (Vec<Run>, Vec<Run>) {
     (validated, corresponded)
 }
 
+/// Crates by hand for the merge of moved sets at a branch: a name moved on
+/// one arm of a match, or one branch of an `if`, and used after it. The
+/// mutants reach this rarely, so these make it a vector.
+fn branch_crates() -> Vec<Crate> {
+    let at = || Origin::of("expr:match");
+    let local = |n: u64| Ident::Local(n);
+    let unit = || Expr::Lit(Lit::Unit, Origin::of("value:unit"));
+    let mut out = Vec::new();
+    for arms in 2..=3usize {
+        for moving in 0..arms {
+            for after in 0..3usize {
+                let mut cases: Vec<(Pat, Block)> = Vec::new();
+                for arm in 0..arms {
+                    let pat = if arm == 0 {
+                        Pat::Some(Box::new(Pat::Wild))
+                    } else if arm + 1 == arms {
+                        Pat::None
+                    } else {
+                        Pat::Some(Box::new(Pat::Bind(local(10 + arm as u64))))
+                    };
+                    let body = if arm == moving {
+                        Block::of(Expr::Move(local(0), Origin::of("read")))
+                    } else {
+                        Block::of(unit())
+                    };
+                    cases.push((pat, body));
+                }
+                let later = match after {
+                    0 => Expr::Move(local(0), Origin::of("read")),
+                    1 => Expr::Clone(local(0), Origin::of("read")),
+                    _ => unit(),
+                };
+                let body = Block {
+                    lets: vec![
+                        Let {
+                            pat: Pat::Wild,
+                            ty: None,
+                            value: Expr::Match {
+                                scrutinee: Box::new(Expr::Copy(local(1), Origin::of("read"))),
+                                arms: cases,
+                                at: at(),
+                            },
+                            at: Origin::of("let"),
+                        },
+                        Let {
+                            pat: Pat::Wild,
+                            ty: None,
+                            value: later,
+                            at: Origin::of("let"),
+                        },
+                    ],
+                    tail: unit(),
+                };
+                out.push(Crate {
+                    profile: Profile::Std,
+                    items: vec![ItemDef::Function {
+                        name: Ident::Function(0),
+                        parameters: vec![
+                            (Pat::Bind(local(0)), Type::Str),
+                            (Pat::Bind(local(1)), Type::Option(Box::new(Type::Nat))),
+                        ],
+                        result: Type::Unit,
+                        body,
+                        at: Origin::of("function"),
+                    }],
+                });
+            }
+        }
+    }
+    // The same on the two branches of an `if`.
+    for moving in 0..2usize {
+        let branch = |arm: usize| {
+            if arm == moving {
+                Block::of(Expr::Move(local(0), Origin::of("read")))
+            } else {
+                Block::of(unit())
+            }
+        };
+        out.push(Crate {
+            profile: Profile::Std,
+            items: vec![ItemDef::Function {
+                name: Ident::Function(0),
+                parameters: vec![
+                    (Pat::Bind(local(0)), Type::Str),
+                    (Pat::Bind(local(1)), Type::Bool),
+                ],
+                result: Type::Unit,
+                body: Block {
+                    lets: vec![
+                        Let {
+                            pat: Pat::Wild,
+                            ty: None,
+                            value: Expr::If {
+                                condition: Box::new(Expr::Copy(local(1), Origin::of("read"))),
+                                then_branch: Box::new(branch(0)),
+                                else_branch: Box::new(branch(1)),
+                                at: Origin::of("expr:cond"),
+                            },
+                            at: Origin::of("let"),
+                        },
+                        Let {
+                            pat: Pat::Wild,
+                            ty: None,
+                            value: Expr::Move(local(0), Origin::of("read")),
+                            at: Origin::of("let"),
+                        },
+                    ],
+                    tail: unit(),
+                },
+                at: Origin::of("function"),
+            }],
+        });
+    }
+    out
+}
+
 /// What the deterministic vectors are made of.
 struct Vectors {
     /// Runs of `validateCrate` and `correspondCrate` on the crates the
@@ -2116,7 +2232,8 @@ pub(super) fn case() {
     let (sources, manifests, fixtures, distinct) = committed();
     let all = rendered(&sources);
     let bases = small(&all, BASE_CAP);
-    let (rule_validate, rule_correspond) = rule_vectors(&bases, RULES_EACH);
+    let (mut rule_validate, rule_correspond) = rule_vectors(&bases, RULES_EACH);
+    rule_validate.extend(branch_crates().iter().map(validate_run));
     let mut counts = coverage(&rule_validate);
     for (template, count) in coverage(&rule_correspond) {
         *counts.entry(template).or_insert(0) += count;
@@ -2151,7 +2268,8 @@ pub(super) fn case() {
     let correspond_root = super::lower(&checked, &project, MODULE, "correspondCrate");
     // On every host: the rendered rust-std packages of both roots, compiled
     // by that host's pinned rustc, agree with the oracle on the vectors.
-    if std::env::var("BS05_QUICK").is_err() {
+    let plants_only = std::env::var("BS05_PLANTS").is_ok();
+    if std::env::var("BS05_QUICK").is_err() && !plants_only {
         rustc_differential(
             &[
                 ("validateCrate", &validate_root, &vectors_validate),
@@ -2191,7 +2309,10 @@ pub(super) fn case() {
     for (root, low, runs) in [
         ("validateCrate", &validate_root, &evaluator_validate),
         ("correspondCrate", &correspond_root, &evaluator_correspond),
-    ] {
+    ]
+    .into_iter()
+    .filter(|_| !plants_only)
+    {
         let disagreements = super::evaluate(low, runs, 5);
         assert!(
             disagreements.is_empty(),
@@ -2209,7 +2330,10 @@ pub(super) fn case() {
     for (root, low, runs) in [
         ("validateCrate", &validate_root, &seeded_validate),
         ("correspondCrate", &correspond_root, &seeded_correspond),
-    ] {
+    ]
+    .into_iter()
+    .filter(|_| !plants_only)
+    {
         let disagreements = super::evaluate(low, runs, 5);
         assert!(
             disagreements.is_empty(),
@@ -2228,13 +2352,15 @@ pub(super) fn case() {
     }
     let mut large = Seeded(0x0B55_0055);
     let (large_validate, large_correspond) = mutants(&bases, &mut large, RUSTC_MUTANTS);
-    rustc_differential(
-        &[
-            ("validateCrate", &validate_root, &large_validate),
-            ("correspondCrate", &correspond_root, &large_correspond),
-        ],
-        "seeded",
-    );
+    if !plants_only {
+        rustc_differential(
+            &[
+                ("validateCrate", &validate_root, &large_validate),
+                ("correspondCrate", &correspond_root, &large_correspond),
+            ],
+            "seeded",
+        );
+    }
     // The gate is armed: each defect planted in a copy of the source is a
     // disagreement with the oracle.
     let mut detection: BTreeMap<&str, Vec<Run>> = BTreeMap::new();
@@ -2266,7 +2392,7 @@ pub(super) fn case() {
     // Under the pinned Lean, the production export certifies both roots;
     // its packages are the committed ones and realize the programs the
     // differential ran.
-    if !support::lean_backed("BS-05") {
+    if plants_only || !support::lean_backed("BS-05") {
         return;
     }
     let exported = harness::exported("bootstrap");
