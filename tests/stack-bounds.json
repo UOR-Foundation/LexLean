@@ -1,0 +1,61 @@
+{
+  "spec": "lexlean/stack-bounds/1",
+  "headroom": 4,
+  "granule": 65536,
+  "scaling": {
+    "bootstrap/is_closed_lean_name": [
+      {
+        "input_bytes": 1000,
+        "debug": 327680,
+        "release": 65536
+      },
+      {
+        "input_bytes": 10000,
+        "debug": 3211264,
+        "release": 65536
+      },
+      {
+        "input_bytes": 40000,
+        "debug": 12845056,
+        "release": 65536
+      },
+      {
+        "input_bytes": 80000,
+        "debug": 25624576,
+        "release": 65536
+      }
+    ]
+  },
+  "rows": {
+    "bootstrap/audit_tokens": {
+      "debug": 3145728
+    },
+    "bootstrap/evaluator": {
+      "debug": 21037056
+    },
+    "bootstrap/is_closed_lean_name": {
+      "debug": 5767168
+    },
+    "bootstrap/lex": {
+      "debug": 1179648
+    },
+    "bootstrap/parse_audit_output": {
+      "debug": 7929856
+    },
+    "stdlib/find": {
+      "debug": 983040
+    },
+    "stdlib/join_with": {
+      "debug": 1572864
+    },
+    "stdlib/lines": {
+      "debug": 458752
+    },
+    "stdlib/split_on": {
+      "debug": 655360
+    },
+    "stdlib/trim": {
+      "debug": 458752
+    }
+  }
+}
