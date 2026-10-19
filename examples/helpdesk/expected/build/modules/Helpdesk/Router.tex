@@ -1,0 +1,118 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{Topic}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{outage}: \texttt{()}.\par
+\noindent Constructor \texttt{billing}: \texttt{()}.\par
+\noindent Constructor \texttt{access}: \texttt{()}.\par
+\subsection*{\texttt{mentions}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(request : ByteArray) (needle : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match LexLeanStd.Text.find (request) (needle) with | Option.some \_ => true | Option.none => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{signal}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(seen : Bool)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Int}.\par
+\noindent Definition: \texttt{(if seen then (1 : Int) else (0 : Int))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{features}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(request : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (Int)}.\par
+\noindent Definition: \texttt{(signal ((mentions (request) (ByteArray.mk \#[100, 111, 119, 110]) || mentions (request) (ByteArray.mk \#[111, 117, 116, 97, 103, 101]))) :: (signal ((mentions (request) (ByteArray.mk \#[105, 110, 118, 111, 105, 99, 101]) || mentions (request) (ByteArray.mk \#[114, 101, 102, 117, 110, 100]))) :: (signal ((mentions (request) (ByteArray.mk \#[112, 97, 115, 115, 119, 111, 114, 100]) || mentions (request) (ByteArray.mk \#[108, 111, 103, 105, 110]))) :: ([] : List (Int)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{Readable}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(request : ByteArray)}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(0 < (LexLeanRuntime.length (request) : Nat))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{readableCheck}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(request : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(Nat.blt (0) ((LexLeanRuntime.length (request) : Nat)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{readable\_check\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(request : ByteArray)}.\par
+\noindent Statement: \texttt{((readableCheck (request) = true) -> Readable (request))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{readable\_check\_complete}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(request : ByteArray)}.\par
+\noindent Statement: \texttt{(Readable (request) -> (readableCheck (request) = true))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{topicWeights}}
+\noindent Kind: \texttt{artifact}.\par
+\noindent Role: \texttt{parameters}.\par
+\noindent Schema: \texttt{int16 integer tensor, little-endian, row-major, shape (3, 3)}.\par
+\noindent Value type: \texttt{List (List (Int))}.\par
+\noindent Content: \texttt{18 bytes, SHA-256 2f430142af6772adcb40669958d8c96e81380911a7f02622f4489553cc0f5e89}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{topicWeights.bytes : ByteArray, the configured bytes}.\par
+\noindent Elaborates to: \texttt{topicWeights : List (List (Int)), their decoding under the schema}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{topicWeights.decoded}.\par
+\subsection*{\texttt{topicBias}}
+\noindent Kind: \texttt{artifact}.\par
+\noindent Role: \texttt{parameters}.\par
+\noindent Schema: \texttt{int16 integer tensor, little-endian, row-major, shape (3)}.\par
+\noindent Value type: \texttt{List (Int)}.\par
+\noindent Content: \texttt{6 bytes, SHA-256 b0f66adc83641586656866813fd9dd0b8ebb63796075661ba45d1aa8089e1d44}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{topicBias.bytes : ByteArray, the configured bytes}.\par
+\noindent Elaborates to: \texttt{topicBias : List (Int), their decoding under the schema}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{topicBias.decoded}.\par
+\subsection*{\texttt{ScoringContract}}
+\noindent Kind: \texttt{contract}.\par
+\noindent Interface: \texttt{input request : ByteArray, output scores : List (Int)}.\par
+\noindent Precondition: \texttt{Readable}.\par
+\noindent Runtime validator: \texttt{readableCheck validates the precondition, sound by readable\_check\_sound, complete by readable\_check\_complete}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (validator precondition sound): \texttt{forall (request : ByteArray), ((readableCheck (request) = true) -> Readable (request)); stated exactly by readable\_check\_sound}.\par
+\noindent Obligation (validator precondition complete): \texttt{forall (request : ByteArray), (Readable (request) -> (readableCheck (request) = true)); stated exactly by readable\_check\_complete}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{ScoringContract.precondition\_sound}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{ScoringContract.precondition\_complete}.\par
+\subsection*{\texttt{routing\_width}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(request : ByteArray)}.\par
+\noindent Statement: \texttt{((LexLeanRuntime.length (features (request)) : Nat) = 3)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{TopicScore}}
+\noindent Kind: \texttt{realization}.\par
+\noindent Interface: \texttt{input request : ByteArray, output List (Int)}.\par
+\noindent Neural architecture: \texttt{exact integer feed-forward over mathematical integers}.\par
+\noindent Encoder: \texttt{features (request) of width 3, by routing\_width}.\par
+\noindent Layer 1: \texttt{dense 3 to 3, weights topicWeights, bias topicBias}.\par
+\noindent Decoder: \texttt{values => values}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Obligation (realization TopicScore width): \texttt{forall (request : ByteArray), ((LexLeanRuntime.length (features (request)) : Nat) = 3); stated exactly by routing\_width}.\par
+\noindent Elaborates to: \texttt{TopicScore.encoded (request : ByteArray) : List (Int) := features (request)}.\par
+\noindent Elaborates to: \texttt{TopicScore.layer1 (\_\_values : List (Int)) : List (Int) := ((LexLeanCollections.listFold ((fun (\_\_acc : (Prod (List (Int)) (List (Int)))) (\_\_row : List (Int)) => (match (\_\_acc).2 with | List.nil => \_\_acc | List.cons \_\_bias \_\_biases => ((LexLeanRuntime.append ((\_\_acc).1) (((LexLeanRuntime.subtract (\_\_bias) ((LexLeanRuntime.negate (((LexLeanCollections.listFold ((fun (\_\_sum : (Prod (Int) (List (Int)))) (\_\_weight : Int) => (match (\_\_sum).2 with | List.nil => \_\_sum | List.cons \_\_value \_\_rest => ((LexLeanRuntime.subtract ((\_\_sum).1) ((LexLeanRuntime.negate ((LexLeanRuntime.multiply (\_\_weight) (\_\_value) : Int)) : Int)) : Int), \_\_rest)))) (((0 : Int), \_\_values)) (\_\_row) : (Prod (Int) (List (Int))))).1) : Int)) : Int) :: ([] : List (Int)))) : List (Int)), \_\_biases)))) ((([] : List (Int)), topicBias)) (topicWeights) : (Prod (List (Int)) (List (Int))))).1}.\par
+\noindent Elaborates to: \texttt{TopicScore.logits (request : ByteArray) : List (Int) := TopicScore.layer1 (TopicScore.encoded (request))}.\par
+\noindent Elaborates to: \texttt{TopicScore (request : ByteArray) : List (Int) := (let values : List (Int) := TopicScore.logits (request); values)}.\par
+\subsection*{\texttt{topicAt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(index : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Topic}.\par
+\noindent Definition: \texttt{(if (Nat.beq (index) (0)) then Topic.outage else (if (Nat.beq (index) (1)) then Topic.billing else Topic.access))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{ScoringModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Binds: \texttt{contract ScoringContract to realization TopicScore}.\par
+\noindent Evidence: \texttt{none}.\par
+\noindent Runtime checks in executable code: \texttt{precondition}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{ScoringModel (\_\_input : ByteArray) : List (Int) := TopicScore (\_\_input)}.\par
+\end{document}

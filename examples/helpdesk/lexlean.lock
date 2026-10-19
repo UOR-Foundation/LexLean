@@ -1,0 +1,87 @@
+spec = "lexlean/lock/2"
+language = "1.2"
+compiler_semantics = "fe1673fbf5adebb05306843661ca60582fb4dab82e2d738ba21b8b159432019b"
+project_config_sha256 = "0ca63d30dcab61099d1e4c2cec23aafe3882c042368642e30c4f443472364003"
+lean_toolchain = "leanprover/lean4:v4.32.1"
+
+[[workspace_file]]
+path = "lake-manifest.json"
+sha256 = "7345e9dad35492030ff80b548c7852ba8fabba24446340cb30b19f8beb2176b3"
+
+[[workspace_file]]
+path = "lakefile.toml"
+sha256 = "520c1a2d70040d3b2b4801c3857355de024615c763985fba303504c8520203ca"
+
+[[workspace_file]]
+path = "lean-toolchain"
+sha256 = "8e3538e0ab5f81a3ee04927d8838c8c674e0e112838b4b3ce87ec218143276af"
+
+[[package]]
+id = "helpdesk.titles"
+version = "1.0.0"
+kind = "path"
+source = "glossary/helpdesk.titles"
+revision = "none"
+tree_sha256 = "7316981daa9a17e234a5c17fda7784ad3fa53079a9e494b01a585b935c2f6916"
+manifest_sha256 = "22711379342bc94c309e893bb8dc52dbe80aaff283a6b4df2785b2714442f7c1"
+imports = ["lexlean.core@1.2.0", "lexlean.std.nat@1.2.0"]
+
+[[package]]
+id = "lexlean.core"
+version = "1.2.0"
+kind = "builtin"
+source = "embedded"
+revision = "compiler-semantics"
+tree_sha256 = "827317cae68c162f3a96c8a8de4e53ab348e7d3724fd2b834fa85ecde1a1b392"
+manifest_sha256 = "271079763d269cc873531f515e56da960cd6321393b9460ff0e617666fa01d71"
+imports = []
+
+[[package]]
+id = "lexlean.std.bool"
+version = "1.2.0"
+kind = "builtin"
+source = "embedded"
+revision = "compiler-semantics"
+tree_sha256 = "3bc0fb09d706ffa7d5a1363302ea87c049acc7c7dcafde63c62682620c11be9b"
+manifest_sha256 = "de58de2cf18a7a5a62d8c20649139d6dfe1f7b16b3130c75f150fbac5440a71e"
+imports = ["lexlean.core@1.2.0"]
+
+[[package]]
+id = "lexlean.std.nat"
+version = "1.2.0"
+kind = "builtin"
+source = "embedded"
+revision = "compiler-semantics"
+tree_sha256 = "e0db021e01b91d651c43921d66f6b0023c8efbf17cac2ec53192ce5305e4e1ac"
+manifest_sha256 = "6fb446b39e3c1c18a5f10cfa1f7aa2bd431837719eb0eb7489aadf452c9420a7"
+imports = ["lexlean.core@1.2.0", "lexlean.std.bool@1.2.0"]
+
+[[source_package]]
+id = "std"
+version = "1.0.0"
+kind = "path"
+source = "stdlib"
+module_prefix = "LexLeanStd"
+tree_sha256 = "aafef610583ee2205336799dc07a795d2cbfa65f952aaf4a7bd3dd6619ce0e44"
+manifest_sha256 = "ca32f854ea2cbe5218a34bf0ace83f90838499ef4dce5e413fe4d6d8d45ab50d"
+imports = []
+
+[[source_package]]
+id = "std-models"
+version = "1.0.0"
+kind = "path"
+source = "std-models"
+module_prefix = "LexLeanStdModels"
+tree_sha256 = "50c65a4e193eed2693c0cc863dda02363dea6eb0608f71d19c18dd7f9bb10143"
+manifest_sha256 = "b23bdec83131b3e4f0a45197f98f9b7144a208ff5a2692289262e5096a455001"
+imports = []
+
+[[source_package]]
+id = "std-reasoning"
+version = "1.0.0"
+kind = "path"
+source = "std-reasoning"
+module_prefix = "LexLeanStdReasoning"
+tree_sha256 = "41389013809361357064b363ddea23a2fc4d335b1905ff6729f9be30fd0e529b"
+manifest_sha256 = "76ead6f0bc516e1d9669cf1333e7b75d9e7c19c7f3f8aeb000ca36ad15d432bc"
+imports = []
