@@ -667,6 +667,8 @@ pub fn run(id: &str) {
         }
         // §17.22: SHA-256 (#126 stage 1).
         "SL-02" => super::stdlib_sha256::run(id),
+        // §17.22, §10.5: the standard library's source packages.
+        "SL-03" | "SL-04" => super::std_packages::run(id),
         other => panic!("no stdlib case is wired for {other}"),
     }
 }

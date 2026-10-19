@@ -591,6 +591,43 @@ impl P {
         Self { temp, root }
     }
 
+    /// A fresh copy of the project at the repository-relative `project`
+    /// beside the `members` it needs (`project` among them) and the
+    /// repository's workspace file, without build output or expected records.
+    /// The copies keep their repository-relative paths, so the workspace file
+    /// resolves a package here exactly as it does in the checkout (SPEC.md
+    /// §10.5).
+    #[must_use]
+    pub fn workspace_project(project: &str, members: &[&str]) -> Self {
+        assert!(
+            members.contains(&project),
+            "`{project}` is one of the members copied"
+        );
+        let temp = tempfile::Builder::new()
+            .prefix("lexlean-workspace-case-")
+            .tempdir()
+            .expect("tempdir");
+        for member in members {
+            let source = repo_root().join(member);
+            assert!(
+                source.is_dir(),
+                "the committed `{member}` project is required"
+            );
+            copy_tree(
+                source.as_std_path(),
+                &temp.path().join(member),
+                &[".lexlean", "expected"],
+            );
+        }
+        std::fs::copy(
+            repo_root().join("lexlean-workspace.toml").as_std_path(),
+            temp.path().join("lexlean-workspace.toml"),
+        )
+        .expect("the workspace file");
+        let root = Utf8PathBuf::from_path_buf(temp.path().join(project)).expect("utf8");
+        Self { temp, root }
+    }
+
     /// Assert that a link-time failure also refuses `build` and leaves no
     /// backend output (§17.12). `check` alone never runs a backend, so the
     /// assertion is made against the command that would: the §21.8 mutation
