@@ -57,6 +57,12 @@
     "stdlib/lines": {
       "debug": 458752
     },
+    "stdlib/sha256": {
+      "debug": 196608
+    },
+    "stdlib/sha256_hex": {
+      "debug": 6422528
+    },
     "stdlib/split_on": {
       "debug": 655360
     },

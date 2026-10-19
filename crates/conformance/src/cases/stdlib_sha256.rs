@@ -386,6 +386,15 @@ pub(super) fn run(id: &str) {
             "{name}: {}",
             String::from_utf8_lossy(&ran.stderr)
         );
+        // PD-08: both roots recurse, so the harness that ran them records
+        // (measuring) or demands (otherwise) their stack bound. The harness
+        // crates are named for the member's output, the packages for the root.
+        let package = if name.starts_with("sha256_words") {
+            "stdlib/sha256"
+        } else {
+            "stdlib/sha256_hex"
+        };
+        crate::stack_bounds::observe(package, &binary);
         let stdout = String::from_utf8(ran.stdout).expect("utf8");
         let printed: Vec<Json> = stdout
             .lines()
