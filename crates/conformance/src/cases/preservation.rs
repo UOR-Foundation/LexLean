@@ -3943,6 +3943,75 @@ pub fn run(id: &str) {
                 !templates(&format!("format!(\"theorem {}0 : …\")", "__rel_")).is_empty(),
                 "the template scan finds a planted template"
             );
+            // Lists of recursive types (#208): a record and an inductive
+            // holding one as a root parameter, `cons` onto one, and a closure
+            // whose encoder rows would be chunked apart, as certificates A, B
+            // and E built as data.
+            let lists = P::copy_tests_project("preservation-certificates/lists");
+            let certified_lists = preservation::certificates(&lists);
+            // The members of a safe compiled mutual group are compiled
+            // together by the runtime, from the members present in the
+            // command, so they must be rendered into one command.
+            let commands_of = |data: &lexlean::ir::core::CoreModule, module: &str| -> usize {
+                let text = lexlean::backend::core::lean_text_legacy(data, module)
+                    .expect("the module renders");
+                let commands: Vec<&str> = text
+                    .split("LexLeanCore.Runtime.decodeAndAdd")
+                    .skip(1)
+                    .collect();
+                let mut straddling = 0;
+                for row in &data.declarations {
+                    let Some(all) = row.all.as_ref().filter(|all| all.len() > 1) else {
+                        continue;
+                    };
+                    if !row.compiled || row.safety.is_some() {
+                        continue;
+                    }
+                    let holding = |name: &str| {
+                        commands
+                            .iter()
+                            .position(|command| command.contains(&format!("\"name\":\"{name}\"")))
+                    };
+                    let first = holding(&row.name);
+                    assert!(first.is_some(), "{module}: `{}` is in a command", row.name);
+                    if all.iter().any(|member| holding(member) != first) {
+                        straddling += 1;
+                    }
+                }
+                straddling
+            };
+            let mut groups = 0;
+            let mut largest = 0;
+            for entry in &certified_lists {
+                let certificate = &entry.certificate;
+                let data = certificate.data.as_ref().expect("certificate A is data");
+                assert_eq!(
+                    commands_of(data, &certificate.module),
+                    0,
+                    "{}: a safe mutual group is split across commands",
+                    certificate.module
+                );
+                let ungrouped = {
+                    let mut ungrouped = data.clone();
+                    for row in &mut ungrouped.declarations {
+                        if row.all.as_ref().is_some_and(|all| all.len() > 1) && row.safety.is_none()
+                        {
+                            groups += 1;
+                            row.all = Some(vec![row.name.clone()]);
+                        }
+                    }
+                    ungrouped
+                };
+                // Armed: the same rows scheduled one by one straddle a
+                // command in the closure the project exists for.
+                let split = commands_of(&ungrouped, &certificate.module);
+                largest = largest.max(split);
+            }
+            assert!(groups > 0, "the list roots have safe mutual groups");
+            assert!(
+                largest > 0,
+                "without the group, the closure's encoder rows are chunked apart"
+            );
             if !support::lean_backed("SP-15") {
                 return;
             }
@@ -4147,12 +4216,8 @@ pub fn run(id: &str) {
             eprintln!(
                 "SP-15 plants refused:\n  wrong lemma: {wrong_lemma}\n  changed statement: {changed_statement}\n  forged program: {forged_program}\n  added axiom: {audit_refusal}\n  lying policy: {lying_policy}"
             );
-            // Lists of recursive types (#208): a record and an inductive
-            // holding one as a root parameter, `cons` onto one, and a closure
-            // whose encoder rows are chunked across commands, certified under
-            // the pinned Lean beside the production example.
-            let lists = P::copy_tests_project("preservation-certificates/lists");
-            let certified_lists = preservation::certificates(&lists);
+            // The same list roots, certified under the pinned Lean beside the
+            // production example.
             let lists_workspace = preservation::staged(&lists, &certified_lists);
             let lists_root = tempfile::Builder::new()
                 .prefix("lexlean-sp15-lists-")
