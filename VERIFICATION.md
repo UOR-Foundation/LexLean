@@ -1675,6 +1675,70 @@ be able to fail by the three statements of a wrong value, each of which the pinn
 Lean refuses (the loop ending at one, the exhausted loop stated as a value, and the
 stuck loop stated as the unit value).
 
+### a function rendered as a loop is certified, and a loop outside the rendering is refused (SP-20)
+
+`FunOK` is `FunOK0` or `FunLoop` (`SP-20`, §17.16, §17.17, #91 stage 4). The case
+reads the library's modules for the declarations (`FunOK0`, `FunOK`, `FunLoop`,
+`loopOf`, `loopCheckOf`, `funSem_loop`, `funSem_of`, `sound`), lowers the renderer
+fixtures in each profile and the production roots of `examples/production`,
+`examples/production-coverage`, `examples/models`, and `examples/reasoning` in each
+of their targets under a lock computed in the case, reads every loop of every
+rendering back into its recursive body with `loopform::recover` (which also
+requires the library's form, transliterated, to be the crate's function), asserts
+that there is a loop that changes a parameter and one that keeps another (the
+case is armed by the first loop), plants six breaks of each loop in every loop
+(a state of another type, no destructuring of the state, an end that is not an
+`Err`, a renamed parameter the body reads, a pattern that rebinds a kept parameter,
+a state held by a parameter the function does not have) and requires each refused,
+and has the pinned Lean 4.32.1 compile certificate B of the fixtures rendered as
+loops over the shipped library with the library audit and the exact axioms of the
+root theorems. The unit tests of `data_b::loopform` restore a countdown loop to its
+recursive body and refuse three breaks. Each plant was run in a Linux container with
+`cargo test -p repo-conformance --test conformance -- conformance_sp_20`; the file
+was restored with `git checkout` afterwards.
+
+Planted (a): the form building an end as `Ok` (`Retarget::end`). Expected: the
+rendering of the first loop is refused. Observed:
+
+```text
+thread 'conformance_sp_20' panicked at crates/conformance/src/preservation.rs:2530:21:
+graph-reachable (rust-std): certificate B: function 2: the loop is not the loop form of the recursive body it restores to
+```
+
+Planted (b): `recover` returning the inverted body without requiring the library's
+form to be the crate's function. Expected: a broken loop is accepted. Observed:
+
+```text
+thread 'conformance_sp_20' panicked at crates/conformance/src/cases/preservation.rs:5078:21:
+graph-reachable (rust-std): function 2: the mutation 4 of a loop is accepted
+```
+
+(Mutations 0 to 3 are refused by the inversion itself; the pattern that rebinds a
+kept parameter is the first the library's checks alone refuse.)
+
+Planted (c): the holder number of the `FunLoop` witnesses one too large. Expected:
+the kernel refuses the equation that `loopOf` holds. Observed:
+
+```text
+renderings: `LexLeanPreserve.Fixture.F44.RustStd` was rejected:
+… error: native core declaration '…RustStd.fun11':
+  (kernel) application type mismatch
+    And.intro
+      (Eq.refl (LexLeanPreservation.Rust.Loop.loopOf 11 [Pos.changed, Pos.changed] …
+```
+
+What was not run in this change: the cases that read a committed lock, golden, or
+production export (`conformance_sp_08` among them) report that the compiler
+semantics changed since locking, as they do on the branch before this change; the
+maintainer regenerates those records. `examples/production-coverage`, whose crates
+hold loops (`loop {` appears in 37 of its 52 rendered crates),
+was verified end to end in a copy: `lexlean lock && lexlean verify` printed
+`verified 8 modules; attestation 16b5350dcfb7abac988cce6d7c8aedb381b77af343de4ce68a4dbf12970626f8`
+after 20 min 17 s, with certificates A, B, and E of every root replayed and audited.
+
+The decoder fix #212 makes (a compiled mutual group is never split across commands) is needed by the new library and is not part of this change: with the #212 branch merged
+in, all 13 modules compile; without it `patBinders`/`patBindersList` are compiled in two commands and Lean rejects them.
+
 ### a list of any length is a term Lean elaborates without binders
 
 Lean's `[…]` macro writes a literal of more than 32 elements under `let`
@@ -8263,6 +8327,110 @@ the calculus's packages, the production export, and the verification records of
 the examples (`cargo xtask check-golden`, `check-fixtures`, `check-calculus`,
 `check-production-export`, `verify-examples --write`); only the language-1.2
 projects change, and `examples/uor-atlas` (language 1.0) is untouched.
+
+### a tail-recursive template rendered as a call can fail its row (`RB-14`, SPEC.md §17.13, §17.16, #105 step 2)
+
+A function every self call of which is a tail call, and some of which changes a
+parameter the body reads, is rendered as a loop (`calculus/rust/tail.rs`); the
+calculus decides it (`rust::loops`, which `realization::recurses` reads, so the
+derivation of `recursion` in `TC-06` follows the rendering) and the lowering
+fails when its rewriting disagrees. Nine primitives go back to
+`recursion = false` (`list_fold`, `iterate`, `iterate_until`, `map_fold`,
+`set_fold`, `map_lookup`, `map_contains`, `set_contains`, `graph_successors`);
+the others keep it, since each has a call whose result is used. `RB-14` renders
+every template in the fixture that instantiates it, compares the rendered call
+graph to the registry row of every template-realized primitive, and states the
+fourteen templates whose instance holds a loop. The case passes on the tree it
+was written in (0.5 s). It makes each of these plants on every run's input
+(`cargo test -p repo-conformance --test conformance -- conformance_rb_14`;
+a defect planted in a clean tree, the failure observed, paths shortened, and
+the defect removed):
+
+- **the rewriting never makes a loop** (`looped` returns `None` at its first
+  test):
+
+  ```text
+  panicked at crates/conformance/src/cases/rust_loops.rs:197:32:
+  graph-reachable: function 2: the lowering and the calculus disagree on whether its self calls are a loop
+  ```
+
+- **neither the rewriting nor the calculus calls anything a loop** (both
+  predicates return false, so a template is rendered recursively again and its
+  row now says `false`):
+
+  ```text
+  assertion `left == right` failed: the templates rendered as loops
+    left: []
+   right: ["graph_reachable", "graph_successors", "graph_topological", "iterate", ...]
+  ```
+
+- **a row that says `true` for a loop.** The registry row of `primitive.list_fold`
+  set back to `true`:
+
+  ```text
+  panicked at crates/conformance/src/cases/rust_loops.rs:314:5:
+  recursion disagreements: [
+      "primitive.list_fold: registry true, rendering false",
+  ]
+  ```
+
+`conformance_pd_05` follows the rows: its second half removes `recursion` from
+`stringGraph` (a graph search, whose template still recurses) and expects
+`LLT4005` naming the effect, and checks that `iterations`, which iterates and
+declares none, passes; it passes on the relocked scratch copy. The nineteen
+declarations of the roots that no longer require `recursion` (`isClosedLeanName`,
+`lex`, `auditTokens`, `mapFolding`, `folds`, `iterations`, `keyTypes`, the seven
+reasoning roots that iterate, and the five `Text` members) lose it, read from the
+eligibility reports of that copy, and the constants of `BS-01`, `BS-02` and
+`SL-01` that state them follow.
+
+A definition of the project follows the same rule (the owner's decision: the
+effect says what the renderer does for every function, not only templates).
+Eligibility (`production::eligibility::analyse_root`) lowers the closure of a
+root whose walk found `recursion`, with the report the walk produced, and
+requires the effect only if the lowered program recurses
+(`realization::program_recurses`, which reads `rust::loops`); a root that does
+not lower keeps the registry's answer. On the relocked scratch copy,
+`examples/production-coverage`'s `wellFounded` and `examples/production`'s
+`halvings` (tail-recursive definitions) require no `recursion` and lose it from
+their declarations, while `sumAll`, `treeTotal`, `parity` (mutual) and the
+others keep it; `conformance_pd_05` checks `halvings`, and removes the effect
+from `sumAll` and expects `LLT4005`. This plant is made on the `rust::loops`
+decision (`conformance_rb_14`): it reports a loop for every function that
+mentions itself, so a function with a call that is not a tail call is a loop
+for the calculus and not for the lowering:
+
+```text
+panicked at crates/conformance/src/cases/rust_loops.rs:197:32:
+graph-reachable: function 8: the lowering and the calculus disagree on whether its self calls are a loop
+```
+
+Cost of the lowering at `check`: `lexlean check` of `bootstrap/` (three
+modules, the largest committed roots; a debug build) took 2.1 s to 2.4 s without
+the refinement and 2.4 s to 2.8 s with it (three runs each, scratch copy).
+
+Removed: each edit was restored and `conformance_rb_14` passes. The converse
+direction (a row `false` for a template that is rendered as a call) is
+`conformance_tc_06`'s, which derives the row from the calculus.
+
+What was checked and what was not. On a scratch copy of the tree, the
+renderer's record regenerated by the repository's writers
+(`check-calculus --write`) and every lock relocked, `conformance_tc_07`
+(every fixture renders, builds under the pinned rustc with warnings denied,
+and prints the denotation's value), `conformance_rb_06` (the lint gate over
+every committed package) and `conformance_rb_07` pass. The lint gate caught a
+defect of the first printing of a loop: a body with bindings as the scrutinee
+of the `match` is `clippy::blocks_in_conditions`, so the printer binds the
+body's value first (`let step = { ... }; match step { ... }`). Nothing in the
+tree is regenerated by this change, and a build that certifies a root with a
+loop does not exist yet: `cargo xtask check-production-export` on that scratch
+copy stops with `LLV7015: certificate B: no derivation relates
+Production.Main.halvings to its rust-core rendering: function 1: binder
+pattern Bind(Param(8)) binds no local`, because the `Corr` correspondence has
+no rule that relates a calculus self tail call to `Expr.loop`. That rule and
+its soundness case are the dependency of the certificates; the `Production`,
+`Coverage`, `Reasoning`, `bootstrap` and `stdlib` roots that use a loop fail
+certification until it lands.
 
 ## The authoring notation (Issue #93, stage 3 of #27)
 
