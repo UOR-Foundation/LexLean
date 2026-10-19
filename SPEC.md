@@ -4077,11 +4077,20 @@ union, an intersection, a difference, the key and value lists, and the graph
 searches) is rendered as a call and carries it, because the depth of its calls
 is bounded only by its input. The registry states exactly that, and
 `conformance_tc_06` derives it from the realization table and `RB-14` from the
-rendering, rather than trusting the row. A root whose closure applies a
-primitive that carries `recursion` admits it, as does a root with a recursive
-definition: the effect of a definition is the over-approximation the next
-paragraph states, so a definition whose calls are all tail calls is rendered
-as a loop and still requires it.
+rendering, rather than trusting the row. A function all of whose self calls are
+tail calls is rendered as a loop (§17.16) and does not recurse, whether it is a
+template or a definition of the project, so the registry's `recursion` for a
+recursive definition (`declaration.definition.recursive`) means *recursion
+unless the lowering makes every such definition a loop*. Eligibility therefore
+lowers the closure of a root whose walk found the effect, with the report the
+walk produced, and requires `recursion` of the root only if the lowered program
+recurses: some function of it is reachable from itself through calls and
+closures other than the self tail calls rendered as loops
+(`realization::program_recurses`). A root that does not lower there keeps the
+registry's answer, which never admits less. A root whose closure applies a
+primitive that carries `recursion`, or has a definition that recurses by a call
+that is not a tail call or that is mutual, admits it; a declaration may admit
+more than the analysis requires, as for every effect.
 
 The analysis is a conservative over-approximation of effects: it may require a
 root to admit an effect its realization never exhibits, and it never admits a

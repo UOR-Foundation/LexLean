@@ -1183,6 +1183,15 @@ pub fn construct_recurses(construct: &str) -> Result<bool, String> {
     Ok(false)
 }
 
+/// Whether a program recurses: some function of it is reachable from itself
+/// through calls and closures other than the self tail calls its rendering
+/// makes loops (§17.16). The effect `recursion` of a root is required exactly
+/// when its lowered program does.
+#[must_use]
+pub fn program_recurses(program: &Program) -> bool {
+    calls_itself(&program.functions)
+}
+
 /// Whether some function of the instance is reachable from itself in the
 /// graph of calls and closures, the two ways a function body names another.
 fn calls_itself(functions: &[Function]) -> bool {

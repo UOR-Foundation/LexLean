@@ -8141,6 +8141,31 @@ reasoning roots that iterate, and the five `Text` members) lose it, read from th
 eligibility reports of that copy, and the constants of `BS-01`, `BS-02` and
 `SL-01` that state them follow.
 
+A definition of the project follows the same rule (the owner's decision: the
+effect says what the renderer does for every function, not only templates).
+Eligibility (`production::eligibility::analyse_root`) lowers the closure of a
+root whose walk found `recursion`, with the report the walk produced, and
+requires the effect only if the lowered program recurses
+(`realization::program_recurses`, which reads `rust::loops`); a root that does
+not lower keeps the registry's answer. On the relocked scratch copy,
+`examples/production-coverage`'s `wellFounded` and `examples/production`'s
+`halvings` (tail-recursive definitions) require no `recursion` and lose it from
+their declarations, while `sumAll`, `treeTotal`, `parity` (mutual) and the
+others keep it; `conformance_pd_05` checks `halvings`, and removes the effect
+from `sumAll` and expects `LLT4005`. This plant is made on the `rust::loops`
+decision (`conformance_rb_14`): it reports a loop for every function that
+mentions itself, so a function with a call that is not a tail call is a loop
+for the calculus and not for the lowering:
+
+```text
+panicked at crates/conformance/src/cases/rust_loops.rs:197:32:
+graph-reachable: function 8: the lowering and the calculus disagree on whether its self calls are a loop
+```
+
+Cost of the lowering at `check`: `lexlean check` of `bootstrap/` (three
+modules, the largest committed roots; a debug build) took 2.1 s to 2.4 s without
+the refinement and 2.4 s to 2.8 s with it (three runs each, scratch copy).
+
 Removed: each edit was restored and `conformance_rb_14` passes. The converse
 direction (a row `false` for a template that is rendered as a call) is
 `conformance_tc_06`'s, which derives the row from the calculus.

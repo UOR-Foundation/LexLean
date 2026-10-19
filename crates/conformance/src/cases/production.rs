@@ -606,11 +606,6 @@ pub fn run(id: &str) {
                 r#"{"arguments":[{"kind":"var","name":"number"},{"kind":"nat","value":"0"}],"function":{"module":"Kernel","name":"countdown"},"kind":"call"}"#,
                 r#"{"kind":"var","name":"number"}"#,
             );
-            mutated.edit(
-                MAIN,
-                r#""effects":["overflow","recursion"]"#,
-                r#""effects":[]"#,
-            );
             let mutated_report = main_report(&mutated);
             let halvings = root(&mutated_report, "halvings");
             assert_eq!(closure(halvings), ["Production.Main.halvings"]);
@@ -724,6 +719,41 @@ pub fn run(id: &str) {
                 "iterations admits no recursion"
             );
             iterating.check_ok();
+            // A definition of the project is a loop when all its self calls
+            // are tail calls (§17.13): `halvings` halves a number to zero by
+            // a tail call and declares no `recursion`, and the example checks.
+            // `sumAll` adds after its recursive call, so removing the effect
+            // from it is refused.
+            let tail = P::copy_example("production");
+            let text = tail.read(MAIN);
+            let after = |text: &str, name: &str| {
+                let at = text
+                    .find(&format!(r#""name":"{name}","parameters""#))
+                    .unwrap_or_else(|| panic!("the example has {name}"));
+                let end = at + text[at..].find(r#""result""#).expect("a result");
+                (at, end)
+            };
+            let (at, end) = after(&text, "halvings");
+            assert!(
+                !text[at..end].contains("recursion"),
+                "halvings admits no recursion"
+            );
+            tail.check_ok();
+            let (at, end) = after(&text, "sumAll");
+            assert!(
+                text[at..end].contains(r#""recursion""#),
+                "sumAll admits recursion"
+            );
+            let kept = text[at..end].replacen(r#","recursion""#, "", 1);
+            let mutated = P::copy_example("production");
+            mutated.write(MAIN, &format!("{}{}{}", &text[..at], kept, &text[end..]));
+            let error = mutated.check_fails_with("LLT4005");
+            assert!(
+                error
+                    .to_string()
+                    .contains("realizes effect `recursion`, which the root does not admit"),
+                "{error}"
+            );
         }
         "PD-06" => {
             let first = P::copy_example("production");

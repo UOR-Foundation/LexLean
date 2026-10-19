@@ -1049,6 +1049,7 @@ fn check_project_inline(
                     &linked,
                     limits.max_total_source_bytes,
                     report_bytes,
+                    &limits,
                 )
                 .map_err(|failure| {
                     let range = load
