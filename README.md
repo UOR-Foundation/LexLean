@@ -158,7 +158,7 @@ Every row is validated by `just vv`; the IDs link the claim to its register row,
 
 | Capability | IDs | Level |
 | --- | --- | --- |
-| Exact repository identity, layout, generated documents, and release gate | `RP-01`..`RP-14` | `build` |
+| Exact repository identity, layout, generated documents, release gate, and the devcontainer pinned to the toolchains | `RP-01`..`RP-16` | `build` |
 | Closed project configuration, canonical lock file, and offline dependency policy | `CF-01`..`CF-18` | `build` |
 | Total lexical closure: every accepted atom is covered by exactly one declared origin | `LX-01`..`LX-14` | `build` |
 | Versioned lexicon packages with closed schemas, denotations, and renderer tokens | `GL-01`..`GL-18` | `build` |
@@ -172,7 +172,7 @@ Every row is validated by `just vv`; the IDs link the claim to its register row,
 | Sixteen-stage verification with leanchecker replay and exact axiom audit | `VR-01`..`VR-23` | `build` |
 | The exact CLI contract, the stable seven-method Rust `Engine` API, the host-driven end of the children the library started, and the `production` subcommands | `CL-01`..`CL-23` | `build` |
 | Filesystem confinement, no shell, no hidden network, closed failure model | `SE-01`..`SE-12` | `build` |
-| Language-1.2 production eligibility: closed targets, effects, and construct dispositions; runtime closures; target-dependent, fail-closed root analysis; deterministic eligibility reports; an exhaustiveness audit | `PD-01`..`PD-07` | `build` |
+| Language-1.2 production eligibility: closed targets, effects, and construct dispositions; runtime closures; target-dependent, fail-closed root analysis; deterministic eligibility reports; an exhaustiveness audit; measured stack bounds for every recursive root a harness runs | `PD-01`..`PD-08` | `build` |
 | Named-root extraction through Lean's compiler front end: an adapter that is a closed tooling module over a registry derived from the pinned Lean and probed on every extraction, checked against a handwritten oracle; a closed, canonical, root-independent compiler input; fail-closed rejection; and an exact closure cross-check against production eligibility | `NE-01`..`NE-06` | `build` |
 | The production realization calculus: a closed target syntax with canonical identity, a kernel-checked denotation, a realization library agreeing with LexLean's own collection primitives, complete realization coverage of the production registry, and a differentially tested Rust profile | `TC-01`..`TC-07` | `build` |
 | The canonical Rust backend: a closed, checked Rust AST whose every construct corresponds to the calculus; hygienic identifiers, single ownership with last-use and component moves, exact failure typing, and no hidden allocation; contiguous lists with constant-work cells; a closed runtime library boundary of stated machine primitives; deterministic packages with checked exports, a lint gate and crate attributes read from one embedded language module, and provenance that states the realization's effects | `RB-01`..`RB-13` | `build` |
