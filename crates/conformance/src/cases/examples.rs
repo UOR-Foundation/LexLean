@@ -171,7 +171,7 @@ pub(crate) fn run(id: &str) {
         // exactly the one prescribed diagnostic code.
         "EX-07" => {
             let root = support::repo_root();
-            let prescribed: [(&str, &str); 277] = [
+            let prescribed: [(&str, &str); 278] = [
                 ("unknown-word", "LLL1004"),
                 ("unknown-symbol", "LLL1004"),
                 ("unknown-control", "LLL1004"),
@@ -466,6 +466,7 @@ pub(crate) fn run(id: &str) {
                 ("lexicon-raw-unicode-render", "LLB6002"),
                 ("definition-binder-mismatch", "LLT4004"),
                 ("lake-dependency-absent", "LLV7007"),
+                ("check-unknown-flag", "LLC0001"),
             ];
             let negative_root = root.join("tests/negative");
             let mut classes: Vec<String> = std::fs::read_dir(negative_root.as_std_path())
@@ -482,6 +483,97 @@ pub(crate) fn run(id: &str) {
                 classes, sorted_expected,
                 "tests/negative holds exactly the prescribed rejection classes (§28.5)"
             );
+
+            // A diagnostic carries `primary` unless its code is one the
+            // compiler issues where no source position exists (SPEC.md
+            // §20.1). The schema lists those codes, the SPEC table lists the
+            // same, and a code with a source that omits `primary` is refused.
+            let diagnostic_schema = support::schema("diagnostic");
+            let positionless: Vec<String> = diagnostic_schema["$defs"]["positionless"]
+                ["properties"]["code"]["enum"]
+                .as_array()
+                .expect("the codes that may omit primary")
+                .iter()
+                .map(|code| code.as_str().expect("a code").to_owned())
+                .collect();
+            let spec = std::fs::read_to_string(root.join("SPEC.md").as_std_path()).expect("SPEC");
+            let section = spec
+                .split("### 20.1 Diagnostic object")
+                .nth(1)
+                .and_then(|rest| rest.split("### 20.2").next())
+                .expect("SPEC 20.1");
+            let mut documented: Vec<String> = section
+                .lines()
+                .filter_map(|line| line.strip_prefix("| `LL"))
+                .map(|rest| format!("LL{}", rest.split('`').next().expect("a code")))
+                .collect();
+            documented.sort();
+            let mut listed = positionless.clone();
+            listed.sort();
+            assert_eq!(
+                listed, documented,
+                "SPEC.md 20.1 names exactly the codes the diagnostic schema lets omit `primary`"
+            );
+            let span = serde_json::json!({"path": "src/Main.lex.tex", "byte_start": 0, "byte_end": 1,
+                "line_start": 1, "column_start": 1, "line_end": 1, "column_end": 2});
+            let make = |code: &str, with_primary: bool| {
+                let mut value = serde_json::json!({"spec": "lexlean/diagnostic/1", "code": code,
+                    "severity": "error", "message": "m", "labels": [], "notes": [], "help": [],
+                    "causes": []});
+                if with_primary {
+                    value["primary"] = span.clone();
+                }
+                value
+            };
+            for code in &positionless {
+                for with_primary in [false, true] {
+                    assert!(
+                        crate::schema::validate(&diagnostic_schema, &make(code, with_primary))
+                            .is_empty(),
+                        "{code} may carry or omit primary (primary: {with_primary})"
+                    );
+                }
+            }
+            for code in ["LLL1001", "LLP2001", "LLT4001", "LLV7002", "LLC0102"] {
+                assert!(
+                    crate::schema::validate(&diagnostic_schema, &make(code, true)).is_empty(),
+                    "{code} with primary is valid"
+                );
+                assert!(
+                    !crate::schema::validate(&diagnostic_schema, &make(code, false)).is_empty(),
+                    "{code} has a source, so omitting primary is refused"
+                );
+            }
+
+            // Every committed expectation is itself a valid diagnostic list,
+            // checked before any fixture runs: the usage-error fixture is
+            // valid only because its code may omit `primary`.
+            let mut expectations = 0;
+            for entry in walkdir::WalkDir::new(root.join("tests").as_std_path())
+                .into_iter()
+                .filter_map(Result::ok)
+                .filter(|entry| entry.file_name() == "diagnostics.json")
+                .filter(|entry| {
+                    entry
+                        .path()
+                        .parent()
+                        .is_some_and(|p| p.ends_with("expected"))
+                })
+            {
+                let list: serde_json::Value =
+                    serde_json::from_slice(&std::fs::read(entry.path()).expect("expectation"))
+                        .expect("expected diagnostics are JSON");
+                for diagnostic in list.as_array().expect("a diagnostics array") {
+                    let violations = crate::schema::validate(&diagnostic_schema, diagnostic);
+                    assert!(
+                        violations.is_empty(),
+                        "{}: {violations:?}",
+                        entry.path().display()
+                    );
+                }
+                expectations += 1;
+            }
+            assert!(expectations > 100, "the committed expectations are read");
 
             let lean_available = support::lean_backed("EX-07");
             // The fixtures are independent of one another (each runs in a

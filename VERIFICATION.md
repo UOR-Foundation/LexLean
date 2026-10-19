@@ -9777,3 +9777,41 @@ file. It empties and then removes each consumer and observes `would pass over`.
 itself: a total match, a wildcard, a binding, a guarded wildcard, a lookup,
 `Self::` paths, prose and literals, a tuple pairing, block bodies, and raw
 strings.
+
+## The diagnostic schema requires a position except where none exists (Issue #33)
+
+`schemas/diagnostic.schema.json` required `primary` of every diagnostic, but
+the compiler issues eight codes where no source position exists, and a fixture of
+one of them (a command-line usage error) could not pass `conformance_ex_07`'s
+schema check. Inventing a span would assert a location the failure does not
+have, so the schema now has two alternatives: a diagnostic with `primary`, or one
+without it whose code is one of the eight. `SPEC.md` 20.1 names the same
+codes and the situation of each.
+
+The eight were read from the emitter, as the paths that run outside any loaded
+project, since `Engine::bound` anchors every other project diagnostic at its
+file: `LLC0001` (clap, `explain`, `init`, an unreadable request file), `LLC0101`
+and `LLS8001` and `LLV7008` and `LLC0108` (`project::discover` and
+`Project::load`, which run before an engine exists), `LLC0201` (the production
+request is parsed before the engine anchors anything), and `LLV7010`, `LLS8001`
+and `LLV7102` (`verify_artifact`, which has no project). A run of the CLI in
+JSON mode confirmed `LLC0001`, `LLC0101` and `LLV7010` carry no `primary`, and
+that a configuration that parses, a stale lock, and an unsupported language do.
+
+`conformance_ex_07` checks, before any fixture runs, that the schema's list and
+the `SPEC.md` table are the same codes, that each listed code is valid with and
+without `primary`, that `LLL1001`, `LLP2001`, `LLT4001`, `LLV7002` and
+`LLC0102` are valid with it and refused without it, and that every committed
+`expected/diagnostics.json` validates. Planted, each alone, observed, restored:
+
+```text
+LLL1001 added to both the schema's list and the SPEC table
+LLL1001 has a source, so omitting primary is refused
+
+LLC0001 removed from both
+tests/negative/check-unknown-flag/expected/diagnostics.json: ... oneOf: 0 of 2 alternatives match ... required property `primary` is missing
+```
+
+The schema is hashed into the compiler-semantics ID, so the ID moves; no record
+was regenerated, and until the maintainer's wave the committed locks fail
+`LLC0102`, which fails the fixtures that run a project.

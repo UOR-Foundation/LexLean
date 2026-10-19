@@ -97,6 +97,7 @@ id = "RP-15"
 level = "build"
 suite = "repository"
 statement = "Every match over a closed semantic enum (the IR, the production realization calculus, and its Rust AST) that names at least five of the enum's variants names all of them, with no wildcard or binding catch-all arm, so that a variant added to the enum is a compile error in each Lean, LaTeX, validation, charge, and calculus consumer and never a silent fallback; the audit rejects a catch-all planted in each consumer group and fails when a consumer it must read has no such match left."
+[[id]]
 id = "RP-16"
 level = "build"
 suite = "repository"
