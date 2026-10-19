@@ -725,6 +725,12 @@ impl CoreModule {
         if source.matches(MARKER).count() != 1 {
             return Err("a native core source holds exactly one core payload".to_owned());
         }
+        if language == crate::LANGUAGE_1_2 {
+            return Err(
+                "language 1.2 does not admit `\\coredata`; write the module in the authoring notation (SPEC.md section 17.21)"
+                    .to_owned(),
+            );
+        }
         let start = source
             .find(MARKER)
             .map(|at| at + MARKER.len())
@@ -1670,7 +1676,18 @@ mod version_2_tests {
         let source = format!(
             "\\begin{{lexlean}}{{M}}\n\\title{{t}}\n\\begin{{coremodule}}\n\\coredata{{{text}}}\n\\end{{coremodule}}\n\\end{{lexlean}}\n"
         );
-        assert!(CoreModule::from_source(&source, "1.2").is_ok());
+        // Language 1.2 reads the notation and refuses the data form.
+        let error = CoreModule::from_source(&source, "1.2").expect_err("the data form is refused");
+        assert!(error.contains("authoring notation"), "{error}");
+        let module = CoreModule::parse(&text, "1.2").expect("the module");
+        let notation = crate::surface::core::print_module(&module).expect("the notation");
+        let source = format!(
+            "\\begin{{lexlean}}{{M}}\n\\title{{t}}\n\\begin{{coremodule}}\n{notation}\\end{{coremodule}}\n\\end{{lexlean}}\n"
+        );
+        assert_eq!(
+            CoreModule::from_source(&source, "1.2").expect("the notation reads"),
+            module
+        );
         assert!(CoreModule::from_source("\\begin{lexlean}{M}\n\\end{lexlean}\n", "1.2").is_err());
     }
 }

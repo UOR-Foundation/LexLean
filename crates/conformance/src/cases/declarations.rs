@@ -1285,12 +1285,23 @@ pub(crate) fn run(id: &str) {
                 let end = r#"],"spec":"lexlean/semantic-module/2"}"#;
                 assert!(source.contains(end), "{file} ends its declarations");
                 copy.write(file, &source.replacen(end, &format!(",{declarations}{end}"), 1));
-                let error = copy.check_fails_with("LLT4001");
+                // A function written with no parameter is not a function of the
+                // notation, which language 1.2 reads, so the reader refuses it
+                // (`LLP2001`) before the decoder's arity rule (`LLT4001`) is
+                // reached; the other arity rules are the decoder's still.
+                let error = copy.check_err();
+                let by_reader = message.contains("at least one")
+                    && error.diagnostics.iter().any(|diagnostic| {
+                        diagnostic.code.as_str() == "LLP2001"
+                            && diagnostic.message.contains("at least one parameter")
+                    });
+                let code = if by_reader { "LLP2001" } else { "LLT4001" };
+                support::expect_code(&error, code);
                 assert!(
-                    error.to_string().contains(message),
+                    by_reader || error.to_string().contains(message),
                     "expected {message:?}, got {error}"
                 );
-                copy.assert_no_backend_output();
+                copy.assert_no_backend_output_with(code);
             }
         }
         // §17.12: mutual structural recursion over one recursive family.

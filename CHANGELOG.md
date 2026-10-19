@@ -17,6 +17,16 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- Language 1.2 refuses the data form, #149 (SPEC.md §17.11, §17.21.1,
+  `AU-13`). A module that states `\semanticdata{…}`, `\toolingdata{…}` or
+  `\coredata{…}` is refused with `LLP2003` at its data argument, naming the
+  notation; `fmt` no longer rewrites such a module, and
+  `lexlean::sdk::to_notation` / `to_data_form` are the explicit conversion
+  (§24.8). Languages 1.0 and 1.1 and the Atlas are unchanged. `AU-02`, `AU-05`
+  and `AU-10` no longer compare a build of the data form with the notation (it
+  is not a language-1.2 source) and their statements say what they check. The
+  language-1.2 records are regenerated in the milestone's one wave, not here.
+  `AU-13` brings the register to 415 IDs.
 - UOR Atlas, #168: the census windows `CensusCert4` and `CensusCert10`
   (`gramRange 4000 1000 = true` and `gramRange 10000 1000 = true`, each one
   `of_decide_eq_true`) are proved from ten width-100 certificates each,

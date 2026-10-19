@@ -2490,8 +2490,10 @@ after the ordinary module header and title, is exclusive with prose blocks
 and `coremodule`, and contains exactly one `\semanticdata{...}` canonical JSON
 value with schema `lexlean/semantic-module/1`. It is semantic declaration
 data, never Lean or LaTeX source. Language 1.0 rejects the environment.
-Language 1.2 also admits the authoring notation of §17.21 as the body of the
-environment, which is read to the same data.
+Language 1.2 does not admit the `\semanticdata{...}` argument: its body is the
+authoring notation of §17.21, which is read to the same data, and a language-1.2
+module that states `\semanticdata` is refused with `LLP2003` (§17.21.1,
+`AU-13`). Language 1.1 has the data form only.
 
 Accepted semantic identifiers retain their exact names in generated Lean.
 Each segment matching the pinned toolchain's reserved-token table is quoted
@@ -6577,15 +6579,24 @@ other tool's output is a source (§17.21.6).
 #### 17.21.1 Where it is written
 
 Under language 1.2, the body of `\begin{semanticmodule}` … `\end{semanticmodule}`
-is either one `\semanticdata{…}` argument (the data form of §17.11) or the
-notation: the verbatim text of its declarations, one after the other, to the
-closing `\end{semanticmodule}`. A `toolingmodule` (§17.21.7) and a `coremodule`
-(§17.21.8) are written in the same two ways, with `\toolingdata{…}` and
-`\coredata{…}`. Language 1.1 has the data form only; the
-notation under language 1.1 is refused with `LLP2003`. Every language-1.2 source
-of this repository that has a semantic or tooling module is written in the
-notation (`AU-04`); the data form is the wire format the notation is read to,
-and `fmt` is how a source leaves it. The text is the module's source
+is the notation: the verbatim text of its declarations, one after the other, to
+the closing `\end{semanticmodule}`. A `toolingmodule` (§17.21.7) and a
+`coremodule` (§17.21.8) are written in the same way. The data form of §17.11,
+one `\semanticdata{…}` (`\toolingdata{…}`, `\coredata{…}`) argument of canonical
+JSON on one line, is the form of languages 1.0 and 1.1, which have it only; the
+notation under language 1.1 is refused with `LLP2003`, and so is the data form
+under language 1.2. The refusal is raised at link, where the project's
+language is known and before the payload is read, at the position of the data
+argument, and its message names the control and the authoring notation; the
+module is not decoded, and `fmt` neither rewrites it nor reports anything but
+the refusal. `LLP2003` carries it because it is the refusal the notation draws
+under language 1.1, mirrored: a structural alternative the language does not
+admit. The conversion between the forms is `lexlean::sdk::to_notation` and
+`lexlean::sdk::to_data_form` (§24.8), an explicit conversion of a text and
+not a source; the Atlas (language 1.0) is still written as `\coredata`. Every
+language-1.2 source of this repository that has a semantic, tooling or core
+module is written in the notation (`AU-04`), and a language-1.2 source in the
+data form is refused (`AU-13`). The text is the module's source
 bytes between the two markers: it is not scanned for prose, glossary entries,
 or comments, every atom of it is covered as metadata owned by
 `lexlean.core::semanticsource` (§20), and it writes a backslash only inside a
@@ -6596,9 +6607,8 @@ is `LLL1003` (§12.4); inside a string it is string data.
 The notation is read to the canonical JSON of the module, with the schema
 tag the language names (`lexlean/semantic-module/2`), and that JSON is decoded
 and linked exactly as a module written as data. What a module means is decided
-there and nowhere else: a module in the notation and its data form have the
-same semantic ID, the same generated Lean and LaTeX byte for byte, and
-differ only in their source ID and in the source maps, which relate each
+there and nowhere else: the JSON a module in the notation reads to is the
+module the SDK writes as its data form (§24.8), and the source maps relate each
 declaration to its own text in the notation.
 
 #### 17.21.2 Lexical structure
@@ -6700,10 +6710,10 @@ group that fits is on one line, and one that does not has each member on its
 own line, indented two further spaces. The canonical source of a module is the
 module with its body replaced by that text, and `fmt` writes it (§23.5); it is
 a function of the module alone, so no layout of the source survives it and
-`fmt` is idempotent. A language-1.2 module written as `\semanticdata{…}` has the
-same canonical source, the notation of its module, so `fmt` rewrites it and
-`fmt --check` reports it as `LLL1003`; a module of language 1.1, which has the
-data form only, is canonical as it is.
+`fmt` is idempotent. A language-1.2 module written as `\semanticdata{…}` has no
+canonical source, because it is not a source (§17.21.1): `fmt` and `fmt --check`
+report the refusal of the data argument and leave the bytes; a module of
+language 1.1, which has the data form only, is canonical as it is.
 
 The notation has no comment form: the canonical document (§19) is where a
 module explains itself, and a comment would have to be data of the module to
@@ -6721,24 +6731,24 @@ survive `fmt`.
   semantic module, `read(write(v)) = v` and `write(read(write(v))) = write(v)`.
   The samples are read from the schema, so a variant added to it is checked
   the day it is added.
-- **Equivalence (`AU-02`).** A module in the notation links to the module its data
-  form links to, with the same semantic ID, generated Lean and LaTeX; source maps
-  relate each declaration to its text in the notation; `fmt` is the identity on
-  the notation and writes the data form as exactly the committed notation.
+- **The notation as source (`AU-02`).** A module in the notation builds, and its
+  source maps relate each declaration to its text in the notation; `fmt` is the
+  identity on the notation and restores its canonical layout from any other.
+  The data form of the same module is not a language-1.2 source (`AU-13`), so it
+  is no second build to compare with: the SDK's two conversions (§24.8) are
+  exact inverses over every committed module (`AU-08`, `AU-13`).
 - **Failing closed (`AU-03`).** Every single-token deletion, duplication, and
   replacement of a committed module either fails with a registered code or links
   to a module that decodes.
-- **Tooling modules (`AU-05`).** The same four laws for a tooling module:
-  read and written back equal for every committed one, linking to the semantic
-  ID, Lean, and LaTeX of its data form with a source map that names the
-  notation, `fmt` writing the data form as the committed notation, and every
+- **Tooling modules (`AU-05`).** The same laws for a tooling module: read and
+  written back equal for every committed one, rendering with a source map that
+  names the notation, `fmt` the identity on the notation, and every
   single-token deletion and duplication refused with a position or decoded.
 - **Core modules (`AU-09`..`AU-12`).** §17.21.8: the notation of a
   core module reads back to the module for every committed one and for a module
   that carries every kind of node, level, annotation, and declaration member;
-  it links to the semantic ID, Lean, and LaTeX of its data form, with a source
-  map that names the notation, and `fmt` writes the data form as the committed
-  notation; and malformed text, with every single-token deletion and
+  it builds, with a source map that names the notation, and `fmt` is the
+  identity on the notation and restores its layout; and malformed text, with every single-token deletion and
   duplication of a committed module, is refused with a position or decoded;
   and a module written with names for its variables and its statements reads to
   the module its canonical notation is, down to a theorem added to the
@@ -6767,7 +6777,17 @@ survive `fmt`.
   the notation cannot spell, because they test the data form's own refusal; a
   refused fixture whose payload the notation can spell, written and read back
   equal, is a defect, so the data form cannot become a second way to write a
-  module unnoticed.
+  module unnoticed. A language-1.2 source in the data form is refused
+  (`AU-13`), so the one refused fixture of that kind is a fixture of that
+  refusal.
+- **The data form refused (`AU-13`).** §17.21.1: under language 1.2 each of the
+  three data arguments draws `LLP2003` at the argument, naming the control and
+  the notation, in a semantic module of each example, a tooling module of each
+  tooling fixture, and a core module; `fmt` and `fmt --check` report that
+  refusal and leave every byte; `lexlean::sdk::to_data_form` and `to_notation`
+  are exact inverses over every module; and language 1.1 still links the
+  semantic example in the data form while the Atlas (language 1.0) is still
+  written as `\coredata`.
 
 #### 17.21.7 Tooling modules
 
@@ -6786,8 +6806,8 @@ as in the data form. A malformed text is `LLP2001` at its position; the notation
 is scanned as the semantic notation is (§17.21.1), and its metadata rows are
 owned by `lexlean.core::toolingsource`. The source map of a module in the
 notation relates each declaration to its own text, as the semantic map does.
-`fmt` writes a language-1.2 tooling module in the notation, so a tooling module
-written as `\toolingdata` leaves the data form by being formatted.
+A language-1.2 tooling module written as `\toolingdata` is refused (§17.21.1);
+`lexlean::sdk::to_notation` is how its text leaves the data form.
 
 #### 17.21.8 Core modules
 
@@ -6899,9 +6919,9 @@ that is not the number of its node, a forward reference to a node, and a
 statement that defines no node are errors, and nothing panics. The notation is
 scanned as the semantic notation is (§17.21.1), and its metadata rows are owned
 by `lexlean.core::coresource`; the source map of a module in the notation
-relates the module's pieces to its text, and `fmt` writes a language-1.2 core
-module of schema 2 in the notation, so a module written as `\coredata` leaves
-the data form by being formatted.
+relates the module's pieces to its text. A language-1.2 core module written as
+`\coredata` is refused (§17.21.1); `lexlean::sdk::to_notation` is how its text
+leaves the data form.
 
 ### 17.22 The standard library
 
@@ -8695,7 +8715,10 @@ it reads as the compiler does (language 1.2). `write_module` replaces the data a
 the module has: canonical JSON for the data form, the canonical notation for the
 notation, so a rewrite never changes which form a source is in. `to_data_form`
 and `to_notation` write the module in one form or the other (`to_notation` is
-what `fmt` writes for a language-1.2 module); `declaration_spans` is what a
+what `fmt` writes for a language-1.2 module). They are the one explicit
+conversion between the forms: `to_data_form` yields text for a reader of the
+JSON or a language-1.1 project and never a language-1.2 source, which refuses
+the data form (§17.21.1, `AU-13`); `declaration_spans` is what a
 source map relates a declaration to; `assemble` writes the whole source of a
 module (header, the module in the canonical notation, closing). A source that
 states no module, a module whose data is not JSON or not a module of its kind,
@@ -9963,17 +9986,18 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `TL-10` | `tooling` | Both backends traverse the one linked module: the Lean text begins with the fixed header, holds one rendering per function, command, invocation, and evaluation, and contains no comment, every declaration with output has one source-mapped piece, coverage is complete, the LaTeX document has one entry per declaration, and the pinned Lean elaborates every committed fixture without a message while refusing a registry that misstates an arity or a constructor list that the tool is consistent with. | §17.20, §18, §19.6, §20.5 |
 | `TL-11` | `tooling` | Tooling modules are deterministic and content-addressed: each committed fixture's published build tree equals its golden byte for byte and across two clean builds in different directories, changing any declaration, registry row, source pin, or term changes the semantic ID, and the schema lies outside `schemas/` and so outside the compiler-semantics ID, which the committed locks of the three languages still record. | §17.20, §21.2, §28.3, §28.4 |
 | `AU-01` | `authoring` | Every value of the closed semantic-module schema has one notation and the notation reads back to the value: every alternative of the declaration, term, type, and proof unions, with and without its optional members, is written and read back equal, a node that no readable form carries exactly is written generically, the notation is its own canonical form, and every committed semantic module is written and read back equal to its data. | §17.21 |
-| `AU-02` | `authoring` | A language-1.2 semantic module written in the authoring notation links to exactly the module its data form links to, with the same semantic ID and the same generated Lean and LaTeX byte for byte and source maps that relate each declaration to its text in the notation; fmt writes a module written as data in the notation, to the committed bytes, and leaves the notation unchanged, and the notation under language 1.1 is refused with LLP2003. | §17.21 |
+| `AU-02` | `authoring` | A language-1.2 semantic module written in the authoring notation builds, with source maps that relate each declaration to its text in the notation; fmt leaves the notation unchanged and restores its canonical layout from another layout, and the notation under language 1.1 is refused with LLP2003; its data form is not a language-1.2 source (AU-13). | §17.21 |
 | `AU-03` | `authoring` | Malformed notation fails closed and never panics: an unclosed delimiter, a keyword used as a name, a literal that is not canonical, an unknown kind, and every single-token deletion, duplication, and replacement of a committed module fail with a registered code at a position in the notation or link to a module that decodes, and a numeral with a redundant leading zero is LLL1003 outside a string and is not one inside it. | §17.21 |
 | `AU-04` | `authoring` | No language-1.2 source of the product is written as data: every committed language-1.2 source with a semantic, tooling, or core module, in the compiler, the language libraries, the examples, and the positive fixtures, is written in the authoring notation and is canonical, the data form remains only under language 1.0 and 1.1 and in refused fixtures whose payload the notation cannot spell, and a refused fixture whose payload the notation can spell is a defect. | §17.21 |
-| `AU-05` | `authoring` | A language-1.2 tooling module written in the authoring notation links to exactly the module its data form links to, with the same semantic ID and the same generated Lean and LaTeX byte for byte and source maps that relate each declaration to its text in the notation; the notation and the canonical JSON of every committed tooling module are in bijection and the notation is its own canonical form; fmt writes a tooling module written as data as exactly the committed notation and leaves the notation unchanged; and malformed notation, and every single-token deletion and duplication of a committed tooling module, fails with a position or decodes, and nothing panics. | §17.20, §17.21 |
+| `AU-05` | `authoring` | A language-1.2 tooling module written in the authoring notation renders, with source maps that relate each declaration to its text in the notation; the notation and the canonical JSON of every committed tooling module are in bijection and the notation is its own canonical form; fmt leaves the notation unchanged; and malformed notation, and every single-token deletion and duplication of a committed tooling module, fails with a position or decodes, and nothing panics. | §17.20, §17.21 |
 | `AU-06` | `authoring` | The compiler-semantics ID does not depend on the form a module of the embedded tree is written in: a semantic, tooling, or core module in the authoring notation contributes its data form, so the committed tree and the same tree with every such module written as data have one ID, a change to a module's meaning changes the ID in either form, the identity a preservation record states for the native library is over the same data forms, so it is the committed one, and the embedded tree holds at least one module written in the notation. | §17.21, §21.2 |
 | `AU-07` | `authoring` | No product source is the output of a generator: every `.lex.tex` source of `compiler/`, `language/`, and `examples/` is written and edited as source, and no writer of the repository (the generators `cargo xtask check-calculus` compares and rewrites) emits one of them except the four fixture modules of `compiler/` (`TargetFixtures`, `ReasoningFixtures`, `GnafFixtures`, `GnafCertificates`), generated from committed fixtures, requests, and certificates, and the extraction adapter's module, generated from the registry the pinned Lean answers; a source emitted by any other writer is a defect. | §17.14, §17.21 |
 | `AU-08` | `authoring` | The authoring API reads, writes, converts, and assembles the source of a module without a project: for every committed semantic and tooling source and every core source of at most twelve megabytes it reads the module it links to, writes it back in the form it has and in the other form, assembles the source from its header and data to the canonical notation, and is idempotent in each; and a source that is not a module, or whose notation is malformed, is an error with a position in the source and never a panic. | §24.8 |
 | `AU-09` | `authoring` | Every core module of the closed schema has one notation and the notation reads back to the module and to its data form: every committed core module reads back equal from its notation, its canonical JSON is the canonical JSON the compiler accepts and is, for a module written as data, byte for byte the data it was read from, the notation is its own canonical form, a node is written inside the node that uses it exactly when it is used once by the node after it and every other node is a statement, and a module that carries every kind of node, level, annotation, and declaration member is written and read back equal. | §17.21.8 |
-| `AU-10` | `authoring` | A language-1.2 core module written in the authoring notation links to exactly the module its data form links to, with the same semantic ID and the same generated Lean and LaTeX byte for byte and source maps that name the notation; fmt writes a core module written as data as the notation and leaves the notation unchanged; and the notation under language 1.0 and 1.1 is refused with LLP2003. | §17.21.8 |
+| `AU-10` | `authoring` | A language-1.2 core module written in the authoring notation builds, with source maps that name the notation; fmt leaves the notation unchanged and restores its canonical layout from another layout; and the notation under language 1.0 and 1.1 is refused with LLP2003; its data form is not a language-1.2 source (AU-13). | §17.21.8 |
 | `AU-11` | `authoring` | Malformed core notation fails closed and never panics: an unclosed delimiter, a keyword used as a name, a label that is not the number of its node, a forward reference to a node, a numeral with a redundant leading zero, a statement that defines no node, a nesting beyond the bound, and every single-token deletion and duplication of a committed module fail with a registered code at a position in the notation or link to a module that decodes. | §17.21.8 |
 | `AU-12` | `authoring` | A core module written with names for its statements and its variables reads to exactly the module its canonical notation reads to, and the canonical notation keeps the names of the binders and writes the numbers of the statements: a variable is written by the name of its binder exactly when no nearer binder has the name, a constant a binder in scope is named like is written as a string, a theorem added to the certification library by name reads to the committed module and is written as the committed bytes, and an unknown or repeated statement name and a variable given universe levels are refused with a position. | §17.21.8 |
+| `AU-13` | `authoring` | Under language 1.2 a module written with a data argument (`\semanticdata{…}`, `\toolingdata{…}`, or `\coredata{…}`) is refused with LLP2003 at the position of the data argument and naming the authoring notation, whichever of the three environments holds it; fmt does not rewrite it and reports the same refusal; lexlean::sdk::to_data_form is the one conversion into the data form and to_notation the one out of it; and the data form is still accepted under language 1.1, where the semantic example links, and is still the form of the Atlas under language 1.0. | §17.11, §17.21, §24.8 |
 | `RT-01` | `runtime` | The runtime of language 1.2 is LexLean source: every module of its registry is one native core module of the runtime's own project, which holds no file of Lean source, the registry lists only the modules in dependency order, every declaration pins its exact axioms, and a source that is missing, weakened to an inexact policy, or imports anything but `Init` and an earlier runtime module is refused; the one-time migration input is absent, no native source names a runtime copy inside a module, and no Lean file declares a runtime namespace but the released output of a language-1.0 or 1.1 project. | §17.12 |
 | `RT-02` | `runtime` | The runtime text of languages 1.0 and 1.1 is the one declared exception: the portable runtime and the decoder of core module 1 are the released bytes, held as data under `language/runtime-1.2/frozen/`, read by the language-1.0 and 1.1 backends alone, excluded from the language-1.0 and 1.1 identities, and reproduced byte for byte by the released language-1.1 and 1.0 output; a one-byte change of either is not the released output. | §17.12, §21.2 |
 | `RT-03` | `runtime` | A verification compiles every runtime module that a project's generated modules, or the calculus modules its certificates are checked against, import before the project's modules, replays it with `leanchecker`, and audits each of its declarations against the axioms its row pins; the committed verification of a project that uses the collections prints them, the runtime's own project verifies under the pinned Lean, and a row that pins another axiom set than its declaration observes fails with LLV7005. | §17.12, §22.3, §22.5, §22.6 |
@@ -9993,7 +10017,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-03` | `language-models` | Text that is not valid UTF-8 is refused and never tokenized: an artifact whose bytes do not decode under the `utf8_lines` schema — invalid UTF-8, a CR, or a missing final LF — fails by its artifact rules before any byte is decoded, and a text offered to `encodeText` that is not valid UTF-8 is refused rather than transcoded. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 418.
+**Total required capability IDs:** 419.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

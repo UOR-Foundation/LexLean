@@ -1212,6 +1212,15 @@ pub(crate) fn run(id: &str) {
                 let rewritten = text
                     .replace("lexlean/semantic-module/1", "lexlean/semantic-module/2")
                     .replace("@1.1.0}", "@1.2.0}");
+                // Language 1.2 refuses the data form (§17.21.1): the migration
+                // writes the module in the notation, as `fmt` is told to.
+                let rewritten = if lexlean::surface::module::locate(&rewritten)
+                    .is_some_and(|found| found.data.is_some())
+                {
+                    lexlean::sdk::to_notation(&rewritten).expect("the notation")
+                } else {
+                    rewritten
+                };
                 std::fs::write(path.as_std_path(), rewritten).expect("migrate source");
             }
             // An unmigrated lock is stale, never silently reinterpreted.

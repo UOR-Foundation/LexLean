@@ -1949,7 +1949,7 @@ pub fn run(id: &str) {
             let planted = |edit: &dyn Fn(&str) -> String| {
                 preserve::check_native_sources(&|path| {
                     if path == first_path {
-                        Ok(edit(&original))
+                        Ok(support::notation_text(&edit(&original)))
                     } else {
                         std::fs::read_to_string(repo_root().join(path).as_std_path())
                             .map_err(|error| format!("{path}: {error}"))
@@ -2194,7 +2194,9 @@ pub fn run(id: &str) {
             let planted = |edit: &dyn Fn(&str) -> Option<String>| {
                 preserve::check_native_sources(&|path| {
                     if path == first_path {
-                        edit(&original).ok_or_else(|| format!("{path}: no such file"))
+                        edit(&original)
+                            .map(|text| support::notation_text(&text))
+                            .ok_or_else(|| format!("{path}: no such file"))
                     } else {
                         std::fs::read_to_string(repo_root().join(path).as_std_path())
                             .map_err(|error| format!("{path}: {error}"))
@@ -2210,7 +2212,9 @@ pub fn run(id: &str) {
                 ))
             })
             .expect_err("a first-schema module carrying second-schema data is refused");
-            assert!(error.contains("requires"), "{error}");
+            // The notation names the schema of the language, so a first-schema
+            // payload is data, which language 1.2 refuses before it reads the tag.
+            assert!(error.contains("authoring notation"), "{error}");
             let error =
                 planted(&|text| Some(text.replace("\"kind\":\"exact\"", "\"kind\":\"allow\"")))
                     .expect_err("an inexact policy is refused");
