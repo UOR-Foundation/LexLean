@@ -19,6 +19,10 @@ struct Package {
     module: &'static str,
     /// Declarations its module states, by name.
     declarations: &'static [&'static str],
+    /// The declarations that elaborate to no Lean declaration of their own: a
+    /// contract with a postcondition alone, evidence (restated as its
+    /// theorem), and a logic (its relation and ranking are the definitions).
+    elaborates_to_nothing: &'static [&'static str],
 }
 
 const MODELS: Package = Package {
@@ -51,6 +55,7 @@ const MODELS: Package = Package {
         "GateEvidence",
         "GateModel",
     ],
+    elaborates_to_nothing: &["Gating", "GateEvidence"],
 };
 
 const REASONING: Package = Package {
@@ -70,6 +75,7 @@ const REASONING: Package = Package {
         "drain_clears_three",
         "drain_steps_three",
     ],
+    elaborates_to_nothing: &["Countdown"],
 };
 
 /// Run the case for `SL-03` or `SL-04`.
@@ -241,19 +247,32 @@ fn package(spec: &Package) {
     let rows = attestation["declarations"]
         .as_array()
         .expect("declarations");
-    for name in spec.declarations {
+    for name in spec
+        .declarations
+        .iter()
+        .filter(|name| !spec.elaborates_to_nothing.contains(name))
+    {
+        // A declaration is audited under its own name or, when it elaborates
+        // to several, under names it prefixes (`Drain.run`, `Tick.apply`).
         let full = format!("{}.{}.{name}", spec.prefix, spec.module);
-        let row = rows
+        let members: Vec<&serde_json::Value> = rows
             .iter()
-            .find(|row| row["name"].as_str() == Some(full.as_str()))
-            .unwrap_or_else(|| panic!("{}: `{full}` is audited", spec.id));
-        assert!(
-            row["observed"].as_array().is_some_and(|observed| observed
-                .iter()
-                .all(|axiom| matches!(axiom.as_str(), Some("propext" | "Quot.sound")))),
-            "{}: `{full}` observes no axiom but propext and Quot.sound: {row}",
-            spec.id
-        );
+            .filter(|row| {
+                row["name"]
+                    .as_str()
+                    .is_some_and(|found| found == full || found.starts_with(&format!("{full}.")))
+            })
+            .collect();
+        assert!(!members.is_empty(), "{}: `{full}` is audited", spec.id);
+        for row in members {
+            assert!(
+                row["observed"].as_array().is_some_and(|observed| observed
+                    .iter()
+                    .all(|axiom| matches!(axiom.as_str(), Some("propext" | "Quot.sound")))),
+                "{}: `{full}` observes no axiom but propext and Quot.sound: {row}",
+                spec.id
+            );
+        }
     }
 
     if spec.id == "SL-04" {
