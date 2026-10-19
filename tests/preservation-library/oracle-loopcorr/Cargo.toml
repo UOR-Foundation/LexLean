@@ -1,0 +1,10 @@
+[package]
+name = "loop-corr"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+lexlean = { path = "../../../crates/lexlean" }
+
+[workspace]
