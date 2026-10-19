@@ -9541,107 +9541,112 @@ build the cases run. The evaluator is measured by the resident size of its
 thread's stack after the `BS-01` and `BS-02` workload, because a bisection
 reruns a workload of about 40 minutes per probe. A debug harness holds the
 corpus as an array literal in its frame, so the bound of a root is the frame
-of its corpus plus the depth of its recursion; the short names of the corpus
-recurse only a few frames.
+of its corpus plus the depth of its recursion. A case that runs one root's
+harness on several corpora (`BS-04`) records the largest need among them.
+
+Since `RB-14` renders a function whose self calls are all tail calls as a
+loop, the rows are the three packages whose provenance still states
+`recursion`: the audit-output parser, whose sorted insertion of each record
+among the ones before it is not a tail call, and the two calculus checkers,
+which recurse with the depth of the program they check. The scans, the token
+roots and the standard library's text and SHA-256 roots are loops and need no
+row (`observe` returns at once for a package that does not recurse, and
+stays in their cases so that a root that recurses again is held to a row).
 
 | subject | least stack (bytes) | with headroom 4 |
 | --- | ---: | ---: |
 | `bootstrap/evaluator` | 21,037,056 | 84,148,224 |
-| `bootstrap/is_closed_lean_name` | 5,767,168 | 23,068,672 |
-| `bootstrap/parse_audit_output` | 7,929,856 | 31,719,424 |
-| `bootstrap/lex` | 1,179,648 | 4,718,592 |
-| `bootstrap/audit_tokens` | 3,145,728 | 12,582,912 |
-| `stdlib/find` | 983,040 | 3,932,160 |
-| `stdlib/join_with` | 1,572,864 | 6,291,456 |
-| `stdlib/lines` | 458,752 | 1,835,008 |
-| `stdlib/split_on` | 655,360 | 2,621,440 |
-| `stdlib/trim` | 458,752 | 1,835,008 |
+| `bootstrap/parse_audit_output` | 6,291,456 | 25,165,824 |
+| `bootstrap/check_program` | 13,697,024 | 54,788,096 |
+| `bootstrap/check_arguments` | 4,915,200 | 19,660,800 |
 
 Both stacks in use cover the largest product: 64 MiB (67,108,864) for the
-harness against 31,719,424, and 1 GiB for the evaluator against 84,148,224.
+harness against 54,788,096, and 1 GiB for the evaluator against
+84,148,224.
 
-The growth of one root with its input is the issue's table: `isClosedLeanName`
-on one name of `n` bytes (a single call, its argument passed through
-`black_box` so that a release build cannot fold the scan).
+The growth of one root with its input is measured on `parseAuditOutput`, the
+one root of the first component that still recurses: one audit output of `n`
+records, each the axiom line of its own declaration (46 bytes a record) with
+names that ascend, so that each insertion walks the whole sorted list before
+it (a single call, its argument passed through `black_box` so that a release
+build cannot fold the parse). The issue's table was of `isClosedLeanName`,
+which is a loop since `RB-14` and needs one 64 KiB step at every length.
 
-| `n` | debug | release |
-| ---: | ---: | ---: |
-| 1,000 | 327,680 | 65,536 |
-| 10,000 | 3,211,264 | 65,536 |
-| 40,000 | 12,845,056 | 65,536 |
-| 80,000 | 25,624,576 | 65,536 |
+| `n` | bytes | debug | release |
+| ---: | ---: | ---: | ---: |
+| 250 | 11,500 | 327,680 | 131,072 |
+| 1,000 | 46,000 | 1,048,576 | 327,680 |
+| 2,000 | 92,000 | 2,097,152 | 655,360 |
+| 4,000 | 184,000 | 4,128,768 | 1,245,184 |
 
-Debug costs about 320 bytes a byte of name, so the 64 MiB of the harness covers
-a name of 40,000 bytes with headroom 4 (51,380,224) and not one of 80,000
-(102,498,304); `PD-08` asserts the first and the table states the second.
-Release needs the least stack the method measures (one 64 KiB step) at every
-`n`, which the issue's own release table did not. The cause is not established
-here; the rendering of `f1` (the iteration template) in the committed package
-now calls itself as `f1(v0, v3, v4)` after `v0.clone()` is taken earlier, where
-the issue's listing cloned in the call, which leaves nothing to drop after the
-call and is a shape LLVM can turn into a
-loop. Whether it does is the optimizer's choice and rustc does not guarantee it,
-so `recursion` stays in the declaration and the debug column is the one the
-suite's stacks are held to.
+Debug costs about 1,048 bytes a record, so the 64 MiB of the harness covers
+an output of 2,000 records with headroom 4 (8,388,608), which is
+the planted size; `PD-08` asserts that every row up to the planted size fits
+the harness stack with headroom and that the table grows. The harness holds
+its input as one literal, a chain of `cons` as deep as the record count, and
+a release build of a chain past a few thousand records takes rustc the better
+part of an hour, so the table stops at 4,000. Release grows too (the
+insertion is not a shape LLVM turns into a loop), at about a third of the
+debug cost; the debug column is the one the suite's stacks are held to.
 
 `PD-08` makes each of these plants on every run's input (the record, a stack
 constant, or a case input is changed in a clean tree, the case run, the failure
 observed, paths shortened, and the change removed):
 
 - **the harness stack lowered below a bound.** `rust_harness::HARNESS_STACK`
-  set to `16 << 20`. `cargo test -p repo-conformance --test conformance --
+  set to `4 << 20`. `cargo test -p repo-conformance --test conformance --
   conformance_pd_08 --exact`:
 
   ```text
-  panicked at crates/conformance/src/cases/bootstrap.rs:1576:75:
-  bootstrap/is_closed_lean_name: a stack of 16777216 bytes is below its recorded bound with headroom (23068672 bytes)
+  panicked at crates/conformance/src/cases/bootstrap.rs:1620:75:
+  bootstrap/check_arguments: a stack of 4194304 bytes is below its recorded bound with headroom (19660800 bytes)
   ```
 
 - **the evaluator stack lowered below its bound.** `EVALUATOR_STACK` set to
   `64 << 20`:
 
   ```text
-  panicked at crates/conformance/src/cases/bootstrap.rs:1576:75:
+  panicked at crates/conformance/src/cases/bootstrap.rs:1620:75:
   bootstrap/evaluator: a stack of 67108864 bytes is below its recorded bound with headroom (84148224 bytes)
   ```
 
-- **a recursive package with no row.** The row of `stdlib/trim` deleted from
-  `tests/stack-bounds.json`:
+- **a recursive package with no row.** The row of `bootstrap/check_arguments`
+  deleted from `tests/stack-bounds.json`:
 
   ```text
   assertion `left == right` failed: the record has a row for each recursive package of the bootstrap and stdlib exports and for no other
-    left: {"bootstrap/audit_tokens", ..., "stdlib/split_on"}
-   right: {"bootstrap/audit_tokens", ..., "stdlib/split_on", "stdlib/trim"}
+    left: {"bootstrap/check_program", "bootstrap/parse_audit_output"}
+   right: {"bootstrap/check_arguments", "bootstrap/check_program", "bootstrap/parse_audit_output"}
   ```
 
-- **a row for no recursive package.** A row for `stdlib/no_such_package`
-  added: the same assertion, with `stdlib/no_such_package` on the left only.
+- **a row for no recursive package.** A row for `stdlib/trim` (a loop since
+  `RB-14`) added: the same assertion, with `stdlib/trim` on the left only.
 
-- **a recorded need that is too large.** The rows of the 40,000- and
-  80,000-byte names multiplied by 8:
+- **a recorded need that is too large.** The debug rows of the 2,000- and
+  4,000-record outputs multiplied by 16:
 
   ```text
-  panicked at crates/conformance/src/cases/bootstrap.rs:1593:9:
-  a name of 40000 bytes needs 411041792 bytes with headroom, and the harness stack is 67108864
+  panicked at crates/conformance/src/cases/bootstrap.rs:1635:9:
+  an audit output of 92000 bytes needs 134217728 bytes with headroom, and the harness stack is 67108864
   ```
 
 - **a recorded need that is stale.** Every debug row of the growth table
   divided by 8, as after a change that makes a frame eight times larger; the
-  harness of `isClosedLeanName` on a name of 40,000 bytes is built and run on
-  the stack the record now allows:
+  harness of `parseAuditOutput` on an output of 2,000 records is built and run
+  on the stack the record now allows:
 
   ```text
-  panicked at crates/conformance/src/cases/bootstrap.rs:1631:5:
-  a name of 40000 bytes: the harness finishes on 6422528 bytes, its need with headroom
+  panicked at crates/conformance/src/cases/bootstrap.rs:1673:5:
+  an audit output of 2000 records: the harness finishes on 1048576 bytes, its need with headroom
   ```
 
-Removed: each edit was restored and `conformance_pd_08` passes (4 s). One
+Removed: each edit was restored and `conformance_pd_08` passes. One
 direction is not caught, and the headroom is why: a recorded need smaller than
 the true one by less than a factor of 4 still finishes, which is what the
 headroom of 4 is for. A recursive root that a harness runs without a row fails
-the case that runs it (`stack_bounds::observe` in `BS-01`, `BS-02`, `SL-01`);
-that was not planted separately, because the set equality above is the same
-fact read from the export.
+the case that runs it (`stack_bounds::observe` in `BS-01`, `BS-02`, `BS-03`,
+`BS-04`, `SL-01`, `SL-02`); that was not planted separately, because the set
+equality above is the same fact read from the export.
 ### the bootstrap calculus checker can fail its oracle (SPEC.md §17.23, §17.14)
 
 `BS-04` holds the two production roots of `LexLeanBoot.CalculusCheck` (`bootstrap/src/CalculusCheck.lex.tex`) to the stage-0 Rust oracle they replace (the counts below are the case's report at b5871e8b9 on its base; the committed corpus has grown since), `calculus::check::check` and `calculus::check::check_arguments`, for a program given as calculus data. The case decodes the arguments of every vector back to the program the oracle read (each list of a recursive type is a chain of its type's own constructors, a faithful image of the list that certificate A can take, #208), runs the 175 committed target programs, the refusals of `TC-02`, one program for each rule a planted defect removes, and the literal, primitive, and shape corpora under the rendered `rust-std` packages on every host, and on the normative host under the calculus evaluator, with 4,722 seeded programs and 403 seeded argument runs and 9,296 more under `rustc`. A run compares the result and the reason to the byte; the runs whose reason spells a scalar beyond U+009F as `\u{…}` are outside the claim and left out (the reasons of Rust's `Debug` for a string past the tables of the module). The case makes each of these twelve plants on a copy of `bootstrap/src/CalculusCheck.lex.tex` on every normative run:

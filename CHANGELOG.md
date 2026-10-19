@@ -74,6 +74,14 @@ and Unreleased holds what has landed since.
   pair and result constructs a loop's state and break carry, for any call of
   the program (the coarsening is stated in SPEC.md §17.16). The language-1.2
   compiler-semantics ID moves; the records bound to it are regenerated in wave 6.
+  In the same wave the declarations of `scanSource`, `rejectAtoms`, `sha256`
+  and `sha256Hex` drop `recursion` (`BS-03` and `SL-02` hold a declaration to
+  exactly the realized effects), and the stack-bounds record of `PD-08` is
+  re-measured for the three packages that still recurse, `parse_audit_output`,
+  `check_program` and `check_arguments`, with the growth table moved from
+  `isClosedLeanName`, now a loop, to `parseAuditOutput` on one audit output of
+  a growing number of records; `BS-04` records or demands the bounds of the
+  two checkers as `BS-01` does the parser's.
 - The declared Rust machine states a machine primitive as a callee and the
   overflow value as a literal (`SP-18`, SPEC.md §17.16, stage 2 of #91):
   `RustSyntax.Machine` has eight primitives at a width, `Callee.machine`
@@ -161,12 +169,12 @@ and Unreleased holds what has landed since.
   #105 step 3; no new diagnostic code, no change to any language identity).
   `tests/stack-bounds.json`, written by the cases in measure mode, holds the
   recursive packages of the committed `bootstrap` and `stdlib` exports, the
-  evaluator thread, and the growth table of `isClosedLeanName`; `PD-08` holds
+  evaluator thread, and the growth table of one root; `PD-08` holds
   the harness and evaluator stacks to at least the largest recorded bound
   times a headroom of 4, the rows to exactly the recursive packages of the
-  exports, and the `isClosedLeanName` harness to finishing on its allowed
-  stack and aborting on a quarter of it. The measurement is Linux-only; the
-  check runs on every host.
+  exports, and that root's harness to finishing on its allowed stack and
+  aborting on a quarter of it. The measurement is Linux-only; the check runs
+  on every host.
 - The third component of the compiler's own pipeline as language-1.2 source:
   the primitive scanner of SPEC.md §12.2 (SPEC.md §17.23, `BS-03`, #92; no new
   diagnostic code, no change to the language-1.2 identity).

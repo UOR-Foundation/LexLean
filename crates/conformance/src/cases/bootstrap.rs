@@ -1602,8 +1602,11 @@ fn stack_bounds_case() {
         rows, recursive,
         "the record has a row for each recursive package of the bootstrap and stdlib exports and for no other"
     );
+    // Three packages recurse since `RB-14` rendered the tail-recursive
+    // templates as loops: the audit-output parser and the two calculus
+    // checkers, whose depth is that of their input.
     assert!(
-        recursive.len() >= 9,
+        recursive.len() >= 3,
         "{} recursive packages: the corpus is not vacuous",
         recursive.len()
     );
@@ -1616,9 +1619,9 @@ fn stack_bounds_case() {
         };
         stack_bounds::check(&record, key, stack).unwrap_or_else(|failure| panic!("{failure}"));
     }
-    // The harness stack covers the growth the issue measured, up to the
-    // length of name that still returned a value on an 8 MiB stack, and the
-    // need does grow with the input, so the table is not a constant.
+    // The harness stack covers the growth the record measured, up to the
+    // planted size, and the need does grow with the input, so the table is
+    // not a constant.
     let scale = &record.scaling[SCALING_SUBJECT];
     assert!(
         scale
@@ -1626,14 +1629,12 @@ fn stack_bounds_case() {
             .all(|pair| pair[0].input_bytes < pair[1].input_bytes && pair[0].debug < pair[1].debug),
         "the need of {SCALING_SUBJECT} grows with its input: {scale:?}"
     );
-    for row in scale
-        .iter()
-        .filter(|row| row.input_bytes <= SCALING_PLANT as u64)
-    {
+    let planted_bytes = scaling_input(SCALING_PLANT).0.len() as u64;
+    for row in scale.iter().filter(|row| row.input_bytes <= planted_bytes) {
         let needed = usize::try_from(row.debug).expect("a bound") * HEADROOM;
         assert!(
             needed <= HARNESS_STACK,
-            "a name of {} bytes needs {needed} bytes with headroom, and the harness stack is {HARNESS_STACK}",
+            "an audit output of {} bytes needs {needed} bytes with headroom, and the harness stack is {HARNESS_STACK}",
             row.input_bytes
         );
     }
@@ -1659,46 +1660,66 @@ fn stack_bounds_case() {
         stack_bounds::check(&without, heaviest, HARNESS_STACK).is_err(),
         "a record with the row dropped refuses the root"
     );
-    // The bound is not vacuous: the harness of `isClosedLeanName` on one long
-    // name finishes on the stack its recorded need allows and aborts on a
-    // quarter of the need.
+    // The bound is not vacuous: the harness of `parseAuditOutput` on one long
+    // audit output finishes on the stack its recorded need allows and aborts
+    // on a quarter of the need.
     let planted = scale
         .iter()
-        .find(|scale| scale.input_bytes == SCALING_PLANT as u64)
+        .find(|scale| scale.input_bytes == planted_bytes)
         .expect("the record measures the planted size");
     let (dir, names) = scaling_workspace(&[SCALING_PLANT], false);
     let binary = scaling_binary(dir.path(), "debug", &names[0]);
     let allowed = usize::try_from(planted.debug).expect("a bound") * HEADROOM;
     assert!(
         stack_bounds::finishes(&binary, allowed),
-        "a name of {SCALING_PLANT} bytes: the harness finishes on {allowed} bytes, its need with headroom"
+        "an audit output of {SCALING_PLANT} records: the harness finishes on {allowed} bytes, its need with headroom"
     );
     let quarter = usize::try_from(planted.debug).expect("a bound") / 4;
     assert!(
         !stack_bounds::finishes(&binary, quarter),
-        "a name of {SCALING_PLANT} bytes: the harness aborts on {quarter} bytes, a quarter of its need"
+        "an audit output of {SCALING_PLANT} records: the harness aborts on {quarter} bytes, a quarter of its need"
     );
 }
 
-/// The subject whose growth with its input the record measures.
-const SCALING_SUBJECT: &str = "bootstrap/is_closed_lean_name";
+/// The subject whose growth with its input the record measures: the one root
+/// of the first component that still recurses since `RB-14`. Its depth is the
+/// sorted insertion of each record among the ones before it (`insertEntry`),
+/// so it grows with the number of records.
+const SCALING_SUBJECT: &str = "bootstrap/parse_audit_output";
 
-/// The lengths of the one name the growth is measured on, in bytes: the
-/// issue's own table (1,000 to 40,000 returned a value on an 8 MiB stack, and
-/// 80,000 aborted it).
-const SCALING_SIZES: [usize; 4] = [1_000, 10_000, 40_000, 80_000];
+/// The numbers of records of the one audit output the growth is measured on.
+/// The harness holds its input as one literal, a chain of `cons` as deep as
+/// the record count, and a release build of a chain past a few thousand
+/// takes rustc the better part of an hour, so the table stops at 4,000.
+const SCALING_SIZES: [usize; 4] = [250, 1_000, 2_000, 4_000];
 
-/// The length the plant of `PD-08` runs.
-const SCALING_PLANT: usize = 40_000;
+/// The number of records the plant of `PD-08` runs.
+const SCALING_PLANT: usize = 2_000;
 
-/// A workspace holding, for each length, the package of `isClosedLeanName`
-/// and a harness that calls it once on a name of that many bytes; built in
-/// the debug profile, and the release profile too when `release`. Returns
-/// the crate names, in order.
+/// One audit output of `records` records, each the axiom line of its own
+/// declaration, and the names it is expected to cover, in the order the
+/// output states them. The names ascend, so each insertion walks the whole
+/// sorted list before it: the deepest the parser recurses on that many
+/// records.
+fn scaling_input(records: usize) -> (String, Vec<String>) {
+    let names: Vec<String> = (0..records)
+        .map(|index| format!("Demo.M.d{index:06}"))
+        .collect();
+    let stdout = names
+        .iter()
+        .map(|name| format!("'{name}' depends on axioms: [propext]\n"))
+        .collect();
+    (stdout, names)
+}
+
+/// A workspace holding, for each number of records, the package of
+/// `parseAuditOutput` and a harness that calls it once on an audit output of
+/// that many records; built in the debug profile, and the release profile
+/// too when `release`. Returns the crate names, in order.
 fn scaling_workspace(sizes: &[usize], release: bool) -> (tempfile::TempDir, Vec<String>) {
     let project = P::bootstrap();
     let checked = support::checked_project(&project);
-    let low = lower(&checked, &project, MODULE, "isClosedLeanName");
+    let low = lower(&checked, &project, MODULE, "parseAuditOutput");
     let mut crates = Vec::new();
     let mut names = Vec::new();
     for &size in sizes {
@@ -1710,6 +1731,8 @@ fn scaling_workspace(sizes: &[usize], release: bool) -> (tempfile::TempDir, Vec<
         );
         let package = target::package(&manifest.to_file_bytes().expect("canonical manifest"))
             .unwrap_or_else(|failure| panic!("{failure:?}"));
+        let (stdout, expected) = scaling_input(size);
+        let (arguments, _) = audit_run(&stdout, &expected);
         let harness_source = rust_harness::render_calls(
             &low.program,
             Profile::Std,
@@ -1717,14 +1740,13 @@ fn scaling_workspace(sizes: &[usize], release: bool) -> (tempfile::TempDir, Vec<
             &[Calls {
                 entry: low.entry(),
                 function: "run",
-                passing: &[Passing::Own],
-                arguments: &[vec![bytes(&vec![b'a'; size])]],
+                passing: &[Passing::Own, Passing::Own],
+                arguments: &[arguments],
             }],
         )
         .expect("the harness");
-        // The issue's table varies the length at run time; a literal lets the
-        // optimizer of a release build fold the scan away, which would
-        // measure nothing.
+        // The input varies at run time; a literal lets the optimizer of a
+        // release build fold the parse away, which would measure nothing.
         let opaque = harness_source
             .replacen(" in [", " in std::hint::black_box([", 1)
             .replacen("] {\n", "]) {\n", 1);
@@ -1761,7 +1783,7 @@ fn scaling_binary(dir: &std::path::Path, profile: &str, name: &str) -> std::path
         .join(format!("run_{name}{}", std::env::consts::EXE_SUFFIX))
 }
 
-/// Measure how the need of `isClosedLeanName` grows with its input, in both
+/// Measure how the need of `parseAuditOutput` grows with its input, in both
 /// profiles, and write it into the record.
 fn measure_scaling() {
     use crate::rust_harness::HARNESS_STACK;
@@ -1779,7 +1801,7 @@ fn measure_scaling() {
                 }) as u64
             };
             let scale = Scale {
-                input_bytes: size as u64,
+                input_bytes: scaling_input(size).0.len() as u64,
                 debug: measure("debug"),
                 release: measure("release"),
             };

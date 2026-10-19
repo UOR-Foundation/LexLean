@@ -2204,6 +2204,10 @@ fn rustc_differential(roots: &[(&str, &Lowered, &[Run])], label: &str) -> usize 
             "{name}: {}",
             String::from_utf8_lossy(&ran.stderr)
         );
+        // PD-08: both roots recurse with the depth of the program, so the
+        // harness that ran them records (measuring) or demands (otherwise)
+        // their stack bound; the row keeps the largest need of the corpora.
+        crate::stack_bounds::observe(&crate::stack_bounds::subject("bootstrap", name), &binary);
         let stdout = String::from_utf8(ran.stdout).expect("utf8");
         let printed: Vec<Json> = stdout
             .lines()

@@ -3,71 +3,41 @@
   "headroom": 4,
   "granule": 65536,
   "scaling": {
-    "bootstrap/is_closed_lean_name": [
+    "bootstrap/parse_audit_output": [
       {
-        "input_bytes": 1000,
-        "debug": 65536,
-        "release": 65536
+        "input_bytes": 11500,
+        "debug": 327680,
+        "release": 131072
       },
       {
-        "input_bytes": 10000,
-        "debug": 65536,
-        "release": 65536
+        "input_bytes": 46000,
+        "debug": 1048576,
+        "release": 327680
       },
       {
-        "input_bytes": 40000,
-        "debug": 65536,
-        "release": 65536
+        "input_bytes": 92000,
+        "debug": 2097152,
+        "release": 655360
       },
       {
-        "input_bytes": 80000,
-        "debug": 65536,
-        "release": 65536
+        "input_bytes": 184000,
+        "debug": 4128768,
+        "release": 1245184
       }
     ]
   },
   "rows": {
-    "bootstrap/audit_tokens": {
-      "debug": 3145728
+    "bootstrap/check_arguments": {
+      "debug": 4915200
+    },
+    "bootstrap/check_program": {
+      "debug": 13697024
     },
     "bootstrap/evaluator": {
       "debug": 21037056
     },
-    "bootstrap/is_closed_lean_name": {
-      "debug": 5767168
-    },
-    "bootstrap/lex": {
-      "debug": 1179648
-    },
     "bootstrap/parse_audit_output": {
-      "debug": 7929856
-    },
-    "bootstrap/reject_atoms": {
-      "debug": 6160384
-    },
-    "bootstrap/scan_source": {
-      "debug": 8650752
-    },
-    "stdlib/find": {
-      "debug": 983040
-    },
-    "stdlib/join_with": {
-      "debug": 1572864
-    },
-    "stdlib/lines": {
-      "debug": 458752
-    },
-    "stdlib/sha256": {
-      "debug": 196608
-    },
-    "stdlib/sha256_hex": {
-      "debug": 6422528
-    },
-    "stdlib/split_on": {
-      "debug": 655360
-    },
-    "stdlib/trim": {
-      "debug": 458752
+      "debug": 6291456
     }
   }
 }
