@@ -258,22 +258,20 @@ pub fn json_depth(text: &str) -> usize {
     let (mut in_string, mut escaped) = (false, false);
     for byte in text.bytes() {
         if in_string {
-            match (escaped, byte) {
-                (true, _) => escaped = false,
-                (false, b'\\') => escaped = true,
-                (false, b'"') => in_string = false,
-                (false, _) => {}
+            if escaped {
+                escaped = false;
+            } else if byte == b'\\' {
+                escaped = true;
+            } else if byte == b'"' {
+                in_string = false;
             }
-            continue;
-        }
-        match byte {
-            b'"' => in_string = true,
-            b'[' | b'{' => {
-                depth += 1;
-                deepest = deepest.max(depth);
-            }
-            b']' | b'}' => depth = depth.saturating_sub(1),
-            _ => {}
+        } else if byte == b'"' {
+            in_string = true;
+        } else if byte == b'[' || byte == b'{' {
+            depth += 1;
+            deepest = deepest.max(depth);
+        } else if byte == b']' || byte == b'}' {
+            depth = depth.saturating_sub(1);
         }
     }
     deepest
