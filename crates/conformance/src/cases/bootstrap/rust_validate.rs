@@ -317,7 +317,7 @@ fn enc_arms(arms: &[(Pat, Block)]) -> Value {
 /// `Expr`: lit, read (move, clone, copy, deref, unbox), wrap (not, box,
 /// widen, succeed), call, apply, construct, pair, if, match, block, probe
 /// (is-zero, non-zero, uncons, predecessor), then the block, the chain's nil
-/// and cons, the let, and the arm.
+/// and cons, the let, the arm, and the loop over a state.
 fn enc_expr(expr: &Expr) -> Value {
     let read = |kind: u64, ident: &Ident, at: &Origin| {
         adt(
@@ -407,6 +407,7 @@ fn enc_expr(expr: &Expr) -> Value {
         // Neither carries an origin of its own; the module ignores the one given.
         Expr::Uncons(ident) => probe(2, ident, &Origin::of("")),
         Expr::Predecessor(ident) => probe(3, ident, &Origin::of("")),
+        Expr::Loop { state, body } => adt(16, vec![enc_ident(state), enc_block(body)]),
     }
 }
 
@@ -828,6 +829,10 @@ fn visit_expr(expr: &mut Expr, f: &mut Visitor<'_>) {
             f(Node::Origin(at));
         }
         Expr::Block(block) => visit_block(block, f),
+        Expr::Loop { state, body } => {
+            f(Node::Ident(state));
+            visit_block(body, f);
+        }
     }
 }
 
@@ -977,7 +982,7 @@ fn read_origin(expr: &Expr) -> Origin {
 #[allow(clippy::too_many_lines)]
 fn mutate_once(krate: &mut Crate, seeded: &mut Seeded, pool: &Pool) -> bool {
     let kinds = IntKind::ALL;
-    match seeded.below(19) {
+    match seeded.below(20) {
         // An identifier read or bound is another one of the crate.
         0 => {
             let count = sites(krate, Class::Ident);
@@ -1466,6 +1471,60 @@ fn mutate_once(krate: &mut Crate, seeded: &mut Seeded, pool: &Pool) -> bool {
             });
             true
         }
+        // A block runs in a loop over a name of the crate: as it is, with its
+        // value an `Err`, or after it takes a name or a component of one.
+        19 => {
+            let count = sites(krate, Class::Block);
+            if count == 0 {
+                return false;
+            }
+            let at = seeded.below(count);
+            let state = seeded.pick(&pool.idents).clone();
+            let taken = seeded.pick(&pool.idents).clone();
+            let which = seeded.below(4);
+            let fresh = Ident::Local(300 + seeded.below(50) as u64);
+            edit_at(krate, Class::Block, at, &mut |node| {
+                if let Node::Block(block) = node {
+                    let mut body = Block {
+                        lets: std::mem::take(&mut block.lets),
+                        tail: block.tail.clone(),
+                    };
+                    match which {
+                        1 => {
+                            body.tail = Expr::Construct {
+                                ctor: Ctor::Err(Type::Nat, Type::Nat),
+                                args: vec![body.tail.clone()],
+                                at: Origin::of("construct:err"),
+                            };
+                        }
+                        2 => body.lets.insert(
+                            0,
+                            Let {
+                                pat: Pat::Wild,
+                                ty: None,
+                                value: Expr::Move(taken.clone(), Origin::of("read")),
+                                at: Origin::of("let"),
+                            },
+                        ),
+                        3 => body.lets.insert(
+                            0,
+                            Let {
+                                pat: Pat::Tuple(vec![Pat::Bind(fresh.clone()), Pat::Wild]),
+                                ty: None,
+                                value: Expr::Move(taken.clone(), Origin::of("read")),
+                                at: Origin::of("destructure:pair"),
+                            },
+                        ),
+                        _ => {}
+                    }
+                    block.tail = Expr::Loop {
+                        state: state.clone(),
+                        body: Box::new(body),
+                    };
+                }
+            });
+            true
+        }
         // A binding's pattern becomes a tuple of the identifier.
         _ => {
             let count = sites(krate, Class::Let);
@@ -1540,6 +1599,9 @@ const REACHABLE: &[&str] = &[
     "call-spurious-propagate",
     "tail-not-fallible",
     "negated-zero",
+    "loop-tail-not-fallible",
+    "loop-moved",
+    "loop-part-moved",
     "function-undeclared",
     "ctor-adt-undeclared",
     "ctor-adt-arity",
@@ -1595,6 +1657,12 @@ fn classify(message: &str) -> &'static str {
         "heap-boxed-capture"
     } else if has(" is bound twice in one function") {
         "bound-twice"
+    } else if has("the value a fallible loop ends with") {
+        "loop-tail-not-fallible"
+    } else if has("ownership: a component of ") && has(" in the body of a loop that runs again") {
+        "loop-part-moved"
+    } else if has("ownership: `") && has(" is moved in the body of a loop that runs again") {
+        "loop-moved"
     } else if message.starts_with("pattern Adt") && has(" is not declared") {
         "pattern-undeclared"
     } else if message.starts_with("pattern Adt") && has(" binds ") {
@@ -1738,6 +1806,23 @@ fn mutants(bases: &[&Rendered], seeded: &mut Seeded, count: usize) -> (Vec<Run>,
     (validated, corresponded)
 }
 
+/// The reachable refusals that fewer than `each` runs of either root show.
+fn unreached(
+    validated: &BTreeMap<&'static str, usize>,
+    corresponded: &BTreeMap<&'static str, usize>,
+    each: usize,
+) -> Vec<&'static str> {
+    REACHABLE
+        .iter()
+        .copied()
+        .filter(|template| {
+            let reached =
+                |seen: &BTreeMap<&'static str, usize>| seen.get(template).copied().unwrap_or(0);
+            reached(validated).max(reached(corresponded)) < each
+        })
+        .collect()
+}
+
 /// Mutants of small crates, taken until every reachable refusal has been
 /// seen `each` times, from the fixed seed: the rule vectors. Returns the
 /// runs of both roots.
@@ -1769,18 +1854,17 @@ fn rule_vectors(bases: &[&Rendered], each: usize) -> (Vec<Run>, Vec<Run>) {
                 corresponded.push(run);
             }
         }
-        let both: BTreeMap<_, _> = seen_validate
-            .iter()
-            .chain(seen_correspond.iter())
-            .map(|(template, count)| (*template, *count))
-            .collect();
-        if REACHABLE
-            .iter()
-            .all(|template| both.get(template).is_some_and(|count| *count >= each))
-        {
+        if unreached(&seen_validate, &seen_correspond, each).is_empty() {
             break;
         }
     }
+    // The target is asserted, not hoped for: a generator that used its draws
+    // up first would otherwise hand the case fewer runs than it states.
+    let missing = unreached(&seen_validate, &seen_correspond, each);
+    assert!(
+        missing.is_empty(),
+        "the rule corpus gave up before it reached {each} runs of: {missing:?}"
+    );
     (validated, corresponded)
 }
 
@@ -1895,6 +1979,444 @@ fn branch_crates() -> Vec<Crate> {
                 },
                 at: Origin::of("function"),
             }],
+        });
+    }
+    out
+}
+
+/// The elements a hand-built crate realizes: the origins of its constructs
+/// and the rows its types name, so a correspondence run of it asks the oracle
+/// about the loop and not only about an element the crate never used.
+fn elements_of(krate: &Crate) -> BTreeSet<String> {
+    let (instances, types) = validate::instances(krate);
+    let mut out: BTreeSet<String> = instances
+        .iter()
+        .map(|instance| instance.origin.element.clone())
+        .collect();
+    for construct in types {
+        for (name, realized) in validate::CORRESPONDENCE {
+            if *name == construct {
+                out.extend(realized.iter().map(|element| (*element).to_owned()));
+            }
+        }
+    }
+    out
+}
+
+/// Crates by hand for the loop rules of `calculus::rust::validate`: a loop's
+/// state is moved by its body and nothing else outside the body is (both
+/// refusals, with the names the oracle reports first), the value a fallible
+/// loop ends with is a fallible value, and the body is checked as a block that
+/// is not a tail. The mutants reach these rarely, so these make each rule a
+/// vector in both directions.
+#[allow(clippy::too_many_lines)]
+fn loop_crates() -> Vec<Crate> {
+    let at = Origin::of;
+    let local = Ident::Local;
+    let read = |ident: Ident| Expr::Move(ident, at("read"));
+    let copy = |ident: Ident| Expr::Copy(ident, at("read"));
+    let succeed = |inner: Expr| Expr::Succeed(Box::new(inner), at("overflow"));
+    let err = |inner: Expr| Expr::Construct {
+        ctor: Ctor::Err(Type::Nat, Type::Nat),
+        args: vec![inner],
+        at: at("construct:err"),
+    };
+    let ok = |inner: Expr| Expr::Construct {
+        ctor: Ctor::Ok(Type::Nat, Type::Nat),
+        args: vec![inner],
+        at: at("construct:ok"),
+    };
+    let nat = || Expr::Lit(Lit::Nat(0), at("value:nat"));
+    let unit = || Expr::Lit(Lit::Unit, at("value:unit"));
+    let discard = |value: Expr| Let {
+        pat: Pat::Wild,
+        ty: None,
+        value,
+        at: at("let"),
+    };
+    let bind = |ident: Ident, value: Expr| Let {
+        pat: Pat::Bind(ident),
+        ty: None,
+        value,
+        at: at("let"),
+    };
+    let part = |ident: Ident, which: usize, value: Expr| Let {
+        pat: Pat::Tuple(if which == 0 {
+            vec![Pat::Bind(ident), Pat::Wild]
+        } else {
+            vec![Pat::Wild, Pat::Bind(ident)]
+        }),
+        ty: None,
+        value,
+        at: at("destructure:pair"),
+    };
+    // A loop over `state` whose body runs `lets` and ends with `end` when the
+    // state is zero and with the next state otherwise.
+    let counting = |state: Ident, lets: Vec<Let>, end: Expr| Expr::Loop {
+        state: state.clone(),
+        body: Box::new(Block {
+            lets,
+            tail: Expr::If {
+                condition: Box::new(Expr::IsZero(state.clone(), at("match:nat"))),
+                then_branch: Box::new(Block::of(end)),
+                else_branch: Box::new(Block::of(ok(Expr::Predecessor(state)))),
+                at: at("if"),
+            },
+        }),
+    };
+    let parameters = || {
+        vec![
+            (Pat::Bind(local(0)), Type::Nat),
+            (Pat::Bind(local(1)), Type::Str),
+            (
+                Pat::Bind(local(2)),
+                Type::Pair(Box::new(Type::Nat), Box::new(Type::Str)),
+            ),
+            (Pat::Bind(local(3)), Type::Option(Box::new(Type::Nat))),
+            (
+                Pat::Bind(local(4)),
+                Type::Pair(Box::new(Type::Nat), Box::new(Type::Str)),
+            ),
+        ]
+    };
+    let fallible = || Type::Fallible(Box::new(Type::Nat));
+    let function = |parameters: Vec<(Pat, Type)>, result: Type, lets: Vec<Let>, tail: Expr| Crate {
+        profile: Profile::Std,
+        items: vec![ItemDef::Function {
+            name: Ident::Function(0),
+            parameters,
+            result,
+            body: Block { lets, tail },
+            at: at("function"),
+        }],
+    };
+    let plain =
+        |result: Type, lets: Vec<Let>, tail: Expr| function(parameters(), result, lets, tail);
+    let body_of = |lets: Vec<Let>, tail: Expr| Expr::Loop {
+        state: local(0),
+        body: Box::new(Block { lets, tail }),
+    };
+    let mut out = Vec::new();
+    // The fallible-tail rule: accepted ends, refused ends, and the first
+    // refused end named.
+    out.push(plain(
+        Type::Nat,
+        vec![],
+        counting(local(0), vec![], err(copy(local(0)))),
+    ));
+    out.push(plain(
+        fallible(),
+        vec![],
+        counting(local(0), vec![], err(succeed(copy(local(0))))),
+    ));
+    out.push(plain(
+        fallible(),
+        vec![],
+        counting(local(0), vec![], err(copy(local(0)))),
+    ));
+    out.push(plain(
+        fallible(),
+        vec![],
+        counting(local(0), vec![], err(nat())),
+    ));
+    out.push(plain(
+        fallible(),
+        vec![],
+        counting(
+            local(0),
+            vec![],
+            err(Expr::If {
+                condition: Box::new(Expr::IsZero(local(0), at("match:nat"))),
+                then_branch: Box::new(Block::of(unit())),
+                else_branch: Box::new(Block::of(unit())),
+                at: at("if"),
+            }),
+        ),
+    ));
+    let branching = |first: Expr, second: Expr| {
+        body_of(
+            vec![],
+            Expr::If {
+                condition: Box::new(Expr::IsZero(local(0), at("match:nat"))),
+                then_branch: Box::new(Block::of(err(first))),
+                else_branch: Box::new(Block::of(Expr::If {
+                    condition: Box::new(Expr::NonZero(local(0), at("match:nat"))),
+                    then_branch: Box::new(Block::of(ok(Expr::Predecessor(local(0))))),
+                    else_branch: Box::new(Block::of(err(second))),
+                    at: at("if"),
+                })),
+                at: at("if"),
+            },
+        )
+    };
+    out.push(plain(
+        fallible(),
+        vec![],
+        branching(succeed(copy(local(0))), nat()),
+    ));
+    out.push(plain(fallible(), vec![], branching(copy(local(0)), nat())));
+    out.push(plain(
+        fallible(),
+        vec![],
+        branching(succeed(copy(local(0))), succeed(nat())),
+    ));
+    let matching = |first: Expr, second: Expr| {
+        body_of(
+            vec![],
+            Expr::Match {
+                scrutinee: Box::new(copy(local(3))),
+                arms: vec![
+                    (Pat::Some(Box::new(Pat::Wild)), Block::of(err(first))),
+                    (Pat::None, Block::of(err(second))),
+                ],
+                at: at("expr:match"),
+            },
+        )
+    };
+    out.push(plain(
+        fallible(),
+        vec![],
+        matching(succeed(copy(local(0))), copy(local(0))),
+    ));
+    out.push(plain(
+        fallible(),
+        vec![],
+        matching(succeed(copy(local(0))), succeed(nat())),
+    ));
+    out.push(plain(
+        fallible(),
+        vec![],
+        body_of(
+            vec![],
+            Expr::Block(Box::new(Block::of(err(copy(local(0)))))),
+        ),
+    ));
+    // Not the value of the function, or not of a fallible one: unchecked.
+    out.push(plain(
+        fallible(),
+        vec![discard(counting(local(0), vec![], err(copy(local(0)))))],
+        succeed(unit()),
+    ));
+    out.push(plain(
+        fallible(),
+        vec![],
+        Expr::If {
+            condition: Box::new(copy(local(3))),
+            then_branch: Box::new(Block::of(counting(local(0), vec![], err(copy(local(0)))))),
+            else_branch: Box::new(Block::of(succeed(nat()))),
+            at: at("if"),
+        },
+    ));
+    out.push(plain(
+        Type::Unit,
+        vec![discard(counting(local(0), vec![], err(copy(local(0)))))],
+        unit(),
+    ));
+    // Ownership across the body: refused moves, the name the oracle reports
+    // first, and the moves a body may make.
+    out.push(plain(
+        Type::Nat,
+        vec![],
+        counting(local(0), vec![discard(read(local(1)))], err(copy(local(0)))),
+    ));
+    out.push(plain(
+        Type::Nat,
+        vec![],
+        counting(
+            local(0),
+            vec![discard(read(local(2))), discard(read(local(1)))],
+            err(copy(local(0))),
+        ),
+    ));
+    // The names order by kind and then by number or bytes, whatever order
+    // the body moves them in.
+    for moved in [
+        vec![Ident::Export("e".to_owned()), local(6), Ident::Param(5)],
+        vec![Ident::Export("e".to_owned()), Ident::Param(5)],
+        vec![Ident::Export("b".to_owned()), Ident::Export("a".to_owned())],
+    ] {
+        let mut parameters = vec![(Pat::Bind(local(0)), Type::Nat)];
+        parameters.extend(
+            moved
+                .iter()
+                .map(|ident| (Pat::Bind(ident.clone()), Type::Str)),
+        );
+        out.push(function(
+            parameters,
+            Type::Nat,
+            vec![],
+            counting(
+                local(0),
+                moved
+                    .into_iter()
+                    .map(|ident| discard(read(ident)))
+                    .collect(),
+                err(copy(local(0))),
+            ),
+        ));
+    }
+    out.push(plain(
+        Type::Nat,
+        vec![],
+        counting(
+            local(0),
+            vec![
+                bind(local(8), Expr::Clone(local(1), at("read"))),
+                discard(read(local(8))),
+            ],
+            err(copy(local(0))),
+        ),
+    ));
+    out.push(plain(
+        Type::Nat,
+        vec![],
+        body_of(vec![], ok(read(local(0)))),
+    ));
+    out.push(plain(
+        Type::Nat,
+        vec![discard(read(local(1)))],
+        counting(local(0), vec![discard(read(local(1)))], err(copy(local(0)))),
+    ));
+    out.push(plain(
+        Type::Nat,
+        vec![],
+        counting(
+            local(0),
+            vec![discard(counting(local(0), vec![], err(copy(local(0)))))],
+            err(copy(local(0))),
+        ),
+    ));
+    // Components of a pair: moved in the body (refused), moved before the
+    // loop and not in it, moved again, a body's own pair.
+    out.push(plain(
+        Type::Nat,
+        vec![],
+        counting(
+            local(0),
+            vec![part(Ident::Part(1), 0, read(local(2)))],
+            err(copy(local(0))),
+        ),
+    ));
+    out.push(plain(
+        Type::Nat,
+        vec![part(Ident::Part(1), 0, read(local(2)))],
+        counting(local(0), vec![], err(copy(local(0)))),
+    ));
+    out.push(plain(
+        Type::Nat,
+        vec![part(Ident::Part(1), 0, read(local(2)))],
+        counting(
+            local(0),
+            vec![part(Ident::Part(2), 1, read(local(2)))],
+            err(copy(local(0))),
+        ),
+    ));
+    out.push(plain(
+        Type::Nat,
+        vec![part(Ident::Part(1), 0, read(local(2)))],
+        counting(
+            local(0),
+            vec![part(Ident::Part(2), 0, read(local(2)))],
+            err(copy(local(0))),
+        ),
+    ));
+    out.push(plain(
+        Type::Nat,
+        vec![],
+        counting(
+            local(0),
+            vec![
+                bind(local(8), Expr::Clone(local(2), at("read"))),
+                part(Ident::Part(1), 0, read(local(8))),
+            ],
+            err(copy(local(0))),
+        ),
+    ));
+    out.push(plain(
+        Type::Nat,
+        vec![],
+        counting(
+            local(0),
+            vec![
+                part(Ident::Part(1), 0, read(local(4))),
+                part(Ident::Part(2), 0, read(local(2))),
+            ],
+            err(copy(local(0))),
+        ),
+    ));
+    // A state the block did not bind, and an inner loop that moves what the
+    // outer body does not own.
+    out.push(plain(
+        Type::Nat,
+        vec![],
+        counting(local(9), vec![], err(nat())),
+    ));
+    out.push(plain(
+        Type::Nat,
+        vec![],
+        counting(
+            local(0),
+            vec![
+                bind(local(8), Expr::Clone(local(1), at("read"))),
+                discard(counting(
+                    local(8),
+                    vec![discard(read(local(1)))],
+                    err(nat()),
+                )),
+            ],
+            err(copy(local(0))),
+        ),
+    ));
+    out.push(plain(
+        Type::Nat,
+        vec![],
+        counting(
+            local(0),
+            vec![
+                bind(local(8), Expr::Copy(local(0), at("read"))),
+                discard(counting(local(8), vec![], err(copy(local(8))))),
+            ],
+            err(copy(local(0))),
+        ),
+    ));
+    // The body is checked as a block that is not a tail: an application of a
+    // fallible function value that drops its failure is refused there even
+    // when the loop is the value of a fallible function.
+    for propagate in [false, true] {
+        let mut parameters = parameters();
+        parameters.push((Pat::Bind(local(5)), Type::Fn(0)));
+        out.push(Crate {
+            profile: Profile::Std,
+            items: vec![
+                ItemDef::Enum {
+                    name: Type::Fn(0),
+                    variants: vec![(0, vec![])],
+                    at: at("enum:closures"),
+                },
+                ItemDef::Apply {
+                    fn_type: 0,
+                    parameters: vec![],
+                    result: Type::Nat,
+                    fallible: true,
+                    arms: vec![],
+                    at: at("apply"),
+                },
+                ItemDef::Function {
+                    name: Ident::Function(0),
+                    parameters,
+                    result: fallible(),
+                    body: Block::of(body_of(
+                        vec![],
+                        Expr::Apply {
+                            holder: local(5),
+                            args: vec![],
+                            propagate,
+                            at: at("apply"),
+                        },
+                    )),
+                    at: at("function"),
+                },
+            ],
         });
     }
     out
@@ -2080,7 +2602,7 @@ fn rustc_differential(roots: &[(&str, &Lowered, &[Run])], label: &str) -> usize 
 
 /// A defect planted in the source: the check it removes, the text of the
 /// source it is made at, and the root whose differential must catch it.
-const PLANTS: [super::Plant; 10] = [
+const PLANTS: [super::Plant; 16] = [
     // The profile check of a type is skipped: a heap type passes under
     // `rust-core`.
     super::Plant {
@@ -2156,6 +2678,49 @@ const PLANTS: [super::Plant; 10] = [
         site: "(LexLeanStd.Text::startsWith construct (text \"call:runtime:\"))",
         replacement: "false",
         root: "correspondCrate",
+    },
+    // A loop's body may move any name outside it.
+    super::Plant {
+        label: "name moved in a loop body accepted",
+        site: "(let offends : Bool := (if same then false else (if kept then false else seen));",
+        replacement: "(let offends : Bool := false;",
+        root: "validateCrate",
+    },
+    // A loop's body may move components of any name outside it.
+    super::Plant {
+        label: "component moved in a loop body accepted",
+        site: "(let offends : Bool := (if seen then (if same then false else true) else false);",
+        replacement: "(let offends : Bool := false;",
+        root: "validateCrate",
+    },
+    // The value a fallible loop ends with is not looked at.
+    super::Plant {
+        label: "end of a fallible loop not checked",
+        site: "| Bool.true => (endsBlock (project cx items) body)\n",
+        replacement: "| Bool.true => (ctor Result.ok [Unit, Bytes] ())\n",
+        root: "validateCrate",
+    },
+    // A loop does not move its state into its own binding.
+    super::Plant {
+        label: "loop state not moved into the loop",
+        site: "| Result.ok done0 => (match (consume st state)",
+        replacement: "| Result.ok done0 => (match (ctor Result.ok [St, Bytes] st)",
+        root: "validateCrate",
+    },
+    // The name a loop's refusal reports is the earliest moved, not the least
+    // in the oracle's order of names.
+    super::Plant {
+        label: "name reported is not the least",
+        site: "| Option.some seen => (match (idLess who seen)",
+        replacement: "| Option.some seen => (match true",
+        root: "validateCrate",
+    },
+    // A loop's body is checked as the tail of the function it is the value of.
+    super::Plant {
+        label: "loop body checked as a tail",
+        site: "| Expr.ELoop state body => (applyBlock types decl body false)",
+        replacement: "| Expr.ELoop state body => (applyBlock types decl body tail)",
+        root: "validateCrate",
     },
 ];
 
@@ -2236,7 +2801,15 @@ pub(super) fn case() {
     let all = rendered(&sources);
     let bases = small(&all, BASE_CAP);
     let (mut rule_validate, rule_correspond) = rule_vectors(&bases, RULES_EACH);
-    rule_validate.extend(branch_crates().iter().map(validate_run));
+    let by_hand: Vec<Crate> = branch_crates().into_iter().chain(loop_crates()).collect();
+    let rule_runs = (rule_validate.len(), rule_correspond.len());
+    rule_validate.extend(by_hand.iter().map(validate_run));
+    let mut rule_correspond = rule_correspond;
+    rule_correspond.extend(
+        loop_crates()
+            .iter()
+            .map(|krate| correspond_run(krate, &elements_of(krate))),
+    );
     let mut counts = coverage(&rule_validate);
     for (template, count) in coverage(&rule_correspond) {
         *counts.entry(template).or_insert(0) += count;
@@ -2274,19 +2847,13 @@ pub(super) fn case() {
     let correspond_root = super::lower(&checked, &project, MODULE, "correspondCrate");
     // On every host: the rendered rust-std packages of both roots, compiled
     // by that host's pinned rustc, agree with the oracle on the vectors.
-    let plants_only = std::env::var("BS05_PLANTS").is_ok();
-    if std::env::var("BS05_QUICK").is_err() && !plants_only {
-        rustc_differential(
-            &[
-                ("validateCrate", &validate_root, &vectors_validate),
-                ("correspondCrate", &correspond_root, &vectors_correspond),
-            ],
-            "vectors",
-        );
-    }
-    if std::env::var("BS05_STOP").as_deref() == Ok("vectors") {
-        return;
-    }
+    rustc_differential(
+        &[
+            ("validateCrate", &validate_root, &vectors_validate),
+            ("correspondCrate", &correspond_root, &vectors_correspond),
+        ],
+        "vectors",
+    );
     if !support::normative_host() {
         eprintln!(
             "BS-05: platform-bound host: the evaluator, the seeded corpora, and the planted defects run on the normative host ({:?})",
@@ -2317,7 +2884,6 @@ pub(super) fn case() {
         ("correspondCrate", &correspond_root, &evaluator_correspond),
     ]
     .into_iter()
-    .filter(|_| !plants_only)
     {
         let disagreements = super::evaluate(low, runs, 5);
         assert!(
@@ -2338,7 +2904,6 @@ pub(super) fn case() {
         ("correspondCrate", &correspond_root, &seeded_correspond),
     ]
     .into_iter()
-    .filter(|_| !plants_only)
     {
         let disagreements = super::evaluate(low, runs, 5);
         assert!(
@@ -2353,20 +2918,15 @@ pub(super) fn case() {
         refused(&seeded_correspond),
         started.elapsed()
     );
-    if std::env::var("BS05_QUICK").is_ok() {
-        return;
-    }
     let mut large = Seeded(0x0B55_0055);
     let (large_validate, large_correspond) = mutants(&bases, &mut large, RUSTC_MUTANTS);
-    if !plants_only {
-        rustc_differential(
-            &[
-                ("validateCrate", &validate_root, &large_validate),
-                ("correspondCrate", &correspond_root, &large_correspond),
-            ],
-            "seeded",
-        );
-    }
+    rustc_differential(
+        &[
+            ("validateCrate", &validate_root, &large_validate),
+            ("correspondCrate", &correspond_root, &large_correspond),
+        ],
+        "seeded",
+    );
     // The gate is armed: each defect planted in a copy of the source is a
     // disagreement with the oracle.
     let mut detection: BTreeMap<&str, Vec<Run>> = BTreeMap::new();
@@ -2404,7 +2964,7 @@ pub(super) fn case() {
     // Under the pinned Lean, the production export certifies both roots;
     // its packages are the committed ones and realize the programs the
     // differential ran.
-    if plants_only || !support::lean_backed("BS-05") {
+    if !support::lean_backed("BS-05") {
         return;
     }
     let exported = harness::exported("bootstrap");

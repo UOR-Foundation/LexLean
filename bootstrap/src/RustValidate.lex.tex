@@ -263,7 +263,8 @@ inductive{
     {name: ENil, fields: []},
     {name: ECons, fields: [Expr, Expr]},
     {name: ELet, fields: [Pat, Bool, Ty, Expr, Origin, Expr]},
-    {name: EArm, fields: [Pat, Expr, Expr]}
+    {name: EArm, fields: [Pat, Expr, Expr]},
+    {name: ELoop, fields: [Id, Expr]}
   ]
 }
 
@@ -861,7 +862,8 @@ definition{
     | Expr.ENil => 0
     | Expr.ECons head tail => (let rest : Nat := (exprLen tail); (1 + rest))
     | Expr.ELet d0 d1 d2 d3 d4 d5 => 0
-    | Expr.EArm d0 d1 d2 => 0),
+    | Expr.EArm d0 d1 d2 => 0
+    | Expr.ELoop d0 d1 => 0),
   executable: true,
   recursive_argument: exprs
 }
@@ -1551,7 +1553,8 @@ definition{
     | Expr.ELet d0 d1 d2 d3 d4 d5 => found
     | Expr.EArm pat body rest => (match (patConstruct pat)
       | Option.some kind => (foundArmPats (foundAt found kind origin) rest origin)
-      | Option.none => (foundArmPats found rest origin))),
+      | Option.none => (foundArmPats found rest origin))
+    | Expr.ELoop d0 d1 => found),
   executable: true,
   recursive_argument: arms
 }
@@ -1576,7 +1579,8 @@ definition{
     | Expr.ENil => true
     | Expr.ECons d0 d1 => false
     | Expr.ELet d0 d1 d2 d3 d4 d5 => false
-    | Expr.EArm d0 d1 d2 => false),
+    | Expr.EArm d0 d1 d2 => false
+    | Expr.ELoop d0 d1 => false),
   executable: true
 }
 
@@ -1661,7 +1665,8 @@ definition{
     | Expr.ENil => false
     | Expr.ECons d0 d1 => false
     | Expr.ELet d0 d1 d2 d3 d4 d5 => false
-    | Expr.EArm d0 d1 d2 => false),
+    | Expr.EArm d0 d1 d2 => false
+    | Expr.ELoop d0 d1 => false),
   executable: true
 }
 
@@ -1730,7 +1735,8 @@ definition{
       | Bool.false => (text "let")); (let typed : Found := (match hasTy
       | Bool.true => (foundTy found ty)
       | Bool.false => found); (let f1 : Found := (foundAt typed kind org); (let f2 : Found := (foundExpr f1 value); (foundExpr f2 rest)))))
-    | Expr.EArm pat body rest => (let f1 : Found := (foundExpr found body); (foundExpr f1 rest))),
+    | Expr.EArm pat body rest => (let f1 : Found := (foundExpr found body); (foundExpr f1 rest))
+    | Expr.ELoop state body => (foundExpr found body)),
   axioms: [propext],
   executable: true,
   recursive_argument: e
@@ -1780,7 +1786,8 @@ definition{
     | Expr.ENil => false
     | Expr.ECons d0 d1 => false
     | Expr.ELet d0 d1 d2 d3 d4 d5 => false
-    | Expr.EArm d0 d1 d2 => false),
+    | Expr.EArm d0 d1 d2 => false
+    | Expr.ELoop d0 d1 => false),
   executable: true
 }
 
@@ -1824,7 +1831,8 @@ definition{
         | Expr.ENil => (ctor Option.none [Id])
         | Expr.ECons d0 d1 => (ctor Option.none [Id])
         | Expr.ELet d0 d1 d2 d3 d4 d5 => (ctor Option.none [Id])
-        | Expr.EArm d0 d1 d2 => (ctor Option.none [Id]))
+        | Expr.EArm d0 d1 d2 => (ctor Option.none [Id])
+        | Expr.ELoop d0 d1 => (ctor Option.none [Id]))
     | Pat.PWrap d0 d1 => (ctor Option.none [Id])
     | Pat.PAdt d0 d1 d2 => (ctor Option.none [Id])
     | Pat.PNil => (ctor Option.none [Id])
@@ -1863,6 +1871,236 @@ definition{
 }
 
 definition{
+  name: conIsErr,
+  parameters: [con : Con],
+  result: Bool,
+  body: (match con
+    | Con.ConNone d0 => false
+    | Con.ConSome => false
+    | Con.ConOk d0 d1 => false
+    | Con.ConErr d0 d1 => true
+    | Con.ConAdt d0 d1 => false
+    | Con.ConClosure d0 d1 => false
+    | Con.ConCons => false
+    | Con.ConNil d0 => false),
+  executable: true
+}
+
+definition{
+  name: returnsResult,
+  parameters: [e : Expr],
+  result: Bool,
+  body: (match e
+    | Expr.ELit d0 d1 => false
+    | Expr.ERead d0 d1 d2 => false
+    | Expr.EWrap k d1 d2 => (match k
+      | WrapKind.WkNot => false
+      | WrapKind.WkBox => false
+      | WrapKind.WkWiden => false
+      | WrapKind.WkSucceed => true)
+    | Expr.ECall d0 d1 propagate d3 => (if propagate then false else true)
+    | Expr.EApply d0 d1 propagate d3 => (if propagate then false else true)
+    | Expr.EConstruct d0 d1 d2 => false
+    | Expr.EPair d0 d1 d2 => false
+    | Expr.EIf d0 d1 d2 d3 => true
+    | Expr.EMatch d0 d1 d2 => true
+    | Expr.EBlockE d0 => true
+    | Expr.EProbe d0 d1 d2 => false
+    | Expr.EBlock d0 d1 => false
+    | Expr.ENil => false
+    | Expr.ECons d0 d1 => false
+    | Expr.ELet d0 d1 d2 d3 d4 d5 => false
+    | Expr.EArm d0 d1 d2 => false
+    | Expr.ELoop d0 d1 => true),
+  executable: true
+}
+
+definition{
+  name: idLess,
+  parameters: [left : Id, right : Id],
+  result: Bool,
+  body: (if ((idTag left) =? (idTag right)) then (if ((idTag left) =? 9) then (bytesLess (idName left) (idName right)) else ((idNum left) <? (idNum right))) else ((idTag left) <? (idTag right))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: dropId,
+  parameters: [items : (List Id), who : Id],
+  result: (List Id),
+  body: (prim list_fold (fun [who] (kept : (List Id)) (item : Id) => (let same : Bool := (idEq item who); (if same then kept else (cons item kept)))) (nil Id) items : (List Id)),
+  executable: true
+}
+
+definition{
+  name: natsWithin,
+  parameters: [left : (List Nat), right : (List Nat)],
+  result: Bool,
+  body: (prim list_fold (fun [right] (all : Bool) (item : Nat) => (let present : Bool := (natHas right item); (if all then present else false))) true left : Bool),
+  executable: true
+}
+
+definition{
+  name: partsSame,
+  parameters: [entry : (List (Id * (List Nat))), who : Id, parts : (List Nat)],
+  result: Bool,
+  body: (match (partsGet entry who)
+    | Option.some have => (let forward : Bool := (natsWithin parts have); (let back : Bool := (natsWithin have parts); (if forward then back else false)))
+    | Option.none => false),
+  executable: true
+}
+
+definition{
+  name: lesserId,
+  parameters: [best : (Option Id), who : Id],
+  result: (Option Id),
+  body: (match best
+    | Option.some seen => (match (idLess who seen)
+      | Bool.true => (ctor Option.some [Id] who)
+      | Bool.false => (ctor Option.some [Id] seen))
+    | Option.none => (ctor Option.some [Id] who)),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: movedInLoop,
+  parameters: [after : (List Id), state : Id, entry : (List Id), outside : (List Id)],
+  result: (Option Id),
+  body: (prim list_fold (fun [entry, outside, state] (best : (Option Id)) (item : Id) => (let same : Bool := (idEq item state); (let kept : Bool := (idHas entry item); (let seen : Bool := (idHas outside item); (let offends : Bool := (if same then false else (if kept then false else seen)); (if offends then (lesserId best item) else best)))))) (ctor Option.none [Id]) after : (Option Id)),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: partedInLoop,
+  parameters: [after : (List (Id * (List Nat))), entry : (List (Id * (List Nat))), outside : (List Id)],
+  result: (Option Id),
+  body: (prim list_fold (fun [entry, outside] (best : (Option Id)) (item : (Id * (List Nat))) => (let seen : Bool := (idHas outside (first item)); (let same : Bool := (partsSame entry (first item) (second item)); (let offends : Bool := (if seen then (if same then false else true) else false); (if offends then (lesserId best (first item)) else best))))) (ctor Option.none [Id]) after : (Option Id)),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: endsArgs,
+  parameters: [rows : (List ItemRow), args : Expr],
+  result: (Result Unit Bytes),
+  body: (match args
+    | Expr.ELit d0 d1 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.ERead d0 d1 d2 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EWrap d0 d1 d2 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.ECall d0 d1 d2 d3 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EApply d0 d1 d2 d3 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EConstruct d0 d1 d2 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EPair d0 d1 d2 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EIf d0 d1 d2 d3 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EMatch d0 d1 d2 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EBlockE d0 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EProbe d0 d1 d2 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EBlock d0 d1 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.ENil => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.ECons head rest => (match (returnsResult head)
+      | Bool.true => (endsArgs rows rest)
+      | Bool.false => (ctor Result.error [Unit, Bytes] (cat (text "arithmetic: the value a fallible loop ends with, ") (cat (constructsOf rows head) (text ", is not a fallible value")))))
+    | Expr.ELet d0 d1 d2 d3 d4 d5 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EArm d0 d1 d2 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.ELoop d0 d1 => (ctor Result.ok [Unit, Bytes] ())),
+  axioms: [propext],
+  executable: true,
+  recursive_argument: args
+}
+
+definition{
+  name: endsBlock,
+  parameters: [rows : (List ItemRow), b : Expr],
+  result: (Result Unit Bytes),
+  body: (match b
+    | Expr.ELit d0 d1 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.ERead d0 d1 d2 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EWrap d0 d1 d2 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.ECall d0 d1 d2 d3 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EApply d0 d1 d2 d3 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EConstruct d0 d1 d2 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EPair d0 d1 d2 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EIf d0 d1 d2 d3 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EMatch d0 d1 d2 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EBlockE d0 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EProbe d0 d1 d2 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EBlock lets bodyTail => (endsTail rows bodyTail)
+    | Expr.ENil => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.ECons d0 d1 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.ELet d0 d1 d2 d3 d4 d5 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EArm d0 d1 d2 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.ELoop d0 d1 => (ctor Result.ok [Unit, Bytes] ())),
+  axioms: [propext],
+  executable: true,
+  mutual: LoopEnds,
+  recursive_argument: b
+}
+
+definition{
+  name: endsTail,
+  parameters: [rows : (List ItemRow), t : Expr],
+  result: (Result Unit Bytes),
+  body: (match t
+    | Expr.ELit d0 d1 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.ERead d0 d1 d2 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EWrap d0 d1 d2 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.ECall d0 d1 d2 d3 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EApply d0 d1 d2 d3 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EConstruct con args org => (match (conIsErr con)
+      | Bool.true => (endsArgs rows args)
+      | Bool.false => (ctor Result.ok [Unit, Bytes] ()))
+    | Expr.EPair d0 d1 d2 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EIf condition thenBranch elseBranch org => (match (endsBlock rows thenBranch)
+      | Result.ok done1 => (endsBlock rows elseBranch)
+      | Result.error problem52 => (ctor Result.error [Unit, Bytes] problem52))
+    | Expr.EMatch scrutinee arms org => (endsArms rows arms)
+    | Expr.EBlockE inner => (endsBlock rows inner)
+    | Expr.EProbe d0 d1 d2 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EBlock d0 d1 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.ENil => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.ECons d0 d1 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.ELet d0 d1 d2 d3 d4 d5 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EArm d0 d1 d2 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.ELoop d0 d1 => (ctor Result.ok [Unit, Bytes] ())),
+  axioms: [propext],
+  executable: true,
+  mutual: LoopEnds,
+  recursive_argument: t
+}
+
+definition{
+  name: endsArms,
+  parameters: [rows : (List ItemRow), arms : Expr],
+  result: (Result Unit Bytes),
+  body: (match arms
+    | Expr.ELit d0 d1 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.ERead d0 d1 d2 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EWrap d0 d1 d2 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.ECall d0 d1 d2 d3 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EApply d0 d1 d2 d3 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EConstruct d0 d1 d2 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EPair d0 d1 d2 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EIf d0 d1 d2 d3 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EMatch d0 d1 d2 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EBlockE d0 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EProbe d0 d1 d2 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EBlock d0 d1 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.ENil => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.ECons d0 d1 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.ELet d0 d1 d2 d3 d4 d5 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EArm pat body rest => (match (endsBlock rows body)
+      | Result.ok done2 => (endsArms rows rest)
+      | Result.error problem53 => (ctor Result.error [Unit, Bytes] problem53))
+    | Expr.ELoop d0 d1 => (ctor Result.ok [Unit, Bytes] ())),
+  axioms: [propext],
+  executable: true,
+  mutual: LoopEnds,
+  recursive_argument: arms
+}
+
+definition{
   name: blockC,
   parameters: [st : St, cx : Cx, b : Expr, tail : Bool],
   result: (Result St Bytes),
@@ -1886,7 +2124,8 @@ definition{
     | Expr.ENil => (ctor Result.ok [St, Bytes] st)
     | Expr.ECons d0 d1 => (ctor Result.ok [St, Bytes] st)
     | Expr.ELet d0 d1 d2 d3 d4 d5 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EArm d0 d1 d2 => (ctor Result.ok [St, Bytes] st)),
+    | Expr.EArm d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
+    | Expr.ELoop d0 d1 => (ctor Result.ok [St, Bytes] st)),
   axioms: [propext],
   executable: true,
   mutual: CheckExpr,
@@ -2028,7 +2267,20 @@ definition{
     | Expr.ENil => (ctor Result.ok [St, Bytes] st)
     | Expr.ECons d0 d1 => (ctor Result.ok [St, Bytes] st)
     | Expr.ELet d0 d1 d2 d3 d4 d5 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EArm d0 d1 d2 => (ctor Result.ok [St, Bytes] st)),
+    | Expr.EArm d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
+    | Expr.ELoop state body => (let gated : Bool := (if tail then (project cx fallible) else false); (let ends : (Result Unit Bytes) := (match gated
+      | Bool.true => (endsBlock (project cx items) body)
+      | Bool.false => (ctor Result.ok [Unit, Bytes] ())); (match ends
+      | Result.ok done0 => (match (consume st state)
+      | Result.ok s1 => (let entry : St := (record St {bound := (project s1 bound), scope := (project s1 scope), moved := (dropId (project s1 moved) state), parted := (project s1 parted), propagates := (project s1 propagates)}); (match (blockC entry cx body false)
+      | Result.ok s2 => (match (movedInLoop (project s2 moved) state (project entry moved) (project s1 scope))
+      | Option.some who => (ctor Result.error [St, Bytes] (cat (text "ownership: ") (cat (tick (idText who)) (text " is moved in the body of a loop that runs again"))))
+      | Option.none => (match (partedInLoop (project s2 parted) (project entry parted) (project s1 scope))
+      | Option.some who2 => (ctor Result.error [St, Bytes] (cat (text "ownership: a component of ") (cat (tick (idText who2)) (text " is moved in the body of a loop that runs again"))))
+      | Option.none => (ctor Result.ok [St, Bytes] (record St {bound := (project s2 bound), scope := (project s2 scope), moved := (project s1 moved), parted := (project s1 parted), propagates := (project s2 propagates)}))))
+      | Result.error problem51 => (ctor Result.error [St, Bytes] problem51)))
+      | Result.error problem50 => (ctor Result.error [St, Bytes] problem50))
+      | Result.error problem49 => (ctor Result.error [St, Bytes] problem49))))),
   axioms: [propext],
   executable: true,
   mutual: CheckExpr,
@@ -2072,7 +2324,8 @@ definition{
       | Result.error problem35 => (ctor Result.error [St, Bytes] problem35))
       | Result.error problem36 => (ctor Result.error [St, Bytes] problem36))
       | Result.error problem37 => (ctor Result.error [St, Bytes] problem37))
-    | Expr.EArm d0 d1 d2 => (ctor Result.ok [St, Bytes] st)),
+    | Expr.EArm d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
+    | Expr.ELoop d0 d1 => (ctor Result.ok [St, Bytes] st)),
   axioms: [propext],
   executable: true,
   mutual: CheckExpr,
@@ -2101,7 +2354,8 @@ definition{
       | Result.ok s1 => (argsC s1 cx tail)
       | Result.error problem38 => (ctor Result.error [St, Bytes] problem38))
     | Expr.ELet d0 d1 d2 d3 d4 d5 => (ctor Result.ok [St, Bytes] st)
-    | Expr.EArm d0 d1 d2 => (ctor Result.ok [St, Bytes] st)),
+    | Expr.EArm d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
+    | Expr.ELoop d0 d1 => (ctor Result.ok [St, Bytes] st)),
   axioms: [propext],
   executable: true,
   mutual: CheckExpr,
@@ -2132,7 +2386,8 @@ definition{
       | Result.ok bArm2 => (match (blockC bArm2 cx body tail)
       | Result.ok bArm3 => (let r : St := (record St {bound := (project bArm3 bound), scope := fork, moved := (unionIds (project acc moved) (project bArm3 moved)), parted := (unionParts (project acc parted) (project bArm3 parted)), propagates := (project bArm3 propagates)}); (armsC before cx r fork rest tail))
       | Result.error problem39 => (ctor Result.error [St, Bytes] problem39))
-      | Result.error problem40 => (ctor Result.error [St, Bytes] problem40)))),
+      | Result.error problem40 => (ctor Result.error [St, Bytes] problem40)))
+    | Expr.ELoop d0 d1 => (ctor Result.ok [St, Bytes] acc)),
   axioms: [propext],
   executable: true,
   mutual: CheckExpr,
@@ -2226,7 +2481,8 @@ definition{
     | Expr.ENil => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.ECons d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.ELet d0 d1 d2 d3 d4 d5 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EArm d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)),
+    | Expr.EArm d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.ELoop d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)),
   executable: true,
   mutual: ApplyTypes,
   recursive_argument: b
@@ -2268,7 +2524,8 @@ definition{
     | Expr.ENil => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.ECons d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.ELet d0 d1 d2 d3 d4 d5 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EArm d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)),
+    | Expr.EArm d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.ELoop state body => (applyBlock types decl body false)),
   executable: true,
   mutual: ApplyTypes,
   recursive_argument: e
@@ -2298,7 +2555,8 @@ definition{
       | Bool.false => types); (match (applyExpr typed decl value false)
       | Result.ok t1 => (applyLets t1 decl rest)
       | Result.error problem46 => (ctor Result.error [(List (Id * Nat)), Bytes] problem46)))
-    | Expr.EArm d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)),
+    | Expr.EArm d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.ELoop d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)),
   executable: true,
   mutual: ApplyTypes,
   recursive_argument: lets
@@ -2326,7 +2584,8 @@ definition{
       | Result.ok t1 => (applyArgs t1 decl rest)
       | Result.error problem47 => (ctor Result.error [(List (Id * Nat)), Bytes] problem47))
     | Expr.ELet d0 d1 d2 d3 d4 d5 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
-    | Expr.EArm d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)),
+    | Expr.EArm d0 d1 d2 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
+    | Expr.ELoop d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)),
   executable: true,
   mutual: ApplyTypes,
   recursive_argument: args
@@ -2354,7 +2613,8 @@ definition{
     | Expr.ELet d0 d1 d2 d3 d4 d5 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)
     | Expr.EArm pat body rest => (match (applyBlock types decl body tail)
       | Result.ok t1 => (applyArms t1 decl rest tail)
-      | Result.error problem48 => (ctor Result.error [(List (Id * Nat)), Bytes] problem48))),
+      | Result.error problem48 => (ctor Result.error [(List (Id * Nat)), Bytes] problem48))
+    | Expr.ELoop d0 d1 => (ctor Result.ok [(List (Id * Nat)), Bytes] types)),
   executable: true,
   mutual: ApplyTypes,
   recursive_argument: arms
@@ -2589,7 +2849,7 @@ definition{
   name: correspondCrate,
   parameters: [krate : Crate, elements : (List Bytes)],
   result: (Result Unit Bytes),
-  body: (let itemRows0 : (List ItemRow) := (cons (record ItemRow {family := 0, stem := (text "nat_add"), form := 0, fallible := true, heap := false}) (cons (record ItemRow {family := 1, stem := (text "nat_sub"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 2, stem := (text "nat_mul"), form := 0, fallible := true, heap := false}) (cons (record ItemRow {family := 3, stem := (text "nat_quot"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 4, stem := (text "nat_rem"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 5, stem := (text "nat_eq"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 6, stem := (text "nat_le"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 7, stem := (text "nat_lt"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 8, stem := (text "nat_succ"), form := 0, fallible := true, heap := false}) (cons (record ItemRow {family := 9, stem := (text "int_add"), form := 0, fallible := true, heap := false}) (nil ItemRow))))))))))); (let itemRows1 : (List ItemRow) := (cons (record ItemRow {family := 10, stem := (text "int_sub"), form := 0, fallible := true, heap := false}) (cons (record ItemRow {family := 11, stem := (text "int_mul"), form := 0, fallible := true, heap := false}) (cons (record ItemRow {family := 12, stem := (text "int_neg"), form := 0, fallible := true, heap := false}) (cons (record ItemRow {family := 13, stem := (text "int_quot"), form := 0, fallible := true, heap := false}) (cons (record ItemRow {family := 14, stem := (text "int_rem"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 15, stem := (text "bool_not"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 16, stem := (text "bool_and"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 17, stem := (text "bool_or"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 18, stem := (text "equal"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 19, stem := (text "compare"), form := 0, fallible := false, heap := false}) itemRows0)))))))))); (let itemRows2 : (List ItemRow) := (cons (record ItemRow {family := 20, stem := (text "checked_add"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 21, stem := (text "checked_sub"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 22, stem := (text "checked_mul"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 23, stem := (text "checked_quot"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 24, stem := (text "checked_neg_"), form := 2, fallible := false, heap := false}) (cons (record ItemRow {family := 25, stem := (text "bit_and"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 26, stem := (text "bit_or"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 27, stem := (text "bit_xor"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 28, stem := (text "bit_not"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 29, stem := (text "shift_left"), form := 1, fallible := false, heap := false}) itemRows1)))))))))); (let itemRows3 : (List ItemRow) := (cons (record ItemRow {family := 30, stem := (text "shift_right"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 31, stem := (text "convert"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 32, stem := (text "append_list"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 33, stem := (text "append_bytes"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 34, stem := (text "length_list"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 35, stem := (text "length_bytes"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 36, stem := (text "length_string"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 37, stem := (text "index_list"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 38, stem := (text "index_bytes"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 39, stem := (text "slice_list"), form := 0, fallible := false, heap := true}) itemRows2)))))))))); (let itemRows4 : (List ItemRow) := (cons (record ItemRow {family := 40, stem := (text "slice_bytes"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 41, stem := (text "utf8_encode"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 42, stem := (text "utf8_decode"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 43, stem := (text "compare_bytes"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 44, stem := (text "split_exact"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 45, stem := (text "join"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 46, stem := (text "format_i64"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 47, stem := (text "format_"), form := 2, fallible := false, heap := true}) (cons (record ItemRow {family := 48, stem := (text "parse_int"), form := 0, fallible := true, heap := true}) (cons (record ItemRow {family := 49, stem := (text "parse_"), form := 2, fallible := false, heap := true}) itemRows3)))))))))); (let rows0 : (List (Bytes * (List Bytes))) := (cons ((text "function"), (cons (text "function") (cons (text "export") (nil Bytes)))) (cons ((text "enum:adt"), (cons (text "type:adt") (nil Bytes))) (cons ((text "enum:closures"), (cons (text "type:fn") (cons (text "expr:closure") (nil Bytes)))) (cons ((text "apply:dispatch"), (cons (text "type:fn") (cons (text "expr:closure") (nil Bytes)))) (cons ((text "let"), (cons (text "expr:let") (cons (text "expr:match") (cons (text "expr:prim") (cons (text "expr:apply") (cons (text "expr:call") (cons (text "expr:closure") (cons (text "expr:cond") (cons (text "expr:field") (cons (text "shape:some") (cons (text "shape:ok") (cons (text "shape:error") (cons (text "shape:cons") (cons (text "shape:adt") (cons (text "shape:succ") (cons (text "shape:zero") (cons (text "shape:unit") (cons (text "shape:true") (cons (text "indirection") (cons (text "overflow") (nil Bytes))))))))))))))))))))) (cons ((text "read"), (cons (text "expr:var") (cons (text "expr:match") (cons (text "expr:prim") (cons (text "expr:call") (cons (text "expr:apply") (cons (text "expr:closure") (cons (text "expr:first") (cons (text "expr:second") (cons (text "expr:field") (cons (text "expr:cond") (cons (text "shape:true") (cons (text "shape:zero") (cons (text "shape:some") (cons (text "shape:ok") (cons (text "shape:error") (cons (text "shape:cons") (cons (text "shape:adt") (cons (text "export") (cons (text "type:fn") (cons (text "type:adt") (cons (text "type:pair") (cons (text "type:result") (nil Bytes)))))))))))))))))))))))) (nil (Bytes * (List Bytes))))))))); (let rows1 : (List (Bytes * (List Bytes))) := (cons ((text "box"), (cons (text "indirection") (nil Bytes))) (cons ((text "destructure:pair"), (cons (text "expr:first") (cons (text "expr:second") (cons (text "shape:pair") (nil Bytes))))) (cons ((text "type:unit"), (cons (text "type:unit") (nil Bytes))) (cons ((text "type:bool"), (cons (text "type:bool") (nil Bytes))) (cons ((text "type:nat"), (cons (text "type:nat") (cons (text "type:fixed") (nil Bytes)))) (cons ((text "type:int"), (cons (text "type:int") (cons (text "type:fixed") (nil Bytes)))) rows0)))))); (let rows2 : (List (Bytes * (List Bytes))) := (cons ((text "type:fixed"), (cons (text "type:fixed") (nil Bytes))) (cons ((text "type:ordering"), (cons (text "type:ordering") (nil Bytes))) (cons ((text "type:string"), (cons (text "type:string") (nil Bytes))) (cons ((text "type:bytes"), (cons (text "type:bytes") (nil Bytes))) (cons ((text "type:option"), (cons (text "type:option") (nil Bytes))) (cons ((text "type:result"), (cons (text "type:result") (nil Bytes))) rows1)))))); (let rows3 : (List (Bytes * (List Bytes))) := (cons ((text "type:list"), (cons (text "type:list") (nil Bytes))) (cons ((text "type:pair"), (cons (text "type:pair") (nil Bytes))) (cons ((text "type:adt"), (cons (text "type:adt") (nil Bytes))) (cons ((text "type:fn"), (cons (text "type:fn") (cons (text "expr:closure") (nil Bytes)))) (cons ((text "type:rc"), (cons (text "indirection") (nil Bytes))) (cons ((text "type:fallible"), (cons (text "overflow") (nil Bytes))) rows2)))))); (let rows4 : (List (Bytes * (List Bytes))) := (cons ((text "type:ref"), (cons (text "export") (nil Bytes))) (cons ((text "lit:unit"), (cons (text "value:unit") (cons (text "shape:unit") (cons (text "expr:var") (cons (text "expr:call") (cons (text "expr:apply") (cons (text "expr:closure") (cons (text "shape:some") (cons (text "shape:ok") (cons (text "shape:error") (cons (text "shape:cons") (cons (text "shape:adt") (cons (text "export") (cons (text "overflow") (nil Bytes))))))))))))))) (cons ((text "lit:bool"), (cons (text "value:bool") (cons (text "shape:true") (cons (text "shape:false") (cons (text "expr:cond") (nil Bytes)))))) (cons ((text "lit:nat"), (cons (text "value:nat") (cons (text "shape:zero") (nil Bytes)))) (cons ((text "lit:int"), (cons (text "value:int") (nil Bytes))) (cons ((text "lit:fixed"), (cons (text "value:u8") (cons (text "value:u16") (cons (text "value:u32") (cons (text "value:u64") (cons (text "value:i8") (cons (text "value:i16") (cons (text "value:i32") (cons (text "value:i64") (nil Bytes)))))))))) rows3)))))); (let rows5 : (List (Bytes * (List Bytes))) := (cons ((text "lit:string"), (cons (text "value:string") (nil Bytes))) (cons ((text "lit:bytes"), (cons (text "value:bytes") (nil Bytes))) (cons ((text "lit:ordering"), (cons (text "value:ordering") (cons (text "shape:lt") (cons (text "shape:eq") (cons (text "shape:gt") (nil Bytes)))))) (cons ((text "construct:none"), (cons (text "value:none") (cons (text "shape:none") (nil Bytes)))) (cons ((text "construct:some"), (cons (text "value:some") (cons (text "shape:some") (nil Bytes)))) (cons ((text "construct:ok"), (cons (text "value:ok") (cons (text "shape:ok") (nil Bytes)))) rows4)))))); (let rows6 : (List (Bytes * (List Bytes))) := (cons ((text "construct:err"), (cons (text "value:error") (cons (text "shape:error") (nil Bytes)))) (cons ((text "construct:adt"), (cons (text "value:adt") (cons (text "shape:adt") (nil Bytes)))) (cons ((text "construct:closure"), (cons (text "expr:closure") (nil Bytes))) (cons ((text "construct:cons"), (cons (text "value:list") (cons (text "shape:cons") (nil Bytes)))) (cons ((text "construct:nil"), (cons (text "value:list") (cons (text "shape:nil") (nil Bytes)))) (cons ((text "construct:pair"), (cons (text "value:pair") (cons (text "shape:pair") (nil Bytes)))) rows5)))))); (let rows7 : (List (Bytes * (List Bytes))) := (cons ((text "if"), (cons (text "expr:cond") (cons (text "shape:true") (cons (text "shape:zero") (nil Bytes))))) (cons ((text "match:nat"), (cons (text "shape:zero") (nil Bytes))) (cons ((text "match:list"), (cons (text "shape:nil") (nil Bytes))) (cons ((text "match:option"), (cons (text "shape:none") (nil Bytes))) (cons ((text "match:result"), (cons (text "shape:ok") (nil Bytes))) (cons ((text "match:ordering"), (cons (text "shape:lt") (nil Bytes))) rows6)))))); (let rows8 : (List (Bytes * (List Bytes))) := (cons ((text "match:adt"), (cons (text "shape:adt") (cons (text "expr:field") (nil Bytes)))) (cons ((text "match:empty"), (cons (text "type:fn") (cons (text "type:adt") (cons (text "type:pair") (cons (text "type:result") (nil Bytes)))))) (cons ((text "call:function"), (cons (text "expr:call") (cons (text "export") (nil Bytes)))) (cons ((text "apply"), (cons (text "expr:apply") (nil Bytes))) (cons ((text "widen"), (cons (text "prim:convert") (nil Bytes))) (cons ((text "succeed"), (cons (text "overflow") (nil Bytes))) rows7)))))); (let rows9 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:succ"), (cons (text "shape:succ") (nil Bytes))) (cons ((text "call:runtime:nat_add"), (cons (text "prim:nat_add") (nil Bytes))) (cons ((text "call:runtime:nat_sub"), (cons (text "prim:nat_sub") (nil Bytes))) (cons ((text "call:runtime:nat_mul"), (cons (text "prim:nat_mul") (nil Bytes))) (cons ((text "call:runtime:nat_quot"), (cons (text "prim:nat_quot") (nil Bytes))) (cons ((text "call:runtime:nat_rem"), (cons (text "prim:nat_rem") (nil Bytes))) rows8)))))); (let rows10 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:nat_eq"), (cons (text "prim:nat_eq") (nil Bytes))) (cons ((text "call:runtime:nat_le"), (cons (text "prim:nat_le") (nil Bytes))) (cons ((text "call:runtime:nat_lt"), (cons (text "prim:nat_lt") (nil Bytes))) (cons ((text "call:runtime:int_add"), (cons (text "prim:int_add") (nil Bytes))) (cons ((text "call:runtime:int_sub"), (cons (text "prim:int_sub") (nil Bytes))) (cons ((text "call:runtime:int_mul"), (cons (text "prim:int_mul") (nil Bytes))) rows9)))))); (let rows11 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:int_neg"), (cons (text "prim:int_neg") (nil Bytes))) (cons ((text "call:runtime:int_quot"), (cons (text "prim:int_quot") (nil Bytes))) (cons ((text "call:runtime:int_rem"), (cons (text "prim:int_rem") (nil Bytes))) (cons ((text "call:runtime:bool_not"), (cons (text "prim:bool_not") (nil Bytes))) (cons ((text "call:runtime:bool_and"), (cons (text "prim:bool_and") (nil Bytes))) (cons ((text "call:runtime:bool_or"), (cons (text "prim:bool_or") (nil Bytes))) rows10)))))); (let rows12 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:equal"), (cons (text "prim:equal") (nil Bytes))) (cons ((text "call:runtime:compare"), (cons (text "prim:compare") (nil Bytes))) (cons ((text "call:runtime:checked_add"), (cons (text "prim:checked_add") (nil Bytes))) (cons ((text "call:runtime:checked_sub"), (cons (text "prim:checked_sub") (nil Bytes))) (cons ((text "call:runtime:checked_mul"), (cons (text "prim:checked_mul") (nil Bytes))) (cons ((text "call:runtime:checked_quot"), (cons (text "prim:checked_quot") (nil Bytes))) rows11)))))); (let rows13 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:checked_neg"), (cons (text "prim:checked_neg") (nil Bytes))) (cons ((text "call:runtime:bit_and"), (cons (text "prim:bit_and") (nil Bytes))) (cons ((text "call:runtime:bit_or"), (cons (text "prim:bit_or") (nil Bytes))) (cons ((text "call:runtime:bit_xor"), (cons (text "prim:bit_xor") (nil Bytes))) (cons ((text "call:runtime:bit_not"), (cons (text "prim:bit_not") (nil Bytes))) (cons ((text "call:runtime:shift_left"), (cons (text "prim:shift_left") (nil Bytes))) rows12)))))); (let rows14 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:shift_right"), (cons (text "prim:shift_right") (nil Bytes))) (cons ((text "call:runtime:convert"), (cons (text "prim:convert") (nil Bytes))) (cons ((text "call:runtime:append"), (cons (text "prim:append") (nil Bytes))) (cons ((text "call:runtime:length"), (cons (text "prim:length") (nil Bytes))) (cons ((text "call:runtime:index"), (cons (text "prim:index") (nil Bytes))) (cons ((text "call:runtime:slice"), (cons (text "prim:slice") (nil Bytes))) rows13)))))); (let rows15 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:utf8_encode"), (cons (text "prim:utf8_encode") (nil Bytes))) (cons ((text "call:runtime:utf8_decode"), (cons (text "prim:utf8_decode") (nil Bytes))) (cons ((text "call:runtime:compare_bytes"), (cons (text "prim:compare_bytes") (nil Bytes))) (cons ((text "call:runtime:split_exact"), (cons (text "prim:split_exact") (nil Bytes))) (cons ((text "call:runtime:join"), (cons (text "prim:join") (nil Bytes))) (cons ((text "call:runtime:format_decimal"), (cons (text "prim:format_decimal") (nil Bytes))) rows14)))))); (let rows16 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:parse_decimal"), (cons (text "prim:parse_decimal") (nil Bytes))) rows15); (let table : (List (Bytes * (List Bytes))) := rows16; (let found : Found := (foundDefs (record Found {insts := (nil Inst), types := (nil Bytes), items := itemRows4}) (project krate items)); (match (prim list_fold (fun [elements, table] (failure : (Option Bytes)) (inst : Inst) => (match failure
+  body: (let itemRows0 : (List ItemRow) := (cons (record ItemRow {family := 0, stem := (text "nat_add"), form := 0, fallible := true, heap := false}) (cons (record ItemRow {family := 1, stem := (text "nat_sub"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 2, stem := (text "nat_mul"), form := 0, fallible := true, heap := false}) (cons (record ItemRow {family := 3, stem := (text "nat_quot"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 4, stem := (text "nat_rem"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 5, stem := (text "nat_eq"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 6, stem := (text "nat_le"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 7, stem := (text "nat_lt"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 8, stem := (text "nat_succ"), form := 0, fallible := true, heap := false}) (cons (record ItemRow {family := 9, stem := (text "int_add"), form := 0, fallible := true, heap := false}) (nil ItemRow))))))))))); (let itemRows1 : (List ItemRow) := (cons (record ItemRow {family := 10, stem := (text "int_sub"), form := 0, fallible := true, heap := false}) (cons (record ItemRow {family := 11, stem := (text "int_mul"), form := 0, fallible := true, heap := false}) (cons (record ItemRow {family := 12, stem := (text "int_neg"), form := 0, fallible := true, heap := false}) (cons (record ItemRow {family := 13, stem := (text "int_quot"), form := 0, fallible := true, heap := false}) (cons (record ItemRow {family := 14, stem := (text "int_rem"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 15, stem := (text "bool_not"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 16, stem := (text "bool_and"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 17, stem := (text "bool_or"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 18, stem := (text "equal"), form := 0, fallible := false, heap := false}) (cons (record ItemRow {family := 19, stem := (text "compare"), form := 0, fallible := false, heap := false}) itemRows0)))))))))); (let itemRows2 : (List ItemRow) := (cons (record ItemRow {family := 20, stem := (text "checked_add"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 21, stem := (text "checked_sub"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 22, stem := (text "checked_mul"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 23, stem := (text "checked_quot"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 24, stem := (text "checked_neg_"), form := 2, fallible := false, heap := false}) (cons (record ItemRow {family := 25, stem := (text "bit_and"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 26, stem := (text "bit_or"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 27, stem := (text "bit_xor"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 28, stem := (text "bit_not"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 29, stem := (text "shift_left"), form := 1, fallible := false, heap := false}) itemRows1)))))))))); (let itemRows3 : (List ItemRow) := (cons (record ItemRow {family := 30, stem := (text "shift_right"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 31, stem := (text "convert"), form := 1, fallible := false, heap := false}) (cons (record ItemRow {family := 32, stem := (text "append_list"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 33, stem := (text "append_bytes"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 34, stem := (text "length_list"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 35, stem := (text "length_bytes"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 36, stem := (text "length_string"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 37, stem := (text "index_list"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 38, stem := (text "index_bytes"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 39, stem := (text "slice_list"), form := 0, fallible := false, heap := true}) itemRows2)))))))))); (let itemRows4 : (List ItemRow) := (cons (record ItemRow {family := 40, stem := (text "slice_bytes"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 41, stem := (text "utf8_encode"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 42, stem := (text "utf8_decode"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 43, stem := (text "compare_bytes"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 44, stem := (text "split_exact"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 45, stem := (text "join"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 46, stem := (text "format_i64"), form := 0, fallible := false, heap := true}) (cons (record ItemRow {family := 47, stem := (text "format_"), form := 2, fallible := false, heap := true}) (cons (record ItemRow {family := 48, stem := (text "parse_int"), form := 0, fallible := true, heap := true}) (cons (record ItemRow {family := 49, stem := (text "parse_"), form := 2, fallible := false, heap := true}) itemRows3)))))))))); (let rows0 : (List (Bytes * (List Bytes))) := (cons ((text "function"), (cons (text "function") (cons (text "export") (nil Bytes)))) (cons ((text "enum:adt"), (cons (text "type:adt") (nil Bytes))) (cons ((text "enum:closures"), (cons (text "type:fn") (cons (text "expr:closure") (nil Bytes)))) (cons ((text "apply:dispatch"), (cons (text "type:fn") (cons (text "expr:closure") (nil Bytes)))) (cons ((text "let"), (cons (text "expr:let") (cons (text "expr:match") (cons (text "expr:prim") (cons (text "expr:apply") (cons (text "expr:call") (cons (text "expr:closure") (cons (text "expr:cond") (cons (text "expr:field") (cons (text "shape:some") (cons (text "shape:ok") (cons (text "shape:error") (cons (text "shape:cons") (cons (text "shape:adt") (cons (text "shape:succ") (cons (text "shape:zero") (cons (text "shape:unit") (cons (text "shape:true") (cons (text "indirection") (cons (text "overflow") (nil Bytes))))))))))))))))))))) (cons ((text "read"), (cons (text "expr:var") (cons (text "expr:match") (cons (text "expr:prim") (cons (text "expr:call") (cons (text "expr:apply") (cons (text "expr:closure") (cons (text "expr:first") (cons (text "expr:second") (cons (text "expr:field") (cons (text "expr:cond") (cons (text "shape:true") (cons (text "shape:zero") (cons (text "shape:some") (cons (text "shape:ok") (cons (text "shape:error") (cons (text "shape:cons") (cons (text "shape:adt") (cons (text "export") (cons (text "type:fn") (cons (text "type:adt") (cons (text "type:pair") (cons (text "type:result") (nil Bytes)))))))))))))))))))))))) (nil (Bytes * (List Bytes))))))))); (let rows1 : (List (Bytes * (List Bytes))) := (cons ((text "box"), (cons (text "indirection") (nil Bytes))) (cons ((text "destructure:pair"), (cons (text "expr:first") (cons (text "expr:second") (cons (text "shape:pair") (cons (text "expr:call") (nil Bytes)))))) (cons ((text "type:unit"), (cons (text "type:unit") (nil Bytes))) (cons ((text "type:bool"), (cons (text "type:bool") (nil Bytes))) (cons ((text "type:nat"), (cons (text "type:nat") (cons (text "type:fixed") (nil Bytes)))) (cons ((text "type:int"), (cons (text "type:int") (cons (text "type:fixed") (nil Bytes)))) rows0)))))); (let rows2 : (List (Bytes * (List Bytes))) := (cons ((text "type:fixed"), (cons (text "type:fixed") (nil Bytes))) (cons ((text "type:ordering"), (cons (text "type:ordering") (nil Bytes))) (cons ((text "type:string"), (cons (text "type:string") (nil Bytes))) (cons ((text "type:bytes"), (cons (text "type:bytes") (nil Bytes))) (cons ((text "type:option"), (cons (text "type:option") (nil Bytes))) (cons ((text "type:result"), (cons (text "type:result") (cons (text "expr:call") (nil Bytes)))) rows1)))))); (let rows3 : (List (Bytes * (List Bytes))) := (cons ((text "type:list"), (cons (text "type:list") (nil Bytes))) (cons ((text "type:pair"), (cons (text "type:pair") (cons (text "expr:call") (nil Bytes)))) (cons ((text "type:adt"), (cons (text "type:adt") (nil Bytes))) (cons ((text "type:fn"), (cons (text "type:fn") (cons (text "expr:closure") (nil Bytes)))) (cons ((text "type:rc"), (cons (text "indirection") (nil Bytes))) (cons ((text "type:fallible"), (cons (text "overflow") (nil Bytes))) rows2)))))); (let rows4 : (List (Bytes * (List Bytes))) := (cons ((text "type:ref"), (cons (text "export") (nil Bytes))) (cons ((text "lit:unit"), (cons (text "value:unit") (cons (text "shape:unit") (cons (text "expr:var") (cons (text "expr:call") (cons (text "expr:apply") (cons (text "expr:closure") (cons (text "shape:some") (cons (text "shape:ok") (cons (text "shape:error") (cons (text "shape:cons") (cons (text "shape:adt") (cons (text "export") (cons (text "overflow") (nil Bytes))))))))))))))) (cons ((text "lit:bool"), (cons (text "value:bool") (cons (text "shape:true") (cons (text "shape:false") (cons (text "expr:cond") (nil Bytes)))))) (cons ((text "lit:nat"), (cons (text "value:nat") (cons (text "shape:zero") (nil Bytes)))) (cons ((text "lit:int"), (cons (text "value:int") (nil Bytes))) (cons ((text "lit:fixed"), (cons (text "value:u8") (cons (text "value:u16") (cons (text "value:u32") (cons (text "value:u64") (cons (text "value:i8") (cons (text "value:i16") (cons (text "value:i32") (cons (text "value:i64") (nil Bytes)))))))))) rows3)))))); (let rows5 : (List (Bytes * (List Bytes))) := (cons ((text "lit:string"), (cons (text "value:string") (nil Bytes))) (cons ((text "lit:bytes"), (cons (text "value:bytes") (nil Bytes))) (cons ((text "lit:ordering"), (cons (text "value:ordering") (cons (text "shape:lt") (cons (text "shape:eq") (cons (text "shape:gt") (nil Bytes)))))) (cons ((text "construct:none"), (cons (text "value:none") (cons (text "shape:none") (nil Bytes)))) (cons ((text "construct:some"), (cons (text "value:some") (cons (text "shape:some") (nil Bytes)))) (cons ((text "construct:ok"), (cons (text "value:ok") (cons (text "shape:ok") (cons (text "expr:call") (nil Bytes))))) rows4)))))); (let rows6 : (List (Bytes * (List Bytes))) := (cons ((text "construct:err"), (cons (text "value:error") (cons (text "shape:error") (cons (text "expr:call") (nil Bytes))))) (cons ((text "construct:adt"), (cons (text "value:adt") (cons (text "shape:adt") (nil Bytes)))) (cons ((text "construct:closure"), (cons (text "expr:closure") (nil Bytes))) (cons ((text "construct:cons"), (cons (text "value:list") (cons (text "shape:cons") (nil Bytes)))) (cons ((text "construct:nil"), (cons (text "value:list") (cons (text "shape:nil") (nil Bytes)))) (cons ((text "construct:pair"), (cons (text "value:pair") (cons (text "shape:pair") (cons (text "expr:call") (nil Bytes))))) rows5)))))); (let rows7 : (List (Bytes * (List Bytes))) := (cons ((text "if"), (cons (text "expr:cond") (cons (text "shape:true") (cons (text "shape:zero") (nil Bytes))))) (cons ((text "match:nat"), (cons (text "shape:zero") (nil Bytes))) (cons ((text "match:list"), (cons (text "shape:nil") (nil Bytes))) (cons ((text "match:option"), (cons (text "shape:none") (nil Bytes))) (cons ((text "match:result"), (cons (text "shape:ok") (nil Bytes))) (cons ((text "match:ordering"), (cons (text "shape:lt") (nil Bytes))) rows6)))))); (let rows8 : (List (Bytes * (List Bytes))) := (cons ((text "match:adt"), (cons (text "shape:adt") (cons (text "expr:field") (nil Bytes)))) (cons ((text "match:empty"), (cons (text "type:fn") (cons (text "type:adt") (cons (text "type:pair") (cons (text "type:result") (nil Bytes)))))) (cons ((text "call:function"), (cons (text "expr:call") (cons (text "export") (nil Bytes)))) (cons ((text "apply"), (cons (text "expr:apply") (nil Bytes))) (cons ((text "widen"), (cons (text "prim:convert") (nil Bytes))) (cons ((text "succeed"), (cons (text "overflow") (nil Bytes))) rows7)))))); (let rows9 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:succ"), (cons (text "shape:succ") (nil Bytes))) (cons ((text "call:runtime:nat_add"), (cons (text "prim:nat_add") (nil Bytes))) (cons ((text "call:runtime:nat_sub"), (cons (text "prim:nat_sub") (nil Bytes))) (cons ((text "call:runtime:nat_mul"), (cons (text "prim:nat_mul") (nil Bytes))) (cons ((text "call:runtime:nat_quot"), (cons (text "prim:nat_quot") (nil Bytes))) (cons ((text "call:runtime:nat_rem"), (cons (text "prim:nat_rem") (nil Bytes))) rows8)))))); (let rows10 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:nat_eq"), (cons (text "prim:nat_eq") (nil Bytes))) (cons ((text "call:runtime:nat_le"), (cons (text "prim:nat_le") (nil Bytes))) (cons ((text "call:runtime:nat_lt"), (cons (text "prim:nat_lt") (nil Bytes))) (cons ((text "call:runtime:int_add"), (cons (text "prim:int_add") (nil Bytes))) (cons ((text "call:runtime:int_sub"), (cons (text "prim:int_sub") (nil Bytes))) (cons ((text "call:runtime:int_mul"), (cons (text "prim:int_mul") (nil Bytes))) rows9)))))); (let rows11 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:int_neg"), (cons (text "prim:int_neg") (nil Bytes))) (cons ((text "call:runtime:int_quot"), (cons (text "prim:int_quot") (nil Bytes))) (cons ((text "call:runtime:int_rem"), (cons (text "prim:int_rem") (nil Bytes))) (cons ((text "call:runtime:bool_not"), (cons (text "prim:bool_not") (nil Bytes))) (cons ((text "call:runtime:bool_and"), (cons (text "prim:bool_and") (nil Bytes))) (cons ((text "call:runtime:bool_or"), (cons (text "prim:bool_or") (nil Bytes))) rows10)))))); (let rows12 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:equal"), (cons (text "prim:equal") (nil Bytes))) (cons ((text "call:runtime:compare"), (cons (text "prim:compare") (nil Bytes))) (cons ((text "call:runtime:checked_add"), (cons (text "prim:checked_add") (nil Bytes))) (cons ((text "call:runtime:checked_sub"), (cons (text "prim:checked_sub") (nil Bytes))) (cons ((text "call:runtime:checked_mul"), (cons (text "prim:checked_mul") (nil Bytes))) (cons ((text "call:runtime:checked_quot"), (cons (text "prim:checked_quot") (nil Bytes))) rows11)))))); (let rows13 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:checked_neg"), (cons (text "prim:checked_neg") (nil Bytes))) (cons ((text "call:runtime:bit_and"), (cons (text "prim:bit_and") (nil Bytes))) (cons ((text "call:runtime:bit_or"), (cons (text "prim:bit_or") (nil Bytes))) (cons ((text "call:runtime:bit_xor"), (cons (text "prim:bit_xor") (nil Bytes))) (cons ((text "call:runtime:bit_not"), (cons (text "prim:bit_not") (nil Bytes))) (cons ((text "call:runtime:shift_left"), (cons (text "prim:shift_left") (nil Bytes))) rows12)))))); (let rows14 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:shift_right"), (cons (text "prim:shift_right") (nil Bytes))) (cons ((text "call:runtime:convert"), (cons (text "prim:convert") (nil Bytes))) (cons ((text "call:runtime:append"), (cons (text "prim:append") (nil Bytes))) (cons ((text "call:runtime:length"), (cons (text "prim:length") (nil Bytes))) (cons ((text "call:runtime:index"), (cons (text "prim:index") (nil Bytes))) (cons ((text "call:runtime:slice"), (cons (text "prim:slice") (nil Bytes))) rows13)))))); (let rows15 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:utf8_encode"), (cons (text "prim:utf8_encode") (nil Bytes))) (cons ((text "call:runtime:utf8_decode"), (cons (text "prim:utf8_decode") (nil Bytes))) (cons ((text "call:runtime:compare_bytes"), (cons (text "prim:compare_bytes") (nil Bytes))) (cons ((text "call:runtime:split_exact"), (cons (text "prim:split_exact") (nil Bytes))) (cons ((text "call:runtime:join"), (cons (text "prim:join") (nil Bytes))) (cons ((text "call:runtime:format_decimal"), (cons (text "prim:format_decimal") (nil Bytes))) rows14)))))); (let rows16 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:parse_decimal"), (cons (text "prim:parse_decimal") (nil Bytes))) rows15); (let table : (List (Bytes * (List Bytes))) := rows16; (let found : Found := (foundDefs (record Found {insts := (nil Inst), types := (nil Bytes), items := itemRows4}) (project krate items)); (match (prim list_fold (fun [elements, table] (failure : (Option Bytes)) (inst : Inst) => (match failure
       | Option.some message => (ctor Option.some [Bytes] message)
       | Option.none => (checkInst table elements inst))) (ctor Option.none [Bytes]) (reverseInsts (project found insts)) : (Option Bytes))
     | Option.some message => (ctor Result.error [Unit, Bytes] message)
