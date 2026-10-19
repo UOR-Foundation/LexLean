@@ -256,12 +256,17 @@ impl<'g, 'a> Writer<'g, 'a> {
             return Ok(found);
         }
         let (module, declaration) = preserve::native_declaration(&full)?;
-        if !declaration.levels.is_empty() {
+        if !declaration.level_names().is_empty() {
             return Err(format!(
                 "`{full}` has universe parameters, which a certificate does not instantiate"
             ));
         }
-        let ty = self.b.import(module, declaration.r#type);
+        let Some(root) = declaration.r#type else {
+            return Err(format!(
+                "`{full}` is a derived row of the library, which states no type for a certificate to cite"
+            ));
+        };
+        let ty = self.b.import(module, root);
         let head = self.b.konst(&full);
         self.lemmas.insert(full.clone(), (head, ty));
         Ok((head, ty))
@@ -511,12 +516,12 @@ fn declaration(row: &Row, height: u32, ty: Term, value: Term) -> CoreDeclaration
     CoreDeclaration {
         all: Some(row.group.clone().unwrap_or_else(|| vec![row.name.clone()])),
         name: row.name.clone(),
-        levels: Vec::new(),
+        levels: Some(Vec::new()),
         kind,
         reducibility,
         transparency: CoreTransparency::Semireducible,
         policy: CoreAxiomPolicy::Exact(row.axioms.iter().cloned().collect()),
-        r#type: ty,
+        r#type: Some(ty),
         value: Some(value),
         inductive: None,
         class: false,
@@ -533,6 +538,7 @@ fn declaration(row: &Row, height: u32, ty: Term, value: Term) -> CoreDeclaration
         inline: None,
         sparse: None,
         grind: None,
+        derived: false,
     }
 }
 

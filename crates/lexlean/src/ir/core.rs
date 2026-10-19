@@ -564,8 +564,11 @@ pub struct CoreEqnInfo {
 pub struct CoreDeclaration {
     /// Generated global name.
     pub name: String,
-    /// Universe parameters in declaration order.
-    pub levels: Vec<String>,
+    /// Universe parameters in declaration order. Absent exactly when the row
+    /// is derived: the universe parameters are the ones the pinned Lean's
+    /// construction gives the constant.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub levels: Option<Vec<String>>,
     /// Declaration kind.
     pub kind: CoreDeclKind,
     /// Exact kernel reducibility metadata for definitions and abbreviations.
@@ -575,9 +578,11 @@ pub struct CoreDeclaration {
     pub transparency: CoreTransparency,
     /// Explicit per-declaration axiom policy.
     pub policy: CoreAxiomPolicy,
-    /// Type root.
-    pub r#type: usize,
-    /// Value/proof root for definitions and theorems.
+    /// Type root. Absent exactly when the row is derived.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub r#type: Option<usize>,
+    /// Value/proof root for definitions and theorems. Absent when the row is
+    /// derived.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub value: Option<usize>,
     /// Inductive metadata exactly for inductive declarations.
@@ -635,6 +640,14 @@ pub struct CoreDeclaration {
     /// The `grind` attribute of a theorem. Core module 2 only.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub grind: Option<CoreGrind>,
+    /// Whether the row is derived: it states its name, its kind, and the
+    /// extension state it installs, and for a sparse `casesOn` its recipe,
+    /// but no universe parameters, type, or value, because the decoder makes
+    /// the constant with the pinned Lean's own construction at the row's
+    /// place in the order and refuses the module when the construction does
+    /// not make it. Core module 2 only.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub derived: bool,
 }
 
 impl CoreDeclaration {
@@ -653,6 +666,20 @@ impl CoreDeclaration {
             || self.inline.is_some()
             || self.sparse.is_some()
             || self.grind.is_some()
+            || self.derived
+    }
+
+    /// The nodes the row states as its type and its value; none for a derived
+    /// row.
+    pub fn expression_roots(&self) -> impl Iterator<Item = usize> {
+        self.r#type.into_iter().chain(self.value)
+    }
+
+    /// The universe parameters a stored row states; none for a derived row,
+    /// whose parameters are Lean's to decide.
+    #[must_use]
+    pub fn level_names(&self) -> &[String] {
+        self.levels.as_deref().unwrap_or(&[])
     }
 }
 
@@ -971,52 +998,10 @@ impl CoreModule {
             if !names.insert(&declaration.name) {
                 return Err(format!("duplicate core declaration `{}`", declaration.name));
             }
-            if declaration.r#type >= self.nodes.len()
-                || declaration
-                    .value
-                    .is_some_and(|value| value >= self.nodes.len())
-            {
-                return Err(format!(
-                    "core declaration `{}` has an out-of-range expression root",
-                    declaration.name
-                ));
-            }
-            let has_value = declaration.value.is_some();
-            if matches!(
-                declaration.kind,
-                CoreDeclKind::Abbrev | CoreDeclKind::Definition | CoreDeclKind::Theorem
-            ) != has_value
-            {
-                return Err(format!(
-                    "core declaration `{}` has a kind/value mismatch",
-                    declaration.name
-                ));
-            }
-            if matches!(declaration.kind, CoreDeclKind::Inductive)
-                != declaration.inductive.is_some()
-            {
-                return Err(format!(
-                    "core declaration `{}` has a kind/inductive mismatch",
-                    declaration.name
-                ));
-            }
-            if matches!(
-                declaration.kind,
-                CoreDeclKind::Definition | CoreDeclKind::Abbrev
-            ) != declaration.reducibility.is_some()
-            {
-                return Err(format!(
-                    "core declaration `{}` has a kind/reducibility-metadata mismatch",
-                    declaration.name
-                ));
-            }
-            if matches!(declaration.kind, CoreDeclKind::Abbrev)
-                != matches!(declaration.reducibility, Some(CoreReducibility::Abbrev))
-            {
-                return Err(format!(
-                    "core declaration `{}` has an inconsistent abbreviation hint",
-                    declaration.name
-                ));
+            if declaration.derived {
+                Self::validate_derived_row(declaration)?;
+            } else {
+                self.validate_stored_row(declaration)?;
             }
             let mut policy_names = BTreeSet::new();
             for axiom in declaration.policy.axioms() {
@@ -1028,7 +1013,7 @@ impl CoreModule {
                     ));
                 }
             }
-            for level in &declaration.levels {
+            for level in declaration.level_names() {
                 segment_ok(level)?;
             }
             self.validate_version_2_row(declaration, &every_name, name_ok, segment_ok)?;
@@ -1079,6 +1064,97 @@ impl CoreModule {
 }
 
 impl CoreModule {
+    /// The checks of a row that states its own universe parameters, type, and
+    /// value: the roots are nodes, the kind says whether there is a value,
+    /// and the reducibility metadata is a definition's.
+    fn validate_stored_row(&self, declaration: &CoreDeclaration) -> Result<(), String> {
+        let (Some(root), Some(_)) = (declaration.r#type, &declaration.levels) else {
+            return Err(format!(
+                "core declaration `{}` states no type or no universe parameters and is not derived",
+                declaration.name
+            ));
+        };
+        if root >= self.nodes.len()
+            || declaration
+                .value
+                .is_some_and(|value| value >= self.nodes.len())
+        {
+            return Err(format!(
+                "core declaration `{}` has an out-of-range expression root",
+                declaration.name
+            ));
+        }
+        let has_value = declaration.value.is_some();
+        if matches!(
+            declaration.kind,
+            CoreDeclKind::Abbrev | CoreDeclKind::Definition | CoreDeclKind::Theorem
+        ) != has_value
+        {
+            return Err(format!(
+                "core declaration `{}` has a kind/value mismatch",
+                declaration.name
+            ));
+        }
+        if matches!(declaration.kind, CoreDeclKind::Inductive) != declaration.inductive.is_some() {
+            return Err(format!(
+                "core declaration `{}` has a kind/inductive mismatch",
+                declaration.name
+            ));
+        }
+        if matches!(
+            declaration.kind,
+            CoreDeclKind::Definition | CoreDeclKind::Abbrev
+        ) != declaration.reducibility.is_some()
+        {
+            return Err(format!(
+                "core declaration `{}` has a kind/reducibility-metadata mismatch",
+                declaration.name
+            ));
+        }
+        if matches!(declaration.kind, CoreDeclKind::Abbrev)
+            != matches!(declaration.reducibility, Some(CoreReducibility::Abbrev))
+        {
+            return Err(format!(
+                "core declaration `{}` has an inconsistent abbreviation hint",
+                declaration.name
+            ));
+        }
+        Ok(())
+    }
+
+    /// The checks of a derived row (SM-34): it is a theorem, a definition,
+    /// or an abbreviation the pinned Lean's own construction makes, so it
+    /// states none of what that construction decides, and it is not the
+    /// owner-created row of an inductive type or a row the decoder skips.
+    fn validate_derived_row(declaration: &CoreDeclaration) -> Result<(), String> {
+        let name = &declaration.name;
+        if !matches!(
+            declaration.kind,
+            CoreDeclKind::Abbrev | CoreDeclKind::Definition | CoreDeclKind::Theorem
+        ) {
+            return Err(format!(
+                "derived core declaration `{name}` is not a theorem, a definition, or an abbreviation"
+            ));
+        }
+        for (stated, what) in [
+            (declaration.levels.is_some(), "universe parameters"),
+            (declaration.r#type.is_some(), "a type"),
+            (declaration.value.is_some(), "a value"),
+            (declaration.reducibility.is_some(), "reducibility metadata"),
+            (declaration.inductive.is_some(), "inductive metadata"),
+            (declaration.generated, "the generated flag"),
+            (declaration.safety.is_some(), "a safety"),
+            (declaration.all.is_some(), "a group"),
+        ] {
+            if stated {
+                return Err(format!(
+                    "derived core declaration `{name}` states {what}, which the pinned Lean's construction decides"
+                ));
+            }
+        }
+        Ok(())
+    }
+
     /// The checks of the fields only core module 2 has.
     fn validate_version_2_row(
         &self,
@@ -1529,12 +1605,12 @@ mod version_2_tests {
     fn theorem(name: &str) -> CoreDeclaration {
         CoreDeclaration {
             name: name.to_owned(),
-            levels: Vec::new(),
+            levels: Some(Vec::new()),
             kind: CoreDeclKind::Theorem,
             reducibility: None,
             transparency: CoreTransparency::Semireducible,
             policy: CoreAxiomPolicy::Exact(Vec::new()),
-            r#type: 0,
+            r#type: Some(0),
             value: Some(0),
             inductive: None,
             class: false,
@@ -1552,6 +1628,7 @@ mod version_2_tests {
             inline: None,
             sparse: None,
             grind: None,
+            derived: false,
         }
     }
 

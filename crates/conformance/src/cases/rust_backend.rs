@@ -58,6 +58,7 @@ fn edit_first(krate: &mut Crate, edit: &mut dyn FnMut(&mut Expr) -> bool) -> boo
                 scrutinee, arms, ..
             } => expr(scrutinee, edit) || arms.iter_mut().any(|(_, body)| block(body, edit)),
             Expr::Block(inner) => block(inner, edit),
+            Expr::Loop { body, .. } => block(body, edit),
             _ => false,
         }
     }
@@ -315,6 +316,11 @@ fn ast_shapes(krate: &Crate, out: &mut BTreeSet<&'static str>) {
             Expr::Predecessor(_) => "expr:predecessor",
             Expr::Widen(..) => "expr:widen",
             Expr::Succeed(..) => "expr:succeed",
+            // Not in AST_SHAPES: no lowering produces a loop until the
+            // scalar items are expressed over it (#91), so no package can
+            // be required to emit one yet. The shape is named so that the
+            // first package that does is counted.
+            Expr::Loop { .. } => "expr:loop",
         });
         match node {
             Expr::Not(inner, _)
@@ -344,7 +350,7 @@ fn ast_shapes(krate: &Crate, out: &mut BTreeSet<&'static str>) {
                 expr(scrutinee, out);
                 arms.iter().for_each(|(_, body)| block(body, out));
             }
-            Expr::Block(body) => block(body, out),
+            Expr::Block(body) | Expr::Loop { body, .. } => block(body, out),
             _ => {}
         }
     }

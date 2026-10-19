@@ -2464,12 +2464,52 @@ are data of the module, not conventions of a backend.
   not after the module: the `recursive` tag, the transparency, the matcher
   record, the equational-lemma record, and the row's realization context,
   which for a definition with an equational-lemma record is opened once its
-  smart-unfolding row (`_sunfold`) is in. A derived row is therefore what the
-  pinned Lean derives from the module, checked against the data rather than
-  taken from it.
+  smart-unfolding row (`_sunfold`) is in. A row that states its type and
+  value is therefore what the pinned Lean derives from the module, checked
+  against the data rather than taken from it.
+- A row may be *derived* (`"derived": true`): it states its name, its kind
+  (`theorem`, `definition`, or `abbrev`), its transparency and axiom policy,
+  and the extension state it installs (the tags, the compiler inlining
+  attribute, the compiled flag, and the other members of version 2 that are
+  not a term), and for a sparse `casesOn` its record (the type, the
+  constructors that have an arm, the position of the major premise, and the
+  arity), and it states no universe parameters, type, value, reducibility
+  metadata, group, or safety, which the construction decides. The decoder
+  makes the constant at the row's place in the order with the construction
+  the row names, the action the pinned Lean registers for a reserved name or
+  the sparse `casesOn` construction above, installs the state the row
+  states, and refuses the module unless the name is one the pinned Lean
+  reserves or the row states a sparse record, the construction makes the
+  name, and the constant is a theorem when the row is a theorem, an
+  abbreviation (its hint is `abbrev`) when the row is an `abbrev`, and
+  another definition when it is a `definition`. What the construction makes
+  is therefore never stored, so it cannot go stale when a type of the module
+  changes, and an authored proof that needs another equation fails to check
+  and is named. A sparse record's constructors are checked
+  against the type: each is a constructor of it, and none is named twice (the
+  record lists them in the order of the arms, not of the type). Every chunk
+  carries the names of the module's sparse `casesOn` rows, and the decoder refuses
+  a chunk whose construction made a sparse `casesOn` that the module does not
+  state, so a row cannot be left out for the construction to supply. The last
+  chunk of a module also carries every row's name and the derived sparse rows,
+  and the decoder refuses the module unless each derived sparse `casesOn` is
+  among the constants that the type or value of some row refers to, those of a
+  derived row (a splitter) being the term the construction made. That is the
+  whole of what is checked of a derived row's content: the kernel has checked
+  every term that uses it, and a recipe that selects other valid constructors
+  of the type, where the use accepts the constant, is not distinguished. A derived
+  row names no term, so the order of emission is the
+  data's: a derived row follows the derived row before it in the module,
+  the rows its name extends (not a sparse `casesOn`, which is named under
+  the splitter whose construction needs it and so comes first), and the
+  type and the constructors its record names. A certificate cites no
+  derived row, since no type of it is stated. The stored form remains valid:
+  a row that states its type and value is checked as above (`SM-33`), so a
+  library migrated before the derived form decodes unchanged.
 
 A version 2 row that states a field of another kind of declaration is
-rejected; the group of a definition names only declarations of the module; an
+rejected, and so is a derived row that states what its construction decides,
+or a row that states no type and is not derived (`SM-34`); the group of a definition names only declarations of the module; an
 annotation entry's name, a group member, a matcher discriminant name, and an
 equational-lemma record's names obey the name grammar; and the roots of an
 equation record are nodes of the module. The data is exactly what the one
@@ -5485,7 +5525,33 @@ the binding; a block binds its lets in order; a match takes the first arm
 whose pattern matches; `?` on `Err` raises out of the function, which returns
 `Err(Overflow)` exactly when its result type is `R<T>`; an application
 dispatches through the `apply` arm of the closure's function and capture
-count. Every runtime item (`rust::runtime::Item`) is declared as the calculus
+count. A *machine primitive* is a function of the machine's standard library that the
+runtime reaches and cannot state in the AST. `RustSyntax` declares eight
+(`Machine`), each at a width: `checkedAdd`, `checkedSub`, `checkedMul`,
+`checkedQuot`, `checkedNeg`, `checkedShl`, and `checkedShr` of a width, and
+`tryFrom` to a width, and a call names one as the callee `Callee.machine`, beside
+`Callee.function` and `Callee.runtime`. Its meaning is the calculus primitive of
+the same name on the same operands, the `Option` value that primitive states
+(`checkedAdd` of two `u8` is `Some` of their sum, or `None` when it exceeds
+255), and the call is stuck on an operand of another width, a shift's amount
+excepted; a primitive is not a runtime item, so it does not pass through the
+item tables. The literal `Lit.overflow` is the unit struct `Overflow` of the
+runtime, which the machine represents by the unit value, as an `Err(Overflow)`
+carries it. Neither is yet written by the renderer: the scalar items are
+expressed over them by the stage of #91 that follows (`SP-18`). A *loop*
+(`Expr.loop`, `SP-19`) is the one construct of the machine that repeats: it names
+a state, a local the enclosing block has bound, and a body block. The body is
+evaluated in the environment with the state, and its value is a `Result`: `Ok`
+of a next state rebinds the state to that value and evaluates the loop again, and
+`Err` of a done value ends the loop with it as the value of the loop, so a loop
+breaks with a value and has no labels. A body whose value is neither is stuck,
+and the loop recurses through `eval` with the fuel the body left, so a loop that
+does not end within the fuel is exhausted, never a wrong value. The renderer
+prints a loop as `{ let mut s = s; loop { match { body } { Ok(next) => { s = next; }
+Err(done) => break done, } } }`; the validator lets the body move the state, which
+the loop's own binding holds, and nothing else, because the body runs again after
+every `Ok`. No lowering produces a loop yet. Every runtime
+item (`rust::runtime::Item`) is declared as the calculus
 primitive it realizes on the same operands (the successor as `nat_add` with
 one), fallible exactly when the renderer types it `R<T>`, and present in
 `rust-core` only when it needs no heap; an overflow of an item that cannot
@@ -5601,7 +5667,8 @@ or whose theorem's axioms are not exactly the three above is `LLV7016`.
 **Certificate E as data.** Certificate E is not Lean text. The compiler
 builds it as a native core module of schema `lexlean/core-module/2`
 (§17.10): the terms above as kernel terms, every argument and universe level
-written. A lemma's type is read from the native preservation library and
+written. A lemma's type is read from the native preservation library, whose derived
+rows (§17.10) state none and which no certificate cites, and
 instantiated one binder at a time, so the implicit program, crate, and flags
 of every lemma, the element types and encoders of the container lemmas, the
 field values and types of a document, and the environment the entry binds
@@ -6826,7 +6893,7 @@ language 1.0 or 1.1 is `LLP2003`. The text of a module is:
 
 ```ebnf
 module      = "imports" "[" [ name { "," name } ] "]" { declaration } { statement } ;
-declaration = kind name [ ".{" name { "," name } "}" ] ":" ref [ ":=" ref ] [ members ] ;
+declaration = kind name [ ".{" name { "," name } "}" ] [ ":" ref [ ":=" ref ] ] [ members ] ;
 kind        = "abbrev" | "definition" | "theorem" | "inductive" | "constructor" | "recursor" ;
 members     = object of the generic notation (§17.21.3) ;
 statement   = ref ":=" term ;
@@ -6902,7 +6969,9 @@ statements of its type and value, naming what they mean and counting nothing
 (`AU-12`). The notation does not infer: every argument and every universe level
 of a constant is written, as a kernel term has them (§17.10).
 
-*The declarations.* The other members of a declaration (its transparency,
+*The declarations.* A declaration without `:` and a type is a derived row
+(§17.10): it has no universe parameters, type, or value, and its members say
+`derived: true`. The other members of a declaration (its transparency,
 policy, reducibility, class and generated flags, the members of version 2, and
 every node it states other than its `type` and `value`) are the generic notation
 of the object that has them, so that no member is unspellable and a member added
@@ -9709,7 +9778,8 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SM-30` | `semantic-ir` | Language 1.2 graph literals reference only declared nodes, a graph's nodes are its keys and every successor, and successor, reachability, and topological-order queries are deterministic, bounded by the node count, and report a cycle as none. | §17.12 |
 | `SM-31` | `semantic-ir` | Language 1.2 accepts a second native core-module schema, and only language 1.2 does, whose annotation nodes, extended names, definition safety and groups, compiled and reducibility state, and matcher, projection, no-confusion, simplification, equation-record, inlining, sparse-casesOn, and grind extension state are closed data that the linker validates against the kind of the declaration carrying it and bounds in depth by max_scope_depth, and that both backends render, and that the Lean backend's one fixed decoder submits through Lean's checked declaration API, so that the generated module elaborates under the pinned Lean with exactly its pinned axioms. | §17.10 |
 | `SM-32` | `semantic-ir` | Language 1.2 widening conversions, to_int from every fixed-width integer type to Int and to_nat from every unsigned fixed-width type to Nat, are total, are rejected under language 1.1, and elaborate in linking to ordinary terms over bit_and, equal, conditionals, and exact integer and natural sums, so that a production root decodes a byte string to integers with no decimal text in its lowered program and is certified like any other root. | §17.12 |
-| `SM-33` | `semantic-ir` | A version 2 core-module row whose name the pinned Lean reserves is not submitted as data: the decoder runs the pinned Lean's own action for the name and refuses the module when the action does not make the name or makes a constant whose kind, levels, type, or value differ from the row's. | §17.10 |
+| `SM-33` | `semantic-ir` | A version 2 core-module row that states its type and value and whose name the pinned Lean reserves is not submitted as data: the decoder runs the pinned Lean's own action for the name and refuses the module when the action does not make the name or makes a constant whose kind, levels, type, or value differ from the row's. | §17.10 |
+| `SM-34` | `semantic-ir` | A version 2 core-module row may be derived, stating its name, kind, and extension state, and for a sparse casesOn its recipe, and no universe parameters, type, or value: the decoder makes the constant with the pinned Lean's own construction at the row's place in the order, and refuses the module when the name is not one the pinned Lean reserves and the row states no sparse casesOn recipe, when the construction does not make the name, or when the constant it makes is not a theorem, definition, or abbreviation as the row says; the notation writes a derived row without a type, the schema and the linker refuse a derived row that states what the construction decides, a stored row is still checked against the construction, the decoder checks that the constructors a recipe names are constructors of the type and are named once, that the module states every sparse casesOn its construction makes, and that every derived sparse casesOn is referred to by the type or value of a row, and the content of a derived row is checked by its uses alone, so that a recipe naming other valid constructors of the type is not distinguished where the use accepts it; and the shipped preservation library states every row that carries a sparse casesOn record or is named like an equation, an unfolding equation, a splitter, or an else equation as a derived row. | §17.10 |
 | `DF-01` | `declarations` | A valid type-definition sentence emits one nonrecursive sort-valued Lean def linked to its document entry. | §15.7, §18.6 |
 | `DF-02` | `declarations` | A valid term-definition sentence emits one nonrecursive explicitly typed Lean def. | §15.7, §18.6 |
 | `DF-03` | `declarations` | A valid predicate-definition sentence emits one nonrecursive Prop-valued Lean def. | §15.7, §18.6 |
@@ -9925,6 +9995,8 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SP-15` | `preservation` | Certificate A of every production root is kernel-term data: a native core module of schema lexlean/core-module/2 that the compiler builds from the lowered program, the layout, the semantic source of the root's closure, and the recorded types of the preservation library's lemmas, every argument and universe level explicit, so that no Lean text template for certificate A remains in the production compiler; its program literal, encoders, width predicates, relation theorems, validators, and entry are rows of that module, which the one core backend renders to the Lean that verification compiles and whose record is the authoring notation, reading back to the data byte for byte; each theorem states, up to elaboration, the statement the text certificate stated, which an oracle over the committed corpora records, every row pins its axioms exactly, and a wrong lemma application, a changed statement, a forged program literal, or an added axiom is refused. | §17.17 |
 | `SP-16` | `preservation` | Certificate B of every production root is kernel-term data: a native core module of schema lexlean/core-module/2 that the compiler builds from the lowered program, the rendered crate, and the recorded types of the preservation library's correspondence rules, every argument and universe level explicit, so that no Lean text template for certificate B remains in the production compiler; its program and crate literals, flags, per-function derivations, and assembly are rows of that module, which the one core backend renders to the Lean that verification compiles and whose record is the authoring notation, reading back to the data byte for byte; each theorem states, up to elaboration, the statement the text certificate stated, which an oracle over the committed corpora records, every row pins its axioms exactly and the audit module prints and checks them, and a wrong lemma application, a changed statement, a forged program literal, an added axiom, or a row whose policy lies is refused. | §17.17 |
 | `SP-17` | `preservation` | No Lean source text template remains in the production compiler: a lexer-level scan of the Rust sources under crates/lexlean/src/production/ and of the probe and audit-module part of crates/lexlean/src/backend/lean.rs reads every string literal outside test code and finds none that is Lean syntax, which is a literal holding a Lean symbol (`:=`, `=>`, `→`, `∀`, `∃`, `⟨`, `⟩`, `(.`, `«`, `#print`, `#check`, `#eval`, `@[`, a `fun` binder), a Lean command line (`import`, `namespace`, `set_option`, `universe`, `open`), or a declaration (`theorem`, `def`, `example`, `instance`, `structure`, `inductive`, `abbrev`) with a type or a body, apart from a short allow-list of the printouts of kernel terms that developers read and the closed commands of the auxiliary module renderer; the staged audit module is an auxiliary module of typed commands that the backend renders; and a planted template in a production source, in the auxiliary module part of the backend, and in a module the scan sees as test code is each reported, the last not. | §17.17, §22.2 |
+| `SP-18` | `preservation` | The declared Rust machine states a machine primitive as a callee and the overflow value as a literal: RustSyntax declares eight machine primitives (checked add, subtract, multiply, quotient, negation, shift left, and shift right of a width, and try-from to a width), the callee that names one, and the literal Overflow, and RustSemantics evaluates a call of a machine callee as the calculus primitive of the same name, with the Option value the calculus states, stuck on an operand of another width (the amount of a shift excepted), and the literal Overflow as the unit value that an Err(Overflow) carries, which the pinned Lean evaluates on the boundary values of the widths and refuses to evaluate to a wrong value. | §17.14, §17.16 |
+| `SP-19` | `preservation` | The declared Rust machine states a loop over a state with a break value: RustSyntax declares the expression Loop of a state binding and a body block, and RustSemantics evaluates it by running the body in the environment of the state, rebinding the state to the payload of an Ok result and running the loop again, ending with the payload of an Err result as the value of the loop, stuck on a body whose value is neither, and exhausted rather than wrong when the fuel runs out, which the pinned Lean evaluates on a countdown and refuses to evaluate to a wrong value. | §17.14, §17.16 |
 | `MD-01` | `models` | Language 1.2 artifact, contract, realization, evidence, and model declarations, the checked_apply term, the contract_violation type, and the less_than primitive belong to the closed lexlean/semantic-module/2 schema and its snapshot schema, are rejected under language 1.1 before either backend runs, and admit no member outside the closed schema, such as prompt text, a free-form description, or raw model configuration. | §17.12 |
 | `MD-02` | `models` | A model artifact is admitted only from a configured, content-addressed, confined project file whose SHA-256 and byte length equal its declaration and whose bytes decode under its declared closed schema to its declared type and role; a missing artifact or a digest or length mismatch fails with LLR3007, a schema, type, or role violation fails with LLR3008, and the generated Lean embeds the exact bytes with a kernel-checked theorem that the typed value is their decoding. | §17.12, §10.1, §26.3 |
 | `MD-03` | `models` | A contract names typed input, output, and optional state interfaces and prior proposition-valued predicates of exactly those interface signatures, and each runtime validator is an executable Boolean definition of the same signature linked to its predicate by a statement-exact soundness theorem and an optional completeness theorem that Lean restates against the fixed model semantics; any mismatch fails with LLT4006. | §17.12 |
@@ -10017,7 +10089,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-03` | `language-models` | Text that is not valid UTF-8 is refused and never tokenized: an artifact whose bytes do not decode under the `utf8_lines` schema — invalid UTF-8, a CR, or a missing final LF — fails by its artifact rules before any byte is decoded, and a text offered to `encodeText` that is not valid UTF-8 is refused rather than transcoded. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 419.
+**Total required capability IDs:** 422.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

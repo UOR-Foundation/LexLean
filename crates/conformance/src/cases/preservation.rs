@@ -1159,7 +1159,7 @@ fn assert_data_statement(
     // The binders.
     let parameters = &entry.program.functions[0].parameters;
     let mut binders = Vec::new();
-    let mut body = row.r#type;
+    let mut body = row.r#type.expect("a certificate row states its type");
     while let CoreNode::Forall { n, t, v, .. } = node(body) {
         binders.push((n.clone(), *t));
         body = *v;
@@ -1344,7 +1344,7 @@ fn assert_data_statement(
     }
     // No binder the composition adds is a name a parameter could be.
     let own_names: BTreeSet<&str> = own.iter().map(|(binder, _)| binder.as_str()).collect();
-    for index in reachable(data, row.r#type)
+    for index in reachable(data, row.r#type.expect("a certificate row states its type"))
         .into_iter()
         .chain(reachable(data, row.value.expect("a proof")))
     {
@@ -4638,6 +4638,213 @@ pub fn run(id: &str) {
                 assert!(
                     source.contains(&format!("\"{beginning}")),
                     "the allow-list entry {file} `{beginning}` ({reason}) matches nothing"
+                );
+            }
+        }
+        // §17.14, §17.16: the machine's primitives and the overflow literal.
+        "SP-18" => {
+            let read = |file: &str| {
+                support::module_json(
+                    &std::fs::read_to_string(
+                        repo_root().join("compiler/src").join(file).as_std_path(),
+                    )
+                    .unwrap_or_else(|error| panic!("compiler/src/{file}: {error}")),
+                )
+            };
+            let (syntax, semantics) = (read("RustSyntax.lex.tex"), read("RustSemantics.lex.tex"));
+            let constructors = |module: &Json, name: &str| -> Vec<(String, usize)> {
+                module["declarations"]
+                    .as_array()
+                    .and_then(|all| all.iter().find(|declaration| declaration["name"] == name))
+                    .unwrap_or_else(|| panic!("`{name}` is declared"))["constructors"]
+                    .as_array()
+                    .expect("constructors")
+                    .iter()
+                    .map(|constructor| {
+                        (
+                            constructor["name"].as_str().expect("a name").to_owned(),
+                            constructor["fields"].as_array().expect("fields").len(),
+                        )
+                    })
+                    .collect()
+            };
+            let expected = |names: &[(&str, usize)]| -> Vec<(String, usize)> {
+                names
+                    .iter()
+                    .map(|(name, fields)| ((*name).to_owned(), *fields))
+                    .collect()
+            };
+            assert_eq!(
+                constructors(&syntax, "Machine"),
+                expected(&[
+                    ("checkedAdd", 1),
+                    ("checkedSub", 1),
+                    ("checkedMul", 1),
+                    ("checkedQuot", 1),
+                    ("checkedNeg", 1),
+                    ("checkedShl", 1),
+                    ("checkedShr", 1),
+                    ("tryFrom", 1),
+                ]),
+                "the machine's primitives, each at a width"
+            );
+            assert_eq!(
+                constructors(&syntax, "Callee"),
+                expected(&[("function", 1), ("runtime", 1), ("machine", 1)]),
+                "a callee is a function, a runtime item, or a machine primitive"
+            );
+            assert!(
+                constructors(&syntax, "Lit").contains(&("overflow".to_owned(), 0)),
+                "the literal Overflow is declared"
+            );
+            for name in [
+                "machinePrimitive",
+                "machineWidth",
+                "machineShifts",
+                "machineAccepts",
+                "runMachine",
+            ] {
+                assert!(
+                    semantics["declarations"].as_array().is_some_and(|all| all
+                        .iter()
+                        .any(|declaration| declaration["name"] == name)),
+                    "`{name}` is declared by the machine"
+                );
+            }
+            if !support::lean_backed("SP-18") {
+                return;
+            }
+            // The pinned Lean evaluates the machine, over the shipped modules
+            // the certificates import. Each claim is a kernel-checked `rfl`.
+            let header = "import LexLeanTarget.RustSemantics\nopen LexLeanTarget LexLeanTarget.RustSyntax LexLeanTarget.RustSemantics LexLeanTarget.TargetSyntax\n\ndef machineCrate : Crate := { profile := Profile.std, items := [] }\n";
+            let claims = [
+                "runMachine (Machine.checkedAdd IntKind.u8) [Value.u8 200, Value.u8 55] = ROutcome.value (Value.some (Value.u8 255))",
+                "runMachine (Machine.checkedAdd IntKind.u8) [Value.u8 200, Value.u8 56] = ROutcome.value Value.none",
+                "runMachine (Machine.checkedAdd IntKind.u8) [Value.u8 1, Value.u16 1] = ROutcome.stuck",
+                "runMachine (Machine.checkedSub IntKind.u8) [Value.u8 0, Value.u8 1] = ROutcome.value Value.none",
+                "runMachine (Machine.checkedMul IntKind.i8) [Value.i8 100, Value.i8 2] = ROutcome.value Value.none",
+                "runMachine (Machine.checkedQuot IntKind.u8) [Value.u8 7, Value.u8 0] = ROutcome.value Value.none",
+                "runMachine (Machine.checkedQuot IntKind.u8) [Value.u8 7, Value.u8 2] = ROutcome.value (Value.some (Value.u8 3))",
+                "runMachine (Machine.checkedNeg IntKind.i8) [Value.i8 (-128)] = ROutcome.value Value.none",
+                "runMachine (Machine.checkedShl IntKind.u8) [Value.u8 1, Value.u32 7] = ROutcome.value (Value.some (Value.u8 128))",
+                "runMachine (Machine.checkedShl IntKind.u8) [Value.u8 1, Value.u32 8] = ROutcome.value Value.none",
+                "runMachine (Machine.checkedShr IntKind.u8) [Value.u8 128, Value.u32 7] = ROutcome.value (Value.some (Value.u8 1))",
+                "runMachine (Machine.checkedShl IntKind.u8) [Value.u16 1, Value.u32 1] = ROutcome.stuck",
+                "runMachine (Machine.tryFrom IntKind.u8) [Value.u16 300] = ROutcome.value Value.none",
+                "runMachine (Machine.tryFrom IntKind.u8) [Value.u16 200] = ROutcome.value (Value.some (Value.u8 200))",
+                "literal Lit.overflow = some Value.unit",
+                "eval 4 machineCrate [] (Expr.call (Callee.machine (Machine.checkedAdd IntKind.u8)) [Expr.lit (Lit.fixed IntKind.u8 200), Expr.lit (Lit.fixed IntKind.u8 55)] false) = ROutcome.value (Value.some (Value.u8 255))",
+                "eval 4 machineCrate [] (Expr.call (Callee.machine (Machine.checkedAdd IntKind.u8)) [Expr.lit (Lit.fixed IntKind.u8 200), Expr.lit (Lit.fixed IntKind.u8 56)] false) = ROutcome.value Value.none",
+                "eval 2 machineCrate [] (Expr.lit Lit.overflow) = ROutcome.value Value.unit",
+                "eval 3 machineCrate [] (Expr.construct (Ctor.err RustType.unit RustType.unit) [Expr.lit Lit.overflow]) = ROutcome.value (Value.error Value.unit)",
+            ];
+            let shipped = preservation::shipped();
+            let compile = |name: &str, text: &str| {
+                let directory = tempfile::tempdir().expect("a directory");
+                let source = directory.path().join(format!("{name}.lean"));
+                std::fs::write(&source, text).expect("write");
+                preservation::pinned_with(
+                    "lean",
+                    directory.path(),
+                    std::slice::from_ref(&shipped.build),
+                )
+                .arg(&source)
+                .output()
+                .expect("lean runs")
+            };
+            let mut text = header.to_owned();
+            for claim in claims {
+                text.push_str(&format!("example : {claim} := rfl\n"));
+            }
+            let output = compile("Machine", &text);
+            assert!(
+                output.status.success(),
+                "the machine does not evaluate as stated:\n{}",
+                preservation::joined(&output)
+            );
+            // A wrong value for the same call is refused, so that the check
+            // above is not one that accepts anything.
+            for wrong in [
+                "runMachine (Machine.checkedAdd IntKind.u8) [Value.u8 200, Value.u8 56] = ROutcome.value (Value.some (Value.u8 0))",
+                "runMachine (Machine.checkedShl IntKind.u8) [Value.u16 1, Value.u32 1] = ROutcome.value Value.none",
+                "literal Lit.overflow = some (Value.bool false)",
+                "eval 4 machineCrate [] (Expr.call (Callee.machine (Machine.checkedSub IntKind.u8)) [Expr.lit (Lit.fixed IntKind.u8 0), Expr.lit (Lit.fixed IntKind.u8 1)] false) = ROutcome.value (Value.some (Value.u8 255))",
+            ] {
+                let refused = compile("Wrong", &format!("{header}example : {wrong} := rfl\n"));
+                assert!(
+                    !refused.status.success(),
+                    "Lean accepts the wrong statement `{wrong}`"
+                );
+            }
+        }
+        // §17.14, §17.16: the loop over a state.
+        "SP-19" => {
+            let syntax = support::module_json(
+                &std::fs::read_to_string(
+                    repo_root()
+                        .join("compiler/src/RustSyntax.lex.tex")
+                        .as_std_path(),
+                )
+                .expect("compiler/src/RustSyntax.lex.tex"),
+            );
+            let expression = syntax["declarations"]
+                .as_array()
+                .and_then(|all| all.iter().find(|declaration| declaration["name"] == "Expr"))
+                .expect("`Expr` is declared");
+            let found = expression["constructors"]
+                .as_array()
+                .expect("constructors")
+                .iter()
+                .find(|constructor| constructor["name"] == "loop")
+                .expect("the expression Loop is declared");
+            assert_eq!(
+                found["fields"].as_array().map(Vec::len),
+                Some(2),
+                "a loop is a state binding and a body block"
+            );
+            if !support::lean_backed("SP-19") {
+                return;
+            }
+            let header = "import LexLeanTarget.RustSemantics\nopen LexLeanTarget LexLeanTarget.RustSyntax LexLeanTarget.RustSemantics LexLeanTarget.TargetSyntax\n\ndef loopCrate : Crate := { profile := Profile.std, items := [] }\ndef st : Ident := Ident.generated IdentKind.binding 0\ndef stop : Block := Block.mk [] (Expr.construct (Ctor.err RustType.nat RustType.nat) [Expr.copy st])\ndef step : Block := Block.mk [] (Expr.construct (Ctor.ok RustType.nat RustType.nat) [Expr.predecessor st])\ndef countdown : RustSyntax.Expr := Expr.loop st (Block.mk [] (Expr.cond (Expr.isZero st) stop step))\ndef neither : RustSyntax.Expr := Expr.loop st (Block.mk [] (Expr.lit Lit.unit))\n";
+            let claims = [
+                "eval 40 loopCrate [(st, Value.nat 3)] countdown = ROutcome.value (Value.nat 0)",
+                "eval 40 loopCrate [(st, Value.nat 0)] countdown = ROutcome.value (Value.nat 0)",
+                "eval 2 loopCrate [(st, Value.nat 3)] countdown = ROutcome.exhausted",
+                "eval 40 loopCrate [(st, Value.nat 3)] neither = ROutcome.stuck",
+            ];
+            let shipped = preservation::shipped();
+            let compile = |name: &str, text: &str| {
+                let directory = tempfile::tempdir().expect("a directory");
+                let source = directory.path().join(format!("{name}.lean"));
+                std::fs::write(&source, text).expect("write");
+                preservation::pinned_with(
+                    "lean",
+                    directory.path(),
+                    std::slice::from_ref(&shipped.build),
+                )
+                .arg(&source)
+                .output()
+                .expect("lean runs")
+            };
+            let mut text = header.to_owned();
+            for claim in claims {
+                text.push_str(&format!("example : {claim} := rfl\n"));
+            }
+            let output = compile("Loop", &text);
+            assert!(
+                output.status.success(),
+                "the loop does not evaluate as stated:\n{}",
+                preservation::joined(&output)
+            );
+            for wrong in [
+                "eval 40 loopCrate [(st, Value.nat 3)] countdown = ROutcome.value (Value.nat 1)",
+                "eval 2 loopCrate [(st, Value.nat 3)] countdown = ROutcome.value (Value.nat 0)",
+                "eval 40 loopCrate [(st, Value.nat 3)] neither = ROutcome.value Value.unit",
+            ] {
+                let refused = compile("Wrong", &format!("{header}example : {wrong} := rfl\n"));
+                assert!(
+                    !refused.status.success(),
+                    "Lean accepts the wrong statement `{wrong}`"
                 );
             }
         }

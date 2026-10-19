@@ -1107,8 +1107,7 @@ fn runtime_declarations() -> Vec<(String, BTreeSet<String>)> {
         }
         let mut references = BTreeSet::new();
         let mut seen = BTreeSet::new();
-        let mut stack = vec![row.r#type];
-        stack.extend(row.value);
+        let mut stack: Vec<usize> = row.expression_roots().collect();
         while let Some(node) = stack.pop() {
             if !seen.insert(node) {
                 continue;

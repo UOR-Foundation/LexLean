@@ -1420,6 +1420,261 @@ and a count, the reverse's sum equated to a count, and a map's entries summed
 as its keys twice. `conformance_pf_23` refuses the pair law applied to a
 swapped statement. Each assertion names exactly the refused theorems.
 
+### a derived row is made by the pinned Lean and never stored (SM-34)
+
+A version 2 row may be derived: it states no universe parameters, type, or value,
+and the decoder makes the constant with the pinned Lean's own construction (`SM-34`,
+§17.10, #91 stage 2). Run with the pinned Lean 4.32.1 in a Linux container, on
+`main` `efea57d8` with the change. The plants that change the library or the
+decoder were run with `lexlean lock && lexlean verify` in a copy of the project of
+`tests/negative/preservation-drift`, the compiler rebuilt for each, and the file
+restored with `git checkout`. Unplanted, the same command verifies (`verified 2
+modules`): all 7,203 derived rows of the library are made by Lean.
+
+Planted (a): the name of the derived row `LexLeanPreservation.Rel.eq_1` in
+`src/Core.lex.tex` replaced by `LexLeanPreservation.Rel.eq_x`, a name the pinned Lean
+does not reserve. Expected: the module is refused at the row.
+
+```text
+error[LLV7014]: preservation environment: `LexLeanPreservation.Core` does not compile silently under the pinned Lean: error: native core declaration 'LexLeanPreservation.Rel.eq_x':
+  derived core declaration 'LexLeanPreservation.Rel.eq_x' bears a name the elaborator does not reserve and states no sparse casesOn record
+```
+
+Planted (b): in `src/RustBase.lex.tex`, the record of the derived sparse `casesOn`
+`LexLeanPreservation.Rust.WT._sparseCasesOn_1` with its last constructor
+(`Value.bytes`) removed and its arity left at 14. Expected: the record the
+construction keeps is not the row's.
+
+```text
+error[LLV7014]: preservation environment: `LexLeanPreservation.RustBase` does not compile silently under the pinned Lean: error: native core declaration 'LexLeanPreservation.Rust.WT._sparseCasesOn_1':
+  core declaration 'LexLeanPreservation.Rust.WT._sparseCasesOn_1' states another sparse casesOn record than the elaborator keeps
+```
+
+Planted (c): the same record with `Value.bytes` replaced by `Value.nat`, so that its
+size, arity, and major premise are the row's own. Expected, and found: the
+construction makes another constant under the name, and the stored matcher
+`WT.match_1`, whose value applies it, is refused by the kernel.
+
+```text
+error[LLV7014]: preservation environment: `LexLeanPreservation.RustBase` does not compile silently under the pinned Lean: error: native core declaration 'LexLeanPreservation.Rust.WT.match_1':
+  (kernel) application type mismatch
+    @LexLeanPreservation.Rust.WT._sparseCasesOn_1 (fun x => motive x x✝) x✝¹
+```
+
+What this does not catch, found by running it: the constructors of a sparse
+record are the input of the construction, so the same plant on a sparse `casesOn` no
+stored row applies (the `Ordering.eq` record of `Keys`, with `Ordering.lt` in its place)
+is made, differently, and the library verifies. The recipe is checked against its
+arity and major premise, and against every stored row that uses the constant, and
+not against the constructors the original elaboration chose.
+
+Planted (e): the record of `LexLeanPreservation.Rust.WT._sparseCasesOn_1` naming
+`Value.clos`, which is no constructor of `Value`. Expected: refused.
+
+```text
+error[LLV7014]: preservation environment: `LexLeanPreservation.RustBase` does not compile silently under the pinned Lean: error: native core declaration 'LexLeanPreservation.Rust.WT._sparseCasesOn_1':
+  core declaration 'LexLeanPreservation.Rust.WT._sparseCasesOn_1' names 'LexLeanTarget.TargetSyntax.Value.clos', which is not a constructor of 'LexLeanTarget.TargetSyntax.Value'
+```
+
+Planted (f): the same record naming `Value.adt` twice. Expected: refused.
+
+```text
+  core declaration 'LexLeanPreservation.Rust.WT._sparseCasesOn_1' names the constructor 'LexLeanTarget.TargetSyntax.Value.adt' twice
+```
+
+Planted (g): the row `splitter._sparseCasesOn_2` of `src/Keys.lex.tex` removed, so
+that the construction of the splitter makes the constant itself. Expected: the module
+does not state what the construction made.
+
+```text
+error[LLV7014]: preservation environment: `LexLeanPreservation.Keys` does not compile silently under the pinned Lean: error: the construction made the sparse casesOn '_private.LexLeanPreservation.Keys.0.LexLeanCollections.compareCodes.match_1.splitter._sparseCasesOn_2', which the module does not state
+```
+
+Not distinguished, and recorded as a non-evidence note: the constructors of the
+`Ordering.eq` record of `Keys` replaced by `Ordering.lt` (command as in (h), run in the
+same way) still verifies with the use-scan of (h) in place. The splitter that
+refers to the constant is made by the pinned Lean from the constant it finds, so the
+use is of the swapped constant, and nothing in the module can tell. The content of a
+derived row is checked by its uses alone, and SM-34 says so; no further machinery is
+added.
+
+Planted (h): a derived sparse `casesOn` row nothing refers to, added to
+`src/Keys.lex.tex` (a copy of the `splitter._sparseCasesOn_2` row named
+`_sparseCasesOn_3`, with `Ordering.gt` for `Ordering.eq`), built and verified in a
+copy of the project of `tests/negative/preservation-drift` with `lexlean lock &&
+lexlean verify`. Expected: refused, because the use-scan finds no row that refers to
+it. The unplanted library verifies (`verified 2 modules`) with the scan, so every one
+of its 313 derived sparse rows is referred to.
+
+```text
+error[LLV7014]: preservation environment: `LexLeanPreservation.Keys` does not compile silently under the pinned Lean: error: the derived sparse casesOn '_private.LexLeanPreservation.Keys.0.LexLeanCollections.compareCodes.match_1.splitter._sparseCasesOn_3' is referred to by no row of the module
+```
+
+Planted (d): the name of `LexLeanPreservation.Rel.eq_1` replaced by `Rel.eq_2`,
+which is reserved but which the construction does not make. Expected: refused.
+
+```text
+error[LLV7014]: preservation environment: `LexLeanPreservation.Core` does not compile silently under the pinned Lean: error: native core declaration 'LexLeanPreservation.Rel.eq_2':
+  derived core declaration 'LexLeanPreservation.Rel.eq_2' bears a name the elaborator reserves, and its construction does not make it
+```
+
+Planted (e): a stored row back in the library, `src/Compose.lex.tex` replaced by its
+version at `efea57d8`. Command: `cargo test -p repo-conformance --test conformance --
+conformance_sm_34`. Expected: the gate over the library names the row.
+
+```text
+thread 'conformance_sm_34' panicked at crates/conformance/src/cases/semantic_ir.rs:2719:21:
+assertion `left == right` failed: .../language/preservation-1.2/library/src/Compose.lex.tex: `LexLeanPreservation.Rust.Representable._sparseCasesOn_1` is stored and must be derived
+```
+
+Planted (f): the check that the constant the construction made is the row's kind
+removed from `addDerived` (`crates/lexlean/src/backend/core_v2.rs`, the condition
+prefixed with `true ||`). Command: `conformance_sm_34`. Expected: the copy whose
+theorem is a `definition` is no longer refused.
+
+```text
+thread 'conformance_sm_34' panicked at crates/conformance/src/support.rs:757:14:
+verify fails
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 414 filtered out
+```
+
+Planted (g): the check that a derived row states none of what the construction
+decides removed from the linker (`validate_derived_row`'s result discarded in
+`crates/lexlean/src/ir/core.rs`). Command: `conformance_sm_34`. Expected: the copies
+that state a type, a value, or universe parameters are no longer refused.
+
+```text
+thread 'conformance_sm_34' panicked at crates/conformance/src/support.rs:730:14:
+check fails
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 414 filtered out
+```
+
+Planted (h): `derived` allowed with a `type` in the schema's `derivedDeclaration`.
+Command: `conformance_sm_34`. Expected: the schema accepts the derived row with a
+type and the case says so.
+
+```text
+thread 'conformance_sm_34' panicked at crates/conformance/src/cases/semantic_ir.rs:2629:17:
+the schema accepts a derived row with a type
+```
+
+Planted (i): the branch of the decoder that handles a derived row disabled
+(`if (optionalField json "derived").isSome` replaced by `if false`). Command:
+`conformance_sm_34`. Expected: the derived module is no longer verified, so the
+case fails before it reaches any refusal.
+
+```text
+thread 'conformance_sm_34' panicked at crates/conformance/src/support.rs:2286:10:
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 414 filtered out
+```
+
+Removed: every plant was reverted. `conformance_sm_31`, `conformance_sm_33`, and
+`conformance_sm_34` pass with the change, and `cargo test -p lexlean --lib` passes
+(200 tests). What was not run is listed in the pull request of the change: no record
+bound to the language-1.2 compiler-semantics ID was regenerated, so every case that
+reads a committed lock (for example `conformance_au_10`, `conformance_au_11`, and
+`conformance_au_12`) reports `LLC0102` until the train regenerates.
+
+### the machine's primitives and the overflow literal can fail (SP-18)
+
+`RustSyntax` declares eight machine primitives, `Callee.machine`, and `Lit.overflow`,
+and `RustSemantics` evaluates them (`SP-18`, §17.14, §17.16, #91 stage 2). The case
+reads the constructors from the committed `compiler/src` modules, and has the pinned
+Lean 4.32.1 evaluate 19 claims over the shipped copies of the modules (the boundary
+values of `u8` and `i8`, a shift by the width and by the width less one, an
+operand of another width, `try_from` out of and into range, the overflow literal,
+and the same calls through `eval`). Each plant was run on `main` `efea57d8` with the
+change in a Linux container, with `cargo test -p repo-conformance --test conformance --
+conformance_sp_18`; the two that change the semantics were regenerated into the
+shipped copies (`lexlean build` in a copy of `compiler/`) before the run, and every
+file was restored with `git checkout`.
+
+Planted (a): `machineAccepts` made `true`, so a shift of a `u16` is run as a shift of
+a `u8`. Expected: the claim that it is stuck fails.
+
+```text
+the machine does not evaluate as stated:
+/tmp/.tmpF9nFg5/Machine.lean:16:100: error: Type mismatch
+  rfl
+```
+
+Planted (b): the literal `Overflow` evaluated to `Value.bool false` in `literal`.
+Expected: the claims about the literal, and about `Err(Overflow)` built by `eval`,
+fail.
+
+```text
+the machine does not evaluate as stated:
+/tmp/.tmpdTa9It/Machine.lean:19:52: error: Type mismatch
+```
+
+Planted (c): the `tryFrom` primitive removed from `Machine` in
+`compiler/src/RustSyntax.lex.tex`. Expected: the declared primitives are not the eight.
+
+```text
+assertion `left == right` failed: the machine's primitives, each at a width
+  left: [("checkedAdd", 1), …, ("checkedShr", 1)]
+ right: [("checkedAdd", 1), …, ("checkedShr", 1), ("tryFrom", 1)]
+```
+
+Planted (d): `overflow` removed from `Lit`. Expected: the literal is not declared.
+
+```text
+the literal Overflow is declared
+```
+
+Not planted: the arm of `eval` that runs a machine callee. A module without it does
+not link (the match is not total), which is the semantic modules' own check, not this
+case's. The five authored declarations of the library that the constructors leave a
+case short are in `tests/preservation-library/MIGRATION.md`, with the run that shows
+each is needed.
+
+### the loop over a state can fail (SP-19)
+
+`RustSyntax` declares `Expr.loop` over a state binding and a body block, and
+`RustSemantics` evaluates it by recursing through `eval` (`SP-19`, §17.14, §17.16,
+#91 stage 3). The case reads the constructor from the committed `compiler/src`
+module, and has the pinned Lean 4.32.1 evaluate four claims over the shipped copies
+of the modules (a countdown from three ends at zero, a countdown from zero ends at
+once, the same countdown at fuel two is exhausted, and a body whose value is neither
+`Ok` nor `Err` is stuck), and refuse three wrong statements of the same loops. The
+Rust side is covered by unit tests in `calculus::rust::ast` (the printed loop rebinds
+the state and breaks with the payload of `Err`; the validator accepts a body that
+moves only the state and refuses one that moves another binding), by the exhaustive
+matches of the moves pass, the lowering, the validator, and the certificate-B term
+builder, and by `audit-production`, which needs a disposition for the new
+construct. Each plant was run in a Linux container with `cargo test -p
+repo-conformance --test conformance -- conformance_sp_19`; the files were restored
+afterwards and compared byte for byte.
+
+Planted (a): the shipped `RustSemantics` evaluating the loop again without rebinding
+the state. Expected: the countdown claim fails. Observed: caught earlier, because
+the library's proof `stable_loop` states the equation of `eval` for `loop`; the
+shipped module is rejected.
+
+```text
+the shipped module `LexLeanPreservation.RustBase` was rejected:
+… error: native core declaration 'LexLeanPreservation.Rust.stable_loop':
+  (kernel) application type mismatch
+```
+
+Planted (b): the shipped `RustSemantics` ending the loop with the unit value
+instead of the payload of `Err`. Expected: the countdown claim fails. Observed: the
+same rejection of `stable_loop`.
+
+Planted (c): the constructor `loop` removed from `Expr` in
+`compiler/src/RustSyntax.lex.tex`. Expected: the declared expressions lack the loop.
+
+```text
+thread 'conformance_sp_19' panicked at crates/conformance/src/cases/preservation.rs:4795:18:
+the expression Loop is declared
+```
+
+Plants (a) and (b) are caught by the proof library before the claims run, which is
+the stronger gate and not the one this case adds; the claims themselves are shown to
+be able to fail by the three statements of a wrong value, each of which the pinned
+Lean refuses (the loop ending at one, the exhausted loop stated as a value, and the
+stuck loop stated as the unit value).
+
 ### a list of any length is a term Lean elaborates without binders
 
 Lean's `[…]` macro writes a literal of more than 32 elements under `let`

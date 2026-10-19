@@ -350,9 +350,8 @@ fn sharing(core: &CoreModule, declarations: &[&CoreDeclaration]) -> Sharing {
         requirements.push(requirement);
     }
     for declaration in declarations {
-        references[declaration.r#type] = references[declaration.r#type].saturating_add(1);
-        if let Some(value) = declaration.value {
-            references[value] = references[value].saturating_add(1);
+        for root in declaration.expression_roots() {
+            references[root] = references[root].saturating_add(1);
         }
     }
     let shared: Vec<usize> = core
@@ -647,10 +646,7 @@ pub fn environment_declarations(core: &CoreModule) -> Result<Vec<&CoreDeclaratio
         ));
     }
     for declaration in &environment {
-        let mut roots = vec![declaration.r#type];
-        if let Some(value) = declaration.value {
-            roots.push(value);
-        }
+        let mut roots: Vec<usize> = declaration.expression_roots().collect();
         if let Some(structure) = declaration
             .inductive
             .as_ref()
@@ -710,21 +706,62 @@ fn emission_order(core: &CoreModule) -> Result<Vec<&CoreDeclaration>, Diagnostic
         .iter()
         .map(|row| (row.name.as_str(), row))
         .collect();
+    // A derived row states no term, so nothing in it names what the pinned
+    // Lean's construction reads. The construction reads the environment as
+    // it stood when the elaborator made the constant, and the data order of
+    // the module is that order, so a derived row follows the derived row
+    // before it in the data, its owners (the rows its name extends) unless it
+    // is a sparse `casesOn`, and the type and constructors of its recipe.
+    let mut previous_derived: Option<&str> = None;
+    let mut derived_predecessor: BTreeMap<&str, &str> = BTreeMap::new();
+    for row in core.declarations.iter().filter(|row| row.derived) {
+        if let Some(previous) = previous_derived {
+            derived_predecessor.insert(row.name.as_str(), previous);
+        }
+        previous_derived = Some(row.name.as_str());
+    }
     let mut dependencies: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     for (name, declaration) in &emitted {
-        let mut roots = vec![declaration.r#type];
-        if let Some(value) = declaration.value {
-            roots.push(value);
-        }
+        let mut roots: Vec<usize> = declaration.expression_roots().collect();
         if let Some(inductive) = &declaration.inductive {
             for constructor in &inductive.constructors {
                 if let Some(row) = rows.get(constructor.as_str()) {
-                    roots.push(row.r#type);
+                    roots.extend(row.r#type);
                 }
             }
         }
         let own = representative_of(name);
         let deps = dependencies.entry(own.clone()).or_default();
+        if declaration.derived {
+            let mut required: Vec<String> = Vec::new();
+            required.extend(derived_predecessor.get(name).map(|name| (*name).to_owned()));
+            if let Some(sparse) = &declaration.sparse {
+                // A sparse `casesOn` is named under the splitter whose
+                // construction needs it, so it comes before its name's owner
+                // and depends on its recipe alone.
+                required.push(sparse.ind_name.clone());
+                required.extend(sparse.interesting_ctors.iter().cloned());
+            } else {
+                let mut owner = name.rsplit_once('.').map(|(prefix, _)| prefix);
+                while let Some(prefix) = owner {
+                    required.push(prefix.to_owned());
+                    owner = prefix.rsplit_once('.').map(|(prefix, _)| prefix);
+                }
+            }
+            for constant in required {
+                let dependency = if emitted.contains_key(constant.as_str()) {
+                    Some(constant)
+                } else {
+                    owners.get(&constant).cloned()
+                };
+                if let Some(dependency) = dependency {
+                    let dependency = representative_of(&dependency);
+                    if dependency != own {
+                        deps.insert(dependency);
+                    }
+                }
+            }
+        }
         for constant in constants_in(core, roots) {
             let dependency = if emitted.contains_key(constant.as_str()) {
                 Some(constant)
@@ -857,7 +894,10 @@ fn remap_declaration(
     mapping: &[usize],
 ) -> Result<CoreDeclaration, Diagnostic> {
     let mut declaration = declaration.clone();
-    declaration.r#type = remapped_root(mapping, declaration.r#type)?;
+    declaration.r#type = declaration
+        .r#type
+        .map(|root| remapped_root(mapping, root))
+        .transpose()?;
     declaration.value = declaration
         .value
         .map(|root| remapped_root(mapping, root))
@@ -938,10 +978,7 @@ fn core_chunk(
     let mut work = Vec::new();
     for index in &declaration_indices {
         let declaration = &core.declarations[*index];
-        work.push(declaration.r#type);
-        if let Some(value) = declaration.value {
-            work.push(value);
-        }
+        work.extend(declaration.expression_roots());
         if let Some(structure) = declaration
             .inductive
             .as_ref()
@@ -1057,11 +1094,29 @@ fn append_core_command(
     text: &mut String,
     core: &CoreModule,
     chunk: &CoreChunk,
+    last: bool,
 ) -> Result<(), Diagnostic> {
+    /// What the last chunk checks of the whole module: every derived sparse
+    /// `casesOn` is referred to by the type or value of some row. A recipe
+    /// selects constructors, and one that selects others makes another
+    /// well-typed constant, so nothing but a use checks it: the kernel has
+    /// checked the term of every row that applies the constant against it.
+    #[derive(serde::Serialize)]
+    struct ModuleScan<'a> {
+        rows: Vec<&'a str>,
+        sparse: Vec<&'a str>,
+    }
     #[derive(serde::Serialize)]
     struct CorePayload<'a> {
         declarations: &'a [CoreDeclaration],
         imports: &'a [String],
+        /// Every sparse `casesOn` the whole module states, so that a chunk
+        /// can tell a constant the construction made for a row of another
+        /// chunk from one the module does not state. Core module 2 only.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        module_sparse: Option<Vec<&'a str>>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        module_scan: Option<ModuleScan<'a>>,
         order: &'a [usize],
         proof_nodes: &'a [usize],
         spec: &'a str,
@@ -1069,6 +1124,26 @@ fn append_core_command(
     let payload = serde_json::to_string(&CorePayload {
         declarations: &chunk.declarations,
         imports: &core.imports,
+        module_sparse: (core.version() == 2).then(|| {
+            core.declarations
+                .iter()
+                .filter(|row| row.sparse.is_some())
+                .map(|row| row.name.as_str())
+                .collect()
+        }),
+        module_scan: (core.version() == 2 && last).then(|| ModuleScan {
+            rows: core
+                .declarations
+                .iter()
+                .map(|row| row.name.as_str())
+                .collect(),
+            sparse: core
+                .declarations
+                .iter()
+                .filter(|row| row.derived && row.sparse.is_some())
+                .map(|row| row.name.as_str())
+                .collect(),
+        }),
         order: &chunk.order,
         proof_nodes: &chunk.proof_nodes,
         spec: &core.spec,
@@ -1192,9 +1267,9 @@ set_option synthInstance.maxHeartbeats 0
     let order = emission_order(core)?;
     let owners = generated_owners(core);
     let ranges = core_command_ranges(core, &order, &owners)?;
-    for range in &ranges {
+    for (index, range) in ranges.iter().enumerate() {
         let chunk = core_chunk(core, &order[range.clone()], &owners)?;
-        append_core_command(&mut text, core, &chunk)?;
+        append_core_command(&mut text, core, &chunk, index + 1 == ranges.len())?;
     }
     if let Some(scope) = legacy_scope {
         text.push_str(&format!("\nend {scope}\n"));
@@ -1398,8 +1473,10 @@ pub fn render_latex(checked: &CheckedModule, core: &CoreModule) -> Result<Emitte
         declarations
             .iter()
             .map(|declaration| {
-                let mut scope = Vec::new();
-                let ty = printer.term(declaration.r#type, &mut scope)?;
+                let ty = match declaration.r#type {
+                    Some(root) => Some(printer.term(root, &mut Vec::new())?),
+                    None => None,
+                };
                 let value = match declaration.value {
                     Some(value) => {
                         let mut scope = Vec::new();
@@ -1412,10 +1489,18 @@ pub fn render_latex(checked: &CheckedModule, core: &CoreModule) -> Result<Emitte
             .collect::<Result<Vec<_>, Diagnostic>>()
     })??;
     for (declaration, (ty, value)) in declarations.iter().zip(rendered) {
+        // A derived row states no type: the document says so, and says what
+        // makes the constant, instead of a statement the data does not hold.
+        let statement = match ty {
+            Some(ty) => format!("\\noindent\\texttt{{{}}}\\par\n", tex_escape(&ty)),
+            None => format!(
+                "\\noindent Derived {} made by the pinned Lean's construction.\\par\n",
+                tex_escape(&format!("{:?}", declaration.kind).to_lowercase())
+            ),
+        };
         let mut text = format!(
-            "\\subsection*{{\\texttt{{{}}}}}\n\\noindent\\texttt{{{}}}\\par\n\\noindent Axiom policy: \\texttt{{{} [{}]}}.\\par\n",
+            "\\subsection*{{\\texttt{{{}}}}}\n{statement}\\noindent Axiom policy: \\texttt{{{} [{}]}}.\\par\n",
             tex_escape(&declaration.name),
-            tex_escape(&ty),
             declaration.policy.kind(),
             tex_escape(&declaration.policy.axioms().join(", ")),
         );
@@ -1460,13 +1545,13 @@ mod tests {
     fn declaration(name: &str, kind: CoreDeclKind, generated: bool) -> CoreDeclaration {
         CoreDeclaration {
             name: name.to_owned(),
-            levels: Vec::new(),
+            levels: Some(Vec::new()),
             kind,
             reducibility: matches!(kind, CoreDeclKind::Definition)
                 .then_some(CoreReducibility::Opaque),
             transparency: CoreTransparency::Semireducible,
             policy: CoreAxiomPolicy::None,
-            r#type: 0,
+            r#type: Some(0),
             value: match kind {
                 CoreDeclKind::Definition => Some(1),
                 CoreDeclKind::Theorem => Some(0),
@@ -1491,6 +1576,7 @@ mod tests {
             inline: None,
             sparse: None,
             grind: None,
+            derived: false,
         }
     }
 
