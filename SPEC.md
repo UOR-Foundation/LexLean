@@ -5005,6 +5005,19 @@ A derivation of certificate B is built without recursion in the number of a
 match's arms, so a limit that allows thousands of arms cannot overflow the
 stack (`conformance_sp_08` derives 9000 on a 2 MiB stack).
 
+The lowered program is bounded in depth too, by a limit of the implementation
+and not a rule of the language. The program is written as canonical JSON and
+read back (`Program::to_file_bytes`) by code that recurses with its nesting, so
+a program whose JSON nests deeper than 512 arrays and objects (about 250 nested
+expressions, measured on the serialized text) is `LLS8002` in phase lowering,
+naming the depth it has, before anything is generated from it (the negative
+fixture `lowering-depth-limit`, a root calling a chain of 509 generic
+definitions whose instances nest a pair one level deeper each, is refused at
+515). The reason is the stack that round trip runs on: a debug build takes about
+a quarter of 2 MiB at the limit, which a test builds and checks. Raising it is a
+change to the constant `PROGRAM_JSON_DEPTH` and to that test, and carries no
+promise of a later lift.
+
 The roots of a project are bounded together, in two places. A closure member
 of the eligibility report (§17.13, a build artifact) records its shortest call
 path, so a closure that is a chain of `D` calls holds `D^2 / 2` steps, and the
