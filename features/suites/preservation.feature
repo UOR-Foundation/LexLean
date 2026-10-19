@@ -143,3 +143,10 @@ Feature: preservation
     When every loop of every rendering is read back into the recursive body it is the loop form of, the loop form of that body is computed by the library's form transliterated, and certificate B of the fixtures rendered as loops is compiled by the pinned Lean over the shipped library
     Then the loop form of each recovered body is the crate's function, and each certificate B compiles with exactly the axioms the audit states
     And a loop that is not the loop form of any recursive body is refused for each way it may differ
+
+  @SP-21 @build
+  Scenario: The declared Rust machine states the integer operations the runtime's scalar functions use as machine primitives beyond the first eight: RustSyntax declares machine primitives for the bitwise and, or, exclusive or, and not of a width, for the equality, less-or-equal, and less-than of two naturals, and for the remainder of two naturals and of two integers, and RustSemantics evaluates a call of each as the calculus primitive of the same name with the value the calculus states, stuck on an operand of another width, which the pinned Lean evaluates on the boundary values of the widths and refuses to evaluate to a wrong value.
+    Given the committed modules RustSyntax and RustSemantics of the compiler project, shipped as the calculus modules the certificates import
+    When RustSyntax is read for its machine primitives and the pinned Lean evaluates a call of each new primitive on the boundary values of the widths and on an operand of another width
+    Then RustSyntax declares the bitwise, order, and remainder primitives, and each evaluation is the value the calculus primitive of the same name states
+    And a statement of a wrong value for the same call is refused by the pinned Lean

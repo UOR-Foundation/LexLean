@@ -93,3 +93,10 @@ Feature: rust-backend
     When each is rendered in both profiles and its self calls are classified as tail calls or not
     Then every template whose self calls are all tail calls renders as a loop that breaks with its result, and its primitives' registry rows say `recursion = false`
     And every other template renders as a call and keeps `recursion = true`, and a template rendered with a self call it could have as a loop, or a row that disagrees with its rendering, is refused
+
+  @RB-15 @build
+  Scenario: The Rust AST mirrors the machine callee and the overflow literal of RustSyntax: a crate that calls a machine primitive or states the overflow value is checked, printed, and compiled by the pinned rustc, a machine call prints as the Rust operation its primitive names at its width, every machine primitive has a correspondence row naming the calculus element it realizes, and a crate that calls a machine primitive with an operand of another width, a machine call with no correspondence row, and an overflow value outside an `Err` are refused as LLB6005; no rendering of an existing program changes.
+    Given crates that call each machine primitive at each width, state the overflow value in an `Err`, and the planted variants of each
+    When each crate is checked, printed, and compiled by the pinned rustc, and the machine calls are run on the boundary values of the widths
+    Then each machine call prints as the Rust operation its primitive names, prints and returns the value the machine states, and has a correspondence row
+    And a machine call with an operand of another width, a machine call with no correspondence row, and an overflow value outside an `Err` are each refused as LLB6005, and the renderings of the existing programs are unchanged
