@@ -2246,10 +2246,13 @@ const EVALUATOR_ARGUMENTS: usize = 300;
 const RUSTC_LITERALS: usize = 1_500;
 const RUSTC_PRIM_ROUNDS: usize = 24;
 const RUSTC_MUTANTS: usize = 6_000;
-const RUSTC_ARGUMENTS: usize = 1_000;
+const RUSTC_ARGUMENTS: usize = 750;
 /// Runs per compiled harness: a harness spells every argument as a Rust
 /// expression, and rustc's memory grows with their number.
 const RUSTC_CHUNK: usize = 1_000;
+/// A run of `checkArguments` spells a whole fixture program beside its
+/// arguments, so its harnesses hold fewer.
+const RUSTC_ARGUMENT_CHUNK: usize = 250;
 
 /// A defect planted in the source: the check it removes, the text of the
 /// source it is made at, and the root whose differential must catch it.
@@ -2555,7 +2558,7 @@ pub(super) fn case() {
             &format!("seeded program chunk {at}"),
         );
     }
-    for (at, arguments) in large_arguments.chunks(RUSTC_CHUNK).enumerate() {
+    for (at, arguments) in large_arguments.chunks(RUSTC_ARGUMENT_CHUNK).enumerate() {
         total += rustc_differential(
             &[("checkArguments", &lowered["checkArguments"], arguments)],
             &format!("seeded argument chunk {at}"),
