@@ -1,0 +1,1 @@
+[{"causes":[],"code":"LLL1006","help":[],"labels":[],"message":"mathematical islands do not nest","notes":[],"primary":{"byte_end":159,"byte_start":157,"column_end":33,"column_start":31,"line_end":7,"line_start":7,"path":"src/Main.lex.tex"},"severity":"error","spec":"lexlean/diagnostic/1"}]

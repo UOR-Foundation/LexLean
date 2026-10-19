@@ -352,8 +352,7 @@ fn children(node: &CoreNode) -> Vec<usize> {
 
 /// The nodes a declaration states by number.
 fn roots(declaration: &CoreDeclaration) -> Vec<usize> {
-    let mut roots = vec![declaration.r#type];
-    roots.extend(declaration.value);
+    let mut roots: Vec<usize> = declaration.expression_roots().collect();
     if let Some(equations) = &declaration.eqn_info {
         roots.push(equations.r#type);
         roots.push(equations.value);
@@ -590,11 +589,19 @@ fn declaration_text(declaration: &CoreDeclaration) -> Result<String, SurfaceErro
         _ => return Err(error(0, "a declaration is an object")),
     };
     let mut head = format!("{kind} {}", spell(&declaration.name));
-    if !declaration.levels.is_empty() {
-        let names: Vec<String> = declaration.levels.iter().map(|name| spell(name)).collect();
+    if !declaration.level_names().is_empty() {
+        let names: Vec<String> = declaration
+            .level_names()
+            .iter()
+            .map(|name| spell(name))
+            .collect();
         let _ = write!(head, ".{{{}}}", names.join(", "));
     }
-    let _ = write!(head, " : @{}", declaration.r#type);
+    // A derived row has no type to state: it is the row without a `:`, and
+    // its members say `derived: true`.
+    if let Some(root) = declaration.r#type {
+        let _ = write!(head, " : @{root}");
+    }
     if let Some(value) = declaration.value {
         let _ = write!(head, " := @{value}");
     }
@@ -1664,13 +1671,21 @@ impl<'a> Parser<'a> {
             }
             self.expect(Kind::RBrace, "`}` after the universe parameters")?;
         }
-        self.expect(Kind::Colon, "`:` and the type")?;
-        let r#type = self.root("the type")?;
-        let value = if self.eat(Kind::ColonEq)? {
-            Some(self.root("the value")?)
+        // A row without a type is a derived row, whose universe parameters,
+        // type, and value are the pinned Lean's to make; the members of the
+        // row say so and the schema's checks hold the two together.
+        let (r#type, value) = if self.eat(Kind::Colon)? {
+            let r#type = self.root("the type")?;
+            let value = if self.eat(Kind::ColonEq)? {
+                Some(self.root("the value")?)
+            } else {
+                None
+            };
+            (Some(r#type), value)
         } else {
-            None
+            (None, None)
         };
+        let stated = r#type.is_some();
         let mut object = std::collections::BTreeMap::new();
         if let Some((from, to)) = self.members()? {
             match generic::parse(&self.text[from..to]) {
@@ -1681,10 +1696,17 @@ impl<'a> Parser<'a> {
         }
         object.insert("kind".to_owned(), Json::Str(kind_word.to_owned()));
         object.insert("name".to_owned(), Json::Str(name));
-        object.insert(
-            "levels".to_owned(),
-            Json::Arr(levels.into_iter().map(Json::Str).collect()),
-        );
+        if stated {
+            object.insert(
+                "levels".to_owned(),
+                Json::Arr(levels.into_iter().map(Json::Str).collect()),
+            );
+        } else if !levels.is_empty() {
+            return self.fail(
+                kind.start,
+                "a row without a type states no universe parameters",
+            );
+        }
         Ok(Pending {
             object,
             r#type,
@@ -1707,10 +1729,9 @@ impl<'a> Parser<'a> {
                     .ok_or_else(|| error(at, format!("no statement is named `@{name}`"))),
             }
         };
-        object.insert(
-            "type".to_owned(),
-            Json::from_usize(resolve(pending.r#type)?),
-        );
+        if let Some(root) = pending.r#type {
+            object.insert("type".to_owned(), Json::from_usize(resolve(root)?));
+        }
         if let Some(value) = pending.value {
             object.insert("value".to_owned(), Json::from_usize(resolve(value)?));
         }
@@ -1791,7 +1812,7 @@ enum Root {
 /// A declaration read up to its roots.
 struct Pending {
     object: std::collections::BTreeMap<String, Json>,
-    r#type: Root,
+    r#type: Option<Root>,
     value: Option<Root>,
     start: usize,
 }

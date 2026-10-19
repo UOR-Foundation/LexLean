@@ -1,4 +1,4 @@
-//! The `authoring` suite: AU-01..AU-12, the language-1.2 authoring notation
+//! The `authoring` suite: AU-01..AU-13, the language-1.2 authoring notation
 //! (SPEC.md §17.21).
 //!
 //! The notation is in bijection with the canonical JSON of the closed schema,
@@ -38,6 +38,7 @@ pub fn run(id: &str) {
         "AU-06" => identity_is_form_independent(),
         "AU-07" => no_other_authoring_path(),
         "AU-08" => authoring_api(),
+        "AU-13" => data_form_refused(),
         "AU-09" | "AU-10" | "AU-11" | "AU-12" => super::authoring_core::run(id),
         other => panic!("no authoring case is wired for {other}"),
     }
@@ -264,9 +265,7 @@ fn equivalence() {
     .into_iter()
     .collect();
     for name in EXAMPLES {
-        let data = P::copy_example(name);
         let notation = P::copy_example(name);
-        convert_to_data(&data);
         // A committed module is written in the notation, and it is canonical
         // as it is: `fmt` leaves it unchanged, in the file and in the check.
         let sources: Vec<String> = walkdir::WalkDir::new(notation.root.join("src").as_std_path())
@@ -286,31 +285,6 @@ fn equivalence() {
             );
         }
         notation.fmt_check_ok();
-        // The data form is the same module in text `fmt` does not write: it
-        // is not canonical, and `fmt` migrates it to the notation, to exactly
-        // the committed bytes.
-        support::expect_code(
-            &format_all(&data, true)
-                .err()
-                .expect("a module written as data is not canonical"),
-            "LLL1003",
-        );
-        let migrated = P::copy_example(name);
-        convert_to_data(&migrated);
-        format_all(&migrated, false).expect("fmt migrates the data form");
-        for (path, committed) in sources.iter().zip(&before) {
-            let relative = std::path::Path::new(path)
-                .strip_prefix(notation.root.as_std_path())
-                .expect("under the project")
-                .to_string_lossy()
-                .replace('\\', "/");
-            let relative = relative.as_str();
-            assert_eq!(
-                &migrated.read_raw(relative),
-                committed,
-                "{name}: fmt did not migrate {relative} to the committed notation"
-            );
-        }
         // The notation is canonical because `fmt` writes the same text from
         // any layout of it: collapse the layout of one module, and `fmt` is
         // what restores it.
@@ -342,28 +316,15 @@ fn equivalence() {
             .collect();
         assert_eq!(before, after, "{name}: fmt changed the notation");
 
-        // The same module: the same semantic ID, and the same generated Lean
-        // and LaTeX byte for byte.
-        let data_checked = data.check_ok();
-        let notation_checked = notation.check_ok();
-        assert_eq!(
-            data_checked.semantic_id, notation_checked.semantic_id,
-            "{name}: the notation does not link to its data form's module"
-        );
-        assert_ne!(
-            data_checked.source_id, notation_checked.source_id,
-            "{name}: the source did not change"
-        );
-        let data_built = data.build_ok();
+        // The notation builds, and the build holds generated files and source
+        // maps to read. (Its data form is not a language-1.2 source, so there
+        // is no second build to compare it with: `AU-13`.)
+        notation.check_ok();
         let notation_built = notation.build_ok();
-        let data_dir = data.build_dir(&data_built.build_id.expect("a build id"));
         let notation_dir = notation.build_dir(&notation_built.build_id.expect("a build id"));
-        let data_files = files(&data_dir.join("modules"));
-        let notation_files = files(&notation_dir.join("modules"));
-        assert!(!data_files.is_empty(), "{name}: no generated files");
-        assert_eq!(
-            data_files, notation_files,
-            "{name}: the generated Lean and LaTeX differ"
+        assert!(
+            !files(&notation_dir.join("modules")).is_empty(),
+            "{name}: no generated files"
         );
 
         // The source maps relate each declaration to its own text in the
@@ -683,6 +644,148 @@ fn one_surface() {
 }
 
 // ---------------------------------------------------------------------------
+// AU-13.
+// ---------------------------------------------------------------------------
+
+/// The refusal a language-1.2 data argument draws: `LLP2003` at the argument
+/// of `control`, whose message names the notation.
+fn assert_data_refused(
+    what: &str,
+    error: &lexlean::LexLeanError,
+    root: &camino::Utf8Path,
+    control: &str,
+) {
+    let refusal = error
+        .diagnostics
+        .iter()
+        .find(|diagnostic| diagnostic.code.as_str() == "LLP2003")
+        .unwrap_or_else(|| panic!("{what}: no LLP2003 in {error}"));
+    assert!(
+        refusal.message.contains("authoring notation") && refusal.message.contains(control),
+        "{what}: the refusal does not name the notation and the form: {}",
+        refusal.message
+    );
+    let span = refusal
+        .primary
+        .as_ref()
+        .unwrap_or_else(|| panic!("{what}: no position"));
+    let text = std::fs::read_to_string(root.join(&span.path).as_std_path()).expect("read");
+    let before = &text[..span.byte_start];
+    let at = before
+        .rfind(control)
+        .unwrap_or_else(|| panic!("{what}: the position is not after {control}"));
+    assert!(
+        before[at + control.len()..]
+            .chars()
+            .all(|scalar| scalar == '{' || scalar.is_whitespace()),
+        "{what}: the position is not the data argument of {control}"
+    );
+}
+
+fn data_form_refused() {
+    // A semantic module, in each example that is language 1.2.
+    for name in EXAMPLES {
+        let data = P::copy_example(name);
+        convert_to_data(&data);
+        let error = data.check_err();
+        assert_data_refused(name, &error, &data.root, "\\semanticdata");
+        let before = read_sources(&data);
+        // `fmt` neither rewrites the module nor takes its payload for a
+        // module: it reports the refusal and leaves every byte.
+        for check_only in [true, false] {
+            let error = format_all(&data, check_only)
+                .err()
+                .unwrap_or_else(|| panic!("{name}: fmt accepted a module written as data"));
+            assert_data_refused(name, &error, &data.root, "\\semanticdata");
+        }
+        assert_eq!(
+            before,
+            read_sources(&data),
+            "{name}: fmt rewrote the data form"
+        );
+
+        // The notation is accepted, and the SDK's two conversions are the
+        // only way between the forms, exact inverses over every module.
+        let notation = P::copy_example(name);
+        notation.check_ok();
+        for text in read_sources(&notation).values() {
+            if lexlean::sdk::module_kind(text).is_none() {
+                continue;
+            }
+            let as_data = lexlean::sdk::to_data_form(text).expect("the data form");
+            assert!(
+                as_data.contains("\\semanticdata{"),
+                "{name}: not the data form"
+            );
+            assert_eq!(
+                &lexlean::sdk::to_notation(&as_data).expect("the notation"),
+                text,
+                "{name}: the conversions are not inverses"
+            );
+        }
+    }
+
+    // A tooling module, in each embedded tooling fixture.
+    for name in TOOLING_FIXTURES {
+        let project = P::tooling(name);
+        let committed = project.read_raw("src/Main.lex.tex");
+        project.write_raw("src/Main.lex.tex", &support::module_as_data(&committed));
+        let inner = lexlean::project::Project::load(&project.root.join("lexlean.toml"))
+            .expect("the project loads")
+            .with_tooling();
+        let (lock, packages) =
+            lexlean::lock::compute_lock(&inner, false).expect("the lock computes");
+        let error = lexlean::link::check_project(
+            &inner,
+            &lexlean::project::Selection::Entrypoints,
+            &lock,
+            packages,
+        )
+        .err()
+        .unwrap_or_else(|| panic!("{name}: a tooling module written as data linked"));
+        assert_data_refused(name, &error, &project.root, "\\toolingdata");
+    }
+
+    // A core module.
+    let core = super::authoring_core::project(&super::authoring_core::small(), false);
+    assert_data_refused("core", &core.check_err(), &core.root, "\\coredata");
+    super::authoring_core::project(&super::authoring_core::small(), true).check_ok();
+
+    // Language 1.1 keeps the data form, and the Atlas (language 1.0) is
+    // written as data.
+    let old = P::copy_example("semantic-1.1");
+    assert!(old.read_raw("src/Main.lex.tex").contains("\\semanticdata{"));
+    old.check_ok();
+    let atlas = repo_root().join("examples/uor-atlas");
+    assert_eq!(
+        project_language(atlas.join("src/Main.lex.tex").as_std_path()).as_deref(),
+        Some("1.0")
+    );
+    let atlas_sources = std::fs::read_dir(atlas.join("src").as_std_path())
+        .expect("the Atlas sources")
+        .flatten()
+        .filter_map(|entry| std::fs::read_to_string(entry.path()).ok())
+        .filter(|text| text.contains("\\coredata{"))
+        .count();
+    assert!(atlas_sources > 0, "the Atlas is no longer written as data");
+}
+
+/// Every `.lex.tex` source of a project, by relative path.
+fn read_sources(project: &P) -> std::collections::BTreeMap<String, String> {
+    walkdir::WalkDir::new(project.root.join("src").as_std_path())
+        .into_iter()
+        .flatten()
+        .filter(|entry| entry.path().to_string_lossy().ends_with(".lex.tex"))
+        .map(|entry| {
+            (
+                entry.path().display().to_string(),
+                std::fs::read_to_string(entry.path()).expect("read"),
+            )
+        })
+        .collect()
+}
+
+// ---------------------------------------------------------------------------
 // AU-05.
 // ---------------------------------------------------------------------------
 
@@ -785,56 +888,26 @@ fn tooling_notation() {
 
     for name in TOOLING_FIXTURES {
         let notation = P::tooling(name);
-        let data = P::tooling(name);
         let committed = notation.read_raw("src/Main.lex.tex");
         assert!(
             !committed.contains("\\toolingdata"),
             "{name}: a committed tooling module is written as data"
         );
-        data.write("src/Main.lex.tex", &support::module_as_data(&committed));
 
-        // `fmt` writes the data form as exactly the committed notation, and
-        // the notation as itself.
-        let from_data = tooling_checked(&data);
+        // `fmt` writes the notation as itself, and the source map relates
+        // each declaration to its text in the notation. (The data form is not
+        // a language-1.2 source and has no build to compare with: `AU-13`.)
         let from_notation = tooling_checked(&notation);
-        assert_eq!(
-            lexlean::fmt::canonical_source(&from_data.modules["Main"], &from_data.closure)
-                .expect("fmt writes the data form"),
-            committed,
-            "{name}: fmt did not write the data form as the committed notation"
-        );
         assert_eq!(
             lexlean::fmt::canonical_source(&from_notation.modules["Main"], &from_notation.closure)
                 .expect("fmt writes the notation"),
             committed,
             "{name}: fmt changed the notation"
         );
-
-        // The same module: the same semantic ID, Lean, and LaTeX, and the
-        // source map relates each declaration to its text in the notation.
-        assert_eq!(
-            from_data.semantic_id, from_notation.semantic_id,
-            "{name}: the notation does not link to its data form's module"
-        );
-        assert_ne!(
-            from_data.source_id, from_notation.source_id,
-            "{name}: the source did not change"
-        );
-        let rendered_data = crate::tooling::render(&data.root.join("lexlean.toml"))
-            .unwrap_or_else(|error| panic!("{name}: {error}"));
         let rendered_notation = crate::tooling::render(&notation.root.join("lexlean.toml"))
             .unwrap_or_else(|error| panic!("{name}: {error}"));
-        assert_eq!(rendered_data.modules.len(), rendered_notation.modules.len());
         let mut mapped = 0usize;
-        for (left, right) in rendered_data.modules.iter().zip(&rendered_notation.modules) {
-            assert_eq!(
-                left.lean_text, right.lean_text,
-                "{name}: the generated Lean differs"
-            );
-            assert_eq!(
-                left.tex_text, right.tex_text,
-                "{name}: the generated LaTeX differs"
-            );
+        for right in &rendered_notation.modules {
             for mapping in &right.map.mappings {
                 let is_declaration = right
                     .map

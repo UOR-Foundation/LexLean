@@ -181,7 +181,57 @@ impl SemanticPrimitive {
             Self::MapFold | Self::SetFold | Self::ListFold | Self::Iterate | Self::IterateUntil => {
                 Some(0)
             }
-            _ => None,
+            Self::Subtract
+            | Self::Multiply
+            | Self::Quotient
+            | Self::Remainder
+            | Self::Negate
+            | Self::CheckedConvert
+            | Self::CheckedAdd
+            | Self::CheckedSubtract
+            | Self::CheckedMultiply
+            | Self::CheckedNegate
+            | Self::CheckedQuotient
+            | Self::BitAnd
+            | Self::BitOr
+            | Self::BitXor
+            | Self::BitNot
+            | Self::ShiftLeft
+            | Self::ShiftRight
+            | Self::Append
+            | Self::Length
+            | Self::Index
+            | Self::Slice
+            | Self::Utf8Encode
+            | Self::Utf8Decode
+            | Self::CompareBytes
+            | Self::Equal
+            | Self::SplitExact
+            | Self::Join
+            | Self::ParseDecimal
+            | Self::FormatDecimal
+            | Self::MapInsert
+            | Self::MapRemove
+            | Self::MapLookup
+            | Self::MapContains
+            | Self::MapSize
+            | Self::MapKeys
+            | Self::MapValues
+            | Self::MapEntries
+            | Self::SetInsert
+            | Self::SetRemove
+            | Self::SetContains
+            | Self::SetSize
+            | Self::SetElements
+            | Self::SetUnion
+            | Self::SetIntersection
+            | Self::SetDifference
+            | Self::GraphSuccessors
+            | Self::GraphReachable
+            | Self::GraphTopological
+            | Self::LessThan
+            | Self::ToInt
+            | Self::ToNat => None,
         }
     }
 }
@@ -1502,7 +1552,11 @@ impl SemanticDeclaration {
             | Self::Tokenizer { axioms, .. }
             | Self::ContextWindow { axioms, .. }
             | Self::TextGenerator { axioms, .. } => axioms,
-            _ => &[],
+            Self::Structure { .. }
+            | Self::Class { .. }
+            | Self::Instance { .. }
+            | Self::Inductive { .. }
+            | Self::TextClassifier { .. } => &[],
         }
     }
 
@@ -2006,7 +2060,26 @@ fn type_node_count(ty: &SemanticType) -> u64 {
         }
         SemanticType::Map { key, value } => type_node_count(key) + type_node_count(value),
         SemanticType::Set { element } => type_node_count(element),
-        _ => 0,
+        SemanticType::Type
+        | SemanticType::Parameter { .. }
+        | SemanticType::Nat
+        | SemanticType::Bool
+        | SemanticType::Prop
+        | SemanticType::Unit
+        | SemanticType::Int
+        | SemanticType::Int8
+        | SemanticType::Int16
+        | SemanticType::Int32
+        | SemanticType::Int64
+        | SemanticType::UInt8
+        | SemanticType::UInt16
+        | SemanticType::UInt32
+        | SemanticType::UInt64
+        | SemanticType::String
+        | SemanticType::Bytes
+        | SemanticType::Ordering
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure => 0,
     }
 }
 
@@ -4157,7 +4230,25 @@ fn integer_representation(ty: &SemanticType) -> Option<SemanticInteger> {
         SemanticType::UInt16 => SemanticInteger::UInt16,
         SemanticType::UInt32 => SemanticInteger::UInt32,
         SemanticType::UInt64 => SemanticInteger::UInt64,
-        _ => return None,
+        SemanticType::Type
+        | SemanticType::Parameter { .. }
+        | SemanticType::Nat
+        | SemanticType::Bool
+        | SemanticType::Prop
+        | SemanticType::Unit
+        | SemanticType::String
+        | SemanticType::Bytes
+        | SemanticType::Ordering
+        | SemanticType::Option { .. }
+        | SemanticType::Result { .. }
+        | SemanticType::List { .. }
+        | SemanticType::Named { .. }
+        | SemanticType::Product { .. }
+        | SemanticType::Function { .. }
+        | SemanticType::Map { .. }
+        | SemanticType::Set { .. }
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure => return None,
     })
 }
 
@@ -4706,7 +4797,43 @@ fn free_locals(term: &SemanticTerm, bound: &mut BTreeSet<String>, out: &mut BTre
                 scoped(&branch.binders, &branch.body, bound, out);
             }
         }
-        _ => {
+        SemanticTerm::Nat { .. }
+        | SemanticTerm::Integer { .. }
+        | SemanticTerm::String { .. }
+        | SemanticTerm::Bytes { .. }
+        | SemanticTerm::Primitive { .. }
+        | SemanticTerm::Bool { .. }
+        | SemanticTerm::Unit
+        | SemanticTerm::Nil { .. }
+        | SemanticTerm::Cons { .. }
+        | SemanticTerm::Record { .. }
+        | SemanticTerm::Constructor { .. }
+        | SemanticTerm::InstanceValue { .. }
+        | SemanticTerm::Project { .. }
+        | SemanticTerm::Call { .. }
+        | SemanticTerm::If { .. }
+        | SemanticTerm::Eq { .. }
+        | SemanticTerm::Le { .. }
+        | SemanticTerm::Lt { .. }
+        | SemanticTerm::Add { .. }
+        | SemanticTerm::Beq { .. }
+        | SemanticTerm::Ble { .. }
+        | SemanticTerm::Blt { .. }
+        | SemanticTerm::And { .. }
+        | SemanticTerm::PropAnd { .. }
+        | SemanticTerm::Or { .. }
+        | SemanticTerm::Not { .. }
+        | SemanticTerm::Implies { .. }
+        | SemanticTerm::Iff { .. }
+        | SemanticTerm::Pair { .. }
+        | SemanticTerm::First { .. }
+        | SemanticTerm::Second { .. }
+        | SemanticTerm::Apply { .. }
+        | SemanticTerm::FunctionRef { .. }
+        | SemanticTerm::MapLiteral { .. }
+        | SemanticTerm::SetLiteral { .. }
+        | SemanticTerm::GraphLiteral { .. }
+        | SemanticTerm::CheckedApply { .. } => {
             // Every other node binds nothing: recurse into its immediate
             // subterms only (visit_terms would also descend past binders).
             for child in immediate_subterms(term) {
@@ -5036,7 +5163,42 @@ fn check_executable_term(
             }
             Ok(())
         }
-        _ => {
+        SemanticTerm::Nat { .. }
+        | SemanticTerm::Integer { .. }
+        | SemanticTerm::String { .. }
+        | SemanticTerm::Bytes { .. }
+        | SemanticTerm::Bool { .. }
+        | SemanticTerm::Unit
+        | SemanticTerm::Nil { .. }
+        | SemanticTerm::Cons { .. }
+        | SemanticTerm::Record { .. }
+        | SemanticTerm::Constructor { .. }
+        | SemanticTerm::InstanceValue { .. }
+        | SemanticTerm::Project { .. }
+        | SemanticTerm::If { .. }
+        | SemanticTerm::Match { .. }
+        | SemanticTerm::Eq { .. }
+        | SemanticTerm::Le { .. }
+        | SemanticTerm::Lt { .. }
+        | SemanticTerm::Add { .. }
+        | SemanticTerm::Beq { .. }
+        | SemanticTerm::Ble { .. }
+        | SemanticTerm::Blt { .. }
+        | SemanticTerm::And { .. }
+        | SemanticTerm::PropAnd { .. }
+        | SemanticTerm::Or { .. }
+        | SemanticTerm::Not { .. }
+        | SemanticTerm::Implies { .. }
+        | SemanticTerm::Iff { .. }
+        | SemanticTerm::Forall { .. }
+        | SemanticTerm::Let { .. }
+        | SemanticTerm::Pair { .. }
+        | SemanticTerm::First { .. }
+        | SemanticTerm::Second { .. }
+        | SemanticTerm::MapLiteral { .. }
+        | SemanticTerm::SetLiteral { .. }
+        | SemanticTerm::GraphLiteral { .. }
+        | SemanticTerm::CheckedApply { .. } => {
             for child in immediate_subterms(term) {
                 check_executable_term(scope, child, false, env)?;
             }
@@ -5546,7 +5708,42 @@ fn check_measure(
             cyclic |= function.module.is_none()
                 && (function.name == name || env.well_founded_group.contains_key(&function.name));
         }
-        _ => {}
+        SemanticTerm::Var { .. }
+        | SemanticTerm::Nat { .. }
+        | SemanticTerm::Integer { .. }
+        | SemanticTerm::String { .. }
+        | SemanticTerm::Bytes { .. }
+        | SemanticTerm::Primitive { .. }
+        | SemanticTerm::Bool { .. }
+        | SemanticTerm::Unit
+        | SemanticTerm::Nil { .. }
+        | SemanticTerm::Cons { .. }
+        | SemanticTerm::Record { .. }
+        | SemanticTerm::Constructor { .. }
+        | SemanticTerm::InstanceValue { .. }
+        | SemanticTerm::Project { .. }
+        | SemanticTerm::If { .. }
+        | SemanticTerm::Eq { .. }
+        | SemanticTerm::Le { .. }
+        | SemanticTerm::Lt { .. }
+        | SemanticTerm::Add { .. }
+        | SemanticTerm::Beq { .. }
+        | SemanticTerm::Ble { .. }
+        | SemanticTerm::Blt { .. }
+        | SemanticTerm::And { .. }
+        | SemanticTerm::PropAnd { .. }
+        | SemanticTerm::Or { .. }
+        | SemanticTerm::Not { .. }
+        | SemanticTerm::Implies { .. }
+        | SemanticTerm::Iff { .. }
+        | SemanticTerm::Pair { .. }
+        | SemanticTerm::First { .. }
+        | SemanticTerm::Second { .. }
+        | SemanticTerm::Apply { .. }
+        | SemanticTerm::MapLiteral { .. }
+        | SemanticTerm::SetLiteral { .. }
+        | SemanticTerm::GraphLiteral { .. }
+        | SemanticTerm::CheckedApply { .. } => {}
     });
     if cyclic {
         return Err(format!(
@@ -5785,7 +5982,7 @@ pub(crate) fn well_founded_plan<'a>(
                     "a recursive call of `{name}` under a lambda or quantifier has no stated decrease obligation"
                 ))
             }
-            _ => {
+            SemanticTerm::Var { .. } | SemanticTerm::Nat { .. } | SemanticTerm::Integer { .. } | SemanticTerm::String { .. } | SemanticTerm::Bytes { .. } | SemanticTerm::Primitive { .. } | SemanticTerm::Bool { .. } | SemanticTerm::Unit | SemanticTerm::Nil { .. } | SemanticTerm::Cons { .. } | SemanticTerm::Record { .. } | SemanticTerm::Constructor { .. } | SemanticTerm::InstanceValue { .. } | SemanticTerm::Project { .. } | SemanticTerm::Call { .. } | SemanticTerm::Eq { .. } | SemanticTerm::Le { .. } | SemanticTerm::Lt { .. } | SemanticTerm::Add { .. } | SemanticTerm::Beq { .. } | SemanticTerm::Ble { .. } | SemanticTerm::Blt { .. } | SemanticTerm::And { .. } | SemanticTerm::PropAnd { .. } | SemanticTerm::Or { .. } | SemanticTerm::Not { .. } | SemanticTerm::Implies { .. } | SemanticTerm::Iff { .. } | SemanticTerm::Forall { .. } | SemanticTerm::Let { .. } | SemanticTerm::Pair { .. } | SemanticTerm::First { .. } | SemanticTerm::Second { .. } | SemanticTerm::Lambda { .. } | SemanticTerm::Apply { .. } | SemanticTerm::FunctionRef { .. } | SemanticTerm::MapLiteral { .. } | SemanticTerm::SetLiteral { .. } | SemanticTerm::GraphLiteral { .. } | SemanticTerm::CheckedApply { .. } => {
                 for child in immediate_subterms(term) {
                     walk(child, state, plan)?;
                 }
@@ -6050,7 +6247,7 @@ fn check_ordered_key(ty: &SemanticType) -> Result<(), String> {
             check_ordered_key(left)?;
             check_ordered_key(right)
         }
-        other => Err(format!(
+        other @ (SemanticType::Type | SemanticType::Parameter { .. } | SemanticType::Prop | SemanticType::Unit | SemanticType::Bytes | SemanticType::Ordering | SemanticType::Option { .. } | SemanticType::Result { .. } | SemanticType::List { .. } | SemanticType::Named { .. } | SemanticType::Function { .. } | SemanticType::Map { .. } | SemanticType::Set { .. } | SemanticType::ContractViolation | SemanticType::ReasoningFailure) => Err(format!(
             "type {other} has no canonical order and cannot key a map, set, or graph: its iteration order would be unspecified"
         )),
     }
@@ -6136,7 +6333,7 @@ fn literal_key(term: &SemanticTerm) -> Result<KeyOrder, String> {
             Box::new(literal_key(left)?),
             Box::new(literal_key(right)?),
         )),
-        _ => Err(
+        SemanticTerm::Var { .. } | SemanticTerm::Bytes { .. } | SemanticTerm::Primitive { .. } | SemanticTerm::Unit | SemanticTerm::Nil { .. } | SemanticTerm::Cons { .. } | SemanticTerm::Record { .. } | SemanticTerm::Constructor { .. } | SemanticTerm::InstanceValue { .. } | SemanticTerm::Project { .. } | SemanticTerm::Call { .. } | SemanticTerm::If { .. } | SemanticTerm::Match { .. } | SemanticTerm::Eq { .. } | SemanticTerm::Le { .. } | SemanticTerm::Lt { .. } | SemanticTerm::Add { .. } | SemanticTerm::Beq { .. } | SemanticTerm::Ble { .. } | SemanticTerm::Blt { .. } | SemanticTerm::And { .. } | SemanticTerm::PropAnd { .. } | SemanticTerm::Or { .. } | SemanticTerm::Not { .. } | SemanticTerm::Implies { .. } | SemanticTerm::Iff { .. } | SemanticTerm::Forall { .. } | SemanticTerm::Let { .. } | SemanticTerm::First { .. } | SemanticTerm::Second { .. } | SemanticTerm::Lambda { .. } | SemanticTerm::Apply { .. } | SemanticTerm::FunctionRef { .. } | SemanticTerm::MapLiteral { .. } | SemanticTerm::SetLiteral { .. } | SemanticTerm::GraphLiteral { .. } | SemanticTerm::CheckedApply { .. } => Err(
             "a map, set, or graph literal key must be a literal value; build other keys with insert"
                 .to_owned(),
         ),
@@ -7639,7 +7836,25 @@ fn branch_binder_types(
             require_type(Some(owner), &expected_owner, "match constructor")?;
             fields
         }
-        other => {
+        other @ (SemanticType::Type
+        | SemanticType::Parameter { .. }
+        | SemanticType::Prop
+        | SemanticType::Unit
+        | SemanticType::Int
+        | SemanticType::Int8
+        | SemanticType::Int16
+        | SemanticType::Int32
+        | SemanticType::Int64
+        | SemanticType::UInt8
+        | SemanticType::UInt16
+        | SemanticType::UInt32
+        | SemanticType::UInt64
+        | SemanticType::String
+        | SemanticType::Bytes
+        | SemanticType::Ordering
+        | SemanticType::Function { .. }
+        | SemanticType::Map { .. }
+        | SemanticType::Set { .. }) => {
             return Err(format!("cannot pattern match value of type {other}"));
         }
     })

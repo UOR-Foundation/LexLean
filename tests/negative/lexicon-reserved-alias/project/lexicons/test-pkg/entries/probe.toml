@@ -1,0 +1,28 @@
+spec = "lexlean/entry/1"
+id = "probe"
+category = "term-constant"
+signature = "(const lexlean.std.nat::nat)"
+surface_arity = 0
+frame = "atom"
+
+[denotation]
+kind = "lean"
+module = "Init"
+name = "Nat.zero"
+
+[[form]]
+id = "probe"
+channel = "both"
+surface = "probe"
+canonical_source = true
+features = []
+
+[[form]]
+id = "alias"
+channel = "both"
+surface = "the"
+canonical_source = false
+features = []
+
+[render]
+math = "(operator-name probe)"

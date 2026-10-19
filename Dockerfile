@@ -70,5 +70,5 @@ CMD ["--version"]
 
 LABEL org.opencontainers.image.title="LexLean" \
       org.opencontainers.image.description="A closed-lexicon LaTeX-to-Lean 4 compiler whose canonical document and prose-free Lean program are generated from one semantic representation." \
-      org.opencontainers.image.source="https://github.com/afflom/lexlean" \
+      org.opencontainers.image.source="https://github.com/UOR-Foundation/LexLean" \
       org.opencontainers.image.licenses="MIT OR Apache-2.0"

@@ -1,0 +1,1 @@
+[{"causes":[],"code":"LLT4004","help":[],"labels":[],"message":"the entry signature of `peano.arith::double` declares 1 explicit binders, the definition declares 0","notes":[],"primary":{"byte_end":441,"byte_start":410,"column_end":34,"column_start":3,"line_end":16,"line_start":16,"path":"src/Doubling.lex.tex"},"severity":"error","spec":"lexlean/diagnostic/1"}]

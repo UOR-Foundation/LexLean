@@ -1,0 +1,494 @@
+\begin{lexlean}{Main}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{toolingmodule}
+{
+  authority: {
+    id: LEAN-LCNF-4-32-1,
+    lean_githash: f054605aea4b840552cca2e725580bffd1e1b704,
+    lean_version: "4.32.1"
+  },
+  declarations: [
+    type{
+      name: Bool,
+      parameters: [],
+      constructors: [{name: "false", fields: []}, {name: "true", fields: []}],
+      source: {
+        file: src/lean/Init/Prelude.lean,
+        sha256: "44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9"
+      }
+    },
+    type{
+      name: Nat,
+      parameters: [],
+      constructors: [
+        {name: zero, fields: []},
+        {name: succ, fields: [{name: n, type: const{name: Nat, arguments: []}}]}
+      ],
+      source: {
+        file: src/lean/Init/Prelude.lean,
+        sha256: "44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9"
+      }
+    },
+    type{
+      name: List,
+      parameters: [{name: "α", kind: type{}}],
+      constructors: [
+        {name: nil, fields: []},
+        {
+          name: cons,
+          fields: [
+            {name: head, type: parameter{name: "α", arguments: []}},
+            {name: tail, type: const{name: List, arguments: [parameter{name: "α", arguments: []}]}}
+          ]
+        }
+      ],
+      source: {
+        file: src/lean/Init/Prelude.lean,
+        sha256: "44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9"
+      }
+    },
+    type{
+      name: String,
+      parameters: [],
+      constructors: [],
+      opaque: true,
+      source: {
+        file: src/lean/Init/Prelude.lean,
+        sha256: "44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9"
+      }
+    },
+    type{
+      name: Unit,
+      parameters: [],
+      constructors: [],
+      opaque: true,
+      source: {
+        file: src/lean/Init/Prelude.lean,
+        sha256: "44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9"
+      }
+    },
+    type{
+      name: Option,
+      parameters: [{name: "α", kind: type{}}],
+      constructors: [
+        {name: none, fields: []},
+        {name: some, fields: [{name: val, type: parameter{name: "α", arguments: []}}]}
+      ],
+      source: {
+        file: src/lean/Init/Prelude.lean,
+        sha256: "44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9"
+      }
+    },
+    type{
+      name: Prod,
+      parameters: [{name: "α", kind: type{}}, {name: "β", kind: type{}}],
+      constructors: [
+        {
+          name: mk,
+          fields: [
+            {name: fst, type: parameter{name: "α", arguments: []}},
+            {name: snd, type: parameter{name: "β", arguments: []}}
+          ]
+        }
+      ],
+      source: {
+        file: src/lean/Init/Prelude.lean,
+        sha256: "44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9"
+      }
+    },
+    type{
+      name: Array,
+      parameters: [{name: "α", kind: type{}}],
+      constructors: [],
+      opaque: true,
+      source: {
+        file: src/lean/Init/Prelude.lean,
+        sha256: "44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9"
+      }
+    },
+    call{
+      name: Nat.add,
+      role: authority,
+      signature: arrow{
+        codomain: arrow{codomain: const{name: Nat}, domain: const{name: Nat}},
+        domain: const{name: Nat}
+      },
+      source: {
+        file: src/lean/Init/Prelude.lean,
+        sha256: "44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9"
+      }
+    },
+    call{
+      name: Nat.ble,
+      role: authority,
+      signature: arrow{
+        codomain: arrow{codomain: const{name: Bool}, domain: const{name: Nat}},
+        domain: const{name: Nat}
+      },
+      source: {
+        file: src/lean/Init/Prelude.lean,
+        sha256: "44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9"
+      }
+    },
+    call{
+      name: Nat.pred,
+      role: authority,
+      signature: arrow{codomain: const{name: Nat}, domain: const{name: Nat}},
+      source: {
+        file: src/lean/Init/Prelude.lean,
+        sha256: "44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9"
+      }
+    },
+    call{
+      name: List.map,
+      role: authority,
+      signature: pi{
+        name: "α",
+        codomain: pi{
+          name: "β",
+          codomain: arrow{
+            codomain: arrow{
+              codomain: app{arguments: [var{name: "β"}], function: const{name: List}},
+              domain: app{arguments: [var{name: "α"}], function: const{name: List}}
+            },
+            domain: arrow{codomain: var{name: "β"}, domain: var{name: "α"}}
+          },
+          domain: type{level: parameter{name: u_2}},
+          info: implicit
+        },
+        domain: type{level: parameter{name: u_1}},
+        info: implicit
+      },
+      source: {
+        file: src/lean/Init/Prelude.lean,
+        sha256: "44f86ebbb9ab743a05c6ebe2c674aadbf2c822bee874f1b16d7e6c8d56318dc9"
+      }
+    },
+    call{
+      name: String.append,
+      role: authority,
+      signature: arrow{
+        codomain: arrow{codomain: const{name: String}, domain: const{name: String}},
+        domain: const{name: String}
+      },
+      source: {
+        file: src/lean/Init/Data/String/Defs.lean,
+        sha256: "082ddab096a431d7c5be1eed0e2aca19689c601512cdf75a17526ddf4cbefa57"
+      }
+    },
+    plumbing{
+      names: [
+        Eq,
+        Eq.refl,
+        Inhabited.default,
+        List.casesOn,
+        List.toArray,
+        Nat.casesOn,
+        Nat.ctorIdx,
+        Nat.hasNotBit,
+        Nat.land,
+        Nat.ne_of_beq_eq_false,
+        Nat.rec,
+        Nat.shiftRight,
+        OfNat.ofNat,
+        Option.casesOn,
+        Prod.fst,
+        Unit.unit,
+        instDecidableEqBool,
+        instInhabitedBool,
+        instInhabitedNat,
+        instOfNatNat,
+        ite
+      ]
+    },
+    function{
+      name: Core.sum,
+      type_parameters: [],
+      parameters: [
+        {name: xs, type: const{name: List, arguments: [const{name: Nat, arguments: []}]}}
+      ],
+      result: const{name: Nat, arguments: []},
+      body: match{
+        branches: [
+          {body: nat{value: "0"}, binders: [], constructor: List.nil},
+          {
+            body: call{
+              arguments: [
+                var{name: h},
+                call{arguments: [var{name: t}], function: Core.sum, type_arguments: []}
+              ],
+              function: Nat.add,
+              type_arguments: []
+            },
+            binders: [h, t],
+            constructor: List.cons
+          }
+        ],
+        scrutinee: var{name: xs}
+      },
+      partial: true,
+      public: true
+    },
+    function{
+      name: Core.size,
+      type_parameters: ["α"],
+      parameters: [
+        {name: xs, type: const{name: List, arguments: [parameter{name: "α", arguments: []}]}}
+      ],
+      result: const{name: Nat, arguments: []},
+      body: match{
+        branches: [
+          {body: nat{value: "0"}, binders: [], constructor: List.nil},
+          {
+            body: call{
+              arguments: [
+                nat{value: "1"},
+                call{
+                  arguments: [var{name: t}],
+                  function: Core.size,
+                  type_arguments: [parameter{name: "α", arguments: []}]
+                }
+              ],
+              function: Nat.add,
+              type_arguments: []
+            },
+            binders: [h, t],
+            constructor: List.cons
+          }
+        ],
+        scrutinee: var{name: xs}
+      },
+      partial: true,
+      public: true
+    },
+    function{
+      name: Core.describe,
+      type_parameters: [],
+      parameters: [{name: n, type: const{name: Nat, arguments: []}}],
+      result: const{name: String, arguments: []},
+      body: let{
+        type: const{name: Bool, arguments: []},
+        body: call{
+          arguments: [
+            if{
+              condition: var{name: big},
+              else_branch: string{value: small},
+              then_branch: string{value: big}
+            },
+            string{value: "!"}
+          ],
+          function: String.append,
+          type_arguments: []
+        },
+        binder: big,
+        value: call{
+          arguments: [nat{value: "10"}, var{name: n}],
+          function: Nat.ble,
+          type_arguments: []
+        }
+      },
+      partial: false,
+      public: true
+    },
+    function{
+      name: Core.double,
+      type_parameters: [],
+      parameters: [
+        {name: xs, type: const{name: List, arguments: [const{name: Nat, arguments: []}]}}
+      ],
+      result: const{name: List, arguments: [const{name: Nat, arguments: []}]},
+      body: call{
+        arguments: [
+          lambda{
+            parameters: [{name: n, type: const{name: Nat, arguments: []}}],
+            body: call{
+              arguments: [var{name: n}, var{name: n}],
+              function: Nat.add,
+              type_arguments: []
+            }
+          },
+          var{name: xs}
+        ],
+        function: List.map,
+        type_arguments: [const{name: Nat, arguments: []}, const{name: Nat, arguments: []}]
+      },
+      partial: false,
+      public: true
+    },
+    function{
+      name: Core.first,
+      type_parameters: [],
+      parameters: [
+        {
+          name: p,
+          type: const{
+            name: Prod,
+            arguments: [const{name: Nat, arguments: []}, const{name: String, arguments: []}]
+          }
+        }
+      ],
+      result: const{name: Nat, arguments: []},
+      body: field{field: fst, value: var{name: p}},
+      partial: false,
+      public: true
+    },
+    function{
+      name: Core.pair,
+      type_parameters: [],
+      parameters: [],
+      result: const{
+        name: Prod,
+        arguments: [const{name: Nat, arguments: []}, const{name: String, arguments: []}]
+      },
+      body: construct{
+        arguments: [nat{value: "1"}, string{value: a}],
+        constructor: Prod.mk,
+        type_arguments: [const{name: Nat, arguments: []}, const{name: String, arguments: []}]
+      },
+      partial: false,
+      public: true
+    },
+    function{
+      name: Core.array,
+      type_parameters: [],
+      parameters: [],
+      result: const{name: Array, arguments: [const{name: Nat, arguments: []}]},
+      body: array{
+        element: const{name: Nat, arguments: []},
+        elements: [nat{value: "1"}, nat{value: "2"}, nat{value: "3"}]
+      },
+      partial: false,
+      public: true
+    },
+    function{
+      name: Core.list,
+      type_parameters: [],
+      parameters: [],
+      result: const{name: List, arguments: [const{name: Nat, arguments: []}]},
+      body: list{
+        element: const{name: Nat, arguments: []},
+        elements: [nat{value: "1"}, nat{value: "2"}]
+      },
+      partial: false,
+      public: true
+    },
+    function{
+      name: Core.twice,
+      type_parameters: [],
+      parameters: [
+        {
+          name: f,
+          type: function{
+            parameters: [const{name: Nat, arguments: []}],
+            result: const{name: Nat, arguments: []}
+          }
+        },
+        {name: n, type: const{name: Nat, arguments: []}}
+      ],
+      result: const{name: Nat, arguments: []},
+      body: apply{
+        arguments: [apply{arguments: [var{name: n}], function: var{name: f}}],
+        function: var{name: f}
+      },
+      partial: false,
+      public: true
+    },
+    function{
+      name: Core.orZero,
+      type_parameters: [],
+      parameters: [
+        {name: o, type: const{name: Option, arguments: [const{name: Nat, arguments: []}]}}
+      ],
+      result: const{name: Nat, arguments: []},
+      body: match{
+        branches: [
+          {body: nat{value: "0"}, binders: [], constructor: Option.none},
+          {body: var{name: v}, binders: [v], constructor: Option.some}
+        ],
+        scrutinee: var{name: o}
+      },
+      partial: false,
+      public: true
+    },
+    function{
+      name: Core.isSmall,
+      type_parameters: [],
+      parameters: [{name: n, type: const{name: Nat, arguments: []}}],
+      result: const{name: Bool, arguments: []},
+      body: match{
+        branches: [
+          {
+            body: construct{arguments: [], constructor: Bool.true, type_arguments: []},
+            binders: [],
+            constructor: Nat.zero
+          },
+          {body: construct{arguments: [], constructor: Bool.false, type_arguments: []}, binders: []}
+        ],
+        scrutinee: var{name: n}
+      },
+      partial: false,
+      public: true
+    },
+    function{
+      name: Core.predecessor,
+      type_parameters: [],
+      parameters: [{name: n, type: const{name: Nat, arguments: []}}],
+      result: const{name: Nat, arguments: []},
+      body: call{arguments: [var{name: n}], function: Nat.pred, type_arguments: []},
+      partial: false,
+      public: true
+    },
+    function{
+      name: Core.isEven,
+      type_parameters: [],
+      parameters: [{name: n, type: const{name: Nat, arguments: []}}],
+      result: const{name: Bool, arguments: []},
+      body: match{
+        branches: [
+          {
+            body: construct{arguments: [], constructor: Bool.true, type_arguments: []},
+            binders: [],
+            constructor: Nat.zero
+          },
+          {
+            body: call{arguments: [var{name: m}], function: Core.isOdd, type_arguments: []},
+            binders: [m],
+            constructor: Nat.succ
+          }
+        ],
+        scrutinee: var{name: n}
+      },
+      mutual: Parity,
+      partial: true,
+      public: true
+    },
+    function{
+      name: Core.isOdd,
+      type_parameters: [],
+      parameters: [{name: n, type: const{name: Nat, arguments: []}}],
+      result: const{name: Bool, arguments: []},
+      body: match{
+        branches: [
+          {
+            body: construct{arguments: [], constructor: Bool.false, type_arguments: []},
+            binders: [],
+            constructor: Nat.zero
+          },
+          {
+            body: call{arguments: [var{name: m}], function: Core.isEven, type_arguments: []},
+            binders: [m],
+            constructor: Nat.succ
+          }
+        ],
+        scrutinee: var{name: n}
+      },
+      mutual: Parity,
+      partial: true,
+      public: true
+    }
+  ],
+  imports: []
+}
+\end{toolingmodule}
+\end{lexlean}

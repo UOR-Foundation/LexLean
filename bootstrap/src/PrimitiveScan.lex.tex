@@ -1,0 +1,500 @@
+\begin{lexlean}{PrimitiveScan}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.Text}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: AtomClass,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: Control, fields: []},
+    {name: Word, fields: []},
+    {name: Numeral, fields: []},
+    {name: Delimiter, fields: []},
+    {name: AsciiSymbol, fields: []},
+    {name: UnicodeSymbol, fields: []},
+    {name: Whitespace, fields: []}
+  ]
+}
+
+structure{
+  name: Atom,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: kind, type: AtomClass},
+    {name: byteStart, type: Nat},
+    {name: byteEnd, type: Nat},
+    {name: lineStart, type: Nat},
+    {name: columnStart, type: Nat},
+    {name: lineEnd, type: Nat},
+    {name: columnEnd, type: Nat},
+    {name: text, type: Bytes}
+  ]
+}
+
+structure{
+  name: Place,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: path, type: Bytes},
+    {name: byteStart, type: Nat},
+    {name: byteEnd, type: Nat},
+    {name: lineStart, type: Nat},
+    {name: columnStart, type: Nat},
+    {name: lineEnd, type: Nat},
+    {name: columnEnd, type: Nat}
+  ]
+}
+
+structure{
+  name: Rejection,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: code, type: Bytes},
+    {name: message, type: Bytes},
+    {name: place, type: (Option Place)},
+    {name: help, type: (Option Bytes)}
+  ]
+}
+
+structure{
+  name: Cursor,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: position, type: Nat}, {name: line, type: Nat}, {name: column, type: Nat}]
+}
+
+structure{
+  name: Lexed,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: kind, type: AtomClass},
+    {name: after, type: Cursor},
+    {name: error, type: (Option Rejection)}
+  ]
+}
+
+structure{
+  name: ScanState,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: cursor, type: Cursor},
+    {name: atoms, type: (List Atom)},
+    {name: count, type: Nat},
+    {name: error, type: (Option Rejection)}
+  ]
+}
+
+structure{
+  name: Context,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: awaitingOpen, type: Bool},
+    {name: depth, type: Nat},
+    {name: quoted, type: Bool},
+    {name: escaped, type: Bool},
+    {name: environment, type: Nat},
+    {name: body, type: Nat}
+  ]
+}
+
+structure{
+  name: Payload,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: index, type: Nat},
+    {name: depth, type: Nat},
+    {name: quoted, type: Bool},
+    {name: escaped, type: Bool}
+  ]
+}
+
+structure{
+  name: CheckState,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: context, type: Context},
+    {name: previous, type: (Option Atom)},
+    {name: error, type: (Option Rejection)}
+  ]
+}
+
+definition{
+  name: lit,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: cat,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bytes,
+  body: (prim append left right : Bytes),
+  executable: true
+}
+
+definition{
+  name: ticks,
+  parameters: [name : Bytes],
+  result: Bytes,
+  body: (cat (cat (lit "`") name) (lit "`")),
+  executable: true
+}
+
+definition{
+  name: listLength,
+  type_parameters: [Item],
+  parameters: [items : (List 'Item)],
+  result: Nat,
+  body: (prim list_fold (fun (count : Nat) (item : 'Item) => (count + 1)) 0 items : Nat),
+  executable: true
+}
+
+definition{
+  name: reversed,
+  type_parameters: [Item],
+  parameters: [items : (List 'Item)],
+  result: (List 'Item),
+  body: (prim list_fold (fun (turned : (List 'Item)) (item : 'Item) => (cons item turned)) (nil 'Item) items : (List 'Item)),
+  executable: true
+}
+
+definition{
+  name: inRange,
+  parameters: [byte : UInt8, low : UInt8, high : UInt8],
+  result: Bool,
+  body: (match (prim checked_subtract byte low : (Option UInt8))
+    | Option.some above => (match (prim checked_subtract high byte : (Option UInt8))
+      | Option.some below => true
+      | Option.none => false)
+    | Option.none => false),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: byteOrZero,
+  parameters: [subject : Bytes, position : Nat],
+  result: UInt8,
+  body: (match (LexLeanStd.Text::byteAt subject position)
+    | Option.some byte => byte
+    | Option.none => (0 : UInt8)),
+  executable: true
+}
+
+definition{
+  name: byteIs,
+  parameters: [subject : Bytes, position : Nat, value : UInt8],
+  result: Bool,
+  body: (match (LexLeanStd.Text::byteAt subject position)
+    | Option.some byte => (prim equal byte value : Bool)
+    | Option.none => false),
+  executable: true
+}
+
+definition{
+  name: isAsciiDigit,
+  parameters: [byte : UInt8],
+  result: Bool,
+  body: (inRange byte (48 : UInt8) (57 : UInt8)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isAsciiAlpha,
+  parameters: [byte : UInt8],
+  result: Bool,
+  body: (let lower : Bool := (inRange byte (97 : UInt8) (122 : UInt8)); (let upper : Bool := (inRange byte (65 : UInt8) (90 : UInt8)); (if lower then true else upper))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: scalarWidth,
+  parameters: [subject : Bytes, position : Nat],
+  result: Nat,
+  body: (let b0 : UInt8 := (byteOrZero subject position); (let ascii : Bool := (inRange b0 (0 : UInt8) (127 : UInt8)); (if ascii then 1 else (let two : Bool := (inRange b0 (128 : UInt8) (223 : UInt8)); (if two then 2 else (let three : Bool := (inRange b0 (224 : UInt8) (239 : UInt8)); (if three then 3 else 4))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: hexDigit,
+  parameters: [nibble : UInt8],
+  result: Bytes,
+  body: (let table : Bytes := (prim utf8_encode "0123456789ABCDEF" : Bytes); (let idx : Nat := (if (prim equal nibble (0 : UInt8) : Bool) then 0 else (if (prim equal nibble (1 : UInt8) : Bool) then 1 else (if (prim equal nibble (2 : UInt8) : Bool) then 2 else (if (prim equal nibble (3 : UInt8) : Bool) then 3 else (if (prim equal nibble (4 : UInt8) : Bool) then 4 else (if (prim equal nibble (5 : UInt8) : Bool) then 5 else (if (prim equal nibble (6 : UInt8) : Bool) then 6 else (if (prim equal nibble (7 : UInt8) : Bool) then 7 else (if (prim equal nibble (8 : UInt8) : Bool) then 8 else (if (prim equal nibble (9 : UInt8) : Bool) then 9 else (if (prim equal nibble (10 : UInt8) : Bool) then 10 else (if (prim equal nibble (11 : UInt8) : Bool) then 11 else (if (prim equal nibble (12 : UInt8) : Bool) then 12 else (if (prim equal nibble (13 : UInt8) : Bool) then 13 else (if (prim equal nibble (14 : UInt8) : Bool) then 14 else 15))))))))))))))); (LexLeanStd.Text::sliceOr table idx 1))),
+  executable: true
+}
+
+definition{
+  name: zeroStep,
+  parameters: [subject : Bytes, position : Nat],
+  result: (Option Nat),
+  body: (if (byteIs subject position (48 : UInt8)) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat])),
+  executable: true
+}
+
+definition{
+  name: significant,
+  parameters: [digits : Bytes],
+  result: Bytes,
+  body: (let zeros : Nat := (first (prim iterate_until (fun [digits] (position : Nat) => (zeroStep digits position)) (prim length digits : Nat) 0 : (Nat * Bool))); (LexLeanStd.Text::sliceOr digits zeros (prim subtract (prim length digits : Nat) zeros : Nat))),
+  executable: true
+}
+
+definition{
+  name: digit,
+  parameters: [number : Nat, place : Nat],
+  result: Bytes,
+  body: (LexLeanStd.Text::sliceOr (lit "0123456789") (prim remainder (prim quotient number place 0 : Nat) 10 0 : Nat) 1),
+  executable: true
+}
+
+definition{
+  name: decimal,
+  parameters: [number : Nat],
+  result: Bytes,
+  body: (let zero : Bytes := (lit "0"); (let digits : Bytes := (significant (prim append (digit number 10000000000000000000) (prim append (digit number 1000000000000000000) (prim append (digit number 100000000000000000) (prim append (digit number 10000000000000000) (prim append (digit number 1000000000000000) (prim append (digit number 100000000000000) (prim append (digit number 10000000000000) (prim append (digit number 1000000000000) (prim append (digit number 100000000000) (prim append (digit number 10000000000) (prim append (digit number 1000000000) (prim append (digit number 100000000) (prim append (digit number 10000000) (prim append (digit number 1000000) (prim append (digit number 100000) (prim append (digit number 10000) (prim append (digit number 1000) (prim append (digit number 100) (prim append (digit number 10) (digit number 1) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes)); (if (number =? 0) then zero else digits))),
+  executable: true
+}
+
+definition{
+  name: bytesInList,
+  parameters: [needle : Bytes, items : (List Bytes)],
+  result: Bool,
+  body: (prim list_fold (fun [needle] (found : Bool) (item : Bytes) => (if found then true else (prim equal item needle : Bool))) false items : Bool),
+  executable: true
+}
+
+definition{
+  name: runMember,
+  parameters: [kind : Nat, byte : UInt8],
+  result: Bool,
+  body: (let space : Bool := (prim equal byte (32 : UInt8) : Bool); (let feed : Bool := (prim equal byte (10 : UInt8) : Bool); (let alpha : Bool := (isAsciiAlpha byte); (let numeric : Bool := (isAsciiDigit byte); (if (kind =? 0) then (if space then true else feed) else (if (kind =? 1) then alpha else numeric)))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: runStep,
+  parameters: [subject : Bytes, n : Nat, kind : Nat, cur : Cursor],
+  result: (Option Cursor),
+  body: (let pos : Nat := (project cur position); (if (pos <? n) then (let b : UInt8 := (byteOrZero subject pos); (let member : Bool := (runMember kind b); (if member then (if (prim equal b (10 : UInt8) : Bool) then (ctor Option.some [Cursor] (record Cursor {position := (pos + 1), line := ((project cur line) + 1), column := 1})) else (ctor Option.some [Cursor] (record Cursor {position := (pos + 1), line := (project cur line), column := ((project cur column) + 1)}))) else (ctor Option.none [Cursor])))) else (ctor Option.none [Cursor]))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: runEnd,
+  parameters: [subject : Bytes, kind : Nat, start : Cursor],
+  result: Cursor,
+  body: (let n : Nat := (prim length subject : Nat); (first (prim iterate_until (fun [kind, n, subject] (cur : Cursor) => (runStep subject n kind cur)) (prim subtract n (project start position) : Nat) start : (Cursor * Bool)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: bumpOne,
+  parameters: [subject : Bytes, cur : Cursor],
+  result: Cursor,
+  body: (let pos : Nat := (project cur position); (let width : Nat := (scalarWidth subject pos); (let feed : Bool := (byteIs subject pos (10 : UInt8)); (if feed then (record Cursor {position := (pos + 1), line := ((project cur line) + 1), column := 1}) else (record Cursor {position := (pos + width), line := (project cur line), column := ((project cur column) + 1)}))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: placeOf,
+  parameters: [path : Bytes, from : Cursor, to : Cursor],
+  result: Place,
+  body: (record Place {path := path, byteStart := (project from position), byteEnd := (project to position), lineStart := (project from line), columnStart := (project from column), lineEnd := (project to line), columnEnd := (project to column)}),
+  executable: true
+}
+
+definition{
+  name: placeOfAtom,
+  parameters: [path : Bytes, atom : Atom],
+  result: Place,
+  body: (record Place {path := path, byteStart := (project atom byteStart), byteEnd := (project atom byteEnd), lineStart := (project atom lineStart), columnStart := (project atom columnStart), lineEnd := (project atom lineEnd), columnEnd := (project atom columnEnd)}),
+  executable: true
+}
+
+definition{
+  name: rejectBackslash,
+  parameters: [path : Bytes, from : Cursor, after : Cursor],
+  result: Rejection,
+  body: (let place : Place := (placeOf path from after); (record Rejection {code := (lit "LLL1004"), message := (lit "a control sequence needs ASCII letters or one ASCII nonletter after the backslash"), place := (ctor Option.some [Place] place), help := (ctor Option.none [Bytes])})),
+  executable: true
+}
+
+definition{
+  name: rejectScalar,
+  parameters: [path : Bytes, subject : Bytes, cur : Cursor],
+  result: Rejection,
+  body: (let b0 : UInt8 := (byteOrZero subject (project cur position)); (let high : UInt8 := (match (prim shift_right b0 (4 : UInt32) : (Option UInt8))
+    | Option.some shifted => shifted
+    | Option.none => (0 : UInt8)); (let low : UInt8 := (prim bit_and b0 (15 : UInt8) : UInt8); (let d1 : Bytes := (hexDigit high); (let d2 : Bytes := (hexDigit low); (let past : Cursor := (record Cursor {position := ((project cur position) + 1), line := (project cur line), column := ((project cur column) + 1)}); (let place : Place := (placeOf path cur past); (record Rejection {code := (lit "LLL1001"), message := (cat (cat (lit "forbidden scalar U+00") d1) d2), place := (ctor Option.some [Place] place), help := (ctor Option.none [Bytes])})))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: limitRejection,
+  parameters: [path : Bytes, maxAtoms : Nat],
+  result: Rejection,
+  body: (record Rejection {code := (lit "LLS8002"), message := (cat (cat (cat (lit "max_primitive_atoms exceeded: configured ") (decimal maxAtoms)) (lit ", scanning ")) path), place := (ctor Option.none [Place]), help := (ctor Option.none [Bytes])}),
+  executable: true
+}
+
+definition{
+  name: lexAtom,
+  parameters: [path : Bytes, subject : Bytes, cur : Cursor],
+  result: Lexed,
+  body: (let n : Nat := (prim length subject : Nat); (let pos : Nat := (project cur position); (let b0 : UInt8 := (byteOrZero subject pos); (let wsEnd : Cursor := (runEnd subject 0 cur); (let alphaEnd : Cursor := (runEnd subject 1 cur); (let numEnd : Cursor := (runEnd subject 2 cur); (let one : Cursor := (bumpOne subject cur); (let nextPos : Nat := (project one position); (let nb : UInt8 := (byteOrZero subject nextPos); (let present : Bool := (nextPos <? n); (let nbAlpha : Bool := (isAsciiAlpha nb); (let nbAscii : Bool := (inRange nb (0 : UInt8) (127 : UInt8)); (let wordEnd : Cursor := (runEnd subject 1 one); (let two : Cursor := (bumpOne subject one); (let alpha : Bool := (isAsciiAlpha b0); (let numeric : Bool := (isAsciiDigit b0); (let printable : Bool := (inRange b0 (32 : UInt8) (126 : UInt8)); (let ascii : Bool := (inRange b0 (0 : UInt8) (127 : UInt8)); (let delimiter : Bool := (if (prim equal b0 (123 : UInt8) : Bool) then true else (if (prim equal b0 (125 : UInt8) : Bool) then true else (if (prim equal b0 (40 : UInt8) : Bool) then true else (if (prim equal b0 (41 : UInt8) : Bool) then true else (if (prim equal b0 (91 : UInt8) : Bool) then true else (prim equal b0 (93 : UInt8) : Bool)))))); (if (if (prim equal b0 (32 : UInt8) : Bool) then true else (prim equal b0 (10 : UInt8) : Bool)) then (record Lexed {kind := (ctor AtomClass.Whitespace), after := wsEnd, error := (ctor Option.none [Rejection])}) else (if (prim equal b0 (92 : UInt8) : Bool) then (if (if present then nbAlpha else false) then (record Lexed {kind := (ctor AtomClass.Control), after := wordEnd, error := (ctor Option.none [Rejection])}) else (if (if present then nbAscii else false) then (record Lexed {kind := (ctor AtomClass.Control), after := two, error := (ctor Option.none [Rejection])}) else (let rejected : Rejection := (rejectBackslash path cur one); (record Lexed {kind := (ctor AtomClass.Control), after := one, error := (ctor Option.some [Rejection] rejected)})))) else (if alpha then (record Lexed {kind := (ctor AtomClass.Word), after := alphaEnd, error := (ctor Option.none [Rejection])}) else (if numeric then (record Lexed {kind := (ctor AtomClass.Numeral), after := numEnd, error := (ctor Option.none [Rejection])}) else (if delimiter then (record Lexed {kind := (ctor AtomClass.Delimiter), after := one, error := (ctor Option.none [Rejection])}) else (if printable then (record Lexed {kind := (ctor AtomClass.AsciiSymbol), after := one, error := (ctor Option.none [Rejection])}) else (if ascii then (let rejected : Rejection := (rejectScalar path subject cur); (record Lexed {kind := (ctor AtomClass.Control), after := cur, error := (ctor Option.some [Rejection] rejected)})) else (record Lexed {kind := (ctor AtomClass.UnicodeSymbol), after := one, error := (ctor Option.none [Rejection])}))))))))))))))))))))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: stepScan,
+  parameters: [path : Bytes, subject : Bytes, n : Nat, maxAtoms : Nat, state : ScanState],
+  result: (Option ScanState),
+  body: (let cur : Cursor := (project state cursor); (let pos : Nat := (project cur position); (match (project state error)
+    | Option.some stopped => (ctor Option.none [ScanState])
+    | Option.none => (if (pos <? n) then (let lexed : Lexed := (lexAtom path subject cur); (match (project lexed error)
+      | Option.some rejection => (ctor Option.some [ScanState] (record ScanState {cursor := cur, atoms := (project state atoms), count := (project state count), error := (ctor Option.some [Rejection] rejection)}))
+      | Option.none => (let after : Cursor := (project lexed after); (let atom : Atom := (record Atom {kind := (project lexed kind), byteStart := pos, byteEnd := (project after position), lineStart := (project cur line), columnStart := (project cur column), lineEnd := (project after line), columnEnd := (project after column), text := (LexLeanStd.Text::sliceOr subject pos (prim subtract (project after position) pos : Nat))}); (let count : Nat := ((project state count) + 1); (if (maxAtoms <? count) then (let rejection : Rejection := (limitRejection path maxAtoms); (ctor Option.some [ScanState] (record ScanState {cursor := after, atoms := (project state atoms), count := count, error := (ctor Option.some [Rejection] rejection)}))) else (ctor Option.some [ScanState] (record ScanState {cursor := after, atoms := (cons atom (project state atoms)), count := count, error := (ctor Option.none [Rejection])})))))))) else (ctor Option.none [ScanState]))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: scanSource,
+  parameters: [path : Bytes, text : Bytes, maxAtoms : Nat],
+  result: (Result (List Atom) Rejection),
+  body: (let n : Nat := (prim length text : Nat); (let final : ScanState := (first (prim iterate_until (fun [maxAtoms, n, path, text] (state : ScanState) => (stepScan path text n maxAtoms state)) (n + 1) (record ScanState {cursor := (record Cursor {position := 0, line := 1, column := 1}), atoms := (nil Atom), count := 0, error := (ctor Option.none [Rejection])}) : (ScanState * Bool))); (match (project final error)
+    | Option.some rejection => (ctor Result.error [(List Atom), Rejection] rejection)
+    | Option.none => (ctor Result.ok [(List Atom), Rejection] (reversed [Atom] (project final atoms)))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: classCode,
+  parameters: [atom : Atom],
+  result: Nat,
+  body: (match (project atom kind)
+    | AtomClass.Control => 0
+    | AtomClass.Word => 1
+    | AtomClass.Numeral => 2
+    | AtomClass.Delimiter => 3
+    | AtomClass.AsciiSymbol => 4
+    | AtomClass.UnicodeSymbol => 5
+    | AtomClass.Whitespace => 6),
+  executable: true
+}
+
+definition{
+  name: isDataControl,
+  parameters: [name : Bytes],
+  result: Bool,
+  body: (if (prim equal name 0x5c73656d616e74696364617461 : Bool) then true else (if (prim equal name 0x5c746f6f6c696e6764617461 : Bool) then true else (prim equal name 0x5c636f726564617461 : Bool))),
+  executable: true
+}
+
+definition{
+  name: payloadStep,
+  parameters: [text : Bytes, track : Bool, state : Payload],
+  result: (Option Payload),
+  body: (let index : Nat := (project state index); (if (index <? (prim length text : Nat)) then (let b : UInt8 := (byteOrZero text index); (let isQuote : Bool := (prim equal b (34 : UInt8) : Bool); (let isSlash : Bool := (prim equal b (92 : UInt8) : Bool); (let isOpen : Bool := (if track then (prim equal b (123 : UInt8) : Bool) else false); (let isClose : Bool := (if track then (prim equal b (125 : UInt8) : Bool) else false); (let depth : Nat := (project state depth); (let quoted : Bool := (project state quoted); (let escaped : Bool := (project state escaped); (if quoted then (if escaped then (ctor Option.some [Payload] (record Payload {index := (index + 1), depth := depth, quoted := true, escaped := false})) else (if isSlash then (ctor Option.some [Payload] (record Payload {index := (index + 1), depth := depth, quoted := true, escaped := true})) else (if isQuote then (ctor Option.some [Payload] (record Payload {index := (index + 1), depth := depth, quoted := false, escaped := escaped})) else (ctor Option.some [Payload] (record Payload {index := (index + 1), depth := depth, quoted := true, escaped := escaped}))))) else (if isQuote then (ctor Option.some [Payload] (record Payload {index := (index + 1), depth := depth, quoted := true, escaped := escaped})) else (if isOpen then (ctor Option.some [Payload] (record Payload {index := (index + 1), depth := (depth + 1), quoted := false, escaped := escaped})) else (if isClose then (ctor Option.some [Payload] (record Payload {index := (index + 1), depth := (prim subtract depth 1 : Nat), quoted := false, escaped := escaped})) else (ctor Option.some [Payload] (record Payload {index := (index + 1), depth := depth, quoted := false, escaped := escaped})))))))))))))) else (ctor Option.none [Payload]))),
+  executable: true
+}
+
+definition{
+  name: payloadRun,
+  parameters: [text : Bytes, track : Bool, context : Context],
+  result: Payload,
+  body: (first (prim iterate_until (fun [text, track] (state : Payload) => (payloadStep text track state)) (prim length text : Nat) (record Payload {index := 0, depth := (project context depth), quoted := (project context quoted), escaped := (project context escaped)}) : (Payload * Bool))),
+  executable: true
+}
+
+definition{
+  name: consume,
+  parameters: [ctx : Context, atom : Atom],
+  result: Context,
+  body: (let bd : Nat := (project ctx body); (let dep : Nat := (project ctx depth); (let env : Nat := (project ctx environment); (let t : Bytes := (project atom text); (let code : Nat := (classCode atom); (let ctl : Bool := (code =? 0); (let ws : Bool := (code =? 6); (let named : Bool := (isDataControl t); (let data : Bool := (if ctl then named else false); (let endName : Bool := (prim equal t 0x5c656e64 : Bool); (let isEnd : Bool := (if ctl then endName else false); (let run : Payload := (payloadRun t (bd =? 0) ctx); (let notation : Context := (if (if (project ctx quoted) then false else isEnd) then (record Context {awaitingOpen := (project ctx awaitingOpen), depth := (project ctx depth), quoted := (project ctx quoted), escaped := false, environment := (project ctx environment), body := 0}) else (record Context {awaitingOpen := (project ctx awaitingOpen), depth := (project ctx depth), quoted := (project run quoted), escaped := (project run escaped), environment := (project ctx environment), body := 2})); (let payload : Context := (record Context {awaitingOpen := (project ctx awaitingOpen), depth := (project run depth), quoted := (project run quoted), escaped := (project run escaped), environment := (project ctx environment), body := (project ctx body)}); (let isBegin : Bool := (if ctl then (prim equal t 0x5c626567696e : Bool) else false); (let isOpenB : Bool := (prim equal t 0x7b : Bool); (let isCloseB : Bool := (prim equal t 0x7d : Bool); (let isModule : Bool := (if (code =? 1) then (if (prim equal t 0x73656d616e7469636d6f64756c65 : Bool) then true else (if (prim equal t 0x746f6f6c696e676d6f64756c65 : Bool) then true else (prim equal t 0x636f72656d6f64756c65 : Bool))) else false); (let envNext0 : Nat := (if (env =? 0) then (if isBegin then 1 else 0) else (if (env =? 1) then (if isOpenB then 2 else 0) else (if (env =? 2) then (if isModule then 3 else 0) else (if (env =? 3) then (if isCloseB then 4 else 0) else 0)))); (let finished : Bool := (envNext0 =? 4); (let envNext : Nat := (if finished then 0 else envNext0); (let environment : Context := (if ws then ctx else (if finished then (record Context {awaitingOpen := (project ctx awaitingOpen), depth := (project ctx depth), quoted := (project ctx quoted), escaped := (project ctx escaped), environment := 0, body := 1}) else (if (if (project ctx awaitingOpen) then isOpenB else false) then (record Context {awaitingOpen := false, depth := 1, quoted := (project ctx quoted), escaped := (project ctx escaped), environment := envNext, body := (project ctx body)}) else (record Context {awaitingOpen := data, depth := (project ctx depth), quoted := (project ctx quoted), escaped := (project ctx escaped), environment := envNext, body := (project ctx body)})))); (if (bd =? 1) then (if ws then ctx else (if data then (record Context {awaitingOpen := true, depth := (project ctx depth), quoted := (project ctx quoted), escaped := (project ctx escaped), environment := (project ctx environment), body := 0}) else notation)) else (if (bd =? 2) then notation else (if (dep =? 0) then environment else payload))))))))))))))))))))))))),
+  executable: true
+}
+
+definition{
+  name: forbiddenRejection,
+  parameters: [path : Bytes, atom : Atom],
+  result: Rejection,
+  body: (let place : Place := (placeOfAtom path atom); (record Rejection {code := (lit "LLL1002"), message := (cat (cat (cat (ticks (project atom text)) (lit " is an always-forbidden TeX control (")) 0xc2a7) (lit "12.4); LexLean does not expand TeX")), place := (ctor Option.some [Place] place), help := (ctor Option.none [Bytes])})),
+  executable: true
+}
+
+definition{
+  name: canonicalDecimal,
+  parameters: [digits : Bytes],
+  result: Bytes,
+  body: (let stripped : Bytes := (significant digits); (if ((prim length stripped : Nat) =? 0) then (lit "0") else stripped)),
+  executable: true
+}
+
+definition{
+  name: leadingRejection,
+  parameters: [path : Bytes, atom : Atom],
+  result: Rejection,
+  body: (let place : Place := (placeOfAtom path atom); (let canonical : Bytes := (canonicalDecimal (project atom text)); (let shown : Bytes := (ticks (project atom text)); (record Rejection {code := (lit "LLL1003"), message := (cat (cat (cat (cat (lit "numeral ") shown) (lit " has a redundant leading zero; the canonical decimal is ")) (ticks canonical)) (lit "")), place := (ctor Option.some [Place] place), help := (ctor Option.some [Bytes] (cat (cat (cat (lit "replace ") shown) (lit " with ")) (ticks canonical)))})))),
+  executable: true
+}
+
+definition{
+  name: atomRejection,
+  parameters: [
+    path : Bytes,
+    atom : Atom,
+    previous : (Option Atom),
+    ctx : Context,
+    forbidden : (List Bytes)
+  ],
+  result: (Option Rejection),
+  body: (let t : Bytes := (project atom text); (let code : Nat := (classCode atom); (let hit : Bool := (bytesInList t forbidden); (let zeroLead : Bool := (byteIs t 0 (48 : UInt8)); (let longer : Bool := (1 <? (prim length t : Nat)); (let leading : Bool := (if (code =? 2) then (if longer then zeroLead else false) else false); (let continues : Bool := (match previous
+    | Option.some before => (let before_code : Nat := (classCode before); (let adjacent : Bool := ((project before byteEnd) =? (project atom byteStart)); (let joiner : Bool := (let bt : Bytes := (project before text); (if (prim equal bt 0x5f : Bool) then true else (if (prim equal bt 0x27 : Bool) then true else (prim equal bt 0x2d : Bool)))); (if adjacent then (if (before_code =? 1) then true else (if (before_code =? 4) then joiner else false)) else false))))
+    | Option.none => false); (if (if (code =? 0) then hit else false) then (let rejection : Rejection := (forbiddenRejection path atom); (ctor Option.some [Rejection] rejection)) else (if leading then (if continues then (ctor Option.none [Rejection]) else (if (project ctx quoted) then (ctor Option.none [Rejection]) else (let rejection : Rejection := (leadingRejection path atom); (ctor Option.some [Rejection] rejection)))) else (ctor Option.none [Rejection])))))))))),
+  executable: true
+}
+
+definition{
+  name: checkStep,
+  parameters: [path : Bytes, forbidden : (List Bytes), state : CheckState, atom : Atom],
+  result: CheckState,
+  body: (match (project state error)
+    | Option.some rejected => state
+    | Option.none => (let ctx : Context := (project state context); (let found : (Option Rejection) := (atomRejection path atom (project state previous) ctx forbidden); (let following : Context := (consume ctx atom); (record CheckState {context := following, previous := (ctor Option.some [Atom] atom), error := found}))))),
+  executable: true
+}
+
+definition{
+  name: rejectAtoms,
+  parameters: [path : Bytes, atoms : (List Atom), forbidden : (List Bytes)],
+  result: (Option Rejection),
+  body: (let final : CheckState := (prim list_fold (fun [forbidden, path] (state : CheckState) (atom : Atom) => (checkStep path forbidden state atom)) (record CheckState {context := (record Context {awaitingOpen := false, depth := 0, quoted := false, escaped := false, environment := 0, body := 0}), previous := (ctor Option.none [Atom]), error := (ctor Option.none [Rejection])}) atoms : CheckState); (project final error)),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

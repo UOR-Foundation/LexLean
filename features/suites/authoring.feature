@@ -7,10 +7,10 @@ Feature: authoring
     Then each is read back equal, the notation written from what is read is the notation written, and a node no readable form carries exactly is written generically
 
   @AU-02 @build
-  Scenario: A language-1.2 semantic module written in the authoring notation links to exactly the module its data form links to, with the same semantic ID and the same generated Lean and LaTeX byte for byte and source maps that relate each declaration to its text in the notation; fmt writes a module written as data in the notation, to the committed bytes, and leaves the notation unchanged, and the notation under language 1.1 is refused with LLP2003.
-    Given committed language-1.2 examples and their copies written as data
-    When each pair is checked, built, and format-checked, and the notation is put under language 1.1
-    Then the semantic IDs and the generated Lean and LaTeX are equal, the source maps name the notation, fmt writes the data form as the committed notation and leaves the notation unchanged, and language 1.1 refuses it
+  Scenario: A language-1.2 semantic module written in the authoring notation builds, with source maps that relate each declaration to its text in the notation; fmt leaves the notation unchanged and restores its canonical layout from another layout, and the notation under language 1.1 is refused with LLP2003; its data form is not a language-1.2 source (AU-13).
+    Given committed language-1.2 examples
+    When each is built and format-checked, its layout is collapsed, and the notation is put under language 1.1
+    Then each builds, the source maps relate each declaration to its text in the notation, fmt leaves the notation unchanged and restores the layout, and language 1.1 refuses it
 
   @AU-03 @build
   Scenario: Malformed notation fails closed and never panics: an unclosed delimiter, a keyword used as a name, a literal that is not canonical, an unknown kind, and every single-token deletion, duplication, and replacement of a committed module fail with a registered code at a position in the notation or link to a module that decodes, and a numeral with a redundant leading zero is LLL1003 outside a string and is not one inside it.
@@ -25,10 +25,10 @@ Feature: authoring
     Then no language-1.2 source of the product is written as data, each is canonical, and a refused fixture that the notation can spell is not written as data
 
   @AU-05 @build
-  Scenario: A language-1.2 tooling module written in the authoring notation links to exactly the module its data form links to, with the same semantic ID and the same generated Lean and LaTeX byte for byte and source maps that relate each declaration to its text in the notation; the notation and the canonical JSON of every committed tooling module are in bijection and the notation is its own canonical form; fmt writes a tooling module written as data as exactly the committed notation and leaves the notation unchanged; and malformed notation, and every single-token deletion and duplication of a committed tooling module, fails with a position or decodes, and nothing panics.
-    Given every committed tooling module and the committed tooling fixtures, and their copies written as data
-    When each module is written in the notation and read back, each fixture and its data form is linked, formatted, and rendered, and every token of a committed module is deleted and duplicated in turn
-    Then each is read back equal, fmt writes the data form as the committed notation, the semantic IDs, Lean and LaTeX are equal, the source maps name the notation, and each mutation is refused with a position or decodes
+  Scenario: A language-1.2 tooling module written in the authoring notation renders, with source maps that relate each declaration to its text in the notation; the notation and the canonical JSON of every committed tooling module are in bijection and the notation is its own canonical form; fmt leaves the notation unchanged; and malformed notation, and every single-token deletion and duplication of a committed tooling module, fails with a position or decodes, and nothing panics.
+    Given every committed tooling module and the committed tooling fixtures
+    When each module is written in the notation and read back, each fixture is linked, formatted, and rendered, and every token of a committed module is deleted and duplicated in turn
+    Then each is read back equal, fmt leaves the notation unchanged, the source maps name the notation, and each mutation is refused with a position or decodes
 
   @AU-06 @build
   Scenario: The compiler-semantics ID does not depend on the form a module of the embedded tree is written in: a semantic, tooling, or core module in the authoring notation contributes its data form, so the committed tree and the same tree with every such module written as data have one ID, a change to a module's meaning changes the ID in either form, the identity a preservation record states for the native library is over the same data forms, so it is the committed one, and the embedded tree holds at least one module written in the notation.
@@ -55,13 +55,13 @@ Feature: authoring
     Then each module is read back equal, the data form is the committed canonical JSON, the notation written from what is read is the notation written, and exactly the nodes the rule names are written inside their user
 
   @AU-10 @build
-  Scenario: A language-1.2 core module written in the authoring notation links to exactly the module its data form links to, with the same semantic ID and the same generated Lean and LaTeX byte for byte and source maps that name the notation; fmt writes a core module written as data as the notation and leaves the notation unchanged; and the notation under language 1.0 and 1.1 is refused with LLP2003.
-    Given a language-1.2 core module and its copy written as data, and the same module under language 1.0 and 1.1
-    When each pair is checked, built, and format-checked, and the notation is put under language 1.0 and 1.1
-    Then the semantic IDs and the generated Lean and LaTeX are equal, the source maps name the notation, fmt writes the data form as the notation and leaves the notation unchanged, and language 1.0 and 1.1 refuse it
+  Scenario: A language-1.2 core module written in the authoring notation builds, with source maps that name the notation; fmt leaves the notation unchanged and restores its canonical layout from another layout; and the notation under language 1.0 and 1.1 is refused with LLP2003; its data form is not a language-1.2 source (AU-13).
+    Given a language-1.2 core module and the same module under language 1.0 and 1.1
+    When it is built and format-checked, its layout is changed, and the notation is put under language 1.0 and 1.1
+    Then it builds, the source maps name the notation, fmt leaves the notation unchanged and restores the layout, and language 1.0 and 1.1 refuse it
 
   @AU-11 @build
-  Scenario: Malformed core notation fails closed and never panics: an unclosed delimiter, a keyword used as a name, a label that is not the number of its node, a reference to a node not yet written, a numeral with a redundant leading zero, a statement that defines no node, a nesting beyond the bound, and every single-token deletion and duplication of a committed module fail with a registered code at a position in the notation or link to a module that decodes.
+  Scenario: Malformed core notation fails closed and never panics: an unclosed delimiter, a keyword used as a name, a label that is not the number of its node, a forward reference to a node, a numeral with a redundant leading zero, a statement that defines no node, a nesting beyond the bound, and every single-token deletion and duplication of a committed module fail with a registered code at a position in the notation or link to a module that decodes.
     Given a committed core module in the notation
     When it is malformed in each way named, and each of its tokens is deleted and duplicated in turn
     Then each is refused with a registered code at a position or links to a module that decodes, and nothing panics
@@ -71,3 +71,9 @@ Feature: authoring
     Given every committed core module in the notation, the last module of the certification library without the theorem it ends with, and a project whose module is written with named statements
     When every number of a statement is replaced by a name and the text is read and written, the theorem is written by name and appended, the project is format-checked and formatted, and an unknown name, a repeated name, and a variable with levels are put in
     Then each reads to the committed module and is written as the committed bytes, fmt writes the numbers, and each defect is refused with a position
+
+  @AU-13 @build
+  Scenario: Under language 1.2 a module written with a data argument (`\semanticdata{…}`, `\toolingdata{…}`, or `\coredata{…}`) is refused with LLP2003 at the position of the data argument and naming the authoring notation, whichever of the three environments holds it; fmt does not rewrite it and reports the same refusal; lexlean::sdk::to_data_form is the one conversion into the data form and to_notation the one out of it; and the data form is still accepted under language 1.1, where the semantic example links, and is still the form of the Atlas under language 1.0.
+    Given language-1.2 projects whose module is written with a data argument in each of the three module environments, the language-1.1 example, the Atlas source, and the module in the notation
+    When each is checked and formatted, and the module is converted into the data form and back with the SDK
+    Then the language-1.2 data form is refused with LLP2003 at its data argument naming the notation, fmt does not rewrite it, the conversions are exact inverses, the notation under language 1.2 and the data form under language 1.1 are accepted, and the Atlas is still written as data

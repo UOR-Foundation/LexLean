@@ -47,6 +47,7 @@
 \noindent Constructor \texttt{str}: \texttt{(String)}.\par
 \noindent Constructor \texttt{bytes}: \texttt{(ByteArray)}.\par
 \noindent Constructor \texttt{ordering}: \texttt{(LexLeanTarget.TargetSyntax.Order)}.\par
+\noindent Constructor \texttt{overflow}: \texttt{()}.\par
 \subsection*{\texttt{Ctor}}
 \noindent Kind: \texttt{inductive}.\par
 \noindent Constructor \texttt{none}: \texttt{(RustType)}.\par
@@ -121,10 +122,21 @@
 \noindent Constructor \texttt{formatFixed}: \texttt{(LexLeanTarget.TargetSyntax.IntKind)}.\par
 \noindent Constructor \texttt{parseInt}: \texttt{()}.\par
 \noindent Constructor \texttt{parseFixed}: \texttt{(LexLeanTarget.TargetSyntax.IntKind)}.\par
+\subsection*{\texttt{Machine}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{checkedAdd}: \texttt{(LexLeanTarget.TargetSyntax.IntKind)}.\par
+\noindent Constructor \texttt{checkedSub}: \texttt{(LexLeanTarget.TargetSyntax.IntKind)}.\par
+\noindent Constructor \texttt{checkedMul}: \texttt{(LexLeanTarget.TargetSyntax.IntKind)}.\par
+\noindent Constructor \texttt{checkedQuot}: \texttt{(LexLeanTarget.TargetSyntax.IntKind)}.\par
+\noindent Constructor \texttt{checkedNeg}: \texttt{(LexLeanTarget.TargetSyntax.IntKind)}.\par
+\noindent Constructor \texttt{checkedShl}: \texttt{(LexLeanTarget.TargetSyntax.IntKind)}.\par
+\noindent Constructor \texttt{checkedShr}: \texttt{(LexLeanTarget.TargetSyntax.IntKind)}.\par
+\noindent Constructor \texttt{tryFrom}: \texttt{(LexLeanTarget.TargetSyntax.IntKind)}.\par
 \subsection*{\texttt{Callee}}
 \noindent Kind: \texttt{inductive}.\par
 \noindent Constructor \texttt{function}: \texttt{(Nat)}.\par
 \noindent Constructor \texttt{runtime}: \texttt{(Item)}.\par
+\noindent Constructor \texttt{machine}: \texttt{(Machine)}.\par
 \subsection*{\texttt{Expr}}
 \noindent Kind: \texttt{inductive}.\par
 \noindent Mutual group: \texttt{Code}.\par
@@ -149,6 +161,7 @@
 \noindent Constructor \texttt{predecessor}: \texttt{(Ident)}.\par
 \noindent Constructor \texttt{widen}: \texttt{(Expr)}.\par
 \noindent Constructor \texttt{succeed}: \texttt{(Expr)}.\par
+\noindent Constructor \texttt{loop}: \texttt{(Ident, Block)}.\par
 \subsection*{\texttt{Let}}
 \noindent Kind: \texttt{inductive}.\par
 \noindent Mutual group: \texttt{Code}.\par

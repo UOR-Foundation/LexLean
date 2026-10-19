@@ -745,7 +745,10 @@ pub fn restated_over(data: &CoreModule, module: &str, krate: &Crate) -> Result<C
     let mut writer = Writer::new(&mut generator, module);
     let own = format!("{module}.krate");
     for row in &data.declarations {
-        let ty = writer.b.import(data, row.r#type);
+        let Some(root) = row.r#type else {
+            return Err(format!("the row `{}` states no type", row.name));
+        };
+        let ty = writer.b.import(data, root);
         let value = match row.value {
             Some(_) if row.name == own => writer.rs_crate(krate),
             Some(value) => writer.b.import(data, value),

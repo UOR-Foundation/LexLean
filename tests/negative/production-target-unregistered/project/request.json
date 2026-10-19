@@ -1,0 +1,1 @@
+{"spec":"lexlean/production-request/1","roots":[{"root":"Production.Main.checkedSum","package":{"name":"pkg","version":"1.0.0"},"targets":[{"id":"rust-wasm","digest":"0218e76d906f1be031cc37ed67032bbfda28134b5104ee8e08fc3f8ea1afe70a"}]}]}

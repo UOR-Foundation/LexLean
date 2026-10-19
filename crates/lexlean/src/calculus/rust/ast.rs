@@ -311,6 +311,15 @@ pub enum Expr {
     Widen(Box<Expr>, Origin),
     /// `Ok(e)`: an infallible value where a fallible one is expected.
     Succeed(Box<Expr>, Origin),
+    /// A loop over the local `state`, which the enclosing block has bound:
+    /// the body's value `Ok(next)` rebinds `state` and runs the body again,
+    /// and `Err(done)` ends the loop with the value `done`. It prints as
+    /// `{ let mut s = s; loop { match { body } { Ok(n) => { s = n; } Err(d)
+    /// => break d } } }`.
+    Loop {
+        state: Ident,
+        body: Box<Block>,
+    },
 }
 
 impl Expr {
@@ -336,7 +345,7 @@ impl Expr {
             | Self::Succeed(_, at)
             | Self::IsZero(_, at)
             | Self::NonZero(_, at) => Some(at),
-            Self::Block(_) | Self::Uncons(_) | Self::Predecessor(_) => None,
+            Self::Block(_) | Self::Uncons(_) | Self::Predecessor(_) | Self::Loop { .. } => None,
         }
     }
 }
@@ -662,6 +671,19 @@ impl Printer {
             Expr::Predecessor(ident) => format!("{} - 1", ident.text()),
             Expr::Widen(inner, _) => format!("i128::from({})", self.expr(inner, depth)),
             Expr::Succeed(inner, _) => format!("Ok({})", self.expr(inner, depth)),
+            // The state is a local of the enclosing block; the loop's own
+            // copy of it is mutable, rebound by `Ok` and left by `Err`.
+            Expr::Loop { state, body } => {
+                let name = state.text();
+                let step = self.block_inline(body, depth + 2);
+                format!(
+                    "{{\n{one}let mut {name} = {name};\n{one}loop {{\n{two}match {step} {{\n{three}Ok(next) => {{ {name} = next; }}\n{three}Err(done) => break done,\n{two}}}\n{one}}}\n{here}}}",
+                    one = "    ".repeat(depth + 1),
+                    two = "    ".repeat(depth + 2),
+                    three = "    ".repeat(depth + 3),
+                    here = "    ".repeat(depth),
+                )
+            }
         }
     }
 
@@ -866,7 +888,80 @@ pub fn print_block(block: &Block) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::quoted;
+    use super::{quoted, Block, Crate, Ctor, Expr, Ident, ItemDef, Origin, Pat, Profile, Type};
+    use crate::calculus::rust::validate::validate;
+
+    /// `f(v0) = loop v0 { if v0 == 0 { Err(v0) } else { Ok(v0 - 1) } }`:
+    /// the countdown, whose body reads the state and nothing else.
+    fn countdown(leaks: Option<Ident>) -> Crate {
+        let at = || Origin::of("loop");
+        let state = Ident::Local(0);
+        let end = Block::of(Expr::Construct {
+            ctor: Ctor::Err(Type::Nat, Type::Nat),
+            args: vec![Expr::Copy(state.clone(), at())],
+            at: at(),
+        });
+        let next = Block::of(Expr::Construct {
+            ctor: Ctor::Ok(Type::Nat, Type::Nat),
+            args: vec![Expr::Predecessor(state.clone())],
+            at: at(),
+        });
+        let mut body = Block::of(Expr::If {
+            condition: Box::new(Expr::IsZero(state.clone(), at())),
+            then_branch: Box::new(end),
+            else_branch: Box::new(next),
+            at: at(),
+        });
+        if let Some(outer) = leaks {
+            body.lets.push(super::Let {
+                pat: Pat::Wild,
+                ty: None,
+                value: Expr::Move(outer, at()),
+                at: at(),
+            });
+        }
+        Crate {
+            profile: Profile::Std,
+            items: vec![ItemDef::Function {
+                name: Ident::Function(0),
+                parameters: vec![
+                    (Pat::Bind(state.clone()), Type::Nat),
+                    (Pat::Bind(Ident::Local(1)), Type::Nat),
+                ],
+                result: Type::Nat,
+                body: Block::of(Expr::Loop {
+                    state,
+                    body: Box::new(body),
+                }),
+                at: at(),
+            }],
+        }
+    }
+
+    #[test]
+    fn a_loop_prints_as_the_rebinding_loop_of_the_semantics() {
+        let text = super::print_expr(
+            &countdown(None)
+                .items
+                .iter()
+                .find_map(|item| match item {
+                    ItemDef::Function { body, .. } => Some(body.tail.clone()),
+                    _ => None,
+                })
+                .expect("the function"),
+        );
+        assert!(text.contains("let mut v0 = v0;"), "{text}");
+        assert!(text.contains("loop {"), "{text}");
+        assert!(text.contains("Ok(next) => { v0 = next; }"), "{text}");
+        assert!(text.contains("Err(done) => break done,"), "{text}");
+    }
+
+    #[test]
+    fn a_loop_may_move_its_state_and_nothing_else() {
+        assert_eq!(validate(&countdown(None)), Ok(()));
+        let refused = validate(&countdown(Some(Ident::Local(1)))).expect_err("moved twice");
+        assert!(refused.contains("ownership"), "{refused}");
+    }
 
     #[test]
     fn strings_are_escaped_by_lexlean_alone() {

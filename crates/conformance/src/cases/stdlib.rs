@@ -124,7 +124,7 @@ fn option(value: Option<Value>) -> Value {
 }
 
 /// One run: the member's arguments and the oracle's observable outcome.
-type Run = (Vec<Value>, Json);
+pub(super) type Run = (Vec<Value>, Json);
 
 fn record(out: &mut Vec<Run>, arguments: Vec<Value>, expected: &Value) {
     out.push((
@@ -368,9 +368,19 @@ fn corpus(member: &str, runs: usize) -> Vec<Run> {
 
 /// The lowered program of one member of the checked project.
 fn lower(checked: &lexlean::link::CheckedProject, project: &P, member: &str) -> Lowered {
+    lower_in(checked, project, MODULE, member)
+}
+
+/// The lowered program of one member of `module` in the checked project.
+pub(super) fn lower_in(
+    checked: &lexlean::link::CheckedProject,
+    project: &P,
+    module: &str,
+    member: &str,
+) -> Lowered {
     let linked = linked_modules(checked);
     let roots = roots(checked).expect("the production roots");
-    let root = format!("{MODULE}.{member}");
+    let root = format!("{module}.{member}");
     let found = roots
         .iter()
         .find(|candidate| candidate.report.root == root)
@@ -560,6 +570,10 @@ pub fn run(id: &str) {
                     "{name}: {}",
                     String::from_utf8_lossy(&ran.stderr)
                 );
+                crate::stack_bounds::observe(
+                    &crate::stack_bounds::subject("stdlib", name),
+                    &binary,
+                );
                 let stdout = String::from_utf8(ran.stdout).expect("utf8");
                 let printed: Vec<Json> = stdout
                     .lines()
@@ -625,10 +639,11 @@ pub fn run(id: &str) {
             }
             let mut realized = 0usize;
             for root in &exported.output.result.roots {
-                let member = root
-                    .root
-                    .strip_prefix(&format!("{MODULE}."))
-                    .unwrap_or_else(|| panic!("{} is a member", root.root));
+                // The export carries every module of the project; this case
+                // holds the `Text` members, `SL-02` the `Sha256` ones.
+                let Some(member) = root.root.strip_prefix(&format!("{MODULE}.")) else {
+                    continue;
+                };
                 for output in &root.outputs {
                     let package: Json = serde_json::from_slice(
                         &std::fs::read(
@@ -650,6 +665,8 @@ pub fn run(id: &str) {
             }
             assert_eq!(realized, MEMBERS.len(), "one certified package per member");
         }
+        // §17.22: SHA-256 (#126 stage 1).
+        "SL-02" => super::stdlib_sha256::run(id),
         other => panic!("no stdlib case is wired for {other}"),
     }
 }

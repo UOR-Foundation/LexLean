@@ -74,8 +74,8 @@ impl Normalizer {
             if c == '\u{1b}' {
                 if iterator.peek() == Some(&'[') {
                     iterator.next();
-                    for follow in iterator.by_ref() {
-                        if follow.is_ascii_alphabetic() {
+                    for terminator in iterator.by_ref() {
+                        if terminator.is_ascii_alphabetic() {
                             break;
                         }
                     }

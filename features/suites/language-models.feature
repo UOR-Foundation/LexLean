@@ -8,7 +8,7 @@ Feature: language-models
   Scenario: A `tokenizer` is a closed language-1.2 declaration whose scheme is `byte_level` or `longest_match` and whose vocabulary is a #29 artifact with role `vocabulary` and schema `utf8_lines`; tokens are `uint32`, the single bytes are the ids 0..255 present always as the byte fallback, the vocabulary pieces take the ids from 256 in artifact order, and the declaration elaborates to `encode` and `decode` over `bytes` together with `encodeText` and `decodeText` over `string` through `utf8_encode` and `utf8_decode`, so a scheme outside the closed enumeration, a vocabulary whose role or schema is not the one stated, or a token outside `uint32` is refused as a schema violation (`LLT4001`) or by the artifact rules (`LLR3007`).
     Given a language-1.2 tokenizer declaration over a `utf8_lines` vocabulary artifact
     When it is linked under language 1.2, and again with an unknown scheme
-    Then the ids 0..255 are the byte fallback and the pieces follow in artifact order
+    Then the ids 0..255 are the byte fallback and the pieces are in artifact order
     And the unknown scheme is refused as a schema violation
 
   @LM-02 @build

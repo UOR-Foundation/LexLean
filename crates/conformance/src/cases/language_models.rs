@@ -31,7 +31,7 @@ const LEAN_MODULE: &str = "Models.Recognizer";
 /// # Panics
 ///
 /// Panics when the case's assertion fails, and for an ID of this suite whose
-/// case is not yet wired — an unimplemented registered capability must not
+/// case is not wired — an unimplemented registered capability must not
 /// pass silently.
 pub fn run(id: &str) {
     match id {
