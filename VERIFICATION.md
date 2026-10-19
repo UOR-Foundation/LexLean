@@ -1886,6 +1886,52 @@ jobs (user time 17.5 minutes); on `main` a chain of 50 functions took 16. So
 
 Found, not fixed here: a left-nested sum of 70 calls makes
 `Program::to_file_bytes` panic (`recursion limit exceeded`), #215.
+### a lowered program nested beyond the limit is refused, not a panic (#215, R5)
+
+`Program::to_file_bytes` serialized the lowered program and read the text back
+through the canonical JSON reader, whose limit on nesting is `serde_json`'s 128,
+and `expect`ed that to succeed. A root whose lowered program nests deeper than
+127 arrays and objects therefore panicked in `verify` instead of failing with a
+registered diagnostic. On `main` (`39edf5ac2`), with the committed negative
+fixture `lowering-depth-limit` (a root `deep` calling a chain of 509 generic
+definitions `g_k<T> x = g_{k+1}<(T, Nat)> (x, 0)`, whose instances nest a pair
+one level deeper per definition; its project lifts `max_total_source_bytes`,
+because the eligibility report of a chain takes the square of its length):
+
+```text
+thread 'main' panicked at crates/lexlean/src/calculus/mod.rs:496:14:
+program is JSON: "recursion limit exceeded at line 1 column 705999"
+```
+
+Now, from the same project:
+
+```text
+error[LLS8002]: root `Production.Main.deep`: program_json_depth exceeded in phase lowering: at most 512, the lowered program nests 515 deep
+```
+
+The reader on this path is the unbounded one that `production::lcnf` already
+uses, so the program nests as deeply as its expressions do, and the depth is
+bounded where the program is lowered (`production::lower::PROGRAM_JSON_DEPTH`,
+512, measured on the serialized text by `json_depth`, which skips strings).
+The number is a stack bound, stated and tested, not the reader's: a debug
+build round-trips a chain of 400 nested expressions on a 1 MiB thread and 800 on
+2 MiB; the limit, about 250 nested expressions, takes about a quarter of 2 MiB,
+and the unit test `a_program_at_the_limit_round_trips_on_a_two_mebibyte_stack`
+builds the deepest chain within the limit and round-trips it on a 2 MiB thread.
+It over-refuses nothing that was accepted: a survey of every lowered program of
+the four corpora (deepest: `models`, 50) and of the stress families (deepest:
+`nested pairs 120`, 244) found none above the limit, where the reader's 127
+would have refused two of the stress families if they had been serialized.
+
+Planted: the check absent is `main`'s behavior, the panic above on the same
+fixture (`EX-07` runs the fixture through the CLI and requires exit 4 and the
+one prescribed code, so a panic or a pass fails it). The limit and the
+round-trip test move together: a limit raised past what a 2 MiB stack hosts
+fails `a_program_at_the_limit_round_trips_on_a_two_mebibyte_stack`.
+
+Not covered: a program nested far beyond the limit can overflow the stack in
+`serde_json::to_string` before the check measures it; the lowering and
+certificate generation recurse over the same nesting on their own stacks.
 
 ### certificate B is kernel-term data and a defect in it is refused
 
