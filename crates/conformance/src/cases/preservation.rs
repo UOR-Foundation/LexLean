@@ -3956,8 +3956,11 @@ pub fn run(id: &str) {
             // The members of a safe compiled mutual group are compiled
             // together by the runtime, from the members present in the
             // command, so they must be rendered into one command.
-            let commands_of = |data: &lexlean::ir::core::CoreModule, module: &str| -> usize {
-                let text = lexlean::backend::core::lean_text_legacy(data, module)
+            let commands_of = |rendered: &lexlean::ir::core::CoreModule,
+                               data: &lexlean::ir::core::CoreModule,
+                               module: &str|
+             -> usize {
+                let text = lexlean::backend::core::lean_text_legacy(rendered, module)
                     .expect("the module renders");
                 let commands: Vec<&str> = text
                     .split("LexLeanCore.Runtime.decodeAndAdd")
@@ -3971,10 +3974,12 @@ pub fn run(id: &str) {
                     if !row.compiled || row.safety.is_some() {
                         continue;
                     }
+                    // The payload is a Lean string literal, so its quotes are
+                    // escaped in the text.
                     let holding = |name: &str| {
-                        commands
-                            .iter()
-                            .position(|command| command.contains(&format!("\"name\":\"{name}\"")))
+                        commands.iter().position(|command| {
+                            command.contains(&format!("\\\"name\\\":\\\"{name}\\\""))
+                        })
                     };
                     let first = holding(&row.name);
                     assert!(first.is_some(), "{module}: `{}` is in a command", row.name);
@@ -3990,7 +3995,7 @@ pub fn run(id: &str) {
                 let certificate = &entry.certificate;
                 let data = certificate.data.as_ref().expect("certificate A is data");
                 assert_eq!(
-                    commands_of(data, &certificate.module),
+                    commands_of(data, data, &certificate.module),
                     0,
                     "{}: a safe mutual group is split across commands",
                     certificate.module
@@ -4008,7 +4013,7 @@ pub fn run(id: &str) {
                 };
                 // Armed: the same rows scheduled one by one straddle a
                 // command in the closure the project exists for.
-                let split = commands_of(&ungrouped, &certificate.module);
+                let split = commands_of(&ungrouped, data, &certificate.module);
                 largest = largest.max(split);
             }
             assert!(groups > 0, "the list roots have safe mutual groups");
