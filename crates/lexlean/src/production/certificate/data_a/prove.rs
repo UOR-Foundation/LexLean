@@ -987,6 +987,30 @@ impl<'a> Writer<'_, 'a> {
         }
     }
 
+    /// Whether a list term is `List.nil` or `List.cons` onto such a term.
+    fn is_literal_list(&self, term: Term) -> bool {
+        let mut at = term;
+        loop {
+            let mut spine = Vec::new();
+            let mut head = at;
+            while let crate::ir::core::CoreNode::App { f, x } = self.b.node(head) {
+                spine.push(*x);
+                head = *f;
+            }
+            match self.b.node(head) {
+                crate::ir::core::CoreNode::Const { n, .. } if n == "List.nil" => return true,
+                crate::ir::core::CoreNode::Const { n, .. } if n == "List.cons" => {
+                    // The arguments, last applied first: tail, head, type.
+                    let Some(tail) = spine.first() else {
+                        return false;
+                    };
+                    at = *tail;
+                }
+                _ => return false,
+            }
+        }
+    }
+
     /// `construct_cons` at the value of `head` and the payload of the
     /// encoding of the list `tail_src`.
     fn construct_cons(
@@ -1003,8 +1027,16 @@ impl<'a> Writer<'_, 'a> {
         // The payload of a list nested in a recursive group is its items row,
         // which the group's bundle equates with the head's encoding consed on
         // the tail's items; `List.map` of the element's encoder is the same
-        // list only by an induction the kernel does not do.
-        if let Some(nested) = self.gen.nested.get(&self.gen.source.type_text(ty)) {
+        // list only by an induction the kernel does not do, unless the tail is
+        // a literal list, where both reduce to the same elements and the map
+        // is what the certificates of such lists have always stated.
+        let literal = self.is_literal_list(tail_src);
+        if let Some(nested) = self
+            .gen
+            .nested
+            .get(&self.gen.source.type_text(ty))
+            .filter(|_| !literal)
+        {
             let index = nested.index;
             let items = self.own(&format!("__items_{index}"));
             let t = self.b.app(items, tail_src);
