@@ -371,3 +371,52 @@ machine modules with no error. What was not run: the compiler project's `verify`
 records the maintainer regenerates, and reports that the compiler semantics changed since
 locking.
 
+## The loop form certified (#91 stage 4, `SP-20`)
+
+The renderer writes a function whose self calls are all tail calls as a loop, so the crate no
+longer holds the body the calculus function corresponds to. `FunOK` is now `FunOK0 ∨ FunLoop`:
+`FunOK0` is the statement `FunOK` was, and `FunLoop` states that the crate's body is `loopOf` of
+an ordinary recursive body, with the Boolean checks of `loopCheckOf` and the `Corr` derivation of
+that body. `Corr`, its recursor, and `sound` are untouched; the soundness of the new disjunct is
+`funSem_loop`, and `funSem_of` is `Or.casesOn` over the two. The oracle is checkpoint commit
+`448aa180c` (the Lean sources, `tests/preservation-library/oracle-loopcorr/lean/`, 2,707 lines,
+198 declarations, no `sorry`) and the commit that follows it (the graft and surgery tools,
+`oracle-loopcorr/src/bin/`), both removed by the commit after them.
+
+| module | rows | change |
+| --- | --- | --- |
+| `RustCorr` | 149, before `FunOK` | `Pos`, `carried`, `pack`, `rtE`/`rtB`/`rtArms`, `loopParams`, `loopParts`, `loopOf`, `loopCheck`, `loopCheckOf`, and `FunLoop`, exported from Lean over the committed library |
+| `RustCorr` | `FunOK`, `CrateOK` | `FunOK` becomes `FunOK0` (its value unchanged) and a new `FunOK p c A f := Or (FunOK0 p c A f) (FunLoop p c A f)`; `CrateOK`'s height and axiom set follow |
+| `RustSound` | 751, before `funSem_of._simp_1_14` | the relational layer for the loop, the relevance and glue lemmas, `funSem_loop` with its exact axioms (`Classical.choice`, `Quot.sound`, `propext`) |
+| `RustSound` | `funSem_of` | the existential case analysis is the first arm of an `Or.casesOn` over the two disjuncts; the second is `funSem_loop` |
+
+`funSem_loop`'s statement:
+
+```lean
+theorem funSem_loop {p : TargetSyntax.Program} {c : RCrate} {A : Flags} {n f : Nat}
+    (hS : ∀ (Γ : Ctx) (fl : Bool) (j : Jd), Corr p c A Γ fl j → Sem p c A n Γ fl j)
+    (h : FunLoop p c A f) : FunSem p c A n f
+```
+
+Found on the way, each fixed where it was found:
+
+- The exporter names a private auxiliary declaration after the module it was elaborated in; a row
+  grafted into another module is renamed to the host module (`_private.LexLeanPreservation.<host>.#0`),
+  or the decoder cannot reproduce it.
+- A name with an apostrophe (`All2.imp'`) cannot be parsed from the audit's output, which quotes
+  names with it; the lemma is `All2.mono`.
+- The decoder cannot realize a sparse `casesOn` over an inductive declared in the same module
+  (`Pos`), because the realization base environment has no `Pos.casesOn`; `keptNames` is written
+  with its constructors spelled out. A decoder that realizes the same-module recursor is the
+  change that would remove the restriction; it is not made here.
+- `compileRows` compiles a mutual group in the command that adds its last member, so a command
+  boundary inside a group failed (`patBinders`/`patBindersList`); `keep_groups_together` in
+  `backend/core.rs` makes neighbouring commands that share a group one command.
+
+Run: the 13 modules compile with no error over the pinned Lean 4.32.1 (`RustCorr` 10 s,
+`RustLemmas` 64 s, `RustMatches` 14 s, `RustSound` 13 s, `Compose` 4 s), the library audit is
+satisfied for every row, and `conformance_sp_20` compiles certificate B of the fixtures rendered
+as loops over it. What was not run: the compiler project's `verify` and every case that reads a
+committed lock, golden, or export report that the compiler semantics changed since locking; the
+maintainer regenerates those records.
+

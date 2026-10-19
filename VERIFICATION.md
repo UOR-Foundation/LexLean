@@ -1675,6 +1675,72 @@ be able to fail by the three statements of a wrong value, each of which the pinn
 Lean refuses (the loop ending at one, the exhausted loop stated as a value, and the
 stuck loop stated as the unit value).
 
+### a function rendered as a loop is certified, and a loop outside the rendering is refused (SP-20)
+
+`FunOK` is `FunOK0` or `FunLoop` (`SP-20`, §17.16, §17.17, #91 stage 4). The case
+reads the library's modules for the declarations (`FunOK0`, `FunOK`, `FunLoop`,
+`loopOf`, `loopCheckOf`, `funSem_loop`, `funSem_of`, `sound`), lowers the renderer
+fixtures in each profile and the production roots of `examples/production`,
+`examples/production-coverage`, `examples/models`, and `examples/reasoning` in each
+of their targets under a lock computed in the case, reads every loop of every
+rendering back into its recursive body with `loopform::recover` (which also
+requires the library's form, transliterated, to be the crate's function), asserts
+that there is a loop that changes a parameter and one that keeps another (the
+case is armed by the first loop), plants six breaks of each loop in every loop
+(a state of another type, no destructuring of the state, an end that is not an
+`Err`, a renamed parameter the body reads, a pattern that rebinds a kept parameter,
+a state held by a parameter the function does not have) and requires each refused,
+and has the pinned Lean 4.32.1 compile certificate B of the fixtures rendered as
+loops over the shipped library with the library audit and the exact axioms of the
+root theorems. The unit tests of `data_b::loopform` restore a countdown loop to its
+recursive body and refuse three breaks. Each plant was run in a Linux container with
+`cargo test -p repo-conformance --test conformance -- conformance_sp_20`; the file
+was restored with `git checkout` afterwards.
+
+Planted (a): the form building an end as `Ok` (`Retarget::end`). Expected: the
+rendering of the first loop is refused. Observed:
+
+```text
+thread 'conformance_sp_20' panicked at crates/conformance/src/preservation.rs:2530:21:
+graph-reachable (rust-std): certificate B: function 2: the loop is not the loop form of the recursive body it restores to
+```
+
+Planted (b): `recover` returning the inverted body without requiring the library's
+form to be the crate's function. Expected: a broken loop is accepted. Observed:
+
+```text
+thread 'conformance_sp_20' panicked at crates/conformance/src/cases/preservation.rs:5078:21:
+graph-reachable (rust-std): function 2: the mutation 4 of a loop is accepted
+```
+
+(Mutations 0 to 3 are refused by the inversion itself; the pattern that rebinds a
+kept parameter is the first the library's checks alone refuse.)
+
+Planted (c): the holder number of the `FunLoop` witnesses one too large. Expected:
+the kernel refuses the equation that `loopOf` holds. Observed:
+
+```text
+renderings: `LexLeanPreserve.Fixture.F44.RustStd` was rejected:
+… error: native core declaration '…RustStd.fun11':
+  (kernel) application type mismatch
+    And.intro
+      (Eq.refl (LexLeanPreservation.Rust.Loop.loopOf 11 [Pos.changed, Pos.changed] …
+```
+
+What was not run in this change: the cases that read a committed lock, golden, or
+production export (`conformance_sp_08` among them) report that the compiler
+semantics changed since locking, as they do on the branch before this change; the
+maintainer regenerates those records. `examples/production-coverage`, whose crates
+hold loops (`loop {` appears in 37 of its 52 rendered crates),
+was verified end to end in a copy: `lexlean lock && lexlean verify` printed
+`verified 8 modules; attestation 16b5350dcfb7abac988cce6d7c8aedb381b77af343de4ce68a4dbf12970626f8`
+after 20 min 17 s, with certificates A, B, and E of every root replayed and audited.
+
+The decoder change (a mutual definition group is never split across commands,
+`backend::core::keep_groups_together`) is covered by the unit test
+`command_ranges_never_split_a_mutual_group`, and by the library itself: without it
+the new library's `patBinders` group is compiled in two commands and Lean rejects it.
+
 ### a list of any length is a term Lean elaborates without binders
 
 Lean's `[…]` macro writes a literal of more than 32 elements under `let`
