@@ -188,7 +188,7 @@ pub(crate) struct WindowInfo {
 /// across modules as a model names its contract.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(crate) struct Texts {
-    tokenizers: BTreeSet<String>,
+    tokenizers: BTreeMap<String, TokenizerScheme>,
     windows: BTreeMap<String, WindowInfo>,
 }
 
@@ -199,8 +199,8 @@ impl Texts {
             tokenizers: self
                 .tokenizers
                 .iter()
-                .filter(|key| !key.contains("::"))
-                .cloned()
+                .filter(|(key, _)| !key.contains("::"))
+                .map(|(key, scheme)| (key.clone(), *scheme))
                 .collect(),
             windows: self
                 .windows
@@ -219,8 +219,10 @@ pub(super) fn register_import(
     elaboration: &model::Elaboration,
     env: &mut Environment<'_>,
 ) {
-    for name in &elaboration.text.tokenizers {
-        env.texts.tokenizers.insert(format!("{module}::{name}"));
+    for (name, scheme) in &elaboration.text.tokenizers {
+        env.texts
+            .tokenizers
+            .insert(format!("{module}::{name}"), *scheme);
     }
     for (name, info) in &elaboration.text.windows {
         env.texts.windows.insert(format!("{module}::{name}"), *info);
@@ -414,7 +416,25 @@ fn register_library(env: &mut Environment<'_>) {
         (names::GENERATE_SAMPLE, seeded(), sample_run()),
         (names::GENERATE_SAMPLE_GUARDED, seeded(), sample_run()),
     ];
-    for (name, parameters, result) in rows.into_iter().chain(windows) {
+    let classifiers: [(&str, Vec<SemanticType>, SemanticType); 4] = [
+        (
+            names::FEATURES,
+            vec![SemanticType::Nat, tokens()],
+            list_of(SemanticType::Int),
+        ),
+        (
+            names::FIT_WIDTH,
+            vec![SemanticType::Nat, list_of(SemanticType::Int)],
+            list_of(SemanticType::Int),
+        ),
+        (
+            names::TOTAL,
+            vec![list_of(SemanticType::Int)],
+            SemanticType::Int,
+        ),
+        (names::TOKEN_COUNT, vec![tokens()], SemanticType::Int),
+    ];
+    for (name, parameters, result) in rows.into_iter().chain(windows).chain(classifiers) {
         env.functions
             .entry(super::member_key(&library_member(name)))
             .or_insert(FunctionInfo {
@@ -782,7 +802,7 @@ fn check_text_generator(
     }
     super::check_member(tokenizer, env)?;
     let tokenizer_key = super::member_key(tokenizer);
-    if !env.texts.tokenizers.contains(&tokenizer_key) {
+    if !env.texts.tokenizers.contains_key(&tokenizer_key) {
         return Err(interface(format!(
             "text generator `{name}` tokenizer `{tokenizer_key}` is not a prior tokenizer"
         )));
@@ -1270,7 +1290,159 @@ fn check_tokenizer(
             pieces_term(),
         ),
     ];
-    env.texts.tokenizers.insert(name.clone());
+    env.texts.tokenizers.insert(name.clone(), *scheme);
+    Ok(Lowering {
+        declarations,
+        theorems,
+        ..Lowering::default()
+    })
+}
+
+// ---------------------------------------------------------------------------
+// The elaboration of a text classifier.
+
+/// Check a text classifier and elaborate it (§17.12, *Text components*
+/// rule 8): its tokenizer is a prior tokenizer and its model a prior
+/// stateless model from `list int` whose every runtime check its evidence
+/// discharges (it is applied on every text). It elaborates to `features`,
+/// `classifyTokens`, and `classify`, and generates `features_width`,
+/// `features_total`, and `features_fit`.
+#[allow(clippy::too_many_lines)]
+fn check_text_classifier(
+    declaration: &SemanticDeclaration,
+    env: &mut Environment<'_>,
+) -> Result<Lowering, SemanticFailure> {
+    let SemanticDeclaration::TextClassifier {
+        name,
+        tokenizer,
+        model: classifier_model,
+        axioms,
+    } = declaration
+    else {
+        return Ok(Lowering::default());
+    };
+    check_policy("text classifier", name, axioms)?;
+    super::check_member(tokenizer, env)?;
+    let tokenizer_key = super::member_key(tokenizer);
+    let Some(scheme) = env.texts.tokenizers.get(&tokenizer_key).copied() else {
+        return Err(interface(format!(
+            "text classifier `{name}` tokenizer `{tokenizer_key}` is not a prior tokenizer"
+        )));
+    };
+    super::check_member(&classifier_model.member, env)?;
+    let model_key = super::member_key(&classifier_model.member);
+    let scoring = model::scorer_interface(classifier_model, env, interface).map_err(|failure| {
+        interface(format!(
+            "text classifier `{name}` model `{model_key}`: {}",
+            failure.reason
+        ))
+    })?;
+    if scoring.stateful {
+        return Err(interface(format!(
+            "text classifier `{name}` model `{model_key}` is stateful; a classifier maps one feature vector to its label"
+        )));
+    }
+    if !scoring.required.is_empty() {
+        return Err(interface(format!(
+            "text classifier `{name}` model `{model_key}` needs runtime checks its evidence does not discharge; a classifier applies its model to every text"
+        )));
+    }
+    if scoring.input != list_of(SemanticType::Int) {
+        return Err(interface(format!(
+            "text classifier `{name}` model `{model_key}` does not take `list int`"
+        )));
+    }
+    let label = scoring.output;
+    register_library(env);
+
+    let features = format!("{name}.features");
+    let classify_tokens = format!("{name}.classifyTokens");
+    let classify = format!("{name}.classify");
+    let size = || model::call(&sibling(tokenizer, "size"), &[], Vec::new());
+    let pieces = || model::call(&sibling(tokenizer, "pieces"), &[], Vec::new());
+    let encoded = || {
+        model::call(
+            &sibling(tokenizer, "encodeText"),
+            &[],
+            vec![model::var(TEXT)],
+        )
+    };
+    let featured = |tokens: SemanticTerm| local_call(&features, vec![tokens]);
+    let declarations = vec![
+        plain_definition(
+            &features,
+            vec![parameter(TOKENS, tokens())],
+            list_of(SemanticType::Int),
+            library_call(names::FEATURES, vec![size(), model::var(TOKENS)]),
+        ),
+        plain_definition(
+            &classify_tokens,
+            vec![parameter(TOKENS, tokens())],
+            label.clone(),
+            model::call(
+                &classifier_model.member,
+                &classifier_model.type_arguments,
+                vec![featured(model::var(TOKENS))],
+            ),
+        ),
+        plain_definition(
+            &classify,
+            vec![parameter(TEXT, SemanticType::String)],
+            label,
+            local_call(&classify_tokens, vec![encoded()]),
+        ),
+    ];
+    let total_lemma = match scheme {
+        TokenizerScheme::LongestMatch => names::FEATURES_TOTAL_TEXT,
+        TokenizerScheme::ByteLevel => names::FEATURES_TOTAL_TEXT_BYTES,
+    };
+    let over_tokens = || vec![parameter(TOKENS, tokens())];
+    let theorems = vec![
+        // The features have exactly `size` entries.
+        law_over(
+            format!("{name}.features_width"),
+            over_tokens(),
+            model::eq(
+                model::primitive(
+                    SemanticPrimitive::Length,
+                    vec![featured(model::var(TOKENS))],
+                    SemanticType::Nat,
+                ),
+                size(),
+            ),
+            &[&features],
+            names::FEATURES_WIDTH,
+            vec![size(), model::var(TOKENS)],
+        ),
+        // The features of an encoded text sum to its token count: no token
+        // is dropped, because every token indexes the vocabulary.
+        law_over(
+            format!("{name}.features_total"),
+            vec![parameter(TEXT, SemanticType::String)],
+            model::eq(
+                library_call(names::TOTAL, vec![featured(encoded())]),
+                library_call(names::TOKEN_COUNT, vec![encoded()]),
+            ),
+            &[&features],
+            total_lemma,
+            vec![pieces(), model::var(TEXT)],
+        ),
+        // The fixed-width map leaves the features unchanged.
+        law_over(
+            format!("{name}.features_fit"),
+            over_tokens(),
+            model::eq(
+                library_call(
+                    names::FIT_WIDTH,
+                    vec![size(), featured(model::var(TOKENS))],
+                ),
+                featured(model::var(TOKENS)),
+            ),
+            &[&features],
+            names::FEATURES_FIT,
+            vec![size(), model::var(TOKENS)],
+        ),
+    ];
     Ok(Lowering {
         declarations,
         theorems,
@@ -1291,6 +1463,7 @@ pub(super) fn check_declaration(
     super::require_language_1_2(env, kind)?;
     let lowering = match declaration {
         SemanticDeclaration::Tokenizer { .. } => check_tokenizer(declaration, env)?,
+        SemanticDeclaration::TextClassifier { .. } => check_text_classifier(declaration, env)?,
         SemanticDeclaration::ContextWindow { .. } => check_context_window(declaration, env)?,
         SemanticDeclaration::TextGenerator { .. } => check_text_generator(declaration, env)?,
         _ => Lowering::default(),

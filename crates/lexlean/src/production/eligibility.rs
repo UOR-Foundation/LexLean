@@ -1205,6 +1205,7 @@ impl<'a> Walk<'a> {
                             name: _,
                             tokenizer: _,
                             model: _,
+                            axioms: _,
                         },
                     )
                     | None => {
@@ -1446,6 +1447,7 @@ impl<'a> Walk<'a> {
                     name: _,
                     tokenizer: _,
                     model: _,
+                    axioms: _,
                 } => continue,
             };
             for derived in linked.semantic.elaboration.lowered(index) {
@@ -1750,6 +1752,7 @@ impl<'a> Walk<'a> {
                 name: _,
                 tokenizer: _,
                 model: _,
+                axioms: _,
             } => {
                 self.violation(
                     site,
@@ -2359,6 +2362,7 @@ impl<'a> Walk<'a> {
                 name: _,
                 tokenizer: _,
                 model: _,
+                axioms: _,
             }) => "declaration.text_classifier",
             None => "declaration.definition",
         };
@@ -2618,6 +2622,7 @@ impl<'a> Walk<'a> {
                     name: _,
                     tokenizer: _,
                     model: _,
+                    axioms: _,
                 },
             ) => {
                 self.construct(&site, construct, None);
@@ -2836,6 +2841,7 @@ fn inductive_group(
                 name: _,
                 tokenizer: _,
                 model: _,
+                axioms: _,
             } => {}
         }
     }
@@ -3497,6 +3503,7 @@ pub fn analyse_module(
                 name: _,
                 tokenizer: _,
                 model: _,
+                axioms: _,
             } => {}
         }
     }
