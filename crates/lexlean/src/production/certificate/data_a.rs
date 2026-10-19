@@ -331,8 +331,7 @@ impl<'g, 'a> Writer<'g, 'a> {
 
     /// The axioms of the row whose type and value are `roots`: those of every
     /// constant they mention.
-    fn row_axiom_set(&self, roots: &[Term]) -> Result<BTreeSet<String>, String> {
-        let mut out = BTreeSet::new();
+    fn constants_in(&self, roots: &[Term]) -> BTreeSet<String> {
         let mut seen = std::collections::HashSet::new();
         let mut names = BTreeSet::new();
         let mut stack: Vec<Term> = roots.to_vec();
@@ -366,7 +365,12 @@ impl<'g, 'a> Writer<'g, 'a> {
                 | crate::ir::core::CoreNode::String { .. } => {}
             }
         }
-        for name in names {
+        names
+    }
+
+    fn row_axiom_set(&self, roots: &[Term]) -> Result<BTreeSet<String>, String> {
+        let mut out = BTreeSet::new();
+        for name in self.constants_in(roots) {
             out.extend(self.constant_axioms(&name)?);
         }
         Ok(out)
@@ -404,6 +408,33 @@ impl<'g, 'a> Writer<'g, 'a> {
         Ok(())
     }
 
+    /// Compile the bundle of every container nested in a recursive group
+    /// that a compiled row applies. The code generator reads a bundle it has no
+    /// code for as a closed term whose join point it cannot find, so a
+    /// compiled encoder or `denote` that applies `ListEnc.enc` of an uncompiled
+    /// `__L_k` is refused. A bundle only the proofs name stays uncompiled.
+    fn compile_applied_bundles(&mut self) {
+        let is_bundle = |name: &str| {
+            name.rsplit_once('.').is_some_and(|(_, short)| {
+                short
+                    .strip_prefix("__L_")
+                    .or_else(|| short.strip_prefix("__O_"))
+                    .is_some_and(|rest| rest.bytes().all(|byte| byte.is_ascii_digit()))
+            })
+        };
+        let mut used = BTreeSet::new();
+        for row in &self.rows {
+            if matches!(row.kind, RowKind::Definition { compiled: true }) {
+                used.extend(self.constants_in(&[row.value]));
+            }
+        }
+        for row in &mut self.rows {
+            if is_bundle(&row.name) && used.contains(&row.name) {
+                row.kind = RowKind::Definition { compiled: true };
+            }
+        }
+    }
+
     /// Name the rows of one mutual group (their short names) as each other's
     /// group.
     pub(super) fn group_rows(&mut self, short_names: &[String]) {
@@ -419,7 +450,8 @@ impl<'g, 'a> Writer<'g, 'a> {
     }
 
     /// The module.
-    pub(super) fn finish(self, imports: Vec<String>) -> Result<CoreModule, String> {
+    pub(super) fn finish(mut self, imports: Vec<String>) -> Result<CoreModule, String> {
+        self.compile_applied_bundles();
         let heights = self.heights();
         let roots: Vec<Term> = self
             .rows

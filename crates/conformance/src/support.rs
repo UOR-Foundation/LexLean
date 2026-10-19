@@ -387,6 +387,21 @@ impl P {
         Self { temp, root }
     }
 
+    /// A fresh copy of a committed project under `tests/`, without build
+    /// output or expected oracles.
+    #[must_use]
+    pub fn copy_tests_project(path: &str) -> Self {
+        let temp = tempfile::Builder::new()
+            .prefix("lexlean-tests-project-")
+            .tempdir()
+            .expect("tempdir");
+        let source = repo_root().join("tests").join(path);
+        assert!(source.is_dir(), "committed project `{path}` is required");
+        copy_tree(source.as_std_path(), temp.path(), &[".lexlean", "expected"]);
+        let root = Utf8PathBuf::from_path_buf(temp.path().to_path_buf()).expect("utf8 tempdir");
+        Self { temp, root }
+    }
+
     /// A fresh copy of the committed source-package workspace
     /// (`tests/packages/workspace`, SPEC.md §10.5): `root` is the member
     /// project `member` (`app`, `lib`, or `base`), and the workspace itself is

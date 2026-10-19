@@ -36,6 +36,15 @@
     "hints": ""
   },
   {
+    "part": "bdd-preservation-lists",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "preservation-lists",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
     "part": "bdd-production",
     "recipes": "bdd",
     "examples_part": "",

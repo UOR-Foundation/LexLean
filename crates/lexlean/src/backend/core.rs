@@ -686,6 +686,22 @@ fn group_representatives(core: &CoreModule) -> BTreeMap<&str, &str> {
     representatives
 }
 
+/// The key of the safe, compiled mutual group a row belongs to, if it has
+/// partners. The runtime compiles such a group in one `compileDecls` over the
+/// members present in the command, so a command that holds only some of them
+/// compiles them apart, and one that holds none of a partner's dependencies
+/// fails; the members of a group are therefore scheduled and chunked as one.
+fn safe_group_key(row: &CoreDeclaration) -> Option<&str> {
+    if row.safety.is_some() || !row.compiled {
+        return None;
+    }
+    let all = row.all.as_ref()?;
+    if all.len() < 2 {
+        return None;
+    }
+    all.iter().min().map(String::as_str)
+}
+
 fn emission_order(core: &CoreModule) -> Result<Vec<&CoreDeclaration>, Diagnostic> {
     let environment = environment_declarations(core)?;
     let emitted: BTreeMap<&str, &CoreDeclaration> = environment
@@ -696,11 +712,6 @@ fn emission_order(core: &CoreModule) -> Result<Vec<&CoreDeclaration>, Diagnostic
         .collect();
     let owners = generated_owners(core);
     let representatives = group_representatives(core);
-    let representative_of = |name: &str| -> String {
-        representatives
-            .get(name)
-            .map_or_else(|| name.to_owned(), |first| (*first).to_owned())
-    };
     let rows: BTreeMap<&str, &CoreDeclaration> = core
         .declarations
         .iter()
@@ -720,6 +731,14 @@ fn emission_order(core: &CoreModule) -> Result<Vec<&CoreDeclaration>, Diagnostic
         }
         previous_derived = Some(row.name.as_str());
     }
+    let representative_of = |name: &str| -> String {
+        if let Some(key) = rows.get(name).copied().and_then(safe_group_key) {
+            return key.to_owned();
+        }
+        representatives
+            .get(name)
+            .map_or_else(|| name.to_owned(), |first| (*first).to_owned())
+    };
     let mut dependencies: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     for (name, declaration) in &emitted {
         let mut roots: Vec<usize> = declaration.expression_roots().collect();
@@ -789,7 +808,7 @@ fn emission_order(core: &CoreModule) -> Result<Vec<&CoreDeclaration>, Diagnostic
     }
     let mut done = BTreeSet::new();
     let mut order = Vec::with_capacity(dependencies.len());
-    while order.len() < dependencies.len() {
+    while done.len() < dependencies.len() {
         let Some((name, _)) = dependencies.iter().find(|(name, deps)| {
             !done.contains(name.as_str())
                 && deps
@@ -813,7 +832,18 @@ fn emission_order(core: &CoreModule) -> Result<Vec<&CoreDeclaration>, Diagnostic
                 "group representative `{name}` is not a row"
             )));
         };
-        order.push(*declaration);
+        if let Some(key) = safe_group_key(declaration) {
+            // Every member of a safe group, together: the runtime adds each
+            // one by itself and compiles the group from what the command holds.
+            order.extend(
+                emitted
+                    .values()
+                    .copied()
+                    .filter(|row| safe_group_key(row) == Some(key)),
+            );
+        } else {
+            order.push(*declaration);
+        }
         done.insert(name);
     }
     Ok(order)
@@ -1069,22 +1099,48 @@ fn core_command_ranges(
         owners: &BTreeMap<String, String>,
         range: std::ops::Range<usize>,
         out: &mut Vec<std::ops::Range<usize>>,
+        joined: &dyn Fn(usize) -> bool,
     ) -> Result<(), Diagnostic> {
         let chunk = core_chunk(core, &order[range.clone()], owners)?;
         if chunk.nodes.len() <= CORE_NODES_PER_COMMAND || range.len() == 1 {
             out.push(range);
             return Ok(());
         }
-        let middle = range.start + range.len() / 2;
-        split(core, order, owners, range.start..middle, out)?;
-        split(core, order, owners, middle..range.end, out)
+        let mut middle = range.start + range.len() / 2;
+        while middle < range.end && joined(middle) {
+            middle += 1;
+        }
+        if middle >= range.end {
+            // One group fills the rest of the range; it cannot be divided.
+            middle = range.start + range.len() / 2;
+            while middle > range.start && joined(middle) {
+                middle -= 1;
+            }
+            if middle == range.start {
+                out.push(range);
+                return Ok(());
+            }
+        }
+        split(core, order, owners, range.start..middle, out, joined)?;
+        split(core, order, owners, middle..range.end, out, joined)
     }
 
+    // A command boundary never falls inside a safe group: the group's members
+    // compile together or not at all.
+    let joined = |at: usize| -> bool {
+        at > 0
+            && at < order.len()
+            && safe_group_key(order[at - 1])
+                .is_some_and(|key| safe_group_key(order[at]) == Some(key))
+    };
     let mut ranges = Vec::new();
     let mut start = 0;
     while start < order.len() {
-        let end = (start + CORE_DECLARATIONS_PER_COMMAND).min(order.len());
-        split(core, order, owners, start..end, &mut ranges)?;
+        let mut end = (start + CORE_DECLARATIONS_PER_COMMAND).min(order.len());
+        while joined(end) {
+            end += 1;
+        }
+        split(core, order, owners, start..end, &mut ranges, &joined)?;
         start = end;
     }
     Ok(ranges)
@@ -1640,5 +1696,67 @@ mod tests {
         core.declarations[3].value = Some(0);
         let error = environment_declarations(&core).expect_err("unowned generated row is rejected");
         assert!(error.message.contains("no native owner"));
+    }
+
+    /// A module of `fillers` independent definitions around a safe mutual
+    /// group `b_enc`, `b_items`, sorted so that the group straddles the first
+    /// command boundary when it is scheduled as two nodes.
+    fn grouped(fillers: usize, group: bool) -> CoreModule {
+        let mut core = fixture();
+        core.declarations.clear();
+        for index in 0..fillers {
+            let mut row = declaration(
+                &format!("Fixture.a_{index:03}"),
+                CoreDeclKind::Definition,
+                false,
+            );
+            row.compiled = true;
+            core.declarations.push(row);
+        }
+        for name in ["Fixture.b_enc", "Fixture.b_items"] {
+            let mut row = declaration(name, CoreDeclKind::Definition, false);
+            row.compiled = true;
+            if group {
+                row.all = Some(vec![
+                    "Fixture.b_enc".to_owned(),
+                    "Fixture.b_items".to_owned(),
+                ]);
+            }
+            core.declarations.push(row);
+        }
+        core
+    }
+
+    fn command_of(core: &CoreModule, name: &str) -> usize {
+        let order = emission_order(core).expect("an order");
+        let ranges = core_command_ranges(core, &order, &generated_owners(core)).expect("ranges");
+        let position = order
+            .iter()
+            .position(|row| row.name == name)
+            .expect("an emitted row");
+        ranges
+            .iter()
+            .position(|range| range.contains(&position))
+            .expect("a command")
+    }
+
+    #[test]
+    fn a_safe_mutual_group_is_one_command() {
+        let core = grouped(CORE_DECLARATIONS_PER_COMMAND - 1, true);
+        assert_eq!(
+            command_of(&core, "Fixture.b_enc"),
+            command_of(&core, "Fixture.b_items"),
+            "the members of a safe compiled group are compiled together"
+        );
+    }
+
+    #[test]
+    fn the_group_test_is_armed_by_an_ungrouped_pair() {
+        let core = grouped(CORE_DECLARATIONS_PER_COMMAND - 1, false);
+        assert_ne!(
+            command_of(&core, "Fixture.b_enc"),
+            command_of(&core, "Fixture.b_items"),
+            "without the group the same pair straddles the boundary"
+        );
     }
 }
