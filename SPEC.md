@@ -5571,8 +5571,10 @@ every `Ok`. The lowering produces a loop for a function every self call of
 which is a tail call and some self call of which changes a parameter the body
 reads (`calculus::rust::loops` decides it on the calculus, and the lowering
 fails when it disagrees; `RB-14`): the parameters the self calls change are the
-state, a tuple nested to the right when there are several, held in a binding
-the function makes from them; each tail self call is `Ok` of the next state and
+state, a tuple nested to the right when there are several and the parameter
+itself when there is one, held in a binding the function makes from them
+(the changed parameters are renamed in the signature, and the body begins by
+binding the original names from it); each tail self call is `Ok` of the next state and
 every other tail value is `Err` of the value, so the loop breaks with the value
 the function returns; a parameter every self call passes on as it got it stays
 a parameter, which the body clones. A function with a self call that is not a

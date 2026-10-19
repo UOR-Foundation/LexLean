@@ -264,17 +264,10 @@ pub(super) fn looped(
     let mut inner = body.clone();
     retarget(me, &state, &mut inner, &at);
     let mut renamed = parameters.to_vec();
-    let outer = if let [only] = changed.as_slice() {
-        // One changing parameter is the state itself.
-        let Pat::Bind(name) = &parameters[*only].0 else {
-            return None;
-        };
-        Block::of(Expr::Loop {
-            state: name.clone(),
-            body: Box::new(inner),
-        })
-    } else {
-        // Several are the components of a tuple the loop's state holds.
+    let outer = {
+        // The state is held by one binding the function makes from the
+        // renamed parameters, whether there is one or several: a single
+        // parameter is the state itself, several are a tuple.
         let held = Ident::Holder(fresh());
         let mut patterns = Vec::new();
         let mut values = Vec::new();
