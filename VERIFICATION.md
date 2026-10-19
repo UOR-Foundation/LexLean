@@ -1574,7 +1574,9 @@ The causes, from the generated terms:
   tail (that is an induction, and the bundle gives `items_nil` and `items_cons`
   only), so the equation `conv_build` needs does not hold by `Eq.refl`. For a
   nested list the lemma now takes `__items_k tail`, which holds by one unfolding
-  of `__items_k` on a `cons`. After this, the same root's `denote` is refused
+  of `__items_k` on a `cons`, unless the tail is a literal list (a `nil`, or a
+  `cons` onto one), where `List.map` of the element encoder and the items row
+  reduce to the same elements and the committed certificates state the map. After this, the same root's `denote` is refused
   with (a)'s message: the same bundle rule applies.
 - (c) `group_representatives` of `backend/core.rs` grouped only the partial
   implementation records. The safe mutual group (`__enc_k`, `__items_k`; `all`
@@ -1592,11 +1594,20 @@ because the emitted Lean text of a module with a safe mutual group differs
 and build ID moves with it, and the maintainer regenerates the records in the
 identity wave. The record gates are therefore red on this branch by design.
 
-Evidence that the statements of every existing root are unchanged, run before
-the bump of `lean_backend` (the bump is the only difference after it):
-`cargo xtask check-golden`, `check-production-export` and `verify-examples` pass
-on the 17 examples including `production` and `production-coverage`; the
-certificate-A notation under `expected/verify/preserve` is byte-identical.
+Evidence that no existing certificate moves, with `lean_backend` held at `20`
+(the bump is the only difference after it): a temporary test, not kept in the
+tree, generated every certificate A of the four corpora (59 roots) and compared
+its notation with the committed `expected/verify/preserve/…/R<i>.lex.tex`: 59 of 59
+byte-identical. Its first run found one that was not, `roseTotal` of
+`production-coverage`: the committed certificate states `List.map` of the
+element encoder for a literal tail (`cons … (nil …)`), where it and the items
+row reduce to the same elements, so the items payload is used only for a tail
+that is not a literal list (`is_literal_list`), and the second run is the 59.
+`cargo xtask check-golden` and `cargo xtask check-production-export` pass, and
+`cargo xtask verify-examples` reached `production` (140 normalized records
+equal) before the process was lost; it was not completed, the remaining
+examples (including `production-coverage`) are not re-verified here, and the
+byte comparison above is the evidence for their certificates A.
 
 Planted:
 
