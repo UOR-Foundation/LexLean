@@ -2786,6 +2786,27 @@ const EVALUATOR_MUTANTS: usize = 500;
 const RUSTC_MUTANTS: usize = 2_000;
 const RULES_EACH: usize = 3;
 
+// The counts the specification states, over the committed tree: SPEC.md
+// §17.23, the register statement of BS-05, its scenario, and VERIFICATION.md
+// restate them, and the case fails when the tree no longer gives them.
+const COMMITTED_MANIFESTS: usize = 247;
+const COMMITTED_FIXTURES: usize = 122;
+const COMMITTED_PROGRAMS: usize = 164;
+const COMMITTED_CRATES: usize = 223;
+const RULE_VALIDATE_RUNS: usize = 132;
+const RULE_CORRESPOND_RUNS: usize = 12;
+const BRANCH_CRATES: usize = 17;
+const LOOP_CRATES: usize = 34;
+const VECTORS_VALIDATE: usize = 406;
+const REFUSED_VALIDATE: usize = 165;
+const VECTORS_CORRESPOND: usize = 269;
+const REFUSED_CORRESPOND: usize = 46;
+const EVALUATOR_CRATES: usize = 200;
+const EVALUATOR_VALIDATE: usize = 383;
+const EVALUATOR_CORRESPOND: usize = 246;
+const SEEDED_REFUSED_VALIDATE: usize = 271;
+const SEEDED_REFUSED_CORRESPOND: usize = 244;
+
 pub(super) fn case() {
     let started = std::time::Instant::now();
     let project = support::P::bootstrap();
@@ -2799,10 +2820,32 @@ pub(super) fn case() {
 
     let (sources, manifests, fixtures, distinct) = committed();
     let all = rendered(&sources);
+    // The counts SPEC.md §17.23, the register statement, and the scenario
+    // state are asserted here, so a repository that grows fails the case
+    // instead of leaving a stale statement behind.
+    assert_eq!(
+        (manifests, fixtures, distinct, all.len()),
+        (
+            COMMITTED_MANIFESTS,
+            COMMITTED_FIXTURES,
+            COMMITTED_PROGRAMS,
+            COMMITTED_CRATES
+        ),
+        "the committed manifests, fixtures, distinct programs, and distinct crates"
+    );
     let bases = small(&all, BASE_CAP);
     let (mut rule_validate, rule_correspond) = rule_vectors(&bases, RULES_EACH);
     let by_hand: Vec<Crate> = branch_crates().into_iter().chain(loop_crates()).collect();
-    let rule_runs = (rule_validate.len(), rule_correspond.len());
+    assert_eq!(
+        (rule_validate.len(), rule_correspond.len()),
+        (RULE_VALIDATE_RUNS, RULE_CORRESPOND_RUNS),
+        "the rule runs: each reachable refusal {RULES_EACH} times"
+    );
+    assert_eq!(
+        (branch_crates().len(), loop_crates().len()),
+        (BRANCH_CRATES, LOOP_CRATES),
+        "the hand-built crates"
+    );
     rule_validate.extend(by_hand.iter().map(validate_run));
     let mut rule_correspond = rule_correspond;
     rule_correspond.extend(
@@ -2833,13 +2876,23 @@ pub(super) fn case() {
     );
     let vectors_validate = merged(&[&accepted_validate, &rule_validate]);
     let vectors_correspond = merged(&[&accepted_correspond, &rule_correspond]);
+    assert_eq!(
+        (
+            vectors_validate.len(),
+            refused(&vectors_validate),
+            vectors_correspond.len(),
+            refused(&vectors_correspond)
+        ),
+        (
+            VECTORS_VALIDATE,
+            REFUSED_VALIDATE,
+            VECTORS_CORRESPOND,
+            REFUSED_CORRESPOND
+        ),
+        "the vectors of validateCrate and correspondCrate, and the refused among them"
+    );
     eprintln!(
-        "BS-05: {manifests} manifests and {fixtures} fixtures, {distinct} distinct programs, {} distinct crates; {} validateCrate vectors ({} refused), {} correspondCrate vectors ({} refused) ({:?})",
-        all.len(),
-        vectors_validate.len(),
-        refused(&vectors_validate),
-        vectors_correspond.len(),
-        refused(&vectors_correspond),
+        "BS-05: the vectors are the counted ones ({:?})",
         started.elapsed()
     );
     let checked = support::checked_project(&project);
@@ -2891,10 +2944,17 @@ pub(super) fn case() {
             "{root}: the evaluator and the Rust validator disagree on the vectors: {disagreements:?}"
         );
     }
+    assert_eq!(
+        (
+            within.len(),
+            evaluator_validate.len(),
+            evaluator_correspond.len()
+        ),
+        (EVALUATOR_CRATES, EVALUATOR_VALIDATE, EVALUATOR_CORRESPOND),
+        "the crates of at most {EVALUATOR_CAP} expressions and the vectors the evaluator is given"
+    );
     eprintln!(
-        "BS-05: the evaluator agrees on {} + {} vectors ({:?})",
-        evaluator_validate.len(),
-        evaluator_correspond.len(),
+        "BS-05: the evaluator agrees on the vectors ({:?})",
         started.elapsed()
     );
     let mut seeded = Seeded(0x0B55_0005);
@@ -2911,11 +2971,23 @@ pub(super) fn case() {
             "{root}: the evaluator and the Rust validator disagree on the seeded mutants: {disagreements:?}"
         );
     }
+    assert_eq!(
+        (
+            seeded_validate.len(),
+            seeded_correspond.len(),
+            refused(&seeded_validate),
+            refused(&seeded_correspond)
+        ),
+        (
+            EVALUATOR_MUTANTS,
+            EVALUATOR_MUTANTS,
+            SEEDED_REFUSED_VALIDATE,
+            SEEDED_REFUSED_CORRESPOND
+        ),
+        "the seeded mutants the evaluator is given, and the refused among them"
+    );
     eprintln!(
-        "BS-05: the evaluator agrees on {} seeded mutants ({} + {} refused) ({:?})",
-        EVALUATOR_MUTANTS,
-        refused(&seeded_validate),
-        refused(&seeded_correspond),
+        "BS-05: the evaluator agrees on the seeded mutants ({:?})",
         started.elapsed()
     );
     let mut large = Seeded(0x0B55_0055);
