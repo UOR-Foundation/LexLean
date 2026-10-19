@@ -1,0 +1,1 @@
+[{"causes":[],"code":"LLC0201","help":[],"labels":[],"message":"production request: unknown field `lean`, expected one of `spec`, `roots`, `expect`, `evidence` at line 1 column 56","notes":[],"severity":"error","spec":"lexlean/diagnostic/1"}]

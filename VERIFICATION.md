@@ -9630,12 +9630,10 @@ and the edit restored.
 `lake-dependency-absent` runs `verify`, so it needs the pinned toolchain, as
 `vr-11-exact-mismatch` does.
 
-The other twelve have no fixture:
+The other eleven have no fixture (`LLC0001` gained one, `check-unknown-flag`,
+once the schema stopped requiring `primary` of the positionless codes; see the
+section on the diagnostic schema below):
 
-- `LLC0001`: a command-line usage error is emitted in JSON mode without a
-  `primary` span, and `diagnostic.schema.json` requires one, so a fixture fails
-  `conformance_ex_07`'s schema check. The emitter and the schema disagree; a
-  fixture would only hide that.
 - `LLC0104`: a case-folded collision needs two paths differing only by case, which
   a repository cannot hold on a case-insensitive checkout, and a duplicate
   logical module is refused earlier as `LLP2003`.
@@ -9815,3 +9813,43 @@ tests/negative/check-unknown-flag/expected/diagnostics.json: ... oneOf: 0 of 2 a
 The schema is hashed into the compiler-semantics ID, so the ID moves; no record
 was regenerated, and until the maintainer's wave the committed locks fail
 `LLC0102`, which fails the fixtures that run a project.
+
+## Negative fixtures for codes only conformance cases reached (Issue #33)
+
+Six of the 18 codes added since v0.3 had no fixture under `tests/negative/`.
+Each fixture below is a refusal the compiler emits on that input, written by
+the fixture writer (`repo_conformance::fixtures::write`, the function behind
+`cargo xtask check-fixtures --write`) for that directory alone, and compared
+byte for byte by `cargo xtask check-fixtures` thereafter. Each was planted
+against: the named edit was made alone in the named source, the fixture's
+comparison observed to fail on `expected/command.json`, and the edit restored.
+
+| Fixture | Code | Planted defect |
+| --- | --- | --- |
+| `production-request-malformed` | `LLC0201` | `api/production.rs`: `request_error` emits `LLC0202` |
+| `production-root-unknown` | `LLC0202` | `api/production.rs`: the unknown-root refusal emits `LLC0201` |
+| `production-target-unregistered` | `LLC0203` | `api/production.rs`: `target_error` emits `LLC0204` |
+| `production-expectation-stale` | `LLC0204` | `api/production.rs`: `stale` emits `LLC0203` |
+| `source-package-outside-workspace` | `LLC0108` | `source_package.rs`: the refusal reads "may not declare" for "cannot declare" |
+| `tooling-module-in-user-project` | `LLT4013` | `link.rs`: the user-project refusal emits `LLT4014` |
+
+The twelve other codes of the list have no fixture, for a reason the runner
+imposes and not a gap in the case that reaches them:
+
+- `LLC0105`, `LLC0106`, `LLC0107`, `LLR3009` need a `lexlean-workspace.toml` in
+  a strict ancestor of the project root (`Workspace::of_project` starts at the
+  parent), and a fixture runs a temporary copy of `project/` alone. A
+  fixture can express only that no workspace exists, which is `LLC0108`.
+  `--project` is read against the process directory, not the copy.
+- `LLT4014`, `LLT4015` are refusals inside a tooling module, and a user project
+  is refused at `LLT4013` before the module is decoded, as the fixture above
+  shows; they are reached only in the tooling projects the compiler embeds.
+- `LLV7018` follows `lexlean::verify::end_live_children`, a host call of the
+  library API; no command line reaches it.
+- `LLV7102` replays a published bundle, which only a verified export produces,
+  and that needs the pinned toolchain; `LLV7101` needs certificate evidence
+  built for the root's lowered program.
+- `LLB6005`, `LLB6006`, `LLB6007` are target programs, GNAF requests, and
+  certificates that the library and `cargo xtask check-calculus` read; no
+  command takes one, and the one production path to `LLB6005` is a package the
+  Rust profile cannot render, which no committed project builds.
