@@ -902,11 +902,22 @@ pub fn run(id: &str) {
                 .expect("JSON");
                 let code = diagnostics[0]["code"].as_str().expect("a committed code");
                 let project = P::negative(name);
-                refused(
-                    &project,
-                    &request_for(&[("Fixture.Main.root", "fixture", &["rust-std"])]),
-                    code,
-                );
+                // A fixture whose refusal is in its own request (its form, a
+                // root or target it names, a stale pin) is asked that request
+                // through the façade's reader; every other fixture is asked
+                // the one root request, which its project refuses for its own
+                // reason.
+                let request = match std::fs::read(project.root.join("request.json").as_std_path()) {
+                    Ok(bytes) => match ProductionRequest::from_json(&bytes) {
+                        Ok(request) => request,
+                        Err(error) => {
+                            support::expect_code(&error, code);
+                            continue;
+                        }
+                    },
+                    Err(_) => request_for(&[("Fixture.Main.root", "fixture", &["rust-std"])]),
+                };
+                refused(&project, &request, code);
             }
         }
         // §24.7, D3: certificate evidence is re-checked, and a request cannot

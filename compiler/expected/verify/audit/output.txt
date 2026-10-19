@@ -1811,11 +1811,16 @@
 'LexLeanTarget.RustSemantics.kindNumber' does not depend on any axioms
 'LexLeanTarget.RustSemantics.literal' depends on axioms: [propext, Quot.sound]
 'LexLeanTarget.RustSemantics.lookup' does not depend on any axioms
+'LexLeanTarget.RustSemantics.machineAccepts' does not depend on any axioms
+'LexLeanTarget.RustSemantics.machinePrimitive' does not depend on any axioms
+'LexLeanTarget.RustSemantics.machineShifts' does not depend on any axioms
+'LexLeanTarget.RustSemantics.machineWidth' does not depend on any axioms
 'LexLeanTarget.RustSemantics.patternsOf' does not depend on any axioms
 'LexLeanTarget.RustSemantics.propagated' does not depend on any axioms
 'LexLeanTarget.RustSemantics.returned' does not depend on any axioms
 'LexLeanTarget.RustSemantics.runExport' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.RustSemantics.runItem' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanTarget.RustSemantics.runMachine' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanTarget.RustSemantics.sameIdent' does not depend on any axioms
 'LexLeanTarget.RustSemantics.widened' does not depend on any axioms
 'LexLeanTarget.RustSyntax.Arm' does not depend on any axioms
@@ -1832,6 +1837,7 @@
 'LexLeanTarget.RustSyntax.ItemDef' does not depend on any axioms
 'LexLeanTarget.RustSyntax.Let' does not depend on any axioms
 'LexLeanTarget.RustSyntax.Lit' does not depend on any axioms
+'LexLeanTarget.RustSyntax.Machine' does not depend on any axioms
 'LexLeanTarget.RustSyntax.Parameter' does not depend on any axioms
 'LexLeanTarget.RustSyntax.Pat' does not depend on any axioms
 'LexLeanTarget.RustSyntax.Profile' does not depend on any axioms

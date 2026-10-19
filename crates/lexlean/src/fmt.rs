@@ -1063,20 +1063,6 @@ fn canonical_notation(normalized: &str, kind: &Kind) -> Option<Result<String, Di
     )
 }
 
-/// A language-1.2 module written as `\semanticdata{…}` (`\toolingdata{…}`,
-/// `\coredata{…}`), written in the notation instead; `None` for any other
-/// source. `fmt` writes a module this way, so it is also how a module leaves
-/// the data form.
-fn data_module_as_notation(normalized: &str, kind: &Kind) -> Option<Result<String, Diagnostic>> {
-    let found = locate(normalized).filter(|found| found.kind.is(kind))?;
-    let (from, to) = found.data?;
-    Some(
-        kind.notation_of_data(&normalized[from..to])?
-            .map_err(|error| notation_error(&error))
-            .map(|printed| with_notation(normalized, found.body, &printed)),
-    )
-}
-
 /// Render the canonical source of one checked module (§23.5).
 pub fn canonical_source(checked: &CheckedModule, closure: &Closure) -> Result<String, Diagnostic> {
     let document: &DocumentModule = &checked.document;
@@ -1086,9 +1072,7 @@ pub fn canonical_source(checked: &CheckedModule, closure: &Closure) -> Result<St
         (document.core.is_some(), &CORE),
     ] {
         if present {
-            if let Some(rewritten) = canonical_notation(&checked.normalized, kind)
-                .or_else(|| data_module_as_notation(&checked.normalized, kind))
-            {
+            if let Some(rewritten) = canonical_notation(&checked.normalized, kind) {
                 return rewritten;
             }
         }

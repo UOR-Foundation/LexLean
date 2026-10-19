@@ -87,7 +87,35 @@ fn prim_at(operation: &Prim, types: &[Ty]) -> Origin {
         | Prim::ShiftLeft
         | Prim::ShiftRight
         | Prim::FormatDecimal => operand(),
-        _ => None,
+        Prim::NatAdd
+        | Prim::NatSub
+        | Prim::NatMul
+        | Prim::NatQuot
+        | Prim::NatRem
+        | Prim::NatEq
+        | Prim::NatLe
+        | Prim::NatLt
+        | Prim::IntAdd
+        | Prim::IntSub
+        | Prim::IntMul
+        | Prim::IntNeg
+        | Prim::IntQuot
+        | Prim::IntRem
+        | Prim::Equal
+        | Prim::BoolNot
+        | Prim::BoolAnd
+        | Prim::BoolOr
+        | Prim::Append
+        | Prim::Length
+        | Prim::Index
+        | Prim::Slice
+        | Prim::Utf8Encode
+        | Prim::Utf8Decode
+        | Prim::CompareBytes
+        | Prim::SplitExact
+        | Prim::Join
+        | Prim::Compare
+        | Prim::ParseDecimal { .. } => None,
     };
     Origin::at_width(&element("prim", operation), width)
 }
@@ -207,7 +235,7 @@ fn fold(block: &mut Block) {
 
 fn fold_expr(expr: &mut Expr) {
     match expr {
-        Expr::Block(block) => fold(block),
+        Expr::Block(block) | Expr::Loop { body: block, .. } => fold(block),
         Expr::Not(inner, _)
         | Expr::Box(inner, _)
         | Expr::Widen(inner, _)
@@ -327,7 +355,25 @@ fn succeed(expr: Expr, unit: bool) -> Expr {
                 tail: Expr::Succeed(Box::new(Expr::Lit(Lit::Unit, at.clone())), at),
             }))
         }
-        other => Expr::Succeed(Box::new(other), Origin::of("overflow")),
+        other @ (Expr::Move(..)
+        | Expr::Clone(..)
+        | Expr::Copy(..)
+        | Expr::Deref(..)
+        | Expr::Not(..)
+        | Expr::Unbox(..)
+        | Expr::Box(..)
+        | Expr::Construct { .. }
+        | Expr::Pair(..)
+        | Expr::Uncons(..)
+        | Expr::IsZero(..)
+        | Expr::NonZero(..)
+        | Expr::Predecessor(..)
+        | Expr::Widen(..)
+        | Expr::Succeed(..)
+        | Expr::Lit(..)
+        | Expr::Call { .. }
+        | Expr::Apply { .. }
+        | Expr::Loop { .. }) => Expr::Succeed(Box::new(other), Origin::of("overflow")),
     }
 }
 
@@ -454,6 +500,10 @@ impl Renamer {
                 }
             }
             Expr::Block(block) => self.block(block),
+            Expr::Loop { state, body } => {
+                self.read(state);
+                self.block(body);
+            }
             Expr::Lit(..) => {}
         }
     }
@@ -1724,7 +1774,12 @@ impl<'a> Lowering<'a> {
                 }
                 Self::rebuilt(out, moved(), shape_at(&Shape::Adt { constructor: 0 }))
             }
-            other => return fail(format!("cannot render a match on {other:?}")),
+            other @ (Ty::Unit
+            | Ty::Int
+            | Ty::Fixed { .. }
+            | Ty::String
+            | Ty::Bytes
+            | Ty::Fn { .. }) => return fail(format!("cannot render a match on {other:?}")),
         };
         if !bodies.is_empty() {
             return fail("a match arm has no rendering");

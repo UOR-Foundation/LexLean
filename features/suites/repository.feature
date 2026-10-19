@@ -106,6 +106,13 @@ Feature: repository
     And the Atlas jobs run every shard of the plan exactly once, each after the jobs of the shards it needs, from the one executable the prefix job built, the join asserts that Atlas verified, and the plan elaborates and replays every Atlas module exactly once with every import elaborated by the shard or by one it needs
     And the vv job has no path filter, no cache action, and no condition on a recipe, the Atlas jobs and the host matrix run only when the plan names the whole gate, and each job uploads its ci-evidence under a name of its own, and the plan script names the rest leg alone for a draft pull request and the whole gate for a ready one, a request, and a push, and names no job for a merge whose tree is its second parent's only when a run of that parent passed every job, the Atlas join, every host, and every leg, and for a skipped or failed job, a missing join, host, or leg, a failed call, a changed tree, and a push that merges nothing it names the whole gate
 
+  @RP-15 @build
+  Scenario: Every match over a closed semantic enum (the IR, the production realization calculus, and its Rust AST) that names at least five of the enum's variants names all of them, with no wildcard or binding catch-all arm, so that a variant added to the enum is a compile error in each Lean, LaTeX, validation, charge, and calculus consumer and never a silent fallback; the audit rejects a catch-all planted in each consumer group and fails when a consumer it must read has no such match left.
+    Given the committed sources of the compiler crate and the closed enums of the IR, the realization calculus, and its Rust AST
+    When the classification audit reads every match that names at least five variants of one enum
+    Then none has a wildcard or binding catch-all arm, and the Lean backend, the LaTeX backend, validation, charge, and the calculus each still hold such a match
+    And a catch-all planted in each of those consumer groups, and a consumer with no such match left, each fails the audit
+
   @RP-16 @build
   Scenario: The development container installs, at image build, exactly the Rust toolchain that rust-toolchain.toml pins and exactly the Lean toolchain that lean-toolchain pins and selects no other default, so that nothing is fetched when a session starts, and a Dockerfile that names another version of either, installs a second toolchain, or selects an unpinned default is refused.
     Given .devcontainer/Dockerfile, rust-toolchain.toml, and lean-toolchain

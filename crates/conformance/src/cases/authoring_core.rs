@@ -110,8 +110,7 @@ fn statements_by_rule(module: &CoreModule) -> BTreeSet<usize> {
         }
     }
     for declaration in &module.declarations {
-        let mut roots = vec![declaration.r#type];
-        roots.extend(declaration.value);
+        let mut roots: Vec<usize> = declaration.expression_roots().collect();
         if let Some(equations) = &declaration.eqn_info {
             roots.extend([equations.r#type, equations.value]);
         }
@@ -515,7 +514,7 @@ fn round_trip() {
 /// A module of a few declarations that links as any core module does: it
 /// states shared nodes, nodes a declaration states, and nodes the notation
 /// writes inside their user.
-fn small() -> Value {
+pub(super) fn small() -> Value {
     let definition = |name: &str, kind: &str, ty: usize, value: usize| {
         json!({
             "class": false, "generated": false, "kind": kind, "levels": [], "name": name,
@@ -553,7 +552,7 @@ const MAIN: &str = "src/Main.lex.tex";
 
 /// A copy of the language-1.2 example whose one module is `data`, written in
 /// the notation or as `\coredata{…}`.
-fn project(data: &Value, in_notation: bool) -> P {
+pub(super) fn project(data: &Value, in_notation: bool) -> P {
     let project = P::language_1_2_example();
     let header = SourceHeader {
         name: "Main",
@@ -562,7 +561,7 @@ fn project(data: &Value, in_notation: bool) -> P {
         title: "Natural number addition",
     };
     let source = assemble(&header, ModuleKind::Core, data).expect("a core source");
-    project.write(
+    project.write_raw(
         MAIN,
         &if in_notation {
             source
@@ -606,25 +605,12 @@ fn format_all(
 // AU-10.
 // ---------------------------------------------------------------------------
 
-/// Link, build, and format a core module in both forms, and compare them.
-fn same_module(what: &str, data: &P, notation: &P) {
-    // The notation is canonical as it is; the data form is the same module in
-    // text `fmt` does not write, and `fmt` writes it as exactly the notation.
+/// Link, build, and format a core module in the notation. (Its data form is
+/// not a language-1.2 source, so there is no second build to compare with:
+/// `AU-13`.)
+fn canonical_module(what: &str, notation: &P) {
+    // The notation is canonical as it is.
     notation.fmt_check_ok();
-    support::expect_code(
-        &format_all(data, true)
-            .err()
-            .expect("a module written as data is not canonical"),
-        "LLL1003",
-    );
-    let migrated = P::language_1_2_example();
-    migrated.write(MAIN, &data.read_raw(MAIN));
-    format_all(&migrated, false).expect("fmt migrates the data form");
-    assert_eq!(
-        migrated.read_raw(MAIN),
-        notation.read_raw(MAIN),
-        "{what}: fmt did not write the data form as the notation"
-    );
     // Another layout of the notation is not canonical, and `fmt` restores
     // the layout.
     let canonical = notation.read_raw(MAIN);
@@ -652,33 +638,17 @@ fn same_module(what: &str, data: &P, notation: &P) {
         "{what}: fmt changed the notation"
     );
 
-    // The same module: the same semantic ID, and the same generated Lean and
-    // LaTeX byte for byte.
-    let data_checked = data.check_ok();
-    let notation_checked = notation.check_ok();
-    assert_eq!(
-        data_checked.semantic_id, notation_checked.semantic_id,
-        "{what}: the notation does not link to its data form's module"
-    );
-    assert_ne!(
-        data_checked.source_id, notation_checked.source_id,
-        "{what}: the source did not change"
-    );
-    let data_built = data.build_ok();
+    // The module links and builds, and the build holds generated files.
+    notation.check_ok();
     let notation_built = notation.build_ok();
-    let data_dir = data.build_dir(&data_built.build_id.expect("a build id"));
     let notation_dir = notation.build_dir(&notation_built.build_id.expect("a build id"));
-    let data_files = files(&data_dir.join("modules"));
-    assert!(!data_files.is_empty(), "{what}: no generated files");
-    assert_eq!(
-        data_files,
-        files(&notation_dir.join("modules")),
-        "{what}: the generated Lean and LaTeX differ"
+    assert!(
+        !files(&notation_dir.join("modules")).is_empty(),
+        "{what}: no generated files"
     );
 
     // The source map of the notation names the notation: the pieces of the
-    // module map the text between the module's markers, and the data form's
-    // map names `coredata`.
+    // module map the text between the module's markers.
     let owned = |directory: &camino::Utf8Path, owner: &str| -> usize {
         files(&directory.join("coverage"))
             .values()
@@ -694,75 +664,54 @@ fn same_module(what: &str, data: &P, notation: &P) {
         "{what}: the coverage of the notation does not name the notation"
     );
     assert!(
-        owned(&data_dir, "coredata") > 0 && owned(&data_dir, "coresource") == 0,
-        "{what}: the coverage of the data form does not name the data"
+        owned(&notation_dir, "coresource") > 0,
+        "{what}: the coverage of the notation names no notation"
     );
 }
 
 fn equivalence() {
-    // A module of a few declarations, linked in both forms.
-    let data = small();
-    same_module(
-        "the small module",
-        &project(&data, false),
-        &project(&data, true),
-    );
+    // A module of a few declarations, linked in the notation.
+    canonical_module("the small module", &project(&small(), true));
 
-    // A committed module of the preservation library, which is large, in both
-    // forms: `Core` states the constructors of the observations of the machine.
-    let library_with = |rewrite: &dyn Fn(&str) -> String| {
-        let library = P::library_project();
-        for entry in walkdir::WalkDir::new(library.root.join("src").as_std_path())
-            .into_iter()
-            .flatten()
-        {
-            let path = entry.path();
-            if !path.to_string_lossy().ends_with(".lex.tex") {
-                continue;
-            }
-            // By file name, not by a suffix with a separator: a path on
-            // Windows is written with backslashes.
-            if path.file_name().is_some_and(|name| name == "Core.lex.tex") {
-                let text = std::fs::read_to_string(path).expect("read");
-                std::fs::write(path, rewrite(&text)).expect("writes");
-            } else {
-                std::fs::remove_file(path).expect("removes");
-            }
+    // A committed module of the preservation library, which is large:
+    // `Core` states the constructors of the observations of the machine.
+    let library = P::library_project();
+    for entry in walkdir::WalkDir::new(library.root.join("src").as_std_path())
+        .into_iter()
+        .flatten()
+    {
+        let path = entry.path();
+        if !path.to_string_lossy().ends_with(".lex.tex") {
+            continue;
         }
-        library.edit(
-            "lexlean.toml",
-            "entrypoints = [\"src/Compose.lex.tex\", \"src/Fixed.lex.tex\"]",
-            "entrypoints = [\"src/Core.lex.tex\"]",
-        );
-        library.relock();
-        library
-    };
-    let in_notation = library_with(&str::to_owned);
+        // By file name, not by a suffix with a separator: a path on
+        // Windows is written with backslashes.
+        if !path.file_name().is_some_and(|name| name == "Core.lex.tex") {
+            std::fs::remove_file(path).expect("removes");
+        }
+    }
+    library.edit(
+        "lexlean.toml",
+        "entrypoints = [\"src/Compose.lex.tex\", \"src/Fixed.lex.tex\"]",
+        "entrypoints = [\"src/Core.lex.tex\"]",
+    );
+    library.relock();
     assert!(
-        in_notation
+        library
             .read_raw("src/Core.lex.tex")
             .contains("imports [Init, LexLeanTarget.TargetSemantics]"),
         "the committed module is written in the notation"
     );
-    let as_data = library_with(&|text| lexlean::sdk::to_data_form(text).expect("the data form"));
-    assert_eq!(
-        in_notation.check_ok().semantic_id,
-        as_data.check_ok().semantic_id,
-        "Core: the notation does not link to its data form's module"
-    );
-    let (built_notation, built_data) = (in_notation.build_ok(), as_data.build_ok());
-    assert_eq!(
-        files(
-            &in_notation
-                .build_dir(&built_notation.build_id.expect("a build id"))
+    library.check_ok();
+    let built = library.build_ok();
+    assert!(
+        !files(
+            &library
+                .build_dir(&built.build_id.expect("a build id"))
                 .join("modules")
-        ),
-        files(
-            &as_data
-                .build_dir(&built_data.build_id.expect("a build id"))
-                .join("modules")
-        ),
-        "Core: the generated Lean and LaTeX differ"
+        )
+        .is_empty(),
+        "Core: no generated files"
     );
 
     // Under language 1.0 and 1.1 the notation is refused.
@@ -994,7 +943,12 @@ fn authored() {
         .find(|row| row.name == AUTHORED_NAME)
         .unwrap_or_else(|| panic!("{shown}: the authored theorem is not declared"));
     let statement_at = body
-        .find(&format!("\n@{} := ", theorem.r#type))
+        .find(&format!(
+            "\n@{} := ",
+            theorem
+                .r#type
+                .expect("the authored theorem states its type")
+        ))
         .expect("the statement of the theorem")
         + 1;
     assert_eq!(

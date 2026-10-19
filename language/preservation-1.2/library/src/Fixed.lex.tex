@@ -3739,34 +3739,27 @@ theorem LexLeanPreservation.prim_shiftRight_u8 : @14564 := @14631 {
   policy: exact{axioms: [Classical.choice, Quot.sound, propext]},
   transparency: semireducible
 }
-theorem _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiplyWith.match_1.eq_1.{u_1} : @14647 := @14653 {
-  all: [
-    "_private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiplyWith.match_1.eq_1"
-  ],
+theorem _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiplyWith.match_1.eq_1 {
   class: false,
+  derived: true,
   generated: false,
   policy: exact{axioms: []},
   transparency: semireducible
 }
-theorem _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiplyWith.match_1.eq_2.{u_1} : @14667 := @14673 {
-  all: [
-    "_private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiplyWith.match_1.eq_2"
-  ],
+theorem _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiplyWith.match_1.eq_2 {
   class: false,
+  derived: true,
   generated: false,
   policy: exact{axioms: []},
   transparency: semireducible
 }
-abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiplyWith.match_1.splitter.{u_1} : @22 := @14638 {
-  all: [
-    "_private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiplyWith.match_1.splitter"
-  ],
+abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiplyWith.match_1.splitter {
   class: false,
   compiled: true,
+  derived: true,
   generated: false,
   inline: inline,
   policy: exact{axioms: []},
-  reducibility: abbrev{},
   transparency: semireducible
 }
 
@@ -3779,8 +3772,7 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
 @6 := #2
 @7 := Option.none.{0}
 @8 := @7 @1
-@9 := @6 @8
-@10 := ("_" : @5) -> @9
+@10 := ("_" : @5) -> @6 @8
 @11 := #3
 @12 := Option.some.{0}
 @13 := @12 @1
@@ -11364,25 +11356,5 @@ abbrev _private.LexLeanPreservation.Fixed.#0.LexLeanPreservation.checkedMultiply
                           @14574)
                         proof(proof(proof(@2904 @14574) @2912) @14)))))
               proof(@2929 @14558)))))
-@14633 := ("_" : @5) -> @30 @8
-@14635 := (value : @1) -> @6 @15
-@14636 := Eq.{u_1}
-@14637 := @14636 @9
-@14638 := LexLeanPreservation.checkedMultiplyWith.match_1.{u_1}
-@14642 := @14638 @6 @8 @30 @14
-@14647 := (motive : @4) -> (h_1 : @14633) -> (h_2 : @14635) -> @14637 @14642 @32
-@14648 := proof(Eq.refl.{u_1})
-@14653 := proof(fun (motive._@._hyg.#3 : @4) =>
-    proof(fun (h_1._@._hyg.#4 : @14633) =>
-      proof(fun (h_2._@._hyg.#5 : @14635) => proof(proof(@14648 @9) @14642))))
-@14654 := @13 @6
-@14655 := @11 @14654
-@14656 := @14636 @14655
-@14660 := @14638 @11 @14654 @30 @14
-@14667 := (motive : @4) -> (value : @1) -> (h_1 : @10) -> (h_2 : @17) -> @14656 @14660 (@14 @6)
-@14673 := proof(fun (motive._@._hyg.#7 : @4) =>
-    proof(fun (value._@._hyg.#8 : @1) =>
-      proof(fun (h_1._@._hyg.#9 : @10) =>
-        proof(fun (h_2._@._hyg.#10 : @17) => proof(proof(@14648 @14655) @14660)))))
 \end{coremodule}
 \end{lexlean}

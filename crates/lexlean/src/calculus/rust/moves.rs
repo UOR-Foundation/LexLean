@@ -200,5 +200,19 @@ fn expr(value: &mut Expr, live: &mut Live) {
             expr(scrutinee, live);
         }
         Expr::Block(inner) => block(inner, live),
+        Expr::Loop { state, body } => {
+            // The body runs again after each `Ok`, so what it reads of
+            // anything but the state, which is rebound, is read again and
+            // may not move; and `let mut s = s;` reads the state whole.
+            let mut reads = Live::new();
+            block(&mut body.clone(), &mut reads);
+            reads.remove(state);
+            let after = std::mem::take(live);
+            let mut inside = merge(after, reads);
+            inside.remove(state);
+            block(body, &mut inside);
+            *live = inside;
+            read_whole(live, state);
+        }
     }
 }

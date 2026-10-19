@@ -2422,7 +2422,7 @@ fn native_source(stem: &str) -> String {
 
 /// The Lean of a native module whose source is `source`.
 fn generated_text(source: &str) -> String {
-    let core = lexlean::ir::core::CoreModule::from_source(source, "1.2")
+    let core = lexlean::ir::core::CoreModule::from_source(&support::notation_text(source), "1.2")
         .expect("the planted module is core data");
     lexlean::backend::core::lean_text(&core).expect("the planted module renders")
 }
@@ -2754,7 +2754,9 @@ fn gc_11() {
     let planted = |edit: &dyn Fn(&str) -> Option<String>| {
         library::check_sources(&|path| {
             if path == first {
-                edit(&original).ok_or_else(|| format!("{path}: no such file"))
+                edit(&original)
+                    .map(|text| support::notation_text(&text))
+                    .ok_or_else(|| format!("{path}: no such file"))
             } else {
                 std::fs::read_to_string(repo_root().join(path).as_std_path())
                     .map_err(|error| format!("{path}: {error}"))
@@ -2783,7 +2785,9 @@ fn gc_11() {
         ))
     })
     .expect_err("a first-schema module carrying second-schema data is refused");
-    assert!(error.contains("requires"), "{error}");
+    // The notation names the schema of the language, so a first-schema
+    // payload is data, which language 1.2 refuses before it reads the tag.
+    assert!(error.contains("authoring notation"), "{error}");
 }
 
 /// §17.18: generated, deterministic, content-addressed.

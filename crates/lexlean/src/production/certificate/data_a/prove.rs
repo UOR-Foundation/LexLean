@@ -987,6 +987,31 @@ impl<'a> Writer<'_, 'a> {
         }
     }
 
+    /// Whether a list term is `List.nil` or `List.cons` onto such a term.
+    fn is_literal_list(&self, term: Term) -> bool {
+        let mut at = term;
+        loop {
+            let mut spine = Vec::new();
+            let mut head = at;
+            while let crate::ir::core::CoreNode::App { f, x } = self.b.node(head) {
+                spine.push(*x);
+                head = *f;
+            }
+            let crate::ir::core::CoreNode::Const { n, .. } = self.b.node(head) else {
+                return false;
+            };
+            match n.as_str() {
+                "List.nil" => return true,
+                // The arguments, last applied first: tail, head, type.
+                "List.cons" => match spine.first() {
+                    Some(tail) => at = *tail,
+                    None => return false,
+                },
+                _ => return false,
+            }
+        }
+    }
+
     /// `construct_cons` at the value of `head` and the payload of the
     /// encoding of the list `tail_src`.
     fn construct_cons(
@@ -1000,6 +1025,24 @@ impl<'a> Writer<'_, 'a> {
         let e = self.enc(&element)?;
         let h = self.value_of(head)?;
         let value = self.value_ty();
+        // The payload of a list nested in a recursive group is its items row,
+        // which the group's bundle equates with the head's encoding consed on
+        // the tail's items; `List.map` of the element's encoder is the same
+        // list only by an induction the kernel does not do, unless the tail is
+        // a literal list, where both reduce to the same elements and the map
+        // is what the certificates of such lists have always stated.
+        let literal = self.is_literal_list(tail_src);
+        if let Some(nested) = self
+            .gen
+            .nested
+            .get(&self.gen.source.type_text(ty))
+            .filter(|_| !literal)
+        {
+            let index = nested.index;
+            let items = self.own(&format!("__items_{index}"));
+            let t = self.b.app(items, tail_src);
+            return self.apply("construct_cons", &[("h", h), ("t", t)], &[]);
+        }
         let map = self.b.konst_at(
             "List.map",
             vec![

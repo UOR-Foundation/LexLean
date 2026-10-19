@@ -122,12 +122,17 @@ impl<'g, 'a> Composer<'g, 'a> {
             return Ok(found);
         }
         let (module, declaration) = preserve::native_declaration(name)?;
-        if !declaration.levels.is_empty() {
+        if !declaration.level_names().is_empty() {
             return Err(format!(
                 "`{name}` has universe parameters, which a certificate does not instantiate"
             ));
         }
-        let ty = self.b.import(module, declaration.r#type);
+        let Some(root) = declaration.r#type else {
+            return Err(format!(
+                "`{name}` is a derived row of the library, which states no type for a certificate to cite"
+            ));
+        };
+        let ty = self.b.import(module, root);
         let head = self.b.konst(name);
         self.lemmas.insert(name.to_owned(), (head, ty));
         self.b.note_lemma(name);
@@ -2249,12 +2254,12 @@ fn theorem_row(name: String, ty: Term, value: Term, axioms: &BTreeSet<String>) -
     CoreDeclaration {
         all: Some(vec![name.clone()]),
         name,
-        levels: Vec::new(),
+        levels: Some(Vec::new()),
         kind: CoreDeclKind::Theorem,
         reducibility: None,
         transparency: CoreTransparency::Semireducible,
         policy: CoreAxiomPolicy::Exact(axioms.iter().cloned().collect()),
-        r#type: ty,
+        r#type: Some(ty),
         value: Some(value),
         inductive: None,
         class: false,
@@ -2271,6 +2276,7 @@ fn theorem_row(name: String, ty: Term, value: Term, axioms: &BTreeSet<String>) -
         inline: None,
         sparse: None,
         grind: None,
+        derived: false,
     }
 }
 

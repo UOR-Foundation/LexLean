@@ -411,8 +411,8 @@ pub(crate) fn run(id: &str) {
                 "edition = \"2021\"",
                 "rust-version = \"1.97\"",
                 "license = \"MIT OR Apache-2.0\"",
-                "repository = \"https://github.com/afflom/lexlean\"",
-                "homepage = \"https://github.com/afflom/lexlean\"",
+                "repository = \"https://github.com/UOR-Foundation/LexLean\"",
+                "homepage = \"https://github.com/UOR-Foundation/LexLean\"",
                 "authors = [\"Alex Flom\"]",
                 "keywords = [\"lean\", \"latex\", \"formal-methods\", \"compiler\", \"proof\"]",
                 "categories = [\"compilers\", \"development-tools\"]",
@@ -756,7 +756,7 @@ pub(crate) fn run(id: &str) {
             let model = repo_model::Model::load(&root.join("model").into_std_path_buf())
                 .expect("the model loads");
             let table = spec_table();
-            assert_eq!(table.len(), 418, "§31 has 418 rows");
+            assert_eq!(table.len(), 423, "§31 has 423 rows");
             assert_eq!(model.ids.id.len(), table.len(), "register row count");
             for ((spec_id, spec_suite, spec_statement), row) in
                 table.iter().zip(model.ids.id.iter())
@@ -1957,6 +1957,9 @@ pub(crate) fn run(id: &str) {
             assert!(root_file(".github/workflows/honesty.yml").contains("just model spec-links"));
             assert!(root_file(".github/workflows/reproducibility.yml").contains("run: just repro"));
         }
+        // R8: a `match` that names several variants of a closed enum names
+        // them all, in every consumer of the IR, the calculus, and its Rust AST.
+        "RP-15" => rp_15(),
         // §9.3: the image installs the pins and nothing else. The checker is
         // run on planted Dockerfiles as well, because a check that only ever
         // sees the committed file cannot be told from one that accepts all.
@@ -2043,4 +2046,101 @@ fn devcontainer_pins(dockerfile: &str, channel: &str, lean: &str) -> Result<(), 
         return Err("`elan default` selects a toolchain".to_owned());
     }
     Ok(())
+}
+
+/// RP-15: the committed consumers are total, each of them is read, and a
+/// catch-all planted in each is found.
+fn rp_15() {
+    use repo_model::classification as audit;
+    let root = support::repo_root();
+    let base = root.join(audit::SOURCE_ROOT);
+    let mut sources: Vec<(String, String)> = walkdir::WalkDir::new(base.as_std_path())
+        .into_iter()
+        .filter_map(Result::ok)
+        .filter(|entry| entry.file_type().is_file())
+        .filter(|entry| entry.path().extension().is_some_and(|ext| ext == "rs"))
+        .map(|entry| {
+            let relative = entry
+                .path()
+                .strip_prefix(root.as_std_path())
+                .expect("under the root")
+                .to_string_lossy()
+                .replace('\\', "/");
+            (
+                relative,
+                std::fs::read_to_string(entry.path()).expect("a source"),
+            )
+        })
+        .collect();
+    sources.sort();
+    let summary = audit::audit(&sources).expect("the committed sources are total");
+    assert!(summary.files > 100, "the audit reads the whole crate");
+    for (path, role) in audit::CONSUMERS {
+        assert!(
+            summary.per_file.get(path).is_some_and(|count| *count > 0),
+            "{path} ({role}) holds a classification"
+        );
+    }
+    // A catch-all planted in a classification of each consumer group.
+    let group = |path: &str| {
+        let mut enums: Vec<&str> = repo_model::exhaustive::AUDITED_ENUMS.to_vec();
+        if path.starts_with(audit::CALCULUS_ROOT) {
+            enums.extend(audit::CALCULUS_ENUMS);
+        }
+        enums
+    };
+    let plants = [
+        ("crates/lexlean/src/backend/semantic.rs", "spelling"),
+        ("crates/lexlean/src/backend/semantic.rs", "render_latex"),
+        ("crates/lexlean/src/ir/semantic.rs", "infer_term"),
+        ("crates/lexlean/src/ir/semantic.rs", "type_node_count"),
+        ("crates/lexlean/src/production/eligibility.rs", "type_key"),
+        ("crates/lexlean/src/calculus/check.rs", "prim_type"),
+        ("crates/lexlean/src/calculus/realization.rs", "in_place"),
+        ("crates/lexlean/src/calculus/rust/ast.rs", "expr"),
+        ("crates/lexlean/src/calculus/rust/lower.rs", "item"),
+        ("crates/lexlean/src/calculus/rust/validate.rs", "expr"),
+    ];
+    for (path, function) in plants {
+        let at = sources
+            .iter()
+            .position(|(candidate, _)| candidate == path)
+            .unwrap_or_else(|| panic!("{path} is read"));
+        let planted = audit::plant_catch_all(&sources[at].1, &group(path), function)
+            .unwrap_or_else(|| panic!("{path}: `{function}` holds a classification"));
+        let mut copy = sources.clone();
+        copy[at].1 = planted.clone();
+        let error = audit::audit(&copy).expect_err("a planted wildcard is found");
+        assert!(
+            error.contains(path) && error.contains("a wildcard arm"),
+            "{path}::{function}: {error}"
+        );
+        // The same arm bound to a name catches everything just the same.
+        copy[at].1 = planted.replacen("_ => Default::default()", "other => other", 1);
+        let error = audit::audit(&copy).expect_err("a planted binding is found");
+        assert!(
+            error.contains(path) && error.contains("a binding catch-all arm"),
+            "{path}::{function}: {error}"
+        );
+    }
+    // A consumer that no longer holds a classification, or is not read, would
+    // be passed over without being checked.
+    for (path, role) in audit::CONSUMERS {
+        let at = sources
+            .iter()
+            .position(|(candidate, _)| candidate == path)
+            .expect("read");
+        let mut vacated = sources.clone();
+        vacated[at].1 = "fn nothing() {}\n".to_owned();
+        let error = audit::audit(&vacated).expect_err("a vacated consumer fails");
+        assert!(
+            error.contains(path) && error.contains(role) && error.contains("would pass over"),
+            "{path}: {error}"
+        );
+        let mut absent = sources.clone();
+        absent.remove(at);
+        assert!(audit::audit(&absent)
+            .expect_err("an unread consumer fails")
+            .contains(path));
+    }
 }

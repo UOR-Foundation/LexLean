@@ -350,9 +350,8 @@ fn sharing(core: &CoreModule, declarations: &[&CoreDeclaration]) -> Sharing {
         requirements.push(requirement);
     }
     for declaration in declarations {
-        references[declaration.r#type] = references[declaration.r#type].saturating_add(1);
-        if let Some(value) = declaration.value {
-            references[value] = references[value].saturating_add(1);
+        for root in declaration.expression_roots() {
+            references[root] = references[root].saturating_add(1);
         }
     }
     let shared: Vec<usize> = core
@@ -647,10 +646,7 @@ pub fn environment_declarations(core: &CoreModule) -> Result<Vec<&CoreDeclaratio
         ));
     }
     for declaration in &environment {
-        let mut roots = vec![declaration.r#type];
-        if let Some(value) = declaration.value {
-            roots.push(value);
-        }
+        let mut roots: Vec<usize> = declaration.expression_roots().collect();
         if let Some(structure) = declaration
             .inductive
             .as_ref()
@@ -690,6 +686,22 @@ fn group_representatives(core: &CoreModule) -> BTreeMap<&str, &str> {
     representatives
 }
 
+/// The key of the safe, compiled mutual group a row belongs to, if it has
+/// partners. The runtime compiles such a group in one `compileDecls` over the
+/// members present in the command, so a command that holds only some of them
+/// compiles them apart, and one that holds none of a partner's dependencies
+/// fails; the members of a group are therefore scheduled and chunked as one.
+fn safe_group_key(row: &CoreDeclaration) -> Option<&str> {
+    if row.safety.is_some() || !row.compiled {
+        return None;
+    }
+    let all = row.all.as_ref()?;
+    if all.len() < 2 {
+        return None;
+    }
+    all.iter().min().map(String::as_str)
+}
+
 fn emission_order(core: &CoreModule) -> Result<Vec<&CoreDeclaration>, Diagnostic> {
     let environment = environment_declarations(core)?;
     let emitted: BTreeMap<&str, &CoreDeclaration> = environment
@@ -700,31 +712,75 @@ fn emission_order(core: &CoreModule) -> Result<Vec<&CoreDeclaration>, Diagnostic
         .collect();
     let owners = generated_owners(core);
     let representatives = group_representatives(core);
-    let representative_of = |name: &str| -> String {
-        representatives
-            .get(name)
-            .map_or_else(|| name.to_owned(), |first| (*first).to_owned())
-    };
     let rows: BTreeMap<&str, &CoreDeclaration> = core
         .declarations
         .iter()
         .map(|row| (row.name.as_str(), row))
         .collect();
+    // A derived row states no term, so nothing in it names what the pinned
+    // Lean's construction reads. The construction reads the environment as
+    // it stood when the elaborator made the constant, and the data order of
+    // the module is that order, so a derived row follows the derived row
+    // before it in the data, its owners (the rows its name extends) unless it
+    // is a sparse `casesOn`, and the type and constructors of its recipe.
+    let mut previous_derived: Option<&str> = None;
+    let mut derived_predecessor: BTreeMap<&str, &str> = BTreeMap::new();
+    for row in core.declarations.iter().filter(|row| row.derived) {
+        if let Some(previous) = previous_derived {
+            derived_predecessor.insert(row.name.as_str(), previous);
+        }
+        previous_derived = Some(row.name.as_str());
+    }
+    let representative_of = |name: &str| -> String {
+        if let Some(key) = rows.get(name).copied().and_then(safe_group_key) {
+            return key.to_owned();
+        }
+        representatives
+            .get(name)
+            .map_or_else(|| name.to_owned(), |first| (*first).to_owned())
+    };
     let mut dependencies: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     for (name, declaration) in &emitted {
-        let mut roots = vec![declaration.r#type];
-        if let Some(value) = declaration.value {
-            roots.push(value);
-        }
+        let mut roots: Vec<usize> = declaration.expression_roots().collect();
         if let Some(inductive) = &declaration.inductive {
             for constructor in &inductive.constructors {
                 if let Some(row) = rows.get(constructor.as_str()) {
-                    roots.push(row.r#type);
+                    roots.extend(row.r#type);
                 }
             }
         }
         let own = representative_of(name);
         let deps = dependencies.entry(own.clone()).or_default();
+        if declaration.derived {
+            let mut required: Vec<String> = Vec::new();
+            required.extend(derived_predecessor.get(name).map(|name| (*name).to_owned()));
+            if let Some(sparse) = &declaration.sparse {
+                // A sparse `casesOn` is named under the splitter whose
+                // construction needs it, so it comes before its name's owner
+                // and depends on its recipe alone.
+                required.push(sparse.ind_name.clone());
+                required.extend(sparse.interesting_ctors.iter().cloned());
+            } else {
+                let mut owner = name.rsplit_once('.').map(|(prefix, _)| prefix);
+                while let Some(prefix) = owner {
+                    required.push(prefix.to_owned());
+                    owner = prefix.rsplit_once('.').map(|(prefix, _)| prefix);
+                }
+            }
+            for constant in required {
+                let dependency = if emitted.contains_key(constant.as_str()) {
+                    Some(constant)
+                } else {
+                    owners.get(&constant).cloned()
+                };
+                if let Some(dependency) = dependency {
+                    let dependency = representative_of(&dependency);
+                    if dependency != own {
+                        deps.insert(dependency);
+                    }
+                }
+            }
+        }
         for constant in constants_in(core, roots) {
             let dependency = if emitted.contains_key(constant.as_str()) {
                 Some(constant)
@@ -752,7 +808,7 @@ fn emission_order(core: &CoreModule) -> Result<Vec<&CoreDeclaration>, Diagnostic
     }
     let mut done = BTreeSet::new();
     let mut order = Vec::with_capacity(dependencies.len());
-    while order.len() < dependencies.len() {
+    while done.len() < dependencies.len() {
         let Some((name, _)) = dependencies.iter().find(|(name, deps)| {
             !done.contains(name.as_str())
                 && deps
@@ -776,7 +832,18 @@ fn emission_order(core: &CoreModule) -> Result<Vec<&CoreDeclaration>, Diagnostic
                 "group representative `{name}` is not a row"
             )));
         };
-        order.push(*declaration);
+        if let Some(key) = safe_group_key(declaration) {
+            // Every member of a safe group, together: the runtime adds each
+            // one by itself and compiles the group from what the command holds.
+            order.extend(
+                emitted
+                    .values()
+                    .copied()
+                    .filter(|row| safe_group_key(row) == Some(key)),
+            );
+        } else {
+            order.push(*declaration);
+        }
         done.insert(name);
     }
     Ok(order)
@@ -857,7 +924,10 @@ fn remap_declaration(
     mapping: &[usize],
 ) -> Result<CoreDeclaration, Diagnostic> {
     let mut declaration = declaration.clone();
-    declaration.r#type = remapped_root(mapping, declaration.r#type)?;
+    declaration.r#type = declaration
+        .r#type
+        .map(|root| remapped_root(mapping, root))
+        .transpose()?;
     declaration.value = declaration
         .value
         .map(|root| remapped_root(mapping, root))
@@ -938,10 +1008,7 @@ fn core_chunk(
     let mut work = Vec::new();
     for index in &declaration_indices {
         let declaration = &core.declarations[*index];
-        work.push(declaration.r#type);
-        if let Some(value) = declaration.value {
-            work.push(value);
-        }
+        work.extend(declaration.expression_roots());
         if let Some(structure) = declaration
             .inductive
             .as_ref()
@@ -1032,22 +1099,48 @@ fn core_command_ranges(
         owners: &BTreeMap<String, String>,
         range: std::ops::Range<usize>,
         out: &mut Vec<std::ops::Range<usize>>,
+        joined: &dyn Fn(usize) -> bool,
     ) -> Result<(), Diagnostic> {
         let chunk = core_chunk(core, &order[range.clone()], owners)?;
         if chunk.nodes.len() <= CORE_NODES_PER_COMMAND || range.len() == 1 {
             out.push(range);
             return Ok(());
         }
-        let middle = range.start + range.len() / 2;
-        split(core, order, owners, range.start..middle, out)?;
-        split(core, order, owners, middle..range.end, out)
+        let mut middle = range.start + range.len() / 2;
+        while middle < range.end && joined(middle) {
+            middle += 1;
+        }
+        if middle >= range.end {
+            // One group fills the rest of the range; it cannot be divided.
+            middle = range.start + range.len() / 2;
+            while middle > range.start && joined(middle) {
+                middle -= 1;
+            }
+            if middle == range.start {
+                out.push(range);
+                return Ok(());
+            }
+        }
+        split(core, order, owners, range.start..middle, out, joined)?;
+        split(core, order, owners, middle..range.end, out, joined)
     }
 
+    // A command boundary never falls inside a safe group: the group's members
+    // compile together or not at all.
+    let joined = |at: usize| -> bool {
+        at > 0
+            && at < order.len()
+            && safe_group_key(order[at - 1])
+                .is_some_and(|key| safe_group_key(order[at]) == Some(key))
+    };
     let mut ranges = Vec::new();
     let mut start = 0;
     while start < order.len() {
-        let end = (start + CORE_DECLARATIONS_PER_COMMAND).min(order.len());
-        split(core, order, owners, start..end, &mut ranges)?;
+        let mut end = (start + CORE_DECLARATIONS_PER_COMMAND).min(order.len());
+        while joined(end) {
+            end += 1;
+        }
+        split(core, order, owners, start..end, &mut ranges, &joined)?;
         start = end;
     }
     Ok(ranges)
@@ -1057,11 +1150,29 @@ fn append_core_command(
     text: &mut String,
     core: &CoreModule,
     chunk: &CoreChunk,
+    last: bool,
 ) -> Result<(), Diagnostic> {
+    /// What the last chunk checks of the whole module: every derived sparse
+    /// `casesOn` is referred to by the type or value of some row. A recipe
+    /// selects constructors, and one that selects others makes another
+    /// well-typed constant, so nothing but a use checks it: the kernel has
+    /// checked the term of every row that applies the constant against it.
+    #[derive(serde::Serialize)]
+    struct ModuleScan<'a> {
+        rows: Vec<&'a str>,
+        sparse: Vec<&'a str>,
+    }
     #[derive(serde::Serialize)]
     struct CorePayload<'a> {
         declarations: &'a [CoreDeclaration],
         imports: &'a [String],
+        /// Every sparse `casesOn` the whole module states, so that a chunk
+        /// can tell a constant the construction made for a row of another
+        /// chunk from one the module does not state. Core module 2 only.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        module_sparse: Option<Vec<&'a str>>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        module_scan: Option<ModuleScan<'a>>,
         order: &'a [usize],
         proof_nodes: &'a [usize],
         spec: &'a str,
@@ -1069,6 +1180,26 @@ fn append_core_command(
     let payload = serde_json::to_string(&CorePayload {
         declarations: &chunk.declarations,
         imports: &core.imports,
+        module_sparse: (core.version() == 2).then(|| {
+            core.declarations
+                .iter()
+                .filter(|row| row.sparse.is_some())
+                .map(|row| row.name.as_str())
+                .collect()
+        }),
+        module_scan: (core.version() == 2 && last).then(|| ModuleScan {
+            rows: core
+                .declarations
+                .iter()
+                .map(|row| row.name.as_str())
+                .collect(),
+            sparse: core
+                .declarations
+                .iter()
+                .filter(|row| row.derived && row.sparse.is_some())
+                .map(|row| row.name.as_str())
+                .collect(),
+        }),
         order: &chunk.order,
         proof_nodes: &chunk.proof_nodes,
         spec: &core.spec,
@@ -1192,9 +1323,9 @@ set_option synthInstance.maxHeartbeats 0
     let order = emission_order(core)?;
     let owners = generated_owners(core);
     let ranges = core_command_ranges(core, &order, &owners)?;
-    for range in &ranges {
+    for (index, range) in ranges.iter().enumerate() {
         let chunk = core_chunk(core, &order[range.clone()], &owners)?;
-        append_core_command(&mut text, core, &chunk)?;
+        append_core_command(&mut text, core, &chunk, index + 1 == ranges.len())?;
     }
     if let Some(scope) = legacy_scope {
         text.push_str(&format!("\nend {scope}\n"));
@@ -1398,8 +1529,10 @@ pub fn render_latex(checked: &CheckedModule, core: &CoreModule) -> Result<Emitte
         declarations
             .iter()
             .map(|declaration| {
-                let mut scope = Vec::new();
-                let ty = printer.term(declaration.r#type, &mut scope)?;
+                let ty = match declaration.r#type {
+                    Some(root) => Some(printer.term(root, &mut Vec::new())?),
+                    None => None,
+                };
                 let value = match declaration.value {
                     Some(value) => {
                         let mut scope = Vec::new();
@@ -1412,10 +1545,18 @@ pub fn render_latex(checked: &CheckedModule, core: &CoreModule) -> Result<Emitte
             .collect::<Result<Vec<_>, Diagnostic>>()
     })??;
     for (declaration, (ty, value)) in declarations.iter().zip(rendered) {
+        // A derived row states no type: the document says so, and says what
+        // makes the constant, instead of a statement the data does not hold.
+        let statement = match ty {
+            Some(ty) => format!("\\noindent\\texttt{{{}}}\\par\n", tex_escape(&ty)),
+            None => format!(
+                "\\noindent Derived {} made by the pinned Lean's construction.\\par\n",
+                tex_escape(&format!("{:?}", declaration.kind).to_lowercase())
+            ),
+        };
         let mut text = format!(
-            "\\subsection*{{\\texttt{{{}}}}}\n\\noindent\\texttt{{{}}}\\par\n\\noindent Axiom policy: \\texttt{{{} [{}]}}.\\par\n",
+            "\\subsection*{{\\texttt{{{}}}}}\n{statement}\\noindent Axiom policy: \\texttt{{{} [{}]}}.\\par\n",
             tex_escape(&declaration.name),
-            tex_escape(&ty),
             declaration.policy.kind(),
             tex_escape(&declaration.policy.axioms().join(", ")),
         );
@@ -1460,13 +1601,13 @@ mod tests {
     fn declaration(name: &str, kind: CoreDeclKind, generated: bool) -> CoreDeclaration {
         CoreDeclaration {
             name: name.to_owned(),
-            levels: Vec::new(),
+            levels: Some(Vec::new()),
             kind,
             reducibility: matches!(kind, CoreDeclKind::Definition)
                 .then_some(CoreReducibility::Opaque),
             transparency: CoreTransparency::Semireducible,
             policy: CoreAxiomPolicy::None,
-            r#type: 0,
+            r#type: Some(0),
             value: match kind {
                 CoreDeclKind::Definition => Some(1),
                 CoreDeclKind::Theorem => Some(0),
@@ -1491,6 +1632,7 @@ mod tests {
             inline: None,
             sparse: None,
             grind: None,
+            derived: false,
         }
     }
 
@@ -1554,5 +1696,67 @@ mod tests {
         core.declarations[3].value = Some(0);
         let error = environment_declarations(&core).expect_err("unowned generated row is rejected");
         assert!(error.message.contains("no native owner"));
+    }
+
+    /// A module of `fillers` independent definitions around a safe mutual
+    /// group `b_enc`, `b_items`, sorted so that the group straddles the first
+    /// command boundary when it is scheduled as two nodes.
+    fn grouped(fillers: usize, group: bool) -> CoreModule {
+        let mut core = fixture();
+        core.declarations.clear();
+        for index in 0..fillers {
+            let mut row = declaration(
+                &format!("Fixture.a_{index:03}"),
+                CoreDeclKind::Definition,
+                false,
+            );
+            row.compiled = true;
+            core.declarations.push(row);
+        }
+        for name in ["Fixture.b_enc", "Fixture.b_items"] {
+            let mut row = declaration(name, CoreDeclKind::Definition, false);
+            row.compiled = true;
+            if group {
+                row.all = Some(vec![
+                    "Fixture.b_enc".to_owned(),
+                    "Fixture.b_items".to_owned(),
+                ]);
+            }
+            core.declarations.push(row);
+        }
+        core
+    }
+
+    fn command_of(core: &CoreModule, name: &str) -> usize {
+        let order = emission_order(core).expect("an order");
+        let ranges = core_command_ranges(core, &order, &generated_owners(core)).expect("ranges");
+        let position = order
+            .iter()
+            .position(|row| row.name == name)
+            .expect("an emitted row");
+        ranges
+            .iter()
+            .position(|range| range.contains(&position))
+            .expect("a command")
+    }
+
+    #[test]
+    fn a_safe_mutual_group_is_one_command() {
+        let core = grouped(CORE_DECLARATIONS_PER_COMMAND - 1, true);
+        assert_eq!(
+            command_of(&core, "Fixture.b_enc"),
+            command_of(&core, "Fixture.b_items"),
+            "the members of a safe compiled group are compiled together"
+        );
+    }
+
+    #[test]
+    fn the_group_test_is_armed_by_an_ungrouped_pair() {
+        let core = grouped(CORE_DECLARATIONS_PER_COMMAND - 1, false);
+        assert_ne!(
+            command_of(&core, "Fixture.b_enc"),
+            command_of(&core, "Fixture.b_items"),
+            "without the group the same pair straddles the boundary"
+        );
     }
 }

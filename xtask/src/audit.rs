@@ -1376,7 +1376,7 @@ fn audit_schema_directory(directory: &Path) -> Result<usize, Fail> {
             .unwrap_or_default()
             .to_string_lossy()
             .to_string();
-        let identity = format!("https://github.com/afflom/lexlean/schemas/{name}");
+        let identity = format!("https://github.com/UOR-Foundation/LexLean/schemas/{name}");
         if !canonical.contains(&identity) {
             return Err(format!("{}: missing its $id `{identity}`", path.display()).into());
         }
@@ -1716,6 +1716,42 @@ pub fn audit_no_unsafe(root: &Path) -> Result<(), Fail> {
         }
     }
     println!("audit-no-unsafe: the prohibition is active (RP-09)");
+    Ok(())
+}
+
+/// RP-15 (R8): a `match` that names several variants of a closed semantic
+/// enum names them all, in every consumer under the compiler crate's source:
+/// the Lean and LaTeX backends, validation, charge, production eligibility,
+/// and the calculus with its Rust AST. A catch-all arm there would give a
+/// variant added later a meaning nobody chose.
+pub fn audit_classifications(root: &Path) -> Result<(), Fail> {
+    use repo_model::classification;
+    let base = root.join(classification::SOURCE_ROOT);
+    let mut paths: Vec<PathBuf> = walkdir::WalkDir::new(&base)
+        .into_iter()
+        .filter_map(Result::ok)
+        .filter(|entry| entry.file_type().is_file())
+        .map(walkdir::DirEntry::into_path)
+        .filter(|path| path.extension().is_some_and(|ext| ext == "rs"))
+        .collect();
+    paths.sort();
+    let mut sources = Vec::with_capacity(paths.len());
+    for path in paths {
+        let relative = path
+            .strip_prefix(root)
+            .map_err(|error| format!("{}: {error}", path.display()))?
+            .to_string_lossy()
+            .replace('\\', "/");
+        sources.push((relative, std::fs::read_to_string(&path)?));
+    }
+    let summary = classification::audit(&sources)?;
+    println!(
+        "audit-classifications: {} matches naming {} or more variants of a closed enum, in {} of {} sources, are total (RP-15, R8)",
+        summary.classifications(),
+        classification::CLASSIFYING_ARMS,
+        summary.per_file.len(),
+        summary.files
+    );
     Ok(())
 }
 

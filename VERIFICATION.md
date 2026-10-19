@@ -1420,6 +1420,261 @@ and a count, the reverse's sum equated to a count, and a map's entries summed
 as its keys twice. `conformance_pf_23` refuses the pair law applied to a
 swapped statement. Each assertion names exactly the refused theorems.
 
+### a derived row is made by the pinned Lean and never stored (SM-34)
+
+A version 2 row may be derived: it states no universe parameters, type, or value,
+and the decoder makes the constant with the pinned Lean's own construction (`SM-34`,
+§17.10, #91 stage 2). Run with the pinned Lean 4.32.1 in a Linux container, on
+`main` `efea57d8` with the change. The plants that change the library or the
+decoder were run with `lexlean lock && lexlean verify` in a copy of the project of
+`tests/negative/preservation-drift`, the compiler rebuilt for each, and the file
+restored with `git checkout`. Unplanted, the same command verifies (`verified 2
+modules`): all 7,203 derived rows of the library are made by Lean.
+
+Planted (a): the name of the derived row `LexLeanPreservation.Rel.eq_1` in
+`src/Core.lex.tex` replaced by `LexLeanPreservation.Rel.eq_x`, a name the pinned Lean
+does not reserve. Expected: the module is refused at the row.
+
+```text
+error[LLV7014]: preservation environment: `LexLeanPreservation.Core` does not compile silently under the pinned Lean: error: native core declaration 'LexLeanPreservation.Rel.eq_x':
+  derived core declaration 'LexLeanPreservation.Rel.eq_x' bears a name the elaborator does not reserve and states no sparse casesOn record
+```
+
+Planted (b): in `src/RustBase.lex.tex`, the record of the derived sparse `casesOn`
+`LexLeanPreservation.Rust.WT._sparseCasesOn_1` with its last constructor
+(`Value.bytes`) removed and its arity left at 14. Expected: the record the
+construction keeps is not the row's.
+
+```text
+error[LLV7014]: preservation environment: `LexLeanPreservation.RustBase` does not compile silently under the pinned Lean: error: native core declaration 'LexLeanPreservation.Rust.WT._sparseCasesOn_1':
+  core declaration 'LexLeanPreservation.Rust.WT._sparseCasesOn_1' states another sparse casesOn record than the elaborator keeps
+```
+
+Planted (c): the same record with `Value.bytes` replaced by `Value.nat`, so that its
+size, arity, and major premise are the row's own. Expected, and found: the
+construction makes another constant under the name, and the stored matcher
+`WT.match_1`, whose value applies it, is refused by the kernel.
+
+```text
+error[LLV7014]: preservation environment: `LexLeanPreservation.RustBase` does not compile silently under the pinned Lean: error: native core declaration 'LexLeanPreservation.Rust.WT.match_1':
+  (kernel) application type mismatch
+    @LexLeanPreservation.Rust.WT._sparseCasesOn_1 (fun x => motive x x✝) x✝¹
+```
+
+What this does not catch, found by running it: the constructors of a sparse
+record are the input of the construction, so the same plant on a sparse `casesOn` no
+stored row applies (the `Ordering.eq` record of `Keys`, with `Ordering.lt` in its place)
+is made, differently, and the library verifies. The recipe is checked against its
+arity and major premise, and against every stored row that uses the constant, and
+not against the constructors the original elaboration chose.
+
+Planted (e): the record of `LexLeanPreservation.Rust.WT._sparseCasesOn_1` naming
+`Value.clos`, which is no constructor of `Value`. Expected: refused.
+
+```text
+error[LLV7014]: preservation environment: `LexLeanPreservation.RustBase` does not compile silently under the pinned Lean: error: native core declaration 'LexLeanPreservation.Rust.WT._sparseCasesOn_1':
+  core declaration 'LexLeanPreservation.Rust.WT._sparseCasesOn_1' names 'LexLeanTarget.TargetSyntax.Value.clos', which is not a constructor of 'LexLeanTarget.TargetSyntax.Value'
+```
+
+Planted (f): the same record naming `Value.adt` twice. Expected: refused.
+
+```text
+  core declaration 'LexLeanPreservation.Rust.WT._sparseCasesOn_1' names the constructor 'LexLeanTarget.TargetSyntax.Value.adt' twice
+```
+
+Planted (g): the row `splitter._sparseCasesOn_2` of `src/Keys.lex.tex` removed, so
+that the construction of the splitter makes the constant itself. Expected: the module
+does not state what the construction made.
+
+```text
+error[LLV7014]: preservation environment: `LexLeanPreservation.Keys` does not compile silently under the pinned Lean: error: the construction made the sparse casesOn '_private.LexLeanPreservation.Keys.0.LexLeanCollections.compareCodes.match_1.splitter._sparseCasesOn_2', which the module does not state
+```
+
+Not distinguished, and recorded as a non-evidence note: the constructors of the
+`Ordering.eq` record of `Keys` replaced by `Ordering.lt` (command as in (h), run in the
+same way) still verifies with the use-scan of (h) in place. The splitter that
+refers to the constant is made by the pinned Lean from the constant it finds, so the
+use is of the swapped constant, and nothing in the module can tell. The content of a
+derived row is checked by its uses alone, and SM-34 says so; no further machinery is
+added.
+
+Planted (h): a derived sparse `casesOn` row nothing refers to, added to
+`src/Keys.lex.tex` (a copy of the `splitter._sparseCasesOn_2` row named
+`_sparseCasesOn_3`, with `Ordering.gt` for `Ordering.eq`), built and verified in a
+copy of the project of `tests/negative/preservation-drift` with `lexlean lock &&
+lexlean verify`. Expected: refused, because the use-scan finds no row that refers to
+it. The unplanted library verifies (`verified 2 modules`) with the scan, so every one
+of its 313 derived sparse rows is referred to.
+
+```text
+error[LLV7014]: preservation environment: `LexLeanPreservation.Keys` does not compile silently under the pinned Lean: error: the derived sparse casesOn '_private.LexLeanPreservation.Keys.0.LexLeanCollections.compareCodes.match_1.splitter._sparseCasesOn_3' is referred to by no row of the module
+```
+
+Planted (d): the name of `LexLeanPreservation.Rel.eq_1` replaced by `Rel.eq_2`,
+which is reserved but which the construction does not make. Expected: refused.
+
+```text
+error[LLV7014]: preservation environment: `LexLeanPreservation.Core` does not compile silently under the pinned Lean: error: native core declaration 'LexLeanPreservation.Rel.eq_2':
+  derived core declaration 'LexLeanPreservation.Rel.eq_2' bears a name the elaborator reserves, and its construction does not make it
+```
+
+Planted (e): a stored row back in the library, `src/Compose.lex.tex` replaced by its
+version at `efea57d8`. Command: `cargo test -p repo-conformance --test conformance --
+conformance_sm_34`. Expected: the gate over the library names the row.
+
+```text
+thread 'conformance_sm_34' panicked at crates/conformance/src/cases/semantic_ir.rs:2719:21:
+assertion `left == right` failed: .../language/preservation-1.2/library/src/Compose.lex.tex: `LexLeanPreservation.Rust.Representable._sparseCasesOn_1` is stored and must be derived
+```
+
+Planted (f): the check that the constant the construction made is the row's kind
+removed from `addDerived` (`crates/lexlean/src/backend/core_v2.rs`, the condition
+prefixed with `true ||`). Command: `conformance_sm_34`. Expected: the copy whose
+theorem is a `definition` is no longer refused.
+
+```text
+thread 'conformance_sm_34' panicked at crates/conformance/src/support.rs:757:14:
+verify fails
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 414 filtered out
+```
+
+Planted (g): the check that a derived row states none of what the construction
+decides removed from the linker (`validate_derived_row`'s result discarded in
+`crates/lexlean/src/ir/core.rs`). Command: `conformance_sm_34`. Expected: the copies
+that state a type, a value, or universe parameters are no longer refused.
+
+```text
+thread 'conformance_sm_34' panicked at crates/conformance/src/support.rs:730:14:
+check fails
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 414 filtered out
+```
+
+Planted (h): `derived` allowed with a `type` in the schema's `derivedDeclaration`.
+Command: `conformance_sm_34`. Expected: the schema accepts the derived row with a
+type and the case says so.
+
+```text
+thread 'conformance_sm_34' panicked at crates/conformance/src/cases/semantic_ir.rs:2629:17:
+the schema accepts a derived row with a type
+```
+
+Planted (i): the branch of the decoder that handles a derived row disabled
+(`if (optionalField json "derived").isSome` replaced by `if false`). Command:
+`conformance_sm_34`. Expected: the derived module is no longer verified, so the
+case fails before it reaches any refusal.
+
+```text
+thread 'conformance_sm_34' panicked at crates/conformance/src/support.rs:2286:10:
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 414 filtered out
+```
+
+Removed: every plant was reverted. `conformance_sm_31`, `conformance_sm_33`, and
+`conformance_sm_34` pass with the change, and `cargo test -p lexlean --lib` passes
+(200 tests). What was not run is listed in the pull request of the change: no record
+bound to the language-1.2 compiler-semantics ID was regenerated, so every case that
+reads a committed lock (for example `conformance_au_10`, `conformance_au_11`, and
+`conformance_au_12`) reports `LLC0102` until the train regenerates.
+
+### the machine's primitives and the overflow literal can fail (SP-18)
+
+`RustSyntax` declares eight machine primitives, `Callee.machine`, and `Lit.overflow`,
+and `RustSemantics` evaluates them (`SP-18`, §17.14, §17.16, #91 stage 2). The case
+reads the constructors from the committed `compiler/src` modules, and has the pinned
+Lean 4.32.1 evaluate 19 claims over the shipped copies of the modules (the boundary
+values of `u8` and `i8`, a shift by the width and by the width less one, an
+operand of another width, `try_from` out of and into range, the overflow literal,
+and the same calls through `eval`). Each plant was run on `main` `efea57d8` with the
+change in a Linux container, with `cargo test -p repo-conformance --test conformance --
+conformance_sp_18`; the two that change the semantics were regenerated into the
+shipped copies (`lexlean build` in a copy of `compiler/`) before the run, and every
+file was restored with `git checkout`.
+
+Planted (a): `machineAccepts` made `true`, so a shift of a `u16` is run as a shift of
+a `u8`. Expected: the claim that it is stuck fails.
+
+```text
+the machine does not evaluate as stated:
+/tmp/.tmpF9nFg5/Machine.lean:16:100: error: Type mismatch
+  rfl
+```
+
+Planted (b): the literal `Overflow` evaluated to `Value.bool false` in `literal`.
+Expected: the claims about the literal, and about `Err(Overflow)` built by `eval`,
+fail.
+
+```text
+the machine does not evaluate as stated:
+/tmp/.tmpdTa9It/Machine.lean:19:52: error: Type mismatch
+```
+
+Planted (c): the `tryFrom` primitive removed from `Machine` in
+`compiler/src/RustSyntax.lex.tex`. Expected: the declared primitives are not the eight.
+
+```text
+assertion `left == right` failed: the machine's primitives, each at a width
+  left: [("checkedAdd", 1), …, ("checkedShr", 1)]
+ right: [("checkedAdd", 1), …, ("checkedShr", 1), ("tryFrom", 1)]
+```
+
+Planted (d): `overflow` removed from `Lit`. Expected: the literal is not declared.
+
+```text
+the literal Overflow is declared
+```
+
+Not planted: the arm of `eval` that runs a machine callee. A module without it does
+not link (the match is not total), which is the semantic modules' own check, not this
+case's. The five authored declarations of the library that the constructors leave a
+case short are in `tests/preservation-library/MIGRATION.md`, with the run that shows
+each is needed.
+
+### the loop over a state can fail (SP-19)
+
+`RustSyntax` declares `Expr.loop` over a state binding and a body block, and
+`RustSemantics` evaluates it by recursing through `eval` (`SP-19`, §17.14, §17.16,
+#91 stage 3). The case reads the constructor from the committed `compiler/src`
+module, and has the pinned Lean 4.32.1 evaluate four claims over the shipped copies
+of the modules (a countdown from three ends at zero, a countdown from zero ends at
+once, the same countdown at fuel two is exhausted, and a body whose value is neither
+`Ok` nor `Err` is stuck), and refuse three wrong statements of the same loops. The
+Rust side is covered by unit tests in `calculus::rust::ast` (the printed loop rebinds
+the state and breaks with the payload of `Err`; the validator accepts a body that
+moves only the state and refuses one that moves another binding), by the exhaustive
+matches of the moves pass, the lowering, the validator, and the certificate-B term
+builder, and by `audit-production`, which needs a disposition for the new
+construct. Each plant was run in a Linux container with `cargo test -p
+repo-conformance --test conformance -- conformance_sp_19`; the files were restored
+afterwards and compared byte for byte.
+
+Planted (a): the shipped `RustSemantics` evaluating the loop again without rebinding
+the state. Expected: the countdown claim fails. Observed: caught earlier, because
+the library's proof `stable_loop` states the equation of `eval` for `loop`; the
+shipped module is rejected.
+
+```text
+the shipped module `LexLeanPreservation.RustBase` was rejected:
+… error: native core declaration 'LexLeanPreservation.Rust.stable_loop':
+  (kernel) application type mismatch
+```
+
+Planted (b): the shipped `RustSemantics` ending the loop with the unit value
+instead of the payload of `Err`. Expected: the countdown claim fails. Observed: the
+same rejection of `stable_loop`.
+
+Planted (c): the constructor `loop` removed from `Expr` in
+`compiler/src/RustSyntax.lex.tex`. Expected: the declared expressions lack the loop.
+
+```text
+thread 'conformance_sp_19' panicked at crates/conformance/src/cases/preservation.rs:4795:18:
+the expression Loop is declared
+```
+
+Plants (a) and (b) are caught by the proof library before the claims run, which is
+the stronger gate and not the one this case adds; the claims themselves are shown to
+be able to fail by the three statements of a wrong value, each of which the pinned
+Lean refuses (the loop ending at one, the exhausted loop stated as a value, and the
+stuck loop stated as the unit value).
+
 ### a list of any length is a term Lean elaborates without binders
 
 Lean's `[…]` macro writes a literal of more than 32 elements under `let`
@@ -1541,6 +1796,96 @@ tight one, measured by hand, is mixed shape 7 at 256: 5,879 expression nodes,
 certificate A 120,894 bytes in the notation, `COSTS_A` bound about 115.6k
 (5400 + 5879 × 300 / 16), 4.4% under. The other shapes' figures were not
 recorded separately.
+
+### certificate A certifies lists of recursive types and closures of any size (#208)
+
+Three limits of the certificate-A builders, each reproduced on `origin/main`
+(`724a55590`) with `lexlean verify` under the pinned Lean 4.32.1 and accepted
+with the fixes. The reproducers are one-module projects with a
+`production: {effects: [allocation], targets: [rust-std]}` root over
+`Ty = TUnit | TOption Ty | TFn (List Ty) Ty`; they are committed as
+`tests/preservation-certificates/lists`, which `conformance_sp_15` certifies
+under the pinned Lean beside the `production` example and which its Lean-free
+part checks for the chunking below.
+
+| limit | reproducer | refused on `main` | accepted with the fix |
+| --- | --- | --- | --- |
+| (a) a record or single-constructor inductive holding `List Ty` as a root parameter | `structure S2 {ts : List Ty}`, root `probe (x : S2) : Nat = 0` | `LLV7013 … rejected in decodeAndAdd … compiler IR check failed at __enc_0. Error: unknown join point 'block_0'` | verified |
+| (b) `cons` onto a list of a recursive type | root `consTy (h : Ty) (r : List Ty) = cons h r` | `LLV7013 … rejected in __rel_0 … (kernel) application type mismatch LexLeanPreservation.conv_build (LexLeanPreservation.convL_cons …` | verified |
+| (c) a closure whose boundary encoders are split across 64-declaration commands | 70 functions `f_i`, ten `g_j` summing seven of them each, root `closure (t : Ty)` summing the `g_j` (81 functions; a chain of 50 does not reach the boundary, a chain of 70 does) | `LLV7013 … rejected in decodeAndAdd of root … f8: Unknown constant …R80.__items_0 … failed to compile definition … depends on '__enc_0', which is 'noncomputable'` | verified |
+
+The causes, from the generated terms:
+
+- (a) The encoder of a document type outside a recursive group (`S2`, compiled)
+  applies `ListEnc.enc Ty __L_0`, and the bundle `__L_0` is a row with
+  `compiled: false`. The code generator has no code for the bundle and reads the
+  application as a closed term whose join point it cannot find. A bundle that a
+  compiled row applies is now compiled (`Gen::finish`, `compile_applied_bundles`);
+  a bundle only the proofs name keeps `compiled: false`, so no committed record
+  moves.
+- (b) `construct_cons` states the payload of the consed list as `List.map enc
+  tail`. For a list nested in a recursive group the encoding is `Value.list
+  (__items_k l)`, and `__items_k tail` is not `List.map enc tail` for a variable
+  tail (that is an induction, and the bundle gives `items_nil` and `items_cons`
+  only), so the equation `conv_build` needs does not hold by `Eq.refl`. For a
+  nested list the lemma now takes `__items_k tail`, which holds by one unfolding
+  of `__items_k` on a `cons`, unless the tail is a literal list (a `nil`, or a
+  `cons` onto one), where `List.map` of the element encoder and the items row
+  reduce to the same elements and the committed certificates state the map. After this, the same root's `denote` is refused
+  with (a)'s message: the same bundle rule applies.
+- (c) `group_representatives` of `backend/core.rs` grouped only the partial
+  implementation records. The safe mutual group (`__enc_k`, `__items_k`; `all`
+  names the group) was scheduled as independent nodes, and the runtime compiles
+  a group from the members present in the command, so a command boundary
+  between them compiled `__enc_0` apart from `__items_0`. A safe compiled group
+  of two or more rows is now one scheduling node whose members are emitted
+  contiguously, and a command boundary never falls inside a run of one group
+  (the 64-declaration boundary and the node-count halving both).
+
+No library lemma, no axiom, no `sorry`; nothing under `language/` is edited
+except `lean_backend` in `semantics-1.2.toml`, which moves from `20` to `21`
+because the emitted Lean text of a module with a safe mutual group differs
+(order and chunking): every 1.2 compiler-semantics ID, lock, source, semantic,
+and build ID moves with it, and the maintainer regenerates the records in the
+identity wave. The record gates are therefore red on this branch by design.
+
+Evidence that no existing certificate moves, with `lean_backend` held at `20`
+(the bump is the only difference after it): a temporary test, not kept in the
+tree, generated every certificate A of the four corpora (59 roots) and compared
+its notation with the committed `expected/verify/preserve/…/R<i>.lex.tex`: 59 of 59
+byte-identical. Its first run found one that was not, `roseTotal` of
+`production-coverage`: the committed certificate states `List.map` of the
+element encoder for a literal tail (`cons … (nil …)`), where it and the items
+row reduce to the same elements, so the items payload is used only for a tail
+that is not a literal list (`is_literal_list`), and the second run is the 59.
+`cargo xtask check-golden` and `cargo xtask check-production-export` pass, and
+`cargo xtask verify-examples` reached `production` (140 normalized records
+equal) before the process was lost; it was not completed, the remaining
+examples (including `production-coverage`) are not re-verified here, and the
+byte comparison above is the evidence for their certificates A.
+
+Planted:
+
+- the pre-fix defect of (a), a bundle row of the list-project certificate of
+  `probeStructure` marked `compiled: false` (`conformance_sp_15`): refused by
+  Lean, the output names the join point;
+- a defect in the new payload of (b), the `__items_0` row of the `consTy`
+  certificate renamed to another encoder (`conformance_sp_15`): refused by the
+  kernel;
+- for (c), the group armed in the Lean-free part of `conformance_sp_15` and the
+  unit tests `a_safe_mutual_group_is_one_command` and
+  `the_group_test_is_armed_by_an_ungrouped_pair` of `backend/core.rs`: the same
+  rows with `all` reduced to themselves straddle a command, so the check can
+  fail; and the closure root is refused on `main`, above.
+
+Cost: the closure root dominates `conformance_sp_15`. The 81-function closure
+verifies in about 21 minutes on the machine of this record under load from other
+jobs (user time 17.5 minutes); on `main` a chain of 50 functions took 16. So
+`SP-15` is its own part of `bdd` (`preservation-lists`, the row
+`bdd-preservation-lists`) and no other leg grows.
+
+Found, not fixed here: a left-nested sum of 70 calls makes
+`Program::to_file_bytes` panic (`recursion limit exceeded`), #215.
 
 ### certificate B is kernel-term data and a defect in it is refused
 
@@ -8567,6 +8912,17 @@ assertion `left == right` failed: the runtime namespaces the gates know are the 
  right: {"LexLeanCollections", "LexLeanModels", "LexLeanReasoning", "LexLeanRuntime"}
 ```
 
+The identity wave (#219) regenerated the Atlas records from these shards with
+no run of the whole Atlas on one host: twelve parts (`prefix`, `cert4`,
+`census-a` to `census-d`, `cert4-replay`, `closure`, `pairs-a` to `pairs-d`)
+were produced in the maintainer's 15 GB container at `LEXLEAN_VERIFY_WIDTH=2`
+and `LEXLEAN_VERIFY_MEMORY_KIB=12582912`, and `orbit`, whose `ClosureOrbit`
+elaboration peaks above that container's cgroup, was the `atlas-part-orbit`
+artifact of the wave's first gate run (39243140976 on 621573a43, whose join
+was red for want of exactly these records); `verify-examples` in
+`join:uor-atlas` mode wrote the records from the thirteen parts, and the gate
+run of the head that carries them is their comparison.
+
 ## The planted verification of the compiler project (Issue #145)
 
 `conformance_rs_12` asks which diagnostic pinned Lean's refusal of the planted
@@ -9375,12 +9731,10 @@ and the edit restored.
 `lake-dependency-absent` runs `verify`, so it needs the pinned toolchain, as
 `vr-11-exact-mismatch` does.
 
-The other twelve have no fixture:
+The other eleven have no fixture (`LLC0001` gained one, `check-unknown-flag`,
+once the schema stopped requiring `primary` of the positionless codes; see the
+section on the diagnostic schema below):
 
-- `LLC0001`: a command-line usage error is emitted in JSON mode without a
-  `primary` span, and `diagnostic.schema.json` requires one, so a fixture fails
-  `conformance_ex_07`'s schema check. The emitter and the schema disagree; a
-  fixture would only hide that.
 - `LLC0104`: a case-folded collision needs two paths differing only by case, which
   a repository cannot hold on a case-insensitive checkout, and a duplicate
   logical module is refused earlier as `LLP2003`.
@@ -9392,3 +9746,214 @@ The other twelve have no fixture:
   generated code.
 - `LLV7008`, `LLV7009`, `LLV7010`: depend on the host (a non-UTF-8 path, git and
   the network, a filesystem failure).
+
+### the refusal of the data form can fail (`AU-13`, #149)
+
+`AU-13` states that a language-1.2 module written with `\semanticdata`,
+`\toolingdata` or `\coredata` is refused with `LLP2003` at its data argument,
+naming the control and the authoring notation, that `fmt` leaves the bytes,
+that the SDK's two conversions are inverses, and that language 1.1 and the
+Atlas keep the data form. The case was written before the refusal; it was not
+run red on its own before the implementation, and the first plant below
+restores exactly the condition it would have run in. Four defects were planted
+in the refusal, one at a time, each undone before the next; each turns
+`conformance_au_13` red:
+
+- **a language-1.2 source in the data form is accepted again** (the semantic
+  branch of the refusal removed from `link.rs`). The case finds the example
+  written as data links:
+
+  ```text
+  panicked at crates/conformance/src/support.rs:758:14:
+  check fails
+  ```
+
+- **a tooling module written as data is accepted again.**
+
+  ```text
+  panicked at crates/conformance/src/cases/authoring.rs:745:28:
+  commands: a tooling module written as data linked
+  ```
+
+- **a core module written as data is accepted again.** The same
+  `check fails` from `support.rs:758:14`, reached in the core part of the case
+  after the semantic and tooling parts pass.
+
+- **the refusal at the wrong position** (the span of the first atom of the
+  file instead of the data argument):
+
+  ```text
+  panicked at crates/conformance/src/cases/authoring.rs:676:28:
+  language-1.2: the position is not after \semanticdata
+  ```
+
+The cases that compared a language-1.2 build of the data form with the build of
+the notation (`AU-02`, `AU-05`, `AU-10`) can no longer do so, because that form
+is not a source; their statements and scenarios were restated to what they
+still check (builds with source maps that name the notation, `fmt` the identity
+on it), and the equivalence of the two forms is carried by the SDK's
+conversions (`AU-08`, `AU-13`). The plants of other cases that edited the data
+form of a language-1.2 module (`DF-15`, `SP-02`, `SP-12`, `GC-11`, `RT-01`,
+`TL-01`, `CF-18`, and `SM-34` from the identity wave that joined the two) now
+hand the compiler the notation of the edit, or the decoder the data directly
+where the notation cannot say it (a spec tag of another schema, the canonical
+bytes of a tooling module, an empty arity, a derived core row written with a
+type, a value, or universe parameters: the notation states a row's universe
+parameters with its type, so the decoder names a derived row's type before its
+parameters); the fixture `tests/negative/semantic-module-v1-under-1.2` is a fixture of this
+refusal and expects `LLP2003`.
+
+Not run for this record: the records the change regenerates (the maintainer's
+wave) and every Lean-backed case, which needs the pinned toolchain.
+
+## Classification matches are total (RP-15, Issue #33)
+
+`cargo xtask validate-model` runs `audit-classifications` (R8). It reads every
+Rust source of `crates/lexlean/src` and finds each `match` whose arms name five
+or more variants of one closed enum: the five IR enums everywhere, and the
+calculus and Rust AST enums beneath `calculus/`. Such a `match` is a
+classification, and it must name every variant: a `_` arm, or a bare binding
+arm (`other =>`), fails the audit, because either would give a variant added
+later a meaning nobody chose and switch off the compiler's own exhaustiveness
+check. Smaller matches are lookups and may default. A guarded catch-all is not
+one: the compiler ignores guards, so it still refuses an unnamed variant.
+
+It reads direct arm patterns only (`SemanticType::Nat`, or `Self::Nat` inside
+an `impl` of the enum). A `match` on a tuple of enums is a pairing and is not
+audited; serialization and the snapshot are `serde`-derived, so no
+hand-written `match` of theirs exists. `if let` and `matches!` over these enums
+are not read.
+
+It also fails when a consumer it must read has no classification left, so a
+refactor cannot move a consumer out from under it: the Lean and LaTeX backends
+(`backend/semantic.rs`), validation and charge (`ir/semantic.rs`), production
+eligibility, the calculus checker and realization table, and the Rust AST, its
+lowering, and its validator.
+
+At the time of writing it reads 137 sources and finds 244 classifications, all
+total. There is no exemption: every source is read alike.
+
+**What the 27 catch-alls it found became.** Each plain `_` arm lists the
+variants it took by default, and each binding arm is `name @ (A | B | ..)`, so
+the arm body is unchanged; rustc confirms the list is exactly the remaining
+variants. The Lean backend's `primitive` became one exhaustive `spelling` table
+of the 56 primitives. For the 25 in sources the compiler-semantics ID does not
+read, generated output is unchanged: `cargo xtask check-golden` and `cargo xtask
+check-calculus` pass, the `lexlean` unit tests pass, and `cargo clippy
+--workspace --all-targets --all-features -- -D warnings` is clean.
+
+**The renderer.** The other two, in `calculus/rust/lower.rs` and `validate.rs`,
+are sources the compiler-semantics ID reads: their bytes are recorded as
+`rust_renderer` in `language/semantics-1.2.toml` and checked by
+`the_compiler_semantics_records_the_renderer`. Editing them changed that digest,
+so the record moved (`6d1e0639...` to `c7fe1d8d...`) and the compiler-semantics
+ID moves with it. No record was regenerated: the committed locks and the
+expected outputs that carry the ID are stale until the maintainer's identity
+wave regenerates them once, and until then a committed lock fails `LLC0102`.
+
+**Planted.** Each was made alone in the named source, `cargo xtask
+validate-model` run, and the edit restored.
+
+```text
+backend/semantic.rs, `spelling`: the `GraphTopological` arm made `_ =>`
+gate failed: R8: crates/lexlean/src/backend/semantic.rs:355: a `match` naming 55 variants of `SemanticPrimitive` has a wildcard arm at line 497; ...
+
+backend/semantic.rs, `spelling`: the `LessThan` arm made `other =>`
+gate failed: R8: crates/lexlean/src/backend/semantic.rs:355: a `match` naming 55 variants of `SemanticPrimitive` has a binding catch-all arm at line 498; ...
+
+ir/semantic.rs, `type_node_count` (charge): `_ => 0,` added after the last arm
+gate failed: R8: crates/lexlean/src/ir/semantic.rs:2048: a `match` naming 28 variants of `SemanticType` has a wildcard arm at line 2079; ...
+
+calculus/rust/ast.rs, `lit`: the `Lit::Unit` arm made `_ =>`
+gate failed: R8: crates/lexlean/src/calculus/rust/ast.rs:458: a `match` naming 7 variants of `Lit` has a wildcard arm at line 459; ...
+```
+
+`conformance_rp_15` plants a wildcard, and then a binding arm, in a
+classification of each of ten consumer functions (`spelling` and
+`render_latex` of the backend, `infer_term` and `type_node_count` of
+validation and charge, `type_key` of eligibility, `prim_type` of the calculus
+checker, `in_place` of the realization table, `expr` of the Rust AST, `item` of
+its lowering, and `expr` of its validator) and observes the audit name the
+file. It empties and then removes each consumer and observes `would pass over`.
+`cargo test -p repo-model classification` covers the scanner
+itself: a total match, a wildcard, a binding, a guarded wildcard, a lookup,
+`Self::` paths, prose and literals, a tuple pairing, block bodies, and raw
+strings.
+
+## The diagnostic schema requires a position except where none exists (Issue #33)
+
+`schemas/diagnostic.schema.json` required `primary` of every diagnostic, but
+the compiler issues eight codes where no source position exists, and a fixture of
+one of them (a command-line usage error) could not pass `conformance_ex_07`'s
+schema check. Inventing a span would assert a location the failure does not
+have, so the schema now has two alternatives: a diagnostic with `primary`, or one
+without it whose code is one of the eight. `SPEC.md` 20.1 names the same
+codes and the situation of each.
+
+The eight were read from the emitter, as the paths that run outside any loaded
+project, since `Engine::bound` anchors every other project diagnostic at its
+file: `LLC0001` (clap, `explain`, `init`, an unreadable request file), `LLC0101`
+and `LLS8001` and `LLV7008` and `LLC0108` (`project::discover` and
+`Project::load`, which run before an engine exists), `LLC0201` (the production
+request is parsed before the engine anchors anything), and `LLV7010`, `LLS8001`
+and `LLV7102` (`verify_artifact`, which has no project). A run of the CLI in
+JSON mode confirmed `LLC0001`, `LLC0101` and `LLV7010` carry no `primary`, and
+that a configuration that parses, a stale lock, and an unsupported language do.
+
+`conformance_ex_07` checks, before any fixture runs, that the schema's list and
+the `SPEC.md` table are the same codes, that each listed code is valid with and
+without `primary`, that `LLL1001`, `LLP2001`, `LLT4001`, `LLV7002` and
+`LLC0102` are valid with it and refused without it, and that every committed
+`expected/diagnostics.json` validates. Planted, each alone, observed, restored:
+
+```text
+LLL1001 added to both the schema's list and the SPEC table
+LLL1001 has a source, so omitting primary is refused
+
+LLC0001 removed from both
+tests/negative/check-unknown-flag/expected/diagnostics.json: ... oneOf: 0 of 2 alternatives match ... required property `primary` is missing
+```
+
+The schema is hashed into the compiler-semantics ID, so the ID moves; no record
+was regenerated, and until the maintainer's wave the committed locks fail
+`LLC0102`, which fails the fixtures that run a project.
+
+## Negative fixtures for codes only conformance cases reached (Issue #33)
+
+Six of the 18 codes added since v0.3 had no fixture under `tests/negative/`.
+Each fixture below is a refusal the compiler emits on that input, written by
+the fixture writer (`repo_conformance::fixtures::write`, the function behind
+`cargo xtask check-fixtures --write`) for that directory alone, and compared
+byte for byte by `cargo xtask check-fixtures` thereafter. Each was planted
+against: the named edit was made alone in the named source, the fixture's
+comparison observed to fail on `expected/command.json`, and the edit restored.
+
+| Fixture | Code | Planted defect |
+| --- | --- | --- |
+| `production-request-malformed` | `LLC0201` | `api/production.rs`: `request_error` emits `LLC0202` |
+| `production-root-unknown` | `LLC0202` | `api/production.rs`: the unknown-root refusal emits `LLC0201` |
+| `production-target-unregistered` | `LLC0203` | `api/production.rs`: `target_error` emits `LLC0204` |
+| `production-expectation-stale` | `LLC0204` | `api/production.rs`: `stale` emits `LLC0203` |
+| `source-package-outside-workspace` | `LLC0108` | `source_package.rs`: the refusal reads "may not declare" for "cannot declare" |
+| `tooling-module-in-user-project` | `LLT4013` | `link.rs`: the user-project refusal emits `LLT4014` |
+
+The twelve other codes of the list have no fixture, for a reason the runner
+imposes and not a gap in the case that reaches them:
+
+- `LLC0105`, `LLC0106`, `LLC0107`, `LLR3009` need a `lexlean-workspace.toml` in
+  a strict ancestor of the project root (`Workspace::of_project` starts at the
+  parent), and a fixture runs a temporary copy of `project/` alone. A
+  fixture can express only that no workspace exists, which is `LLC0108`.
+  `--project` is read against the process directory, not the copy.
+- `LLT4014`, `LLT4015` are refusals inside a tooling module, and a user project
+  is refused at `LLT4013` before the module is decoded, as the fixture above
+  shows; they are reached only in the tooling projects the compiler embeds.
+- `LLV7018` follows `lexlean::verify::end_live_children`, a host call of the
+  library API; no command line reaches it.
+- `LLV7102` replays a published bundle, which only a verified export produces,
+  and that needs the pinned toolchain; `LLV7101` needs certificate evidence
+  built for the root's lowered program.
+- `LLB6005`, `LLB6006`, `LLB6007` are target programs, GNAF requests, and
+  certificates that the library and `cargo xtask check-calculus` read; no
+  command takes one, and the one production path to `LLB6005` is a package the
+  Rust profile cannot render, which no committed project builds.
