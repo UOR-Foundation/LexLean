@@ -382,30 +382,43 @@ pub fn f3(v0: (u64, u64), v1: (u64, u64)) -> Result<u64, (bool, bool)> {
     }
 }
 
-pub fn f4(v0: Fn0, v1: u64, v2: (u64, u64)) -> ((u64, u64), bool) {
-    let m10 = v1;
-    if m10 == 0 {
-        (v2, false)
-    } else {
-        let v3 = m10 - 1;
-        let m12 = {
-            let c11: Fn0 = v0.clone();
-            c11.apply(v2)
-        };
-        match m12 {
-            None => {
-                (v2, true)
-            }
-            Some(v4) => {
-                f4(v0, v3, v4)
+pub fn f4(v0: Fn0, p14: u64, p15: (u64, u64)) -> ((u64, u64), bool) {
+    let m13 = (p14, p15);
+    {
+        let mut m13 = m13;
+        loop {
+            let step = {
+                let (v1, v2) = m13;
+                let m10 = v1;
+                if m10 == 0 {
+                    Err::<(u64, (u64, u64)), ((u64, u64), bool)>((v2, false))
+                } else {
+                    let v3 = m10 - 1;
+                    let m12 = {
+                        let c11: Fn0 = v0.clone();
+                        c11.apply(v2)
+                    };
+                    match m12 {
+                        None => {
+                            Err::<(u64, (u64, u64)), ((u64, u64), bool)>((v2, true))
+                        }
+                        Some(v4) => {
+                            Ok::<(u64, (u64, u64)), ((u64, u64), bool)>((v3, v4))
+                        }
+                    }
+                }
+            };
+            match step {
+                Ok(next) => { m13 = next; }
+                Err(done) => break done,
             }
         }
     }
 }
 
 pub fn f5(v0: (u64, u64)) -> Option<(u64, u64)> {
-    let m13 = f9(v0);
-    match m13 {
+    let m16 = f9(v0);
+    match m16 {
         None => {
             None::<(u64, u64)>
         }
@@ -417,21 +430,21 @@ pub fn f5(v0: (u64, u64)) -> Option<(u64, u64)> {
 
 pub fn f6(v0: (u64, u64)) -> R<(u64, u64)> {
     Ok(({
-        let (h14, _) = v0;
-        h14
+        let (h17, _) = v0;
+        h17
     }, {
-        let a16 = {
-            let (_, h15) = v0;
-            h15
+        let a19 = {
+            let (_, h18) = v0;
+            h18
         };
-        let a17 = 3u64;
-        nat_add(a16, a17)?
+        let a20 = 3u64;
+        nat_add(a19, a20)?
     }))
 }
 
 pub fn f7(v0: (u64, u64), v1: (u64, u64)) -> Option<u64> {
-    let m18 = f8(v1);
-    match m18 {
+    let m21 = f8(v1);
+    match m21 {
         None => {
             None::<u64>
         }
@@ -447,18 +460,18 @@ pub fn f7(v0: (u64, u64), v1: (u64, u64)) -> Option<u64> {
 
 pub fn f8(v0: (u64, u64)) -> Option<u64> {
     Some({
-        let (_, h19) = v0;
-        h19
+        let (_, h22) = v0;
+        h22
     })
 }
 
 pub fn f9(v0: (u64, u64)) -> Option<Adt0> {
-    let m20 = if f12(v0) {
+    let m23 = if f12(v0) {
         Some(Adt0::C0)
     } else {
         None::<Adt0>
     };
-    match m20 {
+    match m23 {
         None => {
             f13(Fn1::F14(v0), None::<Adt0>, f15(v0))
         }
@@ -469,8 +482,8 @@ pub fn f9(v0: (u64, u64)) -> Option<Adt0> {
 }
 
 pub fn f10(v0: (u64, u64), v1: Adt0) -> Option<(u64, u64)> {
-    let m21 = v1;
-    match m21 {
+    let m24 = v1;
+    match m24 {
         Adt0::C0 => {
             f16(v0)
         }
@@ -481,38 +494,51 @@ pub fn f10(v0: (u64, u64), v1: Adt0) -> Option<(u64, u64)> {
 }
 
 pub fn f11(_: (u64, u64), v1: u64) -> bool {
-    let a22 = v1;
-    let a23 = 0u64;
-    nat_eq(a22, a23)
+    let a25 = v1;
+    let a26 = 0u64;
+    nat_eq(a25, a26)
 }
 
 pub fn f12(v0: (u64, u64)) -> bool {
-    let a25 = 2u64;
-    let a26 = {
-        let (_, h24) = v0;
-        h24
+    let a28 = 2u64;
+    let a29 = {
+        let (_, h27) = v0;
+        h27
     };
-    nat_lt(a25, a26)
+    nat_lt(a28, a29)
 }
 
-pub fn f13(v0: Fn1, v1: Option<Adt0>, v2: List<u64>) -> Option<Adt0> {
-    let m27 = v2;
-    match m27.uncons() {
-        None => {
-            v1
-        }
-        Some((v3, v4)) => {
-            f13(v0.clone(), {
-                let c28: Fn1 = v0;
-                c28.apply(v1, v3)
-            }, v4)
+pub fn f13(v0: Fn1, p33: Option<Adt0>, p34: List<u64>) -> Option<Adt0> {
+    let m32 = (p33, p34);
+    {
+        let mut m32 = m32;
+        loop {
+            let step = {
+                let (v1, v2) = m32;
+                let m30 = v2;
+                match m30.uncons() {
+                    None => {
+                        Err::<(Option<Adt0>, List<u64>), Option<Adt0>>(v1)
+                    }
+                    Some((v3, v4)) => {
+                        Ok::<(Option<Adt0>, List<u64>), Option<Adt0>>(({
+                            let c31: Fn1 = v0.clone();
+                            c31.apply(v1, v3)
+                        }, v4))
+                    }
+                }
+            };
+            match step {
+                Ok(next) => { m32 = next; }
+                Err(done) => break done,
+            }
         }
     }
 }
 
 pub fn f14(v0: (u64, u64), v1: Option<Adt0>, v2: u64) -> Option<Adt0> {
-    let m29 = v1;
-    match m29 {
+    let m35 = v1;
+    match m35 {
         None => {
             if f18(v0, v2) {
                 Some(Adt0::C1(v2))
@@ -547,15 +573,15 @@ pub fn f17(v0: (u64, u64), v1: u64) -> Option<(u64, u64)> {
 }
 
 pub fn f18(v0: (u64, u64), v1: u64) -> bool {
-    let a31 = v1;
-    let a32 = {
-        let (_, h30) = v0;
-        h30
+    let a37 = v1;
+    let a38 = {
+        let (_, h36) = v0;
+        h36
     };
-    if nat_le(a31, a32) {
-        let a33 = 0u64;
-        let a34 = v1;
-        nat_lt(a33, a34)
+    if nat_le(a37, a38) {
+        let a39 = 0u64;
+        let a40 = v1;
+        nat_lt(a39, a40)
     } else {
         false
     }
@@ -563,28 +589,28 @@ pub fn f18(v0: (u64, u64), v1: u64) -> bool {
 
 pub fn f19(v0: (u64, u64)) -> (u64, u64) {
     ({
-        let (h35, _) = v0;
-        h35
+        let (h41, _) = v0;
+        h41
     }, {
-        let a37 = {
-            let (_, h36) = v0;
-            h36
+        let a43 = {
+            let (_, h42) = v0;
+            h42
         };
-        let a38 = 1u64;
-        nat_sub(a37, a38)
+        let a44 = 1u64;
+        nat_sub(a43, a44)
     })
 }
 
 pub fn f20(v0: (u64, u64), v1: u64) -> (u64, u64) {
     ({
-        let (h39, _) = v0;
-        h39
+        let (h45, _) = v0;
+        h45
     }, {
-        let a41 = {
-            let (_, h40) = v0;
-            h40
+        let a47 = {
+            let (_, h46) = v0;
+            h46
         };
-        let a42 = v1;
-        nat_sub(a41, a42)
+        let a48 = v1;
+        nat_sub(a47, a48)
     })
 }
