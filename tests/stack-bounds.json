@@ -42,6 +42,12 @@
     "bootstrap/parse_audit_output": {
       "debug": 7929856
     },
+    "bootstrap/reject_atoms": {
+      "debug": 6160384
+    },
+    "bootstrap/scan_source": {
+      "debug": 8650752
+    },
     "stdlib/find": {
       "debug": 983040
     },

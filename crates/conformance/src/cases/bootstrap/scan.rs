@@ -882,6 +882,9 @@ fn rustc_differential(
             "{name}: {}",
             String::from_utf8_lossy(&ran.stderr)
         );
+        // PD-08: both roots recurse, so the harness that ran them records
+        // (measuring) or demands (otherwise) their stack bound.
+        crate::stack_bounds::observe(&crate::stack_bounds::subject("bootstrap", name), &binary);
         let stdout = String::from_utf8(ran.stdout).expect("utf8");
         let mut disagreements: Vec<String> = Vec::new();
         let mut printed = 0usize;
