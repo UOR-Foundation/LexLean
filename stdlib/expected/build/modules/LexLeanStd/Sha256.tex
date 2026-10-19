@@ -203,7 +203,7 @@
 \noindent Parameters: \texttt{(message : ByteArray)}.\par
 \noindent Closure 1: binds \texttt{(state)}, captures \texttt{(message, size, total)}.\par
 \noindent Execution: executable, non-escaping closures only.\par
-\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
 \noindent Type: \texttt{Digest}.\par
 \noindent Definition: \texttt{(let size : Nat := (LexLeanRuntime.length (message) : Nat); (let total : Nat := (LexLeanRuntime.multiply ((LexLeanRuntime.quotient ((size + 72)) (64) (0) : Nat)) (64) : Nat); ((LexLeanCollections.iterate ((fun (state : (Prod (Nat) (Digest))) => (((state).1 + 64), compress ((state).2) (load (message) (size) (total) ((state).1))))) ((LexLeanRuntime.quotient (total) (64) (0) : Nat)) ((0, initial)) : (Prod (Nat) (Digest)))).2))}.\par
 \noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
@@ -232,7 +232,7 @@
 \noindent Kind: \texttt{definition}.\par
 \noindent Parameters: \texttt{(message : ByteArray)}.\par
 \noindent Execution: executable, non-escaping closures only.\par
-\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
 \noindent Type: \texttt{ByteArray}.\par
 \noindent Definition: \texttt{hexDigest (sha256 (message))}.\par
 \noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par

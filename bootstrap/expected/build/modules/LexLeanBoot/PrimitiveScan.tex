@@ -280,7 +280,7 @@
 \noindent Parameters: \texttt{(path : ByteArray) (text : ByteArray) (maxAtoms : Nat)}.\par
 \noindent Closure 1: binds \texttt{(state)}, captures \texttt{(maxAtoms, n, path, text)}.\par
 \noindent Execution: executable, non-escaping closures only.\par
-\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
 \noindent Type: \texttt{Except (Rejection) (List (Atom))}.\par
 \noindent Definition: \texttt{(let n : Nat := (LexLeanRuntime.length (text) : Nat); (let final : ScanState := ((LexLeanCollections.iterateUntil ((fun (state : ScanState) => stepScan (path) (text) (n) (maxAtoms) (state))) ((n + 1)) ((\{ cursor := (\{ position := 0, line := 1, column := 1 \} : Cursor), atoms := ([] : List (Atom)), count := 0, error := Option.none \} : ScanState)) : (Prod (ScanState) (Bool)))).1; (match (final).error with | Option.some rejection => Except.error (rejection) | Option.none => Except.ok (reversed (Atom) ((final).atoms)))))}.\par
 \noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
@@ -360,7 +360,7 @@
 \noindent Parameters: \texttt{(path : ByteArray) (atoms : List (Atom)) (forbidden : List (ByteArray))}.\par
 \noindent Closure 1: binds \texttt{(state, atom)}, captures \texttt{(forbidden, path)}.\par
 \noindent Execution: executable, non-escaping closures only.\par
-\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
 \noindent Type: \texttt{Option (Rejection)}.\par
 \noindent Definition: \texttt{(let final : CheckState := (LexLeanCollections.listFold ((fun (state : CheckState) (atom : Atom) => checkStep (path) (forbidden) (state) (atom))) ((\{ context := (\{ awaitingOpen := false, depth := 0, quoted := false, escaped := false, environment := 0, body := 0 \} : Context), previous := Option.none, error := Option.none \} : CheckState)) (atoms) : CheckState); (final).error)}.\par
 \noindent Axiom policy: \texttt{none}.\par
