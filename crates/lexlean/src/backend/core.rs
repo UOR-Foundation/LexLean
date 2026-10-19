@@ -1087,48 +1087,7 @@ fn core_command_ranges(
         split(core, order, owners, start..end, &mut ranges)?;
         start = end;
     }
-    Ok(keep_groups_together(order, ranges))
-}
-
-/// The decoder compiles a mutual group of definitions in the command that adds
-/// its last member, from the rows that command holds, so a group that two
-/// commands share cannot be compiled: the first command compiles members whose
-/// partners are not yet in the environment. Two neighbouring commands that
-/// share a group are therefore one command.
-fn keep_groups_together(
-    order: &[&CoreDeclaration],
-    ranges: Vec<std::ops::Range<usize>>,
-) -> Vec<std::ops::Range<usize>> {
-    let position: BTreeMap<&str, usize> = order
-        .iter()
-        .enumerate()
-        .map(|(index, row)| (row.name.as_str(), index))
-        .collect();
-    let spans: Vec<(usize, usize)> = order
-        .iter()
-        .filter_map(|row| {
-            let members = row.all.as_ref().filter(|all| all.len() > 1)?;
-            let places: Vec<usize> = members
-                .iter()
-                .filter_map(|member| position.get(member.as_str()).copied())
-                .collect();
-            Some((*places.iter().min()?, *places.iter().max()?))
-        })
-        .collect();
-    let mut merged: Vec<std::ops::Range<usize>> = Vec::new();
-    for range in ranges {
-        match merged.last_mut() {
-            Some(last)
-                if spans.iter().any(|(low, high)| {
-                    *low < range.start && *low >= last.start && *high >= range.start
-                }) =>
-            {
-                last.end = range.end;
-            }
-            _ => merged.push(range),
-        }
-    }
-    merged
+    Ok(ranges)
 }
 
 fn append_core_command(
@@ -1651,27 +1610,6 @@ mod tests {
                 declaration("Fixture.compilerImpl", CoreDeclKind::Definition, true),
             ],
         }
-    }
-
-    #[test]
-    fn command_ranges_never_split_a_mutual_group() {
-        let names = ["A", "B", "C", "D", "E"];
-        let mut rows: Vec<CoreDeclaration> = names
-            .iter()
-            .map(|name| declaration(name, CoreDeclKind::Definition, false))
-            .collect();
-        // B and C are one mutual group; the unmerged ranges cut between them.
-        for row in &mut rows[1..3] {
-            row.all = Some(vec!["B".to_owned(), "C".to_owned()]);
-        }
-        let order: Vec<&CoreDeclaration> = rows.iter().collect();
-        let merged = keep_groups_together(&order, vec![0..2, 2..4, 4..5]);
-        assert_eq!(merged, vec![0..4, 4..5]);
-        // A boundary that no group crosses is left alone.
-        assert_eq!(
-            keep_groups_together(&order, vec![0..1, 1..3, 3..5]),
-            vec![0..1, 1..3, 3..5]
-        );
     }
 
     #[test]

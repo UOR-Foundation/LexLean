@@ -1736,10 +1736,8 @@ was verified end to end in a copy: `lexlean lock && lexlean verify` printed
 `verified 8 modules; attestation 16b5350dcfb7abac988cce6d7c8aedb381b77af343de4ce68a4dbf12970626f8`
 after 20 min 17 s, with certificates A, B, and E of every root replayed and audited.
 
-The decoder change (a mutual definition group is never split across commands,
-`backend::core::keep_groups_together`) is covered by the unit test
-`command_ranges_never_split_a_mutual_group`, and by the library itself: without it
-the new library's `patBinders` group is compiled in two commands and Lean rejects it.
+The decoder fix #212 makes (a compiled mutual group is never split across commands) is needed by the new library and is not part of this change: with the #212 branch merged
+in, all 13 modules compile; without it `patBinders`/`patBindersList` are compiled in two commands and Lean rejects them.
 
 ### a list of any length is a term Lean elaborates without binders
 

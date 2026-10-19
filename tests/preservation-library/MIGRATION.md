@@ -410,8 +410,8 @@ Found on the way, each fixed where it was found:
   with its constructors spelled out. A decoder that realizes the same-module recursor is the
   change that would remove the restriction; it is not made here.
 - `compileRows` compiles a mutual group in the command that adds its last member, so a command
-  boundary inside a group failed (`patBinders`/`patBindersList`); `keep_groups_together` in
-  `backend/core.rs` makes neighbouring commands that share a group one command.
+  boundary inside a group failed (`patBinders`/`patBindersList`). This change requires #212, which
+  keeps a compiled mutual group in one command.
 
 Run: the 13 modules compile with no error over the pinned Lean 4.32.1 (`RustCorr` 10 s,
 `RustLemmas` 64 s, `RustMatches` 14 s, `RustSound` 13 s, `Compose` 4 s), the library audit is
