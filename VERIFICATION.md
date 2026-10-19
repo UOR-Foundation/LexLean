@@ -1542,6 +1542,85 @@ certificate A 120,894 bytes in the notation, `COSTS_A` bound about 115.6k
 (5400 + 5879 × 300 / 16), 4.4% under. The other shapes' figures were not
 recorded separately.
 
+### certificate A certifies lists of recursive types and closures of any size (#208)
+
+Three limits of the certificate-A builders, each reproduced on `origin/main`
+(`724a55590`) with `lexlean verify` under the pinned Lean 4.32.1 and accepted
+with the fixes. The reproducers are one-module projects with a
+`production: {effects: [allocation], targets: [rust-std]}` root over
+`Ty = TUnit | TOption Ty | TFn (List Ty) Ty`; they are committed as
+`tests/preservation-certificates/lists`, which `conformance_sp_15` certifies
+under the pinned Lean beside the `production` example and which its Lean-free
+part checks for the chunking below.
+
+| limit | reproducer | refused on `main` | accepted with the fix |
+| --- | --- | --- | --- |
+| (a) a record or single-constructor inductive holding `List Ty` as a root parameter | `structure S2 {ts : List Ty}`, root `probe (x : S2) : Nat = 0` | `LLV7013 … rejected in decodeAndAdd … compiler IR check failed at __enc_0. Error: unknown join point 'block_0'` | verified |
+| (b) `cons` onto a list of a recursive type | root `consTy (h : Ty) (r : List Ty) = cons h r` | `LLV7013 … rejected in __rel_0 … (kernel) application type mismatch LexLeanPreservation.conv_build (LexLeanPreservation.convL_cons …` | verified |
+| (c) a closure whose boundary encoders are split across 64-declaration commands | 70 functions `f_i`, ten `g_j` summing seven of them each, root `closure (t : Ty)` summing the `g_j` (81 functions; a chain of 50 does not reach the boundary, a chain of 70 does) | `LLV7013 … rejected in decodeAndAdd of root … f8: Unknown constant …R80.__items_0 … failed to compile definition … depends on '__enc_0', which is 'noncomputable'` | verified |
+
+The causes, from the generated terms:
+
+- (a) The encoder of a document type outside a recursive group (`S2`, compiled)
+  applies `ListEnc.enc Ty __L_0`, and the bundle `__L_0` is a row with
+  `compiled: false`. The code generator has no code for the bundle and reads the
+  application as a closed term whose join point it cannot find. A bundle that a
+  compiled row applies is now compiled (`Gen::finish`, `compile_applied_bundles`);
+  a bundle only the proofs name keeps `compiled: false`, so no committed record
+  moves.
+- (b) `construct_cons` states the payload of the consed list as `List.map enc
+  tail`. For a list nested in a recursive group the encoding is `Value.list
+  (__items_k l)`, and `__items_k tail` is not `List.map enc tail` for a variable
+  tail (that is an induction, and the bundle gives `items_nil` and `items_cons`
+  only), so the equation `conv_build` needs does not hold by `Eq.refl`. For a
+  nested list the lemma now takes `__items_k tail`, which holds by one unfolding
+  of `__items_k` on a `cons`. After this, the same root's `denote` is refused
+  with (a)'s message: the same bundle rule applies.
+- (c) `group_representatives` of `backend/core.rs` grouped only the partial
+  implementation records. The safe mutual group (`__enc_k`, `__items_k`; `all`
+  names the group) was scheduled as independent nodes, and the runtime compiles
+  a group from the members present in the command, so a command boundary
+  between them compiled `__enc_0` apart from `__items_0`. A safe compiled group
+  of two or more rows is now one scheduling node whose members are emitted
+  contiguously, and a command boundary never falls inside a run of one group
+  (the 64-declaration boundary and the node-count halving both).
+
+No library lemma, no axiom, no `sorry`; nothing under `language/` is edited
+except `lean_backend` in `semantics-1.2.toml`, which moves from `20` to `21`
+because the emitted Lean text of a module with a safe mutual group differs
+(order and chunking): every 1.2 compiler-semantics ID, lock, source, semantic,
+and build ID moves with it, and the maintainer regenerates the records in the
+identity wave. The record gates are therefore red on this branch by design.
+
+Evidence that the statements of every existing root are unchanged, run before
+the bump of `lean_backend` (the bump is the only difference after it):
+`cargo xtask check-golden`, `check-production-export` and `verify-examples` pass
+on the 17 examples including `production` and `production-coverage`; the
+certificate-A notation under `expected/verify/preserve` is byte-identical.
+
+Planted:
+
+- the pre-fix defect of (a), a bundle row of the list-project certificate of
+  `probeStructure` marked `compiled: false` (`conformance_sp_15`): refused by
+  Lean, the output names the join point;
+- a defect in the new payload of (b), the `__items_0` row of the `consTy`
+  certificate renamed to another encoder (`conformance_sp_15`): refused by the
+  kernel;
+- for (c), the group armed in the Lean-free part of `conformance_sp_15` and the
+  unit tests `a_safe_mutual_group_is_one_command` and
+  `the_group_test_is_armed_by_an_ungrouped_pair` of `backend/core.rs`: the same
+  rows with `all` reduced to themselves straddle a command, so the check can
+  fail; and the closure root is refused on `main`, above.
+
+Cost: the closure root dominates `conformance_sp_15`. The 81-function closure
+verifies in about 21 minutes on the machine of this record under load from other
+jobs (user time 17.5 minutes); on `main` a chain of 50 functions took 16. So
+`SP-15` is its own part of `bdd` (`preservation-lists`, the row
+`bdd-preservation-lists`) and no other leg grows.
+
+Found, not fixed here: a left-nested sum of 70 calls makes
+`Program::to_file_bytes` panic (`recursion limit exceeded`), #215.
+
 ### certificate B is kernel-term data and a defect in it is refused
 
 Certificate B of a root is a native core module the compiler builds
