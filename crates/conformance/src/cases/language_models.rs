@@ -1,7 +1,7 @@
 //! Conformance cases for the language-1.2 text components (SPEC.md §17.10,
 //! §17.12): LM-01..LM-03, the tokenizer and its laws; LM-04..LM-06, context
-//! windows and greedy and sampled generation; and LM-13, the laws as LexLean
-//! source.
+//! windows and greedy and sampled generation; LM-07, classifiers; LM-09, no prompt is code; and LM-13,
+//! the laws as LexLean source.
 //!
 //! Every mutation starts from the committed `models` example, whose
 //! `Recognizer` module declares the `utf8_lines` vocabulary artifact
@@ -41,6 +41,9 @@ pub fn run(id: &str) {
         "LM-04" => lm_04(),
         "LM-05" => lm_05(),
         "LM-06" => lm_06(),
+        "LM-07" => lm_07(),
+        "LM-08" => lm_08(),
+        "LM-09" => lm_09(),
         "LM-13" => lm_13(),
         _ => panic!("no language-models conformance case is wired for {id}"),
     }
@@ -662,6 +665,35 @@ fn generating_with(extra: Vec<serde_json::Value>) -> P {
     project
 }
 
+/// Narrow the project's entrypoint from `Main`, which imports every module
+/// of the example, to `Recognizer`, the module these cases extend, and lock
+/// it again. The subject of a text case lives in `Recognizer` and its import
+/// `Glyphs`; verifying `Main` would verify the rest of the example once more
+/// for each case.
+fn narrowed(project: &P) {
+    let path = project.root.join("lexlean.toml");
+    let config = std::fs::read_to_string(path.as_std_path()).expect("config");
+    let narrowed = config.replace(
+        "entrypoints = [\"src/Main.lex.tex\"]",
+        "entrypoints = [\"src/Recognizer.lex.tex\"]",
+    );
+    assert_ne!(config, narrowed, "the example's entrypoint is `Main`");
+    std::fs::write(path.as_std_path(), narrowed).expect("narrowed config");
+    project.relock();
+}
+
+/// Verify a narrowed project with real Lean.
+fn verified(project: &P) -> lexlean::VerifiedProject {
+    narrowed(project);
+    support::verify_ok(project)
+}
+
+/// Verify a narrowed project with real Lean, expecting the code.
+fn verification_fails(project: &P, code: &str) -> lexlean::LexLeanError {
+    narrowed(project);
+    project.verify_fails_with(code)
+}
+
 /// A theorem `left = right` closed by reflexivity: Lean evaluates both sides.
 fn evaluates(name: &str, left: serde_json::Value, right: serde_json::Value) -> serde_json::Value {
     json!({
@@ -1081,4 +1113,1178 @@ fn lm_06() {
     for fact in ["drawFrom1", "drawFrom48"] {
         assert_ok(&rows, &format!("{LEAN_MODULE}.{fact}"));
     }
+}
+
+// ---------------------------------------------------------------------------
+// LM-07: text classifiers.
+
+/// The number of distinct token ids a feature vector counts, as a term: the
+/// fold over the features that adds one for each id that occurs.
+fn distinct_ids(features: serde_json::Value) -> serde_json::Value {
+    let var = |name: &str| json!({"kind": "var", "name": name});
+    json!({
+        "kind": "primitive",
+        "operation": "list_fold",
+        "arguments": [
+            {
+                "kind": "lambda",
+                "parameters": [
+                    {"name": "count", "type": {"kind": "nat"}},
+                    {"name": "seen", "type": {"kind": "int"}},
+                ],
+                "captures": [],
+                "body": {
+                    "kind": "if",
+                    "condition": {
+                        "kind": "primitive",
+                        "operation": "less_than",
+                        "arguments": [integer("int", 0), var("seen")],
+                        "result": {"kind": "bool"},
+                    },
+                    "then_value": {
+                        "kind": "add",
+                        "left": var("count"),
+                        "right": {"kind": "nat", "value": "1"},
+                    },
+                    "else_value": var("count"),
+                },
+            },
+            {"kind": "nat", "value": "0"},
+            features,
+        ],
+        "result": {"kind": "nat"},
+    })
+}
+
+/// A stateless model `name` from `list int` to `nat`: the number of distinct
+/// token ids a text has. Its contract's postcondition states that the label
+/// is that count, the realization computes it, and the theorem that
+/// discharges the postcondition is closed by reflexivity, so the model
+/// needs no runtime check.
+fn variety(name: &str) -> Vec<serde_json::Value> {
+    let var = |name: &str| json!({"kind": "var", "name": name});
+    let features = || list_type(json!({"kind": "int"}));
+    let nat = || json!({"kind": "nat"});
+    vec![
+        json!({
+            "kind": "definition",
+            "name": format!("{name}Count"),
+            "parameters": [
+                {"name": "features", "type": features()},
+                {"name": "label", "type": nat()},
+            ],
+            "result": {"kind": "prop"},
+            "body": {"kind": "eq", "left": var("label"), "right": distinct_ids(var("features"))},
+            "axioms": ["propext"],
+        }),
+        json!({
+            "kind": "contract",
+            "name": format!("{name}Contract"),
+            "input": {"name": "features", "type": features()},
+            "output": {"name": "label", "type": nat()},
+            "postcondition": member(&format!("{name}Count")),
+        }),
+        json!({
+            "kind": "realization",
+            "name": name,
+            "input": {"name": "features", "type": features()},
+            "output": nat(),
+            "descriptor": {"kind": "deterministic", "body": distinct_ids(var("features"))},
+            "axioms": ["propext"],
+        }),
+        json!({
+            "kind": "theorem",
+            "name": format!("{name}_count"),
+            "parameters": [{"name": "features", "type": features()}],
+            "statement": call(&format!("{name}Count"), vec![var("features"), call(name, vec![var("features")])]),
+            "proof": {"kind": "reflexivity"},
+            "axioms": ["propext"],
+        }),
+        json!({
+            "kind": "evidence",
+            "name": format!("{name}Evidence"),
+            "claims": [{"kind": "satisfies_contract", "theorem": member(&format!("{name}_count"))}],
+            "contract": {"member": member(&format!("{name}Contract"))},
+            "realization": {"member": member(name)},
+            "axioms": ["propext"],
+        }),
+        json!({
+            "kind": "model",
+            "name": format!("{name}Model"),
+            "contract": {"member": member(&format!("{name}Contract"))},
+            "realization": {"member": member(name)},
+            "evidence": [{"member": member(&format!("{name}Evidence"))}],
+            "axioms": ["propext"],
+        }),
+    ]
+}
+
+/// One text classifier declaration as the closed schema writes it.
+fn classifier(name: &str, tokenizer: &str, model: &str) -> serde_json::Value {
+    json!({
+        "kind": "text_classifier",
+        "name": name,
+        "tokenizer": member(tokenizer),
+        "model": {"member": member(model)},
+        "axioms": ["Classical.choice", "Quot.sound", "propext"],
+    })
+}
+
+/// The tokenized example with the `Variety` model and two classifiers over
+/// it: `Words` over the `longest_match` tokenizer `Digits`, whose digit
+/// names are single tokens, and `Letters` over the `byte_level` tokenizer
+/// `Raw`, which sees every byte.
+fn classifying() -> P {
+    let project = tokenized();
+    let mut data = module_data(&project, MODULE);
+    let declarations = data["declarations"].as_array_mut().expect("declarations");
+    declarations.extend(variety("Variety"));
+    declarations.push(classifier("Words", "Digits", "VarietyModel"));
+    declarations.push(classifier("Letters", "Raw", "VarietyModel"));
+    write_module_data(&project, MODULE, &data);
+    project
+}
+
+/// A natural number literal term.
+fn natural(value: u64) -> serde_json::Value {
+    json!({"kind": "nat", "value": value.to_string()})
+}
+
+/// LM-07 (§17.12): a text classifier is a closed declaration over a prior
+/// tokenizer and a prior stateless model from `list int`, elaborating to
+/// `features`, `classifyTokens`, and `classify`, with its laws generated and
+/// kernel-checked.
+fn lm_07() {
+    let project = classifying();
+    project.check_ok();
+    let snapshot = snapshot(&project);
+    for name in ["Words", "Letters"] {
+        let row = elaboration(&snapshot, MODULE, name);
+        assert_eq!(
+            names(row.declarations()),
+            ["features", "classifyTokens", "classify"].map(|member| format!("{name}.{member}")),
+            "{name} elaborates to its features, token classification, and text classification"
+        );
+        assert_eq!(
+            names(row.theorems()),
+            ["features_width", "features_total", "features_fit"].map(|law| format!("{name}.{law}")),
+            "{name} generates its three laws"
+        );
+        let results: Vec<String> = row
+            .declarations()
+            .iter()
+            .map(|declaration| {
+                declaration["result"]["kind"]
+                    .as_str()
+                    .expect("kind")
+                    .to_owned()
+            })
+            .collect();
+        assert_eq!(
+            results,
+            ["list", "nat", "nat"],
+            "{name}: the features are integers and the label is the model's output"
+        );
+        let inputs: Vec<String> = row
+            .declarations()
+            .iter()
+            .map(|declaration| {
+                declaration["parameters"][0]["type"]["kind"]
+                    .as_str()
+                    .expect("kind")
+                    .to_owned()
+            })
+            .collect();
+        assert_eq!(
+            inputs,
+            ["list", "list", "string"],
+            "{name}: a text reaches the model only as tokens"
+        );
+    }
+    let build = support::rendered(&project);
+    let lean = support::lean_text(&build, MODULE);
+    assert!(
+        lean.contains("LexLeanText.features"),
+        "the generated Lean applies the library's features"
+    );
+    for lemma in [
+        "LexLeanText.features_width",
+        "LexLeanText.features_fit",
+        "LexLeanText.features_total_text ",
+        "LexLeanText.features_total_text_bytes",
+    ] {
+        assert!(lean.contains(lemma), "the generated Lean proves by {lemma}");
+    }
+    assert_eq!(
+        lean.matches(text_laws::IMPORT_LINE).count(),
+        1,
+        "the module imports the laws library once"
+    );
+    assert!(
+        !lean.contains("def features") && !lean.contains("namespace LexLeanText"),
+        "no feature law is spliced into the generated module"
+    );
+    let tex = support::tex_text(&build, MODULE);
+    assert!(
+        tex.contains("Tokenizer") && tex.contains("Model") && tex.contains("Words"),
+        "the document states the tokenizer and the model"
+    );
+    // The closed interface: the tokenizer must be a prior tokenizer, the
+    // model a stateless model of `list int` with every check discharged.
+    let edited = |edit: fn(&mut serde_json::Value)| {
+        let project = classifying();
+        edit_declaration(&project, MODULE, "Words", edit);
+        project
+    };
+    refused(
+        &edited(|classifier| classifier["tokenizer"] = member(VOCABULARY)),
+        "LLT4006",
+        "is not a prior tokenizer",
+    );
+    refused(
+        &edited(|classifier| classifier["model"] = json!({"member": member("Prefer1Model")})),
+        "LLT4006",
+        "is not a prior model",
+    );
+    refused(
+        &edited(|classifier| classifier["axioms"] = json!(["propext", "Quot.sound"])),
+        "LLT4006",
+        "axiom policy is not sorted",
+    );
+    edited(|classifier| classifier["unit"] = json!(1)).check_fails_with("LLT4001");
+    // A model from `list uint32` is not a model of features.
+    let wrong_input = tokenized();
+    let mut data = module_data(&wrong_input, MODULE);
+    let declarations = data["declarations"].as_array_mut().expect("declarations");
+    declarations.extend(scorer("Prefer1", &[0, 5, 1]));
+    declarations.push(classifier("Words", "Digits", "Prefer1Model"));
+    write_module_data(&wrong_input, MODULE, &data);
+    refused(&wrong_input, "LLT4006", "does not take `list int`");
+    // A model whose postcondition its evidence leaves open needs a runtime
+    // check on every application, which a classifier does not make: the
+    // example's `RawDigitModel` is checked at its call sites.
+    let unproved = tokenized();
+    let mut data = module_data(&unproved, MODULE);
+    data["declarations"]
+        .as_array_mut()
+        .expect("declarations")
+        .push(classifier("Words", "Digits", "RawDigitModel"));
+    write_module_data(&unproved, MODULE, &data);
+    refused(&unproved, "LLT4006", "needs runtime checks");
+    // A classifier maps one feature vector to its label: a model with a state,
+    // such as the window model that LM-08 composes, is refused.
+    let stateful = composing();
+    let mut data = module_data(&stateful, MODULE);
+    data["declarations"]
+        .as_array_mut()
+        .expect("declarations")
+        .push(classifier("Remembering", "Digits", "RecentModel"));
+    write_module_data(&stateful, MODULE, &data);
+    refused(&stateful, "LLT4006", "is stateful");
+    if !support::lean_backed("LM-07") {
+        return;
+    }
+    let _guard = support::env_shared();
+    let rows = attested(&verified(&project));
+    for name in ["Words", "Letters"] {
+        for law in ["features_width", "features_total", "features_fit"] {
+            assert_ok(&rows, &format!("{LEAN_MODULE}.{name}.{law}"));
+        }
+    }
+    // The kernel evaluates the classification of a token list: the digit
+    // name `one` is the single token 257 of the `longest_match` tokenizer
+    // and the three bytes 111, 110, 101 of the `byte_level` one, so the two
+    // classifiers count one and three distinct ids; 111 repeated is one id.
+    let facts = vec![
+        evaluates(
+            "wordsEmpty",
+            call("Words.classifyTokens", vec![token_literal(&[])]),
+            natural(0),
+        ),
+        evaluates(
+            "wordsOne",
+            call("Words.classifyTokens", vec![token_literal(&[257])]),
+            natural(1),
+        ),
+        evaluates(
+            "lettersOne",
+            call(
+                "Letters.classifyTokens",
+                vec![token_literal(&[111, 110, 101])],
+            ),
+            natural(3),
+        ),
+        evaluates(
+            "lettersTwice",
+            call("Letters.classifyTokens", vec![token_literal(&[111, 111])]),
+            natural(1),
+        ),
+    ];
+    let evaluated = classifying();
+    let mut data = module_data(&evaluated, MODULE);
+    data["declarations"]
+        .as_array_mut()
+        .expect("declarations")
+        .extend(facts.into_iter().map(|mut fact| {
+            fact["axioms"] = json!(["propext"]);
+            fact
+        }));
+    write_module_data(&evaluated, MODULE, &data);
+    evaluated.check_ok();
+    let rows = attested(&verified(&evaluated));
+    for fact in ["wordsEmpty", "wordsOne", "lettersOne", "lettersTwice"] {
+        assert_ok(&rows, &format!("{LEAN_MODULE}.{fact}"));
+    }
+    // A wrong claim about a classification fails verification.
+    let wrong = classifying();
+    let mut data = module_data(&wrong, MODULE);
+    data["declarations"]
+        .as_array_mut()
+        .expect("declarations")
+        .push(evaluates(
+            "lettersWrong",
+            call(
+                "Letters.classifyTokens",
+                vec![token_literal(&[111, 110, 101])],
+            ),
+            natural(1),
+        ));
+    write_module_data(&wrong, MODULE, &data);
+    wrong.check_ok();
+    verification_fails(&wrong, "LLV7002");
+    // The policy is exact over the elaboration: a classifier whose laws
+    // observe an axiom its policy omits fails the audit.
+    let understated = classifying();
+    edit_declaration(&understated, MODULE, "Words", |classifier| {
+        classifier["axioms"] = json!(["propext"]);
+    });
+    understated.check_ok();
+    let error = verification_fails(&understated, "LLV7005");
+    assert!(
+        error.to_string().contains("Words"),
+        "the audit names the classifier: {error}"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// LM-09: no prompt is code.
+
+/// What a primitive does with `string` or `bytes` operands, as SPEC.md §17.4
+/// types it: `text` says whether any operand may be a `string` or `bytes`
+/// value, and `result` classifies what it returns. The table is the
+/// audit's reviewed classification: an operation absent from it is refused,
+/// so a primitive added to the language must be classified before the
+/// registries may name it.
+const PRIMITIVES: [(&str, bool, &str); 56] = [
+    ("append", true, "bytes_or_list"),
+    ("bit_and", false, "fixed_width"),
+    ("bit_not", false, "fixed_width"),
+    ("bit_or", false, "fixed_width"),
+    ("bit_xor", false, "fixed_width"),
+    ("checked_add", false, "option_number"),
+    ("checked_convert", false, "option_number"),
+    ("checked_multiply", false, "option_number"),
+    ("checked_negate", false, "option_number"),
+    ("checked_quotient", false, "option_number"),
+    ("checked_subtract", false, "option_number"),
+    ("compare_bytes", true, "ordering"),
+    ("equal", true, "bool"),
+    ("format_decimal", false, "string"),
+    ("graph_reachable", false, "container"),
+    ("graph_successors", false, "container"),
+    ("graph_topological", false, "container"),
+    ("index", true, "option_element"),
+    ("iterate", false, "value"),
+    ("iterate_until", false, "value"),
+    ("join", true, "string"),
+    ("length", true, "nat"),
+    ("less_than", false, "bool"),
+    ("list_fold", false, "value"),
+    ("map_contains", true, "bool"),
+    ("map_entries", false, "container"),
+    ("map_fold", false, "value"),
+    ("map_insert", true, "container"),
+    ("map_keys", false, "container"),
+    ("map_lookup", true, "option_element"),
+    ("map_remove", true, "container"),
+    ("map_size", false, "nat"),
+    ("map_values", false, "container"),
+    ("multiply", false, "number"),
+    ("negate", false, "number"),
+    ("parse_decimal", true, "option_number"),
+    ("quotient", false, "number"),
+    ("remainder", false, "number"),
+    ("set_contains", true, "bool"),
+    ("set_difference", false, "container"),
+    ("set_elements", false, "container"),
+    ("set_fold", false, "value"),
+    ("set_insert", true, "container"),
+    ("set_intersection", false, "container"),
+    ("set_remove", true, "container"),
+    ("set_size", false, "nat"),
+    ("set_union", false, "container"),
+    ("shift_left", false, "option_number"),
+    ("shift_right", false, "option_number"),
+    ("slice", true, "option_bytes"),
+    ("split_exact", true, "list_string"),
+    ("subtract", false, "number"),
+    ("to_int", false, "number"),
+    ("to_nat", false, "number"),
+    ("utf8_decode", true, "option_string"),
+    ("utf8_encode", true, "bytes"),
+];
+
+/// Every result class that is data. A result that is code — a function, a
+/// term, a declaration, or source — is in none of them.
+const DATA_RESULTS: [&str; 15] = [
+    "bool",
+    "bytes",
+    "bytes_or_list",
+    "container",
+    "fixed_width",
+    "list_string",
+    "nat",
+    "number",
+    "option_bytes",
+    "option_element",
+    "option_number",
+    "option_string",
+    "ordering",
+    "string",
+    "value",
+];
+
+/// The text declarations of the closed schema.
+const TEXT_KINDS: [&str; 4] = [
+    "tokenizer",
+    "context_window",
+    "text_generator",
+    "text_classifier",
+];
+
+/// The operations of the primitive node of a schema.
+fn schema_primitives(schema: &serde_json::Value) -> Result<Vec<String>, String> {
+    let terms = schema["$defs"]["term"]["oneOf"]
+        .as_array()
+        .ok_or("the schema has no term variants")?;
+    let primitive = terms
+        .iter()
+        .find(|term| term["properties"]["kind"]["const"] == "primitive")
+        .ok_or("the schema has no primitive node")?;
+    primitive["properties"]["operation"]["enum"]
+        .as_array()
+        .ok_or("the primitive node has no operation enumeration")?
+        .iter()
+        .map(|operation| {
+            operation
+                .as_str()
+                .map(str::to_owned)
+                .ok_or_else(|| "a primitive operation is not a name".to_owned())
+        })
+        .collect()
+}
+
+/// The operations the production registry lists as primitives.
+fn production_primitives(registry: &toml::Value) -> Result<Vec<String>, String> {
+    registry["construct"]
+        .as_array()
+        .ok_or("the production registry has no constructs")?
+        .iter()
+        .filter_map(|row| row["key"].as_str())
+        .filter_map(|key| key.strip_prefix("primitive."))
+        .map(|operation| Ok(operation.to_owned()))
+        .collect()
+}
+
+/// Whether a schema node states a free `string`: a string type that no
+/// pattern, enumeration, or constant closes, found through the node and
+/// whatever it references. A free string is text a declaration could carry
+/// as data of its own; an identifier (a pattern) is not.
+fn free_string(
+    schema: &serde_json::Value,
+    node: &serde_json::Value,
+    seen: &mut Vec<String>,
+) -> bool {
+    if let Some(reference) = node["$ref"].as_str() {
+        if seen.iter().any(|visited| visited == reference) {
+            return false;
+        }
+        seen.push(reference.to_owned());
+        let Some(target) = reference
+            .strip_prefix("#/$defs/")
+            .map(|name| &schema["$defs"][name])
+        else {
+            return true;
+        };
+        return free_string(schema, target, seen);
+    }
+    if node["type"] == "string" {
+        return node.get("pattern").is_none()
+            && node.get("enum").is_none()
+            && node.get("const").is_none();
+    }
+    let mut children: Vec<&serde_json::Value> = Vec::new();
+    for key in ["oneOf", "anyOf", "allOf"] {
+        if let Some(branches) = node[key].as_array() {
+            children.extend(branches);
+        }
+    }
+    if let Some(properties) = node["properties"].as_object() {
+        children.extend(properties.values());
+    }
+    if node["items"].is_object() {
+        children.push(&node["items"]);
+    }
+    children
+        .into_iter()
+        .any(|child| free_string(schema, child, &mut seen.clone()))
+}
+
+/// The audit: the registries name one set of operations, every operation is
+/// classified, every operation that may take text returns data, and no text
+/// declaration states a free string. Returns the number of operations that
+/// take text, or the first violation with its name.
+fn audit_no_prompt_as_code(
+    schema: &serde_json::Value,
+    production: &toml::Value,
+    classified: &[(&str, bool, &str)],
+) -> Result<usize, String> {
+    let mut registered = schema_primitives(schema)?;
+    registered.sort();
+    let mut listed = production_primitives(production)?;
+    listed.sort();
+    if let Some(operation) = registered.iter().find(|name| !listed.contains(name)) {
+        return Err(format!(
+            "primitive `{operation}` is in the schema enumeration and not in the production registry"
+        ));
+    }
+    if let Some(operation) = listed.iter().find(|name| !registered.contains(name)) {
+        return Err(format!(
+            "primitive `{operation}` is in the production registry and not in the schema enumeration"
+        ));
+    }
+    for operation in &registered {
+        if !classified.iter().any(|(name, _, _)| name == operation) {
+            return Err(format!(
+                "primitive `{operation}` is registered and not classified by the audit"
+            ));
+        }
+    }
+    let mut taking_text = 0;
+    for (operation, text, result) in classified {
+        if !registered.iter().any(|name| name == operation) {
+            return Err(format!(
+                "classified primitive `{operation}` is not registered"
+            ));
+        }
+        if *text {
+            taking_text += 1;
+            if !DATA_RESULTS.contains(result) {
+                return Err(format!(
+                    "primitive `{operation}` takes a string or bytes operand and returns `{result}`, which is not data"
+                ));
+            }
+        }
+    }
+    let declarations = schema["$defs"]["declaration"]["oneOf"]
+        .as_array()
+        .ok_or("the schema has no declarations")?;
+    let mut text_declarations = 0;
+    for declaration in declarations {
+        let Some(kind) = declaration["properties"]["kind"]["const"].as_str() else {
+            continue;
+        };
+        if !TEXT_KINDS.contains(&kind) {
+            continue;
+        }
+        text_declarations += 1;
+        let properties = declaration["properties"]
+            .as_object()
+            .ok_or_else(|| format!("text declaration `{kind}` has no members"))?;
+        for (member, node) in properties {
+            if free_string(schema, node, &mut Vec::new()) {
+                return Err(format!(
+                    "text declaration `{kind}` member `{member}` is a free string"
+                ));
+            }
+        }
+    }
+    if text_declarations != TEXT_KINDS.len() {
+        return Err(format!(
+            "the schema states {text_declarations} of the {} text declarations",
+            TEXT_KINDS.len()
+        ));
+    }
+    Ok(taking_text)
+}
+
+/// LM-09 (§17.12): no operation of the closed language maps a `string` or
+/// `bytes` operand to a function, a term, or source, and no text declaration
+/// states a string; a planted operation or member of that shape is caught
+/// with its name.
+fn lm_09() {
+    let root = repo_root();
+    let read = |path: &str| {
+        std::fs::read_to_string(root.join(path).as_std_path())
+            .unwrap_or_else(|error| panic!("{path} is readable: {error}"))
+    };
+    let schema: serde_json::Value =
+        serde_json::from_str(&read("schemas/semantic-module-v2.schema.json")).expect("schema");
+    let production: toml::Value = read("language/production-1.2.toml")
+        .parse()
+        .expect("registry");
+    let taking_text = audit_no_prompt_as_code(&schema, &production, &PRIMITIVES)
+        .unwrap_or_else(|reason| panic!("the audit holds: {reason}"));
+    assert!(
+        taking_text > 0,
+        "the audit is armed: some operations take text"
+    );
+    // Every registered operation is a variant of the compiler's primitive
+    // enumeration, so the schema names no operation the compiler lacks.
+    for operation in schema_primitives(&schema).expect("operations") {
+        serde_json::from_value::<lexlean::SnapshotPrimitive>(json!(operation))
+            .unwrap_or_else(|error| panic!("`{operation}` is a compiler primitive: {error}"));
+    }
+    // The audit reads every text member of every text declaration: a
+    // `prompt` member of type string on any of them is caught by name.
+    let declarations = schema["$defs"]["declaration"]["oneOf"]
+        .as_array()
+        .expect("declarations");
+    for kind in TEXT_KINDS {
+        let index = declarations
+            .iter()
+            .position(|declaration| declaration["properties"]["kind"]["const"] == kind)
+            .expect("a text declaration");
+        let mut planted = schema.clone();
+        planted["$defs"]["declaration"]["oneOf"][index]["properties"]["prompt"] =
+            json!({"type": "string"});
+        let error = audit_no_prompt_as_code(&planted, &production, &PRIMITIVES)
+            .expect_err("a free string member is caught");
+        assert!(
+            error.contains(kind) && error.contains("prompt") && error.contains("free string"),
+            "the audit names {kind} and its member: {error}"
+        );
+    }
+    // A string reached through a reference is as free as one stated inline.
+    let mut referenced = schema.clone();
+    referenced["$defs"]["freeText"] = json!({"type": "string"});
+    let index = declarations
+        .iter()
+        .position(|declaration| declaration["properties"]["kind"]["const"] == "text_classifier")
+        .expect("the classifier");
+    referenced["$defs"]["declaration"]["oneOf"][index]["properties"]["prompt"] =
+        json!({"$ref": "#/$defs/freeText"});
+    assert!(
+        audit_no_prompt_as_code(&referenced, &production, &PRIMITIVES)
+            .expect_err("a referenced free string is caught")
+            .contains("prompt"),
+        "a reference to a free string is a free string"
+    );
+    // A planted eval-shaped operation is caught in each registry and in the
+    // classification, by name.
+    let mut evaluating = schema.clone();
+    let terms = evaluating["$defs"]["term"]["oneOf"]
+        .as_array_mut()
+        .expect("terms");
+    let primitive = terms
+        .iter_mut()
+        .find(|term| term["properties"]["kind"]["const"] == "primitive")
+        .expect("the primitive node");
+    primitive["properties"]["operation"]["enum"]
+        .as_array_mut()
+        .expect("operations")
+        .push(json!("eval_string"));
+    let error = audit_no_prompt_as_code(&evaluating, &production, &PRIMITIVES)
+        .expect_err("a schema operation unknown to the production registry is caught");
+    assert!(error.contains("eval_string"), "{error}");
+    let mut registry = production.clone();
+    let mut row = toml::Table::new();
+    row.insert("key".to_owned(), "primitive.eval_string".into());
+    row.insert("disposition".to_owned(), "runtime".into());
+    registry["construct"]
+        .as_array_mut()
+        .expect("constructs")
+        .push(toml::Value::Table(row));
+    let error = audit_no_prompt_as_code(&schema, &registry, &PRIMITIVES)
+        .expect_err("a production row unknown to the schema is caught");
+    assert!(error.contains("eval_string"), "{error}");
+    let both = {
+        let mut table = PRIMITIVES.to_vec();
+        table.push(("eval_string", true, "function"));
+        table
+    };
+    let error = audit_no_prompt_as_code(&evaluating, &registry, &both)
+        .expect_err("a registered operation from a string to a function is caught");
+    assert!(
+        error.contains("eval_string") && error.contains("not data"),
+        "the audit names the operation and its result: {error}"
+    );
+    // An operation the audit has not classified is refused until it is.
+    let error = audit_no_prompt_as_code(&evaluating, &registry, &PRIMITIVES)
+        .expect_err("an unclassified operation is caught");
+    assert!(error.contains("eval_string"), "{error}");
+    // Removing a classification is caught as well.
+    let error = audit_no_prompt_as_code(&schema, &production, &PRIMITIVES[1..])
+        .expect_err("a missing classification is caught");
+    assert!(error.contains("append"), "{error}");
+}
+
+// ---------------------------------------------------------------------------
+// LM-08: composition and adapters.
+
+fn option_type(value: serde_json::Value) -> serde_json::Value {
+    json!({"kind": "option", "value": value})
+}
+
+fn var(name: &str) -> serde_json::Value {
+    json!({"kind": "var", "name": name})
+}
+
+fn length_of(list: serde_json::Value) -> serde_json::Value {
+    json!({
+        "kind": "primitive",
+        "operation": "length",
+        "arguments": [list],
+        "result": {"kind": "nat"},
+    })
+}
+
+fn library(function: &str) -> serde_json::Value {
+    json!({"module": "LexLeanText", "name": function})
+}
+
+/// The tokenized, windowed, generating example with a stateful model
+/// `RecentModel` over the window `Last2`, the classifiers `Words` and
+/// `Letters`, and everything composed from them (§17.12, *Text components*
+/// rule 9).
+///
+/// `RecentModel` pushes each input token through `Last2.push`, keeps the
+/// context the push returns (or the old one when the push refuses), and
+/// outputs the push itself. Its contract's postcondition states that the
+/// pushed context fits the window, which is the statement of the window's
+/// generated `push_bounded`, so `push_bounded` is the whole proof of its
+/// `satisfies_contract` evidence. `RecentStream` scans it over a list of
+/// tokens; `ClassifyText` and `GenerateText` are the adapters.
+fn composing() -> P {
+    let project = generating();
+    let mut data = module_data(&project, MODULE);
+    let declarations = data["declarations"].as_array_mut().expect("declarations");
+    declarations.extend(variety("Variety"));
+    declarations.push(classifier("Words", "Digits", "VarietyModel"));
+    declarations.push(classifier("Letters", "Raw", "VarietyModel"));
+    let pushed = option_type(token_list());
+    let policy = ["Quot.sound", "propext"];
+    declarations.push(json!({
+        "kind": "definition",
+        "name": "RecentPost",
+        "parameters": [
+            {"name": "context", "type": token_list()},
+            {"name": "token", "type": {"kind": "uint32"}},
+            {"name": "updated", "type": token_list()},
+            {"name": "pushed", "type": pushed.clone()},
+        ],
+        "result": {"kind": "prop"},
+        "body": {
+            "kind": "eq",
+            "left": {
+                "kind": "call",
+                "function": library("fitsOption"),
+                "arguments": [call("Last2.capacity", vec![]), var("pushed")],
+            },
+            "right": {"kind": "bool", "value": true},
+        },
+    }));
+    declarations.push(json!({
+        "kind": "contract",
+        "name": "RecentContract",
+        "input": {"name": "token", "type": {"kind": "uint32"}},
+        "output": {"name": "pushed", "type": pushed.clone()},
+        "state": {"name": "context", "type": token_list(), "next": "updated"},
+        "postcondition": member("RecentPost"),
+    }));
+    declarations.push(json!({
+        "kind": "realization",
+        "name": "RecentStep",
+        "input": {"name": "token", "type": {"kind": "uint32"}},
+        "output": pushed.clone(),
+        "state": {
+            "name": "context",
+            "type": token_list(),
+            "initial": {"kind": "nil", "element": {"kind": "uint32"}},
+        },
+        "descriptor": {
+            "kind": "deterministic",
+            "body": {
+                "kind": "let",
+                "binder": {"name": "next", "type": pushed.clone()},
+                "value": call("Last2.push", vec![var("context"), var("token")]),
+                "body": pair(
+                    json!({
+                        "kind": "match",
+                        "scrutinee": var("next"),
+                        "branches": [
+                            {"constructor": member("Option.none"), "binders": [], "body": var("context")},
+                            {"constructor": member("Option.some"), "binders": ["kept"], "body": var("kept")},
+                        ],
+                    }),
+                    var("next"),
+                ),
+            },
+        },
+    }));
+    declarations.push(json!({
+        "kind": "theorem",
+        "name": "recent_bounded",
+        "parameters": [
+            {"name": "context", "type": token_list()},
+            {"name": "token", "type": {"kind": "uint32"}},
+        ],
+        "statement": call("RecentPost", vec![
+            var("context"),
+            var("token"),
+            json!({"kind": "first", "value": call("RecentStep", vec![var("context"), var("token")])}),
+            json!({"kind": "second", "value": call("RecentStep", vec![var("context"), var("token")])}),
+        ]),
+        "proof": {
+            "kind": "apply",
+            "theorem": member("Last2.push_bounded"),
+            "arguments": [var("context"), var("token")],
+        },
+        "axioms": policy,
+    }));
+    declarations.push(json!({
+        "kind": "evidence",
+        "name": "RecentEvidence",
+        "claims": [{"kind": "satisfies_contract", "theorem": member("recent_bounded")}],
+        "contract": {"member": member("RecentContract")},
+        "realization": {"member": member("RecentStep")},
+        "axioms": policy,
+    }));
+    declarations.push(json!({
+        "kind": "model",
+        "name": "RecentModel",
+        "contract": {"member": member("RecentContract")},
+        "realization": {"member": member("RecentStep")},
+        "evidence": [{"member": member("RecentEvidence")}],
+    }));
+    let sizes = list_type(pushed.clone());
+    declarations.push(json!({
+        "kind": "definition",
+        "name": "RecentStreamPost",
+        "parameters": [
+            {"name": "tokens", "type": token_list()},
+            {"name": "pushes", "type": sizes.clone()},
+        ],
+        "result": {"kind": "prop"},
+        "body": {
+            "kind": "eq",
+            "left": length_of(var("pushes")),
+            "right": length_of(var("tokens")),
+        },
+    }));
+    declarations.push(json!({
+        "kind": "contract",
+        "name": "RecentStreamContract",
+        "input": {"name": "tokens", "type": token_list()},
+        "output": {"name": "pushes", "type": sizes.clone()},
+        "postcondition": member("RecentStreamPost"),
+    }));
+    declarations.push(json!({
+        "kind": "realization",
+        "name": "RecentStream",
+        "input": {"name": "tokens", "type": token_list()},
+        "output": sizes,
+        "descriptor": {
+            "kind": "composite",
+            "form": {
+                "kind": "scan",
+                "junction": {"kind": "unconditional"},
+                "stage": {"member": member("RecentModel")},
+            },
+        },
+    }));
+    declarations.push(json!({
+        "kind": "model",
+        "name": "RecentStreamModel",
+        "contract": {"member": member("RecentStreamContract")},
+        "realization": {"member": member("RecentStream")},
+    }));
+    // The adapters: models over `string` whose realizations apply the
+    // elaborated `classify` and `generate`, and whose postconditions state
+    // laws the elaborations generate, so that the laws are their proofs.
+    let text_type = || json!({"kind": "string"});
+    let encoded = || call("Digits.encodeText", vec![var("text")]);
+    let adapted = json!({
+        "kind": "prop_and",
+        "left": {
+            "kind": "eq",
+            "left": length_of(call("Words.features", vec![encoded()])),
+            "right": call("Digits.size", vec![]),
+        },
+        "right": {
+            "kind": "eq",
+            "left": var("label"),
+            "right": call("Words.classify", vec![var("text")]),
+        },
+    });
+    declarations.push(json!({
+        "kind": "definition",
+        "name": "Adapted",
+        "parameters": [
+            {"name": "text", "type": text_type()},
+            {"name": "label", "type": {"kind": "nat"}},
+        ],
+        "result": {"kind": "prop"},
+        "body": adapted,
+        "axioms": ["propext"],
+    }));
+    declarations.push(json!({
+        "kind": "contract",
+        "name": "ClassifyTextContract",
+        "input": {"name": "text", "type": text_type()},
+        "output": {"name": "label", "type": {"kind": "nat"}},
+        "postcondition": member("Adapted"),
+    }));
+    declarations.push(json!({
+        "kind": "realization",
+        "name": "ClassifyText",
+        "input": {"name": "text", "type": text_type()},
+        "output": {"kind": "nat"},
+        "descriptor": {
+            "kind": "deterministic",
+            "body": call("Words.classify", vec![var("text")]),
+        },
+        "axioms": ["propext"],
+    }));
+    declarations.push(json!({
+        "kind": "theorem",
+        "name": "classify_text_adapted",
+        "parameters": [{"name": "text", "type": text_type()}],
+        "statement": call("Adapted", vec![var("text"), call("ClassifyText", vec![var("text")])]),
+        "proof": {
+            "kind": "constructor",
+            "branches": [
+                {
+                    "kind": "apply",
+                    "theorem": member("Words.features_width"),
+                    "arguments": [encoded()],
+                },
+                {"kind": "reflexivity"},
+            ],
+        },
+        "axioms": ["propext"],
+    }));
+    declarations.push(json!({
+        "kind": "evidence",
+        "name": "ClassifyTextEvidence",
+        "claims": [{"kind": "satisfies_contract", "theorem": member("classify_text_adapted")}],
+        "contract": {"member": member("ClassifyTextContract")},
+        "realization": {"member": member("ClassifyText")},
+        "axioms": ["propext"],
+    }));
+    declarations.push(json!({
+        "kind": "model",
+        "name": "ClassifyTextModel",
+        "contract": {"member": member("ClassifyTextContract")},
+        "realization": {"member": member("ClassifyText")},
+        "evidence": [{"member": member("ClassifyTextEvidence")}],
+        "axioms": ["propext"],
+    }));
+    let generated = json!({
+        "kind": "result",
+        "ok": product(text_type(), named_type("Halt.End")),
+        "error": named_type("Halt.Failure"),
+    });
+    declarations.push(json!({
+        "kind": "definition",
+        "name": "Prompted",
+        "parameters": [
+            {"name": "prompt", "type": text_type()},
+            {"name": "outcome", "type": generated.clone()},
+        ],
+        "result": {"kind": "prop"},
+        "body": {
+            "kind": "prop_and",
+            "left": {
+                "kind": "eq",
+                "left": call(
+                    "Digits.decodeText",
+                    vec![call("Digits.encodeText", vec![var("prompt")])],
+                ),
+                "right": constructor("Option.some", vec![text_type()], vec![var("prompt")]),
+            },
+            "right": {
+                "kind": "eq",
+                "left": var("outcome"),
+                "right": call("Halt.generate", vec![var("prompt")]),
+            },
+        },
+        "axioms": ["Classical.choice", "Quot.sound", "propext"],
+    }));
+    declarations.push(json!({
+        "kind": "contract",
+        "name": "GenerateTextContract",
+        "input": {"name": "prompt", "type": text_type()},
+        "output": {"name": "outcome", "type": generated.clone()},
+        "postcondition": member("Prompted"),
+    }));
+    declarations.push(json!({
+        "kind": "realization",
+        "name": "GenerateText",
+        "input": {"name": "prompt", "type": text_type()},
+        "output": generated,
+        "descriptor": {
+            "kind": "deterministic",
+            "body": call("Halt.generate", vec![var("prompt")]),
+        },
+        "axioms": ["Classical.choice", "Quot.sound", "propext"],
+    }));
+    declarations.push(json!({
+        "kind": "theorem",
+        "name": "generate_text_prompted",
+        "parameters": [{"name": "prompt", "type": text_type()}],
+        "statement": call("Prompted", vec![var("prompt"), call("GenerateText", vec![var("prompt")])]),
+        "proof": {
+            "kind": "constructor",
+            "branches": [
+                {
+                    "kind": "apply",
+                    "theorem": member("Digits.text_roundtrip"),
+                    "arguments": [var("prompt")],
+                },
+                {"kind": "reflexivity"},
+            ],
+        },
+        "axioms": ["Classical.choice", "Quot.sound", "propext"],
+    }));
+    declarations.push(json!({
+        "kind": "evidence",
+        "name": "GenerateTextEvidence",
+        "claims": [{"kind": "satisfies_contract", "theorem": member("generate_text_prompted")}],
+        "contract": {"member": member("GenerateTextContract")},
+        "realization": {"member": member("GenerateText")},
+        "axioms": ["Classical.choice", "Quot.sound", "propext"],
+    }));
+    declarations.push(json!({
+        "kind": "model",
+        "name": "GenerateTextModel",
+        "contract": {"member": member("GenerateTextContract")},
+        "realization": {"member": member("GenerateText")},
+        "evidence": [{"member": member("GenerateTextEvidence")}],
+        "axioms": ["Classical.choice", "Quot.sound", "propext"],
+    }));
+    // The stream the scan computes, which the kernel evaluates: the window of
+    // two keeps the last two tokens, so the pushes are the prefixes' tails.
+    let some_context = |tokens: &[i64]| {
+        constructor(
+            "Option.some",
+            vec![token_list()],
+            vec![token_literal(tokens)],
+        )
+    };
+    let pushes = [vec![1], vec![1, 2], vec![2, 3]].iter().rev().fold(
+        json!({"kind": "nil", "element": option_type(token_list())}),
+        |tail, tokens| json!({"kind": "cons", "head": some_context(tokens), "tail": tail}),
+    );
+    declarations.push(evaluates(
+        "recent_stream_run",
+        call("RecentStream", vec![token_literal(&[1, 2, 3])]),
+        pushes,
+    ));
+    write_module_data(&project, MODULE, &data);
+    project
+}
+
+/// LM-08 (§17.12): text components compose and adapt through the model
+/// constructs alone.
+fn lm_08() {
+    let project = composing();
+    project.check_ok();
+    // The stream is a scan of the stateful window model, and nothing but
+    // model declarations built it: the closed list of declaration kinds is
+    // the one the language had.
+    let schema: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(
+            repo_root()
+                .join("schemas/semantic-module-v2.schema.json")
+                .as_std_path(),
+        )
+        .expect("schema"),
+    )
+    .expect("schema parses");
+    let kinds: Vec<&str> = schema["$defs"]["declaration"]["oneOf"]
+        .as_array()
+        .expect("declarations")
+        .iter()
+        .map(|declaration| {
+            declaration["properties"]["kind"]["const"]
+                .as_str()
+                .expect("kind")
+        })
+        .collect();
+    assert_eq!(
+        kinds,
+        [
+            "structure",
+            "class",
+            "instance",
+            "inductive",
+            "definition",
+            "theorem",
+            "artifact",
+            "contract",
+            "realization",
+            "evidence",
+            "model",
+            "logic",
+            "inference_rule",
+            "verifier",
+            "reasoner",
+            "tokenizer",
+            "context_window",
+            "text_generator",
+            "text_classifier",
+        ],
+        "composition and adaptation add no declaration kind"
+    );
+    let build = support::rendered(&project);
+    let lean = support::lean_text(&build, MODULE);
+    for proved in [
+        "Last2.push_bounded",
+        "Words.features_width",
+        "Digits.text_roundtrip",
+    ] {
+        assert!(
+            lean.contains(proved),
+            "the generated Lean proves an adapter's evidence by {proved}"
+        );
+    }
+    // An adapter whose realization is not the one its contract names, or
+    // whose model applies a declaration of another kind, is refused.
+    let foreign = composing();
+    edit_declaration(&foreign, MODULE, "ClassifyTextModel", |model| {
+        model["realization"] = json!({"member": member("Words")});
+    });
+    refused(&foreign, "LLT4006", "is not a prior realization");
+    if !support::lean_backed("LM-08") {
+        return;
+    }
+    let _guard = support::env_shared();
+    let rows = attested(&verified(&project));
+    for proved in [
+        "recent_bounded",
+        "classify_text_adapted",
+        "generate_text_prompted",
+        "recent_stream_run",
+    ] {
+        assert_ok(&rows, &format!("{LEAN_MODULE}.{proved}"));
+    }
+    // An adapter whose realization does not meet its contract fails
+    // verification: the classification is not the contract's label.
+    let unfaithful = composing();
+    edit_declaration(&unfaithful, MODULE, "ClassifyText", |realization| {
+        realization["descriptor"]["body"] = json!({"kind": "nat", "value": "7"});
+    });
+    unfaithful.check_ok();
+    verification_fails(&unfaithful, "LLV7002");
 }

@@ -1432,10 +1432,7 @@ fn check_text_classifier(
             format!("{name}.features_fit"),
             over_tokens(),
             model::eq(
-                library_call(
-                    names::FIT_WIDTH,
-                    vec![size(), featured(model::var(TOKENS))],
-                ),
+                library_call(names::FIT_WIDTH, vec![size(), featured(model::var(TOKENS))]),
                 featured(model::var(TOKENS)),
             ),
             &[&features],

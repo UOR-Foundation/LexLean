@@ -54,10 +54,10 @@ Feature: language-models
     And a classifier over a non-tokenizer or a stateful model is refused
 
   @LM-08 @build
-  Scenario: Text components compose and adapt through the model constructs alone, and no new declaration kind exists for it: a stateful model whose state is a context window's `list uint32` and whose step is the window's `push` composes under `scan` with its invariant evidence proved by the window's generated `push_bounded`, and an adapter is a model over `string` whose realization applies the elaborated `classify` of a classifier or `generate` of a generator, with `satisfies_contract` evidence proved from the generated laws of that classifier or generator; the closed list of language-1.2 declaration kinds is unchanged by it, an adapter whose realization does not meet its contract fails verification, and an adapter that applies a declaration of another kind is refused (`LLT4006`).
+  Scenario: Text components compose and adapt through the model constructs alone, and no new declaration kind exists for it: a stateful model whose state is a context window's `list uint32`, whose step is the window's `push`, and whose contract's postcondition states that the pushed context fits composes under `scan` with its `satisfies_contract` evidence proved by the window's generated `push_bounded`, and an adapter is a model over `string` whose realization applies the elaborated `classify` of a classifier or `generate` of a generator, with `satisfies_contract` evidence proved from the generated laws of that classifier or generator; the closed list of language-1.2 declaration kinds is unchanged by it, an adapter whose realization does not meet its contract fails verification, and an adapter that applies a declaration of another kind is refused (`LLT4006`).
     Given a stateful window model stepping by `push`, and adapters over a classifier and a generator
     When they are composed under `scan` and verified by Lean, and again with a false contract
-    Then the invariant evidence is proved by `push_bounded` and the adapters' evidence by the generated laws
+    Then the window model's evidence is proved by `push_bounded` and the adapters' evidence by the generated laws
     And the declaration kinds are unchanged and a false contract fails verification
 
   @LM-09 @build
