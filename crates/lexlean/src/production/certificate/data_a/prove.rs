@@ -997,15 +997,16 @@ impl<'a> Writer<'_, 'a> {
                 spine.push(*x);
                 head = *f;
             }
-            match self.b.node(head) {
-                crate::ir::core::CoreNode::Const { n, .. } if n == "List.nil" => return true,
-                crate::ir::core::CoreNode::Const { n, .. } if n == "List.cons" => {
-                    // The arguments, last applied first: tail, head, type.
-                    let Some(tail) = spine.first() else {
-                        return false;
-                    };
-                    at = *tail;
-                }
+            let crate::ir::core::CoreNode::Const { n, .. } = self.b.node(head) else {
+                return false;
+            };
+            match n.as_str() {
+                "List.nil" => return true,
+                // The arguments, last applied first: tail, head, type.
+                "List.cons" => match spine.first() {
+                    Some(tail) => at = *tail,
+                    None => return false,
+                },
                 _ => return false,
             }
         }
