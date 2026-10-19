@@ -349,40 +349,53 @@ pub fn f3(v0: Bytes, v1: u64, v2: u64) -> Bytes {
     }
 }
 
-pub fn f4(v0: Fn0, v1: u64, v2: u64) -> R<(u64, bool)> {
-    let m11 = v1;
-    if m11 == 0 {
-        Ok((v2, false))
-    } else {
-        let v3 = m11 - 1;
-        let m13 = {
-            let c12: Fn0 = v0.clone();
-            c12.apply(v2)?
-        };
-        match m13 {
-            None => {
-                Ok((v2, true))
-            }
-            Some(v4) => {
-                f4(v0, v3, v4)
+pub fn f4(v0: Fn0, p15: u64, p16: u64) -> R<(u64, bool)> {
+    let m14 = (p15, p16);
+    {
+        let mut m14 = m14;
+        loop {
+            let step = {
+                let (v1, v2) = m14;
+                let m11 = v1;
+                if m11 == 0 {
+                    Err::<(u64, u64), R<(u64, bool)>>(Ok((v2, false)))
+                } else {
+                    let v3 = m11 - 1;
+                    let m13 = {
+                        let c12: Fn0 = v0.clone();
+                        c12.apply(v2)?
+                    };
+                    match m13 {
+                        None => {
+                            Err::<(u64, u64), R<(u64, bool)>>(Ok((v2, true)))
+                        }
+                        Some(v4) => {
+                            Ok::<(u64, u64), R<(u64, bool)>>((v3, v4))
+                        }
+                    }
+                }
+            };
+            match step {
+                Ok(next) => { m14 = next; }
+                Err(done) => break done,
             }
         }
     }
 }
 
 pub fn f5(v0: Bytes, v1: u64) -> Option<u64> {
-    let a14 = 0u64;
-    let a15 = v1;
-    if nat_lt(a14, a15) {
+    let a17 = 0u64;
+    let a18 = v1;
+    if nat_lt(a17, a18) {
         if f7(v0, {
-            let a16 = v1;
-            let a17 = 1u64;
-            nat_sub(a16, a17)
+            let a19 = v1;
+            let a20 = 1u64;
+            nat_sub(a19, a20)
         }) {
             Some({
-                let a18 = v1;
-                let a19 = 1u64;
-                nat_sub(a18, a19)
+                let a21 = v1;
+                let a22 = 1u64;
+                nat_sub(a21, a22)
             })
         } else {
             None::<u64>
@@ -393,14 +406,14 @@ pub fn f5(v0: Bytes, v1: u64) -> Option<u64> {
 }
 
 pub fn f6(v0: u64, v1: Bytes, v2: u64) -> R<Option<u64>> {
-    let a20 = v2;
-    let a21 = v0;
-    if nat_lt(a20, a21) {
+    let a23 = v2;
+    let a24 = v0;
+    if nat_lt(a23, a24) {
         if f7(v1, v2) {
             Ok(Some({
-                let a22 = v2;
-                let a23 = 1u64;
-                nat_add(a22, a23)?
+                let a25 = v2;
+                let a26 = 1u64;
+                nat_add(a25, a26)?
             }))
         } else {
             Ok(None::<u64>)
@@ -411,8 +424,8 @@ pub fn f6(v0: u64, v1: Bytes, v2: u64) -> R<Option<u64>> {
 }
 
 pub fn f7(v0: Bytes, v1: u64) -> bool {
-    let m24 = f8(v0, v1);
-    match m24 {
+    let m27 = f8(v0, v1);
+    match m27 {
         None => {
             false
         }
@@ -423,37 +436,37 @@ pub fn f7(v0: Bytes, v1: u64) -> bool {
 }
 
 pub fn f8(v0: Bytes, v1: u64) -> Option<u8> {
-    let a25 = v0;
-    let a26 = v1;
-    index_bytes(a25, a26)
+    let a28 = v0;
+    let a29 = v1;
+    index_bytes(a28, a29)
 }
 
 pub fn f9(v0: u8) -> bool {
-    let a27 = v0;
-    let a28 = 32u8;
-    if if if equal(a27, a28) {
+    let a30 = v0;
+    let a31 = 32u8;
+    if if if equal(a30, a31) {
         true
     } else {
-        let a29 = v0;
-        let a30 = 9u8;
-        equal(a29, a30)
+        let a32 = v0;
+        let a33 = 9u8;
+        equal(a32, a33)
     } {
         true
     } else {
-        let a31 = v0;
-        let a32 = 10u8;
-        equal(a31, a32)
+        let a34 = v0;
+        let a35 = 10u8;
+        equal(a34, a35)
     } {
         true
     } else {
-        let a33 = v0;
-        let a34 = 12u8;
-        if equal(a33, a34) {
+        let a36 = v0;
+        let a37 = 12u8;
+        if equal(a36, a37) {
             true
         } else {
-            let a35 = v0;
-            let a36 = 13u8;
-            equal(a35, a36)
+            let a38 = v0;
+            let a39 = 13u8;
+            equal(a38, a39)
         }
     }
 }

@@ -29,7 +29,7 @@ definition{
   body: ((Recur::countdown a 0), ((Recur::reduce a b), (Recur::search a 0 b))),
   axioms: [Quot.sound, propext],
   executable: true,
-  production: {effects: [overflow, recursion], targets: [rust-core, rust-std]}
+  production: {effects: [overflow], targets: [rust-core, rust-std]}
 }
 
 definition{

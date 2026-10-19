@@ -277,7 +277,7 @@ definition{
   body: (let size : Nat := (prim length message : Nat); (let total : Nat := (prim multiply (prim quotient (size + 72) 64 0 : Nat) 64 : Nat); (second (prim iterate (fun [message, size, total] (state : (Nat * Digest)) => (((first state) + 64), (compress (second state) (load message size total (first state))))) (prim quotient total 64 0 : Nat) (0, (initial)) : (Nat * Digest))))),
   axioms: [Quot.sound, propext],
   executable: true,
-  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+  production: {effects: [allocation, overflow], targets: [rust-std]}
 }
 
 definition{
@@ -314,7 +314,7 @@ definition{
   body: (hexDigest (sha256 message)),
   axioms: [Quot.sound, propext],
   executable: true,
-  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+  production: {effects: [allocation, overflow], targets: [rust-std]}
 }
 
 theorem{

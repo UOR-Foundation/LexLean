@@ -295,28 +295,41 @@ pub fn f0(v0: List<u64>, v1: u64) -> bool {
     f1(v0, v1)
 }
 
-pub fn f1(v0: List<u64>, v1: u64) -> bool {
-    let m1 = v0;
-    match m1.uncons() {
-        None => {
-            false
-        }
-        Some((v2, v3)) => {
-            let m4 = {
-                let a2 = v1;
-                let a3 = v2;
-                compare(a2, a3)
+pub fn f1(p6: List<u64>, v1: u64) -> bool {
+    let m5 = p6;
+    {
+        let mut m5 = m5;
+        loop {
+            let step = {
+                let v0 = m5;
+                let m1 = v0;
+                match m1.uncons() {
+                    None => {
+                        Err::<List<u64>, bool>(false)
+                    }
+                    Some((v2, v3)) => {
+                        let m4 = {
+                            let a2 = v1;
+                            let a3 = v2;
+                            compare(a2, a3)
+                        };
+                        match m4 {
+                            Ordering::Less => {
+                                Err::<List<u64>, bool>(false)
+                            }
+                            Ordering::Equal => {
+                                Err::<List<u64>, bool>(true)
+                            }
+                            Ordering::Greater => {
+                                Ok::<List<u64>, bool>(v3)
+                            }
+                        }
+                    }
+                }
             };
-            match m4 {
-                Ordering::Less => {
-                    false
-                }
-                Ordering::Equal => {
-                    true
-                }
-                Ordering::Greater => {
-                    f1(v3, v1)
-                }
+            match step {
+                Ok(next) => { m5 = next; }
+                Err(done) => break done,
             }
         }
     }

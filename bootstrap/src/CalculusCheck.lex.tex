@@ -1,0 +1,1867 @@
+\begin{lexlean}{CalculusCheck}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.Text}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: IntKind,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: U8, fields: []},
+    {name: U16, fields: []},
+    {name: U32, fields: []},
+    {name: U64, fields: []},
+    {name: I8, fields: []},
+    {name: I16, fields: []},
+    {name: I32, fields: []},
+    {name: I64, fields: []}
+  ]
+}
+
+inductive{
+  name: OrderingValue,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: OLt, fields: []}, {name: OEq, fields: []}, {name: OGt, fields: []}]
+}
+
+inductive{
+  name: Ty,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: TUnit, fields: []},
+    {name: TBool, fields: []},
+    {name: TNat, fields: []},
+    {name: TInt, fields: []},
+    {name: TFixed, fields: [IntKind]},
+    {name: TString, fields: []},
+    {name: TBytes, fields: []},
+    {name: TOrdering, fields: []},
+    {name: TOption, fields: [Ty]},
+    {name: TResult, fields: [Ty, Ty]},
+    {name: TList, fields: [Ty]},
+    {name: TPair, fields: [Ty, Ty]},
+    {name: TAdt, fields: [Nat]},
+    {name: TFn, fields: [Ty, Ty]},
+    {name: TNil, fields: []},
+    {name: TCons, fields: [Ty, Ty]}
+  ]
+}
+
+inductive{
+  name: Value,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: VUnit, fields: []},
+    {name: VBool, fields: [Bool]},
+    {name: VNat, fields: [Bytes]},
+    {name: VInt, fields: [Bytes]},
+    {name: VU8, fields: [Bytes]},
+    {name: VU16, fields: [Bytes]},
+    {name: VU32, fields: [Bytes]},
+    {name: VU64, fields: [Bytes]},
+    {name: VI8, fields: [Bytes]},
+    {name: VI16, fields: [Bytes]},
+    {name: VI32, fields: [Bytes]},
+    {name: VI64, fields: [Bytes]},
+    {name: VString, fields: [Bytes]},
+    {name: VBytes, fields: [Bytes]},
+    {name: VOrdering, fields: [OrderingValue]},
+    {name: VNone, fields: []},
+    {name: VSome, fields: [Value]},
+    {name: VOk, fields: [Value]},
+    {name: VError, fields: [Value]},
+    {name: VList, fields: [Value]},
+    {name: VPair, fields: [Value, Value]},
+    {name: VAdt, fields: [Nat, Value]},
+    {name: VClosure, fields: [Nat, Value]},
+    {name: VNil, fields: []},
+    {name: VCons, fields: [Value, Value]}
+  ]
+}
+
+inductive{
+  name: Shape,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: SNone, fields: []},
+    {name: SSome, fields: []},
+    {name: SOk, fields: []},
+    {name: SError, fields: []},
+    {name: SNil, fields: []},
+    {name: SCons, fields: []},
+    {name: SZero, fields: []},
+    {name: SSucc, fields: []},
+    {name: SPair, fields: []},
+    {name: STrue, fields: []},
+    {name: SFalse, fields: []},
+    {name: SUnit, fields: []},
+    {name: SLt, fields: []},
+    {name: SEq, fields: []},
+    {name: SGt, fields: []},
+    {name: SAdt, fields: [Nat]}
+  ]
+}
+
+inductive{
+  name: Prim,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: NatAdd, fields: []},
+    {name: NatSub, fields: []},
+    {name: NatMul, fields: []},
+    {name: NatQuot, fields: []},
+    {name: NatRem, fields: []},
+    {name: NatEq, fields: []},
+    {name: NatLe, fields: []},
+    {name: NatLt, fields: []},
+    {name: IntAdd, fields: []},
+    {name: IntSub, fields: []},
+    {name: IntMul, fields: []},
+    {name: IntNeg, fields: []},
+    {name: IntQuot, fields: []},
+    {name: IntRem, fields: []},
+    {name: CheckedAdd, fields: []},
+    {name: CheckedSub, fields: []},
+    {name: CheckedMul, fields: []},
+    {name: CheckedNeg, fields: []},
+    {name: CheckedQuot, fields: []},
+    {name: BitAnd, fields: []},
+    {name: BitOr, fields: []},
+    {name: BitXor, fields: []},
+    {name: BitNot, fields: []},
+    {name: ShiftLeft, fields: []},
+    {name: ShiftRight, fields: []},
+    {name: Equal, fields: []},
+    {name: BoolNot, fields: []},
+    {name: BoolAnd, fields: []},
+    {name: BoolOr, fields: []},
+    {name: Append, fields: []},
+    {name: Length, fields: []},
+    {name: Index, fields: []},
+    {name: Slice, fields: []},
+    {name: Utf8Encode, fields: []},
+    {name: Utf8Decode, fields: []},
+    {name: CompareBytes, fields: []},
+    {name: SplitExact, fields: []},
+    {name: Join, fields: []},
+    {name: FormatDecimal, fields: []},
+    {name: Compare, fields: []},
+    {name: Convert, fields: [IntKind]},
+    {name: ParseDecimal, fields: [Ty]}
+  ]
+}
+
+inductive{
+  name: Expr,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: EValue, fields: [Ty, Value]},
+    {name: EVar, fields: [Nat]},
+    {name: ELet, fields: [Nat, Ty, Expr, Expr]},
+    {name: ECond, fields: [Expr, Expr, Expr]},
+    {name: EMatch, fields: [Ty, Expr, Expr]},
+    {name: EBuild, fields: [Shape, Ty, Expr]},
+    {name: ECall, fields: [Nat, Expr]},
+    {name: EClosure, fields: [Nat, Expr]},
+    {name: EApply, fields: [Expr, Expr]},
+    {name: EPrim, fields: [Prim, Expr]},
+    {name: EFirst, fields: [Expr]},
+    {name: ESecond, fields: [Expr]},
+    {name: EField, fields: [Expr, Nat]},
+    {name: ENil, fields: []},
+    {name: ECons, fields: [Expr, Expr]},
+    {name: EArm, fields: [Shape, (List Nat), Expr]}
+  ]
+}
+
+inductive{
+  name: Outcome,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: OFailed, fields: [Bytes]},
+    {name: OTyped, fields: [Ty]},
+    {name: OCovered, fields: [(List Shape)]},
+    {name: OFine, fields: []}
+  ]
+}
+
+structure{
+  name: Program,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: spec, type: Bytes},
+    {name: adts, type: Ty},
+    {name: parameters, type: (List (List Nat))},
+    {name: types, type: Ty},
+    {name: results, type: Ty},
+    {name: bodies, type: Expr}
+  ]
+}
+
+definition{
+  name: text,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: cat,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bytes,
+  body: (prim append left right : Bytes),
+  executable: true
+}
+
+definition{
+  name: quoted,
+  parameters: [name : Bytes],
+  result: Bytes,
+  body: (cat (text "`") (cat name (text "`"))),
+  executable: true
+}
+
+definition{
+  name: listLength,
+  type_parameters: [Item],
+  parameters: [items : (List 'Item)],
+  result: Nat,
+  body: (prim list_fold (fun (count : Nat) (item : 'Item) => (count + 1)) 0 items : Nat),
+  executable: true
+}
+
+definition{
+  name: byteIs,
+  parameters: [subject : Bytes, position : Nat, value : UInt8],
+  result: Bool,
+  body: (match (LexLeanStd.Text::byteAt subject position)
+    | Option.some byte => (prim equal byte value : Bool)
+    | Option.none => false),
+  executable: true
+}
+
+definition{
+  name: zeroStep,
+  parameters: [subject : Bytes, position : Nat],
+  result: (Option Nat),
+  body: (if (byteIs subject position (48 : UInt8)) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat])),
+  executable: true
+}
+
+definition{
+  name: significant,
+  parameters: [digits : Bytes],
+  result: Bytes,
+  body: (let zeros : Nat := (first (prim iterate_until (fun [digits] (position : Nat) => (zeroStep digits position)) (prim length digits : Nat) 0 : (Nat * Bool))); (LexLeanStd.Text::sliceOr digits zeros (prim subtract (prim length digits : Nat) zeros : Nat))),
+  executable: true
+}
+
+definition{
+  name: digit,
+  parameters: [number : Nat, place : Nat],
+  result: Bytes,
+  body: (LexLeanStd.Text::sliceOr (text "0123456789") (prim remainder (prim quotient number place 0 : Nat) 10 0 : Nat) 1),
+  executable: true
+}
+
+definition{
+  name: decimal,
+  parameters: [number : Nat],
+  result: Bytes,
+  body: (let zero : Bytes := (text "0"); (let digits : Bytes := (significant (prim append (digit number 10000000000000000000) (prim append (digit number 1000000000000000000) (prim append (digit number 100000000000000000) (prim append (digit number 10000000000000000) (prim append (digit number 1000000000000000) (prim append (digit number 100000000000000) (prim append (digit number 10000000000000) (prim append (digit number 1000000000000) (prim append (digit number 100000000000) (prim append (digit number 10000000000) (prim append (digit number 1000000000) (prim append (digit number 100000000) (prim append (digit number 10000000) (prim append (digit number 1000000) (prim append (digit number 100000) (prim append (digit number 10000) (prim append (digit number 1000) (prim append (digit number 100) (prim append (digit number 10) (digit number 1) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes)); (if (number =? 0) then zero else digits))),
+  executable: true
+}
+
+definition{
+  name: tyTag,
+  parameters: [ty : Ty],
+  result: Nat,
+  body: (match ty
+    | Ty.TUnit => 0
+    | Ty.TBool => 1
+    | Ty.TNat => 2
+    | Ty.TInt => 3
+    | Ty.TFixed width => 4
+    | Ty.TString => 5
+    | Ty.TBytes => 6
+    | Ty.TOrdering => 7
+    | Ty.TOption value => 8
+    | Ty.TResult ok error => 9
+    | Ty.TList element => 10
+    | Ty.TPair left right => 11
+    | Ty.TAdt index => 12
+    | Ty.TFn parameters result => 13
+    | Ty.TNil => 14
+    | Ty.TCons head tail => 15),
+  executable: true
+}
+
+definition{
+  name: tyFirstOption,
+  parameters: [ty : Ty],
+  result: (Option Ty),
+  body: (match ty
+    | Ty.TUnit => (ctor Option.none [Ty])
+    | Ty.TBool => (ctor Option.none [Ty])
+    | Ty.TNat => (ctor Option.none [Ty])
+    | Ty.TInt => (ctor Option.none [Ty])
+    | Ty.TFixed width => (ctor Option.none [Ty])
+    | Ty.TString => (ctor Option.none [Ty])
+    | Ty.TBytes => (ctor Option.none [Ty])
+    | Ty.TOrdering => (ctor Option.none [Ty])
+    | Ty.TOption value => (ctor Option.some [Ty] value)
+    | Ty.TResult ok error => (ctor Option.some [Ty] ok)
+    | Ty.TList element => (ctor Option.some [Ty] element)
+    | Ty.TPair left right => (ctor Option.some [Ty] left)
+    | Ty.TAdt index => (ctor Option.none [Ty])
+    | Ty.TFn parameters result => (ctor Option.some [Ty] parameters)
+    | Ty.TNil => (ctor Option.none [Ty])
+    | Ty.TCons head tail => (ctor Option.some [Ty] head)),
+  executable: true
+}
+
+definition{
+  name: tySecondOption,
+  parameters: [ty : Ty],
+  result: (Option Ty),
+  body: (match ty
+    | Ty.TUnit => (ctor Option.none [Ty])
+    | Ty.TBool => (ctor Option.none [Ty])
+    | Ty.TNat => (ctor Option.none [Ty])
+    | Ty.TInt => (ctor Option.none [Ty])
+    | Ty.TFixed width => (ctor Option.none [Ty])
+    | Ty.TString => (ctor Option.none [Ty])
+    | Ty.TBytes => (ctor Option.none [Ty])
+    | Ty.TOrdering => (ctor Option.none [Ty])
+    | Ty.TOption value => (ctor Option.none [Ty])
+    | Ty.TResult ok error => (ctor Option.some [Ty] error)
+    | Ty.TList element => (ctor Option.none [Ty])
+    | Ty.TPair left right => (ctor Option.some [Ty] right)
+    | Ty.TAdt index => (ctor Option.none [Ty])
+    | Ty.TFn parameters result => (ctor Option.some [Ty] result)
+    | Ty.TNil => (ctor Option.none [Ty])
+    | Ty.TCons head tail => (ctor Option.some [Ty] tail)),
+  executable: true
+}
+
+definition{
+  name: tyFirst,
+  parameters: [ty : Ty],
+  result: Ty,
+  body: (match (tyFirstOption ty) | Option.some found => found | Option.none => (ctor Ty.TUnit)),
+  executable: true
+}
+
+definition{
+  name: tySecond,
+  parameters: [ty : Ty],
+  result: Ty,
+  body: (match (tySecondOption ty) | Option.some found => found | Option.none => (ctor Ty.TUnit)),
+  executable: true
+}
+
+definition{
+  name: tyAdtIndex,
+  parameters: [ty : Ty],
+  result: Nat,
+  body: (match ty
+    | Ty.TUnit => 0
+    | Ty.TBool => 0
+    | Ty.TNat => 0
+    | Ty.TInt => 0
+    | Ty.TFixed width => 0
+    | Ty.TString => 0
+    | Ty.TBytes => 0
+    | Ty.TOrdering => 0
+    | Ty.TOption value => 0
+    | Ty.TResult ok error => 0
+    | Ty.TList element => 0
+    | Ty.TPair left right => 0
+    | Ty.TAdt index => index
+    | Ty.TFn parameters result => 0
+    | Ty.TNil => 0
+    | Ty.TCons head tail => 0),
+  executable: true
+}
+
+definition{
+  name: tyWidth,
+  parameters: [ty : Ty],
+  result: IntKind,
+  body: (match ty
+    | Ty.TUnit => (ctor IntKind.U8)
+    | Ty.TBool => (ctor IntKind.U8)
+    | Ty.TNat => (ctor IntKind.U8)
+    | Ty.TInt => (ctor IntKind.U8)
+    | Ty.TFixed width => width
+    | Ty.TString => (ctor IntKind.U8)
+    | Ty.TBytes => (ctor IntKind.U8)
+    | Ty.TOrdering => (ctor IntKind.U8)
+    | Ty.TOption value => (ctor IntKind.U8)
+    | Ty.TResult ok error => (ctor IntKind.U8)
+    | Ty.TList element => (ctor IntKind.U8)
+    | Ty.TPair left right => (ctor IntKind.U8)
+    | Ty.TAdt index => (ctor IntKind.U8)
+    | Ty.TFn parameters result => (ctor IntKind.U8)
+    | Ty.TNil => (ctor IntKind.U8)
+    | Ty.TCons head tail => (ctor IntKind.U8)),
+  executable: true
+}
+
+definition{
+  name: isNilTy,
+  parameters: [ty : Ty],
+  result: Bool,
+  body: ((tyTag ty) =? 14),
+  executable: true
+}
+
+definition{
+  name: kindIndex,
+  parameters: [kind : IntKind],
+  result: Nat,
+  body: (match kind
+    | IntKind.U8 => 0
+    | IntKind.U16 => 1
+    | IntKind.U32 => 2
+    | IntKind.U64 => 3
+    | IntKind.I8 => 4
+    | IntKind.I16 => 5
+    | IntKind.I32 => 6
+    | IntKind.I64 => 7),
+  executable: true
+}
+
+definition{
+  name: kindSigned,
+  parameters: [kind : IntKind],
+  result: Bool,
+  body: (match kind
+    | IntKind.U8 => false
+    | IntKind.U16 => false
+    | IntKind.U32 => false
+    | IntKind.U64 => false
+    | IntKind.I8 => true
+    | IntKind.I16 => true
+    | IntKind.I32 => true
+    | IntKind.I64 => true),
+  executable: true
+}
+
+definition{
+  name: tyChainLength,
+  parameters: [ty : Ty],
+  result: Nat,
+  body: (match ty
+    | Ty.TUnit => 0
+    | Ty.TBool => 0
+    | Ty.TNat => 0
+    | Ty.TInt => 0
+    | Ty.TFixed d0 => 0
+    | Ty.TString => 0
+    | Ty.TBytes => 0
+    | Ty.TOrdering => 0
+    | Ty.TOption d0 => 0
+    | Ty.TResult d0 d1 => 0
+    | Ty.TList d0 => 0
+    | Ty.TPair d0 d1 => 0
+    | Ty.TAdt d0 => 0
+    | Ty.TFn d0 d1 => 0
+    | Ty.TNil => 0
+    | Ty.TCons head tail => (let rest : Nat := (tyChainLength tail); (1 + rest))),
+  executable: true,
+  recursive_argument: ty
+}
+
+definition{
+  name: tyChainAt,
+  parameters: [ty : Ty, at : Nat],
+  result: (Option Ty),
+  body: (match ty
+    | Ty.TUnit => (ctor Option.none [Ty])
+    | Ty.TBool => (ctor Option.none [Ty])
+    | Ty.TNat => (ctor Option.none [Ty])
+    | Ty.TInt => (ctor Option.none [Ty])
+    | Ty.TFixed d0 => (ctor Option.none [Ty])
+    | Ty.TString => (ctor Option.none [Ty])
+    | Ty.TBytes => (ctor Option.none [Ty])
+    | Ty.TOrdering => (ctor Option.none [Ty])
+    | Ty.TOption d0 => (ctor Option.none [Ty])
+    | Ty.TResult d0 d1 => (ctor Option.none [Ty])
+    | Ty.TList d0 => (ctor Option.none [Ty])
+    | Ty.TPair d0 d1 => (ctor Option.none [Ty])
+    | Ty.TAdt d0 => (ctor Option.none [Ty])
+    | Ty.TFn d0 d1 => (ctor Option.none [Ty])
+    | Ty.TNil => (ctor Option.none [Ty])
+    | Ty.TCons head tail => (match at
+      | Nat.zero => (ctor Option.some [Ty] head)
+      | Nat.succ previous => (tyChainAt tail previous))),
+  executable: true,
+  recursive_argument: ty
+}
+
+definition{
+  name: exprChainLength,
+  parameters: [expr : Expr],
+  result: Nat,
+  body: (match expr
+    | Expr.EValue f0 f1 => 0
+    | Expr.EVar f0 => 0
+    | Expr.ELet f0 f1 f2 f3 => 0
+    | Expr.ECond f0 f1 f2 => 0
+    | Expr.EMatch f0 f1 f2 => 0
+    | Expr.EBuild f0 f1 f2 => 0
+    | Expr.ECall f0 f1 => 0
+    | Expr.EClosure f0 f1 => 0
+    | Expr.EApply f0 f1 => 0
+    | Expr.EPrim f0 f1 => 0
+    | Expr.EFirst f0 => 0
+    | Expr.ESecond f0 => 0
+    | Expr.EField f0 f1 => 0
+    | Expr.ENil => 0
+    | Expr.EArm f0 f1 f2 => 0
+    | Expr.ECons head tail => (let rest : Nat := (exprChainLength tail); (1 + rest))),
+  executable: true,
+  recursive_argument: expr
+}
+
+definition{
+  name: valueChainLength,
+  parameters: [value : Value],
+  result: Nat,
+  body: (match value
+    | Value.VUnit => 0
+    | Value.VBool f0 => 0
+    | Value.VNat f0 => 0
+    | Value.VInt f0 => 0
+    | Value.VU8 f0 => 0
+    | Value.VU16 f0 => 0
+    | Value.VU32 f0 => 0
+    | Value.VU64 f0 => 0
+    | Value.VI8 f0 => 0
+    | Value.VI16 f0 => 0
+    | Value.VI32 f0 => 0
+    | Value.VI64 f0 => 0
+    | Value.VString f0 => 0
+    | Value.VBytes f0 => 0
+    | Value.VOrdering f0 => 0
+    | Value.VNone => 0
+    | Value.VSome f0 => 0
+    | Value.VOk f0 => 0
+    | Value.VError f0 => 0
+    | Value.VList f0 => 0
+    | Value.VPair f0 f1 => 0
+    | Value.VAdt f0 f1 => 0
+    | Value.VClosure f0 f1 => 0
+    | Value.VNil => 0
+    | Value.VCons head tail => (let rest : Nat := (valueChainLength tail); (1 + rest))),
+  executable: true,
+  recursive_argument: value
+}
+
+definition{
+  name: tyEq,
+  parameters: [left : Ty, right : Ty],
+  result: Bool,
+  body: (match left
+    | Ty.TUnit => ((tyTag right) =? 0)
+    | Ty.TBool => ((tyTag right) =? 1)
+    | Ty.TNat => ((tyTag right) =? 2)
+    | Ty.TInt => ((tyTag right) =? 3)
+    | Ty.TString => ((tyTag right) =? 5)
+    | Ty.TBytes => ((tyTag right) =? 6)
+    | Ty.TOrdering => ((tyTag right) =? 7)
+    | Ty.TNil => ((tyTag right) =? 14)
+    | Ty.TFixed width => (if ((tyTag right) =? 4) then ((kindIndex width) =? (kindIndex (tyWidth right))) else false)
+    | Ty.TOption value => (let same : Bool := (tyEq value (tyFirst right)); (if ((tyTag right) =? 8) then same else false))
+    | Ty.TResult ok error => (let okSame : Bool := (tyEq ok (tyFirst right)); (let errorSame : Bool := (tyEq error (tySecond right)); (if ((tyTag right) =? 9) then (if okSame then errorSame else false) else false)))
+    | Ty.TList element => (let same : Bool := (tyEq element (tyFirst right)); (if ((tyTag right) =? 10) then same else false))
+    | Ty.TPair left2 right2 => (let leftSame : Bool := (tyEq left2 (tyFirst right)); (let rightSame : Bool := (tyEq right2 (tySecond right)); (if ((tyTag right) =? 11) then (if leftSame then rightSame else false) else false)))
+    | Ty.TAdt index => (if ((tyTag right) =? 12) then (index =? (tyAdtIndex right)) else false)
+    | Ty.TFn parameters result => (let parametersSame : Bool := (tyEq parameters (tyFirst right)); (let resultSame : Bool := (tyEq result (tySecond right)); (if ((tyTag right) =? 13) then (if parametersSame then resultSame else false) else false)))
+    | Ty.TCons head tail => (let headSame : Bool := (tyEq head (tyFirst right)); (let tailSame : Bool := (tyEq tail (tySecond right)); (if ((tyTag right) =? 15) then (if headSame then tailSame else false) else false)))),
+  executable: true,
+  recursive_argument: left
+}
+
+definition{
+  name: orderable,
+  parameters: [ty : Ty],
+  result: Bool,
+  body: (match ty
+    | Ty.TNat => true
+    | Ty.TInt => true
+    | Ty.TBool => true
+    | Ty.TString => true
+    | Ty.TFixed width => true
+    | Ty.TPair left right => (let leftOk : Bool := (orderable left); (let rightOk : Bool := (orderable right); (if leftOk then rightOk else false)))
+    | Ty.TUnit => false
+    | Ty.TBytes => false
+    | Ty.TOrdering => false
+    | Ty.TNil => false
+    | Ty.TOption value => false
+    | Ty.TResult ok error => false
+    | Ty.TList element => false
+    | Ty.TAdt index => false
+    | Ty.TFn parameters result => false
+    | Ty.TCons head tail => false),
+  executable: true,
+  recursive_argument: ty
+}
+
+definition{
+  name: shapeTag,
+  parameters: [shape : Shape],
+  result: Nat,
+  body: (match shape
+    | Shape.SNone => 0
+    | Shape.SSome => 1
+    | Shape.SOk => 2
+    | Shape.SError => 3
+    | Shape.SNil => 4
+    | Shape.SCons => 5
+    | Shape.SZero => 6
+    | Shape.SSucc => 7
+    | Shape.SPair => 8
+    | Shape.STrue => 9
+    | Shape.SFalse => 10
+    | Shape.SUnit => 11
+    | Shape.SLt => 12
+    | Shape.SEq => 13
+    | Shape.SGt => 14
+    | Shape.SAdt constructor => 15),
+  executable: true
+}
+
+definition{
+  name: shapeArg,
+  parameters: [shape : Shape],
+  result: Nat,
+  body: (match shape
+    | Shape.SNone => 0
+    | Shape.SSome => 0
+    | Shape.SOk => 0
+    | Shape.SError => 0
+    | Shape.SNil => 0
+    | Shape.SCons => 0
+    | Shape.SZero => 0
+    | Shape.SSucc => 0
+    | Shape.SPair => 0
+    | Shape.STrue => 0
+    | Shape.SFalse => 0
+    | Shape.SUnit => 0
+    | Shape.SLt => 0
+    | Shape.SEq => 0
+    | Shape.SGt => 0
+    | Shape.SAdt constructor => constructor),
+  executable: true
+}
+
+definition{
+  name: shapeEq,
+  parameters: [left : Shape, right : Shape],
+  result: Bool,
+  body: (if ((shapeTag left) =? (shapeTag right)) then ((shapeArg left) =? (shapeArg right)) else false),
+  executable: true
+}
+
+definition{
+  name: shapeIn,
+  parameters: [shapes : (List Shape), shape : Shape],
+  result: Bool,
+  body: (match shapes
+    | List.nil => false
+    | List.cons head tail => (let here : Bool := (shapeEq head shape); (let later : Bool := (shapeIn tail shape); (if here then true else later)))),
+  executable: true,
+  recursive_argument: shapes
+}
+
+definition{
+  name: natIn,
+  parameters: [items : (List Nat), item : Nat],
+  result: Bool,
+  body: (match items
+    | List.nil => false
+    | List.cons head tail => (let later : Bool := (natIn tail item); (if (head =? item) then true else later))),
+  executable: true,
+  recursive_argument: items
+}
+
+definition{
+  name: hasRepeat,
+  parameters: [items : (List Nat)],
+  result: Bool,
+  body: (match items
+    | List.nil => false
+    | List.cons head tail => (let repeats : Bool := (hasRepeat tail); (let seen : Bool := (natIn tail head); (if seen then true else repeats)))),
+  executable: true,
+  recursive_argument: items
+}
+
+definition{
+  name: listAt,
+  type_parameters: [Item],
+  parameters: [items : (List 'Item), index : Nat],
+  result: (Option 'Item),
+  body: (match items
+    | List.nil => (ctor Option.none ['Item])
+    | List.cons head tail => (match index
+      | Nat.zero => (ctor Option.some ['Item] head)
+      | Nat.succ previous => (listAt ['Item] tail previous))),
+  executable: true,
+  recursive_argument: items
+}
+
+definition{
+  name: consTy,
+  parameters: [head : Ty, tail : Ty],
+  result: Ty,
+  body: (ctor Ty.TCons head tail),
+  executable: true
+}
+
+definition{
+  name: closureTy,
+  parameters: [parameters : Ty, result : Ty],
+  result: Ty,
+  body: (ctor Ty.TFn parameters result),
+  executable: true
+}
+
+definition{
+  name: consShape,
+  parameters: [head : Shape, tail : (List Shape)],
+  result: (List Shape),
+  body: (cons head tail),
+  executable: true
+}
+
+definition{
+  name: kindDebug,
+  parameters: [kind : IntKind],
+  result: Bytes,
+  body: (match kind
+    | IntKind.U8 => (text "U8")
+    | IntKind.U16 => (text "U16")
+    | IntKind.U32 => (text "U32")
+    | IntKind.U64 => (text "U64")
+    | IntKind.I8 => (text "I8")
+    | IntKind.I16 => (text "I16")
+    | IntKind.I32 => (text "I32")
+    | IntKind.I64 => (text "I64")),
+  executable: true
+}
+
+definition{
+  name: kindName,
+  parameters: [kind : IntKind],
+  result: Bytes,
+  body: (match kind
+    | IntKind.U8 => (text "u8")
+    | IntKind.U16 => (text "u16")
+    | IntKind.U32 => (text "u32")
+    | IntKind.U64 => (text "u64")
+    | IntKind.I8 => (text "i8")
+    | IntKind.I16 => (text "i16")
+    | IntKind.I32 => (text "i32")
+    | IntKind.I64 => (text "i64")),
+  executable: true
+}
+
+definition{
+  name: orderingDebug,
+  parameters: [value : OrderingValue],
+  result: Bytes,
+  body: (match value
+    | OrderingValue.OLt => (text "Lt")
+    | OrderingValue.OEq => (text "Eq")
+    | OrderingValue.OGt => (text "Gt")),
+  executable: true
+}
+
+definition{
+  name: boolDebug,
+  parameters: [value : Bool],
+  result: Bytes,
+  body: (if value then (text "true") else (text "false")),
+  executable: true
+}
+
+definition{
+  name: hexNibble,
+  parameters: [n : Nat],
+  result: Bytes,
+  body: (LexLeanStd.Text::sliceOr (text "0123456789abcdef") n 1),
+  executable: true
+}
+
+definition{
+  name: hexByte,
+  parameters: [n : Nat],
+  result: Bytes,
+  body: (let single : Bytes := (hexNibble n); (let double : Bytes := (cat (hexNibble (prim quotient n 16 0 : Nat)) (hexNibble (prim remainder n 16 0 : Nat))); (if (n <? 16) then single else double))),
+  executable: true
+}
+
+definition{
+  name: unicodeEscape,
+  parameters: [n : Nat],
+  result: Bytes,
+  body: (cat (text "\\u{") (cat (hexByte n) (text "}"))),
+  executable: true
+}
+
+definition{
+  name: byteNat,
+  parameters: [subject : Bytes, position : Nat],
+  result: Nat,
+  body: (match (LexLeanStd.Text::byteAt subject position)
+    | Option.some byte => (prim to_nat byte : Nat)
+    | Option.none => 256),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: escapePiece,
+  parameters: [subject : Bytes, position : Nat, byte : Nat],
+  result: (Nat * Bytes),
+  body: (let following : Nat := (byteNat subject (position + 1)); (if (byte =? 34) then (1, (text "\\\"")) else (if (byte =? 92) then (1, (text "\\\\")) else (if (byte =? 10) then (1, (text "\\n")) else (if (byte =? 13) then (1, (text "\\r")) else (if (byte =? 9) then (1, (text "\\t")) else (if (byte =? 0) then (1, (text "\\0")) else (if (byte <? 32) then (1, (unicodeEscape byte)) else (if (byte =? 127) then (1, (unicodeEscape byte)) else (if (byte =? 194) then (if (128 <=? following) then (if (following <=? 159) then (2, (unicodeEscape following)) else (1, (LexLeanStd.Text::sliceOr subject position 1))) else (1, (LexLeanStd.Text::sliceOr subject position 1))) else (1, (LexLeanStd.Text::sliceOr subject position 1)))))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: escapeStep,
+  parameters: [subject : Bytes, state : (Nat * Bytes)],
+  result: (Option (Nat * Bytes)),
+  body: (let position : Nat := (first state); (let byte : Nat := (byteNat subject position); (if (byte =? 256) then (ctor Option.none [(Nat * Bytes)]) else (let piece : (Nat * Bytes) := (escapePiece subject position byte); (ctor Option.some [(Nat * Bytes)] ((position + (first piece)), (cat (second state) (second piece)))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: strDebug,
+  parameters: [subject : Bytes],
+  result: Bytes,
+  body: (cat (text "\"") (cat (second (first (prim iterate_until (fun [subject] (state : (Nat * Bytes)) => (escapeStep subject state)) (prim length subject : Nat) (0, 0x) : ((Nat * Bytes) * Bool)))) (text "\""))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: tyDebug,
+  parameters: [ty : Ty],
+  result: Bytes,
+  body: (match ty
+    | Ty.TUnit => (text "Unit")
+    | Ty.TBool => (text "Bool")
+    | Ty.TNat => (text "Nat")
+    | Ty.TInt => (text "Int")
+    | Ty.TFixed width => (cat (text "Fixed { width: ") (cat (kindDebug width) (text " }")))
+    | Ty.TString => (text "String")
+    | Ty.TBytes => (text "Bytes")
+    | Ty.TOrdering => (text "Ordering")
+    | Ty.TOption value => (cat (text "Option { value: ") (cat (tyDebug value) (text " }")))
+    | Ty.TResult ok error => (cat (text "Result { ok: ") (cat (tyDebug ok) (cat (text ", error: ") (cat (tyDebug error) (text " }")))))
+    | Ty.TList element => (cat (text "List { element: ") (cat (tyDebug element) (text " }")))
+    | Ty.TPair left right => (cat (text "Pair { left: ") (cat (tyDebug left) (cat (text ", right: ") (cat (tyDebug right) (text " }")))))
+    | Ty.TAdt index => (cat (text "Adt { index: ") (cat (decimal index) (text " }")))
+    | Ty.TFn parameters result => (cat (text "Fn { parameters: [") (cat (tyDebug parameters) (cat (text "], result: ") (cat (tyDebug result) (text " }")))))
+    | Ty.TNil => (text "")
+    | Ty.TCons head tail => (let headText : Bytes := (tyDebug head); (let rest : Bytes := (tyDebug tail); (if (isNilTy tail) then headText else (cat headText (cat (text ", ") rest)))))),
+  executable: true,
+  recursive_argument: ty
+}
+
+definition{
+  name: tyList,
+  parameters: [ty : Ty],
+  result: Bytes,
+  body: (cat (text "[") (cat (tyDebug ty) (text "]"))),
+  executable: true
+}
+
+definition{
+  name: shapeDebug,
+  parameters: [shape : Shape],
+  result: Bytes,
+  body: (match shape
+    | Shape.SNone => (text "None")
+    | Shape.SSome => (text "Some")
+    | Shape.SOk => (text "Ok")
+    | Shape.SError => (text "Error")
+    | Shape.SNil => (text "Nil")
+    | Shape.SCons => (text "Cons")
+    | Shape.SZero => (text "Zero")
+    | Shape.SSucc => (text "Succ")
+    | Shape.SPair => (text "Pair")
+    | Shape.STrue => (text "True")
+    | Shape.SFalse => (text "False")
+    | Shape.SUnit => (text "Unit")
+    | Shape.SLt => (text "Lt")
+    | Shape.SEq => (text "Eq")
+    | Shape.SGt => (text "Gt")
+    | Shape.SAdt constructor => (cat (text "Adt { constructor: ") (cat (decimal constructor) (text " }")))),
+  executable: true
+}
+
+definition{
+  name: primDebug,
+  parameters: [operation : Prim],
+  result: Bytes,
+  body: (match operation
+    | Prim.NatAdd => (text "NatAdd")
+    | Prim.NatSub => (text "NatSub")
+    | Prim.NatMul => (text "NatMul")
+    | Prim.NatQuot => (text "NatQuot")
+    | Prim.NatRem => (text "NatRem")
+    | Prim.NatEq => (text "NatEq")
+    | Prim.NatLe => (text "NatLe")
+    | Prim.NatLt => (text "NatLt")
+    | Prim.IntAdd => (text "IntAdd")
+    | Prim.IntSub => (text "IntSub")
+    | Prim.IntMul => (text "IntMul")
+    | Prim.IntNeg => (text "IntNeg")
+    | Prim.IntQuot => (text "IntQuot")
+    | Prim.IntRem => (text "IntRem")
+    | Prim.CheckedAdd => (text "CheckedAdd")
+    | Prim.CheckedSub => (text "CheckedSub")
+    | Prim.CheckedMul => (text "CheckedMul")
+    | Prim.CheckedNeg => (text "CheckedNeg")
+    | Prim.CheckedQuot => (text "CheckedQuot")
+    | Prim.BitAnd => (text "BitAnd")
+    | Prim.BitOr => (text "BitOr")
+    | Prim.BitXor => (text "BitXor")
+    | Prim.BitNot => (text "BitNot")
+    | Prim.ShiftLeft => (text "ShiftLeft")
+    | Prim.ShiftRight => (text "ShiftRight")
+    | Prim.Equal => (text "Equal")
+    | Prim.BoolNot => (text "BoolNot")
+    | Prim.BoolAnd => (text "BoolAnd")
+    | Prim.BoolOr => (text "BoolOr")
+    | Prim.Append => (text "Append")
+    | Prim.Length => (text "Length")
+    | Prim.Index => (text "Index")
+    | Prim.Slice => (text "Slice")
+    | Prim.Utf8Encode => (text "Utf8Encode")
+    | Prim.Utf8Decode => (text "Utf8Decode")
+    | Prim.CompareBytes => (text "CompareBytes")
+    | Prim.SplitExact => (text "SplitExact")
+    | Prim.Join => (text "Join")
+    | Prim.FormatDecimal => (text "FormatDecimal")
+    | Prim.Compare => (text "Compare")
+    | Prim.Convert target => (cat (text "Convert { target: ") (cat (kindDebug target) (text " }")))
+    | Prim.ParseDecimal target => (cat (text "ParseDecimal { target: ") (cat (tyDebug target) (text " }")))),
+  executable: true
+}
+
+definition{
+  name: isNilValue,
+  parameters: [value : Value],
+  result: Bool,
+  body: (match value
+    | Value.VUnit => false
+    | Value.VBool f0 => false
+    | Value.VNat f0 => false
+    | Value.VInt f0 => false
+    | Value.VU8 f0 => false
+    | Value.VU16 f0 => false
+    | Value.VU32 f0 => false
+    | Value.VU64 f0 => false
+    | Value.VI8 f0 => false
+    | Value.VI16 f0 => false
+    | Value.VI32 f0 => false
+    | Value.VI64 f0 => false
+    | Value.VString f0 => false
+    | Value.VBytes f0 => false
+    | Value.VOrdering f0 => false
+    | Value.VNone => false
+    | Value.VSome f0 => false
+    | Value.VOk f0 => false
+    | Value.VError f0 => false
+    | Value.VList f0 => false
+    | Value.VPair f0 f1 => false
+    | Value.VAdt f0 f1 => false
+    | Value.VClosure f0 f1 => false
+    | Value.VNil => true
+    | Value.VCons f0 f1 => false),
+  executable: true
+}
+
+definition{
+  name: valDebug,
+  parameters: [value : Value],
+  result: Bytes,
+  body: (match value
+    | Value.VUnit => (text "Unit")
+    | Value.VBool flag => (cat (text "Bool { value: ") (cat (boolDebug flag) (text " }")))
+    | Value.VNat digits => (cat (text "Nat { value: ") (cat (strDebug digits) (text " }")))
+    | Value.VInt digits => (cat (text "Int { value: ") (cat (strDebug digits) (text " }")))
+    | Value.VU8 digits => (cat (text "U8 { value: ") (cat (strDebug digits) (text " }")))
+    | Value.VU16 digits => (cat (text "U16 { value: ") (cat (strDebug digits) (text " }")))
+    | Value.VU32 digits => (cat (text "U32 { value: ") (cat (strDebug digits) (text " }")))
+    | Value.VU64 digits => (cat (text "U64 { value: ") (cat (strDebug digits) (text " }")))
+    | Value.VI8 digits => (cat (text "I8 { value: ") (cat (strDebug digits) (text " }")))
+    | Value.VI16 digits => (cat (text "I16 { value: ") (cat (strDebug digits) (text " }")))
+    | Value.VI32 digits => (cat (text "I32 { value: ") (cat (strDebug digits) (text " }")))
+    | Value.VI64 digits => (cat (text "I64 { value: ") (cat (strDebug digits) (text " }")))
+    | Value.VString contents => (cat (text "String { value: ") (cat (strDebug contents) (text " }")))
+    | Value.VBytes hex => (cat (text "Bytes { hex: ") (cat (strDebug hex) (text " }")))
+    | Value.VOrdering order => (cat (text "Ordering { value: ") (cat (orderingDebug order) (text " }")))
+    | Value.VNone => (text "None")
+    | Value.VSome inner => (cat (text "Some { value: ") (cat (valDebug inner) (text " }")))
+    | Value.VOk inner => (cat (text "Ok { value: ") (cat (valDebug inner) (text " }")))
+    | Value.VError inner => (cat (text "Error { value: ") (cat (valDebug inner) (text " }")))
+    | Value.VList items => (cat (text "List { items: [") (cat (valDebug items) (text "] }")))
+    | Value.VPair left right => (cat (text "Pair { left: ") (cat (valDebug left) (cat (text ", right: ") (cat (valDebug right) (text " }")))))
+    | Value.VAdt constructor fields => (cat (text "Adt { constructor: ") (cat (decimal constructor) (cat (text ", fields: [") (cat (valDebug fields) (text "] }")))))
+    | Value.VClosure function captures => (cat (text "Closure { function: ") (cat (decimal function) (cat (text ", captures: [") (cat (valDebug captures) (text "] }")))))
+    | Value.VNil => (text "")
+    | Value.VCons head tail => (let headText : Bytes := (valDebug head); (let rest : Bytes := (valDebug tail); (if (isNilValue tail) then headText else (cat headText (cat (text ", ") rest)))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: value
+}
+
+definition{
+  name: digitAt,
+  parameters: [subject : Bytes, position : Nat],
+  result: Bool,
+  body: (let n : Nat := (byteNat subject position); (if (47 <? n) then (n <? 58) else false)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: digitStep,
+  parameters: [subject : Bytes, position : Nat],
+  result: (Option Nat),
+  body: (if (digitAt subject position) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: allDigits,
+  parameters: [subject : Bytes],
+  result: Bool,
+  body: ((first (prim iterate_until (fun [subject] (position : Nat) => (digitStep subject position)) (prim length subject : Nat) 0 : (Nat * Bool))) =? (prim length subject : Nat)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: hexDigitAt,
+  parameters: [subject : Bytes, position : Nat],
+  result: Bool,
+  body: (let n : Nat := (byteNat subject position); (if (47 <? n) then (if (n <? 58) then true else (if (96 <? n) then (n <? 103) else false)) else false)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: hexStep,
+  parameters: [subject : Bytes, position : Nat],
+  result: (Option Nat),
+  body: (if (hexDigitAt subject position) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: allHex,
+  parameters: [subject : Bytes],
+  result: Bool,
+  body: ((first (prim iterate_until (fun [subject] (position : Nat) => (hexStep subject position)) (prim length subject : Nat) 0 : (Nat * Bool))) =? (prim length subject : Nat)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: startsWithByte,
+  parameters: [subject : Bytes, value : UInt8],
+  result: Bool,
+  body: (byteIs subject 0 value),
+  executable: true
+}
+
+definition{
+  name: bytesLess,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bool,
+  body: (prim equal (prim compare_bytes left right : Ordering) (prim compare_bytes 0x 0x01 : Ordering) : Bool),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: magnitudeAtMost,
+  parameters: [digits : Bytes, limit : Bytes],
+  result: Bool,
+  body: (let shorter : Bool := ((prim length digits : Nat) <? (prim length limit : Nat)); (let same : Bool := ((prim length digits : Nat) =? (prim length limit : Nat)); (let above : Bool := (bytesLess limit digits); (if shorter then true else (if same then (not above) else false))))),
+  axioms: [propext],
+  executable: true
+}
+
+structure{
+  name: Decimal,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: negative, type: Bool}, {name: digits, type: Bytes}]
+}
+
+definition{
+  name: decimalAt,
+  parameters: [negative : Bool, digits : String],
+  result: Decimal,
+  body: (record Decimal {negative := negative, digits := (text digits)}),
+  executable: true
+}
+
+definition{
+  name: decimalAtMost,
+  parameters: [left : Decimal, right : Decimal],
+  result: Bool,
+  body: (let downward : Bool := (magnitudeAtMost (project right digits) (project left digits)); (let upward : Bool := (magnitudeAtMost (project left digits) (project right digits)); (if (project left negative) then (if (project right negative) then downward else true) else (if (project right negative) then false else upward)))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: kindLow,
+  parameters: [kind : IntKind],
+  result: Decimal,
+  body: (match kind
+    | IntKind.U8 => (decimalAt false "0")
+    | IntKind.U16 => (decimalAt false "0")
+    | IntKind.U32 => (decimalAt false "0")
+    | IntKind.U64 => (decimalAt false "0")
+    | IntKind.I8 => (decimalAt true "128")
+    | IntKind.I16 => (decimalAt true "32768")
+    | IntKind.I32 => (decimalAt true "2147483648")
+    | IntKind.I64 => (decimalAt true "9223372036854775808")),
+  executable: true
+}
+
+definition{
+  name: kindHigh,
+  parameters: [kind : IntKind],
+  result: Decimal,
+  body: (match kind
+    | IntKind.U8 => (decimalAt false "255")
+    | IntKind.U16 => (decimalAt false "65535")
+    | IntKind.U32 => (decimalAt false "4294967295")
+    | IntKind.U64 => (decimalAt false "18446744073709551615")
+    | IntKind.I8 => (decimalAt false "127")
+    | IntKind.I16 => (decimalAt false "32767")
+    | IntKind.I32 => (decimalAt false "2147483647")
+    | IntKind.I64 => (decimalAt false "9223372036854775807")),
+  executable: true
+}
+
+definition{
+  name: canonicalDigits,
+  parameters: [digits : Bytes, literal : Bytes],
+  result: Bool,
+  body: (if (0 <? (prim length digits : Nat)) then (if (allDigits digits) then (if (prim equal digits (text "0") : Bool) then (not (prim equal literal (text "-0") : Bool)) else (not (byteIs digits 0 (48 : UInt8)))) else false) else false),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: parseDecimal,
+  parameters: [literal : Bytes],
+  result: (Result Decimal Bytes),
+  body: (let negative : Bool := (byteIs literal 0 (45 : UInt8)); (let digits : Bytes := (let rest : Bytes := (LexLeanStd.Text::sliceOr literal 1 (prim subtract (prim length literal : Nat) 1 : Nat)); (if negative then rest else literal)); (let canonical : Bool := (canonicalDigits digits literal); (let fitsPositive : Bool := (magnitudeAtMost digits (text "170141183460469231731687303715884105727")); (let fitsNegative : Bool := (magnitudeAtMost digits (text "170141183460469231731687303715884105728")); (if canonical then (if (if negative then fitsNegative else fitsPositive) then (ctor Result.ok [Decimal, Bytes] (record Decimal {negative := negative, digits := digits})) else (ctor Result.error [Decimal, Bytes] (cat (quoted literal) (text " is outside every realized integer")))) else (ctor Result.error [Decimal, Bytes] (cat (quoted literal) (text " is not a canonical decimal"))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: fixedLiteral,
+  parameters: [literal : Bytes, kind : IntKind],
+  result: (Result Unit Bytes),
+  body: (match (parseDecimal literal)
+    | Result.ok number => (let low : Decimal := (kindLow kind); (let high : Decimal := (kindHigh kind); (let above : Bool := (decimalAtMost low number); (let below : Bool := (decimalAtMost number high); (if above then (if below then (ctor Result.ok [Unit, Bytes] ()) else (ctor Result.error [Unit, Bytes] (cat literal (cat (text " is outside ") (kindName kind))))) else (ctor Result.error [Unit, Bytes] (cat literal (cat (text " is outside ") (kindName kind)))))))))
+    | Result.error problem => (ctor Result.error [Unit, Bytes] problem)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: natLiteral,
+  parameters: [literal : Bytes],
+  result: (Result Unit Bytes),
+  body: (match (parseDecimal literal)
+    | Result.ok number => (let fits : Bool := (magnitudeAtMost (project number digits) (text "18446744073709551615")); (if (project number negative) then (ctor Result.error [Unit, Bytes] (cat (text "nat literal ") (cat literal (text " is outside the 64-bit realization")))) else (if fits then (ctor Result.ok [Unit, Bytes] ()) else (ctor Result.error [Unit, Bytes] (cat (text "nat literal ") (cat literal (text " is outside the 64-bit realization")))))))
+    | Result.error problem => (ctor Result.error [Unit, Bytes] problem)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: bytesLiteral,
+  parameters: [hex : Bytes],
+  result: (Result Unit Bytes),
+  body: (if ((prim remainder (prim length hex : Nat) 2 0 : Nat) =? 0) then (if (allHex hex) then (ctor Result.ok [Unit, Bytes] ()) else (ctor Result.error [Unit, Bytes] (cat (text "byte literal `") (cat hex (text "` is not even-length lowercase hexadecimal"))))) else (ctor Result.error [Unit, Bytes] (cat (text "byte literal `") (cat hex (text "` is not even-length lowercase hexadecimal"))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: adtAt,
+  parameters: [program : Program, position : Nat],
+  result: (Option Ty),
+  body: (tyChainAt (project program adts) position),
+  executable: true
+}
+
+definition{
+  name: functionTypes,
+  parameters: [program : Program, position : Nat],
+  result: (Option Ty),
+  body: (tyChainAt (project program types) position),
+  executable: true
+}
+
+definition{
+  name: functionResult,
+  parameters: [program : Program, position : Nat],
+  result: Ty,
+  body: (match (tyChainAt (project program results) position)
+    | Option.some found => found
+    | Option.none => (ctor Ty.TUnit)),
+  executable: true
+}
+
+definition{
+  name: undeclaredAdt,
+  parameters: [index : Nat],
+  result: Bytes,
+  body: (cat (text "ADT ") (cat (decimal index) (text " is not declared"))),
+  executable: true
+}
+
+definition{
+  name: undeclaredFunction,
+  parameters: [index : Nat],
+  result: Bytes,
+  body: (cat (text "function ") (cat (decimal index) (text " is not declared"))),
+  executable: true
+}
+
+definition{
+  name: tyOk,
+  parameters: [program : Program, ty : Ty],
+  result: (Result Unit Bytes),
+  body: (match ty
+    | Ty.TUnit => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TBool => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TNat => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TInt => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TString => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TBytes => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TOrdering => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TNil => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TFixed width => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TOption value => (tyOk program value)
+    | Ty.TResult ok error => (match (tyOk program ok)
+      | Result.ok done => (tyOk program error)
+      | Result.error problem => (ctor Result.error [Unit, Bytes] problem))
+    | Ty.TList element => (tyOk program element)
+    | Ty.TPair left right => (match (tyOk program left)
+      | Result.ok done => (tyOk program right)
+      | Result.error problem => (ctor Result.error [Unit, Bytes] problem))
+    | Ty.TAdt index => (match (adtAt program index)
+      | Option.some declaration => (ctor Result.ok [Unit, Bytes] ())
+      | Option.none => (ctor Result.error [Unit, Bytes] (undeclaredAdt index)))
+    | Ty.TFn parameters result => (if (isNilTy parameters) then (ctor Result.error [Unit, Bytes] (text "a function type takes at least one parameter")) else (match (tyOk program parameters)
+      | Result.ok done => (tyOk program result)
+      | Result.error problem => (ctor Result.error [Unit, Bytes] problem)))
+    | Ty.TCons head tail => (match (tyOk program head)
+      | Result.ok done => (tyOk program tail)
+      | Result.error problem => (ctor Result.error [Unit, Bytes] problem))),
+  executable: true,
+  recursive_argument: ty
+}
+
+definition{
+  name: expectTy,
+  parameters: [actual : Ty, expected : Ty, what : Bytes],
+  result: (Result Unit Bytes),
+  body: (let yes1 : (Result Unit Bytes) := (ctor Result.ok [Unit, Bytes] ()); (let no2 : (Result Unit Bytes) := (ctor Result.error [Unit, Bytes] (cat what (cat (text " has type ") (cat (tyDebug actual) (cat (text ", expected ") (tyDebug expected)))))); (if (tyEq actual expected) then yes1 else no2))),
+  executable: true
+}
+
+definition{
+  name: ctorFields,
+  parameters: [program : Program, adt : Nat, constructor : Nat],
+  result: (Result Ty Bytes),
+  body: (match (adtAt program adt)
+    | Option.none => (ctor Result.error [Ty, Bytes] (undeclaredAdt adt))
+    | Option.some declaration => (match (tyChainAt declaration constructor)
+      | Option.some fields => (ctor Result.ok [Ty, Bytes] fields)
+      | Option.none => (ctor Result.error [Ty, Bytes] (cat (text "ADT ") (cat (decimal adt) (cat (text " has no constructor ") (decimal constructor))))))),
+  executable: true
+}
+
+definition{
+  name: valueOk,
+  parameters: [program : Program, value : Value, ty : Ty, mode : Nat],
+  result: (Result Unit Bytes),
+  body: (match value
+    | Value.VUnit => (let yes3 : (Result Unit Bytes) := (ctor Result.ok [Unit, Bytes] ()); (let no4 : (Result Unit Bytes) := (ctor Result.error [Unit, Bytes] (cat (text "the literal ") (cat (valDebug (ctor Value.VUnit)) (cat (text " does not have type ") (tyDebug ty))))); (if ((tyTag ty) =? 0) then yes3 else no4)))
+    | Value.VBool flag => (let yes5 : (Result Unit Bytes) := (ctor Result.ok [Unit, Bytes] ()); (let no6 : (Result Unit Bytes) := (ctor Result.error [Unit, Bytes] (cat (text "the literal ") (cat (valDebug (ctor Value.VBool flag)) (cat (text " does not have type ") (tyDebug ty))))); (if ((tyTag ty) =? 1) then yes5 else no6)))
+    | Value.VNat digits => (let yes7 : (Result Unit Bytes) := (natLiteral digits); (let no8 : (Result Unit Bytes) := (ctor Result.error [Unit, Bytes] (cat (text "the literal ") (cat (valDebug (ctor Value.VNat digits)) (cat (text " does not have type ") (tyDebug ty))))); (if ((tyTag ty) =? 2) then yes7 else no8)))
+    | Value.VInt digits => (let yes9 : (Result Unit Bytes) := (fixedLiteral digits (ctor IntKind.I64)); (let no10 : (Result Unit Bytes) := (ctor Result.error [Unit, Bytes] (cat (text "the literal ") (cat (valDebug (ctor Value.VInt digits)) (cat (text " does not have type ") (tyDebug ty))))); (if ((tyTag ty) =? 3) then yes9 else no10)))
+    | Value.VU8 digits => (let yes11 : (Result Unit Bytes) := (fixedLiteral digits (ctor IntKind.U8)); (let no12 : (Result Unit Bytes) := (ctor Result.error [Unit, Bytes] (cat (text "the literal ") (cat (valDebug (ctor Value.VU8 digits)) (cat (text " does not have type ") (tyDebug ty))))); (if (if ((tyTag ty) =? 4) then ((kindIndex (tyWidth ty)) =? 0) else false) then yes11 else no12)))
+    | Value.VU16 digits => (let yes13 : (Result Unit Bytes) := (fixedLiteral digits (ctor IntKind.U16)); (let no14 : (Result Unit Bytes) := (ctor Result.error [Unit, Bytes] (cat (text "the literal ") (cat (valDebug (ctor Value.VU16 digits)) (cat (text " does not have type ") (tyDebug ty))))); (if (if ((tyTag ty) =? 4) then ((kindIndex (tyWidth ty)) =? 1) else false) then yes13 else no14)))
+    | Value.VU32 digits => (let yes15 : (Result Unit Bytes) := (fixedLiteral digits (ctor IntKind.U32)); (let no16 : (Result Unit Bytes) := (ctor Result.error [Unit, Bytes] (cat (text "the literal ") (cat (valDebug (ctor Value.VU32 digits)) (cat (text " does not have type ") (tyDebug ty))))); (if (if ((tyTag ty) =? 4) then ((kindIndex (tyWidth ty)) =? 2) else false) then yes15 else no16)))
+    | Value.VU64 digits => (let yes17 : (Result Unit Bytes) := (fixedLiteral digits (ctor IntKind.U64)); (let no18 : (Result Unit Bytes) := (ctor Result.error [Unit, Bytes] (cat (text "the literal ") (cat (valDebug (ctor Value.VU64 digits)) (cat (text " does not have type ") (tyDebug ty))))); (if (if ((tyTag ty) =? 4) then ((kindIndex (tyWidth ty)) =? 3) else false) then yes17 else no18)))
+    | Value.VI8 digits => (let yes19 : (Result Unit Bytes) := (fixedLiteral digits (ctor IntKind.I8)); (let no20 : (Result Unit Bytes) := (ctor Result.error [Unit, Bytes] (cat (text "the literal ") (cat (valDebug (ctor Value.VI8 digits)) (cat (text " does not have type ") (tyDebug ty))))); (if (if ((tyTag ty) =? 4) then ((kindIndex (tyWidth ty)) =? 4) else false) then yes19 else no20)))
+    | Value.VI16 digits => (let yes21 : (Result Unit Bytes) := (fixedLiteral digits (ctor IntKind.I16)); (let no22 : (Result Unit Bytes) := (ctor Result.error [Unit, Bytes] (cat (text "the literal ") (cat (valDebug (ctor Value.VI16 digits)) (cat (text " does not have type ") (tyDebug ty))))); (if (if ((tyTag ty) =? 4) then ((kindIndex (tyWidth ty)) =? 5) else false) then yes21 else no22)))
+    | Value.VI32 digits => (let yes23 : (Result Unit Bytes) := (fixedLiteral digits (ctor IntKind.I32)); (let no24 : (Result Unit Bytes) := (ctor Result.error [Unit, Bytes] (cat (text "the literal ") (cat (valDebug (ctor Value.VI32 digits)) (cat (text " does not have type ") (tyDebug ty))))); (if (if ((tyTag ty) =? 4) then ((kindIndex (tyWidth ty)) =? 6) else false) then yes23 else no24)))
+    | Value.VI64 digits => (let yes25 : (Result Unit Bytes) := (fixedLiteral digits (ctor IntKind.I64)); (let no26 : (Result Unit Bytes) := (ctor Result.error [Unit, Bytes] (cat (text "the literal ") (cat (valDebug (ctor Value.VI64 digits)) (cat (text " does not have type ") (tyDebug ty))))); (if (if ((tyTag ty) =? 4) then ((kindIndex (tyWidth ty)) =? 7) else false) then yes25 else no26)))
+    | Value.VString contents => (let yes27 : (Result Unit Bytes) := (ctor Result.ok [Unit, Bytes] ()); (let no28 : (Result Unit Bytes) := (ctor Result.error [Unit, Bytes] (cat (text "the literal ") (cat (valDebug (ctor Value.VString contents)) (cat (text " does not have type ") (tyDebug ty))))); (if ((tyTag ty) =? 5) then yes27 else no28)))
+    | Value.VBytes hex => (let yes29 : (Result Unit Bytes) := (bytesLiteral hex); (let no30 : (Result Unit Bytes) := (ctor Result.error [Unit, Bytes] (cat (text "the literal ") (cat (valDebug (ctor Value.VBytes hex)) (cat (text " does not have type ") (tyDebug ty))))); (if ((tyTag ty) =? 6) then yes29 else no30)))
+    | Value.VOrdering order => (let yes31 : (Result Unit Bytes) := (ctor Result.ok [Unit, Bytes] ()); (let no32 : (Result Unit Bytes) := (ctor Result.error [Unit, Bytes] (cat (text "the literal ") (cat (valDebug (ctor Value.VOrdering order)) (cat (text " does not have type ") (tyDebug ty))))); (if ((tyTag ty) =? 7) then yes31 else no32)))
+    | Value.VNone => (let yes33 : (Result Unit Bytes) := (ctor Result.ok [Unit, Bytes] ()); (let no34 : (Result Unit Bytes) := (ctor Result.error [Unit, Bytes] (cat (text "the literal ") (cat (valDebug (ctor Value.VNone)) (cat (text " does not have type ") (tyDebug ty))))); (if ((tyTag ty) =? 8) then yes33 else no34)))
+    | Value.VSome inner => (let yes35 : (Result Unit Bytes) := (valueOk program inner (tyFirst ty) 0); (let no36 : (Result Unit Bytes) := (ctor Result.error [Unit, Bytes] (cat (text "the literal ") (cat (valDebug (ctor Value.VSome inner)) (cat (text " does not have type ") (tyDebug ty))))); (if ((tyTag ty) =? 8) then yes35 else no36)))
+    | Value.VOk inner => (let yes37 : (Result Unit Bytes) := (valueOk program inner (tyFirst ty) 0); (let no38 : (Result Unit Bytes) := (ctor Result.error [Unit, Bytes] (cat (text "the literal ") (cat (valDebug (ctor Value.VOk inner)) (cat (text " does not have type ") (tyDebug ty))))); (if ((tyTag ty) =? 9) then yes37 else no38)))
+    | Value.VError inner => (let yes39 : (Result Unit Bytes) := (valueOk program inner (tySecond ty) 0); (let no40 : (Result Unit Bytes) := (ctor Result.error [Unit, Bytes] (cat (text "the literal ") (cat (valDebug (ctor Value.VError inner)) (cat (text " does not have type ") (tyDebug ty))))); (if ((tyTag ty) =? 9) then yes39 else no40)))
+    | Value.VList items => (let yes41 : (Result Unit Bytes) := (valueOk program items (tyFirst ty) 1); (let no42 : (Result Unit Bytes) := (ctor Result.error [Unit, Bytes] (cat (text "the literal ") (cat (valDebug (ctor Value.VList items)) (cat (text " does not have type ") (tyDebug ty))))); (if ((tyTag ty) =? 10) then yes41 else no42)))
+    | Value.VPair left right => (let onLeft : (Result Unit Bytes) := (valueOk program left (tyFirst ty) 0); (let onRight : (Result Unit Bytes) := (valueOk program right (tySecond ty) 0); (let yes43 : (Result Unit Bytes) := (match onLeft
+      | Result.ok done => onRight
+      | Result.error problem => (ctor Result.error [Unit, Bytes] problem)); (let no44 : (Result Unit Bytes) := (ctor Result.error [Unit, Bytes] (cat (text "the literal ") (cat (valDebug (ctor Value.VPair left right)) (cat (text " does not have type ") (tyDebug ty))))); (if ((tyTag ty) =? 11) then yes43 else no44)))))
+    | Value.VAdt constructor fields => (let yes47 : (Result Unit Bytes) := (match (ctorFields program (tyAdtIndex ty) constructor)
+      | Result.error problem => (ctor Result.error [Unit, Bytes] problem)
+      | Result.ok declared => (let inner : (Result Unit Bytes) := (valueOk program fields declared 2); (let yes45 : (Result Unit Bytes) := inner; (let no46 : (Result Unit Bytes) := (ctor Result.error [Unit, Bytes] (cat (text "constructor ") (cat (decimal constructor) (cat (text " of ADT ") (cat (decimal (tyAdtIndex ty)) (cat (text " takes ") (cat (decimal (tyChainLength declared)) (cat (text " fields, the literal has ") (decimal (valueChainLength fields)))))))))); (if ((valueChainLength fields) =? (tyChainLength declared)) then yes45 else no46))))); (let no48 : (Result Unit Bytes) := (ctor Result.error [Unit, Bytes] (cat (text "the literal ") (cat (valDebug (ctor Value.VAdt constructor fields)) (cat (text " does not have type ") (tyDebug ty))))); (if ((tyTag ty) =? 12) then yes47 else no48)))
+    | Value.VClosure function captures => (ctor Result.error [Unit, Bytes] (text "a closure has no literal form; build it with `closure`"))
+    | Value.VNil => (ctor Result.ok [Unit, Bytes] ())
+    | Value.VCons head tail => (let element : Ty := (if (mode =? 2) then (tyFirst ty) else ty); (let later : Ty := (if (mode =? 2) then (tySecond ty) else ty); (let onHead : (Result Unit Bytes) := (valueOk program head element 0); (let onTail : (Result Unit Bytes) := (valueOk program tail later mode); (if (mode =? 0) then (ctor Result.ok [Unit, Bytes] ()) else (if (if (mode =? 2) then (isNilTy ty) else false) then (ctor Result.ok [Unit, Bytes] ()) else (match onHead
+      | Result.ok done => onTail
+      | Result.error problem => (ctor Result.error [Unit, Bytes] problem))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: value
+}
+
+definition{
+  name: shapeFields,
+  parameters: [program : Program, shape : Shape, ty : Ty],
+  result: (Result Ty Bytes),
+  body: (match shape
+    | Shape.SNone => (let yes49 : (Result Ty Bytes) := (ctor Result.ok [Ty, Bytes] (ctor Ty.TNil)); (let no50 : (Result Ty Bytes) := (ctor Result.error [Ty, Bytes] (cat (text "shape ") (cat (shapeDebug shape) (cat (text " does not belong to type ") (tyDebug ty))))); (if ((tyTag ty) =? 8) then yes49 else no50)))
+    | Shape.SSome => (let yes51 : (Result Ty Bytes) := (ctor Result.ok [Ty, Bytes] (ctor Ty.TCons (tyFirst ty) (ctor Ty.TNil))); (let no52 : (Result Ty Bytes) := (ctor Result.error [Ty, Bytes] (cat (text "shape ") (cat (shapeDebug shape) (cat (text " does not belong to type ") (tyDebug ty))))); (if ((tyTag ty) =? 8) then yes51 else no52)))
+    | Shape.SOk => (let yes53 : (Result Ty Bytes) := (ctor Result.ok [Ty, Bytes] (ctor Ty.TCons (tyFirst ty) (ctor Ty.TNil))); (let no54 : (Result Ty Bytes) := (ctor Result.error [Ty, Bytes] (cat (text "shape ") (cat (shapeDebug shape) (cat (text " does not belong to type ") (tyDebug ty))))); (if ((tyTag ty) =? 9) then yes53 else no54)))
+    | Shape.SError => (let yes55 : (Result Ty Bytes) := (ctor Result.ok [Ty, Bytes] (ctor Ty.TCons (tySecond ty) (ctor Ty.TNil))); (let no56 : (Result Ty Bytes) := (ctor Result.error [Ty, Bytes] (cat (text "shape ") (cat (shapeDebug shape) (cat (text " does not belong to type ") (tyDebug ty))))); (if ((tyTag ty) =? 9) then yes55 else no56)))
+    | Shape.SNil => (let yes57 : (Result Ty Bytes) := (ctor Result.ok [Ty, Bytes] (ctor Ty.TNil)); (let no58 : (Result Ty Bytes) := (ctor Result.error [Ty, Bytes] (cat (text "shape ") (cat (shapeDebug shape) (cat (text " does not belong to type ") (tyDebug ty))))); (if ((tyTag ty) =? 10) then yes57 else no58)))
+    | Shape.SCons => (let yes59 : (Result Ty Bytes) := (ctor Result.ok [Ty, Bytes] (ctor Ty.TCons (tyFirst ty) (ctor Ty.TCons ty (ctor Ty.TNil)))); (let no60 : (Result Ty Bytes) := (ctor Result.error [Ty, Bytes] (cat (text "shape ") (cat (shapeDebug shape) (cat (text " does not belong to type ") (tyDebug ty))))); (if ((tyTag ty) =? 10) then yes59 else no60)))
+    | Shape.SZero => (let yes61 : (Result Ty Bytes) := (ctor Result.ok [Ty, Bytes] (ctor Ty.TNil)); (let no62 : (Result Ty Bytes) := (ctor Result.error [Ty, Bytes] (cat (text "shape ") (cat (shapeDebug shape) (cat (text " does not belong to type ") (tyDebug ty))))); (if ((tyTag ty) =? 2) then yes61 else no62)))
+    | Shape.SSucc => (let yes63 : (Result Ty Bytes) := (ctor Result.ok [Ty, Bytes] (ctor Ty.TCons (ctor Ty.TNat) (ctor Ty.TNil))); (let no64 : (Result Ty Bytes) := (ctor Result.error [Ty, Bytes] (cat (text "shape ") (cat (shapeDebug shape) (cat (text " does not belong to type ") (tyDebug ty))))); (if ((tyTag ty) =? 2) then yes63 else no64)))
+    | Shape.SPair => (let yes65 : (Result Ty Bytes) := (ctor Result.ok [Ty, Bytes] (ctor Ty.TCons (tyFirst ty) (ctor Ty.TCons (tySecond ty) (ctor Ty.TNil)))); (let no66 : (Result Ty Bytes) := (ctor Result.error [Ty, Bytes] (cat (text "shape ") (cat (shapeDebug shape) (cat (text " does not belong to type ") (tyDebug ty))))); (if ((tyTag ty) =? 11) then yes65 else no66)))
+    | Shape.STrue => (let yes67 : (Result Ty Bytes) := (ctor Result.ok [Ty, Bytes] (ctor Ty.TNil)); (let no68 : (Result Ty Bytes) := (ctor Result.error [Ty, Bytes] (cat (text "shape ") (cat (shapeDebug shape) (cat (text " does not belong to type ") (tyDebug ty))))); (if ((tyTag ty) =? 1) then yes67 else no68)))
+    | Shape.SFalse => (let yes69 : (Result Ty Bytes) := (ctor Result.ok [Ty, Bytes] (ctor Ty.TNil)); (let no70 : (Result Ty Bytes) := (ctor Result.error [Ty, Bytes] (cat (text "shape ") (cat (shapeDebug shape) (cat (text " does not belong to type ") (tyDebug ty))))); (if ((tyTag ty) =? 1) then yes69 else no70)))
+    | Shape.SUnit => (let yes71 : (Result Ty Bytes) := (ctor Result.ok [Ty, Bytes] (ctor Ty.TNil)); (let no72 : (Result Ty Bytes) := (ctor Result.error [Ty, Bytes] (cat (text "shape ") (cat (shapeDebug shape) (cat (text " does not belong to type ") (tyDebug ty))))); (if ((tyTag ty) =? 0) then yes71 else no72)))
+    | Shape.SLt => (let yes73 : (Result Ty Bytes) := (ctor Result.ok [Ty, Bytes] (ctor Ty.TNil)); (let no74 : (Result Ty Bytes) := (ctor Result.error [Ty, Bytes] (cat (text "shape ") (cat (shapeDebug shape) (cat (text " does not belong to type ") (tyDebug ty))))); (if ((tyTag ty) =? 7) then yes73 else no74)))
+    | Shape.SEq => (let yes75 : (Result Ty Bytes) := (ctor Result.ok [Ty, Bytes] (ctor Ty.TNil)); (let no76 : (Result Ty Bytes) := (ctor Result.error [Ty, Bytes] (cat (text "shape ") (cat (shapeDebug shape) (cat (text " does not belong to type ") (tyDebug ty))))); (if ((tyTag ty) =? 7) then yes75 else no76)))
+    | Shape.SGt => (let yes77 : (Result Ty Bytes) := (ctor Result.ok [Ty, Bytes] (ctor Ty.TNil)); (let no78 : (Result Ty Bytes) := (ctor Result.error [Ty, Bytes] (cat (text "shape ") (cat (shapeDebug shape) (cat (text " does not belong to type ") (tyDebug ty))))); (if ((tyTag ty) =? 7) then yes77 else no78)))
+    | Shape.SAdt constructor => (let fields : (Result Ty Bytes) := (ctorFields program (tyAdtIndex ty) constructor); (let yes79 : (Result Ty Bytes) := fields; (let no80 : (Result Ty Bytes) := (ctor Result.error [Ty, Bytes] (cat (text "shape ") (cat (shapeDebug shape) (cat (text " does not belong to type ") (tyDebug ty))))); (if ((tyTag ty) =? 12) then yes79 else no80))))),
+  executable: true
+}
+
+definition{
+  name: adtShapes,
+  parameters: [constructors : Ty, start : Nat],
+  result: (List Shape),
+  body: (match constructors
+    | Ty.TUnit => (nil Shape)
+    | Ty.TBool => (nil Shape)
+    | Ty.TNat => (nil Shape)
+    | Ty.TInt => (nil Shape)
+    | Ty.TFixed d0 => (nil Shape)
+    | Ty.TString => (nil Shape)
+    | Ty.TBytes => (nil Shape)
+    | Ty.TOrdering => (nil Shape)
+    | Ty.TOption d0 => (nil Shape)
+    | Ty.TResult d0 d1 => (nil Shape)
+    | Ty.TList d0 => (nil Shape)
+    | Ty.TPair d0 d1 => (nil Shape)
+    | Ty.TAdt d0 => (nil Shape)
+    | Ty.TFn d0 d1 => (nil Shape)
+    | Ty.TNil => (nil Shape)
+    | Ty.TCons head tail => (consShape (ctor Shape.SAdt start) (adtShapes tail (start + 1)))),
+  executable: true,
+  recursive_argument: constructors
+}
+
+definition{
+  name: shapesOf,
+  parameters: [program : Program, ty : Ty],
+  result: (Result (List Shape) Bytes),
+  body: (match ty
+    | Ty.TUnit => (ctor Result.ok [(List Shape), Bytes] (cons (ctor Shape.SUnit) (nil Shape)))
+    | Ty.TBool => (ctor Result.ok [(List Shape), Bytes] (cons (ctor Shape.STrue) (cons (ctor Shape.SFalse) (nil Shape))))
+    | Ty.TNat => (ctor Result.ok [(List Shape), Bytes] (cons (ctor Shape.SZero) (cons (ctor Shape.SSucc) (nil Shape))))
+    | Ty.TInt => (ctor Result.error [(List Shape), Bytes] (cat (text "a value of type ") (cat (tyDebug ty) (text " cannot be matched"))))
+    | Ty.TFixed width => (ctor Result.error [(List Shape), Bytes] (cat (text "a value of type ") (cat (tyDebug ty) (text " cannot be matched"))))
+    | Ty.TString => (ctor Result.error [(List Shape), Bytes] (cat (text "a value of type ") (cat (tyDebug ty) (text " cannot be matched"))))
+    | Ty.TBytes => (ctor Result.error [(List Shape), Bytes] (cat (text "a value of type ") (cat (tyDebug ty) (text " cannot be matched"))))
+    | Ty.TOrdering => (ctor Result.ok [(List Shape), Bytes] (cons (ctor Shape.SLt) (cons (ctor Shape.SEq) (cons (ctor Shape.SGt) (nil Shape)))))
+    | Ty.TOption value => (ctor Result.ok [(List Shape), Bytes] (cons (ctor Shape.SNone) (cons (ctor Shape.SSome) (nil Shape))))
+    | Ty.TResult ok error => (ctor Result.ok [(List Shape), Bytes] (cons (ctor Shape.SOk) (cons (ctor Shape.SError) (nil Shape))))
+    | Ty.TList element => (ctor Result.ok [(List Shape), Bytes] (cons (ctor Shape.SNil) (cons (ctor Shape.SCons) (nil Shape))))
+    | Ty.TPair left right => (ctor Result.ok [(List Shape), Bytes] (cons (ctor Shape.SPair) (nil Shape)))
+    | Ty.TAdt index => (match (adtAt program index)
+      | Option.none => (ctor Result.error [(List Shape), Bytes] (undeclaredAdt index))
+      | Option.some declaration => (ctor Result.ok [(List Shape), Bytes] (adtShapes declaration 0)))
+    | Ty.TFn parameters result => (ctor Result.error [(List Shape), Bytes] (cat (text "a value of type ") (cat (tyDebug ty) (text " cannot be matched"))))
+    | Ty.TNil => (ctor Result.error [(List Shape), Bytes] (cat (text "a value of type ") (cat (tyDebug ty) (text " cannot be matched"))))
+    | Ty.TCons head tail => (ctor Result.error [(List Shape), Bytes] (cat (text "a value of type ") (cat (tyDebug ty) (text " cannot be matched"))))),
+  executable: true
+}
+
+definition{
+  name: firstMissing,
+  parameters: [required : (List Shape), covered : (List Shape)],
+  result: (Option Shape),
+  body: (match required
+    | List.nil => (ctor Option.none [Shape])
+    | List.cons head tail => (let later : (Option Shape) := (firstMissing tail covered); (let yes81 : (Option Shape) := later; (let no82 : (Option Shape) := (ctor Option.some [Shape] head); (if (shapeIn covered head) then yes81 else no82))))),
+  executable: true,
+  recursive_argument: required
+}
+
+definition{
+  name: exactly,
+  parameters: [operation : Prim, expected : Ty, types : Ty, result : Ty],
+  result: (Result Ty Bytes),
+  body: (let yes83 : (Result Ty Bytes) := (ctor Result.ok [Ty, Bytes] result); (let no84 : (Result Ty Bytes) := (ctor Result.error [Ty, Bytes] (cat (text "primitive ") (cat (primDebug operation) (cat (text " takes ") (cat (tyList expected) (cat (text ", received ") (tyList types))))))); (if (tyEq types expected) then yes83 else no84))),
+  executable: true
+}
+
+definition{
+  name: inapplicable,
+  parameters: [operation : Prim, types : Ty],
+  result: (Result Ty Bytes),
+  body: (ctor Result.error [Ty, Bytes] (cat (text "primitive ") (cat (primDebug operation) (cat (text " does not apply to ") (tyList types))))),
+  executable: true
+}
+
+definition{
+  name: primType,
+  parameters: [operation : Prim, types : Ty],
+  result: (Result Ty Bytes),
+  body: (let headTy : Ty := (tyFirst types); (let lead : Ty := (if (isNilTy types) then (ctor Ty.TUnit) else headTy); (match operation
+    | Prim.NatAdd => (exactly operation (ctor Ty.TCons (ctor Ty.TNat) (ctor Ty.TCons (ctor Ty.TNat) (ctor Ty.TNil))) types (ctor Ty.TNat))
+    | Prim.NatSub => (exactly operation (ctor Ty.TCons (ctor Ty.TNat) (ctor Ty.TCons (ctor Ty.TNat) (ctor Ty.TNil))) types (ctor Ty.TNat))
+    | Prim.NatMul => (exactly operation (ctor Ty.TCons (ctor Ty.TNat) (ctor Ty.TCons (ctor Ty.TNat) (ctor Ty.TNil))) types (ctor Ty.TNat))
+    | Prim.NatQuot => (exactly operation (ctor Ty.TCons (ctor Ty.TNat) (ctor Ty.TCons (ctor Ty.TNat) (ctor Ty.TCons (ctor Ty.TNat) (ctor Ty.TNil)))) types (ctor Ty.TNat))
+    | Prim.NatRem => (exactly operation (ctor Ty.TCons (ctor Ty.TNat) (ctor Ty.TCons (ctor Ty.TNat) (ctor Ty.TCons (ctor Ty.TNat) (ctor Ty.TNil)))) types (ctor Ty.TNat))
+    | Prim.NatEq => (exactly operation (ctor Ty.TCons (ctor Ty.TNat) (ctor Ty.TCons (ctor Ty.TNat) (ctor Ty.TNil))) types (ctor Ty.TBool))
+    | Prim.NatLe => (exactly operation (ctor Ty.TCons (ctor Ty.TNat) (ctor Ty.TCons (ctor Ty.TNat) (ctor Ty.TNil))) types (ctor Ty.TBool))
+    | Prim.NatLt => (exactly operation (ctor Ty.TCons (ctor Ty.TNat) (ctor Ty.TCons (ctor Ty.TNat) (ctor Ty.TNil))) types (ctor Ty.TBool))
+    | Prim.IntAdd => (exactly operation (ctor Ty.TCons (ctor Ty.TInt) (ctor Ty.TCons (ctor Ty.TInt) (ctor Ty.TNil))) types (ctor Ty.TInt))
+    | Prim.IntSub => (exactly operation (ctor Ty.TCons (ctor Ty.TInt) (ctor Ty.TCons (ctor Ty.TInt) (ctor Ty.TNil))) types (ctor Ty.TInt))
+    | Prim.IntMul => (exactly operation (ctor Ty.TCons (ctor Ty.TInt) (ctor Ty.TCons (ctor Ty.TInt) (ctor Ty.TNil))) types (ctor Ty.TInt))
+    | Prim.IntNeg => (exactly operation (ctor Ty.TCons (ctor Ty.TInt) (ctor Ty.TNil)) types (ctor Ty.TInt))
+    | Prim.IntQuot => (exactly operation (ctor Ty.TCons (ctor Ty.TInt) (ctor Ty.TCons (ctor Ty.TInt) (ctor Ty.TCons (ctor Ty.TInt) (ctor Ty.TNil)))) types (ctor Ty.TInt))
+    | Prim.IntRem => (exactly operation (ctor Ty.TCons (ctor Ty.TInt) (ctor Ty.TCons (ctor Ty.TInt) (ctor Ty.TCons (ctor Ty.TInt) (ctor Ty.TNil)))) types (ctor Ty.TInt))
+    | Prim.CheckedAdd => (let yes85 : (Result Ty Bytes) := (exactly operation (ctor Ty.TCons lead (ctor Ty.TCons lead (ctor Ty.TNil))) types (ctor Ty.TOption lead)); (let no86 : (Result Ty Bytes) := (inapplicable operation types); (if ((tyTag lead) =? 4) then yes85 else no86)))
+    | Prim.CheckedSub => (let yes87 : (Result Ty Bytes) := (exactly operation (ctor Ty.TCons lead (ctor Ty.TCons lead (ctor Ty.TNil))) types (ctor Ty.TOption lead)); (let no88 : (Result Ty Bytes) := (inapplicable operation types); (if ((tyTag lead) =? 4) then yes87 else no88)))
+    | Prim.CheckedMul => (let yes89 : (Result Ty Bytes) := (exactly operation (ctor Ty.TCons lead (ctor Ty.TCons lead (ctor Ty.TNil))) types (ctor Ty.TOption lead)); (let no90 : (Result Ty Bytes) := (inapplicable operation types); (if ((tyTag lead) =? 4) then yes89 else no90)))
+    | Prim.CheckedQuot => (let yes91 : (Result Ty Bytes) := (exactly operation (ctor Ty.TCons lead (ctor Ty.TCons lead (ctor Ty.TNil))) types (ctor Ty.TOption lead)); (let no92 : (Result Ty Bytes) := (inapplicable operation types); (if ((tyTag lead) =? 4) then yes91 else no92)))
+    | Prim.CheckedNeg => (let yes93 : (Result Ty Bytes) := (exactly operation (ctor Ty.TCons lead (ctor Ty.TNil)) types (ctor Ty.TOption lead)); (let no94 : (Result Ty Bytes) := (inapplicable operation types); (if (if ((tyTag lead) =? 4) then (kindSigned (tyWidth lead)) else false) then yes93 else no94)))
+    | Prim.BitAnd => (let yes95 : (Result Ty Bytes) := (exactly operation (ctor Ty.TCons lead (ctor Ty.TCons lead (ctor Ty.TNil))) types lead); (let no96 : (Result Ty Bytes) := (inapplicable operation types); (if ((tyTag lead) =? 4) then yes95 else no96)))
+    | Prim.BitOr => (let yes97 : (Result Ty Bytes) := (exactly operation (ctor Ty.TCons lead (ctor Ty.TCons lead (ctor Ty.TNil))) types lead); (let no98 : (Result Ty Bytes) := (inapplicable operation types); (if ((tyTag lead) =? 4) then yes97 else no98)))
+    | Prim.BitXor => (let yes99 : (Result Ty Bytes) := (exactly operation (ctor Ty.TCons lead (ctor Ty.TCons lead (ctor Ty.TNil))) types lead); (let no100 : (Result Ty Bytes) := (inapplicable operation types); (if ((tyTag lead) =? 4) then yes99 else no100)))
+    | Prim.BitNot => (let yes101 : (Result Ty Bytes) := (exactly operation (ctor Ty.TCons lead (ctor Ty.TNil)) types lead); (let no102 : (Result Ty Bytes) := (inapplicable operation types); (if ((tyTag lead) =? 4) then yes101 else no102)))
+    | Prim.ShiftLeft => (let yes103 : (Result Ty Bytes) := (exactly operation (ctor Ty.TCons lead (ctor Ty.TCons (ctor Ty.TFixed (ctor IntKind.U32)) (ctor Ty.TNil))) types (ctor Ty.TOption lead)); (let no104 : (Result Ty Bytes) := (inapplicable operation types); (if ((tyTag lead) =? 4) then yes103 else no104)))
+    | Prim.ShiftRight => (let yes105 : (Result Ty Bytes) := (exactly operation (ctor Ty.TCons lead (ctor Ty.TCons (ctor Ty.TFixed (ctor IntKind.U32)) (ctor Ty.TNil))) types (ctor Ty.TOption lead)); (let no106 : (Result Ty Bytes) := (inapplicable operation types); (if ((tyTag lead) =? 4) then yes105 else no106)))
+    | Prim.Equal => (let yes107 : (Result Ty Bytes) := (exactly operation (ctor Ty.TCons lead (ctor Ty.TCons lead (ctor Ty.TNil))) types (ctor Ty.TBool)); (let no108 : (Result Ty Bytes) := (inapplicable operation types); (if (if ((tyTag lead) =? 2) then true else (if ((tyTag lead) =? 1) then true else (if ((tyTag lead) =? 4) then true else (if ((tyTag lead) =? 5) then true else (if ((tyTag lead) =? 6) then true else (if ((tyTag lead) =? 7) then true else false)))))) then yes107 else no108)))
+    | Prim.BoolNot => (exactly operation (ctor Ty.TCons (ctor Ty.TBool) (ctor Ty.TNil)) types (ctor Ty.TBool))
+    | Prim.BoolAnd => (exactly operation (ctor Ty.TCons (ctor Ty.TBool) (ctor Ty.TCons (ctor Ty.TBool) (ctor Ty.TNil))) types (ctor Ty.TBool))
+    | Prim.BoolOr => (exactly operation (ctor Ty.TCons (ctor Ty.TBool) (ctor Ty.TCons (ctor Ty.TBool) (ctor Ty.TNil))) types (ctor Ty.TBool))
+    | Prim.Append => (let yes109 : (Result Ty Bytes) := (exactly operation (ctor Ty.TCons lead (ctor Ty.TCons lead (ctor Ty.TNil))) types lead); (let no110 : (Result Ty Bytes) := (inapplicable operation types); (if (if ((tyTag lead) =? 10) then true else (if ((tyTag lead) =? 6) then true else false)) then yes109 else no110)))
+    | Prim.Length => (let yes111 : (Result Ty Bytes) := (exactly operation (ctor Ty.TCons lead (ctor Ty.TNil)) types (ctor Ty.TNat)); (let no112 : (Result Ty Bytes) := (inapplicable operation types); (if (if ((tyTag lead) =? 10) then true else (if ((tyTag lead) =? 6) then true else (if ((tyTag lead) =? 5) then true else false))) then yes111 else no112)))
+    | Prim.Index => (let onList : (Result Ty Bytes) := (exactly operation (ctor Ty.TCons lead (ctor Ty.TCons (ctor Ty.TNat) (ctor Ty.TNil))) types (ctor Ty.TOption (tyFirst lead))); (let onBytes : (Result Ty Bytes) := (exactly operation (ctor Ty.TCons (ctor Ty.TBytes) (ctor Ty.TCons (ctor Ty.TNat) (ctor Ty.TNil))) types (ctor Ty.TOption (ctor Ty.TFixed (ctor IntKind.U8)))); (if ((tyTag lead) =? 10) then onList else (if ((tyTag lead) =? 6) then onBytes else (ctor Result.error [Ty, Bytes] (cat (text "primitive Index of ") (tyDebug lead)))))))
+    | Prim.Slice => (let yes113 : (Result Ty Bytes) := (exactly operation (ctor Ty.TCons lead (ctor Ty.TCons (ctor Ty.TNat) (ctor Ty.TCons (ctor Ty.TNat) (ctor Ty.TNil)))) types (ctor Ty.TOption lead)); (let no114 : (Result Ty Bytes) := (inapplicable operation types); (if (if ((tyTag lead) =? 10) then true else (if ((tyTag lead) =? 6) then true else false)) then yes113 else no114)))
+    | Prim.Utf8Encode => (exactly operation (ctor Ty.TCons (ctor Ty.TString) (ctor Ty.TNil)) types (ctor Ty.TBytes))
+    | Prim.Utf8Decode => (exactly operation (ctor Ty.TCons (ctor Ty.TBytes) (ctor Ty.TNil)) types (ctor Ty.TOption (ctor Ty.TString)))
+    | Prim.CompareBytes => (exactly operation (ctor Ty.TCons (ctor Ty.TBytes) (ctor Ty.TCons (ctor Ty.TBytes) (ctor Ty.TNil))) types (ctor Ty.TOrdering))
+    | Prim.SplitExact => (exactly operation (ctor Ty.TCons (ctor Ty.TString) (ctor Ty.TCons (ctor Ty.TString) (ctor Ty.TCons (ctor Ty.TFixed (ctor IntKind.U32)) (ctor Ty.TNil)))) types (ctor Ty.TOption (ctor Ty.TList (ctor Ty.TString))))
+    | Prim.Join => (exactly operation (ctor Ty.TCons (ctor Ty.TList (ctor Ty.TString)) (ctor Ty.TCons (ctor Ty.TString) (ctor Ty.TNil))) types (ctor Ty.TString))
+    | Prim.FormatDecimal => (let yes115 : (Result Ty Bytes) := (exactly operation (ctor Ty.TCons lead (ctor Ty.TNil)) types (ctor Ty.TString)); (let no116 : (Result Ty Bytes) := (inapplicable operation types); (if (if ((tyTag lead) =? 3) then true else (if ((tyTag lead) =? 4) then true else false)) then yes115 else no116)))
+    | Prim.Compare => (let yes117 : (Result Ty Bytes) := (exactly operation (ctor Ty.TCons lead (ctor Ty.TCons lead (ctor Ty.TNil))) types (ctor Ty.TOrdering)); (let no118 : (Result Ty Bytes) := (inapplicable operation types); (if (orderable lead) then yes117 else no118)))
+    | Prim.Convert target => (let yes119 : (Result Ty Bytes) := (exactly operation (ctor Ty.TCons lead (ctor Ty.TNil)) types (ctor Ty.TOption (ctor Ty.TFixed target))); (let no120 : (Result Ty Bytes) := (inapplicable operation types); (if (if ((tyTag lead) =? 3) then true else (if ((tyTag lead) =? 4) then true else false)) then yes119 else no120)))
+    | Prim.ParseDecimal target => (let targetTag : Nat := (tyTag target); (let yes121 : (Result Ty Bytes) := (exactly operation (ctor Ty.TCons (ctor Ty.TString) (ctor Ty.TNil)) types (ctor Ty.TOption target)); (let no122 : (Result Ty Bytes) := (inapplicable operation types); (if (if (targetTag =? 3) then true else (targetTag =? 4)) then yes121 else no122))))))),
+  executable: true
+}
+
+definition{
+  name: extendScope,
+  parameters: [name : Nat, ty : Ty, scope : (List (Nat * Ty))],
+  result: (List (Nat * Ty)),
+  body: (cons (name, ty) scope),
+  executable: true
+}
+
+definition{
+  name: scopeFind,
+  parameters: [scope : (List (Nat * Ty)), name : Nat],
+  result: (Option Ty),
+  body: (match scope
+    | List.nil => (ctor Option.none [Ty])
+    | List.cons head tail => (let later : (Option Ty) := (scopeFind tail name); (if ((first head) =? name) then (ctor Option.some [Ty] (second head)) else later))),
+  executable: true,
+  recursive_argument: scope
+}
+
+definition{
+  name: bindAll,
+  parameters: [binders : (List Nat), tys : Ty, scope : (List (Nat * Ty))],
+  result: (List (Nat * Ty)),
+  body: (match binders
+    | List.nil => scope
+    | List.cons binder more => (let deeper : (List (Nat * Ty)) := (bindAll more (tySecond tys) (extendScope binder (tyFirst tys) scope)); (if (isNilTy tys) then scope else deeper))),
+  executable: true,
+  recursive_argument: binders
+}
+
+definition{
+  name: walk,
+  parameters: [
+    program : Program,
+    expr : Expr,
+    scope : (List (Nat * Ty)),
+    mode : Nat,
+    expected : Ty,
+    subject : Ty,
+    what : Bytes,
+    position : Nat,
+    covered : (List Shape)
+  ],
+  result: Outcome,
+  body: (match expr
+    | Expr.EValue ty value => (if (mode =? 0) then (match (tyOk program ty)
+      | Result.ok done124 => (match (valueOk program value ty 0)
+        | Result.ok done123 => (ctor Outcome.OTyped ty)
+        | Result.error problem => (ctor Outcome.OFailed problem))
+      | Result.error problem => (ctor Outcome.OFailed problem)) else (ctor Outcome.OFailed (text "unreachable")))
+    | Expr.EVar name => (if (mode =? 0) then (match (scopeFind scope name)
+      | Option.some found => (ctor Outcome.OTyped found)
+      | Option.none => (ctor Outcome.OFailed (cat (text "local ") (cat (decimal name) (text " is unbound"))))) else (ctor Outcome.OFailed (text "unreachable")))
+    | Expr.ELet name ty bound body => (if (mode =? 0) then (match (tyOk program ty)
+      | Result.ok done126 => (match (walk program bound scope 0 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+        | Outcome.OTyped actual => (match (expectTy actual ty (cat (text "the value bound to ") (decimal name)))
+          | Result.ok done125 => (walk program body (extendScope name ty scope) 0 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+          | Result.error problem => (ctor Outcome.OFailed problem))
+        | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+        | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+        | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable")))
+      | Result.error problem => (ctor Outcome.OFailed problem)) else (ctor Outcome.OFailed (text "unreachable")))
+    | Expr.ECond condition thenBranch elseBranch => (if (mode =? 0) then (match (walk program condition scope 0 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+      | Outcome.OTyped conditionTy => (match (expectTy conditionTy (ctor Ty.TBool) (text "a condition"))
+        | Result.ok done128 => (match (walk program thenBranch scope 0 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+          | Outcome.OTyped thenTy => (match (walk program elseBranch scope 0 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+            | Outcome.OTyped elseTy => (match (expectTy elseTy thenTy (text "the else branch"))
+              | Result.ok done127 => (ctor Outcome.OTyped thenTy)
+              | Result.error problem => (ctor Outcome.OFailed problem))
+            | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+            | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+            | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable")))
+          | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+          | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+          | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable")))
+        | Result.error problem => (ctor Outcome.OFailed problem))
+      | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+      | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+      | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable"))) else (ctor Outcome.OFailed (text "unreachable")))
+    | Expr.EMatch ty scrutinee arms => (if (mode =? 0) then (match (tyOk program ty)
+      | Result.ok done129 => (match (walk program scrutinee scope 0 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+        | Outcome.OTyped scrutineeTy => (match (shapesOf program scrutineeTy)
+          | Result.ok required => (match (walk program arms scope 4 ty scrutineeTy (text "") 0 (nil Shape))
+            | Outcome.OCovered seen => (match (firstMissing required seen)
+              | Option.some missing => (ctor Outcome.OFailed (cat (text "the match is not exhaustive: ") (cat (shapeDebug missing) (text " is not covered"))))
+              | Option.none => (ctor Outcome.OTyped ty))
+            | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+            | Outcome.OTyped stray => (ctor Outcome.OFailed (text "unreachable"))
+            | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable")))
+          | Result.error problem => (ctor Outcome.OFailed problem))
+        | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+        | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+        | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable")))
+      | Result.error problem => (ctor Outcome.OFailed problem)) else (ctor Outcome.OFailed (text "unreachable")))
+    | Expr.EBuild shape ty operands => (if (mode =? 0) then (match (tyOk program ty)
+      | Result.ok done131 => (match (shapeFields program shape ty)
+        | Result.ok fields => (let what130 : Bytes := (cat (text "constructor ") (shapeDebug shape)); (if ((exprChainLength operands) =? (tyChainLength fields)) then (match (walk program operands scope 2 fields (ctor Ty.TNil) what130 0 (nil Shape))
+          | Outcome.OFine => (ctor Outcome.OTyped ty)
+          | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+          | Outcome.OTyped stray => (ctor Outcome.OFailed (text "unreachable"))
+          | Outcome.OCovered strays => (ctor Outcome.OFailed (text "unreachable"))) else (ctor Outcome.OFailed (cat what130 (cat (text " takes ") (cat (decimal (tyChainLength fields)) (cat (text " operand(s), received ") (decimal (exprChainLength operands)))))))))
+        | Result.error problem => (ctor Outcome.OFailed problem))
+      | Result.error problem => (ctor Outcome.OFailed problem)) else (ctor Outcome.OFailed (text "unreachable")))
+    | Expr.ECall function operands => (if (mode =? 0) then (match (functionTypes program function)
+      | Option.none => (ctor Outcome.OFailed (undeclaredFunction function))
+      | Option.some declared => (let what132 : Bytes := (cat (text "function ") (decimal function)); (if ((exprChainLength operands) =? (tyChainLength declared)) then (match (walk program operands scope 2 declared (ctor Ty.TNil) what132 0 (nil Shape))
+        | Outcome.OFine => (ctor Outcome.OTyped (functionResult program function))
+        | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+        | Outcome.OTyped stray => (ctor Outcome.OFailed (text "unreachable"))
+        | Outcome.OCovered strays => (ctor Outcome.OFailed (text "unreachable"))) else (ctor Outcome.OFailed (cat what132 (cat (text " takes ") (cat (decimal (tyChainLength declared)) (cat (text " operand(s), received ") (decimal (exprChainLength operands)))))))))) else (ctor Outcome.OFailed (text "unreachable")))
+    | Expr.EClosure function captures => (if (mode =? 0) then (match (functionTypes program function)
+      | Option.none => (ctor Outcome.OFailed (undeclaredFunction function))
+      | Option.some declared => (let total : Nat := (tyChainLength declared); (let given : Nat := (exprChainLength captures); (if (total <=? given) then (ctor Outcome.OFailed (cat (text "closure of function ") (cat (decimal function) (cat (text " captures ") (cat (decimal given) (cat (text " of its ") (cat (decimal total) (text " parameters; at least one must remain")))))))) else (match (walk program captures scope 3 declared (ctor Ty.TNil) (cat (text "closure of function ") (decimal function)) 0 (nil Shape))
+        | Outcome.OTyped remaining => (ctor Outcome.OTyped (closureTy remaining (functionResult program function)))
+        | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+        | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+        | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable"))))))) else (ctor Outcome.OFailed (text "unreachable")))
+    | Expr.EApply target operands => (if (mode =? 0) then (match (walk program target scope 0 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+      | Outcome.OTyped targetTy => (if ((tyTag targetTy) =? 13) then (let what133 : Bytes := (text "an application"); (if ((exprChainLength operands) =? (tyChainLength (tyFirst targetTy))) then (match (walk program operands scope 2 (tyFirst targetTy) (ctor Ty.TNil) what133 0 (nil Shape))
+        | Outcome.OFine => (ctor Outcome.OTyped (tySecond targetTy))
+        | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+        | Outcome.OTyped stray => (ctor Outcome.OFailed (text "unreachable"))
+        | Outcome.OCovered strays => (ctor Outcome.OFailed (text "unreachable"))) else (ctor Outcome.OFailed (cat what133 (cat (text " takes ") (cat (decimal (tyChainLength (tyFirst targetTy))) (cat (text " operand(s), received ") (decimal (exprChainLength operands))))))))) else (ctor Outcome.OFailed (text "only a function value can be applied")))
+      | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+      | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+      | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable"))) else (ctor Outcome.OFailed (text "unreachable")))
+    | Expr.EPrim operation operands => (if (mode =? 0) then (match (walk program operands scope 1 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+      | Outcome.OTyped types => (match (primType operation types)
+        | Result.ok result => (ctor Outcome.OTyped result)
+        | Result.error problem => (ctor Outcome.OFailed problem))
+      | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+      | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+      | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable"))) else (ctor Outcome.OFailed (text "unreachable")))
+    | Expr.EFirst value => (if (mode =? 0) then (match (walk program value scope 0 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+      | Outcome.OTyped valueTy => (if ((tyTag valueTy) =? 11) then (ctor Outcome.OTyped (tyFirst valueTy)) else (ctor Outcome.OFailed (cat (text "`first` of ") (tyDebug valueTy))))
+      | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+      | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+      | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable"))) else (ctor Outcome.OFailed (text "unreachable")))
+    | Expr.ESecond value => (if (mode =? 0) then (match (walk program value scope 0 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+      | Outcome.OTyped valueTy => (if ((tyTag valueTy) =? 11) then (ctor Outcome.OTyped (tySecond valueTy)) else (ctor Outcome.OFailed (cat (text "`second` of ") (tyDebug valueTy))))
+      | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+      | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+      | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable"))) else (ctor Outcome.OFailed (text "unreachable")))
+    | Expr.EField value index => (if (mode =? 0) then (match (walk program value scope 0 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+      | Outcome.OTyped valueTy => (if ((tyTag valueTy) =? 12) then (let adt : Nat := (tyAdtIndex valueTy); (match (adtAt program adt)
+        | Option.none => (ctor Outcome.OFailed (undeclaredAdt adt))
+        | Option.some constructors => (if ((tyChainLength constructors) =? 1) then (match (tyChainAt constructors 0)
+          | Option.some only => (match (tyChainAt only index)
+            | Option.some found => (ctor Outcome.OTyped found)
+            | Option.none => (ctor Outcome.OFailed (cat (text "ADT ") (cat (decimal adt) (cat (text " has no field ") (decimal index))))))
+          | Option.none => (ctor Outcome.OFailed (text "unreachable"))) else (ctor Outcome.OFailed (cat (text "`field` requires an ADT with exactly one constructor; ADT ") (cat (decimal adt) (cat (text " has ") (decimal (tyChainLength constructors))))))))) else (ctor Outcome.OFailed (text "`field` requires an ADT value")))
+      | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+      | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+      | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable"))) else (ctor Outcome.OFailed (text "unreachable")))
+    | Expr.ENil => (if (mode =? 1) then (ctor Outcome.OTyped (ctor Ty.TNil)) else (if (mode =? 2) then (ctor Outcome.OFine) else (if (mode =? 3) then (ctor Outcome.OTyped expected) else (if (mode =? 4) then (ctor Outcome.OCovered covered) else (ctor Outcome.OFailed (text "unreachable"))))))
+    | Expr.ECons head tail => (if (mode =? 1) then (match (walk program head scope 0 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+      | Outcome.OTyped one => (match (walk program tail scope 1 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+        | Outcome.OTyped rest => (ctor Outcome.OTyped (consTy one rest))
+        | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+        | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+        | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable")))
+      | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+      | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+      | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable"))) else (if (mode =? 2) then (if (isNilTy expected) then (ctor Outcome.OFine) else (match (walk program head scope 0 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+      | Outcome.OTyped actual => (match (expectTy actual (tyFirst expected) (cat what (cat (text " operand ") (decimal position))))
+        | Result.ok done134 => (walk program tail scope 2 (tySecond expected) (ctor Ty.TNil) what (position + 1) (nil Shape))
+        | Result.error problem => (ctor Outcome.OFailed problem))
+      | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+      | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+      | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable")))) else (if (mode =? 3) then (if (isNilTy expected) then (ctor Outcome.OTyped (ctor Ty.TNil)) else (match (walk program head scope 0 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+      | Outcome.OTyped actual => (match (expectTy actual (tyFirst expected) (cat what (cat (text " operand ") (decimal position))))
+        | Result.ok done135 => (walk program tail scope 3 (tySecond expected) (ctor Ty.TNil) what (position + 1) (nil Shape))
+        | Result.error problem => (ctor Outcome.OFailed problem))
+      | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+      | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+      | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable")))) else (if (mode =? 4) then (match (walk program head scope 5 expected subject (text "") 0 covered)
+      | Outcome.OCovered updated => (walk program tail scope 4 expected subject (text "") 0 updated)
+      | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+      | Outcome.OTyped stray => (ctor Outcome.OFailed (text "unreachable"))
+      | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable"))) else (ctor Outcome.OFailed (text "unreachable"))))))
+    | Expr.EArm shape binders body => (if (mode =? 5) then (match (shapeFields program shape subject)
+      | Result.ok fields => (let named : Nat := (listLength [Nat] binders); (let bound : Nat := (tyChainLength fields); (if (named =? bound) then (if (hasRepeat binders) then (ctor Outcome.OFailed (cat (text "shape ") (cat (shapeDebug shape) (text " binds the same name twice")))) else (if (shapeIn covered shape) then (ctor Outcome.OFailed (cat (text "the arm for ") (cat (shapeDebug shape) (text " is unreachable")))) else (match (walk program body (bindAll binders fields scope) 0 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+        | Outcome.OTyped bodyTy => (match (expectTy bodyTy expected (text "an arm"))
+          | Result.ok done136 => (ctor Outcome.OCovered (consShape shape covered))
+          | Result.error problem => (ctor Outcome.OFailed problem))
+        | Outcome.OFailed problem => (ctor Outcome.OFailed problem)
+        | Outcome.OCovered stray => (ctor Outcome.OFailed (text "unreachable"))
+        | Outcome.OFine => (ctor Outcome.OFailed (text "unreachable"))))) else (ctor Outcome.OFailed (cat (text "shape ") (cat (shapeDebug shape) (cat (text " binds ") (cat (decimal bound) (cat (text " value(s), the arm names ") (decimal named))))))))))
+      | Result.error problem => (ctor Outcome.OFailed problem)) else (ctor Outcome.OFailed (text "unreachable")))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: expr
+}
+
+definition{
+  name: checkCtors,
+  parameters: [program : Program, constructors : Ty],
+  result: (Result Unit Bytes),
+  body: (match constructors
+    | Ty.TUnit => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TBool => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TNat => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TInt => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TFixed d0 => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TString => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TBytes => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TOrdering => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TOption d0 => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TResult d0 d1 => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TList d0 => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TPair d0 d1 => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TAdt d0 => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TFn d0 d1 => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TNil => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TCons head tail => (match (tyOk program head)
+      | Result.ok done => (checkCtors program tail)
+      | Result.error problem => (ctor Result.error [Unit, Bytes] problem))),
+  executable: true,
+  recursive_argument: constructors
+}
+
+definition{
+  name: checkAdts,
+  parameters: [program : Program, adts : Ty, index : Nat],
+  result: (Result Unit Bytes),
+  body: (match adts
+    | Ty.TUnit => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TBool => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TNat => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TInt => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TFixed d0 => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TString => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TBytes => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TOrdering => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TOption d0 => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TResult d0 d1 => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TList d0 => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TPair d0 d1 => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TAdt d0 => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TFn d0 d1 => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TNil => (ctor Result.ok [Unit, Bytes] ())
+    | Ty.TCons declaration tail => (if (isNilTy declaration) then (ctor Result.error [Unit, Bytes] (cat (text "ADT ") (cat (decimal index) (text " has no constructor")))) else (match (checkCtors program declaration)
+      | Result.ok done => (checkAdts program tail (index + 1))
+      | Result.error problem => (ctor Result.error [Unit, Bytes] (cat (text "ADT ") (cat (decimal index) (cat (text ": ") problem))))))),
+  executable: true,
+  recursive_argument: adts
+}
+
+definition{
+  name: functionNames,
+  parameters: [program : Program, position : Nat],
+  result: (List Nat),
+  body: (match (listAt [(List Nat)] (project program parameters) position)
+    | Option.some found => found
+    | Option.none => (nil Nat)),
+  executable: true
+}
+
+definition{
+  name: functionTypesOr,
+  parameters: [program : Program, position : Nat],
+  result: Ty,
+  body: (match (functionTypes program position)
+    | Option.some found => found
+    | Option.none => (ctor Ty.TNil)),
+  executable: true
+}
+
+definition{
+  name: checkFunction,
+  parameters: [program : Program, body : Expr, index : Nat],
+  result: (Result Unit Bytes),
+  body: (let names : (List Nat) := (functionNames program index); (let types : Ty := (functionTypesOr program index); (let result : Ty := (functionResult program index); (let named : Nat := (listLength [Nat] names); (let typed : Nat := (tyChainLength types); (if (named =? typed) then (if (hasRepeat names) then (ctor Result.error [Unit, Bytes] (cat (text "function ") (cat (decimal index) (cat (text ": ") (text "a parameter name repeats"))))) else (match (tyOk program types)
+    | Result.error problem => (ctor Result.error [Unit, Bytes] (cat (text "function ") (cat (decimal index) (cat (text ": ") problem))))
+    | Result.ok done1 => (match (tyOk program result)
+      | Result.error problem => (ctor Result.error [Unit, Bytes] (cat (text "function ") (cat (decimal index) (cat (text ": ") problem))))
+      | Result.ok done2 => (match (walk program body (bindAll names types (nil (Nat * Ty))) 0 (ctor Ty.TNil) (ctor Ty.TNil) (text "") 0 (nil Shape))
+        | Outcome.OFailed problem => (ctor Result.error [Unit, Bytes] (cat (text "function ") (cat (decimal index) (cat (text ": ") problem))))
+        | Outcome.OFine => (ctor Result.error [Unit, Bytes] (text "unreachable"))
+        | Outcome.OCovered stray => (ctor Result.error [Unit, Bytes] (text "unreachable"))
+        | Outcome.OTyped bodyTy => (match (expectTy bodyTy result (text "the body"))
+          | Result.error problem => (ctor Result.error [Unit, Bytes] (cat (text "function ") (cat (decimal index) (cat (text ": ") problem))))
+          | Result.ok done3 => (ctor Result.ok [Unit, Bytes] ())))))) else (ctor Result.error [Unit, Bytes] (cat (text "function ") (cat (decimal index) (cat (text ": ") (cat (decimal named) (cat (text " parameter names for ") (cat (decimal typed) (text " parameter types")))))))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: checkFunctions,
+  parameters: [program : Program, bodies : Expr, index : Nat],
+  result: (Result Unit Bytes),
+  body: (match bodies
+    | Expr.ENil => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.ECons head tail => (match (checkFunction program head index)
+      | Result.ok done => (checkFunctions program tail (index + 1))
+      | Result.error problem => (ctor Result.error [Unit, Bytes] problem))
+    | Expr.EValue dummy0 dummy1 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EVar dummy0 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.ELet dummy0 dummy1 dummy2 dummy3 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.ECond dummy0 dummy1 dummy2 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EMatch dummy0 dummy1 dummy2 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EBuild dummy0 dummy1 dummy2 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.ECall dummy0 dummy1 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EClosure dummy0 dummy1 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EApply dummy0 dummy1 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EPrim dummy0 dummy1 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EFirst dummy0 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.ESecond dummy0 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EField dummy0 dummy1 => (ctor Result.ok [Unit, Bytes] ())
+    | Expr.EArm dummy0 dummy1 dummy2 => (ctor Result.ok [Unit, Bytes] ())),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: bodies
+}
+
+definition{
+  name: checkProgram,
+  parameters: [
+    spec : Bytes,
+    adts : Ty,
+    parameters : (List (List Nat)),
+    types : Ty,
+    results : Ty,
+    bodies : Expr
+  ],
+  result: (Result Unit Bytes),
+  body: (let program : Program := (record Program {spec := spec, adts := adts, parameters := parameters, types := types, results := results, bodies := bodies}); (if (prim equal (project program spec) (text "lexlean/target-program/1") : Bool) then (match (checkAdts program (project program adts) 0)
+    | Result.ok done => (checkFunctions program (project program bodies) 0)
+    | Result.error problem => (ctor Result.error [Unit, Bytes] problem)) else (ctor Result.error [Unit, Bytes] (cat (text "target program has spec ") (quoted (project program spec)))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: checkArguments,
+  parameters: [
+    spec : Bytes,
+    adts : Ty,
+    parameters : (List (List Nat)),
+    types : Ty,
+    results : Ty,
+    bodies : Expr,
+    entry : Nat,
+    arguments : Value
+  ],
+  result: (Result Unit Bytes),
+  body: (let program : Program := (record Program {spec := spec, adts := adts, parameters := parameters, types := types, results := results, bodies := bodies}); (match (functionTypes program entry)
+    | Option.none => (ctor Result.error [Unit, Bytes] (undeclaredFunction entry))
+    | Option.some declared => (let yes137 : (Result Unit Bytes) := (valueOk program arguments declared 2); (let no138 : (Result Unit Bytes) := (ctor Result.error [Unit, Bytes] (cat (text "function ") (cat (decimal entry) (cat (text " takes ") (cat (decimal (tyChainLength declared)) (cat (text " argument(s), received ") (decimal (valueChainLength arguments)))))))); (if ((valueChainLength arguments) =? (tyChainLength declared)) then yes137 else no138))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

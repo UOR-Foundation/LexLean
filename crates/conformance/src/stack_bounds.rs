@@ -325,10 +325,16 @@ pub fn record_scaling(subject: &str, scales: Vec<Scale>) {
     });
 }
 
+/// The largest need each subject was measured to have in this process, so
+/// that a case which runs one root's harness on several corpora records the
+/// largest of their needs, not the last.
+static OBSERVED: std::sync::Mutex<BTreeMap<String, usize>> = std::sync::Mutex::new(BTreeMap::new());
+
 /// Take what a case has built, if `subject` is a recursive package: when
-/// measuring, bisect the debug harness at `binary` and write the row; otherwise demand that the record has
-/// the row, so a recursive root run by a harness without a recorded bound
-/// fails the case that runs it.
+/// measuring, bisect the debug harness at `binary` and write the row (the
+/// largest need this process measured for the subject); otherwise demand that
+/// the record has the row, so a recursive root run by a harness without a
+/// recorded bound fails the case that runs it.
 ///
 /// # Panics
 ///
@@ -348,7 +354,13 @@ pub fn observe(subject: &str, binary: &Path) {
         required(&load(), subject).unwrap_or_else(|failure| panic!("{failure}"));
         return;
     }
-    let debug = bisect(binary);
-    eprintln!("{subject}: debug {debug} bytes");
+    let measured = bisect(binary);
+    let debug = {
+        let mut observed = OBSERVED.lock().expect("the observed needs");
+        let largest = observed.entry(subject.to_owned()).or_insert(0);
+        *largest = (*largest).max(measured);
+        *largest
+    };
+    eprintln!("{subject}: debug {measured} bytes (recorded {debug})");
     record_row(subject, debug);
 }

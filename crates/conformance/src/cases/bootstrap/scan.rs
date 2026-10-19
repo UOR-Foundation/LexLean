@@ -24,10 +24,11 @@ const MODULE: &str = "LexLeanBoot.PrimitiveScan";
 
 /// The production roots in the order the module declares them, each with the
 /// effects its declaration admits, which are exactly the effects its closure
-/// realizes.
+/// realizes: the scans are tail-recursive templates, rendered as loops
+/// (`RB-14`), so neither closure recurses.
 const ROOTS: [(&str, &[&str]); 2] = [
-    ("scanSource", &["allocation", "overflow", "recursion"]),
-    ("rejectAtoms", &["allocation", "overflow", "recursion"]),
+    ("scanSource", &["allocation", "overflow"]),
+    ("rejectAtoms", &["allocation", "overflow"]),
 ];
 
 /// The window of every committed source the evaluator reads, in bytes (cut at
@@ -882,8 +883,8 @@ fn rustc_differential(
             "{name}: {}",
             String::from_utf8_lossy(&ran.stderr)
         );
-        // PD-08: both roots recurse, so the harness that ran them records
-        // (measuring) or demands (otherwise) their stack bound.
+        // PD-08: neither root recurses since RB-14, so this returns at once;
+        // it stays so that a root that recurses again is held to a row.
         crate::stack_bounds::observe(&crate::stack_bounds::subject("bootstrap", name), &binary);
         let stdout = String::from_utf8(ran.stdout).expect("utf8");
         let mut disagreements: Vec<String> = Vec::new();

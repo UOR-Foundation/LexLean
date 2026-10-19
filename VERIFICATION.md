@@ -1675,6 +1675,70 @@ be able to fail by the three statements of a wrong value, each of which the pinn
 Lean refuses (the loop ending at one, the exhausted loop stated as a value, and the
 stuck loop stated as the unit value).
 
+### a function rendered as a loop is certified, and a loop outside the rendering is refused (SP-20)
+
+`FunOK` is `FunOK0` or `FunLoop` (`SP-20`, §17.16, §17.17, #91 stage 4). The case
+reads the library's modules for the declarations (`FunOK0`, `FunOK`, `FunLoop`,
+`loopOf`, `loopCheckOf`, `funSem_loop`, `funSem_of`, `sound`), lowers the renderer
+fixtures in each profile and the production roots of `examples/production`,
+`examples/production-coverage`, `examples/models`, and `examples/reasoning` in each
+of their targets under a lock computed in the case, reads every loop of every
+rendering back into its recursive body with `loopform::recover` (which also
+requires the library's form, transliterated, to be the crate's function), asserts
+that there is a loop that changes a parameter and one that keeps another (the
+case is armed by the first loop), plants six breaks of each loop in every loop
+(a state of another type, no destructuring of the state, an end that is not an
+`Err`, a renamed parameter the body reads, a pattern that rebinds a kept parameter,
+a state held by a parameter the function does not have) and requires each refused,
+and has the pinned Lean 4.32.1 compile certificate B of the fixtures rendered as
+loops over the shipped library with the library audit and the exact axioms of the
+root theorems. The unit tests of `data_b::loopform` restore a countdown loop to its
+recursive body and refuse three breaks. Each plant was run in a Linux container with
+`cargo test -p repo-conformance --test conformance -- conformance_sp_20`; the file
+was restored with `git checkout` afterwards.
+
+Planted (a): the form building an end as `Ok` (`Retarget::end`). Expected: the
+rendering of the first loop is refused. Observed:
+
+```text
+thread 'conformance_sp_20' panicked at crates/conformance/src/preservation.rs:2530:21:
+graph-reachable (rust-std): certificate B: function 2: the loop is not the loop form of the recursive body it restores to
+```
+
+Planted (b): `recover` returning the inverted body without requiring the library's
+form to be the crate's function. Expected: a broken loop is accepted. Observed:
+
+```text
+thread 'conformance_sp_20' panicked at crates/conformance/src/cases/preservation.rs:5078:21:
+graph-reachable (rust-std): function 2: the mutation 4 of a loop is accepted
+```
+
+(Mutations 0 to 3 are refused by the inversion itself; the pattern that rebinds a
+kept parameter is the first the library's checks alone refuse.)
+
+Planted (c): the holder number of the `FunLoop` witnesses one too large. Expected:
+the kernel refuses the equation that `loopOf` holds. Observed:
+
+```text
+renderings: `LexLeanPreserve.Fixture.F44.RustStd` was rejected:
+… error: native core declaration '…RustStd.fun11':
+  (kernel) application type mismatch
+    And.intro
+      (Eq.refl (LexLeanPreservation.Rust.Loop.loopOf 11 [Pos.changed, Pos.changed] …
+```
+
+What was not run in this change: the cases that read a committed lock, golden, or
+production export (`conformance_sp_08` among them) report that the compiler
+semantics changed since locking, as they do on the branch before this change; the
+maintainer regenerates those records. `examples/production-coverage`, whose crates
+hold loops (`loop {` appears in 37 of its 52 rendered crates),
+was verified end to end in a copy: `lexlean lock && lexlean verify` printed
+`verified 8 modules; attestation 16b5350dcfb7abac988cce6d7c8aedb381b77af343de4ce68a4dbf12970626f8`
+after 20 min 17 s, with certificates A, B, and E of every root replayed and audited.
+
+The decoder fix #212 makes (a compiled mutual group is never split across commands) is needed by the new library and is not part of this change: with the #212 branch merged
+in, all 13 modules compile; without it `patBinders`/`patBindersList` are compiled in two commands and Lean rejects them.
+
 ### a list of any length is a term Lean elaborates without binders
 
 Lean's `[…]` macro writes a literal of more than 32 elements under `let`
@@ -1886,6 +1950,52 @@ jobs (user time 17.5 minutes); on `main` a chain of 50 functions took 16. So
 
 Found, not fixed here: a left-nested sum of 70 calls makes
 `Program::to_file_bytes` panic (`recursion limit exceeded`), #215.
+### a lowered program nested beyond the limit is refused, not a panic (#215, R5)
+
+`Program::to_file_bytes` serialized the lowered program and read the text back
+through the canonical JSON reader, whose limit on nesting is `serde_json`'s 128,
+and `expect`ed that to succeed. A root whose lowered program nests deeper than
+127 arrays and objects therefore panicked in `verify` instead of failing with a
+registered diagnostic. On `main` (`39edf5ac2`), with the committed negative
+fixture `lowering-depth-limit` (a root `deep` calling a chain of 509 generic
+definitions `g_k<T> x = g_{k+1}<(T, Nat)> (x, 0)`, whose instances nest a pair
+one level deeper per definition; its project lifts `max_total_source_bytes`,
+because the eligibility report of a chain takes the square of its length):
+
+```text
+thread 'main' panicked at crates/lexlean/src/calculus/mod.rs:496:14:
+program is JSON: "recursion limit exceeded at line 1 column 705999"
+```
+
+Now, from the same project:
+
+```text
+error[LLS8002]: root `Production.Main.deep`: program_json_depth exceeded in phase lowering: at most 512, the lowered program nests 515 deep
+```
+
+The reader on this path is the unbounded one that `production::lcnf` already
+uses, so the program nests as deeply as its expressions do, and the depth is
+bounded where the program is lowered (`production::lower::PROGRAM_JSON_DEPTH`,
+512, measured on the serialized text by `json_depth`, which skips strings).
+The number is a stack bound, stated and tested, not the reader's: a debug
+build round-trips a chain of 400 nested expressions on a 1 MiB thread and 800 on
+2 MiB; the limit, about 250 nested expressions, takes about a quarter of 2 MiB,
+and the unit test `a_program_at_the_limit_round_trips_on_a_two_mebibyte_stack`
+builds the deepest chain within the limit and round-trips it on a 2 MiB thread.
+It over-refuses nothing that was accepted: a survey of every lowered program of
+the four corpora (deepest: `models`, 50) and of the stress families (deepest:
+`nested pairs 120`, 244) found none above the limit, where the reader's 127
+would have refused two of the stress families if they had been serialized.
+
+Planted: the check absent is `main`'s behavior, the panic above on the same
+fixture (`EX-07` runs the fixture through the CLI and requires exit 4 and the
+one prescribed code, so a panic or a pass fails it). The limit and the
+round-trip test move together: a limit raised past what a 2 MiB stack hosts
+fails `a_program_at_the_limit_round_trips_on_a_two_mebibyte_stack`.
+
+Not covered: a program nested far beyond the limit can overflow the stack in
+`serde_json::to_string` before the check measures it; the lowering and
+certificate generation recurse over the same nesting on their own stacks.
 
 ### certificate B is kernel-term data and a defect in it is refused
 
@@ -8218,6 +8328,110 @@ the examples (`cargo xtask check-golden`, `check-fixtures`, `check-calculus`,
 `check-production-export`, `verify-examples --write`); only the language-1.2
 projects change, and `examples/uor-atlas` (language 1.0) is untouched.
 
+### a tail-recursive template rendered as a call can fail its row (`RB-14`, SPEC.md §17.13, §17.16, #105 step 2)
+
+A function every self call of which is a tail call, and some of which changes a
+parameter the body reads, is rendered as a loop (`calculus/rust/tail.rs`); the
+calculus decides it (`rust::loops`, which `realization::recurses` reads, so the
+derivation of `recursion` in `TC-06` follows the rendering) and the lowering
+fails when its rewriting disagrees. Nine primitives go back to
+`recursion = false` (`list_fold`, `iterate`, `iterate_until`, `map_fold`,
+`set_fold`, `map_lookup`, `map_contains`, `set_contains`, `graph_successors`);
+the others keep it, since each has a call whose result is used. `RB-14` renders
+every template in the fixture that instantiates it, compares the rendered call
+graph to the registry row of every template-realized primitive, and states the
+fourteen templates whose instance holds a loop. The case passes on the tree it
+was written in (0.5 s). It makes each of these plants on every run's input
+(`cargo test -p repo-conformance --test conformance -- conformance_rb_14`;
+a defect planted in a clean tree, the failure observed, paths shortened, and
+the defect removed):
+
+- **the rewriting never makes a loop** (`looped` returns `None` at its first
+  test):
+
+  ```text
+  panicked at crates/conformance/src/cases/rust_loops.rs:197:32:
+  graph-reachable: function 2: the lowering and the calculus disagree on whether its self calls are a loop
+  ```
+
+- **neither the rewriting nor the calculus calls anything a loop** (both
+  predicates return false, so a template is rendered recursively again and its
+  row now says `false`):
+
+  ```text
+  assertion `left == right` failed: the templates rendered as loops
+    left: []
+   right: ["graph_reachable", "graph_successors", "graph_topological", "iterate", ...]
+  ```
+
+- **a row that says `true` for a loop.** The registry row of `primitive.list_fold`
+  set back to `true`:
+
+  ```text
+  panicked at crates/conformance/src/cases/rust_loops.rs:314:5:
+  recursion disagreements: [
+      "primitive.list_fold: registry true, rendering false",
+  ]
+  ```
+
+`conformance_pd_05` follows the rows: its second half removes `recursion` from
+`stringGraph` (a graph search, whose template still recurses) and expects
+`LLT4005` naming the effect, and checks that `iterations`, which iterates and
+declares none, passes; it passes on the relocked scratch copy. The nineteen
+declarations of the roots that no longer require `recursion` (`isClosedLeanName`,
+`lex`, `auditTokens`, `mapFolding`, `folds`, `iterations`, `keyTypes`, the seven
+reasoning roots that iterate, and the five `Text` members) lose it, read from the
+eligibility reports of that copy, and the constants of `BS-01`, `BS-02` and
+`SL-01` that state them follow.
+
+A definition of the project follows the same rule (the owner's decision: the
+effect says what the renderer does for every function, not only templates).
+Eligibility (`production::eligibility::analyse_root`) lowers the closure of a
+root whose walk found `recursion`, with the report the walk produced, and
+requires the effect only if the lowered program recurses
+(`realization::program_recurses`, which reads `rust::loops`); a root that does
+not lower keeps the registry's answer. On the relocked scratch copy,
+`examples/production-coverage`'s `wellFounded` and `examples/production`'s
+`halvings` (tail-recursive definitions) require no `recursion` and lose it from
+their declarations, while `sumAll`, `treeTotal`, `parity` (mutual) and the
+others keep it; `conformance_pd_05` checks `halvings`, and removes the effect
+from `sumAll` and expects `LLT4005`. This plant is made on the `rust::loops`
+decision (`conformance_rb_14`): it reports a loop for every function that
+mentions itself, so a function with a call that is not a tail call is a loop
+for the calculus and not for the lowering:
+
+```text
+panicked at crates/conformance/src/cases/rust_loops.rs:197:32:
+graph-reachable: function 8: the lowering and the calculus disagree on whether its self calls are a loop
+```
+
+Cost of the lowering at `check`: `lexlean check` of `bootstrap/` (three
+modules, the largest committed roots; a debug build) took 2.1 s to 2.4 s without
+the refinement and 2.4 s to 2.8 s with it (three runs each, scratch copy).
+
+Removed: each edit was restored and `conformance_rb_14` passes. The converse
+direction (a row `false` for a template that is rendered as a call) is
+`conformance_tc_06`'s, which derives the row from the calculus.
+
+What was checked and what was not. On a scratch copy of the tree, the
+renderer's record regenerated by the repository's writers
+(`check-calculus --write`) and every lock relocked, `conformance_tc_07`
+(every fixture renders, builds under the pinned rustc with warnings denied,
+and prints the denotation's value), `conformance_rb_06` (the lint gate over
+every committed package) and `conformance_rb_07` pass. The lint gate caught a
+defect of the first printing of a loop: a body with bindings as the scrutinee
+of the `match` is `clippy::blocks_in_conditions`, so the printer binds the
+body's value first (`let step = { ... }; match step { ... }`). Nothing in the
+tree was regenerated by this change, and the certificate of a root with a loop
+was the dependency it left: `cargo xtask check-production-export` on that
+scratch copy stopped with `LLV7015: certificate B: no derivation relates
+Production.Main.halvings to its rust-core rendering: function 1: binder
+pattern Bind(Param(8)) binds no local`, because the `Corr` correspondence had
+no rule that relates a calculus self tail call to `Expr.loop`. `SP-20` (#214,
+in the same wave) adds that rule and its soundness case, and the `Production`,
+`Coverage`, `Reasoning`, `bootstrap` and `stdlib` roots that use a loop are
+certified with it.
+
 ## The authoring notation (Issue #93, stage 3 of #27)
 
 `AU-01`..`AU-12` (SPEC.md §17.21, §24.8) state that the notation and the canonical
@@ -9338,107 +9552,132 @@ build the cases run. The evaluator is measured by the resident size of its
 thread's stack after the `BS-01` and `BS-02` workload, because a bisection
 reruns a workload of about 40 minutes per probe. A debug harness holds the
 corpus as an array literal in its frame, so the bound of a root is the frame
-of its corpus plus the depth of its recursion; the short names of the corpus
-recurse only a few frames.
+of its corpus plus the depth of its recursion. A case that runs one root's
+harness on several corpora (`BS-04`) records the largest need among them.
+
+Since `RB-14` renders a function whose self calls are all tail calls as a
+loop, the rows are the three packages whose provenance still states
+`recursion`: the audit-output parser, whose sorted insertion of each record
+among the ones before it is not a tail call, and the two calculus checkers,
+which recurse with the depth of the program they check. The scans, the token
+roots and the standard library's text and SHA-256 roots are loops and need no
+row (`observe` returns at once for a package that does not recurse, and
+stays in their cases so that a root that recurses again is held to a row).
 
 | subject | least stack (bytes) | with headroom 4 |
 | --- | ---: | ---: |
 | `bootstrap/evaluator` | 21,037,056 | 84,148,224 |
-| `bootstrap/is_closed_lean_name` | 5,767,168 | 23,068,672 |
-| `bootstrap/parse_audit_output` | 7,929,856 | 31,719,424 |
-| `bootstrap/lex` | 1,179,648 | 4,718,592 |
-| `bootstrap/audit_tokens` | 3,145,728 | 12,582,912 |
-| `stdlib/find` | 983,040 | 3,932,160 |
-| `stdlib/join_with` | 1,572,864 | 6,291,456 |
-| `stdlib/lines` | 458,752 | 1,835,008 |
-| `stdlib/split_on` | 655,360 | 2,621,440 |
-| `stdlib/trim` | 458,752 | 1,835,008 |
+| `bootstrap/parse_audit_output` | 6,291,456 | 25,165,824 |
+| `bootstrap/check_program` | 13,697,024 | 54,788,096 |
+| `bootstrap/check_arguments` | 4,915,200 | 19,660,800 |
 
 Both stacks in use cover the largest product: 64 MiB (67,108,864) for the
-harness against 31,719,424, and 1 GiB for the evaluator against 84,148,224.
+harness against 54,788,096, and 1 GiB for the evaluator against
+84,148,224.
 
-The growth of one root with its input is the issue's table: `isClosedLeanName`
-on one name of `n` bytes (a single call, its argument passed through
-`black_box` so that a release build cannot fold the scan).
+The growth of one root with its input is measured on `parseAuditOutput`, the
+one root of the first component that still recurses: one audit output of `n`
+records, each the axiom line of its own declaration (46 bytes a record) with
+names that ascend, so that each insertion walks the whole sorted list before
+it (a single call, its argument passed through `black_box` so that a release
+build cannot fold the parse). The issue's table was of `isClosedLeanName`,
+which is a loop since `RB-14` and needs one 64 KiB step at every length.
 
-| `n` | debug | release |
-| ---: | ---: | ---: |
-| 1,000 | 327,680 | 65,536 |
-| 10,000 | 3,211,264 | 65,536 |
-| 40,000 | 12,845,056 | 65,536 |
-| 80,000 | 25,624,576 | 65,536 |
+| `n` | bytes | debug | release |
+| ---: | ---: | ---: | ---: |
+| 250 | 11,500 | 327,680 | 131,072 |
+| 1,000 | 46,000 | 1,048,576 | 327,680 |
+| 2,000 | 92,000 | 2,097,152 | 655,360 |
+| 4,000 | 184,000 | 4,128,768 | 1,245,184 |
 
-Debug costs about 320 bytes a byte of name, so the 64 MiB of the harness covers
-a name of 40,000 bytes with headroom 4 (51,380,224) and not one of 80,000
-(102,498,304); `PD-08` asserts the first and the table states the second.
-Release needs the least stack the method measures (one 64 KiB step) at every
-`n`, which the issue's own release table did not. The cause is not established
-here; the rendering of `f1` (the iteration template) in the committed package
-now calls itself as `f1(v0, v3, v4)` after `v0.clone()` is taken earlier, where
-the issue's listing cloned in the call, which leaves nothing to drop after the
-call and is a shape LLVM can turn into a
-loop. Whether it does is the optimizer's choice and rustc does not guarantee it,
-so `recursion` stays in the declaration and the debug column is the one the
-suite's stacks are held to.
+Debug costs about 1,048 bytes a record, so the 64 MiB of the harness covers
+an output of 2,000 records with headroom 4 (8,388,608), which is
+the planted size; `PD-08` asserts that every row up to the planted size fits
+the harness stack with headroom and that the table grows. The harness holds
+its input as one literal, a chain of `cons` as deep as the record count, and
+a release build of a chain past a few thousand records takes rustc the better
+part of an hour, so the table stops at 4,000. Release grows too (the
+insertion is not a shape LLVM turns into a loop), at about a third of the
+debug cost; the debug column is the one the suite's stacks are held to.
 
 `PD-08` makes each of these plants on every run's input (the record, a stack
 constant, or a case input is changed in a clean tree, the case run, the failure
 observed, paths shortened, and the change removed):
 
 - **the harness stack lowered below a bound.** `rust_harness::HARNESS_STACK`
-  set to `16 << 20`. `cargo test -p repo-conformance --test conformance --
+  set to `4 << 20`. `cargo test -p repo-conformance --test conformance --
   conformance_pd_08 --exact`:
 
   ```text
-  panicked at crates/conformance/src/cases/bootstrap.rs:1576:75:
-  bootstrap/is_closed_lean_name: a stack of 16777216 bytes is below its recorded bound with headroom (23068672 bytes)
+  panicked at crates/conformance/src/cases/bootstrap.rs:1620:75:
+  bootstrap/check_arguments: a stack of 4194304 bytes is below its recorded bound with headroom (19660800 bytes)
   ```
 
 - **the evaluator stack lowered below its bound.** `EVALUATOR_STACK` set to
   `64 << 20`:
 
   ```text
-  panicked at crates/conformance/src/cases/bootstrap.rs:1576:75:
+  panicked at crates/conformance/src/cases/bootstrap.rs:1620:75:
   bootstrap/evaluator: a stack of 67108864 bytes is below its recorded bound with headroom (84148224 bytes)
   ```
 
-- **a recursive package with no row.** The row of `stdlib/trim` deleted from
-  `tests/stack-bounds.json`:
+- **a recursive package with no row.** The row of `bootstrap/check_arguments`
+  deleted from `tests/stack-bounds.json`:
 
   ```text
   assertion `left == right` failed: the record has a row for each recursive package of the bootstrap and stdlib exports and for no other
-    left: {"bootstrap/audit_tokens", ..., "stdlib/split_on"}
-   right: {"bootstrap/audit_tokens", ..., "stdlib/split_on", "stdlib/trim"}
+    left: {"bootstrap/check_program", "bootstrap/parse_audit_output"}
+   right: {"bootstrap/check_arguments", "bootstrap/check_program", "bootstrap/parse_audit_output"}
   ```
 
-- **a row for no recursive package.** A row for `stdlib/no_such_package`
-  added: the same assertion, with `stdlib/no_such_package` on the left only.
+- **a row for no recursive package.** A row for `stdlib/trim` (a loop since
+  `RB-14`) added: the same assertion, with `stdlib/trim` on the left only.
 
-- **a recorded need that is too large.** The rows of the 40,000- and
-  80,000-byte names multiplied by 8:
+- **a recorded need that is too large.** The debug rows of the 2,000- and
+  4,000-record outputs multiplied by 16:
 
   ```text
-  panicked at crates/conformance/src/cases/bootstrap.rs:1593:9:
-  a name of 40000 bytes needs 411041792 bytes with headroom, and the harness stack is 67108864
+  panicked at crates/conformance/src/cases/bootstrap.rs:1635:9:
+  an audit output of 92000 bytes needs 134217728 bytes with headroom, and the harness stack is 67108864
   ```
 
 - **a recorded need that is stale.** Every debug row of the growth table
   divided by 8, as after a change that makes a frame eight times larger; the
-  harness of `isClosedLeanName` on a name of 40,000 bytes is built and run on
-  the stack the record now allows:
+  harness of `parseAuditOutput` on an output of 2,000 records is built and run
+  on the stack the record now allows:
 
   ```text
-  panicked at crates/conformance/src/cases/bootstrap.rs:1631:5:
-  a name of 40000 bytes: the harness finishes on 6422528 bytes, its need with headroom
+  panicked at crates/conformance/src/cases/bootstrap.rs:1673:5:
+  an audit output of 2000 records: the harness finishes on 1048576 bytes, its need with headroom
   ```
 
-Removed: each edit was restored and `conformance_pd_08` passes (4 s). One
+Removed: each edit was restored and `conformance_pd_08` passes. One
 direction is not caught, and the headroom is why: a recorded need smaller than
 the true one by less than a factor of 4 still finishes, which is what the
 headroom of 4 is for. A recursive root that a harness runs without a row fails
-the case that runs it (`stack_bounds::observe` in `BS-01`, `BS-02`, `SL-01`);
-that was not planted separately, because the set equality above is the same
-fact read from the export.
+the case that runs it (`stack_bounds::observe` in `BS-01`, `BS-02`, `BS-03`,
+`BS-04`, `SL-01`, `SL-02`); that was not planted separately, because the set
+equality above is the same fact read from the export.
+### the bootstrap calculus checker can fail its oracle (SPEC.md §17.23, §17.14)
+
+`BS-04` holds the two production roots of `LexLeanBoot.CalculusCheck` (`bootstrap/src/CalculusCheck.lex.tex`) to the stage-0 Rust oracle they replace (the counts below are the case's report at b5871e8b9 on its base; the committed corpus has grown since), `calculus::check::check` and `calculus::check::check_arguments`, for a program given as calculus data. The case decodes the arguments of every vector back to the program the oracle read (each list of a recursive type is a chain of its type's own constructors, a faithful image of the list that certificate A can take, #208), runs the 175 committed target programs, the refusals of `TC-02`, one program for each rule a planted defect removes, and the literal, primitive, and shape corpora under the rendered `rust-std` packages on every host, and on the normative host under the calculus evaluator, with 4,722 seeded programs and 403 seeded argument runs and 9,296 more under `rustc`. A run compares the result and the reason to the byte; the runs whose reason spells a scalar beyond U+009F as `\u{…}` are outside the claim and left out (the reasons of Rust's `Debug` for a string past the tables of the module). The case makes each of these twelve plants on a copy of `bootstrap/src/CalculusCheck.lex.tex` on every normative run:
+
+- **the exhaustiveness of a match is not checked** (`(firstMissing required seen)` -> `(ctor Option.none [Shape])`): run 3, the program gives `ok ()` where the oracle says `function 0: the match is not exhaustive: Adt { constructor: 2 } is not covered`.
+- **a second arm for one shape is accepted** (`(if (shapeIn covered shape) then` -> `(if false then`): run 4, `ok ()` where the oracle says `the arm for Adt { constructor: 0 } is unreachable`.
+- **a closure may capture every parameter** (`(total <=? given)` -> `(total <? given)`): run 19, the program's `closure of function 2 operand 1 has type List { element: Nat }, expected Nat` where the oracle says `captures 2 of its 2 parameters; at least one must remain`.
+- **a nat literal may be one past the largest u64** (`18446744073709551615` -> `…616` in the literal check): run 14, `ok ()` where the oracle says `nat literal 18446744073709551616 is outside the 64-bit realization`.
+- **`-0` is a canonical decimal**: run 13, `ok ()` where the oracle says `` `-0` is not a canonical decimal ``.
+- **an arm may bind one name twice** (`(hasRepeat binders)` -> `false`): run 23, `ok ()` where the oracle says `shape Pair binds the same name twice`.
+- **`field` is accepted on a type with several constructors**: run 10, `ok ()` where the oracle says `` `field` requires an ADT with exactly one constructor; ADT 0 has 3 ``.
+- **a byte literal may have an odd length**: run 15, `ok ()` where the oracle says ``byte literal `abc` is not even-length lowercase hexadecimal``.
+- **a shift takes a u64 count**: run 27, the program refuses `[U8, U32]` with `primitive ShiftLeft takes [Fixed { width: U8 }, Fixed { width: U64 }]` where the oracle accepts.
+- **the tail of a list is typed as its element**: run 29, `primitive Length does not apply to [Nat]` where the oracle accepts.
+- **DEL (U+007F) is not escaped in a spelled string**: run 30, the program spells `\u{7f}` as the raw control character, the oracle as `\\u{7f}`.
+- **the argument count of an entry is not checked** (`checkArguments`): run 103, `ok ()` where the oracle says `function 0 takes 2 argument(s), received 1`.
+
+Removed: the source was not changed (the plants are made on copies).
+
+Authoring found four shapes certificate A and certificate B do not accept, each reduced on a scratch project before being avoided in the source (reported as issue 208): a structure or inductive holding a list of a recursive type as a root parameter, a `cons` of a recursive type's value in a definition, a mutual group or nested group whose rows the 64-declaration commands separate, and (certificate B) a match on a recursive type one of whose arms returns a bare binder of that type, which the module returns through an `Option`.
 
 ### source packages can fail
 

@@ -26,11 +26,11 @@ const MODULE: &str = "LexLeanStd.Text";
 const MEMBERS: [(&str, &[&str]); 7] = [
     ("startsWith", &["allocation"]),
     ("endsWith", &["allocation"]),
-    ("trim", &["allocation", "overflow", "recursion"]),
-    ("splitOn", &["allocation", "overflow", "recursion"]),
-    ("lines", &["allocation", "overflow", "recursion"]),
-    ("joinWith", &["allocation", "recursion"]),
-    ("find", &["allocation", "overflow", "recursion"]),
+    ("trim", &["allocation", "overflow"]),
+    ("splitOn", &["allocation", "overflow"]),
+    ("lines", &["allocation", "overflow"]),
+    ("joinWith", &["allocation"]),
+    ("find", &["allocation", "overflow"]),
 ];
 
 /// Argument lists per member under the evaluator.

@@ -38,7 +38,7 @@ definition{
   body: (Kernel::countdown number 0),
   axioms: [Quot.sound, propext],
   executable: true,
-  production: {effects: [overflow, recursion], targets: [rust-core, rust-std]}
+  production: {effects: [overflow], targets: [rust-core, rust-std]}
 }
 
 definition{

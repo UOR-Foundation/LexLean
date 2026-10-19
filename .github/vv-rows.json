@@ -18,6 +18,15 @@
     "hints": ""
   },
   {
+    "part": "bdd-bootstrap-check",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-check",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
     "part": "bdd-compiler",
     "recipes": "bdd",
     "examples_part": "",

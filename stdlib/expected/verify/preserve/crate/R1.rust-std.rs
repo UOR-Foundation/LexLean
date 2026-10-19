@@ -501,33 +501,46 @@ pub fn f3(v0: u32) -> Bytes {
     append_bytes(a63, a64)
 }
 
-pub fn f4(v0: Fn0, v1: u64, v2: (u64, Adt0)) -> R<(u64, Adt0)> {
-    let m65 = v1;
-    if m65 == 0 {
-        Ok(v2)
-    } else {
-        let v3 = m65 - 1;
-        f4(v0.clone(), v3, {
-            let c66: Fn0 = v0;
-            c66.apply(v2)?
-        })
+pub fn f4(v0: Fn0, p68: u64, p69: (u64, Adt0)) -> R<(u64, Adt0)> {
+    let m67 = (p68, p69);
+    {
+        let mut m67 = m67;
+        loop {
+            let step = {
+                let (v1, v2) = m67;
+                let m65 = v1;
+                if m65 == 0 {
+                    Err::<(u64, (u64, Adt0)), R<(u64, Adt0)>>(Ok(v2))
+                } else {
+                    let v3 = m65 - 1;
+                    Ok::<(u64, (u64, Adt0)), R<(u64, Adt0)>>((v3, {
+                        let c66: Fn0 = v0.clone();
+                        c66.apply(v2)?
+                    }))
+                }
+            };
+            match step {
+                Ok(next) => { m67 = next; }
+                Err(done) => break done,
+            }
+        }
     }
 }
 
 pub fn f5(v0: Bytes, v1: u64, v2: u64, v3: (u64, Adt0)) -> R<(u64, Adt0)> {
     Ok(({
-        let a68 = {
-            let (h67, _) = v3.clone();
-            h67
+        let a71 = {
+            let (h70, _) = v3.clone();
+            h70
         };
-        let a69 = 64u64;
-        nat_add(a68, a69)?
+        let a72 = 64u64;
+        nat_add(a71, a72)?
     }, f9({
-        let (_, h70) = v3;
-        h70
+        let (_, h73) = v3;
+        h73
     }, f10(v0, v1, v2, {
-        let (h71, _) = v3;
-        h71
+        let (h74, _) = v3;
+        h74
     })?)?))
 }
 
@@ -536,78 +549,78 @@ pub fn f6() -> Adt0 {
 }
 
 pub fn f7(v0: u32) -> Bytes {
-    let a74 = {
-        let a72 = v0;
-        let a73 = 8u32;
-        fixed_u32::bit_and(a72, a73)
+    let a77 = {
+        let a75 = v0;
+        let a76 = 8u32;
+        fixed_u32::bit_and(a75, a76)
     };
-    let a75 = 0u32;
-    if equal(a74, a75) {
-        let a78 = {
-            let a76 = v0;
-            let a77 = 4u32;
-            fixed_u32::bit_and(a76, a77)
+    let a78 = 0u32;
+    if equal(a77, a78) {
+        let a81 = {
+            let a79 = v0;
+            let a80 = 4u32;
+            fixed_u32::bit_and(a79, a80)
         };
-        let a79 = 0u32;
-        if equal(a78, a79) {
-            let a82 = {
-                let a80 = v0;
-                let a81 = 2u32;
-                fixed_u32::bit_and(a80, a81)
+        let a82 = 0u32;
+        if equal(a81, a82) {
+            let a85 = {
+                let a83 = v0;
+                let a84 = 2u32;
+                fixed_u32::bit_and(a83, a84)
             };
-            let a83 = 0u32;
-            if equal(a82, a83) {
-                let a86 = {
-                    let a84 = v0;
-                    let a85 = 1u32;
-                    fixed_u32::bit_and(a84, a85)
+            let a86 = 0u32;
+            if equal(a85, a86) {
+                let a89 = {
+                    let a87 = v0;
+                    let a88 = 1u32;
+                    fixed_u32::bit_and(a87, a88)
                 };
-                let a87 = 0u32;
-                if equal(a86, a87) {
+                let a90 = 0u32;
+                if equal(a89, a90) {
                     Bytes::lit(&[0x30])
                 } else {
                     Bytes::lit(&[0x31])
                 }
             } else {
-                let a90 = {
-                    let a88 = v0;
-                    let a89 = 1u32;
-                    fixed_u32::bit_and(a88, a89)
+                let a93 = {
+                    let a91 = v0;
+                    let a92 = 1u32;
+                    fixed_u32::bit_and(a91, a92)
                 };
-                let a91 = 0u32;
-                if equal(a90, a91) {
+                let a94 = 0u32;
+                if equal(a93, a94) {
                     Bytes::lit(&[0x32])
                 } else {
                     Bytes::lit(&[0x33])
                 }
             }
         } else {
-            let a94 = {
-                let a92 = v0;
-                let a93 = 2u32;
-                fixed_u32::bit_and(a92, a93)
+            let a97 = {
+                let a95 = v0;
+                let a96 = 2u32;
+                fixed_u32::bit_and(a95, a96)
             };
-            let a95 = 0u32;
-            if equal(a94, a95) {
-                let a98 = {
-                    let a96 = v0;
-                    let a97 = 1u32;
-                    fixed_u32::bit_and(a96, a97)
+            let a98 = 0u32;
+            if equal(a97, a98) {
+                let a101 = {
+                    let a99 = v0;
+                    let a100 = 1u32;
+                    fixed_u32::bit_and(a99, a100)
                 };
-                let a99 = 0u32;
-                if equal(a98, a99) {
+                let a102 = 0u32;
+                if equal(a101, a102) {
                     Bytes::lit(&[0x34])
                 } else {
                     Bytes::lit(&[0x35])
                 }
             } else {
-                let a102 = {
-                    let a100 = v0;
-                    let a101 = 1u32;
-                    fixed_u32::bit_and(a100, a101)
+                let a105 = {
+                    let a103 = v0;
+                    let a104 = 1u32;
+                    fixed_u32::bit_and(a103, a104)
                 };
-                let a103 = 0u32;
-                if equal(a102, a103) {
+                let a106 = 0u32;
+                if equal(a105, a106) {
                     Bytes::lit(&[0x36])
                 } else {
                     Bytes::lit(&[0x37])
@@ -615,71 +628,71 @@ pub fn f7(v0: u32) -> Bytes {
             }
         }
     } else {
-        let a106 = {
-            let a104 = v0;
-            let a105 = 4u32;
-            fixed_u32::bit_and(a104, a105)
+        let a109 = {
+            let a107 = v0;
+            let a108 = 4u32;
+            fixed_u32::bit_and(a107, a108)
         };
-        let a107 = 0u32;
-        if equal(a106, a107) {
-            let a110 = {
-                let a108 = v0;
-                let a109 = 2u32;
-                fixed_u32::bit_and(a108, a109)
+        let a110 = 0u32;
+        if equal(a109, a110) {
+            let a113 = {
+                let a111 = v0;
+                let a112 = 2u32;
+                fixed_u32::bit_and(a111, a112)
             };
-            let a111 = 0u32;
-            if equal(a110, a111) {
-                let a114 = {
-                    let a112 = v0;
-                    let a113 = 1u32;
-                    fixed_u32::bit_and(a112, a113)
+            let a114 = 0u32;
+            if equal(a113, a114) {
+                let a117 = {
+                    let a115 = v0;
+                    let a116 = 1u32;
+                    fixed_u32::bit_and(a115, a116)
                 };
-                let a115 = 0u32;
-                if equal(a114, a115) {
+                let a118 = 0u32;
+                if equal(a117, a118) {
                     Bytes::lit(&[0x38])
                 } else {
                     Bytes::lit(&[0x39])
                 }
             } else {
-                let a118 = {
-                    let a116 = v0;
-                    let a117 = 1u32;
-                    fixed_u32::bit_and(a116, a117)
+                let a121 = {
+                    let a119 = v0;
+                    let a120 = 1u32;
+                    fixed_u32::bit_and(a119, a120)
                 };
-                let a119 = 0u32;
-                if equal(a118, a119) {
+                let a122 = 0u32;
+                if equal(a121, a122) {
                     Bytes::lit(&[0x61])
                 } else {
                     Bytes::lit(&[0x62])
                 }
             }
         } else {
-            let a122 = {
-                let a120 = v0;
-                let a121 = 2u32;
-                fixed_u32::bit_and(a120, a121)
+            let a125 = {
+                let a123 = v0;
+                let a124 = 2u32;
+                fixed_u32::bit_and(a123, a124)
             };
-            let a123 = 0u32;
-            if equal(a122, a123) {
-                let a126 = {
-                    let a124 = v0;
-                    let a125 = 1u32;
-                    fixed_u32::bit_and(a124, a125)
+            let a126 = 0u32;
+            if equal(a125, a126) {
+                let a129 = {
+                    let a127 = v0;
+                    let a128 = 1u32;
+                    fixed_u32::bit_and(a127, a128)
                 };
-                let a127 = 0u32;
-                if equal(a126, a127) {
+                let a130 = 0u32;
+                if equal(a129, a130) {
                     Bytes::lit(&[0x63])
                 } else {
                     Bytes::lit(&[0x64])
                 }
             } else {
-                let a130 = {
-                    let a128 = v0;
-                    let a129 = 1u32;
-                    fixed_u32::bit_and(a128, a129)
+                let a133 = {
+                    let a131 = v0;
+                    let a132 = 1u32;
+                    fixed_u32::bit_and(a131, a132)
                 };
-                let a131 = 0u32;
-                if equal(a130, a131) {
+                let a134 = 0u32;
+                if equal(a133, a134) {
                     Bytes::lit(&[0x65])
                 } else {
                     Bytes::lit(&[0x66])
@@ -690,12 +703,12 @@ pub fn f7(v0: u32) -> Bytes {
 }
 
 pub fn f8(v0: u32, v1: u32) -> u32 {
-    let m134 = {
-        let a132 = v0;
-        let a133 = v1;
-        fixed_u32::shift_right(a132, a133)
+    let m137 = {
+        let a135 = v0;
+        let a136 = v1;
+        fixed_u32::shift_right(a135, a136)
     };
-    match m134 {
+    match m137 {
         None => {
             0u32
         }
@@ -707,179 +720,192 @@ pub fn f8(v0: u32, v1: u32) -> u32 {
 
 pub fn f9(v0: Adt0, v1: Adt1) -> R<Adt0> {
     let v2: Adt2 = f11(Fn1::F12, 64u64, Adt2::C0(match v0.clone() {
-        Adt0::C0(h135, _, _, _, _, _, _, _) => {
-            h135
-        }
-    }, match v0.clone() {
-        Adt0::C0(_, h136, _, _, _, _, _, _) => {
-            h136
-        }
-    }, match v0.clone() {
-        Adt0::C0(_, _, h137, _, _, _, _, _) => {
-            h137
-        }
-    }, match v0.clone() {
-        Adt0::C0(_, _, _, h138, _, _, _, _) => {
+        Adt0::C0(h138, _, _, _, _, _, _, _) => {
             h138
         }
     }, match v0.clone() {
-        Adt0::C0(_, _, _, _, h139, _, _, _) => {
+        Adt0::C0(_, h139, _, _, _, _, _, _) => {
             h139
         }
     }, match v0.clone() {
-        Adt0::C0(_, _, _, _, _, h140, _, _) => {
+        Adt0::C0(_, _, h140, _, _, _, _, _) => {
             h140
         }
     }, match v0.clone() {
-        Adt0::C0(_, _, _, _, _, _, h141, _) => {
+        Adt0::C0(_, _, _, h141, _, _, _, _) => {
             h141
         }
     }, match v0.clone() {
-        Adt0::C0(_, _, _, _, _, _, _, h142) => {
+        Adt0::C0(_, _, _, _, h142, _, _, _) => {
             h142
+        }
+    }, match v0.clone() {
+        Adt0::C0(_, _, _, _, _, h143, _, _) => {
+            h143
+        }
+    }, match v0.clone() {
+        Adt0::C0(_, _, _, _, _, _, h144, _) => {
+            h144
+        }
+    }, match v0.clone() {
+        Adt0::C0(_, _, _, _, _, _, _, h145) => {
+            h145
         }
     }, v1, 0u64))?;
     Ok(Adt0::C0(f13(match v0.clone() {
-        Adt0::C0(h143, _, _, _, _, _, _, _) => {
-            h143
-        }
-    }, match v2.clone() {
-        Adt2::C0(h144, _, _, _, _, _, _, _, _, _) => {
-            h144
-        }
-    }), f13(match v0.clone() {
-        Adt0::C0(_, h145, _, _, _, _, _, _) => {
-            h145
-        }
-    }, match v2.clone() {
-        Adt2::C0(_, h146, _, _, _, _, _, _, _, _) => {
+        Adt0::C0(h146, _, _, _, _, _, _, _) => {
             h146
         }
-    }), f13(match v0.clone() {
-        Adt0::C0(_, _, h147, _, _, _, _, _) => {
+    }, match v2.clone() {
+        Adt2::C0(h147, _, _, _, _, _, _, _, _, _) => {
             h147
         }
-    }, match v2.clone() {
-        Adt2::C0(_, _, h148, _, _, _, _, _, _, _) => {
+    }), f13(match v0.clone() {
+        Adt0::C0(_, h148, _, _, _, _, _, _) => {
             h148
         }
-    }), f13(match v0.clone() {
-        Adt0::C0(_, _, _, h149, _, _, _, _) => {
+    }, match v2.clone() {
+        Adt2::C0(_, h149, _, _, _, _, _, _, _, _) => {
             h149
         }
-    }, match v2.clone() {
-        Adt2::C0(_, _, _, h150, _, _, _, _, _, _) => {
+    }), f13(match v0.clone() {
+        Adt0::C0(_, _, h150, _, _, _, _, _) => {
             h150
         }
-    }), f13(match v0.clone() {
-        Adt0::C0(_, _, _, _, h151, _, _, _) => {
+    }, match v2.clone() {
+        Adt2::C0(_, _, h151, _, _, _, _, _, _, _) => {
             h151
         }
-    }, match v2.clone() {
-        Adt2::C0(_, _, _, _, h152, _, _, _, _, _) => {
+    }), f13(match v0.clone() {
+        Adt0::C0(_, _, _, h152, _, _, _, _) => {
             h152
         }
-    }), f13(match v0.clone() {
-        Adt0::C0(_, _, _, _, _, h153, _, _) => {
+    }, match v2.clone() {
+        Adt2::C0(_, _, _, h153, _, _, _, _, _, _) => {
             h153
         }
-    }, match v2.clone() {
-        Adt2::C0(_, _, _, _, _, h154, _, _, _, _) => {
+    }), f13(match v0.clone() {
+        Adt0::C0(_, _, _, _, h154, _, _, _) => {
             h154
         }
-    }), f13(match v0.clone() {
-        Adt0::C0(_, _, _, _, _, _, h155, _) => {
+    }, match v2.clone() {
+        Adt2::C0(_, _, _, _, h155, _, _, _, _, _) => {
             h155
         }
-    }, match v2.clone() {
-        Adt2::C0(_, _, _, _, _, _, h156, _, _, _) => {
+    }), f13(match v0.clone() {
+        Adt0::C0(_, _, _, _, _, h156, _, _) => {
             h156
         }
-    }), f13(match v0 {
-        Adt0::C0(_, _, _, _, _, _, _, h157) => {
+    }, match v2.clone() {
+        Adt2::C0(_, _, _, _, _, h157, _, _, _, _) => {
             h157
         }
-    }, match v2 {
-        Adt2::C0(_, _, _, _, _, _, _, h158, _, _) => {
+    }), f13(match v0.clone() {
+        Adt0::C0(_, _, _, _, _, _, h158, _) => {
             h158
+        }
+    }, match v2.clone() {
+        Adt2::C0(_, _, _, _, _, _, h159, _, _, _) => {
+            h159
+        }
+    }), f13(match v0 {
+        Adt0::C0(_, _, _, _, _, _, _, h160) => {
+            h160
+        }
+    }, match v2 {
+        Adt2::C0(_, _, _, _, _, _, _, h161, _, _) => {
+            h161
         }
     })))
 }
 
 pub fn f10(v0: Bytes, v1: u64, v2: u64, v3: u64) -> R<Adt1> {
     Ok(Adt1::C0(f14(v0.clone(), v1, v2, v3)?, f14(v0.clone(), v1, v2, {
-        let a159 = v3;
-        let a160 = 4u64;
-        nat_add(a159, a160)?
+        let a162 = v3;
+        let a163 = 4u64;
+        nat_add(a162, a163)?
     })?, f14(v0.clone(), v1, v2, {
-        let a161 = v3;
-        let a162 = 8u64;
-        nat_add(a161, a162)?
+        let a164 = v3;
+        let a165 = 8u64;
+        nat_add(a164, a165)?
     })?, f14(v0.clone(), v1, v2, {
-        let a163 = v3;
-        let a164 = 12u64;
-        nat_add(a163, a164)?
+        let a166 = v3;
+        let a167 = 12u64;
+        nat_add(a166, a167)?
     })?, f14(v0.clone(), v1, v2, {
-        let a165 = v3;
-        let a166 = 16u64;
-        nat_add(a165, a166)?
+        let a168 = v3;
+        let a169 = 16u64;
+        nat_add(a168, a169)?
     })?, f14(v0.clone(), v1, v2, {
-        let a167 = v3;
-        let a168 = 20u64;
-        nat_add(a167, a168)?
+        let a170 = v3;
+        let a171 = 20u64;
+        nat_add(a170, a171)?
     })?, f14(v0.clone(), v1, v2, {
-        let a169 = v3;
-        let a170 = 24u64;
-        nat_add(a169, a170)?
+        let a172 = v3;
+        let a173 = 24u64;
+        nat_add(a172, a173)?
     })?, f14(v0.clone(), v1, v2, {
-        let a171 = v3;
-        let a172 = 28u64;
-        nat_add(a171, a172)?
+        let a174 = v3;
+        let a175 = 28u64;
+        nat_add(a174, a175)?
     })?, f14(v0.clone(), v1, v2, {
-        let a173 = v3;
-        let a174 = 32u64;
-        nat_add(a173, a174)?
+        let a176 = v3;
+        let a177 = 32u64;
+        nat_add(a176, a177)?
     })?, f14(v0.clone(), v1, v2, {
-        let a175 = v3;
-        let a176 = 36u64;
-        nat_add(a175, a176)?
+        let a178 = v3;
+        let a179 = 36u64;
+        nat_add(a178, a179)?
     })?, f14(v0.clone(), v1, v2, {
-        let a177 = v3;
-        let a178 = 40u64;
-        nat_add(a177, a178)?
+        let a180 = v3;
+        let a181 = 40u64;
+        nat_add(a180, a181)?
     })?, f14(v0.clone(), v1, v2, {
-        let a179 = v3;
-        let a180 = 44u64;
-        nat_add(a179, a180)?
+        let a182 = v3;
+        let a183 = 44u64;
+        nat_add(a182, a183)?
     })?, f14(v0.clone(), v1, v2, {
-        let a181 = v3;
-        let a182 = 48u64;
-        nat_add(a181, a182)?
+        let a184 = v3;
+        let a185 = 48u64;
+        nat_add(a184, a185)?
     })?, f14(v0.clone(), v1, v2, {
-        let a183 = v3;
-        let a184 = 52u64;
-        nat_add(a183, a184)?
+        let a186 = v3;
+        let a187 = 52u64;
+        nat_add(a186, a187)?
     })?, f14(v0.clone(), v1, v2, {
-        let a185 = v3;
-        let a186 = 56u64;
-        nat_add(a185, a186)?
+        let a188 = v3;
+        let a189 = 56u64;
+        nat_add(a188, a189)?
     })?, f14(v0, v1, v2, {
-        let a187 = v3;
-        let a188 = 60u64;
-        nat_add(a187, a188)?
+        let a190 = v3;
+        let a191 = 60u64;
+        nat_add(a190, a191)?
     })?))
 }
 
-pub fn f11(v0: Fn1, v1: u64, v2: Adt2) -> R<Adt2> {
-    let m189 = v1;
-    if m189 == 0 {
-        Ok(v2)
-    } else {
-        let v3 = m189 - 1;
-        f11(v0.clone(), v3, {
-            let c190: Fn1 = v0;
-            c190.apply(v2)?
-        })
+pub fn f11(v0: Fn1, p195: u64, p196: Adt2) -> R<Adt2> {
+    let m194 = (p195, p196);
+    {
+        let mut m194 = m194;
+        loop {
+            let step = {
+                let (v1, v2) = m194;
+                let m192 = v1;
+                if m192 == 0 {
+                    Err::<(u64, Adt2), R<Adt2>>(Ok(v2))
+                } else {
+                    let v3 = m192 - 1;
+                    Ok::<(u64, Adt2), R<Adt2>>((v3, {
+                        let c193: Fn1 = v0.clone();
+                        c193.apply(v2)?
+                    }))
+                }
+            };
+            match step {
+                Ok(next) => { m194 = next; }
+                Err(done) => break done,
+            }
+        }
     }
 }
 
@@ -888,12 +914,12 @@ pub fn f12(v0: Adt2) -> R<Adt2> {
 }
 
 pub fn f13(v0: u32, v1: u32) -> u32 {
-    let m193 = {
-        let a191 = f16(v0);
-        let a192 = f16(v1);
-        fixed_u64::checked_add(a191, a192)
+    let m199 = {
+        let a197 = f16(v0);
+        let a198 = f16(v1);
+        fixed_u64::checked_add(a197, a198)
     };
-    match m193 {
+    match m199 {
         None => {
             0u32
         }
@@ -904,54 +930,54 @@ pub fn f13(v0: u32, v1: u32) -> u32 {
 }
 
 pub fn f14(v0: Bytes, v1: u64, v2: u64, v3: u64) -> R<u32> {
-    let a196 = {
-        let a194 = v3;
-        let a195 = 8u64;
-        nat_add(a194, a195)?
+    let a202 = {
+        let a200 = v3;
+        let a201 = 8u64;
+        nat_add(a200, a201)?
     };
-    let a197 = v2;
-    if nat_eq(a196, a197) {
+    let a203 = v2;
+    if nat_eq(a202, a203) {
         Ok(f18({
-            let a200 = {
-                let a198 = v1;
-                let a199 = 8u64;
-                nat_mul(a198, a199)?
+            let a206 = {
+                let a204 = v1;
+                let a205 = 8u64;
+                nat_mul(a204, a205)?
             };
-            let a201 = 4294967296u64;
-            let a202 = 0u64;
-            nat_quot(a200, a201, a202)
+            let a207 = 4294967296u64;
+            let a208 = 0u64;
+            nat_quot(a206, a207, a208)
         }))
     } else {
-        let a205 = {
-            let a203 = v3;
-            let a204 = 4u64;
-            nat_add(a203, a204)?
+        let a211 = {
+            let a209 = v3;
+            let a210 = 4u64;
+            nat_add(a209, a210)?
         };
-        let a206 = v2;
-        if nat_eq(a205, a206) {
+        let a212 = v2;
+        if nat_eq(a211, a212) {
             Ok(f18({
-                let a209 = {
-                    let a207 = v1;
-                    let a208 = 8u64;
-                    nat_mul(a207, a208)?
+                let a215 = {
+                    let a213 = v1;
+                    let a214 = 8u64;
+                    nat_mul(a213, a214)?
                 };
-                let a210 = 4294967296u64;
-                let a211 = 0u64;
-                nat_rem(a209, a210, a211)
+                let a216 = 4294967296u64;
+                let a217 = 0u64;
+                nat_rem(a215, a216, a217)
             }))
         } else {
             Ok(f19(f20(v0.clone(), v1, v3), f20(v0.clone(), v1, {
-                let a212 = v3;
-                let a213 = 1u64;
-                nat_add(a212, a213)?
+                let a218 = v3;
+                let a219 = 1u64;
+                nat_add(a218, a219)?
             }), f20(v0.clone(), v1, {
-                let a214 = v3;
-                let a215 = 2u64;
-                nat_add(a214, a215)?
+                let a220 = v3;
+                let a221 = 2u64;
+                nat_add(a220, a221)?
             }), f20(v0, v1, {
-                let a216 = v3;
-                let a217 = 3u64;
-                nat_add(a216, a217)?
+                let a222 = v3;
+                let a223 = 3u64;
+                nat_add(a222, a223)?
             })))
         }
     }
@@ -959,108 +985,108 @@ pub fn f14(v0: Bytes, v1: u64, v2: u64, v3: u64) -> R<u32> {
 
 pub fn f15(v0: Adt2) -> R<Adt2> {
     let v1: u32 = f21(match v0.clone() {
-        Adt2::C0(_, _, _, _, _, _, _, _, _, h218) => {
-            h218
+        Adt2::C0(_, _, _, _, _, _, _, _, _, h224) => {
+            h224
         }
     });
     let v2: u32 = f13(match v0.clone() {
-        Adt2::C0(_, _, _, _, _, _, _, h219, _, _) => {
-            h219
+        Adt2::C0(_, _, _, _, _, _, _, h225, _, _) => {
+            h225
         }
     }, f13(f22(match v0.clone() {
-        Adt2::C0(_, _, _, _, h220, _, _, _, _, _) => {
-            h220
+        Adt2::C0(_, _, _, _, h226, _, _, _, _, _) => {
+            h226
         }
     }), f13(f23(match v0.clone() {
-        Adt2::C0(_, _, _, _, h221, _, _, _, _, _) => {
-            h221
+        Adt2::C0(_, _, _, _, h227, _, _, _, _, _) => {
+            h227
         }
     }, match v0.clone() {
-        Adt2::C0(_, _, _, _, _, h222, _, _, _, _) => {
-            h222
+        Adt2::C0(_, _, _, _, _, h228, _, _, _, _) => {
+            h228
         }
     }, match v0.clone() {
-        Adt2::C0(_, _, _, _, _, _, h223, _, _, _) => {
-            h223
+        Adt2::C0(_, _, _, _, _, _, h229, _, _, _) => {
+            h229
         }
     }), f13(v1, {
-        let m226 = match v0.clone() {
-            Adt2::C0(_, _, _, _, _, _, _, _, h225, _) => {
-                h225
+        let m232 = match v0.clone() {
+            Adt2::C0(_, _, _, _, _, _, _, _, h231, _) => {
+                h231
             }
         };
-        match m226 {
-            Adt1::C0(h224, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) => {
-                h224
+        match m232 {
+            Adt1::C0(h230, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) => {
+                h230
             }
         }
     }))));
     let v3: u32 = f13(f24(match v0.clone() {
-        Adt2::C0(h227, _, _, _, _, _, _, _, _, _) => {
-            h227
-        }
-    }), f25(match v0.clone() {
-        Adt2::C0(h228, _, _, _, _, _, _, _, _, _) => {
-            h228
-        }
-    }, match v0.clone() {
-        Adt2::C0(_, h229, _, _, _, _, _, _, _, _) => {
-            h229
-        }
-    }, match v0.clone() {
-        Adt2::C0(_, _, h230, _, _, _, _, _, _, _) => {
-            h230
-        }
-    }));
-    Ok(Adt2::C0(f13(v2, v3), match v0.clone() {
-        Adt2::C0(h231, _, _, _, _, _, _, _, _, _) => {
-            h231
-        }
-    }, match v0.clone() {
-        Adt2::C0(_, h232, _, _, _, _, _, _, _, _) => {
-            h232
-        }
-    }, match v0.clone() {
-        Adt2::C0(_, _, h233, _, _, _, _, _, _, _) => {
+        Adt2::C0(h233, _, _, _, _, _, _, _, _, _) => {
             h233
         }
-    }, f13(match v0.clone() {
-        Adt2::C0(_, _, _, h234, _, _, _, _, _, _) => {
+    }), f25(match v0.clone() {
+        Adt2::C0(h234, _, _, _, _, _, _, _, _, _) => {
             h234
         }
-    }, v2), match v0.clone() {
-        Adt2::C0(_, _, _, _, h235, _, _, _, _, _) => {
+    }, match v0.clone() {
+        Adt2::C0(_, h235, _, _, _, _, _, _, _, _) => {
             h235
         }
     }, match v0.clone() {
-        Adt2::C0(_, _, _, _, _, h236, _, _, _, _) => {
+        Adt2::C0(_, _, h236, _, _, _, _, _, _, _) => {
             h236
         }
-    }, match v0.clone() {
-        Adt2::C0(_, _, _, _, _, _, h237, _, _, _) => {
+    }));
+    Ok(Adt2::C0(f13(v2, v3), match v0.clone() {
+        Adt2::C0(h237, _, _, _, _, _, _, _, _, _) => {
             h237
         }
-    }, f26(match v0.clone() {
-        Adt2::C0(_, _, _, _, _, _, _, _, h238, _) => {
+    }, match v0.clone() {
+        Adt2::C0(_, h238, _, _, _, _, _, _, _, _) => {
             h238
         }
+    }, match v0.clone() {
+        Adt2::C0(_, _, h239, _, _, _, _, _, _, _) => {
+            h239
+        }
+    }, f13(match v0.clone() {
+        Adt2::C0(_, _, _, h240, _, _, _, _, _, _) => {
+            h240
+        }
+    }, v2), match v0.clone() {
+        Adt2::C0(_, _, _, _, h241, _, _, _, _, _) => {
+            h241
+        }
+    }, match v0.clone() {
+        Adt2::C0(_, _, _, _, _, h242, _, _, _, _) => {
+            h242
+        }
+    }, match v0.clone() {
+        Adt2::C0(_, _, _, _, _, _, h243, _, _, _) => {
+            h243
+        }
+    }, f26(match v0.clone() {
+        Adt2::C0(_, _, _, _, _, _, _, _, h244, _) => {
+            h244
+        }
     }), {
-        let a240 = match v0 {
-            Adt2::C0(_, _, _, _, _, _, _, _, _, h239) => {
-                h239
+        let a246 = match v0 {
+            Adt2::C0(_, _, _, _, _, _, _, _, _, h245) => {
+                h245
             }
         };
-        let a241 = 1u64;
-        nat_add(a240, a241)?
+        let a247 = 1u64;
+        nat_add(a246, a247)?
     }))
 }
 
 pub fn f16(v0: u32) -> u64 {
-    let m243 = {
-        let a242 = v0;
-        fixed_u64::convert(i128::from(a242))
+    let m249 = {
+        let a248 = v0;
+        fixed_u64::convert(i128::from(a248))
     };
-    match m243 {
+    match m249 {
         None => {
             0u64
         }
@@ -1071,15 +1097,15 @@ pub fn f16(v0: u32) -> u64 {
 }
 
 pub fn f17(v0: u64) -> u32 {
-    let m247 = {
-        let a246 = {
-            let a244 = v0;
-            let a245 = 4294967295u64;
-            fixed_u64::bit_and(a244, a245)
+    let m253 = {
+        let a252 = {
+            let a250 = v0;
+            let a251 = 4294967295u64;
+            fixed_u64::bit_and(a250, a251)
         };
-        fixed_u32::convert(i128::from(a246))
+        fixed_u32::convert(i128::from(a252))
     };
-    match m247 {
+    match m253 {
         None => {
             0u32
         }
@@ -1090,46 +1116,46 @@ pub fn f17(v0: u64) -> u32 {
 }
 
 pub fn f18(v0: u64) -> u32 {
-    let (_, h248) = {
-        let (_, h249) = f27(Fn2::F28, 32u64, (v0, (1u32, 0u32)));
-        h249
+    let (_, h254) = {
+        let (_, h255) = f27(Fn2::F28, 32u64, (v0, (1u32, 0u32)));
+        h255
     };
-    h248
+    h254
 }
 
 pub fn f19(v0: u32, v1: u32, v2: u32, v3: u32) -> u32 {
-    let a254 = f29(v0, 24u32);
-    let a255 = {
-        let a252 = f29(v1, 16u32);
-        let a253 = {
-            let a250 = f29(v2, 8u32);
-            let a251 = v3;
-            fixed_u32::bit_or(a250, a251)
+    let a260 = f29(v0, 24u32);
+    let a261 = {
+        let a258 = f29(v1, 16u32);
+        let a259 = {
+            let a256 = f29(v2, 8u32);
+            let a257 = v3;
+            fixed_u32::bit_or(a256, a257)
         };
-        fixed_u32::bit_or(a252, a253)
+        fixed_u32::bit_or(a258, a259)
     };
-    fixed_u32::bit_or(a254, a255)
+    fixed_u32::bit_or(a260, a261)
 }
 
 pub fn f20(v0: Bytes, v1: u64, v2: u64) -> u32 {
-    let a256 = v2;
-    let a257 = v1;
-    if nat_lt(a256, a257) {
-        let m260 = {
-            let a258 = v0;
-            let a259 = v2;
-            index_bytes(a258, a259)
+    let a262 = v2;
+    let a263 = v1;
+    if nat_lt(a262, a263) {
+        let m266 = {
+            let a264 = v0;
+            let a265 = v2;
+            index_bytes(a264, a265)
         };
-        match m260 {
+        match m266 {
             None => {
                 0u32
             }
             Some(v3) => {
-                let m262 = {
-                    let a261 = v3;
-                    fixed_u32::convert(i128::from(a261))
+                let m268 = {
+                    let a267 = v3;
+                    fixed_u32::convert(i128::from(a267))
                 };
-                match m262 {
+                match m268 {
                     None => {
                         0u32
                     }
@@ -1140,9 +1166,9 @@ pub fn f20(v0: Bytes, v1: u64, v2: u64) -> u32 {
             }
         }
     } else {
-        let a263 = v2;
-        let a264 = v1;
-        if nat_eq(a263, a264) {
+        let a269 = v2;
+        let a270 = v1;
+        if nat_eq(a269, a270) {
             128u32
         } else {
             0u32
@@ -1151,52 +1177,52 @@ pub fn f20(v0: Bytes, v1: u64, v2: u64) -> u32 {
 }
 
 pub fn f21(v0: u64) -> u32 {
-    let a265 = v0;
-    let a266 = 32u64;
-    if nat_lt(a265, a266) {
-        let a267 = v0;
-        let a268 = 16u64;
-        if nat_lt(a267, a268) {
-            let a269 = v0;
-            let a270 = 8u64;
-            if nat_lt(a269, a270) {
-                let a271 = v0;
-                let a272 = 4u64;
-                if nat_lt(a271, a272) {
-                    let a273 = v0;
-                    let a274 = 2u64;
-                    if nat_lt(a273, a274) {
-                        let a275 = v0;
-                        let a276 = 1u64;
-                        if nat_lt(a275, a276) {
+    let a271 = v0;
+    let a272 = 32u64;
+    if nat_lt(a271, a272) {
+        let a273 = v0;
+        let a274 = 16u64;
+        if nat_lt(a273, a274) {
+            let a275 = v0;
+            let a276 = 8u64;
+            if nat_lt(a275, a276) {
+                let a277 = v0;
+                let a278 = 4u64;
+                if nat_lt(a277, a278) {
+                    let a279 = v0;
+                    let a280 = 2u64;
+                    if nat_lt(a279, a280) {
+                        let a281 = v0;
+                        let a282 = 1u64;
+                        if nat_lt(a281, a282) {
                             1116352408u32
                         } else {
                             1899447441u32
                         }
                     } else {
-                        let a277 = v0;
-                        let a278 = 3u64;
-                        if nat_lt(a277, a278) {
+                        let a283 = v0;
+                        let a284 = 3u64;
+                        if nat_lt(a283, a284) {
                             3049323471u32
                         } else {
                             3921009573u32
                         }
                     }
                 } else {
-                    let a279 = v0;
-                    let a280 = 6u64;
-                    if nat_lt(a279, a280) {
-                        let a281 = v0;
-                        let a282 = 5u64;
-                        if nat_lt(a281, a282) {
+                    let a285 = v0;
+                    let a286 = 6u64;
+                    if nat_lt(a285, a286) {
+                        let a287 = v0;
+                        let a288 = 5u64;
+                        if nat_lt(a287, a288) {
                             961987163u32
                         } else {
                             1508970993u32
                         }
                     } else {
-                        let a283 = v0;
-                        let a284 = 7u64;
-                        if nat_lt(a283, a284) {
+                        let a289 = v0;
+                        let a290 = 7u64;
+                        if nat_lt(a289, a290) {
                             2453635748u32
                         } else {
                             2870763221u32
@@ -1204,43 +1230,43 @@ pub fn f21(v0: u64) -> u32 {
                     }
                 }
             } else {
-                let a285 = v0;
-                let a286 = 12u64;
-                if nat_lt(a285, a286) {
-                    let a287 = v0;
-                    let a288 = 10u64;
-                    if nat_lt(a287, a288) {
-                        let a289 = v0;
-                        let a290 = 9u64;
-                        if nat_lt(a289, a290) {
+                let a291 = v0;
+                let a292 = 12u64;
+                if nat_lt(a291, a292) {
+                    let a293 = v0;
+                    let a294 = 10u64;
+                    if nat_lt(a293, a294) {
+                        let a295 = v0;
+                        let a296 = 9u64;
+                        if nat_lt(a295, a296) {
                             3624381080u32
                         } else {
                             310598401u32
                         }
                     } else {
-                        let a291 = v0;
-                        let a292 = 11u64;
-                        if nat_lt(a291, a292) {
+                        let a297 = v0;
+                        let a298 = 11u64;
+                        if nat_lt(a297, a298) {
                             607225278u32
                         } else {
                             1426881987u32
                         }
                     }
                 } else {
-                    let a293 = v0;
-                    let a294 = 14u64;
-                    if nat_lt(a293, a294) {
-                        let a295 = v0;
-                        let a296 = 13u64;
-                        if nat_lt(a295, a296) {
+                    let a299 = v0;
+                    let a300 = 14u64;
+                    if nat_lt(a299, a300) {
+                        let a301 = v0;
+                        let a302 = 13u64;
+                        if nat_lt(a301, a302) {
                             1925078388u32
                         } else {
                             2162078206u32
                         }
                     } else {
-                        let a297 = v0;
-                        let a298 = 15u64;
-                        if nat_lt(a297, a298) {
+                        let a303 = v0;
+                        let a304 = 15u64;
+                        if nat_lt(a303, a304) {
                             2614888103u32
                         } else {
                             3248222580u32
@@ -1249,46 +1275,46 @@ pub fn f21(v0: u64) -> u32 {
                 }
             }
         } else {
-            let a299 = v0;
-            let a300 = 24u64;
-            if nat_lt(a299, a300) {
-                let a301 = v0;
-                let a302 = 20u64;
-                if nat_lt(a301, a302) {
-                    let a303 = v0;
-                    let a304 = 18u64;
-                    if nat_lt(a303, a304) {
-                        let a305 = v0;
-                        let a306 = 17u64;
-                        if nat_lt(a305, a306) {
+            let a305 = v0;
+            let a306 = 24u64;
+            if nat_lt(a305, a306) {
+                let a307 = v0;
+                let a308 = 20u64;
+                if nat_lt(a307, a308) {
+                    let a309 = v0;
+                    let a310 = 18u64;
+                    if nat_lt(a309, a310) {
+                        let a311 = v0;
+                        let a312 = 17u64;
+                        if nat_lt(a311, a312) {
                             3835390401u32
                         } else {
                             4022224774u32
                         }
                     } else {
-                        let a307 = v0;
-                        let a308 = 19u64;
-                        if nat_lt(a307, a308) {
+                        let a313 = v0;
+                        let a314 = 19u64;
+                        if nat_lt(a313, a314) {
                             264347078u32
                         } else {
                             604807628u32
                         }
                     }
                 } else {
-                    let a309 = v0;
-                    let a310 = 22u64;
-                    if nat_lt(a309, a310) {
-                        let a311 = v0;
-                        let a312 = 21u64;
-                        if nat_lt(a311, a312) {
+                    let a315 = v0;
+                    let a316 = 22u64;
+                    if nat_lt(a315, a316) {
+                        let a317 = v0;
+                        let a318 = 21u64;
+                        if nat_lt(a317, a318) {
                             770255983u32
                         } else {
                             1249150122u32
                         }
                     } else {
-                        let a313 = v0;
-                        let a314 = 23u64;
-                        if nat_lt(a313, a314) {
+                        let a319 = v0;
+                        let a320 = 23u64;
+                        if nat_lt(a319, a320) {
                             1555081692u32
                         } else {
                             1996064986u32
@@ -1296,43 +1322,43 @@ pub fn f21(v0: u64) -> u32 {
                     }
                 }
             } else {
-                let a315 = v0;
-                let a316 = 28u64;
-                if nat_lt(a315, a316) {
-                    let a317 = v0;
-                    let a318 = 26u64;
-                    if nat_lt(a317, a318) {
-                        let a319 = v0;
-                        let a320 = 25u64;
-                        if nat_lt(a319, a320) {
+                let a321 = v0;
+                let a322 = 28u64;
+                if nat_lt(a321, a322) {
+                    let a323 = v0;
+                    let a324 = 26u64;
+                    if nat_lt(a323, a324) {
+                        let a325 = v0;
+                        let a326 = 25u64;
+                        if nat_lt(a325, a326) {
                             2554220882u32
                         } else {
                             2821834349u32
                         }
                     } else {
-                        let a321 = v0;
-                        let a322 = 27u64;
-                        if nat_lt(a321, a322) {
+                        let a327 = v0;
+                        let a328 = 27u64;
+                        if nat_lt(a327, a328) {
                             2952996808u32
                         } else {
                             3210313671u32
                         }
                     }
                 } else {
-                    let a323 = v0;
-                    let a324 = 30u64;
-                    if nat_lt(a323, a324) {
-                        let a325 = v0;
-                        let a326 = 29u64;
-                        if nat_lt(a325, a326) {
+                    let a329 = v0;
+                    let a330 = 30u64;
+                    if nat_lt(a329, a330) {
+                        let a331 = v0;
+                        let a332 = 29u64;
+                        if nat_lt(a331, a332) {
                             3336571891u32
                         } else {
                             3584528711u32
                         }
                     } else {
-                        let a327 = v0;
-                        let a328 = 31u64;
-                        if nat_lt(a327, a328) {
+                        let a333 = v0;
+                        let a334 = 31u64;
+                        if nat_lt(a333, a334) {
                             113926993u32
                         } else {
                             338241895u32
@@ -1342,49 +1368,49 @@ pub fn f21(v0: u64) -> u32 {
             }
         }
     } else {
-        let a329 = v0;
-        let a330 = 48u64;
-        if nat_lt(a329, a330) {
-            let a331 = v0;
-            let a332 = 40u64;
-            if nat_lt(a331, a332) {
-                let a333 = v0;
-                let a334 = 36u64;
-                if nat_lt(a333, a334) {
-                    let a335 = v0;
-                    let a336 = 34u64;
-                    if nat_lt(a335, a336) {
-                        let a337 = v0;
-                        let a338 = 33u64;
-                        if nat_lt(a337, a338) {
+        let a335 = v0;
+        let a336 = 48u64;
+        if nat_lt(a335, a336) {
+            let a337 = v0;
+            let a338 = 40u64;
+            if nat_lt(a337, a338) {
+                let a339 = v0;
+                let a340 = 36u64;
+                if nat_lt(a339, a340) {
+                    let a341 = v0;
+                    let a342 = 34u64;
+                    if nat_lt(a341, a342) {
+                        let a343 = v0;
+                        let a344 = 33u64;
+                        if nat_lt(a343, a344) {
                             666307205u32
                         } else {
                             773529912u32
                         }
                     } else {
-                        let a339 = v0;
-                        let a340 = 35u64;
-                        if nat_lt(a339, a340) {
+                        let a345 = v0;
+                        let a346 = 35u64;
+                        if nat_lt(a345, a346) {
                             1294757372u32
                         } else {
                             1396182291u32
                         }
                     }
                 } else {
-                    let a341 = v0;
-                    let a342 = 38u64;
-                    if nat_lt(a341, a342) {
-                        let a343 = v0;
-                        let a344 = 37u64;
-                        if nat_lt(a343, a344) {
+                    let a347 = v0;
+                    let a348 = 38u64;
+                    if nat_lt(a347, a348) {
+                        let a349 = v0;
+                        let a350 = 37u64;
+                        if nat_lt(a349, a350) {
                             1695183700u32
                         } else {
                             1986661051u32
                         }
                     } else {
-                        let a345 = v0;
-                        let a346 = 39u64;
-                        if nat_lt(a345, a346) {
+                        let a351 = v0;
+                        let a352 = 39u64;
+                        if nat_lt(a351, a352) {
                             2177026350u32
                         } else {
                             2456956037u32
@@ -1392,43 +1418,43 @@ pub fn f21(v0: u64) -> u32 {
                     }
                 }
             } else {
-                let a347 = v0;
-                let a348 = 44u64;
-                if nat_lt(a347, a348) {
-                    let a349 = v0;
-                    let a350 = 42u64;
-                    if nat_lt(a349, a350) {
-                        let a351 = v0;
-                        let a352 = 41u64;
-                        if nat_lt(a351, a352) {
+                let a353 = v0;
+                let a354 = 44u64;
+                if nat_lt(a353, a354) {
+                    let a355 = v0;
+                    let a356 = 42u64;
+                    if nat_lt(a355, a356) {
+                        let a357 = v0;
+                        let a358 = 41u64;
+                        if nat_lt(a357, a358) {
                             2730485921u32
                         } else {
                             2820302411u32
                         }
                     } else {
-                        let a353 = v0;
-                        let a354 = 43u64;
-                        if nat_lt(a353, a354) {
+                        let a359 = v0;
+                        let a360 = 43u64;
+                        if nat_lt(a359, a360) {
                             3259730800u32
                         } else {
                             3345764771u32
                         }
                     }
                 } else {
-                    let a355 = v0;
-                    let a356 = 46u64;
-                    if nat_lt(a355, a356) {
-                        let a357 = v0;
-                        let a358 = 45u64;
-                        if nat_lt(a357, a358) {
+                    let a361 = v0;
+                    let a362 = 46u64;
+                    if nat_lt(a361, a362) {
+                        let a363 = v0;
+                        let a364 = 45u64;
+                        if nat_lt(a363, a364) {
                             3516065817u32
                         } else {
                             3600352804u32
                         }
                     } else {
-                        let a359 = v0;
-                        let a360 = 47u64;
-                        if nat_lt(a359, a360) {
+                        let a365 = v0;
+                        let a366 = 47u64;
+                        if nat_lt(a365, a366) {
                             4094571909u32
                         } else {
                             275423344u32
@@ -1437,46 +1463,46 @@ pub fn f21(v0: u64) -> u32 {
                 }
             }
         } else {
-            let a361 = v0;
-            let a362 = 56u64;
-            if nat_lt(a361, a362) {
-                let a363 = v0;
-                let a364 = 52u64;
-                if nat_lt(a363, a364) {
-                    let a365 = v0;
-                    let a366 = 50u64;
-                    if nat_lt(a365, a366) {
-                        let a367 = v0;
-                        let a368 = 49u64;
-                        if nat_lt(a367, a368) {
+            let a367 = v0;
+            let a368 = 56u64;
+            if nat_lt(a367, a368) {
+                let a369 = v0;
+                let a370 = 52u64;
+                if nat_lt(a369, a370) {
+                    let a371 = v0;
+                    let a372 = 50u64;
+                    if nat_lt(a371, a372) {
+                        let a373 = v0;
+                        let a374 = 49u64;
+                        if nat_lt(a373, a374) {
                             430227734u32
                         } else {
                             506948616u32
                         }
                     } else {
-                        let a369 = v0;
-                        let a370 = 51u64;
-                        if nat_lt(a369, a370) {
+                        let a375 = v0;
+                        let a376 = 51u64;
+                        if nat_lt(a375, a376) {
                             659060556u32
                         } else {
                             883997877u32
                         }
                     }
                 } else {
-                    let a371 = v0;
-                    let a372 = 54u64;
-                    if nat_lt(a371, a372) {
-                        let a373 = v0;
-                        let a374 = 53u64;
-                        if nat_lt(a373, a374) {
+                    let a377 = v0;
+                    let a378 = 54u64;
+                    if nat_lt(a377, a378) {
+                        let a379 = v0;
+                        let a380 = 53u64;
+                        if nat_lt(a379, a380) {
                             958139571u32
                         } else {
                             1322822218u32
                         }
                     } else {
-                        let a375 = v0;
-                        let a376 = 55u64;
-                        if nat_lt(a375, a376) {
+                        let a381 = v0;
+                        let a382 = 55u64;
+                        if nat_lt(a381, a382) {
                             1537002063u32
                         } else {
                             1747873779u32
@@ -1484,43 +1510,43 @@ pub fn f21(v0: u64) -> u32 {
                     }
                 }
             } else {
-                let a377 = v0;
-                let a378 = 60u64;
-                if nat_lt(a377, a378) {
-                    let a379 = v0;
-                    let a380 = 58u64;
-                    if nat_lt(a379, a380) {
-                        let a381 = v0;
-                        let a382 = 57u64;
-                        if nat_lt(a381, a382) {
+                let a383 = v0;
+                let a384 = 60u64;
+                if nat_lt(a383, a384) {
+                    let a385 = v0;
+                    let a386 = 58u64;
+                    if nat_lt(a385, a386) {
+                        let a387 = v0;
+                        let a388 = 57u64;
+                        if nat_lt(a387, a388) {
                             1955562222u32
                         } else {
                             2024104815u32
                         }
                     } else {
-                        let a383 = v0;
-                        let a384 = 59u64;
-                        if nat_lt(a383, a384) {
+                        let a389 = v0;
+                        let a390 = 59u64;
+                        if nat_lt(a389, a390) {
                             2227730452u32
                         } else {
                             2361852424u32
                         }
                     }
                 } else {
-                    let a385 = v0;
-                    let a386 = 62u64;
-                    if nat_lt(a385, a386) {
-                        let a387 = v0;
-                        let a388 = 61u64;
-                        if nat_lt(a387, a388) {
+                    let a391 = v0;
+                    let a392 = 62u64;
+                    if nat_lt(a391, a392) {
+                        let a393 = v0;
+                        let a394 = 61u64;
+                        if nat_lt(a393, a394) {
                             2428436474u32
                         } else {
                             2756734187u32
                         }
                     } else {
-                        let a389 = v0;
-                        let a390 = 63u64;
-                        if nat_lt(a389, a390) {
+                        let a395 = v0;
+                        let a396 = 63u64;
+                        if nat_lt(a395, a396) {
                             3204031479u32
                         } else {
                             3329325298u32
@@ -1533,193 +1559,206 @@ pub fn f21(v0: u64) -> u32 {
 }
 
 pub fn f22(v0: u32) -> u32 {
-    let a393 = {
-        let a391 = f30(v0, 6u32, 26u32);
-        let a392 = f30(v0, 11u32, 21u32);
-        fixed_u32::bit_xor(a391, a392)
+    let a399 = {
+        let a397 = f30(v0, 6u32, 26u32);
+        let a398 = f30(v0, 11u32, 21u32);
+        fixed_u32::bit_xor(a397, a398)
     };
-    let a394 = f30(v0, 25u32, 7u32);
-    fixed_u32::bit_xor(a393, a394)
+    let a400 = f30(v0, 25u32, 7u32);
+    fixed_u32::bit_xor(a399, a400)
 }
 
 pub fn f23(v0: u32, v1: u32, v2: u32) -> u32 {
-    let a400 = {
-        let a395 = v0;
-        let a396 = v1;
-        fixed_u32::bit_and(a395, a396)
+    let a406 = {
+        let a401 = v0;
+        let a402 = v1;
+        fixed_u32::bit_and(a401, a402)
     };
-    let a401 = {
-        let a398 = {
-            let a397 = v0;
-            fixed_u32::bit_not(a397)
+    let a407 = {
+        let a404 = {
+            let a403 = v0;
+            fixed_u32::bit_not(a403)
         };
-        let a399 = v2;
-        fixed_u32::bit_and(a398, a399)
+        let a405 = v2;
+        fixed_u32::bit_and(a404, a405)
     };
-    fixed_u32::bit_xor(a400, a401)
+    fixed_u32::bit_xor(a406, a407)
 }
 
 pub fn f24(v0: u32) -> u32 {
-    let a404 = {
-        let a402 = f30(v0, 2u32, 30u32);
-        let a403 = f30(v0, 13u32, 19u32);
-        fixed_u32::bit_xor(a402, a403)
+    let a410 = {
+        let a408 = f30(v0, 2u32, 30u32);
+        let a409 = f30(v0, 13u32, 19u32);
+        fixed_u32::bit_xor(a408, a409)
     };
-    let a405 = f30(v0, 22u32, 10u32);
-    fixed_u32::bit_xor(a404, a405)
+    let a411 = f30(v0, 22u32, 10u32);
+    fixed_u32::bit_xor(a410, a411)
 }
 
 pub fn f25(v0: u32, v1: u32, v2: u32) -> u32 {
-    let a414 = {
-        let a410 = {
-            let a406 = v0;
-            let a407 = v1;
-            fixed_u32::bit_and(a406, a407)
+    let a420 = {
+        let a416 = {
+            let a412 = v0;
+            let a413 = v1;
+            fixed_u32::bit_and(a412, a413)
         };
-        let a411 = {
-            let a408 = v0;
-            let a409 = v2;
-            fixed_u32::bit_and(a408, a409)
+        let a417 = {
+            let a414 = v0;
+            let a415 = v2;
+            fixed_u32::bit_and(a414, a415)
         };
-        fixed_u32::bit_xor(a410, a411)
+        fixed_u32::bit_xor(a416, a417)
     };
-    let a415 = {
-        let a412 = v1;
-        let a413 = v2;
-        fixed_u32::bit_and(a412, a413)
+    let a421 = {
+        let a418 = v1;
+        let a419 = v2;
+        fixed_u32::bit_and(a418, a419)
     };
-    fixed_u32::bit_xor(a414, a415)
+    fixed_u32::bit_xor(a420, a421)
 }
 
 pub fn f26(v0: Adt1) -> Adt1 {
     Adt1::C0(match v0.clone() {
-        Adt1::C0(_, h416, _, _, _, _, _, _, _, _, _, _, _, _, _, _) => {
-            h416
-        }
-    }, match v0.clone() {
-        Adt1::C0(_, _, h417, _, _, _, _, _, _, _, _, _, _, _, _, _) => {
-            h417
-        }
-    }, match v0.clone() {
-        Adt1::C0(_, _, _, h418, _, _, _, _, _, _, _, _, _, _, _, _) => {
-            h418
-        }
-    }, match v0.clone() {
-        Adt1::C0(_, _, _, _, h419, _, _, _, _, _, _, _, _, _, _, _) => {
-            h419
-        }
-    }, match v0.clone() {
-        Adt1::C0(_, _, _, _, _, h420, _, _, _, _, _, _, _, _, _, _) => {
-            h420
-        }
-    }, match v0.clone() {
-        Adt1::C0(_, _, _, _, _, _, h421, _, _, _, _, _, _, _, _, _) => {
-            h421
-        }
-    }, match v0.clone() {
-        Adt1::C0(_, _, _, _, _, _, _, h422, _, _, _, _, _, _, _, _) => {
+        Adt1::C0(_, h422, _, _, _, _, _, _, _, _, _, _, _, _, _, _) => {
             h422
         }
     }, match v0.clone() {
-        Adt1::C0(_, _, _, _, _, _, _, _, h423, _, _, _, _, _, _, _) => {
+        Adt1::C0(_, _, h423, _, _, _, _, _, _, _, _, _, _, _, _, _) => {
             h423
         }
     }, match v0.clone() {
-        Adt1::C0(_, _, _, _, _, _, _, _, _, h424, _, _, _, _, _, _) => {
+        Adt1::C0(_, _, _, h424, _, _, _, _, _, _, _, _, _, _, _, _) => {
             h424
         }
     }, match v0.clone() {
-        Adt1::C0(_, _, _, _, _, _, _, _, _, _, h425, _, _, _, _, _) => {
+        Adt1::C0(_, _, _, _, h425, _, _, _, _, _, _, _, _, _, _, _) => {
             h425
         }
     }, match v0.clone() {
-        Adt1::C0(_, _, _, _, _, _, _, _, _, _, _, h426, _, _, _, _) => {
+        Adt1::C0(_, _, _, _, _, h426, _, _, _, _, _, _, _, _, _, _) => {
             h426
         }
     }, match v0.clone() {
-        Adt1::C0(_, _, _, _, _, _, _, _, _, _, _, _, h427, _, _, _) => {
+        Adt1::C0(_, _, _, _, _, _, h427, _, _, _, _, _, _, _, _, _) => {
             h427
         }
     }, match v0.clone() {
-        Adt1::C0(_, _, _, _, _, _, _, _, _, _, _, _, _, h428, _, _) => {
+        Adt1::C0(_, _, _, _, _, _, _, h428, _, _, _, _, _, _, _, _) => {
             h428
         }
     }, match v0.clone() {
-        Adt1::C0(_, _, _, _, _, _, _, _, _, _, _, _, _, _, h429, _) => {
+        Adt1::C0(_, _, _, _, _, _, _, _, h429, _, _, _, _, _, _, _) => {
             h429
         }
     }, match v0.clone() {
-        Adt1::C0(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, h430) => {
+        Adt1::C0(_, _, _, _, _, _, _, _, _, h430, _, _, _, _, _, _) => {
             h430
         }
-    }, f13(f31(match v0.clone() {
-        Adt1::C0(_, _, _, _, _, _, _, _, _, _, _, _, _, _, h431, _) => {
+    }, match v0.clone() {
+        Adt1::C0(_, _, _, _, _, _, _, _, _, _, h431, _, _, _, _, _) => {
             h431
         }
-    }), f13(match v0.clone() {
-        Adt1::C0(_, _, _, _, _, _, _, _, _, h432, _, _, _, _, _, _) => {
+    }, match v0.clone() {
+        Adt1::C0(_, _, _, _, _, _, _, _, _, _, _, h432, _, _, _, _) => {
             h432
         }
-    }, f13(f32(match v0.clone() {
-        Adt1::C0(_, h433, _, _, _, _, _, _, _, _, _, _, _, _, _, _) => {
+    }, match v0.clone() {
+        Adt1::C0(_, _, _, _, _, _, _, _, _, _, _, _, h433, _, _, _) => {
             h433
         }
-    }), match v0 {
-        Adt1::C0(h434, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) => {
+    }, match v0.clone() {
+        Adt1::C0(_, _, _, _, _, _, _, _, _, _, _, _, _, h434, _, _) => {
             h434
+        }
+    }, match v0.clone() {
+        Adt1::C0(_, _, _, _, _, _, _, _, _, _, _, _, _, _, h435, _) => {
+            h435
+        }
+    }, match v0.clone() {
+        Adt1::C0(_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, h436) => {
+            h436
+        }
+    }, f13(f31(match v0.clone() {
+        Adt1::C0(_, _, _, _, _, _, _, _, _, _, _, _, _, _, h437, _) => {
+            h437
+        }
+    }), f13(match v0.clone() {
+        Adt1::C0(_, _, _, _, _, _, _, _, _, h438, _, _, _, _, _, _) => {
+            h438
+        }
+    }, f13(f32(match v0.clone() {
+        Adt1::C0(_, h439, _, _, _, _, _, _, _, _, _, _, _, _, _, _) => {
+            h439
+        }
+    }), match v0 {
+        Adt1::C0(h440, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _) => {
+            h440
         }
     }))))
 }
 
-pub fn f27(v0: Fn2, v1: u64, v2: (u64, (u32, u32))) -> (u64, (u32, u32)) {
-    let m435 = v1;
-    if m435 == 0 {
-        v2
-    } else {
-        let v3 = m435 - 1;
-        f27(v0.clone(), v3, {
-            let c436: Fn2 = v0;
-            c436.apply(v2)
-        })
+pub fn f27(v0: Fn2, p444: u64, p445: (u64, (u32, u32))) -> (u64, (u32, u32)) {
+    let m443 = (p444, p445);
+    {
+        let mut m443 = m443;
+        loop {
+            let step = {
+                let (v1, v2) = m443;
+                let m441 = v1;
+                if m441 == 0 {
+                    Err::<(u64, (u64, (u32, u32))), (u64, (u32, u32))>(v2)
+                } else {
+                    let v3 = m441 - 1;
+                    Ok::<(u64, (u64, (u32, u32))), (u64, (u32, u32))>((v3, {
+                        let c442: Fn2 = v0.clone();
+                        c442.apply(v2)
+                    }))
+                }
+            };
+            match step {
+                Ok(next) => { m443 = next; }
+                Err(done) => break done,
+            }
+        }
     }
 }
 
 pub fn f28(v0: (u64, (u32, u32))) -> (u64, (u32, u32)) {
     let v1: u64 = {
-        let (h437, _) = v0;
-        h437
+        let (h446, _) = v0;
+        h446
     };
     let v2: u32 = {
-        let (h438, _) = {
-            let (_, h439) = v0;
-            h439
+        let (h447, _) = {
+            let (_, h448) = v0;
+            h448
         };
-        h438
+        h447
     };
     let v3: u32 = {
-        let (_, h440) = {
-            let (_, h441) = v0;
-            h441
+        let (_, h449) = {
+            let (_, h450) = v0;
+            h450
         };
-        h440
+        h449
     };
     ({
-        let a442 = v1;
-        let a443 = 2u64;
-        let a444 = 0u64;
-        nat_quot(a442, a443, a444)
+        let a451 = v1;
+        let a452 = 2u64;
+        let a453 = 0u64;
+        nat_quot(a451, a452, a453)
     }, (f29(v2, 1u32), {
-        let a448 = {
-            let a445 = v1;
-            let a446 = 2u64;
-            let a447 = 0u64;
-            nat_rem(a445, a446, a447)
+        let a457 = {
+            let a454 = v1;
+            let a455 = 2u64;
+            let a456 = 0u64;
+            nat_rem(a454, a455, a456)
         };
-        let a449 = 1u64;
-        if nat_eq(a448, a449) {
-            let a450 = v3;
-            let a451 = v2;
-            fixed_u32::bit_or(a450, a451)
+        let a458 = 1u64;
+        if nat_eq(a457, a458) {
+            let a459 = v3;
+            let a460 = v2;
+            fixed_u32::bit_or(a459, a460)
         } else {
             v3
         }
@@ -1727,12 +1766,12 @@ pub fn f28(v0: (u64, (u32, u32))) -> (u64, (u32, u32)) {
 }
 
 pub fn f29(v0: u32, v1: u32) -> u32 {
-    let m454 = {
-        let a452 = v0;
-        let a453 = v1;
-        fixed_u32::shift_left(a452, a453)
+    let m463 = {
+        let a461 = v0;
+        let a462 = v1;
+        fixed_u32::shift_left(a461, a462)
     };
-    match m454 {
+    match m463 {
         None => {
             0u32
         }
@@ -1743,27 +1782,27 @@ pub fn f29(v0: u32, v1: u32) -> u32 {
 }
 
 pub fn f30(v0: u32, v1: u32, v2: u32) -> u32 {
-    let a455 = f8(v0, v1);
-    let a456 = f29(v0, v2);
-    fixed_u32::bit_or(a455, a456)
+    let a464 = f8(v0, v1);
+    let a465 = f29(v0, v2);
+    fixed_u32::bit_or(a464, a465)
 }
 
 pub fn f31(v0: u32) -> u32 {
-    let a459 = {
-        let a457 = f30(v0, 17u32, 15u32);
-        let a458 = f30(v0, 19u32, 13u32);
-        fixed_u32::bit_xor(a457, a458)
+    let a468 = {
+        let a466 = f30(v0, 17u32, 15u32);
+        let a467 = f30(v0, 19u32, 13u32);
+        fixed_u32::bit_xor(a466, a467)
     };
-    let a460 = f8(v0, 10u32);
-    fixed_u32::bit_xor(a459, a460)
+    let a469 = f8(v0, 10u32);
+    fixed_u32::bit_xor(a468, a469)
 }
 
 pub fn f32(v0: u32) -> u32 {
-    let a463 = {
-        let a461 = f30(v0, 7u32, 25u32);
-        let a462 = f30(v0, 18u32, 14u32);
-        fixed_u32::bit_xor(a461, a462)
+    let a472 = {
+        let a470 = f30(v0, 7u32, 25u32);
+        let a471 = f30(v0, 18u32, 14u32);
+        fixed_u32::bit_xor(a470, a471)
     };
-    let a464 = f8(v0, 3u32);
-    fixed_u32::bit_xor(a463, a464)
+    let a473 = f8(v0, 3u32);
+    fixed_u32::bit_xor(a472, a473)
 }
