@@ -40,7 +40,7 @@ and Unreleased holds what has landed since.
   `semantic_ir` and `latex_backend` versions move to 14 and 13, so every
   language-1.2 lock, golden, fixture, and verification record is
   regenerated. Text classifiers, adapters, composition, production, and the
-  end-to-end example remain for later slices. The register holds 426 IDs.
+  end-to-end example are not part of this change. The register holds 426 IDs.
 - The repository's own URL is `https://github.com/UOR-Foundation/LexLean`
   (#34, D1): the `repository` and `homepage` fields of the workspace manifest,
   SPEC.md §1 and §2.3, the README, the image's `org.opencontainers.image.source`

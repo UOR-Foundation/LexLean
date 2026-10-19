@@ -3931,7 +3931,7 @@ reaches a model only as the tokens `encodeText` makes of it.
    not elaborate.
 
 `examples/models` carries the vocabulary the conformance cases tokenize; the
-end-to-end text-model example is a later release's.
+end-to-end text-model example is not part of this release.
 
 #### Widening conversions (language 1.2)
 
