@@ -1276,6 +1276,17 @@ pub fn checked_project(project: &P) -> lexlean::link::CheckedProject {
         .expect("check_project")
 }
 
+/// The checked project for a fixture under a lock computed now, for a case
+/// that reads the lowering of a committed example and not the identity its
+/// committed lock records.
+pub fn checked_project_fresh(project: &P) -> lexlean::link::CheckedProject {
+    let inner =
+        lexlean::project::Project::load(&project.root.join("lexlean.toml")).expect("project loads");
+    let (lock, packages) = lexlean::lock::compute_lock(&inner, false).expect("the lock computes");
+    lexlean::link::check_project(&inner, &Selection::Entrypoints, &lock, packages)
+        .expect("check_project")
+}
+
 /// The resource limits a fixture's project configures.
 pub fn limits(project: &P) -> lexlean::config::Limits {
     lexlean::project::Project::load(&project.root.join("lexlean.toml"))

@@ -5796,6 +5796,33 @@ reads each record back, verifies the production example under the pinned Lean,
 and plants a wrong lemma application, a changed statement, a forged program
 literal, an added axiom, and a row whose policy lies, each refused.
 
+**A function rendered as a loop** (`SP-20`). The renderer writes a function whose
+self calls are all tail calls as a loop (§17.16), so the crate no longer holds
+the recursive body that the calculus function corresponds to. `FunOK` is
+therefore the disjunction of two statements: `FunOK0`, the one above, and
+`FunLoop`, that the crate's body is the loop form `loopOf` of an ordinary
+recursive body, with the Boolean checks of `loopCheckOf` (the renamed
+parameters and the kept ones are distinct, the originals of the changed
+parameters are none of the kept ones, the kept ones are locals, and the loop
+body mentions no renamed parameter) closed by evaluation, together with the
+`Corr` derivation for that recursive body. The recursive body, how each
+parameter is carried (changed, kept, or dropped), the state and result types,
+and the numbers of the holder and of the renamed parameters are the witnesses
+of `FunLoop`. `funSem_loop` proves the simulation of such a function from the
+simulation of the recursive body, the iteration of the loop on the iteration
+of the calls, and `funSem_of` takes the second disjunct to it; `Corr`, its
+recursor, and `sound` are untouched. The aligner recovers the witnesses by
+inverting the rendering of loops, which reads the holder bound to the state,
+the destructuring that begins the loop body, the renamed parameters, and the
+`Ok` and `Err` wraps of the tails, and then requires the library's form of the
+recovered body, transliterated, to be exactly the crate's function: a loop that
+is not in the image of the rendering is refused with *Certificate B rejected*
+(`LLV7015`) and the reason, not aligned by guess. Two things of the recursive
+body leave no trace in the loop form and are chosen: a kept parameter is read
+by `Clone`, which the library accepts as it accepts every read, and the
+argument of a dropped parameter is recovered only when it is a temporary the
+block binds.
+
 **No Lean text template in the production compiler.** The staged audit module
 is an auxiliary module of typed commands (`#print axioms`, `#print "marker"`,
 `#print name`, `#check @name`) that the Lean backend renders. It is rendered
@@ -9896,6 +9923,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SP-17` | `preservation` | No Lean source text template remains in the production compiler: a lexer-level scan of the Rust sources under crates/lexlean/src/production/ and of the probe and audit-module part of crates/lexlean/src/backend/lean.rs reads every string literal outside test code and finds none that is Lean syntax, which is a literal holding a Lean symbol (`:=`, `=>`, `→`, `∀`, `∃`, `⟨`, `⟩`, `(.`, `«`, `#print`, `#check`, `#eval`, `@[`, a `fun` binder), a Lean command line (`import`, `namespace`, `set_option`, `universe`, `open`), or a declaration (`theorem`, `def`, `example`, `instance`, `structure`, `inductive`, `abbrev`) with a type or a body, apart from a short allow-list of the printouts of kernel terms that developers read and the closed commands of the auxiliary module renderer; the staged audit module is an auxiliary module of typed commands that the backend renders; and a planted template in a production source, in the auxiliary module part of the backend, and in a module the scan sees as test code is each reported, the last not. | §17.17, §22.2 |
 | `SP-18` | `preservation` | The declared Rust machine states a machine primitive as a callee and the overflow value as a literal: RustSyntax declares eight machine primitives (checked add, subtract, multiply, quotient, negation, shift left, and shift right of a width, and try-from to a width), the callee that names one, and the literal Overflow, and RustSemantics evaluates a call of a machine callee as the calculus primitive of the same name, with the Option value the calculus states, stuck on an operand of another width (the amount of a shift excepted), and the literal Overflow as the unit value that an Err(Overflow) carries, which the pinned Lean evaluates on the boundary values of the widths and refuses to evaluate to a wrong value. | §17.14, §17.16 |
 | `SP-19` | `preservation` | The declared Rust machine states a loop over a state with a break value: RustSyntax declares the expression Loop of a state binding and a body block, and RustSemantics evaluates it by running the body in the environment of the state, rebinding the state to the payload of an Ok result and running the loop again, ending with the payload of an Err result as the value of the loop, stuck on a body whose value is neither, and exhausted rather than wrong when the fuel runs out, which the pinned Lean evaluates on a countdown and refuses to evaluate to a wrong value. | §17.14, §17.16 |
+| `SP-20` | `preservation` | Certificate B certifies a function the renderer writes as a loop: the library's FunOK states a function either by the correspondence for the body the crate holds or by FunLoop, that the crate's body is the loop form of an ordinary recursive body (the library's loopOf, with its Boolean checks of the renamed parameters, the kept parameters, and the freshness of the renamed names decided by evaluation) together with the correspondence for that recursive body, which funSem_of turns into the simulation through funSem_loop with the correspondence, its recursor, and the soundness theorem unchanged, and the aligner recovers the recursive body by inverting the rendering of loops (the renamed parameters, the destructuring of the state, and the Ok and Err wraps), so that for every loop of every renderer fixture in each profile and of every production root of the committed examples in each of its targets the loop form of the recovered body, computed by the library's form transliterated, is the crate's function, certificate B of the fixtures rendered as loops compiles under the pinned Lean with exactly the axioms Classical.choice, Quot.sound, and propext, and a loop that is not the loop form of any recursive body is refused, whether its state has another type, its body does not take the state apart, an end is not an Err, a renamed parameter is read by the body, a pattern rebinds a kept parameter, or the state holds a parameter the function does not have. | §17.16, §17.17 |
 | `MD-01` | `models` | Language 1.2 artifact, contract, realization, evidence, and model declarations, the checked_apply term, the contract_violation type, and the less_than primitive belong to the closed lexlean/semantic-module/2 schema and its snapshot schema, are rejected under language 1.1 before either backend runs, and admit no member outside the closed schema, such as prompt text, a free-form description, or raw model configuration. | §17.12 |
 | `MD-02` | `models` | A model artifact is admitted only from a configured, content-addressed, confined project file whose SHA-256 and byte length equal its declaration and whose bytes decode under its declared closed schema to its declared type and role; a missing artifact or a digest or length mismatch fails with LLR3007, a schema, type, or role violation fails with LLR3008, and the generated Lean embeds the exact bytes with a kernel-checked theorem that the typed value is their decoding. | §17.12, §10.1, §26.3 |
 | `MD-03` | `models` | A contract names typed input, output, and optional state interfaces and prior proposition-valued predicates of exactly those interface signatures, and each runtime validator is an executable Boolean definition of the same signature linked to its predicate by a statement-exact soundness theorem and an optional completeness theorem that Lean restates against the fixed model semantics; any mismatch fails with LLT4006. | §17.12 |
@@ -9985,7 +10013,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-03` | `language-models` | Text that is not valid UTF-8 is refused and never tokenized: an artifact whose bytes do not decode under the `utf8_lines` schema — invalid UTF-8, a CR, or a missing final LF — fails by its artifact rules before any byte is decoded, and a text offered to `encodeText` that is not valid UTF-8 is refused rather than transcoded. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 418.
+**Total required capability IDs:** 419.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

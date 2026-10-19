@@ -1119,9 +1119,9 @@ fn keep_groups_together(
     for range in ranges {
         match merged.last_mut() {
             Some(last)
-                if spans
-                    .iter()
-                    .any(|(low, high)| *low < range.start && *low >= last.start && *high >= range.start) =>
+                if spans.iter().any(|(low, high)| {
+                    *low < range.start && *low >= last.start && *high >= range.start
+                }) =>
             {
                 last.end = range.end;
             }
@@ -1668,7 +1668,10 @@ mod tests {
         let merged = keep_groups_together(&order, vec![0..2, 2..4, 4..5]);
         assert_eq!(merged, vec![0..4, 4..5]);
         // A boundary that no group crosses is left alone.
-        assert_eq!(keep_groups_together(&order, vec![0..1, 1..3, 3..5]), vec![0..1, 1..3, 3..5]);
+        assert_eq!(
+            keep_groups_together(&order, vec![0..1, 1..3, 3..5]),
+            vec![0..1, 1..3, 3..5]
+        );
     }
 
     #[test]
