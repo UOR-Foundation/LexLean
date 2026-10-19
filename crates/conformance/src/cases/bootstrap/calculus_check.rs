@@ -2326,7 +2326,7 @@ const PLANTS: [super::Plant; 12] = [
     super::Plant {
         label: "the argument count of an entry is not checked",
         site: "(valueChainLength arguments) =? (tyChainLength declared)",
-        replacement: "true",
+        replacement: "0 =? 0",
         root: "checkArguments",
     },
 ];
