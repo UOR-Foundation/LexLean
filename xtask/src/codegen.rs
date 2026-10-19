@@ -54,7 +54,7 @@ pub fn check_model(root: &Path, write: bool) -> Result<(), Fail> {
     }
 
     // §27.5 step 8: the repository audits.
-    crate::audit::audit_deferral(root)?;
+    crate::audit::audit_deferral(root, &model)?;
     crate::audit::audit_errors(root, &model)?;
     crate::audit::audit_shipped(root)?;
     crate::audit::audit_generated(root)?;

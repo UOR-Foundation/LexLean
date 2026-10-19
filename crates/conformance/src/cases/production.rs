@@ -342,6 +342,8 @@ const REGISTRY_ROWS: [(&str, &str, bool, &[&str], bool); 148] = [
 #[allow(clippy::too_many_lines)]
 pub fn run(id: &str) {
     match id {
+        // §17.13, §17.23: the stacks the harnesses give a recursive root.
+        "PD-08" => super::bootstrap::stack_bounds(),
         "PD-01" => {
             let registry = registry().expect("the embedded production registry parses");
             // Every key the analysis can produce has exactly one row, and

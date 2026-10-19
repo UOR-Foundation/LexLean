@@ -1,0 +1,35 @@
+module
+import LexLeanStd.Sha256
+#print axioms LexLeanStd.Sha256.Digest
+#print axioms LexLeanStd.Sha256.Schedule
+#print axioms LexLeanStd.Sha256.Working
+#print axioms LexLeanStd.Sha256.add
+#print axioms LexLeanStd.Sha256.advance
+#print axioms LexLeanStd.Sha256.bigSigma0
+#print axioms LexLeanStd.Sha256.bigSigma1
+#print axioms LexLeanStd.Sha256.byteAt
+#print axioms LexLeanStd.Sha256.choose
+#print axioms LexLeanStd.Sha256.compress
+#print axioms LexLeanStd.Sha256.fips_empty
+#print axioms LexLeanStd.Sha256.fips_one_block
+#print axioms LexLeanStd.Sha256.fips_two_blocks
+#print axioms LexLeanStd.Sha256.hexDigest
+#print axioms LexLeanStd.Sha256.hexDigit
+#print axioms LexLeanStd.Sha256.hexWord
+#print axioms LexLeanStd.Sha256.initial
+#print axioms LexLeanStd.Sha256.load
+#print axioms LexLeanStd.Sha256.majority
+#print axioms LexLeanStd.Sha256.narrow
+#print axioms LexLeanStd.Sha256.rotateRight
+#print axioms LexLeanStd.Sha256.round
+#print axioms LexLeanStd.Sha256.roundConstant
+#print axioms LexLeanStd.Sha256.scheduleWord
+#print axioms LexLeanStd.Sha256.sha256
+#print axioms LexLeanStd.Sha256.sha256Hex
+#print axioms LexLeanStd.Sha256.shiftLeft
+#print axioms LexLeanStd.Sha256.shiftRight
+#print axioms LexLeanStd.Sha256.smallSigma0
+#print axioms LexLeanStd.Sha256.smallSigma1
+#print axioms LexLeanStd.Sha256.widen
+#print axioms LexLeanStd.Sha256.wordAt
+#print axioms LexLeanStd.Sha256.wordOfNat
