@@ -10371,3 +10371,37 @@ elaborate and replay 75 modules (about 78 seconds for the case).
   `spec/glossary/spec.titles` (a numeral is not renderer-safe in a title, so a
   chapter is titled by its heading's words). The mention scan skips the chapter
   modules, as it skips SPEC.md, because they state the same code ranges.
+
+### Scanners select a source by its parsed `spec`, not by its text (#232 gate)
+
+The chapters of `spec/` quote every environment marker and control in their
+strings (§17.20 and §17.21 are about them), so a scanner that selects sources
+by what their text contains selects the specification too. The first gate of
+#232 found one: `tooling_corpus()` took a file for a tooling module when its
+text contained the tooling environment marker, and `Chapter17` is a semantic
+module whose strings quote it. The chapter string is the plant; no code was
+planted.
+
+| Command | Before | After |
+| --- | --- | --- |
+| `cargo test -p repo-conformance --test conformance -- conformance_au_05` | ``thread 'conformance_au_05' panicked at crates/conformance/src/cases/authoring.rs:858:9: assertion `left == right` failed: .../spec/src/Chapter17.lex.tex: read back differently`` (the chapter, a `lexlean/semantic-module/2`, read back as the `lexlean/tooling-module/1` it was taken for) | passes: the substring stays a speed guard, and the module is kept only when its parsed `spec` is `lexlean/tooling-module/1` |
+
+The other selectors, each audited for whether a chapter string can reach it:
+
+| Site | Reaches `spec/src`? | State |
+| --- | --- | --- |
+| `authoring.rs` `convert_to_data`, and the `sources` search of the notation case | no (a copied example project's `src`) | now select by the parsed `spec` (`support::module_spec`) anyway |
+| `authoring.rs` `corpus()`, `identity_is_form_independent`, the product-tree walks | yes (whole repository) | already classify by `lexlean::surface::module::locate` / `module_kind`, which takes the first environment of a kind in the order semantic, tooling, core: a chapter is correctly semantic |
+| `authoring.rs:373`, `:768`, `:1411` | no (a named example file, the Atlas directory, literal strings) | unchanged |
+| `runtime.rs` native-source namespace scan | no (`language`, `compiler`, `examples`, `tests`) | now selects with `module_kind == Core` |
+| `proofs.rs` PF-22 | no (one named native file) | now asserts `module_kind == Core` and `is_notation` |
+| `latex_pdf.rs:303`, `declarations.rs:336` | no (assertions on generated TeX) | not scanners |
+| `certification.rs:2487`, `reasoning.rs:1243` | no (one named native source) | unchanged |
+| `lexlean/src/surface/identity.rs:68` | no (a unit-test string) | unchanged. The shipped identity path uses `locate`: chapters verify under it (`NS-01`) |
+
+*A finding that is not fixed here.* `locate` is itself a text search: the first
+environment marker of a kind, in the order semantic, tooling, core. It is right
+for every chapter because the real semantic marker precedes any quote of it,
+and it would misclassify a tooling or core module whose strings quote an
+earlier kind's marker before their own. No committed source does; the shipped
+crate is outside this change.
