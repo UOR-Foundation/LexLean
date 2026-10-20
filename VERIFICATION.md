@@ -9384,6 +9384,42 @@ hashes 68, 81, and 72 MB/s at 16 MiB. The override
 profile of the `lexlean` crate (`cargo test -p lexlean --no-run`, no warm
 cache): 98 s without it and 251 s with it.
 
+`SL-06` holds every identity to the one the `sha2` crate gave (#126, stage 2):
+the tracked files of the tree (9,300 at this commit, 300.7 MB; a link to a
+file is read through, a link to a directory has no bytes) digest identically under `Sha256Digest::of` and under `sha2`; the
+compiler-semantics IDs of languages 1.0, 1.1, and 1.2 equal the values pinned
+in the locks of `examples/nat-add-zero`, `examples/semantic-1.1`, and
+`examples/language-1.2`, written before the package was the digest; the
+independent recomputations of `AR-05`, `AR-06`, `SM-10`, `CF-07`, `CF-09`, and
+`TX-10` pass; and every example but `uor-atlas`, the standard library, the
+compiler project, and the bootstrap project recompute their locks on `check`.
+The case is armed by the manifest check of `SL-05`: with `sha2` in the shipped
+crate the two sides would be one implementation. Two defects are planted in the
+tree and found (the first panic line of each, `conformance_sl_06`), and the case
+makes three on copies on every run (a bit in a tracked file's digest, in a
+pinned ID, and the order of a source-ID recipe's frames).
+
+- **a bit of every digest.** `out[0] ^= 1` at the end of `sha256` in
+  `content_id.rs`:
+
+  ```text
+  panicked at crates/conformance/src/cases/stdlib_identity.rs:105:5:
+  assertion `left == right` failed: the compiler's digest differs from the oracle's on a tracked file (1 compared)
+  ```
+
+- **a bit of a pinned compiler-semantics ID.** The first hexadecimal digit of
+  `compiler_semantics` in `examples/language-1.2/lexlean.lock` (`b` to `a`):
+
+  ```text
+  panicked at crates/conformance/src/cases/stdlib_identity.rs:113:9:
+  assertion `left == right` failed: the compiler-semantics ID of language 1.2 is the one examples/language-1.2/lexlean.lock pins
+  ```
+
+Removed: both were restored; `conformance_sl_06` passes, in 26 s. The gates that
+hold the records themselves, `check-golden`, `check-fixtures`,
+`check-calculus`, `check-package`, and `check-production-export`, pass on the
+tree of `SL-05` (see its record).
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the
