@@ -25,6 +25,27 @@ Feature: language-models
     Then the valid ones are tokenized
     And the invalid one is refused rather than transcoded
 
+  @LM-04 @build
+  Scenario: A `context_window` is a closed language-1.2 declaration of a capacity of at least one token and an overflow disposition `refuse` or `keep_last` that elaborates to `capacity`, `fit` over `list uint32`, and `push` of one `uint32` token through the text-laws library, with its laws generated and kernel-checked: `bounded` and `push_bounded` state that every admitted or pushed context fits the capacity, `exact` that a context that fits is admitted unchanged, `suffix` under `keep_last` that what is kept is the end of the context, and `refuses` under `refuse` that a context that does not fit is not admitted; a capacity of 0 is refused (`LLT4016`), a disposition or capacity outside the closed schema is a schema violation (`LLT4001`), and a window whose laws observe an axiom its policy omits fails the audit.
+    Given context windows of capacity 2 under `keep_last` and under `refuse`
+    When they are linked and their laws are checked by Lean, and again with capacity 0
+    Then every admitted or pushed context fits and a context that fits is admitted unchanged
+    And capacity 0 is refused as an unstated bound
+
+  @LM-05 @build
+  Scenario: A `text_generator` under the `greedy` policy names a prior tokenizer, a prior context window, a prior stateless model from `list uint32` to `list int` whose every runtime check its evidence discharges, a prior `uint32` stop token, and a `max_tokens` of at least one, and elaborates to the closed outcome types `End` (`stop`, `exhausted`) and `Failure` (`unknown_token`, `context_overflow`, `invalid_utf8`) and to a loop of at most `max_tokens` steps that takes the first maximum and no seed; its laws `bounded` (at most `max_tokens` tokens are generated) and `context_bounded` (the scorer is consulted only on contexts that fit the window) are generated and kernel-checked, the loop reaches each end and each failure in the kernel, a wrong claim about its output fails verification, a `max_tokens` of 0 is refused (`LLT4016`), and a member of another kind is refused (`LLT4006`).
+    Given greedy generators over a tokenizer, a window, a scorer model and a stop token
+    When they are linked, their laws are checked by Lean, and their runs are evaluated by the kernel
+    Then each run ends at its stop token or after `max_tokens` tokens, or with its closed failure
+    And no elaborated definition takes a seed, and `max_tokens` 0 is refused
+
+  @LM-06 @build
+  Scenario: Nondeterminism is an explicit contract: a `text_generator` under the `sample` policy draws through the closed `xorshift32` generator and `proportional` distribution only, takes its seed as an explicit `uint32` input and returns the next seed as an explicit output, so the same prompt and seed give the same output, which the kernel computes; it has the same generated and kernel-checked laws as a greedy generator, `xorshift32` agrees with the reference sequence, and a generator or distribution outside the closed members, a sample policy without one, or a seed stated on a policy is a schema violation (`LLT4001`).
+    Given a sampling generator under `xorshift32` and `proportional`
+    When it runs from a prompt and a seed in the kernel
+    Then the same prompt and seed give the same tokens and the next seed is returned
+    And a generator or distribution outside the closed members is a schema violation
+
   @LM-13 @build
   Scenario: The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text.
     Given the embedded text library that states a tokenizer's laws, and the register

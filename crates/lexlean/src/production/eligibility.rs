@@ -1190,6 +1190,7 @@ impl<'a> Walk<'a> {
                             name: _,
                             capacity: _,
                             overflow: _,
+                            axioms: _,
                         }
                         | SemanticDeclaration::TextGenerator {
                             name: _,
@@ -1199,6 +1200,7 @@ impl<'a> Walk<'a> {
                             max_tokens: _,
                             stop: _,
                             policy: _,
+                            axioms: _,
                         }
                         | SemanticDeclaration::TextClassifier {
                             name: _,
@@ -1429,6 +1431,7 @@ impl<'a> Walk<'a> {
                     name: _,
                     capacity: _,
                     overflow: _,
+                    axioms: _,
                 }
                 | SemanticDeclaration::TextGenerator {
                     name: _,
@@ -1438,6 +1441,7 @@ impl<'a> Walk<'a> {
                     max_tokens: _,
                     stop: _,
                     policy: _,
+                    axioms: _,
                 }
                 | SemanticDeclaration::TextClassifier {
                     name: _,
@@ -1731,6 +1735,7 @@ impl<'a> Walk<'a> {
                 name: _,
                 capacity: _,
                 overflow: _,
+                axioms: _,
             }
             | SemanticDeclaration::TextGenerator {
                 name: _,
@@ -1740,6 +1745,7 @@ impl<'a> Walk<'a> {
                 max_tokens: _,
                 stop: _,
                 policy: _,
+                axioms: _,
             }
             | SemanticDeclaration::TextClassifier {
                 name: _,
@@ -2338,6 +2344,7 @@ impl<'a> Walk<'a> {
                 name: _,
                 capacity: _,
                 overflow: _,
+                axioms: _,
             }) => "declaration.context_window",
             Some(SemanticDeclaration::TextGenerator {
                 name: _,
@@ -2347,6 +2354,7 @@ impl<'a> Walk<'a> {
                 max_tokens: _,
                 stop: _,
                 policy: _,
+                axioms: _,
             }) => "declaration.text_generator",
             Some(SemanticDeclaration::TextClassifier {
                 name: _,
@@ -2595,6 +2603,7 @@ impl<'a> Walk<'a> {
                     name: _,
                     capacity: _,
                     overflow: _,
+                    axioms: _,
                 }
                 | SemanticDeclaration::TextGenerator {
                     name: _,
@@ -2604,6 +2613,7 @@ impl<'a> Walk<'a> {
                     max_tokens: _,
                     stop: _,
                     policy: _,
+                    axioms: _,
                 }
                 | SemanticDeclaration::TextClassifier {
                     name: _,
@@ -2811,6 +2821,7 @@ fn inductive_group(
                 name: _,
                 capacity: _,
                 overflow: _,
+                axioms: _,
             }
             | SemanticDeclaration::TextGenerator {
                 name: _,
@@ -2820,6 +2831,7 @@ fn inductive_group(
                 max_tokens: _,
                 stop: _,
                 policy: _,
+                axioms: _,
             }
             | SemanticDeclaration::TextClassifier {
                 name: _,
@@ -3506,6 +3518,7 @@ pub fn analyse_module(
                 name: _,
                 capacity: _,
                 overflow: _,
+                axioms: _,
             }
             | SemanticDeclaration::TextGenerator {
                 name: _,
@@ -3515,6 +3528,7 @@ pub fn analyse_module(
                 max_tokens: _,
                 stop: _,
                 policy: _,
+                axioms: _,
             }
             | SemanticDeclaration::TextClassifier {
                 name: _,

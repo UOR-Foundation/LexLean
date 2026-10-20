@@ -86,8 +86,60 @@ pub mod names {
     /// The text round-trip law under `byte_level`.
     pub const TEXT_ROUNDTRIP_BYTES: &str = "text_roundtrip_bytes";
 
+    /// `fits : Nat -> List UInt32 -> Bool`, a context within a capacity.
+    pub const FITS: &str = "fits";
+    /// `admitRefuse : Nat -> List UInt32 -> Option (List UInt32)`, `refuse`.
+    pub const ADMIT_REFUSE: &str = "admitRefuse";
+    /// `admitKeepLast : Nat -> List UInt32 -> Option (List UInt32)`, `keep_last`.
+    pub const ADMIT_KEEP_LAST: &str = "admitKeepLast";
+    /// `pushRefuse : Nat -> List UInt32 -> UInt32 -> Option (List UInt32)`.
+    pub const PUSH_REFUSE: &str = "pushRefuse";
+    /// `pushKeepLast : Nat -> List UInt32 -> UInt32 -> Option (List UInt32)`.
+    pub const PUSH_KEEP_LAST: &str = "pushKeepLast";
+    /// `fitsOption : Nat -> Option (List UInt32) -> Bool`, the `bounded` test.
+    pub const FITS_OPTION: &str = "fitsOption";
+    /// `suffixOption : List UInt32 -> Option (List UInt32) -> Bool`, the
+    /// `suffix` test.
+    pub const SUFFIX_OPTION: &str = "suffixOption";
+    /// `xorshift32 : UInt32 -> UInt32`, the closed `sample` generator.
+    pub const XORSHIFT32: &str = "xorshift32";
+    /// `atMost : Nat -> List UInt32 -> Bool`, the generator's `bounded` test.
+    pub const AT_MOST: &str = "atMost";
+    /// `generateGreedy`, the `greedy` loop over a scorer.
+    pub const GENERATE_GREEDY: &str = "generateGreedy";
+    /// `generateGreedyGuarded`, the same with the scorer guarded by the window.
+    pub const GENERATE_GREEDY_GUARDED: &str = "generateGreedyGuarded";
+    /// `generateSample`, the `sample` loop over a scorer and a seed.
+    pub const GENERATE_SAMPLE: &str = "generateSample";
+    /// `generateSampleGuarded`, the same with the scorer guarded by the window.
+    pub const GENERATE_SAMPLE_GUARDED: &str = "generateSampleGuarded";
+    /// The window's `bounded` law of an admission under `refuse`.
+    pub const ADMIT_REFUSE_BOUNDED: &str = "admitRefuse_bounded";
+    /// The window's `bounded` law of an admission under `keep_last`.
+    pub const ADMIT_KEEP_LAST_BOUNDED: &str = "admitKeepLast_bounded";
+    /// The window's `bounded` law of a push under `refuse`.
+    pub const PUSH_REFUSE_BOUNDED: &str = "pushRefuse_bounded";
+    /// The window's `bounded` law of a push under `keep_last`.
+    pub const PUSH_KEEP_LAST_BOUNDED: &str = "pushKeepLast_bounded";
+    /// The window's `exact` law under `refuse`.
+    pub const ADMIT_REFUSE_EXACT: &str = "admitRefuse_exact";
+    /// The window's `exact` law under `keep_last`.
+    pub const ADMIT_KEEP_LAST_EXACT: &str = "admitKeepLast_exact";
+    /// The window's `suffix` law under `keep_last`.
+    pub const ADMIT_KEEP_LAST_SUFFIX: &str = "admitKeepLast_suffix";
+    /// The window's `refuses` law under `refuse`.
+    pub const ADMIT_REFUSE_REFUSES: &str = "admitRefuse_refuses";
+    /// The generator's `bounded` law under `greedy`.
+    pub const GENERATE_GREEDY_BOUNDED: &str = "generateGreedy_bounded";
+    /// The generator's `bounded` law under `sample`.
+    pub const GENERATE_SAMPLE_BOUNDED: &str = "generateSample_bounded";
+    /// The generator's `context_bounded` law under `greedy`.
+    pub const GENERATE_GREEDY_GUARDED_LAW: &str = "generateGreedy_guarded";
+    /// The generator's `context_bounded` law under `sample`.
+    pub const GENERATE_SAMPLE_GUARDED_LAW: &str = "generateSample_guarded";
+
     /// Every name above, each of which the native module must declare.
-    pub const ALL: [&str; 14] = [
+    pub const ALL: [&str; 39] = [
         VOCAB_SIZE,
         ENCODE_WITH,
         ENCODE_BYTES,
@@ -102,6 +154,31 @@ pub mod names {
         IN_RANGE_BYTES,
         TEXT_ROUNDTRIP,
         TEXT_ROUNDTRIP_BYTES,
+        FITS,
+        ADMIT_REFUSE,
+        ADMIT_KEEP_LAST,
+        PUSH_REFUSE,
+        PUSH_KEEP_LAST,
+        FITS_OPTION,
+        SUFFIX_OPTION,
+        XORSHIFT32,
+        AT_MOST,
+        GENERATE_GREEDY,
+        GENERATE_GREEDY_GUARDED,
+        GENERATE_SAMPLE,
+        GENERATE_SAMPLE_GUARDED,
+        ADMIT_REFUSE_BOUNDED,
+        ADMIT_KEEP_LAST_BOUNDED,
+        PUSH_REFUSE_BOUNDED,
+        PUSH_KEEP_LAST_BOUNDED,
+        ADMIT_REFUSE_EXACT,
+        ADMIT_KEEP_LAST_EXACT,
+        ADMIT_KEEP_LAST_SUFFIX,
+        ADMIT_REFUSE_REFUSES,
+        GENERATE_GREEDY_BOUNDED,
+        GENERATE_SAMPLE_BOUNDED,
+        GENERATE_GREEDY_GUARDED_LAW,
+        GENERATE_SAMPLE_GUARDED_LAW,
     ];
 }
 
