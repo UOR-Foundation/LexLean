@@ -671,6 +671,8 @@ pub fn run(id: &str) {
         "SL-05" => super::stdlib_digest::run(id),
         // §21: every identity is the one `sha2` gave (#126 stage 2).
         "SL-06" => super::stdlib_identity::run(id),
+        // §17.22: the compiler running the package reproduces it (#126 stage 2).
+        "SL-07" => super::stdlib_fixed_point::run(id),
         other => panic!("no stdlib case is wired for {other}"),
     }
 }
