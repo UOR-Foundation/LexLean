@@ -485,6 +485,11 @@ impl Program {
 
     /// The canonical file bytes.
     ///
+    /// The text is read back without the reader's limit on nesting, so a
+    /// program nests as deeply as its expressions do; the depth a program may
+    /// have is bounded where it is lowered
+    /// ([`crate::production::lower::PROGRAM_JSON_DEPTH`]), not here.
+    ///
     /// # Panics
     ///
     /// Panics only if `serde_json` produces text the canonical JSON parser
@@ -492,7 +497,7 @@ impl Program {
     #[must_use]
     pub fn to_file_bytes(&self) -> Vec<u8> {
         let text = serde_json::to_string(self).expect("program serializes");
-        crate::artifact::canonical_json::Json::parse(text.as_bytes())
+        crate::artifact::canonical_json::Json::parse_unbounded(text.as_bytes())
             .expect("program is JSON")
             .to_file_bytes()
     }

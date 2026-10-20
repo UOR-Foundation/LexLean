@@ -600,17 +600,30 @@ pub fn f5(v0: Adt0) -> (bool, bool) {
     }
 }
 
-pub fn f6(v0: Fn0, v1: Adt0, v2: List<u64>) -> R<Adt0> {
-    let m75 = v2;
-    match m75.uncons() {
-        None => {
-            Ok(v1)
-        }
-        Some((v3, v4)) => {
-            f6(v0.clone(), {
-                let c76: Fn0 = v0;
-                c76.apply(v1, v3)?
-            }, v4)
+pub fn f6(v0: Fn0, p78: Adt0, p79: List<u64>) -> R<Adt0> {
+    let m77 = (p78, p79);
+    {
+        let mut m77 = m77;
+        loop {
+            let step = {
+                let (v1, v2) = m77;
+                let m75 = v2;
+                match m75.uncons() {
+                    None => {
+                        Err::<(Adt0, List<u64>), R<Adt0>>(Ok(v1))
+                    }
+                    Some((v3, v4)) => {
+                        Ok::<(Adt0, List<u64>), R<Adt0>>(({
+                            let c76: Fn0 = v0.clone();
+                            c76.apply(v1, v3)?
+                        }, v4))
+                    }
+                }
+            };
+            match step {
+                Ok(next) => { m77 = next; }
+                Err(done) => break done,
+            }
         }
     }
 }

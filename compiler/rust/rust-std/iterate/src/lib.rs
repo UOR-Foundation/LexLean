@@ -314,16 +314,29 @@ pub fn f1(v0: u64) -> R<u64> {
     nat_add(a1, a2)
 }
 
-pub fn f2(v0: Fn0, v1: u64, v2: u64) -> R<u64> {
-    let m3 = v1;
-    if m3 == 0 {
-        Ok(v2)
-    } else {
-        let v3 = m3 - 1;
-        f2(v0.clone(), v3, {
-            let c4: Fn0 = v0;
-            c4.apply(v2)?
-        })
+pub fn f2(v0: Fn0, p6: u64, p7: u64) -> R<u64> {
+    let m5 = (p6, p7);
+    {
+        let mut m5 = m5;
+        loop {
+            let step = {
+                let (v1, v2) = m5;
+                let m3 = v1;
+                if m3 == 0 {
+                    Err::<(u64, u64), R<u64>>(Ok(v2))
+                } else {
+                    let v3 = m3 - 1;
+                    Ok::<(u64, u64), R<u64>>((v3, {
+                        let c4: Fn0 = v0.clone();
+                        c4.apply(v2)?
+                    }))
+                }
+            };
+            match step {
+                Ok(next) => { m5 = next; }
+                Err(done) => break done,
+            }
+        }
     }
 }
 

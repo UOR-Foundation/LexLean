@@ -388,7 +388,7 @@ definition{
     | Option.none => (ctor Result.ok [(List Atom), Rejection] (reversed [Atom] (project final atoms)))))),
   axioms: [Quot.sound, propext],
   executable: true,
-  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+  production: {effects: [allocation, overflow], targets: [rust-std]}
 }
 
 definition{
@@ -494,7 +494,7 @@ definition{
   result: (Option Rejection),
   body: (let final : CheckState := (prim list_fold (fun [forbidden, path] (state : CheckState) (atom : Atom) => (checkStep path forbidden state atom)) (record CheckState {context := (record Context {awaitingOpen := false, depth := 0, quoted := false, escaped := false, environment := 0, body := 0}), previous := (ctor Option.none [Atom]), error := (ctor Option.none [Rejection])}) atoms : CheckState); (project final error)),
   executable: true,
-  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+  production: {effects: [allocation, overflow], targets: [rust-std]}
 }
 \end{semanticmodule}
 \end{lexlean}

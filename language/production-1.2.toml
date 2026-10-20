@@ -771,14 +771,14 @@ key = "primitive.map_lookup"
 disposition = "runtime"
 allocation = false
 overflow = []
-recursion = true
+recursion = false
 
 [[construct]]
 key = "primitive.map_contains"
 disposition = "runtime"
 allocation = false
 overflow = []
-recursion = true
+recursion = false
 
 [[construct]]
 key = "primitive.map_size"
@@ -813,7 +813,7 @@ key = "primitive.map_fold"
 disposition = "runtime"
 allocation = false
 overflow = []
-recursion = true
+recursion = false
 
 [[construct]]
 key = "primitive.set_insert"
@@ -834,7 +834,7 @@ key = "primitive.set_contains"
 disposition = "runtime"
 allocation = false
 overflow = []
-recursion = true
+recursion = false
 
 [[construct]]
 key = "primitive.set_size"
@@ -876,35 +876,35 @@ key = "primitive.set_fold"
 disposition = "runtime"
 allocation = false
 overflow = []
-recursion = true
+recursion = false
 
 [[construct]]
 key = "primitive.list_fold"
 disposition = "runtime"
 allocation = false
 overflow = []
-recursion = true
+recursion = false
 
 [[construct]]
 key = "primitive.iterate"
 disposition = "runtime"
 allocation = false
 overflow = []
-recursion = true
+recursion = false
 
 [[construct]]
 key = "primitive.iterate_until"
 disposition = "runtime"
 allocation = false
 overflow = []
-recursion = true
+recursion = false
 
 [[construct]]
 key = "primitive.graph_successors"
 disposition = "runtime"
 allocation = false
 overflow = []
-recursion = true
+recursion = false
 
 [[construct]]
 key = "primitive.graph_reachable"

@@ -314,8 +314,8 @@ pub enum Expr {
     /// A loop over the local `state`, which the enclosing block has bound:
     /// the body's value `Ok(next)` rebinds `state` and runs the body again,
     /// and `Err(done)` ends the loop with the value `done`. It prints as
-    /// `{ let mut s = s; loop { match { body } { Ok(n) => { s = n; } Err(d)
-    /// => break d } } }`.
+    /// `{ let mut s = s; loop { let step = { body }; match step { Ok(n) => { s = n; }
+    /// Err(d) => break d } } }`.
     Loop {
         state: Ident,
         body: Box<Block>,
@@ -676,8 +676,10 @@ impl Printer {
             Expr::Loop { state, body } => {
                 let name = state.text();
                 let step = self.block_inline(body, depth + 2);
+                // The body's value is bound before the match: Rust's lint gate
+                // refuses a block with bindings as a scrutinee.
                 format!(
-                    "{{\n{one}let mut {name} = {name};\n{one}loop {{\n{two}match {step} {{\n{three}Ok(next) => {{ {name} = next; }}\n{three}Err(done) => break done,\n{two}}}\n{one}}}\n{here}}}",
+                    "{{\n{one}let mut {name} = {name};\n{one}loop {{\n{two}let step = {step};\n{two}match step {{\n{three}Ok(next) => {{ {name} = next; }}\n{three}Err(done) => break done,\n{two}}}\n{one}}}\n{here}}}",
                     one = "    ".repeat(depth + 1),
                     two = "    ".repeat(depth + 2),
                     three = "    ".repeat(depth + 3),
@@ -952,6 +954,7 @@ mod tests {
         );
         assert!(text.contains("let mut v0 = v0;"), "{text}");
         assert!(text.contains("loop {"), "{text}");
+        assert!(text.contains("let step = {"), "{text}");
         assert!(text.contains("Ok(next) => { v0 = next; }"), "{text}");
         assert!(text.contains("Err(done) => break done,"), "{text}");
     }
