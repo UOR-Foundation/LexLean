@@ -1,0 +1,31 @@
+\begin{lexlean}{RustRuntime}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{TargetSyntax}
+\importmodule{TargetSemantics}
+\importmodule{RustSyntax}
+\importmodule{RustSemantics}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: natAddFunction,
+  parameters: [],
+  result: RustSyntax::ItemDef,
+  body: (ctor RustSyntax::ItemDef.function (ctor RustSyntax::Ident.exported "nat_add") (cons (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 0)), type := (ctor RustSyntax::RustType.nat)}) (cons (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 1)), type := (ctor RustSyntax::RustType.nat)}) (nil RustSyntax::Parameter))) (ctor RustSyntax::RustType.fallible (ctor RustSyntax::RustType.nat)) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.matchOn (ctor RustSyntax::Expr.call (ctor RustSyntax::Callee.machine (ctor RustSyntax::Machine.checkedNatAdd)) (cons (ctor RustSyntax::Expr.copy (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 0)) (cons (ctor RustSyntax::Expr.copy (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 1)) (nil RustSyntax::Expr))) false) (cons (ctor RustSyntax::Arm.mk (ctor RustSyntax::Pat.some (ctor RustSyntax::Pat.bind (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.binding) 0))) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.succeed (ctor RustSyntax::Expr.copy (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.binding) 0))))) (cons (ctor RustSyntax::Arm.mk (ctor RustSyntax::Pat.none) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.construct (ctor RustSyntax::Ctor.err (ctor RustSyntax::RustType.nat) (ctor RustSyntax::RustType.unit)) (cons (ctor RustSyntax::Expr.lit (ctor RustSyntax::Lit.overflow)) (nil RustSyntax::Expr))))) (nil RustSyntax::Arm))))))
+}
+
+definition{
+  name: coreCrate,
+  parameters: [],
+  result: RustSyntax::Crate,
+  body: (record RustSyntax::Crate {profile := (ctor RustSyntax::Profile.core), items := (cons (natAddFunction) (nil RustSyntax::ItemDef))})
+}
+
+theorem{
+  name: natAddSample,
+  parameters: [],
+  statement: ((RustSemantics::runExport 12 (coreCrate) "nat_add" (cons (ctor TargetSyntax::Value.nat 2) (cons (ctor TargetSyntax::Value.nat 3) (nil TargetSyntax::Value)))) = (ctor RustSemantics::ROutcome.value (ctor TargetSyntax::Value.ok (ctor TargetSyntax::Value.nat 5)))),
+  proof: reflexivity{},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+\end{semanticmodule}
+\end{lexlean}

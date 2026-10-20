@@ -1505,8 +1505,10 @@ pub fn run(id: &str) {
         "RB-14" => super::rust_loops::run(id),
         // §17.14, §17.16: the machine callee and the overflow value.
         "RB-15" => super::rust_machine::run(id),
+        // §17.16: the core runtime is the definitions of `RustRuntime`.
+        "RB-16" => super::rust_runtime::run(id),
         "RB-09" => {
-            use lexlean::calculus::rust::runtime::{CORE, STD};
+            use lexlean::calculus::rust::runtime::{core, STD};
             use lexlean::calculus::rust_library::{
                 audit, audit_runtime, Kind, Primitive, Role, LIBRARY, PRIMITIVES,
             };
@@ -1519,7 +1521,7 @@ pub fn run(id: &str) {
                 primitives > 0 && LIBRARY.len() > primitives && PRIMITIVES.len() > 1,
                 "an empty table refuses nothing"
             );
-            let runtime = format!("{CORE}{STD}");
+            let runtime = format!("{}{STD}", core().expect("the core runtime"));
             let refused = |text: &str,
                            library: &[(Kind, &str, Role)],
                            primitives: &[Primitive],

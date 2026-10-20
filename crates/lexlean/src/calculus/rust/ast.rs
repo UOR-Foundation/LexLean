@@ -877,8 +877,16 @@ impl Printer {
                 )
             }
             Expr::Construct { ctor, args, .. } => {
+                // The failure of a runtime function is `Overflow` of `R<T>`;
+                // its error type is the runtime's own and has no node, so the
+                // constructor leaves its type arguments to the signature.
+                let failing = matches!(ctor, Ctor::Err(..))
+                    && matches!(args.as_slice(), [Expr::Lit(Lit::Overflow, _)]);
                 let args: Vec<String> = args.iter().map(|arg| self.expr(arg, depth)).collect();
                 let joined = args.join(", ");
+                if failing {
+                    return format!("Err({joined})");
+                }
                 match ctor {
                     Ctor::None(ty) => format!("None::<{}>", ty.text()),
                     Ctor::Some => format!("Some({joined})"),
@@ -1145,7 +1153,7 @@ fn enum_lines(name: &Type, variants: &[(u64, Vec<Type>)]) -> Vec<String> {
 /// attributes are derived from, cannot be read.
 pub fn print(krate: &Crate) -> Result<String, String> {
     let mut out = super::scaffold::get()?.attributes(krate.profile)?;
-    out.push_str(super::runtime::CORE);
+    out.push_str(super::runtime::core()?);
     if krate.profile == Profile::Std {
         out.push_str(super::runtime::STD);
     }
@@ -1155,6 +1163,14 @@ pub fn print(krate: &Crate) -> Result<String, String> {
         printer.item(item);
     }
     Ok(printer.out)
+}
+
+/// The canonical text of one item.
+#[must_use]
+pub fn print_item(item: &ItemDef) -> String {
+    let mut printer = Printer { out: String::new() };
+    printer.item(item);
+    printer.out
 }
 
 /// The canonical text of one expression.

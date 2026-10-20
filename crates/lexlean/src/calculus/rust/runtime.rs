@@ -8,10 +8,15 @@
 //! only through [`Item`], so no rendering can name a runtime function that
 //! does not exist or call one with the wrong failure mode.
 
-use super::super::IntKind;
+use std::sync::OnceLock;
 
-/// The runtime both profiles carry.
-pub const CORE: &str = r#"use core::cmp::Ordering;
+use super::super::IntKind;
+use super::{ast, source};
+
+/// The text of the runtime both profiles carry that the `RustRuntime` module
+/// does not define: [`core`] is this text and the functions the module
+/// defines, printed.
+pub const CORE_BASE: &str = r#"use core::cmp::Ordering;
 use core::sync::atomic::{AtomicU64, Ordering as Memory};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -22,7 +27,6 @@ static WORK: AtomicU64 = AtomicU64::new(0);
 pub fn tick(units: u64) { WORK.fetch_add(units, Memory::Relaxed); }
 pub fn work() -> u64 { WORK.load(Memory::Relaxed) }
 
-pub fn nat_add(a: u64, b: u64) -> R<u64> { a.checked_add(b).ok_or(Overflow) }
 pub fn nat_sub(a: u64, b: u64) -> u64 { a.saturating_sub(b) }
 pub fn nat_mul(a: u64, b: u64) -> R<u64> { a.checked_mul(b).ok_or(Overflow) }
 pub fn nat_quot(a: u64, b: u64, z: u64) -> u64 { a.checked_div(b).unwrap_or(z) }
@@ -83,6 +87,31 @@ pub fn checked_neg_i16(a: i16) -> Option<i16> { a.checked_neg() }
 pub fn checked_neg_i32(a: i32) -> Option<i32> { a.checked_neg() }
 pub fn checked_neg_i64(a: i64) -> Option<i64> { a.checked_neg() }
 "#;
+
+/// The core runtime text of `items`: [`CORE_BASE`], then each item printed.
+#[must_use]
+pub fn assemble(items: &[ast::ItemDef]) -> String {
+    let mut text = CORE_BASE.to_owned();
+    for item in items {
+        text.push('\n');
+        text.push_str(&ast::print_item(item));
+    }
+    text
+}
+
+/// The runtime both profiles carry: [`CORE_BASE`], then each function the
+/// `RustRuntime` module defines, printed in the module's order.
+///
+/// # Errors
+///
+/// Returns the reason the module cannot be read.
+pub fn core() -> Result<&'static str, String> {
+    static CORE: OnceLock<Result<String, String>> = OnceLock::new();
+    CORE.get_or_init(|| Ok(assemble(&source::get()?.core.items)))
+    .as_ref()
+    .map(String::as_str)
+    .map_err(Clone::clone)
+}
 
 /// The runtime only `rust-std` carries. Every loop ticks the work counter
 /// once per iteration and a bulk copy ticks its length, except the release
@@ -581,18 +610,19 @@ pub const ROOT_NAMES: &[&str] = &[
 
 #[cfg(test)]
 mod tests {
-    use super::{Item, CORE, STD};
+    use super::{core, Item, STD};
 
     /// Every item exists in the runtime of every profile that can call it,
     /// with exactly the failure mode the item declares.
     #[test]
     fn every_item_exists_with_its_failure_mode() {
-        let fixed_body = &CORE[CORE.find("macro_rules! fixed").expect("fixed")..];
+        let core = core().expect("the core runtime");
+        let fixed_body = &core[core.find("macro_rules! fixed").expect("fixed")..];
         for item in Item::all() {
             let path = item.path();
-            let text = if item.heap() { STD } else { CORE };
+            let text = if item.heap() { STD } else { core };
             if let Some((module, name)) = path.split_once("::") {
-                assert!(CORE.contains(&format!("fixed!({module}, ")), "{path}");
+                assert!(core.contains(&format!("fixed!({module}, ")), "{path}");
                 let declaration = fixed_body
                     .lines()
                     .find(|line| line.contains(&format!("pub fn {name}(")))
@@ -638,8 +668,8 @@ mod tests {
             .parse()
             .expect("TOML");
         for (key, text) in [
-            ("rust_runtime_core", CORE.to_owned()),
-            ("rust_runtime_std", format!("{CORE}{STD}")),
+            ("rust_runtime_core", core().expect("the core runtime").to_owned()),
+            ("rust_runtime_std", format!("{}{STD}", core().expect("the core runtime"))),
         ] {
             let digest = crate::artifact::content_id::Sha256Digest::of(text.as_bytes()).to_hex();
             assert_eq!(
@@ -653,7 +683,7 @@ mod tests {
     #[test]
     fn the_core_runtime_names_no_heap_type() {
         for heap in ["Vec", "String", "Box", "Rc", "std::", "alloc::", "format!"] {
-            assert!(!CORE.contains(heap), "{heap}");
+            assert!(!core().expect("the core runtime").contains(heap), "{heap}");
         }
     }
 
@@ -661,7 +691,7 @@ mod tests {
     /// of a list, whose cells were counted when built.
     #[test]
     fn every_runtime_loop_ticks() {
-        for runtime in [CORE, STD] {
+        for runtime in [core().expect("the core runtime"), STD] {
             let lines: Vec<&str> = runtime.lines().collect();
             for (number, line) in lines.iter().enumerate() {
                 let trimmed = line.trim_start();
