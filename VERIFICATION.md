@@ -16323,3 +16323,18 @@ registry statements of 40 characters or more (the audit prints its counts on eve
 rule is a heuristic with a threshold, not a proof that no second source exists:
 a paraphrase is not found. What it excludes is the cheap failure, a copied
 register.
+
+### A module's title is its own glossary entry (`NS-01`, #233 review)
+
+The SDK's writer assembles a module with the template header (the title
+"Natural number addition" and the standard glossary only). The prose ports of
+#232 wrote seven chapters through it (05, 08, 09, 17, 21, 27, 30), so they
+shipped on the line with the template title and without `spec.titles`; the
+project still checked, built and verified, so no gate caught it. `NS-01` now
+requires, for every module of `spec/src`, that its title is the surface of its own
+entry in `spec/glossary/spec.titles`, that it uses that glossary, and that the
+title is not the template's.
+
+| Command | Planted defect | Observed |
+| --- | --- | --- |
+| `cargo test -p repo-conformance --test conformance -- conformance_ns_01` | the title of `Chapter05.lex.tex` made `Natural number addition` | ``thread 'conformance_ns_01' panicked at crates/conformance/src/cases/normative_source.rs:90:9: assertion `left == right` failed: Chapter05.lex.tex: the title is the surface of the module's own glossary entry`` (`left: Some("Trust and evidence model")`); restored with `git checkout` |

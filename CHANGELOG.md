@@ -17,6 +17,12 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- `spec/` chapters: #232 shipped seven chapters (05, 08, 09, 17, 21, 27, 30)
+  with the SDK writer's template title and without the `spec.titles` glossary,
+  because the prose ports wrote them through the writer. This restores their
+  titles, and `NS-01` now requires every module's title to be its own glossary
+  entry.
+
 - Normative text as LexLean source, authority and process (`NS-06`, stage 3 of
   #111). `audit-source-authority` inside `validate-model`: `model/` holds only
   the projections and vendored authority copies, every root Markdown file is a

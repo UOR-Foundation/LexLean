@@ -70,6 +70,37 @@ fn specification_project() {
             "{file}: a module of the specification project is a semantic module in the authoring notation"
         );
     }
+    // Each module is titled by its own glossary entry (`spec/glossary/spec.titles`),
+    // never by the template title the SDK's writer puts on a module it assembles:
+    // a title is part of the canonical document, and a reset passes every other
+    // check of the project.
+    for file in &files {
+        let module = file.trim_end_matches(".lex.tex");
+        let text = root_file(&format!("spec/src/{file}"));
+        let title = text
+            .lines()
+            .find_map(|line| line.strip_prefix("\\title{")?.strip_suffix('}'))
+            .unwrap_or_else(|| panic!("{file}: a module states its title"));
+        let entry: toml::Value = root_file(&format!(
+            "spec/glossary/spec.titles/entries/{}.toml",
+            module.to_lowercase()
+        ))
+        .parse()
+        .unwrap_or_else(|error| panic!("{file}: its glossary entry: {error}"));
+        assert_eq!(
+            entry["form"][0]["surface"].as_str(),
+            Some(title),
+            "{file}: the title is the surface of the module's own glossary entry"
+        );
+        assert!(
+            text.contains("\\useglossary{spec.titles@1.0.0}"),
+            "{file}: the module uses the glossary of its title"
+        );
+        assert_ne!(
+            title, "Natural number addition",
+            "{file}: the title is not the template's"
+        );
+    }
     let project_file: toml::Value = root_file("spec/lexlean.toml")
         .parse()
         .expect("project file");
