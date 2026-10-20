@@ -82,26 +82,35 @@ pub fn assemble(items: &[ast::ItemDef]) -> String {
     text
 }
 
-/// The runtime both profiles carry: [`CORE_BASE`], then each function the
-/// `RustRuntime` module defines, printed in the module's order.
+/// The core runtime text of a `RustRuntime` module: its functions decoded,
+/// the crate they make checked by the validator that checks every rendering,
+/// and each printed after [`CORE_BASE`].
+///
+/// The runtime crate is the one crate no lowering produces, so the validator
+/// runs on it here: its functions fail only with `Err(Overflow)`, own what
+/// they return, and allocate nothing.
 ///
 /// # Errors
 ///
-/// Returns the reason the module cannot be read.
+/// Returns the reason the module cannot be decoded, or its crate is not valid.
+pub fn core_from(module: &str) -> Result<String, String> {
+    let source = source::decode(module)?;
+    validate::validate(&source.core)
+        .map_err(|error| format!("the core runtime is not a valid crate: {error}"))?;
+    Ok(assemble(&source.core.items))
+}
+
+/// The runtime both profiles carry: [`core_from`] the embedded module.
+///
+/// # Errors
+///
+/// Returns the reason the module cannot be read, or its crate is not valid.
 pub fn core() -> Result<&'static str, String> {
     static CORE: OnceLock<Result<String, String>> = OnceLock::new();
-    CORE.get_or_init(|| {
-        // The runtime crate is the one crate no lowering produces, so the
-        // validator that checks every rendering checks it too: its functions
-        // fail only with `Err(Overflow)`, own what they return, and allocate
-        // nothing.
-        validate::validate(&source::get()?.core)
-            .map_err(|error| format!("the core runtime is not a valid crate: {error}"))?;
-        Ok(assemble(&source::get()?.core.items))
-    })
-    .as_ref()
-    .map(String::as_str)
-    .map_err(Clone::clone)
+    CORE.get_or_init(|| core_from(source::embedded()?))
+        .as_ref()
+        .map(String::as_str)
+        .map_err(Clone::clone)
 }
 
 /// The runtime only `rust-std` carries. Every loop ticks the work counter

@@ -1901,6 +1901,95 @@ definition{
 }
 
 definition{
+  name: isOverflowExpr,
+  parameters: [e : Expr],
+  result: Bool,
+  body: (match e
+    | Expr.ELit lit org => (isOverflowLit lit)
+    | Expr.ERead d0 d1 d2 => false
+    | Expr.EWrap d0 d1 d2 => false
+    | Expr.ECall d0 d1 d2 d3 => false
+    | Expr.EApply d0 d1 d2 d3 => false
+    | Expr.EConstruct d0 d1 d2 => false
+    | Expr.EPair d0 d1 d2 => false
+    | Expr.EIf d0 d1 d2 d3 => false
+    | Expr.EMatch d0 d1 d2 => false
+    | Expr.EBlockE d0 => false
+    | Expr.EProbe d0 d1 d2 => false
+    | Expr.EBlock d0 d1 => false
+    | Expr.ENil => false
+    | Expr.ECons head tail => false
+    | Expr.ELet d0 d1 d2 d3 d4 d5 => false
+    | Expr.EArm d0 d1 d2 => false
+    | Expr.ELoop d0 d1 => false),
+  executable: true
+}
+
+definition{
+  name: isOverflowTy,
+  parameters: [ty : Ty],
+  result: Bool,
+  body: (match ty
+    | Ty.TyLeaf kind => (match kind
+      | LeafKind.LkUnit => false
+      | LeafKind.LkBool => false
+      | LeafKind.LkNat => false
+      | LeafKind.LkInt => false
+      | LeafKind.LkOrdering => false
+      | LeafKind.LkStr => false
+      | LeafKind.LkBytes => false
+      | LeafKind.LkOverflow => true)
+    | Ty.TyFixed d0 => false
+    | Ty.TyUnary d0 d1 => false
+    | Ty.TyBinary d0 d1 d2 => false
+    | Ty.TyNamed d0 d1 => false
+    | Ty.TyNil => false
+    | Ty.TyCons d0 d1 => false),
+  executable: true
+}
+
+definition{
+  name: isOverflowArgs,
+  parameters: [args : Expr],
+  result: Bool,
+  body: (match args
+    | Expr.ELit d0 d1 => false
+    | Expr.ERead d0 d1 d2 => false
+    | Expr.EWrap d0 d1 d2 => false
+    | Expr.ECall d0 d1 d2 d3 => false
+    | Expr.EApply d0 d1 d2 d3 => false
+    | Expr.EConstruct d0 d1 d2 => false
+    | Expr.EPair d0 d1 d2 => false
+    | Expr.EIf d0 d1 d2 d3 => false
+    | Expr.EMatch d0 d1 d2 => false
+    | Expr.EBlockE d0 => false
+    | Expr.EProbe d0 d1 d2 => false
+    | Expr.EBlock d0 d1 => false
+    | Expr.ENil => false
+    | Expr.ECons head tail => (let single : Bool := ((exprLen tail) =? 0); (let overflow : Bool := (isOverflowExpr head); (single && overflow)))
+    | Expr.ELet d0 d1 d2 d3 d4 d5 => false
+    | Expr.EArm d0 d1 d2 => false
+    | Expr.ELoop d0 d1 => false),
+  executable: true
+}
+
+definition{
+  name: isOverflowErr,
+  parameters: [con : Con, args : Expr],
+  result: Bool,
+  body: (match con
+    | Con.ConNone d0 => false
+    | Con.ConSome => false
+    | Con.ConOk d0 d1 => false
+    | Con.ConErr okTy errTy => (let typed : Bool := (isOverflowTy errTy); (let payload : Bool := (isOverflowArgs args); (typed && payload)))
+    | Con.ConAdt d0 d1 => false
+    | Con.ConClosure d0 d1 => false
+    | Con.ConCons => false
+    | Con.ConNil d0 => false),
+  executable: true
+}
+
+definition{
   name: returnsResult,
   parameters: [e : Expr],
   result: Bool,
@@ -1914,7 +2003,7 @@ definition{
       | WrapKind.WkSucceed => true)
     | Expr.ECall d0 d1 propagate d3 => (if propagate then false else true)
     | Expr.EApply d0 d1 propagate d3 => (if propagate then false else true)
-    | Expr.EConstruct d0 d1 d2 => false
+    | Expr.EConstruct con args d2 => (isOverflowErr con args)
     | Expr.EPair d0 d1 d2 => false
     | Expr.EIf d0 d1 d2 d3 => true
     | Expr.EMatch d0 d1 d2 => true
@@ -2119,31 +2208,6 @@ definition{
 }
 
 definition{
-  name: isOverflowExpr,
-  parameters: [e : Expr],
-  result: Bool,
-  body: (match e
-    | Expr.ELit lit org => (isOverflowLit lit)
-    | Expr.ERead d0 d1 d2 => false
-    | Expr.EWrap d0 d1 d2 => false
-    | Expr.ECall d0 d1 d2 d3 => false
-    | Expr.EApply d0 d1 d2 d3 => false
-    | Expr.EConstruct d0 d1 d2 => false
-    | Expr.EPair d0 d1 d2 => false
-    | Expr.EIf d0 d1 d2 d3 => false
-    | Expr.EMatch d0 d1 d2 => false
-    | Expr.EBlockE d0 => false
-    | Expr.EProbe d0 d1 d2 => false
-    | Expr.EBlock d0 d1 => false
-    | Expr.ENil => false
-    | Expr.ECons head tail => false
-    | Expr.ELet d0 d1 d2 d3 d4 d5 => false
-    | Expr.EArm d0 d1 d2 => false
-    | Expr.ELoop d0 d1 => false),
-  executable: true
-}
-
-definition{
   name: machineName,
   parameters: [m : Nat],
   result: Bytes,
@@ -2291,7 +2355,7 @@ definition{
           | Result.ok s1 => (ctor Result.ok [St, Bytes] (record St {bound := (project s1 bound), scope := (project s1 scope), moved := (project s1 moved), parted := (project s1 parted), propagates := (if propagate then true else (project s1 propagates))}))
           | Result.error problem17 => (ctor Result.error [St, Bytes] problem17))
         | Result.error problem18 => (ctor Result.error [St, Bytes] problem18)))
-    | Expr.EConstruct con args org => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
+    | Expr.EConstruct con args org => (let gated : Bool := (if tail then (if (project cx fallible) then (not (isOverflowErr con args)) else false) else false); (match gated
       | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (project cx items) (ctor Expr.EConstruct con args org)) (text ", is not a fallible value"))))
       | Bool.false => (match (argsC st cx (conIsErr con) args)
         | Result.ok s1 => (match (conOk cx con (exprLen args))

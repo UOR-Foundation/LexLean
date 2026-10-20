@@ -2058,6 +2058,30 @@ fn machine_crates() -> Vec<Crate> {
             at: at("function"),
         }],
     });
+    // The runtime fails with `Err::<T, Overflow>(Overflow)` at the tail of a
+    // fallible function: the one `Err` the arithmetic rule reads as a
+    // fallible value. The same `Err` with another payload, and the overflow
+    // value under another error type, are not.
+    for (error, payload) in [
+        (Type::Overflow, Lit::Overflow),
+        (Type::Overflow, Lit::Nat(0)),
+        (Type::Nat, Lit::Overflow),
+    ] {
+        crates.push(Crate {
+            profile: lexlean::calculus::rust::Profile::Core,
+            items: vec![ItemDef::Function {
+                name: Ident::Function(0),
+                parameters: vec![(Pat::Bind(Ident::Param(0)), Type::Nat)],
+                result: Type::Fallible(Box::new(Type::Nat)),
+                body: Block::of(Expr::Construct {
+                    ctor: Ctor::Err(Type::Nat, error),
+                    args: vec![Expr::Lit(payload, at("overflow"))],
+                    at: at("construct:err"),
+                }),
+                at: at("function"),
+            }],
+        });
+    }
     crates
 }
 
@@ -2911,14 +2935,14 @@ const RULE_VALIDATE_RUNS: usize = 132;
 const RULE_CORRESPOND_RUNS: usize = 12;
 const BRANCH_CRATES: usize = 17;
 const LOOP_CRATES: usize = 34;
-const MACHINE_CRATES: usize = 26 + 3 + 1 + 2 + 1;
-const VECTORS_VALIDATE: usize = 439;
-const REFUSED_VALIDATE: usize = 193;
-const VECTORS_CORRESPOND: usize = 302;
-const REFUSED_CORRESPOND: usize = 78;
+const MACHINE_CRATES: usize = 26 + 3 + 1 + 2 + 1 + 3;
+const VECTORS_VALIDATE: usize = 442;
+const REFUSED_VALIDATE: usize = 195;
+const VECTORS_CORRESPOND: usize = 305;
+const REFUSED_CORRESPOND: usize = 81;
 const EVALUATOR_CRATES: usize = 200;
-const EVALUATOR_VALIDATE: usize = 416;
-const EVALUATOR_CORRESPOND: usize = 279;
+const EVALUATOR_VALIDATE: usize = 419;
+const EVALUATOR_CORRESPOND: usize = 282;
 const SEEDED_REFUSED_VALIDATE: usize = 271;
 const SEEDED_REFUSED_CORRESPOND: usize = 244;
 

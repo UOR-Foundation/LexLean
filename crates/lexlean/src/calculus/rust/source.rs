@@ -17,7 +17,6 @@
 //! refused: the module holds data, and a call is only the name of a datum.
 
 use std::collections::BTreeMap;
-use std::sync::OnceLock;
 
 use super::super::{IntKind, OrderingValue};
 use super::ast::{
@@ -860,23 +859,15 @@ pub fn decode(source: &str) -> Result<Source, String> {
     Ok(Source { core })
 }
 
-/// The source of the embedded module.
+/// The text of the embedded module.
 ///
 /// # Errors
 ///
-/// As [`decode`], or the module is not in the embedded tree.
-pub fn get() -> Result<&'static Source, String> {
-    static SOURCE: OnceLock<Result<Source, String>> = OnceLock::new();
-    SOURCE
-        .get_or_init(|| {
-            let (_, bytes) = crate::embedded::FILES
-                .iter()
-                .find(|(path, _)| *path == MODULE_PATH)
-                .map_or_else(|| fail("is not in the embedded tree"), Ok)?;
-            let source = std::str::from_utf8(bytes)
-                .map_err(|_| format!("runtime source {MODULE_PATH}: is not UTF-8"))?;
-            decode(source)
-        })
-        .as_ref()
-        .map_err(Clone::clone)
+/// The module is not in the embedded tree, or is not UTF-8.
+pub fn embedded() -> Result<&'static str, String> {
+    let (_, bytes) = crate::embedded::FILES
+        .iter()
+        .find(|(path, _)| *path == MODULE_PATH)
+        .map_or_else(|| fail("is not in the embedded tree"), Ok)?;
+    std::str::from_utf8(bytes).map_err(|_| format!("runtime source {MODULE_PATH}: is not UTF-8"))
 }

@@ -1984,6 +1984,36 @@ an `Err` whose error type is `nat`, and a parameter of type `str` in the core ru
 (`hidden allocation`). The case also requires `tests/rust-runtime-oracle/std.rs.txt` to be the
 text `runtime::STD` holds.
 
+The case routes its plants through `runtime::core_from`, the function `core()` is `core_from` of the
+embedded module, so they are refused where `core()` refuses them; the first head validated
+`decoded.core` in the case itself, and with the `validate` call removed from `core()` the case
+still passed (review of `b4b1eaf4c`). With the call removed from `core_from`, `conformance_rb_16`
+fails at the first plant: `an Err of a value that is not the overflow value` is accepted and printed.
+A fourth module plant is a bare `Ok` of an arithmetic result (the `succeed` of `nat_add` replaced by
+`Expr.construct (Ctor.ok …)`): `construct:ok, is not a fallible value`.
+
+The module's `\title{Natural number addition}` stays: a title is a phrase concept of the module's
+glossary (`lexlean.std.nat`), and all eighteen modules of the compiler project carry that one; a title
+of the module's own (tried: `The core runtime profile`) is refused as `LLL1004`, ``The` is not a phrase
+concept`, by `sp_22` when it builds the project.
+
+The normative validator moved with the Rust one (`BS-05`): `returnsResult` and the tail rule of
+`EConstruct` in `RustValidate.lex.tex` read an `Err` whose error type is the `LkOverflow` leaf and
+whose one payload is `LitOverflow` as a fallible value (`isOverflowTy`, `isOverflowArgs`,
+`isOverflowErr`). Before it, `validateCrate` refused `Function{params: [(p0, Nat)], result:
+Fallible(Nat), body: Construct{Err(Nat, Overflow), [Lit::Overflow]}}` that `validate` accepted, and
+the corpus held no crate of that shape. It holds three now, in `machine_crates()`: that crate
+(accepted by both), the same with the payload `Nat 0`, and the same with the error type `nat` (refused
+by both as `arithmetic: … is not a fallible value`); the counts are 442 `validateCrate` vectors (195
+refused) and 305 `correspondCrate` vectors (81 refused). Planted: the tail rule of `EConstruct`
+refusing every `Err` at a fallible tail again. Observed: `run_boot_validate_crate_std_14: the
+rendering and the Rust oracle disagree on 1 of 126 runs: run 123 … arithmetic: the value a fallible
+function returns, construct:err, is not a fallible value != ok`, the first of the three crates. The
+same reading in `returnsResult`, which only the ends of a loop use, is not observable by a crate of
+this shape and was not planted. `conformance_bs_05` passes every leg through the certified export
+(2,127 s) and fails only at the comparison with the committed packages, the record bound to the
+compiler-semantics ID.
+
 Plants were run with `cargo test -p repo-conformance --test conformance conformance_rb_16`,
 each restored with `git checkout` or the saved file.
 
@@ -2027,12 +2057,15 @@ plants run on every host; the elaboration of the module and its plants run where
 (Linux x86-64, §8.3) the case panics rather than skip. Cost on a 4-core container: 142 s for the
 case, of which about 60 s is the project of the five modules and about 70 s the planted one; the
 18 theorems add under ten seconds to the module (71 s with them, 80 s with none, on the same
-machine, so the difference is inside the noise): under half a second a theorem. **That is not
-the cost of the next functions**: the width families (92 more functions, each of the same form,
-on branch `claude/issue-91-stage4-widths`) put 110 theorems in one module, and its verification
-did not end in an hour, because every theorem unfolds `findFunction` through the whole crate, so
-the cost grows with the crate's length per theorem. The width families will need their own
-crates or a faster lookup before they are verified, and `SP-22` its own part of `bdd`.
+machine, so the difference is inside the noise): under half a second a theorem. The width
+families (92 more functions of the same form, on branch `claude/issue-91-stage4-widths-2`) put 110
+theorems in one module and one crate of 110 functions: it verifies in 8 min 1 s on this host
+(13 min 51 s of CPU), about 4 s a theorem, 11 theorems (one width) in 39 s over the base. An earlier
+record here said that verification did not end in an hour and blamed `findFunction` unfolding
+through the crate; that was wrong. That run's proofs lacked `allWidth` and `hasWidth` in their
+definition lists, so `simp` could not close the goals and kept searching, and a later run was killed
+by rebuilding the binary under it. The width families need `SP-22` in a part of `bdd` of their own
+for the time, not for the crate's length.
 
 Plants, each restored: a theorem renamed to `refines_nat_other` (`the module defines` the eighteen names,
 `its refinement theorems are for` the seventeen and `nat_other`); the theorem removed (the same message); the theorem
@@ -9989,7 +10022,7 @@ Authoring found four shapes certificate A and certificate B do not accept, each 
 
 ### the bootstrap Rust crate validator can fail its oracle (SPEC.md §17.23, §17.16)
 
-`BS-05` holds the two production roots of `LexLeanBoot.RustValidate` (`bootstrap/src/RustValidate.lex.tex`) to the stage-0 oracle they replace, `calculus::rust::validate::{validate, correspond}`. The 164 distinct programs among the 247 committed package manifests and 122 fixtures lower to 223 distinct crates over both profiles; with 132 `validateCrate` and 12 `correspondCrate` rule runs (each of the 48 reachable refusals three times, found by a seeded mutation search at a fixed seed, which asserts that it reached the target and does not stop short of it), 17 hand-built crates of the merge of moved sets, 34 hand-built crates of the loop rules, and 33 hand-built crates of the machine callee and the overflow value (#91 stage 4, `SP-18`, `RB-15`), that is 439 `validateCrate` vectors (193 refused) and 302 `correspondCrate` vectors (78 refused), 721 in all. On every host both roots' rendered `rust-std` packages, compiled by the pinned rustc, agree with the oracle on all 741. On the normative host the evaluator agrees on the 200 crates of at most 400 expressions, the rule runs, and the hand-built crates (416 + 279 vectors), and on 500 seeded mutants (271 and 244 refused), and the rendered packages agree on 2,000 further seeded mutants per root. The case passed on the branch merged with `main` after wave 6 (#220), with the production export under the pinned Lean 4.32.1. Every one of these counts is an assertion of the case (`COMMITTED_*`, `RULE_*`, `VECTORS_*`, `EVALUATOR_*`, `SEEDED_*`), so a tree that no longer gives them fails the case instead of leaving this paragraph stale.
+`BS-05` holds the two production roots of `LexLeanBoot.RustValidate` (`bootstrap/src/RustValidate.lex.tex`) to the stage-0 oracle they replace, `calculus::rust::validate::{validate, correspond}`. The 164 distinct programs among the 247 committed package manifests and 122 fixtures lower to 223 distinct crates over both profiles; with 132 `validateCrate` and 12 `correspondCrate` rule runs (each of the 48 reachable refusals three times, found by a seeded mutation search at a fixed seed, which asserts that it reached the target and does not stop short of it), 17 hand-built crates of the merge of moved sets, 34 hand-built crates of the loop rules, and 36 hand-built crates of the machine callee and the overflow value (#91 stage 4, `SP-18`, `RB-15`), that is 442 `validateCrate` vectors (195 refused) and 305 `correspondCrate` vectors (81 refused), 747 in all. On every host both roots' rendered `rust-std` packages, compiled by the pinned rustc, agree with the oracle on all 747. On the normative host the evaluator agrees on the 200 crates of at most 400 expressions, the rule runs, and the hand-built crates (419 + 282 vectors), and on 500 seeded mutants (271 and 244 refused), and the rendered packages agree on 2,000 further seeded mutants per root. The case passed on the branch merged with `main` after wave 6 (#220), with the production export under the pinned Lean 4.32.1. Every one of these counts is an assertion of the case (`COMMITTED_*`, `RULE_*`, `VECTORS_*`, `EVALUATOR_*`, `SEEDED_*`), so a tree that no longer gives them fails the case instead of leaving this paragraph stale.
 
 The loop rules (the oracle's `Expr::Loop`, SP-19 and RB-14) are `ELoop [Id, Expr]` of the module: ownership of the state across a body that runs again (two refusals, for a name and for a component, naming the least offender in the oracle's order of names), the fallible-tail rule, `apply_types` with `tail = false` for the body, and the correspondence traversal treating the body as a block. The correspondence table was re-diffed against the oracle's `CORRESPONDENCE` after SP-19: 97 rows, and the six that gained `expr:call` (`destructure:pair`, `type:result`, `type:pair`, `construct:ok`, `construct:err`, `construct:pair`) are the only difference from the table first transcribed; the module's table and the oracle's are equal row for row and element for element.
 
