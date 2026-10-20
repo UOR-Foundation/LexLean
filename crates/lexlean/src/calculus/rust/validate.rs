@@ -119,7 +119,6 @@ impl Checker<'_> {
             | Type::Nat
             | Type::Int
             | Type::Fixed(..)
-            | Type::I128
             | Type::Ordering
             | Type::Str
             | Type::Bytes
@@ -917,7 +916,6 @@ impl Found {
             Type::Nat => "nat",
             Type::Int => "int",
             Type::Fixed(_) => "fixed",
-            Type::I128 => "i128",
             Type::Ordering => "ordering",
             Type::Str => "string",
             Type::Bytes => "bytes",
@@ -947,7 +945,6 @@ impl Found {
             | Type::Nat
             | Type::Int
             | Type::Fixed(..)
-            | Type::I128
             | Type::Ordering
             | Type::Str
             | Type::Bytes

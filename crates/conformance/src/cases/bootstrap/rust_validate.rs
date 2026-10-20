@@ -99,7 +99,7 @@ fn enc_types(types: &[Type]) -> Value {
     chain(5, 6, types.iter().map(enc_type).collect())
 }
 
-/// `Ty`: a leaf (unit, bool, nat, int, ordering, str, bytes, i128), fixed, a unary
+/// `Ty`: a leaf (unit, bool, nat, int, ordering, str, bytes), fixed, a unary
 /// (option, list, rc, fallible, ref), a binary (result, pair), a name (adt,
 /// fn), then the chain's nil and cons.
 fn enc_type(ty: &Type) -> Value {
@@ -120,7 +120,6 @@ fn enc_type(ty: &Type) -> Value {
         Type::Ordering => leaf(4),
         Type::Str => leaf(5),
         Type::Bytes => leaf(6),
-        Type::I128 => leaf(7),
         Type::Fixed(kind) => adt(1, vec![enc_kind(*kind)]),
         Type::Option(inner) => unary(0, inner),
         Type::List(element) => unary(1, element),
@@ -2046,18 +2045,6 @@ fn machine_crates() -> Vec<Crate> {
         args: vec![Expr::Lit(Lit::Overflow, at("overflow"))],
         at: at("construct:err"),
     }));
-    // The type `i128` has no row of the correspondence: a function that takes
-    // one is valid and is refused by `correspond`.
-    crates.push(Crate {
-        profile: lexlean::calculus::rust::Profile::Core,
-        items: vec![ItemDef::Function {
-            name: Ident::Function(0),
-            parameters: vec![(Pat::Bind(Ident::Param(0)), Type::I128)],
-            result: Type::I128,
-            body: Block::of(Expr::Copy(Ident::Param(0), at("read:param"))),
-            at: at("function"),
-        }],
-    });
     crates
 }
 
@@ -2911,7 +2898,7 @@ const RULE_VALIDATE_RUNS: usize = 132;
 const RULE_CORRESPOND_RUNS: usize = 12;
 const BRANCH_CRATES: usize = 17;
 const LOOP_CRATES: usize = 34;
-const MACHINE_CRATES: usize = 26 + 3 + 1 + 2 + 1;
+const MACHINE_CRATES: usize = 26 + 3 + 1 + 2;
 const VECTORS_VALIDATE: usize = 438;
 const REFUSED_VALIDATE: usize = 193;
 const VECTORS_CORRESPOND: usize = 301;

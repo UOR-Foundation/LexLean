@@ -40,7 +40,6 @@ public inductive RustType where
   | rc (_ : RustType)
   | fallible (_ : RustType)
   | ref (_ : RustType)
-  | i128
 
 public inductive Lit where
   | unit
