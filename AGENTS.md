@@ -119,3 +119,9 @@ for the current release to close.
 Explain *why*, not *what*. The code says what it does. A comment earns its
 place by recording the reason a decision went one way when it could plausibly
 have gone another.
+
+## Editing the specification
+
+A scanner over `.lex.tex` sources selects a module by its parsed `spec`, never by
+a substring of its text: the chapters quote every marker and control in their
+strings (`conformance_au_05` found one that did not).

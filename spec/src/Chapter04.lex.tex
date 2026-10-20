@@ -1,0 +1,123 @@
+\begin{lexlean}{Chapter04}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{spec.titles@1.0.0}
+\importmodule{DocRows}
+\title{Scope and non goals}
+\begin{semanticmodule}
+definition{
+  name: i0001,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [2, 1, "4. Scope and non-goals"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0002,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "4.1 LexLean 1.0 supports"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0003,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "LexLean 1.0 MUST support:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0004,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- closed lexical resolution for all source tokens;" (cons "- a fixed controlled grammar for propositions and definitional statements;" (cons "- symbolic mathematical expressions with glossary-defined operators;" (cons "- document modules and explicit module imports;" (cons "- glossary packages and exact package locking;" (cons "- scoped section parameters, quantified binders, proof locals, and branch locals;" (cons "- nonrecursive type aliases, term definitions, and predicate definitions;" (cons "- theorem, lemma, and corollary declarations;" (cons "- structured proofs using the proof forms in §14;" (cons "- external Lean constants with declared LexLean signatures;" (cons "- canonical LaTeX rendering from the semantic IR;" (cons "- Lean 4 generation with no comments, strings, documentation text, or proof holes;" (cons "- verification in a pinned Lake workspace;" (cons "- per-declaration axiom-dependency policies;" (cons "- optional isolated PDF rendering through the external-provider protocol in §19;" (cons "- human and canonical-JSON diagnostics;" (cons "- a Rust library API and command-line interface;" (cons "- deterministic, content-addressed build artifacts." (nil String)))))))))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0005,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "4.2 LexLean 1.0 deliberately does not support"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0006,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The following are outside the LexLean 1.0 language and MUST be rejected rather than approximated:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0007,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- arbitrary natural language;" (cons "- unrestricted LaTeX;" (cons "- TeX macro definition or macro expansion;" (cons "- raw Lean declarations, terms, tactics, commands, or code blocks;" (cons "- source comments of any kind;" (cons "- free expository paragraphs;" (cons "- author-defined axioms;" (cons "- `sorry`, `admit`, synthetic proof placeholders, or deferred proof nodes;" (cons "- recursive or mutually recursive document definitions;" (cons "- document-defined inductive types, structures, classes, or instances;" (cons "- string literals, file inclusion, shell escape, network access, or foreign code;" (cons "- heuristic ambiguity resolution;" (cons "- probabilistic or model-based translation;" (cons "- a claim that `leanchecker` is an independent proof checker;" (cons "- a claim that successful Rust generation alone establishes a theorem;" (cons "- a claim that imported libraries are proved by LexLean." (nil String)))))))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0008,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Complex Lean objects that LexLean 1.0 cannot define MAY be imported as closed external glossary entries. Their guarantees belong to their upstream repositories. LexLean verifies only that the generated declarations elaborate and check in the pinned environment and that their observed axiom dependencies satisfy their explicit policies." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0009,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "---" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

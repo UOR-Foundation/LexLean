@@ -1,0 +1,342 @@
+\begin{lexlean}{Chapter09}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{DocRows}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: i0001,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [2, 1, "9. Root tooling"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0002,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "9.1 `.cargo/config.toml`"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0003,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The file MUST contain only repository aliases; target-specific remnants from the template MUST be removed." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0004,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "toml",
+      (cons "[alias]" (cons "xtask = \"run --package xtask --\"" (cons "vv = \"run --package xtask -- validate\"" (nil String))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0005,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "9.2 `Justfile`"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0006,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The normative acceptance recipe is `just vv`. It MUST run, in this order:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0007,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "1. `fmt-check`;" (cons "2. `model`;" (cons "3. `spec-links`;" (cons "4. `lint`;" (cons "5. `test`;" (cons "6. `features`;" (cons "7. `bdd`;" (cons "8. `inventory`;" (cons "9. `examples`;" (cons "10. `golden`;" (cons "11. `repro`;" (cons "12. `deny`." (nil String)))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0008,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "The recipes have these meanings:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0009,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "text",
+      (cons "fmt-check   cargo fmt --all -- --check" (cons "model       cargo xtask validate-model" (cons "spec-links  cargo xtask validate-spec-links" (cons "lint        cargo clippy --workspace --all-targets --all-features -- -D warnings" (cons "test        cargo test --workspace --exclude repo-conformance --all-features" (cons "features    cargo check --workspace --all-features --all-targets" (cons "bdd         cargo xtask bdd" (cons "inventory   cargo xtask check-test-inventory" (cons "examples    cargo xtask verify-examples" (cons "golden      cargo xtask check-golden" (cons "repro       cargo xtask check-reproducibility" (cons "deny        cargo deny --all-features check" (cons "vv          all recipes above, in order" (nil String))))))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0010,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "`test` runs every test target of every workspace crate except `repo-conformance`, and `bdd` is the sole owner of the complete `repo-conformance` suite: its library tests and doctests, its `conformance` target (one test per registered ID, §27.8), and its `bdd` meta-gate target. `cargo xtask bdd` runs `cargo test -p repo-conformance --all-features`, the whole suite; when `LEXLEAN_BDD_PART` names a part of `.github/bdd-parts.json`, it runs the same command with that part's harness filters, which is how CI runs it (§9.4). The two phases partition the workspace test set: `inventory` lists the tests of `cargo test --workspace --all-features`, of `test`, and of `bdd` (RP-13), and requires the last two to be disjoint, their union to equal the first, and every test target of `repo-conformance` to be in `bdd`'s list, so that no test is lost and none runs twice in `vv`. It also lists the tests of every part of the `bdd` plan with that part's harness filters, and requires the parts' lists to be disjoint, their union to equal `bdd`'s list, and every test a part names to be in that part's list, so that every test of `bdd` runs in exactly one part. The honesty workflow (§9.4) runs the meta-gate target alone, as a separate signal that is not part of `vv`. `just model-write` regenerates `CONFORMANCE.md` and `ERRORS.md`. Golden files are rewritten only by the explicit `just golden-write` recipe. No acceptance recipe rewrites source or expected output." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0011,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "9.3 Development container"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0012,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "The development container MUST install:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0013,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- Rust 1.97.1 with `rustfmt` and `clippy`;" (cons "- `just`;" (cons "- `cargo-deny`;" (cons "- `elan`;" (cons "- `leanprover/lean4:v4.32.1`;" (cons "- the Rust Analyzer and Lean 4 editor extensions." (nil String)))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0014,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Its image MUST install the pinned Rust and Lean toolchains at build, so that nothing is fetched when a session starts, and MUST NOT select an unpinned default; `RP-16` reads the Dockerfile against `rust-toolchain.toml` and `lean-toolchain`. The container configuration is development support; verification still performs its own version and digest preflight." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0015,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "9.4 Continuous integration"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0016,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "`ci.yml` MUST run every recipe of `just vv` from a clean checkout on Linux x86-64. It MUST install the exact Rust toolchain, Lean 4.32.1 through `elan`, `just`, and `cargo-deny`." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0017,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "**What a run is.** `ci.yml` starts with the job `plan`, which decides from the event and the repository alone, through `.github/ci-plan.sh`, what the run is before any job that costs a runner starts. A pull request that is a draft is the `rest` leg and nothing else: a head pushed again before it is final costs one job and not the gate, the run is a development signal, and a draft is not mergeable on it; marking the pull request ready, and every push to it after, run the whole gate. A ready pull request, a `workflow_dispatch`, and a push to `main` or to a release line are the whole gate, every job below. One push to `main` or to a release line is not: when it is a merge commit whose tree is the tree of its second parent (a pull request head that already contained `main`) and a run of this workflow for that parent as a pull request of this repository passed every job, with none skipped, the join of Atlas, every host of §8.3, and every leg of `.github/vv-rows.json` among them, the push runs no job but the plan, which records the run: the tree it lands is byte for byte the tree that run verified, on the same runners and with the same pins. Any other push to `main` or to a release line, including one the plan cannot decide (a failed query, no run, a run of a draft, a merge that changed the tree, a push that is no merge), is the whole gate. `release.yml` runs `just vv` whole and reads no earlier run. `RP-14` runs the script against planted events and a plant in it fails the case, and reads the three workflows' push triggers, which name `main` and `release/**`." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0018,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "**Release lines.** A release line is the branch `release/vX.Y` of the release X.Y: it is cut from `main` when work on X.Y begins, every pull request for the milestone X.Y targets it, each `vX.Y.Z` tag is made from it, and it is merged forward, by merge commit, into the next release line after each landing so that the next line carries every fix of the one before it. `main` is the newest released line: a release line is merged into `main` when its release is tagged, and nothing else lands on `main`. A release line is held to the same gate as `main`: a push to it is the whole gate under the rule above, and a pull request against it is a pull request of this repository." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0019,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "In a run that is the whole gate, the job runs the recipes as the legs of one matrix, the rows of `.github/vv-rows.json`, at once, each from its own clean checkout: `examples`, which verifies every example but UOR Atlas; `rest`, the other eleven recipes in the order of `vv`; and one `bdd-<part>` row for each named part of the `bdd` plan below, which runs `bdd` alone. Each leg runs `just` with its recipes, which stops at the first that fails, as `vv` does. The part of `examples` a job runs is named by its matrix row through `LEXLEAN_EXAMPLES_PART` and by nothing else: `without:uor-atlas` on the leg, `shard:uor-atlas:<shard>` and `join:uor-atlas` on the Atlas jobs below; unset or empty, which is what `just vv` and `release.yml` run, the recipe verifies every example whole. Together the legs and the Atlas jobs run every recipe of `vv`, every example, and every test of `bdd` exactly once, and the run passes only when every job passes, so it proves what one run of `just vv` proves; no recipe depends on another having run, and every recipe owns the files it builds. Its wall time is the longest path through the jobs rather than the sum. `just vv` remains the acceptance recipe of §9.2 for every other run, and `release.yml` runs it whole." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0020,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "UOR Atlas is verified as the parts of one run. `.github/verify-shards.json` partitions its verification into shards, each naming the shards it needs, the modules it elaborates, and the modules it replays and audits, one of them named `join`; `cargo xtask ci-shards` checks, as the verifier would when a part ran, that every module is elaborated by exactly one shard and replayed by exactly one, that every import of a module a shard elaborates or replays is elaborated by that shard or by one it needs, directly or through another, and that `join` needs every other shard. Each shard is a job of its own clean checkout that runs the verifier's prelude whole (certificate generation, the preflights, staging, the generated-source audit, the probe), then elaborates, replays, and audits only the modules of its plan, reading the `.olean` files of the modules it imports from the output the jobs of the shards it needs uploaded in the same run, and uploads its own `.olean` files and process records as its output. The join runs the modules of its plan, reads every shard's records, requires each to name the executable the join itself hashed for the tool that produced it (`lean` for an elaboration or an audit member, `leanchecker` for a replay), judges each as the stage that produced it judges its own, and continues through policy, the attestation over every record in the canonical order of §22.11, publication, and the comparison of every normalized record with `expected/verify` (§29.5): what it publishes is what the whole verification publishes, record for record and attestation identity included (`VR-23`). A module without a record from any part, a record of a process no module owns, a record whose `executable_sha256` is not the join's digest of its tool (`LLI9001`, naming the record and both digests), or a shard whose plan leaves a module without the `.olean` it imports fails the run. Every process of the verification runs exactly once per run. The executable the Atlas jobs run is the one the `prefix` job built from its clean checkout, carried to the other jobs of the run as an artifact beside the shards' output; it, the output, and the records cross no run, and a job reads the artifacts of its own run only. The Atlas jobs run after the jobs of the shards they need, at the profile of the `examples` leg, and only in a run that is the whole gate." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0021,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The `bdd` recipe runs as the parts of one run as well. `.github/bdd-parts.json` names parts of the `repo-conformance` suite by conformance ID, and a remainder, `rest`, that names none; the cases that share a fixture built once per test process, such as a verified project, an exported package set, or a compiled environment, are named by one part, so that a fixture is built in one part and not once per part. `cargo xtask bdd` runs `cargo test -p repo-conformance --all-features` with the harness filters of the part `LEXLEAN_BDD_PART` names: `--exact` and the test of every ID the part names, or for the remainder `--exact` and a `--skip` of every test another part names, so that the remainder runs the library tests, the doctests, the meta-gate target, and every conformance test no other part names, an ID added to the register included. The part a job runs is named by its matrix row and by nothing else: a `bdd-<part>` row names its part, the `rest` leg names the remainder, and the `examples` leg runs no `bdd` and names none; unset or empty, which is what `just vv` and `release.yml` run, the recipe runs the whole suite. The harness selects the tests, and no case decides whether it runs. `inventory` proves from the harness's own lists that the parts are disjoint and together are `bdd` (§9.2), and every part, the remainder included, is run by exactly one row. Each row builds from its own clean checkout; nothing passes between rows, and nothing crosses runs." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0022,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Every gate job runs on the standard GitHub-hosted runner, `ubuntu-24.04`; no larger runner is part of the gate. The verification resource profile (§22.11) of a job is named by its matrix row, or on an Atlas job by the job itself, and by nothing else, no repository or workflow variable and no input: the `examples` leg and every Atlas job verify at width 2, with the scheduling hints committed in `.github/verify-hints.json` (derived from a run's telemetry by `cargo xtask ci-hints`) and a memory budget of 12 GiB (12582912 KiB) for the summed expected peaks of the proof processes running at once; the other legs name no profile and run at the default. A profile is a schedule and never a verdict: every elaboration, replay, and audit member still runs on the pinned toolchain, the directory each project publishes is byte for byte the one of width 1 without hints or a budget (§22.11), and the leg and the join still require every example's normalized verification records to equal `expected/verify` (§29.5), so a profile that changed a byte would fail the gate rather than pass a different one. A stale hint reorders processes and never skips one. Width 1 is still verified whole on UOR Atlas by `release.yml`, which runs `just vv` with no profile. The budget is below the runner's 16 GB, with the 4 GiB swap file of the job as overflow, so two processes run together only when their expected peaks fit, and a process whose expected peak alone passes the budget runs alone. The gate has no path filter, no cache of a build directory, object, verification tree, attestation, or proof result, and no condition that skips a recipe of `just vv` but the plan's, which decides only what a run is, as above; the artifacts the jobs of one run exchange are read by that run alone, and every job starts from a clean checkout with the exact pinned toolchains. Each job writes its performance telemetry (§22.12) to `ci-evidence/` and uploads that directory as the artifact named after it, `acceptance-gate-evidence-<leg>` or `acceptance-gate-evidence-atlas-<shard>`: the gate log (`just --timestamp` stamps each recipe's first command on a leg, which is how a recipe is timed without changing it; an Atlas job's log is the recipe's own output), the host's memory and swap sampled every five seconds, the verifier's telemetry, and a summary of the wall time of each recipe and verification stage, the slowest modules and audit members, and the peak resident set and swap of the proof processes. The summary step also prints that summary to the job log and appends it to the step summary, and runs when the job failed, because an uploaded artifact cannot be read from the log; each table lists only its slowest rows and the part appended to the step summary is cut at 512 KiB, half of what GitHub accepts. None of it is an input of any recipe, and a timing is never a claim about a semantic property." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0023,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "`honesty.yml` MUST run the model/honesty gate separately so claim drift is distinguishable from code failure." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0024,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "`reproducibility.yml` MUST perform two builds in distinct absolute directories and compare every platform-independent artifact byte-for-byte after path normalization." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0025,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "---" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

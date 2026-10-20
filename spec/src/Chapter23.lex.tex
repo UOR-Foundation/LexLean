@@ -1,0 +1,738 @@
+\begin{lexlean}{Chapter23}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{spec.titles@1.0.0}
+\importmodule{DocRows}
+\title{Command line interface}
+\begin{semanticmodule}
+definition{
+  name: i0001,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [2, 1, "23. Command-line interface"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0002,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "23.1 General form"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0003,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: ["text", (cons "lexlean [GLOBAL-OPTIONS] <COMMAND> [COMMAND-OPTIONS]" (nil String))],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0004,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Global options:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0005,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "text",
+      (cons "--project <path>                  default: lexlean.toml discovered upward" (cons "--diagnostic-format human|json    default: human" (cons "--color auto|always|never         default: auto; ignored for json" (cons "--version" (cons "--help" (nil String))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0006,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "No environment variable changes semantic configuration. Four operational variables exist and change no output: `LEXLEAN_VERIFY_WIDTH` selects the verification process width, `LEXLEAN_VERIFY_HINTS` names the scheduling-hints file and `LEXLEAN_VERIFY_MEMORY_KIB` the process memory budget (§22.11), and `LEXLEAN_CI_TELEMETRY` names the directory that receives performance telemetry (§22.12)." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0007,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "23.2 Project discovery"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0008,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Without `--project`, LexLean searches the current directory and parents for the first regular `lexlean.toml`. It stops at the filesystem root. Symlinked candidates are rejected." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0009,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The directory containing the selected config is the project root." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0010,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "23.3 Selection"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0011,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Commands accepting a selection support:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0012,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: ["text", (cons "--all" (cons "[INPUT...]" (nil String)))],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0013,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "The modes are mutually exclusive:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0014,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- `--all`: every `.lex.tex` beneath every source root;" (cons "- one or more input paths: those modules and their transitive imports;" (cons "- neither: configured entrypoints and their transitive imports." (nil String))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0015,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Inputs are project-relative or absolute paths that resolve beneath a configured source root. Duplicate logical modules, case-fold collisions, and two paths declaring the same module are errors." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0016,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Selections canonicalize to a sorted set. APIs and CLI results are always project result sets, even for one module." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0017,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "23.4 Commands"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0018,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [4, 1, "`init`"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0019,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "text",
+      (cons "lexlean init [PATH] --name <name> --module-prefix <prefix>" (nil String))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0020,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Creates a new project only in an absent or empty directory. It writes canonical config, a canonical initial lock for builtin packages and workspace pins, `lean-toolchain`, a minimal Lake workspace, `src/Main.lex.tex`, and `.gitignore`. It never overwrites." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0021,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [4, 1, "`lock`"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0022,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: ["text", (cons "lexlean lock [--check] [--allow-network]" (nil String))],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0023,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "`--check` and `--allow-network` are mutually exclusive. Without either, it updates from local and cached exact sources. It writes atomically." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0024,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [4, 1, "`check`"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0025,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: ["text", (cons "lexlean check [--all | INPUT...]" (nil String))],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0026,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Runs through linked IR and emits no build artifacts." (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0027,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [4, 1, "`build`"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0028,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: ["text", (cons "lexlean build [--all | INPUT...]" (nil String))],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0029,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Emits the fixed build layout at the build-ID path. It does not run Lean, does not invoke the PDF provider, and does not claim verification." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0030,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [4, 1, "`verify`"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0031,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: ["text", (cons "lexlean verify [--all | INPUT...]" (nil String))],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0032,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Runs §22. It accepts no output or stage-suppression option." (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0033,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [4, 1, "`fmt`"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0034,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: ["text", (cons "lexlean fmt [--check] [--all | INPUT...]" (nil String))],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0035,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Parses and uniquely resolves source, rewrites canonical source, or exact-byte compares under `--check`." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0036,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [4, 1, "`clean`"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0037,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: ["text", (cons "lexlean clean" (nil String))],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0038,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Removes only the configured `.lexlean` build root after verifying it is a nonsymlink directory inside the project. It does not remove package caches outside that root." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0039,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [4, 1, "`explain`"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0040,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: ["text", (cons "lexlean explain <DIAGNOSTIC-CODE>" (nil String))],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0041,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Prints the generated `ERRORS.md` entry for one registered code. Unknown codes exit as CLI misuse." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0042,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [4, 1, "`production`"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0043,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "text",
+      (cons "lexlean production targets" (cons "lexlean production build --request <REQUEST>" (cons "lexlean production verify-artifact <BUNDLE>" (nil String))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0044,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The production export contract of §24.7. `targets` prints the canonical `lexlean/target-descriptors/1` document in either output mode; like `--version` it is not a project command and emits no command-result object. `build` reads a `lexlean/production-request/1` file, verifies the project by §22, and publishes the bundle; its command result names the bundle directory and the source, semantic, build, and attestation IDs. `verify-artifact` replays a bundle and needs no project. Both report failures through the command result with the exit code of their registered class." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0045,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "23.5 Formatting"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0046,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Canonical source formatting:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0047,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- NFC and LF;" (cons "- two spaces per environment nesting level;" (cons "- imports sorted;" (cons "- safe canonical lexical forms selected;" (cons "- explicit qualified selectors retained only when required for disambiguation;" (cons "- one structural control per line;" (cons "- one proposition or definition sentence per logical line;" (cons "- one proof sentence per line;" (cons "- axiom names sorted;" (cons "- no trailing whitespace;" (cons "- one final LF." (nil String))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0048,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Formatting MUST preserve linked IR. The formatter compares pre- and post-render canonical IR and fails if they differ." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0049,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "23.6 Exit codes"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0050,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "| Code | Meaning |" (cons "|---:|---|" (cons "| `0` | Command succeeded. |" (cons "| `1` | Source, glossary, grammar, semantic, Lean, proof, or axiom-policy failure. |" (cons "| `2` | CLI misuse, project-config error, lock-schema error, or invalid selection. |" (cons "| `3` | Missing or mismatched toolchain, Lake workspace, executable, or environment. |" (cons "| `4` | Security-policy or explicit resource-limit violation. |" (cons "| `70` | Internal invariant or software failure. |" (nil String)))))))))
+    ],
+    constructor: DocRows::Item.table,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0051,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "A process terminated by the OS may additionally expose the platform's signal/exception status." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0052,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "23.7 Output streams"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0053,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Human mode:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0054,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- successful summaries to stdout;" (cons "- diagnostics to stderr;" (cons "- no progress spinner in noninteractive mode;" (cons "- paths project-relative where possible." (nil String)))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0055,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "JSON mode:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0056,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- exactly one canonical JSON command-result object to stdout;" (cons "- stderr empty unless the process cannot construct JSON because of an internal failure;" (cons "- no color or progress text." (nil String))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0057,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "---" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

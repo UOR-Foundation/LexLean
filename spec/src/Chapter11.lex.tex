@@ -1,0 +1,286 @@
+\begin{lexlean}{Chapter11}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{spec.titles@1.0.0}
+\importmodule{DocRows}
+\title{Lock file}
+\begin{semanticmodule}
+definition{
+  name: i0001,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [2, 1, "11. Lock file"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0002,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "11.1 General"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0003,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "`lexlean.lock` is generated, canonical TOML with no comments and final LF. Users MUST NOT hand-edit it. `lexlean lock --check` regenerates it in memory and compares exact bytes. Language 1.0 and 1.1 use `spec = \"lexlean/lock/1\"`. Language 1.2 uses `spec = \"lexlean/lock/2\"`. `lexlean lock` migrates locks to the appropriate schema for the project language." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0004,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "The top-level schema is:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0005,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "toml",
+      (cons "spec = \"lexlean/lock/1\"" (cons "language = \"1.0\"" (cons "compiler_semantics = \"64-lowercase-hex-digits\"" (cons "project_config_sha256 = \"64-lowercase-hex-digits\"" (cons "lean_toolchain = \"leanprover/lean4:v4.32.1\"" (cons "" (cons "[[workspace_file]]" (cons "path = \"lean-toolchain\"" (cons "sha256 = \"...\"" (cons "" (cons "[[package]]" (cons "id = \"lexlean.core\"" (cons "version = \"1.0.0\"" (cons "kind = \"builtin\"" (cons "source = \"embedded\"" (cons "revision = \"compiler-semantics\"" (cons "tree_sha256 = \"...\"" (cons "manifest_sha256 = \"...\"" (cons "imports = []" (cons "" (cons "[[package]]" (cons "id = \"example.algebra\"" (cons "version = \"1.2.3\"" (cons "kind = \"path\"" (cons "source = \"glossary/example.algebra\"" (cons "revision = \"none\"" (cons "tree_sha256 = \"...\"" (cons "manifest_sha256 = \"...\"" (cons "imports = [\"lexlean.core@1.0.0\"]" (nil String))))))))))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0006,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "An optional `[pdf]` lock record mirrors the configured provider and records the hashes of every declared resource." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0007,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Language 1.2 only, a project that declares source packages (§10.5) has, after the `[[package]]` rows, one `[[source_package]]` row for every package in the transitive closure of its declarations, and a project that declares none has none:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0008,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "toml",
+      (cons "[[source_package]]" (cons "id = \"lib\"" (cons "version = \"1.0.0\"" (cons "kind = \"path\"" (cons "source = \"lib\"" (cons "module_prefix = \"PkgLib\"" (cons "tree_sha256 = \"...\"" (cons "manifest_sha256 = \"...\"" (cons "imports = [\"base@1.0.0\"]" (nil String))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0009,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Language-1.2 model artifacts (§10.1, §17.12) have no lock rows: each is pinned" (cons "by its `sha256` in `lexlean.toml`, whose canonical bytes the lock's project" (cons "digest and the source ID cover, and every `check`, `build`, `fmt`, and" (cons "`verify` re-reads and re-digests the bytes." (nil String)))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0010,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "11.2 Canonical ordering"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0011,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- `workspace_file` rows sort by `path`." (cons "- `package` rows sort by `(id, version)`." (cons "- `source_package` rows sort by `id`, and their `imports` by `id`." (cons "- package `imports` sort lexicographically and contain no duplicates." (cons "- all keys use the order shown by the schema formatter." (cons "- lowercase hexadecimal is mandatory." (nil String)))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0012,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "11.3 Package closure"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0013,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Every package imported by a source module, and every transitive lexicon import, appears exactly once in the lock. The lock includes `lexlean.core@1.0.0` even though it is automatically loaded." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0014,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "A source import names an exact package and exact version. Version ranges are not part of language 1.0." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0015,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "11.4 Offline behavior"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0016,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- `lexlean lock` resolves local and already-cached sources without networking." (cons "- `lexlean lock --allow-network` may acquire missing exact Git commits." (cons "- no other command accepts `--allow-network`;" (cons "- verification fails if a locked package is absent or its digest differs;" (cons "- an acquired Git package is stored at `<build_root>/cache/git/<revision>/<tree_sha256>/` and is revalidated before use;" (cons "- Git submodules, Git LFS indirection, and nested repositories are rejected." (nil String)))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0017,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "11.5 Tree digest"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0018,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "A package tree digest is SHA-256 over:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0019,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "text",
+      (cons "\"lexlean-tree-v1\\0\"" (cons "+ for each regular file in bytewise-sorted project-relative path order:" (cons "    u32be(path_byte_length)" (cons "    + path_utf8_bytes" (cons "    + u64be(file_byte_length)" (cons "    + file_bytes" (nil String)))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0020,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Only `lexicon.toml` and files under `entries/` participate. Symlinks, device files, FIFOs, sockets, and non-UTF-8 paths are rejected." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0021,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "---" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

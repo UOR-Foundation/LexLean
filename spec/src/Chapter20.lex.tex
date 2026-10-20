@@ -1,0 +1,482 @@
+\begin{lexlean}{Chapter20}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{spec.titles@1.0.0}
+\importmodule{DocRows}
+\title{Diagnostics source maps and coverage}
+\begin{semanticmodule}
+definition{
+  name: i0001,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [2, 1, "20. Diagnostics, source maps, and coverage"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0002,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "20.1 Diagnostic object"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0003,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Every diagnostic serializes as:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0004,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "json",
+      (cons "{" (cons "  \"spec\": \"lexlean/diagnostic/1\"," (cons "  \"code\": \"LLL1004\"," (cons "  \"severity\": \"error\"," (cons "  \"message\": \"unknown source atom\"," (cons "  \"primary\": {" (cons "    \"path\": \"src/Main.lex.tex\"," (cons "    \"byte_start\": 120," (cons "    \"byte_end\": 129," (cons "    \"line_start\": 7," (cons "    \"column_start\": 5," (cons "    \"line_end\": 7," (cons "    \"column_end\": 14" (cons "  }," (cons "  \"labels\": []," (cons "  \"notes\": []," (cons "  \"help\": []," (cons "  \"causes\": []" (cons "}" (nil String))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0005,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Offsets are zero-based half-open UTF-8 byte offsets. Lines and columns are one-based; columns count Unicode scalar values after normalization." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0006,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "`primary` is present in every diagnostic except those of the codes below, which the compiler issues where no source position exists. Inventing a span for them would assert a location the failure does not have, so they omit `primary`, and `schemas/diagnostic.schema.json` requires it of every other code:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0007,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "| Code | Issued without a position when |" (cons "| --- | --- |" (cons "| `LLC0001` | the command line is not valid, an `explain` code is not registered, `init` is refused, or a request file cannot be read |" (cons "| `LLC0101` | no project configuration is found, or the named one cannot be read |" (cons "| `LLC0108` | a project that declares a source package is outside the workspace rule, before any project is loaded |" (cons "| `LLC0201` | a production request is not a closed `lexlean/production-request/1` document |" (cons "| `LLS8001` | a path of the project or of a bundle is confined away, or `clean` meets a symlink |" (cons "| `LLV7008` | a host path is not UTF-8 |" (cons "| `LLV7010` | a host filesystem operation fails outside any project file |" (cons "| `LLV7102` | a published bundle does not replay |" (nil String)))))))))))
+    ],
+    constructor: DocRows::Item.table,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0008,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Object keys are canonicalized. Diagnostics sort by:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0009,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "1. project-relative path;" (cons "2. byte start;" (cons "3. severity;" (cons "4. code;" (cons "5. message." (nil String))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0010,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "20.2 Severity"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0011,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Language 1.0 compiler diagnostics are either `error` or attached `note`/`help`. There is no recoverable compiler warning category." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0012,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Any warning emitted by Lean, Lake, `leanchecker`, or a PDF provider is a verification failure unless the output is the expected informational result of the generated axiom-audit commands." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0013,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "20.3 Source-map schema"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0014,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Each module map contains:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0015,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "json",
+      (cons "{" (cons "  \"spec\": \"lexlean/source-map/1\"," (cons "  \"source_id\": \"...\"," (cons "  \"semantic_id\": \"...\"," (cons "  \"module\": \"Main\"," (cons "  \"sources\": []," (cons "  \"artifacts\": []," (cons "  \"nodes\": []," (cons "  \"mappings\": []" (cons "}" (nil String)))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0016,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "A mapping identifies:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0017,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- artifact kind and relative path;" (cons "- generated half-open byte range;" (cons "- source file and half-open byte range, or a synthetic core/glossary origin;" (cons "- IR node ID;" (cons "- role: `declaration`, `binder`, `term`, `proof`, `structure`, `renderer`, or `synthetic`." (nil String))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0018,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Every non-whitespace generated Lean token and every canonical LaTeX token/control has at least one mapping. Boilerplate maps to explicit synthetic origins such as `core:lean-preamble/1`, never to a fabricated source span." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0019,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "20.4 Lean diagnostic remapping"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0020,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Verification parses Lean locations against generated files. It selects the smallest generated mapping that encloses the reported byte position. Ties are resolved by:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0021,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "1. shortest generated range;" (cons "2. non-synthetic before synthetic;" (cons "3. lowest stable IR node ID." (nil String))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0022,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "The remapped diagnostic contains both:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0023,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- the primary LexLean source span;" (cons "- the generated Lean location as a note." (nil String)))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0024,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "If an external Lean diagnostic has no generated mapping, the primary location is the declaration component and the unmapped generated path/range is retained as a note." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0025,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "20.5 Coverage schema"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0026,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Each module coverage file contains sorted rows for:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0027,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- source primitive atoms;" (cons "- selected lexical forms;" (cons "- scoped declarations;" (cons "- canonical LaTeX visible tokens;" (cons "- canonical LaTeX controls;" (cons "- generated Lean semantic tokens." (nil String)))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0028,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Every source atom row records exactly one selected binding. Whitespace rows are optional; non-whitespace rows are mandatory. Overlap or a gap is an internal invariant failure." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0029,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "20.6 Diagnostic output modes"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0030,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "The CLI supports:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0031,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- `human`: deterministic text to stderr, optional color;" (cons "- `json`: one canonical JSON command-result object to stdout and no human diagnostic text." (nil String)))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0032,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "JSON output has no timestamps, absolute paths, or terminal escape sequences." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0033,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "The one command-result object is:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0034,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "json",
+      (cons "{" (cons "  \"spec\": \"lexlean/command-result/1\"," (cons "  \"command\": \"check\"," (cons "  \"success\": false," (cons "  \"exit_code\": 1," (cons "  \"modules\": []," (cons "  \"artifacts\": []," (cons "  \"diagnostics\": []" (cons "}" (nil String))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0035,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Absent IDs are omitted rather than encoded as JSON `null`. Module and artifact rows are sorted. `success` is true exactly when `exit_code` is zero." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0036,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "---" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

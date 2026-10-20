@@ -1155,6 +1155,18 @@ pub fn audit_errors(root: &Path, model: &repo_model::Model) -> Result<(), Fail> 
         if path.file_name().is_some_and(|name| name == "SPEC.md") {
             continue;
         }
+        // The chapter modules of spec/ are SPEC.md's source and state the same
+        // ranges.
+        if path
+            .parent()
+            .is_some_and(|parent| parent.ends_with("spec/src"))
+            && path.file_name().is_some_and(|name| {
+                let name = name.to_string_lossy();
+                name.starts_with("Chapter") && name.ends_with(".lex.tex")
+            })
+        {
+            continue;
+        }
         let Ok(text) = std::fs::read_to_string(&path) else {
             continue;
         };
@@ -1244,6 +1256,10 @@ pub fn audit_shipped(root: &Path) -> Result<(), Fail> {
         ("crates/lexlean/model/errors.toml", "model/errors.toml"),
         ("crates/lexlean/LICENSE-APACHE", "LICENSE-APACHE"),
         ("crates/lexlean/LICENSE-MIT", "LICENSE-MIT"),
+        (
+            "crates/lexlean/sha256_package.rs",
+            "tests/production-export/stdlib/packages/rust-std/sha256/src/lib.rs",
+        ),
     ] {
         let link_path = root.join(link);
         let resolved = std::fs::canonicalize(&link_path).map_err(|error| {

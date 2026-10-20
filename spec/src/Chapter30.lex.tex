@@ -1,0 +1,267 @@
+\begin{lexlean}{Chapter30}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{DocRows}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: i0001,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [2, 1, "30. Versioning, release, and completion"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0002,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "30.1 Version axes"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0003,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "LexLean has separate versions for:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0004,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- compiler crate/binary SemVer;" (cons "- language identifier `1.0`;" (cons "- project schema;" (cons "- lock schema;" (cons "- lexicon schema;" (cons "- entry schema;" (cons "- artifact schemas;" (cons "- compiler-semantics ID." (nil String)))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0005,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "A compiler patch release may retain the semantics ID only when canonical accepted language, IR, diagnostics required for success/failure, and generated artifacts are unchanged." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0006,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "30.2 Compatibility"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0007,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Language 1.0 accepts only exact schema tags specified here. It does not silently interpret an unknown major or minor schema. A future compiler may support multiple versions through explicit dispatch, but a language-1.0 run remains byte-compatible." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0008,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "No automatic in-place migration command is part of 1.0. Unsupported input fails with `LLC0103`." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0009,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "30.3 Release artifacts"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0010,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "A `1.0.0` release MUST publish:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0011,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- source tag;" (cons "- checksums;" (cons "- supported-host binaries;" (cons "- crate package;" (cons "- compiler-semantics ID;" (cons "- generated `CONFORMANCE.md`;" (cons "- generated `ERRORS.md`;" (cons "- `SPEC.md`;" (cons "- license files;" (cons "- a software-bill-of-materials artifact;" (cons "- CI evidence that `just vv` passed on the tagged commit." (nil String))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0012,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Release binaries MUST report:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0013,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "text",
+      (cons "lexlean 1.0.0" (cons "language 1.0" (cons "compiler-semantics <digest>" (cons "lean-toolchain leanprover/lean4:v4.32.1" (nil String)))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0014,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "30.4 Completion criterion"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0015,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "The project is complete for LexLean 1.0 only when:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0016,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- every §31 ID is implemented at level `build`;" (cons "- no ID is represented by a stub or ignored test;" (cons "- all schemas are committed and exercised;" (cons "- built-in core, Nat, Int, and UOR Atlas lexicons validate;" (cons "- the literal example verifies;" (cons "- every negative fixture fails for the prescribed reason;" (cons "- every gate has falsifiability evidence;" (cons "- `just vv` passes from a clean checkout;" (cons "- the default branch has no `open` row used as a substitute for a capability;" (cons "- README claims are generated from or explicitly tied to model IDs;" (cons "- no normative behavior remains dependent on unspecified implementation choice." (nil String))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0017,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "30.5 Required implementation order"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0018,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Each capability change follows R3. At repository scale, the dependency order is:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0019,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "1. adapt template identity, rules, errors, and gates;" (cons "2. commit normative schemas and built-in language data;" (cons "3. implement normalization, scanning, package loading, and locking;" (cons "4. implement token lattice, structural grammar, expressions, and proposition grammar;" (cons "5. implement scope, resolution, conservative elaboration, linking, and IR;" (cons "6. implement definitions and proof IR;" (cons "7. implement canonical Lean, LaTeX, maps, coverage, and manifests;" (cons "8. implement toolchain preflight, external probes, Lean compilation, replay, and axiom audit;" (cons "9. implement CLI and stable Rust API;" (cons "10. complete examples, negative fixtures, reproducibility, and release gates." (nil String)))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0020,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The default branch and every release line must remain passing at each merge; a capability row is merged only with its complete scenario, test, implementation, and evidence." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

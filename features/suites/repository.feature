@@ -47,10 +47,10 @@ Feature: repository
     And the committed CONFORMANCE.md and ERRORS.md are byte-equal to the rendered conformance and errors views
 
   @RP-07 @build
-  Scenario: The specification conformance table and model register are bijective and text-consistent.
+  Scenario: The specification conformance table, generated from the register modules of the specification project, and the model register are bijective and text-consistent.
     Given the section 31 table of SPEC.md parsed into id, suite, and statement rows
     When the table is zipped against the model ids register in order
-    Then both hold exactly 211 rows
+    Then both hold the same number of rows, the register's
     And each row's ID, suite, and statement text is equal in the table and the register
 
   @RP-08 @build
