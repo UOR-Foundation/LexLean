@@ -16300,3 +16300,41 @@ for every chapter because the real semantic marker precedes any quote of it,
 and it would misclassify a tooling or core module whose strings quote an
 earlier kind's marker before their own. No committed source does; the shipped
 crate is outside this change.
+
+## Planted defects for the source-authority audit (`NS-06`, #111)
+
+Planted alone on the committed tree, `cargo xtask validate-model` run once, the
+failure observed, the plant removed (§27.9). Linux x86-64.
+`conformance_ns_06` asserts these, and a stray vendored copy, a projection
+without its notice, and a generated document without its marker, in scratch
+copies on every run.
+
+| ID | Planted defect | Observed (after `gate failed: model is inconsistent:`) |
+| --- | --- | --- |
+| `NS-06` | `model/extra.toml` | ``R1: model/extra.toml is a file of model/ that is not a projection of spec/src (NS-06)`` |
+| `NS-06` | `SPEC2.md` at the root | ``R1: SPEC2.md is a Markdown file at the root that is neither generated from spec/src nor on the list of hand-written documents (NS-06)`` |
+| `NS-06` | the statement of `RP-06` in a new `spec/README.md` (Markdown under `spec/` is read; only build output and `expected` directories are skipped by name) | ``R1: spec/README.md restates a registered statement, which makes it a second source: ... (NS-06)`` |
+| `NS-06` | the statement of `RP-06` appended to `README.md` | ``R1: README.md restates a registered statement, which makes it a second source: ... (NS-06)`` |
+
+At the base the audit found nothing to refuse: 7 root documents are
+projections or on the list, `model/` holds the four projections and the one
+vendored copy, and 17 hand-written Markdown files restate none of the register or
+registry statements of 40 characters or more (the audit prints its counts on every run). The restatement
+rule is a heuristic with a threshold, not a proof that no second source exists:
+a paraphrase is not found. What it excludes is the cheap failure, a copied
+register.
+
+### A module's title is its own glossary entry (`NS-01`, #233 review)
+
+The SDK's writer assembles a module with the template header (the title
+"Natural number addition" and the standard glossary only). The prose ports of
+#232 wrote seven chapters through it (05, 08, 09, 17, 21, 27, 30), so they
+shipped on the line with the template title and without `spec.titles`; the
+project still checked, built and verified, so no gate caught it. `NS-01` now
+requires, for every module of `spec/src`, that its title is the surface of its own
+entry in `spec/glossary/spec.titles`, that it uses that glossary, and that the
+title is not the template's.
+
+| Command | Planted defect | Observed |
+| --- | --- | --- |
+| `cargo test -p repo-conformance --test conformance -- conformance_ns_01` | the title of `Chapter05.lex.tex` made `Natural number addition` | ``thread 'conformance_ns_01' panicked at crates/conformance/src/cases/normative_source.rs:90:9: assertion `left == right` failed: Chapter05.lex.tex: the title is the surface of the module's own glossary entry`` (`left: Some("Trust and evidence model")`); restored with `git checkout` |

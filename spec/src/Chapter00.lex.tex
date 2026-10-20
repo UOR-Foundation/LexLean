@@ -35,6 +35,20 @@ definition{
   parameters: [],
   result: DocRows::Item,
   body: constructor{
+    arguments: [
+      (cons "> **Generated.** This file is the projection of the modules of `spec/src` by `cargo xtask validate-model --write` (§27.5). It is never edited: edit the module that holds the text and run `just model-write`." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0004,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
     arguments: [(cons "---" (nil String))],
     constructor: DocRows::Item.para,
     type_arguments: []
