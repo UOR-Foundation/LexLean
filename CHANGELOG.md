@@ -188,6 +188,12 @@ and Unreleased holds what has landed since.
   the gate are the rows of `.github/vv-rows.json`, the matrix the plan hands
   to `vv`. `release.yml` still runs `just vv` whole and reads no earlier run.
   The register is unchanged: the statement of `RP-14` is extended.
+- The host legs of CI may run for 240 minutes, where they were cut off at 120:
+  the Intel macOS leg took 74, 92, and 100 minutes on the three full gates
+  before 2026-10-20, then passed its 430 conformance tests in 99 minutes and
+  was cancelled at 120 during the last test binaries. A leg cancelled at its
+  limit is not a result about the code; the limit is again twice the slowest
+  observed time.
 - Release lines (SPEC.md §9.4, `RP-14`): the branch `release/vX.Y` is the
   release X.Y, cut from `main` when work on it begins; a milestone's pull
   requests target its line, tags are made from it, it is merged forward into
