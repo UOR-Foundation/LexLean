@@ -136,8 +136,22 @@ fn project(text: &str) -> P {
     project
 }
 
-/// Run the case of `SP-22`.
+/// Run the case of `SP-22`. The module of every function nests as deeply as
+/// its list, and the readers it passes through recurse with it, so the case
+/// runs on a stack of its own rather than the two megabytes of a test thread.
 pub fn run(id: &str) {
+    let id = id.to_owned();
+    std::thread::scope(|scope| {
+        std::thread::Builder::new()
+            .stack_size(256 * 1024 * 1024)
+            .spawn_scoped(scope, || check(&id))
+            .expect("a thread for the case")
+            .join()
+            .unwrap_or_else(|panic| std::panic::resume_unwind(panic));
+    });
+}
+
+fn check(id: &str) {
     assert_eq!(id, "SP-22");
     let text = std::fs::read_to_string(repo_root().join(MODULE).as_std_path()).expect(MODULE);
     assert!(
