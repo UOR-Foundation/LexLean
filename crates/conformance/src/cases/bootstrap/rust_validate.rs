@@ -2461,7 +2461,7 @@ fn rustc_differential(roots: &[(&str, &Lowered, &[Run])], label: &str) -> usize 
         .expect("tempdir");
     let mut members = Vec::new();
     // (binary, expected outcomes) in order
-    let mut expected: Vec<(String, Vec<Json>)> = Vec::new();
+    let mut expected: Vec<(String, String, Vec<Json>)> = Vec::new();
     for (root, low, runs) in roots {
         let manifest = rust_packages::manifest(
             &format!("boot_{}", snake(root)),
@@ -2519,7 +2519,11 @@ fn rustc_differential(roots: &[(&str, &Lowered, &[Run])], label: &str) -> usize 
             .expect("harness manifest");
             std::fs::write(runner.join("src/main.rs"), source).expect("harness source");
             members.push(format!("\"h/{binary}\""));
-            expected.push((binary, chunk.iter().map(|run| run.1.clone()).collect()));
+            expected.push((
+                binary,
+                name.clone(),
+                chunk.iter().map(|run| run.1.clone()).collect(),
+            ));
         }
     }
     std::fs::write(
@@ -2552,7 +2556,7 @@ fn rustc_differential(roots: &[(&str, &Lowered, &[Run])], label: &str) -> usize 
         started.elapsed()
     );
     let mut total = 0;
-    for (binary, outcomes) in &expected {
+    for (binary, package, outcomes) in &expected {
         let path = dir
             .path()
             .join("target/debug")
@@ -2565,6 +2569,10 @@ fn rustc_differential(roots: &[(&str, &Lowered, &[Run])], label: &str) -> usize 
             "{binary}: {}",
             String::from_utf8_lossy(&ran.stderr)
         );
+        // PD-08: both roots recurse with the depth of the crate, so the
+        // harness that ran them records (measuring) or demands (otherwise)
+        // their stack bound; the row keeps the largest need of the corpora.
+        crate::stack_bounds::observe(&crate::stack_bounds::subject("bootstrap", package), &path);
         let stdout = String::from_utf8(ran.stdout).expect("utf8");
         let printed: Vec<Json> = stdout
             .lines()
