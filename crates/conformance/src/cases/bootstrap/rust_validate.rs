@@ -2050,16 +2050,40 @@ fn machine_crates() -> Vec<Crate> {
     // The types `Overflow` and `i128` have no row of the correspondence: a
     // function that takes one is valid and is refused by `correspond`.
     for ty in [Type::Overflow, Type::I128] {
-    crates.push(Crate {
-        profile: lexlean::calculus::rust::Profile::Core,
-        items: vec![ItemDef::Function {
-            name: Ident::Function(0),
-            parameters: vec![(Pat::Bind(Ident::Param(0)), ty.clone())],
-            result: ty,
-            body: Block::of(Expr::Copy(Ident::Param(0), at("read:param"))),
-            at: at("function"),
-        }],
-    });
+        crates.push(Crate {
+            profile: lexlean::calculus::rust::Profile::Core,
+            items: vec![ItemDef::Function {
+                name: Ident::Function(0),
+                parameters: vec![(Pat::Bind(Ident::Param(0)), ty.clone())],
+                result: ty,
+                body: Block::of(Expr::Copy(Ident::Param(0), at("read:param"))),
+                at: at("function"),
+            }],
+        });
+    }
+    // The runtime fails with `Err::<T, Overflow>(Overflow)` at the tail of a
+    // fallible function: the one `Err` the arithmetic rule reads as a
+    // fallible value. The same `Err` with another payload, and the overflow
+    // value under another error type, are not.
+    for (error, payload) in [
+        (Type::Overflow, Lit::Overflow),
+        (Type::Overflow, Lit::Nat(0)),
+        (Type::Nat, Lit::Overflow),
+    ] {
+        crates.push(Crate {
+            profile: lexlean::calculus::rust::Profile::Core,
+            items: vec![ItemDef::Function {
+                name: Ident::Function(0),
+                parameters: vec![(Pat::Bind(Ident::Param(0)), Type::Nat)],
+                result: Type::Fallible(Box::new(Type::Nat)),
+                body: Block::of(Expr::Construct {
+                    ctor: Ctor::Err(Type::Nat, error),
+                    args: vec![Expr::Lit(payload, at("overflow"))],
+                    at: at("construct:err"),
+                }),
+                at: at("function"),
+            }],
+        });
     }
     crates
 }
@@ -2914,14 +2938,14 @@ const RULE_VALIDATE_RUNS: usize = 132;
 const RULE_CORRESPOND_RUNS: usize = 12;
 const BRANCH_CRATES: usize = 17;
 const LOOP_CRATES: usize = 34;
-const MACHINE_CRATES: usize = 26 + 3 + 1 + 2 + 2;
-const VECTORS_VALIDATE: usize = 440;
-const REFUSED_VALIDATE: usize = 193;
-const VECTORS_CORRESPOND: usize = 303;
-const REFUSED_CORRESPOND: usize = 79;
+const MACHINE_CRATES: usize = 26 + 3 + 1 + 2 + 2 + 3;
+const VECTORS_VALIDATE: usize = 443;
+const REFUSED_VALIDATE: usize = 195;
+const VECTORS_CORRESPOND: usize = 306;
+const REFUSED_CORRESPOND: usize = 82;
 const EVALUATOR_CRATES: usize = 200;
-const EVALUATOR_VALIDATE: usize = 417;
-const EVALUATOR_CORRESPOND: usize = 280;
+const EVALUATOR_VALIDATE: usize = 420;
+const EVALUATOR_CORRESPOND: usize = 283;
 const SEEDED_REFUSED_VALIDATE: usize = 271;
 const SEEDED_REFUSED_CORRESPOND: usize = 244;
 

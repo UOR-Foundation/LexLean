@@ -319,9 +319,16 @@ pub fn run(id: &str) {
 
     // The runtime crate is checked by the validator that checks every
     // rendering, with the runtime's reading of its arithmetic rule: its
-    // functions fail only with `Err(Overflow)`, and a core function
-    // allocates nothing.
-    lexlean::calculus::rust::validate::validate(&decoded.core).expect("the runtime is valid");
+    // functions fail only with `Err(Overflow)`, and a core function allocates
+    // nothing. The plants go through `core_from`, which is what `core()` runs,
+    // so removing the call from it fails here.
+    assert_eq!(
+        runtime::core_from(&shipped).expect("the runtime is valid"),
+        runtime::core().expect("the embedded module"),
+        "core() is core_from of the embedded module"
+    );
+    let ok = "(ctor RustSyntax::Expr.succeed (ctor RustSyntax::Expr.copy (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.binding) 0)))";
+    let bare_ok = "(ctor RustSyntax::Expr.construct (ctor RustSyntax::Ctor.ok (ctor RustSyntax::RustType.nat) (ctor RustSyntax::RustType.overflow)) (cons (ctor RustSyntax::Expr.copy (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.binding) 0)) (nil RustSyntax::Expr)))";
     for (what, from, to, message) in [
         (
             "an Err of a value that is not the overflow value",
@@ -336,6 +343,12 @@ pub fn run(id: &str) {
             "is not a fallible value",
         ),
         (
+            "a bare Ok of an arithmetic result",
+            ok,
+            bare_ok,
+            "construct:ok, is not a fallible value",
+        ),
+        (
             "a heap type in the core runtime",
             "type := (ctor RustSyntax::RustType.nat)",
             "type := (ctor RustSyntax::RustType.str)",
@@ -344,9 +357,11 @@ pub fn run(id: &str) {
     ] {
         let edited = shipped.replacen(from, to, 1);
         assert_ne!(edited, shipped, "{what}: the plant site exists");
-        let krate = source::decode(&edited).expect(what).core;
-        let error = lexlean::calculus::rust::validate::validate(&krate).expect_err(what);
-        assert!(error.contains(message), "{what}: {error}");
+        let error = runtime::core_from(&edited).expect_err(what);
+        assert!(
+            error.contains("the core runtime is not a valid crate") && error.contains(message),
+            "{what}: {error}"
+        );
     }
 
     // A module the decoder refuses, each for the rule it breaks.
