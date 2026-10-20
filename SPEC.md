@@ -5958,8 +5958,10 @@ call, and the `rust-std` rendering holds it as a constant built once per thread
 (§17.16 *Constants*). Certificate A relates the source's construction of the
 list to the literal by the lemma that relates any literal to its value
 (`conv_value`, stated for every `Value`), so the preservation library has no
-new lemma and `Corr` no new constructor; certificate B reads the constant as
-the function of no parameters it caches.
+new lemma and `Corr` no new constructor; certificate B encodes the constant as
+the machine's `ItemDef.constant` (§17.16 *Constants*), whose function the
+machine finds by the same lookup as any function, so the derivation of a
+constant is the derivation of a function of no parameters over its literal.
 
 **A function rendered as a loop** (`SP-20`). The renderer writes a function whose
 self calls are all tail calls as a loop (§17.16), so the crate no longer holds

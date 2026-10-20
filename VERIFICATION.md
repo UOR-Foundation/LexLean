@@ -4115,7 +4115,8 @@ Models.Main.classify: `Recognizer.outputBias` is built on each call, not held as
    per-call check names; the second is unequal to the closed schemas'
    decoding of the artifact's bytes, which the case computes from the file
    alone.
-3. In certificate A of a root that holds a literal, every `conv_value` was
+3. Certificate B and E: `conformance_sp_24` stages and compiles the certificates of every root of the models example with the crate's ten constants encoded as `ItemDef.constant`, over the regenerated machine modules and the repaired library held in the working tree only (289 s, with `conformance_md_14`).
+4. In certificate A of a root that holds a literal, every `conv_value` was
    replaced by `conv_var`. `conformance_sp_24` compiles the planted module
    under the pinned Lean and requires it to be refused.
 

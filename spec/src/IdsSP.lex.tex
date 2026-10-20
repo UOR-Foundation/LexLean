@@ -168,7 +168,7 @@ definition{
   name: sp24,
   parameters: [],
   result: Rows::IdRow,
-  body: (record Rows::IdRow {id := "SP-24", level := "build", suite := "preservation", statement := "A production root that reads a content-addressed artifact lowers the artifact's decoded value as a data literal and not as a nullary function whose body builds it, and certificates A, B, and E cover the data literal on every committed root, so that no lowered program evaluates a build chain for an artifact on any call; a lowering that rebuilds the value per call is refused.", sections := "§17.17"}),
+  body: (record Rows::IdRow {id := "SP-24", level := "build", suite := "preservation", statement := "A production root that reads a content-addressed artifact holds the artifact's decoded value as one literal in its lowered program, recognised by the artifact declaration and not by the shape of a term, and certificates A, B, and E verify for every root of the committed models example, certificate A relating the source's construction of the list to the literal by the lemma that relates any literal to its value, so that the preservation library does not grow; a wrong lemma for the literal is refused by Lean.", sections := "§17.17"}),
   executable: true
 }
 \end{semanticmodule}
