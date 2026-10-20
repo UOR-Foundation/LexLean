@@ -9310,6 +9310,80 @@ Removed: the source was restored; `conformance_sl_02` passes, in 305 s with
 the production export of both roots under the pinned Lean (`conformance_sl_01`
 in 206 s on the same tree).
 
+`SL-05` holds the compiler's own digest (#126, stage 2): `Sha256Digest::of`,
+`FramedHasher`, and `tree_digest` compute through the committed export of
+`LexLeanStd.Sha256`, linked by `crates/lexlean/sha256_package.rs`, and the
+shipped crate has no `sha2` dependency. The case reads the manifest and the
+link, checks the three FIPS 180-4 examples, the million-`a` example, and every
+NIST CAVP vector against the authority first and `sha2` second, then the
+compiler's digest on the same, on every length 0..=300, on the neighbours of
+every power of two to 4 MiB, and on 40 seeded messages to 4 MiB, and the
+frames and tree rows against independent encodings. Five defects are planted
+and each is found by the check the real tree passes (the first panic line of
+each, `conformance_sl_05`):
+
+- **`sha2` in the shipped manifest.** `sha2 = { workspace = true }` under
+  `[dependencies]` of `crates/lexlean/Cargo.toml`:
+
+  ```text
+  panicked at crates/conformance/src/cases/stdlib_digest.rs:249:61:
+  R6: the shipped crate depends on `sha2`: sha2 = { workspace = true }
+  ```
+
+- **a link that is not the export.** The link replaced by a copy of the export
+  with one bit changed:
+
+  ```text
+  panicked at crates/conformance/src/cases/stdlib_digest.rs:253:64:
+  the linked package (47096 bytes) is not the committed export (47096 bytes)
+  ```
+
+- **one bit of the first round constant in the export itself.**
+  `1116352408u32` becomes `1116352409u32` in the committed `lib.rs` (the link
+  follows it, so only the vectors can find it):
+
+  ```text
+  panicked at crates/conformance/src/cases/stdlib_digest.rs:286:9:
+  the compiler's digest disagrees with its authority or the oracle on a FIPS 180-4 example of 3 bytes
+  ```
+
+- **a message truncated by one byte in the seam.** `Bytes::lit(message)`
+  becomes `Bytes::lit(&message[..message.len().saturating_sub(1)])` in
+  `content_id.rs`: the same panic at line 286.
+- **a frame length written little-endian.** `to_be_bytes` becomes
+  `to_le_bytes` for the label length in `FramedHasher::frame`:
+
+  ```text
+  panicked at crates/conformance/src/cases/stdlib_digest.rs:304:5:
+  FramedHasher writes the §21.1 frames
+  ```
+
+The case makes five plants itself on every run, on copies (the manifest
+line, the one-byte link divergence, the truncation, the little-endian frame,
+and a built copy of the package with `1116352409u32`, which `rustc` compiles
+and whose digest of each FIPS example must differ from the stated one), so the
+gate stays armed.
+
+Removed: every plant was restored; `conformance_sl_05` passes, in 4.9 s.
+
+Open measurements (C5; none is an acceptance criterion), on 4 cores of a Xeon
+at 2.1 GHz with SHA extensions, `rustc` 1.97.1:
+
+| Message | `sha2` | the package | ratio |
+| --- | --- | --- | --- |
+| 1 KiB | 1,260 MB/s | 94.5 MB/s | 13.3 |
+| 16 KiB | 1,303 MB/s | 81.6 MB/s | 16.0 |
+| 1 MiB | 1,373 MB/s | 100.6 MB/s | 13.6 |
+| 16 MiB | 1,316 MB/s | 85.6 MB/s | 15.4 |
+| 35 MB (the compiler-semantics tree) | 1,262 MB/s | 68.8 MB/s | 18.4 |
+
+At the dev profile's `opt-level = 0` the package hashes 0.7 MB/s (1,984 times
+slower than `sha2` at 1 MiB, 1,936 at 16 MiB); at `opt-level = 1`, 2, and 3 it
+hashes 68, 81, and 72 MB/s at 16 MiB. The override
+`[profile.dev.package.lexlean] opt-level = 1` costs a cold build of the test
+profile of the `lexlean` crate (`cargo test -p lexlean --no-run`, no warm
+cache): 98 s without it and 251 s with it.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the
