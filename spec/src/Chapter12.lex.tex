@@ -1,0 +1,284 @@
+\begin{lexlean}{Chapter12}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{spec.titles@1.0.0}
+\importmodule{DocRows}
+\title{Source normalization and primitive atoms}
+\begin{semanticmodule}
+definition{
+  name: i0001,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [2, 1, "12. Source normalization and primitive atoms"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0002,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "12.1 File encoding"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0003,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Every `.lex.tex` file MUST be valid UTF-8." (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0004,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Compilation normalizes CRLF and lone CR to LF, then requires Unicode NFC. A non-NFC file is rejected by `check` with a fix-it; `fmt` rewrites it canonically." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0005,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "A source file MUST end in one LF and MUST NOT contain:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0006,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- NUL;" (cons "- tab;" (cons "- trailing spaces;" (cons "- Unicode line or paragraph separators;" (cons "- non-ASCII whitespace;" (cons "- a raw percent character;" (cons "- a TeX comment;" (cons "- a byte-order mark." (nil String)))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0007,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "A percent sign may appear only through a glossary-defined control sequence such as `\\percent`." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0008,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "12.2 Primitive scanner"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0009,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "The primitive scanner recognizes only these atom classes:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0010,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "1. **control**: backslash followed by one or more ASCII letters, or backslash followed by one ASCII nonletter;" (cons "2. **ASCII word**: one or more ASCII letters;" (cons "3. **metadata/math identifier**: an ASCII letter followed by zero or more ASCII letters, digits, `_`, or `'`, when the structural or math grammar requests an identifier;" (cons "4. **numeral**: one or more ASCII digits;" (cons "5. **delimiter**: `{`, `}`, `(`, `)`, `[`, `]`;" (cons "6. **ASCII symbol**: one printable ASCII scalar not classified above;" (cons "7. **Unicode symbol**: one non-ASCII Unicode scalar;" (cons "8. **whitespace**: one or more U+0020 or LF scalars." (nil String)))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0011,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The scanner assigns byte and line/column spans. It does not assign mathematical meaning." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0012,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The scanner has no dependency on host Unicode character classes. Non-ASCII prose is possible only when its exact scalar sequence is declared as a glossary form." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0013,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "12.3 Core syntax also belongs to the glossary"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0014,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The compiler embeds the exact bytes and digest of `lexlean.core@1.0.0` and loads it before structural parsing. The lock must identify the same digest. The embedded package is not an implicit prose exception; it is the bootstrap glossary." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0015,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Braces, environment delimiters, punctuation, math delimiters, structural controls, and grammar words are entries in `lexlean.core@1.0.0`. They are not accepted merely because TeX recognizes them." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0016,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The scanner is the only bootstrapping layer. Every accepted primitive atom after scanning is accounted for by lexical coverage." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0017,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "12.4 No TeX expansion"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0018,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "LexLean does not execute TeX's mouth, macro expander, conditionals, catcodes, package loader, or file inclusion. The following controls are always forbidden in source, whether or not a glossary attempts to declare them:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0019,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "text",
+      (cons "\\def" (cons "\\gdef" (cons "\\edef" (cons "\\xdef" (cons "\\let" (cons "\\futurelet" (cons "\\newcommand" (cons "\\renewcommand" (cons "\\providecommand" (cons "\\input" (cons "\\include" (cons "\\usepackage" (cons "\\documentclass" (cons "\\csname" (cons "\\catcode" (cons "\\write" (cons "\\read" (cons "\\openin" (cons "\\openout" (cons "\\special" (cons "\\immediate" (cons "\\verbatim" (cons "\\verb" (nil String))))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0020,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The canonical LaTeX backend may emit trusted controls from the renderer-token registry; this does not make those controls legal source escape hatches." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0021,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "---" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

@@ -1,0 +1,20 @@
+\begin{lexlean}{DocRows}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{spec.titles@1.0.0}
+\title{Document item type}
+\begin{semanticmodule}
+inductive{
+  name: Item,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: heading, fields: [Nat, Nat, String]},
+    {name: para, fields: [(List String)]},
+    {name: table, fields: [(List String)]},
+    {name: fence, fields: [String, (List String)]},
+    {name: derived, fields: [String]},
+    {name: cont, fields: [(List String)]}
+  ]
+}
+\end{semanticmodule}
+\end{lexlean}
