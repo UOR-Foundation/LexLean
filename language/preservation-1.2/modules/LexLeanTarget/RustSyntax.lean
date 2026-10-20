@@ -41,6 +41,7 @@ public inductive RustType where
   | fallible (_ : RustType)
   | ref (_ : RustType)
   | overflow
+  | i128
 
 public inductive Lit where
   | unit
