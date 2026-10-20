@@ -152,6 +152,8 @@ The differential against the independent generator `lean4-prod` (SPEC.md §17.19
 
 `just vv` is the Linux x86-64 gate. On the other four supported hosts (§8.3) the crate builds and every test runs. A case whose assertions need something the host does not have runs its platform-independent assertions and prints which ones it skipped: the pinned toolchain, a `#!/bin/sh` program for the external-provider cases, a filesystem that distinguishes two names differing only in case, or one that accepts a name that is not valid UTF-8. Each is detected at run time rather than assumed from the target triple, and on Linux x86-64 the toolchain gate is mandatory, so nothing there passes vacuously.
 
+Releases live on release lines (SPEC.md §9.4): `release/vX.Y` is the branch of the release X.Y, cut from `main` when its work begins and the target of its pull requests; tags are made from it, it is merged forward into the next line after each landing, and `main` is the newest released line. A push to a release line runs the same gate as a push to `main`.
+
 ## Capabilities
 
 Every row is validated by `just vv`; the IDs link the claim to its register row, scenario, and conformance test.
