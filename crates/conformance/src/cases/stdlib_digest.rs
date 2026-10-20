@@ -61,15 +61,58 @@ fn oracle(message: &[u8]) -> [u8; 32] {
     Sha256::digest(message).into()
 }
 
-/// The manifest check of the statement: no `sha2` dependency in any table.
-fn manifest_has_no_sha2(manifest: &str) -> Result<(), String> {
-    match manifest
-        .lines()
-        .find(|line| line.trim_start().starts_with("sha2"))
-    {
-        Some(line) => Err(format!("R6: the shipped crate depends on `sha2`: {line}")),
-        None => Ok(()),
+/// The names `lexlean` depends on, of every kind, read from the output of
+/// `cargo metadata --no-deps` for the workspace: the resolved package names,
+/// so a `[dependencies.sha2]` table or a renamed `package = "sha2"` counts as
+/// the dependency it is.
+pub(super) fn shipped_dependencies(metadata: &serde_json::Value) -> Vec<String> {
+    let package = metadata["packages"]
+        .as_array()
+        .and_then(|packages| packages.iter().find(|package| package["name"] == "lexlean"))
+        .expect("cargo metadata lists the lexlean package");
+    package["dependencies"]
+        .as_array()
+        .expect("a package lists its dependencies")
+        .iter()
+        .map(|dependency| dependency["name"].as_str().expect("a name").to_owned())
+        .collect()
+}
+
+/// The dependency check of the statement: `lexlean` has no `sha2`.
+pub(super) fn has_no_sha2(metadata: &serde_json::Value) -> Result<(), String> {
+    let dependencies = shipped_dependencies(metadata);
+    assert!(
+        dependencies.len() > 5,
+        "the shipped crate's dependency list is read ({dependencies:?})"
+    );
+    if dependencies.iter().any(|name| name == "sha2") {
+        Err("R6: the shipped crate depends on `sha2`".to_owned())
+    } else {
+        Ok(())
     }
+}
+
+/// `cargo metadata` of this workspace, offline and against the lock.
+pub(super) fn workspace_metadata() -> serde_json::Value {
+    let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned());
+    let output = std::process::Command::new(cargo)
+        .args([
+            "metadata",
+            "--no-deps",
+            "--offline",
+            "--locked",
+            "--format-version",
+            "1",
+        ])
+        .current_dir(support::repo_root().as_std_path())
+        .output()
+        .expect("cargo metadata runs");
+    assert!(
+        output.status.success(),
+        "cargo metadata: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    serde_json::from_slice(&output.stdout).expect("cargo metadata is JSON")
 }
 
 /// The link check: the in-crate link resolves to the export, and the bytes it
@@ -244,9 +287,8 @@ pub(super) fn run(id: &str) {
     // R6: the shipped crate's boundary is explicit, it has no second
     // implementation of the digest beside the package, and the package it
     // links is the committed export (a dangling or diverging link fails).
-    let manifest = std::fs::read_to_string(root.join("crates/lexlean/Cargo.toml").as_std_path())
-        .expect("the shipped crate's manifest");
-    manifest_has_no_sha2(&manifest).unwrap_or_else(|reason| panic!("{reason}"));
+    let metadata = workspace_metadata();
+    has_no_sha2(&metadata).unwrap_or_else(|reason| panic!("{reason}"));
     let export = std::fs::read(root.join(EXPORT).as_std_path()).expect("the committed export");
     let link = std::fs::read(root.join(LINK).as_std_path())
         .unwrap_or_else(|error| panic!("{LINK}: the link to the export is broken: {error}"));
@@ -323,10 +365,28 @@ pub(super) fn run(id: &str) {
     );
 
     // Each planted defect is found by the check the tree just passed.
-    assert!(
-        manifest_has_no_sha2(&format!("{manifest}\nsha2 = \"0.10\"\n")).is_err(),
-        "a `sha2` dependency added to the manifest is found"
-    );
+    for planted in [
+        serde_json::json!({"name": "sha2", "kind": null}),
+        serde_json::json!({"name": "sha2", "rename": "digest", "kind": "dev"}),
+    ] {
+        let mut altered = metadata.clone();
+        let lexlean = altered["packages"]
+            .as_array_mut()
+            .and_then(|packages| {
+                packages
+                    .iter_mut()
+                    .find(|package| package["name"] == "lexlean")
+            })
+            .expect("lexlean");
+        lexlean["dependencies"]
+            .as_array_mut()
+            .expect("dependencies")
+            .push(planted);
+        assert!(
+            has_no_sha2(&altered).is_err(),
+            "a `sha2` dependency of any form or kind is found"
+        );
+    }
     let mut diverging = export.clone();
     let middle = diverging.len() / 2;
     diverging[middle] ^= 1;
