@@ -347,13 +347,22 @@ impl Machine {
             Self::NatLt => 14,
             Self::NatRem => 15,
             Self::IntRem => 16,
+            Self::CheckedNatAdd => 17,
+            Self::NatSub => 18,
+            Self::CheckedNatMul => 19,
+            Self::NatQuot => 20,
+            Self::CheckedIntAdd => 21,
+            Self::CheckedIntSub => 22,
+            Self::CheckedIntMul => 23,
+            Self::CheckedIntNeg => 24,
+            Self::CheckedIntQuot => 25,
         }
     }
 
     /// One primitive of each family, at `u8` where it has a width, in the
     /// order of [`Machine::family`].
     #[must_use]
-    pub const fn families() -> [Self; 17] {
+    pub const fn families() -> [Self; 26] {
         let kind = IntKind::U8;
         [
             Self::CheckedAdd(kind),
@@ -373,6 +382,15 @@ impl Machine {
             Self::NatLt,
             Self::NatRem,
             Self::IntRem,
+            Self::CheckedNatAdd,
+            Self::NatSub,
+            Self::CheckedNatMul,
+            Self::NatQuot,
+            Self::CheckedIntAdd,
+            Self::CheckedIntSub,
+            Self::CheckedIntMul,
+            Self::CheckedIntNeg,
+            Self::CheckedIntQuot,
         ]
     }
 
