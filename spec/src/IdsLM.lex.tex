@@ -1,0 +1,63 @@
+\begin{lexlean}{IdsLM}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{spec.titles@1.0.0}
+\importmodule{Rows}
+\title{Language models conformance claims}
+\begin{semanticmodule}
+definition{
+  name: lm01,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "LM-01", level := "build", suite := "language-models", statement := "A `tokenizer` is a closed language-1.2 declaration whose scheme is `byte_level` or `longest_match` and whose vocabulary is a #29 artifact with role `vocabulary` and schema `utf8_lines`; tokens are `uint32`, the single bytes are the ids 0..255 present always as the byte fallback, the vocabulary pieces take the ids from 256 in artifact order, and the declaration elaborates to `encode` and `decode` over `bytes` together with `encodeText` and `decodeText` over `string` through `utf8_encode` and `utf8_decode`, so a scheme outside the closed enumeration, a vocabulary whose role or schema is not the one stated, or a token outside `uint32` is refused as a schema violation (`LLT4001`) or by the artifact rules (`LLR3007`).", sections := "§17.12"}),
+  executable: true
+}
+
+definition{
+  name: lm02,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "LM-02", level := "build", suite := "language-models", statement := "A tokenizer's laws are generated and kernel-checked: `roundtrip` states that for every byte string `b`, `decode (encode b)` is `some b`; `text_roundtrip` states the same over `string`; and `in_range` states that every token a decode produces indexes the vocabulary, so the round trip also fixes the token boundaries, and a tokenizer whose elaboration does not close these laws fails verification.", sections := "§17.12"}),
+  executable: true
+}
+
+definition{
+  name: lm03,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "LM-03", level := "build", suite := "language-models", statement := "Text that is not valid UTF-8 is refused and never tokenized: an artifact whose bytes do not decode under the `utf8_lines` schema — invalid UTF-8, a CR, or a missing final LF — fails by its artifact rules before any byte is decoded, and a text offered to `encodeText` that is not valid UTF-8 is refused rather than transcoded.", sections := "§17.12"}),
+  executable: true
+}
+
+definition{
+  name: lm04,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "LM-04", level := "build", suite := "language-models", statement := "A `context_window` is a closed language-1.2 declaration of a capacity of at least one token and an overflow disposition `refuse` or `keep_last` that elaborates to `capacity`, `fit` over `list uint32`, and `push` of one `uint32` token through the text-laws library, with its laws generated and kernel-checked: `bounded` and `push_bounded` state that every admitted or pushed context fits the capacity, `exact` that a context that fits is admitted unchanged, `suffix` under `keep_last` that what is kept is the end of the context, and `refuses` under `refuse` that a context that does not fit is not admitted; a capacity of 0 is refused (`LLT4016`), a disposition or capacity outside the closed schema is a schema violation (`LLT4001`), and a window whose laws observe an axiom its policy omits fails the audit.", sections := "§17.12"}),
+  executable: true
+}
+
+definition{
+  name: lm05,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "LM-05", level := "build", suite := "language-models", statement := "A `text_generator` under the `greedy` policy names a prior tokenizer, a prior context window, a prior stateless model from `list uint32` to `list int` whose every runtime check its evidence discharges, a prior `uint32` stop token, and a `max_tokens` of at least one, and elaborates to the closed outcome types `End` (`stop`, `exhausted`) and `Failure` (`unknown_token`, `context_overflow`, `invalid_utf8`) and to a loop of at most `max_tokens` steps that takes the first maximum and no seed; its laws `bounded` (at most `max_tokens` tokens are generated) and `context_bounded` (the scorer is consulted only on contexts that fit the window) are generated and kernel-checked, the loop reaches each end and each failure in the kernel, a wrong claim about its output fails verification, a `max_tokens` of 0 is refused (`LLT4016`), and a member of another kind is refused (`LLT4006`).", sections := "§17.12"}),
+  executable: true
+}
+
+definition{
+  name: lm06,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "LM-06", level := "build", suite := "language-models", statement := "Nondeterminism is an explicit contract: a `text_generator` under the `sample` policy draws through the closed `xorshift32` generator and `proportional` distribution only, takes its seed as an explicit `uint32` input and returns the next seed as an explicit output, so the same prompt and seed give the same output, which the kernel computes; it has the same generated and kernel-checked laws as a greedy generator, `xorshift32` agrees with the reference sequence, and a generator or distribution outside the closed members, a sample policy without one, or a seed stated on a policy is a schema violation (`LLT4001`).", sections := "§17.12"}),
+  executable: true
+}
+
+definition{
+  name: lm13,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "LM-13", level := "build", suite := "language-models", statement := "The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text.", sections := "§17.10, §17.12"}),
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

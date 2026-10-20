@@ -17,6 +17,16 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- Normative text as LexLean source, the register (SPEC.md §27.5, `NS-01`..`NS-04`,
+  stage 1 of #111). The conformance register, the diagnostic registry, the
+  ledger and the authority register are the semantic modules of the new
+  workspace member `spec/`, one record per row and one module per ID family,
+  written in the authoring notation; `model/*.toml` are generated from them by
+  `repo-model`'s projector, `validate-model` compares their bytes before it
+  reads them, and `validate-spec-links` takes the §31 section references and the
+  row count from the projection instead of a literal. Count 430 becomes 434.
+  No language, schema or compiler-semantics identity moves, and `model/errors.toml`
+  is byte-identical.
 - The compiler running the package reproduces it (SPEC.md §17.22, `SL-07`,
   #126 stage 2; no change to the compiler). `conformance_sl_07` holds the
   digests every committed production export records to the oracle, holds

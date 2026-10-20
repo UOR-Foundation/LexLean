@@ -1,0 +1,16 @@
+spec = "lexlean/entry/1"
+id = "idspx"
+category = "label-word"
+surface_arity = 0
+frame = "atom"
+
+[denotation]
+kind = "defined"
+value = "(const lexlean.std.nat::nat)"
+
+[[form]]
+id = "idspx"
+channel = "text"
+surface = "Production export conformance claims"
+canonical_source = true
+features = ["sentence-case", "singular"]

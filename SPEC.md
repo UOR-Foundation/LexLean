@@ -483,6 +483,10 @@ The completed repository MUST have this layout. Additional files are allowed onl
 │   ├── source-map.schema.json
 │   ├── target-fixture.schema.json
 │   └── target-program.schema.json
+├── spec/
+│   ├── lexlean.toml
+│   ├── lexlean.lock
+│   └── src/
 ├── tests/
 │   ├── fixtures/
 │   ├── golden/
@@ -9355,18 +9359,43 @@ LexLean realizes it.
 
 ### 27.5 Generated documents
 
+The conformance register, the diagnostic registry, the honesty ledger and the
+authority register are LexLean source: the semantic modules of the
+language-1.2 project `spec/`, a member of the workspace (§10.5) written in the
+authoring notation (§17.21), one module per ID family for the register and one
+each for the registry, the ledger and the authorities. `model/ids.toml`,
+`model/errors.toml`, `model/ledger.toml` and `model/authorities.toml` are
+generated from them, with `CONFORMANCE.md` and `ERRORS.md` generated from the
+model, and none of the six is edited by hand (`NS-02`). A register row is the
+`IdRow` record of a definition named for its ID, with the §31 "Primary
+specification" cell in `sections`; the projector accepts exactly the shapes
+the modules are made of and refuses any other declaration, term, field, name,
+file or family, naming the file and the declaration (`NS-04`).
+
 `cargo xtask validate-model` MUST:
 
-1. parse all model files with unknown-field rejection;
-2. validate IDs, levels, authorities, errors, and cross-references;
-3. generate `CONFORMANCE.md` and `ERRORS.md` in memory;
-4. compare exact committed bytes;
-5. scan feature scenarios and Rust test names;
-6. reject missing, duplicate, or extra links;
-7. run the honesty vocabulary checks;
-8. run repository-specific audits.
+1. project the modules of `spec/` in memory and compare the bytes of each model
+   file with its projection, failing naming R1 on a difference (`NS-03`);
+2. parse all model files with unknown-field rejection;
+3. validate IDs, levels, authorities, errors, and cross-references;
+4. generate `CONFORMANCE.md` and `ERRORS.md` in memory;
+5. compare exact committed bytes;
+6. scan feature scenarios and Rust test names;
+7. reject missing, duplicate, or extra links;
+8. run the honesty vocabulary checks;
+9. run repository-specific audits.
 
-`model-write` is the only normal path that rewrites generated documentation.
+`model-write` is the only normal path that rewrites the model files and the
+generated documentation.
+
+*What is and is not established (C9).* The projector is a Rust program, not
+LexLean: it can falsify a projection and never establishes one. What
+establishes it is the byte equality of every projection with the file it
+replaced when the register moved into `spec/`, and the plants of `NS-03` and
+`NS-04`. Verifying `spec/` (`NS-01`) has the pinned Lean elaborate each record
+definition against its row structure and replay the generated modules with the
+audited axioms; it does not establish that a row's text is the normative text,
+that identifiers are distinct, or that a projection is the committed file.
 
 ### 27.6 Specification links
 
@@ -9972,7 +10001,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RP-03` | `repository` | The completed repository has the required file and crate layout, and the tracked tree holds no CACHEDIR.TAG or path component the repository walkers skip outside sanctioned expected/ oracle directories. | §7 |
 | `RP-04` | `repository` | Only the lexlean crate is shipped and no shipped crate depends on repository-only tooling. | §7, §8.4 |
 | `RP-05` | `repository` | The just vv recipe runs every normative acceptance gate in the specified order. | §9.2 |
-| `RP-06` | `repository` | CONFORMANCE.md and ERRORS.md are exact generated views of model files. | §27.5 |
+| `RP-06` | `repository` | `model/*.toml`, `CONFORMANCE.md`, and `ERRORS.md` are exact generated views of the register modules of the specification project. | §27.5 |
 | `RP-07` | `repository` | The specification conformance table and model register are bijective and text-consistent. | §27.6 |
 | `RP-08` | `repository` | Repository source contains no unsanctioned deferral marker, stub, placeholder, ignored capability, or disabling feature; the deferral audit reads every text file of the repository, the root documents, workflows, scripts, devcontainer, API, oracle, and tooling data included, except a vendored authority copy whose bytes its checksum pins, and its markers include the phrases that put work in the future. | §27.10 |
 | `RP-09` | `repository` | The shipped crate forbids unsafe Rust and the audit proves the prohibition is active. | §8.1, §27.10 |
@@ -10401,8 +10430,12 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-05` | `language-models` | A `text_generator` under the `greedy` policy names a prior tokenizer, a prior context window, a prior stateless model from `list uint32` to `list int` whose every runtime check its evidence discharges, a prior `uint32` stop token, and a `max_tokens` of at least one, and elaborates to the closed outcome types `End` (`stop`, `exhausted`) and `Failure` (`unknown_token`, `context_overflow`, `invalid_utf8`) and to a loop of at most `max_tokens` steps that takes the first maximum and no seed; its laws `bounded` (at most `max_tokens` tokens are generated) and `context_bounded` (the scorer is consulted only on contexts that fit the window) are generated and kernel-checked, the loop reaches each end and each failure in the kernel, a wrong claim about its output fails verification, a `max_tokens` of 0 is refused (`LLT4016`), and a member of another kind is refused (`LLT4006`). | §17.12 |
 | `LM-06` | `language-models` | Nondeterminism is an explicit contract: a `text_generator` under the `sample` policy draws through the closed `xorshift32` generator and `proportional` distribution only, takes its seed as an explicit `uint32` input and returns the next seed as an explicit output, so the same prompt and seed give the same output, which the kernel computes; it has the same generated and kernel-checked laws as a greedy generator, `xorshift32` agrees with the reference sequence, and a generator or distribution outside the closed members, a sample policy without one, or a seed stated on a policy is a schema violation (`LLT4001`). | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
+| `NS-01` | `normative-source` | The specification project is a language-1.2 workspace member whose every module is a semantic module in the authoring notation; it is canonical under fmt, locked, checked, and built, and under the pinned toolchain it verifies, which establishes that each record definition elaborates against its row structure and that the generated modules replay with the audited axioms, and does not establish that a row's text is the normative text, that identifiers are distinct, or that a projection equals its committed file, which NS-02 to NS-04 measure. | §17.21, §27.5 |
+| `NS-02` | `normative-source` | The conformance register, the diagnostic registry, the honesty ledger, and the authority register are modules of the specification project, and `model/ids.toml`, `model/errors.toml`, `model/ledger.toml`, `model/authorities.toml`, `CONFORMANCE.md`, and `ERRORS.md` regenerate from them byte-identically. | §26.1, §27.5 |
+| `NS-03` | `normative-source` | A difference between a model file and the projection of the specification project's modules, in either direction, fails the repository gate naming R1, a source edit that is not projected being such a difference, and the section references of the §31 table are checked against those the register modules carry. | §27.5, §27.6 |
+| `NS-04` | `normative-source` | The projector fails closed on a module of the specification project that holds a declaration kind, a term kind, a field, a name, a file, or a family it does not read, and on a duplicate identifier or code, and a plant of each is refused naming the file and, for a declaration, its position. | §17.21, §24.8 |
 
-**Total required capability IDs:** 433.
+**Total required capability IDs:** 437.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

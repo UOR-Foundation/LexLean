@@ -332,6 +332,15 @@ the error registry does not sanction (R5, `ERRORS.md`).
 | `MD-12` | `build` | The committed models example verifies nontrivial deterministic stateful, rule, statistical, artifact-backed neural, and composite models with every claim kernel-checked, and planting a contract and realization mismatch in it is refused by verification. |
 | `MD-13` | `build` | IEEE-754 binary32 and binary64 bit patterns decode in LexLean to exact dyadic rationals (sign, integer mantissa, exponent) for zero, subnormal, and normal values while rejecting non-finite and out-of-range patterns, and the models corpus derives round(a * b / c * 2^32) from three binary32 patterns by exact integer arithmetic that agrees with an independent exact rational computation under Lean and refuses a planted rounding or exponent mutation. |
 
+## normative-source
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `NS-01` | `build` | The specification project is a language-1.2 workspace member whose every module is a semantic module in the authoring notation; it is canonical under fmt, locked, checked, and built, and under the pinned toolchain it verifies, which establishes that each record definition elaborates against its row structure and that the generated modules replay with the audited axioms, and does not establish that a row's text is the normative text, that identifiers are distinct, or that a projection equals its committed file, which NS-02 to NS-04 measure. |
+| `NS-02` | `build` | The conformance register, the diagnostic registry, the honesty ledger, and the authority register are modules of the specification project, and `model/ids.toml`, `model/errors.toml`, `model/ledger.toml`, `model/authorities.toml`, `CONFORMANCE.md`, and `ERRORS.md` regenerate from them byte-identically. |
+| `NS-03` | `build` | A difference between a model file and the projection of the specification project's modules, in either direction, fails the repository gate naming R1, a source edit that is not projected being such a difference, and the section references of the §31 table are checked against those the register modules carry. |
+| `NS-04` | `build` | The projector fails closed on a module of the specification project that holds a declaration kind, a term kind, a field, a name, a file, or a family it does not read, and on a duplicate identifier or code, and a plant of each is refused naming the file and, for a declaration, its position. |
+
 ## oracle
 
 | ID | Level | Statement |
@@ -467,7 +476,7 @@ the error registry does not sanction (R5, `ERRORS.md`).
 | `RP-03` | `build` | The completed repository has the required file and crate layout, and the tracked tree holds no CACHEDIR.TAG or path component the repository walkers skip outside sanctioned expected/ oracle directories. |
 | `RP-04` | `build` | Only the lexlean crate is shipped and no shipped crate depends on repository-only tooling. |
 | `RP-05` | `build` | The just vv recipe runs every normative acceptance gate in the specified order. |
-| `RP-06` | `build` | CONFORMANCE.md and ERRORS.md are exact generated views of model files. |
+| `RP-06` | `build` | `model/*.toml`, `CONFORMANCE.md`, and `ERRORS.md` are exact generated views of the register modules of the specification project. |
 | `RP-07` | `build` | The specification conformance table and model register are bijective and text-consistent. |
 | `RP-08` | `build` | Repository source contains no unsanctioned deferral marker, stub, placeholder, ignored capability, or disabling feature; the deferral audit reads every text file of the repository, the root documents, workflows, scripts, devcontainer, API, oracle, and tooling data included, except a vendored authority copy whose bytes its checksum pins, and its markers include the phrases that put work in the future. |
 | `RP-09` | `build` | The shipped crate forbids unsafe Rust and the audit proves the prohibition is active. |
