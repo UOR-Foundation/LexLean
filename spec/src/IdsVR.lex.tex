@@ -1,0 +1,190 @@
+\begin{lexlean}{IdsVR}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{Rows}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: vr01,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "VR-01", level := "build", suite := "verification", statement := "Verification runs every specified stage in order and exposes no stage-suppression option.", sections := "§22.1"}),
+  executable: true
+}
+
+definition{
+  name: vr02,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "VR-02", level := "build", suite := "verification", statement := "Lean, Lake, and leanchecker versions and executable hashes are checked and recorded before use.", sections := "§22.2"}),
+  executable: true
+}
+
+definition{
+  name: vr03,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "VR-03", level := "build", suite := "verification", statement := "Lean execution uses the pinned Lake environment and never updates or fetches workspace dependencies.", sections := "§22.2"}),
+  executable: true
+}
+
+definition{
+  name: vr04,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "VR-04", level := "build", suite := "verification", statement := "Every used external interface is elaborated in the unique reserved probe module.", sections := "§18.8, §22.1"}),
+  executable: true
+}
+
+definition{
+  name: vr05,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "VR-05", level := "build", suite := "verification", statement := "Generated modules compile in topological order and produce one required olean each.", sections := "§22.3"}),
+  executable: true
+}
+
+definition{
+  name: vr06,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "VR-06", level := "build", suite := "verification", statement := "Verification neither requests nor includes ilean artifacts.", sections := "§22.3"}),
+  executable: true
+}
+
+definition{
+  name: vr07,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "VR-07", level := "build", suite := "verification", statement := "A Lean warning, unknown informational message, overflow, or missing output fails verification.", sections := "§20.2, §22.3"}),
+  executable: true
+}
+
+definition{
+  name: vr08,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "VR-08", level := "build", suite := "verification", statement := "Every generated module is replayed by a separate leanchecker process and every replay must succeed.", sections := "§22.4"}),
+  executable: true
+}
+
+definition{
+  name: vr09,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "VR-09", level := "build", suite := "verification", statement := "The reserved audit module family audits one generated module per process and prints axioms for every declaration in its native Lean environment exactly once.", sections := "§18.9"}),
+  executable: true
+}
+
+definition{
+  name: vr10,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "VR-10", level := "build", suite := "verification", statement := "The axiom parser accepts only the pinned exact output forms and rejects missing, duplicate, extra, or malformed records.", sections := "§22.5"}),
+  executable: true
+}
+
+definition{
+  name: vr11,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "VR-11", level := "build", suite := "verification", statement := "None, allow-subset, and exact axiom policies are enforced exactly and recorded per declaration.", sections := "§22.6"}),
+  executable: true
+}
+
+definition{
+  name: vr12,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "VR-12", level := "build", suite := "verification", statement := "Child process output is normalized with the exact path and line rules before hashing.", sections := "§22.7"}),
+  executable: true
+}
+
+definition{
+  name: vr13,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "VR-13", level := "build", suite := "verification", statement := "A verified directory contains the complete fixed source, map, coverage, olean, probe, audit, and process artifact set, and, exactly when a production root exists, the eligibility reports, the extraction module, its process record, and the compiler input.", sections := "§22.8"}),
+  executable: true
+}
+
+definition{
+  name: vr14,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "VR-14", level := "build", suite := "verification", statement := "The attestation ID is computed over the canonical body with its ID field removed.", sections := "§22.9"}),
+  executable: true
+}
+
+definition{
+  name: vr15,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "VR-15", level := "build", suite := "verification", statement := "Any failed verification stage removes staging and produces no verified artifact or verified status.", sections := "§6 I11, §22"}),
+  executable: true
+}
+
+definition{
+  name: vr16,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "VR-16", level := "build", suite := "verification", statement := "Axioms flowing from imported theorems remain subject to the generated declaration's policy.", sections := "§22.6"}),
+  executable: true
+}
+
+definition{
+  name: vr17,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "VR-17", level := "build", suite := "verification", statement := "Lean workspace configuration and manifest hashes must match the lock and all dependencies must be locally available.", sections := "§10.4, §22.2"}),
+  executable: true
+}
+
+definition{
+  name: vr18,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "VR-18", level := "build", suite := "verification", statement := "Check and build results never claim verified or kernel-checked status.", sections := "§5.3"}),
+  executable: true
+}
+
+definition{
+  name: vr19,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "VR-19", level := "build", suite := "verification", statement := "The native Atlas source graph is self-contained: every generated Atlas module publicly depends only on Init and the generated graph, its only backend-support import is Lean, and no independently authored Atlas implementation exists. The one Lean text a generated Atlas module carries beside its data is the decoder of core module 1: the released language-1.0 bytes, held as the frozen data `language/runtime-1.2/frozen/core-decoder-1.txt`, the one declared exception to Lean generated from native modules.", sections := "§10.4, §17.10, §22.2"}),
+  executable: true
+}
+
+definition{
+  name: vr20,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "VR-20", level := "build", suite := "verification", statement := "The verifier process width is an operational resource profile selected only by the environment, defaulting to 1 and refusing any malformed value with LLV7017, and it enters no lock, identity, or verified artifact.", sections := "§22.11, §23.1"}),
+  executable: true
+}
+
+definition{
+  name: vr21,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "VR-21", level := "build", suite := "verification", statement := "A multi-module project whose imports form nontrivial frontiers verifies at width 1 and at a larger width to byte-identical verified directories and the same attestation identity, observed axiom sets, and policy rows, and no completion order orders a record or changes which failure is reported.", sections := "§22.3, §22.4, §22.11"}),
+  executable: true
+}
+
+definition{
+  name: vr22,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "VR-22", level := "build", suite := "verification", statement := "Performance telemetry is written only to the CI evidence directory the environment names, a verification with telemetry on publishes byte-identical artifacts to one without, and telemetry planted in a verified artifact fails the gate.", sections := "§22.12"}),
+  executable: true
+}
+
+definition{
+  name: vr23,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "VR-23", level := "build", suite := "verification", statement := "A project verified as the parts of one run, each shard running the processes its plan names with the oleans of the shards it needs and the join reading every shard's records, publishes a verified directory byte-identical to the whole verification's with the same attestation identity, and a shard whose plan leaves a module without its imports, a join missing a record, or a join reading a record of an executable other than its own, is refused.", sections := "§9.4, §22.11"}),
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

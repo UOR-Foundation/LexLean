@@ -7,6 +7,7 @@
 examples/**/.lexlean/
 tests/**/.lexlean/
 compiler/.lexlean/
+spec/.lexlean/
 
 # The assembled release artifact set (§30.3). `cargo xtask release-artifacts`
 # derives it, the release workflow attaches it, and it is output, never source:

@@ -1,0 +1,150 @@
+\begin{lexlean}{IdsCF}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{Rows}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: cf01,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CF-01", level := "build", suite := "configuration-lock", statement := "Project configuration accepts exactly the project/1 schema and rejects unknown or missing fields.", sections := "§10.1"}),
+  executable: true
+}
+
+definition{
+  name: cf02,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CF-02", level := "build", suite := "configuration-lock", statement := "Every operational limit is explicit, positive, parsed with checked arithmetic, and has no hidden default.", sections := "§10.2"}),
+  executable: true
+}
+
+definition{
+  name: cf03,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CF-03", level := "build", suite := "configuration-lock", statement := "Configured paths resolve within the project under the specified UTF-8 and nonsymlink rules.", sections := "§10.1, §25.1"}),
+  executable: true
+}
+
+definition{
+  name: cf04,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CF-04", level := "build", suite := "configuration-lock", statement := "Project discovery selects the nearest valid regular lexlean.toml and stops at the filesystem root.", sections := "§23.2"}),
+  executable: true
+}
+
+definition{
+  name: cf05,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CF-05", level := "build", suite := "configuration-lock", statement := "Entrypoint, explicit-file, and all-module selections are mutually exclusive and canonicalized as specified.", sections := "§23.3"}),
+  executable: true
+}
+
+definition{
+  name: cf06,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CF-06", level := "build", suite := "configuration-lock", statement := "Builtin, path, and exact-commit HTTPS Git lexicon sources obey their disjoint schemas.", sections := "§10.1"}),
+  executable: true
+}
+
+definition{
+  name: cf07,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CF-07", level := "build", suite := "configuration-lock", statement := "The lock file is canonical, comment-free, sorted, generated, and exact-byte checkable.", sections := "§11"}),
+  executable: true
+}
+
+definition{
+  name: cf08,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CF-08", level := "build", suite := "configuration-lock", statement := "The lock contains the complete exact transitive lexicon package closure including lexlean.core.", sections := "§11.3"}),
+  executable: true
+}
+
+definition{
+  name: cf09,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CF-09", level := "build", suite := "configuration-lock", statement := "Package tree digests use the specified length-framed sorted-file algorithm and reject special files.", sections := "§11.5"}),
+  executable: true
+}
+
+definition{
+  name: cf10,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CF-10", level := "build", suite := "configuration-lock", statement := "A changed config, package, workspace pin, or digest makes lock checking fail rather than silently refresh.", sections := "§11"}),
+  executable: true
+}
+
+definition{
+  name: cf11,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CF-11", level := "build", suite := "configuration-lock", statement := "Check, build, format, and verify resolve only locked locally available dependencies.", sections := "§11.4"}),
+  executable: true
+}
+
+definition{
+  name: cf12,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CF-12", level := "build", suite := "configuration-lock", statement := "Network package acquisition occurs only through lock --allow-network and only for an exact configured commit.", sections := "§11.4, §25.3"}),
+  executable: true
+}
+
+definition{
+  name: cf13,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CF-13", level := "build", suite := "configuration-lock", statement := "The Lake workspace contains exactly one supported Lake configuration and the recorded workspace files match.", sections := "§10.4"}),
+  executable: true
+}
+
+definition{
+  name: cf14,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CF-14", level := "build", suite := "configuration-lock", statement := "Language 1.0 accepts only leanprover/lean4:v4.32.1 for verification.", sections := "§8.2, §10.1"}),
+  executable: true
+}
+
+definition{
+  name: cf15,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CF-15", level := "build", suite := "configuration-lock", statement := "Duplicate logical modules and case-folded path or module collisions are rejected.", sections := "§23.3"}),
+  executable: true
+}
+
+definition{
+  name: cf16,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CF-16", level := "build", suite := "configuration-lock", statement := "Language 1.1 has a parallel exact builtin closure and rejects a language-1.0 lock or package without altering language-1.0 identities.", sections := "§10.1"}),
+  executable: true
+}
+
+definition{
+  name: cf17,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CF-17", level := "build", suite := "configuration-lock", statement := "Language 1.2 declaration support accepts language 1.2 and rejects unsupported or malformed language versions.", sections := "§10.1"}),
+  executable: true
+}
+
+definition{
+  name: cf18,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CF-18", level := "build", suite := "configuration-lock", statement := "Lockfile v2 schema migration validates 1.2 locks while preserving exact byte-stability for language 1.0 and 1.1 projects.", sections := "§11.1, §11.2"}),
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

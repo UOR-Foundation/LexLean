@@ -1,0 +1,190 @@
+\begin{lexlean}{IdsPF}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{Rows}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: pf01,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PF-01", level := "build", suite := "proofs", statement := "Assume and exact-style simple proof sentences create scoped introductions and exact proof nodes.", sections := "§16.2"}),
+  executable: true
+}
+
+definition{
+  name: pf02,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PF-02", level := "build", suite := "proofs", statement := "Simple Apply is accepted only when its declared signature yields exactly one residual premise.", sections := "§16.2"}),
+  executable: true
+}
+
+definition{
+  name: pf03,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PF-03", level := "build", suite := "proofs", statement := "Structured apply requires every numbered residual premise exactly once and in signature order.", sections := "§16.6"}),
+  executable: true
+}
+
+definition{
+  name: pf04,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PF-04", level := "build", suite := "proofs", statement := "Reflexivity lowers only to pinned Lean rfl and closes the current goal.", sections := "§16.2"}),
+  executable: true
+}
+
+definition{
+  name: pf05,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PF-05", level := "build", suite := "proofs", statement := "Witness steps supply the next existential witness with no implicit search.", sections := "§16.2"}),
+  executable: true
+}
+
+definition{
+  name: pf06,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PF-06", level := "build", suite := "proofs", statement := "Left and right alternative steps select only the corresponding disjunction constructor.", sections := "§16.2"}),
+  executable: true
+}
+
+definition{
+  name: pf07,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PF-07", level := "build", suite := "proofs", statement := "Have establishes a nested proposition before introducing its fresh hypothesis into subsequent scope.", sections := "§16.3"}),
+  executable: true
+}
+
+definition{
+  name: pf08,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PF-08", level := "build", suite := "proofs", statement := "Rewrite applies every explicitly directed rule strictly in source order at exactly one target.", sections := "§16.4"}),
+  executable: true
+}
+
+definition{
+  name: pf09,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PF-09", level := "build", suite := "proofs", statement := "Simplify lowers to simp only with exactly the listed rules and target.", sections := "§16.5"}),
+  executable: true
+}
+
+definition{
+  name: pf10,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PF-10", level := "build", suite := "proofs", statement := "Constructor requires the exact ordered branch count and every branch closes.", sections := "§16.7"}),
+  executable: true
+}
+
+definition{
+  name: pf11,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PF-11", level := "build", suite := "proofs", statement := "Cases requires a validated descriptor, every constructor once, and exact branch binders.", sections := "§16.8"}),
+  executable: true
+}
+
+definition{
+  name: pf12,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PF-12", level := "build", suite := "proofs", statement := "Induction requires a validated descriptor, every constructor once, and exact field and induction-hypothesis binders.", sections := "§16.9"}),
+  executable: true
+}
+
+definition{
+  name: pf13,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PF-13", level := "build", suite := "proofs", statement := "Calculation chains use one declared relation, at least one step, and exact endpoint proofs.", sections := "§16.10"}),
+  executable: true
+}
+
+definition{
+  name: pf14,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PF-14", level := "build", suite := "proofs", statement := "Proof locals, hypotheses, premise scopes, and case scopes cannot capture or leak.", sections := "§14.2, §16"}),
+  executable: true
+}
+
+definition{
+  name: pf15,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PF-15", level := "build", suite := "proofs", statement := "Every proof and nested branch must close all goals and rejects steps after closure.", sections := "§16.1"}),
+  executable: true
+}
+
+definition{
+  name: pf16,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PF-16", level := "build", suite := "proofs", statement := "Raw tactics, custom proof nodes, unrestricted automation, and proof holes are rejected.", sections := "§16.12"}),
+  executable: true
+}
+
+definition{
+  name: pf17,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PF-17", level := "build", suite := "proofs", statement := "native_decide is never accepted or generated.", sections := "§16.12, §18.2"}),
+  executable: true
+}
+
+definition{
+  name: pf18,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PF-18", level := "build", suite := "proofs", statement := "Lean proof failures remap to the smallest originating LexLean proof or statement span.", sections := "§20.4"}),
+  executable: true
+}
+
+definition{
+  name: pf19,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PF-19", level := "build", suite := "proofs", statement := "The language-1.2 linear_arithmetic proof form names only the prior document definitions it unfolds, lowers to one fixed omega script, proves true linear obligations, and is refused by Lean on a false one.", sections := "§17.12, §16"}),
+  executable: true
+}
+
+definition{
+  name: pf20,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PF-20", level := "build", suite := "proofs", statement := "Under language 1.2 the order propositions <= and < take two operands of one integer type, Nat, Int, or one fixed-width type, and lower to Lean's order on that type; language 1.1 keeps them over Nat only.", sections := "§17.12"}),
+  executable: true
+}
+
+definition{
+  name: pf21,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PF-21", level := "build", suite := "proofs", statement := "The language-1.2 linear_arithmetic proof form reads the runtime: it rewrites less_than, equal, negate, quotient, remainder, and fixed-width order and equality into linear arithmetic over mathematical values, splits every if and match left in the goal, proves integer kernels for all inputs, and is refused by Lean on a false one.", sections := "§17.12, §16"}),
+  executable: true
+}
+
+definition{
+  name: pf22,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PF-22", level := "build", suite := "proofs", statement := "The runtime module LexLeanRuntime.Laws states the fold laws as LexLean source with every row's axioms pinned, and linear_arithmetic rewrites additive list, set, and map folds into sums that are linear and invariant under append and reverse, so fold equalities verify for all inputs with decide only on closed instances.", sections := "§17.12, §22.6"}),
+  executable: true
+}
+
+definition{
+  name: pf23,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PF-23", level := "build", suite := "proofs", statement := "The language-1.2 law proof form applies one registered fold law (fusion, the fold of a pair, or the fold of an append) to checked type arguments, arguments, and prior theorems discharging its premises, and is refused in linking for an unregistered law, a wrong argument count or type, or a missing premise, and by Lean for a statement the law does not prove.", sections := "§17.12, §16"}),
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

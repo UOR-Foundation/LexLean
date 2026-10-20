@@ -1,0 +1,190 @@
+\begin{lexlean}{IdsCL}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{Rows}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: cl01,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CL-01", level := "build", suite := "cli-api", statement := "Global options and upward project discovery obey the exact CLI contract.", sections := "§23.1, §23.2"}),
+  executable: true
+}
+
+definition{
+  name: cl02,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CL-02", level := "build", suite := "cli-api", statement := "Init creates the complete canonical skeleton only in an absent or empty destination and never overwrites.", sections := "§23.4"}),
+  executable: true
+}
+
+definition{
+  name: cl03,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CL-03", level := "build", suite := "cli-api", statement := "Lock check, local update, and explicit network acquisition obey their exact mutually exclusive behavior.", sections := "§23.4"}),
+  executable: true
+}
+
+definition{
+  name: cl04,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CL-04", level := "build", suite := "cli-api", statement := "Check runs through linked IR and emits no build artifacts.", sections := "§23.4"}),
+  executable: true
+}
+
+definition{
+  name: cl05,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CL-05", level := "build", suite := "cli-api", statement := "Build emits the fixed build-ID artifact set without running Lean or claiming verification.", sections := "§23.4"}),
+  executable: true
+}
+
+definition{
+  name: cl06,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CL-06", level := "build", suite := "cli-api", statement := "Verify runs the complete fixed verification pipeline and accepts no output or suppression option.", sections := "§23.4"}),
+  executable: true
+}
+
+definition{
+  name: cl07,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CL-07", level := "build", suite := "cli-api", statement := "Format and format-check are idempotent and preserve linked IR.", sections := "§23.4, §23.5"}),
+  executable: true
+}
+
+definition{
+  name: cl08,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CL-08", level := "build", suite := "cli-api", statement := "Clean removes only the validated configured build root and no source or external cache.", sections := "§23.4"}),
+  executable: true
+}
+
+definition{
+  name: cl09,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CL-09", level := "build", suite := "cli-api", statement := "Explain prints exactly one registered diagnostic entry and rejects unknown codes.", sections := "§23.4"}),
+  executable: true
+}
+
+definition{
+  name: cl10,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CL-10", level := "build", suite := "cli-api", statement := "All, explicit-files, and entrypoint selections return sorted project result sets including import closure.", sections := "§23.3"}),
+  executable: true
+}
+
+definition{
+  name: cl11,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CL-11", level := "build", suite := "cli-api", statement := "Every command maps failures to the exact documented exit code.", sections := "§23.6"}),
+  executable: true
+}
+
+definition{
+  name: cl12,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CL-12", level := "build", suite := "cli-api", statement := "Human and canonical-JSON output modes obey exact stream, color, and cardinality rules.", sections := "§23.7"}),
+  executable: true
+}
+
+definition{
+  name: cl13,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CL-13", level := "build", suite := "cli-api", statement := "The public Engine exposes exactly the stable load, lock, check, snapshot, build, verify, and format entry points.", sections := "§24.1"}),
+  executable: true
+}
+
+definition{
+  name: cl14,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CL-14", level := "build", suite := "cli-api", statement := "Every public multi-module operation returns a ProjectResultSet or VerifiedProject rather than a singular unit.", sections := "§24.2, §24.4"}),
+  executable: true
+}
+
+definition{
+  name: cl15,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CL-15", level := "build", suite := "cli-api", statement := "Public requests cannot override backends, toolchain, verification stages, limits, policies, or fixed artifact sets.", sections := "§24.3"}),
+  executable: true
+}
+
+definition{
+  name: cl16,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CL-16", level := "build", suite := "cli-api", statement := "Every public failure is a LexLeanError and malformed user input cannot panic.", sections := "§24.5"}),
+  executable: true
+}
+
+definition{
+  name: cl17,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CL-17", level := "build", suite := "cli-api", statement := "Environment variables cannot alter semantic project configuration.", sections := "§23.1, §25.4"}),
+  executable: true
+}
+
+definition{
+  name: cl18,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CL-18", level := "build", suite := "cli-api", statement := "Version output reports compiler, language, semantics ID, and Lean toolchain exactly.", sections := "§30.3"}),
+  executable: true
+}
+
+definition{
+  name: cl19,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CL-19", level := "build", suite := "cli-api", statement := "Snapshot returns a stable owned canonical semantic envelope without writing artifacts or invoking a backend.", sections := "§24.1"}),
+  executable: true
+}
+
+definition{
+  name: cl20,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CL-20", level := "build", suite := "cli-api", statement := "Language-1.1 init creates and verifies a declarative Lake workspace containing no source Lean module.", sections := "§23.4"}),
+  executable: true
+}
+
+definition{
+  name: cl21,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CL-21", level := "build", suite := "cli-api", statement := "Native diagnostics distinguish package-import cycles and unqualified cross-package term ambiguities without changing diagnostic wire bytes.", sections := "§24.5"}),
+  executable: true
+}
+
+definition{
+  name: cl22,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CL-22", level := "build", suite := "cli-api", statement := "A host that embeds the library ends every child process group the library started and has not seen exit through the public function `lexlean::verify::end_live_children`, which installs no signal handler, alters no signal disposition, never signals the host's own process or group, reports each group as ended, already gone, or failing with the OS error, and refuses a later child start with LLV7018 until the host re-enables it, and the `lexlean` executable ends its interrupted children through the same function.", sections := "§17.17, §24.6"}),
+  executable: true
+}
+
+definition{
+  name: cl23,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CL-23", level := "build", suite := "cli-api", statement := "lexlean production targets prints the canonical target-descriptor document in either output mode, production build --request publishes the bundle its request names and reports the bundle and the project's source, semantic, build, and attestation IDs in its command result, production verify-artifact replays a bundle with no project, and each maps a malformed request, a refused request, and a rejected replay to the exact exit code of its registered class.", sections := "§24.7"}),
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

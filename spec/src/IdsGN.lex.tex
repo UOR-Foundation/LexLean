@@ -1,0 +1,70 @@
+\begin{lexlean}{IdsGN}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{Rows}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: gn01,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GN-01", level := "build", suite := "gnaf", statement := "Every committed GNAF request and fixture is canonical, validates against the GNAF schemas whose calculus definitions are the target program schema's, and states its components' universe identity; a malformed request, an invalid reference, plan, or realized program, a reference without a value on a domain argument, or a wrong universe identity fails closed with LLB6006, and a machine or request beyond the host's capacity fails closed with LLS8002.", sections := "§17.15, §26.3"}),
+  executable: true
+}
+
+definition{
+  name: gn02,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GN-02", level := "build", suite := "gnaf", statement := "The GNAF model is a kernel-checked LexLean definition, Lean's kernel reduces the universe, the system statuses, and the answer of every committed request to what the host transcription computes, and a wrong answer, an answer computed from a universe with a system omitted, a tie with a member dropped, and a universe with a system omitted are rejected by Lean.", sections := "§17.15"}),
+  executable: true
+}
+
+definition{
+  name: gn03,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GN-03", level := "build", suite := "gnaf", statement := "Candidate membership is the grammar's expansion, which a kernel-checked theorem proves equal to the grammar's well-formed selectors for every grammar, independent of evaluation and fixed by a universe identity before any optimizer, and optimizer-defined, discovered, cached, and internal-plan universes and missing, self-referential, or optimizer-citing completeness evidence are rejected.", sections := "§17.15"}),
+  executable: true
+}
+
+definition{
+  name: gn04,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GN-04", level := "build", suite := "gnaf", statement := "Every action a system performs is charged by steps, every admitted preparation action by a positive constant for each plan that needs it or by a prepared artifact bound in the common initial state, operands are charged by weight, and a request fits the capacity its machine binds; hidden zero-cost, free, undeclared, duplicated, unaccounted, unbound, stray, unit-cost, over-capacity, and unrealizable actions are rejected, and a plan's preparation enters exactly the cost of the systems that can run it.", sections := "§17.15"}),
+  executable: true
+}
+
+definition{
+  name: gn05,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GN-05", level := "build", suite := "gnaf", statement := "Scalar claims require the total step order and Pareto claims the componentwise steps-and-size order, a scalar claim over the partial order, a vector claim over the total order, the restricted-universe alias, an undecided claim class, and a scope beyond the grammar universe are rejected, equal-cost systems are all kept, a frontier answer has incomparable members, and GNAF-VEC-02 posed over the calculus has a frontier of exactly three of four systems for which no omission is certified and whose componentwise minima no system attains.", sections := "§17.15"}),
+  executable: true
+}
+
+definition{
+  name: gn06,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GN-06", level := "build", suite := "gnaf", statement := "Complete-system cost includes selection and counts only the code a system can run, the system argmin differs from the best internal plan and from the per-input plan envelope that no system attains, an inadmissible system is excluded, and an unresolved system makes the answer incomplete rather than being removed.", sections := "§17.15"}),
+  executable: true
+}
+
+definition{
+  name: gn07,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GN-07", level := "build", suite := "gnaf", statement := "The authority's GNAF-VEC-01, GNAF-VEC-02, GNAF-VEC-04, GNAF-VEC-17, GNAF-REJ-14, and GNAF-REJ-29 vectors are kernel-checked theorems over the argmin and frontier the answers are computed by, stated with the authority's numbers, and the authority is vendored with a recomputed SHA-256, cited by revision, and claimed some-true.", sections := "§17.15, §27.4"}),
+  executable: true
+}
+
+definition{
+  name: gn08,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GN-08", level := "build", suite := "gnaf", statement := "The GNAF dependency manifest names the authority's revision and SHA-256, every kind, operation, machine, cost, proof, interchange, and address profile with its role, every restriction of the admitted universe, and exactly the claim classes the model answers, and equals its generator.", sections := "§17.15, §27.4"}),
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

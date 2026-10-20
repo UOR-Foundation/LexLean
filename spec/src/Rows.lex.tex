@@ -1,0 +1,72 @@
+\begin{lexlean}{Rows}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+structure{
+  name: IdRow,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: id, type: String},
+    {name: level, type: String},
+    {name: suite, type: String},
+    {name: statement, type: String},
+    {name: sections, type: String}
+  ]
+}
+
+structure{
+  name: ErrorRow,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: code, type: String},
+    {name: class, type: String},
+    {name: exit, type: Nat},
+    {name: title, type: String},
+    {name: statement, type: String}
+  ]
+}
+
+structure{
+  name: LedgerClaim,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: id, type: String},
+    {name: level, type: String},
+    {name: statement, type: String},
+    {name: authority, type: String}
+  ]
+}
+
+structure{
+  name: AuthorityRow,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: id, type: String},
+    {name: name, type: String},
+    {name: citation, type: String},
+    {name: checksum, type: String},
+    {name: checksumReason, type: (Option String)},
+    {name: vendored, type: (Option String)},
+    {name: statement, type: String},
+    {name: realizedBy, type: (List String)},
+    {name: issuer, type: String},
+    {name: canonicalIdentifier, type: String},
+    {name: edition, type: String},
+    {name: sourceRole, type: String},
+    {name: immutableUrl, type: String},
+    {name: revision, type: String},
+    {name: acquiredSha256, type: String},
+    {name: signature, type: String},
+    {name: mediaType, type: String},
+    {name: license, type: String},
+    {name: redistribution, type: String},
+    {name: retrievalDate, type: String},
+    {name: supersessionPolicy, type: String}
+  ]
+}
+\end{semanticmodule}
+\end{lexlean}

@@ -11,6 +11,17 @@ use crate::Fail;
 
 /// R1, §27.5: the generated documents equal the model, byte for byte.
 pub fn check_model(root: &Path, write: bool) -> Result<(), Fail> {
+    // The model files are the projection of the specification project's
+    // modules (NS-02, NS-03): written from them, or compared with them byte for
+    // byte before anything reads the files as a model.
+    let projection = repo_model::project::project(root)?;
+    if write {
+        for (path, projected) in projection.files() {
+            std::fs::write(root.join(path), projected)?;
+        }
+    } else {
+        projection.check_committed(root)?;
+    }
     let model = Model::load(&root.join("model"))?;
     model.check()?;
 

@@ -1,0 +1,150 @@
+\begin{lexlean}{IdsGL}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{Rows}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: gl01,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GL-01", level := "build", suite := "lexicon", statement := "Lexicon packages obey the exact package layout, schema, ID-to-path rule, and exact imports.", sections := "§13.1"}),
+  executable: true
+}
+
+definition{
+  name: gl02,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GL-02", level := "build", suite := "lexicon", statement := "Entry files obey the exact entry schema and category-specific field rules.", sections := "§13.2, §13.3"}),
+  executable: true
+}
+
+definition{
+  name: gl03,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GL-03", level := "build", suite := "lexicon", statement := "Forms obey channel, feature, canonical-source, safety, and explicit-inflection requirements.", sections := "§13.5"}),
+  executable: true
+}
+
+definition{
+  name: gl04,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GL-04", level := "build", suite := "lexicon", statement := "Every entry uses one fixed frame and packages cannot add grammar productions.", sections := "§13.4"}),
+  executable: true
+}
+
+definition{
+  name: gl05,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GL-05", level := "build", suite := "lexicon", statement := "Denotations are exactly core, Lean, document, or acyclic defined values.", sections := "§13.6"}),
+  executable: true
+}
+
+definition{
+  name: gl06,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GL-06", level := "build", suite := "lexicon", statement := "Every semantic entry has a valid canonical LSE signature with scoped binders and universes.", sections := "§13.7, §13.8"}),
+  executable: true
+}
+
+definition{
+  name: gl07,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GL-07", level := "build", suite := "lexicon", statement := "Every canonical render uses valid LRE with complete slot use and no raw TeX.", sections := "§13.9"}),
+  executable: true
+}
+
+definition{
+  name: gl08,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GL-08", level := "build", suite := "lexicon", statement := "Only the core renderer-token registry can authorize emitted LaTeX controls and glyphs.", sections := "§13.10"}),
+  executable: true
+}
+
+definition{
+  name: gl09,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GL-09", level := "build", suite := "lexicon", statement := "Package import cycles and excessive import depth are rejected.", sections := "§13.11"}),
+  executable: true
+}
+
+definition{
+  name: gl10,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GL-10", level := "build", suite := "lexicon", statement := "Defined-denotation cycles and document-definition cycles are rejected.", sections := "§13.6, §15.7"}),
+  executable: true
+}
+
+definition{
+  name: gl11,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GL-11", level := "build", suite := "lexicon", statement := "A document denotation must resolve to an available declaration with a matching signature.", sections := "§13.6, §17.7"}),
+  executable: true
+}
+
+definition{
+  name: gl12,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GL-12", level := "build", suite := "lexicon", statement := "Every used external Lean entry is checked by a generated interface probe during verification.", sections := "§18.8"}),
+  executable: true
+}
+
+definition{
+  name: gl13,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GL-13", level := "build", suite := "lexicon", statement := "Duplicate packages, entries, forms, and qualified IDs are rejected while same-surface overloads remain explicit candidates.", sections := "§13.11, §14"}),
+  executable: true
+}
+
+definition{
+  name: gl14,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GL-14", level := "build", suite := "lexicon", statement := "Cases and induction are available only through a complete validated eliminator descriptor.", sections := "§16.11"}),
+  executable: true
+}
+
+definition{
+  name: gl15,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GL-15", level := "build", suite := "lexicon", statement := "Glossary files reject free description, documentation, note, meaning, and unknown prose fields.", sections := "§13.6"}),
+  executable: true
+}
+
+definition{
+  name: gl16,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GL-16", level := "build", suite := "lexicon", statement := "Package and entry bytes participate in lock and semantic closure hashes exactly as specified.", sections := "§11, §21"}),
+  executable: true
+}
+
+definition{
+  name: gl17,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GL-17", level := "build", suite := "lexicon", statement := "Language 1.2 resolves the exact 1.2 builtin package closure and enforces 1.2 lexicon semantics.", sections := "§13.1, §13.11"}),
+  executable: true
+}
+
+definition{
+  name: gl18,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GL-18", level := "build", suite := "lexicon", statement := "Cross-version package, lexicon, and lock combinations fail closed before backend execution.", sections := "§10.1, §13.11"}),
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}
