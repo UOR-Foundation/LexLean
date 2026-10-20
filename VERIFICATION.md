@@ -15123,6 +15123,87 @@ pass; no test depends on where the target directory is. That clean run is
 also a measurement of the same kind: `tests/property.rs` (11 tests) takes
 1,369 s at `opt-level = 0` and 197 s at `opt-level = 1`, the rest of the
 crate's tests about 40 s or less in either.
+`SL-06` holds every identity to the one the `sha2` crate gave (#126, stage 2):
+the tracked files of the tree (9,300 at this commit, 300.7 MB; a link to a
+file is read through, a link to a directory has no bytes) digest identically under `Sha256Digest::of` and under `sha2`; the
+compiler-semantics IDs of languages 1.0, 1.1, and 1.2 equal the values pinned
+in the locks of `examples/nat-add-zero`, `examples/semantic-1.1`, and
+`examples/language-1.2`, written before the package was the digest; the
+independent recomputations of `AR-05`, `AR-06`, `SM-10`, `CF-07`, `CF-09`, and
+`TX-10` pass; and every example but `uor-atlas`, the standard library, the
+compiler project, and the bootstrap project recompute their locks on `check`.
+The case is armed by the dependency check of `SL-05` (`cargo metadata`, not a
+manifest line): with `sha2` in the shipped crate the two sides would be one implementation. Two defects are planted in the
+tree and found (the first panic line of each, `conformance_sl_06`), and the case
+makes three on copies on every run (a bit in a tracked file's digest, in a
+pinned ID, and the order of a source-ID recipe's frames).
+
+- **a bit of every digest.** `out[0] ^= 1` at the end of `sha256` in
+  `content_id.rs`:
+
+  ```text
+  panicked at crates/conformance/src/cases/stdlib_identity.rs:105:5:
+  assertion `left == right` failed: the compiler's digest differs from the oracle's on a tracked file (1 compared)
+  ```
+
+- **a bit of a pinned compiler-semantics ID.** The first hexadecimal digit of
+  `compiler_semantics` in `examples/language-1.2/lexlean.lock` (`b` to `a`):
+
+  ```text
+  panicked at crates/conformance/src/cases/stdlib_identity.rs:113:9:
+  assertion `left == right` failed: the compiler-semantics ID of language 1.2 is the one examples/language-1.2/lexlean.lock pins
+  ```
+
+Removed: both were restored; `conformance_sl_06` passes, in 26 s. The gates that
+hold the records themselves, `check-golden`, `check-fixtures`,
+`check-calculus`, `check-package`, and `check-production-export`, pass on the
+tree of `SL-05` (see its record).
+
+`SL-07` holds the fixed point (#126, stage 2): the compiler that computes every
+digest with the `Sha256` package, rebuilding the standard library, produces the
+package. The digests that every committed export's `provenance.json` records
+(`bootstrap`, `production`, `production-coverage`, `stdlib`) are the oracle's
+digests of the files they name; `lib.rs` of `sha256` and `sha256_hex` holds none
+of the digests its provenance records; and, under the pinned Lean, the
+exported packages of the standard library are the committed ones and the
+rebuilt `lib.rs` of `sha256` is the file the compiler links, so a second
+regeneration changes nothing. Three defects are planted in the tree and found
+(the first panic line of each, `conformance_sl_07`), and the case makes three on
+copies on every run (a bit of a recorded digest, a digest written into
+`lib.rs`, a link that is not the rebuilt file):
+
+- **a digest written into `lib.rs`.** The `program` digest of the provenance
+  appended to the committed `lib.rs` as a comment. The file's own recorded
+  digest no longer matches, which is found first:
+
+  ```text
+  panicked at crates/conformance/src/cases/stdlib_fixed_point.rs:113:42:
+  stdlib/rust-std/sha256: src/lib.rs: recorded "b9038d0a…", the oracle gives 9c338b5d…
+  ```
+
+  The search of `lib.rs` for the recorded digests is exercised by the plant the
+  case makes on a copy.
+
+- **a bit of a recorded digest.** The first digit of the `src/lib.rs` digest in
+  `provenance.json` (`b` to `0`):
+
+  ```text
+  panicked at crates/conformance/src/cases/stdlib_fixed_point.rs:113:42:
+  stdlib/rust-std/sha256: src/lib.rs: recorded "09038d0a…", the oracle gives b9038d0a…
+  ```
+
+- **a stale link.** The link replaced by a copy of the export with a comment
+  appended, so that it differs from the file the compiler rebuilds (found after
+  the rebuild, 7 minutes in):
+
+  ```text
+  panicked at crates/conformance/src/cases/stdlib_fixed_point.rs:184:5:
+  the file the compiler links is not the lib.rs it rebuilds
+  ```
+
+Removed: all three were restored; `conformance_sl_07` passes, in 441 s with the
+production export of the standard library under the pinned Lean (`SL-02` in
+305 s on the same host).
 
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
