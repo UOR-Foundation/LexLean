@@ -8742,6 +8742,21 @@ fn elimination_binder_types(
             ),
             ("zero".to_owned(), Vec::new()),
         ]),
+        // Language 1.2: a Boolean local splits into its two constructors.
+        // `Bool` is no inductive of the document, so `induction` has no
+        // recursor of its own to name here.
+        SemanticType::Bool => {
+            require_language_1_2(env, "cases on a Boolean local")?;
+            if induction {
+                return Err(format!(
+                    "induction on the Boolean `{scrutinee}` has no hypothesis to bind; use cases"
+                ));
+            }
+            BTreeMap::from([
+                ("false".to_owned(), Vec::new()),
+                ("true".to_owned(), Vec::new()),
+            ])
+        }
         SemanticType::Named { member, arguments } => {
             let info = type_info(member, env).ok_or_else(|| {
                 format!("proof scrutinee `{scrutinee}` has an unavailable inductive type")

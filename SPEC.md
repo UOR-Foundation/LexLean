@@ -2699,6 +2699,16 @@ take it. The canonical LaTeX of a semantic module is a catalog of its
 declarations that states a theorem's statement and axiom policy and no proof, for
 every proof form, so the form adds nothing to it.
 
+A `cases` proof (§17.10) may name a local of type `Bool` (language 1.2, `SM-36`): the
+branches are exactly `false` and `true`, each without binders, and the proof lowers to
+`cases` on the local with those two alternatives, as it does for a natural number, a
+list, or a document inductive. A use in language 1.1 is refused, a missing, repeated,
+or non-constructor branch is refused by the exhaustiveness check every `cases` proof has,
+and `induction` on a Boolean is refused because a Boolean has no recursive field to
+bind a hypothesis for. The form exists because a Boolean parameter of a runtime function
+cannot be split by `term_cases`, which splits on a term of an inductive type of the
+document, and the refinement of `bool_and` needs its two values.
+
 Every definition and theorem has an exact axiom policy. An omitted `axioms`
 member means the exact empty set; a present member is a strictly sorted,
 duplicate-free list of Lean names and means exact equality with that set.

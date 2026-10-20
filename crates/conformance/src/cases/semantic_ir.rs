@@ -7,6 +7,7 @@ use sha2::Digest;
 
 use crate::support::{self, P};
 
+mod boolean;
 mod bytes;
 mod names;
 mod strings;
@@ -2577,6 +2578,8 @@ pub(crate) fn run(id: &str) {
         }
         // §17.12: the widening conversions.
         "SM-32" => widen::run(),
+        // §17.10: a theorem proved by a split on a Boolean local.
+        "SM-36" => boolean::run(),
         // §17.10: a theorem proved by a split on the value of a document
         // term.
         "SM-35" => {
