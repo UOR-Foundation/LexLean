@@ -1800,7 +1800,7 @@ pinned Lean verifies the module with exactly `[propext]` (where the toolchain is
 and that the LaTeX catalog carries the theorem's statement and policy. Seven misuses are
 refused as `LLT4001` naming the misuse (the planted projects of the case): language 1.1 (data form, schema 1: "a language-1.2
 construct"), an empty list, definitions out of order, a repeated definition, a definition that
-is absent, a term of type `Nat`, and a theorem parameter named `llCase`. Each misuse but the reserved one is also a committed fixture under `tests/negative/`
+is absent, a term of type `Nat`, and a theorem parameter named `llCase`. Each of the seven misuses is also a committed fixture under `tests/negative/`
 (`term-cases-language-11`, `-empty-definitions`, `-definitions-unsorted`,
 `-definition-repeated`, `-definition-absent`, `-scrutinee-not-inductive`,
 `-reserved-name`: seven, each `LLT4001` with the message of the case), listed in `EX-07`'s prescribed
