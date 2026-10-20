@@ -2663,7 +2663,7 @@ pub(crate) fn run(id: &str) {
             assert!(
                 lean.contains("cases llCase : flagOf (n) <;>")
                     && lean.contains(
-                        "simp (config := {decide := true}) only [direct, wrapped, llCase]"
+                        "simp (config := {decide := true}) only [direct, wrapped, llCase, ite_true, ite_false]"
                     ),
                 "{lean}"
             );

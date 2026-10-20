@@ -1281,7 +1281,7 @@ impl Render<'_> {
                 scrutinee,
                 definitions,
             } => format!(
-                "{pad}cases llCase : {} <;>\n{pad}  simp (config := {{decide := true}}) only [{}, llCase]\n",
+                "{pad}set_option linter.unusedSimpArgs false in\n{pad}cases llCase : {} <;>\n{pad}  simp (config := {{decide := true}}) only [{}, llCase, ite_true, ite_false]\n",
                 self.term(scrutinee),
                 definitions
                     .iter()
