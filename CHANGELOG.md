@@ -250,7 +250,7 @@ and Unreleased holds what has landed since.
   host, and on the normative host the evaluator on the crates of at most 400
   expressions and 500 seeded mutants, 2,000 more per root under `rustc`,
   sixteen planted defects, and the certified packages against the committed
-  ones. The register is 427 IDs. A finding about the certificate generator,
+  ones. The register is 430 IDs. A finding about the certificate generator,
   #222, is worked around by building the correspondence table in a definition
   of its own.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
