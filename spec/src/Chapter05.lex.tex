@@ -1,8 +1,7 @@
 \begin{lexlean}{Chapter05}
 \useglossary{lexlean.std.nat@1.2.0}
-\useglossary{spec.titles@1.0.0}
 \importmodule{DocRows}
-\title{Trust and evidence model}
+\title{Natural number addition}
 \begin{semanticmodule}
 definition{
   name: i0001,
@@ -46,7 +45,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "1. the exact LexLean compiler semantics identified in the build manifest;" (cons "2. the pinned Lean 4 toolchain;" (cons "3. Lean's elaborator and kernel;" (cons "4. the `leanchecker` executable from that same toolchain, used as a separate-process replay check;" (cons "5. the imported Lean workspace and its locked dependencies;" (cons "6. the operating system, filesystem, and process implementation;" (cons "7. any external PDF engine only for PDF bytes, never for theorem verification." (nil String))))))))
+      (cons "1. the exact LexLean compiler semantics identified in the build manifest, and the SHA-256 that computes every identity (the certified standard-library package of §17.22);" (cons "2. the pinned Lean 4 toolchain;" (cons "3. Lean's elaborator and kernel;" (cons "4. the `leanchecker` executable from that same toolchain, used as a separate-process replay check;" (cons "5. the imported Lean workspace and its locked dependencies;" (cons "6. the operating system, filesystem, and process implementation;" (cons "7. any external PDF engine only for PDF bytes, never for theorem verification." (nil String))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []

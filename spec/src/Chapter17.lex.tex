@@ -1,8 +1,7 @@
 \begin{lexlean}{Chapter17}
 \useglossary{lexlean.std.nat@1.2.0}
-\useglossary{spec.titles@1.0.0}
 \importmodule{DocRows}
-\title{Semantic elaboration and IR}
+\title{Natural number addition}
 \begin{semanticmodule}
 definition{
   name: i0001,
@@ -4696,7 +4695,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "A disagreement with an oracle fails the case (`SL-02`) and is a defect; it is" (cons "never resolved by adopting the oracle's digest. The module is the first stage" (cons "of #126: the compiler's own identities (§8, §21) are still computed by the" (cons "`sha2` crate, and switching them to the module is the second stage, which" (cons "waits on the measured cost of the rendered package against `sha2`." (nil String))))))
+      (cons "A disagreement with an oracle fails the case (`SL-02`) and is a defect; it is" (cons "never resolved by adopting the oracle's digest. **The compiler's digest (`SL-05`, #126 stage 2).** Every content identity of" (cons "§21 is computed by the rendered `rust-std` package of `sha256`, and no other" (cons "implementation of SHA-256 is part of the compiler: the shipped crate links the" (cons "committed export (`tests/production-export/stdlib/packages/rust-std/sha256/src/lib.rs`)" (cons "through the in-crate link `crates/lexlean/sha256_package.rs`, which `cargo" (cons "package` dereferences and `audit-shipped` requires to resolve to that file," (cons "and its manifest has no `sha2` dependency. The crate is a dependency of the" (cons "product's identities, not of their inputs, which is why it does not recurse on" (cons "itself: the file contains no digest of anything (the digests that describe the" (cons "package, its file hashes, program identity, and source identity, are in its" (cons "`provenance.json`, beside it), the compiler is built from the committed file" (cons "and not from a build of the project, and the package is not part of any" (cons "compiler-semantics ID (§21.2), exactly as the `sha2` crate was not. What holds" (cons "the function instead is the case of `SL-05` (the authorities, the oracle, and" (cons "the planted defects) and the byte-identity of every committed identity." (cons "Regenerating the export is two steps for that reason: the export is rewritten" (cons "by the compiler, the compiler is rebuilt from the rewritten file, and the" (cons "export is checked again. Of the compression function, the standard's" (cons "authorities (the rows `NIST-FIPS-180-4`, `NIST-SHA256-EXAMPLES`, `NIST-FIPS-180-2`," (cons "and `NIST-CAVP-SHA256-SHORTMSG` and `-LONGMSG` of `model/authorities.toml`, level" (cons "`some-true`) establish the digest and the Lean certificates of the package" (cons "establish its program; `sha2` falsifies and establishes nothing. The Rust" (cons "runtime text the package embeds (§17.16) is the declared Rust machine's, as it" (cons "is for every production package, so what remains outside LexLean source under" (cons "the digest is that text and the framing of §21.1, which is Rust until it is" (cons "authored in LexLean (#92). A message of 2^61 bytes or more is outside the" (cons "domain of FIPS 180-4 and is not allocatable on any supported host, so the" (cons "package's `Overflow` for it is a host impossibility and not a public failure." (nil String))))))))))))))))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []

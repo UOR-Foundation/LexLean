@@ -9351,6 +9351,11 @@ The authority register (`model/authorities.toml`, generated from the authority m
 | `LEAN-LCNF-4-32-1` | Lean 4.32.1 compiler front end (LCNF): the translation of a definition and the run-time dependencies it names |
 | `UOR-GNAF-1-DRAFT-2` | UOR-GNAF v1 normative draft 0.2: what an optimality claim fixes before optimization |
 | `RUSTC-1-97-1` | Rust 1.97.1 compiler (`rustc`): the semantics of a safe Rust 2021 crate |
+| `NIST-FIPS-180-4` | FIPS PUB 180-4: the definition of SHA-256 |
+| `NIST-SHA256-EXAMPLES` | NIST worked examples of SHA-256 on `abc` and on the 448-bit message |
+| `NIST-FIPS-180-2` | FIPS PUB 180-2, appendix B.3: the SHA-256 digest of one million `a` |
+| `NIST-CAVP-SHA256-SHORTMSG` | NIST CAVP SHA-256 byte-oriented short-message vectors |
+| `NIST-CAVP-SHA256-LONGMSG` | NIST CAVP SHA-256 byte-oriented long-message vectors |
 
 Corresponding ledger claims are `some-true`. LexLean tests realize compatibility with those authorities but do not re-register Lean's guarantees as LexLean proofs.
 
@@ -10451,7 +10456,7 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `NS-04` | `normative-source` | The projector fails closed on a module of the specification project that holds a declaration kind, a term kind, a field, a name, a file, or a family it does not read, and on a duplicate identifier or code, and a plant of each is refused naming the file and, for a declaration, its position. | §17.21, §24.8 |
 | `NS-05` | `normative-source` | SPEC.md regenerates byte-identically from the chapter modules of the specification project, its conformance-ID table, its diagnostic-code table, its authority table, and its stated total being derived from the register, registry, and authority modules and never typed, and the projector refuses a chapter item it does not read. | §26.3, §27.5, §31 |
 
-**Total required capability IDs:** 435.
+**Total required capability IDs:** 436.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 
