@@ -7501,7 +7501,7 @@ ends with, at each `Err` of its body, must be a fallible value; the body is
 checked as a block that is not a tail, for its applications as for its moves,
 and the correspondence traversal treats it as a block.
 `correspondCrate` lists the constructs a crate emits instance by instance and
-checks each against the 97 rows of the correspondence table, the element it was
+checks each against the 98 rows of the correspondence table, the element it was
 lowered from, its width, and the elements the program uses; a repeated
 instance is kept once, which does not change which one the oracle reports
 first. Lowering, printing, packaging, and the choice of profile are not part of
