@@ -93,3 +93,9 @@ Feature: rust-backend
     When each is rendered in both profiles and its self calls are classified as tail calls or not
     Then every template whose self calls are all tail calls renders as a loop that breaks with its result, and its primitives' registry rows say `recursion = false`
     And every other template renders as a call and keeps `recursion = true`, and a template rendered with a self call it could have as a loop, or a row that disagrees with its rendering, is refused
+
+  @RB-18 @build
+  Scenario: The Rust backend renders each closed data literal of a program once per thread and a read of it as a clone of that value, so that a production root reads a constant without rebuilding it, and the counted work of a read never exceeds the denotation's steps; a rendering that rebuilds the literal at each read is detected by the work gate.
+    Given the calculus fixtures that read a data literal, and a copy whose rendering rebuilds the literal at each read
+    When it is rendered as rust-std packages and run under the pinned rustc
+    Then each package prints the denotation's value with counted work no greater than its steps, the literal is constructed once per thread, and the rebuilding copy is detected

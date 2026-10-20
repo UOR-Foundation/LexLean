@@ -115,5 +115,13 @@ definition{
   body: (record Rows::IdRow {id := "RB-14", level := "build", suite := "rust-backend", statement := "A library template whose self calls are all tail calls is rendered as a loop over its accumulator that breaks with its result, so that the production rows of the primitives it realizes carry no `recursion`, while a template with a call that is not a tail call is rendered as a call and keeps the effect; a rendering that states a self call where a loop is possible, and a row whose `recursion` differs from its rendering, are refused.", sections := "§17.13, §17.14, §17.16"}),
   executable: true
 }
+
+definition{
+  name: rb18,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "RB-18", level := "build", suite := "rust-backend", statement := "The Rust backend renders each closed data literal of a program once per thread and a read of it as a clone of that value, so that a production root reads a constant without rebuilding it, and the counted work of a read never exceeds the denotation's steps; a rendering that rebuilds the literal at each read is detected by the work gate.", sections := "§17.16"}),
+  executable: true
+}
 \end{semanticmodule}
 \end{lexlean}

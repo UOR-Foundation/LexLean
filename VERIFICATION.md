@@ -4009,6 +4009,54 @@ A second plant dropped the result weight from a primitive's charge; the
 kernel refused the same theorem, stated with 50 steps. Removed: the
 interpreter was restored and the fixtures regenerated; `compiler/` verifies.
 
+### calculus literal weight can fail (TC-08)
+
+Command: `cargo test -p repo-conformance --test conformance conformance_tc_08`.
+Planted, in two steps. First the reference interpreter charged a literal one
+step (the rule before TC-08); `conformance_tc_08` refused it at the string
+literal, whose weight is 4 for `"h\u{e9}\u{e9}"`:
+
+```text
+assertion `left == right` failed: string read 1 time(s) is charged its weight 4
+  left: 1
+ right: 4
+```
+
+Second, with the interpreter correct, `TargetSemantics.lex.tex` was restored to
+`(ctor Outcome.value literal 1)`; the same case refused it:
+
+```text
+the denotation charges a literal its weight
+```
+
+The second plant is a text check: the case reads `TargetSemantics.lex.tex` and
+requires the line that charges `weight literal`. It shows the source was not
+restored to the old charge; it does not show the kernel's reduction agrees
+with the interpreter, which needs the regenerated fixtures.
+
+Removed: the weight charge was restored in both. The kernel's own check of
+the rule, a fixture whose `rfl` theorem states the weighted step count, needs
+`cargo xtask check-calculus --write` and is not exercised here: the 14 fixtures
+with a literal heavier than one node (and `compiler/lexlean.lock`) still hold
+the bytes written before TC-08, so `conformance_tc_01`, `conformance_tc_03`, `conformance_tc_04`,
+and `conformance_tc_05` fail on this tree until they are rewritten.
+
+
+**The library follows the denotation.** With `TargetSemantics.lean` regenerated
+from the changed source (held in the working tree only) `conformance_sp_13`,
+which compiles the 13 library modules over the machine modules, refused
+`RustLemmas` at `LexLeanPreservation.Rust.sem_value`: the term applies
+`congrArg` to `eval.eq_2` with the explicit argument `Outcome.value v 1`, which
+the new equation lemma no longer states. The repair rewrites that argument to
+`Outcome.value v (weight v)` (one occurrence, on the module's data, written back
+in the notation). The loader stops at the first refusal, so the count was found
+by iteration: after the one repair `conformance_sp_13` passes over all 13
+modules (no second refusal), and `conformance_sp_14`, `conformance_sp_15` (the
+four corpora's certificates A as data and the production example verified under
+Lean) and `conformance_sp_16` pass over the same regenerated module. The
+examples' and `compiler/`'s locks were refreshed locally for these runs and are
+not committed.
+
 ### kernel-opaque classification is observed
 
 Probe: `compare_bytes` and byte equality were both treated as reducible, and

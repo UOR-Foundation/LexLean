@@ -442,9 +442,13 @@ impl Interp<'_> {
             return Out::Exhausted;
         };
         match expr {
-            Expr::Value { value, .. } => {
-                to_runtime(value).map_or(Out::Stuck, |value| Out::Value(value, 1))
-            }
+            // A literal is charged its weight each time it is read, as a
+            // primitive's operands are, so a decoded constant is accounted
+            // by its size; a scalar still costs one step (§17.14 *Cost*).
+            Expr::Value { value, .. } => to_runtime(value).map_or(Out::Stuck, |value| {
+                let steps = weight(&value);
+                Out::Value(value, steps)
+            }),
             Expr::Var { name } => {
                 lookup(env, *name).map_or(Out::Stuck, |(value, depth)| Out::Value(value, 1 + depth))
             }
