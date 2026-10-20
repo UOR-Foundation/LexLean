@@ -9420,6 +9420,52 @@ hold the records themselves, `check-golden`, `check-fixtures`,
 `check-calculus`, `check-package`, and `check-production-export`, pass on the
 tree of `SL-05` (see its record).
 
+`SL-07` holds the fixed point (#126, stage 2): the compiler that computes every
+digest with the `Sha256` package, rebuilding the standard library, produces the
+package. The digests that every committed export's `provenance.json` records
+(`bootstrap`, `production`, `production-coverage`, `stdlib`) are the oracle's
+digests of the files they name; `lib.rs` of `sha256` and `sha256_hex` holds none
+of the digests its provenance records; and, under the pinned Lean, the
+exported packages of the standard library are the committed ones and the
+rebuilt `lib.rs` of `sha256` is the file the compiler links, so a second
+regeneration changes nothing. Three defects are planted in the tree and found
+(the first panic line of each, `conformance_sl_07`), and the case makes three on
+copies on every run (a bit of a recorded digest, a digest written into
+`lib.rs`, a link that is not the rebuilt file):
+
+- **a digest written into `lib.rs`.** The `program` digest of the provenance
+  appended to the committed `lib.rs` as a comment. The file's own recorded
+  digest no longer matches, which is found first:
+
+  ```text
+  panicked at crates/conformance/src/cases/stdlib_fixed_point.rs:113:42:
+  stdlib/rust-std/sha256: src/lib.rs: recorded "b9038d0a…", the oracle gives 9c338b5d…
+  ```
+
+  The search of `lib.rs` for the recorded digests is exercised by the plant the
+  case makes on a copy.
+
+- **a bit of a recorded digest.** The first digit of the `src/lib.rs` digest in
+  `provenance.json` (`b` to `0`):
+
+  ```text
+  panicked at crates/conformance/src/cases/stdlib_fixed_point.rs:113:42:
+  stdlib/rust-std/sha256: src/lib.rs: recorded "09038d0a…", the oracle gives b9038d0a…
+  ```
+
+- **a stale link.** The link replaced by a copy of the export with a comment
+  appended, so that it differs from the file the compiler rebuilds (found after
+  the rebuild, 7 minutes in):
+
+  ```text
+  panicked at crates/conformance/src/cases/stdlib_fixed_point.rs:184:5:
+  the file the compiler links is not the lib.rs it rebuilds
+  ```
+
+Removed: all three were restored; `conformance_sl_07` passes, in 441 s with the
+production export of the standard library under the pinned Lean (`SL-02` in
+305 s on the same host).
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the

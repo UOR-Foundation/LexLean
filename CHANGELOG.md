@@ -17,6 +17,13 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- The compiler running the package reproduces it (SPEC.md §17.22, `SL-07`,
+  #126 stage 2; no change to the compiler). `conformance_sl_07` holds the
+  digests every committed production export records to the oracle, holds
+  `lib.rs` of the two SHA-256 packages free of the digests that describe them,
+  and, under the pinned Lean, rebuilds the standard library with the compiler
+  and requires the committed packages and, for `sha256`, the file the compiler
+  links. The register holds 433 IDs.
 - Every identity is the one `sha2` gave (SPEC.md §21, `SL-06`, #126 stage 2;
   no change to the compiler). `conformance_sl_06` digests every tracked file
   of the repository with the compiler and with the oracle, holds the
