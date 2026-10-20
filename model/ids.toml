@@ -2033,7 +2033,7 @@ statement = "Certificate B certifies a function the renderer writes as a loop: t
 id = "SP-24"
 level = "build"
 suite = "preservation"
-statement = "A production root that reads a content-addressed artifact lowers the artifact's decoded value as a data literal and not as a nullary function whose body builds it, and certificates A, B, and E cover the data literal on every committed root, so that no lowered program evaluates a build chain for an artifact on any call; a lowering that rebuilds the value per call is refused."
+statement = "A production root that reads a content-addressed artifact holds the artifact's decoded value as one literal in its lowered program, recognised by the artifact declaration and not by the shape of a term, and certificates A, B, and E verify for every root of the committed models example, certificate A relating the source's construction of the list to the literal by the lemma that relates any literal to its value, so that the preservation library does not grow; a wrong lemma for the literal is refused by Lean."
 
 [[id]]
 id = "MD-01"
@@ -2117,7 +2117,7 @@ statement = "IEEE-754 binary32 and binary64 bit patterns decode in LexLean to ex
 id = "MD-14"
 level = "build"
 suite = "models"
-statement = "The lowered program of a production root reading an artifact contains the artifact's decoded value as data equal to the decoding of its bytes and no per-call construction of it, and a root whose lowered program decodes or builds the value on a call is detected."
+statement = "The lowered program of a production root reading an artifact holds the artifact's decoded value as a literal equal to the decoding of its bytes by the closed schemas, and no function of no parameters builds a list with constructors on a call; a literal turned back into its chain, or with one element changed, is detected, and a lowering that stops folding artifacts is refused by the case."
 
 [[id]]
 id = "RS-01"

@@ -145,7 +145,7 @@ Feature: preservation
     And a loop that is not the loop form of any recursive body is refused for each way it may differ
 
   @SP-24 @build
-  Scenario: A production root that reads a content-addressed artifact lowers the artifact's decoded value as a data literal and not as a nullary function whose body builds it, and certificates A, B, and E cover the data literal on every committed root, so that no lowered program evaluates a build chain for an artifact on any call; a lowering that rebuilds the value per call is refused.
-    Given every committed production root that reads an artifact, and a copy that lowers the artifact to a nullary function
-    When it is lowered and certified
-    Then each lowered program holds the decoded value as data, certificates A, B, and E check, and the copy is refused
+  Scenario: A production root that reads a content-addressed artifact holds the artifact's decoded value as one literal in its lowered program, recognised by the artifact declaration and not by the shape of a term, and certificates A, B, and E verify for every root of the committed models example, certificate A relating the source's construction of the list to the literal by the lemma that relates any literal to its value, so that the preservation library does not grow; a wrong lemma for the literal is refused by Lean.
+    Given the committed models example, whose roots read artifacts, lowered, certified, and checked under the pinned Lean
+    When its certificates A, B, and E are staged and compiled, replayed, and audited, and the certificate A of a root that holds a literal has the lemma for a literal replaced
+    Then ten artifact literals are held as data and rendered as constants, every certificate verifies with its exact axioms, and the wrong lemma is refused

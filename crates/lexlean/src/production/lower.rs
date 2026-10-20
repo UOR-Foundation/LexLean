@@ -277,6 +277,107 @@ pub fn json_depth(text: &str) -> usize {
     deepest
 }
 
+/// What a lowered term is, for the folding of an artifact's list to a literal.
+enum Folding<'a> {
+    Literal(&'a Value),
+    Nil,
+    Cons(&'a Expr, &'a Expr),
+    Other,
+}
+
+/// Every construct of the calculus classified, so a new one is a decision here.
+fn folding(expr: &Expr) -> Folding<'_> {
+    match expr {
+        Expr::Value { ty: _, value } => Folding::Literal(value),
+        Expr::Build {
+            shape,
+            ty: _,
+            operands,
+        } => match shape {
+            Shape::Nil if operands.is_empty() => Folding::Nil,
+            Shape::Cons => <&[Expr; 2]>::try_from(operands.as_slice())
+                .map_or(Folding::Other, |pair| Folding::Cons(&pair[0], &pair[1])),
+            Shape::Nil
+            | Shape::None
+            | Shape::Some
+            | Shape::Ok
+            | Shape::Error
+            | Shape::Zero
+            | Shape::Succ
+            | Shape::Pair
+            | Shape::True
+            | Shape::False
+            | Shape::Unit
+            | Shape::Lt
+            | Shape::Eq
+            | Shape::Gt
+            | Shape::Adt { constructor: _ } => Folding::Other,
+        },
+        Expr::Var { name: _ }
+        | Expr::Let {
+            name: _,
+            ty: _,
+            bound: _,
+            body: _,
+        }
+        | Expr::Cond {
+            condition: _,
+            then_branch: _,
+            else_branch: _,
+        }
+        | Expr::Match {
+            ty: _,
+            scrutinee: _,
+            arms: _,
+        }
+        | Expr::Call {
+            function: _,
+            operands: _,
+        }
+        | Expr::Closure {
+            function: _,
+            captures: _,
+        }
+        | Expr::Apply {
+            target: _,
+            operands: _,
+        }
+        | Expr::Prim {
+            operation: _,
+            operands: _,
+        }
+        | Expr::First { value: _ }
+        | Expr::Second { value: _ }
+        | Expr::Field { value: _, index: _ } => Folding::Other,
+    }
+}
+
+/// The calculus value a lowered term of constructions and literals denotes,
+/// when it is one: a list built from `Nil` and `Cons` whose elements are
+/// literals or such lists. A cons spine is walked in a loop, so the length of
+/// a tensor does not deepen the recursion; only its rank does.
+fn literal_of(expr: &Expr) -> Option<Value> {
+    match folding(expr) {
+        Folding::Literal(value) => Some(value.clone()),
+        Folding::Nil => Some(Value::List { items: Vec::new() }),
+        Folding::Cons(_, _) => {
+            let mut items = Vec::new();
+            let mut rest = expr;
+            loop {
+                match folding(rest) {
+                    Folding::Cons(head, tail) => {
+                        items.push(literal_of(head)?);
+                        rest = tail;
+                    }
+                    Folding::Nil => return Some(Value::List { items }),
+                    Folding::Literal(_) | Folding::Other => return None,
+                }
+            }
+        }
+        Folding::Other => None,
+    }
+}
+
 /// Lower one eligible root. A failure is a compiler defect: eligibility
 /// already admitted every construct the closure reaches.
 ///
@@ -2408,7 +2509,19 @@ impl Lowerer<'_> {
                     }));
                 }
                 let result = self.ty(&self.source.close(result, &site))?;
-                let body = self.term(body, &mut scope, &site, index)?;
+                let mut body = self.term(body, &mut scope, &site, index)?;
+                // An artifact's decoded value is data, not a chain of
+                // constructions evaluated at each read (§17.14 *Cost*, the
+                // weight of a literal; §17.17 *Artifacts as data*).
+                let folded = self
+                    .source
+                    .is_artifact(&module, &name)
+                    .then(|| literal_of(&body))
+                    .flatten();
+                body = folded.map_or(body, |value| Expr::Value {
+                    ty: result.clone(),
+                    value,
+                });
                 self.functions[index as usize] = Some(Function {
                     parameters: names,
                     types,

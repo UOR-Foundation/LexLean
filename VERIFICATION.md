@@ -4058,6 +4058,33 @@ function 1 renders as a constant read twice. On this tree
 and `conformance_rb_07` fails with `the renderer changed without its record
 `rust_renderer``: both are records of the renderer's bytes.
 
+### artifacts as data can fail (SP-24, MD-14)
+
+Planted, three ways.
+
+1. The lowering stopped folding artifacts (`is_artifact` replaced by `false`).
+   `conformance_md_14` refused it at the first artifact read:
+
+```text
+Models.Main.classify: `Recognizer.outputBias` is built on each call, not held as data: Build { shape: Cons, ty: List { element: Int }, operands: [Value { ty: Int, value: Int { value: "-6" } }, Build { shape: Cons, ...
+```
+
+2. A literal turned back into its construction chain, and a literal with one
+   element changed: the first is a `Build` of constructors, which the
+   per-call check names; the second is unequal to the closed schemas'
+   decoding of the artifact's bytes, which the case computes from the file
+   alone.
+3. In certificate A of a root that holds a literal, every `conv_value` was
+   replaced by `conv_var`. `conformance_sp_24` compiles the planted module
+   under the pinned Lean and requires it to be refused.
+
+Before the aligner learned the case, the same run printed
+`LLI9001 phase preservation: the lowering of a cons is not a build of two`:
+certificate A had no derivation for a source list lowered to one literal. The
+fix is one branch in `data_a/prove.rs` using the lemma that relates any
+literal to its value; `git diff -- language/` is empty, so the preservation
+library did not grow. Removed: each plant was reverted.
+
 ### kernel-opaque classification is observed
 
 Probe: `compare_bytes` and byte equality were both treated as reducible, and

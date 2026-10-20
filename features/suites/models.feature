@@ -94,7 +94,7 @@ Feature: models
     And non-finite and out-of-range patterns are rejected and a planted rounding or exponent mutation is refused by verification
 
   @MD-14 @build
-  Scenario: The lowered program of a production root reading an artifact contains the artifact's decoded value as data equal to the decoding of its bytes and no per-call construction of it, and a root whose lowered program decodes or builds the value on a call is detected.
-    Given the committed models example, whose production roots read artifacts, and a copy whose lowered program builds an artifact per call
-    When it is built and verified
-    Then every artifact read is a data literal equal to its decoding, no function body builds an artifact value, and the copy is detected
+  Scenario: The lowered program of a production root reading an artifact holds the artifact's decoded value as a literal equal to the decoding of its bytes by the closed schemas, and no function of no parameters builds a list with constructors on a call; a literal turned back into its chain, or with one element changed, is detected, and a lowering that stops folding artifacts is refused by the case.
+    Given the committed models example, whose production roots read eight artifacts, and copies that turn a literal back into its chain or change one element
+    When every root is lowered and each artifact's file is decoded by the closed schemas from its bytes alone
+    Then each artifact definition is a literal equal to that decoding, no function of no parameters builds a list on a call, and each copy is detected
