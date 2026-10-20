@@ -10336,3 +10336,25 @@ the projection (C9). `%` is spelled U+FF05 in the chapters because a source
 cannot hold a raw percent sign (§12.1, `LLL1002`) and the formatter would write
 one back; no text of SPEC.md contains U+FF05. `NS-01` now has the pinned Lean
 elaborate and replay 75 modules (about 78 seconds for the case).
+
+## Planted defects for the source-authority audit (`NS-06`, #111)
+
+Planted alone on the committed tree, `cargo xtask validate-model` run once, the
+failure observed, the plant removed (§27.9). Linux x86-64.
+`conformance_ns_06` asserts these, and a stray vendored copy, a projection
+without its notice, and a generated document without its marker, in scratch
+copies on every run.
+
+| ID | Planted defect | Observed (after `gate failed: model is inconsistent:`) |
+| --- | --- | --- |
+| `NS-06` | `model/extra.toml` | ``R1: model/extra.toml is a file of model/ that is not a projection of spec/src (NS-06)`` |
+| `NS-06` | `SPEC2.md` at the root | ``R1: SPEC2.md is a Markdown file at the root that is neither generated from spec/src nor on the list of hand-written documents (NS-06)`` |
+| `NS-06` | the statement of `RP-06` appended to `README.md` | ``R1: README.md restates a registered statement, which makes it a second source: ... (NS-06)`` |
+
+At the base the audit found nothing to refuse: 7 root documents are
+projections or on the list, `model/` holds the four projections and the one
+vendored copy, and 17 hand-written Markdown files restate none of the 435
+register or 86 registry statements of 40 characters or more. The restatement
+rule is a heuristic with a threshold, not a proof that no second source exists:
+a paraphrase is not found. What it excludes is the cheap failure, a copied
+register.

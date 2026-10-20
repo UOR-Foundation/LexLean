@@ -17,6 +17,15 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- Normative text as LexLean source, authority and process (`NS-06`, stage 3 of
+  #111). `audit-source-authority` inside `validate-model`: `model/` holds only
+  the projections and vendored authority copies, every root Markdown file is a
+  projection or on the closed list of hand-written documents, the projections
+  say they are generated (SPEC.md gains a notice; CONFORMANCE.md and ERRORS.md
+  name `spec/src`), and no hand-written document restates a registered
+  statement. AGENTS.md re-orders "Adding a capability" and gains "Editing the
+  specification". Count 435 becomes 436.
+
 - Normative text as LexLean source, SPEC.md (`NS-05`, stage 2 of #111).
   SPEC.md is the projection of 33 chapter modules of `spec/` (1,330 `DocRows.Item`
   records: headings, paragraphs, tables, fences, continuations, derived blocks);
