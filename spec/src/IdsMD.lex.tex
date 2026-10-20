@@ -107,5 +107,13 @@ definition{
   body: (record Rows::IdRow {id := "MD-13", level := "build", suite := "models", statement := "IEEE-754 binary32 and binary64 bit patterns decode in LexLean to exact dyadic rationals (sign, integer mantissa, exponent) for zero, subnormal, and normal values while rejecting non-finite and out-of-range patterns, and the models corpus derives round(a * b / c * 2^32) from three binary32 patterns by exact integer arithmetic that agrees with an independent exact rational computation under Lean and refuses a planted rounding or exponent mutation.", sections := "§17.12, §28.6"}),
   executable: true
 }
+
+definition{
+  name: md14,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "MD-14", level := "build", suite := "models", statement := "The lowered program of a production root reading an artifact contains the artifact's decoded value as data equal to the decoding of its bytes and no per-call construction of it, and a root whose lowered program decodes or builds the value on a call is detected.", sections := "§17.12"}),
+  executable: true
+}
 \end{semanticmodule}
 \end{lexlean}

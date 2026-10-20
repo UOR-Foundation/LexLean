@@ -59,5 +59,13 @@ definition{
   body: (record Rows::IdRow {id := "TC-07", level := "build", suite := "calculus", statement := "Every fixture with an observable outcome renders to a safe Rust library crate in rust-std, and in rust-core exactly when it needs no heap, that the pinned rustc compiles with warnings denied, that prints exactly the denotation's value or overflow, and whose counted work never exceeds the denotation's steps; planted value and work discrepancies are detected.", sections := "§17.14"}),
   executable: true
 }
+
+definition{
+  name: tc08,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "TC-08", level := "build", suite := "calculus", statement := "The production calculus has a closed data literal, a list, pair, option, or algebraic-data value spelled by literals of its element types, that has a type rule, a canonical form with one spelling per value, a kernel-checked denotation equal to the value it spells, and a stated cost that charges its weight once per read, so that a decoded constant is data in a program and never a chain of build expressions evaluated on each call; a literal of the wrong type, a malformed member, or a literal that is not canonical is refused with LLB6005.", sections := "§17.14"}),
+  executable: true
+}
 \end{semanticmodule}
 \end{lexlean}

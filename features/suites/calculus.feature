@@ -50,3 +50,9 @@ Feature: calculus
     When each is rendered as a library crate in both profiles where it can be, compiled with its harness by rustc with warnings denied, and run
     Then rust-core renders exactly the fixtures that need no heap, and each run prints the denotation's observable outcome and a work count no greater than its steps
     And a wrapping addition or a Euclidean quotient planted in a rendering changes the printed outcome, and a quadratic append exceeds the steps
+
+  @TC-08 @build
+  Scenario: The production calculus has a closed data literal, a list, pair, option, or algebraic-data value spelled by literals of its element types, that has a type rule, a canonical form with one spelling per value, a kernel-checked denotation equal to the value it spells, and a stated cost that charges its weight once per read, so that a decoded constant is data in a program and never a chain of build expressions evaluated on each call; a literal of the wrong type, a malformed member, or a literal that is not canonical is refused with LLB6005.
+    Given a calculus program that holds a decoded constant as a data literal, and copies that plant a mistyped literal, a malformed member, and a noncanonical spelling
+    When it is loaded, evaluated by the denotation, and rendered
+    Then the literal has its type, its canonical form, and the denotation's value, the cost is its weight per read, and each copy fails with LLB6005
