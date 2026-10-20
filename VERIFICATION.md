@@ -15114,6 +15114,15 @@ which was not run twice. The maintainer's review of #234 reads CI's `rest` leg
 as showing no slowdown above noise on the other cut (259 tests in 2,153 s on
 the baseline, 260 in 1,921 s with this head).
 
+The first measurement also ran `cargo test -p lexlean` in each setting, and
+both runs ended with a failure that is not the setting's: the tree was edited
+and a branch switched while they ran, and tests of the crate read the
+repository. Run again with the tree untouched, in a separate target directory
+and with `--config profile.dev.package.lexlean.opt-level=0`, all 246 tests
+pass; no test depends on where the target directory is. That clean run is
+also a measurement of the same kind: `tests/property.rs` (11 tests) takes
+1,369 s at `opt-level = 0` and 197 s at `opt-level = 1`, the rest of the
+crate's tests about 40 s or less in either.
 `SL-06` holds every identity to the one the `sha2` crate gave (#126, stage 2):
 the tracked files of the tree (9,300 at this commit, 300.7 MB; a link to a
 file is read through, a link to a directory has no bytes) digest identically under `Sha256Digest::of` and under `sha2`; the
