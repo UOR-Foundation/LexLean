@@ -1470,6 +1470,8 @@ pub enum SemanticDeclaration {
         name: String,
         capacity: u64,
         overflow: OverflowDisposition,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        axioms: Vec<String>,
     },
     /// Language 1.2 (text): a generator over a tokenizer, a window and a
     /// scorer, with `max_tokens`, `stop` and a closed policy.
@@ -1481,6 +1483,8 @@ pub enum SemanticDeclaration {
         max_tokens: u64,
         stop: MemberRef,
         policy: GenerationPolicy,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        axioms: Vec<String>,
     },
     /// Language 1.2 (text): a classifier over token-count features.
     TextClassifier {
@@ -1555,13 +1559,13 @@ impl SemanticDeclaration {
             | Self::InferenceRule { axioms, .. }
             | Self::Verifier { axioms, .. }
             | Self::Reasoner { axioms, .. }
-            | Self::Tokenizer { axioms, .. } => axioms,
+            | Self::Tokenizer { axioms, .. }
+            | Self::ContextWindow { axioms, .. }
+            | Self::TextGenerator { axioms, .. } => axioms,
             Self::Structure { .. }
             | Self::Class { .. }
             | Self::Instance { .. }
             | Self::Inductive { .. }
-            | Self::ContextWindow { .. }
-            | Self::TextGenerator { .. }
             | Self::TextClassifier { .. } => &[],
         }
     }
@@ -3672,6 +3676,8 @@ struct Environment<'a> {
     /// Language 1.2 (reasoning): every visible logic, rule, and verifier,
     /// and the generated functions executable code may not reach directly.
     reasoning: reasoning::Reasoning,
+    /// Language 1.2 (text): every visible tokenizer and context window.
+    texts: language_model::Texts,
     /// Language 1.2 (models): the declaration being checked was elaborated
     /// from a model declaration, so generated binders are admitted.
     derived: bool,
@@ -9122,6 +9128,7 @@ impl SemanticModule {
             }
             model::register_import(import, &module.elaboration, &mut env.models);
             reasoning::register_import(import, &module.elaboration, &mut env);
+            language_model::register_import(import, &module.elaboration, &mut env);
         }
         for (key, (flags, nested, members)) in imported_flags {
             if let Some(info) = env.types.get_mut(&key) {
@@ -9465,7 +9472,9 @@ impl SemanticModule {
                     )?;
                     elaboration.record(index, lowering);
                 }
-                SemanticDeclaration::Tokenizer { .. } => {
+                SemanticDeclaration::Tokenizer { .. }
+                | SemanticDeclaration::ContextWindow { .. }
+                | SemanticDeclaration::TextGenerator { .. } => {
                     // §17.12 (text): a tokenizer states no law of its own.
                     // Its meaning is the sealed laws library the compiler
                     // embeds — `encode`, `decode`, `encodeText`, `decodeText`
@@ -9476,7 +9485,9 @@ impl SemanticModule {
                     // generated theorems the library's lemmas prove, and that
                     // library's import, so the generated module imports the
                     // laws rather than carrying a copy of them, and no Lean
-                    // text is spliced.
+                    // text is spliced. A context window and a text generator
+                    // elaborate the same way, over the library's windows and
+                    // bounded generation loop.
                     let lowering = language_model::check_declaration(
                         declaration,
                         &mut env,
@@ -9488,14 +9499,12 @@ impl SemanticModule {
                         text_imports.push(laws.to_owned());
                     }
                 }
-                SemanticDeclaration::ContextWindow { .. }
-                | SemanticDeclaration::TextGenerator { .. }
-                | SemanticDeclaration::TextClassifier { .. } => {
-                    // §17.12 (text): the remaining text constructs carry
-                    // their own elaborations, in their own slices of #30.
-                    // One admitted under 1.2 without one is reported by
-                    // `Builder::finish` exactly as it reports any family
-                    // declaration linking did not elaborate.
+                SemanticDeclaration::TextClassifier { .. } => {
+                    // §17.12 (text): a text classifier carries its own
+                    // elaboration, in its own slice of #30. One admitted
+                    // under 1.2 without one is reported by `Builder::finish`
+                    // exactly as it reports any family declaration linking
+                    // did not elaborate.
                     require_language_1_2(&env, "text declaration")?;
                 }
             }
@@ -9504,6 +9513,7 @@ impl SemanticModule {
             &self.declarations,
             env.models.locals(),
             env.reasoning.locals(),
+            env.texts.locals(),
             text_imports,
         )?;
         // Every declaration has been checked with its widening conversions

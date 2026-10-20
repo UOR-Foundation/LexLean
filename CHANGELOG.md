@@ -17,6 +17,30 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- Context windows and text generators (SPEC.md §17.12, *Text components*,
+  `LM-04`..`LM-06`, slice 2 of #30; new code `LLT4016`). A `context_window`
+  of capacity at least 1 and overflow `refuse` or `keep_last` elaborates to
+  `capacity`, `fit`, and `push` over the text-laws library and generates
+  `bounded`, `push_bounded`, `exact`, and `suffix` (`keep_last`) or
+  `refuses` (`refuse`). A `text_generator` over a prior tokenizer, window,
+  stateless `list uint32 -> list int` model, and `uint32` stop token, with
+  `max_tokens` at least 1, elaborates to `score`, the closed inductives
+  `End` (`stop`, `exhausted`) and `Failure` (`unknown_token`,
+  `context_overflow`, `invalid_utf8`), `run` (the library's bounded loop),
+  `generateTokens`, and `generate`, and generates `bounded` (at most
+  `max_tokens` tokens) and `context_bounded` (the scorer is never consulted
+  on a context that does not fit). `greedy` takes the first maximum and no
+  seed; `sample` draws through the closed `xorshift32` and `proportional`
+  members with the seed an explicit input and the next seed an explicit
+  output. Both declarations gain an `axioms` policy. A capacity or
+  `max_tokens` of 0 is `LLT4016`; a member of another kind is `LLT4006`. The
+  laws are new declarations of the native `LexLeanText` module, authored once
+  outside the release tree and exported by the same round trip as slice 1
+  (`tests/text-laws/MIGRATION.md`, second record). The language-1.2
+  `semantic_ir` and `latex_backend` versions move to 14 and 13, so every
+  language-1.2 lock, golden, fixture, and verification record is
+  regenerated. Text classifiers, adapters, composition, production, and the
+  end-to-end example are not part of this change. The register holds 429 IDs.
 - The repository's own URL is `https://github.com/UOR-Foundation/LexLean`
   (#34, D1): the `repository` and `homepage` fields of the workspace manifest,
   SPEC.md §1 and §2.3, the README, the image's `org.opencontainers.image.source`
@@ -164,6 +188,19 @@ and Unreleased holds what has landed since.
   the gate are the rows of `.github/vv-rows.json`, the matrix the plan hands
   to `vv`. `release.yml` still runs `just vv` whole and reads no earlier run.
   The register is unchanged: the statement of `RP-14` is extended.
+- The host legs of CI may run for 240 minutes, where they were cut off at 120:
+  the Intel macOS leg took 74, 92, and 100 minutes on the three full gates
+  before 2026-10-20, then passed its 430 conformance tests in 99 minutes and
+  was cancelled at 120 during the last test binaries. A leg cancelled at its
+  limit is not a result about the code; the limit is again twice the slowest
+  observed time.
+- Release lines (SPEC.md §9.4, `RP-14`): the branch `release/vX.Y` is the
+  release X.Y, cut from `main` when work on it begins; a milestone's pull
+  requests target its line, tags are made from it, it is merged forward into
+  the next line after each landing, and `main` is the newest released line.
+  The three workflows run on a push to a release line as on a push to `main`,
+  under the same plan, and `RP-14` reads their push triggers. The register is
+  unchanged: the statement of `RP-14` is extended.
 - Measured stack bounds for every production root a conformance harness runs
   on a corpus and that admits `recursion` (SPEC.md §17.13, §17.23, `PD-08`,
   #105 step 3; no new diagnostic code, no change to any language identity).
@@ -213,6 +250,22 @@ and Unreleased holds what has landed since.
   twelve planted defects, and the certified packages against the committed
   ones. The Rust reasons are reproduced to the byte but for Rust's `Debug` of
   a string with a scalar beyond U+009F, which is outside the claim.
+- The Rust crate validator as language-1.2 source (SPEC.md §17.23, §17.16,
+  `BS-05`, #92; no new diagnostic code, no change to the language-1.2
+  identity). `bootstrap/src/RustValidate.lex.tex` declares `validateCrate` and
+  `correspondCrate` as production roots for `rust-std`, for a crate given as
+  the closed Rust AST as data, with the oracle's reasons to the byte and the
+  rules for a loop (`Expr::Loop`: ownership across a body that runs again, the
+  fallible-tail rule, the body as a block that is not a tail). `BS-05` runs the
+  223 distinct crates the renderer lowers from the committed programs, 132 +
+  12 rule runs that reach each of the 48 reachable refusals three times, and 17
+  + 34 hand-built crates (406 + 269 vectors) under the pinned `rustc` on every
+  host, and on the normative host the evaluator on the crates of at most 400
+  expressions and 500 seeded mutants, 2,000 more per root under `rustc`,
+  sixteen planted defects, and the certified packages against the committed
+  ones. The register is 430 IDs. A finding about the certificate generator,
+  #222, is worked around by building the correspondence table in a definition
+  of its own.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or
