@@ -22,8 +22,9 @@ const RUNS: usize = 150;
 
 /// The abstention threshold of `Main.threshold`.
 const THRESHOLD: i64 = 2;
-/// The weight of the diagonal of the `topic-weights` artifact.
-const WEIGHT: i64 = 3;
+/// The diagonal of the `topic-weights` artifact: what a mention adds to the
+/// score of each topic.
+const WEIGHTS: [i64; 3] = [4, 3, 2];
 /// The keywords of each topic: the features of `Router.features`.
 const KEYWORDS: [[&str; 2]; 3] = [
     ["down", "outage"],
@@ -82,9 +83,10 @@ fn decide(request: &[u8]) -> Option<Option<usize>> {
     };
     let scores: Vec<i64> = KEYWORDS
         .iter()
-        .map(|words| {
+        .zip(WEIGHTS)
+        .map(|(words, weight)| {
             if words.iter().any(|word| mentions(word)) {
-                WEIGHT
+                weight
             } else {
                 0
             }
