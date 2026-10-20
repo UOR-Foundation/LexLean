@@ -252,6 +252,18 @@ pub(super) fn run(id: &str) {
         .unwrap_or_else(|error| panic!("{LINK}: the link to the export is broken: {error}"));
     link_is_the_export(&link, &export).unwrap_or_else(|reason| panic!("{reason}"));
 
+    // Each digest the case states is stated by a `some-true` claim of the
+    // ledger, which cites the authority row that vendors the document or the
+    // file (R2): a constant the register does not state is not an authority.
+    let ledger =
+        std::fs::read_to_string(root.join("model/ledger.toml").as_std_path()).expect("the ledger");
+    for (_, stated) in FIPS.iter().chain([&(&b""[..], MILLION_A)]) {
+        assert!(
+            ledger.contains(stated),
+            "no authority claim of model/ledger.toml states the digest {stated}"
+        );
+    }
+
     // The authorities first: a vector and `sha2` must agree before either
     // judges the compiler.
     for (message, stated) in FIPS {

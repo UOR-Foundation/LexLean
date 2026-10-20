@@ -9366,6 +9366,33 @@ gate stays armed.
 
 Removed: every plant was restored; `conformance_sl_05` passes, in 4.9 s.
 
+The digests the case holds the compiler to are `some-true` claims, reproduced
+from authorities and not established here (R2): `model/authorities.toml` has
+rows for FIPS 180-4 (the standard, vendored with the checksum `validate-model`
+recomputes), NIST's SHA-256 examples (vendored: `abc` and the 448-bit
+message), FIPS 180-2 appendix B.3 (the million-`a` message; cited by the
+SHA-256 of the copy read, nothing vendored), and the two CAVP response files
+(vendored from `tests/stdlib/sha256/`), each with a ledger claim that states
+its digests. The case requires every digest it names to appear in a claim.
+Two plants: a digest constant of the case changed in its last digit
+(`ba7816bf…15ad` to `…15ae`):
+
+```text
+panicked at crates/conformance/src/cases/stdlib_digest.rs:261:9:
+no authority claim of model/ledger.toml states the digest ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ae
+```
+
+and one byte appended to the vendored `NIST.FIPS.180-4.pdf`
+(`validate-model`, R6):
+
+```text
+gate failed: model is inconsistent: NIST-FIPS-180-4: model/authorities/NIST.FIPS.180-4.pdf hashes to 48b486fb…, not its checksum 0455b406… (R6)
+```
+
+Writing the check found a gap in the first draft of the rows: no claim stated
+the digest of the empty message (it is in the vendored `SHA256ShortMsg.rsp`,
+`Len = 0`), and the case failed until the CAVP claim stated it.
+
 Open measurements (C5; none is an acceptance criterion), on 4 cores of a Xeon
 at 2.1 GHz with SHA extensions, `rustc` 1.97.1:
 
