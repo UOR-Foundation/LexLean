@@ -17,6 +17,22 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- The compiler's digest is the standard library's `Sha256` package (SPEC.md
+  §17.22, §21.1, §5.1, `SL-05`, #126 stage 2; no new diagnostic code, no
+  identity moves). `Sha256Digest::of`, `FramedHasher`, and `tree_digest`
+  compute through the committed production export of `LexLeanStd.Sha256`,
+  linked by `crates/lexlean/sha256_package.rs` (a link `audit-shipped`
+  requires to resolve to that file, wrapped as a module by `build.rs`), and
+  the shipped `lexlean` crate no longer depends on `sha2`; `repo-model` and
+  `repo-conformance` keep it as the stage-0 oracle, which falsifies and never
+  establishes. `[profile.dev.package.lexlean]` is `opt-level = 1`, because
+  the package hashes 0.7 MB/s unoptimized and about 68 MB/s at that level.
+  `conformance_sl_05` holds the compiler's own API to the FIPS 180-4 and NIST
+  CAVP vectors, every length to 300 bytes and around each power of two to
+  4 MiB, and a seeded corpus, and detects five planted defects. The framing
+  recipes of §21.1 remain Rust (#92). Language 1.0, 1.1, and 1.2 identities,
+  locks, goldens, and verification records are byte-identical.
+
 - Context windows and text generators (SPEC.md §17.12, *Text components*,
   `LM-04`..`LM-06`, slice 2 of #30; new code `LLT4016`). A `context_window`
   of capacity at least 1 and overflow `refuse` or `keep_last` elaborates to
