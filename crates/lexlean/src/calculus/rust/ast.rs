@@ -120,6 +120,8 @@ pub enum Type {
     Fallible(Box<Type>),
     /// A borrowed parameter of an exported function.
     Ref(Box<Type>),
+    /// `i128`, the operand type of the runtime's conversions to a width.
+    I128,
 }
 
 impl Type {
@@ -142,6 +144,7 @@ impl Type {
             Self::Rc(inner) => format!("std::rc::Rc<{}>", inner.text()),
             Self::Fallible(inner) => format!("R<{}>", inner.text()),
             Self::Ref(inner) => format!("&{}", inner.text()),
+            Self::I128 => "i128".to_owned(),
         }
     }
 
@@ -157,6 +160,7 @@ impl Type {
             | Self::Nat
             | Self::Int
             | Self::Fixed(_)
+            | Self::I128
             | Self::Ordering
             | Self::Adt(_)
             | Self::Fn(_) => false,
@@ -168,9 +172,13 @@ impl Type {
     #[must_use]
     pub fn copy(&self) -> bool {
         match self {
-            Self::Unit | Self::Bool | Self::Nat | Self::Int | Self::Fixed(_) | Self::Ordering => {
-                true
-            }
+            Self::Unit
+            | Self::Bool
+            | Self::Nat
+            | Self::Int
+            | Self::Fixed(_)
+            | Self::I128
+            | Self::Ordering => true,
             Self::Option(inner) => inner.copy(),
             Self::Result(left, right) | Self::Pair(left, right) => left.copy() && right.copy(),
             Self::Str

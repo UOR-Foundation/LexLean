@@ -1457,7 +1457,8 @@ definition{
     | RustSyntax::RustType.fn ignored554 => false
     | RustSyntax::RustType.rc ignored555 => false
     | RustSyntax::RustType.fallible ignoredInner => true
-    | RustSyntax::RustType.ref ignored556 => false)
+    | RustSyntax::RustType.ref ignored556 => false
+    | RustSyntax::RustType.i128 => false)
 }
 
 definition{
