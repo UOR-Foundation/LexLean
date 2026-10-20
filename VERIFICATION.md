@@ -15109,8 +15109,8 @@ in the locks of `examples/nat-add-zero`, `examples/semantic-1.1`, and
 independent recomputations of `AR-05`, `AR-06`, `SM-10`, `CF-07`, `CF-09`, and
 `TX-10` pass; and every example but `uor-atlas`, the standard library, the
 compiler project, and the bootstrap project recompute their locks on `check`.
-The case is armed by the manifest check of `SL-05`: with `sha2` in the shipped
-crate the two sides would be one implementation. Two defects are planted in the
+The case is armed by the dependency check of `SL-05` (`cargo metadata`, not a
+manifest line): with `sha2` in the shipped crate the two sides would be one implementation. Two defects are planted in the
 tree and found (the first panic line of each, `conformance_sl_06`), and the case
 makes three on copies on every run (a bit in a tracked file's digest, in a
 pinned ID, and the order of a source-ID recipe's frames).
