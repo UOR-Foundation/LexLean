@@ -135,6 +135,15 @@ public inductive Machine where
   | checkedShl (_ : LexLeanTarget.TargetSyntax.IntKind)
   | checkedShr (_ : LexLeanTarget.TargetSyntax.IntKind)
   | tryFrom (_ : LexLeanTarget.TargetSyntax.IntKind)
+  | bitAnd (_ : LexLeanTarget.TargetSyntax.IntKind)
+  | bitOr (_ : LexLeanTarget.TargetSyntax.IntKind)
+  | bitXor (_ : LexLeanTarget.TargetSyntax.IntKind)
+  | bitNot (_ : LexLeanTarget.TargetSyntax.IntKind)
+  | natEq
+  | natLe
+  | natLt
+  | natRem
+  | intRem
 
 public inductive Callee where
   | function (_ : Nat)

@@ -1197,7 +1197,16 @@ definition{
     | RustSyntax::Machine.checkedNeg ignoredWidth => (ctor TargetSyntax::Prim.checkedNeg)
     | RustSyntax::Machine.checkedShl ignoredWidth => (ctor TargetSyntax::Prim.shiftLeft)
     | RustSyntax::Machine.checkedShr ignoredWidth => (ctor TargetSyntax::Prim.shiftRight)
-    | RustSyntax::Machine.tryFrom target => (ctor TargetSyntax::Prim.convert target))
+    | RustSyntax::Machine.tryFrom target => (ctor TargetSyntax::Prim.convert target)
+    | RustSyntax::Machine.bitAnd ignoredWidth => (ctor TargetSyntax::Prim.bitAnd)
+    | RustSyntax::Machine.bitOr ignoredWidth => (ctor TargetSyntax::Prim.bitOr)
+    | RustSyntax::Machine.bitXor ignoredWidth => (ctor TargetSyntax::Prim.bitXor)
+    | RustSyntax::Machine.bitNot ignoredWidth => (ctor TargetSyntax::Prim.bitNot)
+    | RustSyntax::Machine.natEq => (ctor TargetSyntax::Prim.natEq)
+    | RustSyntax::Machine.natLe => (ctor TargetSyntax::Prim.natLe)
+    | RustSyntax::Machine.natLt => (ctor TargetSyntax::Prim.natLt)
+    | RustSyntax::Machine.natRem => (ctor TargetSyntax::Prim.natRem)
+    | RustSyntax::Machine.intRem => (ctor TargetSyntax::Prim.intRem))
 }
 
 definition{
@@ -1212,7 +1221,16 @@ definition{
     | RustSyntax::Machine.checkedNeg kind => (ctor Option.some [TargetSyntax::IntKind] kind)
     | RustSyntax::Machine.checkedShl kind => (ctor Option.some [TargetSyntax::IntKind] kind)
     | RustSyntax::Machine.checkedShr kind => (ctor Option.some [TargetSyntax::IntKind] kind)
-    | RustSyntax::Machine.tryFrom ignoredTarget => (ctor Option.none [TargetSyntax::IntKind]))
+    | RustSyntax::Machine.tryFrom ignoredTarget => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.bitAnd kind => (ctor Option.some [TargetSyntax::IntKind] kind)
+    | RustSyntax::Machine.bitOr kind => (ctor Option.some [TargetSyntax::IntKind] kind)
+    | RustSyntax::Machine.bitXor kind => (ctor Option.some [TargetSyntax::IntKind] kind)
+    | RustSyntax::Machine.bitNot kind => (ctor Option.some [TargetSyntax::IntKind] kind)
+    | RustSyntax::Machine.natEq => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.natLe => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.natLt => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.natRem => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.intRem => (ctor Option.none [TargetSyntax::IntKind]))
 }
 
 definition{
@@ -1227,7 +1245,16 @@ definition{
     | RustSyntax::Machine.checkedNeg ignoredWidth => false
     | RustSyntax::Machine.checkedShl ignoredWidth => true
     | RustSyntax::Machine.checkedShr ignoredWidth => true
-    | RustSyntax::Machine.tryFrom ignoredTarget => false)
+    | RustSyntax::Machine.tryFrom ignoredTarget => false
+    | RustSyntax::Machine.bitAnd ignoredWidth => false
+    | RustSyntax::Machine.bitOr ignoredWidth => false
+    | RustSyntax::Machine.bitXor ignoredWidth => false
+    | RustSyntax::Machine.bitNot ignoredWidth => false
+    | RustSyntax::Machine.natEq => false
+    | RustSyntax::Machine.natLe => false
+    | RustSyntax::Machine.natLt => false
+    | RustSyntax::Machine.natRem => false
+    | RustSyntax::Machine.intRem => false)
 }
 
 definition{
