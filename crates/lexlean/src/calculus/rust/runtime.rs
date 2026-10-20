@@ -27,9 +27,6 @@ static WORK: AtomicU64 = AtomicU64::new(0);
 pub fn tick(units: u64) { WORK.fetch_add(units, Memory::Relaxed); }
 pub fn work() -> u64 { WORK.load(Memory::Relaxed) }
 
-pub fn bool_not(a: bool) -> bool { !a }
-pub fn bool_and(a: bool, b: bool) -> bool { a && b }
-pub fn bool_or(a: bool, b: bool) -> bool { a || b }
 
 pub trait Same { fn same(&self, other: &Self) -> bool; }
 pub trait Key { fn key(&self, other: &Self) -> Ordering; }

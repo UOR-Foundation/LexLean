@@ -1936,10 +1936,10 @@ print as fully qualified trait calls.
 
 `rust::source` decodes the shipped `RustRuntime` module and `runtime::core()` prints its
 functions after the base text (`RB-16`, §17.16, #91 stage 4, PR 2). The module defines
-fifteen of the 144 functions: the natural functions `nat_add`, `nat_sub`, `nat_mul`, `nat_quot`,
+eighteen of the 144 functions: the natural functions `nat_add`, `nat_sub`, `nat_mul`, `nat_quot`,
 `nat_rem`, `nat_eq`, `nat_le`, `nat_lt`, and `nat_succ`, and the integer functions `int_add`,
-`int_sub`, `int_mul`, `int_neg`, `int_quot`, and `int_rem`, each a call of a machine primitive
-(`nat_add` is `match u64::checked_add(p0, p1) { Some(v0) => Ok(v0), None => Err(Overflow) }`, and
+`int_sub`, `int_mul`, `int_neg`, `int_quot`, and `int_rem`, each a call of a machine primitive, and the Boolean functions `bool_not`, `bool_and`, and `bool_or`, a negation and two conditionals (`if p0 { p1 } else { false }`, `if p0 { true } else { p1 }`)
+(the fallible ones return `R<T>`; `nat_add` is `match u64::checked_add(p0, p1) { Some(v0) => Ok(v0), None => Err(Overflow) }`, and
 the other fallible ones have its shape; the plain ones are the call alone); the handwritten text of the whole runtime is kept at
 `tests/rust-runtime-oracle/{core,std}.rs.txt` (its SHA-256 is the `rust_runtime_core` the
 language data recorded before this change). The case (`cases/rust_runtime.rs`) requires the shipped
@@ -1993,10 +1993,10 @@ differential covers {}`.
 
 `refines_nat_add` states, for all `x y : Nat`, `runExport 12 coreCrate "nat_add" [nat x, nat y]
 = runItem core natAdd [nat x, nat y]` and is proved by `term_cases` over the primitive's outcome
-with the definitions the unfolding draws on (`SP-22`, §17.16, #91 stage 4, PR 2); the other fourteen
-functions have a theorem of the same form over their primitive, the module's own data definitions
+with the definitions the unfolding draws on (`SP-22`, §17.16, #91 stage 4, PR 2); the other thirteen
+natural and integer functions have a theorem of the same form over their primitive, the module's own data definitions
 (parameters, argument reads, the two arms of a checked call) listed with the `RustSemantics`
-ones. `nat_succ`'s run adds the operand one to the item's list, and `itemOperands` stated that with
+ones. the three Boolean functions are proved by `cases` on each Boolean parameter (`SM-36`) with `reflexivity` in each of the two or four branches, because a Boolean has no document inductive for `term_cases` to split on and the two sides agree only on the values. `nat_succ`'s run adds the operand one to the item's list, and `itemOperands` stated that with
 `prim append`, which the proof cannot unfold; its arm now matches the list of one operand and
 states the list of two directly, keeping `prim append` for any other length, so the item's meaning
 is unchanged and the shipped `RustSemantics.lean` is regenerated. The case (`cases/rust_refinement.rs`)
@@ -2007,8 +2007,8 @@ project of the five modules the runtime module imports, and has the pinned Lean 
 conditional of `itemFallible` only through `ite_true` and `ite_false`, which the lowering of
 `term_cases` therefore names (see `SM-35`).
 
-Plants, each restored: a theorem renamed to `refines_nat_other` (`the module defines` the fifteen names,
-`its refinement theorems are for` the fourteen and `nat_other`); the theorem removed (the same message); the theorem
+Plants, each restored: a theorem renamed to `refines_nat_other` (`the module defines` the eighteen names,
+`its refinement theorems are for` the seventeen and `nat_other`); the theorem removed (the same message); the theorem
 run on `"nat_sub"` (`refines_nat_add states the run of nat_sub`); the body changed to the checked
 product (`LLV7002` with `unsolved goals`); the axiom policy changed to `[propext]` (`LLV7005`,
 `violates its exact axiom policy: observed [Classical.choice, Quot.sound, propext]`).

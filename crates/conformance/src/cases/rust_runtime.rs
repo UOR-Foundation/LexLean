@@ -21,7 +21,7 @@ const SHIPPED: &str = "language/rust-runtime-1.2/RustRuntime.lex.tex";
 /// The calls the differential makes of each defined function: the `same!`
 /// of the harness runs the oracle's and the generated function on the same
 /// arguments and compares what they return and the work they count.
-const DIFFERENTIAL: [(&str, &str); 15] = [
+const DIFFERENTIAL: [(&str, &str); 18] = [
     ("nat_add",
         "for &a in &nats { for &b in &nats { same!(nat_add(a, b)); } }\n    for _ in 0..1000 { let (a, b) = (next(), next()); same!(nat_add(a, b)); same!(nat_add(a >> 1, b >> 1)); }"),
     ("nat_sub",
@@ -52,6 +52,18 @@ const DIFFERENTIAL: [(&str, &str); 15] = [
         "for &a in &ints { for &b in &ints { for &z in &[i64::MIN, -1, 0, 7, i64::MAX] { same!(int_quot(a, b, z)); } } }\n    for _ in 0..1000 { let (a, b, z) = (next() as i64, next() as i64, next() as i64); same!(int_quot(a, b, z)); same!(int_quot(a >> 40, b >> 50, z)); }"),
     ("int_rem",
         "for &a in &ints { for &b in &ints { for &z in &[i64::MIN, -1, 0, 7, i64::MAX] { same!(int_rem(a, b, z)); } } }\n    for _ in 0..1000 { let (a, b, z) = (next() as i64, next() as i64, next() as i64); same!(int_rem(a, b, z)); same!(int_rem(a >> 40, b >> 50, z)); }"),
+    (
+        "bool_not",
+        "for &a in &[false, true] { same!(bool_not(a)); }",
+    ),
+    (
+        "bool_and",
+        "for &a in &[false, true] { for &b in &[false, true] { same!(bool_and(a, b)); } }",
+    ),
+    (
+        "bool_or",
+        "for &a in &[false, true] { for &b in &[false, true] { same!(bool_or(a, b)); } }",
+    ),
 ];
 
 /// The names of the functions a decoded module defines.
