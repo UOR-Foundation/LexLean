@@ -132,6 +132,13 @@ fn project(text: &str) -> P {
         "entrypoints = [\"src/Main.lex.tex\"]",
         "entrypoints = [\"src/RustRuntime.lex.tex\"]",
     );
+    // Each theorem is a proof search over the whole crate: the module of every
+    // function elaborates in minutes, longer than the five a project allows.
+    project.edit(
+        "lexlean.toml",
+        "child_timeout_ms = 300000",
+        "child_timeout_ms = 3600000",
+    );
     project.relock();
     project
 }
