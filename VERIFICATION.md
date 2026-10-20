@@ -1920,24 +1920,34 @@ print as fully qualified trait calls.
 
 `rust::source` decodes the shipped `RustRuntime` module and `runtime::core()` prints its
 functions after the base text (`RB-16`, §17.16, #91 stage 4, PR 2). The module defines
-`nat_add` as `match u64::checked_add(p0, p1) { Some(v0) => Ok(v0), None => Err(Overflow) }`,
-the first of the 144 functions; the handwritten text of the whole runtime is kept at
+fifteen of the 144 functions: the natural functions `nat_add`, `nat_sub`, `nat_mul`, `nat_quot`,
+`nat_rem`, `nat_eq`, `nat_le`, `nat_lt`, and `nat_succ`, and the integer functions `int_add`,
+`int_sub`, `int_mul`, `int_neg`, `int_quot`, and `int_rem`, each a call of a machine primitive
+(`nat_add` is `match u64::checked_add(p0, p1) { Some(v0) => Ok(v0), None => Err(Overflow) }`, and
+the other fallible ones have its shape; the plain ones are the call alone); the handwritten text of the whole runtime is kept at
 `tests/rust-runtime-oracle/{core,std}.rs.txt` (its SHA-256 is the `rust_runtime_core` the
 language data recorded before this change). The case (`cases/rust_runtime.rs`) requires the shipped
 copy to be the compiler project's module byte for byte; requires the module to define at
 least one function and the differential to cover exactly the functions it defines; requires
 the embedded module to print as `assemble` of the decoded items; compiles the oracle as
 module `old` and the generated runtime as module `new` of one crate under the pinned rustc with
-warnings denied; and runs `nat_add` on 100 boundary pairs and 4,000 seeded pairs, comparing
-the debug form of the result and the counted work (`work()`, the same for both: zero).
+warnings denied; and runs every defined function on all pairs (triples with a zero-divisor value
+for the quotients and remainders) of 11 boundary values of its type and on 1,000 to 2,000 seeded
+calls each, comparing the debug form of the result and the counted work (`work()`, the same for
+both: zero). Four bodies changed to another primitive (the checked product for the checked sum of
+naturals, the checked difference for the checked sum of integers, the strict order for the loose
+one, the remainder for the quotient) are each caught at the function's own `result` assertion.
 Six decoder refusals are asserted by the message they give (no `coreCrate`, a definition
 with a parameter, a reference to a definition the module lacks, a machine primitive and a
 runtime function `RustSyntax` does not declare, a constructor with an extra argument).
 
 The tree-wide gates that read the runtime were run: `rb_01`, `rb_04`, `rb_05`, `rb_06`,
-`rb_08`, `rb_09`, `tc_07` pass. `rb_09` needed the library table to list the path form
-`<int>::checked_add`, which the generated text uses where the handwritten text used the
-method; `tc_07`'s plant of a wrapping addition named the handwritten text and now names the
+`rb_08`, `rb_09`, `tc_07` pass. `rb_09` needed the library table to list the path forms the generated text uses where
+the handwritten text used methods (`<int>::checked_add`, `checked_sub`, `checked_mul`, `checked_div`,
+`checked_neg`, `checked_rem`, `saturating_sub`, and `core::cmp::PartialEq::eq`, `PartialOrd::le`,
+`PartialOrd::lt`) and to drop the three method rows nothing uses any more (`checked_rem`, `ok_or`,
+`saturating_sub`); its plant of a role citing a name that is not a primitive now names the path row
+`<int>::saturating_sub`; `tc_07`'s plant of a wrapping addition named the handwritten text and now names the
 generated one (`u64::checked_add(p0, p1)` for `Some(u64::wrapping_add(p0, p1))`) and is still
 detected. `rb_07` and the `lexlean` unit tests of the renderer and runtime digests fail only on
 the records bound to the compiler-semantics ID (`rust_renderer`, `rust_runtime_core`,
@@ -1965,7 +1975,13 @@ differential covers {}`.
 
 `refines_nat_add` states, for all `x y : Nat`, `runExport 12 coreCrate "nat_add" [nat x, nat y]
 = runItem core natAdd [nat x, nat y]` and is proved by `term_cases` over the primitive's outcome
-with 37 definitions (`SP-22`, §17.16, #91 stage 4, PR 2). The case (`cases/rust_refinement.rs`)
+with the definitions the unfolding draws on (`SP-22`, §17.16, #91 stage 4, PR 2); the other fourteen
+functions have a theorem of the same form over their primitive, the module's own data definitions
+(parameters, argument reads, the two arms of a checked call) listed with the `RustSemantics`
+ones. `nat_succ`'s run adds the operand one to the item's list, and `itemOperands` stated that with
+`prim append`, which the proof cannot unfold; its arm now matches the list of one operand and
+states the list of two directly, keeping `prim append` for any other length, so the item's meaning
+is unchanged and the shipped `RustSemantics.lean` is regenerated. The case (`cases/rust_refinement.rs`)
 lists the functions with the decoder and the theorems from the module's data, requires one
 theorem per function with a statement that runs the function it is named for, builds the
 project of the five modules the runtime module imports, and has the pinned Lean verify it

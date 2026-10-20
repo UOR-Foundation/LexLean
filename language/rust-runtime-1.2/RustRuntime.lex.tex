@@ -7,6 +7,132 @@
 \title{Natural number addition}
 \begin{semanticmodule}
 definition{
+  name: p0,
+  parameters: [],
+  result: RustSyntax::Ident,
+  body: (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 0)
+}
+
+definition{
+  name: p1,
+  parameters: [],
+  result: RustSyntax::Ident,
+  body: (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 1)
+}
+
+definition{
+  name: p2,
+  parameters: [],
+  result: RustSyntax::Ident,
+  body: (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 2)
+}
+
+definition{
+  name: v0,
+  parameters: [],
+  result: RustSyntax::Ident,
+  body: (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.binding) 0)
+}
+
+definition{
+  name: copyP0,
+  parameters: [],
+  result: RustSyntax::Expr,
+  body: (ctor RustSyntax::Expr.copy (p0))
+}
+
+definition{
+  name: copyP1,
+  parameters: [],
+  result: RustSyntax::Expr,
+  body: (ctor RustSyntax::Expr.copy (p1))
+}
+
+definition{
+  name: copyP2,
+  parameters: [],
+  result: RustSyntax::Expr,
+  body: (ctor RustSyntax::Expr.copy (p2))
+}
+
+definition{
+  name: natP0,
+  parameters: [],
+  result: RustSyntax::Parameter,
+  body: (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (p0)), type := (ctor RustSyntax::RustType.nat)})
+}
+
+definition{
+  name: natP1,
+  parameters: [],
+  result: RustSyntax::Parameter,
+  body: (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (p1)), type := (ctor RustSyntax::RustType.nat)})
+}
+
+definition{
+  name: natP2,
+  parameters: [],
+  result: RustSyntax::Parameter,
+  body: (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (p2)), type := (ctor RustSyntax::RustType.nat)})
+}
+
+definition{
+  name: intP0,
+  parameters: [],
+  result: RustSyntax::Parameter,
+  body: (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (p0)), type := (ctor RustSyntax::RustType.int)})
+}
+
+definition{
+  name: intP1,
+  parameters: [],
+  result: RustSyntax::Parameter,
+  body: (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (p1)), type := (ctor RustSyntax::RustType.int)})
+}
+
+definition{
+  name: intP2,
+  parameters: [],
+  result: RustSyntax::Parameter,
+  body: (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (p2)), type := (ctor RustSyntax::RustType.int)})
+}
+
+definition{
+  name: boolP0,
+  parameters: [],
+  result: RustSyntax::Parameter,
+  body: (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (p0)), type := (ctor RustSyntax::RustType.bool)})
+}
+
+definition{
+  name: boolP1,
+  parameters: [],
+  result: RustSyntax::Parameter,
+  body: (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (p1)), type := (ctor RustSyntax::RustType.bool)})
+}
+
+definition{
+  name: someArm,
+  parameters: [],
+  result: RustSyntax::Arm,
+  body: (ctor RustSyntax::Arm.mk (ctor RustSyntax::Pat.some (ctor RustSyntax::Pat.bind (v0))) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.succeed (ctor RustSyntax::Expr.copy (v0)))))
+}
+
+definition{
+  name: failNat,
+  parameters: [],
+  result: RustSyntax::Arm,
+  body: (ctor RustSyntax::Arm.mk (ctor RustSyntax::Pat.none) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.construct (ctor RustSyntax::Ctor.err (ctor RustSyntax::RustType.nat) (ctor RustSyntax::RustType.unit)) (cons (ctor RustSyntax::Expr.lit (ctor RustSyntax::Lit.overflow)) (nil RustSyntax::Expr)))))
+}
+
+definition{
+  name: failInt,
+  parameters: [],
+  result: RustSyntax::Arm,
+  body: (ctor RustSyntax::Arm.mk (ctor RustSyntax::Pat.none) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.construct (ctor RustSyntax::Ctor.err (ctor RustSyntax::RustType.int) (ctor RustSyntax::RustType.unit)) (cons (ctor RustSyntax::Expr.lit (ctor RustSyntax::Lit.overflow)) (nil RustSyntax::Expr)))))
+}
+
+definition{
   name: natAddFunction,
   parameters: [],
   result: RustSyntax::ItemDef,
@@ -14,17 +140,227 @@ definition{
 }
 
 definition{
+  name: natSubFunction,
+  parameters: [],
+  result: RustSyntax::ItemDef,
+  body: (ctor RustSyntax::ItemDef.function (ctor RustSyntax::Ident.exported "nat_sub") (cons (natP0) (cons (natP1) (nil RustSyntax::Parameter))) (ctor RustSyntax::RustType.nat) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.call (ctor RustSyntax::Callee.machine (ctor RustSyntax::Machine.natSub)) (cons (copyP0) (cons (copyP1) (nil RustSyntax::Expr))) false)))
+}
+
+definition{
+  name: natMulFunction,
+  parameters: [],
+  result: RustSyntax::ItemDef,
+  body: (ctor RustSyntax::ItemDef.function (ctor RustSyntax::Ident.exported "nat_mul") (cons (natP0) (cons (natP1) (nil RustSyntax::Parameter))) (ctor RustSyntax::RustType.fallible (ctor RustSyntax::RustType.nat)) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.matchOn (ctor RustSyntax::Expr.call (ctor RustSyntax::Callee.machine (ctor RustSyntax::Machine.checkedNatMul)) (cons (copyP0) (cons (copyP1) (nil RustSyntax::Expr))) false) (cons (someArm) (cons (failNat) (nil RustSyntax::Arm))))))
+}
+
+definition{
+  name: natQuotFunction,
+  parameters: [],
+  result: RustSyntax::ItemDef,
+  body: (ctor RustSyntax::ItemDef.function (ctor RustSyntax::Ident.exported "nat_quot") (cons (natP0) (cons (natP1) (cons (natP2) (nil RustSyntax::Parameter)))) (ctor RustSyntax::RustType.nat) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.call (ctor RustSyntax::Callee.machine (ctor RustSyntax::Machine.natQuot)) (cons (copyP0) (cons (copyP1) (cons (copyP2) (nil RustSyntax::Expr)))) false)))
+}
+
+definition{
+  name: natRemFunction,
+  parameters: [],
+  result: RustSyntax::ItemDef,
+  body: (ctor RustSyntax::ItemDef.function (ctor RustSyntax::Ident.exported "nat_rem") (cons (natP0) (cons (natP1) (cons (natP2) (nil RustSyntax::Parameter)))) (ctor RustSyntax::RustType.nat) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.call (ctor RustSyntax::Callee.machine (ctor RustSyntax::Machine.natRem)) (cons (copyP0) (cons (copyP1) (cons (copyP2) (nil RustSyntax::Expr)))) false)))
+}
+
+definition{
+  name: natEqFunction,
+  parameters: [],
+  result: RustSyntax::ItemDef,
+  body: (ctor RustSyntax::ItemDef.function (ctor RustSyntax::Ident.exported "nat_eq") (cons (natP0) (cons (natP1) (nil RustSyntax::Parameter))) (ctor RustSyntax::RustType.bool) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.call (ctor RustSyntax::Callee.machine (ctor RustSyntax::Machine.natEq)) (cons (copyP0) (cons (copyP1) (nil RustSyntax::Expr))) false)))
+}
+
+definition{
+  name: natLeFunction,
+  parameters: [],
+  result: RustSyntax::ItemDef,
+  body: (ctor RustSyntax::ItemDef.function (ctor RustSyntax::Ident.exported "nat_le") (cons (natP0) (cons (natP1) (nil RustSyntax::Parameter))) (ctor RustSyntax::RustType.bool) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.call (ctor RustSyntax::Callee.machine (ctor RustSyntax::Machine.natLe)) (cons (copyP0) (cons (copyP1) (nil RustSyntax::Expr))) false)))
+}
+
+definition{
+  name: natLtFunction,
+  parameters: [],
+  result: RustSyntax::ItemDef,
+  body: (ctor RustSyntax::ItemDef.function (ctor RustSyntax::Ident.exported "nat_lt") (cons (natP0) (cons (natP1) (nil RustSyntax::Parameter))) (ctor RustSyntax::RustType.bool) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.call (ctor RustSyntax::Callee.machine (ctor RustSyntax::Machine.natLt)) (cons (copyP0) (cons (copyP1) (nil RustSyntax::Expr))) false)))
+}
+
+definition{
+  name: natSuccFunction,
+  parameters: [],
+  result: RustSyntax::ItemDef,
+  body: (ctor RustSyntax::ItemDef.function (ctor RustSyntax::Ident.exported "nat_succ") (cons (natP0) (nil RustSyntax::Parameter)) (ctor RustSyntax::RustType.fallible (ctor RustSyntax::RustType.nat)) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.matchOn (ctor RustSyntax::Expr.call (ctor RustSyntax::Callee.machine (ctor RustSyntax::Machine.checkedNatAdd)) (cons (copyP0) (cons (ctor RustSyntax::Expr.lit (ctor RustSyntax::Lit.nat 1)) (nil RustSyntax::Expr))) false) (cons (someArm) (cons (failNat) (nil RustSyntax::Arm))))))
+}
+
+definition{
+  name: intAddFunction,
+  parameters: [],
+  result: RustSyntax::ItemDef,
+  body: (ctor RustSyntax::ItemDef.function (ctor RustSyntax::Ident.exported "int_add") (cons (intP0) (cons (intP1) (nil RustSyntax::Parameter))) (ctor RustSyntax::RustType.fallible (ctor RustSyntax::RustType.int)) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.matchOn (ctor RustSyntax::Expr.call (ctor RustSyntax::Callee.machine (ctor RustSyntax::Machine.checkedIntAdd)) (cons (copyP0) (cons (copyP1) (nil RustSyntax::Expr))) false) (cons (someArm) (cons (failInt) (nil RustSyntax::Arm))))))
+}
+
+definition{
+  name: intSubFunction,
+  parameters: [],
+  result: RustSyntax::ItemDef,
+  body: (ctor RustSyntax::ItemDef.function (ctor RustSyntax::Ident.exported "int_sub") (cons (intP0) (cons (intP1) (nil RustSyntax::Parameter))) (ctor RustSyntax::RustType.fallible (ctor RustSyntax::RustType.int)) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.matchOn (ctor RustSyntax::Expr.call (ctor RustSyntax::Callee.machine (ctor RustSyntax::Machine.checkedIntSub)) (cons (copyP0) (cons (copyP1) (nil RustSyntax::Expr))) false) (cons (someArm) (cons (failInt) (nil RustSyntax::Arm))))))
+}
+
+definition{
+  name: intMulFunction,
+  parameters: [],
+  result: RustSyntax::ItemDef,
+  body: (ctor RustSyntax::ItemDef.function (ctor RustSyntax::Ident.exported "int_mul") (cons (intP0) (cons (intP1) (nil RustSyntax::Parameter))) (ctor RustSyntax::RustType.fallible (ctor RustSyntax::RustType.int)) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.matchOn (ctor RustSyntax::Expr.call (ctor RustSyntax::Callee.machine (ctor RustSyntax::Machine.checkedIntMul)) (cons (copyP0) (cons (copyP1) (nil RustSyntax::Expr))) false) (cons (someArm) (cons (failInt) (nil RustSyntax::Arm))))))
+}
+
+definition{
+  name: intNegFunction,
+  parameters: [],
+  result: RustSyntax::ItemDef,
+  body: (ctor RustSyntax::ItemDef.function (ctor RustSyntax::Ident.exported "int_neg") (cons (intP0) (nil RustSyntax::Parameter)) (ctor RustSyntax::RustType.fallible (ctor RustSyntax::RustType.int)) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.matchOn (ctor RustSyntax::Expr.call (ctor RustSyntax::Callee.machine (ctor RustSyntax::Machine.checkedIntNeg)) (cons (copyP0) (nil RustSyntax::Expr)) false) (cons (someArm) (cons (failInt) (nil RustSyntax::Arm))))))
+}
+
+definition{
+  name: intQuotFunction,
+  parameters: [],
+  result: RustSyntax::ItemDef,
+  body: (ctor RustSyntax::ItemDef.function (ctor RustSyntax::Ident.exported "int_quot") (cons (intP0) (cons (intP1) (cons (intP2) (nil RustSyntax::Parameter)))) (ctor RustSyntax::RustType.fallible (ctor RustSyntax::RustType.int)) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.matchOn (ctor RustSyntax::Expr.call (ctor RustSyntax::Callee.machine (ctor RustSyntax::Machine.checkedIntQuot)) (cons (copyP0) (cons (copyP1) (cons (copyP2) (nil RustSyntax::Expr)))) false) (cons (someArm) (cons (failInt) (nil RustSyntax::Arm))))))
+}
+
+definition{
+  name: intRemFunction,
+  parameters: [],
+  result: RustSyntax::ItemDef,
+  body: (ctor RustSyntax::ItemDef.function (ctor RustSyntax::Ident.exported "int_rem") (cons (intP0) (cons (intP1) (cons (intP2) (nil RustSyntax::Parameter)))) (ctor RustSyntax::RustType.int) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.call (ctor RustSyntax::Callee.machine (ctor RustSyntax::Machine.intRem)) (cons (copyP0) (cons (copyP1) (cons (copyP2) (nil RustSyntax::Expr)))) false)))
+}
+
+definition{
   name: coreCrate,
   parameters: [],
   result: RustSyntax::Crate,
-  body: (record RustSyntax::Crate {profile := (ctor RustSyntax::Profile.core), items := (cons (natAddFunction) (nil RustSyntax::ItemDef))})
+  body: (record RustSyntax::Crate {profile := (ctor RustSyntax::Profile.core), items := (cons (natAddFunction) (cons (natSubFunction) (cons (natMulFunction) (cons (natQuotFunction) (cons (natRemFunction) (cons (natEqFunction) (cons (natLeFunction) (cons (natLtFunction) (cons (natSuccFunction) (cons (intAddFunction) (cons (intSubFunction) (cons (intMulFunction) (cons (intNegFunction) (cons (intQuotFunction) (cons (intRemFunction) (nil RustSyntax::ItemDef))))))))))))))))})
 }
 
 theorem{
   name: refines_nat_add,
   parameters: [x : Nat, y : Nat],
   statement: ((RustSemantics::runExport 12 (coreCrate) "nat_add" (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (nil TargetSyntax::Value)))) = (RustSemantics::runItem (ctor RustSyntax::Profile.core) (ctor RustSyntax::Item.natAdd) (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (nil TargetSyntax::Value))))),
-  proof: term_cases{scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.natAdd) (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (nil TargetSyntax::Value)))), definitions: [RustSemantics::bindPattern, RustSemantics::bindPatterns, RustSemantics::constructValue, RustSemantics::dispatched, RustSemantics::eval, RustSemantics::evalArms, RustSemantics::evalBlock, RustSemantics::evalList, RustSemantics::fallibleType, RustSemantics::findFunction, RustSemantics::finished, RustSemantics::invoke, RustSemantics::itemAccepts, RustSemantics::itemFallible, RustSemantics::itemHeap, RustSemantics::itemOperands, RustSemantics::itemPrimitive, RustSemantics::itemShifts, RustSemantics::itemTakes, RustSemantics::itemWidth, RustSemantics::kindNumber, RustSemantics::literal, RustSemantics::lookup, RustSemantics::machineAccepts, RustSemantics::machineOptional, RustSemantics::machinePrimitive, RustSemantics::machineShifts, RustSemantics::machineWidth, RustSemantics::patternsOf, RustSemantics::propagated, RustSemantics::returned, RustSemantics::runExport, RustSemantics::runItem, RustSemantics::runMachine, RustSemantics::sameIdent, coreCrate, natAddFunction]},
+  proof: term_cases{scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.natAdd) (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (nil TargetSyntax::Value)))), definitions: [RustSemantics::bindPattern, RustSemantics::bindPatterns, RustSemantics::constructValue, RustSemantics::dispatched, RustSemantics::eval, RustSemantics::evalArms, RustSemantics::evalBlock, RustSemantics::evalList, RustSemantics::fallibleType, RustSemantics::findFunction, RustSemantics::finished, RustSemantics::invoke, RustSemantics::itemAccepts, RustSemantics::itemFallible, RustSemantics::itemHeap, RustSemantics::itemOperands, RustSemantics::itemPrimitive, RustSemantics::itemShifts, RustSemantics::itemTakes, RustSemantics::itemWidth, RustSemantics::kindNumber, RustSemantics::literal, RustSemantics::lookup, RustSemantics::machineAccepts, RustSemantics::machineOptional, RustSemantics::machinePrimitive, RustSemantics::machineShifts, RustSemantics::machineWidth, RustSemantics::patternsOf, RustSemantics::propagated, RustSemantics::returned, RustSemantics::runExport, RustSemantics::runItem, RustSemantics::runMachine, RustSemantics::sameIdent, boolP0, boolP1, copyP0, copyP1, copyP2, coreCrate, failInt, failNat, intAddFunction, intMulFunction, intNegFunction, intP0, intP1, intP2, intQuotFunction, intRemFunction, intSubFunction, natAddFunction, natEqFunction, natLeFunction, natLtFunction, natMulFunction, natP0, natP1, natP2, natQuotFunction, natRemFunction, natSubFunction, natSuccFunction, p0, p1, p2, someArm, v0]},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: refines_nat_sub,
+  parameters: [x : Nat, y : Nat],
+  statement: ((RustSemantics::runExport 12 (coreCrate) "nat_sub" (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (nil TargetSyntax::Value)))) = (RustSemantics::runItem (ctor RustSyntax::Profile.core) (ctor RustSyntax::Item.natSub) (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (nil TargetSyntax::Value))))),
+  proof: term_cases{scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.natSub) (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (nil TargetSyntax::Value)))), definitions: [RustSemantics::bindPattern, RustSemantics::bindPatterns, RustSemantics::constructValue, RustSemantics::dispatched, RustSemantics::eval, RustSemantics::evalArms, RustSemantics::evalBlock, RustSemantics::evalList, RustSemantics::fallibleType, RustSemantics::findFunction, RustSemantics::finished, RustSemantics::invoke, RustSemantics::itemAccepts, RustSemantics::itemFallible, RustSemantics::itemHeap, RustSemantics::itemOperands, RustSemantics::itemPrimitive, RustSemantics::itemShifts, RustSemantics::itemTakes, RustSemantics::itemWidth, RustSemantics::kindNumber, RustSemantics::literal, RustSemantics::lookup, RustSemantics::machineAccepts, RustSemantics::machineOptional, RustSemantics::machinePrimitive, RustSemantics::machineShifts, RustSemantics::machineWidth, RustSemantics::patternsOf, RustSemantics::propagated, RustSemantics::returned, RustSemantics::runExport, RustSemantics::runItem, RustSemantics::runMachine, RustSemantics::sameIdent, boolP0, boolP1, copyP0, copyP1, copyP2, coreCrate, failInt, failNat, intAddFunction, intMulFunction, intNegFunction, intP0, intP1, intP2, intQuotFunction, intRemFunction, intSubFunction, natAddFunction, natEqFunction, natLeFunction, natLtFunction, natMulFunction, natP0, natP1, natP2, natQuotFunction, natRemFunction, natSubFunction, natSuccFunction, p0, p1, p2, someArm, v0]},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: refines_nat_mul,
+  parameters: [x : Nat, y : Nat],
+  statement: ((RustSemantics::runExport 12 (coreCrate) "nat_mul" (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (nil TargetSyntax::Value)))) = (RustSemantics::runItem (ctor RustSyntax::Profile.core) (ctor RustSyntax::Item.natMul) (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (nil TargetSyntax::Value))))),
+  proof: term_cases{scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.natMul) (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (nil TargetSyntax::Value)))), definitions: [RustSemantics::bindPattern, RustSemantics::bindPatterns, RustSemantics::constructValue, RustSemantics::dispatched, RustSemantics::eval, RustSemantics::evalArms, RustSemantics::evalBlock, RustSemantics::evalList, RustSemantics::fallibleType, RustSemantics::findFunction, RustSemantics::finished, RustSemantics::invoke, RustSemantics::itemAccepts, RustSemantics::itemFallible, RustSemantics::itemHeap, RustSemantics::itemOperands, RustSemantics::itemPrimitive, RustSemantics::itemShifts, RustSemantics::itemTakes, RustSemantics::itemWidth, RustSemantics::kindNumber, RustSemantics::literal, RustSemantics::lookup, RustSemantics::machineAccepts, RustSemantics::machineOptional, RustSemantics::machinePrimitive, RustSemantics::machineShifts, RustSemantics::machineWidth, RustSemantics::patternsOf, RustSemantics::propagated, RustSemantics::returned, RustSemantics::runExport, RustSemantics::runItem, RustSemantics::runMachine, RustSemantics::sameIdent, boolP0, boolP1, copyP0, copyP1, copyP2, coreCrate, failInt, failNat, intAddFunction, intMulFunction, intNegFunction, intP0, intP1, intP2, intQuotFunction, intRemFunction, intSubFunction, natAddFunction, natEqFunction, natLeFunction, natLtFunction, natMulFunction, natP0, natP1, natP2, natQuotFunction, natRemFunction, natSubFunction, natSuccFunction, p0, p1, p2, someArm, v0]},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: refines_nat_quot,
+  parameters: [x : Nat, y : Nat, z : Nat],
+  statement: ((RustSemantics::runExport 12 (coreCrate) "nat_quot" (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (cons (ctor TargetSyntax::Value.nat z) (nil TargetSyntax::Value))))) = (RustSemantics::runItem (ctor RustSyntax::Profile.core) (ctor RustSyntax::Item.natQuot) (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (cons (ctor TargetSyntax::Value.nat z) (nil TargetSyntax::Value)))))),
+  proof: term_cases{scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.natQuot) (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (cons (ctor TargetSyntax::Value.nat z) (nil TargetSyntax::Value))))), definitions: [RustSemantics::bindPattern, RustSemantics::bindPatterns, RustSemantics::constructValue, RustSemantics::dispatched, RustSemantics::eval, RustSemantics::evalArms, RustSemantics::evalBlock, RustSemantics::evalList, RustSemantics::fallibleType, RustSemantics::findFunction, RustSemantics::finished, RustSemantics::invoke, RustSemantics::itemAccepts, RustSemantics::itemFallible, RustSemantics::itemHeap, RustSemantics::itemOperands, RustSemantics::itemPrimitive, RustSemantics::itemShifts, RustSemantics::itemTakes, RustSemantics::itemWidth, RustSemantics::kindNumber, RustSemantics::literal, RustSemantics::lookup, RustSemantics::machineAccepts, RustSemantics::machineOptional, RustSemantics::machinePrimitive, RustSemantics::machineShifts, RustSemantics::machineWidth, RustSemantics::patternsOf, RustSemantics::propagated, RustSemantics::returned, RustSemantics::runExport, RustSemantics::runItem, RustSemantics::runMachine, RustSemantics::sameIdent, boolP0, boolP1, copyP0, copyP1, copyP2, coreCrate, failInt, failNat, intAddFunction, intMulFunction, intNegFunction, intP0, intP1, intP2, intQuotFunction, intRemFunction, intSubFunction, natAddFunction, natEqFunction, natLeFunction, natLtFunction, natMulFunction, natP0, natP1, natP2, natQuotFunction, natRemFunction, natSubFunction, natSuccFunction, p0, p1, p2, someArm, v0]},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: refines_nat_rem,
+  parameters: [x : Nat, y : Nat, z : Nat],
+  statement: ((RustSemantics::runExport 12 (coreCrate) "nat_rem" (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (cons (ctor TargetSyntax::Value.nat z) (nil TargetSyntax::Value))))) = (RustSemantics::runItem (ctor RustSyntax::Profile.core) (ctor RustSyntax::Item.natRem) (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (cons (ctor TargetSyntax::Value.nat z) (nil TargetSyntax::Value)))))),
+  proof: term_cases{scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.natRem) (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (cons (ctor TargetSyntax::Value.nat z) (nil TargetSyntax::Value))))), definitions: [RustSemantics::bindPattern, RustSemantics::bindPatterns, RustSemantics::constructValue, RustSemantics::dispatched, RustSemantics::eval, RustSemantics::evalArms, RustSemantics::evalBlock, RustSemantics::evalList, RustSemantics::fallibleType, RustSemantics::findFunction, RustSemantics::finished, RustSemantics::invoke, RustSemantics::itemAccepts, RustSemantics::itemFallible, RustSemantics::itemHeap, RustSemantics::itemOperands, RustSemantics::itemPrimitive, RustSemantics::itemShifts, RustSemantics::itemTakes, RustSemantics::itemWidth, RustSemantics::kindNumber, RustSemantics::literal, RustSemantics::lookup, RustSemantics::machineAccepts, RustSemantics::machineOptional, RustSemantics::machinePrimitive, RustSemantics::machineShifts, RustSemantics::machineWidth, RustSemantics::patternsOf, RustSemantics::propagated, RustSemantics::returned, RustSemantics::runExport, RustSemantics::runItem, RustSemantics::runMachine, RustSemantics::sameIdent, boolP0, boolP1, copyP0, copyP1, copyP2, coreCrate, failInt, failNat, intAddFunction, intMulFunction, intNegFunction, intP0, intP1, intP2, intQuotFunction, intRemFunction, intSubFunction, natAddFunction, natEqFunction, natLeFunction, natLtFunction, natMulFunction, natP0, natP1, natP2, natQuotFunction, natRemFunction, natSubFunction, natSuccFunction, p0, p1, p2, someArm, v0]},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: refines_nat_eq,
+  parameters: [x : Nat, y : Nat],
+  statement: ((RustSemantics::runExport 12 (coreCrate) "nat_eq" (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (nil TargetSyntax::Value)))) = (RustSemantics::runItem (ctor RustSyntax::Profile.core) (ctor RustSyntax::Item.natEq) (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (nil TargetSyntax::Value))))),
+  proof: term_cases{scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.natEq) (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (nil TargetSyntax::Value)))), definitions: [RustSemantics::bindPattern, RustSemantics::bindPatterns, RustSemantics::constructValue, RustSemantics::dispatched, RustSemantics::eval, RustSemantics::evalArms, RustSemantics::evalBlock, RustSemantics::evalList, RustSemantics::fallibleType, RustSemantics::findFunction, RustSemantics::finished, RustSemantics::invoke, RustSemantics::itemAccepts, RustSemantics::itemFallible, RustSemantics::itemHeap, RustSemantics::itemOperands, RustSemantics::itemPrimitive, RustSemantics::itemShifts, RustSemantics::itemTakes, RustSemantics::itemWidth, RustSemantics::kindNumber, RustSemantics::literal, RustSemantics::lookup, RustSemantics::machineAccepts, RustSemantics::machineOptional, RustSemantics::machinePrimitive, RustSemantics::machineShifts, RustSemantics::machineWidth, RustSemantics::patternsOf, RustSemantics::propagated, RustSemantics::returned, RustSemantics::runExport, RustSemantics::runItem, RustSemantics::runMachine, RustSemantics::sameIdent, boolP0, boolP1, copyP0, copyP1, copyP2, coreCrate, failInt, failNat, intAddFunction, intMulFunction, intNegFunction, intP0, intP1, intP2, intQuotFunction, intRemFunction, intSubFunction, natAddFunction, natEqFunction, natLeFunction, natLtFunction, natMulFunction, natP0, natP1, natP2, natQuotFunction, natRemFunction, natSubFunction, natSuccFunction, p0, p1, p2, someArm, v0]},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: refines_nat_le,
+  parameters: [x : Nat, y : Nat],
+  statement: ((RustSemantics::runExport 12 (coreCrate) "nat_le" (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (nil TargetSyntax::Value)))) = (RustSemantics::runItem (ctor RustSyntax::Profile.core) (ctor RustSyntax::Item.natLe) (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (nil TargetSyntax::Value))))),
+  proof: term_cases{scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.natLe) (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (nil TargetSyntax::Value)))), definitions: [RustSemantics::bindPattern, RustSemantics::bindPatterns, RustSemantics::constructValue, RustSemantics::dispatched, RustSemantics::eval, RustSemantics::evalArms, RustSemantics::evalBlock, RustSemantics::evalList, RustSemantics::fallibleType, RustSemantics::findFunction, RustSemantics::finished, RustSemantics::invoke, RustSemantics::itemAccepts, RustSemantics::itemFallible, RustSemantics::itemHeap, RustSemantics::itemOperands, RustSemantics::itemPrimitive, RustSemantics::itemShifts, RustSemantics::itemTakes, RustSemantics::itemWidth, RustSemantics::kindNumber, RustSemantics::literal, RustSemantics::lookup, RustSemantics::machineAccepts, RustSemantics::machineOptional, RustSemantics::machinePrimitive, RustSemantics::machineShifts, RustSemantics::machineWidth, RustSemantics::patternsOf, RustSemantics::propagated, RustSemantics::returned, RustSemantics::runExport, RustSemantics::runItem, RustSemantics::runMachine, RustSemantics::sameIdent, boolP0, boolP1, copyP0, copyP1, copyP2, coreCrate, failInt, failNat, intAddFunction, intMulFunction, intNegFunction, intP0, intP1, intP2, intQuotFunction, intRemFunction, intSubFunction, natAddFunction, natEqFunction, natLeFunction, natLtFunction, natMulFunction, natP0, natP1, natP2, natQuotFunction, natRemFunction, natSubFunction, natSuccFunction, p0, p1, p2, someArm, v0]},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: refines_nat_lt,
+  parameters: [x : Nat, y : Nat],
+  statement: ((RustSemantics::runExport 12 (coreCrate) "nat_lt" (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (nil TargetSyntax::Value)))) = (RustSemantics::runItem (ctor RustSyntax::Profile.core) (ctor RustSyntax::Item.natLt) (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (nil TargetSyntax::Value))))),
+  proof: term_cases{scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.natLt) (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (nil TargetSyntax::Value)))), definitions: [RustSemantics::bindPattern, RustSemantics::bindPatterns, RustSemantics::constructValue, RustSemantics::dispatched, RustSemantics::eval, RustSemantics::evalArms, RustSemantics::evalBlock, RustSemantics::evalList, RustSemantics::fallibleType, RustSemantics::findFunction, RustSemantics::finished, RustSemantics::invoke, RustSemantics::itemAccepts, RustSemantics::itemFallible, RustSemantics::itemHeap, RustSemantics::itemOperands, RustSemantics::itemPrimitive, RustSemantics::itemShifts, RustSemantics::itemTakes, RustSemantics::itemWidth, RustSemantics::kindNumber, RustSemantics::literal, RustSemantics::lookup, RustSemantics::machineAccepts, RustSemantics::machineOptional, RustSemantics::machinePrimitive, RustSemantics::machineShifts, RustSemantics::machineWidth, RustSemantics::patternsOf, RustSemantics::propagated, RustSemantics::returned, RustSemantics::runExport, RustSemantics::runItem, RustSemantics::runMachine, RustSemantics::sameIdent, boolP0, boolP1, copyP0, copyP1, copyP2, coreCrate, failInt, failNat, intAddFunction, intMulFunction, intNegFunction, intP0, intP1, intP2, intQuotFunction, intRemFunction, intSubFunction, natAddFunction, natEqFunction, natLeFunction, natLtFunction, natMulFunction, natP0, natP1, natP2, natQuotFunction, natRemFunction, natSubFunction, natSuccFunction, p0, p1, p2, someArm, v0]},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: refines_nat_succ,
+  parameters: [x : Nat],
+  statement: ((RustSemantics::runExport 12 (coreCrate) "nat_succ" (cons (ctor TargetSyntax::Value.nat x) (nil TargetSyntax::Value))) = (RustSemantics::runItem (ctor RustSyntax::Profile.core) (ctor RustSyntax::Item.natSucc) (cons (ctor TargetSyntax::Value.nat x) (nil TargetSyntax::Value)))),
+  proof: term_cases{scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.natAdd) (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat 1) (nil TargetSyntax::Value)))), definitions: [RustSemantics::bindPattern, RustSemantics::bindPatterns, RustSemantics::constructValue, RustSemantics::dispatched, RustSemantics::eval, RustSemantics::evalArms, RustSemantics::evalBlock, RustSemantics::evalList, RustSemantics::fallibleType, RustSemantics::findFunction, RustSemantics::finished, RustSemantics::invoke, RustSemantics::itemAccepts, RustSemantics::itemFallible, RustSemantics::itemHeap, RustSemantics::itemOperands, RustSemantics::itemPrimitive, RustSemantics::itemShifts, RustSemantics::itemTakes, RustSemantics::itemWidth, RustSemantics::kindNumber, RustSemantics::literal, RustSemantics::lookup, RustSemantics::machineAccepts, RustSemantics::machineOptional, RustSemantics::machinePrimitive, RustSemantics::machineShifts, RustSemantics::machineWidth, RustSemantics::patternsOf, RustSemantics::propagated, RustSemantics::returned, RustSemantics::runExport, RustSemantics::runItem, RustSemantics::runMachine, RustSemantics::sameIdent, boolP0, boolP1, copyP0, copyP1, copyP2, coreCrate, failInt, failNat, intAddFunction, intMulFunction, intNegFunction, intP0, intP1, intP2, intQuotFunction, intRemFunction, intSubFunction, natAddFunction, natEqFunction, natLeFunction, natLtFunction, natMulFunction, natP0, natP1, natP2, natQuotFunction, natRemFunction, natSubFunction, natSuccFunction, p0, p1, p2, someArm, v0]},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: refines_int_add,
+  parameters: [x : Int, y : Int],
+  statement: ((RustSemantics::runExport 12 (coreCrate) "int_add" (cons (ctor TargetSyntax::Value.int x) (cons (ctor TargetSyntax::Value.int y) (nil TargetSyntax::Value)))) = (RustSemantics::runItem (ctor RustSyntax::Profile.core) (ctor RustSyntax::Item.intAdd) (cons (ctor TargetSyntax::Value.int x) (cons (ctor TargetSyntax::Value.int y) (nil TargetSyntax::Value))))),
+  proof: term_cases{scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.intAdd) (cons (ctor TargetSyntax::Value.int x) (cons (ctor TargetSyntax::Value.int y) (nil TargetSyntax::Value)))), definitions: [RustSemantics::bindPattern, RustSemantics::bindPatterns, RustSemantics::constructValue, RustSemantics::dispatched, RustSemantics::eval, RustSemantics::evalArms, RustSemantics::evalBlock, RustSemantics::evalList, RustSemantics::fallibleType, RustSemantics::findFunction, RustSemantics::finished, RustSemantics::invoke, RustSemantics::itemAccepts, RustSemantics::itemFallible, RustSemantics::itemHeap, RustSemantics::itemOperands, RustSemantics::itemPrimitive, RustSemantics::itemShifts, RustSemantics::itemTakes, RustSemantics::itemWidth, RustSemantics::kindNumber, RustSemantics::literal, RustSemantics::lookup, RustSemantics::machineAccepts, RustSemantics::machineOptional, RustSemantics::machinePrimitive, RustSemantics::machineShifts, RustSemantics::machineWidth, RustSemantics::patternsOf, RustSemantics::propagated, RustSemantics::returned, RustSemantics::runExport, RustSemantics::runItem, RustSemantics::runMachine, RustSemantics::sameIdent, boolP0, boolP1, copyP0, copyP1, copyP2, coreCrate, failInt, failNat, intAddFunction, intMulFunction, intNegFunction, intP0, intP1, intP2, intQuotFunction, intRemFunction, intSubFunction, natAddFunction, natEqFunction, natLeFunction, natLtFunction, natMulFunction, natP0, natP1, natP2, natQuotFunction, natRemFunction, natSubFunction, natSuccFunction, p0, p1, p2, someArm, v0]},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: refines_int_sub,
+  parameters: [x : Int, y : Int],
+  statement: ((RustSemantics::runExport 12 (coreCrate) "int_sub" (cons (ctor TargetSyntax::Value.int x) (cons (ctor TargetSyntax::Value.int y) (nil TargetSyntax::Value)))) = (RustSemantics::runItem (ctor RustSyntax::Profile.core) (ctor RustSyntax::Item.intSub) (cons (ctor TargetSyntax::Value.int x) (cons (ctor TargetSyntax::Value.int y) (nil TargetSyntax::Value))))),
+  proof: term_cases{scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.intSub) (cons (ctor TargetSyntax::Value.int x) (cons (ctor TargetSyntax::Value.int y) (nil TargetSyntax::Value)))), definitions: [RustSemantics::bindPattern, RustSemantics::bindPatterns, RustSemantics::constructValue, RustSemantics::dispatched, RustSemantics::eval, RustSemantics::evalArms, RustSemantics::evalBlock, RustSemantics::evalList, RustSemantics::fallibleType, RustSemantics::findFunction, RustSemantics::finished, RustSemantics::invoke, RustSemantics::itemAccepts, RustSemantics::itemFallible, RustSemantics::itemHeap, RustSemantics::itemOperands, RustSemantics::itemPrimitive, RustSemantics::itemShifts, RustSemantics::itemTakes, RustSemantics::itemWidth, RustSemantics::kindNumber, RustSemantics::literal, RustSemantics::lookup, RustSemantics::machineAccepts, RustSemantics::machineOptional, RustSemantics::machinePrimitive, RustSemantics::machineShifts, RustSemantics::machineWidth, RustSemantics::patternsOf, RustSemantics::propagated, RustSemantics::returned, RustSemantics::runExport, RustSemantics::runItem, RustSemantics::runMachine, RustSemantics::sameIdent, boolP0, boolP1, copyP0, copyP1, copyP2, coreCrate, failInt, failNat, intAddFunction, intMulFunction, intNegFunction, intP0, intP1, intP2, intQuotFunction, intRemFunction, intSubFunction, natAddFunction, natEqFunction, natLeFunction, natLtFunction, natMulFunction, natP0, natP1, natP2, natQuotFunction, natRemFunction, natSubFunction, natSuccFunction, p0, p1, p2, someArm, v0]},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: refines_int_mul,
+  parameters: [x : Int, y : Int],
+  statement: ((RustSemantics::runExport 12 (coreCrate) "int_mul" (cons (ctor TargetSyntax::Value.int x) (cons (ctor TargetSyntax::Value.int y) (nil TargetSyntax::Value)))) = (RustSemantics::runItem (ctor RustSyntax::Profile.core) (ctor RustSyntax::Item.intMul) (cons (ctor TargetSyntax::Value.int x) (cons (ctor TargetSyntax::Value.int y) (nil TargetSyntax::Value))))),
+  proof: term_cases{scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.intMul) (cons (ctor TargetSyntax::Value.int x) (cons (ctor TargetSyntax::Value.int y) (nil TargetSyntax::Value)))), definitions: [RustSemantics::bindPattern, RustSemantics::bindPatterns, RustSemantics::constructValue, RustSemantics::dispatched, RustSemantics::eval, RustSemantics::evalArms, RustSemantics::evalBlock, RustSemantics::evalList, RustSemantics::fallibleType, RustSemantics::findFunction, RustSemantics::finished, RustSemantics::invoke, RustSemantics::itemAccepts, RustSemantics::itemFallible, RustSemantics::itemHeap, RustSemantics::itemOperands, RustSemantics::itemPrimitive, RustSemantics::itemShifts, RustSemantics::itemTakes, RustSemantics::itemWidth, RustSemantics::kindNumber, RustSemantics::literal, RustSemantics::lookup, RustSemantics::machineAccepts, RustSemantics::machineOptional, RustSemantics::machinePrimitive, RustSemantics::machineShifts, RustSemantics::machineWidth, RustSemantics::patternsOf, RustSemantics::propagated, RustSemantics::returned, RustSemantics::runExport, RustSemantics::runItem, RustSemantics::runMachine, RustSemantics::sameIdent, boolP0, boolP1, copyP0, copyP1, copyP2, coreCrate, failInt, failNat, intAddFunction, intMulFunction, intNegFunction, intP0, intP1, intP2, intQuotFunction, intRemFunction, intSubFunction, natAddFunction, natEqFunction, natLeFunction, natLtFunction, natMulFunction, natP0, natP1, natP2, natQuotFunction, natRemFunction, natSubFunction, natSuccFunction, p0, p1, p2, someArm, v0]},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: refines_int_neg,
+  parameters: [x : Int],
+  statement: ((RustSemantics::runExport 12 (coreCrate) "int_neg" (cons (ctor TargetSyntax::Value.int x) (nil TargetSyntax::Value))) = (RustSemantics::runItem (ctor RustSyntax::Profile.core) (ctor RustSyntax::Item.intNeg) (cons (ctor TargetSyntax::Value.int x) (nil TargetSyntax::Value)))),
+  proof: term_cases{scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.intNeg) (cons (ctor TargetSyntax::Value.int x) (nil TargetSyntax::Value))), definitions: [RustSemantics::bindPattern, RustSemantics::bindPatterns, RustSemantics::constructValue, RustSemantics::dispatched, RustSemantics::eval, RustSemantics::evalArms, RustSemantics::evalBlock, RustSemantics::evalList, RustSemantics::fallibleType, RustSemantics::findFunction, RustSemantics::finished, RustSemantics::invoke, RustSemantics::itemAccepts, RustSemantics::itemFallible, RustSemantics::itemHeap, RustSemantics::itemOperands, RustSemantics::itemPrimitive, RustSemantics::itemShifts, RustSemantics::itemTakes, RustSemantics::itemWidth, RustSemantics::kindNumber, RustSemantics::literal, RustSemantics::lookup, RustSemantics::machineAccepts, RustSemantics::machineOptional, RustSemantics::machinePrimitive, RustSemantics::machineShifts, RustSemantics::machineWidth, RustSemantics::patternsOf, RustSemantics::propagated, RustSemantics::returned, RustSemantics::runExport, RustSemantics::runItem, RustSemantics::runMachine, RustSemantics::sameIdent, boolP0, boolP1, copyP0, copyP1, copyP2, coreCrate, failInt, failNat, intAddFunction, intMulFunction, intNegFunction, intP0, intP1, intP2, intQuotFunction, intRemFunction, intSubFunction, natAddFunction, natEqFunction, natLeFunction, natLtFunction, natMulFunction, natP0, natP1, natP2, natQuotFunction, natRemFunction, natSubFunction, natSuccFunction, p0, p1, p2, someArm, v0]},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: refines_int_quot,
+  parameters: [x : Int, y : Int, z : Int],
+  statement: ((RustSemantics::runExport 12 (coreCrate) "int_quot" (cons (ctor TargetSyntax::Value.int x) (cons (ctor TargetSyntax::Value.int y) (cons (ctor TargetSyntax::Value.int z) (nil TargetSyntax::Value))))) = (RustSemantics::runItem (ctor RustSyntax::Profile.core) (ctor RustSyntax::Item.intQuot) (cons (ctor TargetSyntax::Value.int x) (cons (ctor TargetSyntax::Value.int y) (cons (ctor TargetSyntax::Value.int z) (nil TargetSyntax::Value)))))),
+  proof: term_cases{scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.intQuot) (cons (ctor TargetSyntax::Value.int x) (cons (ctor TargetSyntax::Value.int y) (cons (ctor TargetSyntax::Value.int z) (nil TargetSyntax::Value))))), definitions: [RustSemantics::bindPattern, RustSemantics::bindPatterns, RustSemantics::constructValue, RustSemantics::dispatched, RustSemantics::eval, RustSemantics::evalArms, RustSemantics::evalBlock, RustSemantics::evalList, RustSemantics::fallibleType, RustSemantics::findFunction, RustSemantics::finished, RustSemantics::invoke, RustSemantics::itemAccepts, RustSemantics::itemFallible, RustSemantics::itemHeap, RustSemantics::itemOperands, RustSemantics::itemPrimitive, RustSemantics::itemShifts, RustSemantics::itemTakes, RustSemantics::itemWidth, RustSemantics::kindNumber, RustSemantics::literal, RustSemantics::lookup, RustSemantics::machineAccepts, RustSemantics::machineOptional, RustSemantics::machinePrimitive, RustSemantics::machineShifts, RustSemantics::machineWidth, RustSemantics::patternsOf, RustSemantics::propagated, RustSemantics::returned, RustSemantics::runExport, RustSemantics::runItem, RustSemantics::runMachine, RustSemantics::sameIdent, boolP0, boolP1, copyP0, copyP1, copyP2, coreCrate, failInt, failNat, intAddFunction, intMulFunction, intNegFunction, intP0, intP1, intP2, intQuotFunction, intRemFunction, intSubFunction, natAddFunction, natEqFunction, natLeFunction, natLtFunction, natMulFunction, natP0, natP1, natP2, natQuotFunction, natRemFunction, natSubFunction, natSuccFunction, p0, p1, p2, someArm, v0]},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: refines_int_rem,
+  parameters: [x : Int, y : Int, z : Int],
+  statement: ((RustSemantics::runExport 12 (coreCrate) "int_rem" (cons (ctor TargetSyntax::Value.int x) (cons (ctor TargetSyntax::Value.int y) (cons (ctor TargetSyntax::Value.int z) (nil TargetSyntax::Value))))) = (RustSemantics::runItem (ctor RustSyntax::Profile.core) (ctor RustSyntax::Item.intRem) (cons (ctor TargetSyntax::Value.int x) (cons (ctor TargetSyntax::Value.int y) (cons (ctor TargetSyntax::Value.int z) (nil TargetSyntax::Value)))))),
+  proof: term_cases{scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.intRem) (cons (ctor TargetSyntax::Value.int x) (cons (ctor TargetSyntax::Value.int y) (cons (ctor TargetSyntax::Value.int z) (nil TargetSyntax::Value))))), definitions: [RustSemantics::bindPattern, RustSemantics::bindPatterns, RustSemantics::constructValue, RustSemantics::dispatched, RustSemantics::eval, RustSemantics::evalArms, RustSemantics::evalBlock, RustSemantics::evalList, RustSemantics::fallibleType, RustSemantics::findFunction, RustSemantics::finished, RustSemantics::invoke, RustSemantics::itemAccepts, RustSemantics::itemFallible, RustSemantics::itemHeap, RustSemantics::itemOperands, RustSemantics::itemPrimitive, RustSemantics::itemShifts, RustSemantics::itemTakes, RustSemantics::itemWidth, RustSemantics::kindNumber, RustSemantics::literal, RustSemantics::lookup, RustSemantics::machineAccepts, RustSemantics::machineOptional, RustSemantics::machinePrimitive, RustSemantics::machineShifts, RustSemantics::machineWidth, RustSemantics::patternsOf, RustSemantics::propagated, RustSemantics::returned, RustSemantics::runExport, RustSemantics::runItem, RustSemantics::runMachine, RustSemantics::sameIdent, boolP0, boolP1, copyP0, copyP1, copyP2, coreCrate, failInt, failNat, intAddFunction, intMulFunction, intNegFunction, intP0, intP1, intP2, intQuotFunction, intRemFunction, intSubFunction, natAddFunction, natEqFunction, natLeFunction, natLtFunction, natMulFunction, natP0, natP1, natP2, natQuotFunction, natRemFunction, natSubFunction, natSuccFunction, p0, p1, p2, someArm, v0]},
   axioms: [Classical.choice, Quot.sound, propext]
 }
 \end{semanticmodule}

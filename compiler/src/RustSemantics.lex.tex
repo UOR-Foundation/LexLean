@@ -628,7 +628,11 @@ definition{
     | RustSyntax::Item.natEq => values
     | RustSyntax::Item.natLe => values
     | RustSyntax::Item.natLt => values
-    | RustSyntax::Item.natSucc => (prim append values (cons (ctor TargetSyntax::Value.nat 1) (nil TargetSyntax::Value)) : (List TargetSyntax::Value))
+    | RustSyntax::Item.natSucc => (match values
+      | List.nil => (cons (ctor TargetSyntax::Value.nat 1) (nil TargetSyntax::Value))
+      | List.cons head rest => (match rest
+        | List.nil => (cons head (cons (ctor TargetSyntax::Value.nat 1) (nil TargetSyntax::Value)))
+        | List.cons ignoredSecond ignoredMore => (prim append values (cons (ctor TargetSyntax::Value.nat 1) (nil TargetSyntax::Value)) : (List TargetSyntax::Value))))
     | RustSyntax::Item.intAdd => values
     | RustSyntax::Item.intSub => values
     | RustSyntax::Item.intMul => values

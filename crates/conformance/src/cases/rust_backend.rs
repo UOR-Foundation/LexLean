@@ -1581,14 +1581,14 @@ pub fn run(id: &str) {
             let mut stated = LIBRARY.to_vec();
             let row = stated
                 .iter_mut()
-                .find(|(_, name, _)| *name == "saturating_sub")
+                .find(|(_, name, _)| *name == "<int>::saturating_sub")
                 .expect("the row exists");
             row.2 = Role::Stated(&["wrapping_sub"]);
             refused(
                 &runtime,
                 &stated,
                 PRIMITIVES,
-                "the method row `saturating_sub` cites `wrapping_sub`, which is not a primitive",
+                "the path row `<int>::saturating_sub` cites `wrapping_sub`, which is not a primitive",
             );
             // A primitive no row cites.
             let mut unused = PRIMITIVES.to_vec();

@@ -21,10 +21,38 @@ const SHIPPED: &str = "language/rust-runtime-1.2/RustRuntime.lex.tex";
 /// The calls the differential makes of each defined function: the `same!`
 /// of the harness runs the oracle's and the generated function on the same
 /// arguments and compares what they return and the work they count.
-const DIFFERENTIAL: [(&str, &str); 1] = [(
-    "nat_add",
-    "let edge = [0u64, 1, 2, 3, u32::MAX as u64, u32::MAX as u64 + 1, u64::MAX / 2, u64::MAX - 2, u64::MAX - 1, u64::MAX];\n    for &a in &edge { for &b in &edge { same!(nat_add(a, b)); } }\n    for _ in 0..2000 { let (a, b) = (next(), next()); same!(nat_add(a, b)); same!(nat_add(a >> 1, b >> 1)); }",
-)];
+const DIFFERENTIAL: [(&str, &str); 15] = [
+    ("nat_add",
+        "for &a in &nats { for &b in &nats { same!(nat_add(a, b)); } }\n    for _ in 0..1000 { let (a, b) = (next(), next()); same!(nat_add(a, b)); same!(nat_add(a >> 1, b >> 1)); }"),
+    ("nat_sub",
+        "for &a in &nats { for &b in &nats { same!(nat_sub(a, b)); } }\n    for _ in 0..1000 { let (a, b) = (next(), next()); same!(nat_sub(a, b)); same!(nat_sub(a >> 1, b >> 1)); }"),
+    ("nat_mul",
+        "for &a in &nats { for &b in &nats { same!(nat_mul(a, b)); } }\n    for _ in 0..1000 { let (a, b) = (next(), next()); same!(nat_mul(a, b)); same!(nat_mul(a >> 1, b >> 1)); }"),
+    ("nat_quot",
+        "for &a in &nats { for &b in &nats { for &z in &[0u64, 7, u64::MAX] { same!(nat_quot(a, b, z)); } } }\n    for _ in 0..1000 { let (a, b, z) = (next(), next(), next()); same!(nat_quot(a, b, z)); same!(nat_quot(a >> 40, b >> 50, z)); }"),
+    ("nat_rem",
+        "for &a in &nats { for &b in &nats { for &z in &[0u64, 7, u64::MAX] { same!(nat_rem(a, b, z)); } } }\n    for _ in 0..1000 { let (a, b, z) = (next(), next(), next()); same!(nat_rem(a, b, z)); same!(nat_rem(a >> 40, b >> 50, z)); }"),
+    ("nat_eq",
+        "for &a in &nats { for &b in &nats { same!(nat_eq(a, b)); } }\n    for _ in 0..1000 { let (a, b) = (next(), next()); same!(nat_eq(a, b)); same!(nat_eq(a >> 1, b >> 1)); }"),
+    ("nat_le",
+        "for &a in &nats { for &b in &nats { same!(nat_le(a, b)); } }\n    for _ in 0..1000 { let (a, b) = (next(), next()); same!(nat_le(a, b)); same!(nat_le(a >> 1, b >> 1)); }"),
+    ("nat_lt",
+        "for &a in &nats { for &b in &nats { same!(nat_lt(a, b)); } }\n    for _ in 0..1000 { let (a, b) = (next(), next()); same!(nat_lt(a, b)); same!(nat_lt(a >> 1, b >> 1)); }"),
+    ("nat_succ",
+        "for &a in &nats { same!(nat_succ(a)); }\n    for _ in 0..1000 { let a = next(); same!(nat_succ(a)); }"),
+    ("int_add",
+        "for &a in &ints { for &b in &ints { same!(int_add(a, b)); } }\n    for _ in 0..1000 { let (a, b) = (next() as i64, next() as i64); same!(int_add(a, b)); same!(int_add(a >> 1, b >> 1)); }"),
+    ("int_sub",
+        "for &a in &ints { for &b in &ints { same!(int_sub(a, b)); } }\n    for _ in 0..1000 { let (a, b) = (next() as i64, next() as i64); same!(int_sub(a, b)); same!(int_sub(a >> 1, b >> 1)); }"),
+    ("int_mul",
+        "for &a in &ints { for &b in &ints { same!(int_mul(a, b)); } }\n    for _ in 0..1000 { let (a, b) = (next() as i64, next() as i64); same!(int_mul(a, b)); same!(int_mul(a >> 1, b >> 1)); }"),
+    ("int_neg",
+        "for &a in &ints { same!(int_neg(a)); }\n    for _ in 0..1000 { let a = next() as i64; same!(int_neg(a)); }"),
+    ("int_quot",
+        "for &a in &ints { for &b in &ints { for &z in &[i64::MIN, -1, 0, 7, i64::MAX] { same!(int_quot(a, b, z)); } } }\n    for _ in 0..1000 { let (a, b, z) = (next() as i64, next() as i64, next() as i64); same!(int_quot(a, b, z)); same!(int_quot(a >> 40, b >> 50, z)); }"),
+    ("int_rem",
+        "for &a in &ints { for &b in &ints { for &z in &[i64::MIN, -1, 0, 7, i64::MAX] { same!(int_rem(a, b, z)); } } }\n    for _ in 0..1000 { let (a, b, z) = (next() as i64, next() as i64, next() as i64); same!(int_rem(a, b, z)); same!(int_rem(a >> 40, b >> 50, z)); }"),
+];
 
 /// The names of the functions a decoded module defines.
 fn defined(items: &[ItemDef]) -> Result<BTreeSet<String>, String> {
@@ -60,7 +88,7 @@ fn covered(items: &[ItemDef]) -> Result<(), String> {
 /// The harness: both runtimes, every function of the differential.
 fn harness() -> String {
     let mut out = String::from(
-        "use runtime_diff::{new, old};\nmacro_rules! same {\n    ($f:ident($($a:expr),*)) => {{\n        let (w0, w1) = (old::work(), new::work());\n        let x = old::$f($($a),*);\n        let y = new::$f($($a),*);\n        assert_eq!(format!(\"{x:?}\"), format!(\"{y:?}\"), \"{} result\", stringify!($f));\n        assert_eq!(old::work() - w0, new::work() - w1, \"{} work\", stringify!($f));\n    }};\n}\nfn main() {\n    let mut seed = 0x9e37_79b9_7f4a_7c15_u64;\n    let mut next = move || { seed ^= seed << 13; seed ^= seed >> 7; seed ^= seed << 17; seed };\n",
+        "use runtime_diff::{new, old};\nmacro_rules! same {\n    ($f:ident($($a:expr),*)) => {{\n        let (w0, w1) = (old::work(), new::work());\n        let x = old::$f($($a),*);\n        let y = new::$f($($a),*);\n        assert_eq!(format!(\"{x:?}\"), format!(\"{y:?}\"), \"{} result\", stringify!($f));\n        assert_eq!(old::work() - w0, new::work() - w1, \"{} work\", stringify!($f));\n    }};\n}\nfn main() {\n    let nats = [0u64, 1, 2, 3, 7, u32::MAX as u64, u32::MAX as u64 + 1, u64::MAX / 2, u64::MAX - 2, u64::MAX - 1, u64::MAX];\n    let ints = [i64::MIN, i64::MIN + 1, -3037000500, -2, -1, 0, 1, 2, 3037000500, i64::MAX - 1, i64::MAX];\n    let mut seed = 0x9e37_79b9_7f4a_7c15_u64;\n    let mut next = move || { seed ^= seed << 13; seed ^= seed >> 7; seed ^= seed << 17; seed };\n",
     );
     for (_, calls) in DIFFERENTIAL {
         out.push_str("    {\n    ");
@@ -148,16 +176,33 @@ pub fn run(id: &str) {
     assert_eq!(ran, "runtime");
 
     // A function whose body computes another result is caught by the
-    // differential, not by the decoder: the checked product for the checked sum.
-    let changed = shipped.replacen("Machine.checkedNatAdd", "Machine.checkedNatMul", 1);
-    assert_ne!(changed, shipped, "the plant site exists");
-    let items = source::decode(&changed)
-        .expect("a changed body decodes")
-        .core
-        .items;
-    let error = differ(&oracle, &runtime::assemble(&items))
-        .expect_err("a changed body disagrees with the oracle");
-    assert!(error.contains("nat_add result"), "{error}");
+    // differential, not by the decoder: the checked product for the checked
+    // sum, the checked difference for the checked sum of integers, the strict
+    // order for the loose one, the remainder for the quotient.
+    for (from, to, caught) in [
+        (
+            "Machine.checkedNatAdd",
+            "Machine.checkedNatMul",
+            "nat_add result",
+        ),
+        (
+            "Machine.checkedIntAdd",
+            "Machine.checkedIntSub",
+            "int_add result",
+        ),
+        ("Machine.natLe", "Machine.natLt", "nat_le result"),
+        ("Machine.natQuot", "Machine.natRem", "nat_quot result"),
+    ] {
+        let changed = shipped.replacen(from, to, 1);
+        assert_ne!(changed, shipped, "the plant site exists");
+        let items = source::decode(&changed)
+            .expect("a changed body decodes")
+            .core
+            .items;
+        let error = differ(&oracle, &runtime::assemble(&items))
+            .expect_err("a changed body disagrees with the oracle");
+        assert!(error.contains(caught), "{error}");
+    }
 
     // A module the decoder refuses, each for the rule it breaks.
     for (what, from, to, message) in [
@@ -214,23 +259,25 @@ pub fn run(id: &str) {
     let copy = block
         .replace("natAddFunction", "natOtherFunction")
         .replace("\"nat_add\"", "\"nat_other\"");
-    let extra = shipped
-        .replacen(block, &format!("{block}\n{copy}"), 1)
+    let at = shipped.find("name: coreCrate").expect("the core crate");
+    let (before, crate_text) = shipped.split_at(at);
+    let crate_text = crate_text
         .replacen(
-            "(cons (natAddFunction) ",
-            "(cons (natOtherFunction) (cons (natAddFunction) ",
+            "items := (cons (natAddFunction) ",
+            "items := (cons (natOtherFunction) (cons (natAddFunction) ",
             1,
         )
-        .replacen(
-            "(nil RustSyntax::ItemDef))})",
-            "(nil RustSyntax::ItemDef)))})",
-            1,
-        );
+        .replacen("})\n}\n", ")})\n}\n", 1);
+    let extra = format!("{before}{crate_text}").replacen(block, &format!("{block}\n{copy}"), 1);
     let items = source::decode(&extra)
         .expect("a module with a second function decodes")
         .core
         .items;
-    assert_eq!(items.len(), 2, "the plant adds a function");
+    assert_eq!(
+        items.len(),
+        decoded.core.items.len() + 1,
+        "the plant adds a function"
+    );
     let error = covered(&items).expect_err("a function without a differential");
     assert!(error.contains("nat_other"), "{error}");
 }

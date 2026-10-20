@@ -178,6 +178,39 @@ pub const LIBRARY: &[(Kind, &str, Role)] = &[
         "<int>::checked_add",
         Role::Primitive("checked_add"),
     ),
+    (
+        Kind::Path,
+        "<int>::checked_div",
+        Role::Primitive("checked_div"),
+    ),
+    (
+        Kind::Path,
+        "<int>::checked_mul",
+        Role::Primitive("checked_mul"),
+    ),
+    (
+        Kind::Path,
+        "<int>::checked_neg",
+        Role::Primitive("checked_neg"),
+    ),
+    (
+        Kind::Path,
+        "<int>::checked_rem",
+        Role::Primitive("checked_rem"),
+    ),
+    (
+        Kind::Path,
+        "<int>::checked_sub",
+        Role::Primitive("checked_sub"),
+    ),
+    (
+        Kind::Path,
+        "<int>::saturating_sub",
+        Role::Stated(&["checked_sub"]),
+    ),
+    (Kind::Path, "core::cmp::PartialEq::eq", Role::Stated(&[])),
+    (Kind::Path, "core::cmp::PartialOrd::le", Role::Stated(&[])),
+    (Kind::Path, "core::cmp::PartialOrd::lt", Role::Stated(&[])),
     (Kind::Path, "<int>::from", Role::Primitive("convert")),
     (Kind::Path, "<int>::try_from", Role::Primitive("convert")),
     (Kind::Path, "AtomicU64::new", Role::Primitive("work")),
@@ -226,7 +259,6 @@ pub const LIBRARY: &[(Kind, &str, Role)] = &[
     (Kind::Method, "checked_div", Role::Primitive("checked_div")),
     (Kind::Method, "checked_mul", Role::Primitive("checked_mul")),
     (Kind::Method, "checked_neg", Role::Primitive("checked_neg")),
-    (Kind::Method, "checked_rem", Role::Primitive("checked_rem")),
     (Kind::Method, "checked_sub", Role::Primitive("checked_sub")),
     (Kind::Method, "clone", Role::Construct),
     (Kind::Method, "cmp", Role::Stated(&["order", "buffer_len"])),
@@ -254,7 +286,6 @@ pub const LIBRARY: &[(Kind, &str, Role)] = &[
     (Kind::Method, "min", Role::Stated(&[])),
     (Kind::Method, "next", Role::Stated(&["buffer_len"])),
     (Kind::Method, "ok", Role::Stated(&[])),
-    (Kind::Method, "ok_or", Role::Stated(&[])),
     (
         Kind::Method,
         "parse",
@@ -267,11 +298,6 @@ pub const LIBRARY: &[(Kind, &str, Role)] = &[
         Role::Stated(&["utf8_view", "buffer_push"]),
     ),
     (Kind::Method, "rev", Role::Stated(&["buffer_len"])),
-    (
-        Kind::Method,
-        "saturating_sub",
-        Role::Stated(&["checked_sub"]),
-    ),
     (
         Kind::Method,
         "split",

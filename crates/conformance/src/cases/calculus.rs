@@ -1474,8 +1474,8 @@ pub fn run(id: &str) {
                 ),
                 (
                     "intArithmetic_rust_std",
-                    "a.checked_div(b).ok_or(Overflow)",
-                    "a.checked_div_euclid(b).ok_or(Overflow)",
+                    "else { a.checked_div(b) }",
+                    "else { a.checked_div_euclid(b) }",
                     false,
                 ),
                 (
