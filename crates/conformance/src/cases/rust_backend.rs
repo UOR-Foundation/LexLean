@@ -1503,6 +1503,8 @@ pub fn run(id: &str) {
         "RB-10" | "RB-11" | "RB-12" | "RB-13" => super::rust_scaffold::run(id),
         // §17.13, §17.16: a tail-recursive template renders as a loop.
         "RB-14" => super::rust_loops::run(id),
+        // §17.14, §17.16: the machine callee and the overflow value.
+        "RB-15" => super::rust_machine::run(id),
         "RB-09" => {
             use lexlean::calculus::rust::runtime::{CORE, STD};
             use lexlean::calculus::rust_library::{
