@@ -395,6 +395,7 @@ impl<'a> Source<'a> {
                     name: _,
                     tokenizer: _,
                     model: _,
+                    axioms: _,
                 },
             )
             | None => Err(internal(format!(
@@ -657,6 +658,7 @@ impl<'a> Source<'a> {
                     name: _,
                     tokenizer: _,
                     model: _,
+                    axioms: _,
                 },
             )
             | None => Err(internal(format!(
