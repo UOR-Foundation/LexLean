@@ -2161,13 +2161,13 @@ fn conformance_tc_08() {
 }
 
 #[test]
-fn conformance_rb_15() {
-    repo_conformance::cases::run("RB-15");
+fn conformance_rb_18() {
+    repo_conformance::cases::run("RB-18");
 }
 
 #[test]
-fn conformance_sp_21() {
-    repo_conformance::cases::run("SP-21");
+fn conformance_sp_24() {
+    repo_conformance::cases::run("SP-24");
 }
 
 #[test]
