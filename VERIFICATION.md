@@ -1782,6 +1782,48 @@ claim exercises its constructor once, so a swapped arm is caught only where a
 claim distinguishes the two results. `SP-18` now checks that the first eight
 constructors are its eight; its register statement no longer says "eight".
 
+### a theorem proved by a split on a document term can fail (SM-35)
+
+`term_cases` is a language-1.2 proof form: a document term and a nonempty sorted unique
+list of prior document definitions, lowered to `cases llCase : <term> <;> simp (config :=
+{decide := true}) only [<definitions>, llCase]` (`SM-35`, §17.10, #91 stage 4). It exists
+because the unbounded refinement of a runtime item, `runExport … = runItem …`, is true and
+provable only by that script (measured on the `nat_add` slice: six seconds, the axioms
+`propext`, `Classical.choice`, `Quot.sound`), and `simplify` (plain `simp only`), `cases` on
+a local, and `reflexivity` cannot state it (the two sides are a case-of-case). The case
+builds a language-1.2 project whose theorem equates a direct match on `flagOf n` with the same
+match wrapped in a second match, proves it by `term_cases{scrutinee: (flagOf n), definitions:
+[direct, wrapped]}`, checks that the module satisfies `semantic-module-v2`, that the
+formatter keeps the proof and its fixed point links to the same module, that the notation
+reads back to the same module, that the generated Lean has the stated lowering, that the
+pinned Lean verifies the module with exactly `[propext]` (where the toolchain is installed),
+and that the LaTeX catalog carries the theorem's statement and policy. Seven misuses are
+refused as `LLT4001` naming the misuse: language 1.1 (data form, schema 1: "a language-1.2
+construct"), an empty list, definitions out of order, a repeated definition, a definition that
+is absent, a term of type `Nat`, and a theorem parameter named `llCase`. The neighbouring
+suites (`semantic-ir`, `proofs`, `declarations`, 76 cases): 54 pass and 22 fail with
+`LLC0102`, the lock bound to the compiler-semantics ID, as every case that copies a
+committed project does on this stack since `SP-18`; none fails on the schema, the
+proof forms, or the snapshot.
+
+Each plant was run with `cargo test -p repo-conformance --test conformance -- conformance_sm_35`
+and restored with `git checkout`.
+
+Planted (a): the hypothesis left out of the `simp only` list in the lowering. Expected: the
+lowering assertion of the case fails. Observed: it does (the generated module shows
+`simp … only [direct, wrapped]`). Not shown: that the pinned Lean then also rejects this
+module; the toy theorem may not need the hypothesis, and the `nat_add` slice did not
+test it.
+
+Planted (b): the language gate removed. Observed: the language-1.1 project is accepted and
+the case fails at the expected refusal (`check fails`).
+
+Planted (c): the sortedness and uniqueness check replaced by acceptance. Observed: the same.
+
+Not planted: the check that the term's type is an inductive of the document, the empty list,
+the absent definition, and the reserved name, each of which the case exercises with its own
+misuse; their checks were not removed one by one.
+
 ### the machine's natural and integer arithmetic can fail (SP-23)
 
 `RustSyntax.Machine` gains nine constructors (`checkedNatAdd`, `natSub`, `checkedNatMul`,

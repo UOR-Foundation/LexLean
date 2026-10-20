@@ -2602,7 +2602,7 @@ pub(crate) fn run(id: &str) {
             let accepted = project_of(&source(good, "n"), "1.2");
             let checked = support::checked_project(&accepted);
             let core = serde_json::to_value(
-                &checked.modules["Main"]
+                checked.modules["Main"]
                     .document
                     .semantic
                     .as_ref()

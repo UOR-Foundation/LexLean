@@ -2673,6 +2673,29 @@ An `apply` proof names one prior theorem and supplies exactly its ordered,
 type-checked semantic arguments; it lowers to one `exact` application and
 cannot carry a proof-term or tactic string.
 
+A `term_cases` proof (language 1.2, `SM-35`) names a document term and a
+nonempty, strictly sorted, duplicate-free list of prior document definitions.
+The term's type must be an inductive type of the document. It lowers to
+`cases llCase : <term> <;> simp (config := {decide := true}) only [<definitions>, llCase]`:
+the goal is split on every constructor of the term's type, `llCase` is the
+hypothesis that equates the term to the constructor, and the definitions and that
+hypothesis are the only rewrite rules, with closed propositions decided. It is
+admitted because an evaluation that matches on the same term twice, once
+through a wrapper that matches on the result of the first, is a case-of-case
+that conversion does not commute, so such an equation cannot be proved by
+`reflexivity` or by `cases` on a local, which needs a name for the value; the
+runtime profile's refinement statements (§17.17, `SP-22`) are of this shape.
+The proof carries no tactic name, option, or lemma: the definitions are the
+only free choice, and each must be a prior definition of the document, so the
+rewrite set is the document's own text and the hypothesis. It adds no axiom of
+its own: the theorem's policy states the exact set the pinned Lean observes,
+which `simp` with decided propositions draws from `propext` (and from
+`Classical.choice` and `Quot.sound` where the unfolded definitions use them), as
+for `simplify`. The name `llCase` is reserved, so a theorem parameter cannot
+take it. The canonical LaTeX of a semantic module is a catalog of its
+declarations that states a theorem's statement and axiom policy and no proof, for
+every proof form, so the form adds nothing to it.
+
 Every definition and theorem has an exact axiom policy. An omitted `axioms`
 member means the exact empty set; a present member is a strictly sorted,
 duplicate-free list of Lean names and means exact equality with that set.
