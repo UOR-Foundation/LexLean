@@ -33,11 +33,17 @@
     "bootstrap/check_program": {
       "debug": 13697024
     },
+    "bootstrap/correspond_crate": {
+      "debug": 4915200
+    },
     "bootstrap/evaluator": {
       "debug": 21037056
     },
     "bootstrap/parse_audit_output": {
       "debug": 6291456
+    },
+    "bootstrap/validate_crate": {
+      "debug": 5046272
     }
   }
 }

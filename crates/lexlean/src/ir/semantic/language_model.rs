@@ -17,15 +17,22 @@
 //! those definitions, in the manner of the reasoning family's generated
 //! theorems. The laws themselves are the library's: nothing is spliced, and
 //! the generated module imports the library's generated Lean.
+//!
+//! A context window and a text generator elaborate the same way: a window
+//! to its capacity and the library's admission and push under its overflow
+//! disposition, a generator to its scorer, its closed outcome types, and
+//! the library's bounded generation loop under its policy, each with
+//! generated theorems one library lemma proves.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use super::model::{self, Lowering};
 use super::reasoning::{self, Formula, GeneratedTheorem, Proof, ProofTerm};
 use super::{
     type_node_count, ArtifactRole, ArtifactSchema, Environment, FunctionInfo, GenerationPolicy,
-    MemberRef, ModelUse, SemanticDeclaration, SemanticFailure, SemanticParameter, SemanticTerm,
-    SemanticType, TokenizerScheme,
+    MemberRef, ModelUse, OverflowDisposition, SemanticConstructor, SemanticDeclaration,
+    SemanticFailure, SemanticParameter, SemanticPrimitive, SemanticTerm, SemanticType,
+    TokenizerScheme,
 };
 use crate::code;
 use crate::text_laws::{self, names};
@@ -167,6 +174,60 @@ pub fn declaration_construct(declaration: &SemanticDeclaration) -> Option<&'stat
 }
 
 // ---------------------------------------------------------------------------
+// The text interfaces a module declares and imports.
+
+/// What linking knows about one context window.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct WindowInfo {
+    capacity: u64,
+    overflow: OverflowDisposition,
+}
+
+/// Every visible tokenizer and context window, by environment key (a local
+/// name, or `module::name` for an import), so that a generator names them
+/// across modules as a model names its contract.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub(crate) struct Texts {
+    tokenizers: BTreeSet<String>,
+    windows: BTreeMap<String, WindowInfo>,
+}
+
+impl Texts {
+    /// The interfaces this module declares itself.
+    pub(super) fn locals(&self) -> Self {
+        Self {
+            tokenizers: self
+                .tokenizers
+                .iter()
+                .filter(|key| !key.contains("::"))
+                .cloned()
+                .collect(),
+            windows: self
+                .windows
+                .iter()
+                .filter(|(key, _)| !key.contains("::"))
+                .map(|(key, info)| (key.clone(), *info))
+                .collect(),
+        }
+    }
+}
+
+/// Make the text interfaces an imported module declares visible under
+/// `module::name`.
+pub(super) fn register_import(
+    module: &str,
+    elaboration: &model::Elaboration,
+    env: &mut Environment<'_>,
+) {
+    for name in &elaboration.text.tokenizers {
+        env.texts.tokenizers.insert(format!("{module}::{name}"));
+    }
+    for (name, info) in &elaboration.text.windows {
+        env.texts.windows.insert(format!("{module}::{name}"), *info);
+    }
+}
+
+// ---------------------------------------------------------------------------
 // The elaboration of a tokenizer.
 
 /// The generated binder of a byte string.
@@ -175,9 +236,19 @@ const BYTES: &str = "__bytes";
 const TOKENS: &str = "__tokens";
 /// The generated binder of a text.
 const TEXT: &str = "__text";
+/// The generated binder of one token.
+const TOKEN: &str = "__token";
+/// The generated binder of a seed.
+const SEED: &str = "__seed";
 
 fn interface(reason: String) -> SemanticFailure {
     model::fail(code!("LLT4006"), reason)
+}
+
+/// A bound a text declaration must state is absent or zero (§17.12, *Text
+/// components* rule 5).
+fn unbounded(reason: String) -> SemanticFailure {
+    model::fail(code!("LLT4016"), reason)
 }
 
 /// A member of the laws library, as an elaboration names it.
@@ -211,7 +282,26 @@ fn parameter(name: &str, ty: SemanticType) -> SemanticParameter {
     }
 }
 
-/// Register the library's functions a tokenizer's elaboration applies, with
+/// `list uint32 -> list int`, a generator's scorer as the library loop takes it.
+fn scorer_type() -> SemanticType {
+    SemanticType::Function {
+        parameters: vec![tokens()],
+        result: Box::new(list_of(SemanticType::Int)),
+    }
+}
+
+/// `product (list uint32) nat`: a greedy run's tokens and outcome code.
+fn greedy_run() -> SemanticType {
+    model::product(tokens(), SemanticType::Nat)
+}
+
+/// `product (product (list uint32) nat) uint32`: a sampled run and its next
+/// seed.
+fn sample_run() -> SemanticType {
+    model::product(greedy_run(), SemanticType::UInt32)
+}
+
+/// Register the library's functions a text declaration's elaboration applies, with
 /// their signatures, so that the derived definitions and generated
 /// statements type-check like any call (§17.12, *Text components* rule 3).
 /// The native data is what the compiler generates the Lean from; linking
@@ -252,7 +342,79 @@ fn register_library(env: &mut Environment<'_>) {
             SemanticType::Bool,
         ),
     ];
-    for (name, parameters, result) in rows {
+    let context = || model::option_type(tokens());
+    let loop_parameters = || {
+        vec![
+            scorer_type(),
+            SemanticType::Nat,
+            SemanticType::Nat,
+            SemanticType::Bool,
+            SemanticType::UInt32,
+            SemanticType::Nat,
+            tokens(),
+        ]
+    };
+    let seeded = || {
+        let mut parameters = loop_parameters();
+        parameters.push(SemanticType::UInt32);
+        parameters
+    };
+    let windows: [(&str, Vec<SemanticType>, SemanticType); 13] = [
+        (
+            names::FITS,
+            vec![SemanticType::Nat, tokens()],
+            SemanticType::Bool,
+        ),
+        (
+            names::ADMIT_REFUSE,
+            vec![SemanticType::Nat, tokens()],
+            context(),
+        ),
+        (
+            names::ADMIT_KEEP_LAST,
+            vec![SemanticType::Nat, tokens()],
+            context(),
+        ),
+        (
+            names::PUSH_REFUSE,
+            vec![SemanticType::Nat, tokens(), SemanticType::UInt32],
+            context(),
+        ),
+        (
+            names::PUSH_KEEP_LAST,
+            vec![SemanticType::Nat, tokens(), SemanticType::UInt32],
+            context(),
+        ),
+        (
+            names::FITS_OPTION,
+            vec![SemanticType::Nat, context()],
+            SemanticType::Bool,
+        ),
+        (
+            names::SUFFIX_OPTION,
+            vec![tokens(), context()],
+            SemanticType::Bool,
+        ),
+        (
+            names::XORSHIFT32,
+            vec![SemanticType::UInt32],
+            SemanticType::UInt32,
+        ),
+        (
+            names::AT_MOST,
+            vec![SemanticType::Nat, tokens()],
+            SemanticType::Bool,
+        ),
+        (names::GENERATE_GREEDY, loop_parameters(), greedy_run()),
+        (
+            names::GENERATE_GREEDY_GUARDED,
+            loop_parameters(),
+            greedy_run(),
+        ),
+        (names::GENERATE_SAMPLE, seeded(), sample_run()),
+        (names::GENERATE_SAMPLE_GUARDED, seeded(), sample_run()),
+    ];
+    for (name, parameters, result) in rows.into_iter().chain(windows) {
         env.functions
             .entry(super::member_key(&library_member(name)))
             .or_insert(FunctionInfo {
@@ -276,23 +438,655 @@ fn law(
     pieces: SemanticTerm,
 ) -> GeneratedTheorem {
     let bound = model::var(&binder.name);
+    law_over(
+        name,
+        vec![binder],
+        statement,
+        unfold,
+        lemma,
+        vec![pieces, bound],
+    )
+}
+
+/// A generated theorem over several binders, proved by one library lemma
+/// applied to `arguments` after unfolding exactly the named derived
+/// definitions.
+fn law_over(
+    name: String,
+    binders: Vec<SemanticParameter>,
+    statement: SemanticTerm,
+    unfold: &[&str],
+    lemma: &str,
+    arguments: Vec<SemanticTerm>,
+) -> GeneratedTheorem {
     GeneratedTheorem {
         name,
         type_parameters: Vec::new(),
-        parameters: vec![binder],
+        parameters: binders,
         statement: Formula::Term { term: statement },
         proof: Proof::Unfold {
             definitions: unfold.iter().map(|name| model::local(name)).collect(),
             term: ProofTerm::Theorem {
                 theorem: library_member(lemma),
                 type_arguments: Vec::new(),
-                arguments: vec![
-                    ProofTerm::Term { term: pieces },
-                    ProofTerm::Term { term: bound },
-                ],
+                arguments: arguments
+                    .into_iter()
+                    .map(|term| ProofTerm::Term { term })
+                    .collect(),
             },
         },
     }
+}
+
+/// A text declaration's axiom policy is sorted, unique, and qualified: it is
+/// the exact policy of every Lean declaration it elaborates to.
+fn check_policy(kind: &str, name: &str, axioms: &[String]) -> Result<(), SemanticFailure> {
+    if axioms.windows(2).any(|pair| pair[0] >= pair[1])
+        || axioms.iter().any(|axiom| !super::legal_name(axiom))
+    {
+        return Err(interface(format!(
+            "{kind} `{name}` axiom policy is not sorted, unique, and qualified"
+        )));
+    }
+    Ok(())
+}
+
+fn library_call(function: &str, arguments: Vec<SemanticTerm>) -> SemanticTerm {
+    model::call(&library_member(function), &[], arguments)
+}
+
+fn local_call(function: &str, arguments: Vec<SemanticTerm>) -> SemanticTerm {
+    model::call(&model::local(function), &[], arguments)
+}
+
+fn is_true(term: SemanticTerm) -> SemanticTerm {
+    model::eq(term, SemanticTerm::Bool { value: true })
+}
+
+fn plain_definition(
+    name: &str,
+    parameters: Vec<SemanticParameter>,
+    result: SemanticType,
+    body: SemanticTerm,
+) -> SemanticDeclaration {
+    model::ordinary_definition(name.to_owned(), &[], parameters, result, body, false)
+}
+
+/// A member of the module that declares `owner`: the derived definition
+/// `owner.suffix`, in `owner`'s module when it is imported.
+fn sibling(owner: &MemberRef, suffix: &str) -> MemberRef {
+    MemberRef {
+        module: owner.module.clone(),
+        name: format!("{}.{suffix}", owner.name),
+    }
+}
+
+// ---------------------------------------------------------------------------
+// The elaboration of a context window.
+
+/// Check a context window and elaborate it (§17.12, *Text components*): a
+/// capacity of at least one token (`LLT4016`), elaborated to `capacity`,
+/// `fit`, and `push` over the library's functions under the overflow
+/// disposition, with `bounded`, `push_bounded`, and `exact` generated, and
+/// `suffix` under `keep_last` or `refuses` under `refuse`.
+fn check_context_window(
+    declaration: &SemanticDeclaration,
+    env: &mut Environment<'_>,
+) -> Result<Lowering, SemanticFailure> {
+    let SemanticDeclaration::ContextWindow {
+        name,
+        capacity,
+        overflow,
+        axioms,
+    } = declaration
+    else {
+        return Ok(Lowering::default());
+    };
+    check_policy("context window", name, axioms)?;
+    if *capacity == 0 {
+        return Err(unbounded(format!(
+            "context window `{name}` has capacity 0; a window holds at least one token"
+        )));
+    }
+    register_library(env);
+    let capacity_name = format!("{name}.capacity");
+    let admit = format!("{name}.fit");
+    let push = format!("{name}.push");
+    let capacity_term = || local_call(&capacity_name, Vec::new());
+    let (admit_with, push_with, bounded, push_bounded, exact) = match overflow {
+        OverflowDisposition::Refuse => (
+            names::ADMIT_REFUSE,
+            names::PUSH_REFUSE,
+            names::ADMIT_REFUSE_BOUNDED,
+            names::PUSH_REFUSE_BOUNDED,
+            names::ADMIT_REFUSE_EXACT,
+        ),
+        OverflowDisposition::KeepLast => (
+            names::ADMIT_KEEP_LAST,
+            names::PUSH_KEEP_LAST,
+            names::ADMIT_KEEP_LAST_BOUNDED,
+            names::PUSH_KEEP_LAST_BOUNDED,
+            names::ADMIT_KEEP_LAST_EXACT,
+        ),
+    };
+    let declarations = vec![
+        plain_definition(
+            &capacity_name,
+            Vec::new(),
+            SemanticType::Nat,
+            model::nat(*capacity),
+        ),
+        plain_definition(
+            &admit,
+            vec![parameter(TOKENS, tokens())],
+            model::option_type(tokens()),
+            library_call(admit_with, vec![capacity_term(), model::var(TOKENS)]),
+        ),
+        plain_definition(
+            &push,
+            vec![
+                parameter(TOKENS, tokens()),
+                parameter(TOKEN, SemanticType::UInt32),
+            ],
+            model::option_type(tokens()),
+            library_call(
+                push_with,
+                vec![capacity_term(), model::var(TOKENS), model::var(TOKEN)],
+            ),
+        ),
+    ];
+    let admitted = || local_call(&admit, vec![model::var(TOKENS)]);
+    let fits = |value: bool| {
+        model::eq(
+            library_call(names::FITS, vec![capacity_term(), model::var(TOKENS)]),
+            SemanticTerm::Bool { value },
+        )
+    };
+    let over_tokens = || vec![parameter(TOKENS, tokens())];
+    let mut theorems = vec![
+        // Every admitted context fits the window.
+        law_over(
+            format!("{name}.bounded"),
+            over_tokens(),
+            is_true(library_call(
+                names::FITS_OPTION,
+                vec![capacity_term(), admitted()],
+            )),
+            &[&admit],
+            bounded,
+            vec![capacity_term(), model::var(TOKENS)],
+        ),
+        // Every pushed context fits the window.
+        law_over(
+            format!("{name}.push_bounded"),
+            vec![
+                parameter(TOKENS, tokens()),
+                parameter(TOKEN, SemanticType::UInt32),
+            ],
+            is_true(library_call(
+                names::FITS_OPTION,
+                vec![
+                    capacity_term(),
+                    local_call(&push, vec![model::var(TOKENS), model::var(TOKEN)]),
+                ],
+            )),
+            &[&push],
+            push_bounded,
+            vec![capacity_term(), model::var(TOKENS), model::var(TOKEN)],
+        ),
+        // A context that fits is admitted unchanged.
+        law_over(
+            format!("{name}.exact"),
+            over_tokens(),
+            model::implies(
+                fits(true),
+                model::eq(
+                    admitted(),
+                    model::constructor("Option.some", vec![tokens()], vec![model::var(TOKENS)]),
+                ),
+            ),
+            &[&admit],
+            exact,
+            vec![capacity_term(), model::var(TOKENS)],
+        ),
+    ];
+    theorems.push(match overflow {
+        // What `keep_last` keeps is the end of the context.
+        OverflowDisposition::KeepLast => law_over(
+            format!("{name}.suffix"),
+            over_tokens(),
+            is_true(library_call(
+                names::SUFFIX_OPTION,
+                vec![model::var(TOKENS), admitted()],
+            )),
+            &[&admit],
+            names::ADMIT_KEEP_LAST_SUFFIX,
+            vec![capacity_term(), model::var(TOKENS)],
+        ),
+        // `refuse` admits nothing that does not fit.
+        OverflowDisposition::Refuse => law_over(
+            format!("{name}.refuses"),
+            over_tokens(),
+            model::implies(
+                fits(false),
+                model::eq(
+                    admitted(),
+                    model::constructor("Option.none", vec![tokens()], Vec::new()),
+                ),
+            ),
+            &[&admit],
+            names::ADMIT_REFUSE_REFUSES,
+            vec![capacity_term(), model::var(TOKENS)],
+        ),
+    });
+    env.texts.windows.insert(
+        name.clone(),
+        WindowInfo {
+            capacity: *capacity,
+            overflow: *overflow,
+        },
+    );
+    Ok(Lowering {
+        declarations,
+        theorems,
+        ..Lowering::default()
+    })
+}
+
+// ---------------------------------------------------------------------------
+// The elaboration of a text generator.
+
+/// The closed outcome codes of the library's generation loop, in the order
+/// `LexLeanText.genGo` writes them.
+const STOPPED: u64 = 0;
+const EXHAUSTED: u64 = 1;
+const UNKNOWN_TOKEN: u64 = 2;
+
+/// The constructors of a generator's `End` type, in declaration order.
+const ENDS: [&str; 2] = ["stop", "exhausted"];
+/// The constructors of a generator's `Failure` type, in declaration order:
+/// the closed `text_failure` members.
+const FAILURES: [&str; 3] = ["unknown_token", "context_overflow", "invalid_utf8"];
+
+fn named(name: &str) -> SemanticType {
+    SemanticType::Named {
+        member: model::local(name),
+        arguments: Vec::new(),
+    }
+}
+
+fn enumeration(name: &str, constructors: &[&str]) -> SemanticDeclaration {
+    SemanticDeclaration::Inductive {
+        name: name.to_owned(),
+        type_parameters: Vec::new(),
+        parameters: Vec::new(),
+        constructors: constructors
+            .iter()
+            .map(|constructor| SemanticConstructor {
+                name: (*constructor).to_owned(),
+                fields: Vec::new(),
+            })
+            .collect(),
+        mutual: None,
+    }
+}
+
+fn result_of(ok: SemanticType, error: SemanticType) -> SemanticType {
+    SemanticType::Result {
+        ok: Box::new(ok),
+        error: Box::new(error),
+    }
+}
+
+fn nat_equals(left: SemanticTerm, right: u64) -> SemanticTerm {
+    model::primitive(
+        SemanticPrimitive::Equal,
+        vec![left, model::nat(right)],
+        SemanticType::Bool,
+    )
+}
+
+/// Check a text generator and elaborate it (§17.12, *Text components*).
+///
+/// Its tokenizer and window are prior text declarations; its scorer a prior
+/// stateless model from `list uint32` to `list int` whose every runtime
+/// check its evidence discharges; its stop a prior definition of one
+/// `uint32`; `max_tokens` at least one (`LLT4016`). It elaborates to `score`,
+/// the closed types `End` and `Failure`, `run` (the library's loop under the
+/// policy), `generateTokens`, and `generate`, and generates `bounded` and
+/// `context_bounded`. A `greedy` generator takes no seed; a `sample`
+/// generator takes the seed and returns the next one.
+#[allow(clippy::too_many_lines)]
+fn check_text_generator(
+    declaration: &SemanticDeclaration,
+    env: &mut Environment<'_>,
+) -> Result<Lowering, SemanticFailure> {
+    let SemanticDeclaration::TextGenerator {
+        name,
+        tokenizer,
+        window,
+        scorer,
+        max_tokens,
+        stop,
+        policy,
+        axioms,
+    } = declaration
+    else {
+        return Ok(Lowering::default());
+    };
+    check_policy("text generator", name, axioms)?;
+    if *max_tokens == 0 {
+        return Err(unbounded(format!(
+            "text generator `{name}` has max_tokens 0; a generator states a bound of at least one token"
+        )));
+    }
+    super::check_member(tokenizer, env)?;
+    let tokenizer_key = super::member_key(tokenizer);
+    if !env.texts.tokenizers.contains(&tokenizer_key) {
+        return Err(interface(format!(
+            "text generator `{name}` tokenizer `{tokenizer_key}` is not a prior tokenizer"
+        )));
+    }
+    super::check_member(window, env)?;
+    let window_key = super::member_key(window);
+    let Some(window_info) = env.texts.windows.get(&window_key).copied() else {
+        return Err(interface(format!(
+            "text generator `{name}` window `{window_key}` is not a prior context window"
+        )));
+    };
+    super::check_member(&scorer.member, env)?;
+    let scorer_key = super::member_key(&scorer.member);
+    let scoring = model::scorer_interface(scorer, env, interface).map_err(|failure| {
+        interface(format!(
+            "text generator `{name}` scorer `{scorer_key}`: {}",
+            failure.reason
+        ))
+    })?;
+    if scoring.stateful {
+        return Err(interface(format!(
+            "text generator `{name}` scorer `{scorer_key}` is stateful; a scorer maps one context to its scores"
+        )));
+    }
+    if scoring.input != tokens() || scoring.output != list_of(SemanticType::Int) {
+        return Err(interface(format!(
+            "text generator `{name}` scorer `{scorer_key}` does not map `list uint32` to `list int`"
+        )));
+    }
+    if !scoring.required.is_empty() {
+        return Err(interface(format!(
+            "text generator `{name}` scorer `{scorer_key}` needs runtime checks its evidence does not discharge; a scorer is applied on every step"
+        )));
+    }
+    super::check_member(stop, env)?;
+    let stop_key = super::member_key(stop);
+    match env.functions.get(&stop_key) {
+        Some(info)
+            if info.parameters.is_empty()
+                && info.type_parameters.is_empty()
+                && info.result == SemanticType::UInt32 => {}
+        _ => {
+            return Err(interface(format!(
+                "text generator `{name}` stop `{stop_key}` is not a prior definition of one `uint32` token"
+            )));
+        }
+    }
+    register_library(env);
+
+    let sampled = matches!(policy, GenerationPolicy::Sample { .. });
+    let score = format!("{name}.score");
+    let end_type = format!("{name}.End");
+    let failure_type = format!("{name}.Failure");
+    let run = format!("{name}.run");
+    let generate_tokens = format!("{name}.generateTokens");
+    let generate = format!("{name}.generate");
+    let end = || named(&end_type);
+    let failure = || named(&failure_type);
+    let end_value = |constructor: &str| {
+        model::constructor(&format!("{end_type}.{constructor}"), Vec::new(), Vec::new())
+    };
+    let failure_value = |constructor: &str| {
+        model::constructor(
+            &format!("{failure_type}.{constructor}"),
+            Vec::new(),
+            Vec::new(),
+        )
+    };
+
+    // The loop's arguments, in the library's order: the scorer, the
+    // vocabulary size, the capacity, the disposition, the stop token, the
+    // fuel, the prompt, and under `sample` the seed.
+    let loop_arguments = |prompt: SemanticTerm| {
+        let mut arguments = vec![
+            model::function_ref(&model::local(&score), &[]),
+            model::call(&sibling(tokenizer, "size"), &[], Vec::new()),
+            model::call(&sibling(window, "capacity"), &[], Vec::new()),
+            SemanticTerm::Bool {
+                value: window_info.overflow == OverflowDisposition::KeepLast,
+            },
+            model::call(stop, &[], Vec::new()),
+            model::nat(*max_tokens),
+            prompt,
+        ];
+        if sampled {
+            arguments.push(model::var(SEED));
+        }
+        arguments
+    };
+    let (loop_function, guarded_function, bounded_lemma, guarded_lemma, run_type) = if sampled {
+        (
+            names::GENERATE_SAMPLE,
+            names::GENERATE_SAMPLE_GUARDED,
+            names::GENERATE_SAMPLE_BOUNDED,
+            names::GENERATE_SAMPLE_GUARDED_LAW,
+            sample_run(),
+        )
+    } else {
+        (
+            names::GENERATE_GREEDY,
+            names::GENERATE_GREEDY_GUARDED,
+            names::GENERATE_GREEDY_BOUNDED,
+            names::GENERATE_GREEDY_GUARDED_LAW,
+            greedy_run(),
+        )
+    };
+    let seeded = |mut parameters: Vec<SemanticParameter>| {
+        if sampled {
+            parameters.push(parameter(SEED, SemanticType::UInt32));
+        }
+        parameters
+    };
+    let seeded_arguments = |mut arguments: Vec<SemanticTerm>| {
+        if sampled {
+            arguments.push(model::var(SEED));
+        }
+        arguments
+    };
+
+    // `generateTokens`: the run's outcome code read into the closed types.
+    let outcome = "__outcome";
+    let (tokens_and_code, next_seed) = if sampled {
+        (
+            model::first(model::var(outcome)),
+            Some(model::second(model::var(outcome))),
+        )
+    } else {
+        (model::var(outcome), None)
+    };
+    let tokens_ok_type = |ok: SemanticType| match &next_seed {
+        Some(_) => model::product(ok, SemanticType::UInt32),
+        None => ok,
+    };
+    let token_result = result_of(tokens_ok_type(model::product(tokens(), end())), failure());
+    let ok = |value: SemanticTerm, ty: &SemanticType| {
+        model::constructor("Result.ok", vec![ty.clone(), failure()], vec![value])
+    };
+    let error = |constructor: &str, ty: &SemanticType| {
+        model::constructor(
+            "Result.error",
+            vec![ty.clone(), failure()],
+            vec![failure_value(constructor)],
+        )
+    };
+    let tokens_ok = tokens_ok_type(model::product(tokens(), end()));
+    let ended = |constructor: &str| {
+        let value = model::pair(
+            model::first(tokens_and_code.clone()),
+            end_value(constructor),
+        );
+        let value = match &next_seed {
+            Some(seed) => model::pair(value, seed.clone()),
+            None => value,
+        };
+        ok(value, &tokens_ok)
+    };
+    let code = model::second(tokens_and_code.clone());
+    let tokens_body = model::let_in(
+        outcome,
+        run_type.clone(),
+        local_call(&run, seeded_arguments(vec![model::var(TOKENS)])),
+        model::if_then(
+            nat_equals(code.clone(), STOPPED),
+            ended("stop"),
+            model::if_then(
+                nat_equals(code.clone(), EXHAUSTED),
+                ended("exhausted"),
+                model::if_then(
+                    nat_equals(code, UNKNOWN_TOKEN),
+                    error("unknown_token", &tokens_ok),
+                    error("context_overflow", &tokens_ok),
+                ),
+            ),
+        ),
+    );
+
+    // `generate`: the prompt encoded, the tokens generated, the output decoded.
+    let text_ok = tokens_ok_type(model::product(SemanticType::String, end()));
+    let generated = "__generated";
+    let decoded = "__decoded";
+    let failed = "__failed";
+    let (generated_pair, generated_seed) = if sampled {
+        (
+            model::first(model::var(generated)),
+            Some(model::second(model::var(generated))),
+        )
+    } else {
+        (model::var(generated), None)
+    };
+    let text_value = {
+        let value = model::pair(model::var(decoded), model::second(generated_pair.clone()));
+        match generated_seed {
+            Some(seed) => model::pair(value, seed),
+            None => value,
+        }
+    };
+    let text_body = model::matching(
+        local_call(
+            &generate_tokens,
+            seeded_arguments(vec![model::call(
+                &sibling(tokenizer, "encodeText"),
+                &[],
+                vec![model::var(TEXT)],
+            )]),
+        ),
+        vec![
+            (
+                "Result.ok",
+                vec![generated],
+                model::matching(
+                    model::call(
+                        &sibling(tokenizer, "decodeText"),
+                        &[],
+                        vec![model::first(generated_pair)],
+                    ),
+                    vec![
+                        ("Option.none", Vec::new(), error("invalid_utf8", &text_ok)),
+                        ("Option.some", vec![decoded], ok(text_value, &text_ok)),
+                    ],
+                ),
+            ),
+            (
+                "Result.error",
+                vec![failed],
+                model::constructor(
+                    "Result.error",
+                    vec![text_ok.clone(), failure()],
+                    vec![model::var(failed)],
+                ),
+            ),
+        ],
+    );
+
+    let declarations = vec![
+        plain_definition(
+            &score,
+            vec![parameter(TOKENS, tokens())],
+            list_of(SemanticType::Int),
+            model::call(
+                &scorer.member,
+                &scorer.type_arguments,
+                vec![model::var(TOKENS)],
+            ),
+        ),
+        enumeration(&end_type, &ENDS),
+        enumeration(&failure_type, &FAILURES),
+        plain_definition(
+            &run,
+            seeded(vec![parameter(TOKENS, tokens())]),
+            run_type.clone(),
+            library_call(loop_function, loop_arguments(model::var(TOKENS))),
+        ),
+        plain_definition(
+            &generate_tokens,
+            seeded(vec![parameter(TOKENS, tokens())]),
+            token_result,
+            tokens_body,
+        ),
+        plain_definition(
+            &generate,
+            seeded(vec![parameter(TEXT, SemanticType::String)]),
+            result_of(text_ok.clone(), failure()),
+            text_body,
+        ),
+    ];
+
+    let ran = local_call(&run, seeded_arguments(vec![model::var(TOKENS)]));
+    let generated_tokens = if sampled {
+        model::first(model::first(ran.clone()))
+    } else {
+        model::first(ran.clone())
+    };
+    let theorems = vec![
+        // At most `max_tokens` tokens are generated.
+        law_over(
+            format!("{name}.bounded"),
+            seeded(vec![parameter(TOKENS, tokens())]),
+            is_true(library_call(
+                names::AT_MOST,
+                vec![model::nat(*max_tokens), generated_tokens],
+            )),
+            &[&run],
+            bounded_lemma,
+            loop_arguments(model::var(TOKENS)),
+        ),
+        // The scorer is consulted only on contexts that fit the window: the
+        // run equals the run whose scorer sees nothing that does not fit.
+        law_over(
+            format!("{name}.context_bounded"),
+            seeded(vec![parameter(TOKENS, tokens())]),
+            model::eq(
+                ran,
+                library_call(guarded_function, loop_arguments(model::var(TOKENS))),
+            ),
+            &[&run],
+            guarded_lemma,
+            loop_arguments(model::var(TOKENS)),
+        ),
+    ];
+    Ok(Lowering {
+        declarations,
+        theorems,
+        ..Lowering::default()
+    })
 }
 
 /// Check a tokenizer and elaborate it (§17.12, *Text components*): its
@@ -476,6 +1270,7 @@ fn check_tokenizer(
             pieces_term(),
         ),
     ];
+    env.texts.tokenizers.insert(name.clone());
     Ok(Lowering {
         declarations,
         theorems,
@@ -496,6 +1291,8 @@ pub(super) fn check_declaration(
     super::require_language_1_2(env, kind)?;
     let lowering = match declaration {
         SemanticDeclaration::Tokenizer { .. } => check_tokenizer(declaration, env)?,
+        SemanticDeclaration::ContextWindow { .. } => check_context_window(declaration, env)?,
+        SemanticDeclaration::TextGenerator { .. } => check_text_generator(declaration, env)?,
         _ => Lowering::default(),
     };
     let name = declaration.name();
@@ -510,7 +1307,28 @@ pub(super) fn check_declaration(
         env.derived = true;
         let checked = match derived {
             SemanticDeclaration::Definition { .. } => super::check_definition(derived, env),
-            _ => Err(format!("internal: `{derived_name}` is not a definition")),
+            // A generator's closed outcome types, registered as a reasoner's
+            // generated inductives are.
+            SemanticDeclaration::Inductive {
+                name: inductive,
+                type_parameters,
+                parameters,
+                constructors,
+                ..
+            } => super::register_inductive_group(
+                &[super::InductiveRow {
+                    name: inductive,
+                    type_parameters,
+                    parameters,
+                    constructors,
+                }],
+                None,
+                env,
+                generated_names,
+            ),
+            _ => Err(format!(
+                "internal: `{derived_name}` is not a definition or an inductive"
+            )),
         };
         env.derived = false;
         env.current_type_parameters.clear();
@@ -561,6 +1379,7 @@ mod tests {
             name: "W".to_owned(),
             capacity: 1,
             overflow: super::super::OverflowDisposition::Refuse,
+            axioms: Vec::new(),
         };
         assert_eq!(
             elaborated_construct(&window),

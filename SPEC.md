@@ -680,7 +680,9 @@ Its image MUST install the pinned Rust and Lean toolchains at build, so that not
 
 `ci.yml` MUST run every recipe of `just vv` from a clean checkout on Linux x86-64. It MUST install the exact Rust toolchain, Lean 4.32.1 through `elan`, `just`, and `cargo-deny`.
 
-**What a run is.** `ci.yml` starts with the job `plan`, which decides from the event and the repository alone, through `.github/ci-plan.sh`, what the run is before any job that costs a runner starts. A pull request that is a draft is the `rest` leg and nothing else: a head pushed again before it is final costs one job and not the gate, the run is a development signal, and a draft is not mergeable on it; marking the pull request ready, and every push to it after, run the whole gate. A ready pull request, a `workflow_dispatch`, and a push to `main` are the whole gate, every job below. One push to `main` is not: when it is a merge commit whose tree is the tree of its second parent (a pull request head that already contained `main`) and a run of this workflow for that parent as a pull request of this repository passed every job, with none skipped, the join of Atlas, every host of §8.3, and every leg of `.github/vv-rows.json` among them, the push runs no job but the plan, which records the run: the tree it lands is byte for byte the tree that run verified, on the same runners and with the same pins. Any other push to `main`, including one the plan cannot decide (a failed query, no run, a run of a draft, a merge that changed the tree, a push that is no merge), is the whole gate. `release.yml` runs `just vv` whole and reads no earlier run. `RP-14` runs the script against planted events and a plant in it fails the case.
+**What a run is.** `ci.yml` starts with the job `plan`, which decides from the event and the repository alone, through `.github/ci-plan.sh`, what the run is before any job that costs a runner starts. A pull request that is a draft is the `rest` leg and nothing else: a head pushed again before it is final costs one job and not the gate, the run is a development signal, and a draft is not mergeable on it; marking the pull request ready, and every push to it after, run the whole gate. A ready pull request, a `workflow_dispatch`, and a push to `main` or to a release line are the whole gate, every job below. One push to `main` or to a release line is not: when it is a merge commit whose tree is the tree of its second parent (a pull request head that already contained `main`) and a run of this workflow for that parent as a pull request of this repository passed every job, with none skipped, the join of Atlas, every host of §8.3, and every leg of `.github/vv-rows.json` among them, the push runs no job but the plan, which records the run: the tree it lands is byte for byte the tree that run verified, on the same runners and with the same pins. Any other push to `main` or to a release line, including one the plan cannot decide (a failed query, no run, a run of a draft, a merge that changed the tree, a push that is no merge), is the whole gate. `release.yml` runs `just vv` whole and reads no earlier run. `RP-14` runs the script against planted events and a plant in it fails the case, and reads the three workflows' push triggers, which name `main` and `release/**`.
+
+**Release lines.** A release line is the branch `release/vX.Y` of the release X.Y: it is cut from `main` when work on X.Y begins, every pull request for the milestone X.Y targets it, each `vX.Y.Z` tag is made from it, and it is merged forward, by merge commit, into the next release line after each landing so that the next line carries every fix of the one before it. `main` is the newest released line: a release line is merged into `main` when its release is tagged, and nothing else lands on `main`. A release line is held to the same gate as `main`: a push to it is the whole gate under the rule above, and a pull request against it is a pull request of this repository.
 
 In a run that is the whole gate, the job runs the recipes as the legs of one matrix, the rows of `.github/vv-rows.json`, at once, each from its own clean checkout: `examples`, which verifies every example but UOR Atlas; `rest`, the other eleven recipes in the order of `vv`; and one `bdd-<part>` row for each named part of the `bdd` plan below, which runs `bdd` alone. Each leg runs `just` with its recipes, which stops at the first that fails, as `vv` does. The part of `examples` a job runs is named by its matrix row through `LEXLEAN_EXAMPLES_PART` and by nothing else: `without:uor-atlas` on the leg, `shard:uor-atlas:<shard>` and `join:uor-atlas` on the Atlas jobs below; unset or empty, which is what `just vv` and `release.yml` run, the recipe verifies every example whole. Together the legs and the Atlas jobs run every recipe of `vv`, every example, and every test of `bdd` exactly once, and the run passes only when every job passes, so it proves what one run of `just vv` proves; no recipe depends on another having run, and every recipe owns the files it builds. Its wall time is the longest path through the jobs rather than the sum. `just vv` remains the acceptance recipe of §9.2 for every other run, and `release.yml` runs it whole.
 
@@ -3844,6 +3846,100 @@ proved correct on every state its run reaches, with its check erased, all
 verified by pinned Lean, with the six-counter ledger of each run decided
 counter by counter by Lean's kernel.
 
+#### Text components (language 1.2)
+
+A text component models a step of a language-processing system: a
+*tokenizer* turns text into tokens and back, a *context window* bounds the
+tokens a model sees, and a *text generator* extends a prompt one token at a
+time with a model's scores. As with models and reasoning machines, a text
+declaration carries no meaning of its own: linking elaborates it into ordinary
+language-1.2 definitions, inductives, and generated theorems, which the
+ordinary rules check again, and the Lean backend, production eligibility, and
+the axiom audit read only the elaboration. The universal laws are not stated
+by the declaration and not spliced as Lean text: they are the declarations of
+the embedded text-laws library, one native `lexlean/core-module/2` module
+`LexLeanText.LexLeanText` of the project `language/text-1.2/library/` (§17.10),
+which the compiler embeds, hashes into the language-1.2 semantics, and
+generates Lean from, and which a module that declares a text component
+imports. No prompt string is semantic code: `string` is data, and a prompt
+reaches a model only as the tokens `encodeText` makes of it.
+
+1. **Closed declarations** (`LLT4001`). `tokenizer`, `context_window`,
+   `text_generator`, and `text_classifier` are declarations of
+   `lexlean/semantic-module/2`; a member, scheme, disposition, policy,
+   generator, or distribution outside the closed schema is a schema
+   violation. A declaration's `axioms` row is the exact axiom policy of every
+   Lean declaration it elaborates to, sorted, unique, and qualified
+   (`LLT4006`).
+2. **Tokenizers** (`LLT4006`). `{"kind":"tokenizer","name":T,"scheme":S,
+   "vocabulary":{"member":A}}` names a prior artifact of role `vocabulary` and
+   schema `utf8_lines`; the scheme is `byte_level` or `longest_match`.
+   Tokens are `uint32`: the ids 0..255 are the single bytes, always present
+   as the byte fallback, and the vocabulary's pieces take the ids from 256 in
+   artifact order. `T` elaborates to `T.pieces`, `T.size`, `T.encode` and
+   `T.decode` over `bytes`, and `T.encodeText` and `T.decodeText` over
+   `string` through UTF-8, and generates `T.roundtrip` (`decode (encode b) =
+   some b` for every byte string), `T.text_roundtrip`, and `T.in_range`
+   (every token `encode` makes is below `T.size`).
+3. **The laws library.** Every library function an elaboration applies is
+   registered with its signature, so its applications type-check like any
+   call, and every generated theorem is proved by one library lemma applied
+   after unfolding exactly the elaborated definitions it names; the loader
+   refuses a native module that does not declare every name an elaboration
+   applies.
+4. **Context windows.** `{"kind":"context_window","name":W,"capacity":n,
+   "overflow":D}` elaborates to `W.capacity : nat`, `W.fit : list uint32 ->
+   option (list uint32)`, and `W.push : list uint32 -> uint32 -> option (list
+   uint32)`. Under `refuse` a context that does not fit is `none`; under
+   `keep_last` the most recent `n` tokens are kept. It generates
+   `W.bounded` and `W.push_bounded` (every admitted or pushed context fits),
+   `W.exact` (a context that fits is admitted unchanged), and `W.suffix`
+   under `keep_last` (what is kept is the end of the context) or
+   `W.refuses` under `refuse` (a context that does not fit is not admitted).
+5. **Bounds** (`LLT4016`). A window's capacity and a generator's
+   `max_tokens` are at least 1: a text component never runs unbounded or
+   with an unstated bound. The schema admits any non-negative integer there
+   and the compiler refuses 0 with `LLT4016`, so the one rule is stated by
+   the code that enforces it; a negative value is a schema violation
+   (`LLT4001`).
+6. **Text generators** (`LLT4006`). `{"kind":"text_generator","name":G,
+   "tokenizer":T,"window":W,"scorer":{"member":M},"max_tokens":k,"stop":s,
+   "policy":P}` names a prior tokenizer, a prior context window, a prior
+   stateless model whose contract maps `list uint32` to `list int` and whose
+   evidence discharges every runtime check (it is applied on every step),
+   and a prior definition of one `uint32` token. The scorer's width is not
+   compared with the vocabulary size when linking: a choice outside the
+   vocabulary is the runtime `unknown_token`. It elaborates to `G.score`,
+   the scorer; the closed inductives `G.End` (`stop`, `exhausted`) and
+   `G.Failure` (`unknown_token`, `context_overflow`, `invalid_utf8`), the
+   members of `text_failure`; `G.run`, the library's loop: the window admits
+   the prompt, then each step scores the context, chooses a token by the
+   policy, ends at the stop token, refuses a choice that is not a token of
+   the vocabulary (`unknown_token`), and pushes the token through the window
+   (`context_overflow` when `refuse` refuses it), for at most `k` steps, the
+   last of which ends `exhausted` and keeps its output; `G.generateTokens`,
+   the run read into `result (product (list uint32) G.End) G.Failure`; and
+   `G.generate`, the same over `string`, whose output that is not UTF-8 is
+   `invalid_utf8`. It generates `G.bounded` (at most `k` tokens are
+   generated) and `G.context_bounded` (the run equals the run whose scorer
+   is never consulted on a context that does not fit the window).
+7. **Explicit nondeterminism.** Under `greedy` the choice is the first
+   maximum and no elaborated definition takes a seed, so a greedy generator
+   is deterministic by type. Under `sample` the generator is `xorshift32`
+   (Marsaglia's 13, 17, 5 triple over `uint32`) and the distribution
+   `proportional` (a negative score weighs nothing; the draw is the next
+   seed modulo the total weight against the prefix sums, and with no weight
+   the first maximum): `G.run`, `G.generateTokens`, and `G.generate` take the
+   seed as their last input and return the next seed with their result, so
+   the same prompt and seed give the same output. No claim is made about the
+   quality of the generator, and `0` is its fixed point.
+8. **Classifiers.** A `text_classifier` is not elaborated by linking in this
+   release; one admitted under 1.2 is reported as a declaration linking did
+   not elaborate.
+
+`examples/models` carries the vocabulary the conformance cases tokenize; the
+end-to-end text-model example is not part of this release.
+
 #### Widening conversions (language 1.2)
 
 1. **Typing.** `to_int` takes one operand of a fixed-width integer type
@@ -4031,11 +4127,12 @@ that runs a reasoner admits `overflow` where the target requires it.
 
 Language-1.2 text declarations (§17.12, *Text components*) are `formal-only`
 (`declaration.tokenizer`, `declaration.context_window`,
-`declaration.text_generator`, `declaration.text_classifier`): a
-tokenizer's elaborated definitions are reported with that construct and
-apply the embedded text-laws library, which no production target realizes,
-so a root whose closure reaches one fails, and its generated theorems are in
-no closure; the other three are not elaborated by linking in this release.
+`declaration.text_generator`, `declaration.text_classifier`): the
+elaborated definitions of a tokenizer, a context window, and a text
+generator are reported with their construct and apply the embedded
+text-laws library, which no production target realizes, so a root whose
+closure reaches one fails, and their generated theorems are in no closure; a
+text classifier is not elaborated by linking in this release.
 
 **Rules.** A root is eligible for a target exactly when none of the following
 holds; otherwise `check` fails with `LLT4005`, naming the root, the target, the
@@ -7341,6 +7438,81 @@ The roots take a program as calculus data and not as its canonical JSON: reading
 
 `BS-04` holds both roots to the oracle. The counts here are the case's own report at the change's head on its base (b5871e8b9), and the committed corpus grows with the repository. On every host the rendered `rust-std` packages of both roots, compiled by the pinned rustc, run the 1,756 vectors of `checkProgram` (1,483 refused) and the 303 of `checkArguments` (129 refused): the 175 distinct programs committed in the repository, each read by the oracle's reader (the fixtures of `compiler/fixtures/`, the programs of the committed Rust packages, and the lowered programs a verification record preserves, among them the two roots' own), the refusals of `TC-02` as the edits that test makes, one program for each rule a planted defect removes, and the literal, primitive, and shape corpora at a fixed seed; the arguments are those of the committed fixtures, as stated and mutated. On the normative host the lowered programs of both roots under the calculus evaluator (§17.14) agree on the same vectors and on 4,722 seeded programs (3,933 refused) and 403 seeded argument runs (202 refused), mutations at the level of the data (a retyped operand, a dropped, duplicated, or reshaped arm, a changed binder, an undeclared function or declaration, a closure over every parameter, an operand dropped or added, each primitive at wrong operand types, a literal respelled or out of range, a specification changed), the rendered packages agree on 9,296 more under rustc, in harnesses of at most 1,000 runs, and twelve planted defects in the source are each detected by the same differential. Under the pinned Lean, the production export (§24.7) certifies both roots beside those of the other components under `tests/production-export/bootstrap/`.
 
+The fifth component is the Rust crate validator (§17.16), the module
+`RustValidate`, with two production roots for `rust-std`:
+
+| Root | Oracle |
+| --- | --- |
+| `validateCrate (krate : Crate) : Result Unit Bytes` | `calculus::rust::validate::validate` |
+| `correspondCrate (krate : Crate) (elements : List Bytes) : Result Unit Bytes` | `calculus::rust::validate::correspond` |
+
+A `Crate` is the closed Rust AST (`calculus::rust::ast`) as first-order data
+(§17.13 rule 1): whether the profile is `rust-core`, and the items as a chain,
+each sort carrying its lists as its own `Nil`/`Cons` chain. A literal is
+read for its kind and width and a runtime function for its row of the table
+the module transcribes from `runtime::Item` (path, failure, heap use, width),
+so the payload of a literal is not data. `Result.error` carries the oracle's
+message to the byte, including the `{:?}` of a `Type`, of an `Option<IntKind>`,
+and of a slice of strings. `validateCrate` checks, in the order of the oracle,
+that each enum, `apply`, and function is declared once, that every type a crate
+names is declared and, in `rust-core`, has no heap component (and no heap
+construct or runtime function appears), that every name is bound once per
+function and in scope, that a value is moved at most once on every path
+(including the components of a pair, and the alternatives of an `if` and a
+`match`), that a fallible call propagates exactly where its function is
+fallible, and that each `apply` arm states the failure of the function it calls.
+A loop over a state (`Loop`, the constructor `ELoop` of the module) moves its
+state into the loop's own binding and runs its body again after each `Ok`, so a
+body that moves a name outside it, or a component of one, is refused with the
+least such name in the oracle's order of names, and the value a fallible loop
+ends with, at each `Err` of its body, must be a fallible value; the body is
+checked as a block that is not a tail, for its applications as for its moves,
+and the correspondence traversal treats it as a block.
+`correspondCrate` lists the constructs a crate emits instance by instance and
+checks each against the 97 rows of the correspondence table, the element it was
+lowered from, its width, and the elements the program uses; a repeated
+instance is kept once, which does not change which one the oracle reports
+first. Lowering, printing, packaging, and the choice of profile are not part of
+the claim, and a crate whose exported name or origin element holds a non-ASCII
+or non-printable scalar is outside it.
+
+`BS-05` holds both roots to the oracle. The crates are those the renderer
+lowers (`rust::lower`) from the 164 distinct programs among the 247 committed
+package manifests of `compiler/rust` and `tests/production-export` and the 122
+fixtures of `compiler/fixtures` (223 distinct crates over both profiles, with
+the `elements` the renderer realizes), a rule corpus that reaches each of the
+48 refusals a crate of the closed AST can reach three times (132 `validateCrate`
+runs and 12 `correspondCrate` runs, asserted: the corpus fails if its draws run
+out first; the refusal that a construct has no row of the table cannot be
+reached), 17 crates by hand for the merge of moved sets at an `if` and a
+`match`, and 34 by hand for the loop rules; that is 406 runs of `validateCrate`
+(165 refused) and 269 of `correspondCrate` (46 refused), and the case asserts
+these counts. On every host, the rendered `rust-std` packages of both
+roots (§17.16), compiled by the pinned rustc, are run on all of them. On the
+normative host, the lowered programs of both roots are run under the calculus
+evaluator (§17.14) on the crates of at most 400 expressions (200 of the 223;
+the larger ones are the compiler's own packages and are held to the oracle by
+the compiled run) with the rule corpus, and on 500 seeded mutants of the
+crates of at most 80 expressions (a node replaced by another of the crate, a
+name, type, pattern, constructor, callee, origin, or width changed, an item or
+binding or arm dropped, doubled, or swapped, a call's propagation flipped, a
+dispatch arm restated, a block run in a loop, the profile exchanged, and the
+elements of the program changed); the rendered packages are also run on 2,000 further seeded mutants
+per root. The outcome of a run is the result and, for a refusal, the message,
+and one difference fails the case. Sixteen planted defects in the source (a heap
+type admitted under `rust-core`, a name bound twice accepted, the moves of
+earlier match arms forgotten, a component moved after its whole accepted, an
+undeclared ADT type accepted, a `?` in an infallible function accepted, a
+fallible call without propagation accepted, an `apply` arm's failure not
+compared with its function's, a correspondence row narrowed, the width of a
+runtime call not compared, a name or a component moved in a loop body accepted,
+the end of a fallible loop not checked, a loop's state not moved into the loop,
+the name a loop's refusal reports not the least, and a loop body checked as a
+tail) are each detected by the same differential, and
+under the pinned Lean the production export (§24.7) certifies both roots beside
+the others, whose packages are the committed ones under
+`tests/production-export/bootstrap/`.
+
 ## 18. Lean backend
 
 ### 18.1 Output contract
@@ -9052,6 +9224,7 @@ The initial registry MUST include at least these exact codes and meanings:
 | `LLT4013` | Tooling module malformed or out of context (§17.20). |
 | `LLT4014` | Tooling authority registry invalid (§17.20). |
 | `LLT4015` | Tooling term ill-typed or unlicensed (§17.20). |
+| `LLT4016` | Unbounded or unspecified text generation (§17.12). |
 | `LLF5001` | Invalid definition form, self head, or recursion. |
 | `LLF5002` | Invalid proof step for the current goal. |
 | `LLF5003` | Missing, duplicate, or malformed proof branch. |
@@ -9757,7 +9930,7 @@ Each capability change follows R3. At repository scale, the dependency order is:
 9. implement CLI and stable Rust API;
 10. complete examples, negative fixtures, reproducibility, and release gates.
 
-The default branch must remain passing at each merge; a capability row is merged only with its complete scenario, test, implementation, and evidence.
+The default branch and every release line must remain passing at each merge; a capability row is merged only with its complete scenario, test, implementation, and evidence.
 
 
 ## 31. Complete conformance-ID registry
@@ -9779,7 +9952,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RP-11` | `repository` | Every public README capability claim is tied to a registered model ID and honesty level. | §27 |
 | `RP-12` | `repository` | A release is refused unless the complete release criterion and all required artifacts are satisfied. | §30 |
 | `RP-13` | `repository` | The ordinary workspace test phase excludes repo-conformance, the bdd phase alone runs its complete suite, and a test inventory proves that the two phases together equal the whole workspace test set with no test lost and none run twice, and that the parts of the committed bdd plan together equal the bdd phase with every test in exactly one part. | §9.2 |
-| `RP-14` | `repository` | The normative CI job runs every recipe of just vv in parallel legs that each start from a clean checkout on the standard ubuntu-24.04 runner, each recipe exactly once but bdd, which runs once per part of its committed plan on the row that names the part, the examples leg at the verification resource profile its matrix row names and without UOR Atlas, which the Atlas jobs of the same run verify as the shards of the committed plan and a join at that profile, every process once and nothing across runs, and the other legs at the default, with no cache, path filter, or skipped recipe, and each job uploads its CI evidence; a plan job decides what a run is from the event alone: a draft pull request runs the rest leg and no other job, a ready pull request, a request, and a push to main run every job, and a push to main that merges a head whose tree it equals runs none when the whole gate passed on that head, and runs the whole gate when any job of that run did not pass, was skipped, or is missing. | §9.4 |
+| `RP-14` | `repository` | The normative CI job runs every recipe of just vv in parallel legs that each start from a clean checkout on the standard ubuntu-24.04 runner, each recipe exactly once but bdd, which runs once per part of its committed plan on the row that names the part, the examples leg at the verification resource profile its matrix row names and without UOR Atlas, which the Atlas jobs of the same run verify as the shards of the committed plan and a join at that profile, every process once and nothing across runs, and the other legs at the default, with no cache, path filter, or skipped recipe, and each job uploads its CI evidence; a plan job decides what a run is from the event alone: a draft pull request runs the rest leg and no other job, a ready pull request, a request, and a push to main or to a release line run every job, and a push to main or to a release line that merges a head whose tree it equals runs none when the whole gate passed on that head, and runs the whole gate when any job of that run did not pass, was skipped, or is missing. | §9.4 |
 | `RP-15` | `repository` | Every match over a closed semantic enum (the IR, the production realization calculus, and its Rust AST) that names at least five of the enum's variants names all of them, with no wildcard or binding catch-all arm, so that a variant added to the enum is a compile error in each Lean, LaTeX, validation, charge, and calculus consumer and never a silent fallback; the audit rejects a catch-all planted in each consumer group and fails when a consumer it must read has no such match left. | §27.2 |
 | `RP-16` | `repository` | The development container installs, at image build, exactly the Rust toolchain that rust-toolchain.toml pins and exactly the Lean toolchain that lean-toolchain pins and selects no other default, so that nothing is fetched when a session starts, and a Dockerfile that names another version of either, installs a second toolchain, or selects an unpinned default is refused. | §9.3 |
 | `CF-01` | `configuration-lock` | Project configuration accepts exactly the project/1 schema and rejects unknown or missing fields. | §10.1 |
@@ -10186,6 +10359,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `BS-02` | `bootstrap` | The preservation lexer and token audit of SPEC.md §17.17 are language-1.2 source in the `bootstrap/` project: `lex` and `auditTokens` of `TokenAudit` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle `production::preserve::{lex, audit_tokens}` on every lexeme, position, and rejection message for the first 1,500 characters of every module of the shipped preservation library and calculus modules, the number-lexing corpus, and every token-audit unit vector; on the normative host, both roots' lowered programs under the calculus evaluator agree with the Rust oracle on those vectors and a seeded corpus, the rendered packages under the pinned rustc agree with the oracle on the large seeded corpus of generated and mutated Lean texts with no disagreement, a planted defect in the source is detected, and the certified packages the production export publishes for the project are the committed ones. | §17.17, §17.23 |
 | `BS-03` | `bootstrap` | The primitive scanner of SPEC.md §12.2 is language-1.2 source in the `bootstrap/` project: `scanSource` and `rejectAtoms` of `PrimitiveScan` are production roots eligible for `rust-std` with exactly their declared effects; on every host of the matrix, both roots' rendered `rust-std` packages under that host's pinned rustc agree with the Rust oracle `source::scan::{scan, reject_forbidden_atoms}` on every atom with its class, text, and byte, line, and column spans and on every rejection with its code, message, span, and help, for the deterministic vectors (the oracle's unit inputs, the atom limit at N and N+1, atom lists with gaps, payload strings, and notation bodies), a 128-byte window and a 2,048-byte prefix of every committed `.lex.tex` source, and the whole of each such source up to 8,192 bytes (up to 1,024 bytes, one source in four, for `rejectAtoms`); on the normative host, both roots' lowered programs under the calculus evaluator agree with the oracle on the vectors and the 128-byte windows and on 80 seeded texts, the packages agree on 2,500 seeded texts, each of ten planted defects in the source is detected, and the certified packages the production export publishes for the project are the committed ones. | §12.2, §17.23 |
 | `BS-04` | `bootstrap` | The target calculus's checker of SPEC.md §17.14 (`lexlean::calculus::check`), for a program given as calculus data, each list of a recursive type carried as a chain of that type's own `Nil` and `Cons` constructors and decoded back to the program on every vector (reading a program from its canonical JSON is not part of this row), is language-1.2 source in the `bootstrap/` project: `checkProgram` and `checkArguments` of `CalculusCheck` are production roots eligible for `rust-std` with exactly their declared effects; on the normative host the lowered programs of both roots under the calculus evaluator agree with the Rust checker on acceptance and on the rejection message to the byte for every committed target program and the refusal edits of `TC-02` and for a seeded corpus of data-level mutations, and each planted defect in the source is detected; on every host the rendered `rust-std` packages of both roots under the pinned rustc agree with the Rust checker on the deterministic vectors, and on the normative host also on a larger seeded corpus with no disagreement; strings whose Rust `Debug` spelling escapes a non-ASCII scalar other than `U+0080`..`U+009F` are outside the claim; and the certified packages the production export publishes for the project are the committed ones. | §17.14, §17.23 |
+| `BS-05` | `bootstrap` | The Rust crate validator of SPEC.md §17.16 is language-1.2 source in the `bootstrap/` project: `validateCrate` and `correspondCrate` of `RustValidate` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle `calculus::rust::validate::{validate, correspond}` on the exact outcome and message for the 223 distinct crates the renderer lowers from the 164 distinct programs among the 247 committed package manifests and 122 fixtures, for 132 `validateCrate` and 12 `correspondCrate` runs that reach each of the 48 reachable refusals three times, for 17 hand-built crates of the merge of moved sets, and for 34 hand-built crates of the loop rules (406 `validateCrate` runs, 165 of them refusals, and 269 `correspondCrate` runs, 46 of them refusals); on the normative host, both roots' lowered programs under the calculus evaluator agree with the oracle on the crates of at most 400 expressions (200) with the rule runs and on 500 seeded mutants of the crates of at most 80 expressions, the rendered packages under the pinned rustc agree on 2,000 further seeded mutants per root, sixteen planted defects in the source are each detected, and the certified packages the production export publishes for the project are the committed ones; lowering, printing, packaging, and crates naming a non-ASCII or non-printable scalar are outside the claim. | §17.16, §17.23 |
 | `PK-01` | `packages` | A language-1.2 project that declares a source package by its identifier, version, kind `path`, and the member directory a `lexlean-workspace.toml` lists locks it by the tree digest of its manifest and source files, its manifest digest, its version, its module prefix, and its own packages, and the configuration and the lock read back to the bytes written; a project without a source package keeps its bytes, and a package of another kind, a source package in another language, a changed byte or version (LLC0105), an undeclared package (LLC0106), a module prefix claimed twice (LLC0107), a project or a package outside the workspace (LLC0108), a path that escapes it, and a symlink (LLS8001) are each refused with the named code. | §10.5, §11.1, §25.1 |
 | `PK-02` | `packages` | A module of a project imports only modules of its own project and modules of the packages the project declares, and a module of a package only modules of itself and of the packages its own manifest declares: a package module is a module of the importing project under its own module prefix, a module of a package the project does not declare fails with LLR3009, and an import cycle through a package fails with LLR3003. | §10.5, §15.1 |
 | `PK-03` | `packages` | An importing project builds and verifies under the pinned Lean offline, and its package modules are generated, elaborated, replayed with `leanchecker`, and audited for their exact axioms under the package's module prefix with the package as their origin in the records; the source ID of the project changes with the pins, and no file of the package is written by `fmt`, `build`, or `verify`. | §10.5, §21.3, §22 |
@@ -10194,9 +10368,12 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-01` | `language-models` | A `tokenizer` is a closed language-1.2 declaration whose scheme is `byte_level` or `longest_match` and whose vocabulary is a #29 artifact with role `vocabulary` and schema `utf8_lines`; tokens are `uint32`, the single bytes are the ids 0..255 present always as the byte fallback, the vocabulary pieces take the ids from 256 in artifact order, and the declaration elaborates to `encode` and `decode` over `bytes` together with `encodeText` and `decodeText` over `string` through `utf8_encode` and `utf8_decode`, so a scheme outside the closed enumeration, a vocabulary whose role or schema is not the one stated, or a token outside `uint32` is refused as a schema violation (`LLT4001`) or by the artifact rules (`LLR3007`). | §17.12 |
 | `LM-02` | `language-models` | A tokenizer's laws are generated and kernel-checked: `roundtrip` states that for every byte string `b`, `decode (encode b)` is `some b`; `text_roundtrip` states the same over `string`; and `in_range` states that every token a decode produces indexes the vocabulary, so the round trip also fixes the token boundaries, and a tokenizer whose elaboration does not close these laws fails verification. | §17.12 |
 | `LM-03` | `language-models` | Text that is not valid UTF-8 is refused and never tokenized: an artifact whose bytes do not decode under the `utf8_lines` schema — invalid UTF-8, a CR, or a missing final LF — fails by its artifact rules before any byte is decoded, and a text offered to `encodeText` that is not valid UTF-8 is refused rather than transcoded. | §17.12 |
+| `LM-04` | `language-models` | A `context_window` is a closed language-1.2 declaration of a capacity of at least one token and an overflow disposition `refuse` or `keep_last` that elaborates to `capacity`, `fit` over `list uint32`, and `push` of one `uint32` token through the text-laws library, with its laws generated and kernel-checked: `bounded` and `push_bounded` state that every admitted or pushed context fits the capacity, `exact` that a context that fits is admitted unchanged, `suffix` under `keep_last` that what is kept is the end of the context, and `refuses` under `refuse` that a context that does not fit is not admitted; a capacity of 0 is refused (`LLT4016`), a disposition or capacity outside the closed schema is a schema violation (`LLT4001`), and a window whose laws observe an axiom its policy omits fails the audit. | §17.12 |
+| `LM-05` | `language-models` | A `text_generator` under the `greedy` policy names a prior tokenizer, a prior context window, a prior stateless model from `list uint32` to `list int` whose every runtime check its evidence discharges, a prior `uint32` stop token, and a `max_tokens` of at least one, and elaborates to the closed outcome types `End` (`stop`, `exhausted`) and `Failure` (`unknown_token`, `context_overflow`, `invalid_utf8`) and to a loop of at most `max_tokens` steps that takes the first maximum and no seed; its laws `bounded` (at most `max_tokens` tokens are generated) and `context_bounded` (the scorer is consulted only on contexts that fit the window) are generated and kernel-checked, the loop reaches each end and each failure in the kernel, a wrong claim about its output fails verification, a `max_tokens` of 0 is refused (`LLT4016`), and a member of another kind is refused (`LLT4006`). | §17.12 |
+| `LM-06` | `language-models` | Nondeterminism is an explicit contract: a `text_generator` under the `sample` policy draws through the closed `xorshift32` generator and `proportional` distribution only, takes its seed as an explicit `uint32` input and returns the next seed as an explicit output, so the same prompt and seed give the same output, which the kernel computes; it has the same generated and kernel-checked laws as a greedy generator, `xorshift32` agrees with the reference sequence, and a generator or distribution outside the closed members, a sample policy without one, or a seed stated on a policy is a schema violation (`LLT4001`). | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 428.
+**Total required capability IDs:** 432.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 
