@@ -1,0 +1,1344 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{IntKind}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{U8}: \texttt{()}.\par
+\noindent Constructor \texttt{U16}: \texttt{()}.\par
+\noindent Constructor \texttt{U32}: \texttt{()}.\par
+\noindent Constructor \texttt{U64}: \texttt{()}.\par
+\noindent Constructor \texttt{I8}: \texttt{()}.\par
+\noindent Constructor \texttt{I16}: \texttt{()}.\par
+\noindent Constructor \texttt{I32}: \texttt{()}.\par
+\noindent Constructor \texttt{I64}: \texttt{()}.\par
+\subsection*{\texttt{Origin}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{element}: \texttt{ByteArray}.\par
+\noindent Field \texttt{width}: \texttt{Option (IntKind)}.\par
+\subsection*{\texttt{Rt}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{family}: \texttt{Nat}.\par
+\noindent Field \texttt{width}: \texttt{Option (IntKind)}.\par
+\subsection*{\texttt{Id}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{IdLocal}: \texttt{(Nat)}.\par
+\noindent Constructor \texttt{IdHolder}: \texttt{(Nat)}.\par
+\noindent Constructor \texttt{IdOperand}: \texttt{(Nat)}.\par
+\noindent Constructor \texttt{IdCallee}: \texttt{(Nat)}.\par
+\noindent Constructor \texttt{IdBoxed}: \texttt{(Nat)}.\par
+\noindent Constructor \texttt{IdPart}: \texttt{(Nat)}.\par
+\noindent Constructor \texttt{IdCapture}: \texttt{(Nat)}.\par
+\noindent Constructor \texttt{IdParam}: \texttt{(Nat)}.\par
+\noindent Constructor \texttt{IdFunction}: \texttt{(Nat)}.\par
+\noindent Constructor \texttt{IdExport}: \texttt{(ByteArray)}.\par
+\subsection*{\texttt{LeafKind}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{LkUnit}: \texttt{()}.\par
+\noindent Constructor \texttt{LkBool}: \texttt{()}.\par
+\noindent Constructor \texttt{LkNat}: \texttt{()}.\par
+\noindent Constructor \texttt{LkInt}: \texttt{()}.\par
+\noindent Constructor \texttt{LkOrdering}: \texttt{()}.\par
+\noindent Constructor \texttt{LkStr}: \texttt{()}.\par
+\noindent Constructor \texttt{LkBytes}: \texttt{()}.\par
+\subsection*{\texttt{UnaryKind}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{UkOption}: \texttt{()}.\par
+\noindent Constructor \texttt{UkList}: \texttt{()}.\par
+\noindent Constructor \texttt{UkRc}: \texttt{()}.\par
+\noindent Constructor \texttt{UkFallible}: \texttt{()}.\par
+\noindent Constructor \texttt{UkRef}: \texttt{()}.\par
+\subsection*{\texttt{BinaryKind}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{BkResult}: \texttt{()}.\par
+\noindent Constructor \texttt{BkPair}: \texttt{()}.\par
+\subsection*{\texttt{NameKind}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{NkAdt}: \texttt{()}.\par
+\noindent Constructor \texttt{NkFn}: \texttt{()}.\par
+\subsection*{\texttt{Ty}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{TyLeaf}: \texttt{(LeafKind)}.\par
+\noindent Constructor \texttt{TyFixed}: \texttt{(IntKind)}.\par
+\noindent Constructor \texttt{TyUnary}: \texttt{(UnaryKind, Ty)}.\par
+\noindent Constructor \texttt{TyBinary}: \texttt{(BinaryKind, Ty, Ty)}.\par
+\noindent Constructor \texttt{TyNamed}: \texttt{(NameKind, Nat)}.\par
+\noindent Constructor \texttt{TyNil}: \texttt{()}.\par
+\noindent Constructor \texttt{TyCons}: \texttt{(Ty, Ty)}.\par
+\subsection*{\texttt{Lit}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{LitUnit}: \texttt{()}.\par
+\noindent Constructor \texttt{LitBool}: \texttt{()}.\par
+\noindent Constructor \texttt{LitNat}: \texttt{()}.\par
+\noindent Constructor \texttt{LitInt}: \texttt{()}.\par
+\noindent Constructor \texttt{LitFixed}: \texttt{(IntKind)}.\par
+\noindent Constructor \texttt{LitStr}: \texttt{()}.\par
+\noindent Constructor \texttt{LitBytes}: \texttt{()}.\par
+\noindent Constructor \texttt{LitOrdering}: \texttt{()}.\par
+\subsection*{\texttt{Con}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{ConNone}: \texttt{(Ty)}.\par
+\noindent Constructor \texttt{ConSome}: \texttt{()}.\par
+\noindent Constructor \texttt{ConOk}: \texttt{(Ty, Ty)}.\par
+\noindent Constructor \texttt{ConErr}: \texttt{(Ty, Ty)}.\par
+\noindent Constructor \texttt{ConAdt}: \texttt{(Nat, Nat)}.\par
+\noindent Constructor \texttt{ConClosure}: \texttt{(Nat, Nat)}.\par
+\noindent Constructor \texttt{ConCons}: \texttt{()}.\par
+\noindent Constructor \texttt{ConNil}: \texttt{(Ty)}.\par
+\subsection*{\texttt{PatLeaf}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{PlWild}: \texttt{()}.\par
+\noindent Constructor \texttt{PlUnit}: \texttt{()}.\par
+\noindent Constructor \texttt{PlNone}: \texttt{()}.\par
+\noindent Constructor \texttt{PlOrdering}: \texttt{()}.\par
+\subsection*{\texttt{PatWrap}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{PwSome}: \texttt{()}.\par
+\noindent Constructor \texttt{PwOk}: \texttt{()}.\par
+\noindent Constructor \texttt{PwErr}: \texttt{()}.\par
+\subsection*{\texttt{Pat}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{PLeaf}: \texttt{(PatLeaf)}.\par
+\noindent Constructor \texttt{PBind}: \texttt{(Id)}.\par
+\noindent Constructor \texttt{PTuple}: \texttt{(Pat)}.\par
+\noindent Constructor \texttt{PWrap}: \texttt{(PatWrap, Pat)}.\par
+\noindent Constructor \texttt{PAdt}: \texttt{(Nat, Nat, Pat)}.\par
+\noindent Constructor \texttt{PNil}: \texttt{()}.\par
+\noindent Constructor \texttt{PCons}: \texttt{(Pat, Pat)}.\par
+\subsection*{\texttt{Callee}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{CalFn}: \texttt{(Nat)}.\par
+\noindent Constructor \texttt{CalRt}: \texttt{(Rt)}.\par
+\subsection*{\texttt{Cap}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{CapCopy}: \texttt{()}.\par
+\noindent Constructor \texttt{CapClone}: \texttt{()}.\par
+\noindent Constructor \texttt{CapUnbox}: \texttt{()}.\par
+\noindent Constructor \texttt{CapUnit}: \texttt{()}.\par
+\subsection*{\texttt{ReadKind}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{RkMove}: \texttt{()}.\par
+\noindent Constructor \texttt{RkClone}: \texttt{()}.\par
+\noindent Constructor \texttt{RkCopy}: \texttt{()}.\par
+\noindent Constructor \texttt{RkDeref}: \texttt{()}.\par
+\noindent Constructor \texttt{RkUnbox}: \texttt{()}.\par
+\subsection*{\texttt{WrapKind}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{WkNot}: \texttt{()}.\par
+\noindent Constructor \texttt{WkBox}: \texttt{()}.\par
+\noindent Constructor \texttt{WkWiden}: \texttt{()}.\par
+\noindent Constructor \texttt{WkSucceed}: \texttt{()}.\par
+\subsection*{\texttt{ProbeKind}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{PkIsZero}: \texttt{()}.\par
+\noindent Constructor \texttt{PkNonZero}: \texttt{()}.\par
+\noindent Constructor \texttt{PkUncons}: \texttt{()}.\par
+\noindent Constructor \texttt{PkPred}: \texttt{()}.\par
+\subsection*{\texttt{Expr}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{ELit}: \texttt{(Lit, Origin)}.\par
+\noindent Constructor \texttt{ERead}: \texttt{(ReadKind, Id, Origin)}.\par
+\noindent Constructor \texttt{EWrap}: \texttt{(WrapKind, Expr, Origin)}.\par
+\noindent Constructor \texttt{ECall}: \texttt{(Callee, Expr, Bool, Origin)}.\par
+\noindent Constructor \texttt{EApply}: \texttt{(Id, Expr, Bool, Origin)}.\par
+\noindent Constructor \texttt{EConstruct}: \texttt{(Con, Expr, Origin)}.\par
+\noindent Constructor \texttt{EPair}: \texttt{(Expr, Expr, Origin)}.\par
+\noindent Constructor \texttt{EIf}: \texttt{(Expr, Expr, Expr, Origin)}.\par
+\noindent Constructor \texttt{EMatch}: \texttt{(Expr, Expr, Origin)}.\par
+\noindent Constructor \texttt{EBlockE}: \texttt{(Expr)}.\par
+\noindent Constructor \texttt{EProbe}: \texttt{(ProbeKind, Id, Origin)}.\par
+\noindent Constructor \texttt{EBlock}: \texttt{(Expr, Expr)}.\par
+\noindent Constructor \texttt{ENil}: \texttt{()}.\par
+\noindent Constructor \texttt{ECons}: \texttt{(Expr, Expr)}.\par
+\noindent Constructor \texttt{ELet}: \texttt{(Pat, Bool, Ty, Expr, Origin, Expr)}.\par
+\noindent Constructor \texttt{EArm}: \texttt{(Pat, Expr, Expr)}.\par
+\noindent Constructor \texttt{ELoop}: \texttt{(Id, Expr)}.\par
+\subsection*{\texttt{Row}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{RowNil}: \texttt{()}.\par
+\noindent Constructor \texttt{RowCons}: \texttt{(Nat, Ty, Row)}.\par
+\subsection*{\texttt{Dis}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{DisNil}: \texttt{()}.\par
+\noindent Constructor \texttt{DisCons}: \texttt{(Nat, List (Cap), Bool, Dis)}.\par
+\subsection*{\texttt{Par}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{ParNil}: \texttt{()}.\par
+\noindent Constructor \texttt{ParCons}: \texttt{(Pat, Ty, Par)}.\par
+\subsection*{\texttt{Def}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{DEnum}: \texttt{(Ty, Row, Origin)}.\par
+\noindent Constructor \texttt{DApply}: \texttt{(Nat, Ty, Ty, Bool, Dis, Origin)}.\par
+\noindent Constructor \texttt{DFunction}: \texttt{(Id, Par, Ty, Expr, Origin)}.\par
+\noindent Constructor \texttt{DNil}: \texttt{()}.\par
+\noindent Constructor \texttt{DCons}: \texttt{(Def, Def)}.\par
+\subsection*{\texttt{Crate}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{core}: \texttt{Bool}.\par
+\noindent Field \texttt{items}: \texttt{Def}.\par
+\subsection*{\texttt{Decl}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{adts}: \texttt{List ((Prod (Nat) (List ((Prod (Nat) (Nat))))))}.\par
+\noindent Field \texttt{closures}: \texttt{List ((Prod (Nat) (List ((Prod (Nat) (Nat))))))}.\par
+\noindent Field \texttt{applies}: \texttt{List ((Prod (Nat) (Bool)))}.\par
+\noindent Field \texttt{functions}: \texttt{List ((Prod (Nat) (Bool)))}.\par
+\subsection*{\texttt{St}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{bound}: \texttt{List (Id)}.\par
+\noindent Field \texttt{scope}: \texttt{List (Id)}.\par
+\noindent Field \texttt{moved}: \texttt{List (Id)}.\par
+\noindent Field \texttt{parted}: \texttt{List ((Prod (Id) (List (Nat))))}.\par
+\noindent Field \texttt{propagates}: \texttt{Bool}.\par
+\subsection*{\texttt{ItemRow}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{family}: \texttt{Nat}.\par
+\noindent Field \texttt{stem}: \texttt{ByteArray}.\par
+\noindent Field \texttt{form}: \texttt{Nat}.\par
+\noindent Field \texttt{fallible}: \texttt{Bool}.\par
+\noindent Field \texttt{heap}: \texttt{Bool}.\par
+\subsection*{\texttt{Cx}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{core}: \texttt{Bool}.\par
+\noindent Field \texttt{decl}: \texttt{Decl}.\par
+\noindent Field \texttt{fallible}: \texttt{Bool}.\par
+\noindent Field \texttt{items}: \texttt{List (ItemRow)}.\par
+\subsection*{\texttt{Inst}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{construct}: \texttt{ByteArray}.\par
+\noindent Field \texttt{element}: \texttt{ByteArray}.\par
+\noindent Field \texttt{originWidth}: \texttt{Option (IntKind)}.\par
+\noindent Field \texttt{width}: \texttt{Option (IntKind)}.\par
+\subsection*{\texttt{Found}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{insts}: \texttt{List (Inst)}.\par
+\noindent Field \texttt{types}: \texttt{List (ByteArray)}.\par
+\noindent Field \texttt{items}: \texttt{List (ItemRow)}.\par
+\subsection*{\texttt{text}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(literal : String)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.utf8Encode (literal) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{cat}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : ByteArray) (right : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.append (left) (right) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tick}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(name : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{cat (text ("`")) (cat (name) (text ("`")))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{byteIs}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat) (value : UInt8)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match LexLeanStd.Text.byteAt (subject) (position) with | Option.some byte => (LexLeanRuntime.equal (byte) (value) : Bool) | Option.none => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{zeroStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Nat)}.\par
+\noindent Definition: \texttt{(if byteIs (subject) (position) ((48 : UInt8)) then Option.some ((position + 1)) else Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{significant}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(digits : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(position)}, captures \texttt{(digits)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(let zeros : Nat := ((LexLeanCollections.iterateUntil ((fun (position : Nat) => zeroStep (digits) (position))) ((LexLeanRuntime.length (digits) : Nat)) (0) : (Prod (Nat) (Bool)))).1; LexLeanStd.Text.sliceOr (digits) (zeros) ((LexLeanRuntime.subtract ((LexLeanRuntime.length (digits) : Nat)) (zeros) : Nat)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{digit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(number : Nat) (place : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanStd.Text.sliceOr (text ("0123456789")) ((LexLeanRuntime.remainder ((LexLeanRuntime.quotient (number) (place) (0) : Nat)) (10) (0) : Nat)) (1)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{decimal}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(number : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(let zero : ByteArray := text ("0"); (let digits : ByteArray := significant ((LexLeanRuntime.append (digit (number) (10000000000000000000)) ((LexLeanRuntime.append (digit (number) (1000000000000000000)) ((LexLeanRuntime.append (digit (number) (100000000000000000)) ((LexLeanRuntime.append (digit (number) (10000000000000000)) ((LexLeanRuntime.append (digit (number) (1000000000000000)) ((LexLeanRuntime.append (digit (number) (100000000000000)) ((LexLeanRuntime.append (digit (number) (10000000000000)) ((LexLeanRuntime.append (digit (number) (1000000000000)) ((LexLeanRuntime.append (digit (number) (100000000000)) ((LexLeanRuntime.append (digit (number) (10000000000)) ((LexLeanRuntime.append (digit (number) (1000000000)) ((LexLeanRuntime.append (digit (number) (100000000)) ((LexLeanRuntime.append (digit (number) (10000000)) ((LexLeanRuntime.append (digit (number) (1000000)) ((LexLeanRuntime.append (digit (number) (100000)) ((LexLeanRuntime.append (digit (number) (10000)) ((LexLeanRuntime.append (digit (number) (1000)) ((LexLeanRuntime.append (digit (number) (100)) ((LexLeanRuntime.append (digit (number) (10)) (digit (number) (1)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)); (if (Nat.beq (number) (0)) then zero else digits)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{kindUpper}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : IntKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match kind with | IntKind.U8 => text ("U8") | IntKind.U16 => text ("U16") | IntKind.U32 => text ("U32") | IntKind.U64 => text ("U64") | IntKind.I8 => text ("I8") | IntKind.I16 => text ("I16") | IntKind.I32 => text ("I32") | IntKind.I64 => text ("I64"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{kindLower}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : IntKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match kind with | IntKind.U8 => text ("u8") | IntKind.U16 => text ("u16") | IntKind.U32 => text ("u32") | IntKind.U64 => text ("u64") | IntKind.I8 => text ("i8") | IntKind.I16 => text ("i16") | IntKind.I32 => text ("i32") | IntKind.I64 => text ("i64"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{optKindDebug}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(width : Option (IntKind))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match width with | Option.some kind => cat (text ("Some(")) (cat (kindUpper (kind)) (text (")"))) | Option.none => text ("None"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{optKindEq}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : Option (IntKind)) (right : Option (IntKind))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.equal (optKindDebug (left)) (optKindDebug (right)) : Bool)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{idTag}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(who : Id)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match who with | Id.IdLocal \_ => 0 | Id.IdHolder \_ => 1 | Id.IdOperand \_ => 2 | Id.IdCallee \_ => 3 | Id.IdBoxed \_ => 4 | Id.IdPart \_ => 5 | Id.IdCapture \_ => 6 | Id.IdParam \_ => 7 | Id.IdFunction \_ => 8 | Id.IdExport \_ => 9)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{idNum}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(who : Id)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match who with | Id.IdLocal n => n | Id.IdHolder n => n | Id.IdOperand n => n | Id.IdCallee n => n | Id.IdBoxed n => n | Id.IdPart n => n | Id.IdCapture n => n | Id.IdParam n => n | Id.IdFunction n => n | Id.IdExport \_ => 0)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{idName}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(who : Id)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match who with | Id.IdLocal \_ => ByteArray.mk \#[] | Id.IdHolder \_ => ByteArray.mk \#[] | Id.IdOperand \_ => ByteArray.mk \#[] | Id.IdCallee \_ => ByteArray.mk \#[] | Id.IdBoxed \_ => ByteArray.mk \#[] | Id.IdPart \_ => ByteArray.mk \#[] | Id.IdCapture \_ => ByteArray.mk \#[] | Id.IdParam \_ => ByteArray.mk \#[] | Id.IdFunction \_ => ByteArray.mk \#[] | Id.IdExport n => n)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{idText}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(who : Id)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match who with | Id.IdLocal n => cat (text ("v")) (decimal (n)) | Id.IdHolder n => cat (text ("m")) (decimal (n)) | Id.IdOperand n => cat (text ("a")) (decimal (n)) | Id.IdCallee n => cat (text ("c")) (decimal (n)) | Id.IdBoxed n => cat (text ("r")) (decimal (n)) | Id.IdPart n => cat (text ("h")) (decimal (n)) | Id.IdCapture n => cat (text ("k")) (decimal (n)) | Id.IdParam n => cat (text ("p")) (decimal (n)) | Id.IdFunction n => cat (text ("f")) (decimal (n)) | Id.IdExport n => n)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{idEq}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : Id) (right : Id)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(if (Nat.beq (idTag (left)) (idTag (right))) then (if (Nat.beq (idNum (left)) (idNum (right))) then (LexLeanRuntime.equal (idName (left)) (idName (right)) : Bool) else false) else false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{idHas}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (Id)) (who : Id)}.\par
+\noindent Closure 1: binds \texttt{(found, item)}, captures \texttt{(who)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (found : Bool) (item : Id) => (let same : Bool := idEq (item) (who); (found || same)))) (false) (items) : Bool)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{leafName}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : LeafKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match kind with | LeafKind.LkUnit => text ("Unit") | LeafKind.LkBool => text ("Bool") | LeafKind.LkNat => text ("Nat") | LeafKind.LkInt => text ("Int") | LeafKind.LkOrdering => text ("Ordering") | LeafKind.LkStr => text ("Str") | LeafKind.LkBytes => text ("Bytes"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{leafKey}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : LeafKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match kind with | LeafKind.LkUnit => text ("unit") | LeafKind.LkBool => text ("bool") | LeafKind.LkNat => text ("nat") | LeafKind.LkInt => text ("int") | LeafKind.LkOrdering => text ("ordering") | LeafKind.LkStr => text ("string") | LeafKind.LkBytes => text ("bytes"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{leafHeap}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : LeafKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match kind with | LeafKind.LkUnit => false | LeafKind.LkBool => false | LeafKind.LkNat => false | LeafKind.LkInt => false | LeafKind.LkOrdering => false | LeafKind.LkStr => true | LeafKind.LkBytes => true)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{unaryName}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : UnaryKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match kind with | UnaryKind.UkOption => text ("Option") | UnaryKind.UkList => text ("List") | UnaryKind.UkRc => text ("Rc") | UnaryKind.UkFallible => text ("Fallible") | UnaryKind.UkRef => text ("Ref"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{unaryKey}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : UnaryKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match kind with | UnaryKind.UkOption => text ("option") | UnaryKind.UkList => text ("list") | UnaryKind.UkRc => text ("rc") | UnaryKind.UkFallible => text ("fallible") | UnaryKind.UkRef => text ("ref"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{unaryHeap}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : UnaryKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match kind with | UnaryKind.UkOption => false | UnaryKind.UkList => true | UnaryKind.UkRc => true | UnaryKind.UkFallible => false | UnaryKind.UkRef => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{unaryFallible}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : UnaryKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match kind with | UnaryKind.UkOption => false | UnaryKind.UkList => false | UnaryKind.UkRc => false | UnaryKind.UkFallible => true | UnaryKind.UkRef => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{binaryName}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : BinaryKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match kind with | BinaryKind.BkResult => text ("Result") | BinaryKind.BkPair => text ("Pair"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{binaryKey}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : BinaryKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match kind with | BinaryKind.BkResult => text ("result") | BinaryKind.BkPair => text ("pair"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{nameName}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : NameKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match kind with | NameKind.NkAdt => text ("Adt") | NameKind.NkFn => text ("Fn"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{nameKey}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : NameKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match kind with | NameKind.NkAdt => text ("adt") | NameKind.NkFn => text ("fn"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{nameIsFn}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : NameKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match kind with | NameKind.NkAdt => false | NameKind.NkFn => true)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tyDebug}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(ty : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match ty with | Ty.TyLeaf k => leafName (k) | Ty.TyFixed k => cat (text ("Fixed(")) (cat (kindUpper (k)) (text (")"))) | Ty.TyUnary k inner => cat (unaryName (k)) (cat (text ("(")) (cat (tyDebug (inner)) (text (")")))) | Ty.TyBinary k left right => cat (binaryName (k)) (cat (text ("(")) (cat (tyDebug (left)) (cat (text (", ")) (cat (tyDebug (right)) (text (")")))))) | Ty.TyNamed k n => cat (nameName (k)) (cat (text ("(")) (cat (decimal (n)) (text (")")))) | Ty.TyNil => text ("unreachable") | Ty.TyCons \_ \_ => text ("unreachable"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tyHeap}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(ty : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match ty with | Ty.TyLeaf k => leafHeap (k) | Ty.TyFixed \_ => false | Ty.TyUnary k inner => (match unaryHeap (k) with | Bool.true => true | Bool.false => tyHeap (inner)) | Ty.TyBinary \_ left right => (let l : Bool := tyHeap (left); (let r : Bool := tyHeap (right); (l || r))) | Ty.TyNamed \_ \_ => false | Ty.TyNil => false | Ty.TyCons \_ \_ => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tyLen}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(tys : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match tys with | Ty.TyLeaf \_ => 0 | Ty.TyFixed \_ => 0 | Ty.TyUnary \_ \_ => 0 | Ty.TyBinary \_ \_ \_ => 0 | Ty.TyNamed \_ \_ => 0 | Ty.TyNil => 0 | Ty.TyCons \_ tail => (let rest : Nat := tyLen (tail); (1 + rest)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tyIsFallible}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(ty : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match ty with | Ty.TyLeaf \_ => false | Ty.TyFixed \_ => false | Ty.TyUnary k \_ => unaryFallible (k) | Ty.TyBinary \_ \_ \_ => false | Ty.TyNamed \_ \_ => false | Ty.TyNil => false | Ty.TyCons \_ \_ => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{patLen}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(pats : Pat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match pats with | Pat.PLeaf \_ => 0 | Pat.PBind \_ => 0 | Pat.PTuple \_ => 0 | Pat.PWrap \_ \_ => 0 | Pat.PAdt \_ \_ \_ => 0 | Pat.PNil => 0 | Pat.PCons \_ tail => (let rest : Nat := patLen (tail); (1 + rest)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{patIsWild}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(pat : Pat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match pat with | Pat.PLeaf k => (match k with | PatLeaf.PlWild => true | PatLeaf.PlUnit => false | PatLeaf.PlNone => false | PatLeaf.PlOrdering => false) | Pat.PBind \_ => false | Pat.PTuple \_ => false | Pat.PWrap \_ \_ => false | Pat.PAdt \_ \_ \_ => false | Pat.PNil => false | Pat.PCons \_ \_ => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{patIsTuple}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(pat : Pat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match pat with | Pat.PLeaf \_ => false | Pat.PBind \_ => false | Pat.PTuple \_ => true | Pat.PWrap \_ \_ => false | Pat.PAdt \_ \_ \_ => false | Pat.PNil => false | Pat.PCons \_ \_ => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{patHasWild}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(pats : Pat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match pats with | Pat.PLeaf \_ => false | Pat.PBind \_ => false | Pat.PTuple \_ => false | Pat.PWrap \_ \_ => false | Pat.PAdt \_ \_ \_ => false | Pat.PNil => false | Pat.PCons head tail => (let here : Bool := patIsWild (head); (let rest : Bool := patHasWild (tail); (here || rest))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{exprLen}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(exprs : Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match exprs with | Expr.ELit \_ \_ => 0 | Expr.ERead \_ \_ \_ => 0 | Expr.EWrap \_ \_ \_ => 0 | Expr.ECall \_ \_ \_ \_ => 0 | Expr.EApply \_ \_ \_ \_ => 0 | Expr.EConstruct \_ \_ \_ => 0 | Expr.EPair \_ \_ \_ => 0 | Expr.EIf \_ \_ \_ \_ => 0 | Expr.EMatch \_ \_ \_ => 0 | Expr.EBlockE \_ => 0 | Expr.EProbe \_ \_ \_ => 0 | Expr.EBlock \_ \_ => 0 | Expr.ENil => 0 | Expr.ECons \_ tail => (let rest : Nat := exprLen (tail); (1 + rest)) | Expr.ELet \_ \_ \_ \_ \_ \_ => 0 | Expr.EArm \_ \_ \_ => 0 | Expr.ELoop \_ \_ => 0)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{lookupNat}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(entries : List ((Prod (Nat) (Nat)))) (key : Nat)}.\par
+\noindent Closure 1: binds \texttt{(found, entry)}, captures \texttt{(key)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Nat)}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (found : Option (Nat)) (entry : (Prod (Nat) (Nat))) => (match found with | Option.some value => Option.some (value) | Option.none => (if (Nat.beq ((entry).1) (key)) then Option.some ((entry).2) else Option.none)))) (Option.none) (entries) : Option (Nat))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{lookupFlag}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(entries : List ((Prod (Nat) (Bool)))) (key : Nat)}.\par
+\noindent Closure 1: binds \texttt{(found, entry)}, captures \texttt{(key)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Bool)}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (found : Option (Bool)) (entry : (Prod (Nat) (Bool))) => (match found with | Option.some value => Option.some (value) | Option.none => (if (Nat.beq ((entry).1) (key)) then Option.some ((entry).2) else Option.none)))) (Option.none) (entries) : Option (Bool))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{lookupVariants}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(entries : List ((Prod (Nat) (List ((Prod (Nat) (Nat))))))) (key : Nat)}.\par
+\noindent Closure 1: binds \texttt{(found, entry)}, captures \texttt{(key)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (List ((Prod (Nat) (Nat))))}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (found : Option (List ((Prod (Nat) (Nat))))) (entry : (Prod (Nat) (List ((Prod (Nat) (Nat)))))) => (match found with | Option.some value => Option.some (value) | Option.none => (if (Nat.beq ((entry).1) (key)) then Option.some ((entry).2) else Option.none)))) (Option.none) (entries) : Option (List ((Prod (Nat) (Nat)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{isSome}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(found : Option (Nat))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match found with | Option.some \_ => true | Option.none => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{hasFlag}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(entries : List ((Prod (Nat) (Bool)))) (key : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match lookupFlag (entries) (key) with | Option.some \_ => true | Option.none => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{hasVariants}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(entries : List ((Prod (Nat) (List ((Prod (Nat) (Nat))))))) (key : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match lookupVariants (entries) (key) with | Option.some \_ => true | Option.none => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{adtArity}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(decl : Decl) (adt : Nat) (constructor : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Nat)}.\par
+\noindent Definition: \texttt{(match lookupVariants ((decl).adts) (adt) with | Option.some variants => lookupNat (variants) (constructor) | Option.none => Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{closureArity}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(decl : Decl) (fnType : Nat) (function : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Nat)}.\par
+\noindent Definition: \texttt{(match lookupVariants ((decl).closures) (fnType) with | Option.some variants => lookupNat (variants) (function) | Option.none => Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{aritiesStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(acc : List ((Prod (Nat) (Nat)))) (row : Row)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List ((Prod (Nat) (Nat)))}.\par
+\noindent Definition: \texttt{(match row with | Row.RowNil => acc | Row.RowCons number fields rest => aritiesStep (((number, tyLen (fields)) :: acc)) (rest))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{declareDefs}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(decl : Decl) (defs : Def)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Decl)}.\par
+\noindent Definition: \texttt{(match defs with | Def.DEnum \_ \_ \_ => Except.ok (decl) | Def.DApply \_ \_ \_ \_ \_ \_ => Except.ok (decl) | Def.DFunction \_ \_ \_ \_ \_ => Except.ok (decl) | Def.DNil => Except.ok (decl) | Def.DCons head tail => (match head with | Def.DEnum name variants \_ => (match name with | Ty.TyLeaf \_ => Except.error (cat (text ("an enum named ")) (cat (tyDebug (name)) (text (" is not a declared type")))) | Ty.TyFixed \_ => Except.error (cat (text ("an enum named ")) (cat (tyDebug (name)) (text (" is not a declared type")))) | Ty.TyUnary \_ \_ => Except.error (cat (text ("an enum named ")) (cat (tyDebug (name)) (text (" is not a declared type")))) | Ty.TyBinary \_ \_ \_ => Except.error (cat (text ("an enum named ")) (cat (tyDebug (name)) (text (" is not a declared type")))) | Ty.TyNamed k n => (match nameIsFn (k) with | Bool.true => (match hasVariants ((decl).closures) (n) with | Bool.true => Except.error (cat (text ("hygiene: ")) (cat (tyDebug (name)) (text (" is declared twice")))) | Bool.false => declareDefs ((\{ adts := (decl).adts, closures := ((n, aritiesStep (([] : List ((Prod (Nat) (Nat))))) (variants)) :: (decl).closures), applies := (decl).applies, functions := (decl).functions \} : Decl)) (tail)) | Bool.false => (match hasVariants ((decl).adts) (n) with | Bool.true => Except.error (cat (text ("hygiene: ")) (cat (tyDebug (name)) (text (" is declared twice")))) | Bool.false => declareDefs ((\{ adts := ((n, aritiesStep (([] : List ((Prod (Nat) (Nat))))) (variants)) :: (decl).adts), closures := (decl).closures, applies := (decl).applies, functions := (decl).functions \} : Decl)) (tail))) | Ty.TyNil => Except.error (cat (text ("an enum named ")) (cat (tyDebug (name)) (text (" is not a declared type")))) | Ty.TyCons \_ \_ => Except.error (cat (text ("an enum named ")) (cat (tyDebug (name)) (text (" is not a declared type"))))) | Def.DApply fnType \_ \_ fallible \_ \_ => (match hasFlag ((decl).applies) (fnType) with | Bool.true => Except.error (cat (text ("hygiene: Fn")) (cat (decimal (fnType)) (text ("::apply is declared twice")))) | Bool.false => declareDefs ((\{ adts := (decl).adts, closures := (decl).closures, applies := ((fnType, fallible) :: (decl).applies), functions := (decl).functions \} : Decl)) (tail)) | Def.DFunction name \_ result \_ \_ => (match name with | Id.IdLocal \_ => declareDefs (decl) (tail) | Id.IdHolder \_ => declareDefs (decl) (tail) | Id.IdOperand \_ => declareDefs (decl) (tail) | Id.IdCallee \_ => declareDefs (decl) (tail) | Id.IdBoxed \_ => declareDefs (decl) (tail) | Id.IdPart \_ => declareDefs (decl) (tail) | Id.IdCapture \_ => declareDefs (decl) (tail) | Id.IdParam \_ => declareDefs (decl) (tail) | Id.IdFunction n => (match hasFlag ((decl).functions) (n) with | Bool.true => Except.error (cat (text ("hygiene: f")) (cat (decimal (n)) (text (" is declared twice")))) | Bool.false => declareDefs ((\{ adts := (decl).adts, closures := (decl).closures, applies := (decl).applies, functions := ((n, tyIsFallible (result)) :: (decl).functions) \} : Decl)) (tail)) | Id.IdExport \_ => declareDefs (decl) (tail)) | Def.DNil => declareDefs (decl) (tail) | Def.DCons \_ \_ => declareDefs (decl) (tail)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{heapSt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(cx : Cx) (st : St) (what : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (St)}.\par
+\noindent Definition: \texttt{(match (cx).core with | Bool.true => Except.error (cat (text ("hidden allocation: rust-core renders ")) (cat (what) (text (", which requires heap allocation")))) | Bool.false => Except.ok (st))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{heapUnit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(cx : Cx) (what : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Unit)}.\par
+\noindent Definition: \texttt{(match (cx).core with | Bool.true => Except.error (cat (text ("hidden allocation: rust-core renders ")) (cat (what) (text (", which requires heap allocation")))) | Bool.false => Except.ok (()))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tyWalk}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(cx : Cx) (ty : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Unit)}.\par
+\noindent Definition: \texttt{(match ty with | Ty.TyLeaf \_ => Except.ok (()) | Ty.TyFixed \_ => Except.ok (()) | Ty.TyUnary \_ inner => tyWalk (cx) (inner) | Ty.TyBinary \_ left right => (match tyWalk (cx) (left) with | Except.ok \_ => tyWalk (cx) (right) | Except.error problem1 => Except.error (problem1)) | Ty.TyNamed k n => (match nameIsFn (k) with | Bool.true => (match hasVariants (((cx).decl).closures) (n) with | Bool.true => Except.ok (()) | Bool.false => Except.error (cat (text ("type Fn")) (cat (decimal (n)) (text (" is not declared"))))) | Bool.false => (match hasVariants (((cx).decl).adts) (n) with | Bool.true => Except.ok (()) | Bool.false => Except.error (cat (text ("type Adt")) (cat (decimal (n)) (text (" is not declared")))))) | Ty.TyNil => Except.ok (()) | Ty.TyCons \_ \_ => Except.ok (()))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tyOk}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(cx : Cx) (ty : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Unit)}.\par
+\noindent Definition: \texttt{(let heapy : Bool := tyHeap (ty); (let blocked : Bool := (if (cx).core then heapy else false); (match blocked with | Bool.true => Except.error (cat (text ("hidden allocation: rust-core renders the heap type ")) (cat (tyDebug (ty)) (text (", which rust-core does not provide")))) | Bool.false => tyWalk (cx) (ty))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tysOk}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(cx : Cx) (tys : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Unit)}.\par
+\noindent Definition: \texttt{(match tys with | Ty.TyLeaf \_ => Except.ok (()) | Ty.TyFixed \_ => Except.ok (()) | Ty.TyUnary \_ \_ => Except.ok (()) | Ty.TyBinary \_ \_ \_ => Except.ok (()) | Ty.TyNamed \_ \_ => Except.ok (()) | Ty.TyNil => Except.ok (()) | Ty.TyCons head tail => (match tyOk (cx) (head) with | Except.ok \_ => tysOk (cx) (tail) | Except.error problem2 => Except.error (problem2)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{rowTysOk}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(cx : Cx) (row : Row)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Unit)}.\par
+\noindent Definition: \texttt{(match row with | Row.RowNil => Except.ok (()) | Row.RowCons \_ fields rest => (match tysOk (cx) (fields) with | Except.ok \_ => rowTysOk (cx) (rest) | Except.error problem3 => Except.error (problem3)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{natHas}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (Nat)) (key : Nat)}.\par
+\noindent Closure 1: binds \texttt{(found, item)}, captures \texttt{(key)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (found : Bool) (item : Nat) => (found || (Nat.beq (item) (key))))) (false) (items) : Bool)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{partsGet}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(parted : List ((Prod (Id) (List (Nat))))) (who : Id)}.\par
+\noindent Closure 1: binds \texttt{(found, entry)}, captures \texttt{(who)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (List (Nat))}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (found : Option (List (Nat))) (entry : (Prod (Id) (List (Nat)))) => (match found with | Option.some value => Option.some (value) | Option.none => (let same : Bool := idEq ((entry).1) (who); (if same then Option.some ((entry).2) else Option.none))))) (Option.none) (parted) : Option (List (Nat)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{partsHas}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(parted : List ((Prod (Id) (List (Nat))))) (who : Id)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match partsGet (parted) (who) with | Option.some \_ => true | Option.none => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{partsDrop}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(parted : List ((Prod (Id) (List (Nat))))) (who : Id)}.\par
+\noindent Closure 1: binds \texttt{(kept, entry)}, captures \texttt{(who)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List ((Prod (Id) (List (Nat))))}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (kept : List ((Prod (Id) (List (Nat))))) (entry : (Prod (Id) (List (Nat)))) => (let same : Bool := idEq ((entry).1) (who); (if same then kept else (entry :: kept))))) (([] : List ((Prod (Id) (List (Nat)))))) (parted) : List ((Prod (Id) (List (Nat)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{partsPut}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(parted : List ((Prod (Id) (List (Nat))))) (who : Id) (taken : List (Nat))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List ((Prod (Id) (List (Nat))))}.\par
+\noindent Definition: \texttt{((who, taken) :: partsDrop (parted) (who))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{unionNats}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : List (Nat)) (right : List (Nat))}.\par
+\noindent Closure 1: binds \texttt{(acc, item)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (Nat)}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (acc : List (Nat)) (item : Nat) => (let present : Bool := natHas (acc) (item); (if present then acc else (item :: acc))))) (left) (right) : List (Nat))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{unionIds}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : List (Id)) (right : List (Id))}.\par
+\noindent Closure 1: binds \texttt{(acc, item)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (Id)}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (acc : List (Id)) (item : Id) => (let present : Bool := idHas (acc) (item); (if present then acc else (item :: acc))))) (left) (right) : List (Id))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{unionParts}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : List ((Prod (Id) (List (Nat))))) (right : List ((Prod (Id) (List (Nat)))))}.\par
+\noindent Closure 1: binds \texttt{(acc, entry)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List ((Prod (Id) (List (Nat))))}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (acc : List ((Prod (Id) (List (Nat))))) (entry : (Prod (Id) (List (Nat)))) => (match partsGet (acc) ((entry).1) with | Option.some <U+00AB>have<U+00BB> => partsPut (acc) ((entry).1) (unionNats (<U+00AB>have<U+00BB>) ((entry).2)) | Option.none => partsPut (acc) ((entry).1) ((entry).2)))) (left) (right) : List ((Prod (Id) (List (Nat)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{readOk}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : St) (who : Id)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Unit)}.\par
+\noindent Definition: \texttt{(match idHas ((st).scope) (who) with | Bool.true => (match idHas ((st).moved) (who) with | Bool.true => Except.error (cat (text ("ownership: ")) (cat (tick (idText (who))) (text (" is read after it was moved")))) | Bool.false => (match partsHas ((st).parted) (who) with | Bool.true => Except.error (cat (text ("ownership: ")) (cat (tick (idText (who))) (text (" is read after a component was moved out of it")))) | Bool.false => Except.ok (()))) | Bool.false => Except.error (cat (tick (idText (who))) (text (" is not bound"))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{consume}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : St) (who : Id)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (St)}.\par
+\noindent Definition: \texttt{(match idHas ((st).scope) (who) with | Bool.true => (match partsHas ((st).parted) (who) with | Bool.true => Except.error (cat (text ("ownership: ")) (cat (tick (idText (who))) (text (" is moved after a component was moved out of it")))) | Bool.false => (match idHas ((st).moved) (who) with | Bool.true => Except.error (cat (text ("ownership: ")) (cat (tick (idText (who))) (text (" is moved twice")))) | Bool.false => Except.ok ((\{ bound := (st).bound, scope := (st).scope, moved := (who :: (st).moved), parted := (st).parted, propagates := (st).propagates \} : St)))) | Bool.false => Except.error (cat (tick (idText (who))) (text (" is not bound"))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{takeParts}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(taken : List (Nat)) (index : Nat) (parts : Pat) (owner : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (List (Nat))}.\par
+\noindent Definition: \texttt{(match parts with | Pat.PLeaf \_ => Except.ok (taken) | Pat.PBind \_ => Except.ok (taken) | Pat.PTuple \_ => Except.ok (taken) | Pat.PWrap \_ \_ => Except.ok (taken) | Pat.PAdt \_ \_ \_ => Except.ok (taken) | Pat.PNil => Except.ok (taken) | Pat.PCons head tail => (let wild : Bool := patIsWild (head); (match wild with | Bool.true => takeParts (taken) ((index + 1)) (tail) (owner) | Bool.false => (match natHas (taken) (index) with | Bool.true => Except.error (cat (text ("ownership: component ")) (cat (decimal (index)) (cat (text (" of ")) (cat (owner) (text (" is moved twice")))))) | Bool.false => takeParts ((index :: taken)) ((index + 1)) (tail) (owner)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{consumeParts}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : St) (who : Id) (parts : Pat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (St)}.\par
+\noindent Definition: \texttt{(match idHas ((st).scope) (who) with | Bool.true => (match idHas ((st).moved) (who) with | Bool.true => Except.error (cat (text ("ownership: a component of ")) (cat (tick (idText (who))) (text (" is moved after it was moved")))) | Bool.false => (let <U+00AB>have<U+00BB> : List (Nat) := (match partsGet ((st).parted) (who) with | Option.some found => found | Option.none => ([] : List (Nat))); (match takeParts (<U+00AB>have<U+00BB>) (0) (parts) (tick (idText (who))) with | Except.ok taken => Except.ok ((\{ bound := (st).bound, scope := (st).scope, moved := (st).moved, parted := partsPut ((st).parted) (who) (taken), propagates := (st).propagates \} : St)) | Except.error problem4 => Except.error (problem4)))) | Bool.false => Except.error (cat (tick (idText (who))) (text (" is not bound"))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{bindPat}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : St) (decl : Decl) (pat : Pat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (St)}.\par
+\noindent Definition: \texttt{(match pat with | Pat.PLeaf \_ => Except.ok (st) | Pat.PBind who => (match idHas ((st).bound) (who) with | Bool.true => Except.error (cat (text ("hygiene: ")) (cat (tick (idText (who))) (text (" is bound twice in one function")))) | Bool.false => Except.ok ((\{ bound := (who :: (st).bound), scope := (who :: (st).scope), moved := (st).moved, parted := (st).parted, propagates := (st).propagates \} : St))) | Pat.PTuple inner => bindPat (st) (decl) (inner) | Pat.PWrap \_ inner => bindPat (st) (decl) (inner) | Pat.PAdt adt constructor fields => (match adtArity (decl) (adt) (constructor) with | Option.none => Except.error (cat (text ("pattern Adt")) (cat (decimal (adt)) (cat (text ("::C")) (cat (decimal (constructor)) (text (" is not declared")))))) | Option.some arity => (match (Nat.beq (arity) (patLen (fields))) with | Bool.true => bindPat (st) (decl) (fields) | Bool.false => Except.error (cat (text ("pattern Adt")) (cat (decimal (adt)) (cat (text ("::C")) (cat (decimal (constructor)) (cat (text (" binds ")) (cat (decimal (patLen (fields))) (cat (text (" fields of ")) (decimal (arity))))))))))) | Pat.PNil => Except.ok (st) | Pat.PCons head tail => (match bindPat (st) (decl) (head) with | Except.ok next => bindPat (next) (decl) (tail) | Except.error problem5 => Except.error (problem5)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{callOk}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : St) (cx : Cx) (fallible : Bool) (propagate : Bool) (tail : Bool) (what : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (St)}.\par
+\noindent Definition: \texttt{(let excused : Bool := (if tail then (cx).fallible else false); (match fallible with | Bool.true => (match propagate with | Bool.true => Except.ok ((\{ bound := (st).bound, scope := (st).scope, moved := (st).moved, parted := (st).parted, propagates := true \} : St)) | Bool.false => (match excused with | Bool.true => Except.ok (st) | Bool.false => Except.error (cat (text ("arithmetic: the fallible call of ")) (cat (what) (text (" does not propagate its overflow")))))) | Bool.false => (match propagate with | Bool.true => Except.error (cat (text ("arithmetic: the infallible call of ")) (cat (what) (text (" propagates a failure it cannot have")))) | Bool.false => Except.ok (st))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{itemRowOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(rows : List (ItemRow)) (family : Nat)}.\par
+\noindent Closure 1: binds \texttt{(found, row)}, captures \texttt{(family)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (ItemRow)}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (found : Option (ItemRow)) (row : ItemRow) => (match found with | Option.some value => Option.some (value) | Option.none => (if (Nat.beq ((row).family) (family)) then Option.some (row) else Option.none)))) (Option.none) (rows) : Option (ItemRow))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{widthKind}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(width : Option (IntKind))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{IntKind}.\par
+\noindent Definition: \texttt{(match width with | Option.some kind => kind | Option.none => IntKind.U8)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{itemPath}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(rows : List (ItemRow)) (item : Rt)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match itemRowOf (rows) ((item).family) with | Option.none => ByteArray.mk \#[] | Option.some row => (if (Nat.beq ((row).form) (0)) then (row).stem else (if (Nat.beq ((row).form) (1)) then cat (text ("fixed\_")) (cat (kindLower (widthKind ((item).width))) (cat (text ("::")) ((row).stem))) else cat ((row).stem) (kindLower (widthKind ((item).width))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{itemWidth}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(rows : List (ItemRow)) (item : Rt)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (IntKind)}.\par
+\noindent Definition: \texttt{(match itemRowOf (rows) ((item).family) with | Option.none => Option.none | Option.some row => (if (Nat.beq ((row).form) (0)) then Option.none else Option.some (widthKind ((item).width))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{itemFallible}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(rows : List (ItemRow)) (item : Rt)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match itemRowOf (rows) ((item).family) with | Option.none => false | Option.some row => (row).fallible)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{itemHeap}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(rows : List (ItemRow)) (item : Rt)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match itemRowOf (rows) ((item).family) with | Option.none => false | Option.some row => (row).heap)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{lastSegment}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(path : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match LexLeanStd.Text.find (path) (text ("::")) with | Option.some <U+00AB>at<U+00BB> => LexLeanStd.Text.sliceOr (path) ((<U+00AB>at<U+00BB> + 2)) ((LexLeanRuntime.subtract ((LexLeanRuntime.length (path) : Nat)) ((<U+00AB>at<U+00BB> + 2)) : Nat)) | Option.none => path)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{runtimeKind}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(base : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match LexLeanStd.Text.startsWith (base) (text ("checked\_neg\_")) with | Bool.true => text ("checked\_neg") | Bool.false => (match LexLeanStd.Text.startsWith (base) (text ("format\_")) with | Bool.true => text ("format\_decimal") | Bool.false => (match LexLeanStd.Text.startsWith (base) (text ("parse\_")) with | Bool.true => text ("parse\_decimal") | Bool.false => (match LexLeanStd.Text.startsWith (base) (text ("append\_")) with | Bool.true => text ("append") | Bool.false => (match LexLeanStd.Text.startsWith (base) (text ("length\_")) with | Bool.true => text ("length") | Bool.false => (match LexLeanStd.Text.startsWith (base) (text ("index\_")) with | Bool.true => text ("index") | Bool.false => (match LexLeanStd.Text.startsWith (base) (text ("slice\_")) with | Bool.true => text ("slice") | Bool.false => (match (LexLeanRuntime.equal (base) (text ("nat\_succ")) : Bool) with | Bool.true => text ("succ") | Bool.false => base))))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{bytesLess}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : ByteArray) (right : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.equal ((LexLeanRuntime.compareBytes (left) (right) : Ordering)) ((LexLeanRuntime.compareBytes (ByteArray.mk \#[]) (ByteArray.mk \#[1]) : Ordering)) : Bool)}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{bytesHas}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (ByteArray)) (key : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(found, item)}, captures \texttt{(key)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (found : Bool) (item : ByteArray) => (found || (LexLeanRuntime.equal (item) (key) : Bool)))) (false) (items) : Bool)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{sortedStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(key : ByteArray) (state : (Prod (Bool) (List (ByteArray)))) (item : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (Bool) (List (ByteArray)))}.\par
+\noindent Definition: \texttt{(let placed : Bool := (state).1; (let rev : List (ByteArray) := (state).2; (match placed with | Bool.true => (true, (item :: rev)) | Bool.false => (match bytesLess (key) (item) with | Bool.true => (true, (item :: (key :: rev))) | Bool.false => (false, (item :: rev))))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{sortedInsert}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (ByteArray)) (key : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(state, item)}, captures \texttt{(key)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (ByteArray)}.\par
+\noindent Definition: \texttt{(match bytesHas (items) (key) with | Bool.true => items | Bool.false => (let done : (Prod (Bool) (List (ByteArray))) := (LexLeanCollections.listFold ((fun (state : (Prod (Bool) (List (ByteArray)))) (item : ByteArray) => sortedStep (key) (state) (item))) ((false, ([] : List (ByteArray)))) (items) : (Prod (Bool) (List (ByteArray)))); (match (done).1 with | Bool.true => LexLeanStd.Text.reverse ((done).2) | Bool.false => LexLeanStd.Text.reverse ((key :: (done).2)))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{foundType}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(found : Found) (key : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Found}.\par
+\noindent Definition: \texttt{(\{ insts := (found).insts, types := sortedInsert ((found).types) (key), items := (found).items \} : Found)}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{instSame}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : Inst) (right : Inst)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(if (LexLeanRuntime.equal ((left).construct) ((right).construct) : Bool) then (if (LexLeanRuntime.equal ((left).element) ((right).element) : Bool) then (if optKindEq ((left).originWidth) ((right).originWidth) then optKindEq ((left).width) ((right).width) else false) else false) else false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{instHas}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(insts : List (Inst)) (inst : Inst)}.\par
+\noindent Closure 1: binds \texttt{(found, seen)}, captures \texttt{(inst)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (found : Bool) (seen : Inst) => (let same : Bool := instSame (seen) (inst); (found || same)))) (false) (insts) : Bool)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{foundWide}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(found : Found) (construct : ByteArray) (origin : Origin) (width : Option (IntKind))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Found}.\par
+\noindent Definition: \texttt{(let inst : Inst := (\{ construct := construct, element := (origin).element, originWidth := (origin).width, width := width \} : Inst); (match instHas ((found).insts) (inst) with | Bool.true => found | Bool.false => (\{ insts := (inst :: (found).insts), types := (found).types, items := (found).items \} : Found)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{foundAt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(found : Found) (construct : ByteArray) (origin : Origin)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Found}.\par
+\noindent Definition: \texttt{foundWide (found) (construct) (origin) (Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{foundTy}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(found : Found) (ty : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Found}.\par
+\noindent Definition: \texttt{(match ty with | Ty.TyLeaf k => foundType (found) (cat (text ("type:")) (leafKey (k))) | Ty.TyFixed \_ => foundType (found) (text ("type:fixed")) | Ty.TyUnary k inner => (let f1 : Found := foundType (found) (cat (text ("type:")) (unaryKey (k))); foundTy (f1) (inner)) | Ty.TyBinary k left right => (let f1 : Found := foundType (found) (cat (text ("type:")) (binaryKey (k))); (let f2 : Found := foundTy (f1) (left); foundTy (f2) (right))) | Ty.TyNamed k \_ => foundType (found) (cat (text ("type:")) (nameKey (k))) | Ty.TyNil => found | Ty.TyCons head tail => (let f1 : Found := foundTy (found) (head); foundTy (f1) (tail)))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{litKind}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(lit : Lit)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match lit with | Lit.LitUnit => text ("lit:unit") | Lit.LitBool => text ("lit:bool") | Lit.LitNat => text ("lit:nat") | Lit.LitInt => text ("lit:int") | Lit.LitFixed \_ => text ("lit:fixed") | Lit.LitStr => text ("lit:string") | Lit.LitBytes => text ("lit:bytes") | Lit.LitOrdering => text ("lit:ordering"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{litWidth}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(lit : Lit)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (IntKind)}.\par
+\noindent Definition: \texttt{(match lit with | Lit.LitUnit => Option.none | Lit.LitBool => Option.none | Lit.LitNat => Option.none | Lit.LitInt => Option.none | Lit.LitFixed k => Option.some (k) | Lit.LitStr => Option.none | Lit.LitBytes => Option.none | Lit.LitOrdering => Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{patLeafConstruct}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : PatLeaf)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (ByteArray)}.\par
+\noindent Definition: \texttt{(match kind with | PatLeaf.PlWild => Option.none | PatLeaf.PlUnit => Option.none | PatLeaf.PlNone => Option.some (text ("match:option")) | PatLeaf.PlOrdering => Option.some (text ("match:ordering")))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{patWrapConstruct}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : PatWrap)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match kind with | PatWrap.PwSome => text ("match:option") | PatWrap.PwOk => text ("match:result") | PatWrap.PwErr => text ("match:result"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{patConstruct}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(pat : Pat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (ByteArray)}.\par
+\noindent Definition: \texttt{(match pat with | Pat.PLeaf k => patLeafConstruct (k) | Pat.PBind \_ => Option.none | Pat.PTuple \_ => Option.none | Pat.PWrap k \_ => Option.some (patWrapConstruct (k)) | Pat.PAdt \_ \_ \_ => Option.some (text ("match:adt")) | Pat.PNil => Option.none | Pat.PCons \_ \_ => Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{foundArmPats}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(found : Found) (arms : Expr) (origin : Origin)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Found}.\par
+\noindent Definition: \texttt{(match arms with | Expr.ELit \_ \_ => found | Expr.ERead \_ \_ \_ => found | Expr.EWrap \_ \_ \_ => found | Expr.ECall \_ \_ \_ \_ => found | Expr.EApply \_ \_ \_ \_ => found | Expr.EConstruct \_ \_ \_ => found | Expr.EPair \_ \_ \_ => found | Expr.EIf \_ \_ \_ \_ => found | Expr.EMatch \_ \_ \_ => found | Expr.EBlockE \_ => found | Expr.EProbe \_ \_ \_ => found | Expr.EBlock \_ \_ => found | Expr.ENil => found | Expr.ECons \_ \_ => found | Expr.ELet \_ \_ \_ \_ \_ \_ => found | Expr.EArm pat \_ rest => (match patConstruct (pat) with | Option.some kind => foundArmPats (foundAt (found) (kind) (origin)) (rest) (origin) | Option.none => foundArmPats (found) (rest) (origin)) | Expr.ELoop \_ \_ => found)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{isNilExpr}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(e : Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match e with | Expr.ELit \_ \_ => false | Expr.ERead \_ \_ \_ => false | Expr.EWrap \_ \_ \_ => false | Expr.ECall \_ \_ \_ \_ => false | Expr.EApply \_ \_ \_ \_ => false | Expr.EConstruct \_ \_ \_ => false | Expr.EPair \_ \_ \_ => false | Expr.EIf \_ \_ \_ \_ => false | Expr.EMatch \_ \_ \_ => false | Expr.EBlockE \_ => false | Expr.EProbe \_ \_ \_ => false | Expr.EBlock \_ \_ => false | Expr.ENil => true | Expr.ECons \_ \_ => false | Expr.ELet \_ \_ \_ \_ \_ \_ => false | Expr.EArm \_ \_ \_ => false | Expr.ELoop \_ \_ => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{probeIsUncons}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : ProbeKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match kind with | ProbeKind.PkIsZero => false | ProbeKind.PkNonZero => false | ProbeKind.PkUncons => true | ProbeKind.PkPred => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{probeIsNat}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : ProbeKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match kind with | ProbeKind.PkIsZero => true | ProbeKind.PkNonZero => true | ProbeKind.PkUncons => false | ProbeKind.PkPred => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{probeNegatable}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : ProbeKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match kind with | ProbeKind.PkIsZero => true | ProbeKind.PkNonZero => true | ProbeKind.PkUncons => false | ProbeKind.PkPred => true)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{readConstruct}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : ReadKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match kind with | ReadKind.RkMove => text ("read") | ReadKind.RkClone => text ("read") | ReadKind.RkCopy => text ("read") | ReadKind.RkDeref => text ("read") | ReadKind.RkUnbox => text ("box"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{wrapConstruct}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : WrapKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match kind with | WrapKind.WkNot => text ("if") | WrapKind.WkBox => text ("box") | WrapKind.WkWiden => text ("widen") | WrapKind.WkSucceed => text ("succeed"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{isUncons}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(e : Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match e with | Expr.ELit \_ \_ => false | Expr.ERead \_ \_ \_ => false | Expr.EWrap \_ \_ \_ => false | Expr.ECall \_ \_ \_ \_ => false | Expr.EApply \_ \_ \_ \_ => false | Expr.EConstruct \_ \_ \_ => false | Expr.EPair \_ \_ \_ => false | Expr.EIf \_ \_ \_ \_ => false | Expr.EMatch \_ \_ \_ => false | Expr.EBlockE \_ => false | Expr.EProbe k \_ \_ => probeIsUncons (k) | Expr.EBlock \_ \_ => false | Expr.ENil => false | Expr.ECons \_ \_ => false | Expr.ELet \_ \_ \_ \_ \_ \_ => false | Expr.EArm \_ \_ \_ => false | Expr.ELoop \_ \_ => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{conKind}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(con : Con)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match con with | Con.ConNone \_ => text ("none") | Con.ConSome => text ("some") | Con.ConOk \_ \_ => text ("ok") | Con.ConErr \_ \_ => text ("err") | Con.ConAdt \_ \_ => text ("adt") | Con.ConClosure \_ \_ => text ("closure") | Con.ConCons => text ("cons") | Con.ConNil \_ => text ("nil"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{foundCon}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(found : Found) (con : Con)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Found}.\par
+\noindent Definition: \texttt{(match con with | Con.ConNone ty => foundTy (found) (ty) | Con.ConSome => found | Con.ConOk ok error => foundTy (foundTy (found) (ok)) (error) | Con.ConErr ok error => foundTy (foundTy (found) (ok)) (error) | Con.ConAdt \_ \_ => found | Con.ConClosure \_ \_ => found | Con.ConCons => found | Con.ConNil ty => foundTy (found) (ty))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{foundExpr}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(found : Found) (e : Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Found}.\par
+\noindent Definition: \texttt{(match e with | Expr.ELit lit org => foundWide (found) (litKind (lit)) (org) (litWidth (lit)) | Expr.ERead k \_ org => foundAt (found) (readConstruct (k)) (org) | Expr.EWrap k inner org => (let f1 : Found := foundAt (found) (wrapConstruct (k)) (org); foundExpr (f1) (inner)) | Expr.ECall callee args \_ org => (let f1 : Found := (match callee with | Callee.CalFn \_ => foundAt (found) (text ("call:function")) (org) | Callee.CalRt item => foundWide (found) (cat (text ("call:runtime:")) (runtimeKind (lastSegment (itemPath ((found).items) (item))))) (org) (itemWidth ((found).items) (item))); foundExpr (f1) (args)) | Expr.EApply \_ args \_ org => (let f1 : Found := foundAt (found) (text ("apply")) (org); foundExpr (f1) (args)) | Expr.EConstruct con args org => (let f1 : Found := foundAt (foundCon (found) (con)) (cat (text ("construct:")) (conKind (con))) (org); foundExpr (f1) (args)) | Expr.EPair left right org => (let f1 : Found := foundAt (found) (text ("construct:pair")) (org); (let f2 : Found := foundExpr (f1) (left); foundExpr (f2) (right))) | Expr.EIf condition thenBranch elseBranch org => (let f1 : Found := foundAt (found) (text ("if")) (org); (let f2 : Found := foundExpr (f1) (condition); (let f3 : Found := foundExpr (f2) (thenBranch); foundExpr (f3) (elseBranch)))) | Expr.EMatch scrutinee arms org => (let head : Found := (match isNilExpr (arms) with | Bool.true => foundAt (found) (text ("match:empty")) (org) | Bool.false => (match isUncons (scrutinee) with | Bool.true => foundAt (found) (text ("match:list")) (org) | Bool.false => foundArmPats (found) (arms) (org))); (let f2 : Found := foundExpr (head) (scrutinee); foundExpr (f2) (arms))) | Expr.EBlockE inner => foundExpr (found) (inner) | Expr.EProbe k \_ org => (match probeIsNat (k) with | Bool.true => foundAt (found) (text ("match:nat")) (org) | Bool.false => found) | Expr.EBlock lets tail => (let f1 : Found := foundExpr (found) (lets); foundExpr (f1) (tail)) | Expr.ENil => found | Expr.ECons head tail => (let f1 : Found := foundExpr (found) (head); foundExpr (f1) (tail)) | Expr.ELet pat hasTy ty value org rest => (let kind : ByteArray := (match patIsTuple (pat) with | Bool.true => text ("destructure:pair") | Bool.false => text ("let")); (let typed : Found := (match hasTy with | Bool.true => foundTy (found) (ty) | Bool.false => found); (let f1 : Found := foundAt (typed) (kind) (org); (let f2 : Found := foundExpr (f1) (value); foundExpr (f2) (rest))))) | Expr.EArm \_ body rest => (let f1 : Found := foundExpr (found) (body); foundExpr (f1) (rest)) | Expr.ELoop \_ body => foundExpr (found) (body))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{minConstruct}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(insts : List (Inst))}.\par
+\noindent Closure 1: binds \texttt{(best, inst)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match (LexLeanCollections.listFold ((fun (best : Option (ByteArray)) (inst : Inst) => (match best with | Option.none => Option.some ((inst).construct) | Option.some seen => (match bytesLess ((inst).construct) (seen) with | Bool.true => Option.some ((inst).construct) | Bool.false => Option.some (seen))))) (Option.none) (insts) : Option (ByteArray)) with | Option.some least => least | Option.none => text ("a read"))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{constructsOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(rows : List (ItemRow)) (e : Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{minConstruct ((foundExpr ((\{ insts := ([] : List (Inst)), types := ([] : List (ByteArray)), items := rows \} : Found)) (e)).insts)}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{negatesZero}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(e : Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match e with | Expr.ELit \_ \_ => false | Expr.ERead \_ \_ \_ => false | Expr.EWrap \_ \_ \_ => false | Expr.ECall \_ \_ \_ \_ => false | Expr.EApply \_ \_ \_ \_ => false | Expr.EConstruct \_ \_ \_ => false | Expr.EPair \_ \_ \_ => false | Expr.EIf \_ \_ \_ \_ => false | Expr.EMatch \_ \_ \_ => false | Expr.EBlockE \_ => false | Expr.EProbe k \_ \_ => probeNegatable (k) | Expr.EBlock \_ \_ => false | Expr.ENil => false | Expr.ECons \_ \_ => false | Expr.ELet \_ \_ \_ \_ \_ \_ => false | Expr.EArm \_ \_ \_ => false | Expr.ELoop \_ \_ => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{readIsMove}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : ReadKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match kind with | ReadKind.RkMove => true | ReadKind.RkClone => false | ReadKind.RkCopy => false | ReadKind.RkDeref => false | ReadKind.RkUnbox => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tupleMoveTarget}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(pat : Pat) (value : Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Id)}.\par
+\noindent Definition: \texttt{(match pat with | Pat.PLeaf \_ => Option.none | Pat.PBind \_ => Option.none | Pat.PTuple parts => (match value with | Expr.ELit \_ \_ => Option.none | Expr.ERead k who \_ => (match readIsMove (k) with | Bool.true => (match patHasWild (parts) with | Bool.true => Option.some (who) | Bool.false => Option.none) | Bool.false => Option.none) | Expr.EWrap \_ \_ \_ => Option.none | Expr.ECall \_ \_ \_ \_ => Option.none | Expr.EApply \_ \_ \_ \_ => Option.none | Expr.EConstruct \_ \_ \_ => Option.none | Expr.EPair \_ \_ \_ => Option.none | Expr.EIf \_ \_ \_ \_ => Option.none | Expr.EMatch \_ \_ \_ => Option.none | Expr.EBlockE \_ => Option.none | Expr.EProbe \_ \_ \_ => Option.none | Expr.EBlock \_ \_ => Option.none | Expr.ENil => Option.none | Expr.ECons \_ \_ => Option.none | Expr.ELet \_ \_ \_ \_ \_ \_ => Option.none | Expr.EArm \_ \_ \_ => Option.none | Expr.ELoop \_ \_ => Option.none) | Pat.PWrap \_ \_ => Option.none | Pat.PAdt \_ \_ \_ => Option.none | Pat.PNil => Option.none | Pat.PCons \_ \_ => Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{conOk}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(cx : Cx) (con : Con) (argc : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Unit)}.\par
+\noindent Definition: \texttt{(match con with | Con.ConNone ty => tyOk (cx) (ty) | Con.ConSome => Except.ok (()) | Con.ConOk ok error => (match tyOk (cx) (ok) with | Except.ok \_ => tyOk (cx) (error) | Except.error problem7 => Except.error (problem7)) | Con.ConErr ok error => (match tyOk (cx) (ok) with | Except.ok \_ => tyOk (cx) (error) | Except.error problem8 => Except.error (problem8)) | Con.ConAdt adt constructor => (match adtArity ((cx).decl) (adt) (constructor) with | Option.none => Except.error (cat (text ("Adt")) (cat (decimal (adt)) (cat (text ("::C")) (cat (decimal (constructor)) (text (" is not declared")))))) | Option.some arity => (match (Nat.beq (arity) (argc)) with | Bool.true => Except.ok (()) | Bool.false => Except.error (cat (text ("Adt")) (cat (decimal (adt)) (cat (text ("::C")) (cat (decimal (constructor)) (cat (text (" receives ")) (cat (decimal (argc)) (cat (text (" fields of ")) (decimal (arity))))))))))) | Con.ConClosure fnType function => (match closureArity ((cx).decl) (fnType) (function) with | Option.none => Except.error (cat (text ("Fn")) (cat (decimal (fnType)) (cat (text ("::F")) (cat (decimal (function)) (text (" is not declared")))))) | Option.some arity => (match (Nat.beq (arity) (argc)) with | Bool.true => Except.ok (()) | Bool.false => Except.error (cat (text ("Fn")) (cat (decimal (fnType)) (cat (text ("::F")) (cat (decimal (function)) (cat (text (" captures ")) (cat (decimal (argc)) (cat (text (" values of ")) (decimal (arity))))))))))) | Con.ConCons => heapUnit (cx) (text ("a list cell")) | Con.ConNil ty => (match heapUnit (cx) (text ("an empty list")) with | Except.ok \_ => tyOk (cx) (ty) | Except.error problem6 => Except.error (problem6)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{conIsErr}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(con : Con)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match con with | Con.ConNone \_ => false | Con.ConSome => false | Con.ConOk \_ \_ => false | Con.ConErr \_ \_ => true | Con.ConAdt \_ \_ => false | Con.ConClosure \_ \_ => false | Con.ConCons => false | Con.ConNil \_ => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{returnsResult}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(e : Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match e with | Expr.ELit \_ \_ => false | Expr.ERead \_ \_ \_ => false | Expr.EWrap k \_ \_ => (match k with | WrapKind.WkNot => false | WrapKind.WkBox => false | WrapKind.WkWiden => false | WrapKind.WkSucceed => true) | Expr.ECall \_ \_ propagate \_ => (if propagate then false else true) | Expr.EApply \_ \_ propagate \_ => (if propagate then false else true) | Expr.EConstruct \_ \_ \_ => false | Expr.EPair \_ \_ \_ => false | Expr.EIf \_ \_ \_ \_ => true | Expr.EMatch \_ \_ \_ => true | Expr.EBlockE \_ => true | Expr.EProbe \_ \_ \_ => false | Expr.EBlock \_ \_ => false | Expr.ENil => false | Expr.ECons \_ \_ => false | Expr.ELet \_ \_ \_ \_ \_ \_ => false | Expr.EArm \_ \_ \_ => false | Expr.ELoop \_ \_ => true)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{idLess}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : Id) (right : Id)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(if (Nat.beq (idTag (left)) (idTag (right))) then (if (Nat.beq (idTag (left)) (9)) then bytesLess (idName (left)) (idName (right)) else (Nat.blt (idNum (left)) (idNum (right)))) else (Nat.blt (idTag (left)) (idTag (right))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{dropId}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (Id)) (who : Id)}.\par
+\noindent Closure 1: binds \texttt{(kept, item)}, captures \texttt{(who)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (Id)}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (kept : List (Id)) (item : Id) => (let same : Bool := idEq (item) (who); (if same then kept else (item :: kept))))) (([] : List (Id))) (items) : List (Id))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{natsWithin}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : List (Nat)) (right : List (Nat))}.\par
+\noindent Closure 1: binds \texttt{(all, item)}, captures \texttt{(right)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (all : Bool) (item : Nat) => (let present : Bool := natHas (right) (item); (if all then present else false)))) (true) (left) : Bool)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{partsSame}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(entry : List ((Prod (Id) (List (Nat))))) (who : Id) (parts : List (Nat))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match partsGet (entry) (who) with | Option.some <U+00AB>have<U+00BB> => (let forward : Bool := natsWithin (parts) (<U+00AB>have<U+00BB>); (let back : Bool := natsWithin (<U+00AB>have<U+00BB>) (parts); (if forward then back else false))) | Option.none => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{lesserId}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(best : Option (Id)) (who : Id)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Id)}.\par
+\noindent Definition: \texttt{(match best with | Option.some seen => (match idLess (who) (seen) with | Bool.true => Option.some (who) | Bool.false => Option.some (seen)) | Option.none => Option.some (who))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{movedInLoop}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(after : List (Id)) (state : Id) (entry : List (Id)) (outside : List (Id))}.\par
+\noindent Closure 1: binds \texttt{(best, item)}, captures \texttt{(entry, outside, state)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Id)}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (best : Option (Id)) (item : Id) => (let same : Bool := idEq (item) (state); (let kept : Bool := idHas (entry) (item); (let seen : Bool := idHas (outside) (item); (let offends : Bool := (if same then false else (if kept then false else seen)); (if offends then lesserId (best) (item) else best))))))) (Option.none) (after) : Option (Id))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{partedInLoop}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(after : List ((Prod (Id) (List (Nat))))) (entry : List ((Prod (Id) (List (Nat))))) (outside : List (Id))}.\par
+\noindent Closure 1: binds \texttt{(best, item)}, captures \texttt{(entry, outside)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Id)}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (best : Option (Id)) (item : (Prod (Id) (List (Nat)))) => (let seen : Bool := idHas (outside) ((item).1); (let same : Bool := partsSame (entry) ((item).1) ((item).2); (let offends : Bool := (if seen then (if same then false else true) else false); (if offends then lesserId (best) ((item).1) else best)))))) (Option.none) (after) : Option (Id))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{endsArgs}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(rows : List (ItemRow)) (args : Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Unit)}.\par
+\noindent Definition: \texttt{(match args with | Expr.ELit \_ \_ => Except.ok (()) | Expr.ERead \_ \_ \_ => Except.ok (()) | Expr.EWrap \_ \_ \_ => Except.ok (()) | Expr.ECall \_ \_ \_ \_ => Except.ok (()) | Expr.EApply \_ \_ \_ \_ => Except.ok (()) | Expr.EConstruct \_ \_ \_ => Except.ok (()) | Expr.EPair \_ \_ \_ => Except.ok (()) | Expr.EIf \_ \_ \_ \_ => Except.ok (()) | Expr.EMatch \_ \_ \_ => Except.ok (()) | Expr.EBlockE \_ => Except.ok (()) | Expr.EProbe \_ \_ \_ => Except.ok (()) | Expr.EBlock \_ \_ => Except.ok (()) | Expr.ENil => Except.ok (()) | Expr.ECons head rest => (match returnsResult (head) with | Bool.true => endsArgs (rows) (rest) | Bool.false => Except.error (cat (text ("arithmetic: the value a fallible loop ends with, ")) (cat (constructsOf (rows) (head)) (text (", is not a fallible value"))))) | Expr.ELet \_ \_ \_ \_ \_ \_ => Except.ok (()) | Expr.EArm \_ \_ \_ => Except.ok (()) | Expr.ELoop \_ \_ => Except.ok (()))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{endsBlock}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{LoopEnds}, decreasing on \texttt{b}.\par
+\noindent Parameters: \texttt{(rows : List (ItemRow)) (b : Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Unit)}.\par
+\noindent Definition: \texttt{(match b with | Expr.ELit \_ \_ => Except.ok (()) | Expr.ERead \_ \_ \_ => Except.ok (()) | Expr.EWrap \_ \_ \_ => Except.ok (()) | Expr.ECall \_ \_ \_ \_ => Except.ok (()) | Expr.EApply \_ \_ \_ \_ => Except.ok (()) | Expr.EConstruct \_ \_ \_ => Except.ok (()) | Expr.EPair \_ \_ \_ => Except.ok (()) | Expr.EIf \_ \_ \_ \_ => Except.ok (()) | Expr.EMatch \_ \_ \_ => Except.ok (()) | Expr.EBlockE \_ => Except.ok (()) | Expr.EProbe \_ \_ \_ => Except.ok (()) | Expr.EBlock \_ bodyTail => endsTail (rows) (bodyTail) | Expr.ENil => Except.ok (()) | Expr.ECons \_ \_ => Except.ok (()) | Expr.ELet \_ \_ \_ \_ \_ \_ => Except.ok (()) | Expr.EArm \_ \_ \_ => Except.ok (()) | Expr.ELoop \_ \_ => Except.ok (()))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{endsTail}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{LoopEnds}, decreasing on \texttt{t}.\par
+\noindent Parameters: \texttt{(rows : List (ItemRow)) (t : Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Unit)}.\par
+\noindent Definition: \texttt{(match t with | Expr.ELit \_ \_ => Except.ok (()) | Expr.ERead \_ \_ \_ => Except.ok (()) | Expr.EWrap \_ \_ \_ => Except.ok (()) | Expr.ECall \_ \_ \_ \_ => Except.ok (()) | Expr.EApply \_ \_ \_ \_ => Except.ok (()) | Expr.EConstruct con args \_ => (match conIsErr (con) with | Bool.true => endsArgs (rows) (args) | Bool.false => Except.ok (())) | Expr.EPair \_ \_ \_ => Except.ok (()) | Expr.EIf \_ thenBranch elseBranch \_ => (match endsBlock (rows) (thenBranch) with | Except.ok \_ => endsBlock (rows) (elseBranch) | Except.error problem52 => Except.error (problem52)) | Expr.EMatch \_ arms \_ => endsArms (rows) (arms) | Expr.EBlockE inner => endsBlock (rows) (inner) | Expr.EProbe \_ \_ \_ => Except.ok (()) | Expr.EBlock \_ \_ => Except.ok (()) | Expr.ENil => Except.ok (()) | Expr.ECons \_ \_ => Except.ok (()) | Expr.ELet \_ \_ \_ \_ \_ \_ => Except.ok (()) | Expr.EArm \_ \_ \_ => Except.ok (()) | Expr.ELoop \_ \_ => Except.ok (()))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{endsArms}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{LoopEnds}, decreasing on \texttt{arms}.\par
+\noindent Parameters: \texttt{(rows : List (ItemRow)) (arms : Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Unit)}.\par
+\noindent Definition: \texttt{(match arms with | Expr.ELit \_ \_ => Except.ok (()) | Expr.ERead \_ \_ \_ => Except.ok (()) | Expr.EWrap \_ \_ \_ => Except.ok (()) | Expr.ECall \_ \_ \_ \_ => Except.ok (()) | Expr.EApply \_ \_ \_ \_ => Except.ok (()) | Expr.EConstruct \_ \_ \_ => Except.ok (()) | Expr.EPair \_ \_ \_ => Except.ok (()) | Expr.EIf \_ \_ \_ \_ => Except.ok (()) | Expr.EMatch \_ \_ \_ => Except.ok (()) | Expr.EBlockE \_ => Except.ok (()) | Expr.EProbe \_ \_ \_ => Except.ok (()) | Expr.EBlock \_ \_ => Except.ok (()) | Expr.ENil => Except.ok (()) | Expr.ECons \_ \_ => Except.ok (()) | Expr.ELet \_ \_ \_ \_ \_ \_ => Except.ok (()) | Expr.EArm \_ body rest => (match endsBlock (rows) (body) with | Except.ok \_ => endsArms (rows) (rest) | Except.error problem53 => Except.error (problem53)) | Expr.ELoop \_ \_ => Except.ok (()))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{blockC}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{CheckExpr}, decreasing on \texttt{b}.\par
+\noindent Parameters: \texttt{(st : St) (cx : Cx) (b : Expr) (tail : Bool)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (St)}.\par
+\noindent Definition: \texttt{(match b with | Expr.ELit \_ \_ => Except.ok (st) | Expr.ERead \_ \_ \_ => Except.ok (st) | Expr.EWrap \_ \_ \_ => Except.ok (st) | Expr.ECall \_ \_ \_ \_ => Except.ok (st) | Expr.EApply \_ \_ \_ \_ => Except.ok (st) | Expr.EConstruct \_ \_ \_ => Except.ok (st) | Expr.EPair \_ \_ \_ => Except.ok (st) | Expr.EIf \_ \_ \_ \_ => Except.ok (st) | Expr.EMatch \_ \_ \_ => Except.ok (st) | Expr.EBlockE \_ => Except.ok (st) | Expr.EProbe \_ \_ \_ => Except.ok (st) | Expr.EBlock lets bodyTail => (let saved : List (Id) := (st).scope; (match letsC (st) (cx) (lets) with | Except.ok s1 => (match exprC (s1) (cx) (bodyTail) (tail) with | Except.ok s2 => Except.ok ((\{ bound := (s2).bound, scope := saved, moved := (s2).moved, parted := (s2).parted, propagates := (s2).propagates \} : St)) | Except.error problem33 => Except.error (problem33)) | Except.error problem34 => Except.error (problem34))) | Expr.ENil => Except.ok (st) | Expr.ECons \_ \_ => Except.ok (st) | Expr.ELet \_ \_ \_ \_ \_ \_ => Except.ok (st) | Expr.EArm \_ \_ \_ => Except.ok (st) | Expr.ELoop \_ \_ => Except.ok (st))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{exprC}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{CheckExpr}, decreasing on \texttt{e}.\par
+\noindent Parameters: \texttt{(st : St) (cx : Cx) (e : Expr) (tail : Bool)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (St)}.\par
+\noindent Definition: \texttt{(match e with | Expr.ELit lit org => (let gated : Bool := (if tail then (cx).fallible else false); (match gated with | Bool.true => Except.error (cat (text ("arithmetic: the value a fallible function returns, ")) (cat (constructsOf ((cx).items) (Expr.ELit (lit) (org))) (text (", is not a fallible value")))) | Bool.false => (match lit with | Lit.LitUnit => Except.ok (st) | Lit.LitBool => Except.ok (st) | Lit.LitNat => Except.ok (st) | Lit.LitInt => Except.ok (st) | Lit.LitFixed \_ => Except.ok (st) | Lit.LitStr => heapSt (cx) (st) (text ("a string literal")) | Lit.LitBytes => heapSt (cx) (st) (text ("a byte string literal")) | Lit.LitOrdering => Except.ok (st)))) | Expr.ERead k who org => (let gated : Bool := (if tail then (cx).fallible else false); (match gated with | Bool.true => Except.error (cat (text ("arithmetic: the value a fallible function returns, ")) (cat (constructsOf ((cx).items) (Expr.ERead (k) (who) (org))) (text (", is not a fallible value")))) | Bool.false => (match k with | ReadKind.RkMove => consume (st) (who) | ReadKind.RkClone => (match readOk (st) (who) with | Except.ok \_ => Except.ok (st) | Except.error problem9 => Except.error (problem9)) | ReadKind.RkCopy => (match readOk (st) (who) with | Except.ok \_ => Except.ok (st) | Except.error problem10 => Except.error (problem10)) | ReadKind.RkDeref => (match readOk (st) (who) with | Except.ok \_ => Except.ok (st) | Except.error problem11 => Except.error (problem11)) | ReadKind.RkUnbox => (match heapUnit (cx) (text ("a boxed read")) with | Except.ok \_ => (match readOk (st) (who) with | Except.ok \_ => Except.ok (st) | Except.error problem12 => Except.error (problem12)) | Except.error problem13 => Except.error (problem13))))) | Expr.EWrap k inner org => (match k with | WrapKind.WkNot => (let gated : Bool := (if tail then (cx).fallible else false); (match gated with | Bool.true => Except.error (cat (text ("arithmetic: the value a fallible function returns, ")) (cat (constructsOf ((cx).items) (Expr.EWrap (k) (inner) (org))) (text (", is not a fallible value")))) | Bool.false => (match negatesZero (inner) with | Bool.true => Except.error (text ("a negated zero test or predecessor: a zero test is negated as its complement, and a predecessor is not a Boolean")) | Bool.false => exprC (st) (cx) (inner) (false)))) | WrapKind.WkBox => (let gated : Bool := (if tail then (cx).fallible else false); (match gated with | Bool.true => Except.error (cat (text ("arithmetic: the value a fallible function returns, ")) (cat (constructsOf ((cx).items) (Expr.EWrap (k) (inner) (org))) (text (", is not a fallible value")))) | Bool.false => (match heapUnit (cx) (text ("a box")) with | Except.ok \_ => exprC (st) (cx) (inner) (false) | Except.error problem14 => Except.error (problem14)))) | WrapKind.WkWiden => (let gated : Bool := (if tail then (cx).fallible else false); (match gated with | Bool.true => Except.error (cat (text ("arithmetic: the value a fallible function returns, ")) (cat (constructsOf ((cx).items) (Expr.EWrap (k) (inner) (org))) (text (", is not a fallible value")))) | Bool.false => exprC (st) (cx) (inner) (false))) | WrapKind.WkSucceed => exprC (st) (cx) (inner) (false)) | Expr.ECall callee args propagate org => (match propagate with | Bool.true => (let gated : Bool := (if tail then (cx).fallible else false); (match gated with | Bool.true => Except.error (cat (text ("arithmetic: the value a fallible function returns, ")) (cat (constructsOf ((cx).items) (Expr.ECall (callee) (args) (propagate) (org))) (text (", is not a fallible value")))) | Bool.false => (match argsC (st) (cx) (args) with | Except.ok s1 => (match callee with | Callee.CalFn n => (match lookupFlag (((cx).decl).functions) (n) with | Option.none => Except.error (cat (text ("f")) (cat (decimal (n)) (text (" is not declared")))) | Option.some declared => callOk (s1) (cx) (declared) (propagate) (tail) (cat (text ("f")) (decimal (n)))) | Callee.CalRt item => (let path : ByteArray := itemPath ((cx).items) (item); (match (match itemHeap ((cx).items) (item) with | Bool.true => heapUnit (cx) (cat (text ("the runtime function ")) (tick (path))) | Bool.false => Except.ok (())) with | Except.ok \_ => callOk (s1) (cx) (itemFallible ((cx).items) (item)) (propagate) (tail) (tick (path)) | Except.error problem15 => Except.error (problem15)))) | Except.error problem16 => Except.error (problem16)))) | Bool.false => (match argsC (st) (cx) (args) with | Except.ok s1 => (match callee with | Callee.CalFn n => (match lookupFlag (((cx).decl).functions) (n) with | Option.none => Except.error (cat (text ("f")) (cat (decimal (n)) (text (" is not declared")))) | Option.some declared => callOk (s1) (cx) (declared) (propagate) (tail) (cat (text ("f")) (decimal (n)))) | Callee.CalRt item => (let path : ByteArray := itemPath ((cx).items) (item); (match (match itemHeap ((cx).items) (item) with | Bool.true => heapUnit (cx) (cat (text ("the runtime function ")) (tick (path))) | Bool.false => Except.ok (())) with | Except.ok \_ => callOk (s1) (cx) (itemFallible ((cx).items) (item)) (propagate) (tail) (tick (path)) | Except.error problem15 => Except.error (problem15)))) | Except.error problem16 => Except.error (problem16))) | Expr.EApply who args propagate org => (match propagate with | Bool.true => (let gated : Bool := (if tail then (cx).fallible else false); (match gated with | Bool.true => Except.error (cat (text ("arithmetic: the value a fallible function returns, ")) (cat (constructsOf ((cx).items) (Expr.EApply (who) (args) (propagate) (org))) (text (", is not a fallible value")))) | Bool.false => (match readOk (st) (who) with | Except.ok \_ => (match argsC (st) (cx) (args) with | Except.ok s1 => Except.ok ((\{ bound := (s1).bound, scope := (s1).scope, moved := (s1).moved, parted := (s1).parted, propagates := (if propagate then true else (s1).propagates) \} : St)) | Except.error problem17 => Except.error (problem17)) | Except.error problem18 => Except.error (problem18)))) | Bool.false => (match readOk (st) (who) with | Except.ok \_ => (match argsC (st) (cx) (args) with | Except.ok s1 => Except.ok ((\{ bound := (s1).bound, scope := (s1).scope, moved := (s1).moved, parted := (s1).parted, propagates := (if propagate then true else (s1).propagates) \} : St)) | Except.error problem17 => Except.error (problem17)) | Except.error problem18 => Except.error (problem18))) | Expr.EConstruct con args org => (let gated : Bool := (if tail then (cx).fallible else false); (match gated with | Bool.true => Except.error (cat (text ("arithmetic: the value a fallible function returns, ")) (cat (constructsOf ((cx).items) (Expr.EConstruct (con) (args) (org))) (text (", is not a fallible value")))) | Bool.false => (match argsC (st) (cx) (args) with | Except.ok s1 => (match conOk (cx) (con) (exprLen (args)) with | Except.ok \_ => Except.ok (s1) | Except.error problem19 => Except.error (problem19)) | Except.error problem20 => Except.error (problem20)))) | Expr.EPair left right org => (let gated : Bool := (if tail then (cx).fallible else false); (match gated with | Bool.true => Except.error (cat (text ("arithmetic: the value a fallible function returns, ")) (cat (constructsOf ((cx).items) (Expr.EPair (left) (right) (org))) (text (", is not a fallible value")))) | Bool.false => (match exprC (st) (cx) (left) (false) with | Except.ok s1 => exprC (s1) (cx) (right) (false) | Except.error problem21 => Except.error (problem21)))) | Expr.EIf condition thenBranch elseBranch \_ => (match exprC (st) (cx) (condition) (false) with | Except.ok s1 => (let bThen0 : St := (\{ bound := (s1).bound, scope := (s1).scope, moved := (s1).moved, parted := (s1).parted, propagates := (s1).propagates \} : St); (match bindPat (bThen0) ((cx).decl) (Pat.PLeaf (PatLeaf.PlWild)) with | Except.ok bThen2 => (match blockC (bThen2) (cx) (thenBranch) (tail) with | Except.ok bThen3 => (let r1 : St := (\{ bound := (bThen3).bound, scope := (s1).scope, moved := unionIds ((s1).moved) ((bThen3).moved), parted := unionParts ((s1).parted) ((bThen3).parted), propagates := (bThen3).propagates \} : St); (let bElse0 : St := (\{ bound := (r1).bound, scope := (s1).scope, moved := (s1).moved, parted := (s1).parted, propagates := (r1).propagates \} : St); (match bindPat (bElse0) ((cx).decl) (Pat.PLeaf (PatLeaf.PlWild)) with | Except.ok bElse2 => (match blockC (bElse2) (cx) (elseBranch) (tail) with | Except.ok bElse3 => (let r2 : St := (\{ bound := (bElse3).bound, scope := (s1).scope, moved := unionIds ((r1).moved) ((bElse3).moved), parted := unionParts ((r1).parted) ((bElse3).parted), propagates := (bElse3).propagates \} : St); Except.ok (r2)) | Except.error problem24 => Except.error (problem24)) | Except.error problem25 => Except.error (problem25)))) | Except.error problem22 => Except.error (problem22)) | Except.error problem23 => Except.error (problem23))) | Except.error problem26 => Except.error (problem26)) | Expr.EMatch scrutinee arms \_ => (match exprC (st) (cx) (scrutinee) (false) with | Except.ok s1 => armsC (s1) (cx) (s1) ((s1).scope) (arms) (tail) | Except.error problem27 => Except.error (problem27)) | Expr.EBlockE inner => blockC (st) (cx) (inner) (tail) | Expr.EProbe k who org => (let gated : Bool := (if tail then (cx).fallible else false); (match gated with | Bool.true => Except.error (cat (text ("arithmetic: the value a fallible function returns, ")) (cat (constructsOf ((cx).items) (Expr.EProbe (k) (who) (org))) (text (", is not a fallible value")))) | Bool.false => (match k with | ProbeKind.PkIsZero => (match readOk (st) (who) with | Except.ok \_ => Except.ok (st) | Except.error problem30 => Except.error (problem30)) | ProbeKind.PkNonZero => (match readOk (st) (who) with | Except.ok \_ => Except.ok (st) | Except.error problem31 => Except.error (problem31)) | ProbeKind.PkUncons => (match heapUnit (cx) (text ("a list match")) with | Except.ok \_ => (match readOk (st) (who) with | Except.ok \_ => Except.ok (st) | Except.error problem28 => Except.error (problem28)) | Except.error problem29 => Except.error (problem29)) | ProbeKind.PkPred => (match readOk (st) (who) with | Except.ok \_ => Except.ok (st) | Except.error problem32 => Except.error (problem32))))) | Expr.EBlock \_ \_ => Except.ok (st) | Expr.ENil => Except.ok (st) | Expr.ECons \_ \_ => Except.ok (st) | Expr.ELet \_ \_ \_ \_ \_ \_ => Except.ok (st) | Expr.EArm \_ \_ \_ => Except.ok (st) | Expr.ELoop state body => (let gated : Bool := (if tail then (cx).fallible else false); (let ends : Except (ByteArray) (Unit) := (match gated with | Bool.true => endsBlock ((cx).items) (body) | Bool.false => Except.ok (())); (match ends with | Except.ok \_ => (match consume (st) (state) with | Except.ok s1 => (let entry : St := (\{ bound := (s1).bound, scope := (s1).scope, moved := dropId ((s1).moved) (state), parted := (s1).parted, propagates := (s1).propagates \} : St); (match blockC (entry) (cx) (body) (false) with | Except.ok s2 => (match movedInLoop ((s2).moved) (state) ((entry).moved) ((s1).scope) with | Option.some who => Except.error (cat (text ("ownership: ")) (cat (tick (idText (who))) (text (" is moved in the body of a loop that runs again")))) | Option.none => (match partedInLoop ((s2).parted) ((entry).parted) ((s1).scope) with | Option.some who2 => Except.error (cat (text ("ownership: a component of ")) (cat (tick (idText (who2))) (text (" is moved in the body of a loop that runs again")))) | Option.none => Except.ok ((\{ bound := (s2).bound, scope := (s2).scope, moved := (s1).moved, parted := (s1).parted, propagates := (s2).propagates \} : St)))) | Except.error problem51 => Except.error (problem51))) | Except.error problem50 => Except.error (problem50)) | Except.error problem49 => Except.error (problem49)))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{letsC}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{CheckExpr}, decreasing on \texttt{lets}.\par
+\noindent Parameters: \texttt{(st : St) (cx : Cx) (lets : Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (St)}.\par
+\noindent Definition: \texttt{(match lets with | Expr.ELit \_ \_ => Except.ok (st) | Expr.ERead \_ \_ \_ => Except.ok (st) | Expr.EWrap \_ \_ \_ => Except.ok (st) | Expr.ECall \_ \_ \_ \_ => Except.ok (st) | Expr.EApply \_ \_ \_ \_ => Except.ok (st) | Expr.EConstruct \_ \_ \_ => Except.ok (st) | Expr.EPair \_ \_ \_ => Except.ok (st) | Expr.EIf \_ \_ \_ \_ => Except.ok (st) | Expr.EMatch \_ \_ \_ => Except.ok (st) | Expr.EBlockE \_ => Except.ok (st) | Expr.EProbe \_ \_ \_ => Except.ok (st) | Expr.EBlock \_ \_ => Except.ok (st) | Expr.ENil => Except.ok (st) | Expr.ECons \_ \_ => Except.ok (st) | Expr.ELet pat hasTy ty value \_ rest => (match (match hasTy with | Bool.true => tyOk (cx) (ty) | Bool.false => Except.ok (())) with | Except.ok \_ => (match (match tupleMoveTarget (pat) (value) with | Option.some who => (match pat with | Pat.PLeaf \_ => exprC (st) (cx) (value) (false) | Pat.PBind \_ => exprC (st) (cx) (value) (false) | Pat.PTuple parts => consumeParts (st) (who) (parts) | Pat.PWrap \_ \_ => exprC (st) (cx) (value) (false) | Pat.PAdt \_ \_ \_ => exprC (st) (cx) (value) (false) | Pat.PNil => exprC (st) (cx) (value) (false) | Pat.PCons \_ \_ => exprC (st) (cx) (value) (false)) | Option.none => exprC (st) (cx) (value) (false)) with | Except.ok s1 => (match bindPat (s1) ((cx).decl) (pat) with | Except.ok s2 => letsC (s2) (cx) (rest) | Except.error problem35 => Except.error (problem35)) | Except.error problem36 => Except.error (problem36)) | Except.error problem37 => Except.error (problem37)) | Expr.EArm \_ \_ \_ => Except.ok (st) | Expr.ELoop \_ \_ => Except.ok (st))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{argsC}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{CheckExpr}, decreasing on \texttt{args}.\par
+\noindent Parameters: \texttt{(st : St) (cx : Cx) (args : Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (St)}.\par
+\noindent Definition: \texttt{(match args with | Expr.ELit \_ \_ => Except.ok (st) | Expr.ERead \_ \_ \_ => Except.ok (st) | Expr.EWrap \_ \_ \_ => Except.ok (st) | Expr.ECall \_ \_ \_ \_ => Except.ok (st) | Expr.EApply \_ \_ \_ \_ => Except.ok (st) | Expr.EConstruct \_ \_ \_ => Except.ok (st) | Expr.EPair \_ \_ \_ => Except.ok (st) | Expr.EIf \_ \_ \_ \_ => Except.ok (st) | Expr.EMatch \_ \_ \_ => Except.ok (st) | Expr.EBlockE \_ => Except.ok (st) | Expr.EProbe \_ \_ \_ => Except.ok (st) | Expr.EBlock \_ \_ => Except.ok (st) | Expr.ENil => Except.ok (st) | Expr.ECons head tail => (match exprC (st) (cx) (head) (false) with | Except.ok s1 => argsC (s1) (cx) (tail) | Except.error problem38 => Except.error (problem38)) | Expr.ELet \_ \_ \_ \_ \_ \_ => Except.ok (st) | Expr.EArm \_ \_ \_ => Except.ok (st) | Expr.ELoop \_ \_ => Except.ok (st))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{armsC}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{CheckExpr}, decreasing on \texttt{arms}.\par
+\noindent Parameters: \texttt{(before : St) (cx : Cx) (acc : St) (fork : List (Id)) (arms : Expr) (tail : Bool)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (St)}.\par
+\noindent Definition: \texttt{(match arms with | Expr.ELit \_ \_ => Except.ok (acc) | Expr.ERead \_ \_ \_ => Except.ok (acc) | Expr.EWrap \_ \_ \_ => Except.ok (acc) | Expr.ECall \_ \_ \_ \_ => Except.ok (acc) | Expr.EApply \_ \_ \_ \_ => Except.ok (acc) | Expr.EConstruct \_ \_ \_ => Except.ok (acc) | Expr.EPair \_ \_ \_ => Except.ok (acc) | Expr.EIf \_ \_ \_ \_ => Except.ok (acc) | Expr.EMatch \_ \_ \_ => Except.ok (acc) | Expr.EBlockE \_ => Except.ok (acc) | Expr.EProbe \_ \_ \_ => Except.ok (acc) | Expr.EBlock \_ \_ => Except.ok (acc) | Expr.ENil => Except.ok (acc) | Expr.ECons \_ \_ => Except.ok (acc) | Expr.ELet \_ \_ \_ \_ \_ \_ => Except.ok (acc) | Expr.EArm pat body rest => (let bArm0 : St := (\{ bound := (acc).bound, scope := fork, moved := (before).moved, parted := (before).parted, propagates := (acc).propagates \} : St); (match bindPat (bArm0) ((cx).decl) (pat) with | Except.ok bArm2 => (match blockC (bArm2) (cx) (body) (tail) with | Except.ok bArm3 => (let r : St := (\{ bound := (bArm3).bound, scope := fork, moved := unionIds ((acc).moved) ((bArm3).moved), parted := unionParts ((acc).parted) ((bArm3).parted), propagates := (bArm3).propagates \} : St); armsC (before) (cx) (r) (fork) (rest) (tail)) | Except.error problem39 => Except.error (problem39)) | Except.error problem40 => Except.error (problem40))) | Expr.ELoop \_ \_ => Except.ok (acc))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{typesGet}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(types : List ((Prod (Id) (Nat)))) (who : Id)}.\par
+\noindent Closure 1: binds \texttt{(found, entry)}, captures \texttt{(who)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Nat)}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (found : Option (Nat)) (entry : (Prod (Id) (Nat))) => (match found with | Option.some value => Option.some (value) | Option.none => (let same : Bool := idEq ((entry).1) (who); (if same then Option.some ((entry).2) else Option.none))))) (Option.none) (types) : Option (Nat))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{patBindId}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(pat : Pat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Id)}.\par
+\noindent Definition: \texttt{(match pat with | Pat.PLeaf \_ => Option.none | Pat.PBind who => Option.some (who) | Pat.PTuple \_ => Option.none | Pat.PWrap \_ \_ => Option.none | Pat.PAdt \_ \_ \_ => Option.none | Pat.PNil => Option.none | Pat.PCons \_ \_ => Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tyFnIndex}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(ty : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Nat)}.\par
+\noindent Definition: \texttt{(match ty with | Ty.TyLeaf \_ => Option.none | Ty.TyFixed \_ => Option.none | Ty.TyUnary \_ \_ => Option.none | Ty.TyBinary \_ \_ \_ => Option.none | Ty.TyNamed k n => (match nameIsFn (k) with | Bool.true => Option.some (n) | Bool.false => Option.none) | Ty.TyNil => Option.none | Ty.TyCons \_ \_ => Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{typesWith}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(types : List ((Prod (Id) (Nat)))) (pat : Pat) (ty : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List ((Prod (Id) (Nat)))}.\par
+\noindent Definition: \texttt{(match patBindId (pat) with | Option.some who => (match tyFnIndex (ty) with | Option.some n => ((who, n) :: types) | Option.none => types) | Option.none => types)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{paramTypes}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(types : List ((Prod (Id) (Nat)))) (params : Par)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List ((Prod (Id) (Nat)))}.\par
+\noindent Definition: \texttt{(match params with | Par.ParNil => types | Par.ParCons pat ty rest => paramTypes (typesWith (types) (pat) (ty)) (rest))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{applyBlock}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{ApplyTypes}, decreasing on \texttt{b}.\par
+\noindent Parameters: \texttt{(types : List ((Prod (Id) (Nat)))) (decl : Decl) (b : Expr) (tail : Bool)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (List ((Prod (Id) (Nat))))}.\par
+\noindent Definition: \texttt{(match b with | Expr.ELit \_ \_ => Except.ok (types) | Expr.ERead \_ \_ \_ => Except.ok (types) | Expr.EWrap \_ \_ \_ => Except.ok (types) | Expr.ECall \_ \_ \_ \_ => Except.ok (types) | Expr.EApply \_ \_ \_ \_ => Except.ok (types) | Expr.EConstruct \_ \_ \_ => Except.ok (types) | Expr.EPair \_ \_ \_ => Except.ok (types) | Expr.EIf \_ \_ \_ \_ => Except.ok (types) | Expr.EMatch \_ \_ \_ => Except.ok (types) | Expr.EBlockE \_ => Except.ok (types) | Expr.EProbe \_ \_ \_ => Except.ok (types) | Expr.EBlock lets bodyTail => (match applyLets (types) (decl) (lets) with | Except.ok t1 => applyExpr (t1) (decl) (bodyTail) (tail) | Except.error problem45 => Except.error (problem45)) | Expr.ENil => Except.ok (types) | Expr.ECons \_ \_ => Except.ok (types) | Expr.ELet \_ \_ \_ \_ \_ \_ => Except.ok (types) | Expr.EArm \_ \_ \_ => Except.ok (types) | Expr.ELoop \_ \_ => Except.ok (types))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{applyExpr}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{ApplyTypes}, decreasing on \texttt{e}.\par
+\noindent Parameters: \texttt{(types : List ((Prod (Id) (Nat)))) (decl : Decl) (e : Expr) (tail : Bool)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (List ((Prod (Id) (Nat))))}.\par
+\noindent Definition: \texttt{(match e with | Expr.ELit \_ \_ => Except.ok (types) | Expr.ERead \_ \_ \_ => Except.ok (types) | Expr.EWrap \_ inner \_ => applyExpr (types) (decl) (inner) (false) | Expr.ECall \_ args \_ \_ => applyArgs (types) (decl) (args) | Expr.EApply who args propagate \_ => (match typesGet (types) (who) with | Option.none => Except.error (cat (tick (idText (who))) (text (" is applied without a function type"))) | Option.some fnType => (match lookupFlag ((decl).applies) (fnType) with | Option.none => Except.error (cat (text ("Fn")) (cat (decimal (fnType)) (text ("::apply is not declared")))) | Option.some fallible => (let differs : Bool := (if fallible then (if propagate then false else true) else propagate); (let excused : Bool := (if tail then fallible else false); (match differs with | Bool.true => (match excused with | Bool.true => applyArgs (types) (decl) (args) | Bool.false => Except.error (cat (text ("arithmetic: an application of Fn")) (cat (decimal (fnType)) (cat (text (" ")) (cat ((if propagate then text ("propagates") else text ("drops"))) (cat (text (" a failure its apply ")) ((if fallible then text ("can have") else text ("cannot have"))))))))) | Bool.false => applyArgs (types) (decl) (args)))))) | Expr.EConstruct \_ args \_ => applyArgs (types) (decl) (args) | Expr.EPair left right \_ => (match applyExpr (types) (decl) (left) (false) with | Except.ok t1 => applyExpr (t1) (decl) (right) (false) | Except.error problem41 => Except.error (problem41)) | Expr.EIf condition thenBranch elseBranch \_ => (match applyExpr (types) (decl) (condition) (false) with | Except.ok t1 => (match applyBlock (t1) (decl) (thenBranch) (tail) with | Except.ok t2 => applyBlock (t2) (decl) (elseBranch) (tail) | Except.error problem42 => Except.error (problem42)) | Except.error problem43 => Except.error (problem43)) | Expr.EMatch scrutinee arms \_ => (match applyExpr (types) (decl) (scrutinee) (false) with | Except.ok t1 => applyArms (t1) (decl) (arms) (tail) | Except.error problem44 => Except.error (problem44)) | Expr.EBlockE inner => applyBlock (types) (decl) (inner) (tail) | Expr.EProbe \_ \_ \_ => Except.ok (types) | Expr.EBlock \_ \_ => Except.ok (types) | Expr.ENil => Except.ok (types) | Expr.ECons \_ \_ => Except.ok (types) | Expr.ELet \_ \_ \_ \_ \_ \_ => Except.ok (types) | Expr.EArm \_ \_ \_ => Except.ok (types) | Expr.ELoop \_ body => applyBlock (types) (decl) (body) (false))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{applyLets}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{ApplyTypes}, decreasing on \texttt{lets}.\par
+\noindent Parameters: \texttt{(types : List ((Prod (Id) (Nat)))) (decl : Decl) (lets : Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (List ((Prod (Id) (Nat))))}.\par
+\noindent Definition: \texttt{(match lets with | Expr.ELit \_ \_ => Except.ok (types) | Expr.ERead \_ \_ \_ => Except.ok (types) | Expr.EWrap \_ \_ \_ => Except.ok (types) | Expr.ECall \_ \_ \_ \_ => Except.ok (types) | Expr.EApply \_ \_ \_ \_ => Except.ok (types) | Expr.EConstruct \_ \_ \_ => Except.ok (types) | Expr.EPair \_ \_ \_ => Except.ok (types) | Expr.EIf \_ \_ \_ \_ => Except.ok (types) | Expr.EMatch \_ \_ \_ => Except.ok (types) | Expr.EBlockE \_ => Except.ok (types) | Expr.EProbe \_ \_ \_ => Except.ok (types) | Expr.EBlock \_ \_ => Except.ok (types) | Expr.ENil => Except.ok (types) | Expr.ECons \_ \_ => Except.ok (types) | Expr.ELet pat hasTy ty value \_ rest => (let typed : List ((Prod (Id) (Nat))) := (match hasTy with | Bool.true => typesWith (types) (pat) (ty) | Bool.false => types); (match applyExpr (typed) (decl) (value) (false) with | Except.ok t1 => applyLets (t1) (decl) (rest) | Except.error problem46 => Except.error (problem46))) | Expr.EArm \_ \_ \_ => Except.ok (types) | Expr.ELoop \_ \_ => Except.ok (types))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{applyArgs}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{ApplyTypes}, decreasing on \texttt{args}.\par
+\noindent Parameters: \texttt{(types : List ((Prod (Id) (Nat)))) (decl : Decl) (args : Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (List ((Prod (Id) (Nat))))}.\par
+\noindent Definition: \texttt{(match args with | Expr.ELit \_ \_ => Except.ok (types) | Expr.ERead \_ \_ \_ => Except.ok (types) | Expr.EWrap \_ \_ \_ => Except.ok (types) | Expr.ECall \_ \_ \_ \_ => Except.ok (types) | Expr.EApply \_ \_ \_ \_ => Except.ok (types) | Expr.EConstruct \_ \_ \_ => Except.ok (types) | Expr.EPair \_ \_ \_ => Except.ok (types) | Expr.EIf \_ \_ \_ \_ => Except.ok (types) | Expr.EMatch \_ \_ \_ => Except.ok (types) | Expr.EBlockE \_ => Except.ok (types) | Expr.EProbe \_ \_ \_ => Except.ok (types) | Expr.EBlock \_ \_ => Except.ok (types) | Expr.ENil => Except.ok (types) | Expr.ECons head rest => (match applyExpr (types) (decl) (head) (false) with | Except.ok t1 => applyArgs (t1) (decl) (rest) | Except.error problem47 => Except.error (problem47)) | Expr.ELet \_ \_ \_ \_ \_ \_ => Except.ok (types) | Expr.EArm \_ \_ \_ => Except.ok (types) | Expr.ELoop \_ \_ => Except.ok (types))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{applyArms}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{ApplyTypes}, decreasing on \texttt{arms}.\par
+\noindent Parameters: \texttt{(types : List ((Prod (Id) (Nat)))) (decl : Decl) (arms : Expr) (tail : Bool)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (List ((Prod (Id) (Nat))))}.\par
+\noindent Definition: \texttt{(match arms with | Expr.ELit \_ \_ => Except.ok (types) | Expr.ERead \_ \_ \_ => Except.ok (types) | Expr.EWrap \_ \_ \_ => Except.ok (types) | Expr.ECall \_ \_ \_ \_ => Except.ok (types) | Expr.EApply \_ \_ \_ \_ => Except.ok (types) | Expr.EConstruct \_ \_ \_ => Except.ok (types) | Expr.EPair \_ \_ \_ => Except.ok (types) | Expr.EIf \_ \_ \_ \_ => Except.ok (types) | Expr.EMatch \_ \_ \_ => Except.ok (types) | Expr.EBlockE \_ => Except.ok (types) | Expr.EProbe \_ \_ \_ => Except.ok (types) | Expr.EBlock \_ \_ => Except.ok (types) | Expr.ENil => Except.ok (types) | Expr.ECons \_ \_ => Except.ok (types) | Expr.ELet \_ \_ \_ \_ \_ \_ => Except.ok (types) | Expr.EArm \_ body rest => (match applyBlock (types) (decl) (body) (tail) with | Except.ok t1 => applyArms (t1) (decl) (rest) (tail) | Except.error problem48 => Except.error (problem48)) | Expr.ELoop \_ \_ => Except.ok (types))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{parsOk}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(cx : Cx) (st : St) (params : Par)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (St)}.\par
+\noindent Definition: \texttt{(match params with | Par.ParNil => Except.ok (st) | Par.ParCons pat ty rest => (match tyOk (cx) (ty) with | Except.ok \_ => (match bindPat (st) ((cx).decl) (pat) with | Except.ok s1 => parsOk (cx) (s1) (rest) | Except.error problem49 => Except.error (problem49)) | Except.error problem50 => Except.error (problem50)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{capsUnbox}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(caps : List (Cap))}.\par
+\noindent Closure 1: binds \texttt{(found, cap)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (found : Bool) (cap : Cap) => (match cap with | Cap.CapCopy => found | Cap.CapClone => found | Cap.CapUnbox => true | Cap.CapUnit => found))) (false) (caps) : Bool)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{disOk}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(cx : Cx) (fnType : Nat) (fallible : Bool) (arms : Dis)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Unit)}.\par
+\noindent Definition: \texttt{(match arms with | Dis.DisNil => Except.ok (()) | Dis.DisCons function captures functionFallible rest => (match lookupFlag (((cx).decl).functions) (function) with | Option.none => Except.error (cat (text ("Fn")) (cat (decimal (fnType)) (cat (text (" dispatches to undeclared f")) (decimal (function))))) | Option.some isFunction => (let differs : Bool := (if isFunction then (if functionFallible then false else true) else functionFallible); (let overstated : Bool := (if functionFallible then (if fallible then false else true) else false); (match differs with | Bool.true => Except.error (cat (text ("arithmetic: Fn")) (cat (decimal (fnType)) (cat (text ("::apply misstates the failure of f")) (decimal (function))))) | Bool.false => (match overstated with | Bool.true => Except.error (cat (text ("arithmetic: Fn")) (cat (decimal (fnType)) (cat (text ("::apply misstates the failure of f")) (decimal (function))))) | Bool.false => (match capsUnbox (captures) with | Bool.true => (match heapUnit (cx) (text ("a boxed capture")) with | Except.ok \_ => disOk (cx) (fnType) (fallible) (rest) | Except.error problem51 => Except.error (problem51)) | Bool.false => disOk (cx) (fnType) (fallible) (rest))))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{validateItem}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(core : Bool) (decl : Decl) (rows : List (ItemRow)) (item : Def)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Unit)}.\par
+\noindent Definition: \texttt{(match item with | Def.DEnum \_ variants \_ => rowTysOk ((\{ core := core, decl := decl, fallible := false, items := rows \} : Cx)) (variants) | Def.DApply fnType parameters result fallible arms \_ => (let cx : Cx := (\{ core := core, decl := decl, fallible := false, items := rows \} : Cx); (match tysOk (cx) (parameters) with | Except.ok \_ => (match tyOk (cx) (result) with | Except.ok \_ => disOk (cx) (fnType) (fallible) (arms) | Except.error problem52 => Except.error (problem52)) | Except.error problem53 => Except.error (problem53))) | Def.DFunction name parameters result body \_ => (let fallible : Bool := tyIsFallible (result); (let cx : Cx := (\{ core := core, decl := decl, fallible := fallible, items := rows \} : Cx); (match tyOk (cx) (result) with | Except.ok \_ => (match parsOk (cx) ((\{ bound := ([] : List (Id)), scope := ([] : List (Id)), moved := ([] : List (Id)), parted := ([] : List ((Prod (Id) (List (Nat))))), propagates := false \} : St)) (parameters) with | Except.ok s1 => (match blockC (s1) (cx) (body) (true) with | Except.ok s2 => (match (if (s2).propagates then (!fallible) else false) with | Bool.true => Except.error (cat (text ("arithmetic: ")) (cat (tick (idText (name))) (text (" propagates a failure its result type does not carry")))) | Bool.false => (match applyBlock (paramTypes (([] : List ((Prod (Id) (Nat))))) (parameters)) (decl) (body) (fallible) with | Except.ok \_ => Except.ok (()) | Except.error problem54 => Except.error (problem54))) | Except.error problem55 => Except.error (problem55)) | Except.error problem56 => Except.error (problem56)) | Except.error problem57 => Except.error (problem57)))) | Def.DNil => Except.ok (()) | Def.DCons \_ \_ => Except.ok (()))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{validateItems}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(core : Bool) (decl : Decl) (rows : List (ItemRow)) (defs : Def)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Unit)}.\par
+\noindent Definition: \texttt{(match defs with | Def.DEnum \_ \_ \_ => Except.ok (()) | Def.DApply \_ \_ \_ \_ \_ \_ => Except.ok (()) | Def.DFunction \_ \_ \_ \_ \_ => Except.ok (()) | Def.DNil => Except.ok (()) | Def.DCons head tail => (match validateItem (core) (decl) (rows) (head) with | Except.ok \_ => validateItems (core) (decl) (rows) (tail) | Except.error problem58 => Except.error (problem58)))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{validateCrate}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(krate : Crate)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{Except (ByteArray) (Unit)}.\par
+\noindent Definition: \texttt{(let itemRows0 : List (ItemRow) := ((\{ family := 0, stem := text ("nat\_add"), form := 0, fallible := true, heap := false \} : ItemRow) :: ((\{ family := 1, stem := text ("nat\_sub"), form := 0, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 2, stem := text ("nat\_mul"), form := 0, fallible := true, heap := false \} : ItemRow) :: ((\{ family := 3, stem := text ("nat\_quot"), form := 0, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 4, stem := text ("nat\_rem"), form := 0, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 5, stem := text ("nat\_eq"), form := 0, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 6, stem := text ("nat\_le"), form := 0, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 7, stem := text ("nat\_lt"), form := 0, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 8, stem := text ("nat\_succ"), form := 0, fallible := true, heap := false \} : ItemRow) :: ((\{ family := 9, stem := text ("int\_add"), form := 0, fallible := true, heap := false \} : ItemRow) :: ([] : List (ItemRow)))))))))))); (let itemRows1 : List (ItemRow) := ((\{ family := 10, stem := text ("int\_sub"), form := 0, fallible := true, heap := false \} : ItemRow) :: ((\{ family := 11, stem := text ("int\_mul"), form := 0, fallible := true, heap := false \} : ItemRow) :: ((\{ family := 12, stem := text ("int\_neg"), form := 0, fallible := true, heap := false \} : ItemRow) :: ((\{ family := 13, stem := text ("int\_quot"), form := 0, fallible := true, heap := false \} : ItemRow) :: ((\{ family := 14, stem := text ("int\_rem"), form := 0, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 15, stem := text ("bool\_not"), form := 0, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 16, stem := text ("bool\_and"), form := 0, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 17, stem := text ("bool\_or"), form := 0, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 18, stem := text ("equal"), form := 0, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 19, stem := text ("compare"), form := 0, fallible := false, heap := false \} : ItemRow) :: itemRows0)))))))))); (let itemRows2 : List (ItemRow) := ((\{ family := 20, stem := text ("checked\_add"), form := 1, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 21, stem := text ("checked\_sub"), form := 1, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 22, stem := text ("checked\_mul"), form := 1, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 23, stem := text ("checked\_quot"), form := 1, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 24, stem := text ("checked\_neg\_"), form := 2, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 25, stem := text ("bit\_and"), form := 1, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 26, stem := text ("bit\_or"), form := 1, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 27, stem := text ("bit\_xor"), form := 1, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 28, stem := text ("bit\_not"), form := 1, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 29, stem := text ("shift\_left"), form := 1, fallible := false, heap := false \} : ItemRow) :: itemRows1)))))))))); (let itemRows3 : List (ItemRow) := ((\{ family := 30, stem := text ("shift\_right"), form := 1, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 31, stem := text ("convert"), form := 1, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 32, stem := text ("append\_list"), form := 0, fallible := false, heap := true \} : ItemRow) :: ((\{ family := 33, stem := text ("append\_bytes"), form := 0, fallible := false, heap := true \} : ItemRow) :: ((\{ family := 34, stem := text ("length\_list"), form := 0, fallible := false, heap := true \} : ItemRow) :: ((\{ family := 35, stem := text ("length\_bytes"), form := 0, fallible := false, heap := true \} : ItemRow) :: ((\{ family := 36, stem := text ("length\_string"), form := 0, fallible := false, heap := true \} : ItemRow) :: ((\{ family := 37, stem := text ("index\_list"), form := 0, fallible := false, heap := true \} : ItemRow) :: ((\{ family := 38, stem := text ("index\_bytes"), form := 0, fallible := false, heap := true \} : ItemRow) :: ((\{ family := 39, stem := text ("slice\_list"), form := 0, fallible := false, heap := true \} : ItemRow) :: itemRows2)))))))))); (let itemRows4 : List (ItemRow) := ((\{ family := 40, stem := text ("slice\_bytes"), form := 0, fallible := false, heap := true \} : ItemRow) :: ((\{ family := 41, stem := text ("utf8\_encode"), form := 0, fallible := false, heap := true \} : ItemRow) :: ((\{ family := 42, stem := text ("utf8\_decode"), form := 0, fallible := false, heap := true \} : ItemRow) :: ((\{ family := 43, stem := text ("compare\_bytes"), form := 0, fallible := false, heap := true \} : ItemRow) :: ((\{ family := 44, stem := text ("split\_exact"), form := 0, fallible := false, heap := true \} : ItemRow) :: ((\{ family := 45, stem := text ("join"), form := 0, fallible := false, heap := true \} : ItemRow) :: ((\{ family := 46, stem := text ("format\_i64"), form := 0, fallible := false, heap := true \} : ItemRow) :: ((\{ family := 47, stem := text ("format\_"), form := 2, fallible := false, heap := true \} : ItemRow) :: ((\{ family := 48, stem := text ("parse\_int"), form := 0, fallible := true, heap := true \} : ItemRow) :: ((\{ family := 49, stem := text ("parse\_"), form := 2, fallible := false, heap := true \} : ItemRow) :: itemRows3)))))))))); (match declareDefs ((\{ adts := ([] : List ((Prod (Nat) (List ((Prod (Nat) (Nat))))))), closures := ([] : List ((Prod (Nat) (List ((Prod (Nat) (Nat))))))), applies := ([] : List ((Prod (Nat) (Bool)))), functions := ([] : List ((Prod (Nat) (Bool)))) \} : Decl)) ((krate).items) with | Except.ok decl => validateItems ((krate).core) (decl) (itemRows4) ((krate).items) | Except.error problem59 => Except.error (problem59)))))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{foundRowTys}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(found : Found) (row : Row)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Found}.\par
+\noindent Definition: \texttt{(match row with | Row.RowNil => found | Row.RowCons \_ fields rest => foundRowTys (foundTy (found) (fields)) (rest))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{foundParTys}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(found : Found) (params : Par)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Found}.\par
+\noindent Definition: \texttt{(match params with | Par.ParNil => found | Par.ParCons \_ ty rest => foundParTys (foundTy (found) (ty)) (rest))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{tyIsFn}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(ty : Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match ty with | Ty.TyLeaf \_ => false | Ty.TyFixed \_ => false | Ty.TyUnary \_ \_ => false | Ty.TyBinary \_ \_ \_ => false | Ty.TyNamed k \_ => nameIsFn (k) | Ty.TyNil => false | Ty.TyCons \_ \_ => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{foundDefs}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(found : Found) (defs : Def)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Found}.\par
+\noindent Definition: \texttt{(match defs with | Def.DEnum name variants org => foundRowTys (foundAt (found) ((match tyIsFn (name) with | Bool.true => text ("enum:closures") | Bool.false => text ("enum:adt"))) (org)) (variants) | Def.DApply \_ parameters result \_ \_ org => foundTy (foundTy (foundAt (found) (text ("apply:dispatch")) (org)) (parameters)) (result) | Def.DFunction \_ parameters result body org => foundExpr (foundTy (foundParTys (foundAt (found) (text ("function")) (org)) (parameters)) (result)) (body) | Def.DNil => found | Def.DCons head tail => (let f1 : Found := foundDefs (found) (head); foundDefs (f1) (tail)))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{reverseInsts}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(insts : List (Inst))}.\par
+\noindent Closure 1: binds \texttt{(turned, inst)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (Inst)}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (turned : List (Inst)) (inst : Inst) => (inst :: turned))) (([] : List (Inst))) (insts) : List (Inst))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{rowOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(table : List ((Prod (ByteArray) (List (ByteArray))))) (construct : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(found, row)}, captures \texttt{(construct)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (List (ByteArray))}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (found : Option (List (ByteArray))) (row : (Prod (ByteArray) (List (ByteArray)))) => (match found with | Option.some value => Option.some (value) | Option.none => (if (LexLeanRuntime.equal ((row).1) (construct) : Bool) then Option.some ((row).2) else Option.none)))) (Option.none) (table) : Option (List (ByteArray)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{anyIn}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(pieces : List (ByteArray)) (elements : List (ByteArray))}.\par
+\noindent Closure 1: binds \texttt{(found, piece)}, captures \texttt{(elements)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (found : Bool) (piece : ByteArray) => (let here : Bool := bytesHas (elements) (piece); (found || here)))) (false) (pieces) : Bool)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{debugRow}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(pieces : List (ByteArray))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{cat (ByteArray.mk \#[91, 34]) (cat (LexLeanStd.Text.joinWith (pieces) (ByteArray.mk \#[34, 44, 32, 34])) (ByteArray.mk \#[34, 93]))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{checkInst}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(table : List ((Prod (ByteArray) (List (ByteArray))))) (elements : List (ByteArray)) (inst : Inst)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (ByteArray)}.\par
+\noindent Definition: \texttt{(let construct : ByteArray := (inst).construct; (let element : ByteArray := (inst).element; (match rowOf (table) (construct) with | Option.none => Option.some (cat (text ("the construct ")) (cat (tick (construct)) (text (" has no target-semantics correspondence")))) | Option.some pieces => (match bytesHas (pieces) (element) with | Bool.true => (match bytesHas (elements) (element) with | Bool.true => (let differs : Bool := (!optKindEq ((inst).width) ((inst).originWidth)); (let needs : Bool := (match (inst).width with | Option.some \_ => true | Option.none => LexLeanStd.Text.startsWith (construct) (text ("call:runtime:"))); (match (if differs then needs else false) with | Bool.true => Option.some (cat (text ("the construct ")) (cat (tick (construct)) (cat (text (" works at width ")) (cat (optKindDebug ((inst).width)) (cat (text (", but ")) (cat (tick (element)) (cat (text (" is at ")) (optKindDebug ((inst).originWidth))))))))) | Bool.false => Option.none))) | Bool.false => Option.some (cat (text ("the construct ")) (cat (tick (construct)) (cat (text (" realizes ")) (cat (tick (element)) (text (", which the program does not use"))))))) | Bool.false => Option.some (cat (text ("the construct ")) (cat (tick (construct)) (cat (text (" does not realize ")) (cat (tick (element)) (text (", the element it was lowered from"))))))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{checkType}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(table : List ((Prod (ByteArray) (List (ByteArray))))) (elements : List (ByteArray)) (construct : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (ByteArray)}.\par
+\noindent Definition: \texttt{(match rowOf (table) (construct) with | Option.none => Option.some (cat (text ("the construct ")) (cat (tick (construct)) (text (" has no target-semantics correspondence")))) | Option.some pieces => (match anyIn (pieces) (elements) with | Bool.true => Option.none | Bool.false => Option.some (cat (text ("the construct ")) (cat (tick (construct)) (cat (text (" realizes none of ")) (cat (debugRow (pieces)) (text (", which the program does not use"))))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{correspondTable}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(unit : Unit)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List ((Prod (ByteArray) (List (ByteArray))))}.\par
+\noindent Definition: \texttt{(let rows0 : List ((Prod (ByteArray) (List (ByteArray)))) := ((text ("function"), (text ("function") :: (text ("export") :: ([] : List (ByteArray))))) :: ((text ("enum:adt"), (text ("type:adt") :: ([] : List (ByteArray)))) :: ((text ("enum:closures"), (text ("type:fn") :: (text ("expr:closure") :: ([] : List (ByteArray))))) :: ((text ("apply:dispatch"), (text ("type:fn") :: (text ("expr:closure") :: ([] : List (ByteArray))))) :: ((text ("let"), (text ("expr:let") :: (text ("expr:match") :: (text ("expr:prim") :: (text ("expr:apply") :: (text ("expr:call") :: (text ("expr:closure") :: (text ("expr:cond") :: (text ("expr:field") :: (text ("shape:some") :: (text ("shape:ok") :: (text ("shape:error") :: (text ("shape:cons") :: (text ("shape:adt") :: (text ("shape:succ") :: (text ("shape:zero") :: (text ("shape:unit") :: (text ("shape:true") :: (text ("indirection") :: (text ("overflow") :: ([] : List (ByteArray)))))))))))))))))))))) :: ((text ("read"), (text ("expr:var") :: (text ("expr:match") :: (text ("expr:prim") :: (text ("expr:call") :: (text ("expr:apply") :: (text ("expr:closure") :: (text ("expr:first") :: (text ("expr:second") :: (text ("expr:field") :: (text ("expr:cond") :: (text ("shape:true") :: (text ("shape:zero") :: (text ("shape:some") :: (text ("shape:ok") :: (text ("shape:error") :: (text ("shape:cons") :: (text ("shape:adt") :: (text ("export") :: (text ("type:fn") :: (text ("type:adt") :: (text ("type:pair") :: (text ("type:result") :: ([] : List (ByteArray))))))))))))))))))))))))) :: ([] : List ((Prod (ByteArray) (List (ByteArray))))))))))); (let rows1 : List ((Prod (ByteArray) (List (ByteArray)))) := ((text ("box"), (text ("indirection") :: ([] : List (ByteArray)))) :: ((text ("destructure:pair"), (text ("expr:first") :: (text ("expr:second") :: (text ("shape:pair") :: (text ("expr:call") :: ([] : List (ByteArray))))))) :: ((text ("type:unit"), (text ("type:unit") :: ([] : List (ByteArray)))) :: ((text ("type:bool"), (text ("type:bool") :: ([] : List (ByteArray)))) :: ((text ("type:nat"), (text ("type:nat") :: (text ("type:fixed") :: ([] : List (ByteArray))))) :: ((text ("type:int"), (text ("type:int") :: (text ("type:fixed") :: ([] : List (ByteArray))))) :: rows0)))))); (let rows2 : List ((Prod (ByteArray) (List (ByteArray)))) := ((text ("type:fixed"), (text ("type:fixed") :: ([] : List (ByteArray)))) :: ((text ("type:ordering"), (text ("type:ordering") :: ([] : List (ByteArray)))) :: ((text ("type:string"), (text ("type:string") :: ([] : List (ByteArray)))) :: ((text ("type:bytes"), (text ("type:bytes") :: ([] : List (ByteArray)))) :: ((text ("type:option"), (text ("type:option") :: ([] : List (ByteArray)))) :: ((text ("type:result"), (text ("type:result") :: (text ("expr:call") :: ([] : List (ByteArray))))) :: rows1)))))); (let rows3 : List ((Prod (ByteArray) (List (ByteArray)))) := ((text ("type:list"), (text ("type:list") :: ([] : List (ByteArray)))) :: ((text ("type:pair"), (text ("type:pair") :: (text ("expr:call") :: ([] : List (ByteArray))))) :: ((text ("type:adt"), (text ("type:adt") :: ([] : List (ByteArray)))) :: ((text ("type:fn"), (text ("type:fn") :: (text ("expr:closure") :: ([] : List (ByteArray))))) :: ((text ("type:rc"), (text ("indirection") :: ([] : List (ByteArray)))) :: ((text ("type:fallible"), (text ("overflow") :: ([] : List (ByteArray)))) :: rows2)))))); (let rows4 : List ((Prod (ByteArray) (List (ByteArray)))) := ((text ("type:ref"), (text ("export") :: ([] : List (ByteArray)))) :: ((text ("lit:unit"), (text ("value:unit") :: (text ("shape:unit") :: (text ("expr:var") :: (text ("expr:call") :: (text ("expr:apply") :: (text ("expr:closure") :: (text ("shape:some") :: (text ("shape:ok") :: (text ("shape:error") :: (text ("shape:cons") :: (text ("shape:adt") :: (text ("export") :: (text ("overflow") :: ([] : List (ByteArray)))))))))))))))) :: ((text ("lit:bool"), (text ("value:bool") :: (text ("shape:true") :: (text ("shape:false") :: (text ("expr:cond") :: ([] : List (ByteArray))))))) :: ((text ("lit:nat"), (text ("value:nat") :: (text ("shape:zero") :: ([] : List (ByteArray))))) :: ((text ("lit:int"), (text ("value:int") :: ([] : List (ByteArray)))) :: ((text ("lit:fixed"), (text ("value:u8") :: (text ("value:u16") :: (text ("value:u32") :: (text ("value:u64") :: (text ("value:i8") :: (text ("value:i16") :: (text ("value:i32") :: (text ("value:i64") :: ([] : List (ByteArray))))))))))) :: rows3)))))); (let rows5 : List ((Prod (ByteArray) (List (ByteArray)))) := ((text ("lit:string"), (text ("value:string") :: ([] : List (ByteArray)))) :: ((text ("lit:bytes"), (text ("value:bytes") :: ([] : List (ByteArray)))) :: ((text ("lit:ordering"), (text ("value:ordering") :: (text ("shape:lt") :: (text ("shape:eq") :: (text ("shape:gt") :: ([] : List (ByteArray))))))) :: ((text ("construct:none"), (text ("value:none") :: (text ("shape:none") :: ([] : List (ByteArray))))) :: ((text ("construct:some"), (text ("value:some") :: (text ("shape:some") :: ([] : List (ByteArray))))) :: ((text ("construct:ok"), (text ("value:ok") :: (text ("shape:ok") :: (text ("expr:call") :: ([] : List (ByteArray)))))) :: rows4)))))); (let rows6 : List ((Prod (ByteArray) (List (ByteArray)))) := ((text ("construct:err"), (text ("value:error") :: (text ("shape:error") :: (text ("expr:call") :: ([] : List (ByteArray)))))) :: ((text ("construct:adt"), (text ("value:adt") :: (text ("shape:adt") :: ([] : List (ByteArray))))) :: ((text ("construct:closure"), (text ("expr:closure") :: ([] : List (ByteArray)))) :: ((text ("construct:cons"), (text ("value:list") :: (text ("shape:cons") :: ([] : List (ByteArray))))) :: ((text ("construct:nil"), (text ("value:list") :: (text ("shape:nil") :: ([] : List (ByteArray))))) :: ((text ("construct:pair"), (text ("value:pair") :: (text ("shape:pair") :: (text ("expr:call") :: ([] : List (ByteArray)))))) :: rows5)))))); (let rows7 : List ((Prod (ByteArray) (List (ByteArray)))) := ((text ("if"), (text ("expr:cond") :: (text ("shape:true") :: (text ("shape:zero") :: ([] : List (ByteArray)))))) :: ((text ("match:nat"), (text ("shape:zero") :: ([] : List (ByteArray)))) :: ((text ("match:list"), (text ("shape:nil") :: ([] : List (ByteArray)))) :: ((text ("match:option"), (text ("shape:none") :: ([] : List (ByteArray)))) :: ((text ("match:result"), (text ("shape:ok") :: ([] : List (ByteArray)))) :: ((text ("match:ordering"), (text ("shape:lt") :: ([] : List (ByteArray)))) :: rows6)))))); (let rows8 : List ((Prod (ByteArray) (List (ByteArray)))) := ((text ("match:adt"), (text ("shape:adt") :: (text ("expr:field") :: ([] : List (ByteArray))))) :: ((text ("match:empty"), (text ("type:fn") :: (text ("type:adt") :: (text ("type:pair") :: (text ("type:result") :: ([] : List (ByteArray))))))) :: ((text ("call:function"), (text ("expr:call") :: (text ("export") :: ([] : List (ByteArray))))) :: ((text ("apply"), (text ("expr:apply") :: ([] : List (ByteArray)))) :: ((text ("widen"), (text ("prim:convert") :: ([] : List (ByteArray)))) :: ((text ("succeed"), (text ("overflow") :: ([] : List (ByteArray)))) :: rows7)))))); (let rows9 : List ((Prod (ByteArray) (List (ByteArray)))) := ((text ("call:runtime:succ"), (text ("shape:succ") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:nat\_add"), (text ("prim:nat\_add") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:nat\_sub"), (text ("prim:nat\_sub") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:nat\_mul"), (text ("prim:nat\_mul") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:nat\_quot"), (text ("prim:nat\_quot") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:nat\_rem"), (text ("prim:nat\_rem") :: ([] : List (ByteArray)))) :: rows8)))))); (let rows10 : List ((Prod (ByteArray) (List (ByteArray)))) := ((text ("call:runtime:nat\_eq"), (text ("prim:nat\_eq") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:nat\_le"), (text ("prim:nat\_le") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:nat\_lt"), (text ("prim:nat\_lt") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:int\_add"), (text ("prim:int\_add") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:int\_sub"), (text ("prim:int\_sub") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:int\_mul"), (text ("prim:int\_mul") :: ([] : List (ByteArray)))) :: rows9)))))); (let rows11 : List ((Prod (ByteArray) (List (ByteArray)))) := ((text ("call:runtime:int\_neg"), (text ("prim:int\_neg") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:int\_quot"), (text ("prim:int\_quot") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:int\_rem"), (text ("prim:int\_rem") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:bool\_not"), (text ("prim:bool\_not") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:bool\_and"), (text ("prim:bool\_and") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:bool\_or"), (text ("prim:bool\_or") :: ([] : List (ByteArray)))) :: rows10)))))); (let rows12 : List ((Prod (ByteArray) (List (ByteArray)))) := ((text ("call:runtime:equal"), (text ("prim:equal") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:compare"), (text ("prim:compare") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:checked\_add"), (text ("prim:checked\_add") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:checked\_sub"), (text ("prim:checked\_sub") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:checked\_mul"), (text ("prim:checked\_mul") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:checked\_quot"), (text ("prim:checked\_quot") :: ([] : List (ByteArray)))) :: rows11)))))); (let rows13 : List ((Prod (ByteArray) (List (ByteArray)))) := ((text ("call:runtime:checked\_neg"), (text ("prim:checked\_neg") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:bit\_and"), (text ("prim:bit\_and") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:bit\_or"), (text ("prim:bit\_or") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:bit\_xor"), (text ("prim:bit\_xor") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:bit\_not"), (text ("prim:bit\_not") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:shift\_left"), (text ("prim:shift\_left") :: ([] : List (ByteArray)))) :: rows12)))))); (let rows14 : List ((Prod (ByteArray) (List (ByteArray)))) := ((text ("call:runtime:shift\_right"), (text ("prim:shift\_right") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:convert"), (text ("prim:convert") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:append"), (text ("prim:append") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:length"), (text ("prim:length") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:index"), (text ("prim:index") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:slice"), (text ("prim:slice") :: ([] : List (ByteArray)))) :: rows13)))))); (let rows15 : List ((Prod (ByteArray) (List (ByteArray)))) := ((text ("call:runtime:utf8\_encode"), (text ("prim:utf8\_encode") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:utf8\_decode"), (text ("prim:utf8\_decode") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:compare\_bytes"), (text ("prim:compare\_bytes") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:split\_exact"), (text ("prim:split\_exact") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:join"), (text ("prim:join") :: ([] : List (ByteArray)))) :: ((text ("call:runtime:format\_decimal"), (text ("prim:format\_decimal") :: ([] : List (ByteArray)))) :: rows14)))))); (let rows16 : List ((Prod (ByteArray) (List (ByteArray)))) := ((text ("call:runtime:parse\_decimal"), (text ("prim:parse\_decimal") :: ([] : List (ByteArray)))) :: rows15); rows16)))))))))))))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{correspondCrate}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(krate : Crate) (elements : List (ByteArray))}.\par
+\noindent Closure 1: binds \texttt{(failure, inst)}, captures \texttt{(elements, table)}.\par
+\noindent Closure 2: binds \texttt{(failure, construct)}, captures \texttt{(elements, table)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{Except (ByteArray) (Unit)}.\par
+\noindent Definition: \texttt{(let itemRows0 : List (ItemRow) := ((\{ family := 0, stem := text ("nat\_add"), form := 0, fallible := true, heap := false \} : ItemRow) :: ((\{ family := 1, stem := text ("nat\_sub"), form := 0, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 2, stem := text ("nat\_mul"), form := 0, fallible := true, heap := false \} : ItemRow) :: ((\{ family := 3, stem := text ("nat\_quot"), form := 0, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 4, stem := text ("nat\_rem"), form := 0, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 5, stem := text ("nat\_eq"), form := 0, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 6, stem := text ("nat\_le"), form := 0, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 7, stem := text ("nat\_lt"), form := 0, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 8, stem := text ("nat\_succ"), form := 0, fallible := true, heap := false \} : ItemRow) :: ((\{ family := 9, stem := text ("int\_add"), form := 0, fallible := true, heap := false \} : ItemRow) :: ([] : List (ItemRow)))))))))))); (let itemRows1 : List (ItemRow) := ((\{ family := 10, stem := text ("int\_sub"), form := 0, fallible := true, heap := false \} : ItemRow) :: ((\{ family := 11, stem := text ("int\_mul"), form := 0, fallible := true, heap := false \} : ItemRow) :: ((\{ family := 12, stem := text ("int\_neg"), form := 0, fallible := true, heap := false \} : ItemRow) :: ((\{ family := 13, stem := text ("int\_quot"), form := 0, fallible := true, heap := false \} : ItemRow) :: ((\{ family := 14, stem := text ("int\_rem"), form := 0, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 15, stem := text ("bool\_not"), form := 0, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 16, stem := text ("bool\_and"), form := 0, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 17, stem := text ("bool\_or"), form := 0, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 18, stem := text ("equal"), form := 0, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 19, stem := text ("compare"), form := 0, fallible := false, heap := false \} : ItemRow) :: itemRows0)))))))))); (let itemRows2 : List (ItemRow) := ((\{ family := 20, stem := text ("checked\_add"), form := 1, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 21, stem := text ("checked\_sub"), form := 1, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 22, stem := text ("checked\_mul"), form := 1, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 23, stem := text ("checked\_quot"), form := 1, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 24, stem := text ("checked\_neg\_"), form := 2, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 25, stem := text ("bit\_and"), form := 1, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 26, stem := text ("bit\_or"), form := 1, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 27, stem := text ("bit\_xor"), form := 1, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 28, stem := text ("bit\_not"), form := 1, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 29, stem := text ("shift\_left"), form := 1, fallible := false, heap := false \} : ItemRow) :: itemRows1)))))))))); (let itemRows3 : List (ItemRow) := ((\{ family := 30, stem := text ("shift\_right"), form := 1, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 31, stem := text ("convert"), form := 1, fallible := false, heap := false \} : ItemRow) :: ((\{ family := 32, stem := text ("append\_list"), form := 0, fallible := false, heap := true \} : ItemRow) :: ((\{ family := 33, stem := text ("append\_bytes"), form := 0, fallible := false, heap := true \} : ItemRow) :: ((\{ family := 34, stem := text ("length\_list"), form := 0, fallible := false, heap := true \} : ItemRow) :: ((\{ family := 35, stem := text ("length\_bytes"), form := 0, fallible := false, heap := true \} : ItemRow) :: ((\{ family := 36, stem := text ("length\_string"), form := 0, fallible := false, heap := true \} : ItemRow) :: ((\{ family := 37, stem := text ("index\_list"), form := 0, fallible := false, heap := true \} : ItemRow) :: ((\{ family := 38, stem := text ("index\_bytes"), form := 0, fallible := false, heap := true \} : ItemRow) :: ((\{ family := 39, stem := text ("slice\_list"), form := 0, fallible := false, heap := true \} : ItemRow) :: itemRows2)))))))))); (let itemRows4 : List (ItemRow) := ((\{ family := 40, stem := text ("slice\_bytes"), form := 0, fallible := false, heap := true \} : ItemRow) :: ((\{ family := 41, stem := text ("utf8\_encode"), form := 0, fallible := false, heap := true \} : ItemRow) :: ((\{ family := 42, stem := text ("utf8\_decode"), form := 0, fallible := false, heap := true \} : ItemRow) :: ((\{ family := 43, stem := text ("compare\_bytes"), form := 0, fallible := false, heap := true \} : ItemRow) :: ((\{ family := 44, stem := text ("split\_exact"), form := 0, fallible := false, heap := true \} : ItemRow) :: ((\{ family := 45, stem := text ("join"), form := 0, fallible := false, heap := true \} : ItemRow) :: ((\{ family := 46, stem := text ("format\_i64"), form := 0, fallible := false, heap := true \} : ItemRow) :: ((\{ family := 47, stem := text ("format\_"), form := 2, fallible := false, heap := true \} : ItemRow) :: ((\{ family := 48, stem := text ("parse\_int"), form := 0, fallible := true, heap := true \} : ItemRow) :: ((\{ family := 49, stem := text ("parse\_"), form := 2, fallible := false, heap := true \} : ItemRow) :: itemRows3)))))))))); (let table : List ((Prod (ByteArray) (List (ByteArray)))) := correspondTable (()); (let found : Found := foundDefs ((\{ insts := ([] : List (Inst)), types := ([] : List (ByteArray)), items := itemRows4 \} : Found)) ((krate).items); (match (LexLeanCollections.listFold ((fun (failure : Option (ByteArray)) (inst : Inst) => (match failure with | Option.some message => Option.some (message) | Option.none => checkInst (table) (elements) (inst)))) (Option.none) (reverseInsts ((found).insts)) : Option (ByteArray)) with | Option.some message => Except.error (message) | Option.none => (match (LexLeanCollections.listFold ((fun (failure : Option (ByteArray)) (construct : ByteArray) => (match failure with | Option.some message => Option.some (message) | Option.none => checkType (table) (elements) (construct)))) (Option.none) ((found).types) : Option (ByteArray)) with | Option.some message => Except.error (message) | Option.none => Except.ok (()))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\end{document}

@@ -20,6 +20,7 @@ use crate::rust_harness::{self, Calls};
 use crate::rust_packages;
 use crate::support::{self, P};
 
+mod rust_validate;
 mod scan;
 
 /// The module the first component lives in.
@@ -2421,6 +2422,7 @@ fn case(id: &str) {
         "BS-03" => scan::case(),
         // §17.23, §17.14: the target calculus's checker.
         "BS-04" => calculus_check::case(),
+        "BS-05" => rust_validate::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }
