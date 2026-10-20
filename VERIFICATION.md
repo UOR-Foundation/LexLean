@@ -1739,6 +1739,89 @@ after 20 min 17 s, with certificates A, B, and E of every root replayed and audi
 The decoder fix #212 makes (a compiled mutual group is never split across commands) is needed by the new library and is not part of this change: with the #212 branch merged
 in, all 13 modules compile; without it `patBinders`/`patBindersList` are compiled in two commands and Lean rejects them.
 
+### the machine's bitwise, order, and remainder primitives can fail (SP-21)
+
+`RustSyntax.Machine` gains nine constructors (`bitAnd`, `bitOr`, `bitXor`, `bitNot`
+at a width; `natEq`, `natLe`, `natLt`, `natRem`, `intRem`), each evaluated by
+`RustSemantics` as the calculus primitive of the same name (`SP-21`, §17.14, §17.16,
+#91 stage 4, PR 1). The case reads the constructors from the committed
+`compiler/src` module (the first eight of `SP-18`, then these nine, seventeen in all)
+and has the pinned Lean 4.32.1 evaluate fifteen claims over the shipped copies
+(bitwise results at `u8` and `i8`, an operand of another width, the three orders
+at equal operands, the remainders including a zero divisor, and one call through
+`eval`) and refuse four wrong statements of the same calls. The shipped
+`RustSyntax.lean` and `RustSemantics.lean` were regenerated from `compiler/src` with
+`lexlean build`; the other two machine modules are unchanged. Growing `Machine`
+cost no library repair: `conformance_sp_13` (every library module, compiled by the
+pinned Lean over the regenerated modules) passes unchanged, 390 s on this host.
+Plants were run on the branch head with `cargo test -p repo-conformance --test
+conformance -- conformance_sp_21`; files restored with `git checkout` after each.
+
+Planted (a): `natLt` evaluated as the primitive `natLe` in `machinePrimitive` (the
+module regenerated into the shipped copy). Expected: the claim that `4 < 4` is
+false fails.
+
+```text
+the machine does not evaluate as stated:
+…/Machine.lean:14:101: error: Type mismatch
+  rfl
+```
+
+Planted (b): `intRem` removed from `Machine` in `compiler/src/RustSyntax.lex.tex`.
+Expected: the nine declared constructors differ.
+
+```text
+assertion `left == right` failed: the bitwise primitives at a width, the order of naturals, and the remainders
+  left: [("bitAnd", 1), …, ("natRem", 0)]
+ right: [("bitAnd", 1), …, ("natRem", 0), ("intRem", 0)]
+```
+
+Not planted: the arms of `machineWidth`, `machineShifts` and `machinePrimitive` for
+`bitXor`, `bitOr` and `natEq`, `natLe`, `natRem`, `intRem` individually; each
+claim exercises its constructor once, so a swapped arm is caught only where a
+claim distinguishes the two results. `SP-18` now checks that the first eight
+constructors are its eight; its register statement no longer says "eight".
+
+### the machine callee and the overflow value are printed and computed (RB-15)
+
+`rust::ast::Callee::Machine` and `Lit::Overflow` mirror the Lean constructors
+(`RB-15`, §17.14, §17.16, #91 stage 4, PR 1). The case (`cases/rust_machine.rs`)
+builds one crate with a function per machine primitive and width (`Machine::all()`,
+97 functions: 5 without a width, 11 at each of 8 widths, and the negation at the 4
+signed widths), validates and prints it, requires the printed text to contain eight
+named forms, and compiles it with the pinned rustc 1.97.1 under `warnings = "deny"`;
+the harness calls every function on the boundary values of its width (minimum,
+minimum plus one, minus one, zero, one, maximum minus one, maximum) and compares with
+an `i128` computation, including 17 conversion inputs per width, 6 shift amounts per
+width, and the `MIN % -1` case of `int_rem`. Two crates are refused (a call with one
+operand of two; a stray overflow value), and an `Err(Overflow)` is accepted. The
+lowering emits neither construct, so no rendering changes: `rb_07` and the
+`lexlean` unit test of the renderer digest fail on this branch only on the records
+bound to the compiler-semantics ID (`rust_renderer` in `language/semantics-1.2.toml`
+and the `compiler_semantics` field of `provenance.json`), which are left to the
+regeneration wave; with the `rust_renderer` digest set locally, all 208 `lexlean`
+unit tests pass.
+
+Plants were run with `cargo test -p repo-conformance --test conformance --
+conformance_rb_15`, each restored with `git checkout`.
+
+Planted (a): `natLt` printed as `PartialOrd::le`. Expected: the comparison of equal
+operands differs. Observed: `assertion left == right failed, left: true, right: false`
+at the harness.
+
+Planted (b): `bitXor` printed as `BitOr::bitor`. Expected: `xor u8 1 1` differs.
+Observed: `assertion left == right failed: xor u8 1 1, left: 1, right: 0`.
+
+Planted (c): the arity check of the validator removed. Expected: the crate with one
+operand of two is accepted, and the case fails because the plant is not refused.
+Observed: `the planted crate is refused` panicked.
+
+Planted (d): the stray-overflow refusal removed. Observed: the same panic.
+
+An earlier head printed the operators infix (`(a & b)`); rustc with warnings denied
+refused it for redundant parentheses as a block value, which is why the primitives
+print as fully qualified trait calls.
+
 ### a list of any length is a term Lean elaborates without binders
 
 Lean's `[…]` macro writes a literal of more than 32 elements under `let`
