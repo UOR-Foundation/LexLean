@@ -332,6 +332,16 @@ the error registry does not sanction (R5, `ERRORS.md`).
 | `MD-12` | `build` | The committed models example verifies nontrivial deterministic stateful, rule, statistical, artifact-backed neural, and composite models with every claim kernel-checked, and planting a contract and realization mismatch in it is refused by verification. |
 | `MD-13` | `build` | IEEE-754 binary32 and binary64 bit patterns decode in LexLean to exact dyadic rationals (sign, integer mantissa, exponent) for zero, subnormal, and normal values while rejecting non-finite and out-of-range patterns, and the models corpus derives round(a * b / c * 2^32) from three binary32 patterns by exact integer arithmetic that agrees with an independent exact rational computation under Lean and refuses a planted rounding or exponent mutation. |
 
+## normative-source
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `NS-01` | `build` | The specification project is a language-1.2 workspace member whose modules are semantic modules written in the authoring notation: it checks, builds, and verifies under the pinned toolchain, and the `.lex.tex` modules of the project are the only hand-edited normative inputs of the repository. |
+| `NS-02` | `build` | The conformance register, the diagnostic registry, the honesty ledger, and the authority register are LexLean modules of the specification project, and `model/ids.toml`, `model/errors.toml`, `model/ledger.toml`, `model/authorities.toml`, `CONFORMANCE.md`, and `ERRORS.md` regenerate from them byte-identically. |
+| `NS-03` | `build` | SPEC.md regenerates byte-identically from the document modules of the specification project, and its conformance-ID table, its diagnostic-code table, its authority table, and its stated total are derived from the register modules and never typed. |
+| `NS-04` | `build` | A difference between a normative source and its projection, in either direction, fails the repository gate naming R1, and the specification-link gate checks the projection instead of a hand-kept bijection. |
+| `NS-05` | `build` | The projector fails closed on a module of the specification project that holds a declaration kind, a term kind, a field, a name, or an ordering it does not read, and on a duplicate identifier or code, and a plant of each is refused with the position of the offending declaration. |
+
 ## oracle
 
 | ID | Level | Statement |
