@@ -15095,10 +15095,24 @@ at 2.1 GHz with SHA extensions, `rustc` 1.97.1:
 
 At the dev profile's `opt-level = 0` the package hashes 0.7 MB/s (1,984 times
 slower than `sha2` at 1 MiB, 1,936 at 16 MiB); at `opt-level = 1`, 2, and 3 it
-hashes 68, 81, and 72 MB/s at 16 MiB. The override
-`[profile.dev.package.lexlean] opt-level = 1` costs a cold build of the test
-profile of the `lexlean` crate (`cargo test -p lexlean --no-run`, no warm
-cache): 98 s without it and 251 s with it.
+hashes 68, 81, and 72 MB/s at 16 MiB. The reason for the override
+`[profile.dev.package.lexlean] opt-level = 1` is the measurement below, taken
+on one tree (the head of the stack of #234, #236, #237) on 4 cores, one run per
+cell, each setting in its own cold target directory
+(`--config profile.dev.package.lexlean.opt-level=N`):
+
+| | no override (`opt-level = 0`) | override (`opt-level = 1`) | difference |
+| --- | --- | --- | --- |
+| cold `cargo test -p lexlean -p repo-conformance --no-run` | 113 s | 269 s | +156 s |
+| 59 conformance tests: `conformance_ar_*`, `cf_*`, `cl_*`, `sl_05`, `sl_06`, `vr_01`, `vr_02` | 1,162 s | 745 s | -417 s (-36%) |
+
+(The cold build of the `lexlean` crate's tests alone was 98 s and 251 s in the
+first measurement.) The subset is the part of the suite that hashes the most
+(the verification cases read the toolchain executables and the running one),
+so it is the upper end of the effect and not a measure of the whole suite,
+which was not run twice. The maintainer's review of #234 reads CI's `rest` leg
+as showing no slowdown above noise on the other cut (259 tests in 2,153 s on
+the baseline, 260 in 1,921 s with this head).
 
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
