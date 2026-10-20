@@ -2418,11 +2418,11 @@ definition{
     | Expr.EProbe d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
     | Expr.EBlock d0 d1 => (ctor Result.ok [St, Bytes] st)
     | Expr.ENil => (ctor Result.ok [St, Bytes] st)
-    | Expr.ECons head tail => (match (if err then (isOverflowExpr head) else false)
+    | Expr.ECons head tail => (let skip : Bool := (if err then (isOverflowExpr head) else false); (match skip
       | Bool.true => (argsC st cx err tail)
       | Bool.false => (match (exprC st cx head false)
         | Result.ok s1 => (argsC s1 cx err tail)
-        | Result.error problem38 => (ctor Result.error [St, Bytes] problem38)))
+        | Result.error problem38 => (ctor Result.error [St, Bytes] problem38))))
     | Expr.ELet d0 d1 d2 d3 d4 d5 => (ctor Result.ok [St, Bytes] st)
     | Expr.EArm d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
     | Expr.ELoop d0 d1 => (ctor Result.ok [St, Bytes] st)),
