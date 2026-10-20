@@ -1594,6 +1594,11 @@ fn literal_weight() {
                    "right": {"kind": "some", "value": {"kind": "string", "value": "a"}}}),
         ),
         (
+            "result",
+            json!({"kind": "result", "ok": {"kind": "nat"}, "error": {"kind": "string"}}),
+            json!({"kind": "ok", "value": nat("3")}),
+        ),
+        (
             "adt",
             json!({"kind": "adt", "index": 0}),
             json!({"kind": "adt", "constructor": 1, "fields": [nat("7")]}),
