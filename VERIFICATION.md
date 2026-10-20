@@ -1798,9 +1798,15 @@ formatter keeps the proof and its fixed point links to the same module, that the
 reads back to the same module, that the generated Lean has the stated lowering, that the
 pinned Lean verifies the module with exactly `[propext]` (where the toolchain is installed),
 and that the LaTeX catalog carries the theorem's statement and policy. Seven misuses are
-refused as `LLT4001` naming the misuse: language 1.1 (data form, schema 1: "a language-1.2
+refused as `LLT4001` naming the misuse (the planted projects of the case): language 1.1 (data form, schema 1: "a language-1.2
 construct"), an empty list, definitions out of order, a repeated definition, a definition that
-is absent, a term of type `Nat`, and a theorem parameter named `llCase`. The neighbouring
+is absent, a term of type `Nat`, and a theorem parameter named `llCase`. Each misuse but the reserved one is also a committed fixture under `tests/negative/`
+(`term-cases-language-11`, `-empty-definitions`, `-definitions-unsorted`,
+`-definition-repeated`, `-definition-absent`, `-scrutinee-not-inductive`,
+`-reserved-name`: seven, each `LLT4001` with the message of the case), listed in `EX-07`'s prescribed
+classes (285 to 292). Their locks are current for the head they were written at and are
+relocked, with every other fixture's, by the regeneration wave; on this head `EX-07` fails
+for the 220 existing fixtures whose lock is stale (`LLC0102`) and for none of the seven. The neighbouring
 suites (`semantic-ir`, `proofs`, `declarations`, 76 cases): 54 pass and 22 fail with
 `LLC0102`, the lock bound to the compiler-semantics ID, as every case that copies a
 committed project does on this stack since `SP-18`; none fails on the schema, the
