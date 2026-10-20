@@ -1,5 +1,7 @@
 # model/ids.toml --- the LexLean conformance ID register (R1).
 #
+# GENERATED from the modules of spec/src by `just model-write`: edit them, never this file (NS-03).
+#
 # Every row is copied byte-for-byte from the SPEC.md §31 table; `cargo xtask
 # validate-spec-links` fails if the two ever disagree (RP-07). CONFORMANCE.md
 # is generated from this file by `just model-write` and compared by the model
