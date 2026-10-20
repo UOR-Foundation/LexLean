@@ -1256,6 +1256,10 @@ pub fn audit_shipped(root: &Path) -> Result<(), Fail> {
         ("crates/lexlean/model/errors.toml", "model/errors.toml"),
         ("crates/lexlean/LICENSE-APACHE", "LICENSE-APACHE"),
         ("crates/lexlean/LICENSE-MIT", "LICENSE-MIT"),
+        (
+            "crates/lexlean/sha256_package.rs",
+            "tests/production-export/stdlib/packages/rust-std/sha256/src/lib.rs",
+        ),
     ] {
         let link_path = root.join(link);
         let resolved = std::fs::canonicalize(&link_path).map_err(|error| {
