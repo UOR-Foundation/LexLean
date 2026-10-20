@@ -448,7 +448,7 @@ fn enc_params(parameters: &[(Pat, Type)]) -> Value {
         })
 }
 
-/// `Def`: enum, apply, function, nil, cons.
+/// `Def`: enum, apply, function, nil, cons, constant.
 fn enc_item_def(item: &ItemDef) -> Value {
     match item {
         ItemDef::Enum { name, variants, at } => {
@@ -472,19 +472,15 @@ fn enc_item_def(item: &ItemDef) -> Value {
                 enc_origin(at),
             ],
         ),
-        // The bootstrap validator reads a constant as the function of no
-        // parameters it caches; the rule that its body is a literal is
-        // `validate.rs`'s alone.
         ItemDef::Constant {
             name,
             result,
             body,
             at,
         } => adt(
-            2,
+            5,
             vec![
                 enc_ident(name),
-                enc_params(&[]),
                 enc_type(result),
                 enc_block(body),
                 enc_origin(at),
@@ -1732,6 +1728,8 @@ fn classify(message: &str) -> &'static str {
         "dispatch-misstated"
     } else if has("propagates a failure its result type does not carry") {
         "propagates-undeclared"
+    } else if has(" is not an infallible closed literal") {
+        "constant-shape"
     } else if has("has no target-semantics correspondence") {
         "no-row"
     } else if has("the element it was lowered from") {
@@ -1899,6 +1897,71 @@ fn rule_vectors(bases: &[&Rendered], each: usize) -> (Vec<Run>, Vec<Run>) {
         "the rule corpus gave up before it reached {each} runs of: {missing:?}"
     );
     (validated, corresponded)
+}
+
+/// Crates by hand for the rule of a constant (SPEC.md §17.16 *Constants*): a
+/// literal the rule accepts, then a call in its body, a result that can fail,
+/// and a binding before the literal, each refused by the rule, and a name
+/// declared by a constant twice. No lowering builds a constant that breaks the
+/// rule, so the mutants never reach it; these make it a vector the validators
+/// are held to.
+fn constant_crates() -> Vec<Crate> {
+    let at = Origin::of;
+    let literal = || Expr::Construct {
+        ctor: Ctor::Cons,
+        args: vec![
+            Expr::Lit(Lit::Nat(1), at("value:nat")),
+            Expr::Construct {
+                ctor: Ctor::Nil(Type::Nat),
+                args: Vec::new(),
+                at: at("construct:nil"),
+            },
+        ],
+        at: at("construct:cons"),
+    };
+    let constant = |result: Type, body: Block| ItemDef::Constant {
+        name: Ident::Function(0),
+        result,
+        body,
+        at: at("function"),
+    };
+    let list = || Type::List(Box::new(Type::Nat));
+    let crate_of = |items: Vec<ItemDef>| Crate {
+        profile: Profile::Std,
+        items,
+    };
+    vec![
+        crate_of(vec![constant(list(), Block::of(literal()))]),
+        crate_of(vec![constant(
+            list(),
+            Block::of(Expr::Call {
+                callee: Callee::Function(0),
+                args: Vec::new(),
+                propagate: false,
+                at: at("expr:call"),
+            }),
+        )]),
+        crate_of(vec![constant(
+            Type::Fallible(Box::new(list())),
+            Block::of(literal()),
+        )]),
+        crate_of(vec![constant(
+            list(),
+            Block {
+                lets: vec![Let {
+                    pat: Pat::Wild,
+                    ty: None,
+                    value: Expr::Lit(Lit::Unit, at("value:unit")),
+                    at: at("let"),
+                }],
+                tail: literal(),
+            },
+        )]),
+        crate_of(vec![
+            constant(list(), Block::of(literal())),
+            constant(list(), Block::of(literal())),
+        ]),
+    ]
 }
 
 /// Crates by hand for the merge of moved sets at a branch: a name moved on
@@ -2840,12 +2903,13 @@ const RULE_VALIDATE_RUNS: usize = 132;
 const RULE_CORRESPOND_RUNS: usize = 12;
 const BRANCH_CRATES: usize = 17;
 const LOOP_CRATES: usize = 34;
-const VECTORS_VALIDATE: usize = 406;
-const REFUSED_VALIDATE: usize = 165;
+const CONSTANT_CRATES: usize = 5;
+const VECTORS_VALIDATE: usize = 411;
+const REFUSED_VALIDATE: usize = 169;
 const VECTORS_CORRESPOND: usize = 269;
 const REFUSED_CORRESPOND: usize = 46;
 const EVALUATOR_CRATES: usize = 200;
-const EVALUATOR_VALIDATE: usize = 383;
+const EVALUATOR_VALIDATE: usize = 388;
 const EVALUATOR_CORRESPOND: usize = 246;
 const SEEDED_REFUSED_VALIDATE: usize = 271;
 const SEEDED_REFUSED_CORRESPOND: usize = 244;
@@ -2878,15 +2942,23 @@ pub(super) fn case() {
     );
     let bases = small(&all, BASE_CAP);
     let (mut rule_validate, rule_correspond) = rule_vectors(&bases, RULES_EACH);
-    let by_hand: Vec<Crate> = branch_crates().into_iter().chain(loop_crates()).collect();
+    let by_hand: Vec<Crate> = branch_crates()
+        .into_iter()
+        .chain(loop_crates())
+        .chain(constant_crates())
+        .collect();
     assert_eq!(
         (rule_validate.len(), rule_correspond.len()),
         (RULE_VALIDATE_RUNS, RULE_CORRESPOND_RUNS),
         "the rule runs: each reachable refusal {RULES_EACH} times"
     );
     assert_eq!(
-        (branch_crates().len(), loop_crates().len()),
-        (BRANCH_CRATES, LOOP_CRATES),
+        (
+            branch_crates().len(),
+            loop_crates().len(),
+            constant_crates().len(),
+        ),
+        (BRANCH_CRATES, LOOP_CRATES, CONSTANT_CRATES),
         "the hand-built crates"
     );
     rule_validate.extend(by_hand.iter().map(validate_run));

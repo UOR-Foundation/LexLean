@@ -1,0 +1,55 @@
+\begin{lexlean}{IdsNE}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{spec.titles@1.0.0}
+\importmodule{Rows}
+\title{Extraction conformance claims}
+\begin{semanticmodule}
+definition{
+  name: ne01,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "NE-01", level := "build", suite := "extraction", statement := "Verifying a project with production roots extracts every root through Lean's compiler front end into one canonical compiler input whose bytes and ID are schema-valid, recorded in the attestation, and identical from distinct project directories, and a project without a production root publishes none.", sections := "§22.10, §26.3"}),
+  executable: true
+}
+
+definition{
+  name: ne02,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "NE-02", level := "build", suite := "extraction", statement := "Each root's extracted closure is exactly its computational dependencies, equals its production-eligibility closure, carries its runtime members and monomorphization instances, names every constant its code uses, marks recursion from the use graph, and records proof-only dependencies as erased and never as runtime members.", sections := "§22.10, §26.3"}),
+  executable: true
+}
+
+definition{
+  name: ne03,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "NE-03", level := "build", suite := "extraction", statement := "An unknown root, an opaque, axiomatic, unsafe, partial, or noncomputable dependency, an external implementation, an unresolved external, an unsupported compiler form, a kind that differs from the declared kind, and a malformed, noisy, or foreign extraction record fail closed with LLV7011, while a core definition its module exports as an axiom is admitted as that definition exactly when it is computable and Lean's compiler holds its code, and a borrowed type annotation canonicalizes to the type it annotates.", sections := "§22.10, §26.3"}),
+  executable: true
+}
+
+definition{
+  name: ne04,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "NE-04", level := "build", suite := "extraction", statement := "The extraction adapter is a closed tooling module of the embedded project `language/lcnf-1.2/tooling/`, rendered to Lean by the compiler, and every constant it uses is registered exactly once, as a call with its exact signature and pinned source identity, a type with its exact constructors, or plumbing, in a registry that is the pinned Lean's own answer; each extraction compares every signature structurally and the adapter's constants with the registry under pinned Lean, the adapter runs no LCNF pass, its record equals that of the handwritten oracle `tests/lcnf/oracle/extract.lean` and does not depend on what Lean elaborated before it, and drift of a signature, a constructor list, the adapter's constants, its output, or the Lean identity fails with LLV7012.", sections := "§22.10, §26.3"}),
+  executable: true
+}
+
+definition{
+  name: ne05,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "NE-05", level := "build", suite := "extraction", statement := "A dependency dropped from Lean's extracted facts or from the production-eligibility closure fails extraction with LLV7011 before any compiler input is published.", sections := "§22.10, §26.3"}),
+  executable: true
+}
+
+definition{
+  name: ne06,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "NE-06", level := "build", suite := "extraction", statement := "A proof-only dependency presented as a runtime closure member fails extraction with LLV7011 before any compiler input is published.", sections := "§22.10, §26.3"}),
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

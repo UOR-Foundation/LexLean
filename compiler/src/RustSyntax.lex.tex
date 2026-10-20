@@ -287,7 +287,8 @@ inductive{
   constructors: [
     {name: enum, fields: [RustType, (List Variant)]},
     {name: apply, fields: [Nat, (List RustType), RustType, Bool, (List Dispatch)]},
-    {name: function, fields: [Ident, (List Parameter), RustType, Block]}
+    {name: function, fields: [Ident, (List Parameter), RustType, Block]},
+    {name: constant, fields: [Ident, RustType, Block]}
   ]
 }
 

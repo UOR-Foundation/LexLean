@@ -483,6 +483,10 @@ The completed repository MUST have this layout. Additional files are allowed onl
 │   ├── source-map.schema.json
 │   ├── target-fixture.schema.json
 │   └── target-program.schema.json
+├── spec/
+│   ├── lexlean.toml
+│   ├── lexlean.lock
+│   └── src/
 ├── tests/
 │   ├── fixtures/
 │   ├── golden/
@@ -680,7 +684,9 @@ Its image MUST install the pinned Rust and Lean toolchains at build, so that not
 
 `ci.yml` MUST run every recipe of `just vv` from a clean checkout on Linux x86-64. It MUST install the exact Rust toolchain, Lean 4.32.1 through `elan`, `just`, and `cargo-deny`.
 
-**What a run is.** `ci.yml` starts with the job `plan`, which decides from the event and the repository alone, through `.github/ci-plan.sh`, what the run is before any job that costs a runner starts. A pull request that is a draft is the `rest` leg and nothing else: a head pushed again before it is final costs one job and not the gate, the run is a development signal, and a draft is not mergeable on it; marking the pull request ready, and every push to it after, run the whole gate. A ready pull request, a `workflow_dispatch`, and a push to `main` are the whole gate, every job below. One push to `main` is not: when it is a merge commit whose tree is the tree of its second parent (a pull request head that already contained `main`) and a run of this workflow for that parent as a pull request of this repository passed every job, with none skipped, the join of Atlas, every host of §8.3, and every leg of `.github/vv-rows.json` among them, the push runs no job but the plan, which records the run: the tree it lands is byte for byte the tree that run verified, on the same runners and with the same pins. Any other push to `main`, including one the plan cannot decide (a failed query, no run, a run of a draft, a merge that changed the tree, a push that is no merge), is the whole gate. `release.yml` runs `just vv` whole and reads no earlier run. `RP-14` runs the script against planted events and a plant in it fails the case.
+**What a run is.** `ci.yml` starts with the job `plan`, which decides from the event and the repository alone, through `.github/ci-plan.sh`, what the run is before any job that costs a runner starts. A pull request that is a draft is the `rest` leg and nothing else: a head pushed again before it is final costs one job and not the gate, the run is a development signal, and a draft is not mergeable on it; marking the pull request ready, and every push to it after, run the whole gate. A ready pull request, a `workflow_dispatch`, and a push to `main` or to a release line are the whole gate, every job below. One push to `main` or to a release line is not: when it is a merge commit whose tree is the tree of its second parent (a pull request head that already contained `main`) and a run of this workflow for that parent as a pull request of this repository passed every job, with none skipped, the join of Atlas, every host of §8.3, and every leg of `.github/vv-rows.json` among them, the push runs no job but the plan, which records the run: the tree it lands is byte for byte the tree that run verified, on the same runners and with the same pins. Any other push to `main` or to a release line, including one the plan cannot decide (a failed query, no run, a run of a draft, a merge that changed the tree, a push that is no merge), is the whole gate. `release.yml` runs `just vv` whole and reads no earlier run. `RP-14` runs the script against planted events and a plant in it fails the case, and reads the three workflows' push triggers, which name `main` and `release/**`.
+
+**Release lines.** A release line is the branch `release/vX.Y` of the release X.Y: it is cut from `main` when work on X.Y begins, every pull request for the milestone X.Y targets it, each `vX.Y.Z` tag is made from it, and it is merged forward, by merge commit, into the next release line after each landing so that the next line carries every fix of the one before it. `main` is the newest released line: a release line is merged into `main` when its release is tagged, and nothing else lands on `main`. A release line is held to the same gate as `main`: a push to it is the whole gate under the rule above, and a pull request against it is a pull request of this repository.
 
 In a run that is the whole gate, the job runs the recipes as the legs of one matrix, the rows of `.github/vv-rows.json`, at once, each from its own clean checkout: `examples`, which verifies every example but UOR Atlas; `rest`, the other eleven recipes in the order of `vv`; and one `bdd-<part>` row for each named part of the `bdd` plan below, which runs `bdd` alone. Each leg runs `just` with its recipes, which stops at the first that fails, as `vv` does. The part of `examples` a job runs is named by its matrix row through `LEXLEAN_EXAMPLES_PART` and by nothing else: `without:uor-atlas` on the leg, `shard:uor-atlas:<shard>` and `join:uor-atlas` on the Atlas jobs below; unset or empty, which is what `just vv` and `release.yml` run, the recipe verifies every example whole. Together the legs and the Atlas jobs run every recipe of `vv`, every example, and every test of `bdd` exactly once, and the run passes only when every job passes, so it proves what one run of `just vv` proves; no recipe depends on another having run, and every recipe owns the files it builds. Its wall time is the longest path through the jobs rather than the sum. `just vv` remains the acceptance recipe of §9.2 for every other run, and `release.yml` runs it whole.
 
@@ -4770,21 +4776,28 @@ Each of these renders the same denotation with no more work than the plain
 rendering.
 
 **Constants.** A function of no parameters that cannot fail, whose body is a
-closed literal (scalars, constructors, pairs, and boxes of literals only) whose
-result holds heap storage, is rendered in `rust-std` as a *constant*: a
-`thread_local!` cell initialised once per thread by the literal, and a function
-whose every call is `CELL.with(|cell| cell.clone())`. A clone of a list, a
-string, or a byte string shares its storage, so a read allocates nothing, where
-a rebuilt literal allocates at each read (`RB-18`). A constant is not a new
-construct of the calculus: its row in `validate::CORRESPONDENCE` is `constant`,
-realizing `function`, and calls to it are ordinary calls. The machine of §17.17
-reads a constant as the function of no parameters it caches, whose value is the
-body's; when the value is computed is not part of the denotation, so the work
-the machine counts and the steps of §17.14 are unchanged. `rust::validate`
-refuses, as `LLB6005`, a constant whose result can fail or whose body is not a
-closed literal: a thread-local initializer cannot propagate a failure, and a
-body that calls could reach the constant it initializes. `rust-core` renders no
-constant, because the literal holds heap storage.
+closed literal (scalars, constructors, pairs, and boxes of literals only) and
+whose result is a list, a string, or a byte string (a type with heap storage
+by `Type::heap`), is a *constant* in `rust-std`: the item `ItemDef::Constant`
+of the AST and `ItemDef.constant` of `RustSyntax`, printed as a `thread_local!`
+cell initialised once per thread by the literal and a function whose every call
+is `CELL.with(|cell| cell.clone())`. A clone of a list, a string, or a byte
+string shares its storage, so a read allocates nothing, where a rebuilt literal
+allocates at each read (`RB-18`). A literal whose type is a declared algebraic
+type is not a constant, whatever it holds: its type says no heap, so it stays a
+function that builds the value on each call. `RustSemantics` gives a call of a
+constant the value of its body, as `findFunction` returns it as a function of no
+parameters; the machine counts no work, so a read adds none to the counted work
+the differentials measure (§17.16 *Checks*, `TC-07`), and when the value is
+computed is not part of the denotation. Certificate B encodes the item as
+itself (§17.17), so the crate it states is the crate printed. `rust::validate`
+and the bootstrap `RustValidate` refuse, as `LLB6005`, a constant whose result
+can fail or whose body has a binding or is not a closed literal, ``constant: `f<n>`
+is not an infallible closed literal``: a thread-local initializer cannot propagate
+a failure, and a body that calls could reach the constant it initializes. No
+lowering builds such a constant, so the refusal is held by committed crates in
+the differential of `BS-05`. `rust-core` renders no constant, because the
+literal holds heap storage.
 
 **Failure typing.** A function can overflow exactly when its body reaches a
 primitive or successor that can (`nat_add`, `nat_mul`, `int_add`, `int_sub`,
@@ -7518,8 +7531,9 @@ the `elements` the renderer realizes), a rule corpus that reaches each of the
 runs and 12 `correspondCrate` runs, asserted: the corpus fails if its draws run
 out first; the refusal that a construct has no row of the table cannot be
 reached), 17 crates by hand for the merge of moved sets at an `if` and a
-`match`, and 34 by hand for the loop rules; that is 406 runs of `validateCrate`
-(165 refused) and 269 of `correspondCrate` (46 refused), and the case asserts
+`match`, 34 by hand for the loop rules, and 5 by hand for the rule of a constant
+(§17.16 *Constants*); that is 411 runs of `validateCrate`
+(169 refused) and 269 of `correspondCrate` (46 refused), and the case asserts
 these counts. On every host, the rendered `rust-std` packages of both
 roots (§17.16), compiled by the pinned rustc, are run on all of them. On the
 normative host, the lowered programs of both roots are run under the calculus
@@ -9360,18 +9374,43 @@ LexLean realizes it.
 
 ### 27.5 Generated documents
 
+The conformance register, the diagnostic registry, the honesty ledger and the
+authority register are LexLean source: the semantic modules of the
+language-1.2 project `spec/`, a member of the workspace (§10.5) written in the
+authoring notation (§17.21), one module per ID family for the register and one
+each for the registry, the ledger and the authorities. `model/ids.toml`,
+`model/errors.toml`, `model/ledger.toml` and `model/authorities.toml` are
+generated from them, with `CONFORMANCE.md` and `ERRORS.md` generated from the
+model, and none of the six is edited by hand (`NS-02`). A register row is the
+`IdRow` record of a definition named for its ID, with the §31 "Primary
+specification" cell in `sections`; the projector accepts exactly the shapes
+the modules are made of and refuses any other declaration, term, field, name,
+file or family, naming the file and the declaration (`NS-04`).
+
 `cargo xtask validate-model` MUST:
 
-1. parse all model files with unknown-field rejection;
-2. validate IDs, levels, authorities, errors, and cross-references;
-3. generate `CONFORMANCE.md` and `ERRORS.md` in memory;
-4. compare exact committed bytes;
-5. scan feature scenarios and Rust test names;
-6. reject missing, duplicate, or extra links;
-7. run the honesty vocabulary checks;
-8. run repository-specific audits.
+1. project the modules of `spec/` in memory and compare the bytes of each model
+   file with its projection, failing naming R1 on a difference (`NS-03`);
+2. parse all model files with unknown-field rejection;
+3. validate IDs, levels, authorities, errors, and cross-references;
+4. generate `CONFORMANCE.md` and `ERRORS.md` in memory;
+5. compare exact committed bytes;
+6. scan feature scenarios and Rust test names;
+7. reject missing, duplicate, or extra links;
+8. run the honesty vocabulary checks;
+9. run repository-specific audits.
 
-`model-write` is the only normal path that rewrites generated documentation.
+`model-write` is the only normal path that rewrites the model files and the
+generated documentation.
+
+*What is and is not established (C9).* The projector is a Rust program, not
+LexLean: it can falsify a projection and never establishes one. What
+establishes it is the byte equality of every projection with the file it
+replaced when the register moved into `spec/`, and the plants of `NS-03` and
+`NS-04`. Verifying `spec/` (`NS-01`) has the pinned Lean elaborate each record
+definition against its row structure and replay the generated modules with the
+audited axioms; it does not establish that a row's text is the normative text,
+that identifiers are distinct, or that a projection is the committed file.
 
 ### 27.6 Specification links
 
@@ -9963,7 +10002,7 @@ Each capability change follows R3. At repository scale, the dependency order is:
 9. implement CLI and stable Rust API;
 10. complete examples, negative fixtures, reproducibility, and release gates.
 
-The default branch must remain passing at each merge; a capability row is merged only with its complete scenario, test, implementation, and evidence.
+The default branch and every release line must remain passing at each merge; a capability row is merged only with its complete scenario, test, implementation, and evidence.
 
 
 ## 31. Complete conformance-ID registry
@@ -9977,7 +10016,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RP-03` | `repository` | The completed repository has the required file and crate layout, and the tracked tree holds no CACHEDIR.TAG or path component the repository walkers skip outside sanctioned expected/ oracle directories. | §7 |
 | `RP-04` | `repository` | Only the lexlean crate is shipped and no shipped crate depends on repository-only tooling. | §7, §8.4 |
 | `RP-05` | `repository` | The just vv recipe runs every normative acceptance gate in the specified order. | §9.2 |
-| `RP-06` | `repository` | CONFORMANCE.md and ERRORS.md are exact generated views of model files. | §27.5 |
+| `RP-06` | `repository` | `model/*.toml`, `CONFORMANCE.md`, and `ERRORS.md` are exact generated views of the register modules of the specification project. | §27.5 |
 | `RP-07` | `repository` | The specification conformance table and model register are bijective and text-consistent. | §27.6 |
 | `RP-08` | `repository` | Repository source contains no unsanctioned deferral marker, stub, placeholder, ignored capability, or disabling feature; the deferral audit reads every text file of the repository, the root documents, workflows, scripts, devcontainer, API, oracle, and tooling data included, except a vendored authority copy whose bytes its checksum pins, and its markers include the phrases that put work in the future. | §27.10 |
 | `RP-09` | `repository` | The shipped crate forbids unsafe Rust and the audit proves the prohibition is active. | §8.1, §27.10 |
@@ -9985,7 +10024,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RP-11` | `repository` | Every public README capability claim is tied to a registered model ID and honesty level. | §27 |
 | `RP-12` | `repository` | A release is refused unless the complete release criterion and all required artifacts are satisfied. | §30 |
 | `RP-13` | `repository` | The ordinary workspace test phase excludes repo-conformance, the bdd phase alone runs its complete suite, and a test inventory proves that the two phases together equal the whole workspace test set with no test lost and none run twice, and that the parts of the committed bdd plan together equal the bdd phase with every test in exactly one part. | §9.2 |
-| `RP-14` | `repository` | The normative CI job runs every recipe of just vv in parallel legs that each start from a clean checkout on the standard ubuntu-24.04 runner, each recipe exactly once but bdd, which runs once per part of its committed plan on the row that names the part, the examples leg at the verification resource profile its matrix row names and without UOR Atlas, which the Atlas jobs of the same run verify as the shards of the committed plan and a join at that profile, every process once and nothing across runs, and the other legs at the default, with no cache, path filter, or skipped recipe, and each job uploads its CI evidence; a plan job decides what a run is from the event alone: a draft pull request runs the rest leg and no other job, a ready pull request, a request, and a push to main run every job, and a push to main that merges a head whose tree it equals runs none when the whole gate passed on that head, and runs the whole gate when any job of that run did not pass, was skipped, or is missing. | §9.4 |
+| `RP-14` | `repository` | The normative CI job runs every recipe of just vv in parallel legs that each start from a clean checkout on the standard ubuntu-24.04 runner, each recipe exactly once but bdd, which runs once per part of its committed plan on the row that names the part, the examples leg at the verification resource profile its matrix row names and without UOR Atlas, which the Atlas jobs of the same run verify as the shards of the committed plan and a join at that profile, every process once and nothing across runs, and the other legs at the default, with no cache, path filter, or skipped recipe, and each job uploads its CI evidence; a plan job decides what a run is from the event alone: a draft pull request runs the rest leg and no other job, a ready pull request, a request, and a push to main or to a release line run every job, and a push to main or to a release line that merges a head whose tree it equals runs none when the whole gate passed on that head, and runs the whole gate when any job of that run did not pass, was skipped, or is missing. | §9.4 |
 | `RP-15` | `repository` | Every match over a closed semantic enum (the IR, the production realization calculus, and its Rust AST) that names at least five of the enum's variants names all of them, with no wildcard or binding catch-all arm, so that a variant added to the enum is a compile error in each Lean, LaTeX, validation, charge, and calculus consumer and never a silent fallback; the audit rejects a catch-all planted in each consumer group and fails when a consumer it must read has no such match left. | §27.2 |
 | `RP-16` | `repository` | The development container installs, at image build, exactly the Rust toolchain that rust-toolchain.toml pins and exactly the Lean toolchain that lean-toolchain pins and selects no other default, so that nothing is fetched when a session starts, and a Dockerfile that names another version of either, installs a second toolchain, or selects an unpinned default is refused. | §9.3 |
 | `CF-01` | `configuration-lock` | Project configuration accepts exactly the project/1 schema and rejects unknown or missing fields. | §10.1 |
@@ -10269,7 +10308,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RB-12` | `rust-backend` | The language-1.2 compiler-semantics ID covers the package scaffold: changing a lint row, the edition, or a gate of a copy of the embedded tree changes it, writing the module in its data form or reformatting its notation does not, and the module is outside the identities of languages 1.0 and 1.1. | §17.16, §21.2 |
 | `RB-13` | `rust-backend` | A package states the effects of its realization: `package.json` and `provenance.json` record them, ascending and registered, the production registry says that exhausting the stack aborts the process, and an unregistered or unordered list, or one that states allocation on `rust-core`, is refused. | §17.13, §17.16 |
 | `RB-14` | `rust-backend` | A library template whose self calls are all tail calls is rendered as a loop over its accumulator that breaks with its result, so that the production rows of the primitives it realizes carry no `recursion`, while a template with a call that is not a tail call is rendered as a call and keeps the effect; a rendering that states a self call where a loop is possible, and a row whose `recursion` differs from its rendering, are refused. | §17.13, §17.14, §17.16 |
-| `RB-18` | `rust-backend` | A function of no parameters that cannot fail and whose body is a closed literal holding heap storage is a constant in rust-std, a thread-local cell evaluated once per thread whose every call returns a clone of the value, so that a production root reads a decoded constant without rebuilding it and a read allocates nothing; the machine reads a constant as the function it caches, rust-core has no rendering of it, and a constant whose body calls, or that can fail, is refused before printing, while a rendering that rebuilds the literal at each read is detected by counting its allocations. | §17.16 |
+| `RB-18` | `rust-backend` | A function of no parameters that cannot fail and whose body is a closed literal of a list, string, or byte string is a constant of the Rust machine, an `ItemDef.constant` of `RustSyntax` whose value in `RustSemantics` is its body's, rendered in rust-std as a thread-local cell evaluated once per thread whose every call returns a clone of the value, so that a read allocates nothing and a decoded constant is not rebuilt on each call; certificate B encodes the item as itself, rust-core has no rendering of it, a literal whose type is a declared algebraic type is not a constant, and the rule that a constant cannot fail and that its body is a closed literal is stated by `validate` and by the bootstrap `RustValidate`, whose differential is held to it by committed crates that break it, while a rendering that rebuilds the literal at each read is detected by counting its allocations. | §17.16 |
 | `GN-01` | `gnaf` | Every committed GNAF request and fixture is canonical, validates against the GNAF schemas whose calculus definitions are the target program schema's, and states its components' universe identity; a malformed request, an invalid reference, plan, or realized program, a reference without a value on a domain argument, or a wrong universe identity fails closed with LLB6006, and a machine or request beyond the host's capacity fails closed with LLS8002. | §17.15, §26.3 |
 | `GN-02` | `gnaf` | The GNAF model is a kernel-checked LexLean definition, Lean's kernel reduces the universe, the system statuses, and the answer of every committed request to what the host transcription computes, and a wrong answer, an answer computed from a universe with a system omitted, a tie with a member dropped, and a universe with a system omitted are rejected by Lean. | §17.15 |
 | `GN-03` | `gnaf` | Candidate membership is the grammar's expansion, which a kernel-checked theorem proves equal to the grammar's well-formed selectors for every grammar, independent of evaluation and fixed by a universe identity before any optimizer, and optimizer-defined, discovered, cached, and internal-plan universes and missing, self-referential, or optimizer-citing completeness evidence are rejected. | §17.15 |
@@ -10394,7 +10433,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `BS-02` | `bootstrap` | The preservation lexer and token audit of SPEC.md §17.17 are language-1.2 source in the `bootstrap/` project: `lex` and `auditTokens` of `TokenAudit` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle `production::preserve::{lex, audit_tokens}` on every lexeme, position, and rejection message for the first 1,500 characters of every module of the shipped preservation library and calculus modules, the number-lexing corpus, and every token-audit unit vector; on the normative host, both roots' lowered programs under the calculus evaluator agree with the Rust oracle on those vectors and a seeded corpus, the rendered packages under the pinned rustc agree with the oracle on the large seeded corpus of generated and mutated Lean texts with no disagreement, a planted defect in the source is detected, and the certified packages the production export publishes for the project are the committed ones. | §17.17, §17.23 |
 | `BS-03` | `bootstrap` | The primitive scanner of SPEC.md §12.2 is language-1.2 source in the `bootstrap/` project: `scanSource` and `rejectAtoms` of `PrimitiveScan` are production roots eligible for `rust-std` with exactly their declared effects; on every host of the matrix, both roots' rendered `rust-std` packages under that host's pinned rustc agree with the Rust oracle `source::scan::{scan, reject_forbidden_atoms}` on every atom with its class, text, and byte, line, and column spans and on every rejection with its code, message, span, and help, for the deterministic vectors (the oracle's unit inputs, the atom limit at N and N+1, atom lists with gaps, payload strings, and notation bodies), a 128-byte window and a 2,048-byte prefix of every committed `.lex.tex` source, and the whole of each such source up to 8,192 bytes (up to 1,024 bytes, one source in four, for `rejectAtoms`); on the normative host, both roots' lowered programs under the calculus evaluator agree with the oracle on the vectors and the 128-byte windows and on 80 seeded texts, the packages agree on 2,500 seeded texts, each of ten planted defects in the source is detected, and the certified packages the production export publishes for the project are the committed ones. | §12.2, §17.23 |
 | `BS-04` | `bootstrap` | The target calculus's checker of SPEC.md §17.14 (`lexlean::calculus::check`), for a program given as calculus data, each list of a recursive type carried as a chain of that type's own `Nil` and `Cons` constructors and decoded back to the program on every vector (reading a program from its canonical JSON is not part of this row), is language-1.2 source in the `bootstrap/` project: `checkProgram` and `checkArguments` of `CalculusCheck` are production roots eligible for `rust-std` with exactly their declared effects; on the normative host the lowered programs of both roots under the calculus evaluator agree with the Rust checker on acceptance and on the rejection message to the byte for every committed target program and the refusal edits of `TC-02` and for a seeded corpus of data-level mutations, and each planted defect in the source is detected; on every host the rendered `rust-std` packages of both roots under the pinned rustc agree with the Rust checker on the deterministic vectors, and on the normative host also on a larger seeded corpus with no disagreement; strings whose Rust `Debug` spelling escapes a non-ASCII scalar other than `U+0080`..`U+009F` are outside the claim; and the certified packages the production export publishes for the project are the committed ones. | §17.14, §17.23 |
-| `BS-05` | `bootstrap` | The Rust crate validator of SPEC.md §17.16 is language-1.2 source in the `bootstrap/` project: `validateCrate` and `correspondCrate` of `RustValidate` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle `calculus::rust::validate::{validate, correspond}` on the exact outcome and message for the 223 distinct crates the renderer lowers from the 164 distinct programs among the 247 committed package manifests and 122 fixtures, for 132 `validateCrate` and 12 `correspondCrate` runs that reach each of the 48 reachable refusals three times, for 17 hand-built crates of the merge of moved sets, and for 34 hand-built crates of the loop rules (406 `validateCrate` runs, 165 of them refusals, and 269 `correspondCrate` runs, 46 of them refusals); on the normative host, both roots' lowered programs under the calculus evaluator agree with the oracle on the crates of at most 400 expressions (200) with the rule runs and on 500 seeded mutants of the crates of at most 80 expressions, the rendered packages under the pinned rustc agree on 2,000 further seeded mutants per root, sixteen planted defects in the source are each detected, and the certified packages the production export publishes for the project are the committed ones; lowering, printing, packaging, and crates naming a non-ASCII or non-printable scalar are outside the claim. | §17.16, §17.23 |
+| `BS-05` | `bootstrap` | The Rust crate validator of SPEC.md §17.16 is language-1.2 source in the `bootstrap/` project: `validateCrate` and `correspondCrate` of `RustValidate` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle `calculus::rust::validate::{validate, correspond}` on the exact outcome and message for the 223 distinct crates the renderer lowers from the 164 distinct programs among the 247 committed package manifests and 122 fixtures, for 132 `validateCrate` and 12 `correspondCrate` runs that reach each of the 48 reachable refusals three times, for 17 hand-built crates of the merge of moved sets, for 34 hand-built crates of the loop rules, and for 5 hand-built crates of the rule of a constant (411 `validateCrate` runs, 169 of them refusals, and 269 `correspondCrate` runs, 46 of them refusals); on the normative host, both roots' lowered programs under the calculus evaluator agree with the oracle on the crates of at most 400 expressions (200) with the rule runs and on 500 seeded mutants of the crates of at most 80 expressions, the rendered packages under the pinned rustc agree on 2,000 further seeded mutants per root, sixteen planted defects in the source are each detected, and the certified packages the production export publishes for the project are the committed ones; lowering, printing, packaging, and crates naming a non-ASCII or non-printable scalar are outside the claim. | §17.16, §17.23 |
 | `PK-01` | `packages` | A language-1.2 project that declares a source package by its identifier, version, kind `path`, and the member directory a `lexlean-workspace.toml` lists locks it by the tree digest of its manifest and source files, its manifest digest, its version, its module prefix, and its own packages, and the configuration and the lock read back to the bytes written; a project without a source package keeps its bytes, and a package of another kind, a source package in another language, a changed byte or version (LLC0105), an undeclared package (LLC0106), a module prefix claimed twice (LLC0107), a project or a package outside the workspace (LLC0108), a path that escapes it, and a symlink (LLS8001) are each refused with the named code. | §10.5, §11.1, §25.1 |
 | `PK-02` | `packages` | A module of a project imports only modules of its own project and modules of the packages the project declares, and a module of a package only modules of itself and of the packages its own manifest declares: a package module is a module of the importing project under its own module prefix, a module of a package the project does not declare fails with LLR3009, and an import cycle through a package fails with LLR3003. | §10.5, §15.1 |
 | `PK-03` | `packages` | An importing project builds and verifies under the pinned Lean offline, and its package modules are generated, elaborated, replayed with `leanchecker`, and audited for their exact axioms under the package's module prefix with the package as their origin in the records; the source ID of the project changes with the pins, and no file of the package is written by `fmt`, `build`, or `verify`. | §10.5, §21.3, §22 |
@@ -10407,8 +10446,12 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-05` | `language-models` | A `text_generator` under the `greedy` policy names a prior tokenizer, a prior context window, a prior stateless model from `list uint32` to `list int` whose every runtime check its evidence discharges, a prior `uint32` stop token, and a `max_tokens` of at least one, and elaborates to the closed outcome types `End` (`stop`, `exhausted`) and `Failure` (`unknown_token`, `context_overflow`, `invalid_utf8`) and to a loop of at most `max_tokens` steps that takes the first maximum and no seed; its laws `bounded` (at most `max_tokens` tokens are generated) and `context_bounded` (the scorer is consulted only on contexts that fit the window) are generated and kernel-checked, the loop reaches each end and each failure in the kernel, a wrong claim about its output fails verification, a `max_tokens` of 0 is refused (`LLT4016`), and a member of another kind is refused (`LLT4006`). | §17.12 |
 | `LM-06` | `language-models` | Nondeterminism is an explicit contract: a `text_generator` under the `sample` policy draws through the closed `xorshift32` generator and `proportional` distribution only, takes its seed as an explicit `uint32` input and returns the next seed as an explicit output, so the same prompt and seed give the same output, which the kernel computes; it has the same generated and kernel-checked laws as a greedy generator, `xorshift32` agrees with the reference sequence, and a generator or distribution outside the closed members, a sample policy without one, or a seed stated on a policy is a schema violation (`LLT4001`). | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
+| `NS-01` | `normative-source` | The specification project is a language-1.2 workspace member whose every module is a semantic module in the authoring notation; it is canonical under fmt, locked, checked, and built, and under the pinned toolchain it verifies, which establishes that each record definition elaborates against its row structure and that the generated modules replay with the audited axioms, and does not establish that a row's text is the normative text, that identifiers are distinct, or that a projection equals its committed file, which NS-02 to NS-04 measure. | §17.21, §27.5 |
+| `NS-02` | `normative-source` | The conformance register, the diagnostic registry, the honesty ledger, and the authority register are modules of the specification project, and `model/ids.toml`, `model/errors.toml`, `model/ledger.toml`, `model/authorities.toml`, `CONFORMANCE.md`, and `ERRORS.md` regenerate from them byte-identically. | §26.1, §27.5 |
+| `NS-03` | `normative-source` | A difference between a model file and the projection of the specification project's modules, in either direction, fails the repository gate naming R1, a source edit that is not projected being such a difference, and the section references of the §31 table are checked against those the register modules carry. | §27.5, §27.6 |
+| `NS-04` | `normative-source` | The projector fails closed on a module of the specification project that holds a declaration kind, a term kind, a field, a name, a file, or a family it does not read, and on a duplicate identifier or code, and a plant of each is refused naming the file and, for a declaration, its position. | §17.21, §24.8 |
 
-**Total required capability IDs:** 434.
+**Total required capability IDs:** 438.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

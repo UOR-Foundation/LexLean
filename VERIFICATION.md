@@ -4011,6 +4011,7 @@ interpreter was restored and the fixtures regenerated; `compiler/` verifies.
 
 ### calculus literal weight can fail (TC-08)
 
+Command: `cargo test -p repo-conformance --test conformance conformance_tc_08`.
 Planted, in two steps. First the reference interpreter charged a literal one
 step (the rule before TC-08); `conformance_tc_08` refused it at the string
 literal, whose weight is 4 for `"h\u{e9}\u{e9}"`:
@@ -4028,6 +4029,11 @@ Second, with the interpreter correct, `TargetSemantics.lex.tex` was restored to
 the denotation charges a literal its weight
 ```
 
+The second plant is a text check: the case reads `TargetSemantics.lex.tex` and
+requires the line that charges `weight literal`. It shows the source was not
+restored to the old charge; it does not show the kernel's reduction agrees
+with the interpreter, which needs the regenerated fixtures.
+
 Removed: the weight charge was restored in both. The kernel's own check of
 the rule, a fixture whose `rfl` theorem states the weighted step count, needs
 `cargo xtask check-calculus --write` and is not exercised here: the 14 fixtures
@@ -4037,25 +4043,60 @@ and `conformance_tc_05` fail on this tree until they are rewritten.
 
 ### rust constants can fail (RB-18)
 
-Planted, three ways, all observed by `conformance_rb_18`. The oracle is the
-pinned rustc, a counting global allocator in the harness, and `validate`.
+Command: `cargo test -p repo-conformance --test conformance conformance_rb_18`.
+The oracles are the pinned rustc, a counting global allocator in the harness,
+`validate`, and the bootstrap validator.
 
-1. The same program with its constant rebuilt at each read (the crate's
-   `Constant` item printed as a `Function`): two reads allocate 4 times,
-   where the cached rendering allocates 0. The harness counts, so the
-   rebuilding rendering is detected by behavior, not by its text.
-2. A constant whose body is a call: `validate` refuses it
-   (`constant: ... is not an infallible closed literal`).
-3. A constant whose result is `R<T>`: the same refusal.
+Planted, five ways.
 
-Removed: the crate was restored to the lowering's own output. `rust-core`
-has no rendering of the heap literal at all (`lower` refuses it).
+1. The lowering stopped hoisting (`let cached = false && ...`). The case
+   refused it:
 
-`conformance_tc_07` passes with the new fixture `cached-literal`, whose
-function 1 renders as a constant read twice. On this tree
-`conformance_rb_01` fails with `correspondence rows no run package exercises:
-["constant"]` until the committed packages are rewritten from the fixtures,
-and `conformance_rb_07` fails with `the renderer changed without its record
+```text
+thread 'conformance_rb_18' panicked at crates/conformance/src/cases/rust_backend.rs:1711:5:
+a nullary heap literal is a constant: [Function { name: Function(0), parameters: [], result: List(Int), body: Block { lets: [], tail: Construct { ctor: Cons, args: [Lit(Int(7), ...
+```
+
+2. The same program with its constant printed as a function that rebuilds at
+   each read: two reads allocate 4 times where the cached rendering allocates
+   0 (counted by the harness; observed by printing the count once, the case
+   asserts `> 0` and `== 0`). The reviewer's variant, a rebuild behind the
+   cell, fails the same equality (`left: 4`, `right: 0`).
+3. A constant whose body is a call, one whose result can fail, and one with a
+   binding before the literal: `validate` refuses each with
+   ``constant: `f0` is not an infallible closed literal``. The bootstrap
+   validator refuses the same three crates with the same message (committed in
+   `constant_crates` of the BS-05 differential, with a literal it accepts and a
+   name declared twice by constants), so the differential holds the rule.
+4. A literal of a declared algebraic type holding a list is not a constant: the
+   case requires the lowering to leave it a function.
+5. `rust-core` has no rendering of the heap literal (`lower` refuses it).
+
+The expectation `Some(7) 5 5` of the harness is written by hand. That the
+rendering and the evaluator agree on a constant rests on `conformance_tc_07`,
+whose fixture `cached-literal` is generated and has no committed file until the
+fixtures are regenerated, so until then it is the case's own program and not
+the committed fixture that the differential runs.
+
+**The machine and the library.** `RustSyntax.ItemDef` grows by `constant` and
+`RustSemantics` gains an arm in each of its two matches over it (`findFunction`
+returns a constant as a function of no parameters, `findDispatch` skips it).
+With the regenerated `RustSyntax`/`RustSemantics` modules in place, the library
+refused the grown `ItemDef` at the first break the #91 stage-4 walk predicted,
+`LexLeanPreservation.Rust.findDispatch_some._f` in `RustMatches`
+(`(kernel) application type mismatch ... ItemDef.casesOn`). The repair is the
+fourth minor premise of that `casesOn`: the `function` minor with its parameters
+field removed and the constructor replaced, rewritten on the module's data and
+written back in the notation (the module round-trips byte for byte before the
+edit). After it `conformance_sp_13`, which compiles all 13 library modules
+over the machine modules, passes (299 s); no other declaration needed a repair.
+`lexlean verify` of `bootstrap/` with the grown `RustValidate` passes
+(`verified 6 modules`). Both runs used regenerated machine modules held in the
+working tree only; the committed ones are left for the regeneration.
+
+Removed: each plant was reverted. `conformance_rb_01` fails on this tree with
+`correspondence rows no run package exercises: ["constant"]` and
+`conformance_rb_07` with `the renderer changed without its record
 `rust_renderer``: both are records of the renderer's bytes.
 
 ### artifacts as data can fail (SP-24, MD-14)
@@ -9764,7 +9805,7 @@ Authoring found four shapes certificate A and certificate B do not accept, each 
 
 ### the bootstrap Rust crate validator can fail its oracle (SPEC.md §17.23, §17.16)
 
-`BS-05` holds the two production roots of `LexLeanBoot.RustValidate` (`bootstrap/src/RustValidate.lex.tex`) to the stage-0 oracle they replace, `calculus::rust::validate::{validate, correspond}`. The 164 distinct programs among the 247 committed package manifests and 122 fixtures lower to 223 distinct crates over both profiles; with 132 `validateCrate` and 12 `correspondCrate` rule runs (each of the 48 reachable refusals three times, found by a seeded mutation search at a fixed seed, which asserts that it reached the target and does not stop short of it), 17 hand-built crates of the merge of moved sets, and 34 hand-built crates of the loop rules, that is 406 `validateCrate` vectors (165 refused) and 269 `correspondCrate` vectors (46 refused), 675 in all. On every host both roots' rendered `rust-std` packages, compiled by the pinned rustc, agree with the oracle on all 675. On the normative host the evaluator agrees on the 200 crates of at most 400 expressions, the rule runs, and the hand-built crates (383 + 246 vectors), and on 500 seeded mutants (271 and 244 refused), and the rendered packages agree on 2,000 further seeded mutants per root. The case passed on the branch merged with `main` after wave 6 (#220), with the production export under the pinned Lean 4.32.1. Every one of these counts is an assertion of the case (`COMMITTED_*`, `RULE_*`, `VECTORS_*`, `EVALUATOR_*`, `SEEDED_*`), so a tree that no longer gives them fails the case instead of leaving this paragraph stale.
+`BS-05` holds the two production roots of `LexLeanBoot.RustValidate` (`bootstrap/src/RustValidate.lex.tex`) to the stage-0 oracle they replace, `calculus::rust::validate::{validate, correspond}`. The 164 distinct programs among the 247 committed package manifests and 122 fixtures lower to 223 distinct crates over both profiles; with 132 `validateCrate` and 12 `correspondCrate` rule runs (each of the 48 reachable refusals three times, found by a seeded mutation search at a fixed seed, which asserts that it reached the target and does not stop short of it), 17 hand-built crates of the merge of moved sets, and 34 hand-built crates of the loop rules, that is 406 `validateCrate` vectors (165 refused) and 269 `correspondCrate` vectors (46 refused), 675 in all. On every host both roots' rendered `rust-std` packages, compiled by the pinned rustc, agree with the oracle on all 675. On the normative host the evaluator agrees on the 200 crates of at most 400 expressions, the rule runs, and the hand-built crates (388 + 246 vectors), and on 500 seeded mutants (271 and 244 refused), and the rendered packages agree on 2,000 further seeded mutants per root. The case passed on the branch merged with `main` after wave 6 (#220), with the production export under the pinned Lean 4.32.1. Every one of these counts is an assertion of the case (`COMMITTED_*`, `RULE_*`, `VECTORS_*`, `EVALUATOR_*`, `SEEDED_*`), so a tree that no longer gives them fails the case instead of leaving this paragraph stale.
 
 The loop rules (the oracle's `Expr::Loop`, SP-19 and RB-14) are `ELoop [Id, Expr]` of the module: ownership of the state across a body that runs again (two refusals, for a name and for a component, naming the least offender in the oracle's order of names), the fallible-tail rule, `apply_types` with `tail = false` for the body, and the correspondence traversal treating the body as a block. The correspondence table was re-diffed against the oracle's `CORRESPONDENCE` after SP-19: 97 rows, and the six that gained `expr:call` (`destructure:pair`, `type:result`, `type:pair`, `construct:ok`, `construct:err`, `construct:pair`) are the only difference from the table first transcribed; the module's table and the oracle's are equal row for row and element for element.
 
@@ -9902,6 +9943,7 @@ run, and the defect removed. The observed lines are the case's own.
 | the host matrix does not wait for the plan | `repository.rs:1792`, `§8.3: the hosts are checked when the plan says the run is the whole gate` |
 | an Atlas job decides by the event itself | ``§9.4: `atlas-prefix` runs only when the plan says the run is the whole gate`` |
 | `.github/ci-plan.sh` is not executable (the mode it first had in git: the plan failed on a runner with `Permission denied` and skipped every job) | `§9.4: .github/ci-plan.sh is executable` |
+| `release/**` removed from the push trigger of `ci.yml` (a release line's pushes would run no gate) | `repository.rs:1839`, `§9.4: ci.yml runs on a push to `main` and to a release line` |
 
 The script's decisions are run on Linux, where the gate runs; on another host of the matrix the case reads the files and skips them. (The first full run of this change failed on Windows for that reason: the stand-in for `gh` was put on a `PATH` written with `:`, so the script found no run and, failing closed, chose the whole gate, which the case refused.)
 
@@ -10337,3 +10379,57 @@ The wrong-shape scorer refusals (a contract that maps to `nat`, a contract over
 `list int`) share the stateful and undischarged refusals' branch structure in
 `check_text_generator` but were not planted separately; the case asserts each
 by its reason (`does not map `list uint32` to `list int``).
+
+## Planted defects for normative text as LexLean source (`NS-01`..`NS-04`, #111)
+
+Each defect below was planted alone in the committed tree, `cargo xtask
+validate-model` (or `validate-spec-links` where stated) run once, the failure
+observed, and the plant restored with `git checkout` (§27.9). The runs were
+made on a Linux x86-64 host. The signatures are the gate's first line, trimmed
+of its `gate failed: model is inconsistent:` prefix. `NS-03` and `NS-04` assert
+the same plants, in scratch copies, on every run
+(`conformance_ns_03`, `conformance_ns_04`).
+
+| ID | Planted defect | Command | Observed |
+| --- | --- | --- | --- |
+| `NS-03` | `model/errors.toml`: the first `exit = 1` made `exit = 2` by hand | `validate-model` | `R1: model/errors.toml differs from the projection of spec/src: it is a generated view, so edit the module and run `just model-write` (NS-03)` |
+| `NS-03` | `spec/src/IdsRP.lex.tex`: the statement of `RP-01` edited, `model-write` not run | `validate-model` | `R1: model/ids.toml differs from the projection of spec/src: ... (NS-03)` |
+| `NS-03` | `SPEC.md` §31: the "Primary specification" cell of `RP-01` made `§2, §3` | `validate-spec-links` | ``RP-07: `RP-01` cites `§2, §3` in the table but its source cites `§2` (NS-03)`` |
+| `NS-04` | `spec/src/IdsRP.lex.tex`: a `structure` declared before `rp01` | `validate-model` | ``R1: spec/src/IdsRP.lex.tex: declaration 1 `Extra` (byte 134 of the module body): a row is a `definition` with exactly a name, no parameters, a result, a body and `executable` (NS-04)`` |
+| `NS-04` | `spec/src/IdsRP.lex.tex`: the `level` of `rp01` made `(if true then "build" else "build")` | `validate-model` | ``R1: spec/src/IdsRP.lex.tex: declaration 1 `rp01` (byte 134 of the module body): field `level` is missing, out of order, or not a literal of its type (NS-04)`` |
+| `NS-04` | `spec/src/Errors.lex.tex`: the first record repeated | `validate-model` | ``R1: spec/src/Errors.lex.tex: declaration 2 `llb6001` (byte 412 of the module body): `LLB6001` is registered twice (NS-04)`` |
+| `NS-04` | `spec/src/Extra.lex.tex`: a copy of `Order.lex.tex` | `validate-model` | `R1: spec/src/Extra.lex.tex: a file that belongs to no part of the projection (NS-04)` |
+
+`conformance_ns_04` additionally plants a missing field, fields out of order,
+a definition not named for its row, a family listed twice, a module in the data
+form, malformed notation and a missing module, and asserts each is refused
+naming the file and, for a declaration, its position.
+
+*What the evidence is.* `NS-02` compares the projection with the files it
+replaced: the four model files are byte-identical to their state before the
+register moved into `spec/`, except that `ids.toml` gains the blank line before
+`RP-16` that the file lacked and that the projection writes between every pair
+of rows, and that `ids.toml`, `ledger.toml` and `authorities.toml` gain the one
+comment line saying they are generated. `model/errors.toml`, whose bytes the
+shipped crate embeds, is unchanged. The projector is Rust and can falsify a
+projection, never establish one (C9, SPEC.md §27.5). `NS-01` has the pinned
+Lean elaborate and replay the 40 modules of `spec/` (about 34 seconds on the
+host above); that proves each record definition is a well-typed closed term of
+its row structure and nothing about what the strings say.
+
+### `audit-deferral` and the code-mention scan read `spec/` (#231 review)
+
+`spec` is among the directories R4 reads, and among those the diagnostic-code
+mention scan reads (`.lex.tex` included). Planted on the real gate after
+`model-write`, so that the projection, the scenario and the §31 row agree and
+only the audit can object:
+
+| Rule | Planted defect | Observed |
+| --- | --- | --- |
+| R4 | the deferral marker (spelled in halves here) at the head of the `NS-01` statement in `spec/src/IdsNS.lex.tex` | the audit names `spec/src/IdsNS.lex.tex:11` (and `model/ids.toml:2597`, which carries the same text) |
+| R4 | the marker as a comment in `spec/glossary/spec.titles/lexicon.toml`, a file only `spec/` holds | ``spec/glossary/spec.titles/lexicon.toml:6: # <marker>`` |
+| R5 | a code-shaped token that is not registered, as a comment in `spec/glossary/spec.titles/lexicon.toml` | `R5:` the token, `in .../spec/glossary/spec.titles/lexicon.toml is not a registered diagnostic code` |
+
+An unregistered code written in a `.lex.tex` statement is caught first in
+`CONFORMANCE.md`, which carries the same text, so the `.lex.tex` extension of
+the mention scan is not isolated by a plant; the `spec/` directory is.

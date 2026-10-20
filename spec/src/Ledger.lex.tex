@@ -1,0 +1,63 @@
+\begin{lexlean}{Ledger}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{spec.titles@1.0.0}
+\importmodule{Rows}
+\title{Honesty ledger}
+\begin{semanticmodule}
+definition{
+  name: authLeanRel4321,
+  parameters: [],
+  result: Rows::LedgerClaim,
+  body: (record Rows::LedgerClaim {id := "AUTH-LEAN-REL-4-32-1", level := "some-true", statement := "Lean 4.32.1 is the release tagged leanprover/lean4:v4.32.1, built from source commit f054605aea4b840552cca2e725580bffd1e1b704.", authority := "LEAN-REL-4-32-1"}),
+  executable: true
+}
+
+definition{
+  name: authLake4321,
+  parameters: [],
+  result: Rows::LedgerClaim,
+  body: (record Rows::LedgerClaim {id := "AUTH-LAKE-4-32-1", level := "some-true", statement := "Lake as distributed with Lean 4.32.1 resolves a pinned workspace environment through lake env without network access when every locked dependency is locally available.", authority := "LAKE-4-32-1"}),
+  executable: true
+}
+
+definition{
+  name: authLeanchecker4321,
+  parameters: [],
+  result: Rows::LedgerClaim,
+  body: (record Rows::LedgerClaim {id := "AUTH-LEANCHECKER-4-32-1", level := "some-true", statement := "The leanchecker executable distributed with Lean 4.32.1 replays a compiled module's environment through the Lean kernel in a separate process and is not an independent proof checker.", authority := "LEANCHECKER-4-32-1"}),
+  executable: true
+}
+
+definition{
+  name: authLeanLcnf4321,
+  parameters: [],
+  result: Rows::LedgerClaim,
+  body: (record Rows::LedgerClaim {id := "AUTH-LEAN-LCNF-4-32-1", level := "some-true", statement := "Lean 4.32.1 translates a code-generating definition to base-phase LCNF with Lean.Compiler.LCNF.toDecl, the compiler's own input to its later passes, so every constant the compiled definition can depend on at run time is named by that translation or by a definition it names.", authority := "LEAN-LCNF-4-32-1"}),
+  executable: true
+}
+
+definition{
+  name: authRustc1971,
+  parameters: [],
+  result: Rows::LedgerClaim,
+  body: (record Rows::LedgerClaim {id := "AUTH-RUSTC-1-97-1", level := "some-true", statement := "rustc 1.97.1 compiles a safe Rust 2021 crate with the semantics The Rust Reference states for that release: the checked integer methods return None exactly on overflow, the wrapping shifts mask their amount, integer division truncates toward zero, and a #![no_std] crate that declares no extern crate links neither alloc nor std.", authority := "RUSTC-1-97-1"}),
+  executable: true
+}
+
+definition{
+  name: authPrintAxioms4321,
+  parameters: [],
+  result: Rows::LedgerClaim,
+  body: (record Rows::LedgerClaim {id := "AUTH-PRINT-AXIOMS-4-32-1", level := "some-true", statement := "Lean 4.32.1 reports the transitive axiom dependencies of a declaration through #print axioms in exactly the output forms recorded by the committed axiom-parser fixtures.", authority := "PRINT-AXIOMS-4-32-1"}),
+  executable: true
+}
+
+definition{
+  name: authUorGnaf1Draft2,
+  parameters: [],
+  result: Rows::LedgerClaim,
+  body: (record Rows::LedgerClaim {id := "AUTH-UOR-GNAF-1-DRAFT-2", level := "some-true", statement := "UOR-GNAF normative draft uor-gnaf/1-draft.2 requires an optimality claim's machine contract, accounting model, complete-system universe and its optimizer-independent completeness evidence, objective order, and claim class to be fixed before optimization, and treats UOR-NAF as informative only.", authority := "UOR-GNAF-1-DRAFT-2"}),
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

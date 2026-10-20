@@ -1151,7 +1151,6 @@ fn runtime_kind(base: &str) -> String {
 /// the realized program uses that element.
 pub const CORRESPONDENCE: &[(&str, &[&str])] = &[
     ("function", &["function", "export"]),
-    ("constant", &["function"]),
     ("enum:adt", &["type:adt"]),
     ("enum:closures", &["type:fn", "expr:closure"]),
     ("apply:dispatch", &["type:fn", "expr:closure"]),
@@ -1341,6 +1340,7 @@ pub const CORRESPONDENCE: &[(&str, &[&str])] = &[
     ("call:runtime:join", &["prim:join"]),
     ("call:runtime:format_decimal", &["prim:format_decimal"]),
     ("call:runtime:parse_decimal", &["prim:parse_decimal"]),
+    ("constant", &["function"]),
 ];
 
 fn row(construct: &str) -> Result<&'static [&'static str], String> {

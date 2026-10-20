@@ -1,0 +1,127 @@
+\begin{lexlean}{IdsRB}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{spec.titles@1.0.0}
+\importmodule{Rows}
+\title{Rust backend conformance claims}
+\begin{semanticmodule}
+definition{
+  name: rb01,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "RB-01", level := "build", suite := "rust-backend", statement := "Every Rust rendering is built as a closed AST each of whose constructs carries the calculus element it realizes, every correspondence row and every AST node is exercised by a run package, and a construct whose row, width, or program does not justify its element is refused.", sections := "§17.16"}),
+  executable: true
+}
+
+definition{
+  name: rb02,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "RB-02", level := "build", suite := "rust-backend", statement := "An exported name that is not a lowercase snake-case identifier, is a Rust keyword, imitates a generated name, or is declared by the runtime, a name exported twice, and an unavailable crate name each fail with LLB6005, and a crate binding one name twice in a function is refused.", sections := "§17.16, §26.3"}),
+  executable: true
+}
+
+definition{
+  name: rb03,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "RB-03", level := "build", suite := "rust-backend", statement := "An export that copies a parameter whose type is not Copy fails with LLB6005, and a crate that moves a value twice or reads it after moving it is refused.", sections := "§17.16, §26.3"}),
+  executable: true
+}
+
+definition{
+  name: rb04,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "RB-04", level := "build", suite := "rust-backend", statement := "A package whose boundary holds a function value at any depth, whose program computes a value of a type no value inhabits, or whose rust-core program needs the heap fails with LLB6005, and a rust-core crate naming any heap type, runtime function, or construct is refused.", sections := "§17.13, §17.16"}),
+  executable: true
+}
+
+definition{
+  name: rb05,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "RB-05", level := "build", suite := "rust-backend", statement := "A function that can overflow returns R<T> and every call to it propagates, any other returns its value, an export whose declared errors differ from its function's fails with LLB6005, and a crate that drops, invents, or misreturns a failure is refused.", sections := "§17.16"}),
+  executable: true
+}
+
+definition{
+  name: rb06,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "RB-06", level := "build", suite := "rust-backend", statement := "Every committed package builds offline under its declared gates, rustc warnings and Clippy's default lints denied with ten documented exceptions, the export of each one with an observable outcome, called from a separate crate, prints exactly the denotation's observable outcome, and so does every primitive instance on its boundary and seeded inputs; a planted lint and a planted semantic mutation are detected.", sections := "§17.16"}),
+  executable: true
+}
+
+definition{
+  name: rb07,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "RB-07", level := "build", suite := "rust-backend", statement := "Packages are deterministic and content-addressed: renderings by two separate processes under different roots and environments are byte-identical to each other and to the committed package, every manifest and provenance validates against its schema, the provenance binds the SHA-256 of each file, the program identity, the runtime LexLean's semantics records, the sources, and the language-1.2 compiler-semantics ID, and every committed package's sources are the semantic ID of the verified build stating its program.", sections := "§17.16, §21.7"}),
+  executable: true
+}
+
+definition{
+  name: rb08,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "RB-08", level := "build", suite := "rust-backend", statement := "A read of a binding that nothing after it reads is a move and a projection of a pair component that nothing after it reads moves the component out of the pair, every other read clones, and every clone a rendering keeps is one the ownership check requires; a list is a run of contiguous cells, and building or taking apart a cell is constant work on any list; a crate that reads or moves a binding after a component was moved out of it, or moves a component twice, is refused.", sections := "§17.16"}),
+  executable: true
+}
+
+definition{
+  name: rb09,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "RB-09", level := "build", suite := "rust-backend", statement := "Every name the Rust runtime takes from Rust's library is a row of its library table, each a machine primitive with a stated meaning, stated in the closed AST over primitives, or a construct of the closed AST, and every primitive is cited by a row; a runtime that names anything else, a row it does not use, a row citing a name that is not a primitive, and a primitive no row cites are refused.", sections := "§17.16"}),
+  executable: true
+}
+
+definition{
+  name: rb10,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "RB-10", level := "build", suite := "rust-backend", statement := "The scaffolding of a Rust package is data and not renderer text: the edition, whether the crate is published, the lint gates, and every allowed lint with its Clippy group and reason are read from the language-1.2 semantic module `RustPackage`, `#![no_std]` is the production target row's `allocation = false`, and `#![forbid(lint)]` restates each gate on rustc's lints at `forbid`; a renderer source holding a string of the module, a module that is not the shape the reader accepts, and a `Cargo.toml` or crate header that differs from the module are refused.", sections := "§17.16"}),
+  executable: true
+}
+
+definition{
+  name: rb11,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "RB-11", level := "build", suite := "rust-backend", statement := "Every lint a package allows states its Clippy group, none is in the `correctness` group, the module states the same as a theorem over the same list, which the reader checks by its shape and the module's project type-checks (`verify` replays its proof, this row does not), and the table of SPEC.md §17.16 equals the module's rows; an allowed lint in `correctness`, a specified row the module lacks, a module row the specification lacks, and a module without the theorem are refused.", sections := "§17.16"}),
+  executable: true
+}
+
+definition{
+  name: rb12,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "RB-12", level := "build", suite := "rust-backend", statement := "The language-1.2 compiler-semantics ID covers the package scaffold: changing a lint row, the edition, or a gate of a copy of the embedded tree changes it, writing the module in its data form or reformatting its notation does not, and the module is outside the identities of languages 1.0 and 1.1.", sections := "§17.16, §21.2"}),
+  executable: true
+}
+
+definition{
+  name: rb13,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "RB-13", level := "build", suite := "rust-backend", statement := "A package states the effects of its realization: `package.json` and `provenance.json` record them, ascending and registered, the production registry says that exhausting the stack aborts the process, and an unregistered or unordered list, or one that states allocation on `rust-core`, is refused.", sections := "§17.13, §17.16"}),
+  executable: true
+}
+
+definition{
+  name: rb14,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "RB-14", level := "build", suite := "rust-backend", statement := "A library template whose self calls are all tail calls is rendered as a loop over its accumulator that breaks with its result, so that the production rows of the primitives it realizes carry no `recursion`, while a template with a call that is not a tail call is rendered as a call and keeps the effect; a rendering that states a self call where a loop is possible, and a row whose `recursion` differs from its rendering, are refused.", sections := "§17.13, §17.14, §17.16"}),
+  executable: true
+}
+
+definition{
+  name: rb18,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "RB-18", level := "build", suite := "rust-backend", statement := "A function of no parameters that cannot fail and whose body is a closed literal of a list, string, or byte string is a constant of the Rust machine, an `ItemDef.constant` of `RustSyntax` whose value in `RustSemantics` is its body's, rendered in rust-std as a thread-local cell evaluated once per thread whose every call returns a clone of the value, so that a read allocates nothing and a decoded constant is not rebuilt on each call; certificate B encodes the item as itself, rust-core has no rendering of it, a literal whose type is a declared algebraic type is not a constant, and the rule that a constant cannot fail and that its body is a closed literal is stated by `validate` and by the bootstrap `RustValidate`, whose differential is held to it by committed crates that break it, while a rendering that rebuilds the literal at each read is detected by counting its allocations.", sections := "§17.16"}),
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}
