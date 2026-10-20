@@ -7,9 +7,11 @@ include!(concat!(env!("OUT_DIR"), "/sha256_package.rs"));
 /// package, linked from the committed production export, and no other
 /// implementation.
 fn sha256(message: &[u8]) -> [u8; 32] {
-    // `Overflow` is the end of FIPS 180-4's domain, a message of 2^64 bits or
-    // more (2^61 bytes): no host allocates one, so this is an impossibility of
-    // the host and not a failure of any input (R5).
+    // The package declares the effect `overflow` and its certificate states
+    // the result `Result<Digest, Overflow>`: `Overflow` is returned exactly
+    // when the message length in bits does not fit 64 bits, the end of FIPS
+    // 180-4's domain (2^61 bytes). No host allocates such a message, so this
+    // is an impossibility of the host and not a failure of any input (R5).
     let sha256_package::Adt0::C0(a, b, c, d, e, f, g, h) =
         sha256_package::run(sha256_package::Bytes::lit(message))
             .expect("a message under 2^61 bytes is inside the domain of FIPS 180-4");
