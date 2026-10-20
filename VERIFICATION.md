@@ -10298,3 +10298,20 @@ projection, never establish one (C9, SPEC.md §27.5). `NS-01` has the pinned
 Lean elaborate and replay the 40 modules of `spec/` (about 34 seconds on the
 host above); that proves each record definition is a well-typed closed term of
 its row structure and nothing about what the strings say.
+
+### `audit-deferral` and the code-mention scan read `spec/` (#231 review)
+
+`spec` is among the directories R4 reads, and among those the diagnostic-code
+mention scan reads (`.lex.tex` included). Planted on the real gate after
+`model-write`, so that the projection, the scenario and the §31 row agree and
+only the audit can object:
+
+| Rule | Planted defect | Observed |
+| --- | --- | --- |
+| R4 | the deferral marker (spelled in halves here) at the head of the `NS-01` statement in `spec/src/IdsNS.lex.tex` | the audit names `spec/src/IdsNS.lex.tex:11` (and `model/ids.toml:2597`, which carries the same text) |
+| R4 | the marker as a comment in `spec/glossary/spec.titles/lexicon.toml`, a file only `spec/` holds | ``spec/glossary/spec.titles/lexicon.toml:6: # <marker>`` |
+| R5 | a code-shaped token that is not registered, as a comment in `spec/glossary/spec.titles/lexicon.toml` | `R5:` the token, `in .../spec/glossary/spec.titles/lexicon.toml is not a registered diagnostic code` |
+
+An unregistered code written in a `.lex.tex` statement is caught first in
+`CONFORMANCE.md`, which carries the same text, so the `.lex.tex` extension of
+the mention scan is not isolated by a plant; the `spec/` directory is.
