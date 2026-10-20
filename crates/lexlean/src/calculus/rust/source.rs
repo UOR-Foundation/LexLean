@@ -32,7 +32,7 @@ use crate::surface::module::{self, SEMANTIC};
 pub const MODULE_PATH: &str = "language/rust-runtime-1.2/RustRuntime.lex.tex";
 
 /// The stack of the thread that decodes the module.
-const DECODER_STACK: usize = 256 * 1024 * 1024;
+const DECODER_STACK: usize = crate::READER_STACK;
 
 /// The origin every decoded construct carries: the runtime realizes no
 /// calculus element, so nothing is checked against a correspondence table.

@@ -1884,11 +1884,28 @@ functions on 9 boundary values of its width (all pairs, six shift amounts, nine 
 and 200 seeded calls: 27 s; three plants of width bodies (`checked_add` of `u8` for `checked_sub`,
 `shift_left` of `i32` for `shift_right`, `bit_xor` of `u16` for `bit_or`) fail at their function.
 `sp_22` verifies the module of 110 theorems in 8 min 1 s (13 min 51 s of CPU) and its plant on one
-theorem in about a minute; the case is 566 s with `rb_16` and `rb_09`, runs on a stack of 256 MiB
-because the readers recurse with the module's nesting, and allows its project an hour
-(`child_timeout_ms`), so `SP-22` is the one case of the part `preservation-runtime` of `bdd`
+theorem in about a minute; the case is 566 s with `rb_16` and `rb_09`, runs on a stack of 64 MiB
+(`lexlean::READER_STACK`) and allows its project an hour (`child_timeout_ms`), so `SP-22` is the one case of the part `preservation-runtime` of `bdd`
 (`bdd-preservation-runtime` in `.github/vv-rows.json`). The proofs of the width theorems need
 `allWidth` and `hasWidth` in their definitions: a head without them did not terminate.
+
+The reader stack is a measured need, not a workaround. The runtime module reads (`sdk::read_module`)
+to 1.14 MB of data nested 119 levels, because a list of n elements nests n levels, and the reader
+recurses once per level in frames of about 17 KB each in a debug build, which the tests and `vv` are:
+run on threads of 2, 4, 8, 16, 32, and 64 MiB, the read aborts with a stack overflow at 2 MiB, which
+is what a default or test thread has, and succeeds at 4 MiB. Three places read it on a thread the
+caller does not size: `sp_22` before it had its own (`has overflowed its stack`), `rp_10`, which
+recomputes the compiler-semantics ID through `identity_bytes` on the test thread (the same), and
+the decoder in `runtime::core`. Each now spawns one of `READER_STACK`, 64 MiB, sixteen times the
+measured need, so the module can grow with the runtime (each function adds about one level; the
+stack is virtual memory the thread touches only as deep as the recursion goes). A release build
+needs far less; the 64 MiB is for the debug builds that run the gate.
+
+The identity-bound records (`rust_renderer`, `rust_runtime_core`, `rust_runtime_std` in
+`language/semantics-1.2.toml`, the example and fixture locks, the compiler goldens, the packages of
+the production export) are regenerated once, by the maintainer at the end of the stack when it is
+green on the line, not by each PR: this branch moves the compiler-semantics ID again, on top of
+#243's move (`RustSyntax` gains `RustType.i128`), and leaves every such record as it found it.
 
 ### a theorem proved by a split on a Boolean local can fail (SM-36)
 

@@ -150,7 +150,7 @@ pub fn run(id: &str) {
     let id = id.to_owned();
     std::thread::scope(|scope| {
         std::thread::Builder::new()
-            .stack_size(256 * 1024 * 1024)
+            .stack_size(lexlean::READER_STACK)
             .spawn_scoped(scope, || check(&id))
             .expect("a thread for the case")
             .join()
