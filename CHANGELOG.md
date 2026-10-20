@@ -237,6 +237,22 @@ and Unreleased holds what has landed since.
   twelve planted defects, and the certified packages against the committed
   ones. The Rust reasons are reproduced to the byte but for Rust's `Debug` of
   a string with a scalar beyond U+009F, which is outside the claim.
+- The Rust crate validator as language-1.2 source (SPEC.md §17.23, §17.16,
+  `BS-05`, #92; no new diagnostic code, no change to the language-1.2
+  identity). `bootstrap/src/RustValidate.lex.tex` declares `validateCrate` and
+  `correspondCrate` as production roots for `rust-std`, for a crate given as
+  the closed Rust AST as data, with the oracle's reasons to the byte and the
+  rules for a loop (`Expr::Loop`: ownership across a body that runs again, the
+  fallible-tail rule, the body as a block that is not a tail). `BS-05` runs the
+  223 distinct crates the renderer lowers from the committed programs, 132 +
+  12 rule runs that reach each of the 48 reachable refusals three times, and 17
+  + 34 hand-built crates (406 + 269 vectors) under the pinned `rustc` on every
+  host, and on the normative host the evaluator on the crates of at most 400
+  expressions and 500 seeded mutants, 2,000 more per root under `rustc`,
+  sixteen planted defects, and the certified packages against the committed
+  ones. The register is 430 IDs. A finding about the certificate generator,
+  #222, is worked around by building the correspondence table in a definition
+  of its own.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or

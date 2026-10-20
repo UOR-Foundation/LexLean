@@ -4,6 +4,9 @@
     "bootstrap-check": [
       "BS-04"
     ],
+    "bootstrap-validate": [
+      "BS-05"
+    ],
     "compiler": [
       "BS-01",
       "BS-02",
