@@ -10,6 +10,17 @@ This record is the evidence that the migration lost nothing, in the manner of
 
 ## What was migrated
 
+This record describes the module as it was first migrated, at commit
+`b4be399a6`: the counts below (17 declarations, 824 DAG nodes) are the first
+oracle's own output, and running its `export.lean` and `flags.lean` from
+commit `54594e1a0` under `leanprover/lean4:v4.32.1` prints `LexLeanText:
+decls=17 nodes=824` and `17 7` again. They are not the committed module's
+counts: slice 1 went on to extend the module (the vocabulary and piece
+functions `idBound` and `pieceBytes`, `Good`, `allBelow`, and the private
+names of #91), and the module on `main` holds 118 declarations, which is what
+the pipeline reports for its oracle source in the second record below. The
+equivalence of the committed module is the second record's, not this one's.
+
 `LexLeanText` — the text laws — authored once at
 `tests/text-laws/oracle/src/LexLeanText.lean` (recoverable from checkpoint
 commit `54594e1a0`), proved under `leanprover/lean4:v4.32.1` with no `sorry`, no
@@ -140,3 +151,113 @@ recomputes them from disk. The language-1.2 compiler-semantics ID moves, so
 every lock, golden, fixture expectation and verified record bound to it is
 stale; that regeneration is the work of the slices that add the example, and
 this slice leaves it to them so that one sweep pays for it once.
+
+## Second record: context windows and generation (slice 2 of #30)
+
+Slice 2 (`LM-04`..`LM-06`) adds the laws of context windows and text
+generators to the same module, by the round trip of the first record. Nothing
+in the release tree is hand-written Lean.
+
+### What was added
+
+The oracle source of the first record was extended outside the release tree
+and proved under `leanprover/lean4:v4.32.1` with no `sorry`, no `admit`, and
+no new axiom:
+
+- **Windows:** `fits`, `keepLast`, `admitRefuse`, `admitKeepLast`,
+  `pushRefuse`, `pushKeepLast`, `admit`, `push`, `fitsOption`, and
+  `suffixOption`.
+- **Window laws:** `admitRefuse_bounded`, `admitKeepLast_bounded`,
+  `pushRefuse_bounded`, `pushKeepLast_bounded`, `admitRefuse_exact`,
+  `admitKeepLast_exact`, `admitKeepLast_suffix`, and `admitRefuse_refuses`.
+- **Generation:** `firstMax`, `xorshift32`, `weight`, `totalWeight`,
+  `drawGo`, `proportional`, `chooseGreedy`, `chooseSample`, `guard`, `genGo`
+  (structural in its fuel), `generateWith`, `generateGreedy`,
+  `generateSample`, their `Guarded` forms, and `atMost`.
+- **Generation laws:** `generateGreedy_bounded`, `generateSample_bounded`,
+  `generateGreedy_guarded`, and `generateSample_guarded`.
+
+The exact axioms `#print axioms` reports for the laws an elaboration names:
+
+```
+'LexLeanText.admitRefuse_bounded' does not depend on any axioms
+'LexLeanText.admitKeepLast_bounded' depends on axioms: [propext, Quot.sound]
+'LexLeanText.pushRefuse_bounded' does not depend on any axioms
+'LexLeanText.pushKeepLast_bounded' depends on axioms: [propext, Quot.sound]
+'LexLeanText.admitRefuse_exact' does not depend on any axioms
+'LexLeanText.admitKeepLast_exact' depends on axioms: [propext, Quot.sound]
+'LexLeanText.admitKeepLast_suffix' depends on axioms: [propext, Quot.sound]
+'LexLeanText.admitRefuse_refuses' does not depend on any axioms
+'LexLeanText.generateGreedy_bounded' depends on axioms: [propext, Quot.sound]
+'LexLeanText.generateSample_bounded' depends on axioms: [propext, Quot.sound]
+'LexLeanText.generateGreedy_guarded' depends on axioms: [propext, Quot.sound]
+'LexLeanText.generateSample_guarded' depends on axioms: [propext, Quot.sound]
+```
+
+`xorshift32` evaluates to `270369`, `67634689`, `2647435461`, and `307599695`
+from seed 1, which is Marsaglia's sequence for the 13, 17, 5 triple.
+
+### The first record's pipeline, re-run
+
+Before the extension, the first record's pipeline was run again on the
+committed slice-1 oracle source:
+
+```
+export.lean -> "LexLeanText: decls=118 nodes=12570"
+```
+
+After `lexlean fmt`, its output is byte-identical to the module `main`
+committed. The counts the first record prints (17 declarations, 824 nodes)
+are not what this pipeline produces from that source today. The committed
+module is what the pipeline produces.
+
+### The extended export
+
+```
+flags.lean  -> "198 58"
+export.lean -> "LexLeanText: decls=198 nodes=19448"
+canon.py    -> "LexLeanText 799557"
+```
+
+The committed `language/text-1.2/library/src/LexLeanText.lex.tex` is that
+output, written in the authoring notation by `lexlean fmt` in a locked scratch
+copy of the library project.
+
+### Equivalence
+
+The Lean the compiler generates from the committed native data
+(`text_laws::stage()`) was compiled by the pinned Lean as the module
+`LexLeanText`. It was then exported again with the same `export.lean` and
+`flags.lean`, converted with the same `canon.py`, and formatted with
+`lexlean fmt`:
+
+```
+export.lean -> "LexLeanText: decls=198 nodes=19448"
+```
+
+Compared with the committed module, the regenerated module has:
+
+- the same 198 declarations, in the same order;
+- the same 19,448 DAG nodes;
+- every row equal in kind, universe parameters, type, value, reducibility,
+  transparency, tags, inlining, compiled flag, and exact axioms.
+
+The attribute probe prints the same 198 lines for the library's constants in
+both environments.
+
+### Differences, stated plainly
+
+1. **The private `Lean` import.** The regenerated module imports `["Init",
+   "Lean"]`. This is the import of the generic decoder runtime, as in the
+   first record. The decoder's private constants (`LexLeanCore.Runtime`) are
+   also the 64 extra lines of the regenerated probe and the difference
+   between the `flags.lean` counts (`262 86` against `198 58`). None of them
+   is a declaration of the library.
+2. **One hygienic binder name.** The `else` binder of one compiled matcher is
+   `else._@.LexLeanText.#2792387140._hygCtx._hyg.#91` in the original and
+   `else._@._hyg.#2` in the regenerated module. A binder name is not part of
+   a kernel term's meaning (terms are compared up to renaming of bound
+   variables).
+3. **Layout.** Line breaks differ where the longer binder name was wrapped.
+
+Apart from these, the two modules are equal.
