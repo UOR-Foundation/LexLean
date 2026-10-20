@@ -9731,6 +9731,83 @@ IDs, and the digests of its lock and its source map); the committed
 language-1.2 records are regenerated in the wave the maintainer names, not by
 this change.
 
+### the standard-library source packages and the helpdesk can fail (`SL-03`, `SL-04`, `EX-09`, #32)
+
+The three cases were written before the packages and the example existed (R3).
+With the sources moved out of the tree, `conformance_sl_03`, `conformance_sl_04`,
+and `conformance_ex_09` each failed at their first read:
+
+```text
+SL-03: std-models/lexlean.toml: No such file or directory (os error 2)
+SL-04: std-reasoning/lexlean.toml: No such file or directory (os error 2)
+EX-09: examples/helpdesk/lexlean.toml: No such file or directory (os error 2)
+```
+
+Each defect below was planted in the committed source, the named case run with
+`cargo test -p repo-conformance --test conformance <case> -- --exact --test-threads=1`,
+and the defect removed. The observed lines are the cases' own, cut for width.
+
+| Planted defect | Case | Observed |
+| --- | --- | --- |
+| `Scores` declares a `composite{}` | `conformance_sl_03` | `no composite takes an importer's models` |
+| a file `std-models/src/Hand.lean` | `conformance_sl_03` | `std-models/src/Hand.lean is Lean source` |
+| the manifest declares an `[[artifact_source]]` | `conformance_sl_03` | `the package declares no source package and no artifact` |
+| the law `margin_tie` is renamed away | `conformance_sl_03` | `the module states `margin_tie`` |
+| `leaderStep` keeps the last maximal score | `conformance_sl_03` | `LLV7002`: `Tactic `decide` proved that the proposition best [3, 9, 9, 4] = 1 is false` |
+| `drain_bound` states `Remaining x < second x`, a bound the ranking does not meet | `conformance_sl_04` | `LLT4010`: `reasoner `Drain` fuel bound: `drain_bound` does not state exactly the generated obligation` |
+| the manifest of `std-reasoning` declares a source package | `conformance_sl_04` | `the package declares no source package and no artifact` |
+| the abstention threshold is 1, not 2 | `conformance_ex_09` | `classify disagrees with the oracle: on "invoice down": 0 != 8` |
+| a file `examples/helpdesk/src/Glue.rs` | `conformance_ex_09` | `Glue.rs is handwritten Lean or Rust` |
+| the keyword `refund` is misspelled in `Router.features` | `conformance_ex_09` | `classify disagrees with the oracle: on "help refund is": 8 != 1` |
+| `Reply.workFor` gives an outage four items of work, not three | `conformance_ex_09` | `dispatch disagrees with the oracle: on "my site is down": outage:3 != outage:2` |
+| `plan` loses its `production:` clause | `conformance_ex_09` | `the packages' own roots are not the example's` (`left == right`: two roots) |
+| `classify` applies the model with no checks | `conformance_ex_09` | `LLT4008`: `executable `classify` applies model `Router::ScoringModel` without the runtime checks [precondition]` |
+
+The threshold plant was not caught where it was first made. With the topics
+weighted alike a request mentioning one topic scored a margin of 3 and every
+other request 0, so a threshold of 1, 2, or 3 gave the same answers and the
+differential passed; only the comparison with the committed export caught it
+(`packages/rust-std/classify/package.json differs from the committed package`).
+The weights are now 4, 3, and 2, so the margins 1, 2, 3, and 4 all occur and
+the differential itself catches the plant, as the row above records. The
+plants of `std-models` and `std-reasoning` that need only the manifest or the
+source text fail before any Lean runs; the `leaderStep` plant fails in the
+kernel, and the `drain_bound` plant at link.
+
+Three more refusals are the case's own planted copies, each required to be
+refused with exactly its code before any backend output: a changed byte of
+`std-models` and a changed version of it in the example's manifest (`LLC0105`),
+an import of `LexLeanStdModels.Scores` by an example that does not declare the
+package while `std-reasoning` does (`LLR3009`), a flipped bit of the weights
+artifact (`LLR3007`), and a `checked` application without its precondition
+(`LLT4008`). The same pin check refused the example when the packages were
+edited under a lock that predated them, before any case was run:
+
+```text
+error[LLC0105]: source package `std-models` is not the package the lock pins: tree_sha256: locked dddefafb…, found 50c65a4e…
+```
+
+The proof forms bound what the combinators claim. `linear_arithmetic` could
+not prove that `decideOr` abstains below the threshold for every list (Lean
+reported `omega could not prove the goal` with the counterexample
+`c ≥ 2, a - b ≥ 1`, where `a` is the threshold and `b` the margin), and a theorem about `classify` over a byte literal is not reducible by the
+kernel (`Tactic `decide` failed` and `Tactic `rfl` failed` on `classify`
+applied to `"hello"`), so the laws of the score combinators are stated at
+closed instances and the behavior of the roots is held by the differential
+against an oracle written in the case, the way `SL-01` holds `Text`. The
+gate law of `GateModel` is general over the type parameter.
+
+Measured on Linux x86-64 with Lean 4.32.1: `conformance_sl_03` and
+`conformance_sl_04` together in 92 s (each verifies its package, replays it
+with `leanchecker`, and audits its axioms); `conformance_ex_09` in 821 s (the
+example formatted, built, and verified with its three packages, the evaluator
+differential, and the production export compared with the committed packages).
+No language data, schema, or fixture moved for these rows: after the merge of
+the wave-6 identity `cargo xtask check-golden --write` changed only the files
+of `std-models`, `std-reasoning`, and `examples/helpdesk`, and
+`cargo xtask check-production-export --write` only
+`tests/production-export/helpdesk/`.
+
 ### byte-to-fixed-width widening conversions in language 1.2 (`SM-32`, #114)
 
 Language 1.2 adds the total widening primitives `to_int` (any fixed-width
