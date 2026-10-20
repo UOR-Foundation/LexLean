@@ -30,3 +30,10 @@ Feature: stdlib
     Then no digest, pin, or identity differs from its authority or its recomputation
     And every planted defect is detected
 
+  @SL-07 @build
+  Scenario: The compiler running the standard library's `Sha256` package reproduces that package: the digest of every file that the `provenance.json` of every committed production export names equals the digest `sha2` gives its bytes; `lib.rs` of the two SHA-256 packages holds none of the digests their provenance records; and, under the pinned Lean, rebuilding the standard library with the compiler yields packages byte-identical to the committed ones and a `lib.rs` for `sha256` that is the file the compiler links, so that regenerating the export a second time changes nothing; a bit changed in a recorded digest, a digest written into `lib.rs`, and a link that is not the rebuilt `lib.rs` are each detected.
+    Given the committed production exports, the linked `Sha256` package, the pinned Lean toolchain, and the `sha2` crate as the oracle
+    When the files named by every provenance are digested by the oracle, `lib.rs` is searched for the recorded digests, the standard library is exported again, and each defect is planted
+    Then every recorded digest is the oracle's, no recorded digest is in `lib.rs`, the exported packages are the committed ones, and the exported `lib.rs` of `sha256` is the linked file
+    And every planted defect is detected
+
