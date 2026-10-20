@@ -58,7 +58,6 @@ fn theorems(text: &str) -> Vec<(String, String)> {
             let run = functions(text)
                 .into_iter()
                 .find(|function| statement.contains(&format!("\"value\":\"{function}\"")))
-                .map(|function| function.replace("::", "_"))
                 .unwrap_or_default();
             Some((name.to_owned(), run))
         })
@@ -68,12 +67,7 @@ fn theorems(text: &str) -> Vec<(String, String)> {
 /// Whether the module has exactly one refinement theorem per function it
 /// defines, each stating the function it is named for.
 fn complete(text: &str) -> Result<(), String> {
-    // A function in a module is named by its path; its theorem by the path
-    // with `_` for `::`.
-    let defined: BTreeSet<String> = functions(text)
-        .into_iter()
-        .map(|function| function.replace("::", "_"))
-        .collect();
+    let defined = functions(text);
     let stated = theorems(text);
     let named: BTreeSet<String> = stated.iter().map(|(name, _)| name.clone()).collect();
     if named.len() != stated.len() {

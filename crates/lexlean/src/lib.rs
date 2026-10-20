@@ -232,20 +232,13 @@ fn embedded_digest(keep: impl Fn(&str) -> bool) -> Sha256Digest {
         .min(8);
     std::thread::scope(|scope| {
         for _ in 0..workers {
-            // A module of a hundred functions nests as deeply as its list, and
-            // reading it to its data form recurses with it, so the readers have
-            // a stack of their own rather than the two megabytes of a default
-            // thread.
-            std::thread::Builder::new()
-                .stack_size(256 * 1024 * 1024)
-                .spawn_scoped(scope, || loop {
-                    let at = next.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                    let Some((path, bytes)) = selected.get(at) else {
-                        break;
-                    };
-                    let _ = slots[at].set(identity_bytes(path, bytes));
-                })
-                .expect("a reader thread");
+            scope.spawn(|| loop {
+                let at = next.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                let Some((path, bytes)) = selected.get(at) else {
+                    break;
+                };
+                let _ = slots[at].set(identity_bytes(path, bytes));
+            });
         }
     });
     let rows: Vec<(&str, std::borrow::Cow<'static, [u8]>)> = selected
