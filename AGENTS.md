@@ -133,8 +133,8 @@ Change the chapter modules with `cargo xtask spec` (`NS-07`): `replace-block`
 and `insert-after` act on the paragraph, table or fence found by its first line
 (`--chapter ChapterNN --first-line <text> --from <file of lines>`), and `port`
 applies each hunk of a merged SPEC.md that lies outside the derived regions
-(`--merged <SPEC.md>`: after a merge, keep the merged text, run `model-write` on
-the chapters to get their projection, and give the merged text to `port`). Each
+(`--merged <SPEC.md>`: after a merge, the merged SPEC.md is the text to give it;
+the chapters still hold the old text, so it is compared with their projection). Each
 writes a module only when the regenerated SPEC.md is the intended text, and
 `--dry-run` verifies and writes nothing. The route below is what it does by
 hand, and the way to edit what it refuses.
