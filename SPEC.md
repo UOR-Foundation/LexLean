@@ -163,7 +163,7 @@ Complex Lean objects that LexLean 1.0 cannot define MAY be imported as closed ex
 
 A verification attestation depends on:
 
-1. the exact LexLean compiler semantics identified in the build manifest;
+1. the exact LexLean compiler semantics identified in the build manifest, and the SHA-256 that computes every identity (the certified standard-library package of §17.22);
 2. the pinned Lean 4 toolchain;
 3. Lean's elaborator and kernel;
 4. the `leanchecker` executable from that same toolchain, used as a separate-process replay check;
@@ -605,7 +605,6 @@ Every dependency the shipped crate declares, for any target and of any kind but 
 | `semver` | semantic-version parsing |
 | `serde` | JSON and TOML deserialization and serialization |
 | `serde_json` | JSON parsing and serialization |
-| `sha2` | SHA-256 |
 | `signal-hook` | interrupt handling (SIGINT, SIGTERM, SIGHUP, SIGQUIT end the live child process groups; §17.17) |
 | `tempfile` | temporary directories |
 | `toml` | TOML parsing |
@@ -7230,10 +7229,34 @@ bound (§17.16), and a linear chain of sixty-four is past it. Its roots and orac
 | `sha256Hex (message : Bytes) : Bytes` | the FIPS 180-4 example digests, every vector of the NIST CAVP `SHA256ShortMsg` and `SHA256LongMsg` files under `tests/stdlib/sha256/`, and the `sha2` crate on a seeded corpus whose lengths cover every padding boundary |
 
 A disagreement with an oracle fails the case (`SL-02`) and is a defect; it is
-never resolved by adopting the oracle's digest. The module is the first stage
-of #126: the compiler's own identities (§8, §21) are still computed by the
-`sha2` crate, and switching them to the module is the second stage, which
-waits on the measured cost of the rendered package against `sha2`.
+never resolved by adopting the oracle's digest. **The compiler's digest (`SL-05`, #126 stage 2).** Every content identity of
+§21 is computed by the rendered `rust-std` package of `sha256`, and no other
+implementation of SHA-256 is part of the compiler: the shipped crate links the
+committed export (`tests/production-export/stdlib/packages/rust-std/sha256/src/lib.rs`)
+through the in-crate link `crates/lexlean/sha256_package.rs`, which `cargo
+package` dereferences and `audit-shipped` requires to resolve to that file,
+and its manifest has no `sha2` dependency. The crate is a dependency of the
+product's identities, not of their inputs, which is why it does not recurse on
+itself: the file contains no digest of anything (the digests that describe the
+package, its file hashes, program identity, and source identity, are in its
+`provenance.json`, beside it), the compiler is built from the committed file
+and not from a build of the project, and the package is not part of any
+compiler-semantics ID (§21.2), exactly as the `sha2` crate was not. What holds
+the function instead is the case of `SL-05` (the authorities, the oracle, and
+the planted defects) and the byte-identity of every committed identity.
+Regenerating the export is two steps for that reason: the export is rewritten
+by the compiler, the compiler is rebuilt from the rewritten file, and the
+export is checked again. Of the compression function, the standard's
+authorities (the rows `NIST-FIPS-180-4`, `NIST-SHA256-EXAMPLES`, `NIST-FIPS-180-2`,
+and `NIST-CAVP-SHA256-SHORTMSG` and `-LONGMSG` of `model/authorities.toml`, level
+`some-true`) establish the digest and the Lean certificates of the package
+establish its program; `sha2` falsifies and establishes nothing. The Rust
+runtime text the package embeds (§17.16) is the declared Rust machine's, as it
+is for every production package, so what remains outside LexLean source under
+the digest is that text and the framing of §21.1, which is Rust until it is
+authored in LexLean (#92). A message of 2^61 bytes or more is outside the
+domain of FIPS 180-4 and is not allocatable on any supported host, so the
+package's `Overflow` for it is a host impossibility and not a public failure.
 
 ### 17.23 The bootstrap project
 
@@ -7979,6 +8002,11 @@ frame(label, bytes) =
 ```
 
 Labels are ASCII and unique within each hash recipe.
+
+Every SHA-256 in these recipes is the standard library's `Sha256` package
+(§17.22). The package digests one message, so a recipe holds its frames until
+it finishes. FIPS 180-4 defines SHA-256 for messages of fewer than 2^64 bits,
+that is fewer than 2^61 bytes; no host allocates a larger one.
 
 ### 21.2 Compiler-semantics ID
 
@@ -10382,6 +10410,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RT-04` | `runtime` | No Lean runtime text remains in the language-1.2 compiler: a generated language-1.2 module imports the runtime modules whose constants it names and declares nothing under a runtime namespace, and the only Lean runtime text in the compiler's source outside unit-test items, in one string literal or in several written together, is the decoder of core module 2, which loads native modules and so cannot be one; a runtime text planted in any of its shapes, raw or escaped, with or without a namespace line, split across literals, or after a test module, is found. | §17.12, §18.1 |
 | `SL-01` | `stdlib` | The standard library's `Text` module is language-1.2 source whose seven members over `Bytes` (`startsWith`, `endsWith`, `trim`, `lines`, `splitOn`, `joinWith`, `find`) are production roots eligible for `rust-std` with exactly their declared effects; each member's lowered program under the calculus evaluator and its rendered `rust-std` package under the pinned rustc agree with Rust's `starts_with`, `ends_with`, `trim_ascii`, `lines`, `split`, `join`, and `find` on a seeded corpus; a planted defect in a member is detected; and the certified packages the production export publishes for it are the committed ones. | §17.22 |
 | `SL-02` | `stdlib` | The standard library's `Sha256` module is language-1.2 source stating FIPS 180-4 SHA-256 over `UInt32` bit operations and `iterate` (modular addition by widening to `UInt64`, rotation as two shifts, padding read by position, the message schedule as a sixteen-word window, sixty-four rounds over the round-constant list), whose roots `sha256 : Bytes -> Digest` and `sha256Hex : Bytes -> Bytes` are production roots eligible for `rust-std` with exactly their declared effects; the lowered program under the calculus evaluator and the rendered `rust-std` package under the pinned rustc compute the FIPS 180-4 example digests and every NIST CAVP SHA-256 short- and long-message vector, and agree with the `sha2` crate on a seeded corpus whose lengths cover every padding boundary, a disagreement failing closed and never resolved by adopting the oracle's digest; a planted one-bit error in the round function is detected; and the certified packages the production export publishes for the two roots are the committed ones. | §17.22 |
+| `SL-05` | `stdlib` | The compiler computes its content identities with the standard library's certified `Sha256` package instead of the `sha2` crate: the shipped `lexlean` crate links the committed production export of `LexLeanStd.Sha256` through an in-crate link that resolves to that file and nothing else, its manifest has no `sha2` dependency, and `Sha256Digest::of`, `FramedHasher`, and `tree_digest` compute through the package; through the compiler's own API the digest of every example NIST states (the examples of FIPS 180-4 and the million-`a` message of FIPS 180-2) and every NIST CAVP SHA-256 short- and long-message vector, each cited by a `some-true` row of `model/authorities.toml` that vendors it or states its digest,, of every message length from 0 to 300 bytes and around each power of two up to 4 MiB, and of a seeded corpus agrees with the authority's digest and with the `sha2` crate as an oracle that can falsify and never establish, and the frames and tree rows agree with an independent recomputation of the §21.1 and §11.5 encodings, a disagreement failing closed and never resolved by adopting the oracle's digest; and a planted bit of the first round constant in a built copy of the package, a link that differs from the export by one byte, a `sha2` dependency added to the manifest, a message truncated by one byte, and a frame length written little-endian are each detected. | §17.22 |
 | `BS-01` | `bootstrap` | The axiom-output parser of SPEC.md §22.5 is language-1.2 source in the `bootstrap/` project: `parseAuditOutput` and the closed Lean-name check `isClosedLeanName` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle on the committed golden vectors and boundary edges; on the normative host, both roots' lowered programs under the calculus evaluator agree with the Rust oracle on every committed golden vector and a seeded corpus, the rendered packages under the pinned rustc agree with the oracle on the large seeded corpus of generated, wrapped, and mutated audit outputs and names with no disagreement, a planted defect in the source is detected, and the certified packages the production export publishes for the project are the committed ones. | §17.23, §22.5 |
 | `BS-02` | `bootstrap` | The preservation lexer and token audit of SPEC.md §17.17 are language-1.2 source in the `bootstrap/` project: `lex` and `auditTokens` of `TokenAudit` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle `production::preserve::{lex, audit_tokens}` on every lexeme, position, and rejection message for the first 1,500 characters of every module of the shipped preservation library and calculus modules, the number-lexing corpus, and every token-audit unit vector; on the normative host, both roots' lowered programs under the calculus evaluator agree with the Rust oracle on those vectors and a seeded corpus, the rendered packages under the pinned rustc agree with the oracle on the large seeded corpus of generated and mutated Lean texts with no disagreement, a planted defect in the source is detected, and the certified packages the production export publishes for the project are the committed ones. | §17.17, §17.23 |
 | `BS-03` | `bootstrap` | The primitive scanner of SPEC.md §12.2 is language-1.2 source in the `bootstrap/` project: `scanSource` and `rejectAtoms` of `PrimitiveScan` are production roots eligible for `rust-std` with exactly their declared effects; on every host of the matrix, both roots' rendered `rust-std` packages under that host's pinned rustc agree with the Rust oracle `source::scan::{scan, reject_forbidden_atoms}` on every atom with its class, text, and byte, line, and column spans and on every rejection with its code, message, span, and help, for the deterministic vectors (the oracle's unit inputs, the atom limit at N and N+1, atom lists with gaps, payload strings, and notation bodies), a 128-byte window and a 2,048-byte prefix of every committed `.lex.tex` source, and the whole of each such source up to 8,192 bytes (up to 1,024 bytes, one source in four, for `rejectAtoms`); on the normative host, both roots' lowered programs under the calculus evaluator agree with the oracle on the vectors and the 128-byte windows and on 80 seeded texts, the packages agree on 2,500 seeded texts, each of ten planted defects in the source is detected, and the certified packages the production export publishes for the project are the committed ones. | §12.2, §17.23 |
@@ -10404,7 +10433,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `NS-03` | `normative-source` | A difference between a model file and the projection of the specification project's modules, in either direction, fails the repository gate naming R1, a source edit that is not projected being such a difference, and the section references of the §31 table are checked against those the register modules carry. | §27.5, §27.6 |
 | `NS-04` | `normative-source` | The projector fails closed on a module of the specification project that holds a declaration kind, a term kind, a field, a name, a file, or a family it does not read, and on a duplicate identifier or code, and a plant of each is refused naming the file and, for a declaration, its position. | §17.21, §24.8 |
 
-**Total required capability IDs:** 434.
+**Total required capability IDs:** 435.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 
