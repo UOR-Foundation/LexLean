@@ -27,6 +27,14 @@ and Unreleased holds what has landed since.
   row count from the projection instead of a literal. Count 430 becomes 434.
   No language, schema or compiler-semantics identity moves, and `model/errors.toml`
   is byte-identical.
+- Every identity is the one `sha2` gave (SPEC.md §21, `SL-06`, #126 stage 2;
+  no change to the compiler). `conformance_sl_06` digests every tracked file
+  of the repository with the compiler and with the oracle, holds the
+  compiler-semantics IDs of the three languages to the values the committed
+  example locks pin, runs the independent recomputations of the recipes, and
+  re-checks the locks of every example but `uor-atlas`, the standard library,
+  the compiler project, and the bootstrap project; three planted defects are
+  detected on every run. The register holds 432 IDs.
 - The compiler's digest is the standard library's `Sha256` package (SPEC.md
   §17.22, §21.1, §5.1, `SL-05`, #126 stage 2; no new diagnostic code, no
   identity moves). `Sha256Digest::of`, `FramedHasher`, and `tree_digest`
