@@ -138,8 +138,26 @@ pub mod names {
     /// The generator's `context_bounded` law under `sample`.
     pub const GENERATE_SAMPLE_GUARDED_LAW: &str = "generateSample_guarded";
 
+    /// `features : Nat -> List UInt32 -> List Int`, the count of each id
+    /// below a size.
+    pub const FEATURES: &str = "features";
+    /// `fitWidth : Nat -> List Int -> List Int`, the fixed-width map.
+    pub const FIT_WIDTH: &str = "fitWidth";
+    /// `total : List Int -> Int`, the sum of a list of integers.
+    pub const TOTAL: &str = "total";
+    /// `tokenCount : List UInt32 -> Int`, the number of tokens.
+    pub const TOKEN_COUNT: &str = "tokenCount";
+    /// The classifier's `features_width` law.
+    pub const FEATURES_WIDTH: &str = "features_width";
+    /// The classifier's `features_fit` law.
+    pub const FEATURES_FIT: &str = "features_fit";
+    /// The classifier's `features_total` law under `longest_match`.
+    pub const FEATURES_TOTAL_TEXT: &str = "features_total_text";
+    /// The classifier's `features_total` law under `byte_level`.
+    pub const FEATURES_TOTAL_TEXT_BYTES: &str = "features_total_text_bytes";
+
     /// Every name above, each of which the native module must declare.
-    pub const ALL: [&str; 39] = [
+    pub const ALL: [&str; 47] = [
         VOCAB_SIZE,
         ENCODE_WITH,
         ENCODE_BYTES,
@@ -179,6 +197,14 @@ pub mod names {
         GENERATE_SAMPLE_BOUNDED,
         GENERATE_GREEDY_GUARDED_LAW,
         GENERATE_SAMPLE_GUARDED_LAW,
+        FEATURES,
+        FIT_WIDTH,
+        TOTAL,
+        TOKEN_COUNT,
+        FEATURES_WIDTH,
+        FEATURES_FIT,
+        FEATURES_TOTAL_TEXT,
+        FEATURES_TOTAL_TEXT_BYTES,
     ];
 }
 
