@@ -46,38 +46,55 @@ impl<A: Key, B: Key> Key for (A, B) {
 pub fn equal<T: Same>(a: T, b: T) -> bool { a.same(&b) }
 pub fn compare<T: Key>(a: T, b: T) -> Ordering { a.key(&b) }
 
-macro_rules! fixed {
-    ($m:ident, $t:ident) => {
-        pub mod $m {
-            pub fn checked_add(a: $t, b: $t) -> Option<$t> { a.checked_add(b) }
-            pub fn checked_sub(a: $t, b: $t) -> Option<$t> { a.checked_sub(b) }
-            pub fn checked_mul(a: $t, b: $t) -> Option<$t> { a.checked_mul(b) }
-            pub fn checked_quot(a: $t, b: $t) -> Option<$t> { a.checked_div(b) }
-            pub fn bit_and(a: $t, b: $t) -> $t { a & b }
-            pub fn bit_or(a: $t, b: $t) -> $t { a | b }
-            pub fn bit_xor(a: $t, b: $t) -> $t { a ^ b }
-            pub fn bit_not(a: $t) -> $t { !a }
-            pub fn shift_left(a: $t, amount: u32) -> Option<$t> { if amount < $t::BITS { Some(a.wrapping_shl(amount)) } else { None } }
-            pub fn shift_right(a: $t, amount: u32) -> Option<$t> { if amount < $t::BITS { Some(a.wrapping_shr(amount)) } else { None } }
-            pub fn convert(a: i128) -> Option<$t> { $t::try_from(a).ok() }
-        }
-    };
-}
-fixed!(fixed_u8, u8); fixed!(fixed_u16, u16); fixed!(fixed_u32, u32); fixed!(fixed_u64, u64);
-fixed!(fixed_i8, i8); fixed!(fixed_i16, i16); fixed!(fixed_i32, i32); fixed!(fixed_i64, i64);
-pub fn checked_neg_i8(a: i8) -> Option<i8> { a.checked_neg() }
-pub fn checked_neg_i16(a: i16) -> Option<i16> { a.checked_neg() }
-pub fn checked_neg_i32(a: i32) -> Option<i32> { a.checked_neg() }
-pub fn checked_neg_i64(a: i64) -> Option<i64> { a.checked_neg() }
 "#;
 
 /// The core runtime text of `items`: [`CORE_BASE`], then each item printed.
+/// An item whose exported name is a path `module::name` is printed inside
+/// `pub mod module { … }` under its last segment, with the consecutive items
+/// of one module in one block, so the module's path in the exported name is
+/// the runtime item's path (`fixed_u8::checked_add`).
 #[must_use]
 pub fn assemble(items: &[ast::ItemDef]) -> String {
     let mut text = CORE_BASE.to_owned();
+    let mut open: Option<String> = None;
     for item in items {
+        let (module, shown) = match item {
+            ast::ItemDef::Function {
+                name: ast::Ident::Export(name),
+                ..
+            } if name.contains("::") => {
+                let (module, last) = name.rsplit_once("::").expect("a path");
+                let mut shown = item.clone();
+                if let ast::ItemDef::Function { name, .. } = &mut shown {
+                    *name = ast::Ident::Export(last.to_owned());
+                }
+                (Some(module.to_owned()), shown)
+            }
+            _ => (None, item.clone()),
+        };
+        if module != open {
+            if open.is_some() {
+                text.push_str("}\n");
+            }
+            if let Some(module) = &module {
+                text.push_str(&format!("\npub mod {module} {{"));
+            }
+            open = module;
+        }
         text.push('\n');
-        text.push_str(&ast::print_item(item));
+        let printed = ast::print_item(&shown);
+        if open.is_some() {
+            for line in printed.lines() {
+                text.push_str("    ");
+                text.push_str(line);
+                text.push('\n');
+            }
+        } else {
+            text.push_str(&printed);
+        }
+    }
+    if open.is_some() {
+        text.push_str("}\n");
     }
     text
 }
@@ -608,13 +625,16 @@ mod tests {
     #[test]
     fn every_item_exists_with_its_failure_mode() {
         let core = core().expect("the core runtime");
-        let fixed_body = &core[core.find("macro_rules! fixed").expect("fixed")..];
         for item in Item::all() {
             let path = item.path();
             let text = if item.heap() { STD } else { core };
             if let Some((module, name)) = path.split_once("::") {
-                assert!(core.contains(&format!("fixed!({module}, ")), "{path}");
-                let declaration = fixed_body
+                let at = core
+                    .find(&format!("pub mod {module} {{"))
+                    .unwrap_or_else(|| panic!("{path}: the module is not declared"));
+                let body = &core[at..];
+                let body = &body[..body.find("\n}\n").expect("the module ends")];
+                let declaration = body
                     .lines()
                     .find(|line| line.contains(&format!("pub fn {name}(")))
                     .unwrap_or_else(|| panic!("{path} is not declared"));
