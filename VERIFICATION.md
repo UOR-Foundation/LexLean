@@ -1869,6 +1869,22 @@ the nine declared constructors differ.
 A first run of plant (b) removed the `natSub` of `Item` instead and the case passed, which
 is the correct answer to that edit and not a plant of this case.
 
+### a theorem proved by a split on a Boolean local can fail (SM-36)
+
+A language-1.2 `cases` proof may name a local of type `Bool` (`SM-36`, §17.10, #91 stage 4). The
+case (`cases/semantic_ir/boolean.rs`) builds a project whose theorem `pickSame` states
+`pick b = b` for `pick b := if b then true else false`, proved by `cases{scrutinee: b, branches:
+[false, true]}` with `reflexivity` in each; it requires the module to satisfy `semantic-module-v2`,
+the formatter to keep the proof and its fixed point to link to the same module, the notation to read
+back to the same module, the generated Lean to hold `cases b with`, `| false =>`, and `| true =>`, and
+the pinned Lean to verify the module with an empty axiom policy. Five misuses are refused: language
+1.1, a missing branch, a repeated branch, a branch with a binder, and `induction` on a Boolean.
+
+Plants, each restored: the `Bool` arm of `elimination_binder_types` disabled (`proof scrutinee `b` is not
+Nat, List, or a document inductive` at the accepted project); the language gate removed (the
+language-1.1 project is accepted and the case fails at `check fails`); the induction refusal removed
+(the same).
+
 ### the machine callee and the overflow value are printed and computed (RB-15)
 
 `rust::ast::Callee::Machine` and `Lit::Overflow` mirror the Lean constructors

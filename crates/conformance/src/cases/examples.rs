@@ -171,7 +171,7 @@ pub(crate) fn run(id: &str) {
         // exactly the one prescribed diagnostic code.
         "EX-07" => {
             let root = support::repo_root();
-            let prescribed: [(&str, &str); 292] = [
+            let prescribed: [(&str, &str); 297] = [
                 ("unknown-word", "LLL1004"),
                 ("unknown-symbol", "LLL1004"),
                 ("unknown-control", "LLL1004"),
@@ -290,6 +290,12 @@ pub(crate) fn run(id: &str) {
                 ("term-cases-definition-absent", "LLT4001"),
                 ("term-cases-scrutinee-not-inductive", "LLT4001"),
                 ("term-cases-reserved-name", "LLT4001"),
+                // §17.10: `cases` on a Boolean fails closed (`SM-36`).
+                ("cases-bool-language-11", "LLT4001"),
+                ("cases-bool-missing-branch", "LLT4001"),
+                ("cases-bool-branch-repeated", "LLT4001"),
+                ("cases-bool-branch-binder", "LLT4001"),
+                ("cases-bool-induction", "LLT4001"),
                 ("mutual-label-shared", "LLT4001"),
                 ("recursion-member-under-lambda", "LLT4001"),
                 ("recursion-well-founded-reference", "LLT4001"),
