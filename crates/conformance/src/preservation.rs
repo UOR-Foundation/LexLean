@@ -2381,18 +2381,20 @@ fn crate_function<R>(
     let functions = krate
         .items
         .iter()
-        .filter(|item| matches!(item, ItemDef::Function { .. }))
+        .filter(|item| matches!(item, ItemDef::Function { .. } | ItemDef::Constant { .. }))
         .count() as u64;
     let last = krate
         .items
         .iter()
         .filter_map(|item| match item {
-            ItemDef::Function { name, .. } => function_number(name),
+            ItemDef::Function { name, .. } | ItemDef::Constant { name, .. } => {
+                function_number(name)
+            }
             _ => None,
         })
         .max();
     for item in &mut krate.items {
-        if let ItemDef::Function { name, body, .. } = item {
+        if let ItemDef::Function { name, body, .. } | ItemDef::Constant { name, body, .. } = item {
             let Some(number) = function_number(name) else {
                 continue;
             };

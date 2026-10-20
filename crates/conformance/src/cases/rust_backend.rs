@@ -372,7 +372,7 @@ fn ast_shapes(krate: &Crate, out: &mut BTreeSet<&'static str>) {
                     });
                 }
             }
-            ItemDef::Function { body, .. } => block(body, out),
+            ItemDef::Function { body, .. } | ItemDef::Constant { body, .. } => block(body, out),
             ItemDef::Enum { .. } => {}
         }
     }
@@ -1599,6 +1599,286 @@ pub fn run(id: &str) {
                 "the primitive `checked_pow` is cited by no row",
             );
         }
+        // §17.16 *Constants*: a literal that holds heap storage is built once
+        // per thread and each read is a clone of it.
+        "RB-18" => cached_literal(),
         other => panic!("no Rust backend case is wired for {other}"),
     }
+}
+
+/// A program whose function 0 is the list literal `[7, 8, 9, 10, 11]` over
+/// `int`, the shape an artifact read lowers to.
+fn literal_list_program() -> target::Program {
+    let int = |n: i64| serde_json::json!({"kind": "int", "value": n.to_string()});
+    let ty = serde_json::json!({"kind": "list", "element": {"kind": "int"}});
+    let program = serde_json::json!({
+        "adts": [],
+        "functions": [{
+            "body": {"kind": "value", "type": ty,
+                     "value": {"kind": "list", "items": [int(7), int(8), int(9), int(10), int(11)]}},
+            "parameters": [], "result": ty, "types": []
+        }],
+        "spec": "lexlean/target-program/1"
+    });
+    target::load(program.to_string().as_bytes()).expect("the literal program loads")
+}
+
+/// Build `library` with the pinned rustc and run a harness that reads function
+/// 0 once to warm it, then counts the allocations of the next two reads.
+fn allocations_of_reads(library: &str, dir: &Path) -> (String, u64) {
+    let harness = r#"use std::alloc::{GlobalAlloc, Layout, System};
+use std::sync::atomic::{AtomicU64, Ordering};
+struct Counting;
+static ALLOCATIONS: AtomicU64 = AtomicU64::new(0);
+unsafe impl GlobalAlloc for Counting {
+    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+        ALLOCATIONS.fetch_add(1, Ordering::Relaxed);
+        unsafe { System.alloc(layout) }
+    }
+    unsafe fn dealloc(&self, pointer: *mut u8, layout: Layout) {
+        unsafe { System.dealloc(pointer, layout) }
+    }
+}
+#[global_allocator]
+static COUNTING: Counting = Counting;
+fn main() {
+    let warm = program::f0();
+    let before = ALLOCATIONS.load(Ordering::Relaxed);
+    let second = program::f0();
+    let third = program::f0();
+    let after = ALLOCATIONS.load(Ordering::Relaxed);
+    let head = second.uncons().map(|(head, _)| head);
+    println!("{:?} {} {}", head, program::length_list(third), program::length_list(warm));
+    println!("allocations {}", after - before);
+}
+"#;
+    std::fs::write(dir.join("library.rs"), library).expect("library");
+    std::fs::write(dir.join("harness.rs"), harness).expect("harness");
+    let rustc = std::env::var("RUSTC").unwrap_or_else(|_| "rustc".to_owned());
+    let compile = |arguments: &[&str]| {
+        let compiled = std::process::Command::new(&rustc)
+            .args(["--edition", "2021", "-D", "warnings", "-C", "opt-level=0"])
+            .args(arguments)
+            .current_dir(dir)
+            .output()
+            .expect("rustc runs");
+        assert!(
+            compiled.status.success(),
+            "rustc rejects the program:\n{}",
+            String::from_utf8_lossy(&compiled.stderr)
+        );
+    };
+    compile(&[
+        "--crate-type",
+        "rlib",
+        "--crate-name",
+        "program",
+        "-o",
+        "libprogram.rlib",
+        "library.rs",
+    ]);
+    compile(&[
+        "--crate-name",
+        "harness",
+        "--extern",
+        "program=libprogram.rlib",
+        "-o",
+        "harness",
+        "harness.rs",
+    ]);
+    let ran = std::process::Command::new(dir.join("harness"))
+        .output()
+        .expect("runs");
+    assert!(
+        ran.status.success(),
+        "{}",
+        String::from_utf8_lossy(&ran.stderr)
+    );
+    let stdout = String::from_utf8(ran.stdout).expect("utf8");
+    let mut lines = stdout.lines();
+    let value = lines.next().expect("the value line").to_owned();
+    let count = lines
+        .next()
+        .and_then(|line| line.strip_prefix("allocations "))
+        .and_then(|count| count.parse().ok())
+        .expect("the allocation line");
+    (value, count)
+}
+
+fn cached_literal() {
+    let program = literal_list_program();
+    let cached = rust::lower(&program, Profile::Std).expect("the literal program lowers");
+    assert!(
+        matches!(cached.items.as_slice(), [ItemDef::Constant { .. }]),
+        "a nullary heap literal is a constant: {:?}",
+        cached.items
+    );
+    let text = rust::ast::print(&cached).expect("prints");
+    assert_eq!(
+        text.matches("thread_local!").count(),
+        1,
+        "one cell per constant"
+    );
+    assert!(
+        text.contains("CELL.with(|cell| cell.clone())"),
+        "a read is a clone"
+    );
+    // The profile with no heap has no rendering of the literal at all.
+    assert!(
+        rust::lower(&program, Profile::Core).is_err(),
+        "rust-core does not render a heap literal"
+    );
+    let dir = tempfile::Builder::new()
+        .prefix("lexlean-cached-literal-")
+        .tempdir()
+        .expect("tempdir");
+    let read = |library: &str, name: &str| {
+        let sub = dir.path().join(name);
+        std::fs::create_dir(&sub).expect("dir");
+        allocations_of_reads(library, &sub)
+    };
+    let (value, allocations) = read(&text, "cached");
+    assert_eq!(value, "Some(7) 5 5", "a read is the denotation's value");
+    assert_eq!(
+        allocations, 0,
+        "a read of a cached literal allocates nothing"
+    );
+
+    // Planted: the same program with its constant rebuilt at each read
+    // allocates on every read, which the harness counts.
+    let mut rebuilt = cached.clone();
+    for item in &mut rebuilt.items {
+        if let ItemDef::Constant {
+            name,
+            result,
+            body,
+            at,
+        } = item.clone()
+        {
+            *item = ItemDef::Function {
+                name,
+                parameters: Vec::new(),
+                result,
+                body,
+                at,
+            };
+        }
+    }
+    let (value, allocations) = read(&rust::ast::print(&rebuilt).expect("prints"), "rebuilt");
+    assert_eq!(
+        value, "Some(7) 5 5",
+        "the rebuilding rendering has the same value"
+    );
+    assert!(allocations > 0, "a rebuilt literal allocates at each read");
+
+    // Certificate B states the constant as the machine's `ItemDef.constant`
+    // (SPEC.md §17.17), not as a function: the text and the data of the
+    // certificate of the cached crate name it, and the certificate of the
+    // rebuilding copy, a function, does not.
+    {
+        let module =
+            lexlean::production::rust_cert::module_for("LexLeanPreserve.C0.R0", "rust-std")
+                .expect("a Rust target");
+        let constant = "LexLeanTarget.RustSyntax.ItemDef.constant";
+        let states = |krate: &Crate| {
+            let b =
+                lexlean::production::rust_cert::certificate_b(&program, krate, &module, u64::MAX)
+                    .expect("certificate B builds");
+            let in_data = b.data.nodes.iter().any(|node| {
+                matches!(node, lexlean::ir::core::CoreNode::Const { n, .. } if n == constant)
+            });
+            (b.text.contains("ItemDef.constant"), in_data)
+        };
+        assert_eq!(
+            states(&cached),
+            (true, true),
+            "certificate B states the constant"
+        );
+        let mut as_function = cached.clone();
+        for item in &mut as_function.items {
+            if let ItemDef::Constant {
+                name,
+                result,
+                body,
+                at,
+            } = item.clone()
+            {
+                *item = ItemDef::Function {
+                    name,
+                    parameters: Vec::new(),
+                    result,
+                    body,
+                    at,
+                };
+            }
+        }
+        assert_eq!(
+            states(&as_function),
+            (false, false),
+            "a function is not stated as a constant"
+        );
+    }
+    // A literal whose type is a declared algebraic type is not a constant,
+    // although it holds a list: the type says no heap (`Type::heap`), so it
+    // stays a function that builds the value at each call (SPEC.md §17.16).
+    {
+        let int = |n: &str| serde_json::json!({"kind": "int", "value": n});
+        let ty = serde_json::json!({"kind": "adt", "index": 0});
+        let program = serde_json::json!({
+            "adts": [{"constructors": [[{"kind": "list", "element": {"kind": "int"}}]]}],
+            "functions": [{
+                "body": {"kind": "value", "type": ty, "value": {
+                    "kind": "adt", "constructor": 0,
+                    "fields": [{"kind": "list", "items": [int("1"), int("2")]}]}},
+                "parameters": [], "result": ty, "types": []
+            }],
+            "spec": "lexlean/target-program/1"
+        });
+        let program = target::load(program.to_string().as_bytes()).expect("the program loads");
+        let krate = rust::lower(&program, Profile::Std).expect("the program lowers");
+        assert!(
+            matches!(krate.items.as_slice(), [.., ItemDef::Function { .. }])
+                && !krate
+                    .items
+                    .iter()
+                    .any(|item| matches!(item, ItemDef::Constant { .. })),
+            "a literal of a declared type is a function: {:?}",
+            krate.items
+        );
+    }
+    // Planted: a constant whose body calls, or that can fail, is refused
+    // before printing.
+    let mut called = cached.clone();
+    if let ItemDef::Constant { body, .. } = &mut called.items[0] {
+        body.tail = Expr::Call {
+            callee: Callee::Function(0),
+            args: Vec::new(),
+            propagate: false,
+            at: Origin::of("function"),
+        };
+    }
+    let error = validate::validate(&called).expect_err("a constant that calls is refused");
+    assert!(error.contains("constant"), "{error}");
+    let mut bound = cached.clone();
+    if let ItemDef::Constant { body, .. } = &mut bound.items[0] {
+        body.lets.push(Let {
+            pat: Pat::Wild,
+            ty: None,
+            value: Expr::Lit(Lit::Unit, Origin::of("value:unit")),
+            at: Origin::of("let"),
+        });
+    }
+    let error = validate::validate(&bound).expect_err("a constant with a binding is refused");
+    assert!(
+        error.contains("not an infallible closed literal"),
+        "{error}"
+    );
+    let mut failing = cached;
+    if let ItemDef::Constant { result, .. } = &mut failing.items[0] {
+        *result = Type::Fallible(Box::new(result.clone()));
+    }
+    assert!(
+        validate::validate(&failing).is_err(),
+        "a fallible constant is refused"
+    );
 }

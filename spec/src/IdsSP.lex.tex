@@ -163,5 +163,13 @@ definition{
   body: (record Rows::IdRow {id := "SP-20", level := "build", suite := "preservation", statement := "Certificate B certifies a function the renderer writes as a loop: the library's FunOK states a function either by the correspondence for the body the crate holds or by FunLoop, that the crate's body is the loop form of an ordinary recursive body (the library's loopOf, with its Boolean checks of the renamed parameters, the kept parameters, and the freshness of the renamed names decided by evaluation) together with the correspondence for that recursive body, which funSem_of turns into the simulation through funSem_loop with the correspondence, its recursor, and the soundness theorem unchanged, and the aligner recovers the recursive body by inverting the rendering of loops (the renamed parameters, the destructuring of the state, and the Ok and Err wraps), so that for every loop of every renderer fixture in each profile and of every production root of the committed examples in each of its targets the loop form of the recovered body, computed by the library's form transliterated, is the crate's function, certificate B of the fixtures rendered as loops compiles under the pinned Lean with exactly the axioms Classical.choice, Quot.sound, and propext, and a loop that is not the loop form of any recursive body is refused, whether its state has another type, its body does not take the state apart, an end is not an Err, a renamed parameter is read by the body, a pattern rebinds a kept parameter, or the state holds a parameter the function does not have.", sections := "§17.16, §17.17"}),
   executable: true
 }
+
+definition{
+  name: sp24,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SP-24", level := "build", suite := "preservation", statement := "A production root that reads a content-addressed artifact holds the artifact's decoded value as one literal in its lowered program, recognised by the artifact declaration and not by the shape of a term, and certificates A, B, and E verify for every root of the committed models example, certificate A relating the source's construction of the list to the literal by the lemma that relates any literal to its value, so that the preservation library does not grow; a wrong lemma for the literal is refused by Lean.", sections := "§17.17"}),
+  executable: true
+}
 \end{semanticmodule}
 \end{lexlean}

@@ -286,6 +286,7 @@ pub fn run(id: &str) {
         "MD-11" => md_11(),
         "MD-12" => md_12(),
         "MD-13" => md_13(),
+        "MD-14" => md_14(),
         _ => panic!("no models case {id}"),
     }
 }
@@ -3773,4 +3774,262 @@ fn md_13() {
         let _guard = support::env_shared();
         planted_round.verify_fails_with("LLV7002");
     }
+}
+
+/// An artifact's bytes decoded by the closed schemas of §17.12 rule 2, from
+/// the bytes alone: the value a lowered program must hold as data.
+fn decoded_artifact(
+    schema: &lexlean::ir::semantic::ArtifactSchema,
+    bytes: &[u8],
+) -> lexlean::calculus::Value {
+    use lexlean::calculus::Value;
+    use lexlean::ir::semantic::{ArtifactSchema, TensorElement};
+    match schema {
+        ArtifactSchema::Bytes => Value::Bytes {
+            hex: bytes.iter().map(|byte| format!("{byte:02x}")).collect(),
+        },
+        ArtifactSchema::Utf8Lines => Value::List {
+            items: std::str::from_utf8(bytes)
+                .expect("UTF-8 lines")
+                .split_terminator('\n')
+                .map(|line| Value::String {
+                    value: line.to_owned(),
+                })
+                .collect(),
+        },
+        ArtifactSchema::IntTensor { element, shape } => {
+            let (width, signed) = match element {
+                TensorElement::Int8 => (1, true),
+                TensorElement::Int16 => (2, true),
+                TensorElement::Int32 => (4, true),
+                TensorElement::Int64 => (8, true),
+                TensorElement::UInt8 => (1, false),
+                TensorElement::UInt16 => (2, false),
+                TensorElement::UInt32 => (4, false),
+                TensorElement::UInt64 => (8, false),
+            };
+            let numbers: Vec<String> = bytes
+                .chunks(width)
+                .map(|chunk| {
+                    let mut wide = [0_u8; 16];
+                    wide[..width].copy_from_slice(chunk);
+                    if signed && chunk[width - 1] & 0x80 != 0 {
+                        wide[width..].fill(0xff);
+                    }
+                    i128::from_le_bytes(wide).to_string()
+                })
+                .collect();
+            fn nest(numbers: &[String], shape: &[u64]) -> Value {
+                match shape {
+                    [] => Value::Int {
+                        value: numbers[0].clone(),
+                    },
+                    [extent, rest @ ..] => {
+                        let stride = numbers.len() / usize::try_from(*extent).expect("extent");
+                        Value::List {
+                            items: numbers.chunks(stride).map(|row| nest(row, rest)).collect(),
+                        }
+                    }
+                }
+            }
+            nest(&numbers, shape)
+        }
+    }
+}
+
+/// The artifact definitions of one lowered program, with each one's body.
+fn artifact_literals<'a>(
+    lowered: &'a lexlean::production::lower::Lowered,
+    artifacts: &BTreeSet<String>,
+) -> Vec<(String, &'a lexlean::calculus::Expr)> {
+    use lexlean::production::lower::Origin;
+    lowered
+        .layout
+        .functions
+        .iter()
+        .zip(&lowered.program.functions)
+        .filter_map(|(origin, function)| {
+            let Origin::Definition { module, name, .. } = origin else {
+                return None;
+            };
+            let full = format!("{module}.{name}");
+            artifacts.contains(&full).then_some((full, &function.body))
+        })
+        .collect()
+}
+
+/// Whether a function body builds its value with constructor expressions,
+/// the per-call construction of a decoded constant.
+fn builds_per_call(body: &lexlean::calculus::Expr) -> bool {
+    matches!(body, lexlean::calculus::Expr::Build { .. })
+}
+
+/// The checks of MD-14 on one lowered root: every artifact definition is a
+/// literal equal to the decoding of its file, and no function of no
+/// parameters builds a list with constructors. Returns the number of literals
+/// checked, or the first defect.
+fn check_artifacts_as_data(
+    lowered: &lexlean::production::lower::Lowered,
+    root: &str,
+    artifacts: &BTreeSet<String>,
+    schemas: &std::collections::BTreeMap<String, (lexlean::ir::semantic::ArtifactSchema, String)>,
+    files: &std::collections::BTreeMap<String, Vec<u8>>,
+) -> Result<usize, String> {
+    use lexlean::calculus::{Expr, Shape};
+    let mut literals = 0;
+    for (name, body) in artifact_literals(lowered, artifacts) {
+        let Expr::Value { value, .. } = body else {
+            return Err(format!(
+                "{root}: `{name}` is built on each call, not held as data"
+            ));
+        };
+        let (schema, sha256) = &schemas[&name];
+        let bytes = files
+            .get(sha256)
+            .ok_or_else(|| format!("{name}: no file has digest {sha256}"))?;
+        if value != &decoded_artifact(schema, bytes) {
+            return Err(format!(
+                "{root}: the literal of `{name}` is not the decoding of the artifact's bytes"
+            ));
+        }
+        literals += 1;
+    }
+    for function in &lowered.program.functions {
+        if function.parameters.is_empty()
+            && builds_per_call(&function.body)
+            && matches!(
+                function.body,
+                Expr::Build {
+                    shape: Shape::Cons,
+                    ..
+                }
+            )
+        {
+            return Err(format!("{root}: a list is built on each call"));
+        }
+    }
+    Ok(literals)
+}
+
+fn md_14() {
+    use lexlean::calculus::{Expr, Shape, Value};
+    use lexlean::ir::semantic::SemanticDeclaration;
+    use lexlean::production::lower::{linked_modules, lower_root, roots};
+
+    let project = P::copy_example(EXAMPLE);
+    let checked = support::checked_project(&project);
+    let modules = linked_modules(&checked);
+    let limits = support::limits(&project);
+    // Every configured artifact file by its digest, decoded from its bytes.
+    let files: std::collections::BTreeMap<String, Vec<u8>> =
+        std::fs::read_dir(project.root.join("artifacts").as_std_path())
+            .expect("artifacts")
+            .map(|entry| {
+                let bytes = std::fs::read(entry.expect("entry").path()).expect("artifact bytes");
+                (Sha256Digest::of(&bytes).to_hex(), bytes)
+            })
+            .collect();
+    let mut schemas = std::collections::BTreeMap::new();
+    for (module, linked) in &modules {
+        for declaration in &linked.semantic.declarations {
+            if let SemanticDeclaration::Artifact {
+                name,
+                schema,
+                sha256,
+                ..
+            } = declaration
+            {
+                schemas.insert(format!("{module}.{name}"), (schema.clone(), sha256.clone()));
+            }
+        }
+    }
+    assert_eq!(schemas.len(), 8, "the example declares eight artifacts");
+    let artifacts: BTreeSet<String> = schemas.keys().cloned().collect();
+    let mut literals = 0;
+    let mut planted = None;
+    for report in roots(&checked).expect("the eligibility reports") {
+        let lowered = lower_root(
+            &modules,
+            &report.module,
+            &report.name,
+            report.report,
+            &limits,
+        )
+        .unwrap_or_else(|diagnostic| panic!("{}: {diagnostic:?}", report.report.root));
+        literals +=
+            check_artifacts_as_data(&lowered, &report.report.root, &artifacts, &schemas, &files)
+                .unwrap_or_else(|defect| panic!("{defect}"));
+        if planted.is_none() && !artifact_literals(&lowered, &artifacts).is_empty() {
+            planted = Some((lowered, report.report.root.clone()));
+        }
+    }
+    assert_eq!(literals, 10, "R0, R1, and R2 hold ten artifact literals");
+
+    // Planted: the same checks, run on a lowered program of a root that reads
+    // an artifact after its literal is turned back into the chain a lowering
+    // that stopped folding would leave, and after one element is changed.
+    let (lowered, root) = planted.expect("a root reads an artifact");
+    let target = lowered
+        .layout
+        .functions
+        .iter()
+        .zip(&lowered.program.functions)
+        .position(|(origin, function)| {
+            matches!(
+                (&function.body, origin),
+                (
+                    Expr::Value {
+                        value: Value::List { .. },
+                        ..
+                    },
+                    lexlean::production::lower::Origin::Definition { .. }
+                )
+            )
+        })
+        .expect("a literal-bodied definition");
+    let Expr::Value {
+        value: Value::List { items },
+        ty,
+    } = lowered.program.functions[target].body.clone()
+    else {
+        panic!("the target is a list literal");
+    };
+    let mut chained = lowered.clone();
+    chained.program.functions[target].body = items.iter().rev().fold(
+        Expr::Build {
+            shape: Shape::Nil,
+            ty: ty.clone(),
+            operands: Vec::new(),
+        },
+        |tail, item| Expr::Build {
+            shape: Shape::Cons,
+            ty: ty.clone(),
+            operands: vec![
+                Expr::Value {
+                    ty: ty.clone(),
+                    value: item.clone(),
+                },
+                tail,
+            ],
+        },
+    );
+    let defect = check_artifacts_as_data(&chained, &root, &artifacts, &schemas, &files)
+        .expect_err("a rebuilt constant is refused");
+    assert!(defect.contains("is built on each call"), "{defect}");
+    let mut changed = lowered.clone();
+    if let Expr::Value {
+        value: Value::List { items },
+        ..
+    } = &mut changed.program.functions[target].body
+    {
+        items[0] = Value::Int {
+            value: "424242".to_owned(),
+        };
+    }
+    let defect = check_artifacts_as_data(&changed, &root, &artifacts, &schemas, &files)
+        .expect_err("a changed element is refused");
+    assert!(
+        defect.contains("is not the decoding of the artifact's bytes"),
+        "{defect}"
+    );
 }

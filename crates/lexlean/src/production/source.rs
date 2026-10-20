@@ -132,6 +132,18 @@ impl<'a> Source<'a> {
         })
     }
 
+    /// Whether `name` of `module` is an artifact declaration (§17.12 rule 2):
+    /// its elaborated definition is the constant its bytes decode to.
+    pub(crate) fn is_artifact(&self, module: &str, name: &str) -> bool {
+        self.modules.get(module).is_some_and(|linked| {
+            linked
+                .semantic
+                .declarations
+                .iter()
+                .any(|declaration| declaration.kind() == "artifact" && declaration.name() == name)
+        })
+    }
+
     /// The generated Lean module of a source module.
     pub(crate) fn lean_module(&self, module: &str) -> Result<&'a str, String> {
         self.modules

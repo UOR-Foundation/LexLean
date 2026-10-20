@@ -425,6 +425,52 @@ pub enum ItemDef {
         body: Block,
         at: Origin,
     },
+    /// A function of no parameters that cannot fail and whose body is a
+    /// closed literal: the rendering evaluates the body once per thread and
+    /// each call returns a clone of that value. A clone of a persistent value
+    /// shares its cells, so the call allocates nothing, while a rebuilt
+    /// literal allocates on every call (SPEC.md §17.16 *Constants*). The
+    /// machine reads it as the function it caches: the value is the body's,
+    /// and when it is computed is not part of the denotation.
+    Constant {
+        name: Ident,
+        result: Type,
+        body: Block,
+        at: Origin,
+    },
+}
+
+/// The name, parameters, result, body, and origin of a function.
+pub type FunctionParts<'a> = (
+    &'a Ident,
+    &'a [(Pat, Type)],
+    &'a Type,
+    &'a Block,
+    &'a Origin,
+);
+
+impl ItemDef {
+    /// The function an item denotes, when it denotes one: a function is
+    /// itself and a constant is the function of no parameters it caches.
+    #[must_use]
+    pub fn function(&self) -> Option<FunctionParts<'_>> {
+        match self {
+            Self::Function {
+                name,
+                parameters,
+                result,
+                body,
+                at,
+            } => Some((name, parameters, result, body, at)),
+            Self::Constant {
+                name,
+                result,
+                body,
+                at,
+            } => Some((name, &[], result, body, at)),
+            Self::Enum { .. } | Self::Apply { .. } => None,
+        }
+    }
 }
 
 /// A rendered library crate.
@@ -830,6 +876,19 @@ impl Printer {
                         returns(&result.text())
                     ),
                 );
+            }
+            ItemDef::Constant {
+                name, result, body, ..
+            } => {
+                let ty = result.text();
+                let value = self.block_inline(body, 1);
+                self.line(0, &format!("pub fn {}() -> {ty} {{", name.text()));
+                self.line(
+                    1,
+                    &format!("thread_local! {{ static CELL: {ty} = {value}; }}"),
+                );
+                self.line(1, "CELL.with(|cell| cell.clone())");
+                self.line(0, "}");
             }
         }
     }

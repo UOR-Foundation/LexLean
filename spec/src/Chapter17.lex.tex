@@ -1989,7 +1989,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "- each evaluated node is one step, on top of the steps of its operands;" (cons "- reading a local is one step more per binding the lookup examines before" (cons "  it finds the local's;" (cons "- a `match` is one step more per arm it tries, the taken arm included;" (cons "- `apply` is one step more per capture it passes;" (cons "- `field` is one step more per field it skips;" (cons "- a primitive is one step more per unit of *weight* of its operands and of" (cons "  its result. A value's weight is one per node, plus a string's characters" (cons "  and a byte string's bytes, so every primitive whose work grows with its" (cons "  operands (append, length, index, slice, encoding, decoding, comparison," (cons "  split, join, formatting, parsing) is charged in proportion." (nil String))))))))))))
+      (cons "- each evaluated node is one step, on top of the steps of its operands, except" (cons "  a literal, which is charged its *weight* each time it is read, so that a" (cons "  scalar costs one step and a decoded constant held as a list, pair, option," (cons "  result, or algebraic-data literal is accounted by its size and never by a" (cons "  single step (`TC-08`);" (cons "- reading a local is one step more per binding the lookup examines before" (cons "  it finds the local's;" (cons "- a `match` is one step more per arm it tries, the taken arm included;" (cons "- `apply` is one step more per capture it passes;" (cons "- `field` is one step more per field it skips;" (cons "- a primitive is one step more per unit of *weight* of its operands and of" (cons "  its result. A value's weight is one per node, plus a string's characters" (cons "  and a byte string's bytes, so every primitive whose work grows with its" (cons "  operands (append, length, index, slice, encoding, decoding, comparison," (cons "  split, join, formatting, parsing) is charged in proportion." (nil String))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -2363,7 +2363,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "**Failure typing.** A function can overflow exactly when its body reaches a" (cons "primitive or successor that can (`nat_add`, `nat_mul`, `int_add`, `int_sub`," (cons "`int_mul`, `int_neg`, `int_quot`, `parse_decimal` at `int`, `succ`), a call to" (cons "a function that can, or an application of a function type one of whose" (cons "closures can: the least fixed point of these rules, computed by a worklist" (cons "over the reverse call and application edges. A function that can overflow" (cons "returns `R<T>` and every call to it ends in `?`, except in tail position," (cons "where its result is returned as it is; any other function returns its value" (cons "and no call to it propagates. The length of a sequence cannot exceed" (cons "`2^64 - 1` on any machine that holds it, so `length` cannot overflow." (nil String)))))))))))
+      (cons "**Constants.** A function of no parameters that cannot fail, whose body is a" (cons "closed literal (scalars, constructors, pairs, and boxes of literals only) and" (cons "whose result is a list, a string, or a byte string (a type with heap storage" (cons "by `Type::heap`), is a *constant* in `rust-std`: the item `ItemDef::Constant`" (cons "of the AST and `ItemDef.constant` of `RustSyntax`, printed as a `thread_local!`" (cons "cell initialised once per thread by the literal and a function whose every call" (cons "is `CELL.with(|cell| cell.clone())`. A clone of a list, a string, or a byte" (cons "string shares its storage, so a read allocates nothing, where a rebuilt literal" (cons "allocates at each read (`RB-18`). A literal whose type is a declared algebraic" (cons "type is not a constant, whatever it holds: its type says no heap, so it stays a" (cons "function that builds the value on each call. `RustSemantics` gives a call of a" (cons "constant the value of its body, as `findFunction` returns it as a function of no" (cons "parameters; the machine counts no work, so a read adds none to the counted work" (cons "the differentials measure (§17.16 *Checks*, `TC-07`), and when the value is" (cons "computed is not part of the denotation. Certificate B encodes the item as" (cons "itself (§17.17), so the crate it states is the crate printed. `rust::validate`" (cons "and the bootstrap `RustValidate` refuse, as `LLB6005`, a constant whose result" (cons "can fail or whose body has a binding or is not a closed literal, ``constant: `f<n>`" (cons "is not an infallible closed literal``: a thread-local initializer cannot propagate" (cons "a failure, and a body that calls could reach the constant it initializes. No" (cons "lowering builds such a constant, so the refusal is held by committed crates in" (cons "the differential of `BS-05`. `rust-core` renders no constant, because the" (cons "literal holds heap storage." (nil String))))))))))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -2377,7 +2377,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "**Checks.** Before printing, `rust::validate` refuses, as `LLB6005`:" (nil String))
+      (cons "**Failure typing.** A function can overflow exactly when its body reaches a" (cons "primitive or successor that can (`nat_add`, `nat_mul`, `int_add`, `int_sub`," (cons "`int_mul`, `int_neg`, `int_quot`, `parse_decimal` at `int`, `succ`), a call to" (cons "a function that can, or an application of a function type one of whose" (cons "closures can: the least fixed point of these rules, computed by a worklist" (cons "over the reverse call and application edges. A function that can overflow" (cons "returns `R<T>` and every call to it ends in `?`, except in tail position," (cons "where its result is returned as it is; any other function returns its value" (cons "and no call to it propagates. The length of a sequence cannot exceed" (cons "`2^64 - 1` on any machine that holds it, so `length` cannot overflow." (nil String)))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -2391,7 +2391,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "1. *hygiene*: a name used but not bound, or bound twice in one function," (cons "   and an item declared twice;" (cons "2. *ownership*: a value moved twice, or read after it was moved, on any" (cons "   path; a pair component moved out twice, or a binding read or moved" (cons "   whole after a component was moved out of it; branches are alternatives;" (cons "3. *hidden allocation*: in `rust-core`, any heap type, heap runtime" (cons "   function, string or byte string literal, list construction or match, or" (cons "   box;" (cons "4. *arithmetic*: a fallible call that does not propagate outside tail" (cons "   position, an infallible call that propagates, a fallible function's tail" (cons "   that is not a fallible value, and a function that propagates a failure" (cons "   its result type does not carry;" (cons "5. *correspondence*, instance by instance: an emitted construct with no row" (cons "   in `validate::CORRESPONDENCE`, whose row does not name the element of its" (cons "   own origin, whose width (a fixed-width runtime function's or literal's)" (cons "   differs from its origin's, or whose origin the program does not use; and" (cons "   a type the crate names whose row names no element the program uses. The" (cons "   pair and result constructs that a loop's state and break carry (`type:pair`," (cons "   `type:result`, `destructure:pair`, `construct:pair`, `construct:ok`," (cons "   `construct:err`) name `expr:call` among their origins, so they are admitted" (cons "   in any program that calls, not only where a self tail call is rendered as" (cons "   a loop: the rule is coarser there by that much. The" (cons "   origin is derived from the term being lowered, independently of the" (cons "   construct chosen for it, so a call of `nat_mul` lowered from a `nat_add`" (cons "   term, or a `u16` addition lowered from a `u8` one, is refused even in a" (cons "   program that uses both. Types are checked against the program's elements" (cons "   as a whole. That the parts of a construct are composed faithfully (which" (cons "   arm is which, which function a call names, the order of captures and" (cons "   fields) is not a check of the AST: it is established by the conformance" (cons "   differential below, against which planted lowering mutations are" (cons "   recorded. A negated zero test or predecessor is refused as well: a zero" (cons "   test is negated as its complement, and the printer parenthesizes any" (cons "   comparison under `!`." (nil String))))))))))))))))))))))))))))))))))
+      (cons "**Checks.** Before printing, `rust::validate` refuses, as `LLB6005`:" (nil String))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -2405,7 +2405,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "**Runtime boundary.** The runtime both profiles carry is a closed text" (cons "(`rust::runtime`), and what it may take from Rust's library is closed too." (cons "`rust_library::PRIMITIVES` lists the *machine primitives*: the checked" (cons "integer operations at each width (`checked_add`, `checked_sub`," (cons "`checked_mul`, `checked_div`, `checked_rem`, `checked_neg`, `checked_shl`," (cons "`checked_shr`), conversion between integer widths, the order of two" (cons "scalars, the work counter, a growable buffer (creation with a capacity," (cons "`push` and `truncate` by its only holder, length), a shared immutable copy of" (cons "a slice, the unique-holder test and release of a shared value, replacement" (cons "of a place's value, and the UTF-8 view and check of a text. Each is stated" (cons "by its meaning, and these, with Rust's integer and Boolean operators, are" (cons "the only operations the runtime may use that no runtime source defines." (cons "`rust_library::LIBRARY` lists every name the runtime text takes from the" (cons "library (an import, a path, a method, a macro, or a capitalized type, trait," (cons "or constructor; an integer type in a path is written `<int>`), each with its" (cons "role: part of a primitive; *stated*, meaning the closed AST states what it" (cons "computes over the primitives the row cites, or over its own constructs" (cons "alone when it cites none; or a construct of the closed AST. The audit" (cons "(`rust_library::audit`) reads the text as tokens and refuses a name the" (cons "table does not list, a row the text does not use or lists twice, a row" (cons "citing a name that is not a primitive, and a primitive no row cites." (nil String))))))))))))))))))))))
+      (cons "1. *hygiene*: a name used but not bound, or bound twice in one function," (cons "   and an item declared twice;" (cons "2. *ownership*: a value moved twice, or read after it was moved, on any" (cons "   path; a pair component moved out twice, or a binding read or moved" (cons "   whole after a component was moved out of it; branches are alternatives;" (cons "3. *hidden allocation*: in `rust-core`, any heap type, heap runtime" (cons "   function, string or byte string literal, list construction or match, or" (cons "   box;" (cons "4. *arithmetic*: a fallible call that does not propagate outside tail" (cons "   position, an infallible call that propagates, a fallible function's tail" (cons "   that is not a fallible value, and a function that propagates a failure" (cons "   its result type does not carry;" (cons "5. *correspondence*, instance by instance: an emitted construct with no row" (cons "   in `validate::CORRESPONDENCE`, whose row does not name the element of its" (cons "   own origin, whose width (a fixed-width runtime function's or literal's)" (cons "   differs from its origin's, or whose origin the program does not use; and" (cons "   a type the crate names whose row names no element the program uses. The" (cons "   pair and result constructs that a loop's state and break carry (`type:pair`," (cons "   `type:result`, `destructure:pair`, `construct:pair`, `construct:ok`," (cons "   `construct:err`) name `expr:call` among their origins, so they are admitted" (cons "   in any program that calls, not only where a self tail call is rendered as" (cons "   a loop: the rule is coarser there by that much. The" (cons "   origin is derived from the term being lowered, independently of the" (cons "   construct chosen for it, so a call of `nat_mul` lowered from a `nat_add`" (cons "   term, or a `u16` addition lowered from a `u8` one, is refused even in a" (cons "   program that uses both. Types are checked against the program's elements" (cons "   as a whole. That the parts of a construct are composed faithfully (which" (cons "   arm is which, which function a call names, the order of captures and" (cons "   fields) is not a check of the AST: it is established by the conformance" (cons "   differential below, against which planted lowering mutations are" (cons "   recorded. A negated zero test or predecessor is refused as well: a zero" (cons "   test is negated as its complement, and the printer parenthesizes any" (cons "   comparison under `!`." (nil String))))))))))))))))))))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -2419,7 +2419,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "**Packages.** A package manifest (`lexlean/rust-package/1`," (cons "`schemas/rust-package.schema.json`) names a crate and its version (three" (cons "canonical decimals, each at most `2^64 - 1`, as Cargo reads them; the schema" (cons "pattern and the renderer agree), a profile, a target program, the exported" (cons "functions, and its `sources`: the semantic IDs (§21.4) of the LexLean builds" (cons "whose linked IR states the program, as lowercase SHA-256 hex, strictly" (cons "ascending, and empty for a program no LexLean build states. The renderer" (cons "checks their form and records them; that they name the build stating the" (cons "program is established by the conformance suite against the verified build" (cons "(below). That the program faithfully realizes the semantic objects of that" (cons "build (realization-to-source preservation) is the obligation of the" (cons "production pipeline that derives target programs from LexLean roots, not of" (cons "this backend: `sources` binds a package to the build that states its program," (cons "and the backend never derives a program from a build. Its `effects` are effects" (cons "of §17.13, strictly ascending and registered, that the package states of" (cons "itself. For a package a production root exports they are the set eligibility" (cons "requires of the root on the profile, which eligibility decides and the renderer" (cons "does not derive; for a package no root exports (a fixture) they are the effects" (cons "its program shows, `overflow` for an export that can fail and `recursion` for a" (cons "function that reaches itself, never `allocation`. They are not the effects the" (cons "realization can exhibit: the argument check an entry carries recurses over a" (cons "recursive argument type, and the graph templates' `nat_add` fuel bound can" (cons "overflow, and neither is among a root's required effects (issue 105). The" (cons "renderer refuses a list that is unregistered, unordered, or states `allocation`" (cons "on `rust-core`. Each export names a" (cons "program function, its Rust name, how it takes each parameter (`own`;" (cons "`borrow`, by shared reference; or `copy`, only for a `Copy` type: a scalar," (cons "or an option, result, or pair of `Copy` types), and whether it can fail" (cons "(`none` or `overflow`). A package is refused, as `LLB6005`, when:" (nil String))))))))))))))))))))))))))))))
+      (cons "**Runtime boundary.** The runtime both profiles carry is a closed text" (cons "(`rust::runtime`), and what it may take from Rust's library is closed too." (cons "`rust_library::PRIMITIVES` lists the *machine primitives*: the checked" (cons "integer operations at each width (`checked_add`, `checked_sub`," (cons "`checked_mul`, `checked_div`, `checked_rem`, `checked_neg`, `checked_shl`," (cons "`checked_shr`), conversion between integer widths, the order of two" (cons "scalars, the work counter, a growable buffer (creation with a capacity," (cons "`push` and `truncate` by its only holder, length), a shared immutable copy of" (cons "a slice, the unique-holder test and release of a shared value, replacement" (cons "of a place's value, and the UTF-8 view and check of a text. Each is stated" (cons "by its meaning, and these, with Rust's integer and Boolean operators, are" (cons "the only operations the runtime may use that no runtime source defines." (cons "`rust_library::LIBRARY` lists every name the runtime text takes from the" (cons "library (an import, a path, a method, a macro, or a capitalized type, trait," (cons "or constructor; an integer type in a path is written `<int>`), each with its" (cons "role: part of a primitive; *stated*, meaning the closed AST states what it" (cons "computes over the primitives the row cites, or over its own constructs" (cons "alone when it cites none; or a construct of the closed AST. The audit" (cons "(`rust_library::audit`) reads the text as tokens and refuses a name the" (cons "table does not list, a row the text does not use or lists twice, a row" (cons "citing a name that is not a primitive, and a primitive no row cites." (nil String))))))))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -2433,7 +2433,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "- an exported name is not a lowercase snake-case identifier of at most 64" (cons "  characters, is a Rust keyword, has the shape of a generated name, or is" (cons "  declared by the runtime; a name is exported twice; or the crate name is a" (cons "  sysroot crate or `harness` (*identifier collision*);" (cons "- an export copies a parameter whose type is not `Copy` (*ownership" (cons "  mismatch*);" (cons "- an export's boundary holds a function value, directly or inside the fields" (cons "  of a named type at any depth: the boundary is first-order (§17.13)" (cons "  (*unsupported type*);" (cons "- an export's declared errors differ from its function's (*arithmetic" (cons "  mismatch*);" (cons "- the profile is `rust-core` and the program needs heap allocation, or its" (cons "  effects state `allocation` (*hidden allocation*);" (cons "- its effects are not registered or not strictly ascending (*effects" (cons "  mismatch*); or" (cons "- the manifest is malformed, its version not canonical, its sources not" (cons "  canonical, its program invalid or without a faithful rendering, or an" (cons "  export's arity wrong." (nil String)))))))))))))))))))
+      (cons "**Packages.** A package manifest (`lexlean/rust-package/1`," (cons "`schemas/rust-package.schema.json`) names a crate and its version (three" (cons "canonical decimals, each at most `2^64 - 1`, as Cargo reads them; the schema" (cons "pattern and the renderer agree), a profile, a target program, the exported" (cons "functions, and its `sources`: the semantic IDs (§21.4) of the LexLean builds" (cons "whose linked IR states the program, as lowercase SHA-256 hex, strictly" (cons "ascending, and empty for a program no LexLean build states. The renderer" (cons "checks their form and records them; that they name the build stating the" (cons "program is established by the conformance suite against the verified build" (cons "(below). That the program faithfully realizes the semantic objects of that" (cons "build (realization-to-source preservation) is the obligation of the" (cons "production pipeline that derives target programs from LexLean roots, not of" (cons "this backend: `sources` binds a package to the build that states its program," (cons "and the backend never derives a program from a build. Its `effects` are effects" (cons "of §17.13, strictly ascending and registered, that the package states of" (cons "itself. For a package a production root exports they are the set eligibility" (cons "requires of the root on the profile, which eligibility decides and the renderer" (cons "does not derive; for a package no root exports (a fixture) they are the effects" (cons "its program shows, `overflow` for an export that can fail and `recursion` for a" (cons "function that reaches itself, never `allocation`. They are not the effects the" (cons "realization can exhibit: the argument check an entry carries recurses over a" (cons "recursive argument type, and the graph templates' `nat_add` fuel bound can" (cons "overflow, and neither is among a root's required effects (issue 105). The" (cons "renderer refuses a list that is unregistered, unordered, or states `allocation`" (cons "on `rust-core`. Each export names a" (cons "program function, its Rust name, how it takes each parameter (`own`;" (cons "`borrow`, by shared reference; or `copy`, only for a `Copy` type: a scalar," (cons "or an option, result, or pair of `Copy` types), and whether it can fail" (cons "(`none` or `overflow`). A package is refused, as `LLB6005`, when:" (nil String))))))))))))))))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -2447,7 +2447,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "A package is three files. `src/lib.rs` is the rendering with one public" (cons "wrapper per export. `Cargo.toml` declares the crate, its edition, no" (cons "dependencies, and its lint gate: `unsafe_code` forbidden, rustc warnings" (cons "denied, and every Clippy lint of the default set denied except the ten of the" (cons "table below, each because its advice would make the rendering depart from the" (cons "calculus." (nil String)))))))
+      (cons "- an exported name is not a lowercase snake-case identifier of at most 64" (cons "  characters, is a Rust keyword, has the shape of a generated name, or is" (cons "  declared by the runtime; a name is exported twice; or the crate name is a" (cons "  sysroot crate or `harness` (*identifier collision*);" (cons "- an export copies a parameter whose type is not `Copy` (*ownership" (cons "  mismatch*);" (cons "- an export's boundary holds a function value, directly or inside the fields" (cons "  of a named type at any depth: the boundary is first-order (§17.13)" (cons "  (*unsupported type*);" (cons "- an export's declared errors differ from its function's (*arithmetic" (cons "  mismatch*);" (cons "- the profile is `rust-core` and the program needs heap allocation, or its" (cons "  effects state `allocation` (*hidden allocation*);" (cons "- its effects are not registered or not strictly ascending (*effects" (cons "  mismatch*); or" (cons "- the manifest is malformed, its version not canonical, its sources not" (cons "  canonical, its program invalid or without a faithful rendering, or an" (cons "  export's arity wrong." (nil String)))))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -2461,7 +2461,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "**Scaffolding.** What a package says of itself beside its program is data, not" (cons "renderer text. The edition (2021), that the crate is not published, the gate" (cons "on rustc's lints, the Clippy group the gate starts from, and the" (cons "allowed lints, each with its Clippy group and its reason, are the declarations" (cons "of one language-1.2 semantic module, `RustPackage`, written in the authoring" (cons "notation at `language/package-1.2/library/src/RustPackage.lex.tex`. It is under `language/`," (cons "so the language-1.2 compiler-semantics ID (§21.2) covers it, and a changed" (cons "lint, edition, or gate changes LexLean's identity. The renderer reads it, and" (cons "neither evaluates it nor splices it into a rendering (the library's path is" (cons "not in it: `src/lib.rs` is the package's layout, `package::LIBRARY_PATH`, which" (cons "the provenance schema also fixes): `rust::scaffold` decodes" (cons "the module's semantic data, accepting exactly the shapes the module uses and" (cons "the declarations it names, and `package.rs` prints `Cargo.toml` over the" (cons "record. The crate attributes are derived, not stored: `#![no_std]` is the" (cons "target row of `language/production-1.2.toml` with `allocation = false`, and" (cons "`#![forbid(lint)]` restates each gate on rustc's lints at level `forbid` (so" (cons "`#![forbid(unsafe_code)]` and `unsafe_code = \"forbid\"` come from one row, and" (cons "a `lib.rs` built outside Cargo still forbids unsafe code). No source of the" (cons "renderer holds a string the module states (`scaffold::audit`). The module" (cons "states that no allowed lint is in Clippy's `correctness` group as a theorem" (cons "over the same list. The reader refuses a lint in that group and checks the" (cons "theorem by its shape (the predicate is false exactly on `correctness`, and the" (cons "theorem equates it over the list with `true`); the module is the project" (cons "`language/package-1.2/library`, whose check types it, and the kernel's replay" (cons "of the theorem's proof is that of `verify`, which no gate of this repository" (cons "runs on it." (nil String)))))))))))))))))))))))))))
+      (cons "A package is three files. `src/lib.rs` is the rendering with one public" (cons "wrapper per export. `Cargo.toml` declares the crate, its edition, no" (cons "dependencies, and its lint gate: `unsafe_code` forbidden, rustc warnings" (cons "denied, and every Clippy lint of the default set denied except the ten of the" (cons "table below, each because its advice would make the rendering depart from the" (cons "calculus." (nil String)))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -2475,6 +2475,20 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
+      (cons "**Scaffolding.** What a package says of itself beside its program is data, not" (cons "renderer text. The edition (2021), that the crate is not published, the gate" (cons "on rustc's lints, the Clippy group the gate starts from, and the" (cons "allowed lints, each with its Clippy group and its reason, are the declarations" (cons "of one language-1.2 semantic module, `RustPackage`, written in the authoring" (cons "notation at `language/package-1.2/library/src/RustPackage.lex.tex`. It is under `language/`," (cons "so the language-1.2 compiler-semantics ID (§21.2) covers it, and a changed" (cons "lint, edition, or gate changes LexLean's identity. The renderer reads it, and" (cons "neither evaluates it nor splices it into a rendering (the library's path is" (cons "not in it: `src/lib.rs` is the package's layout, `package::LIBRARY_PATH`, which" (cons "the provenance schema also fixes): `rust::scaffold` decodes" (cons "the module's semantic data, accepting exactly the shapes the module uses and" (cons "the declarations it names, and `package.rs` prints `Cargo.toml` over the" (cons "record. The crate attributes are derived, not stored: `#![no_std]` is the" (cons "target row of `language/production-1.2.toml` with `allocation = false`, and" (cons "`#![forbid(lint)]` restates each gate on rustc's lints at level `forbid` (so" (cons "`#![forbid(unsafe_code)]` and `unsafe_code = \"forbid\"` come from one row, and" (cons "a `lib.rs` built outside Cargo still forbids unsafe code). No source of the" (cons "renderer holds a string the module states (`scaffold::audit`). The module" (cons "states that no allowed lint is in Clippy's `correctness` group as a theorem" (cons "over the same list. The reader refuses a lint in that group and checks the" (cons "theorem by its shape (the predicate is false exactly on `correctness`, and the" (cons "theorem equates it over the list with `true`); the module is the project" (cons "`language/package-1.2/library`, whose check types it, and the kernel's replay" (cons "of the theorem's proof is that of `verify`, which no gate of this repository" (cons "runs on it." (nil String)))))))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0183,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
       (cons "| Lint | Clippy group | Reason |" (cons "| --- | --- | --- |" (cons "| `type_complexity` | complexity | asks for a type alias: a generated type is exactly its calculus type, and an alias is a name with no calculus counterpart |" (cons "| `too_many_arguments` | complexity | asks to group parameters into a struct: a function takes exactly its calculus parameters, and the struct is a type with no calculus counterpart |" (cons "| `large_enum_variant` | perf | asks to box a large variant: boxing changes the representation and allocates, which rust-core cannot and the calculus does not |" (cons "| `result_large_err` | perf | asks to box a large error: boxing changes the representation and allocates, which rust-core cannot and the calculus does not |" (cons "| `result_unit_err` | style | asks for an error type in place of unit: a function returns exactly its calculus result type, and the error type has no calculus counterpart |" (cons "| `single_match` | style | asks for `if let` or `if` in place of a match with an empty arm: every calculus match states an arm for every shape, and `if let` leaves one implicit |" (cons "| `manual_unwrap_or` | complexity | asks for a library combinator in place of the program's own match: the combinator is outside the closed runtime |" (cons "| `manual_unwrap_or_default` | suspicious | asks for a library combinator in place of the program's own match: the combinator is outside the closed runtime, and its advice is a rewrite that preserves the match's meaning, so allowing it masks no defect |" (cons "| `manual_map` | style | asks for `Option::map` and a Rust closure in place of the program's own match: a calculus closure is defunctionalized, never a Rust closure |" (cons "| `manual_ok_err` | complexity | asks for a library combinator in place of the program's own match: the combinator is outside the closed runtime |" (nil String)))))))))))))
     ],
     constructor: DocRows::Item.table,
@@ -2484,7 +2498,7 @@ definition{
 }
 
 definition{
-  name: i0183,
+  name: i0184,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2498,7 +2512,7 @@ definition{
 }
 
 definition{
-  name: i0184,
+  name: i0185,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2512,7 +2526,7 @@ definition{
 }
 
 definition{
-  name: i0185,
+  name: i0186,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2526,7 +2540,7 @@ definition{
 }
 
 definition{
-  name: i0186,
+  name: i0187,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2540,7 +2554,7 @@ definition{
 }
 
 definition{
-  name: i0187,
+  name: i0188,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2552,7 +2566,7 @@ definition{
 }
 
 definition{
-  name: i0188,
+  name: i0189,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2566,7 +2580,7 @@ definition{
 }
 
 definition{
-  name: i0189,
+  name: i0190,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2580,7 +2594,7 @@ definition{
 }
 
 definition{
-  name: i0190,
+  name: i0191,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2594,7 +2608,7 @@ definition{
 }
 
 definition{
-  name: i0191,
+  name: i0192,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2609,7 +2623,7 @@ definition{
 }
 
 definition{
-  name: i0192,
+  name: i0193,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2623,7 +2637,7 @@ definition{
 }
 
 definition{
-  name: i0193,
+  name: i0194,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2637,7 +2651,7 @@ definition{
 }
 
 definition{
-  name: i0194,
+  name: i0195,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2651,7 +2665,7 @@ definition{
 }
 
 definition{
-  name: i0195,
+  name: i0196,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2665,7 +2679,7 @@ definition{
 }
 
 definition{
-  name: i0196,
+  name: i0197,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2679,7 +2693,7 @@ definition{
 }
 
 definition{
-  name: i0197,
+  name: i0198,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2693,7 +2707,7 @@ definition{
 }
 
 definition{
-  name: i0198,
+  name: i0199,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2707,7 +2721,7 @@ definition{
 }
 
 definition{
-  name: i0199,
+  name: i0200,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2721,7 +2735,7 @@ definition{
 }
 
 definition{
-  name: i0200,
+  name: i0201,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2735,7 +2749,7 @@ definition{
 }
 
 definition{
-  name: i0201,
+  name: i0202,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2749,7 +2763,7 @@ definition{
 }
 
 definition{
-  name: i0202,
+  name: i0203,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2763,7 +2777,7 @@ definition{
 }
 
 definition{
-  name: i0203,
+  name: i0204,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2777,7 +2791,7 @@ definition{
 }
 
 definition{
-  name: i0204,
+  name: i0205,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2791,7 +2805,7 @@ definition{
 }
 
 definition{
-  name: i0205,
+  name: i0206,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2805,7 +2819,7 @@ definition{
 }
 
 definition{
-  name: i0206,
+  name: i0207,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2819,7 +2833,7 @@ definition{
 }
 
 definition{
-  name: i0207,
+  name: i0208,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2833,7 +2847,7 @@ definition{
 }
 
 definition{
-  name: i0208,
+  name: i0209,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2848,7 +2862,7 @@ definition{
 }
 
 definition{
-  name: i0209,
+  name: i0210,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2862,7 +2876,7 @@ definition{
 }
 
 definition{
-  name: i0210,
+  name: i0211,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2876,7 +2890,7 @@ definition{
 }
 
 definition{
-  name: i0211,
+  name: i0212,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2890,7 +2904,7 @@ definition{
 }
 
 definition{
-  name: i0212,
+  name: i0213,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2905,7 +2919,7 @@ definition{
 }
 
 definition{
-  name: i0213,
+  name: i0214,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2920,7 +2934,7 @@ definition{
 }
 
 definition{
-  name: i0214,
+  name: i0215,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2935,7 +2949,7 @@ definition{
 }
 
 definition{
-  name: i0215,
+  name: i0216,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2950,7 +2964,7 @@ definition{
 }
 
 definition{
-  name: i0216,
+  name: i0217,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2965,7 +2979,7 @@ definition{
 }
 
 definition{
-  name: i0217,
+  name: i0218,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2979,7 +2993,7 @@ definition{
 }
 
 definition{
-  name: i0218,
+  name: i0219,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2993,7 +3007,7 @@ definition{
 }
 
 definition{
-  name: i0219,
+  name: i0220,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3007,7 +3021,7 @@ definition{
 }
 
 definition{
-  name: i0220,
+  name: i0221,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3021,7 +3035,7 @@ definition{
 }
 
 definition{
-  name: i0221,
+  name: i0222,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3035,7 +3049,7 @@ definition{
 }
 
 definition{
-  name: i0222,
+  name: i0223,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3049,7 +3063,7 @@ definition{
 }
 
 definition{
-  name: i0223,
+  name: i0224,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3063,7 +3077,7 @@ definition{
 }
 
 definition{
-  name: i0224,
+  name: i0225,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3077,7 +3091,7 @@ definition{
 }
 
 definition{
-  name: i0225,
+  name: i0226,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3089,7 +3103,7 @@ definition{
 }
 
 definition{
-  name: i0226,
+  name: i0227,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3103,7 +3117,7 @@ definition{
 }
 
 definition{
-  name: i0227,
+  name: i0228,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3117,7 +3131,7 @@ definition{
 }
 
 definition{
-  name: i0228,
+  name: i0229,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3131,7 +3145,7 @@ definition{
 }
 
 definition{
-  name: i0229,
+  name: i0230,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3146,7 +3160,7 @@ definition{
 }
 
 definition{
-  name: i0230,
+  name: i0231,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3160,7 +3174,7 @@ definition{
 }
 
 definition{
-  name: i0231,
+  name: i0232,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3175,7 +3189,7 @@ definition{
 }
 
 definition{
-  name: i0232,
+  name: i0233,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3189,7 +3203,7 @@ definition{
 }
 
 definition{
-  name: i0233,
+  name: i0234,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3203,7 +3217,7 @@ definition{
 }
 
 definition{
-  name: i0234,
+  name: i0235,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3217,7 +3231,7 @@ definition{
 }
 
 definition{
-  name: i0235,
+  name: i0236,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3231,26 +3245,12 @@ definition{
 }
 
 definition{
-  name: i0236,
-  parameters: [],
-  result: DocRows::Item,
-  body: constructor{
-    arguments: [
-      (cons "**A function rendered as a loop** (`SP-20`). The renderer writes a function whose" (cons "self calls are all tail calls as a loop (§17.16), so the crate no longer holds" (cons "the recursive body that the calculus function corresponds to. `FunOK` is" (cons "therefore the disjunction of two statements: `FunOK0`, the one above, and" (cons "`FunLoop`, that the crate's body is the loop form `loopOf` of an ordinary" (cons "recursive body, with the Boolean checks of `loopCheckOf` (the renamed" (cons "parameters and the kept ones are distinct, the originals of the changed" (cons "parameters are none of the kept ones, the kept ones are locals, and the loop" (cons "body mentions no renamed parameter) closed by evaluation, together with the" (cons "`Corr` derivation for that recursive body. The recursive body, how each" (cons "parameter is carried (changed, kept, or dropped), the state and result types," (cons "and the numbers of the holder and of the renamed parameters are the witnesses" (cons "of `FunLoop`. `funSem_loop` proves the simulation of such a function from the" (cons "simulation of the recursive body, the iteration of the loop on the iteration" (cons "of the calls, and `funSem_of` takes the second disjunct to it; `Corr`, its" (cons "recursor, and `sound` are untouched. The aligner recovers the witnesses by" (cons "inverting the rendering of loops, which reads the holder bound to the state," (cons "the destructuring that begins the loop body, the renamed parameters, and the" (cons "`Ok` and `Err` wraps of the tails, and then requires the library's form of the" (cons "recovered body, transliterated, to be exactly the crate's function: a loop that" (cons "is not in the image of the rendering is refused with *Certificate B rejected*" (cons "(`LLV7015`) and the reason, not aligned by guess. Two things of the recursive" (cons "body leave no trace in the loop form and are chosen: a kept parameter is read" (cons "by `Clone`, which the library accepts as it accepts every read, and the" (cons "argument of a dropped parameter is recovered only when it is a temporary the" (cons "block binds." (nil String)))))))))))))))))))))))))))
-    ],
-    constructor: DocRows::Item.para,
-    type_arguments: []
-  },
-  executable: true
-}
-
-definition{
   name: i0237,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "**No Lean text template in the production compiler.** The staged audit module" (cons "is an auxiliary module of typed commands (`#print axioms`, `#print \"marker\"`," (cons "`#print name`, `#check @name`) that the Lean backend renders. It is rendered" (cons "without the `module` header, because Lean refuses a `module` that imports a" (cons "file that is not one and the certificates it imports are rendered outside the" (cons "module system via `lean_text_legacy` (scoped in `namespace <module>` without a" (cons "`module` header so each certificate's inline decoder stays local and can be" (cons "imported by certificate E and the audit module). No other string literal under `crates/lexlean/src/production/`," (cons "and none in the probe and audit module part of `backend/lean.rs` beyond the" (cons "renderer of those commands and the quote of a name, is Lean syntax: a" (cons "lexer-level scan of the sources, which drops test code and reads every string" (cons "literal, finds none outside a short allow-list of the printouts of kernel terms" (cons "that developers read (`conformance_sp_17`; the definition of Lean syntax and" (cons "the planted templates it reports are in VERIFICATION.md)." (nil String)))))))))))))))
+      (cons "**Artifacts as data** (`SP-24`, `MD-14`). An artifact declaration (§17.12 rule" (cons "2) elaborates to a definition of its decoded value, which the lowering holds as" (cons "one literal of the target program when the definition's body is a list built" (cons "from `Nil` and `Cons` of literals: the declaration, and not the shape of a" (cons "term, decides which definitions fold, so an ordinary definition that builds the" (cons "same list keeps its construction. The literal is charged its weight on each read" (cons "(§17.14 *Cost*) where the chain it replaces was evaluated, node by node, at each" (cons "call, and the `rust-std` rendering holds it as a constant built once per thread" (cons "(§17.16 *Constants*). Certificate A relates the source's construction of the" (cons "list to the literal by the lemma that relates any literal to its value" (cons "(`conv_value`, stated for every `Value`), so the preservation library has no" (cons "new lemma and `Corr` no new constructor; certificate B encodes the constant as" (cons "the machine's `ItemDef.constant` (§17.16 *Constants*), whose function the" (cons "machine finds by the same lookup as any function, so the derivation of a" (cons "constant is the derivation of a function of no parameters over its literal." (nil String))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -3264,7 +3264,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "**Evidence.** The conformance suite certifies every production root of" (cons "`examples/production`, `examples/production-coverage`, `examples/models`, and" (cons "`examples/reasoning`, and verification checks every example's certificates as part of its" (cons "published set. Together these roots exercise every runtime row of the" (cons "production registry (§17.13), a type parameter through an instance of a" (cons "generic definition: arithmetic at every width, text and bytes, documents," (cons "records, instances, generic and nested inductive types, higher-order" (cons "functions with captures, structural, mutual, and well-founded recursion," (cons "every collection template, every key order, the model constructs, and a" (cons "recursive tree (`Grove`) whose nodes carry a set, a list of children, a map," (cons "an option of a child, and a list of pairs of a number and a child, whose" (cons "leaves carry a map and whose third constructor holds a result of a child or a" (cons "number, and whose boundary validators are one mutual group." (nil String))))))))))))))
+      (cons "**A function rendered as a loop** (`SP-20`). The renderer writes a function whose" (cons "self calls are all tail calls as a loop (§17.16), so the crate no longer holds" (cons "the recursive body that the calculus function corresponds to. `FunOK` is" (cons "therefore the disjunction of two statements: `FunOK0`, the one above, and" (cons "`FunLoop`, that the crate's body is the loop form `loopOf` of an ordinary" (cons "recursive body, with the Boolean checks of `loopCheckOf` (the renamed" (cons "parameters and the kept ones are distinct, the originals of the changed" (cons "parameters are none of the kept ones, the kept ones are locals, and the loop" (cons "body mentions no renamed parameter) closed by evaluation, together with the" (cons "`Corr` derivation for that recursive body. The recursive body, how each" (cons "parameter is carried (changed, kept, or dropped), the state and result types," (cons "and the numbers of the holder and of the renamed parameters are the witnesses" (cons "of `FunLoop`. `funSem_loop` proves the simulation of such a function from the" (cons "simulation of the recursive body, the iteration of the loop on the iteration" (cons "of the calls, and `funSem_of` takes the second disjunct to it; `Corr`, its" (cons "recursor, and `sound` are untouched. The aligner recovers the witnesses by" (cons "inverting the rendering of loops, which reads the holder bound to the state," (cons "the destructuring that begins the loop body, the renamed parameters, and the" (cons "`Ok` and `Err` wraps of the tails, and then requires the library's form of the" (cons "recovered body, transliterated, to be exactly the crate's function: a loop that" (cons "is not in the image of the rendering is refused with *Certificate B rejected*" (cons "(`LLV7015`) and the reason, not aligned by guess. Two things of the recursive" (cons "body leave no trace in the loop form and are chosen: a kept parameter is read" (cons "by `Clone`, which the library accepts as it accepts every read, and the" (cons "argument of a dropped parameter is recovered only when it is a temporary the" (cons "block binds." (nil String)))))))))))))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -3278,7 +3278,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "Mutations. It plants defects after lowering, while the proof is still" (cons "derived from the source, in the lowered program: branches swapped, an" (cons "addition that subtracts, a checked operation bounded as another, a wrong" (cons "constructor, a slice's bounds exchanged, a wrong callee, a wrong literal; and" (cons "in the boundary, an entry that omits the check of a validated parameter, a" (cons "validator that omits the check of a component of its type, and a validator" (cons "that admits an equal key. Each of the first seven is planted at the first, a" (cons "middle, and the last place it applies in the roots of the coverage example," (cons "and each of the three of the boundary at every place it applies, so that every" (cons "validated parameter and every component check is planted in turn. Lean must" (cons "reject each, and the first error must lie in the relation of the function the" (cons "mutation changed (`__rel_k` for a definition, instance, or lambda `k`," (cons "`__vrel_k` for a validator, `entry` for the entry; for a member of a library" (cons "template, whose relation the certificate states where it is instantiated, the" (cons "relation of a caller). It plants defects after rendering, in each crate," (cons "while the program is unchanged: the same kinds, and an entry that omits the" (cons "check of a validated parameter, at the first, a middle, and the last place" (cons "each applies across the renderings of the renderer fixtures and of the entries" (cons "of the coverage roots (every validated parameter for the last); the aligner" (cons "must refuse the crate naming the mutated function, or Lean's first error on" (cons "the realigned derivation and on the unmutated derivation restated over the" (cons "mutated crate must lie in the derivation `fun<k>` of that function; the" (cons "width change is also refused by the renderer's correspondence check (§17.16)." (cons "A defect in A or B leaves certificate E unbuildable, since it imports both; it" (cons "also plants, in certificate E's own statement, at every place, the other" (cons "result shape of each `RealizesFn` and another function for each `fnIdent`," (cons "and Lean's first error must lie in the composition `root`. A lowering that does" (cons "not validate a parameter, or lowers a validator that checks nothing, is" (cons "planted in the lowered program and the certificate generator must refuse it" (cons "(**Boundary**); a call of a validator from the root, a validator that reaches" (cons "the program, and validators with no entry are each refused by the boundary" (cons "audit." (nil String)))))))))))))))))))))))))))))))))
+      (cons "**No Lean text template in the production compiler.** The staged audit module" (cons "is an auxiliary module of typed commands (`#print axioms`, `#print \"marker\"`," (cons "`#print name`, `#check @name`) that the Lean backend renders. It is rendered" (cons "without the `module` header, because Lean refuses a `module` that imports a" (cons "file that is not one and the certificates it imports are rendered outside the" (cons "module system via `lean_text_legacy` (scoped in `namespace <module>` without a" (cons "`module` header so each certificate's inline decoder stays local and can be" (cons "imported by certificate E and the audit module). No other string literal under `crates/lexlean/src/production/`," (cons "and none in the probe and audit module part of `backend/lean.rs` beyond the" (cons "renderer of those commands and the quote of a name, is Lean syntax: a" (cons "lexer-level scan of the sources, which drops test code and reads every string" (cons "literal, finds none outside a short allow-list of the printouts of kernel terms" (cons "that developers read (`conformance_sp_17`; the definition of Lean syntax and" (cons "the planted templates it reports are in VERIFICATION.md)." (nil String)))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -3292,7 +3292,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "Differentials. On seeded inputs to every root, on inputs with larger numbers" (cons "and longer sequences, on inputs at the top and the bottom of every scalar type" (cons "and with each parameter in turn at the top, on a search over inputs whose" (cons "scalars are each small or at a bound, and, through its entry, on valid inputs" (cons "and on inputs that break the invariant of each validated parameter in turn," (cons "the calculus interpreter's outcome must equal the certificate's `denote` or" (cons "`denoteEntry` evaluated by Lean and the declared machine's outcome on the" (cons "root's crate. Every root whose closure declares an overflow is run on an input" (cons "on which it overflows, so the overflow arm of each statement is exercised on" (cons "the interpreter, Lean, the machine, and rustc, except the roots below, whose" (cons "declared overflow no input reaches (the registry's effect rows" (cons "over-approximate). Of the 59 certified roots of the four examples, 44" (cons "declare an overflow, 19 of them reach it, and the other 25 rest on the" (cons "kernel proof alone for the overflow arm of E, B, and the machine, because" (cons "either the operands that can overflow do not depend on the root's parameters," (cons "or the overflow is a sequence, text, or collection of 2^64 elements, which no" (cons "test can build, or, for the model roots, no input found overflows their" (cons "arithmetic over the decoded weights, or, for four of the reasoning roots," (cons "no input found overflows the arithmetic of their rule guards and conclusions. The list is checked against the suite" (cons "both ways: a root on it that overflows, or a root off it that does not, fails" (cons "`conformance_sp_03`." (nil String))))))))))))))))))))))
+      (cons "**Evidence.** The conformance suite certifies every production root of" (cons "`examples/production`, `examples/production-coverage`, `examples/models`, and" (cons "`examples/reasoning`, and verification checks every example's certificates as part of its" (cons "published set. Together these roots exercise every runtime row of the" (cons "production registry (§17.13), a type parameter through an instance of a" (cons "generic definition: arithmetic at every width, text and bytes, documents," (cons "records, instances, generic and nested inductive types, higher-order" (cons "functions with captures, structural, mutual, and well-founded recursion," (cons "every collection template, every key order, the model constructs, and a" (cons "recursive tree (`Grove`) whose nodes carry a set, a list of children, a map," (cons "an option of a child, and a list of pairs of a number and a child, whose" (cons "leaves carry a map and whose third constructor holds a result of a child or a" (cons "number, and whose boundary validators are one mutual group." (nil String))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -3302,6 +3302,34 @@ definition{
 
 definition{
   name: i0241,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Mutations. It plants defects after lowering, while the proof is still" (cons "derived from the source, in the lowered program: branches swapped, an" (cons "addition that subtracts, a checked operation bounded as another, a wrong" (cons "constructor, a slice's bounds exchanged, a wrong callee, a wrong literal; and" (cons "in the boundary, an entry that omits the check of a validated parameter, a" (cons "validator that omits the check of a component of its type, and a validator" (cons "that admits an equal key. Each of the first seven is planted at the first, a" (cons "middle, and the last place it applies in the roots of the coverage example," (cons "and each of the three of the boundary at every place it applies, so that every" (cons "validated parameter and every component check is planted in turn. Lean must" (cons "reject each, and the first error must lie in the relation of the function the" (cons "mutation changed (`__rel_k` for a definition, instance, or lambda `k`," (cons "`__vrel_k` for a validator, `entry` for the entry; for a member of a library" (cons "template, whose relation the certificate states where it is instantiated, the" (cons "relation of a caller). It plants defects after rendering, in each crate," (cons "while the program is unchanged: the same kinds, and an entry that omits the" (cons "check of a validated parameter, at the first, a middle, and the last place" (cons "each applies across the renderings of the renderer fixtures and of the entries" (cons "of the coverage roots (every validated parameter for the last); the aligner" (cons "must refuse the crate naming the mutated function, or Lean's first error on" (cons "the realigned derivation and on the unmutated derivation restated over the" (cons "mutated crate must lie in the derivation `fun<k>` of that function; the" (cons "width change is also refused by the renderer's correspondence check (§17.16)." (cons "A defect in A or B leaves certificate E unbuildable, since it imports both; it" (cons "also plants, in certificate E's own statement, at every place, the other" (cons "result shape of each `RealizesFn` and another function for each `fnIdent`," (cons "and Lean's first error must lie in the composition `root`. A lowering that does" (cons "not validate a parameter, or lowers a validator that checks nothing, is" (cons "planted in the lowered program and the certificate generator must refuse it" (cons "(**Boundary**); a call of a validator from the root, a validator that reaches" (cons "the program, and validators with no entry are each refused by the boundary" (cons "audit." (nil String)))))))))))))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0242,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Differentials. On seeded inputs to every root, on inputs with larger numbers" (cons "and longer sequences, on inputs at the top and the bottom of every scalar type" (cons "and with each parameter in turn at the top, on a search over inputs whose" (cons "scalars are each small or at a bound, and, through its entry, on valid inputs" (cons "and on inputs that break the invariant of each validated parameter in turn," (cons "the calculus interpreter's outcome must equal the certificate's `denote` or" (cons "`denoteEntry` evaluated by Lean and the declared machine's outcome on the" (cons "root's crate. Every root whose closure declares an overflow is run on an input" (cons "on which it overflows, so the overflow arm of each statement is exercised on" (cons "the interpreter, Lean, the machine, and rustc, except the roots below, whose" (cons "declared overflow no input reaches (the registry's effect rows" (cons "over-approximate). Of the 59 certified roots of the four examples, 44" (cons "declare an overflow, 19 of them reach it, and the other 25 rest on the" (cons "kernel proof alone for the overflow arm of E, B, and the machine, because" (cons "either the operands that can overflow do not depend on the root's parameters," (cons "or the overflow is a sequence, text, or collection of 2^64 elements, which no" (cons "test can build, or, for the model roots, no input found overflows their" (cons "arithmetic over the decoded weights, or, for four of the reasoning roots," (cons "no input found overflows the arithmetic of their rule guards and conclusions. The list is checked against the suite" (cons "both ways: a root on it that overflows, or a root off it that does not, fails" (cons "`conformance_sp_03`." (nil String))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0243,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3316,7 +3344,7 @@ definition{
 }
 
 definition{
-  name: i0242,
+  name: i0244,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3330,7 +3358,7 @@ definition{
 }
 
 definition{
-  name: i0243,
+  name: i0245,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3342,7 +3370,7 @@ definition{
 }
 
 definition{
-  name: i0244,
+  name: i0246,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3356,7 +3384,7 @@ definition{
 }
 
 definition{
-  name: i0245,
+  name: i0247,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3370,7 +3398,7 @@ definition{
 }
 
 definition{
-  name: i0246,
+  name: i0248,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3384,7 +3412,7 @@ definition{
 }
 
 definition{
-  name: i0247,
+  name: i0249,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3398,7 +3426,7 @@ definition{
 }
 
 definition{
-  name: i0248,
+  name: i0250,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3412,7 +3440,7 @@ definition{
 }
 
 definition{
-  name: i0249,
+  name: i0251,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3426,7 +3454,7 @@ definition{
 }
 
 definition{
-  name: i0250,
+  name: i0252,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3440,7 +3468,7 @@ definition{
 }
 
 definition{
-  name: i0251,
+  name: i0253,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3454,7 +3482,7 @@ definition{
 }
 
 definition{
-  name: i0252,
+  name: i0254,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3468,7 +3496,7 @@ definition{
 }
 
 definition{
-  name: i0253,
+  name: i0255,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3482,7 +3510,7 @@ definition{
 }
 
 definition{
-  name: i0254,
+  name: i0256,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3496,7 +3524,7 @@ definition{
 }
 
 definition{
-  name: i0255,
+  name: i0257,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3510,7 +3538,7 @@ definition{
 }
 
 definition{
-  name: i0256,
+  name: i0258,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3524,7 +3552,7 @@ definition{
 }
 
 definition{
-  name: i0257,
+  name: i0259,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3538,7 +3566,7 @@ definition{
 }
 
 definition{
-  name: i0258,
+  name: i0260,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3552,7 +3580,7 @@ definition{
 }
 
 definition{
-  name: i0259,
+  name: i0261,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3566,7 +3594,7 @@ definition{
 }
 
 definition{
-  name: i0260,
+  name: i0262,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3580,7 +3608,7 @@ definition{
 }
 
 definition{
-  name: i0261,
+  name: i0263,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3592,7 +3620,7 @@ definition{
 }
 
 definition{
-  name: i0262,
+  name: i0264,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3606,7 +3634,7 @@ definition{
 }
 
 definition{
-  name: i0263,
+  name: i0265,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3620,7 +3648,7 @@ definition{
 }
 
 definition{
-  name: i0264,
+  name: i0266,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3634,7 +3662,7 @@ definition{
 }
 
 definition{
-  name: i0265,
+  name: i0267,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3648,7 +3676,7 @@ definition{
 }
 
 definition{
-  name: i0266,
+  name: i0268,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3662,7 +3690,7 @@ definition{
 }
 
 definition{
-  name: i0267,
+  name: i0269,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3676,7 +3704,7 @@ definition{
 }
 
 definition{
-  name: i0268,
+  name: i0270,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3690,7 +3718,7 @@ definition{
 }
 
 definition{
-  name: i0269,
+  name: i0271,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3704,7 +3732,7 @@ definition{
 }
 
 definition{
-  name: i0270,
+  name: i0272,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3718,7 +3746,7 @@ definition{
 }
 
 definition{
-  name: i0271,
+  name: i0273,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3732,7 +3760,7 @@ definition{
 }
 
 definition{
-  name: i0272,
+  name: i0274,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3746,7 +3774,7 @@ definition{
 }
 
 definition{
-  name: i0273,
+  name: i0275,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3760,7 +3788,7 @@ definition{
 }
 
 definition{
-  name: i0274,
+  name: i0276,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3774,7 +3802,7 @@ definition{
 }
 
 definition{
-  name: i0275,
+  name: i0277,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3788,7 +3816,7 @@ definition{
 }
 
 definition{
-  name: i0276,
+  name: i0278,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3802,7 +3830,7 @@ definition{
 }
 
 definition{
-  name: i0277,
+  name: i0279,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3816,7 +3844,7 @@ definition{
 }
 
 definition{
-  name: i0278,
+  name: i0280,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3830,7 +3858,7 @@ definition{
 }
 
 definition{
-  name: i0279,
+  name: i0281,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3844,7 +3872,7 @@ definition{
 }
 
 definition{
-  name: i0280,
+  name: i0282,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3858,7 +3886,7 @@ definition{
 }
 
 definition{
-  name: i0281,
+  name: i0283,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3870,7 +3898,7 @@ definition{
 }
 
 definition{
-  name: i0282,
+  name: i0284,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3884,7 +3912,7 @@ definition{
 }
 
 definition{
-  name: i0283,
+  name: i0285,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3898,7 +3926,7 @@ definition{
 }
 
 definition{
-  name: i0284,
+  name: i0286,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3912,7 +3940,7 @@ definition{
 }
 
 definition{
-  name: i0285,
+  name: i0287,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3926,7 +3954,7 @@ definition{
 }
 
 definition{
-  name: i0286,
+  name: i0288,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3940,7 +3968,7 @@ definition{
 }
 
 definition{
-  name: i0287,
+  name: i0289,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3954,7 +3982,7 @@ definition{
 }
 
 definition{
-  name: i0288,
+  name: i0290,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3968,7 +3996,7 @@ definition{
 }
 
 definition{
-  name: i0289,
+  name: i0291,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3982,7 +4010,7 @@ definition{
 }
 
 definition{
-  name: i0290,
+  name: i0292,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3996,7 +4024,7 @@ definition{
 }
 
 definition{
-  name: i0291,
+  name: i0293,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4010,7 +4038,7 @@ definition{
 }
 
 definition{
-  name: i0292,
+  name: i0294,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4024,7 +4052,7 @@ definition{
 }
 
 definition{
-  name: i0293,
+  name: i0295,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4038,7 +4066,7 @@ definition{
 }
 
 definition{
-  name: i0294,
+  name: i0296,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4052,7 +4080,7 @@ definition{
 }
 
 definition{
-  name: i0295,
+  name: i0297,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4066,7 +4094,7 @@ definition{
 }
 
 definition{
-  name: i0296,
+  name: i0298,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4078,7 +4106,7 @@ definition{
 }
 
 definition{
-  name: i0297,
+  name: i0299,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4092,7 +4120,7 @@ definition{
 }
 
 definition{
-  name: i0298,
+  name: i0300,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4104,7 +4132,7 @@ definition{
 }
 
 definition{
-  name: i0299,
+  name: i0301,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4118,7 +4146,7 @@ definition{
 }
 
 definition{
-  name: i0300,
+  name: i0302,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4132,7 +4160,7 @@ definition{
 }
 
 definition{
-  name: i0301,
+  name: i0303,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4144,7 +4172,7 @@ definition{
 }
 
 definition{
-  name: i0302,
+  name: i0304,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4158,7 +4186,7 @@ definition{
 }
 
 definition{
-  name: i0303,
+  name: i0305,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4173,7 +4201,7 @@ definition{
 }
 
 definition{
-  name: i0304,
+  name: i0306,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4187,7 +4215,7 @@ definition{
 }
 
 definition{
-  name: i0305,
+  name: i0307,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4199,7 +4227,7 @@ definition{
 }
 
 definition{
-  name: i0306,
+  name: i0308,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4213,7 +4241,7 @@ definition{
 }
 
 definition{
-  name: i0307,
+  name: i0309,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4228,7 +4256,7 @@ definition{
 }
 
 definition{
-  name: i0308,
+  name: i0310,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4242,7 +4270,7 @@ definition{
 }
 
 definition{
-  name: i0309,
+  name: i0311,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4254,7 +4282,7 @@ definition{
 }
 
 definition{
-  name: i0310,
+  name: i0312,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4268,7 +4296,7 @@ definition{
 }
 
 definition{
-  name: i0311,
+  name: i0313,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4282,7 +4310,7 @@ definition{
 }
 
 definition{
-  name: i0312,
+  name: i0314,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4294,7 +4322,7 @@ definition{
 }
 
 definition{
-  name: i0313,
+  name: i0315,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4308,7 +4336,7 @@ definition{
 }
 
 definition{
-  name: i0314,
+  name: i0316,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4322,7 +4350,7 @@ definition{
 }
 
 definition{
-  name: i0315,
+  name: i0317,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4336,7 +4364,7 @@ definition{
 }
 
 definition{
-  name: i0316,
+  name: i0318,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4350,7 +4378,7 @@ definition{
 }
 
 definition{
-  name: i0317,
+  name: i0319,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4364,7 +4392,7 @@ definition{
 }
 
 definition{
-  name: i0318,
+  name: i0320,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4376,7 +4404,7 @@ definition{
 }
 
 definition{
-  name: i0319,
+  name: i0321,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4390,7 +4418,7 @@ definition{
 }
 
 definition{
-  name: i0320,
+  name: i0322,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4404,7 +4432,7 @@ definition{
 }
 
 definition{
-  name: i0321,
+  name: i0323,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4416,7 +4444,7 @@ definition{
 }
 
 definition{
-  name: i0322,
+  name: i0324,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4430,7 +4458,7 @@ definition{
 }
 
 definition{
-  name: i0323,
+  name: i0325,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4444,7 +4472,7 @@ definition{
 }
 
 definition{
-  name: i0324,
+  name: i0326,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4456,7 +4484,7 @@ definition{
 }
 
 definition{
-  name: i0325,
+  name: i0327,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4470,7 +4498,7 @@ definition{
 }
 
 definition{
-  name: i0326,
+  name: i0328,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4482,7 +4510,7 @@ definition{
 }
 
 definition{
-  name: i0327,
+  name: i0329,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4496,7 +4524,7 @@ definition{
 }
 
 definition{
-  name: i0328,
+  name: i0330,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4510,7 +4538,7 @@ definition{
 }
 
 definition{
-  name: i0329,
+  name: i0331,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4525,7 +4553,7 @@ definition{
 }
 
 definition{
-  name: i0330,
+  name: i0332,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4539,7 +4567,7 @@ definition{
 }
 
 definition{
-  name: i0331,
+  name: i0333,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4553,7 +4581,7 @@ definition{
 }
 
 definition{
-  name: i0332,
+  name: i0334,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4567,7 +4595,7 @@ definition{
 }
 
 definition{
-  name: i0333,
+  name: i0335,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4581,7 +4609,7 @@ definition{
 }
 
 definition{
-  name: i0334,
+  name: i0336,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4595,7 +4623,7 @@ definition{
 }
 
 definition{
-  name: i0335,
+  name: i0337,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4607,7 +4635,7 @@ definition{
 }
 
 definition{
-  name: i0336,
+  name: i0338,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4621,7 +4649,7 @@ definition{
 }
 
 definition{
-  name: i0337,
+  name: i0339,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4635,7 +4663,7 @@ definition{
 }
 
 definition{
-  name: i0338,
+  name: i0340,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4649,7 +4677,7 @@ definition{
 }
 
 definition{
-  name: i0339,
+  name: i0341,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4663,7 +4691,7 @@ definition{
 }
 
 definition{
-  name: i0340,
+  name: i0342,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4677,7 +4705,7 @@ definition{
 }
 
 definition{
-  name: i0341,
+  name: i0343,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4691,7 +4719,7 @@ definition{
 }
 
 definition{
-  name: i0342,
+  name: i0344,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4705,7 +4733,7 @@ definition{
 }
 
 definition{
-  name: i0343,
+  name: i0345,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4717,7 +4745,7 @@ definition{
 }
 
 definition{
-  name: i0344,
+  name: i0346,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4731,7 +4759,7 @@ definition{
 }
 
 definition{
-  name: i0345,
+  name: i0347,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4745,7 +4773,7 @@ definition{
 }
 
 definition{
-  name: i0346,
+  name: i0348,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4759,7 +4787,7 @@ definition{
 }
 
 definition{
-  name: i0347,
+  name: i0349,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4773,7 +4801,7 @@ definition{
 }
 
 definition{
-  name: i0348,
+  name: i0350,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4787,7 +4815,7 @@ definition{
 }
 
 definition{
-  name: i0349,
+  name: i0351,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4801,7 +4829,7 @@ definition{
 }
 
 definition{
-  name: i0350,
+  name: i0352,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4815,7 +4843,7 @@ definition{
 }
 
 definition{
-  name: i0351,
+  name: i0353,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4829,7 +4857,7 @@ definition{
 }
 
 definition{
-  name: i0352,
+  name: i0354,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4843,7 +4871,7 @@ definition{
 }
 
 definition{
-  name: i0353,
+  name: i0355,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4857,7 +4885,7 @@ definition{
 }
 
 definition{
-  name: i0354,
+  name: i0356,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4871,7 +4899,7 @@ definition{
 }
 
 definition{
-  name: i0355,
+  name: i0357,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4885,7 +4913,7 @@ definition{
 }
 
 definition{
-  name: i0356,
+  name: i0358,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4899,7 +4927,7 @@ definition{
 }
 
 definition{
-  name: i0357,
+  name: i0359,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4913,7 +4941,7 @@ definition{
 }
 
 definition{
-  name: i0358,
+  name: i0360,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4927,7 +4955,7 @@ definition{
 }
 
 definition{
-  name: i0359,
+  name: i0361,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4941,7 +4969,7 @@ definition{
 }
 
 definition{
-  name: i0360,
+  name: i0362,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4955,7 +4983,7 @@ definition{
 }
 
 definition{
-  name: i0361,
+  name: i0363,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4969,7 +4997,7 @@ definition{
 }
 
 definition{
-  name: i0362,
+  name: i0364,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4983,7 +5011,7 @@ definition{
 }
 
 definition{
-  name: i0363,
+  name: i0365,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4997,7 +5025,7 @@ definition{
 }
 
 definition{
-  name: i0364,
+  name: i0366,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5011,7 +5039,7 @@ definition{
 }
 
 definition{
-  name: i0365,
+  name: i0367,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5025,7 +5053,7 @@ definition{
 }
 
 definition{
-  name: i0366,
+  name: i0368,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5039,12 +5067,12 @@ definition{
 }
 
 definition{
-  name: i0367,
+  name: i0369,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "A `Crate` is the closed Rust AST (`calculus::rust::ast`) as first-order data" (cons "(§17.13 rule 1): whether the profile is `rust-core`, and the items as a chain," (cons "each sort carrying its lists as its own `Nil`/`Cons` chain. A literal is" (cons "read for its kind and width and a runtime function for its row of the table" (cons "the module transcribes from `runtime::Item` (path, failure, heap use, width)," (cons "so the payload of a literal is not data. `Result.error` carries the oracle's" (cons "message to the byte, including the `{:?}` of a `Type`, of an `Option<IntKind>`," (cons "and of a slice of strings. `validateCrate` checks, in the order of the oracle," (cons "that each enum, `apply`, and function is declared once, that every type a crate" (cons "names is declared and, in `rust-core`, has no heap component (and no heap" (cons "construct or runtime function appears), that every name is bound once per" (cons "function and in scope, that a value is moved at most once on every path" (cons "(including the components of a pair, and the alternatives of an `if` and a" (cons "`match`), that a fallible call propagates exactly where its function is" (cons "fallible, and that each `apply` arm states the failure of the function it calls." (cons "A loop over a state (`Loop`, the constructor `ELoop` of the module) moves its" (cons "state into the loop's own binding and runs its body again after each `Ok`, so a" (cons "body that moves a name outside it, or a component of one, is refused with the" (cons "least such name in the oracle's order of names, and the value a fallible loop" (cons "ends with, at each `Err` of its body, must be a fallible value; the body is" (cons "checked as a block that is not a tail, for its applications as for its moves," (cons "and the correspondence traversal treats it as a block." (cons "`correspondCrate` lists the constructs a crate emits instance by instance and" (cons "checks each against the 97 rows of the correspondence table, the element it was" (cons "lowered from, its width, and the elements the program uses; a repeated" (cons "instance is kept once, which does not change which one the oracle reports" (cons "first. Lowering, printing, packaging, and the choice of profile are not part of" (cons "the claim, and a crate whose exported name or origin element holds a non-ASCII" (cons "or non-printable scalar is outside it." (nil String))))))))))))))))))))))))))))))
+      (cons "A `Crate` is the closed Rust AST (`calculus::rust::ast`) as first-order data" (cons "(§17.13 rule 1): whether the profile is `rust-core`, and the items as a chain," (cons "each sort carrying its lists as its own `Nil`/`Cons` chain. A literal is" (cons "read for its kind and width and a runtime function for its row of the table" (cons "the module transcribes from `runtime::Item` (path, failure, heap use, width)," (cons "so the payload of a literal is not data. `Result.error` carries the oracle's" (cons "message to the byte, including the `{:?}` of a `Type`, of an `Option<IntKind>`," (cons "and of a slice of strings. `validateCrate` checks, in the order of the oracle," (cons "that each enum, `apply`, and function is declared once, that every type a crate" (cons "names is declared and, in `rust-core`, has no heap component (and no heap" (cons "construct or runtime function appears), that every name is bound once per" (cons "function and in scope, that a value is moved at most once on every path" (cons "(including the components of a pair, and the alternatives of an `if` and a" (cons "`match`), that a fallible call propagates exactly where its function is" (cons "fallible, and that each `apply` arm states the failure of the function it calls." (cons "A loop over a state (`Loop`, the constructor `ELoop` of the module) moves its" (cons "state into the loop's own binding and runs its body again after each `Ok`, so a" (cons "body that moves a name outside it, or a component of one, is refused with the" (cons "least such name in the oracle's order of names, and the value a fallible loop" (cons "ends with, at each `Err` of its body, must be a fallible value; the body is" (cons "checked as a block that is not a tail, for its applications as for its moves," (cons "and the correspondence traversal treats it as a block." (cons "`correspondCrate` lists the constructs a crate emits instance by instance and" (cons "checks each against the 98 rows of the correspondence table, the element it was" (cons "lowered from, its width, and the elements the program uses; a repeated" (cons "instance is kept once, which does not change which one the oracle reports" (cons "first. Lowering, printing, packaging, and the choice of profile are not part of" (cons "the claim, and a crate whose exported name or origin element holds a non-ASCII" (cons "or non-printable scalar is outside it." (nil String))))))))))))))))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -5053,12 +5081,12 @@ definition{
 }
 
 definition{
-  name: i0368,
+  name: i0370,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "`BS-05` holds both roots to the oracle. The crates are those the renderer" (cons "lowers (`rust::lower`) from the 164 distinct programs among the 247 committed" (cons "package manifests of `compiler/rust` and `tests/production-export` and the 122" (cons "fixtures of `compiler/fixtures` (223 distinct crates over both profiles, with" (cons "the `elements` the renderer realizes), a rule corpus that reaches each of the" (cons "48 refusals a crate of the closed AST can reach three times (132 `validateCrate`" (cons "runs and 12 `correspondCrate` runs, asserted: the corpus fails if its draws run" (cons "out first; the refusal that a construct has no row of the table cannot be" (cons "reached), 17 crates by hand for the merge of moved sets at an `if` and a" (cons "`match`, and 34 by hand for the loop rules; that is 406 runs of `validateCrate`" (cons "(165 refused) and 269 of `correspondCrate` (46 refused), and the case asserts" (cons "these counts. On every host, the rendered `rust-std` packages of both" (cons "roots (§17.16), compiled by the pinned rustc, are run on all of them. On the" (cons "normative host, the lowered programs of both roots are run under the calculus" (cons "evaluator (§17.14) on the crates of at most 400 expressions (200 of the 223;" (cons "the larger ones are the compiler's own packages and are held to the oracle by" (cons "the compiled run) with the rule corpus, and on 500 seeded mutants of the" (cons "crates of at most 80 expressions (a node replaced by another of the crate, a" (cons "name, type, pattern, constructor, callee, origin, or width changed, an item or" (cons "binding or arm dropped, doubled, or swapped, a call's propagation flipped, a" (cons "dispatch arm restated, a block run in a loop, the profile exchanged, and the" (cons "elements of the program changed); the rendered packages are also run on 2,000 further seeded mutants" (cons "per root. The outcome of a run is the result and, for a refusal, the message," (cons "and one difference fails the case. Sixteen planted defects in the source (a heap" (cons "type admitted under `rust-core`, a name bound twice accepted, the moves of" (cons "earlier match arms forgotten, a component moved after its whole accepted, an" (cons "undeclared ADT type accepted, a `?` in an infallible function accepted, a" (cons "fallible call without propagation accepted, an `apply` arm's failure not" (cons "compared with its function's, a correspondence row narrowed, the width of a" (cons "runtime call not compared, a name or a component moved in a loop body accepted," (cons "the end of a fallible loop not checked, a loop's state not moved into the loop," (cons "the name a loop's refusal reports not the least, and a loop body checked as a" (cons "tail) are each detected by the same differential, and" (cons "under the pinned Lean the production export (§24.7) certifies both roots beside" (cons "the others, whose packages are the committed ones under" (cons "`tests/production-export/bootstrap/`." (nil String)))))))))))))))))))))))))))))))))))))
+      (cons "`BS-05` holds both roots to the oracle. The crates are those the renderer" (cons "lowers (`rust::lower`) from the 164 distinct programs among the 247 committed" (cons "package manifests of `compiler/rust` and `tests/production-export` and the 122" (cons "fixtures of `compiler/fixtures` (223 distinct crates over both profiles, with" (cons "the `elements` the renderer realizes), a rule corpus that reaches each of the" (cons "48 refusals a crate of the closed AST can reach three times (132 `validateCrate`" (cons "runs and 12 `correspondCrate` runs, asserted: the corpus fails if its draws run" (cons "out first; the refusal that a construct has no row of the table cannot be" (cons "reached), 17 crates by hand for the merge of moved sets at an `if` and a" (cons "`match`, 34 by hand for the loop rules, and 5 by hand for the rule of a constant" (cons "(§17.16 *Constants*); that is 411 runs of `validateCrate`" (cons "(169 refused) and 269 of `correspondCrate` (46 refused), and the case asserts" (cons "these counts. On every host, the rendered `rust-std` packages of both" (cons "roots (§17.16), compiled by the pinned rustc, are run on all of them. On the" (cons "normative host, the lowered programs of both roots are run under the calculus" (cons "evaluator (§17.14) on the crates of at most 400 expressions (200 of the 223;" (cons "the larger ones are the compiler's own packages and are held to the oracle by" (cons "the compiled run) with the rule corpus, and on 500 seeded mutants of the" (cons "crates of at most 80 expressions (a node replaced by another of the crate, a" (cons "name, type, pattern, constructor, callee, origin, or width changed, an item or" (cons "binding or arm dropped, doubled, or swapped, a call's propagation flipped, a" (cons "dispatch arm restated, a block run in a loop, the profile exchanged, and the" (cons "elements of the program changed); the rendered packages are also run on 2,000 further seeded mutants" (cons "per root. The outcome of a run is the result and, for a refusal, the message," (cons "and one difference fails the case. Sixteen planted defects in the source (a heap" (cons "type admitted under `rust-core`, a name bound twice accepted, the moves of" (cons "earlier match arms forgotten, a component moved after its whole accepted, an" (cons "undeclared ADT type accepted, a `?` in an infallible function accepted, a" (cons "fallible call without propagation accepted, an `apply` arm's failure not" (cons "compared with its function's, a correspondence row narrowed, the width of a" (cons "runtime call not compared, a name or a component moved in a loop body accepted," (cons "the end of a fallible loop not checked, a loop's state not moved into the loop," (cons "the name a loop's refusal reports not the least, and a loop body checked as a" (cons "tail) are each detected by the same differential, and" (cons "under the pinned Lean the production export (§24.7) certifies both roots beside" (cons "the others, whose packages are the committed ones under" (cons "`tests/production-export/bootstrap/`." (nil String))))))))))))))))))))))))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []

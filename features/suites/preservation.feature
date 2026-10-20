@@ -143,3 +143,9 @@ Feature: preservation
     When every loop of every rendering is read back into the recursive body it is the loop form of, the loop form of that body is computed by the library's form transliterated, and certificate B of the fixtures rendered as loops is compiled by the pinned Lean over the shipped library
     Then the loop form of each recovered body is the crate's function, and each certificate B compiles with exactly the axioms the audit states
     And a loop that is not the loop form of any recursive body is refused for each way it may differ
+
+  @SP-24 @build
+  Scenario: A production root that reads a content-addressed artifact holds the artifact's decoded value as one literal in its lowered program, recognised by the artifact declaration and not by the shape of a term, and certificates A, B, and E verify for every root of the committed models example, certificate A relating the source's construction of the list to the literal by the lemma that relates any literal to its value, so that the preservation library does not grow; a wrong lemma for the literal is refused by Lean.
+    Given the committed models example, whose roots read artifacts, lowered, certified, and checked under the pinned Lean
+    When its certificates A, B, and E are staged and compiled, replayed, and audited, and the certificate A of a root that holds a literal has the lemma for a literal replaced
+    Then ten artifact literals are held as data and rendered as constants, every certificate verifies with its exact axioms, and the wrong lemma is refused

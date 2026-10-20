@@ -606,6 +606,17 @@ impl Writer<'_, '_> {
                     &[fn_type, parameters, result, fallible, arms],
                 )
             }
+            ItemDef::Constant {
+                name,
+                result,
+                body,
+                at: _,
+            } => {
+                let name = self.rs_ident(name);
+                let result = self.rs_type(result);
+                let body = self.rs_block(body);
+                self.rs_apply("ItemDef.constant", &[name, result, body])
+            }
             ItemDef::Function {
                 name,
                 parameters,

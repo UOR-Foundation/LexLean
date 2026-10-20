@@ -5272,6 +5272,124 @@ pub fn run(id: &str) {
                 );
             }
         }
+        // §17.17 *Artifacts as data*: an artifact lowered as one literal is
+        // certified like any other root.
+        "SP-24" => artifacts_as_data(),
         _ => panic!("no preservation case is wired for {id}"),
     }
+}
+
+fn artifacts_as_data() {
+    use lexlean::calculus::rust::ast::ItemDef;
+    use lexlean::calculus::{Expr, Value};
+    let project = P::copy_example("models");
+    let certified = preservation::certificates(&project);
+    let held = |function: &lexlean::calculus::Function| {
+        function.parameters.is_empty()
+            && matches!(
+                &function.body,
+                Expr::Value {
+                    value: Value::List { .. },
+                    ..
+                }
+            )
+    };
+    let literals: usize = certified
+        .iter()
+        .map(|entry| entry.program.functions.iter().filter(|f| held(f)).count())
+        .sum();
+    assert_eq!(literals, 10, "R0, R1, and R2 hold ten artifact literals");
+    let mut constants = 0;
+    for entry in &certified {
+        assert!(!entry.targets.is_empty(), "{}: a target", entry.root);
+        assert_eq!(
+            entry.renderings.len(),
+            entry.targets.len(),
+            "{}: certificate B in each target",
+            entry.root
+        );
+        assert_eq!(
+            entry.composed.len(),
+            entry.targets.len(),
+            "{}: certificate E in each target",
+            entry.root
+        );
+        let krate =
+            lexlean::calculus::rust::lower(&entry.program, lexlean::calculus::rust::Profile::Std)
+                .expect("the program renders in rust-std");
+        let here = krate
+            .items
+            .iter()
+            .filter(|item| matches!(item, ItemDef::Constant { .. }))
+            .count();
+        constants += here;
+        // Certificate B states a constant as the machine's `ItemDef.constant`,
+        // in its text and in its data, exactly for the roots that have one: a
+        // certificate that compiled but encoded the constant as a function
+        // would not name it.
+        for (target, certificate) in &entry.renderings {
+            let in_data = certificate.data.as_ref().is_some_and(|data| {
+                data.nodes.iter().any(|node| {
+                    matches!(node, lexlean::ir::core::CoreNode::Const { n, .. }
+                        if n == "LexLeanTarget.RustSyntax.ItemDef.constant")
+                })
+            });
+            assert_eq!(
+                (certificate.text.contains("ItemDef.constant"), in_data),
+                (
+                    here > 0 && target == "rust-std",
+                    here > 0 && target == "rust-std"
+                ),
+                "{} on {target}: certificate B states the constant exactly when the crate has one",
+                entry.root
+            );
+        }
+    }
+    assert_eq!(constants, 10, "each literal renders as a constant");
+    if !support::lean_backed("SP-24") {
+        return;
+    }
+    let workspace = preservation::staged(&project, &certified);
+    let root = tempfile::Builder::new()
+        .prefix("lexlean-sp24-")
+        .tempdir()
+        .expect("tempdir");
+    let checked = preservation::check(&workspace, root.path());
+    assert!(
+        checked.failure.is_none(),
+        "every certificate of the models example verifies under the pinned Lean: {:?}",
+        checked.failure
+    );
+    let all: Vec<lexlean::production::certificate::Certificate> = certified
+        .iter()
+        .flat_map(preservation::Certified::all)
+        .collect();
+    audit(&checked.audit_output, &all).expect("the audit, every row's axioms included");
+    // Planted: the lemma that relates a literal to its value, replaced in the
+    // certificate A of a root that holds one, is refused by Lean.
+    let entry = certified
+        .iter()
+        .find(|entry| entry.program.functions.iter().any(held))
+        .expect("a root that holds a literal");
+    let certificate = &entry.certificate;
+    let data = certificate.data.as_ref().expect("certificate A is data");
+    let mut planted = data.clone();
+    let mut renamed = 0;
+    for node in &mut planted.nodes {
+        if let lexlean::ir::core::CoreNode::Const { n, .. } = node {
+            if n == "LexLeanPreservation.conv_value" {
+                *n = "LexLeanPreservation.conv_var".to_owned();
+                renamed += 1;
+            }
+        }
+    }
+    assert!(renamed > 0, "the certificate uses `conv_value`");
+    let module = format!("{}PlantWrongLemma", certificate.module);
+    let text = lexlean::backend::core::lean_text_legacy(&planted, &module)
+        .expect("the planted module renders");
+    let output = preservation::compile_text(root.path(), &module, &text);
+    assert!(
+        !output.status.success(),
+        "the wrong lemma for a literal is refused by Lean"
+    );
 }

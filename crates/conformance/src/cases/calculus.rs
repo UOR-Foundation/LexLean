@@ -1518,6 +1518,160 @@ pub fn run(id: &str) {
                 }
             }
         }
+        // §17.14 *Cost*: a literal is charged its weight once per read.
+        "TC-08" => literal_weight(),
         other => panic!("no calculus case is wired for {other}"),
     }
+}
+
+/// The weight of a literal, spelled from its JSON form so the expectation
+/// does not borrow the interpreter's own function.
+fn literal_nodes(value: &Json) -> u64 {
+    let all = |items: &Json| {
+        items
+            .as_array()
+            .expect("items")
+            .iter()
+            .map(literal_nodes)
+            .sum::<u64>()
+    };
+    match value["kind"].as_str().expect("kind") {
+        "string" => 1 + value["value"].as_str().expect("text").chars().count() as u64,
+        "bytes" => 1 + value["hex"].as_str().expect("hex").len() as u64 / 2,
+        "some" | "ok" | "error" => 1 + literal_nodes(&value["value"]),
+        "list" => 1 + all(&value["items"]),
+        "adt" => 1 + all(&value["fields"]),
+        "pair" => 1 + literal_nodes(&value["left"]) + literal_nodes(&value["right"]),
+        _ => 1,
+    }
+}
+
+fn literal_program(ty: &Json, value: &Json, reads: usize) -> Json {
+    let literal = json!({"kind": "value", "type": ty, "value": value});
+    let (body, result) = if reads == 1 {
+        (literal, ty.clone())
+    } else {
+        let pair = json!({"kind": "pair", "left": ty, "right": ty});
+        (
+            json!({"kind": "build", "operands": [literal.clone(), literal],
+                   "shape": {"kind": "pair"}, "type": pair}),
+            pair,
+        )
+    };
+    json!({
+        "adts": [{"constructors": [[], [{"kind": "nat"}]]}],
+        "functions": [{"body": body, "parameters": [], "result": result, "types": []}],
+        "spec": "lexlean/target-program/1"
+    })
+}
+
+fn literal_weight() {
+    let nat = |n: &str| json!({"kind": "nat", "value": n});
+    let nat_ty = json!({"kind": "nat"});
+    let list_ty = json!({"kind": "list", "element": nat_ty});
+    let cases: Vec<(&str, Json, Json)> = vec![
+        ("nat", nat_ty.clone(), nat("5")),
+        (
+            "string",
+            json!({"kind": "string"}),
+            json!({"kind": "string", "value": "h\u{e9}\u{e9}"}),
+        ),
+        (
+            "bytes",
+            json!({"kind": "bytes"}),
+            json!({"kind": "bytes", "hex": "0102"}),
+        ),
+        (
+            "list",
+            list_ty.clone(),
+            json!({"kind": "list", "items": [nat("1"), nat("2"), nat("3")]}),
+        ),
+        (
+            "pair",
+            json!({"kind": "pair", "left": list_ty, "right": {"kind": "option", "value": {"kind": "string"}}}),
+            json!({"kind": "pair",
+                   "left": {"kind": "list", "items": [nat("1"), nat("2")]},
+                   "right": {"kind": "some", "value": {"kind": "string", "value": "a"}}}),
+        ),
+        (
+            "result",
+            json!({"kind": "result", "ok": {"kind": "nat"}, "error": {"kind": "string"}}),
+            json!({"kind": "ok", "value": nat("3")}),
+        ),
+        (
+            "adt",
+            json!({"kind": "adt", "index": 0}),
+            json!({"kind": "adt", "constructor": 1, "fields": [nat("7")]}),
+        ),
+    ];
+    let mut heavier = 0;
+    for (name, ty, value) in &cases {
+        let weight = literal_nodes(value);
+        heavier += usize::from(weight > 1);
+        for reads in [1usize, 2] {
+            let program = target::load(literal_program(ty, value, reads).to_string().as_bytes())
+                .unwrap_or_else(|error| panic!("{name}: the program loads: {error:?}"));
+            // One read is the literal's weight. Two reads are the build node
+            // and the weight of each, so the cost is per read, not per program.
+            let expected = if reads == 1 { weight } else { 1 + 2 * weight };
+            match interp::run(&program, 1000, 0, &[]) {
+                Outcome::Value { steps, .. } => assert_eq!(
+                    steps, expected,
+                    "{name} read {reads} time(s) is charged its weight {weight}"
+                ),
+                other => panic!("{name}: {other:?}"),
+            }
+        }
+    }
+    assert!(
+        heavier >= 4,
+        "the cases cover literals heavier than one node"
+    );
+    // The denotation is the same rule: the Lean evaluator charges `weight`.
+    let semantics =
+        std::fs::read_to_string(repo_root().join("compiler/src/TargetSemantics.lex.tex"))
+            .expect("TargetSemantics");
+    assert!(
+        semantics.contains("TargetSyntax::Expr.value literalType literal => (ctor Outcome.value literal (weight literal))"),
+        "the denotation charges a literal its weight"
+    );
+    // Planted: the defects the static rules refuse, each LLB6005.
+    let base = literal_program(
+        &list_ty_of_nat(),
+        &json!({"kind": "list", "items": [nat("1")]}),
+        1,
+    );
+    for (what, edit) in [
+        (
+            "a mistyped element",
+            json!({"kind": "list", "items": [{"kind": "bool", "value": true}]}),
+        ),
+        (
+            "a noncanonical byte spelling",
+            json!({"kind": "bytes", "hex": "0A"}),
+        ),
+        (
+            "an unknown member",
+            json!({"kind": "list", "items": [{"kind": "closure", "function": 0, "captures": []}]}),
+        ),
+    ] {
+        let mut planted = base.clone();
+        let ty = if what == "a noncanonical byte spelling" {
+            json!({"kind": "bytes"})
+        } else {
+            list_ty_of_nat()
+        };
+        planted["functions"][0]["body"]["value"] = edit;
+        planted["functions"][0]["body"]["type"] = ty.clone();
+        planted["functions"][0]["result"] = ty;
+        let error = target::load(planted.to_string().as_bytes()).expect_err(what);
+        assert!(
+            format!("{error:?}").contains("LLB6005"),
+            "{what} is LLB6005: {error:?}"
+        );
+    }
+}
+
+fn list_ty_of_nat() -> Json {
+    json!({"kind": "list", "element": {"kind": "nat"}})
 }
