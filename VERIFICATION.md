@@ -1782,6 +1782,45 @@ claim exercises its constructor once, so a swapped arm is caught only where a
 claim distinguishes the two results. `SP-18` now checks that the first eight
 constructors are its eight; its register statement no longer says "eight".
 
+### the machine's natural and integer arithmetic can fail (SP-23)
+
+`RustSyntax.Machine` gains nine constructors (`checkedNatAdd`, `natSub`, `checkedNatMul`,
+`natQuot`, `checkedIntAdd`, `checkedIntSub`, `checkedIntMul`, `checkedIntNeg`,
+`checkedIntQuot`) and `RustSemantics` a definition `machineOptional` that `runMachine`
+reads: the seven checked ones return `Some` of the primitive's value, or `None` where the
+primitive overflows (the runtime's `nat_add` and the others return `Err(Overflow)` there, and
+a body cannot observe `abort`); `natSub` and `natQuot` cannot overflow and are the value
+(`SP-23`, §17.14, §17.16, #91 stage 4, PR 2). Found while setting up the `nat_add` slice:
+`Machine.checkedAdd u64` accepts only `Value.u64`, and the runtime's `nat_*` and `int_*`
+compute on `Value.nat` and `Value.int`, so those nine functions were not expressible over
+the first seventeen primitives (corrected on #91). The case reads the constructors from
+`compiler/src` and has the pinned Lean 4.32.1 evaluate eighteen claims over the shipped
+copies (sums and products at the width of a natural, differences below zero, quotients by
+zero, `MIN / -1`, `-MIN`, and an operand of another width, which is stuck) and refuse four
+wrong statements. The library compiles over the regenerated modules, with the new body of
+`runMachine`, unchanged: `conformance_sp_13` passes in 400 s, so 0 library repairs. The
+RB-15 case covers the nine in the same harness (106 functions).
+
+Planted (a): `machineOptional` of `checkedIntNeg` made `false` (regenerated into the shipped
+copy). Expected: the claim that `-MIN` is `None` fails.
+
+```text
+the machine does not evaluate as stated:
+…/Machine.lean:18:109: error: Type mismatch
+  rfl
+```
+
+Planted (b): `natSub` removed from `Machine` in `compiler/src/RustSyntax.lex.tex`. Expected:
+the nine declared constructors differ.
+
+```text
+  left: [("checkedNatAdd", 0), ("checkedNatMul", 0), ("natQuot", 0), …]
+ right: [("checkedNatAdd", 0), ("natSub", 0), ("checkedNatMul", 0), …]
+```
+
+A first run of plant (b) removed the `natSub` of `Item` instead and the case passed, which
+is the correct answer to that edit and not a plant of this case.
+
 ### the machine callee and the overflow value are printed and computed (RB-15)
 
 `rust::ast::Callee::Machine` and `Lit::Overflow` mirror the Lean constructors

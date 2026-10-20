@@ -5566,12 +5566,20 @@ whose pattern matches; `?` on `Err` raises out of the function, which returns
 `Err(Overflow)` exactly when its result type is `R<T>`; an application
 dispatches through the `apply` arm of the closure's function and capture
 count. A *machine primitive* is a function of the machine's standard library that the
-runtime reaches and cannot state in the AST. `RustSyntax` declares seventeen
+runtime reaches and cannot state in the AST. `RustSyntax` declares twenty-six
 (`Machine`): `checkedAdd`, `checkedSub`, `checkedMul`,
 `checkedQuot`, `checkedNeg`, `checkedShl`, and `checkedShr` of a width,
 `tryFrom` to a width (`SP-18`), and `bitAnd`, `bitOr`, `bitXor`, and `bitNot` of a
 width, `natEq`, `natLe`, and `natLt` of two naturals, and `natRem` and `intRem` of
-a dividend, a divisor, and the value a zero divisor gives (`SP-21`). A call names one as the callee `Callee.machine`, beside
+a dividend, a divisor, and the value a zero divisor gives (`SP-21`), and the natural and
+integer arithmetic of the runtime's scalar functions (`SP-23`): the checked sum and product of
+naturals and the checked sum, difference, product, negation, and quotient of integers, each the
+calculus primitive's value as `Some`, or `None` when that primitive overflows, so that a body can
+observe the overflow and return `Err(Overflow)`, and the difference and quotient of naturals,
+which cannot overflow. The runtime's width families are written out, one definition per width,
+and not as an `ItemDef` constructor over a kind list, because stating what an instance is would
+need a substitution function over `RustSyntax` and a lemma that evaluation commutes with it
+(#91). A call names one as the callee `Callee.machine`, beside
 `Callee.function` and `Callee.runtime`. Its meaning is the calculus primitive of
 the same name on the same operands, the `Option` value that primitive states
 (`checkedAdd` of two `u8` is `Some` of their sum, or `None` when it exceeds
