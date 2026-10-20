@@ -38,7 +38,10 @@ and Unreleased holds what has landed since.
   `conformance_sl_05` holds the compiler's own API to the FIPS 180-4 and NIST
   CAVP vectors, every length to 300 bytes and around each power of two to
   4 MiB, and a seeded corpus, and detects five planted defects. The framing
-  recipes of §21.1 remain Rust (#92). Language 1.0, 1.1, and 1.2 identities,
+  recipes of §21.1 remain Rust (#92). The digests it states are `some-true`
+  claims of the ledger citing five new authority rows (FIPS 180-4, NIST's
+  SHA-256 examples, FIPS 180-2 appendix B.3, and the two CAVP files; four are
+  vendored and recomputed by `validate-model`). Language 1.0, 1.1, and 1.2 identities,
   locks, goldens, and verification records are byte-identical.
 
 - Context windows and text generators (SPEC.md §17.12, *Text components*,
