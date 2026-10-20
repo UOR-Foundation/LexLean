@@ -986,7 +986,8 @@ pub(crate) fn run(id: &str) {
             let source = std::fs::read_to_string(support::repo_root().join(&path).as_std_path())
                 .expect("the native laws source");
             assert!(
-                source.contains("\\begin{coremodule}") && !source.contains("\\coredata{"),
+                lexlean::sdk::module_kind(&source) == Some(lexlean::sdk::ModuleKind::Core)
+                    && lexlean::sdk::is_notation(&source),
                 "the laws are a native core module in the notation"
             );
             for name in registered_rewrites().iter().chain(

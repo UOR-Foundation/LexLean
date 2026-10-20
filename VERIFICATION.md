@@ -16211,3 +16211,92 @@ only the audit can object:
 An unregistered code written in a `.lex.tex` statement is caught first in
 `CONFORMANCE.md`, which carries the same text, so the `.lex.tex` extension of
 the mention scan is not isolated by a plant; the `spec/` directory is.
+## Planted defects for SPEC.md as LexLean source (`NS-05`, #111)
+
+Planted alone on the committed tree, `cargo xtask validate-model` run once, the
+failure observed, the plant restored with `git checkout` (§27.9). Linux x86-64.
+`conformance_ns_03` and `conformance_ns_05` assert the same plants in scratch
+copies on every run, and `conformance_ns_05` adds a chapter missing from
+`DocOrder`.
+
+| ID | Planted defect | Observed (after `gate failed: model is inconsistent:`) |
+| --- | --- | --- |
+| `NS-05` | `SPEC.md` §26.3: the meaning of `LLC0001` edited by hand | ``R1: SPEC.md differs from the projection of spec/src: a generated view is never edited, so edit the module and run `just model-write` (NS-03)`` |
+| `NS-05` | `SPEC.md` §17.21: a sentence of prose edited by hand | the same |
+| `NS-05` | `spec/src/IdsRP.lex.tex`: the statement of `RP-01` edited, nothing projected | ``R1: SPEC.md, model/ids.toml differ from the projection of spec/src: ... (NS-03)`` |
+| `NS-05` | `spec/src/Chapter00.lex.tex`: `DocRows::Item.para` made `DocRows::Item.quote` | ``R1: spec/src/Chapter00.lex.tex: declaration 2 `i0002` (byte 393 of the module body): the constructor is not one of `DocRows.Item` (NS-04)`` |
+| `NS-05` | `spec/src/Chapter31.lex.tex`: the derived block `register-table` made `no-such-table` | ``R1: spec/src/Chapter31.lex.tex: declaration 3 `i0003` (byte 966 of the module body): `no-such-table` is not a derived block (NS-04)`` |
+| `NS-05` | `spec/src/Chapter00.lex.tex`: a paragraph item of 61 lines | ``R1: spec/src/Chapter00.lex.tex: declaration 2 `i0002` (...): an item holds at most 60 lines; the rest continues in a `cont` item (NS-04)`` |
+
+*What the evidence is.* SPEC.md at the base commit and the projection of the
+chapter modules differ in exactly two ways, both deliberate:
+
+1. §31's table was two tables in the file, split by a blank line after `OR-08`;
+   the projection is one table, as the section intends.
+2. §26.3 is the projection of `model/errors.toml`: 39 of its 86 rows differ from
+   the text SPEC.md had (36 changed meanings and the three codes
+   `LLV7008`–`LLV7010` that the table lacked), and the rows follow the registry's
+   order. `errors.toml` is unchanged, so the shipped crate's embedded bytes are.
+   The old and new text of the 39 are in the pull request.
+
+Every other line of SPEC.md is byte-identical to the file it replaced, outside
+the sentences of §26.1, §26.3, §27.5, §27.6 and §31 that now say they are
+generated. The conversion was a one-time program, not committed: the chapters
+carry the text as typed strings (headings, paragraphs, tables, fences), and the
+comparison with the previous bytes, with the plants above, is what establishes
+the projection (C9). `%` is spelled U+FF05 in the chapters because a source
+cannot hold a raw percent sign (§12.1, `LLL1002`) and the formatter would write
+one back; no text of SPEC.md contains U+FF05. `NS-01` now has the pinned Lean
+elaborate and replay 75 modules (about 78 seconds for the case).
+
+### §27.4 derived, U+FF05 standing check, titles (#232 review)
+
+- §27.4 is now a `derived` item (`authority-table`) generated from the authority
+  module, which carries a `subject` per row that `authorities.toml` does not.
+  The table lists all 7 authorities (the typed one listed 4). Planted on the
+  real gate: the Subject of `LAKE-4-32-1` edited by hand in SPEC.md, refused as
+  ``R1: SPEC.md differs from the projection of spec/src ... (NS-03)``.
+- U+FF05 is reserved to spell a percent sign in the chapters, and the projector
+  now refuses, on every run, a projection that would hold it: a register
+  statement carrying one reached SPEC.md unmapped. Planted on the real gate
+  (`U+FF05` in the statement of `RP-01`): ``R1: SPEC.md would hold U+FF05, which the
+  chapters reserve to spell a percent sign (NS-05)``. `conformance_ns_05`
+  asserts it.
+- Each of the 75 modules has its own title, from the local glossary
+  `spec/glossary/spec.titles` (a numeral is not renderer-safe in a title, so a
+  chapter is titled by its heading's words). The mention scan skips the chapter
+  modules, as it skips SPEC.md, because they state the same code ranges.
+
+### Scanners select a source by its parsed `spec`, not by its text (#232 gate)
+
+The chapters of `spec/` quote every environment marker and control in their
+strings (§17.20 and §17.21 are about them), so a scanner that selects sources
+by what their text contains selects the specification too. The first gate of
+#232 found one: `tooling_corpus()` took a file for a tooling module when its
+text contained the tooling environment marker, and `Chapter17` is a semantic
+module whose strings quote it. The chapter string is the plant; no code was
+planted.
+
+| Command | Before | After |
+| --- | --- | --- |
+| `cargo test -p repo-conformance --test conformance -- conformance_au_05` | ``thread 'conformance_au_05' panicked at crates/conformance/src/cases/authoring.rs:858:9: assertion `left == right` failed: .../spec/src/Chapter17.lex.tex: read back differently`` (the chapter, a `lexlean/semantic-module/2`, read back as the `lexlean/tooling-module/1` it was taken for) | passes: the substring stays a speed guard, and the module is kept only when its parsed `spec` is `lexlean/tooling-module/1` |
+
+The other selectors, each audited for whether a chapter string can reach it:
+
+| Site | Reaches `spec/src`? | State |
+| --- | --- | --- |
+| `authoring.rs` `convert_to_data`, and the `sources` search of the notation case | no (a copied example project's `src`) | now select by the parsed `spec` (`support::module_spec`) anyway |
+| `authoring.rs` `corpus()`, `identity_is_form_independent`, the product-tree walks | yes (whole repository) | already classify by `lexlean::surface::module::locate` / `module_kind`, which takes the first environment of a kind in the order semantic, tooling, core: a chapter is correctly semantic |
+| `authoring.rs:373`, `:768`, `:1411` | no (a named example file, the Atlas directory, literal strings) | unchanged |
+| `runtime.rs` native-source namespace scan | no (`language`, `compiler`, `examples`, `tests`) | now selects with `module_kind == Core` |
+| `proofs.rs` PF-22 | no (one named native file) | now asserts `module_kind == Core` and `is_notation` |
+| `latex_pdf.rs:303`, `declarations.rs:336` | no (assertions on generated TeX) | not scanners |
+| `certification.rs:2487`, `reasoning.rs:1243` | no (one named native source) | unchanged |
+| `lexlean/src/surface/identity.rs:68` | no (a unit-test string) | unchanged. The shipped identity path uses `locate`: chapters verify under it (`NS-01`) |
+
+*A finding that is not fixed here.* `locate` is itself a text search: the first
+environment marker of a kind, in the order semantic, tooling, core. It is right
+for every chapter because the real semantic marker precedes any quote of it,
+and it would misclassify a tooling or core module whose strings quote an
+earlier kind's marker before their own. No committed source does; the shipped
+crate is outside this change.

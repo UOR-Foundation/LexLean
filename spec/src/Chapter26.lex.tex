@@ -1,0 +1,178 @@
+\begin{lexlean}{Chapter26}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{spec.titles@1.0.0}
+\importmodule{DocRows}
+\title{Diagnostic registry and closed error model}
+\begin{semanticmodule}
+definition{
+  name: i0001,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [2, 3, "26. Diagnostic registry and closed error model"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0002,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "26.1 `model/errors.toml`"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0003,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Every public diagnostic code is registered once. `model/errors.toml` is generated from the registry module of the specification project (§27.5), and its rows are:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0004,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "toml",
+      (cons "spec = \"lexlean/errors/1\"" (cons "" (cons "[[error]]" (cons "code = \"LLL1004\"" (cons "class = \"language\"" (cons "exit = 1" (cons "title = \"Unknown source atom\"" (cons "statement = \"A non-whitespace primitive atom has no covering lexical or scoped declaration.\"" (nil String)))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0005,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Rows sort by code. Unknown fields, duplicate codes, invalid class/exit combinations, and an empty statement fail the model gate." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0006,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "`ERRORS.md` is generated from this file. Source uses diagnostic codes only through a checked constructor or macro whose code argument is a compile-time string literal. `xtask` rejects a code used in Rust, tests, fixtures, or documentation that is absent from the registry, and rejects an unused registered code." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0007,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "26.2 Code ranges"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0008,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "| Range | Class |" (cons "|---|---|" (cons "| `LLC0001`–`LLC0999` | CLI, configuration, selection, and lock structure |" (cons "| `LLL1001`–`LLL1999` | normalization, scanning, lexical closure, and token coverage |" (cons "| `LLP2001`–`LLP2999` | structural, phrase, mathematical, and proposition parsing |" (cons "| `LLR3001`–`LLR3999` | lexicon packages, references, imports, and resolution |" (cons "| `LLT4001`–`LLT4999` | conservative elaboration, signatures, and linking |" (cons "| `LLF5001`–`LLF5999` | definitions and structured proofs |" (cons "| `LLB6001`–`LLB6999` | Lean/LaTeX/PDF lowering, target realization, and artifact construction |" (cons "| `LLV7001`–`LLV7999` | toolchain, Lean, replay, audit, and verification |" (cons "| `LLS8001`–`LLS8999` | filesystem security, networking, child policy, and limits |" (cons "| `LLI9001`–`LLI9999` | internal invariants |" (nil String)))))))))))))
+    ],
+    constructor: DocRows::Item.table,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0009,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "26.3 Required diagnostic codes"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0010,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The registry holds exactly these codes and meanings. The table is generated from `model/errors.toml` (§26.1), so a meaning is stated once:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0011,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: ["error-table"],
+    constructor: DocRows::Item.derived,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0012,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "An implementation may add a more specific code only by adding the model row, scenario, test, generated documentation, and behavior in the same change." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0013,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "---" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}
