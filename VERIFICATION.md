@@ -9556,10 +9556,15 @@ of its corpus plus the depth of its recursion. A case that runs one root's
 harness on several corpora (`BS-04`) records the largest need among them.
 
 Since `RB-14` renders a function whose self calls are all tail calls as a
-loop, the rows are the three packages whose provenance still states
+loop, the rows are the five packages whose provenance still states
 `recursion`: the audit-output parser, whose sorted insertion of each record
-among the ones before it is not a tail call, and the two calculus checkers,
-which recurse with the depth of the program they check. The scans, the token
+among the ones before it is not a tail call, the two calculus checkers, which
+recurse with the depth of the program they check, and the two Rust crate
+validators (`BS-05`, `validate_crate` and `correspond_crate`), which recurse
+with the depth of the crate they check. The validators were measured with
+`LEXLEAN_MEASURE_STACK=all` on `conformance_bs_05` alone, over the 675 vectors
+and the 4,000 seeded mutants of its rustc differentials, the largest need of
+all of them being the row. The scans, the token
 roots and the standard library's text and SHA-256 roots are loops and need no
 row (`observe` returns at once for a package that does not recurse, and
 stays in their cases so that a root that recurses again is held to a row).
@@ -9570,10 +9575,12 @@ stays in their cases so that a root that recurses again is held to a row).
 | `bootstrap/parse_audit_output` | 6,291,456 | 25,165,824 |
 | `bootstrap/check_program` | 13,697,024 | 54,788,096 |
 | `bootstrap/check_arguments` | 4,915,200 | 19,660,800 |
+| `bootstrap/validate_crate` | 5,046,272 | 20,185,088 |
+| `bootstrap/correspond_crate` | 4,915,200 | 19,660,800 |
 
 Both stacks in use cover the largest product: 64 MiB (67,108,864) for the
-harness against 54,788,096, and 1 GiB for the evaluator against
-84,148,224.
+harness against 54,788,096 (the two new rows have products of 20,185,088 and
+19,660,800), and 1 GiB for the evaluator against 84,148,224.
 
 The growth of one root with its input is measured on `parseAuditOutput`, the
 one root of the first component that still recurses: one audit output of `n`
