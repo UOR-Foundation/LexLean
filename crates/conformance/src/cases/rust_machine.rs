@@ -12,9 +12,10 @@ use std::fmt::Write as _;
 use lexlean::calculus::rust::ast::{
     self, Block, Callee, Crate, Ctor, Expr, Ident, ItemDef, Lit, Machine, Origin, Pat, Type,
 };
-use lexlean::calculus::rust::{validate, Profile};
+use lexlean::calculus::rust::{self, validate, Profile};
 use lexlean::calculus::IntKind;
 
+use crate::calculus::cases;
 use crate::rust_build::{cargo_in, workspace, Built};
 
 /// The operand types and the result type of a machine primitive.
@@ -238,5 +239,31 @@ pub fn run(id: &str) {
         at: Origin::of("overflow"),
     };
     let accepted = one(err, Type::Unit);
+    // A machine call in a lowered crate has no row: `correspond` refuses the
+    // construct, whatever element it claims to realize.
+    let sum = cases()
+        .into_iter()
+        .find(|case| case.fixture.name == "sum-to")
+        .expect("fixture sum-to")
+        .fixture
+        .program;
+    let mut lowered = rust::lower(&sum, Profile::Std).expect("lowers");
+    let elements = rust::realized(&sum, Profile::Std).expect("valid");
+    validate::correspond(&lowered, &elements).expect("the lowered crate corresponds");
+    let planted = super::rust_backend::edit_first(&mut lowered, &mut |expr| {
+        if let Expr::Call { callee, .. } = expr {
+            if matches!(callee, Callee::Runtime(_)) {
+                *callee = Callee::Machine(Machine::NatEq);
+                return true;
+            }
+        }
+        false
+    });
+    assert!(planted, "the plant site exists");
+    let error = validate::correspond(&lowered, &elements).expect_err("a machine call has no row");
+    assert!(
+        error.contains("the construct `call:machine` has no target-semantics correspondence"),
+        "{error}"
+    );
     validate::validate(&accepted).expect("an overflow value in the payload of an Err is valid");
 }

@@ -1818,6 +1818,13 @@ Observed: `the planted crate is refused` panicked.
 
 Planted (d): the stray-overflow refusal removed. Observed: the same panic.
 
+Planted (e): a machine call in a lowered crate (the `sum-to` fixture, the callee of its
+first runtime call replaced by `Machine::NatEq`). Expected: `correspond` refuses it as a
+construct with no row. Observed with the construct recorded as `call:machine`:
+`the construct `call:machine` has no target-semantics correspondence`. With the gate
+removed (the construct recorded as nothing), the plant is accepted and the case fails:
+`a machine call has no row: ()` at the `expect_err`.
+
 An earlier head printed the operators infix (`(a & b)`); rustc with warnings denied
 refused it for redundant parentheses as a block value, which is why the primitives
 print as fully qualified trait calls.

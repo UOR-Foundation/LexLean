@@ -1015,9 +1015,12 @@ impl Found {
             } => {
                 match callee {
                     Callee::Function(_) => self.at("call:function", at),
-                    // Only runtime crates call a machine primitive; none is
-                    // lowered from a calculus element.
-                    Callee::Machine(_) => {}
+                    // Only the runtime profile calls a machine primitive, so
+                    // the construct has no row of `CORRESPONDENCE`: a lowered
+                    // crate that holds one is refused by `correspond` as a
+                    // construct with no row, which is how "machine calls
+                    // appear only in the runtime profile" is checked.
+                    Callee::Machine(_) => self.at("call:machine", at),
                     Callee::Runtime(item) => {
                         let path = item.path();
                         let base = path.rsplit("::").next().unwrap_or(&path).to_owned();

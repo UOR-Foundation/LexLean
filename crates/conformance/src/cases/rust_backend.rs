@@ -27,7 +27,7 @@ fn schema(name: &str) -> Json {
 }
 
 /// Apply `edit` to the first expression, depth first, it accepts.
-fn edit_first(krate: &mut Crate, edit: &mut dyn FnMut(&mut Expr) -> bool) -> bool {
+pub(super) fn edit_first(krate: &mut Crate, edit: &mut dyn FnMut(&mut Expr) -> bool) -> bool {
     fn block(block: &mut Block, edit: &mut dyn FnMut(&mut Expr) -> bool) -> bool {
         block
             .lets
