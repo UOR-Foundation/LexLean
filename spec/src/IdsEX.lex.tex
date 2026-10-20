@@ -1,0 +1,71 @@
+\begin{lexlean}{IdsEX}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{spec.titles@1.0.0}
+\importmodule{Rows}
+\title{Examples conformance claims}
+\begin{semanticmodule}
+definition{
+  name: ex01,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "EX-01", level := "build", suite := "examples", statement := "The committed nat-add-zero example formats, locks, checks, builds, and verifies with an empty axiom set.", sections := "§29"}),
+  executable: true
+}
+
+definition{
+  name: ex02,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "EX-02", level := "build", suite := "examples", statement := "Changing the example proposition while retaining the old proof causes remapped Lean verification failure.", sections := "§29.6"}),
+  executable: true
+}
+
+definition{
+  name: ex03,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "EX-03", level := "build", suite := "examples", statement := "Replacing a title concept with an undeclared word causes lexical-closure failure.", sections := "§29.6"}),
+  executable: true
+}
+
+definition{
+  name: ex04,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "EX-04", level := "build", suite := "examples", statement := "Adding an indistinguishable same-surface entry causes ambiguity rather than priority selection.", sections := "§29.6"}),
+  executable: true
+}
+
+definition{
+  name: ex05,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "EX-05", level := "build", suite := "examples", statement := "An axiom-dependent fixture fails an insufficient declaration policy and records the observed excess.", sections := "§29.6"}),
+  executable: true
+}
+
+definition{
+  name: ex06,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "EX-06", level := "build", suite := "examples", statement := "Two clean example builds in distinct paths have byte-identical platform-independent artifacts.", sections := "§29.6"}),
+  executable: true
+}
+
+definition{
+  name: ex07,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "EX-07", level := "build", suite := "examples", statement := "The negative fixture suite covers every required rejection class and prescribed diagnostic family.", sections := "§28.5"}),
+  executable: true
+}
+
+definition{
+  name: ex08,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "EX-08", level := "build", suite := "examples", statement := "Every example directory is discovered automatically and must satisfy the full example gate.", sections := "§28.6"}),
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

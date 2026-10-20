@@ -1,0 +1,119 @@
+\begin{lexlean}{IdsLX}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{spec.titles@1.0.0}
+\importmodule{Rows}
+\title{Lexical closure conformance claims}
+\begin{semanticmodule}
+definition{
+  name: lx01,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "LX-01", level := "build", suite := "lexical-closure", statement := "Source decoding and line normalization enforce valid UTF-8, LF, final LF, and forbidden-scalar rules.", sections := "§12.1"}),
+  executable: true
+}
+
+definition{
+  name: lx02,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "LX-02", level := "build", suite := "lexical-closure", statement := "Non-NFC source is diagnosed and canonical formatting rewrites it without semantic change.", sections := "§12.1, §23.5"}),
+  executable: true
+}
+
+definition{
+  name: lx03,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "LX-03", level := "build", suite := "lexical-closure", statement := "Raw percent, comments, tabs, trailing spaces, and non-ASCII whitespace are rejected.", sections := "§12.1"}),
+  executable: true
+}
+
+definition{
+  name: lx04,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "LX-04", level := "build", suite := "lexical-closure", statement := "The primitive scanner recognizes exactly the specified atom classes and records exact spans.", sections := "§12.2"}),
+  executable: true
+}
+
+definition{
+  name: lx05,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "LX-05", level := "build", suite := "lexical-closure", statement := "Core braces, controls, punctuation, and grammar tokens receive glossary coverage rather than TeX trust.", sections := "§12.3"}),
+  executable: true
+}
+
+definition{
+  name: lx06,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "LX-06", level := "build", suite := "lexical-closure", statement := "An undeclared prose word is rejected with an exact unknown-atom diagnostic.", sections := "§14"}),
+  executable: true
+}
+
+definition{
+  name: lx07,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "LX-07", level := "build", suite := "lexical-closure", statement := "An undeclared symbol or control sequence is rejected with an exact unknown-atom diagnostic.", sections := "§14"}),
+  executable: true
+}
+
+definition{
+  name: lx08,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "LX-08", level := "build", suite := "lexical-closure", statement := "Lexical analysis builds all valid form edges without greedy import-order selection.", sections := "§14.1"}),
+  executable: true
+}
+
+definition{
+  name: lx09,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "LX-09", level := "build", suite := "lexical-closure", statement := "Every accepted non-whitespace source atom is covered exactly once in the selected path.", sections := "§6 I1, §14.1"}),
+  executable: true
+}
+
+definition{
+  name: lx10,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "LX-10", level := "build", suite := "lexical-closure", statement := "A local identifier is accepted only when introduced by a binder and every later occurrence resolves by scope.", sections := "§14.2"}),
+  executable: true
+}
+
+definition{
+  name: lx11,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "LX-11", level := "build", suite := "lexical-closure", statement := "TeX macro definition, expansion, file access, and execution controls are rejected even if a package declares them.", sections := "§12.4"}),
+  executable: true
+}
+
+definition{
+  name: lx12,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "LX-12", level := "build", suite := "lexical-closure", statement := "Qualified lexeme and document-reference controls select only existing closed entries or declarations.", sections := "§14.3"}),
+  executable: true
+}
+
+definition{
+  name: lx13,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "LX-13", level := "build", suite := "lexical-closure", statement := "Lexical or semantic ambiguity is rejected and no priority or heuristic chooses a candidate.", sections := "§14.4"}),
+  executable: true
+}
+
+definition{
+  name: lx14,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "LX-14", level := "build", suite := "lexical-closure", statement := "Canonical formatting chooses safe canonical forms and proves linked-IR preservation.", sections := "§23.5"}),
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

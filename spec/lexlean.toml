@@ -1,0 +1,32 @@
+spec = "lexlean/project/1"
+name = "spec"
+language = "1.2"
+module_prefix = "LexLeanSpec"
+source_roots = ["src"]
+entrypoints = ["src/Authorities.lex.tex", "src/Errors.lex.tex", "src/Headers.lex.tex", "src/IdsAR.lex.tex", "src/IdsAU.lex.tex", "src/IdsBS.lex.tex", "src/IdsCF.lex.tex", "src/IdsCL.lex.tex", "src/IdsDF.lex.tex", "src/IdsEX.lex.tex", "src/IdsGC.lex.tex", "src/IdsGL.lex.tex", "src/IdsGN.lex.tex", "src/IdsGR.lex.tex", "src/IdsLM.lex.tex", "src/IdsLN.lex.tex", "src/IdsLX.lex.tex", "src/IdsMD.lex.tex", "src/IdsNE.lex.tex", "src/IdsNS.lex.tex", "src/IdsOR.lex.tex", "src/IdsPD.lex.tex", "src/IdsPF.lex.tex", "src/IdsPK.lex.tex", "src/IdsPX.lex.tex", "src/IdsRB.lex.tex", "src/IdsRP.lex.tex", "src/IdsRS.lex.tex", "src/IdsRT.lex.tex", "src/IdsSE.lex.tex", "src/IdsSL.lex.tex", "src/IdsSM.lex.tex", "src/IdsSP.lex.tex", "src/IdsTC.lex.tex", "src/IdsTL.lex.tex", "src/IdsTX.lex.tex", "src/IdsVR.lex.tex", "src/Ledger.lex.tex", "src/Order.lex.tex", "src/Rows.lex.tex"]
+build_root = ".lexlean"
+lockfile = "lexlean.lock"
+lean_workspace = "."
+lean_toolchain = "leanprover/lean4:v4.32.1"
+
+[[lexicon_source]]
+package = "lexlean.std.nat"
+kind = "builtin"
+
+[[lexicon_source]]
+package = "spec.titles"
+kind = "path"
+path = "glossary/spec.titles"
+
+[limits]
+max_file_bytes = 4194304
+max_total_source_bytes = 67108864
+max_primitive_atoms = 2000000
+max_token_lattice_edges = 4000000
+max_parse_states = 4000000
+max_ir_nodes = 2000000
+max_scope_depth = 1024
+max_import_depth = 128
+max_diagnostics = 256
+max_child_output_bytes = 16777216
+child_timeout_ms = 300000

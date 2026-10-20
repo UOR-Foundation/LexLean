@@ -40,11 +40,11 @@ Feature: repository
     And the Justfile also defines the model-write and golden-write recipes plus each of the twelve gates
 
   @RP-06 @build
-  Scenario: CONFORMANCE.md and ERRORS.md are exact generated views of model files.
-    Given the model directory loaded through repo_model::Model::load
-    When CONFORMANCE.md and ERRORS.md are re-rendered from the loaded model in memory
-    Then the committed CONFORMANCE.md is byte-equal to the rendered conformance view
-    And the committed ERRORS.md is byte-equal to the rendered errors view
+  Scenario: `model/*.toml`, `CONFORMANCE.md`, and `ERRORS.md` are exact generated views of the register modules of the specification project.
+    Given the register modules of the `spec` project projected in memory and parsed through repo_model::Model::from_texts
+    When the model files, CONFORMANCE.md and ERRORS.md are re-rendered from that projection
+    Then each committed model file is byte-equal to its projection
+    And the committed CONFORMANCE.md and ERRORS.md are byte-equal to the rendered conformance and errors views
 
   @RP-07 @build
   Scenario: The specification conformance table and model register are bijective and text-consistent.

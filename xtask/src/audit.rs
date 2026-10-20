@@ -901,6 +901,7 @@ pub fn audit_deferral(root: &Path, model: &repo_model::Model) -> Result<(), Fail
             "features",
             "examples",
             "model",
+            "spec",
             "tests",
             "lean",
             "compiler",
@@ -1139,11 +1140,12 @@ pub fn audit_errors(root: &Path, model: &repo_model::Model) -> Result<(), Fail> 
             "features",
             "examples",
             "model",
+            "spec",
             "compiler",
             "stdlib",
             "bootstrap",
         ],
-        &[".toml", ".json", ".feature", ".md", ".txt"],
+        &[".toml", ".json", ".feature", ".md", ".txt", ".lex.tex"],
         &mut mention_files,
     );
     for path in mention_files {
