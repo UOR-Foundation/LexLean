@@ -35,7 +35,9 @@ fn defined(items: &[ItemDef]) -> Result<BTreeSet<String>, String> {
                 name: Ident::Export(name),
                 ..
             } => Ok(name.clone()),
-            _ => Err("the core runtime module defines an item that is not a named function".to_owned()),
+            _ => Err(
+                "the core runtime module defines an item that is not a named function".to_owned(),
+            ),
         })
         .collect()
 }
@@ -136,7 +138,10 @@ pub fn run(id: &str) {
             !runtime::CORE_BASE.contains(&format!("pub fn {name}(")),
             "the base still holds `{name}`"
         );
-        assert!(oracle.contains(&format!("pub fn {name}(")), "the oracle lacks `{name}`");
+        assert!(
+            oracle.contains(&format!("pub fn {name}(")),
+            "the oracle lacks `{name}`"
+        );
     }
     let generated = runtime::assemble(&decoded.core.items);
     let ran = differ(&oracle, &generated).expect("the generated runtime agrees with the oracle");
@@ -146,7 +151,10 @@ pub fn run(id: &str) {
     // differential, not by the decoder: the checked product for the checked sum.
     let changed = shipped.replacen("Machine.checkedNatAdd", "Machine.checkedNatMul", 1);
     assert_ne!(changed, shipped, "the plant site exists");
-    let items = source::decode(&changed).expect("a changed body decodes").core.items;
+    let items = source::decode(&changed)
+        .expect("a changed body decodes")
+        .core
+        .items;
     let error = differ(&oracle, &runtime::assemble(&items))
         .expect_err("a changed body disagrees with the oracle");
     assert!(error.contains("nat_add result"), "{error}");

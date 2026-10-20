@@ -173,6 +173,11 @@ pub const LIBRARY: &[(Kind, &str, Role)] = &[
         "<int>::BITS",
         Role::Stated(&["checked_shl", "checked_shr"]),
     ),
+    (
+        Kind::Path,
+        "<int>::checked_add",
+        Role::Primitive("checked_add"),
+    ),
     (Kind::Path, "<int>::from", Role::Primitive("convert")),
     (Kind::Path, "<int>::try_from", Role::Primitive("convert")),
     (Kind::Path, "AtomicU64::new", Role::Primitive("work")),

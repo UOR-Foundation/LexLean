@@ -21,10 +21,10 @@ definition{
 }
 
 theorem{
-  name: natAddSample,
-  parameters: [],
-  statement: ((RustSemantics::runExport 12 (coreCrate) "nat_add" (cons (ctor TargetSyntax::Value.nat 2) (cons (ctor TargetSyntax::Value.nat 3) (nil TargetSyntax::Value)))) = (ctor RustSemantics::ROutcome.value (ctor TargetSyntax::Value.ok (ctor TargetSyntax::Value.nat 5)))),
-  proof: reflexivity{},
+  name: refines_nat_add,
+  parameters: [x : Nat, y : Nat],
+  statement: ((RustSemantics::runExport 12 (coreCrate) "nat_add" (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (nil TargetSyntax::Value)))) = (RustSemantics::runItem (ctor RustSyntax::Profile.core) (ctor RustSyntax::Item.natAdd) (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (nil TargetSyntax::Value))))),
+  proof: term_cases{scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.natAdd) (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (nil TargetSyntax::Value)))), definitions: [RustSemantics::bindPattern, RustSemantics::bindPatterns, RustSemantics::constructValue, RustSemantics::dispatched, RustSemantics::eval, RustSemantics::evalArms, RustSemantics::evalBlock, RustSemantics::evalList, RustSemantics::fallibleType, RustSemantics::findFunction, RustSemantics::finished, RustSemantics::invoke, RustSemantics::itemAccepts, RustSemantics::itemFallible, RustSemantics::itemHeap, RustSemantics::itemOperands, RustSemantics::itemPrimitive, RustSemantics::itemShifts, RustSemantics::itemTakes, RustSemantics::itemWidth, RustSemantics::kindNumber, RustSemantics::literal, RustSemantics::lookup, RustSemantics::machineAccepts, RustSemantics::machineOptional, RustSemantics::machinePrimitive, RustSemantics::machineShifts, RustSemantics::machineWidth, RustSemantics::patternsOf, RustSemantics::propagated, RustSemantics::returned, RustSemantics::runExport, RustSemantics::runItem, RustSemantics::runMachine, RustSemantics::sameIdent, coreCrate, natAddFunction]},
   axioms: [Classical.choice, Quot.sound, propext]
 }
 \end{semanticmodule}

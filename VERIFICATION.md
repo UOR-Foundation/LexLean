@@ -1916,6 +1916,69 @@ An earlier head printed the operators infix (`(a & b)`); rustc with warnings den
 refused it for redundant parentheses as a block value, which is why the primitives
 print as fully qualified trait calls.
 
+### the core runtime is the definitions of RustRuntime (RB-16)
+
+`rust::source` decodes the shipped `RustRuntime` module and `runtime::core()` prints its
+functions after the base text (`RB-16`, §17.16, #91 stage 4, PR 2). The module defines
+`nat_add` as `match u64::checked_add(p0, p1) { Some(v0) => Ok(v0), None => Err(Overflow) }`,
+the first of the 144 functions; the handwritten text of the whole runtime is kept at
+`tests/rust-runtime-oracle/{core,std}.rs.txt` (its SHA-256 is the `rust_runtime_core` the
+language data recorded before this change). The case (`cases/rust_runtime.rs`) requires the shipped
+copy to be the compiler project's module byte for byte; requires the module to define at
+least one function and the differential to cover exactly the functions it defines; requires
+the embedded module to print as `assemble` of the decoded items; compiles the oracle as
+module `old` and the generated runtime as module `new` of one crate under the pinned rustc with
+warnings denied; and runs `nat_add` on 100 boundary pairs and 4,000 seeded pairs, comparing
+the debug form of the result and the counted work (`work()`, the same for both: zero).
+Six decoder refusals are asserted by the message they give (no `coreCrate`, a definition
+with a parameter, a reference to a definition the module lacks, a machine primitive and a
+runtime function `RustSyntax` does not declare, a constructor with an extra argument).
+
+The tree-wide gates that read the runtime were run: `rb_01`, `rb_04`, `rb_05`, `rb_06`,
+`rb_08`, `rb_09`, `tc_07` pass. `rb_09` needed the library table to list the path form
+`<int>::checked_add`, which the generated text uses where the handwritten text used the
+method; `tc_07`'s plant of a wrapping addition named the handwritten text and now names the
+generated one (`u64::checked_add(p0, p1)` for `Some(u64::wrapping_add(p0, p1))`) and is still
+detected. `rb_07` and the `lexlean` unit tests of the renderer and runtime digests fail only on
+the records bound to the compiler-semantics ID (`rust_renderer`, `rust_runtime_core`,
+`rust_runtime_std` in `language/semantics-1.2.toml`), which are left to the regeneration wave.
+
+Plants were run with `cargo test -p repo-conformance --test conformance conformance_rb_16`,
+each restored with `git checkout` or the saved file.
+
+Planted (a): one byte added to the shipped copy. Observed: `language/rust-runtime-1.2/RustRuntime.lex.tex
+differs from compiler/src/RustRuntime.lex.tex`.
+
+Planted (b): `Machine.checkedNatAdd` replaced by `Machine.checkedNatMul` in the module (part of
+the case). Observed: the harness fails at `nat_add result`.
+
+Planted (c): the arity check of the decoder removed. Observed: the extra-argument module is
+accepted and the case fails at `a constructor with another number of arguments`.
+
+Planted (d): `runtime::core()` assembling the base alone. Observed: `the embedded module is the
+committed one`.
+
+Planted (e): the differential table emptied. Observed: `the module defines {"nat_add"}, the
+differential covers {}`.
+
+### each core runtime function has its refinement theorem (SP-22)
+
+`refines_nat_add` states, for all `x y : Nat`, `runExport 12 coreCrate "nat_add" [nat x, nat y]
+= runItem core natAdd [nat x, nat y]` and is proved by `term_cases` over the primitive's outcome
+with 37 definitions (`SP-22`, §17.16, #91 stage 4, PR 2). The case (`cases/rust_refinement.rs`)
+lists the functions with the decoder and the theorems from the module's data, requires one
+theorem per function with a statement that runs the function it is named for, builds the
+project of the five modules the runtime module imports, and has the pinned Lean verify it
+(about 100 s: 60 for the project, 40 for the planted one). The proof reached the
+conditional of `itemFallible` only through `ite_true` and `ite_false`, which the lowering of
+`term_cases` therefore names (see `SM-35`).
+
+Plants, each restored: a theorem renamed to `refines_nat_sub` (`the module defines {"nat_add"},
+its refinement theorems are for {"nat_sub"}`); the theorem removed (the same message); the theorem
+run on `"nat_sub"` (`refines_nat_add states the run of nat_sub`); the body changed to the checked
+product (`LLV7002` with `unsolved goals`); the axiom policy changed to `[propext]` (`LLV7005`,
+`violates its exact axiom policy: observed [Classical.choice, Quot.sound, propext]`).
+
 ### a list of any length is a term Lean elaborates without binders
 
 Lean's `[…]` macro writes a literal of more than 32 elements under `let`

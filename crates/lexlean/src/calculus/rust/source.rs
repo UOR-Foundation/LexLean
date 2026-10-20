@@ -61,11 +61,7 @@ impl<'a> Reader<'a> {
         }
     }
 
-    fn member(
-        map: &'a BTreeMap<String, Json>,
-        name: &str,
-        what: &str,
-    ) -> Result<&'a Json, String> {
+    fn member(map: &'a BTreeMap<String, Json>, name: &str, what: &str) -> Result<&'a Json, String> {
         map.get(name)
             .map_or_else(|| fail(format!("{what} has no `{name}`")), Ok)
     }
@@ -90,13 +86,21 @@ impl<'a> Reader<'a> {
             let name = Self::text(Self::member(function, "name", what)?, what)?;
             let arguments = match Self::member(map, "arguments", what)? {
                 Json::Arr(items) => items,
-                _ => return fail(format!("{what} gives `{name}` arguments that are not a list")),
+                _ => {
+                    return fail(format!(
+                        "{what} gives `{name}` arguments that are not a list"
+                    ))
+                }
             };
             if !arguments.is_empty() {
                 return fail(format!("{what} applies `{name}`, which is data"));
             }
             term = self.definitions.get(name).copied().map_or_else(
-                || fail(format!("{what} names `{name}`, which the module does not define")),
+                || {
+                    fail(format!(
+                        "{what} names `{name}`, which the module does not define"
+                    ))
+                },
                 Ok,
             )?;
         }
@@ -270,8 +274,10 @@ impl<'a> Reader<'a> {
                 Ok,
             )?);
         }
-        out.try_into()
-            .map_or_else(|_| fail(format!("a record of `{of}` has the wrong fields")), Ok)
+        out.try_into().map_or_else(
+            |_| fail(format!("a record of `{of}` has the wrong fields")),
+            Ok,
+        )
     }
 
     /// An `Option` term: its payload, if present.
@@ -291,7 +297,10 @@ impl<'a> Reader<'a> {
             Json::Arr(arguments) => arguments,
             _ => return fail(format!("{what} has arguments that are not a list")),
         };
-        match (Self::text(Self::member(named, "name", what)?, what)?, arguments.as_slice()) {
+        match (
+            Self::text(Self::member(named, "name", what)?, what)?,
+            arguments.as_slice(),
+        ) {
             ("Option.none", []) => Ok(None),
             ("Option.some", [payload]) => element(self, payload).map(Some),
             _ => fail(format!("{what} is not an `Option`")),
@@ -340,7 +349,9 @@ impl<'a> Reader<'a> {
             }
             "exported" => {
                 let arguments = Self::arity(arguments, 1, "Ident", short)?;
-                Ok(Ident::Export(self.string(&arguments[0], "an exported name")?))
+                Ok(Ident::Export(
+                    self.string(&arguments[0], "an exported name")?,
+                ))
             }
             other => fail(format!("`Ident.{other}` is not an identifier")),
         }
@@ -411,10 +422,10 @@ impl<'a> Reader<'a> {
             "nat" => Lit::Nat(self.nat(&take(1)?[0], "a natural literal")?),
             "int" => {
                 let value = self.int(&take(1)?[0], "an integer literal")?;
-                Lit::Int(i64::try_from(value).map_or_else(
-                    |_| fail("an integer literal leaves `i64`"),
-                    Ok,
-                )?)
+                Lit::Int(
+                    i64::try_from(value)
+                        .map_or_else(|_| fail("an integer literal leaves `i64`"), Ok)?,
+                )
             }
             "fixed" => {
                 let a = take(2)?;
@@ -531,7 +542,10 @@ impl<'a> Reader<'a> {
         Item::all()
             .into_iter()
             .find(|item| Self::is_variant(&format!("{item:?}"), short, width))
-            .map_or_else(|| fail(format!("`Item.{short}` is not a runtime function")), Ok)
+            .map_or_else(
+                || fail(format!("`Item.{short}` is not a runtime function")),
+                Ok,
+            )
     }
 
     fn machine(&self, term: &'a Json) -> Result<Machine, String> {
@@ -688,8 +702,11 @@ impl<'a> Reader<'a> {
     }
 
     fn dispatch(&self, term: &'a Json) -> Result<Dispatch, String> {
-        let [function, captures, fallible] =
-            self.record(term, "Dispatch", ["function", "captures", "functionFallible"])?;
+        let [function, captures, fallible] = self.record(
+            term,
+            "Dispatch",
+            ["function", "captures", "functionFallible"],
+        )?;
         Ok(Dispatch {
             function: self.nat(function, "a function number")?,
             captures: self.list(captures, "the captures of a dispatch", Self::capture)?,
@@ -737,7 +754,11 @@ impl<'a> Reader<'a> {
                 let a = take(4)?;
                 ItemDef::Function {
                     name: self.ident(&a[0])?,
-                    parameters: self.list(&a[1], "the parameters of a function", Self::parameter)?,
+                    parameters: self.list(
+                        &a[1],
+                        "the parameters of a function",
+                        Self::parameter,
+                    )?,
                     result: self.ty(&a[2])?,
                     body: self.block(&a[3])?,
                     at: origin(),
@@ -800,7 +821,10 @@ pub fn decode(source: &str) -> Result<Source, String> {
     let mut definitions = BTreeMap::new();
     for declaration in declarations {
         let declaration = Reader::members(declaration, "a declaration")?;
-        let name = Reader::text(Reader::member(declaration, "name", "a declaration")?, "a name")?;
+        let name = Reader::text(
+            Reader::member(declaration, "name", "a declaration")?,
+            "a name",
+        )?;
         match Reader::text(Reader::member(declaration, "kind", name)?, name)? {
             "definition" => {
                 match Reader::member(declaration, "parameters", name)? {
@@ -814,7 +838,11 @@ pub fn decode(source: &str) -> Result<Source, String> {
             }
             // The kernel decides a theorem; the reader has no use for one.
             "theorem" => {}
-            other => return fail(format!("`{name}` is a {other}, which the reader does not read")),
+            other => {
+                return fail(format!(
+                    "`{name}` is a {other}, which the reader does not read"
+                ))
+            }
         }
     }
     let reader = Reader { definitions };

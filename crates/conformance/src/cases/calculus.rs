@@ -1468,8 +1468,8 @@ pub fn run(id: &str) {
             let plants = [
                 (
                     "natOverflowAdd_rust_core",
-                    "a.checked_add(b).ok_or(Overflow)",
-                    "Ok(a.wrapping_add(b))",
+                    "u64::checked_add(p0, p1)",
+                    "Some(u64::wrapping_add(p0, p1))",
                     false,
                 ),
                 (

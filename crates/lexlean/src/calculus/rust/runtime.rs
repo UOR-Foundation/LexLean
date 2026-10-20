@@ -108,9 +108,9 @@ pub fn assemble(items: &[ast::ItemDef]) -> String {
 pub fn core() -> Result<&'static str, String> {
     static CORE: OnceLock<Result<String, String>> = OnceLock::new();
     CORE.get_or_init(|| Ok(assemble(&source::get()?.core.items)))
-    .as_ref()
-    .map(String::as_str)
-    .map_err(Clone::clone)
+        .as_ref()
+        .map(String::as_str)
+        .map_err(Clone::clone)
 }
 
 /// The runtime only `rust-std` carries. Every loop ticks the work counter
@@ -668,8 +668,14 @@ mod tests {
             .parse()
             .expect("TOML");
         for (key, text) in [
-            ("rust_runtime_core", core().expect("the core runtime").to_owned()),
-            ("rust_runtime_std", format!("{}{STD}", core().expect("the core runtime"))),
+            (
+                "rust_runtime_core",
+                core().expect("the core runtime").to_owned(),
+            ),
+            (
+                "rust_runtime_std",
+                format!("{}{STD}", core().expect("the core runtime")),
+            ),
         ] {
             let digest = crate::artifact::content_id::Sha256Digest::of(text.as_bytes()).to_hex();
             assert_eq!(

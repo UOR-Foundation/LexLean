@@ -5715,7 +5715,30 @@ names (`u8::checked_add(a, b)`, `u32::try_from(a).ok()`, `core::ops::BitAnd::bit
 operands than its primitive takes and an overflow value outside the payload of an
 `Err`, and no lowering emits either: they are the constructs the runtime profile of #91 is
 authored in, so they have no row of the correspondence between a rendering and its
-program. A *loop*
+program. The runtime is that authoring (`RB-16`, `SP-22`). The core runtime every package
+carries is a base text and the functions of the language-1.2 module `RustRuntime` of the
+compiler project, which defines `coreCrate`, a `RustSyntax` crate; its shipped copy,
+`language/rust-runtime-1.2/RustRuntime.lex.tex`, is the compiler project's module byte for byte,
+because the compiler-semantics ID hashes the embedded tree and the proofs are about the other
+file. The Rust crate decodes the shipped copy (`rust::source`), never evaluates it, and
+prints each function after the base, where the handwritten function of the same name stood,
+and the text it hashes into `rust_runtime_core` and `rust_runtime_std` is the result. The
+decoder accepts exactly the constructors of `RustSyntax`, each with its arity, and the
+closed reference to another definition of the module, and refuses a module that names
+another constructor, a runtime function or machine primitive `RustSyntax` does not declare,
+a datum with parameters, a reference to a definition it lacks, or no `coreCrate`. An
+`Err` of the overflow value prints as `Err(Overflow)`, with the type arguments left to the
+function's `R<T>`, because the error type of `R<T>` is the runtime's own and has no type
+node. The handwritten text of every function the module defines is kept at
+`tests/rust-runtime-oracle/` and read by tests alone; one crate holds it as module `old` and
+the generated runtime as module `new`, and a harness calls both on the boundary and seeded
+values of each defined function and compares the result and the counted work. A function
+the module defines that the differential does not cover is refused by the case. Each
+function has a theorem `refines_<function>` in the module (`SP-22`): for all arguments of
+its parameter types, the declared semantics' run of the function in `coreCrate` equals the
+run of the runtime item of the same name, proved by `term_cases` (`SM-35`) and accepted with the
+axioms its policy states; the set of theorems equals the set of defined functions, and a
+theorem that runs another function than its name says is refused. A *loop*
 (`Expr.loop`, `SP-19`) is the one construct of the machine that repeats: it names
 a state, a local the enclosing block has bound, and a body block. The body is
 evaluated in the environment with the state, and its value is a `Result`: `Ok`
