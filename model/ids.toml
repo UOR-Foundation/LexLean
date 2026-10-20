@@ -2600,6 +2600,24 @@ suite = "language-models"
 statement = "No prompt is code: no member of the closed language maps `string` or `bytes` to a function, a term, or source — every operation of the primitive registry that takes a `string` or `bytes` operand is classified by the audit with a data result, the registry's schema enumeration and the production registry's primitive rows equal one another and equal that classified set, and the text declarations of `lexlean/semantic-module/2` state no `string`-typed member, so a prompt reaches a model only as the tokens `encodeText` makes of it; a planted operation or text member of that shape is caught by the audit with its name."
 
 [[id]]
+id = "LM-10"
+level = "build"
+suite = "language-models"
+statement = "Text components are produced as ordinary executable language-1.2 definitions: a production root whose runtime closure reaches a tokenizer, a context window, a text generator, or a text classifier is eligible for `rust-std` and is refused for `rust-core` with `LLT4005` because strings and bytes allocate; every library function an elaboration applies has a production form in `LexLeanStd.TextModels` related to it by a kernel-checked equality, so that the generated laws are proved of the realized definitions; the eligibility report records in `text_rows`, one row per text component the closure reaches, its closed nondeterminism contract — its scheme or disposition, its bound, its policy, and for `sample` the closed generator and distribution and the positions of the seed and of the next seed, and for `greedy` that it takes no seed — and the generated laws that state the bound, with no member of type `string`; and the `rust-std` rendering of a text root agrees with its oracle on the differential and satisfies certificates A, B, and E."
+
+[[id]]
+id = "LM-11"
+level = "build"
+suite = "language-models"
+statement = "`examples/text-models` is a language-1.2 project that builds, verifies, and produces through the real pipeline a tokenizer, a context window, a greedy and a sampled text generator, a text classifier, and an adapter over `string`, with the records of that run under `expected/`; the round trip and token boundary, the context overflow, the invalid UTF-8 text and artifact, and the nondeterminism-contract negatives are each refused by name, and a planted mutation of the example is detected."
+
+[[id]]
+id = "LM-12"
+level = "build"
+suite = "language-models"
+statement = "Every fixed helper of the text-laws library is covered by the conformance suite: each of the library functions an elaboration applies is realized, produced or evaluated by the kernel against a reference vector, and each of its lemmas is applied by a generated proof that the pinned Lean checks; a library function or lemma that no case reaches fails the coverage audit with its name."
+
+[[id]]
 id = "LM-13"
 level = "build"
 suite = "language-models"

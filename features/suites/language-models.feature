@@ -67,6 +67,27 @@ Feature: language-models
     Then every one has a data result and the two registries agree
     And a planted operation or text member that maps a string to code is caught by name
 
+  @LM-10 @build
+  Scenario: Text components are produced as ordinary executable language-1.2 definitions: a production root whose runtime closure reaches a tokenizer, a context window, a text generator, or a text classifier is eligible for `rust-std` and is refused for `rust-core` with `LLT4005` because strings and bytes allocate; every library function an elaboration applies has a production form in `LexLeanStd.TextModels` related to it by a kernel-checked equality, so that the generated laws are proved of the realized definitions; the eligibility report records in `text_rows`, one row per text component the closure reaches, its closed nondeterminism contract — its scheme or disposition, its bound, its policy, and for `sample` the closed generator and distribution and the positions of the seed and of the next seed, and for `greedy` that it takes no seed — and the generated laws that state the bound, with no member of type `string`; and the `rust-std` rendering of a text root agrees with its oracle on the differential and satisfies certificates A, B, and E.
+    Given a root that reaches each kind of text component, built for `rust-std` and for `rust-core`
+    When its eligibility, its report, its differential and its certificates are checked
+    Then the root is eligible on `rust-std` with a row per component and refused on `rust-core` with `LLT4005`
+    And a rendering that drops a token of a kept window disagrees with its oracle
+
+  @LM-11 @build
+  Scenario: `examples/text-models` is a language-1.2 project that builds, verifies, and produces through the real pipeline a tokenizer, a context window, a greedy and a sampled text generator, a text classifier, and an adapter over `string`, with the records of that run under `expected/`; the round trip and token boundary, the context overflow, the invalid UTF-8 text and artifact, and the nondeterminism-contract negatives are each refused by name, and a planted mutation of the example is detected.
+    Given the end-to-end text-model example and its negatives
+    When the example is built, verified and produced, and its negatives and a planted mutation are run
+    Then every record under `expected/` is reproduced and every negative is refused by name
+    And the mutated example fails verification
+
+  @LM-12 @build
+  Scenario: Every fixed helper of the text-laws library is covered by the conformance suite: each of the library functions an elaboration applies is realized, produced or evaluated by the kernel against a reference vector, and each of its lemmas is applied by a generated proof that the pinned Lean checks; a library function or lemma that no case reaches fails the coverage audit with its name.
+    Given the library's fixed helpers and the conformance suite
+    When the coverage audit walks every function and lemma
+    Then each is realized or applied by some case
+    And a helper no case reaches is named by the audit
+
   @LM-13 @build
   Scenario: The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text.
     Given the embedded text library that states a tokenizer's laws, and the register
