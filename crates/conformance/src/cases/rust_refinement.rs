@@ -94,6 +94,24 @@ fn complete(text: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// The module with every theorem but `name` left out.
+fn keeping(text: &str, name: &str) -> String {
+    let mut out = String::new();
+    let mut rest = text;
+    while let Some(at) = rest.find("theorem{\n  name: ") {
+        out.push_str(&rest[..at]);
+        let block_end = rest[at..]
+            .find("\n}\n")
+            .map_or(rest.len(), |end| at + end + 3);
+        if rest[at..block_end].starts_with(&format!("theorem{{\n  name: {name},")) {
+            out.push_str(&rest[at..block_end]);
+        }
+        rest = rest[block_end..].trim_start_matches('\n');
+    }
+    out.push_str(rest);
+    out
+}
+
 /// A project holding the runtime module and what it imports.
 fn project(text: &str) -> P {
     let project = P::compiler();
@@ -161,7 +179,9 @@ pub fn run(id: &str) {
     // the item: the checked product for the checked sum.
     let changed = text.replacen("Machine.checkedNatAdd", "Machine.checkedNatMul", 1);
     assert_ne!(changed, text, "the plant site exists");
-    let refused = project(&changed);
+    // The plant needs one theorem to fail, so the others are left out: the
+    // module of every function takes minutes to elaborate.
+    let refused = project(&keeping(&changed, "refines_nat_add"));
     let error = refused.verify_fails_with("LLV7002");
     assert!(
         error.to_string().contains("unsolved goals"),

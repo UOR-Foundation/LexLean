@@ -47,8 +47,7 @@
       "SP-11",
       "SP-12",
       "SP-13",
-      "SP-14",
-      "SP-22"
+      "SP-14"
     ],
     "production": [
       "CL-01",
@@ -186,6 +185,9 @@
     ],
     "preservation-lists": [
       "SP-15"
+    ],
+    "preservation-runtime": [
+      "SP-22"
     ]
   }
 }

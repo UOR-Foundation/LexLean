@@ -1942,7 +1942,8 @@ definition{
       | LeafKind.LkOrdering => false
       | LeafKind.LkStr => false
       | LeafKind.LkBytes => false
-      | LeafKind.LkOverflow => true)
+      | LeafKind.LkOverflow => true
+      | LeafKind.LkI128 => false)
     | Ty.TyFixed d0 => false
     | Ty.TyUnary d0 d1 => false
     | Ty.TyBinary d0 d1 d2 => false

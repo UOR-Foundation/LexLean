@@ -207,9 +207,19 @@ fn is_v1_2_file(path: &str) -> bool {
 #[doc(hidden)]
 #[must_use]
 pub fn identity_bytes<'a>(path: &str, bytes: &'a [u8]) -> std::borrow::Cow<'a, [u8]> {
-    surface::identity::data_form(path, bytes).map_or(std::borrow::Cow::Borrowed(bytes), |data| {
-        std::borrow::Cow::Owned(data)
-    })
+    // A module of a hundred functions nests as deeply as its list, and reading
+    // it to its data form recurses with it, so the reading has a stack of its
+    // own rather than the two megabytes of the thread that asks (a test's, or
+    // a debug build's worker).
+    let data = std::thread::scope(|scope| {
+        std::thread::Builder::new()
+            .stack_size(256 * 1024 * 1024)
+            .spawn_scoped(scope, || surface::identity::data_form(path, bytes))
+            .expect("a reader thread")
+            .join()
+            .expect("the reader does not panic")
+    });
+    data.map_or(std::borrow::Cow::Borrowed(bytes), std::borrow::Cow::Owned)
 }
 
 /// The §11.5 tree digest of the files of the embedded tree selected by `keep`.
@@ -232,20 +242,13 @@ fn embedded_digest(keep: impl Fn(&str) -> bool) -> Sha256Digest {
         .min(8);
     std::thread::scope(|scope| {
         for _ in 0..workers {
-            // A module of a hundred functions nests as deeply as its list, and
-            // reading it to its data form recurses with it, so the readers have
-            // a stack of their own rather than the two megabytes of a default
-            // thread.
-            std::thread::Builder::new()
-                .stack_size(256 * 1024 * 1024)
-                .spawn_scoped(scope, || loop {
-                    let at = next.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                    let Some((path, bytes)) = selected.get(at) else {
-                        break;
-                    };
-                    let _ = slots[at].set(identity_bytes(path, bytes));
-                })
-                .expect("a reader thread");
+            scope.spawn(|| loop {
+                let at = next.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                let Some((path, bytes)) = selected.get(at) else {
+                    break;
+                };
+                let _ = slots[at].set(identity_bytes(path, bytes));
+            });
         }
     });
     let rows: Vec<(&str, std::borrow::Cow<'static, [u8]>)> = selected
