@@ -5563,10 +5563,12 @@ whose pattern matches; `?` on `Err` raises out of the function, which returns
 `Err(Overflow)` exactly when its result type is `R<T>`; an application
 dispatches through the `apply` arm of the closure's function and capture
 count. A *machine primitive* is a function of the machine's standard library that the
-runtime reaches and cannot state in the AST. `RustSyntax` declares eight
-(`Machine`), each at a width: `checkedAdd`, `checkedSub`, `checkedMul`,
-`checkedQuot`, `checkedNeg`, `checkedShl`, and `checkedShr` of a width, and
-`tryFrom` to a width, and a call names one as the callee `Callee.machine`, beside
+runtime reaches and cannot state in the AST. `RustSyntax` declares seventeen
+(`Machine`): `checkedAdd`, `checkedSub`, `checkedMul`,
+`checkedQuot`, `checkedNeg`, `checkedShl`, and `checkedShr` of a width,
+`tryFrom` to a width (`SP-18`), and `bitAnd`, `bitOr`, `bitXor`, and `bitNot` of a
+width, `natEq`, `natLe`, and `natLt` of two naturals, and `natRem` and `intRem` of
+a dividend, a divisor, and the value a zero divisor gives (`SP-21`). A call names one as the callee `Callee.machine`, beside
 `Callee.function` and `Callee.runtime`. Its meaning is the calculus primitive of
 the same name on the same operands, the `Option` value that primitive states
 (`checkedAdd` of two `u8` is `Some` of their sum, or `None` when it exceeds
@@ -5574,8 +5576,14 @@ the same name on the same operands, the `Option` value that primitive states
 excepted; a primitive is not a runtime item, so it does not pass through the
 item tables. The literal `Lit.overflow` is the unit struct `Overflow` of the
 runtime, which the machine represents by the unit value, as an `Err(Overflow)`
-carries it. Neither is yet written by the renderer: the scalar items are
-expressed over them by the stage of #91 that follows (`SP-18`). A *loop*
+carries it. The Rust AST mirrors both (`rust::ast::Machine`, `Callee::Machine`,
+`Lit::Overflow`, `RB-15`): a machine call prints as the Rust operation its primitive
+names (`u8::checked_add(a, b)`, `u32::try_from(a).ok()`, `core::ops::BitAnd::bitand(a, b)`,
+`core::cmp::PartialOrd::lt(&a, &b)`), the validator refuses a call with another number of
+operands than its primitive takes and an overflow value outside the payload of an
+`Err`, and no lowering emits either: they are the constructs the runtime profile of #91 is
+authored in, so they have no row of the correspondence between a rendering and its
+program. A *loop*
 (`Expr.loop`, `SP-19`) is the one construct of the machine that repeats: it names
 a state, a local the enclosing block has bound, and a body block. The body is
 evaluated in the environment with the state, and its value is a `Result`: `Ok`
@@ -10062,7 +10070,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RB-12` | `rust-backend` | The language-1.2 compiler-semantics ID covers the package scaffold: changing a lint row, the edition, or a gate of a copy of the embedded tree changes it, writing the module in its data form or reformatting its notation does not, and the module is outside the identities of languages 1.0 and 1.1. | §17.16, §21.2 |
 | `RB-13` | `rust-backend` | A package states the effects of its realization: `package.json` and `provenance.json` record them, ascending and registered, the production registry says that exhausting the stack aborts the process, and an unregistered or unordered list, or one that states allocation on `rust-core`, is refused. | §17.13, §17.16 |
 | `RB-14` | `rust-backend` | A library template whose self calls are all tail calls is rendered as a loop over its accumulator that breaks with its result, so that the production rows of the primitives it realizes carry no `recursion`, while a template with a call that is not a tail call is rendered as a call and keeps the effect; a rendering that states a self call where a loop is possible, and a row whose `recursion` differs from its rendering, are refused. | §17.13, §17.14, §17.16 |
-| `RB-15` | `rust-backend` | The Rust AST mirrors the machine callee and the overflow literal of RustSyntax: a crate that calls a machine primitive or states the overflow value is checked, printed, and compiled by the pinned rustc, a machine call prints as the Rust operation its primitive names at its width, every machine primitive has a correspondence row naming the calculus element it realizes, and a crate that calls a machine primitive with an operand of another width, a machine call with no correspondence row, and an overflow value outside an `Err` are refused as LLB6005; no rendering of an existing program changes. | §17.14, §17.16 |
+| `RB-15` | `rust-backend` | The Rust AST mirrors the machine callee and the overflow literal of RustSyntax: a crate whose functions call each machine primitive at each width is checked, printed, and compiled by the pinned rustc with warnings denied, each call prints as the Rust operation its primitive names, and each function computes on the boundary values of its width exactly what an independent computation over a wider integer states; a machine call with another number of operands than its primitive takes, and an overflow value outside the payload of an `Err`, are refused as LLB6005, and the crates of the machine calls are not rows of the correspondence between a rendering and its program, which no lowering emits a machine call for. | §17.14, §17.16 |
 | `GN-01` | `gnaf` | Every committed GNAF request and fixture is canonical, validates against the GNAF schemas whose calculus definitions are the target program schema's, and states its components' universe identity; a malformed request, an invalid reference, plan, or realized program, a reference without a value on a domain argument, or a wrong universe identity fails closed with LLB6006, and a machine or request beyond the host's capacity fails closed with LLS8002. | §17.15, §26.3 |
 | `GN-02` | `gnaf` | The GNAF model is a kernel-checked LexLean definition, Lean's kernel reduces the universe, the system statuses, and the answer of every committed request to what the host transcription computes, and a wrong answer, an answer computed from a universe with a system omitted, a tie with a member dropped, and a universe with a system omitted are rejected by Lean. | §17.15 |
 | `GN-03` | `gnaf` | Candidate membership is the grammar's expansion, which a kernel-checked theorem proves equal to the grammar's well-formed selectors for every grammar, independent of evaluation and fixed by a universe identity before any optimizer, and optimizer-defined, discovered, cached, and internal-plan universes and missing, self-referential, or optimizer-citing completeness evidence are rejected. | §17.15 |

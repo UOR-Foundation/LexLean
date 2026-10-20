@@ -1787,7 +1787,7 @@ statement = "A library template whose self calls are all tail calls is rendered 
 id = "RB-15"
 level = "build"
 suite = "rust-backend"
-statement = "The Rust AST mirrors the machine callee and the overflow literal of RustSyntax: a crate that calls a machine primitive or states the overflow value is checked, printed, and compiled by the pinned rustc, a machine call prints as the Rust operation its primitive names at its width, every machine primitive has a correspondence row naming the calculus element it realizes, and a crate that calls a machine primitive with an operand of another width, a machine call with no correspondence row, and an overflow value outside an `Err` are refused as LLB6005; no rendering of an existing program changes."
+statement = "The Rust AST mirrors the machine callee and the overflow literal of RustSyntax: a crate whose functions call each machine primitive at each width is checked, printed, and compiled by the pinned rustc with warnings denied, each call prints as the Rust operation its primitive names, and each function computes on the boundary values of its width exactly what an independent computation over a wider integer states; a machine call with another number of operands than its primitive takes, and an overflow value outside the payload of an `Err`, are refused as LLB6005, and the crates of the machine calls are not rows of the correspondence between a rendering and its program, which no lowering emits a machine call for."
 
 [[id]]
 id = "GN-01"
