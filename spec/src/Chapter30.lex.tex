@@ -1,8 +1,7 @@
 \begin{lexlean}{Chapter30}
 \useglossary{lexlean.std.nat@1.2.0}
-\useglossary{spec.titles@1.0.0}
 \importmodule{DocRows}
-\title{Versioning release and completion}
+\title{Natural number addition}
 \begin{semanticmodule}
 definition{
   name: i0001,
@@ -257,7 +256,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "The default branch must remain passing at each merge; a capability row is merged only with its complete scenario, test, implementation, and evidence." (nil String))
+      (cons "The default branch and every release line must remain passing at each merge; a capability row is merged only with its complete scenario, test, implementation, and evidence." (nil String))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
