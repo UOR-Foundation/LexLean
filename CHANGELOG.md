@@ -188,6 +188,13 @@ and Unreleased holds what has landed since.
   the gate are the rows of `.github/vv-rows.json`, the matrix the plan hands
   to `vv`. `release.yml` still runs `just vv` whole and reads no earlier run.
   The register is unchanged: the statement of `RP-14` is extended.
+- Release lines (SPEC.md §9.4, `RP-14`): the branch `release/vX.Y` is the
+  release X.Y, cut from `main` when work on it begins; a milestone's pull
+  requests target its line, tags are made from it, it is merged forward into
+  the next line after each landing, and `main` is the newest released line.
+  The three workflows run on a push to a release line as on a push to `main`,
+  under the same plan, and `RP-14` reads their push triggers. The register is
+  unchanged: the statement of `RP-14` is extended.
 - Measured stack bounds for every production root a conformance harness runs
   on a corpus and that admits `recursion` (SPEC.md §17.13, §17.23, `PD-08`,
   #105 step 3; no new diagnostic code, no change to any language identity).

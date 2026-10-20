@@ -5,7 +5,8 @@
 #   pull request, draft       the `rest` leg only: a development signal
 #   pull request, ready       the whole gate
 #   workflow_dispatch         the whole gate
-#   push to main              the whole gate, unless the push is a merge whose
+#   push to main or to a      the whole gate, unless the push is a merge whose
+#   release line (§9.4)
 #                             tree is the tree of its second parent and the
 #                             whole gate passed on that parent as a pull
 #                             request run: then nothing, and the run says
