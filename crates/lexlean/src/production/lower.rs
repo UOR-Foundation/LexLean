@@ -2372,6 +2372,7 @@ impl Lowerer<'_> {
                             name: _,
                             capacity: _,
                             overflow: _,
+                            axioms: _,
                         }
                         | SemanticDeclaration::TextGenerator {
                             name: _,
@@ -2381,6 +2382,7 @@ impl Lowerer<'_> {
                             max_tokens: _,
                             stop: _,
                             policy: _,
+                            axioms: _,
                         }
                         | SemanticDeclaration::TextClassifier {
                             name: _,
@@ -2574,6 +2576,7 @@ impl Lowerer<'_> {
                             name: _,
                             capacity: _,
                             overflow: _,
+                            axioms: _,
                         }
                         | SemanticDeclaration::TextGenerator {
                             name: _,
@@ -2583,6 +2586,7 @@ impl Lowerer<'_> {
                             max_tokens: _,
                             stop: _,
                             policy: _,
+                            axioms: _,
                         }
                         | SemanticDeclaration::TextClassifier {
                             name: _,
