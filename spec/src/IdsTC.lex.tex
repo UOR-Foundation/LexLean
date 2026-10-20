@@ -1,0 +1,71 @@
+\begin{lexlean}{IdsTC}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{spec.titles@1.0.0}
+\importmodule{Rows}
+\title{Calculus conformance claims}
+\begin{semanticmodule}
+definition{
+  name: tc01,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "TC-01", level := "build", suite := "calculus", statement := "Hand-constructed target programs have canonical bytes and a SHA-256 content identity, alpha-equivalent programs canonicalize to identical bytes and identity, an ill-typed program has neither, and every committed fixture validates against the target schemas.", sections := "§17.14, §21.7"}),
+  executable: true
+}
+
+definition{
+  name: tc02,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "TC-02", level := "build", suite := "calculus", statement := "Every malformed target program or violated static rule fails closed with LLB6005, and an invalid program has neither a canonical form nor a rendering.", sections := "§17.14, §26.3"}),
+  executable: true
+}
+
+definition{
+  name: tc03,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "TC-03", level := "build", suite := "calculus", statement := "The calculus denotation is a kernel-checked LexLean definition that charges every evaluator operation, Lean's kernel reduces every kernel-reducible fixture to its expected outcome with its exact step count, no fixture program is stuck on its stated arguments or on seeded random well-typed arguments at any sampled fuel, and a wrong expected outcome is rejected by Lean.", sections := "§17.14"}),
+  executable: true
+}
+
+definition{
+  name: tc04,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "TC-04", level := "build", suite := "calculus", statement := "Lean's evaluator, running the published calculus sources compiled again by pinned Lean, reproduces every fixture's expected outcome and step count, including fixtures a reflexivity proof cannot decide, and the comparison refuses a fixture stated one step off.", sections := "§17.14"}),
+  executable: true
+}
+
+definition{
+  name: tc05,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "TC-05", level := "build", suite := "calculus", statement := "Every realization library template has a fixture whose outcome the kernel proves equal to the value LexLean's own collection primitive computes, committed instances equal their templates, and a mutated template is rejected by Lean.", sections := "§17.12, §17.14"}),
+  executable: true
+}
+
+definition{
+  name: tc06,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "TC-06", level := "build", suite := "calculus", statement := "Every runtime construct of the production registry has exactly one realization row naming existing calculus elements and requires allocation and implies recursion exactly when its realization does, and the fixtures exercise every calculus type, literal, expression, shape, primitive, and template, and every fixed-width primitive at every width it admits.", sections := "§17.13, §17.14"}),
+  executable: true
+}
+
+definition{
+  name: tc07,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "TC-07", level := "build", suite := "calculus", statement := "Every fixture with an observable outcome renders to a safe Rust library crate in rust-std, and in rust-core exactly when it needs no heap, that the pinned rustc compiles with warnings denied, that prints exactly the denotation's value or overflow, and whose counted work never exceeds the denotation's steps; planted value and work discrepancies are detected.", sections := "§17.14"}),
+  executable: true
+}
+
+definition{
+  name: tc08,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "TC-08", level := "build", suite := "calculus", statement := "The production calculus has a closed data literal, a list, pair, option, or algebraic-data value spelled by literals of its element types, that has a type rule, a canonical form with one spelling per value, a kernel-checked denotation equal to the value it spells, and a stated cost that charges its weight once per read, so that a decoded constant is data in a program and never a chain of build expressions evaluated on each call; a literal of the wrong type, a malformed member, or a literal that is not canonical is refused with LLB6005.", sections := "§17.14"}),
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

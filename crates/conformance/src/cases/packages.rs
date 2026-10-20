@@ -756,7 +756,7 @@ fn pk_05() {
     let workspace = lexlean::source_package::Workspace::read(&root)
         .expect("the workspace file reads")
         .expect("the repository has a workspace file");
-    assert_eq!(workspace.members, ["bootstrap", "stdlib"]);
+    assert_eq!(workspace.members, ["bootstrap", "spec", "stdlib"]);
 
     let project = P::bootstrap();
     assert!(

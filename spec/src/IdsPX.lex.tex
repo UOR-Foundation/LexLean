@@ -1,0 +1,111 @@
+\begin{lexlean}{IdsPX}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{spec.titles@1.0.0}
+\importmodule{Rows}
+\title{Production export conformance claims}
+\begin{semanticmodule}
+definition{
+  name: px01,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PX-01", level := "build", suite := "production-export", statement := "A consumer that names only lexlean::api::production and the stable crate-root types exports every production root of examples/production and examples/production-coverage through production::build into a bundle whose every Rust package is byte-identical to its committed expected package and renders the certified crate followed by one export, run, of the root's recorded entry, and whose result binds every output to the project's source, semantic, and lock identities, the compiler-semantics ID, its target ID and descriptor digest, the compiler input and preservation record the attestation binds, certificates A, B, and E, and the certification status kernel-checked, with optimality not-claimed.", sections := "§24.7"}),
+  executable: true
+}
+
+definition{
+  name: px02,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PX-02", level := "build", suite := "production-export", statement := "A production request naming an unknown root, a declaration that is not a production root, or a formal-only theorem fails with LLC0202 before any Lean process runs and publishes no build, verification, or production directory.", sections := "§24.7"}),
+  executable: true
+}
+
+definition{
+  name: px03,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PX-03", level := "build", suite := "production-export", statement := "A production request naming an unregistered target, a registered target its root does not declare, or a registered target with any other descriptor digest fails with LLC0203 before any Lean process runs and publishes nothing, and production::targets returns each registered target's descriptor with a digest that changes with any field of it.", sections := "§24.7"}),
+  executable: true
+}
+
+definition{
+  name: px04,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PX-04", level := "build", suite := "production-export", statement := "A production request pinning a source ID, semantic ID, or lock digest that a later edit of a source module or of the lock no longer matches fails with LLC0204 before any Lean process runs and publishes nothing, and a lock made stale by an edit of the project configuration fails with LLC0102.", sections := "§24.7"}),
+  executable: true
+}
+
+definition{
+  name: px05,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PX-05", level := "build", suite := "production-export", statement := "Every committed production-refusal fixture of tests/negative fails through production::build with its committed diagnostic code before any Lean process runs and publishes no production directory.", sections := "§24.7"}),
+  executable: true
+}
+
+definition{
+  name: px06,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PX-06", level := "build", suite := "production-export", statement := "GNAF evidence whose certificate has another identity than the request pins, earns a refused verdict, or is for a request whose reference program is not the root's lowered program fails with LLV7101, a malformed request or certificate fails with LLB6006 or LLB6007, each before any Lean process runs, a request carrying a certification, optimality, preservation, certificate, Lean, program, or crate field fails with LLC0201, and evidence that binds the root is recorded with the identity, universe, and verdict the host checker recomputes.", sections := "§24.7"}),
+  executable: true
+}
+
+definition{
+  name: px07,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PX-07", level := "build", suite := "production-export", statement := "verify_artifact accepts an untouched bundle with status bindings-verified and names the four stages it does not re-run, and rejects with LLV7102 a bundle in which one byte of a package, crate, program, certificate, attestation, compiler input, or preservation record, one binding or certification field of the result with its identity recomputed, or one added or removed file differs, and with LLS8001 a bundle holding a symlink.", sections := "§24.7"}),
+  executable: true
+}
+
+definition{
+  name: px08,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PX-08", level := "build", suite := "production-export", statement := "Exporting one request from two copies of a project in distinct absolute directories and from distinct working directories yields byte-identical bundles under one result ID, and the result holds no absolute path, environment value, or time.", sections := "§24.7"}),
+  executable: true
+}
+
+definition{
+  name: px09,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PX-09", level := "build", suite := "production-export", statement := "Evidence paths that are absolute, contain .., or pass through a symlink leaving the project fail with LLS8001 before any Lean process runs, and a symlinked production area under the build root is refused with LLS8001 rather than followed.", sections := "§24.7"}),
+  executable: true
+}
+
+definition{
+  name: px10,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PX-10", level := "build", suite := "production-export", statement := "After setup, production::build takes no network option and starts no network or git operation: with a git sentinel first on PATH and an unreachable proxy in the environment it exports the project and the sentinel never runs, and a project whose lock needs an unacquired Git package fails closed with a registered code without acquiring it.", sections := "§24.7"}),
+  executable: true
+}
+
+definition{
+  name: px11,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PX-11", level := "build", suite := "production-export", statement := "No production request type can carry Lean, LCNF, a target program, or Rust: every field is a root name, a crate name and version, a registered target ID with a digest, a pinned digest, or a project-relative evidence path, as an exhaustive destructuring of each request type shows, and a root name, crate name, or version carrying Lean or Rust text fails with LLC0201, while evidence naming a Lean file fails as a malformed GNAF document.", sections := "§24.7"}),
+  executable: true
+}
+
+definition{
+  name: px12,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PX-12", level := "build", suite := "production-export", statement := "Each production export schema under api/schemas validates the values the façade produces and refuses an unknown field, and its SHA-256 is recorded under its exact spec version in api/schemas/versions.toml, so that a schema changed without a new version fails the gate.", sections := "§24.7"}),
+  executable: true
+}
+
+definition{
+  name: px13,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PX-13", level := "build", suite := "production-export", statement := "Every output of a production result states the effects its realization can exhibit on its target, ascending and exactly those that eligibility requires of the root there, so an output that can recurse says that it needs a host stack its input-dependent depth fits, and the export report counts those outputs.", sections := "§17.13, §24.7"}),
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

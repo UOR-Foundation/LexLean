@@ -1,0 +1,103 @@
+\begin{lexlean}{IdsSE}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{spec.titles@1.0.0}
+\importmodule{Rows}
+\title{Security conformance claims}
+\begin{semanticmodule}
+definition{
+  name: se01,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SE-01", level := "build", suite := "security", statement := "Source, package, workspace, resource, and output paths are confined and symlinks are rejected.", sections := "§25.1"}),
+  executable: true
+}
+
+definition{
+  name: se02,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SE-02", level := "build", suite := "security", statement := "Special files, duplicate filesystem identities, and case-fold collisions are rejected before processing.", sections := "§25.1"}),
+  executable: true
+}
+
+definition{
+  name: se03,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SE-03", level := "build", suite := "security", statement := "All child processes use direct executable and argv invocation with no shell.", sections := "§25.2"}),
+  executable: true
+}
+
+definition{
+  name: se04,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SE-04", level := "build", suite := "security", statement := "No command except lock --allow-network may perform package network acquisition.", sections := "§25.3"}),
+  executable: true
+}
+
+definition{
+  name: se05,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SE-05", level := "build", suite := "security", statement := "Child environments use the specified deterministic allow-list and recorded normalization.", sections := "§25.4"}),
+  executable: true
+}
+
+definition{
+  name: se06,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SE-06", level := "build", suite := "security", statement := "Every configured parser, graph, IR, diagnostic, child-output, and timeout limit is enforced with checked arithmetic.", sections := "§25.5"}),
+  executable: true
+}
+
+definition{
+  name: se07,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SE-07", level := "build", suite := "security", statement := "Temporary data uses confined owner-only staging and is removed after atomic publication or failure.", sections := "§25.6"}),
+  executable: true
+}
+
+definition{
+  name: se08,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SE-08", level := "build", suite := "security", statement := "External executables and PDF resources are hash-checked before use.", sections := "§19.7, §22.2"}),
+  executable: true
+}
+
+definition{
+  name: se09,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SE-09", level := "build", suite := "security", statement := "PDF execution receives only canonical TeX and declared resources in an isolated working directory.", sections := "§19.7"}),
+  executable: true
+}
+
+definition{
+  name: se10,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SE-10", level := "build", suite := "security", statement := "Internal invariant failures use LLI9001 and exit 70 without misclassifying user input.", sections := "§25.7"}),
+  executable: true
+}
+
+definition{
+  name: se11,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SE-11", level := "build", suite := "security", statement := "Diagnostics and process records do not expose secret environment values or arbitrary unrelated file contents.", sections := "§25.6"}),
+  executable: true
+}
+
+definition{
+  name: se12,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SE-12", level := "build", suite := "security", statement := "Git lexicon acquisition accepts only an exact 40-hex commit over HTTPS and rejects submodules and LFS indirection.", sections := "§10.1, §11.4"}),
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

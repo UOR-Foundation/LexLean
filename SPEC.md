@@ -483,6 +483,10 @@ The completed repository MUST have this layout. Additional files are allowed onl
 │   ├── source-map.schema.json
 │   ├── target-fixture.schema.json
 │   └── target-program.schema.json
+├── spec/
+│   ├── lexlean.toml
+│   ├── lexlean.lock
+│   └── src/
 ├── tests/
 │   ├── fixtures/
 │   ├── golden/
@@ -680,7 +684,9 @@ Its image MUST install the pinned Rust and Lean toolchains at build, so that not
 
 `ci.yml` MUST run every recipe of `just vv` from a clean checkout on Linux x86-64. It MUST install the exact Rust toolchain, Lean 4.32.1 through `elan`, `just`, and `cargo-deny`.
 
-**What a run is.** `ci.yml` starts with the job `plan`, which decides from the event and the repository alone, through `.github/ci-plan.sh`, what the run is before any job that costs a runner starts. A pull request that is a draft is the `rest` leg and nothing else: a head pushed again before it is final costs one job and not the gate, the run is a development signal, and a draft is not mergeable on it; marking the pull request ready, and every push to it after, run the whole gate. A ready pull request, a `workflow_dispatch`, and a push to `main` are the whole gate, every job below. One push to `main` is not: when it is a merge commit whose tree is the tree of its second parent (a pull request head that already contained `main`) and a run of this workflow for that parent as a pull request of this repository passed every job, with none skipped, the join of Atlas, every host of §8.3, and every leg of `.github/vv-rows.json` among them, the push runs no job but the plan, which records the run: the tree it lands is byte for byte the tree that run verified, on the same runners and with the same pins. Any other push to `main`, including one the plan cannot decide (a failed query, no run, a run of a draft, a merge that changed the tree, a push that is no merge), is the whole gate. `release.yml` runs `just vv` whole and reads no earlier run. `RP-14` runs the script against planted events and a plant in it fails the case.
+**What a run is.** `ci.yml` starts with the job `plan`, which decides from the event and the repository alone, through `.github/ci-plan.sh`, what the run is before any job that costs a runner starts. A pull request that is a draft is the `rest` leg and nothing else: a head pushed again before it is final costs one job and not the gate, the run is a development signal, and a draft is not mergeable on it; marking the pull request ready, and every push to it after, run the whole gate. A ready pull request, a `workflow_dispatch`, and a push to `main` or to a release line are the whole gate, every job below. One push to `main` or to a release line is not: when it is a merge commit whose tree is the tree of its second parent (a pull request head that already contained `main`) and a run of this workflow for that parent as a pull request of this repository passed every job, with none skipped, the join of Atlas, every host of §8.3, and every leg of `.github/vv-rows.json` among them, the push runs no job but the plan, which records the run: the tree it lands is byte for byte the tree that run verified, on the same runners and with the same pins. Any other push to `main` or to a release line, including one the plan cannot decide (a failed query, no run, a run of a draft, a merge that changed the tree, a push that is no merge), is the whole gate. `release.yml` runs `just vv` whole and reads no earlier run. `RP-14` runs the script against planted events and a plant in it fails the case, and reads the three workflows' push triggers, which name `main` and `release/**`.
+
+**Release lines.** A release line is the branch `release/vX.Y` of the release X.Y: it is cut from `main` when work on X.Y begins, every pull request for the milestone X.Y targets it, each `vX.Y.Z` tag is made from it, and it is merged forward, by merge commit, into the next release line after each landing so that the next line carries every fix of the one before it. `main` is the newest released line: a release line is merged into `main` when its release is tagged, and nothing else lands on `main`. A release line is held to the same gate as `main`: a push to it is the whole gate under the rule above, and a pull request against it is a pull request of this repository.
 
 In a run that is the whole gate, the job runs the recipes as the legs of one matrix, the rows of `.github/vv-rows.json`, at once, each from its own clean checkout: `examples`, which verifies every example but UOR Atlas; `rest`, the other eleven recipes in the order of `vv`; and one `bdd-<part>` row for each named part of the `bdd` plan below, which runs `bdd` alone. Each leg runs `just` with its recipes, which stops at the first that fails, as `vv` does. The part of `examples` a job runs is named by its matrix row through `LEXLEAN_EXAMPLES_PART` and by nothing else: `without:uor-atlas` on the leg, `shard:uor-atlas:<shard>` and `join:uor-atlas` on the Atlas jobs below; unset or empty, which is what `just vv` and `release.yml` run, the recipe verifies every example whole. Together the legs and the Atlas jobs run every recipe of `vv`, every example, and every test of `bdd` exactly once, and the run passes only when every job passes, so it proves what one run of `just vv` proves; no recipe depends on another having run, and every recipe owns the files it builds. Its wall time is the longest path through the jobs rather than the sum. `just vv` remains the acceptance recipe of §9.2 for every other run, and `release.yml` runs it whole.
 
@@ -9325,18 +9331,43 @@ LexLean realizes it.
 
 ### 27.5 Generated documents
 
+The conformance register, the diagnostic registry, the honesty ledger and the
+authority register are LexLean source: the semantic modules of the
+language-1.2 project `spec/`, a member of the workspace (§10.5) written in the
+authoring notation (§17.21), one module per ID family for the register and one
+each for the registry, the ledger and the authorities. `model/ids.toml`,
+`model/errors.toml`, `model/ledger.toml` and `model/authorities.toml` are
+generated from them, with `CONFORMANCE.md` and `ERRORS.md` generated from the
+model, and none of the six is edited by hand (`NS-02`). A register row is the
+`IdRow` record of a definition named for its ID, with the §31 "Primary
+specification" cell in `sections`; the projector accepts exactly the shapes
+the modules are made of and refuses any other declaration, term, field, name,
+file or family, naming the file and the declaration (`NS-04`).
+
 `cargo xtask validate-model` MUST:
 
-1. parse all model files with unknown-field rejection;
-2. validate IDs, levels, authorities, errors, and cross-references;
-3. generate `CONFORMANCE.md` and `ERRORS.md` in memory;
-4. compare exact committed bytes;
-5. scan feature scenarios and Rust test names;
-6. reject missing, duplicate, or extra links;
-7. run the honesty vocabulary checks;
-8. run repository-specific audits.
+1. project the modules of `spec/` in memory and compare the bytes of each model
+   file with its projection, failing naming R1 on a difference (`NS-03`);
+2. parse all model files with unknown-field rejection;
+3. validate IDs, levels, authorities, errors, and cross-references;
+4. generate `CONFORMANCE.md` and `ERRORS.md` in memory;
+5. compare exact committed bytes;
+6. scan feature scenarios and Rust test names;
+7. reject missing, duplicate, or extra links;
+8. run the honesty vocabulary checks;
+9. run repository-specific audits.
 
-`model-write` is the only normal path that rewrites generated documentation.
+`model-write` is the only normal path that rewrites the model files and the
+generated documentation.
+
+*What is and is not established (C9).* The projector is a Rust program, not
+LexLean: it can falsify a projection and never establishes one. What
+establishes it is the byte equality of every projection with the file it
+replaced when the register moved into `spec/`, and the plants of `NS-03` and
+`NS-04`. Verifying `spec/` (`NS-01`) has the pinned Lean elaborate each record
+definition against its row structure and replay the generated modules with the
+audited axioms; it does not establish that a row's text is the normative text,
+that identifiers are distinct, or that a projection is the committed file.
 
 ### 27.6 Specification links
 
@@ -9928,7 +9959,7 @@ Each capability change follows R3. At repository scale, the dependency order is:
 9. implement CLI and stable Rust API;
 10. complete examples, negative fixtures, reproducibility, and release gates.
 
-The default branch must remain passing at each merge; a capability row is merged only with its complete scenario, test, implementation, and evidence.
+The default branch and every release line must remain passing at each merge; a capability row is merged only with its complete scenario, test, implementation, and evidence.
 
 
 ## 31. Complete conformance-ID registry
@@ -9942,7 +9973,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RP-03` | `repository` | The completed repository has the required file and crate layout, and the tracked tree holds no CACHEDIR.TAG or path component the repository walkers skip outside sanctioned expected/ oracle directories. | §7 |
 | `RP-04` | `repository` | Only the lexlean crate is shipped and no shipped crate depends on repository-only tooling. | §7, §8.4 |
 | `RP-05` | `repository` | The just vv recipe runs every normative acceptance gate in the specified order. | §9.2 |
-| `RP-06` | `repository` | CONFORMANCE.md and ERRORS.md are exact generated views of model files. | §27.5 |
+| `RP-06` | `repository` | `model/*.toml`, `CONFORMANCE.md`, and `ERRORS.md` are exact generated views of the register modules of the specification project. | §27.5 |
 | `RP-07` | `repository` | The specification conformance table and model register are bijective and text-consistent. | §27.6 |
 | `RP-08` | `repository` | Repository source contains no unsanctioned deferral marker, stub, placeholder, ignored capability, or disabling feature; the deferral audit reads every text file of the repository, the root documents, workflows, scripts, devcontainer, API, oracle, and tooling data included, except a vendored authority copy whose bytes its checksum pins, and its markers include the phrases that put work in the future. | §27.10 |
 | `RP-09` | `repository` | The shipped crate forbids unsafe Rust and the audit proves the prohibition is active. | §8.1, §27.10 |
@@ -9950,7 +9981,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RP-11` | `repository` | Every public README capability claim is tied to a registered model ID and honesty level. | §27 |
 | `RP-12` | `repository` | A release is refused unless the complete release criterion and all required artifacts are satisfied. | §30 |
 | `RP-13` | `repository` | The ordinary workspace test phase excludes repo-conformance, the bdd phase alone runs its complete suite, and a test inventory proves that the two phases together equal the whole workspace test set with no test lost and none run twice, and that the parts of the committed bdd plan together equal the bdd phase with every test in exactly one part. | §9.2 |
-| `RP-14` | `repository` | The normative CI job runs every recipe of just vv in parallel legs that each start from a clean checkout on the standard ubuntu-24.04 runner, each recipe exactly once but bdd, which runs once per part of its committed plan on the row that names the part, the examples leg at the verification resource profile its matrix row names and without UOR Atlas, which the Atlas jobs of the same run verify as the shards of the committed plan and a join at that profile, every process once and nothing across runs, and the other legs at the default, with no cache, path filter, or skipped recipe, and each job uploads its CI evidence; a plan job decides what a run is from the event alone: a draft pull request runs the rest leg and no other job, a ready pull request, a request, and a push to main run every job, and a push to main that merges a head whose tree it equals runs none when the whole gate passed on that head, and runs the whole gate when any job of that run did not pass, was skipped, or is missing. | §9.4 |
+| `RP-14` | `repository` | The normative CI job runs every recipe of just vv in parallel legs that each start from a clean checkout on the standard ubuntu-24.04 runner, each recipe exactly once but bdd, which runs once per part of its committed plan on the row that names the part, the examples leg at the verification resource profile its matrix row names and without UOR Atlas, which the Atlas jobs of the same run verify as the shards of the committed plan and a join at that profile, every process once and nothing across runs, and the other legs at the default, with no cache, path filter, or skipped recipe, and each job uploads its CI evidence; a plan job decides what a run is from the event alone: a draft pull request runs the rest leg and no other job, a ready pull request, a request, and a push to main or to a release line run every job, and a push to main or to a release line that merges a head whose tree it equals runs none when the whole gate passed on that head, and runs the whole gate when any job of that run did not pass, was skipped, or is missing. | §9.4 |
 | `RP-15` | `repository` | Every match over a closed semantic enum (the IR, the production realization calculus, and its Rust AST) that names at least five of the enum's variants names all of them, with no wildcard or binding catch-all arm, so that a variant added to the enum is a compile error in each Lean, LaTeX, validation, charge, and calculus consumer and never a silent fallback; the audit rejects a catch-all planted in each consumer group and fails when a consumer it must read has no such match left. | §27.2 |
 | `RP-16` | `repository` | The development container installs, at image build, exactly the Rust toolchain that rust-toolchain.toml pins and exactly the Lean toolchain that lean-toolchain pins and selects no other default, so that nothing is fetched when a session starts, and a Dockerfile that names another version of either, installs a second toolchain, or selects an unpinned default is refused. | §9.3 |
 | `CF-01` | `configuration-lock` | Project configuration accepts exactly the project/1 schema and rejects unknown or missing fields. | §10.1 |
@@ -10372,8 +10403,12 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-05` | `language-models` | A `text_generator` under the `greedy` policy names a prior tokenizer, a prior context window, a prior stateless model from `list uint32` to `list int` whose every runtime check its evidence discharges, a prior `uint32` stop token, and a `max_tokens` of at least one, and elaborates to the closed outcome types `End` (`stop`, `exhausted`) and `Failure` (`unknown_token`, `context_overflow`, `invalid_utf8`) and to a loop of at most `max_tokens` steps that takes the first maximum and no seed; its laws `bounded` (at most `max_tokens` tokens are generated) and `context_bounded` (the scorer is consulted only on contexts that fit the window) are generated and kernel-checked, the loop reaches each end and each failure in the kernel, a wrong claim about its output fails verification, a `max_tokens` of 0 is refused (`LLT4016`), and a member of another kind is refused (`LLT4006`). | §17.12 |
 | `LM-06` | `language-models` | Nondeterminism is an explicit contract: a `text_generator` under the `sample` policy draws through the closed `xorshift32` generator and `proportional` distribution only, takes its seed as an explicit `uint32` input and returns the next seed as an explicit output, so the same prompt and seed give the same output, which the kernel computes; it has the same generated and kernel-checked laws as a greedy generator, `xorshift32` agrees with the reference sequence, and a generator or distribution outside the closed members, a sample policy without one, or a seed stated on a policy is a schema violation (`LLT4001`). | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
+| `NS-01` | `normative-source` | The specification project is a language-1.2 workspace member whose every module is a semantic module in the authoring notation; it is canonical under fmt, locked, checked, and built, and under the pinned toolchain it verifies, which establishes that each record definition elaborates against its row structure and that the generated modules replay with the audited axioms, and does not establish that a row's text is the normative text, that identifiers are distinct, or that a projection equals its committed file, which NS-02 to NS-04 measure. | §17.21, §27.5 |
+| `NS-02` | `normative-source` | The conformance register, the diagnostic registry, the honesty ledger, and the authority register are modules of the specification project, and `model/ids.toml`, `model/errors.toml`, `model/ledger.toml`, `model/authorities.toml`, `CONFORMANCE.md`, and `ERRORS.md` regenerate from them byte-identically. | §26.1, §27.5 |
+| `NS-03` | `normative-source` | A difference between a model file and the projection of the specification project's modules, in either direction, fails the repository gate naming R1, a source edit that is not projected being such a difference, and the section references of the §31 table are checked against those the register modules carry. | §27.5, §27.6 |
+| `NS-04` | `normative-source` | The projector fails closed on a module of the specification project that holds a declaration kind, a term kind, a field, a name, a file, or a family it does not read, and on a duplicate identifier or code, and a plant of each is refused naming the file and, for a declaration, its position. | §17.21, §24.8 |
 
-**Total required capability IDs:** 434.
+**Total required capability IDs:** 438.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 
