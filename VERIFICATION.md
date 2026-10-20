@@ -15118,11 +15118,11 @@ The first measurement also ran `cargo test -p lexlean` in each setting, and
 both runs ended with a failure that is not the setting's: the tree was edited
 and a branch switched while they ran, and tests of the crate read the
 repository. Run again with the tree untouched, in a separate target directory
-and with `--config profile.dev.package.lexlean.opt-level=0`, all 245 tests
+and with `--config profile.dev.package.lexlean.opt-level=0`, all 246 tests
 pass; no test depends on where the target directory is. That clean run is
 also a measurement of the same kind: `tests/property.rs` (11 tests) takes
 1,369 s at `opt-level = 0` and 197 s at `opt-level = 1`, the rest of the
-crate's tests about 40 s in either.
+crate's tests about 40 s or less in either.
 
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
