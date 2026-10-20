@@ -9982,6 +9982,7 @@ run, and the defect removed. The observed lines are the case's own.
 | the host matrix does not wait for the plan | `repository.rs:1792`, `§8.3: the hosts are checked when the plan says the run is the whole gate` |
 | an Atlas job decides by the event itself | ``§9.4: `atlas-prefix` runs only when the plan says the run is the whole gate`` |
 | `.github/ci-plan.sh` is not executable (the mode it first had in git: the plan failed on a runner with `Permission denied` and skipped every job) | `§9.4: .github/ci-plan.sh is executable` |
+| `release/**` removed from the push trigger of `ci.yml` (a release line's pushes would run no gate) | `repository.rs:1839`, `§9.4: ci.yml runs on a push to `main` and to a release line` |
 
 The script's decisions are run on Linux, where the gate runs; on another host of the matrix the case reads the files and skips them. (The first full run of this change failed on Windows for that reason: the stand-in for `gh` was put on a `PATH` written with `:`, so the script found no run and, failing closed, chose the whole gate, which the case refused.)
 
