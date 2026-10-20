@@ -106,6 +106,9 @@ const AUTHORITIES: Table = Table {
         ("redistribution", Kind::Text, true),
         ("retrievalDate", Kind::Text, true),
         ("supersessionPolicy", Kind::Text, true),
+        // The "Subject" column of the §27.4 table: it has no place in
+        // `authorities.toml`, so the source alone carries it.
+        ("subject", Kind::Text, false),
     ],
 };
 
@@ -136,6 +139,8 @@ pub struct Projection {
     pub ledger: String,
     /// The bytes of `model/authorities.toml`.
     pub authorities: String,
+    /// The bytes of `SPEC.md`.
+    pub spec: String,
     /// Each register row's §31 "Primary specification" column, in register
     /// order.
     pub sections: Vec<(String, String)>,
@@ -144,8 +149,9 @@ pub struct Projection {
 impl Projection {
     /// The projected files as `(path under the repository root, bytes)`.
     #[must_use]
-    pub fn files(&self) -> [(&'static str, &str); 4] {
+    pub fn files(&self) -> [(&'static str, &str); 5] {
         [
+            ("SPEC.md", &self.spec),
             ("model/ids.toml", &self.ids),
             ("model/errors.toml", &self.errors),
             ("model/ledger.toml", &self.ledger),
@@ -163,17 +169,23 @@ impl Projection {
     ///
     /// Fails naming the first model file that differs or cannot be read.
     pub fn check_committed(&self, root: &Path) -> Result<(), ModelError> {
+        let mut differing = Vec::new();
         for (path, projected) in self.files() {
             let committed = std::fs::read_to_string(root.join(path))
                 .map_err(|e| ModelError::Io(root.join(path), e))?;
             if committed != projected {
-                return Err(ModelError::Inconsistent(format!(
-                    "R1: {path} differs from the projection of {SOURCE_DIR}: it is a generated view, \
-                     so edit the module and run `just model-write` (NS-03)"
-                )));
+                differing.push(path);
             }
         }
-        Ok(())
+        if differing.is_empty() {
+            return Ok(());
+        }
+        Err(ModelError::Inconsistent(format!(
+            "R1: {} differ{} from the projection of {SOURCE_DIR}: a generated view is never \
+             edited, so edit the module and run `just model-write` (NS-03)",
+            differing.join(", "),
+            if differing.len() == 1 { "s" } else { "" }
+        )))
     }
 
     /// `NS-03`: the first row whose "Primary specification" cell in the §31
@@ -620,6 +632,292 @@ fn families(module: &Module) -> Result<Vec<String>, ModelError> {
     Ok(families)
 }
 
+/// One item of the document, read from a definition of a chapter module.
+enum Item {
+    Heading(u64, u64, String),
+    Block(Block, Vec<String>),
+    Derived(String),
+    Continue(Vec<String>),
+}
+
+#[derive(Clone)]
+enum Block {
+    Paragraph,
+    Table,
+    Fence(String),
+}
+
+/// The constructors of `DocRows.Item` with the kind of each argument.
+const ITEMS: [(&str, &[Kind]); 6] = [
+    ("heading", &[Kind::Number, Kind::Number, Kind::Text]),
+    ("para", &[Kind::List]),
+    ("table", &[Kind::List]),
+    ("fence", &[Kind::Text, Kind::List]),
+    ("derived", &[Kind::Text]),
+    ("cont", &[Kind::List]),
+];
+
+/// The most lines one item holds: the notation reads a nested term to a fixed
+/// depth (SPEC.md §17.21.3), and a longer block continues in a `cont` item.
+pub const ITEM_LINES: usize = 60;
+
+fn item_type() -> Value {
+    json!({"arguments": [], "kind": "named", "member": {"module": "DocRows", "name": "Item"}})
+}
+
+/// `DocRows` declares the one inductive the chapters are made of.
+fn check_item_type(module: &Module) -> Result<(), ModelError> {
+    let list = type_json(Kind::List);
+    let expected = json!({
+        "constructors": [
+            {"fields": [{"kind": "nat"}, {"kind": "nat"}, {"kind": "string"}], "name": "heading"},
+            {"fields": [list], "name": "para"},
+            {"fields": [list], "name": "table"},
+            {"fields": [{"kind": "string"}, list], "name": "fence"},
+            {"fields": [{"kind": "string"}], "name": "derived"},
+            {"fields": [list], "name": "cont"},
+        ],
+        "kind": "inductive",
+        "name": "Item",
+        "parameters": [],
+        "type_parameters": [],
+    });
+    if module.declarations != [expected] {
+        return Err(module.refuse(
+            0,
+            "`DocRows` holds exactly the inductive `Item` the projector reads",
+        ));
+    }
+    Ok(())
+}
+
+/// A source cannot hold a raw percent sign (SPEC.md §12.1, `LLL1002`), and its
+/// formatter would write one back, so the document spells it as the fullwidth
+/// percent sign, which no text of the document uses.
+fn percent(text: &str) -> String {
+    text.replace('\u{ff05}', "%")
+}
+
+fn read_item(module: &Module, index: usize) -> Result<Item, ModelError> {
+    let (name, body) = module.definition(index, &item_type())?;
+    if name != format!("i{:04}", index + 1) {
+        return Err(module.refuse(
+            index,
+            &format!("items are numbered in order: expected `i{:04}`", index + 1),
+        ));
+    }
+    let object = body
+        .as_object()
+        .filter(|object| {
+            exact(
+                object,
+                &["arguments", "constructor", "kind", "type_arguments"],
+            ) && object["kind"] == "constructor"
+                && object["type_arguments"] == json!([])
+        })
+        .ok_or_else(|| module.refuse(index, "the body is not a constructor of `DocRows.Item`"))?;
+    let constructor = object["constructor"]
+        .as_object()
+        .filter(|constructor| constructor["module"] == "DocRows")
+        .and_then(|constructor| constructor["name"].as_str())
+        .and_then(|name| name.strip_prefix("Item."))
+        .and_then(|name| ITEMS.iter().find(|(known, _)| *known == name))
+        .ok_or_else(|| module.refuse(index, "the constructor is not one of `DocRows.Item`"))?;
+    let arguments = object["arguments"]
+        .as_array()
+        .filter(|arguments| arguments.len() == constructor.1.len())
+        .ok_or_else(|| module.refuse(index, "the constructor has the wrong number of arguments"))?;
+    let mut values = Vec::new();
+    for (argument, kind) in arguments.iter().zip(constructor.1) {
+        let value = literal(argument, *kind).ok_or_else(|| {
+            module.refuse(
+                index,
+                "an argument is not a literal of its constructor's type",
+            )
+        })?;
+        values.push(match value {
+            Lit::Text(text) => Lit::Text(percent(&text)),
+            Lit::List(lines) => Lit::List(lines.iter().map(|line| percent(line)).collect()),
+            other => other,
+        });
+    }
+    let lines = |lit: &Lit| match lit {
+        Lit::List(lines) if lines.len() <= ITEM_LINES => Some(lines.clone()),
+        _ => None,
+    };
+    let refuse_lines = || {
+        module.refuse(
+            index,
+            &format!(
+                "an item holds at most {ITEM_LINES} lines; the rest continues in a `cont` item"
+            ),
+        )
+    };
+    Ok(match (constructor.0, values.as_slice()) {
+        ("heading", [Lit::Number(level), Lit::Number(gap), Lit::Text(text)]) => {
+            if !(1..=4).contains(level) {
+                return Err(module.refuse(index, "a heading has a level from 1 to 4"));
+            }
+            Item::Heading(*level, *gap, text.clone())
+        }
+        ("para", [lit]) => Item::Block(Block::Paragraph, lines(lit).ok_or_else(refuse_lines)?),
+        ("table", [lit]) => Item::Block(Block::Table, lines(lit).ok_or_else(refuse_lines)?),
+        ("fence", [Lit::Text(info), lit]) => Item::Block(
+            Block::Fence(info.clone()),
+            lines(lit).ok_or_else(refuse_lines)?,
+        ),
+        ("derived", [Lit::Text(name)]) => Item::Derived(name.clone()),
+        ("cont", [lit]) => Item::Continue(lines(lit).ok_or_else(refuse_lines)?),
+        _ => return Err(module.refuse(index, "the constructor's arguments are not read")),
+    })
+}
+
+/// The lines a `derived` item stands for, from the register and the registry.
+fn derived(
+    name: &str,
+    register: &[Vec<Lit>],
+    errors: &[Vec<Lit>],
+    authorities: &[Vec<Lit>],
+) -> Option<Vec<String>> {
+    let text = |lit: &Lit| match lit {
+        Lit::Text(text) => text.clone(),
+        _ => String::new(),
+    };
+    Some(match name {
+        "register-table" => {
+            let mut lines = vec![
+                "| ID | Suite | Normative statement | Primary specification |".to_owned(),
+                "|---|---|---|---|".to_owned(),
+            ];
+            for row in register {
+                lines.push(format!(
+                    "| `{}` | `{}` | {} | {} |",
+                    text(&row[0]),
+                    text(&row[2]),
+                    text(&row[3]),
+                    text(&row[4])
+                ));
+            }
+            lines
+        }
+        "error-table" => {
+            let mut lines = vec!["| Code | Meaning |".to_owned(), "|---|---|".to_owned()];
+            for row in errors {
+                lines.push(format!("| `{}` | {} |", text(&row[0]), text(&row[4])));
+            }
+            lines
+        }
+        "authority-table" => {
+            let mut lines = vec![
+                "| Authority ID | Subject |".to_owned(),
+                "|---|---|".to_owned(),
+            ];
+            for row in authorities {
+                let last = row.len() - 1;
+                lines.push(format!("| `{}` | {} |", text(&row[0]), text(&row[last])));
+            }
+            lines
+        }
+        "total-ids" => vec![format!(
+            "**Total required capability IDs:** {}.",
+            register.len()
+        )],
+        _ => return None,
+    })
+}
+
+/// The chapter modules named by `DocOrder`, in order.
+fn chapter_list(module: &Module) -> Result<Vec<String>, ModelError> {
+    if module.declarations.len() != 1 {
+        return Err(module.refuse(
+            module.declarations.len().min(1),
+            "`DocOrder` holds exactly `documentChapters`",
+        ));
+    }
+    let (name, body) = module.definition(0, &type_json(Kind::List))?;
+    let Some(Lit::List(chapters)) =
+        literal(body, Kind::List).filter(|_| name == "documentChapters")
+    else {
+        return Err(module.refuse(0, "expected `documentChapters`, a list of text"));
+    };
+    let mut unique = std::collections::BTreeSet::new();
+    for chapter in &chapters {
+        let shaped = chapter
+            .strip_prefix("Chapter")
+            .is_some_and(|digits| digits.len() == 2 && digits.bytes().all(|b| b.is_ascii_digit()));
+        if !shaped || !unique.insert(chapter.clone()) {
+            return Err(module.refuse(
+                0,
+                &format!("`{chapter}` is not a chapter module named `Chapter` and two digits, listed once"),
+            ));
+        }
+    }
+    Ok(chapters)
+}
+
+/// SPEC.md, rendered from the chapter modules and the registers.
+fn document(
+    root: &Path,
+    chapters: &[String],
+    register: &[Vec<Lit>],
+    errors: &[Vec<Lit>],
+    authorities: &[Vec<Lit>],
+) -> Result<String, ModelError> {
+    check_item_type(&Module::load(root, "DocRows")?)?;
+    let mut lines: Vec<String> = Vec::new();
+    for chapter in chapters {
+        let module = Module::load(root, chapter)?;
+        // The block a `cont` item continues, and whether a fence is still open.
+        let mut open: Option<(Block, usize)> = None;
+        let close = |lines: &mut Vec<String>, open: &mut Option<(Block, usize)>| {
+            if let Some((Block::Fence(_), _)) = open.take() {
+                lines.push("```".to_owned());
+            }
+        };
+        for index in 0..module.declarations.len() {
+            match read_item(&module, index)? {
+                Item::Heading(level, gap, text) => {
+                    close(&mut lines, &mut open);
+                    lines.extend((0..gap).map(|_| String::new()));
+                    lines.push(format!(
+                        "{} {text}",
+                        "#".repeat(usize::try_from(level).unwrap_or(0))
+                    ));
+                }
+                Item::Block(block, body) => {
+                    close(&mut lines, &mut open);
+                    lines.push(String::new());
+                    if let Block::Fence(info) = &block {
+                        lines.push(format!("```{info}"));
+                    }
+                    lines.extend(body);
+                    open = Some((block, index));
+                }
+                Item::Derived(name) => {
+                    close(&mut lines, &mut open);
+                    let expanded =
+                        derived(&name, register, errors, authorities).ok_or_else(|| {
+                            module.refuse(index, &format!("`{name}` is not a derived block"))
+                        })?;
+                    lines.push(String::new());
+                    lines.extend(expanded);
+                }
+                Item::Continue(body) => {
+                    if open.is_none() {
+                        return Err(module
+                            .refuse(index, "a `cont` item follows a paragraph, table or fence"));
+                    }
+                    lines.extend(body);
+                }
+            }
+        }
+        close(&mut lines, &mut open);
+    }
+    let mut text = lines.join("\n");
+    text.push('\n');
+    Ok(text)
+}
+
 /// Project the specification project's register modules to the model files.
 ///
 /// # Errors
@@ -661,6 +959,7 @@ pub fn project(root: &Path) -> Result<Projection, ModelError> {
         }
     }
 
+    let chapter_names = chapter_list(&Module::load(root, "DocOrder")?)?;
     let known: std::collections::BTreeSet<String> = [
         "Rows",
         "Headers",
@@ -668,10 +967,13 @@ pub fn project(root: &Path) -> Result<Projection, ModelError> {
         "Errors",
         "Ledger",
         "Authorities",
+        "DocRows",
+        "DocOrder",
     ]
     .into_iter()
     .map(str::to_owned)
     .chain(families.iter().map(|family| format!("Ids{family}")))
+    .chain(chapter_names.iter().cloned())
     .collect();
     let directory = root.join(SOURCE_DIR);
     let listing =
@@ -694,7 +996,9 @@ pub fn project(root: &Path) -> Result<Projection, ModelError> {
         <[_; 4]>::try_from(headers).map_err(|_| {
             ModelError::Inconsistent("R1: Headers does not hold four headers (NS-04)".to_owned())
         })?;
-    Ok(Projection {
+    let spec = document(root, &chapter_names, &register, &errors, &authorities)?;
+    let projection = Projection {
+        spec,
         ids: emit(&ids_header, &ids_spec, &IDS, &register),
         errors: emit(&errors_header, &errors_spec, &ERRORS, &errors),
         ledger: emit(&ledger_header, &ledger_spec, &LEDGER, &ledger),
@@ -705,7 +1009,18 @@ pub fn project(root: &Path) -> Result<Projection, ModelError> {
             &authorities,
         ),
         sections,
-    })
+    };
+    // The chapters spell a percent sign as U+FF05, so a projection that holds
+    // one is ambiguous: a register statement carrying it would reach SPEC.md
+    // unmapped. Refused here, every time, not just when the text was converted.
+    for (path, text) in projection.files() {
+        if text.contains('\u{ff05}') {
+            return Err(ModelError::Inconsistent(format!(
+                "R1: {path} would hold U+FF05, which the chapters reserve to spell a percent sign (NS-05)"
+            )));
+        }
+    }
+    Ok(projection)
 }
 
 #[cfg(test)]

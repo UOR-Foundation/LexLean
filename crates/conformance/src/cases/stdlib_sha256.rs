@@ -127,7 +127,7 @@ fn stated(member: &str, md: &[u8]) -> Json {
     serde_json::to_value(expected).expect("a value is JSON")
 }
 
-fn unhex(text: &str) -> Vec<u8> {
+pub(super) fn unhex(text: &str) -> Vec<u8> {
     assert!(text.len().is_multiple_of(2), "even hexadecimal: {text}");
     (0..text.len())
         .step_by(2)
@@ -138,7 +138,7 @@ fn unhex(text: &str) -> Vec<u8> {
 /// The `(message, digest)` pairs of one CAVP response file: `Len` is the
 /// message length in bits, `Msg` the message (`00` for the empty one), `MD`
 /// the digest.
-fn parse_rsp(text: &str) -> Vec<(Vec<u8>, Vec<u8>)> {
+pub(super) fn parse_rsp(text: &str) -> Vec<(Vec<u8>, Vec<u8>)> {
     let mut out = Vec::new();
     let mut length: Option<usize> = None;
     let mut message: Option<Vec<u8>> = None;

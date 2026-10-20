@@ -1,0 +1,617 @@
+\begin{lexlean}{Chapter10}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{spec.titles@1.0.0}
+\importmodule{DocRows}
+\title{Project files}
+\begin{semanticmodule}
+definition{
+  name: i0001,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [2, 1, "10. Project files"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0002,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "A LexLean project contains:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0003,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- one `lexlean.toml`;" (cons "- one generated `lexlean.lock`;" (cons "- one `lean-toolchain`;" (cons "- a valid Lake workspace;" (cons "- one or more `.lex.tex` modules under configured source roots;" (cons "- zero or more local lexicon packages;" (cons "- in language 1.2, zero or more source packages, member projects of the project's workspace that it imports modules from (§10.5);" (cons "- `.lexlean/`, reserved for generated and verified artifacts." (nil String)))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0004,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "No project file may override the language grammar, backend, verifier sequence, axiom-audit parser, source-map format, or verified artifact set." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0005,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "10.1 `lexlean.toml`"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0006,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "`lexlean.toml` is UTF-8, NFC, LF-terminated TOML. Comments are forbidden. Unknown fields are errors. Every field below is required except `[pdf]`." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0007,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "toml",
+      (cons "spec = \"lexlean/project/1\"" (cons "name = \"example-project\"" (cons "language = \"1.0\"" (cons "module_prefix = \"ExampleProject\"" (cons "source_roots = [\"src\"]" (cons "entrypoints = [\"src/Main.lex.tex\"]" (cons "build_root = \".lexlean\"" (cons "lockfile = \"lexlean.lock\"" (cons "lean_workspace = \".\"" (cons "lean_toolchain = \"leanprover/lean4:v4.32.1\"" (cons "" (cons "[[lexicon_source]]" (cons "package = \"lexlean.std.nat\"" (cons "kind = \"builtin\"" (cons "" (cons "[limits]" (cons "max_file_bytes = 4194304" (cons "max_total_source_bytes = 67108864" (cons "max_primitive_atoms = 2000000" (cons "max_token_lattice_edges = 4000000" (cons "max_parse_states = 4000000" (cons "max_ir_nodes = 2000000" (cons "max_scope_depth = 1024" (cons "max_import_depth = 128" (cons "max_diagnostics = 256" (cons "max_child_output_bytes = 16777216" (cons "child_timeout_ms = 300000" (nil String))))))))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0008,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [4, 1, "Canonical project serialization"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0009,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The parsed project has one canonical TOML serialization used by `project_config_sha256` and `source_id`. It writes:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0010,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "1. scalar top-level keys in the order shown by the schema example;" (cons "2. `lexicon_source` tables sorted by `package`, with keys in the order `package`, `kind`, then kind-specific fields;" (cons "3. language 1.2 only: `artifact_source` tables sorted by `sha256`, with keys in the order `sha256`, `path`, omitted entirely when there are none, so a project without artifacts keeps its bytes;" (cons "4. language 1.2 only: `source_package` tables sorted by `package`, with keys in the order `package`, `version`, `kind`, `path`, omitted entirely when there are none, so a project without source packages keeps its bytes;" (cons "5. `[limits]` with keys in the order shown;" (cons "6. optional `[pdf]` last, with keys in the order shown;" (cons "7. basic quoted strings, decimal integers, arrays with comma-space separators, LF line endings, and one final LF;" (cons "8. no comments, blank leading lines, or trailing spaces." (nil String)))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0011,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Input whitespace does not affect this canonical serialization. A project may be semantically valid before formatting, but `lexlean lock --check` and repository examples require canonical bytes." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0012,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [4, 1, "Project-field rules"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0013,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "| Field | Rule |" (cons "|---|---|" (cons "| `spec` | Exactly `lexlean/project/1`. |" (cons "| `name` | Lower-case ASCII package identifier: `[a-z][a-z0-9-]{0,62}`. |" (cons "| `language` | Language version: `1.0`, `1.1`, or `1.2`. |" (cons "| `module_prefix` | One or more dot-separated ASCII Lean-name segments matching `[A-Z][A-Za-z0-9_]*`, the first of which is none of `Init`, `Std`, `Lean`, `Lake`, `LakeMain`, `LeanChecker`, `LeanIR` (module roots of the pinned toolchain, beside which a module of the project would be found, and which `leanchecker` replays against), `IO` (a namespace of Lean's prelude, which generated Lean never writes: the audit of §18.2 rejects it), or one of the roots this compiler ships or generates (`LexLeanAudit`, `LexLeanCollections`, `LexLeanCore`, `LexLeanExtract`, `LexLeanIdentityProbe`, `LexLeanLaws`, `LexLeanModels`, `LexLeanPreserve`, `LexLeanProbe`, `LexLeanReasoning`, `LexLeanTokenProbe`, which `conformance` checks against the roots of the shipped certificate library, `LexLeanTarget`, `LexLeanPreservation`, and `LexLeanRuntime` excepted). A prefix that begins with one is `LLC0101`, the fixtures `module-prefix-reserved` and `module-prefix-shipped-root`. A prefix that begins with `LexLeanTarget`, `LexLeanPreservation`, or `LexLeanRuntime`, the roots of the calculus modules, of the proof library the certificates import, and of the runtime modules every generated language-1.2 module that uses the runtime imports (the repository's `compiler` project uses the first, the library's own project, §17.17, the second, and the runtime's own project, §17.12, the third), is accepted for a project without a production root, and `LLT4005` for a module with one (fixture `module-prefix-target-production`): its certificates would import the library's module for the project's. |" (cons "| `source_roots` | Nonempty, unique, sorted project-relative directories. |" (cons "| `entrypoints` | Nonempty, unique, sorted project-relative `.lex.tex` files beneath a source root. |" (cons "| `build_root` | Project-relative directory; must resolve within the project and must not be a symlink. |" (cons "| `lockfile` | Project-relative regular-file path; exactly one lock file. |" (cons "| `lean_workspace` | Project-relative directory containing `lean-toolchain` and a Lake configuration. |" (cons "| `lean_toolchain` | Exactly the language-1.0 toolchain string. |" (cons "| `lexicon_source` | Unique by package and sorted by package identifier. |" (cons "| `artifact_source` | Language 1.2 only (another language rejects the field, `LLC0101`): optional `[[artifact_source]]` tables `sha256 = \"<64 lowercase hex>\"`, `path = \"<project-relative file>\"`, sorted by `sha256`, unique by digest and by path, never beneath the build root. Each names the content-addressed bytes of one model artifact (§17.12); `check`, `build`, `fmt`, and `verify` read the file, confined (§25.1), and require its SHA-256 to equal the configured digest (`LLR3007`). Artifacts are never fetched. |" (cons "| `source_package` | Language 1.2 only (another language rejects the field, `LLC0101`): optional `[[source_package]]` tables `package = \"<identifier>\"`, `version = \"<reader's string>\"`, `kind = \"path\"`, `path = \"<workspace-relative member directory>\"`, sorted and unique by `package`, with `package` an identifier of the form of `name` and `version` a string of at most 64 ASCII letters, digits, `.`, `+`, and `-` that begins with a letter or digit. `path` is resolved from the workspace root, not the project's (§10.5); a kind other than `path` is `LLC0101`, and a path that is absolute or has a `..` segment escapes the workspace and is `LLS8001`. |" (cons "| `limits` | Every listed positive integer is required. There are no hidden compiler defaults. |" (nil String)))))))))))))))))
+    ],
+    constructor: DocRows::Item.table,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0014,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [4, 1, "Lexicon-source forms"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0015,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "A source is exactly one of:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0016,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "toml",
+      (cons "[[lexicon_source]]" (cons "package = \"lexlean.std.nat\"" (cons "kind = \"builtin\"" (nil String))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0017,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "toml",
+      (cons "[[lexicon_source]]" (cons "package = \"example.algebra\"" (cons "kind = \"path\"" (cons "path = \"glossary/example.algebra\"" (nil String)))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0018,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "toml",
+      (cons "[[lexicon_source]]" (cons "package = \"example.algebra\"" (cons "kind = \"git\"" (cons "url = \"https://github.com/example/algebra-lexicon.git\"" (cons "revision = \"0123456789abcdef0123456789abcdef01234567\"" (cons "subdirectory = \"lexicon\"" (nil String)))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0019,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Rules:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0020,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- `builtin` accepts no additional fields." (cons "- `path` requires `path` and accepts no URL or revision." (cons "- `git` requires HTTPS URL, exact 40-lowercase-hex commit, and a relative `subdirectory`; it accepts no branch, tag, or mutable reference." (cons "- package IDs match `[a-z][a-z0-9]*(\\.[a-z][a-z0-9-]*)*`." (cons "- source order does not create shadowing." (cons "- path packages and cached Git packages are hashed as described in §21.4." (cons "- `check`, `build`, `fmt`, and `verify` never fetch a missing Git source." (nil String))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0021,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "10.2 Explicit resource policy"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0022,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The values under `[limits]` are semantic inputs to acceptance. `max_total_source_bytes` counts normalized selected modules, loaded lexicon manifests and entries, configuration, lock bytes, and, in language 1.2, the bytes of every configured model artifact and, once more, the length of every artifact declaration, which materializes its bytes again (§17.12 rule 2); a single artifact is also bounded by `max_file_bytes`. Exceeding one produces `LLS8002` and identifies:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0023,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- the limit name;" (cons "- configured value;" (cons "- observed value, when safely known;" (cons "- the source or phase involved." (nil String)))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0024,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The compiler MUST stream or incrementally inspect configuration and lock data so that it does not require a hidden pre-configuration size limit. Platform allocation failure is reported as an environment failure, not misrepresented as a language error." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0025,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "10.3 Optional PDF provider"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0026,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "When `[pdf]` is absent, no PDF is requested or emitted. When present, all fields are required:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0027,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "toml",
+      (cons "[pdf]" (cons "mode = \"external\"" (cons "program = \"tools/tectonic\"" (cons "program_sha256 = \"64-lowercase-hex-digits\"" (cons "version_argv = [\"--version\"]" (cons "version_stdout_sha256 = \"64-lowercase-hex-digits\"" (cons "compile_argv = [\"--outdir\", \"{out_dir}\", \"{input}\"]" (cons "output = \"{stem}.pdf\"" (cons "resources = []" (nil String))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0028,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Only `mode = \"external\"` exists in language 1.0. The protocol is specified in §19." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0029,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "10.4 Lake workspace pin"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0030,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The project `lean-toolchain` MUST contain the exact toolchain string. `lexlean lock` records hashes of:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0031,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- `lean-toolchain`;" (cons "- the one Lake configuration, either `lakefile.toml` or `lakefile.lean`;" (cons "- `lake-manifest.json`, when present." (nil String))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0032,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "If both Lake configuration forms exist, locking fails. Verification requires the recorded files to match and requires all manifest dependencies to be locally available." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0033,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "10.5 Source packages"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0034,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "A language-1.2 project imports the modules of another project, a *source package*, without copying them. A source package is a project: its own `lexlean.toml` names its `module_prefix`, its `source_roots`, its language (1.2), and its own source packages, and `entrypoints` may name any of its modules, since a library has no distinguished one. Its modules keep its prefix: a module `Text` of a package whose prefix is `LexLeanStd` is the Lean module `LexLeanStd.Text` in every project that imports it. Nothing is fetched: a package is read from a directory of the workspace, `kind` is `path` and nothing else, and a package of any other kind is refused rather than treated as a later extension." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0035,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "**The workspace.** Until now every read of a project lay inside the project (§25.1). A package lives beside the projects that use it, so one widening is made, stated narrowly. An optional `lexlean-workspace.toml` at the root of a repository lists the member project directories:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0036,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "toml",
+      (cons "spec = \"lexlean/workspace/1\"" (cons "members = [\"app\", \"base\", \"lib\"]" (nil String)))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0037,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "`members` are unique, sorted, workspace-relative directories (no `..`, no leading separator), and the file carries no comment. The workspace of a project is the nearest proper ancestor of its canonical root that holds the file. A project that declares a source package must be a member of its workspace, and a `source_package` path must name a member, resolved from the workspace root. A project outside any workspace, a project its workspace does not list, a path that names no member, and a malformed workspace file are `LLC0108`: a stray file higher in the tree grants nothing to a project it does not list. No path component from the workspace root to a package may be a symlink, and a path with a `..` segment is an escape; both are `LLS8001`. Of a package, only its `lexlean.toml` and the files beneath its `source_roots` are read, and a symlink or a special file among them is `LLS8001`. A project that declares no source package reads nothing outside its own root, and has no workspace." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0038,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "**The manifest of a package** declares language 1.2, no `artifact_source`, no `[pdf]`, and only builtin `lexicon_source`s: those would read files outside what the pin covers, or glossaries the importing project does not have. A violation is `LLC0101`. The glossaries a package module uses (`\\useglossary`) are resolved in the closure of the importing project, so a package that uses one the project does not load fails `LLR3001`." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0039,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "**The pin.** `lexlean.lock` (§11) carries one `[[source_package]]` row for every package in the transitive closure of the project's declarations, sorted by `id`: the identifier, the declared `version`, `kind`, the workspace-relative `source`, the package's `module_prefix`, `tree_sha256` over the package's `lexlean.toml` and every regular file beneath its `source_roots` (the tree digest of §11.5, over package-relative paths in bytewise order), `manifest_sha256` over its `lexlean.toml`, and `imports`, the `id@version` of the packages its own manifest declares, sorted. The digests are recomputed by every command: `lock --check`, `check`, `fmt`, `build`, and `verify` read the package and require the lock's row to be the package as it now is. A changed byte, a changed version, source, prefix, or declared package is `LLC0105`, naming the package and the locked and the found values, before anything is linked. A row for a package the closure of the project's declarations does not reach is `LLC0106`, and so is one identifier with two sources. `lexlean lock` writes the rows, and a package that depends on itself or on the importing project is `LLR3003`." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0040,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Two limits are deliberate. `version` is required in a `[[source_package]]` table because a changed version must be refused and the pin is the digest, so there is nowhere else to write it; and a package manifest declares only builtin `lexicon_source`s and no `artifact_source` or `[pdf]`, because those would name files outside the manifest and source roots that the pin covers. Each is a limit, not an omission; lifting one would be a change to the pin and its own register row." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0041,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "**One source per module prefix.** The importing project's prefix and each package's must not be equal, and none may lie beneath another (`a.b` is beneath `a`); two sources that claim a prefix are `LLC0107`." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0042,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "**Closed imports.** A module of the importing project may import modules of the project, written as before, and modules of the packages the project declares itself, written with the package's prefix: `\\importmodule{LexLeanStd.Text}`. A module of a package may import the modules of that package, written as inside the package, and the modules of the packages its own manifest declares, written with their prefixes. A module of a package the importing scope does not declare, though the closure holds it, is `LLR3009`; one no source provides is `LLR3005`; a name both the scope's own modules and a declared package provide is `LLC0107`; a cycle of packages or of modules is `LLR3003`. The package's modules that no import reaches are not linked. Inside the linked project a package module is named by its Lean name, `LexLeanStd.Text`, which is its key in every record; its references to a sibling are read under that key." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0043,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "**Production.** A package's `production:` clauses make roots of the package project, built when the package is built. Imported by another project, a package definition is an ordinary definition: no module of a package is analysed for production roots, the certificates are those of the closure of the importing project's roots, and the package's own certified roots are not republished by the importer. There is no re-export." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0044,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "**Verification and identity.** The modules of every package the project reaches are generated, elaborated, replayed with `leanchecker`, and audited as part of the importing project's `verify`, under the package's prefix. The build manifest's module rows, the semantic snapshot's modules, and the attestation (`origins`, by Lean module) name the package as their `origin`; the document of a package module is linked and rendered like any other, and `fmt` never rewrites a package file, which is the package's own. Nothing crosses runs (§9.4): there is no cache of a built package. The source ID (§21.3) hashes the canonical lock, and so the pins, and the bytes of every linked package module. `source_package` and the lock rows are part of the language-1.2 schemas, so they move the language-1.2 compiler-semantics ID (§21.2) once; languages 1.0 and 1.1 are unchanged, and so is a language-1.2 project that declares no source package, apart from that identity." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0045,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "---" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

@@ -1,0 +1,144 @@
+\begin{lexlean}{Chapter07}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{spec.titles@1.0.0}
+\importmodule{DocRows}
+\title{Repository layout}
+\begin{semanticmodule}
+definition{
+  name: i0001,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [2, 1, "7. Repository layout"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0002,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The completed repository MUST have this layout. Additional files are allowed only when they have a defined role and are included by the repository audits; the tracked tree MUST NOT hold any `CACHEDIR.TAG` file or any path component the repository walkers skip (`target`, `.git`, `.lexlean`, `.lake`, `node_modules`, or `expected` outside the sanctioned `expected/` oracle directories under `bootstrap/`, `compiler/`, `stdlib/`, `examples/<example>/`, `tests/negative/<case>/`, `tests/tooling/<suite>/<case>/`, and `tests/fixtures/<suite>/<case>/`)." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0003,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "text",
+      (cons "." (cons "├── .cargo/" (cons "│   └── config.toml" (cons "├── .devcontainer/" (cons "│   └── devcontainer.json" (cons "├── .github/" (cons "│   └── workflows/" (cons "│       ├── ci.yml" (cons "│       ├── honesty.yml" (cons "│       └── reproducibility.yml" (cons "├── AGENTS.md" (cons "├── CONFORMANCE.md" (cons "├── ERRORS.md" (cons "├── README.md" (cons "├── SPEC.md" (cons "├── VERIFICATION.md" (cons "├── Cargo.lock" (cons "├── Cargo.toml" (cons "├── Justfile" (cons "├── LICENSE-APACHE" (cons "├── LICENSE-MIT" (cons "├── clippy.toml" (cons "├── deny.toml" (cons "├── lean-toolchain" (cons "├── rust-toolchain.toml" (cons "├── rustfmt.toml" (cons "├── api/" (cons "│   └── schemas/" (cons "│       ├── production-replay.schema.json" (cons "│       ├── production-request.schema.json" (cons "│       ├── production-result.schema.json" (cons "│       ├── target-descriptor.schema.json" (cons "│       ├── target-descriptors.schema.json" (cons "│       └── versions.toml" (cons "├── compiler/" (cons "│   ├── certificates/" (cons "│   ├── expected/" (cons "│   ├── fixtures/" (cons "│   ├── gnaf/" (cons "│   ├── gnaf.manifest.json" (cons "│   ├── lake-manifest.json" (cons "│   ├── lakefile.toml" (cons "│   ├── lean-toolchain" (cons "│   ├── lexlean.lock" (cons "│   ├── lexlean.toml" (cons "│   ├── proofs/" (cons "│   ├── rust/" (cons "│   └── src/" (cons "├── crates/" (cons "│   ├── lexlean/" (cons "│   │   ├── Cargo.toml" (cons "│   │   └── src/" (cons "│   │       ├── api.rs" (cons "│   │       ├── artifact/" (cons "│   │       │   ├── canonical_json.rs" (cons "│   │       │   ├── content_id.rs" (cons "│   │       │   ├── manifest.rs" (cons "│   │       │   ├── mod.rs" (cons "│   │       │   └── source_map.rs" (cons "│   │       ├── backend/" (nil String)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0004,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "│   │       │   ├── latex.rs" (cons "│   │       │   ├── lean.rs" (cons "│   │       │   ├── mod.rs" (cons "│   │       │   └── pdf.rs" (cons "│   │       ├── calculus/" (cons "│   │       │   ├── check.rs" (cons "│   │       │   ├── interp.rs" (cons "│   │       │   ├── library.rs" (cons "│   │       │   ├── mod.rs" (cons "│   │       │   ├── realization.rs" (cons "│   │       │   ├── rust/" (cons "│   │       │   │   ├── ast.rs" (cons "│   │       │   │   ├── lower.rs" (cons "│   │       │   │   ├── mod.rs" (cons "│   │       │   │   ├── package.rs" (cons "│   │       │   │   ├── runtime.rs" (cons "│   │       │   │   └── validate.rs" (cons "│   │       │   └── term.rs" (cons "│   │       ├── cli.rs" (cons "│   │       ├── config.rs" (cons "│   │       ├── diagnostic.rs" (cons "│   │       ├── elaborate/" (cons "│   │       │   ├── definitions.rs" (cons "│   │       │   ├── expressions.rs" (cons "│   │       │   ├── mod.rs" (cons "│   │       │   ├── proofs.rs" (cons "│   │       │   └── resolve.rs" (cons "│   │       ├── error.rs" (cons "│   │       ├── fmt.rs" (cons "│   │       ├── gnaf.rs" (cons "│   │       ├── grammar/" (cons "│   │       │   ├── chart.rs" (cons "│   │       │   ├── math.rs" (cons "│   │       │   ├── mod.rs" (cons "│   │       │   ├── proposition.rs" (cons "│   │       │   ├── proof.rs" (cons "│   │       │   └── structural.rs" (cons "│   │       ├── ir/" (cons "│   │       │   ├── declaration.rs" (cons "│   │       │   ├── document.rs" (cons "│   │       │   ├── mod.rs" (cons "│   │       │   ├── proof.rs" (cons "│   │       │   └── term.rs" (cons "│   │       ├── lexicon/" (cons "│   │       │   ├── entry.rs" (cons "│   │       │   ├── lre.rs" (cons "│   │       │   ├── lse.rs" (cons "│   │       │   ├── mod.rs" (cons "│   │       │   ├── package.rs" (cons "│   │       │   └── resolve.rs" (cons "│   │       ├── lib.rs" (cons "│   │       ├── link.rs" (cons "│   │       ├── lock.rs" (cons "│   │       ├── main.rs" (cons "│   │       ├── project.rs" (cons "│   │       ├── source/" (cons "│   │       │   ├── atom.rs" (cons "│   │       │   ├── coverage.rs" (cons "│   │       │   ├── mod.rs" (cons "│   │       │   ├── normalize.rs" (nil String)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.cont,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0005,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "│   │       │   └── scan.rs" (cons "│   │       └── verify/" (cons "│   │           ├── axiom.rs" (cons "│   │           ├── child.rs" (cons "│   │           ├── leanchecker.rs" (cons "│   │           ├── mod.rs" (cons "│   │           ├── toolchain.rs" (cons "│   │           └── workspace.rs" (cons "│   ├── model/" (cons "│   └── conformance/" (cons "├── examples/" (cons "│   └── nat-add-zero/" (cons "├── features/" (cons "│   └── suites/" (cons "├── language/" (cons "│   ├── bootstrap.toml" (cons "│   ├── bootstrap-1.1.toml" (cons "│   ├── bootstrap-1.2.toml" (cons "│   ├── semantics.toml" (cons "│   ├── semantics-1.1.toml" (cons "│   ├── semantics-1.2.toml" (cons "│   ├── production-1.2.toml" (cons "│   ├── renderer-tokens.toml" (cons "│   ├── lcnf-1.2/" (cons "│   │   └── tooling/" (cons "│   ├── preservation-1.2/" (cons "│   │   ├── library.toml" (cons "│   │   ├── library/" (cons "│   │   └── modules/" (cons "│   ├── core/" (cons "│   │   ├── lexicon.toml" (cons "│   │   └── entries/" (cons "│   ├── core-1.1/" (cons "│   │   ├── lexicon.toml" (cons "│   │   └── entries/" (cons "│   ├── core-1.2/" (cons "│   │   ├── lexicon.toml" (cons "│   │   └── entries/" (cons "│   └── std/" (cons "│       ├── bool-1.1/" (cons "│       ├── bool-1.2/" (cons "│       ├── int/" (cons "│       ├── int-1.1/" (cons "│       ├── int-1.2/" (cons "│       ├── nat/" (cons "│       ├── nat-1.1/" (cons "│       └── nat-1.2/" (cons "├── model/" (cons "│   ├── authorities/" (cons "│   ├── authorities.toml" (cons "│   ├── errors.toml" (cons "│   ├── ids.toml" (cons "│   └── ledger.toml" (cons "├── oracle/" (cons "│   ├── known-differences.toml" (cons "│   ├── known-non-overlap.toml" (cons "│   └── lean4-prod.toml" (cons "├── schemas/" (cons "│   ├── attestation.schema.json" (cons "│   ├── attestation-v2.schema.json" (nil String)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.cont,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0006,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "│   ├── build-manifest.schema.json" (cons "│   ├── build-manifest-v2.schema.json" (cons "│   ├── compiler-input.schema.json" (cons "│   ├── core-module.schema.json" (cons "│   ├── core-module-v2.schema.json" (cons "│   ├── coverage.schema.json" (cons "│   ├── diagnostic.schema.json" (cons "│   ├── entry.schema.json" (cons "│   ├── gnaf-certificate-fixture.schema.json" (cons "│   ├── gnaf-certificate.schema.json" (cons "│   ├── gnaf-fixture.schema.json" (cons "│   ├── gnaf-request.schema.json" (cons "│   ├── lexicon.schema.json" (cons "│   ├── lexicon-v2.schema.json" (cons "│   ├── lock.schema.json" (cons "│   ├── lock-1.1.schema.json" (cons "│   ├── lock-v2.schema.json" (cons "│   ├── preservation.schema.json" (cons "│   ├── production-eligibility.schema.json" (cons "│   ├── project.schema.json" (cons "│   ├── project-v2.schema.json" (cons "│   ├── rust-package.schema.json" (cons "│   ├── rust-provenance.schema.json" (cons "│   ├── semantic-snapshot.schema.json" (cons "│   ├── semantic-snapshot-v2.schema.json" (cons "│   ├── semantic-module.schema.json" (cons "│   ├── semantic-module-v2.schema.json" (cons "│   ├── source-map.schema.json" (cons "│   ├── target-fixture.schema.json" (cons "│   └── target-program.schema.json" (cons "├── spec/" (cons "│   ├── lexlean.toml" (cons "│   ├── lexlean.lock" (cons "│   └── src/" (cons "├── tests/" (cons "│   ├── fixtures/" (cons "│   ├── golden/" (cons "│   ├── lcnf/" (cons "│   ├── negative/" (cons "│   ├── oracle/" (cons "│   ├── preservation-library/" (cons "│   ├── production-export/" (cons "│   ├── stdlib/" (cons "│   └── tooling/" (cons "├── tooling/" (cons "│   └── schemas/" (cons "│       └── tooling-module.schema.json" (cons "└── xtask/" (cons "    ├── Cargo.toml" (cons "    └── src/" (cons "        ├── audit.rs" (cons "        ├── codegen.rs" (cons "        ├── main.rs" (cons "        └── spec_links.rs" (nil String)))))))))))))))))))))))))))))))))))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.cont,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0007,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "`CONFORMANCE.md` and `ERRORS.md` are generated and committed. Their committed bytes MUST equal regeneration from `model/*.toml`." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0008,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "`language/` is the compiler's versioned built-in language data. It is distinct from `model/`, which records claims about the repository." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0009,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "`tooling/schemas/` holds the schema of the compiler-tooling language (§17.20). It is not part of the compiler-semantics ID (§21.2) and is not embedded: a tooling module is accepted only in a project the compiler itself embeds, whose source is language data and so is hashed into that ID, so a change of the tooling language that matters changes that source and its ID, while a change that alters no embedded source changes no existing identity. The audit of generated documents checks that the schema is canonical JSON with its own `$id`, like the schemas of `schemas/`." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0010,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "---" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

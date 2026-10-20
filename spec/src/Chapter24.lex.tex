@@ -1,0 +1,656 @@
+\begin{lexlean}{Chapter24}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{spec.titles@1.0.0}
+\importmodule{DocRows}
+\title{Public Rust API}
+\begin{semanticmodule}
+definition{
+  name: i0001,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [2, 1, "24. Public Rust API"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0002,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "24.1 Stable entry point"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0003,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "`crates/lexlean/src/lib.rs` exports:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0004,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: ["rust", (cons "pub struct Engine;" (nil String))],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0005,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "with:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0006,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "rust",
+      (cons "impl Engine {" (cons "    pub fn load(project_file: &Utf8Path) -> Result<Self, LexLeanError>;" (cons "    pub fn lock(&self, request: LockRequest) -> Result<LockResult, LexLeanError>;" (cons "    pub fn check(&self, request: CheckRequest) -> Result<ProjectResultSet<CheckedUnit>, LexLeanError>;" (cons "    pub fn snapshot(&self, request: CheckRequest) -> Result<SemanticSnapshot, LexLeanError>;" (cons "    pub fn build(&self, request: BuildRequest) -> Result<ProjectResultSet<BuiltUnit>, LexLeanError>;" (cons "    pub fn verify(&self, request: VerifyRequest) -> Result<VerifiedProject, LexLeanError>;" (cons "    pub fn format(&self, request: FormatRequest) -> Result<FormatResultSet, LexLeanError>;" (cons "}" (nil String))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0007,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "`snapshot` executes the same normalization, lexical closure, parsing," (cons "elaboration, linking, resource-limit, and diagnostic pipeline as `check`. It" (cons "does not invoke either backend, start a child process, or write a project" (cons "artifact. Its owned, read-only DTO is serialized as" (cons "`lexlean/semantic-snapshot/1`, or `lexlean/semantic-snapshot/2` for a" (cons "language-1.2 project (§17.12); object keys use canonical ASCII order, arrays" (cons "use their specified semantic order, and the file spelling has exactly one" (cons "final LF. The snapshot ID is SHA-256 of those exact canonical bytes." (nil String)))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0008,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The envelope records source, semantic, compiler-semantics, and selected" (cons "language identities; normalized relative source identities; sorted module," (cons "import, glossary, and visible-package closures; declarations, generated Lean" (cons "names, axiom policies, and origins; canonical linked terms and proofs; and the" (cons "complete native semantic module value, including expression DAG, binders," (cons "structures, classes, instances, inductives, constructors, recursion and proof" (cons "metadata. Absolute paths, environment data, Rust debug text, mutable compiler" (cons "references, and backend output are not representable. The published JSON" (cons "Schema and derived Serde representation are the same shape." (nil String))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0009,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "24.2 Selection type"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0010,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "rust",
+      (cons "pub enum Selection {" (cons "    Entrypoints," (cons "    All," (cons "    Files(BTreeSet<Utf8PathBuf>)," (cons "}" (nil String))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0011,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "An empty `Files` set is invalid. No API treats a multi-module operation as singular." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0012,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "24.3 Requests"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0013,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "rust",
+      (cons "pub struct CheckRequest {" (cons "    pub selection: Selection," (cons "}" (cons "" (cons "pub struct BuildRequest {" (cons "    pub selection: Selection," (cons "}" (cons "" (cons "pub struct VerifyRequest {" (cons "    pub selection: Selection," (cons "}" (cons "" (cons "pub struct FormatRequest {" (cons "    pub selection: Selection," (cons "    pub check_only: bool," (cons "}" (cons "" (cons "pub struct LockRequest {" (cons "    pub check_only: bool," (cons "    pub allow_network: bool," (cons "}" (nil String))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0014,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Build and verify requests cannot alter artifact selection, backend, axiom audit, toolchain, limits, or PDF policy." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0015,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "24.4 Result sets"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0016,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "rust",
+      (cons "pub struct ProjectResultSet<U> {" (cons "    pub source_id: Sha256Digest," (cons "    pub semantic_id: Sha256Digest," (cons "    pub build_id: Option<Sha256Digest>," (cons "    pub units: BTreeMap<ModuleName, U>," (cons "}" (cons "" (cons "pub struct CheckedUnit {" (cons "    pub module: ModuleName," (cons "    pub summary: CheckedUnitSummary," (cons "}" (cons "" (cons "pub struct BuiltUnit {" (cons "    pub module: ModuleName," (cons "    pub artifacts: ModuleArtifacts," (cons "}" (cons "" (cons "pub struct VerifiedProject {" (cons "    pub source_id: Sha256Digest," (cons "    pub semantic_id: Sha256Digest," (cons "    pub build_id: Sha256Digest," (cons "    pub attestation_id: Sha256Digest," (cons "    pub root: Utf8PathBuf," (cons "    pub units: BTreeMap<ModuleName, VerifiedUnit>," (cons "}" (nil String))))))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0017,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The full mutable compiler IR remains internal. Stable serializable summaries and artifact schema types are public." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0018,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "24.5 Errors"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0019,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Every public function returns only `LexLeanError`:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0020,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "rust",
+      (cons "pub struct LexLeanError {" (cons "    pub class: ErrorClass," (cons "    pub diagnostics: Vec<Diagnostic>," (cons "    pub source: Option<Box<dyn std::error::Error + Send + Sync>>," (cons "}" (nil String))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0021,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "`ErrorClass` is:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0022,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "rust",
+      (cons "pub enum ErrorClass {" (cons "    Language," (cons "    CliOrConfiguration," (cons "    Environment," (cons "    SecurityOrLimit," (cons "    Internal," (cons "}" (nil String))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0023,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "It maps exactly to CLI exit codes 1, 2, 3, 4, and 70." (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0024,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The native API exposes optional, producer-set `DiagnosticDetail` through" (cons "`Diagnostic::detail()`. `PackageImportCycle { packages, importers }` records the actual" (cons "closed import walk, including its repeated final package, only for package" (cons "self-import or package-import graph cycles. Module and defined-denotation" (cons "cycles do not carry that detail. `importers` contains sorted distinct exact" (cons "`package@version` references whose validated import edges reach the cycle," (cons "including its members. Package-local self-import rejection keeps its existing" (cons "timing; importers are extended only through successfully resolved, uniquely" (cons "identified packages and exact-version edges. Invalid identities, mismatched" (cons "versions, and unvalidated edges cannot establish reachability." (cons "`UnqualifiedCrossPackageTermAmbiguity { candidates, packages, span }` records" (cons "sorted distinct qualified entry IDs from at least" (cons "two packages competing at the same unqualified lexical-term source range" (cons "among distinct surviving linked interpretations. Operator notation, binder" (cons "structure, and lexical-segmentation ambiguities alone do not carry that detail." (cons "When multiple ranges qualify, the earliest range is reported. Explicitly" (cons "qualified selection is not an unqualified candidate. Its `packages` records" (cons "the sorted exact package references owning those candidates." (nil String)))))))))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0025,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "This metadata is native-only: canonical diagnostic JSON, human rendering," (cons "diagnostic sorting, registered codes, and accepted-program artifact identities" (cons "are unchanged. The detail accessor is read-only; compiler producers alone set" (cons "the detail. `Diagnostic::new` creates a diagnostic without detail. Adding its" (cons "private storage in the untagged `0.3.0` API is a Rust struct-literal source" (cons "compatibility change: downstream callers construct diagnostics with" (cons "`Diagnostic::new`, not struct literals. It is not a diagnostic wire-version" (cons "change or a claim of unchanged struct-literal source compatibility." (nil String)))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0026,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "No public function panics for malformed user input, filesystem races, child failure, invalid UTF-8 input, invalid TOML/JSON, or unexpected external output." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0027,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "24.6 Ending the children the library started"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0028,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Every child the library starts (`lake`, `lean`, `leanchecker`, `git`, the PDF provider) leads a process group of its own (§17.17). A host that embeds the library ends the ones still live through:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0029,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "rust",
+      (cons "pub enum GroupEnd {" (cons "    Ended," (cons "    AlreadyGone," (cons "    Failed(String)," (cons "}" (cons "" (cons "pub struct ChildGroupEnd {" (cons "    pub group: u32," (cons "    pub outcome: GroupEnd," (cons "}" (cons "" (cons "pub fn end_live_children() -> Vec<ChildGroupEnd>;" (cons "pub fn allow_children();" (nil String))))))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0030,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "at `lexlean::verify`, part of the embedding surface versioned with the stable compiler API. The contract:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0031,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- `end_live_children` ends every child process group the library has started in this process and has not seen exit, and returns one row per such group, in registration order: `Ended` (the group was live and is now ended), `AlreadyGone` (it had already exited), or `Failed` with the OS error. A failure to end a group is reported in its row, never swallowed, and never a bare success of the whole." (cons "- It is idempotent and a no-op when no child is live: the return is empty." (cons "- It installs no signal handler, alters no signal disposition, and never signals or terminates the host's own process or process group. The groups it ends are exactly the ones the library registered." (cons "- It is callable from any ordinary thread of the host. It is not async-signal-safe (it takes a lock, waits, and reaps): a host calls it from an ordinary thread — its signal-handling thread, its shutdown path, or a timeout of its own — never from inside a signal handler." (cons "- After the call, starting a new child in this process fails with `LLV7018` until the host calls `allow_children`. The shutdown state is set and the live list is taken under the one lock that registers a child, so a child started concurrently with the call is either ended by it or refused; none is left running." (cons "- A zombie in a group counts as ended. Zombies that are children of the host process are reaped with a targeted `waitpid` on exactly those process IDs, never a wait-for-any; the group's leader is reaped by the run that owns its child handle." (cons "- On unix the group is signalled directly through the audited process-group signalling dependency (§8.5); no `kill` executable is looked up on `PATH`. On Windows the process tree is ended with `taskkill /PID <pid> /T /F`; its exit status is 128 alike for a tree that is gone, a process that has exited with its handle still open, and access denied, so a `taskkill` that fails is classified by whether `tasklist` still lists the root process: not listed is `AlreadyGone`, and listed, or `tasklist` unable to say, is reported in the row like a group that could not be ended." (cons "- The `lexlean` executable's interrupt thread (§17.17) ends the live groups through this same function: exactly one implementation of \"end the live groups\" exists, and the executable is its first user. So does a run that ends its own child at its timeout (§17.17): ending the group a child leads, or the tree it roots, and confirming it is one function (`verify::lifeline::end_leader`), and a process group is signalled, and a process tree ended, in no other place of the library; `conformance_cl_22` counts the sites across every source file of the library, so a second kill path in any module is a failure of the register and not a review comment. The library still installs no handler for an embedding host, and its tests show it in a host process of its own, twice. Where the host can report its signal dispositions (`SigCgt` and `SigIgn` of `/proc/self/status`, or the `caught` and `ignored` columns of `ps`) a host that has registered its own handling of `SIGINT` and `SIGTERM` reads them before the library starts a child, after it has started one, and after it has ended it, and they must be equal; a host with `/proc` can always report them, and its case requires it. On every host, including macOS whose `ps` has neither column, a host that handles no signal is sent `SIGQUIT` while a child that the library started is running: it must die of the signal by its default action, and the child must still be running, which a handler that the library had installed for the signals the executable watches would have ended first." (nil String)))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0032,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "24.7 Production export"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0033,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "A consumer compiles a project's production roots (§17.13) to certified Rust packages through one stable, versioned, fail-closed boundary, `lexlean::api::production`, and its CLI mirror (§23.4), and never through the hidden compiler modules, the build or verification directories, generated Lean, or a backend. `api::production` is a module of the stable `api` (§24.1); the `Engine` entry points are unchanged." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0034,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "rust",
+      (cons "pub fn targets() -> Result<Vec<TargetDescriptor>, LexLeanError>;" (cons "pub fn targets_document() -> Result<Vec<u8>, LexLeanError>;" (cons "impl ProductionRequest { pub fn from_json(bytes: &[u8]) -> Result<Self, LexLeanError>; }" (cons "pub fn build(engine: &Engine, request: &ProductionRequest) -> Result<ProductionOutput, LexLeanError>;" (cons "pub fn verify_artifact(bundle: &Utf8Path) -> Result<ReplayReport, LexLeanError>;" (nil String))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0035,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "**Setup, then offline.** Setup is explicit and is the only step that may use the network: `Engine::lock` with `allow_network` acquires packages, the Lake workspace is provisioned, and `targets` gives the descriptor digests a consumer pins. `build` takes no network option: a stale lock is `LLC0102`, a missing Lake dependency `LLV7007`, and an acquisition `LLS8003` (§25.3)." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0036,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "**Target descriptors.** `lexlean/target-descriptor/1` states one registered target (`language/production-1.2.toml`): its ID, statement, allocation, natural and integer widths, the SHA-256 of the runtime its profile carries, and the renderer digest (`language/semantics-1.2.toml`). Its `digest` is SHA-256 over `\"lexlean-target-descriptor-v1\"` and `frame(\"descriptor\", canonical_json(descriptor without digest))`." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0037,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "**Request.** `lexlean/production-request/1` is closed: `roots`, non-empty and strictly ascending by name, each a fully qualified production root of the project's entrypoint closure with a crate `name` and `version` of the §17.16 package forms and `targets` strictly ascending by ID, each a registered ID with its descriptor digest; an optional `expect` pinning the source ID, the semantic ID, and the SHA-256 of the lock file; and optional `evidence`, strictly ascending by root, each a requested root, the kind `gnaf`, project-relative paths of a `lexlean/gnaf-request/1` and a `lexlean/gnaf-certificate/1` document, and the certificate identity the caller means. No field states a certification, an optimality claim, a preservation result, a certificate verdict, Lean, LCNF, a program, or Rust, and an unknown field does not deserialize. A root name is looked up, never interpreted, and one that cannot be a Lean name is refused by form." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0038,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "**Run.** `build` refuses, before any Lean process runs and before anything is published: a malformed request (`LLC0201`); a root that is not a production root (`LLC0202`); an unregistered or undeclared target or another digest (`LLC0203`); a pin the project no longer matches (`LLC0204`); an evidence path that escapes the project or a symlinked bundle area (`LLS8001`); malformed evidence (`LLB6006`, `LLB6007`); evidence whose certificate is not the pinned one, earns a `refused` verdict, or is for a request whose reference program is not the root's lowered program (`LLV7101`); and a package the renderer refuses (`LLB6005`). Every check and eligibility failure of the project fails as it does for `check`. The project is then verified by the unchanged §22 pipeline over the entrypoint selection, so every production root of the project is certified; a project edited during the run is `LLC0204`. For each requested root and target, `build` renders the exporting package `verify` does not assemble (§17.17): the renderer of §17.16 over the verified lowered program, exporting the recorded entry alone as `run` with every parameter owned, with `sources` the semantic ID; its `src/lib.rs` begins with the certified crate's bytes. The bundle is published atomically, content-addressed, at `<build_root>/production/<result-id>/`; there is no output-directory option." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0039,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "**Bundle.** `result.json`; `packages/<target>/<name>/` with `Cargo.toml`, `src/lib.rs`, `provenance.json` (`lexlean/rust-provenance/1`), and `package.json` (the `lexlean/rust-package/1` manifest); and `evidence/`: `attestation.json`, `compiler-input.json`, `preservation.json`, `program/R<i>.json`, `crate/R<i>.<target>.rs`, `certificates/<module path>.lex.tex` for certificates A, B, and E (their kernel data in the authoring notation, §17.17), and `gnaf/R<i>/request.json` and `certificate.json` where evidence was offered." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0040,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "**Result.** `lexlean/production-result/2` binds the compiler (its version, the language-1.2 compiler-semantics ID of §21.2, read as an opaque digest, and the Lean toolchain); the source, semantic, and lock identities; the build and attestation IDs and the attestation, compiler input (whose SHA-256 is the compiler-input ID, §22.10), and preservation record; and per root its index `R<i>`, program, and optimality, and per target the target ID and digest, the package's name, version, directory, export, and files, the crate, the entry, the certification, and the effects the output's realization can exhibit on its target, ascending and exactly those that eligibility requires of the root there (§17.13); an output with `recursion` recurses to a depth bounded only by its input, so the host must give the call a stack that depth fits, and exhausting it aborts the process. `lexlean production build` reports how many outputs need such a stack. Every file is stated by bundle-relative path, byte length, and SHA-256. The certification status is the closed `kernel-checked`: certificates A, B, and E compiled silently under the pinned Lean, replayed through `leanchecker`, and their root theorems depend on exactly the stated axioms (§17.17). It is preservation, at level `build`, and never optimality. Optimality is `not-claimed`, or `gnaf` with the certificate identity, the universe identity, the two documents, and the verdict the host checker of §17.18 recomputes, `certified` or `incomplete`; a `refused` verdict is never recorded. `result_id` is SHA-256 over `\"lexlean-production-result-v1\"` and `frame(\"result-body\", canonical_json(result without result_id))`. The result holds no absolute path, environment value, or time; because it binds the attestation, which records the host and executable hashes (§22.9), it is identical across project locations and working directories on one host and toolchain, not across hosts." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0041,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "**Replay.** `verify_artifact` reads a bundle without the source, Lean, or the network. A symlink or special file in it is `LLS8001`. It recomputes the result identity and requires the canonical bytes, every stated file and no other, the producing compiler's semantics and toolchain, the attestation identity recomputed from its body, the attestation's source, semantic, and build IDs and its compiler-input and preservation digests, the preservation record's program, crate, entry, and certificate rows for every output, the registered target digests, each package re-rendered from its manifest byte for byte with the manifest the façade would write, its library beginning with the bound crate, and each GNAF verdict recomputed; any disagreement is `LLV7102`. It reports `lexlean/production-replay/1` with status `bindings-verified` and the stages it does not re-run: Lean elaboration, the `leanchecker` replay, the axiom audit, and named-root extraction, which need the generated modules and the pinned toolchain; the attestation is the record that they ran. Replay detects any disagreement between the bundle's parts; a bundle whose attestation, preservation record, and certificates are forged consistently together is detected only by verifying the source again or by a signature, which §22.9 leaves to release automation." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0042,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "**Schemas and versions.** The five schemas are `api/schemas/production-request`, `production-result`, `target-descriptor`, `target-descriptors`, and `production-replay`. They are outside `schemas/` and outside the compiler-semantics ID (§21.2): the envelope changes nothing the compiler computes from a source. `api/schemas/versions.toml` records each schema's SHA-256 under its exact spec; a released row is never edited, and a changed schema raises its spec version and adds a row." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0043,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "**Boundary.** No application semantics of a consumer enter the compiler: the consumer's own record of which roots it ships, under which names, is its own." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0044,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 2, "24.8 Authoring API"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0045,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "`lexlean::sdk` is the programmatic form of the authoring surface (§17.21): what" (cons "a program that produces or edits a module's source may do, and nothing it may" (cons "do in place of the notation. It reads, writes, and converts the `.lex.tex`" (cons "source of a module without a project and without linking it (linking is the" (cons "engine's, §24.1). The data it handles is the module as canonical JSON" (cons "(`serde_json::Value`), the value every form of the module reads to." (nil String)))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0046,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "rust",
+      (cons "pub enum ModuleKind { Semantic, Tooling, Core }" (cons "" (cons "pub struct AuthoringError { pub message: String, pub offset: Option<usize> }" (cons "" (cons "pub struct SourceHeader<'a> {" (cons "    pub name: &'a str," (cons "    pub glossaries: &'a [&'a str]," (cons "    pub imports: &'a [&'a str]," (cons "    pub title: &'a str," (cons "}" (cons "" (cons "pub fn module_kind(text: &str) -> Option<ModuleKind>;" (cons "pub fn is_notation(text: &str) -> bool;" (cons "pub fn read_module(text: &str) -> Result<Value, AuthoringError>;" (cons "pub fn write_module(text: &str, data: &Value) -> Result<String, AuthoringError>;" (cons "pub fn to_data_form(text: &str) -> Result<String, AuthoringError>;" (cons "pub fn to_notation(text: &str) -> Result<String, AuthoringError>;" (cons "pub fn declaration_spans(text: &str)" (cons "    -> Result<Option<Vec<(usize, usize)>>, AuthoringError>;" (cons "pub fn assemble(header: &SourceHeader<'_>, kind: ModuleKind, data: &Value)" (cons "    -> Result<String, AuthoringError>;" (nil String))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0047,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "`read_module` returns the data of the module of `text`, written as" (cons "`\\semanticdata{…}` (`\\toolingdata{…}`, `\\coredata{…}`) or in the notation, which" (cons "it reads as the compiler does (language 1.2). `write_module` replaces the data and keeps the form" (cons "the module has: canonical JSON for the data form, the canonical notation for the" (cons "notation, so a rewrite never changes which form a source is in. `to_data_form`" (cons "and `to_notation` write the module in one form or the other (`to_notation` is" (cons "what `fmt` writes for a language-1.2 module). They are the one explicit" (cons "conversion between the forms: `to_data_form` yields text for a reader of the" (cons "JSON or a language-1.1 project and never a language-1.2 source, which refuses" (cons "the data form (§17.21.1, `AU-13`); `declaration_spans` is what a" (cons "source map relates a declaration to; `assemble` writes the whole source of a" (cons "module (header, the module in the canonical notation, closing). A source that" (cons "states no module, a module whose data is not JSON or not a module of its kind," (cons "and notation that is not well formed are an `AuthoringError`, with the byte" (cons "offset in the source when there is one, and never a panic. Every function is a" (cons "function of its arguments alone. The formatter (§23.5), the identity of the" (cons "embedded tree (§21.2), and the conformance suite's own editing of committed" (cons "sources are written over these functions, so a program is held to the same text" (cons "a person writes (`AU-08`)." (nil String))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0048,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "---" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

@@ -48,6 +48,8 @@ const SPEC: &str = "lexlean/semantic-module/2";
 
 /// The schema tag of a tooling module.
 const TOOLING_SPEC: &str = "lexlean/tooling-module/1";
+/// The schema tags of semantic modules begin with this.
+const SEMANTIC_SPEC_PREFIX: &str = "lexlean/semantic-module/";
 
 /// The schema tag the notation of a core module names (§17.21.8).
 const CORE_SPEC: &str = "lexlean/core-module/2";
@@ -228,7 +230,7 @@ fn convert_to_data(project: &P) {
             continue;
         }
         let text = std::fs::read_to_string(path).expect("read");
-        if text.contains("\\begin{semanticmodule}") {
+        if support::module_spec(&text).is_some_and(|spec| spec.starts_with(SEMANTIC_SPEC_PREFIX)) {
             std::fs::write(path, support::module_as_data(&text)).expect("write");
         }
     }
@@ -291,7 +293,10 @@ fn equivalence() {
         let (path, canonical) = sources
             .iter()
             .zip(&before)
-            .find(|(_, text)| text.contains("\\begin{semanticmodule}"))
+            .find(|(_, text)| {
+                support::module_spec(text)
+                    .is_some_and(|spec| spec.starts_with(SEMANTIC_SPEC_PREFIX))
+            })
             .expect("a semantic module");
         let squeezed = support::squeezed_notation(canonical);
         assert_ne!(&squeezed, canonical, "{name}: the layout did not change");
@@ -831,11 +836,17 @@ fn tooling_corpus() -> Vec<(String, Json)> {
         let Ok(text) = std::fs::read_to_string(path) else {
             continue;
         };
+        // A cheap guard, then the module itself: the specification's chapters
+        // quote this marker in their strings, so only the parsed `spec` says
+        // what a source is.
         if !text.contains("\\begin{toolingmodule}") {
             continue;
         }
         let value = support::try_module_json(&text)
             .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
+        if value.get("spec").and_then(serde_json::Value::as_str) != Some(TOOLING_SPEC) {
+            continue;
+        }
         modules.push((
             path.display().to_string(),
             Json::parse(value.to_string().as_bytes()).expect("canonical JSON"),

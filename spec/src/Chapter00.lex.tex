@@ -1,0 +1,45 @@
+\begin{lexlean}{Chapter00}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{spec.titles@1.0.0}
+\importmodule{DocRows}
+\title{LexLean Repository and Project Specification}
+\begin{semanticmodule}
+definition{
+  name: i0001,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [1, 0, "LexLean Repository and Project Specification"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0002,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "**Repository:** `https://github.com/UOR-Foundation/LexLean`  " (cons "**Project name:** LexLean  " (cons "**Rust crate and executable:** `lexlean`  " (cons "**Specification identifier:** `LEXLEAN-SPEC-1`  " (cons "**Language identifiers:** `lexlean-language/1.0`, `lexlean-language/1.1`" (cons "**Project-schema identifier:** `lexlean/project/1`  " (cons "**Status:** Normative implementation specification  " (cons "**Target initial release:** `1.0.0`" (nil String)))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0003,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "---" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}
