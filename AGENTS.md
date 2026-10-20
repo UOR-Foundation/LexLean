@@ -102,6 +102,18 @@ Two habits follow from that:
   the file --- puts a hole precisely where a deferral parked in a gate would
   sit.
 
+## Release lines
+
+A release X.Y lives on the branch `release/vX.Y` (SPEC.md §9.4): cut from
+`main` when work on X.Y begins, the target of every pull request of the
+milestone X.Y, the source of each `vX.Y.Z` tag, and merged forward by merge
+commit into the next line after each landing. `main` is the newest released
+line and receives a release line only at its tag. A pull request that moves a
+language identity lands one at a time on its line, with one regeneration and
+one full gate each; the forward merge carries the regeneration to the next
+line. Two lines are open at once so that the next release's work does not wait
+for the current release to close.
+
 ## Comments
 
 Explain *why*, not *what*. The code says what it does. A comment earns its

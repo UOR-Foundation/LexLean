@@ -13,7 +13,7 @@
 name: honesty
 
 on:
-  push: { branches: [main] }
+  push: { branches: [main, "release/**"] }
   pull_request:
   workflow_dispatch:
 
