@@ -452,6 +452,7 @@ impl<'g, 'a> Writer<'g, 'a> {
     /// The module.
     pub(super) fn finish(mut self, imports: Vec<String>) -> Result<CoreModule, String> {
         self.compile_applied_bundles();
+        self.close_forward_references();
         let heights = self.heights();
         let roots: Vec<Term> = self
             .rows
@@ -481,6 +482,50 @@ impl<'g, 'a> Writer<'g, 'a> {
         };
         module.validate(crate::LANGUAGE_1_2)?;
         Ok(module)
+    }
+
+    /// Close every row's pinned axioms over the rows it names. A row pins what
+    /// was known when it was pushed, so one that applies a later row of its
+    /// mutual group (the direct-recursion records call each other) pinned
+    /// that row as axiom-free; Lean's `#print axioms` follows the reference,
+    /// and which rows came first is an accident of the group's order.
+    fn close_forward_references(&mut self) {
+        let references: Vec<Vec<usize>> = {
+            let positions: HashMap<&str, usize> = self
+                .rows
+                .iter()
+                .enumerate()
+                .map(|(position, row)| (row.name.as_str(), position))
+                .collect();
+            self.rows
+                .iter()
+                .map(|row| {
+                    self.constants_in(&[row.ty, row.value])
+                        .iter()
+                        .filter_map(|name| positions.get(name.as_str()).copied())
+                        .collect()
+                })
+                .collect()
+        };
+        loop {
+            let mut changed = false;
+            for (position, named) in references.iter().enumerate() {
+                for &other in named {
+                    let missing: Vec<String> = self.rows[other]
+                        .axioms
+                        .difference(&self.rows[position].axioms)
+                        .cloned()
+                        .collect();
+                    if !missing.is_empty() {
+                        self.rows[position].axioms.extend(missing);
+                        changed = true;
+                    }
+                }
+            }
+            if !changed {
+                break;
+            }
+        }
     }
 
     /// The reducibility height of each row: one above the rows it names, so

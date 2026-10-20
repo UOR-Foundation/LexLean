@@ -120,7 +120,8 @@ inductive{
     {name: LitFixed, fields: [IntKind]},
     {name: LitStr, fields: []},
     {name: LitBytes, fields: []},
-    {name: LitOrdering, fields: []}
+    {name: LitOrdering, fields: []},
+    {name: LitOverflow, fields: []}
   ]
 }
 
@@ -178,7 +179,7 @@ inductive{
   name: Callee,
   type_parameters: [],
   parameters: [],
-  constructors: [{name: CalFn, fields: [Nat]}, {name: CalRt, fields: [Rt]}]
+  constructors: [{name: CalFn, fields: [Nat]}, {name: CalRt, fields: [Rt]}, {name: CalMachine, fields: [Nat]}]
 }
 
 inductive{
@@ -1460,7 +1461,8 @@ definition{
     | Lit.LitFixed d0 => (text "lit:fixed")
     | Lit.LitStr => (text "lit:string")
     | Lit.LitBytes => (text "lit:bytes")
-    | Lit.LitOrdering => (text "lit:ordering")),
+    | Lit.LitOrdering => (text "lit:ordering")
+    | Lit.LitOverflow => (text "lit:overflow")),
   executable: true
 }
 
@@ -1476,7 +1478,25 @@ definition{
     | Lit.LitFixed k => (ctor Option.some [IntKind] k)
     | Lit.LitStr => (ctor Option.none [IntKind])
     | Lit.LitBytes => (ctor Option.none [IntKind])
-    | Lit.LitOrdering => (ctor Option.none [IntKind])),
+    | Lit.LitOrdering => (ctor Option.none [IntKind])
+    | Lit.LitOverflow => (ctor Option.none [IntKind])),
+  executable: true
+}
+
+definition{
+  name: isOverflowLit,
+  parameters: [lit : Lit],
+  result: Bool,
+  body: (match lit
+    | Lit.LitUnit => false
+    | Lit.LitBool => false
+    | Lit.LitNat => false
+    | Lit.LitInt => false
+    | Lit.LitFixed d0 => false
+    | Lit.LitStr => false
+    | Lit.LitBytes => false
+    | Lit.LitOrdering => false
+    | Lit.LitOverflow => true),
   executable: true
 }
 
@@ -1695,11 +1715,14 @@ definition{
   parameters: [found : Found, e : Expr],
   result: Found,
   body: (match e
-    | Expr.ELit lit org => (foundWide found (litKind lit) org (litWidth lit))
+    | Expr.ELit lit org => (match (isOverflowLit lit)
+      | Bool.true => found
+      | Bool.false => (foundWide found (litKind lit) org (litWidth lit)))
     | Expr.ERead k who org => (foundAt found (readConstruct k) org)
     | Expr.EWrap k inner org => (let f1 : Found := (foundAt found (wrapConstruct k) org); (foundExpr f1 inner))
     | Expr.ECall callee args propagate org => (let f1 : Found := (match callee
       | Callee.CalFn n => (foundAt found (text "call:function") org)
+      | Callee.CalMachine m => (foundAt found (text "call:machine") org)
       | Callee.CalRt item => (foundWide found (cat (text "call:runtime:") (runtimeKind (lastSegment (itemPath (project found items) item)))) org (itemWidth (project found items) item))); (foundExpr f1 args))
     | Expr.EApply who args propagate org => (let f1 : Found := (foundAt found (text "apply") org); (foundExpr f1 args))
     | Expr.EConstruct con args org => (let f1 : Found := (foundAt (foundCon found con) (cat (text "construct:") (conKind con)) org); (foundExpr f1 args))
@@ -2092,6 +2115,57 @@ definition{
 }
 
 definition{
+  name: isOverflowExpr,
+  parameters: [e : Expr],
+  result: Bool,
+  body: (match e
+    | Expr.ELit lit org => (isOverflowLit lit)
+    | Expr.ERead d0 d1 d2 => false
+    | Expr.EWrap d0 d1 d2 => false
+    | Expr.ECall d0 d1 d2 d3 => false
+    | Expr.EApply d0 d1 d2 d3 => false
+    | Expr.EConstruct d0 d1 d2 => false
+    | Expr.EPair d0 d1 d2 => false
+    | Expr.EIf d0 d1 d2 d3 => false
+    | Expr.EMatch d0 d1 d2 => false
+    | Expr.EBlockE d0 => false
+    | Expr.EProbe d0 d1 d2 => false
+    | Expr.EBlock d0 d1 => false
+    | Expr.ENil => false
+    | Expr.ECons head tail => false
+    | Expr.ELet d0 d1 d2 d3 d4 d5 => false
+    | Expr.EArm d0 d1 d2 => false
+    | Expr.ELoop d0 d1 => false),
+  executable: true
+}
+
+definition{
+  name: machineName,
+  parameters: [m : Nat],
+  result: Bytes,
+  body: (if (m =? 0) then (text "checked_add") else (if (m =? 1) then (text "checked_sub") else (if (m =? 2) then (text "checked_mul") else (if (m =? 3) then (text "checked_div") else (if (m =? 4) then (text "checked_neg") else (if (m =? 5) then (text "checked_shl") else (if (m =? 6) then (text "checked_shr") else (if (m =? 7) then (text "convert") else (if (m =? 8) then (text "bit_and") else (if (m =? 9) then (text "bit_or") else (if (m =? 10) then (text "bit_xor") else (if (m =? 11) then (text "bit_not") else (if (m =? 12) then (text "nat_eq") else (if (m =? 13) then (text "nat_le") else (if (m =? 14) then (text "nat_lt") else (if (m =? 15) then (text "nat_rem") else (if (m =? 16) then (text "int_rem") else (if (m =? 17) then (text "nat_add") else (if (m =? 18) then (text "nat_sub") else (if (m =? 19) then (text "nat_mul") else (if (m =? 20) then (text "nat_quot") else (if (m =? 21) then (text "int_add") else (if (m =? 22) then (text "int_sub") else (if (m =? 23) then (text "int_mul") else (if (m =? 24) then (text "int_neg") else (if (m =? 25) then (text "int_quot") else 0x)))))))))))))))))))))))))),
+  executable: true
+}
+
+definition{
+  name: machineArity,
+  parameters: [m : Nat],
+  result: Nat,
+  body: (if (m =? 0) then 2 else (if (m =? 1) then 2 else (if (m =? 2) then 2 else (if (m =? 3) then 2 else (if (m =? 4) then 1 else (if (m =? 5) then 2 else (if (m =? 6) then 2 else (if (m =? 7) then 1 else (if (m =? 8) then 2 else (if (m =? 9) then 2 else (if (m =? 10) then 2 else (if (m =? 11) then 1 else (if (m =? 12) then 2 else (if (m =? 13) then 2 else (if (m =? 14) then 2 else (if (m =? 15) then 3 else (if (m =? 16) then 3 else (if (m =? 17) then 2 else (if (m =? 18) then 2 else (if (m =? 19) then 2 else (if (m =? 20) then 3 else (if (m =? 21) then 2 else (if (m =? 22) then 2 else (if (m =? 23) then 2 else (if (m =? 24) then 1 else (if (m =? 25) then 3 else 0)))))))))))))))))))))))))),
+  executable: true
+}
+
+definition{
+  name: machineCallC,
+  parameters: [st : St, cx : Cx, m : Nat, args : Expr, propagate : Bool, tail : Bool],
+  result: (Result St Bytes),
+  body: (match ((exprLen args) =? (machineArity m))
+    | Bool.true => (callOk st cx false propagate tail (tick (machineName m)))
+    | Bool.false => (ctor Result.error [St, Bytes] (cat (text "machine: ") (cat (tick (machineName m)) (cat (text " receives ") (cat (decimal (exprLen args)) (cat (text " operands of ") (decimal (machineArity m))))))))),
+  executable: true
+}
+
+definition{
   name: blockC,
   parameters: [st : St, cx : Cx, b : Expr, tail : Bool],
   result: (Result St Bytes),
@@ -2138,7 +2212,8 @@ definition{
         | Lit.LitFixed d0 => (ctor Result.ok [St, Bytes] st)
         | Lit.LitStr => (heapSt cx st (text "a string literal"))
         | Lit.LitBytes => (heapSt cx st (text "a byte string literal"))
-        | Lit.LitOrdering => (ctor Result.ok [St, Bytes] st))))
+        | Lit.LitOrdering => (ctor Result.ok [St, Bytes] st)
+        | Lit.LitOverflow => (ctor Result.error [St, Bytes] (text "overflow: the overflow value stands outside the payload of an `Err`")))))
     | Expr.ERead k who org => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
       | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (project cx items) (ctor Expr.ERead k who org)) (text ", is not a fallible value"))))
       | Bool.false => (match k
@@ -2175,22 +2250,24 @@ definition{
     | Expr.ECall callee args propagate org => (match propagate
       | Bool.true => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
         | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (project cx items) (ctor Expr.ECall callee args propagate org)) (text ", is not a fallible value"))))
-        | Bool.false => (match (argsC st cx args)
+        | Bool.false => (match (argsC st cx false args)
           | Result.ok s1 => (match callee
             | Callee.CalFn n => (match (lookupFlag (project (project cx decl) functions) n)
               | Option.none => (ctor Result.error [St, Bytes] (cat (text "f") (cat (decimal n) (text " is not declared"))))
               | Option.some declared => (callOk s1 cx declared propagate tail (cat (text "f") (decimal n))))
+            | Callee.CalMachine m => (machineCallC s1 cx m args propagate tail)
             | Callee.CalRt item => (let path : Bytes := (itemPath (project cx items) item); (match (match (itemHeap (project cx items) item)
                 | Bool.true => (heapUnit cx (cat (text "the runtime function ") (tick path)))
                 | Bool.false => (ctor Result.ok [Unit, Bytes] ()))
               | Result.ok done => (callOk s1 cx (itemFallible (project cx items) item) propagate tail (tick path))
               | Result.error problem15 => (ctor Result.error [St, Bytes] problem15))))
           | Result.error problem16 => (ctor Result.error [St, Bytes] problem16))))
-      | Bool.false => (match (argsC st cx args)
+      | Bool.false => (match (argsC st cx false args)
         | Result.ok s1 => (match callee
           | Callee.CalFn n => (match (lookupFlag (project (project cx decl) functions) n)
             | Option.none => (ctor Result.error [St, Bytes] (cat (text "f") (cat (decimal n) (text " is not declared"))))
             | Option.some declared => (callOk s1 cx declared propagate tail (cat (text "f") (decimal n))))
+          | Callee.CalMachine m => (machineCallC s1 cx m args propagate tail)
           | Callee.CalRt item => (let path : Bytes := (itemPath (project cx items) item); (match (match (itemHeap (project cx items) item)
               | Bool.true => (heapUnit cx (cat (text "the runtime function ") (tick path)))
               | Bool.false => (ctor Result.ok [Unit, Bytes] ()))
@@ -2201,18 +2278,18 @@ definition{
       | Bool.true => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
         | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (project cx items) (ctor Expr.EApply who args propagate org)) (text ", is not a fallible value"))))
         | Bool.false => (match (readOk st who)
-          | Result.ok done => (match (argsC st cx args)
+          | Result.ok done => (match (argsC st cx false args)
             | Result.ok s1 => (ctor Result.ok [St, Bytes] (record St {bound := (project s1 bound), scope := (project s1 scope), moved := (project s1 moved), parted := (project s1 parted), propagates := (if propagate then true else (project s1 propagates))}))
             | Result.error problem17 => (ctor Result.error [St, Bytes] problem17))
           | Result.error problem18 => (ctor Result.error [St, Bytes] problem18))))
       | Bool.false => (match (readOk st who)
-        | Result.ok done => (match (argsC st cx args)
+        | Result.ok done => (match (argsC st cx false args)
           | Result.ok s1 => (ctor Result.ok [St, Bytes] (record St {bound := (project s1 bound), scope := (project s1 scope), moved := (project s1 moved), parted := (project s1 parted), propagates := (if propagate then true else (project s1 propagates))}))
           | Result.error problem17 => (ctor Result.error [St, Bytes] problem17))
         | Result.error problem18 => (ctor Result.error [St, Bytes] problem18)))
     | Expr.EConstruct con args org => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
       | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (project cx items) (ctor Expr.EConstruct con args org)) (text ", is not a fallible value"))))
-      | Bool.false => (match (argsC st cx args)
+      | Bool.false => (match (argsC st cx (conIsErr con) args)
         | Result.ok s1 => (match (conOk cx con (exprLen args))
           | Result.ok done => (ctor Result.ok [St, Bytes] s1)
           | Result.error problem19 => (ctor Result.error [St, Bytes] problem19))
@@ -2325,7 +2402,7 @@ definition{
 
 definition{
   name: argsC,
-  parameters: [st : St, cx : Cx, args : Expr],
+  parameters: [st : St, cx : Cx, err : Bool, args : Expr],
   result: (Result St Bytes),
   body: (match args
     | Expr.ELit d0 d1 => (ctor Result.ok [St, Bytes] st)
@@ -2341,9 +2418,11 @@ definition{
     | Expr.EProbe d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
     | Expr.EBlock d0 d1 => (ctor Result.ok [St, Bytes] st)
     | Expr.ENil => (ctor Result.ok [St, Bytes] st)
-    | Expr.ECons head tail => (match (exprC st cx head false)
-      | Result.ok s1 => (argsC s1 cx tail)
-      | Result.error problem38 => (ctor Result.error [St, Bytes] problem38))
+    | Expr.ECons head tail => (let skip : Bool := (if err then (isOverflowExpr head) else false); (match skip
+      | Bool.true => (argsC st cx err tail)
+      | Bool.false => (match (exprC st cx head false)
+        | Result.ok s1 => (argsC s1 cx err tail)
+        | Result.error problem38 => (ctor Result.error [St, Bytes] problem38))))
     | Expr.ELet d0 d1 d2 d3 d4 d5 => (ctor Result.ok [St, Bytes] st)
     | Expr.EArm d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
     | Expr.ELoop d0 d1 => (ctor Result.ok [St, Bytes] st)),

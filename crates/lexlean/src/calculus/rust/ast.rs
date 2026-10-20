@@ -324,6 +324,76 @@ impl Machine {
         out
     }
 
+    /// The index of the primitive's family: the position of its constructor
+    /// in `RustSyntax.Machine`, which the width, if it has one, does not
+    /// change. The bootstrap validator names a machine call by it.
+    #[must_use]
+    pub const fn family(self) -> u64 {
+        match self {
+            Self::CheckedAdd(_) => 0,
+            Self::CheckedSub(_) => 1,
+            Self::CheckedMul(_) => 2,
+            Self::CheckedQuot(_) => 3,
+            Self::CheckedNeg(_) => 4,
+            Self::CheckedShl(_) => 5,
+            Self::CheckedShr(_) => 6,
+            Self::TryFrom(_) => 7,
+            Self::BitAnd(_) => 8,
+            Self::BitOr(_) => 9,
+            Self::BitXor(_) => 10,
+            Self::BitNot(_) => 11,
+            Self::NatEq => 12,
+            Self::NatLe => 13,
+            Self::NatLt => 14,
+            Self::NatRem => 15,
+            Self::IntRem => 16,
+            Self::CheckedNatAdd => 17,
+            Self::NatSub => 18,
+            Self::CheckedNatMul => 19,
+            Self::NatQuot => 20,
+            Self::CheckedIntAdd => 21,
+            Self::CheckedIntSub => 22,
+            Self::CheckedIntMul => 23,
+            Self::CheckedIntNeg => 24,
+            Self::CheckedIntQuot => 25,
+        }
+    }
+
+    /// One primitive of each family, at `u8` where it has a width, in the
+    /// order of [`Machine::family`].
+    #[must_use]
+    pub const fn families() -> [Self; 26] {
+        let kind = IntKind::U8;
+        [
+            Self::CheckedAdd(kind),
+            Self::CheckedSub(kind),
+            Self::CheckedMul(kind),
+            Self::CheckedQuot(kind),
+            Self::CheckedNeg(kind),
+            Self::CheckedShl(kind),
+            Self::CheckedShr(kind),
+            Self::TryFrom(kind),
+            Self::BitAnd(kind),
+            Self::BitOr(kind),
+            Self::BitXor(kind),
+            Self::BitNot(kind),
+            Self::NatEq,
+            Self::NatLe,
+            Self::NatLt,
+            Self::NatRem,
+            Self::IntRem,
+            Self::CheckedNatAdd,
+            Self::NatSub,
+            Self::CheckedNatMul,
+            Self::NatQuot,
+            Self::CheckedIntAdd,
+            Self::CheckedIntSub,
+            Self::CheckedIntMul,
+            Self::CheckedIntNeg,
+            Self::CheckedIntQuot,
+        ]
+    }
+
     /// The width the primitive works at (the target of `TryFrom`).
     #[must_use]
     pub const fn width(self) -> Option<IntKind> {
