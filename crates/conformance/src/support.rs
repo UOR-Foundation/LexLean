@@ -561,6 +561,24 @@ impl P {
         Self { temp, root }
     }
 
+    /// A fresh copy of the specification project (SPEC.md §17.21, `NS-01`),
+    /// without build output.
+    #[must_use]
+    pub fn specification() -> Self {
+        let temp = tempfile::Builder::new()
+            .prefix("lexlean-spec-case-")
+            .tempdir()
+            .expect("tempdir");
+        let source = repo_root().join("spec");
+        assert!(
+            source.is_dir(),
+            "the committed specification project is required"
+        );
+        copy_tree(source.as_std_path(), temp.path(), &[".lexlean"]);
+        let root = Utf8PathBuf::from_path_buf(temp.path().to_path_buf()).expect("utf8 tempdir");
+        Self { temp, root }
+    }
+
     /// A fresh copy of the bootstrap project (SPEC.md §17.23), without build
     /// output or expected records, beside the standard library it imports as a
     /// source package (§10.5) and the repository's workspace file.

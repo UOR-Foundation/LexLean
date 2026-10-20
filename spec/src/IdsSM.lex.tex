@@ -1,0 +1,279 @@
+\begin{lexlean}{IdsSM}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{spec.titles@1.0.0}
+\importmodule{Rows}
+\title{Semantic ir conformance claims}
+\begin{semanticmodule}
+definition{
+  name: sm01,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-01", level := "build", suite := "semantic-ir", statement := "Compiler phases execute in the required order and no backend receives an unlinked or ambiguous program.", sections := "§17.1"}),
+  executable: true
+}
+
+definition{
+  name: sm02,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-02", level := "build", suite := "semantic-ir", statement := "Every global and local reference has one closed typed reference variant and one stable identity.", sections := "§17.2"}),
+  executable: true
+}
+
+definition{
+  name: sm03,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-03", level := "build", suite := "semantic-ir", statement := "Term IR contains only the specified closed variants and represents every accepted semantic term.", sections := "§17.3"}),
+  executable: true
+}
+
+definition{
+  name: sm04,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-04", level := "build", suite := "semantic-ir", statement := "Proof IR contains only the specified closed variants and represents every accepted proof form.", sections := "§17.4"}),
+  executable: true
+}
+
+definition{
+  name: sm05,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-05", level := "build", suite := "semantic-ir", statement := "Conservative signature elaboration checks arity, binders, categories, and expected types without claiming Lean kernel equivalence.", sections := "§17.6"}),
+  executable: true
+}
+
+definition{
+  name: sm06,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-06", level := "build", suite := "semantic-ir", statement := "Omitted implicit binders are recorded as controlled application metadata and user holes are rejected.", sections := "§17.3, §17.6"}),
+  executable: true
+}
+
+definition{
+  name: sm07,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-07", level := "build", suite := "semantic-ir", statement := "Document-entry signatures and generated declaration signatures are compared canonically before rendering.", sections := "§17.7"}),
+  executable: true
+}
+
+definition{
+  name: sm08,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-08", level := "build", suite := "semantic-ir", statement := "Module, component, local, and hypothesis name generation is deterministic and collision checked.", sections := "§17.8"}),
+  executable: true
+}
+
+definition{
+  name: sm09,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-09", level := "build", suite := "semantic-ir", statement := "Linked IR has stable schema-tagged canonical JSON with alpha-safe binder serialization.", sections := "§17.9"}),
+  executable: true
+}
+
+definition{
+  name: sm10,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-10", level := "build", suite := "semantic-ir", statement := "Source ID and semantic ID use exactly the specified framed hash inputs.", sections := "§21.3, §21.4"}),
+  executable: true
+}
+
+definition{
+  name: sm11,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-11", level := "build", suite := "semantic-ir", statement := "Linked project result sets contain every selected module and imported module exactly once in stable order.", sections := "§17.5, §23.3"}),
+  executable: true
+}
+
+definition{
+  name: sm12,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-12", level := "build", suite := "semantic-ir", statement := "No semantic IR node can contain opaque prose, raw backend text, or an unknown extension.", sections := "§6 I4, §17"}),
+  executable: true
+}
+
+definition{
+  name: sm13,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-13", level := "build", suite := "semantic-ir", statement := "Inherited section parameters are represented explicitly and emitted only on declarations that use them.", sections := "§17.5, §18.3"}),
+  executable: true
+}
+
+definition{
+  name: sm14,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-14", level := "build", suite := "semantic-ir", statement := "A numeral without a unique expected type is rejected rather than defaulted.", sections := "§15.5"}),
+  executable: true
+}
+
+definition{
+  name: sm15,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-15", level := "build", suite := "semantic-ir", statement := "A native core module is closed typed DAG data shared by both backends, carries explicit declaration policies, and accepts no backend source text.", sections := "§17.10"}),
+  executable: true
+}
+
+definition{
+  name: sm16,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-16", level := "build", suite := "semantic-ir", statement := "The language-1.1 semantic snapshot contains every closed declaration, term, recursion, match, instance, proof variant, and exact theorem axiom policy without paths or backend text.", sections := "§17.11"}),
+  executable: true
+}
+
+definition{
+  name: sm17,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-17", level := "build", suite := "semantic-ir", statement := "Language 1.1 has distinct mathematical Int, fixed-width signed and unsigned integer, UTF-8 string, byte-sequence, Option, and Result semantic types with canonical literals.", sections := "§17.11"}),
+  executable: true
+}
+
+definition{
+  name: sm18,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-18", level := "build", suite := "semantic-ir", statement := "Portable arithmetic, conversion, bitwise, bounded-shift, collection, UTF-8, byte-order, split/join, and decimal operations form one closed typed primitive vocabulary.", sections := "§17.11"}),
+  executable: true
+}
+
+definition{
+  name: sm19,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-19", level := "build", suite := "semantic-ir", statement := "Portable semantic operations generate deterministic Lean 4.32.1 definitions that elaborate and replay with exact declared computational axiom policies.", sections := "§17.11, §18, §22.6"}),
+  executable: true
+}
+
+definition{
+  name: sm20,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-20", level := "build", suite := "semantic-ir", statement := "Noncanonical, out-of-range, invalid-byte, ill-typed, and unbounded fixed-width values fail before either backend runs.", sections := "§17.11"}),
+  executable: true
+}
+
+definition{
+  name: sm21,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-21", level := "build", suite := "semantic-ir", statement := "Structural recursion admits byte/list values and closed Option and Result inductives while preserving termination and exhaustiveness checks.", sections := "§17.11"}),
+  executable: true
+}
+
+definition{
+  name: sm22,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-22", level := "build", suite := "semantic-ir", statement := "The public owned snapshot DTO and schemas cover every portable type, literal, primitive, and explicit definition axiom policy without backend text.", sections := "§17.11, §21"}),
+  executable: true
+}
+
+definition{
+  name: sm23,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-23", level := "build", suite := "semantic-ir", statement := "Language 1.2 semantic modules use the versioned module and snapshot schemas and accept the typed nonrecursive let term, which language 1.1 rejects before either backend runs.", sections := "§17.12"}),
+  executable: true
+}
+
+definition{
+  name: sm24,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-24", level := "build", suite := "semantic-ir", statement := "Language 1.2 product types, pairs, projections, and product matches are typed, snapshotted under the v2 schemas, and give identical semantic IDs from distinct roots.", sections := "§17.12, §21"}),
+  executable: true
+}
+
+definition{
+  name: sm25,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-25", level := "build", suite := "semantic-ir", statement := "Language 1.2 function types, lambdas with exact explicit captures, full applications, and definition references are typed, lowered to fixed Lean, and verified.", sections := "§17.12, §18"}),
+  executable: true
+}
+
+definition{
+  name: sm26,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-26", level := "build", suite := "semantic-ir", statement := "Language 1.2 snapshots carry a deterministic alpha identity per definition that alpha-equivalent definitions share and any other change alters.", sections := "§17.12, §21"}),
+  executable: true
+}
+
+definition{
+  name: sm27,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-27", level := "build", suite := "semantic-ir", statement := "Language 1.2 snapshots carry complete recursion evidence (mutual labels, decreasing arguments, measures, and evidence bindings), and changing an evidence binding changes the semantic and alpha identities.", sections := "§17.12, §21"}),
+  executable: true
+}
+
+definition{
+  name: sm28,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-28", level := "build", suite := "semantic-ir", statement := "Language 1.2 finite maps and sets over closed ordered key types, their literals, and their primitive operations are typed, lowered to the fixed ordered-collection runtime, and verified.", sections := "§17.12"}),
+  executable: true
+}
+
+definition{
+  name: sm29,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-29", level := "build", suite := "semantic-ir", statement := "Reordered equivalent map, set, and graph literals link to byte-identical semantic data and generated Lean, LaTeX, and lexicon-closure artifacts, while duplicate keys, non-literal literal keys, and key types without a canonical order are rejected.", sections := "§17.12, §21"}),
+  executable: true
+}
+
+definition{
+  name: sm30,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-30", level := "build", suite := "semantic-ir", statement := "Language 1.2 graph literals reference only declared nodes, a graph's nodes are its keys and every successor, and successor, reachability, and topological-order queries are deterministic, bounded by the node count, and report a cycle as none.", sections := "§17.12"}),
+  executable: true
+}
+
+definition{
+  name: sm31,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-31", level := "build", suite := "semantic-ir", statement := "Language 1.2 accepts a second native core-module schema, and only language 1.2 does, whose annotation nodes, extended names, definition safety and groups, compiled and reducibility state, and matcher, projection, no-confusion, simplification, equation-record, inlining, sparse-casesOn, and grind extension state are closed data that the linker validates against the kind of the declaration carrying it and bounds in depth by max_scope_depth, and that both backends render, and that the Lean backend's one fixed decoder submits through Lean's checked declaration API, so that the generated module elaborates under the pinned Lean with exactly its pinned axioms.", sections := "§17.10"}),
+  executable: true
+}
+
+definition{
+  name: sm32,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-32", level := "build", suite := "semantic-ir", statement := "Language 1.2 widening conversions, to_int from every fixed-width integer type to Int and to_nat from every unsigned fixed-width type to Nat, are total, are rejected under language 1.1, and elaborate in linking to ordinary terms over bit_and, equal, conditionals, and exact integer and natural sums, so that a production root decodes a byte string to integers with no decimal text in its lowered program and is certified like any other root.", sections := "§17.12"}),
+  executable: true
+}
+
+definition{
+  name: sm33,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-33", level := "build", suite := "semantic-ir", statement := "A version 2 core-module row that states its type and value and whose name the pinned Lean reserves is not submitted as data: the decoder runs the pinned Lean's own action for the name and refuses the module when the action does not make the name or makes a constant whose kind, levels, type, or value differ from the row's.", sections := "§17.10"}),
+  executable: true
+}
+
+definition{
+  name: sm34,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-34", level := "build", suite := "semantic-ir", statement := "A version 2 core-module row may be derived, stating its name, kind, and extension state, and for a sparse casesOn its recipe, and no universe parameters, type, or value: the decoder makes the constant with the pinned Lean's own construction at the row's place in the order, and refuses the module when the name is not one the pinned Lean reserves and the row states no sparse casesOn recipe, when the construction does not make the name, or when the constant it makes is not a theorem, definition, or abbreviation as the row says; the notation writes a derived row without a type, the schema and the linker refuse a derived row that states what the construction decides, a stored row is still checked against the construction, the decoder checks that the constructors a recipe names are constructors of the type and are named once, that the module states every sparse casesOn its construction makes, and that every derived sparse casesOn is referred to by the type or value of a row, and the content of a derived row is checked by its uses alone, so that a recipe naming other valid constructors of the type is not distinguished where the use accepts it; and the shipped preservation library states every row that carries a sparse casesOn record or is named like an equation, an unfolding equation, a splitter, or an else equation as a derived row.", sections := "§17.10"}),
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

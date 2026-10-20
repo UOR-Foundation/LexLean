@@ -1,6 +1,8 @@
 # model/ledger.toml --- the honesty ledger for claims that are not conformance
 # IDs (R2, SPEC.md §27.3).
 #
+# GENERATED from the modules of spec/src by `just model-write`: edit them, never this file (NS-03).
+#
 # The conformance IDs and their levels live in `model/ids.toml`, which is the
 # register; duplicating them here would give a claim two sources, which is
 # exactly what R1 forbids. What remains is the facts this repository

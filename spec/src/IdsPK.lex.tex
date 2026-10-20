@@ -1,0 +1,47 @@
+\begin{lexlean}{IdsPK}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{spec.titles@1.0.0}
+\importmodule{Rows}
+\title{Packages conformance claims}
+\begin{semanticmodule}
+definition{
+  name: pk01,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PK-01", level := "build", suite := "packages", statement := "A language-1.2 project that declares a source package by its identifier, version, kind `path`, and the member directory a `lexlean-workspace.toml` lists locks it by the tree digest of its manifest and source files, its manifest digest, its version, its module prefix, and its own packages, and the configuration and the lock read back to the bytes written; a project without a source package keeps its bytes, and a package of another kind, a source package in another language, a changed byte or version (LLC0105), an undeclared package (LLC0106), a module prefix claimed twice (LLC0107), a project or a package outside the workspace (LLC0108), a path that escapes it, and a symlink (LLS8001) are each refused with the named code.", sections := "§10.5, §11.1, §25.1"}),
+  executable: true
+}
+
+definition{
+  name: pk02,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PK-02", level := "build", suite := "packages", statement := "A module of a project imports only modules of its own project and modules of the packages the project declares, and a module of a package only modules of itself and of the packages its own manifest declares: a package module is a module of the importing project under its own module prefix, a module of a package the project does not declare fails with LLR3009, and an import cycle through a package fails with LLR3003.", sections := "§10.5, §15.1"}),
+  executable: true
+}
+
+definition{
+  name: pk03,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PK-03", level := "build", suite := "packages", statement := "An importing project builds and verifies under the pinned Lean offline, and its package modules are generated, elaborated, replayed with `leanchecker`, and audited for their exact axioms under the package's module prefix with the package as their origin in the records; the source ID of the project changes with the pins, and no file of the package is written by `fmt`, `build`, or `verify`.", sections := "§10.5, §21.3, §22"}),
+  executable: true
+}
+
+definition{
+  name: pk04,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PK-04", level := "build", suite := "packages", statement := "A production root of the importing project whose closure reaches a definition of a package certifies and exports over that closure as it does for a definition of its own module, the `production:` roots of a package are not roots of the importing project, and the importer publishes no certificate of the package's own.", sections := "§10.5, §17.13"}),
+  executable: true
+}
+
+definition{
+  name: pk05,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PK-05", level := "build", suite := "packages", statement := "The `bootstrap/` pilot imports the standard library's `Text` module through a source package of the workspace instead of holding a copy: its configuration declares `stdlib` as a source package, `bootstrap/src/` holds no `Text` module, `check` links `LexLeanStd.Text` as a module of the project whose definitions are ordinary ones, so that the project's production roots remain `parseAuditOutput` and `isClosedLeanName`, and neither the case of `BS-01`, SPEC.md §17.23, nor `bootstrap/README.md` keeps the copy or its equivalence assertion.", sections := "§10.5, §17.23"}),
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

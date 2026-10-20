@@ -25,6 +25,7 @@ mod lean_backend;
 mod lexical_closure;
 mod lexicon;
 mod models;
+mod normative_source;
 mod operational;
 mod oracle;
 mod packages;
@@ -127,6 +128,7 @@ pub fn run(id: &str) {
         "SL" => stdlib::run(id),
         "BS" => bootstrap::run(id),
         "PK" => packages::run(id),
+        "NS" => normative_source::run(id),
         _ => panic!("no conformance case is wired for {id}"),
     }
 }

@@ -738,8 +738,17 @@ pub(crate) fn run(id: &str) {
         }
         // §27.5: the committed documents equal regeneration from the model.
         "RP-06" => {
-            let model = repo_model::Model::load(&root.join("model").into_std_path_buf())
-                .expect("the model loads");
+            let projection = repo_model::project::project(root.as_std_path())
+                .expect("the register modules project");
+            let model = repo_model::Model::from_texts(root.as_std_path(), &projection)
+                .expect("the projection parses as the model");
+            for (path, projected) in projection.files() {
+                assert_eq!(
+                    root_file(path),
+                    projected,
+                    "{path} is stale; edit spec/src and run `just model-write`"
+                );
+            }
             assert_eq!(
                 root_file(repo_model::codegen::CONFORMANCE_PATH),
                 repo_model::codegen::render_conformance(&model),
@@ -756,7 +765,7 @@ pub(crate) fn run(id: &str) {
             let model = repo_model::Model::load(&root.join("model").into_std_path_buf())
                 .expect("the model loads");
             let table = spec_table();
-            assert_eq!(table.len(), 432, "§31 has 432 rows");
+            assert!(!table.is_empty(), "anti-vacuity: §31 has rows");
             assert_eq!(model.ids.id.len(), table.len(), "register row count");
             for ((spec_id, spec_suite, spec_statement), row) in
                 table.iter().zip(model.ids.id.iter())

@@ -15095,10 +15095,24 @@ at 2.1 GHz with SHA extensions, `rustc` 1.97.1:
 
 At the dev profile's `opt-level = 0` the package hashes 0.7 MB/s (1,984 times
 slower than `sha2` at 1 MiB, 1,936 at 16 MiB); at `opt-level = 1`, 2, and 3 it
-hashes 68, 81, and 72 MB/s at 16 MiB. The override
-`[profile.dev.package.lexlean] opt-level = 1` costs a cold build of the test
-profile of the `lexlean` crate (`cargo test -p lexlean --no-run`, no warm
-cache): 98 s without it and 251 s with it.
+hashes 68, 81, and 72 MB/s at 16 MiB. The reason for the override
+`[profile.dev.package.lexlean] opt-level = 1` is the measurement below, taken
+on one tree (the head of the stack of #234, #236, #237) on 4 cores, one run per
+cell, each setting in its own cold target directory
+(`--config profile.dev.package.lexlean.opt-level=N`):
+
+| | no override (`opt-level = 0`) | override (`opt-level = 1`) | difference |
+| --- | --- | --- | --- |
+| cold `cargo test -p lexlean -p repo-conformance --no-run` | 113 s | 269 s | +156 s |
+| 59 conformance tests: `conformance_ar_*`, `cf_*`, `cl_*`, `sl_05`, `sl_06`, `vr_01`, `vr_02` | 1,162 s | 745 s | -417 s (-36%) |
+
+(The cold build of the `lexlean` crate's tests alone was 98 s and 251 s in the
+first measurement.) The subset is the part of the suite that hashes the most
+(the verification cases read the toolchain executables and the running one),
+so it is the upper end of the effect and not a measure of the whole suite,
+which was not run twice. The maintainer's review of #234 reads CI's `rest` leg
+as showing no slowdown above noise on the other cut (259 tests in 2,153 s on
+the baseline, 260 in 1,921 s with this head).
 
 `SL-06` holds every identity to the one the `sha2` crate gave (#126, stage 2):
 the tracked files of the tree (9,300 at this commit, 300.7 MB; a link to a
@@ -16088,3 +16102,57 @@ The wrong-shape scorer refusals (a contract that maps to `nat`, a contract over
 `list int`) share the stateful and undischarged refusals' branch structure in
 `check_text_generator` but were not planted separately; the case asserts each
 by its reason (`does not map `list uint32` to `list int``).
+
+## Planted defects for normative text as LexLean source (`NS-01`..`NS-04`, #111)
+
+Each defect below was planted alone in the committed tree, `cargo xtask
+validate-model` (or `validate-spec-links` where stated) run once, the failure
+observed, and the plant restored with `git checkout` (§27.9). The runs were
+made on a Linux x86-64 host. The signatures are the gate's first line, trimmed
+of its `gate failed: model is inconsistent:` prefix. `NS-03` and `NS-04` assert
+the same plants, in scratch copies, on every run
+(`conformance_ns_03`, `conformance_ns_04`).
+
+| ID | Planted defect | Command | Observed |
+| --- | --- | --- | --- |
+| `NS-03` | `model/errors.toml`: the first `exit = 1` made `exit = 2` by hand | `validate-model` | `R1: model/errors.toml differs from the projection of spec/src: it is a generated view, so edit the module and run `just model-write` (NS-03)` |
+| `NS-03` | `spec/src/IdsRP.lex.tex`: the statement of `RP-01` edited, `model-write` not run | `validate-model` | `R1: model/ids.toml differs from the projection of spec/src: ... (NS-03)` |
+| `NS-03` | `SPEC.md` §31: the "Primary specification" cell of `RP-01` made `§2, §3` | `validate-spec-links` | ``RP-07: `RP-01` cites `§2, §3` in the table but its source cites `§2` (NS-03)`` |
+| `NS-04` | `spec/src/IdsRP.lex.tex`: a `structure` declared before `rp01` | `validate-model` | ``R1: spec/src/IdsRP.lex.tex: declaration 1 `Extra` (byte 134 of the module body): a row is a `definition` with exactly a name, no parameters, a result, a body and `executable` (NS-04)`` |
+| `NS-04` | `spec/src/IdsRP.lex.tex`: the `level` of `rp01` made `(if true then "build" else "build")` | `validate-model` | ``R1: spec/src/IdsRP.lex.tex: declaration 1 `rp01` (byte 134 of the module body): field `level` is missing, out of order, or not a literal of its type (NS-04)`` |
+| `NS-04` | `spec/src/Errors.lex.tex`: the first record repeated | `validate-model` | ``R1: spec/src/Errors.lex.tex: declaration 2 `llb6001` (byte 412 of the module body): `LLB6001` is registered twice (NS-04)`` |
+| `NS-04` | `spec/src/Extra.lex.tex`: a copy of `Order.lex.tex` | `validate-model` | `R1: spec/src/Extra.lex.tex: a file that belongs to no part of the projection (NS-04)` |
+
+`conformance_ns_04` additionally plants a missing field, fields out of order,
+a definition not named for its row, a family listed twice, a module in the data
+form, malformed notation and a missing module, and asserts each is refused
+naming the file and, for a declaration, its position.
+
+*What the evidence is.* `NS-02` compares the projection with the files it
+replaced: the four model files are byte-identical to their state before the
+register moved into `spec/`, except that `ids.toml` gains the blank line before
+`RP-16` that the file lacked and that the projection writes between every pair
+of rows, and that `ids.toml`, `ledger.toml` and `authorities.toml` gain the one
+comment line saying they are generated. `model/errors.toml`, whose bytes the
+shipped crate embeds, is unchanged. The projector is Rust and can falsify a
+projection, never establish one (C9, SPEC.md §27.5). `NS-01` has the pinned
+Lean elaborate and replay the 40 modules of `spec/` (about 34 seconds on the
+host above); that proves each record definition is a well-typed closed term of
+its row structure and nothing about what the strings say.
+
+### `audit-deferral` and the code-mention scan read `spec/` (#231 review)
+
+`spec` is among the directories R4 reads, and among those the diagnostic-code
+mention scan reads (`.lex.tex` included). Planted on the real gate after
+`model-write`, so that the projection, the scenario and the §31 row agree and
+only the audit can object:
+
+| Rule | Planted defect | Observed |
+| --- | --- | --- |
+| R4 | the deferral marker (spelled in halves here) at the head of the `NS-01` statement in `spec/src/IdsNS.lex.tex` | the audit names `spec/src/IdsNS.lex.tex:11` (and `model/ids.toml:2597`, which carries the same text) |
+| R4 | the marker as a comment in `spec/glossary/spec.titles/lexicon.toml`, a file only `spec/` holds | ``spec/glossary/spec.titles/lexicon.toml:6: # <marker>`` |
+| R5 | a code-shaped token that is not registered, as a comment in `spec/glossary/spec.titles/lexicon.toml` | `R5:` the token, `in .../spec/glossary/spec.titles/lexicon.toml is not a registered diagnostic code` |
+
+An unregistered code written in a `.lex.tex` statement is caught first in
+`CONFORMANCE.md`, which carries the same text, so the `.lex.tex` extension of
+the mention scan is not isolated by a plant; the `spec/` directory is.

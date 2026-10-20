@@ -1,0 +1,103 @@
+\begin{lexlean}{IdsTX}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{spec.titles@1.0.0}
+\importmodule{Rows}
+\title{Latex pdf conformance claims}
+\begin{semanticmodule}
+definition{
+  name: tx01,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "TX-01", level := "build", suite := "latex-pdf", statement := "Canonical LaTeX is rendered solely from linked IR and never copies source text or controls.", sections := "§19.1"}),
+  executable: true
+}
+
+definition{
+  name: tx02,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "TX-02", level := "build", suite := "latex-pdf", statement := "Every module uses the exact canonical LaTeX preamble and no host or timestamp metadata.", sections := "§19.2"}),
+  executable: true
+}
+
+definition{
+  name: tx03,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "TX-03", level := "build", suite := "latex-pdf", statement := "Statements use only canonical controlled proposition and definition renderings.", sections := "§19.3, §19.4"}),
+  executable: true
+}
+
+definition{
+  name: tx04,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "TX-04", level := "build", suite := "latex-pdf", statement := "Proof prose is generated from proof IR using fixed core lexical forms.", sections := "§19.5"}),
+  executable: true
+}
+
+definition{
+  name: tx05,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "TX-05", level := "build", suite := "latex-pdf", statement := "Titles, sections, parameters, environments, numbering, and labels follow the exact document rules.", sections := "§19.3"}),
+  executable: true
+}
+
+definition{
+  name: tx06,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "TX-06", level := "build", suite := "latex-pdf", statement := "Every visible LaTeX word, symbol, punctuation mark, and control has complete coverage.", sections := "§19.6"}),
+  executable: true
+}
+
+definition{
+  name: tx07,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "TX-07", level := "build", suite := "latex-pdf", statement := "Non-core lexicons cannot inject a raw TeX control or unclassified output segment.", sections := "§13.9, §19.6"}),
+  executable: true
+}
+
+definition{
+  name: tx08,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "TX-08", level := "build", suite := "latex-pdf", statement := "Canonical LaTeX bytes are deterministic, LF-normalized, and final-LF terminated.", sections := "§19"}),
+  executable: true
+}
+
+definition{
+  name: tx09,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "TX-09", level := "build", suite := "latex-pdf", statement := "An enabled external PDF provider runs without a shell in an isolated directory with exact hashes and resources.", sections := "§19.7"}),
+  executable: true
+}
+
+definition{
+  name: tx10,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "TX-10", level := "build", suite := "latex-pdf", statement := "The PDF recipe ID and actual PDF hash use the specified independent content records.", sections := "§19.8"}),
+  executable: true
+}
+
+definition{
+  name: tx11,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "TX-11", level := "build", suite := "latex-pdf", statement := "PDF success or failure never changes mathematical verification authority.", sections := "§19.7"}),
+  executable: true
+}
+
+definition{
+  name: tx12,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "TX-12", level := "build", suite := "latex-pdf", statement := "The publishable document is the canonical renderer output rather than unchecked source bytes.", sections := "§6 I8, §19"}),
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}
