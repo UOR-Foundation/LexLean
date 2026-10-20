@@ -1869,6 +1869,27 @@ the nine declared constructors differ.
 A first run of plant (b) removed the `natSub` of `Item` instead and the case passed, which
 is the correct answer to that edit and not a plant of this case.
 
+### the width families of the core runtime are source (RB-16, SP-22, widths branch)
+
+`claude/issue-91-stage4-widths-2` writes out the 92 functions of the eight widths in `RustRuntime`:
+`fixed_<w>::checked_add`, `checked_sub`, `checked_mul`, `checked_quot`, `bit_and`, `bit_or`, `bit_xor`,
+`bit_not`, `shift_left`, `shift_right`, and `convert` (88), and `checked_neg_<w>` for the four signed
+widths (4), each a call of a machine primitive, with a `refines_<path with _>` theorem each. The
+runtime is then 110 functions and 110 theorems. `RustType.i128` is a node across the machine for
+`convert`'s operand (the `Type::I128` of the AST and the decoder, the Lean constructor, the certificate
+B encoder, the leaf `LkI128` of `RustValidate`, one more hand-built crate: BS-05 counts 443/195/306/82,
+749 in all). The printer groups the consecutive functions of one module by the path in the exported
+name. `rb_16` compiles the oracle and the generated runtime together and runs every one of the 110
+functions on 9 boundary values of its width (all pairs, six shift amounts, nine conversion inputs)
+and 200 seeded calls: 27 s; three plants of width bodies (`checked_add` of `u8` for `checked_sub`,
+`shift_left` of `i32` for `shift_right`, `bit_xor` of `u16` for `bit_or`) fail at their function.
+`sp_22` verifies the module of 110 theorems in 8 min 1 s (13 min 51 s of CPU) and its plant on one
+theorem in about a minute; the case is 566 s with `rb_16` and `rb_09`, runs on a stack of 256 MiB
+because the readers recurse with the module's nesting, and allows its project an hour
+(`child_timeout_ms`), so `SP-22` is the one case of the part `preservation-runtime` of `bdd`
+(`bdd-preservation-runtime` in `.github/vv-rows.json`). The proofs of the width theorems need
+`allWidth` and `hasWidth` in their definitions: a head without them did not terminate.
+
 ### a theorem proved by a split on a Boolean local can fail (SM-36)
 
 A language-1.2 `cases` proof may name a local of type `Bool` (`SM-36`, §17.10, #91 stage 4). The

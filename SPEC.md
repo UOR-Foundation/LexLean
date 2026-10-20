@@ -5758,7 +5758,13 @@ run of the runtime item of the same name, proved by `term_cases` (`SM-35`) and a
 axioms its policy states; the fuel is fixed in each theorem (12) and only the run of the
 function spends it, so a fuel too small for a body would make that side `exhausted`, and the
 theorem would be unprovable, never a false equation proved; the set of theorems equals the set of defined functions, and a
-theorem that runs another function than its name says is refused. A *loop*
+theorem that runs another function than its name says is refused. The functions of a width are
+written out, one definition per function and width, and not as a family (#91): an exported name
+that is a path `fixed_u8::checked_add` prints inside `pub mod fixed_u8 { … }` under its last
+segment, so the module's path is the runtime item's path and the printer, which groups the
+consecutive functions of one module, adds no construct to `RustSyntax`. The conversion to a width
+takes `i128`, the node `RustType.i128` (`Type::I128`), and is a call of the machine primitive
+`tryFrom`; its theorem states the run of the item on an `int`. A *loop*
 (`Expr.loop`, `SP-19`) is the one construct of the machine that repeats: it names
 a state, a local the enclosing block has bound, and a body block. The body is
 evaluated in the environment with the state, and its value is a `Result`: `Ok`
