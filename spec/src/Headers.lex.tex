@@ -1,0 +1,64 @@
+\begin{lexlean}{Headers}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{spec.titles@1.0.0}
+\title{Model file headers}
+\begin{semanticmodule}
+definition{
+  name: idsHeader,
+  parameters: [],
+  result: (List String),
+  body: (cons "# model/ids.toml --- the LexLean conformance ID register (R1)." (cons "#" (cons "# GENERATED from the modules of spec/src by `just model-write`: edit them, never this file (NS-03)." (cons "#" (cons "# Every row is copied byte-for-byte from the SPEC.md §31 table; `cargo xtask" (cons "# validate-spec-links` fails if the two ever disagree (RP-07). CONFORMANCE.md" (cons "# is generated from this file by `just model-write` and compared by the model" (cons "# gate. Every ID is honesty level `build` (§27.3): constructed here and" (cons "# validated against its oracle." (nil String)))))))))),
+  executable: true
+}
+
+definition{name: idsSpec, parameters: [], result: String, body: "lexlean/ids/1", executable: true}
+
+definition{
+  name: errorsHeader,
+  parameters: [],
+  result: (List String),
+  body: (cons "# model/errors.toml --- the closed public diagnostic registry (R1, R5, §26)." (cons "#" (cons "# Rows sort by code. `statement` is the §26.3 meaning byte-for-byte; `title`" (cons "# is that meaning without its terminal period. ERRORS.md is generated from" (cons "# this file, and `cargo xtask validate-model` rejects a code used anywhere" (cons "# that is absent here, and an unused registered code (§26.1)." (nil String))))))),
+  executable: true
+}
+
+definition{
+  name: errorsSpec,
+  parameters: [],
+  result: String,
+  body: "lexlean/errors/1",
+  executable: true
+}
+
+definition{
+  name: ledgerHeader,
+  parameters: [],
+  result: (List String),
+  body: (cons "# model/ledger.toml --- the honesty ledger for claims that are not conformance" (cons "# IDs (R2, SPEC.md §27.3)." (cons "#" (cons "# GENERATED from the modules of spec/src by `just model-write`: edit them, never this file (NS-03)." (cons "#" (cons "# The conformance IDs and their levels live in `model/ids.toml`, which is the" (cons "# register; duplicating them here would give a claim two sources, which is" (cons "# exactly what R1 forbids. What remains is the facts this repository" (cons "# *reproduces* from an authority (§27.4): each is `some-true`, cites its" (cons "# authority row, and is never presented as established here." (cons "#" (cons "# The initial repository has no `open` claim, and no `open` row may ever be" (cons "# used as acceptance evidence (§27.3)." (nil String)))))))))))))),
+  executable: true
+}
+
+definition{
+  name: ledgerSpec,
+  parameters: [],
+  result: String,
+  body: "lexlean/ledger/1",
+  executable: true
+}
+
+definition{
+  name: authoritiesHeader,
+  parameters: [],
+  result: (List String),
+  body: (cons "# model/authorities.toml --- what this repository cites rather than proves" (cons "# (R2, SPEC.md §27.4)." (cons "#" (cons "# GENERATED from the modules of spec/src by `just model-write`: edit them, never this file (NS-03)." (cons "#" (cons "# A `some-true` claim is reproduced from an authority and is not established" (cons "# here. Each row names the authority well enough for a third party to find it." (cons "# A row that vendors nothing records `checksum = \"none\"` with the identifier a" (cons "# third party verifies instead. A row that vendors a copy of its source names" (cons "# it in `vendored` and records `checksum = \"sha256:<hex>\"`, which" (cons "# `cargo xtask validate-model` recomputes from the copy. `realized_by` lists the conformance IDs that are *evidence* this" (cons "# repository realizes the cited fact; evidence is not proof, and the meta-gate" (cons "# fails the build if any document blurs the two registers." (nil String)))))))))))))),
+  executable: true
+}
+
+definition{
+  name: authoritiesSpec,
+  parameters: [],
+  result: String,
+  body: "lexlean/authorities/1",
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

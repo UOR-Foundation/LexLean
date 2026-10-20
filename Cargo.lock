@@ -513,7 +513,9 @@ dependencies = [
 name = "repo-model"
 version = "0.3.0"
 dependencies = [
+ "lexlean",
  "serde",
+ "serde_json",
  "sha2",
  "toml",
 ]

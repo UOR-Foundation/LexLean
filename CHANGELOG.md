@@ -17,6 +17,17 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- Normative text as LexLean source, the register (SPEC.md §27.5, `NS-01`..`NS-04`,
+  stage 1 of #111). The conformance register, the diagnostic registry, the
+  ledger and the authority register are the semantic modules of the new
+  workspace member `spec/`, one record per row and one module per ID family,
+  written in the authoring notation; `model/*.toml` are generated from them by
+  `repo-model`'s projector, `validate-model` compares their bytes before it
+  reads them, and `validate-spec-links` takes the §31 section references and the
+  row count from the projection instead of a literal. Count 430 becomes 434.
+  No language, schema or compiler-semantics identity moves, and `model/errors.toml`
+  is byte-identical.
+
 - Context windows and text generators (SPEC.md §17.12, *Text components*,
   `LM-04`..`LM-06`, slice 2 of #30; new code `LLT4016`). A `context_window`
   of capacity at least 1 and overflow `refuse` or `keep_last` elaborates to
@@ -188,6 +199,19 @@ and Unreleased holds what has landed since.
   the gate are the rows of `.github/vv-rows.json`, the matrix the plan hands
   to `vv`. `release.yml` still runs `just vv` whole and reads no earlier run.
   The register is unchanged: the statement of `RP-14` is extended.
+- The host legs of CI may run for 240 minutes, where they were cut off at 120:
+  the Intel macOS leg took 74, 92, and 100 minutes on the three full gates
+  before 2026-10-20, then passed its 430 conformance tests in 99 minutes and
+  was cancelled at 120 during the last test binaries. A leg cancelled at its
+  limit is not a result about the code; the limit is again twice the slowest
+  observed time.
+- Release lines (SPEC.md §9.4, `RP-14`): the branch `release/vX.Y` is the
+  release X.Y, cut from `main` when work on it begins; a milestone's pull
+  requests target its line, tags are made from it, it is merged forward into
+  the next line after each landing, and `main` is the newest released line.
+  The three workflows run on a push to a release line as on a push to `main`,
+  under the same plan, and `RP-14` reads their push triggers. The register is
+  unchanged: the statement of `RP-14` is extended.
 - Measured stack bounds for every production root a conformance harness runs
   on a corpus and that admits `recursion` (SPEC.md §17.13, §17.23, `PD-08`,
   #105 step 3; no new diagnostic code, no change to any language identity).

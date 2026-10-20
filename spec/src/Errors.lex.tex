@@ -1,0 +1,695 @@
+\begin{lexlean}{Errors}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{spec.titles@1.0.0}
+\importmodule{Rows}
+\title{Diagnostic registry}
+\begin{semanticmodule}
+definition{
+  name: llb6001,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLB6001", class := "language", exit := 1, title := "Lean lowering has no defined form", statement := "Lean lowering has no defined form."}),
+  executable: true
+}
+
+definition{
+  name: llb6002,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLB6002", class := "language", exit := 1, title := "LaTeX lowering or renderer-token coverage failure", statement := "LaTeX lowering or renderer-token coverage failure."}),
+  executable: true
+}
+
+definition{
+  name: llb6003,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLB6003", class := "language", exit := 1, title := "Artifact hash, schema, or atomic publication failure", statement := "Artifact hash, schema, or atomic publication failure."}),
+  executable: true
+}
+
+definition{
+  name: llb6004,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLB6004", class := "environment", exit := 3, title := "PDF-provider protocol failure", statement := "PDF-provider protocol failure."}),
+  executable: true
+}
+
+definition{
+  name: llb6005,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLB6005", class := "language", exit := 1, title := "Target realization program or Rust package invalid or unrenderable", statement := "A production-realization target program is malformed, violates the calculus's static rules, or cannot be rendered faithfully to the Rust profile, or a Rust package manifest is malformed or misstates its crate name, version, sources, exports, or the interface of the program it packages."}),
+  executable: true
+}
+
+definition{
+  name: llb6006,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLB6006", class := "language", exit := 1, title := "GNAF request malformed", statement := "A GNAF request is not a closed `lexlean/gnaf-request/1` document, its reference program or a system its universe realizes is not a valid target program, its reference returns no value on a domain argument, its grammar repeats a threshold or misdeclares a plan's preparation, or its stated universe identity is not the one its components determine."}),
+  executable: true
+}
+
+definition{
+  name: llb6007,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLB6007", class := "language", exit := 1, title := "GNAF certificate malformed", statement := "A GNAF certificate is not a closed `lexlean/gnaf-certificate/1` document, or a certificate fixture states an identity other than its certificate's."}),
+  executable: true
+}
+
+definition{
+  name: llc0001,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLC0001", class := "cli-configuration", exit := 2, title := "Invalid command-line usage", statement := "Invalid command-line usage."}),
+  executable: true
+}
+
+definition{
+  name: llc0002,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLC0002", class := "cli-configuration", exit := 2, title := "Mutually exclusive or empty selection", statement := "Mutually exclusive or empty selection."}),
+  executable: true
+}
+
+definition{
+  name: llc0101,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLC0101", class := "cli-configuration", exit := 2, title := "Invalid or unknown project configuration field", statement := "Invalid or unknown project configuration field."}),
+  executable: true
+}
+
+definition{
+  name: llc0102,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLC0102", class := "cli-configuration", exit := 2, title := "Missing, stale, or noncanonical lock file", statement := "Missing, stale, or noncanonical lock file."}),
+  executable: true
+}
+
+definition{
+  name: llc0103,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLC0103", class := "cli-configuration", exit := 2, title := "Unsupported schema or language version", statement := "Unsupported schema or language version."}),
+  executable: true
+}
+
+definition{
+  name: llc0104,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLC0104", class := "cli-configuration", exit := 2, title := "Duplicate module or case-folded path collision", statement := "Duplicate module or case-folded path collision."}),
+  executable: true
+}
+
+definition{
+  name: llc0105,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLC0105", class := "cli-configuration", exit := 2, title := "Source package is not the package the lock pins", statement := "A source package's version, source, module prefix, manifest digest, tree digest, or declared packages differ from the lock's row, naming the package and both digests."}),
+  executable: true
+}
+
+definition{
+  name: llc0106,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLC0106", class := "cli-configuration", exit := 2, title := "Source package undeclared or declared with two sources", statement := "The lock pins a source package the project does not declare, or one identifier names two sources in the closure."}),
+  executable: true
+}
+
+definition{
+  name: llc0107,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLC0107", class := "cli-configuration", exit := 2, title := "Module prefix claimed by two sources", statement := "A module prefix is claimed by the project and a source package, or by two source packages, equal or one beneath the other, or an import names a module both the project and a package provide."}),
+  executable: true
+}
+
+definition{
+  name: llc0108,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLC0108", class := "cli-configuration", exit := 2, title := "Source package outside the workspace rule", statement := "A project that declares a source package is outside any workspace or is not a member of it, a package is not a member of the workspace, or the workspace file or a package is malformed."}),
+  executable: true
+}
+
+definition{
+  name: llc0201,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLC0201", class := "cli-configuration", exit := 2, title := "Production request malformed", statement := "A production request is not a closed `lexlean/production-request/1` document: an unknown or missing field, another spec, roots, targets, or evidence that are empty, unsorted, or repeated, a root, package, or path that is not of its form, or a package name used twice for one target."}),
+  executable: true
+}
+
+definition{
+  name: llc0202,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLC0202", class := "cli-configuration", exit := 2, title := "Requested root is not a production root", statement := "A production request names a root that is not a linked production root of the project's entrypoint closure."}),
+  executable: true
+}
+
+definition{
+  name: llc0203,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLC0203", class := "cli-configuration", exit := 2, title := "Unknown or mismatched production target", statement := "A production request names a target that is not registered, that its root does not declare, or whose descriptor digest is not the registered target's."}),
+  executable: true
+}
+
+definition{
+  name: llc0204,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLC0204", class := "cli-configuration", exit := 2, title := "Stale production expectation", statement := "The source ID, semantic ID, or lock digest a production request pins differs from the project's, or the project changed while it was being exported."}),
+  executable: true
+}
+
+definition{
+  name: llf5001,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLF5001", class := "language", exit := 1, title := "Invalid definition form, self head, or recursion", statement := "Invalid definition form, self head, or recursion."}),
+  executable: true
+}
+
+definition{
+  name: llf5002,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLF5002", class := "language", exit := 1, title := "Invalid proof step for the current goal", statement := "Invalid proof step for the current goal."}),
+  executable: true
+}
+
+definition{
+  name: llf5003,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLF5003", class := "language", exit := 1, title := "Missing, duplicate, or malformed proof branch", statement := "Missing, duplicate, or malformed proof branch."}),
+  executable: true
+}
+
+definition{
+  name: llf5004,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLF5004", class := "language", exit := 1, title := "Proof does not close all goals", statement := "Proof does not close all goals."}),
+  executable: true
+}
+
+definition{
+  name: llf5005,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLF5005", class := "language", exit := 1, title := "Forbidden proof form or proof hole", statement := "Forbidden proof form or proof hole."}),
+  executable: true
+}
+
+definition{
+  name: lli9001,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLI9001", class := "internal", exit := 70, title := "Internal invariant failure", statement := "Internal invariant failure."}),
+  executable: true
+}
+
+definition{
+  name: lll1001,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLL1001", class := "language", exit := 1, title := "Invalid UTF-8, forbidden scalar, or line-ending form", statement := "Invalid UTF-8, forbidden scalar, or line-ending form."}),
+  executable: true
+}
+
+definition{
+  name: lll1002,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLL1002", class := "language", exit := 1, title := "Forbidden comment, raw percent, tab, or TeX escape", statement := "Forbidden comment, raw percent, tab, or TeX escape."}),
+  executable: true
+}
+
+definition{
+  name: lll1003,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLL1003", class := "language", exit := 1, title := "Non-NFC or noncanonical source requiring formatting", statement := "Non-NFC or noncanonical source requiring formatting."}),
+  executable: true
+}
+
+definition{
+  name: lll1004,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLL1004", class := "language", exit := 1, title := "Unknown non-whitespace primitive atom", statement := "Unknown non-whitespace primitive atom."}),
+  executable: true
+}
+
+definition{
+  name: lll1005,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLL1005", class := "language", exit := 1, title := "Source token-coverage gap or overlap", statement := "Source token-coverage gap or overlap."}),
+  executable: true
+}
+
+definition{
+  name: lll1006,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLL1006", class := "language", exit := 1, title := "Token-lattice construction failure", statement := "Token-lattice construction failure."}),
+  executable: true
+}
+
+definition{
+  name: llp2001,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLP2001", class := "language", exit := 1, title := "No grammar parse", statement := "No grammar parse."}),
+  executable: true
+}
+
+definition{
+  name: llp2002,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLP2002", class := "language", exit := 1, title := "More than one distinct linked interpretation", statement := "More than one distinct linked interpretation."}),
+  executable: true
+}
+
+definition{
+  name: llp2003,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLP2003", class := "language", exit := 1, title := "Invalid structural order or component cardinality", statement := "Invalid structural order or component cardinality."}),
+  executable: true
+}
+
+definition{
+  name: llp2004,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLP2004", class := "language", exit := 1, title := "Invalid math precedence, associativity, or grouping", statement := "Invalid math precedence, associativity, or grouping."}),
+  executable: true
+}
+
+definition{
+  name: llr3001,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLR3001", class := "language", exit := 1, title := "Missing package, version, source, or digest mismatch", statement := "Missing package, version, source, or digest mismatch."}),
+  executable: true
+}
+
+definition{
+  name: llr3002,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLR3002", class := "language", exit := 1, title := "Duplicate package, entry, form, or qualified ID", statement := "Duplicate package, entry, form, or qualified ID."}),
+  executable: true
+}
+
+definition{
+  name: llr3003,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLR3003", class := "language", exit := 1, title := "Import, denotation, module, or definition cycle", statement := "Import, denotation, module, or definition cycle."}),
+  executable: true
+}
+
+definition{
+  name: llr3004,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLR3004", class := "language", exit := 1, title := "Invalid LSE, LRE, frame, form, or renderer token", statement := "Invalid LSE, LRE, frame, form, or renderer token."}),
+  executable: true
+}
+
+definition{
+  name: llr3005,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLR3005", class := "language", exit := 1, title := "Unavailable or invalid document/external reference", statement := "Unavailable or invalid document/external reference."}),
+  executable: true
+}
+
+definition{
+  name: llr3006,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLR3006", class := "language", exit := 1, title := "Unsafe canonical form or raw renderer output", statement := "Unsafe canonical form or raw renderer output."}),
+  executable: true
+}
+
+definition{
+  name: llr3007,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLR3007", class := "language", exit := 1, title := "Model artifact unavailable or its digest or length mismatched", statement := "Model artifact unavailable or its digest or length mismatched."}),
+  executable: true
+}
+
+definition{
+  name: llr3008,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLR3008", class := "language", exit := 1, title := "Model artifact bytes violate the declared schema, type, or role", statement := "Model artifact bytes violate the declared schema, type, or role."}),
+  executable: true
+}
+
+definition{
+  name: llr3009,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLR3009", class := "language", exit := 1, title := "Import of a module of a source package the importing scope does not declare", statement := "A module imports a module of a source package that the project, or the package the module belongs to, does not declare."}),
+  executable: true
+}
+
+definition{
+  name: lls8001,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLS8001", class := "security-limit", exit := 4, title := "Path escape, symlink, special file, or filesystem identity conflict", statement := "Path escape, symlink, special file, or filesystem identity conflict."}),
+  executable: true
+}
+
+definition{
+  name: lls8002,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLS8002", class := "security-limit", exit := 4, title := "Explicit resource limit exceeded", statement := "An explicit project resource limit, or the declared capacity of an evaluator such as the GNAF host's (§17.15), is exceeded."}),
+  executable: true
+}
+
+definition{
+  name: lls8003,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLS8003", class := "security-limit", exit := 4, title := "Network operation attempted outside permitted lock acquisition", statement := "Network operation attempted outside permitted lock acquisition."}),
+  executable: true
+}
+
+definition{
+  name: lls8004,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLS8004", class := "security-limit", exit := 4, title := "Child environment, executable, hash, or shell-policy violation", statement := "Child environment, executable, hash, or shell-policy violation."}),
+  executable: true
+}
+
+definition{
+  name: llt4001,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLT4001", class := "language", exit := 1, title := "Arity, binder, category, or conservative type mismatch", statement := "Arity, binder, category, or conservative type mismatch."}),
+  executable: true
+}
+
+definition{
+  name: llt4002,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLT4002", class := "language", exit := 1, title := "Unresolved overloaded entry", statement := "Unresolved overloaded entry."}),
+  executable: true
+}
+
+definition{
+  name: llt4003,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLT4003", class := "language", exit := 1, title := "External-interface probe mismatch", statement := "External-interface probe mismatch."}),
+  executable: true
+}
+
+definition{
+  name: llt4004,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLT4004", class := "language", exit := 1, title := "Document-entry signature mismatch", statement := "Document-entry signature mismatch."}),
+  executable: true
+}
+
+definition{
+  name: llt4005,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLT4005", class := "language", exit := 1, title := "Production root not eligible for a declared target", statement := "Production root not eligible for a declared target."}),
+  executable: true
+}
+
+definition{
+  name: llt4006,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLT4006", class := "language", exit := 1, title := "Model contract, realization, or artifact interface mismatch", statement := "Model contract, realization, or artifact interface mismatch."}),
+  executable: true
+}
+
+definition{
+  name: llt4007,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLT4007", class := "language", exit := 1, title := "Invalid model composition or entry obligation", statement := "Invalid model composition or entry obligation."}),
+  executable: true
+}
+
+definition{
+  name: llt4008,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLT4008", class := "language", exit := 1, title := "Unvalidated model runtime boundary", statement := "Unvalidated model runtime boundary."}),
+  executable: true
+}
+
+definition{
+  name: llt4009,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLT4009", class := "language", exit := 1, title := "Model evidence not established", statement := "Model evidence not established."}),
+  executable: true
+}
+
+definition{
+  name: llt4010,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLT4010", class := "language", exit := 1, title := "Reasoning interface or obligation mismatch", statement := "Reasoning interface or obligation mismatch."}),
+  executable: true
+}
+
+definition{
+  name: llt4011,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLT4011", class := "language", exit := 1, title := "Unbounded reasoning or missing termination evidence", statement := "Unbounded reasoning or missing termination evidence."}),
+  executable: true
+}
+
+definition{
+  name: llt4012,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLT4012", class := "language", exit := 1, title := "Unvalidated reasoning runtime boundary", statement := "Unvalidated reasoning runtime boundary."}),
+  executable: true
+}
+
+definition{
+  name: llt4013,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLT4013", class := "language", exit := 1, title := "Tooling module malformed or out of context", statement := "A tooling module is not canonical JSON of the closed schema lexlean/tooling-module/1, has a member the schema does not close, nests deeper than the decoder allows, or is not in a language-1.2 project the compiler embeds."}),
+  executable: true
+}
+
+definition{
+  name: llt4014,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLT4014", class := "language", exit := 1, title := "Tooling authority registry invalid", statement := "A tooling module pins an authority other than the compiler's Lean release, or its registry of types, calls, and plumbing is not closed: a name declared twice, a signature or field naming an unregistered constant or an unbound variable, a type whose parameters, constructors, index requirements, or abbreviation are inconsistent, a plumbing row that is empty, unsorted, or repeats a constant, or a source pin that is not a toolchain path with a SHA-256."}),
+  executable: true
+}
+
+definition{
+  name: llt4015,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLT4015", class := "language", exit := 1, title := "Tooling term ill-typed or unlicensed", statement := "A tooling term is not well typed: a call with the wrong type arguments or arguments, a match that is not exhaustive at its scrutinee's index, or a binder that shadows another; a function recurses without a licence (partial, or its contiguous mutual group); a command, invocation, or evaluation does not match its grammar; or a traversal does not recurse into every field of its recursive family."}),
+  executable: true
+}
+
+definition{
+  name: llt4016,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLT4016", class := "language", exit := 1, title := "Unbounded or unspecified text generation", statement := "A text declaration does not state the bound it must: a context window with capacity 0, or a text generator with max_tokens 0."}),
+  executable: true
+}
+
+definition{
+  name: llv7001,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLV7001", class := "environment", exit := 3, title := "Lean/Lake/leanchecker version or executable mismatch", statement := "Lean/Lake/leanchecker version or executable mismatch."}),
+  executable: true
+}
+
+definition{
+  name: llv7002,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLV7002", class := "language", exit := 1, title := "Generated Lean elaboration or compilation failure", statement := "Generated Lean elaboration or compilation failure."}),
+  executable: true
+}
+
+definition{
+  name: llv7003,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLV7003", class := "language", exit := 1, title := "`leanchecker` replay failure", statement := "`leanchecker` replay failure."}),
+  executable: true
+}
+
+definition{
+  name: llv7004,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLV7004", class := "language", exit := 1, title := "Missing, malformed, or unexpected axiom-audit output", statement := "Missing, malformed, or unexpected axiom-audit output."}),
+  executable: true
+}
+
+definition{
+  name: llv7005,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLV7005", class := "language", exit := 1, title := "Axiom policy violation", statement := "Axiom policy violation."}),
+  executable: true
+}
+
+definition{
+  name: llv7006,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLV7006", class := "language", exit := 1, title := "Lean warning or unexpected successful-process output", statement := "Lean warning or unexpected successful-process output."}),
+  executable: true
+}
+
+definition{
+  name: llv7007,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLV7007", class := "environment", exit := 3, title := "Lake workspace lock or dependency availability mismatch", statement := "Lake workspace lock or dependency availability mismatch."}),
+  executable: true
+}
+
+definition{
+  name: llv7008,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLV7008", class := "environment", exit := 3, title := "Non-UTF-8 path or argument in the environment", statement := "A host path, working directory, or command-line argument is not valid UTF-8; non-UTF-8 project paths are outside language 1.0 (§8.3)."}),
+  executable: true
+}
+
+definition{
+  name: llv7009,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLV7009", class := "environment", exit := 3, title := "Git acquisition environment failure", statement := "During `lock --allow-network`, the git executable could not be resolved or run, or the exact configured commit could not be fetched or checked out from the HTTPS remote."}),
+  executable: true
+}
+
+definition{
+  name: llv7010,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLV7010", class := "environment", exit := 3, title := "Host filesystem or platform failure", statement := "A host filesystem or platform operation under the project (creating, writing, renaming, or locking a file) failed for a reason outside the project's control."}),
+  executable: true
+}
+
+definition{
+  name: llv7011,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLV7011", class := "language", exit := 1, title := "Named-root extraction rejected", statement := "Lean's compiler front end could not extract a production root's computational closure, or the extracted closure names an unknown root, an opaque, unsafe, partial, or noncomputable dependency, an unresolved or unsupported constant, an unsupported compiler form, or disagrees with the production-eligibility closure."}),
+  executable: true
+}
+
+definition{
+  name: llv7012,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLV7012", class := "environment", exit := 3, title := "Lean compiler-front-end authority drift", statement := "The pinned Lean compiler-front-end interface no longer matches its registry: a signature probe or the pinned extraction adapter fails to elaborate, or the running Lean reports another version or source commit."}),
+  executable: true
+}
+
+definition{
+  name: llv7013,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLV7013", class := "language", exit := 1, title := "Certificate A rejected", statement := "A production root's preservation certificate does not compile silently under the pinned Lean, its leanchecker replay fails, or its root theorem depends on axioms other than exactly Classical.choice, Quot.sound, and propext."}),
+  executable: true
+}
+
+definition{
+  name: llv7014,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLV7014", class := "environment", exit := 3, title := "Preservation environment drift", statement := "The shipped preservation library or calculus modules fail their token audit, do not compile silently under the pinned Lean, or a library declaration depends on axioms other than those its registry row states."}),
+  executable: true
+}
+
+definition{
+  name: llv7015,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLV7015", class := "language", exit := 1, title := "Certificate B rejected", statement := "A production root's rendering in one of its targets admits no derivation of the correspondence with its lowered program, its certificate does not compile silently under the pinned Lean, its leanchecker replay fails, or its simulation theorem depends on axioms other than exactly Classical.choice, Quot.sound, and propext."}),
+  executable: true
+}
+
+definition{
+  name: llv7016,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLV7016", class := "language", exit := 1, title := "Certificate E rejected", statement := "The composition of a production root's certificates A and B for one of its targets does not compile silently under the pinned Lean, its leanchecker replay fails, or its end-to-end theorem depends on axioms other than exactly Classical.choice, Quot.sound, and propext."}),
+  executable: true
+}
+
+definition{
+  name: llv7017,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLV7017", class := "environment", exit := 3, title := "Invalid verification resource profile", statement := "The operational verification process width the environment selects is not a decimal integer from 1 to 64."}),
+  executable: true
+}
+
+definition{
+  name: llv7018,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLV7018", class := "environment", exit := 3, title := "Child start refused after the host ended the live children", statement := "A child process could not be started because the host ended the live children of this process through `lexlean::verify::end_live_children` and has not re-enabled starting children."}),
+  executable: true
+}
+
+definition{
+  name: llv7101,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLV7101", class := "language", exit := 1, title := "Certificate evidence does not certify the root", statement := "Certificate evidence a production request supplies is not the certificate whose identity it pins, earns a refused verdict for its request, or is for a request whose reference program is not the root's lowered program."}),
+  executable: true
+}
+
+definition{
+  name: llv7102,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLV7102", class := "language", exit := 1, title := "Production artifact replay rejected", statement := "A production bundle does not replay: its result identity, a file digest, a binding between the result, the attestation, the preservation record, and its packages, a re-rendered package, a target descriptor, the producing compiler's semantics, or a recomputed certificate verdict disagrees with what the bundle states, or the bundle holds a file it does not state."}),
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

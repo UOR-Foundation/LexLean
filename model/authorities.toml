@@ -1,6 +1,8 @@
 # model/authorities.toml --- what this repository cites rather than proves
 # (R2, SPEC.md §27.4).
 #
+# GENERATED from the modules of spec/src by `just model-write`: edit them, never this file (NS-03).
+#
 # A `some-true` claim is reproduced from an authority and is not established
 # here. Each row names the authority well enough for a third party to find it.
 # A row that vendors nothing records `checksum = "none"` with the identifier a
