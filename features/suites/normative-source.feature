@@ -37,3 +37,9 @@ Feature: normative-source
     Given the committed repository, and a plant of a file in `model/` that is not a projection, of a root Markdown file on no list, of a projection without its notice, and of a hand-written document that restates a registered statement
     When the source-authority audit runs on the committed repository and on each plant
     Then the committed repository passes and each plant is refused naming R1 and the file
+
+  @NS-07 @build
+  Scenario: `cargo xtask spec` changes the chapter modules of the specification project by item: it replaces a block, inserts one after a block, and ports the hunks of a merged SPEC.md that lie outside derived regions, each through the authoring SDK, and it writes nothing unless the regenerated SPEC.md equals the intended text outside derived regions, refusing a first line that matches no block or two and a hunk that spans two blocks.
+    Given a scratch copy of the specification project, a block to replace, a block to insert after, a merged SPEC.md with a prose hunk and a hunk inside a derived region, and a block of more than sixty lines
+    When each operation of `cargo xtask spec` is run on the copy, and each refusal is planted: a first line that matches no block, one that matches two, a hunk that spans two blocks, and an edit whose regenerated text differs from the intended text
+    Then each accepted operation leaves the regenerated SPEC.md equal to the intended text outside derived regions, a hunk inside a derived region is reported and not ported, an item over sixty lines is continued, a percent sign is written back, and each refusal names its block or lines and leaves the tree unchanged

@@ -2214,3 +2214,8 @@ fn conformance_ns_05() {
 fn conformance_ns_06() {
     repo_conformance::cases::run("NS-06");
 }
+
+#[test]
+fn conformance_ns_07() {
+    repo_conformance::cases::run("NS-07");
+}
