@@ -5257,7 +5257,7 @@ definition{
   body: (match fuel
     | Nat.zero => (ctor Outcome.exhausted)
     | Nat.succ remaining => (match expression
-      | TargetSyntax::Expr.value literalType literal => (ctor Outcome.value literal 1)
+      | TargetSyntax::Expr.value literalType literal => (ctor Outcome.value literal (weight literal))
       | TargetSyntax::Expr.var name => (match (lookup environment name)
         | Option.none => (ctor Outcome.stuck)
         | Option.some found => (ctor Outcome.value found (1 + (depth environment name))))

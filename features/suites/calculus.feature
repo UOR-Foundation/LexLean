@@ -52,7 +52,7 @@ Feature: calculus
     And a wrapping addition or a Euclidean quotient planted in a rendering changes the printed outcome, and a quadratic append exceeds the steps
 
   @TC-08 @build
-  Scenario: The production calculus has a closed data literal, a list, pair, option, or algebraic-data value spelled by literals of its element types, that has a type rule, a canonical form with one spelling per value, a kernel-checked denotation equal to the value it spells, and a stated cost that charges its weight once per read, so that a decoded constant is data in a program and never a chain of build expressions evaluated on each call; a literal of the wrong type, a malformed member, or a literal that is not canonical is refused with LLB6005.
-    Given a calculus program that holds a decoded constant as a data literal, and copies that plant a mistyped literal, a malformed member, and a noncanonical spelling
-    When it is loaded, evaluated by the denotation, and rendered
-    Then the literal has its type, its canonical form, and the denotation's value, the cost is its weight per read, and each copy fails with LLB6005
+  Scenario: A literal of the production calculus, a scalar or a list, pair, option, result, or algebraic-data value of literals, is charged its weight, one per node plus a string's characters and a byte string's bytes, once each time it is read, in the kernel-checked denotation, in the reference interpreter, and in the cost rules of §17.14, so that a scalar literal still costs one step and a decoded constant is data whose read is accounted by its size and never by a single step; a literal of the wrong type, a malformed member, or a noncanonical spelling is refused with LLB6005.
+    Given calculus programs that read scalar, string, byte-string, list, pair, option, and algebraic-data literals once and twice, and copies that plant a mistyped literal, a malformed member, and a noncanonical spelling
+    When they are loaded and evaluated by the reference interpreter, and the denotation's source is read
+    Then each read costs the literal's weight and a scalar costs one step, the denotation charges the same weight, and each copy fails with LLB6005

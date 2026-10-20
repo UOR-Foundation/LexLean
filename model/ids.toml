@@ -1703,7 +1703,7 @@ statement = "Every fixture with an observable outcome renders to a safe Rust lib
 id = "TC-08"
 level = "build"
 suite = "calculus"
-statement = "The production calculus has a closed data literal, a list, pair, option, or algebraic-data value spelled by literals of its element types, that has a type rule, a canonical form with one spelling per value, a kernel-checked denotation equal to the value it spells, and a stated cost that charges its weight once per read, so that a decoded constant is data in a program and never a chain of build expressions evaluated on each call; a literal of the wrong type, a malformed member, or a literal that is not canonical is refused with LLB6005."
+statement = "A literal of the production calculus, a scalar or a list, pair, option, result, or algebraic-data value of literals, is charged its weight, one per node plus a string's characters and a byte string's bytes, once each time it is read, in the kernel-checked denotation, in the reference interpreter, and in the cost rules of §17.14, so that a scalar literal still costs one step and a decoded constant is data whose read is accounted by its size and never by a single step; a literal of the wrong type, a malformed member, or a noncanonical spelling is refused with LLB6005."
 
 [[id]]
 id = "RB-01"

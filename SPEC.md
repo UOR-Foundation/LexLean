@@ -4313,7 +4313,11 @@ map key order. The result is an `Outcome`: a value with its exact step count,
 **Cost.** The step count charges every operation the evaluator performs, so
 no runtime operation is free:
 
-- each evaluated node is one step, on top of the steps of its operands;
+- each evaluated node is one step, on top of the steps of its operands, except
+  a literal, which is charged its *weight* each time it is read, so that a
+  scalar costs one step and a decoded constant held as a list, pair, option,
+  result, or algebraic-data literal is accounted by its size and never by a
+  single step (`TC-08`);
 - reading a local is one step more per binding the lookup examines before
   it finds the local's;
 - a `match` is one step more per arm it tries, the taken arm included;
@@ -10219,7 +10223,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `TC-05` | `calculus` | Every realization library template has a fixture whose outcome the kernel proves equal to the value LexLean's own collection primitive computes, committed instances equal their templates, and a mutated template is rejected by Lean. | §17.12, §17.14 |
 | `TC-06` | `calculus` | Every runtime construct of the production registry has exactly one realization row naming existing calculus elements and requires allocation and implies recursion exactly when its realization does, and the fixtures exercise every calculus type, literal, expression, shape, primitive, and template, and every fixed-width primitive at every width it admits. | §17.13, §17.14 |
 | `TC-07` | `calculus` | Every fixture with an observable outcome renders to a safe Rust library crate in rust-std, and in rust-core exactly when it needs no heap, that the pinned rustc compiles with warnings denied, that prints exactly the denotation's value or overflow, and whose counted work never exceeds the denotation's steps; planted value and work discrepancies are detected. | §17.14 |
-| `TC-08` | `calculus` | The production calculus has a closed data literal, a list, pair, option, or algebraic-data value spelled by literals of its element types, that has a type rule, a canonical form with one spelling per value, a kernel-checked denotation equal to the value it spells, and a stated cost that charges its weight once per read, so that a decoded constant is data in a program and never a chain of build expressions evaluated on each call; a literal of the wrong type, a malformed member, or a literal that is not canonical is refused with LLB6005. | §17.14 |
+| `TC-08` | `calculus` | A literal of the production calculus, a scalar or a list, pair, option, result, or algebraic-data value of literals, is charged its weight, one per node plus a string's characters and a byte string's bytes, once each time it is read, in the kernel-checked denotation, in the reference interpreter, and in the cost rules of §17.14, so that a scalar literal still costs one step and a decoded constant is data whose read is accounted by its size and never by a single step; a literal of the wrong type, a malformed member, or a noncanonical spelling is refused with LLB6005. | §17.14 |
 | `RB-01` | `rust-backend` | Every Rust rendering is built as a closed AST each of whose constructs carries the calculus element it realizes, every correspondence row and every AST node is exercised by a run package, and a construct whose row, width, or program does not justify its element is refused. | §17.16 |
 | `RB-02` | `rust-backend` | An exported name that is not a lowercase snake-case identifier, is a Rust keyword, imitates a generated name, or is declared by the runtime, a name exported twice, and an unavailable crate name each fail with LLB6005, and a crate binding one name twice in a function is refused. | §17.16, §26.3 |
 | `RB-03` | `rust-backend` | An export that copies a parameter whose type is not Copy fails with LLB6005, and a crate that moves a value twice or reads it after moving it is refused. | §17.16, §26.3 |

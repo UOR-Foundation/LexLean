@@ -4009,6 +4009,32 @@ A second plant dropped the result weight from a primitive's charge; the
 kernel refused the same theorem, stated with 50 steps. Removed: the
 interpreter was restored and the fixtures regenerated; `compiler/` verifies.
 
+### calculus literal weight can fail (TC-08)
+
+Planted, in two steps. First the reference interpreter charged a literal one
+step (the rule before TC-08); `conformance_tc_08` refused it at the string
+literal, whose weight is 4 for `"h\u{e9}\u{e9}"`:
+
+```text
+assertion `left == right` failed: string read 1 time(s) is charged its weight 4
+  left: 1
+ right: 4
+```
+
+Second, with the interpreter correct, `TargetSemantics.lex.tex` was restored to
+`(ctor Outcome.value literal 1)`; the same case refused it:
+
+```text
+the denotation charges a literal its weight
+```
+
+Removed: the weight charge was restored in both. The kernel's own check of
+the rule, a fixture whose `rfl` theorem states the weighted step count, needs
+`cargo xtask check-calculus --write` and is not exercised here: the 14 fixtures
+with a literal heavier than one node (and `compiler/lexlean.lock`) are not yet
+regenerated, so `conformance_tc_01`, `conformance_tc_03`, `conformance_tc_04`,
+and `conformance_tc_05` fail on this tree until they are.
+
 ### kernel-opaque classification is observed
 
 Probe: `compare_bytes` and byte equality were both treated as reducible, and
