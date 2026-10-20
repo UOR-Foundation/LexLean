@@ -42,8 +42,8 @@ public theorem readable_check_complete (request : ByteArray) : (Readable (reques
   all_goals (repeat' split)
   all_goals omega
 
-@[expose] public def topicWeights.bytes : ByteArray := (let __byte0 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 0); _root_.ByteArray.mk #[(_root_.UInt8.ofNat (nat_lit 3)), __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, (_root_.UInt8.ofNat (nat_lit 3)), __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, (_root_.UInt8.ofNat (nat_lit 3)), __byte0])
-@[expose] public def topicWeights : List (List (Int)) := (((3 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int))))) :: (((0 : Int) :: ((3 : Int) :: ((0 : Int) :: ([] : List (Int))))) :: (((0 : Int) :: ((0 : Int) :: ((3 : Int) :: ([] : List (Int))))) :: ([] : List (List (Int))))))
+@[expose] public def topicWeights.bytes : ByteArray := (let __byte0 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 0); _root_.ByteArray.mk #[(_root_.UInt8.ofNat (nat_lit 4)), __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, (_root_.UInt8.ofNat (nat_lit 3)), __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, (_root_.UInt8.ofNat (nat_lit 2)), __byte0])
+@[expose] public def topicWeights : List (List (Int)) := (((4 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int))))) :: (((0 : Int) :: ((3 : Int) :: ((0 : Int) :: ([] : List (Int))))) :: (((0 : Int) :: ((0 : Int) :: ((2 : Int) :: ([] : List (Int))))) :: ([] : List (List (Int))))))
 public theorem topicWeights.decoded : (LexLeanModels.tensorMatches 2 true topicWeights.flatten topicWeights.bytes && (topicWeights.length == 3) && (topicWeights.map List.length == List.replicate 3 3)) = true := by decide
 
 @[expose] public def topicBias.bytes : ByteArray := (let __byte0 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 0); _root_.ByteArray.mk #[__byte0, __byte0, __byte0, __byte0, __byte0, __byte0])
