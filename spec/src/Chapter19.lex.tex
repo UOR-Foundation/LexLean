@@ -1,0 +1,466 @@
+\begin{lexlean}{Chapter19}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{DocRows}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: i0001,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [2, 1, "19. Canonical LaTeX and PDF"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0002,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "19.1 Canonical LaTeX is generated, not copied"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0003,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The LaTeX backend consumes linked IR. It MUST NOT copy an author's sentence, alias spelling, whitespace, TeX control, or punctuation directly into output." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0004,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Every visible output word is produced from a canonical glossary form. Every mathematical construct is produced through LRE and the renderer-token registry. Every structural control is produced by the fixed backend. Every non-whitespace canonical-TeX atom, including fixed preamble options, package names, environment names, braces, labels, and separators, receives an output-coverage origin." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0005,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "19.2 Exact preamble"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0006,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Each module emits a standalone `.tex` file with this logical preamble and order:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0007,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "latex",
+      (cons "\\documentclass[11pt]{article}" (cons "\\usepackage[T1]{fontenc}" (cons "\\usepackage{amsmath}" (cons "\\usepackage{amssymb}" (cons "\\usepackage{amsthm}" (cons "\\usepackage[hidelinks]{hyperref}" (cons "\\newtheorem{theorem}{Theorem}[section]" (cons "\\newtheorem{lemma}[theorem]{Lemma}" (cons "\\newtheorem{corollary}[theorem]{Corollary}" (cons "\\theoremstyle{definition}" (cons "\\newtheorem{definition}[theorem]{Definition}" (cons "\\begin{document}" (nil String)))))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0008,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "The file ends with:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0009,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: ["latex", (cons "\\end{document}" (nil String))],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0010,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "No comment, author, date, timestamp, generator banner, path, or host metadata is emitted." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0011,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "19.3 Document rendering"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0012,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- The title is rendered in a `center` environment with `\\LARGE`." (cons "- Source sections render as `\\section{...}` and nested sections as `\\subsection{...}`. Nesting beyond two levels continues with a deterministic bold heading construct registered in the renderer." (cons "- Section parameters render immediately below the heading as a display labeled by the core glossary concept `Parameters`." (cons "- Type, term, and predicate definitions render in `definition`." (cons "- Theorem-like kinds use their corresponding environments." (cons "- Every component receives:" (cons "  ```latex" (cons "  \\label{ll:<module-slug>:<component-id>}" (cons "  ```" (cons "- Statements render from proposition or definition IR." (cons "- Proofs render from proof IR using the canonical proof phrases in `lexlean.core`." (cons "- Imported-module lists are not human-visible claims and are omitted." (cons "- The file uses LF and one final LF." (nil String))))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0013,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "19.4 Canonical proposition rendering"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0014,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Canonical prose uses the controlled grammar:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0015,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- leading `For every`;" (cons "- `there exists`;" (cons "- `there exists exactly one`;" (cons "- `if ..., then ...`;" (cons "- `if and only if`;" (cons "- `and`, `or`, and `not`;" (cons "- canonical predicate frames." (nil String))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0016,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Parentheses are inserted when grammar precedence would otherwise change the IR. Mathematical terms use canonical LRE." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0017,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "19.5 Canonical proof rendering"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0018,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Proof IR renders to fixed formal prose. Representative mappings are:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0019,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "| Proof IR | Canonical text |" (cons "|---|---|" (cons "| `Intro` | `Assume ... .` |" (cons "| `Exact` | `The goal follows from ... .` |" (cons "| `ApplyOne` | `Apply ... .` |" (cons "| `Reflexivity` | `The goal follows by reflexivity.` |" (cons "| `Have` | `We first establish ... .` followed by its nested proof |" (cons "| `Rewrite` | `Rewrite ... using ... .` with every direction stated |" (cons "| `SimplifyOnly` | `Simplify ... using only ... .` |" (cons "| `Cases` | `Consider the cases of ... .` |" (cons "| `Induction` | `Proceed by induction on ... .` |" (cons "| `Calculate` | a displayed aligned chain |" (nil String)))))))))))))
+    ],
+    constructor: DocRows::Item.table,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0020,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "These words are core glossary entries. The renderer never invents synonyms." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0021,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "19.6 Output lexical coverage"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0022,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "For every canonical `.tex`, LexLean emits a coverage record proving mechanically that:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0023,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- every visible word maps to a glossary entry;" (cons "- every mathematical token maps to a glossary entry, local, numeral, or core constructor;" (cons "- every control sequence maps to a renderer token;" (cons "- every punctuation mark maps to core grammar or renderer data;" (cons "- no raw output segment is unclassified." (nil String))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0024,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Failure to produce complete output coverage is a backend error and prevents artifact publication." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0025,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "19.7 External PDF provider"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0026,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "PDF output is optional and has no proof authority." (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0027,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "When configured, `lexlean verify`:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0028,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "1. verifies the provider executable SHA-256;" (cons "2. invokes `version_argv` with no shell;" (cons "3. normalizes stdout and verifies `version_stdout_sha256`;" (cons "4. creates an isolated temporary working directory;" (cons "5. copies only the canonical `.tex` and declared regular resource files into it;" (cons "6. expands only the whole-argument placeholders:" (cons "   - `{input}`;" (cons "   - `{out_dir}`;" (cons "   - `{stem}`;" (cons "7. invokes `compile_argv` directly, with no shell parsing;" (cons "8. enforces child timeout and output-size limits;" (cons "9. requires exactly the configured output regular file;" (cons "10. requires the bytes to begin with `％PDF-`;" (cons "11. copies the PDF atomically into the platform-bound verification artifact set;" (cons "12. records process, recipe, and output hashes." (nil String))))))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0029,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "PDF bytes and process records are not placed in the platform-independent build directory." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0030,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "A placeholder embedded in a larger argument is forbidden. Each required placeholder must occur exactly once where the schema requires it. The provider receives no project directory as its working directory and no undeclared resource." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0031,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "19.8 PDF recipe content address"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0032,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "The PDF recipe ID is:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0033,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "text",
+      (cons "SHA256(" (cons "  \"lexlean-pdf-recipe-v1\\0\"" (cons "  || frame(\"tex\", canonical_tex_sha256_bytes)" (cons "  || frame(\"program\", program_sha256_bytes)" (cons "  || frame(\"version-output\", version_stdout_sha256_bytes)" (cons "  || frame(\"argv\", canonical_json(compile_argv))" (cons "  || frame(\"resources\", canonical_json(sorted resource path/hash rows))" (cons ")" (nil String)))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0034,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The actual PDF SHA-256 is recorded separately. The recipe and PDF are platform-bound evidence and do not affect `semantic_id`." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0035,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "---" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

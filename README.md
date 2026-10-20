@@ -146,7 +146,7 @@ just vv        # the complete normative acceptance gate (SPEC.md §9.2)
 just release   # vv, then the §30 release criterion; refused until 1.0.0
 ```
 
-All 434 registered conformance IDs are implemented and pass; `just vv` runs clean from a checkout with the pinned toolchain installed.
+All 435 registered conformance IDs are implemented and pass; `just vv` runs clean from a checkout with the pinned toolchain installed.
 
 The differential against the independent generator `lean4-prod` (SPEC.md §17.19, `OR-01`..`OR-08`) acquires it at its pinned commit: from the checkout `LEXLEAN_ORACLE_DIR` names, or by fetching the commit with `git` into the Cargo target directory (`LEXLEAN_ORACLE_CACHE` overrides), and builds it with the pinned Lean and Rust toolchains. It is validation evidence only and no input to any identity. An oracle that cannot be acquired, is not the pinned files, or fails is unavailable: that fails the gate on Linux x86-64 and is printed as `NOT VALIDATED` elsewhere, and is never reported as agreement.
 
@@ -192,7 +192,7 @@ Every row is validated by `just vv`; the IDs link the claim to its register row,
 | The literal `nat-add-zero` example, the Lean-verified feature examples, and the complete negative fixture suite | `EX-01`..`EX-08` | `build` |
 | Language-1.2 text components, first slice: tokenizers and their round-trip laws, with the laws carried as one native core module the generated modules import rather than authored Lean text | `LM-01`, `LM-02`, `LM-03`, `LM-13` | `build` |
 | Language-1.2 text components, second slice: context windows with their bound, exactness, and suffix laws, and greedy and seeded text generators bounded by `max_tokens` whose scorer sees only contexts that fit, over the same native laws module (text classifiers, adapters, and composition have no rows) | `LM-04`, `LM-05`, `LM-06` | `build` |
-| Normative text as LexLean source: the register, the diagnostic registry, the ledger, and the authority register are semantic modules of the `spec/` workspace member, and `model/*.toml`, `CONFORMANCE.md`, and `ERRORS.md` are generated from them; the Rust projector can falsify a projection and never establishes one | `NS-01`..`NS-04` | `build` |
+| Normative text as LexLean source: the register, the diagnostic registry, the ledger, and the authority register are semantic modules of the `spec/` workspace member, and `model/*.toml`, `CONFORMANCE.md`, and `ERRORS.md` are generated from them; the Rust projector can falsify a projection and never establishes one | `NS-01`..`NS-05` | `build` |
 
 Range rows abbreviate consecutive registered IDs; every individual ID in each range is registered in [`model/ids.toml`](model/ids.toml) at the stated level with its own scenario and test.
 

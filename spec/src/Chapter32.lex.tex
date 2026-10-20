@@ -1,0 +1,60 @@
+\begin{lexlean}{Chapter32}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{DocRows}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: i0001,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [2, 1, "32. Final acceptance statement"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0002,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "A repository conforming to this specification has no semantically untracked prose path in a LexLean document:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0003,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- source tokens are closed;" (cons "- grammar is closed;" (cons "- denotations are closed;" (cons "- proof forms are closed;" (cons "- generated Lean is prose-free;" (cons "- generated LaTeX is coverage-complete;" (cons "- generation is deterministic;" (cons "- verification is explicit and kernel-backed;" (cons "- axiom dependencies are per-declaration and machine-audited;" (cons "- every public capability and failure is registered and falsifiable." (nil String)))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0004,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Accordingly, a change to the mathematical meaning changes the linked semantic object, the generated Lean statement, the canonical human document, or all three. A proof that no longer establishes the changed statement fails verification. There is no independent prose channel that can silently remain stale." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

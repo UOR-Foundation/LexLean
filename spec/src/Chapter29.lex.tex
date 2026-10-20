@@ -1,0 +1,427 @@
+\begin{lexlean}{Chapter29}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{DocRows}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: i0001,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [2, 1, "29. Literal minimal example"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0002,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "29.1 Required standard Nat lexicon"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0003,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "`lexlean.std.nat@1.0.0` MUST provide at least:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0004,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "| Entry | Category | Lean denotation | Canonical source |" (cons "|---|---|---|---|" (cons "| `nat` | `type-noun` | `Nat` | `natural number` / `natural numbers` |" (cons "| `zero` | `term-constant` | `Nat.zero` | `zero` and math `0` through numeral semantics |" (cons "| `succ` | `function` | `Nat.succ` | qualified/call form |" (cons "| `add` | `infix-function` | `Nat.add` | `+` |" (cons "| `addition` | `label-word` | a defined concept reference to `add` | `addition` |" (nil String))))))))
+    ],
+    constructor: DocRows::Item.table,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0005,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "It MUST include the Nat cases/induction descriptor." (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0006,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "29.2 Example files"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0007,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "`examples/nat-add-zero/lexlean.toml`:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0008,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "toml",
+      (cons "spec = \"lexlean/project/1\"" (cons "name = \"nat-add-zero\"" (cons "language = \"1.0\"" (cons "module_prefix = \"LexLeanExample\"" (cons "source_roots = [\"src\"]" (cons "entrypoints = [\"src/Main.lex.tex\"]" (cons "build_root = \".lexlean\"" (cons "lockfile = \"lexlean.lock\"" (cons "lean_workspace = \".\"" (cons "lean_toolchain = \"leanprover/lean4:v4.32.1\"" (cons "" (cons "[[lexicon_source]]" (cons "package = \"lexlean.std.nat\"" (cons "kind = \"builtin\"" (cons "" (cons "[limits]" (cons "max_file_bytes = 4194304" (cons "max_total_source_bytes = 67108864" (cons "max_primitive_atoms = 2000000" (cons "max_token_lattice_edges = 4000000" (cons "max_parse_states = 4000000" (cons "max_ir_nodes = 2000000" (cons "max_scope_depth = 1024" (cons "max_import_depth = 128" (cons "max_diagnostics = 256" (cons "max_child_output_bytes = 16777216" (cons "child_timeout_ms = 300000" (nil String))))))))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0009,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "`examples/nat-add-zero/lean-toolchain`:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0010,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: ["text", (cons "leanprover/lean4:v4.32.1" (nil String))],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0011,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "`examples/nat-add-zero/lakefile.toml`:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0012,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "toml",
+      (cons "name = \"nat_add_zero_host\"" (cons "version = \"0.1.0\"" (cons "defaultTargets = [\"NatAddZeroHost\"]" (cons "" (cons "[[lean_lib]]" (cons "name = \"NatAddZeroHost\"" (nil String)))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0013,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "`examples/nat-add-zero/NatAddZeroHost.lean`:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0014,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: ["lean", (cons "module" (cons "import Init" (nil String)))],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0015,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "`examples/nat-add-zero/src/Main.lex.tex`:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0016,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "latex",
+      (cons "\\begin{lexlean}{Main}" (cons "\\useglossary{lexlean.std.nat@1.0.0}" (cons "\\title{Natural number addition}" (cons "" (cons "\\begin{theorem}{add-zero}" (cons "\\noaxioms" (cons "For every natural number \\(n\\), \\(n + 0 = n\\)." (cons "\\begin{proof}" (cons "Close the goal by reflexivity." (cons "\\end{proof}" (cons "\\end{theorem}" (cons "\\end{lexlean}" (nil String)))))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0017,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "`lexlean lock` generates and the repository commits the exact `lexlean.lock` for the built-in package and workspace files." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0018,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "29.3 Expected generated Lean"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0019,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "The canonical generated module is exactly:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0020,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "lean",
+      (cons "module" (cons "import Init" (cons "set_option autoImplicit false" (cons "namespace LexLeanExample.Main" (cons "" (cons "theorem add_zero (llv0 : Nat) : Eq (Nat.add llv0 0) llv0 := by" (cons "  rfl" (cons "" (cons "end LexLeanExample.Main" (nil String))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0021,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "No prose or comments occur in the file." (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0022,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "29.4 Expected canonical LaTeX"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0023,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "The canonical `.tex` bytes are:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0024,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "latex",
+      (cons "\\documentclass[11pt]{article}" (cons "\\usepackage[T1]{fontenc}" (cons "\\usepackage{amsmath}" (cons "\\usepackage{amssymb}" (cons "\\usepackage{amsthm}" (cons "\\usepackage[hidelinks]{hyperref}" (cons "\\newtheorem{theorem}{Theorem}[section]" (cons "\\newtheorem{lemma}[theorem]{Lemma}" (cons "\\newtheorem{corollary}[theorem]{Corollary}" (cons "\\theoremstyle{definition}" (cons "\\newtheorem{definition}[theorem]{Definition}" (cons "\\begin{document}" (cons "\\begin{center}" (cons "{\\LARGE Natural number addition}" (cons "\\end{center}" (cons "\\begin{theorem}" (cons "\\label{ll:main:add-zero}" (cons "For every natural number \\(n\\), \\(n + 0 = n\\)." (cons "\\end{theorem}" (cons "\\begin{proof}" (cons "The goal follows by reflexivity." (cons "\\end{proof}" (cons "\\end{document}" (nil String))))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0025,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Every word, symbol, and control in this file has a coverage origin." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0026,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "29.5 Expected verification"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0027,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Verification MUST observe an empty axiom set for:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0028,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: ["text", (cons "LexLeanExample.Main.add_zero" (nil String))],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0029,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The example's verified artifact is platform-bound. The committed example oracle contains platform-independent build artifacts and expected normalized verification records, not a cross-platform `.olean` oracle." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0030,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "29.6 Required example mutations"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0031,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "The example suite MUST mechanically demonstrate:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0032,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "1. changing `=` to a false proposition causes the old proof to fail in Lean;" (cons "2. replacing `addition` in the title with an undeclared word fails lexical closure;" (cons "3. adding a second same-surface proof entry with an indistinguishable signature causes ambiguity;" (cons "4. changing `\\noaxioms` to an insufficient allow-list fails policy checking when a fixture introduces an axiom-dependent proof;" (cons "5. two clean builds in distinct paths are byte-identical for platform-independent artifacts." (nil String))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0033,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "---" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

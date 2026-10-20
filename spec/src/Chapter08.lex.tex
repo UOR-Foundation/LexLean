@@ -1,0 +1,361 @@
+\begin{lexlean}{Chapter08}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{DocRows}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: i0001,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [2, 1, "8. Toolchains, platforms, and dependency policy"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0002,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "8.1 Rust"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0003,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "The exact repository Rust toolchain is:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0004,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "toml",
+      (cons "[toolchain]" (cons "channel = \"1.97.1\"" (cons "components = [\"rustfmt\", \"clippy\"]" (cons "profile = \"minimal\"" (nil String)))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0005,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The workspace uses Rust edition 2021 and MSRV 1.97. The shipped crate MUST compile with `#![forbid(unsafe_code)]`." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0006,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "8.2 Lean"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0007,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "LexLean language 1.0 is pinned to:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0008,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: ["text", (cons "leanprover/lean4:v4.32.1" (nil String))],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0009,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The repository-root `lean-toolchain` file MUST contain exactly that line followed by LF." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0010,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "The corresponding Lean tag resolves to source commit:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0011,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: ["text", (cons "f054605aea4b840552cca2e725580bffd1e1b704" (nil String))],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0012,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "LexLean MUST reject a verification environment whose reported Lean version is not 4.32.1. The verification attestation records the SHA-256 digest of the actual `lean`, `lake`, and `leanchecker` executables used, so platform-specific executable bytes do not need to be assumed identical." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0013,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "8.3 Supported hosts"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0014,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The Rust crate MUST build and its non-Lean tests MUST pass on:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0015,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- Linux x86-64;" (cons "- Linux AArch64;" (cons "- macOS x86-64;" (cons "- macOS AArch64;" (cons "- Windows x86-64." (nil String))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0016,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "`ci.yml` checks this on each of them, in every run that is the whole gate (§9.4), with one `cargo test --locked --workspace --all-features --no-fail-fast`, which reports every failing test of the host in one run and not the first failing test binary's (a host with two independent failures would otherwise cost one run for each), and which builds the library and the binary of the crate in the same profile, with the same locking and features, before it runs any test; there is no separate build step, because it would build nothing that run does not. The normative full verification and reproducibility gate runs on Linux x86-64. Other hosts produce platform-bound attestations and MUST obey the same source, manifest, and policy formats." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0017,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Non-UTF-8 project paths are outside language 1.0 and produce a registered environment diagnostic." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0018,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "8.4 Cargo dependency rules"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0019,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- Every dependency requirement MUST be explicit; wildcard requirements are forbidden." (cons "- `Cargo.lock` is committed." (cons "- `cargo deny --all-features check` is part of `just vv`." (cons "- Unknown registries and unknown Git sources are denied." (cons "- `repo-model`, `repo-conformance`, and `xtask` are `publish = false`." (cons "- No shipped crate may depend on a `publish = false` repository crate." (cons "- Cargo features MUST NOT disable a normative capability. LexLean 1.0 defines no optional capability feature." (cons "- Dependency additions require a license decision and an update to `deny.toml` only when the actual graph requires it." (nil String)))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0020,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "8.5 Required implementation dependencies"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0021,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The implementation MAY choose exact compatible releases through `Cargo.lock`, but the dependency roles are fixed:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0022,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- CLI parsing;" (cons "- TOML parsing;" (cons "- JSON parsing and serialization;" (cons "- SHA-256;" (cons "- semantic-version parsing;" (cons "- UTF-8 path handling;" (cons "- Unicode NFC normalization;" (cons "- structured errors;" (cons "- temporary directories;" (cons "- directory walking;" (cons "- file locking;" (cons "- file identity (whether two paths are the same file);" (cons "- process-group signalling and interrupt handling (unix)." (nil String))))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0023,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Every dependency the shipped crate declares, for any target and of any kind but development, MUST be named in the following table with its role, and every crate the table names MUST be one it declares (`cargo xtask audit-shipped`, R6). A dependency without a row, or a row without a dependency, is a failure of the gate." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0024,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "| Dependency | Role |" (cons "| --- | --- |" (cons "| `camino` | UTF-8 path handling |" (cons "| `clap` | CLI parsing |" (cons "| `fs4` | file locking |" (cons "| `rustix` | process-group signalling (`kill` of a group, without an external `kill`; safe wrappers, the crate forbids unsafe code) |" (cons "| `same-file` | file identity |" (cons "| `semver` | semantic-version parsing |" (cons "| `serde` | JSON and TOML deserialization and serialization |" (cons "| `serde_json` | JSON parsing and serialization |" (cons "| `sha2` | SHA-256 |" (cons "| `signal-hook` | interrupt handling (SIGINT, SIGTERM, SIGHUP, SIGQUIT end the live child process groups; §17.17) |" (cons "| `tempfile` | temporary directories |" (cons "| `toml` | TOML parsing |" (cons "| `unicode-normalization` | Unicode NFC normalization |" (cons "| `walkdir` | directory walking |" (nil String)))))))))))))))))
+    ],
+    constructor: DocRows::Item.table,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0025,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The role \"structured errors\" is filled by the crate's own closed error model (§26) and needs no dependency." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0026,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "No dependency may provide arbitrary TeX execution, Lean parsing by string substitution, probabilistic language interpretation, or a second proof authority." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0027,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "---" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

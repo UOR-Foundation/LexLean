@@ -1,0 +1,853 @@
+\begin{lexlean}{Chapter15}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{DocRows}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: i0001,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [2, 3, "15. LexLean document grammar"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0002,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "15.1 Structural grammar"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0003,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The structural grammar is fixed. Environment and control names are literal core entries." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0004,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "ebnf",
+      (cons "module          = \"\\begin{lexlean}\" \"{\" module-name \"}\"" (cons "                  header" (cons "                  block*" (cons "                  \"\\end{lexlean}\" ;" (cons "" (cons "header          = use-glossary*" (cons "                  import-module*" (cons "                  title ;" (cons "" (cons "use-glossary    = \"\\useglossary\" \"{\" package-id \"@\" semver \"}\" ;" (cons "import-module   = \"\\importmodule\" \"{\" module-name \"}\" ;" (cons "title           = \"\\title\" \"{\" phrase \"}\" ;" (cons "" (cons "block           = section | declaration ;" (cons "" (cons "section         = \"\\begin{section}\" \"{\" component-id \"}\"" (cons "                  \"\\heading\" \"{\" phrase \"}\"" (cons "                  [parameters]" (cons "                  block*" (cons "                  \"\\end{section}\" ;" (cons "" (cons "parameters      = \"\\parameters\" \"{\" binder-list \"}\" ;" (cons "" (cons "declaration     = type-definition" (cons "                | term-definition" (cons "                | predicate-definition" (cons "                | theorem" (cons "                | lemma" (cons "                | corollary ;" (cons "" (cons "type-definition = \"\\begin{typedefinition}\"" (cons "                  \"{\" component-id \"}\"" (cons "                  \"{\" qualified-entry-id \"}\"" (cons "                  axiom-policy" (cons "                  type-definition-sentence" (cons "                  \"\\end{typedefinition}\" ;" (cons "" (cons "term-definition = \"\\begin{termdefinition}\"" (cons "                  \"{\" component-id \"}\"" (cons "                  \"{\" qualified-entry-id \"}\"" (cons "                  axiom-policy" (cons "                  term-definition-sentence" (cons "                  \"\\end{termdefinition}\" ;" (cons "" (cons "predicate-definition" (cons "                = \"\\begin{predicatedefinition}\"" (cons "                  \"{\" component-id \"}\"" (cons "                  \"{\" qualified-entry-id \"}\"" (cons "                  axiom-policy" (cons "                  predicate-definition-sentence" (cons "                  \"\\end{predicatedefinition}\" ;" (cons "" (cons "theorem         = \"\\begin{theorem}\" \"{\" component-id \"}\"" (cons "                  axiom-policy proposition-sentence proof" (cons "                  \"\\end{theorem}\" ;" (cons "" (cons "lemma           = \"\\begin{lemma}\" \"{\" component-id \"}\"" (cons "                  axiom-policy proposition-sentence proof" (cons "                  \"\\end{lemma}\" ;" (cons "" (nil String)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0005,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "corollary       = \"\\begin{corollary}\" \"{\" component-id \"}\"" (cons "                  axiom-policy proposition-sentence proof" (cons "                  \"\\end{corollary}\" ;" (cons "" (cons "proof           = \"\\begin{proof}\" proof-step+ \"\\end{proof}\" ;" (cons "" (cons "axiom-policy    = \"\\noaxioms\"" (cons "                | \"\\allowaxioms\" \"{\" lean-name-list \"}\"" (cons "                | \"\\exactaxioms\" \"{\" lean-name-list \"}\" ;" (nil String))))))))))
+    ],
+    constructor: DocRows::Item.cont,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0006,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Rules:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0007,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- imports occur only in the header;" (cons "- `\\useglossary` rows sort by package reference under `fmt`;" (cons "- `\\importmodule` rows sort by module name under `fmt`;" (cons "- each module has exactly one title;" (cons "- section nesting is allowed up to `max_scope_depth`;" (cons "- section component IDs and declaration component IDs share one module-wide namespace;" (cons "- component IDs match `[a-z][a-z0-9-]*`;" (cons "- module names are relative to `module_prefix`;" (cons "- the full generated Lean module is `<module_prefix>.<module-name>`;" (cons "- an imported module must be a project module and must not create an import cycle;" (cons "- a selected build includes the transitive import closure;" (cons "- a source module may import only declarations exported by an explicitly imported module;" (cons "- no declaration may reference a later declaration in the same module;" (cons "- an empty module is valid, but a theorem-like declaration without a proof is not." (nil String)))))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0008,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "15.2 Core structural controls"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0009,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "The complete structural control set for language 1.0 is:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0010,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "text",
+      (cons "\\begin" (cons "\\end" (cons "\\useglossary" (cons "\\importmodule" (cons "\\title" (cons "\\heading" (cons "\\parameters" (cons "\\noaxioms" (cons "\\allowaxioms" (cons "\\exactaxioms" (cons "\\lexeme" (cons "\\reference" (cons "\\forward" (cons "\\backward" (cons "\\rule" (cons "\\start" (cons "\\step" (cons "\\bind" (cons "\\(" (cons "\\)" (cons "\\[" (cons "\\]" (nil String)))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0011,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "The complete environment-name set is:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0012,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "text",
+      (cons "lexlean" (cons "section" (cons "typedefinition" (cons "termdefinition" (cons "predicatedefinition" (cons "theorem" (cons "lemma" (cons "corollary" (cons "proof" (cons "have" (cons "rewrite" (cons "simplify" (cons "apply" (cons "constructor" (cons "branch" (cons "premise" (cons "cases" (cons "case" (cons "induction" (cons "calculate" (nil String)))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0013,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Any other control or environment name is unknown unless it is a nonstructural glossary form accepted in the current expression channel. A glossary cannot add an environment." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0014,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "15.3 Phrases"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0015,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "A `type-phrase` is either one linked `type-noun` frame, including its explicit surface arguments, or one math island whose result is a sort." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0016,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "A `phrase` is a nonempty sequence of:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0017,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- `label-word`;" (cons "- `type-noun`;" (cons "- the canonical nominal form of a term or function entry;" (cons "- a math island containing a term whose result is not `Prop`;" (cons "- core punctuation `:`, `-`, `(`, or `)`." (nil String))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0018,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "A phrase cannot contain:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0019,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- a proposition;" (cons "- a quantifier;" (cons "- a predicate frame;" (cons "- a proof instruction;" (cons "- an unbound pronoun;" (cons "- an adverbial assertion." (nil String)))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0020,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Titles and headings therefore identify concepts but do not make unproved claims." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0021,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "15.4 Binder lists"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0022,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "A text binder has:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0023,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "ebnf",
+      (cons "binder      = type-phrase math-new-local ;" (cons "binder-list = binder { \";\" binder } ;" (nil String)))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0024,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Example:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0025,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "latex",
+      (cons "\\parameters{natural number \\(n\\); natural number \\(m\\)}" (nil String))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0026,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "A `math-new-local` is a math island containing exactly one fresh ASCII identifier. The identifier is a display spelling; the IR assigns a unique `LocalId`." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0027,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "All source binders are explicit. Implicit and instance binders may exist in external signatures, but language 1.0 does not let document prose silently introduce them." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0028,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "15.5 Mathematical islands"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0029,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Only `\\(...\\)` and `\\[...\\]` delimit mathematical islands. Dollar delimiters are forbidden." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0030,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Inside a math island:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0031,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- spaces and LF are insignificant separators;" (cons "- parentheses group;" (cons "- comma separates explicit call arguments;" (cons "- a local identifier resolves through scope;" (cons "- a numeral uses the core numeral constructor;" (cons "- `\\lexeme{qualified-id}` explicitly selects an entry;" (cons "- `\\reference{Module::component}` selects an earlier or imported document declaration;" (cons "- glossary frames supply prefix, postfix, and infix syntax;" (cons "- function application is `f(arg_0, ..., arg_n)`;" (cons "- juxtaposition is never implicit multiplication or application;" (cons "- braces do not group mathematical terms;" (cons "- `_` has no built-in subscript meaning;" (cons "- every operator has declared precedence and associativity." (nil String))))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0032,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The Pratt precedence scale is `0..255`; higher values bind more tightly. An infix operator declares `left`, `right`, or `none`. A nonassociative chain without parentheses is an ambiguity error." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0033,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Numerals have no default type. A numeral must receive an expected type from an operator, relation, binder, definition signature, or declaration statement. Otherwise elaboration fails." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0034,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "15.6 Proposition grammar"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0035,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "The controlled proposition grammar is:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0036,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "ebnf",
+      (cons "proposition-sentence = proposition \".\" ;" (cons "" (cons "proposition    = conditional ;" (cons "" (cons "conditional    = \"if\" proposition \",\" \"then\" proposition" (cons "               | equivalence ;" (cons "" (cons "equivalence    = implication" (cons "                 [ \"if\" \"and\" \"only\" \"if\" implication ] ;" (cons "" (cons "implication    = disjunction" (cons "                 [ \"implies\" implication ] ;" (cons "" (cons "disjunction    = conjunction { \"or\" conjunction } ;" (cons "" (cons "conjunction    = negation { \"and\" negation } ;" (cons "" (cons "negation       = \"not\" negation" (cons "               | quantified" (cons "               | atomic-proposition ;" (cons "" (cons "quantified     = \"For\" \"every\" binder" (cons "                 { \"and\" binder } \",\"" (cons "                 proposition" (cons "               | \"for\" \"every\" binder" (cons "                 { \"and\" binder } \",\"" (cons "                 proposition" (cons "               | \"there\" \"exists\" article binder" (cons "                 \"such\" \"that\" proposition" (cons "               | \"there\" \"exists\" \"exactly\" \"one\" binder" (cons "                 \"such\" \"that\" proposition ;" (cons "" (cons "article        = \"a\" | \"an\" ;" (cons "" (cons "atomic-proposition" (cons "              = math-proposition" (cons "              | predicate-frame ;" (nil String))))))))))))))))))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0037,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The lowercase `for every` form is accepted after a grammar boundary; sentence-initial canonical output uses `For`." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0038,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "A `math-proposition` is a math island whose linked result is `Prop`." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0039,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "A `predicate-frame` is one of the fixed predicate frames declared in §13.4. Its semantic denotation is application of that entry to its surface arguments." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0040,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Compositional semantics are:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0041,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "| Surface | IR |" (cons "|---|---|" (cons "| `For every x, P` | dependent `Pi` into `Prop` |" (cons "| `there exists a x such that P` | `Exists (fun x => P)` |" (cons "| `there exists exactly one x such that P` | `ExistsUnique (fun x => P)` |" (cons "| `if P, then Q` or `P implies Q` | implication |" (cons "| `P if and only if Q` | `Iff P Q` |" (cons "| `P and Q` | `And P Q` |" (cons "| `P or Q` | `Or P Q` |" (cons "| `not P` | `Not P` |" (nil String)))))))))))
+    ],
+    constructor: DocRows::Item.table,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0042,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Core logical words have no user-overridable denotation." (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0043,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "15.7 Definition sentences"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0044,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "A type definition has exactly one of these forms:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0045,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "text",
+      (cons "A SELF-TYPE is defined as TYPE." (cons "An SELF-TYPE is defined as TYPE." (cons "For every BINDER-LIST, a SELF-TYPE is defined as TYPE." (cons "For every BINDER-LIST, an SELF-TYPE is defined as TYPE." (nil String)))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0046,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "A term definition has exactly one of:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0047,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "text",
+      (cons "SELF-TERM is defined as TERM." (cons "For every BINDER-LIST, SELF-APPLICATION is defined as TERM." (nil String)))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0048,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "A predicate definition has exactly one of:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0049,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "text",
+      (cons "SELF-PREDICATE holds exactly when PROPOSITION." (cons "For every BINDER-LIST, SELF-PREDICATE holds exactly when PROPOSITION." (nil String)))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0050,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Validation requirements:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0051,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "1. `SELF` is the entry named in the declaration header." (cons "2. Its denotation is `document` and names the current module and component." (cons "3. Its signature agrees with the declaration kind." (cons "4. Each explicit signature binder occurs exactly once in the self application and in signature order." (cons "5. The right-hand side has the declared result category." (cons "6. The right-hand side does not reference the declaration being defined." (cons "7. The declaration references no later local declaration." (cons "8. The definition graph is acyclic." (cons "9. A type definition emits a nonrecursive Lean `def` whose result is a sort." (cons "10. A predicate definition emits a nonrecursive Lean `def` returning `Prop`." (cons "11. No definitional component accepts a proof environment." (nil String))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0052,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "15.8 Theorem-like components"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0053,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "A theorem, lemma, or corollary contains:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0054,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "1. exactly one axiom policy;" (cons "2. exactly one proposition sentence;" (cons "3. exactly one proof;" (cons "4. no other text." (nil String)))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0055,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Quantified locals in the proposition are in scope throughout the proof. The declaration's Lean type is generated from the proposition IR, not from a separate signature field." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0056,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The three kinds all emit Lean `theorem`; their distinction affects canonical document labeling and IR metadata." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0057,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "15.9 Axiom-policy syntax"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0058,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "`\\noaxioms` means the observed set must be empty." (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0059,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "`\\allowaxioms{A;B;C}` means the observed set must be a subset of the listed set." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0060,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "`\\exactaxioms{A;B;C}` means the observed set must equal the listed set." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0061,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "A Lean-name list:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0062,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- uses semicolon separators;" (cons "- contains fully qualified conservative ASCII Lean names;" (cons "- is nonempty for `allow` and `exact`;" (cons "- contains no duplicates;" (cons "- is sorted by `fmt`;" (cons "- is recorded exactly in IR and manifests." (nil String)))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0063,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Every definition and theorem-like declaration requires a policy. There is no inherited module policy and no implicit default." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0064,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "---" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

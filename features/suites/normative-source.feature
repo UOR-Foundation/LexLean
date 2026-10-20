@@ -15,8 +15,8 @@ Feature: normative-source
     Then each projection is byte-identical to its committed file
 
   @NS-03 @build
-  Scenario: A difference between a model file and the projection of the specification project's modules, in either direction, fails the repository gate naming R1, a source edit that is not projected being such a difference, and the section references of the §31 table are checked against those the register modules carry.
-    Given the committed sources and projections, and a plant of a hand edit of a model file, of a source edit that is not projected, and of a section reference that differs from the table
+  Scenario: A difference between a model file or SPEC.md and the projection of the specification project's modules, in either direction, fails the repository gate naming R1, a source edit that is not projected being such a difference, and the section references of the §31 table are checked against those the register modules carry.
+    Given the committed sources and projections, and a plant of a hand edit of a model file or of SPEC.md, of a source edit that is not projected, and of a section reference that differs from the table
     When the repository gate runs on each plant
     Then each plant fails naming R1 or RP-07 and the committed tree passes
 
@@ -25,3 +25,9 @@ Feature: normative-source
     Given the projector and a plant of each foreign declaration kind, term kind, field, name, file, family, and duplicate
     When the projector reads each planted module
     Then each plant is refused naming the file and, for a declaration, its position, and the committed modules project
+
+  @NS-05 @build
+  Scenario: SPEC.md regenerates byte-identically from the chapter modules of the specification project, its conformance-ID table, its diagnostic-code table, and its stated total being derived from the register and registry modules and never typed, and the projector refuses a chapter item it does not read.
+    Given the chapter, register, and registry modules of the committed `spec` project, and a plant of each foreign chapter item, a hand edit of a derived table, and a register edit that is not projected
+    When the modules are projected to SPEC.md and the repository gate runs on each plant
+    Then SPEC.md is byte-identical to the projection, each derived region equals what the register and registry modules give, and each plant is refused naming R1 and its position

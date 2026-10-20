@@ -1,0 +1,100 @@
+\begin{lexlean}{Chapter01}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{DocRows}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: i0001,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [2, 1, "1. Normative force"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0002,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "This document is the complete implementation contract for `github.com/UOR-Foundation/LexLean`." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0003,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The key words **MUST**, **MUST NOT**, **REQUIRED**, **SHALL**, **SHALL NOT**, **SHOULD**, **SHOULD NOT**, and **MAY** are normative. A behavior not authorized by this specification is not part of LexLean language 1.0, 1.1, or 1.2." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0004,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "A LexLean implementation conforms to this specification only when:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0005,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "1. every conformance ID in §31 is present in `model/ids.toml` at honesty level `build`;" (cons "2. every ID has exactly one scenario in its named `features/suites/*.feature` file;" (cons "3. every ID has exactly one Rust conformance test named `conformance_<id>`, where hyphens are changed to underscores and letters are lower-case;" (cons "4. every required positive and negative fixture passes;" (cons "5. `just vv` succeeds from a clean checkout;" (cons "6. all generated platform-independent artifacts match their committed oracles;" (cons "7. every verification fixture passes with the pinned Lean toolchain;" (cons "8. no public capability is represented as complete while any required branch, error path, artifact, or audit remains absent." (nil String)))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0006,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The repository MUST NOT ship a partial implementation under the LexLean 1.0 language identifier. Work may occur on branches with failing tests, but the default branch and every release tag MUST satisfy the entire acceptance gate." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0007,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "---" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

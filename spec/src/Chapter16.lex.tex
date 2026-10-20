@@ -1,0 +1,850 @@
+\begin{lexlean}{Chapter16}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{DocRows}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: i0001,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [2, 1, "16. Structured proof language"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0002,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "16.1 General semantics"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0003,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "A proof is a structured program over one current goal and an ordered local context. It is not English passed to an interpreter and not Lean tactic text." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0004,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Each simple proof sentence or structured proof environment constructs one `Proof` IR node. The Lean backend lowers that node to a fixed tactic pattern." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0005,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "A proof block MUST leave no goals. LexLean performs conservative structural checking; Lean elaboration is final. A proof that Rust accepts but Lean rejects is a verification failure, never a verified result." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0006,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "16.2 Simple proof sentences"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0007,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "The exact simple sentences are:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0008,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "text",
+      (cons "Assume \\(x\\)." (cons "Assume \\(x\\), \\(y\\)." (cons "Apply TERM." (cons "Close the goal with TERM." (cons "Close the goal by reflexivity." (cons "Use TERM as the witness." (cons "Select the left alternative." (cons "Select the right alternative." (nil String)))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0009,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Semantics:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0010,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "| Sentence | IR / Lean lowering |" (cons "|---|---|" (cons "| `Assume ...` | introduce the next leading goal binders; lower to `intro` |" (cons "| `Apply TERM.` | apply a proof term; valid only when exactly one residual goal remains |" (cons "| `Close the goal with TERM.` | `exact TERM` |" (cons "| `Close the goal by reflexivity.` | `rfl` |" (cons "| `Use TERM as the witness.` | provide the next existential witness |" (cons "| `Select the left alternative.` | choose `Or.inl` |" (cons "| `Select the right alternative.` | choose `Or.inr` |" (nil String))))))))))
+    ],
+    constructor: DocRows::Item.table,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0011,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "A local named by `Assume` must be fresh in the current proof scope. The displayed spelling is mapped to a deterministic generated Lean local name." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0012,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "16.3 Have"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0013,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Syntax:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0014,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "latex",
+      (cons "\\begin{have}{h}" (cons "PROPOSITION." (cons "\\begin{proof}" (cons "PROOF-STEPS" (cons "\\end{proof}" (cons "\\end{have}" (nil String)))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0015,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The nested proof establishes the proposition and introduces `h` for all subsequent steps in the containing proof block. Lowering is:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0016,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "lean",
+      (cons "have <generated-h> : <proposition> := by" (cons "  <nested-proof>" (nil String)))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0017,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "The nested proof cannot see `h` before it is established." (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0018,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "16.4 Rewrite"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0019,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Syntax:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0020,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "latex",
+      (cons "\\begin{rewrite}{goal}" (cons "\\forward{PROOF-TERM}" (cons "\\backward{PROOF-TERM}" (cons "\\forward{PROOF-TERM}" (cons "\\end{rewrite}" (nil String))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0021,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "or with a hypothesis target:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0022,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "latex",
+      (cons "\\begin{rewrite}{h}" (cons "..." (cons "\\end{rewrite}" (nil String))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0023,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Rules:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0024,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- the target is exactly `goal` or an in-scope proof-local spelling;" (cons "- at least one rule is required;" (cons "- rules are applied strictly in source order;" (cons "- `\\forward` uses the equality or equivalence left-to-right;" (cons "- `\\backward` uses it right-to-left;" (cons "- each rule contains exactly one proof term;" (cons "- no global rewrite set is consulted." (nil String))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0025,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Lean lowering is a single `rw` command with ordered rules and explicit reverse markers, optionally `at <target>`." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0026,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "This ordered, per-rule direction model is the complete multi-rule rewrite semantics." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0027,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "16.5 Simplify"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0028,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Syntax:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0029,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "latex",
+      (cons "\\begin{simplify}{goal}" (cons "\\rule{PROOF-TERM}" (cons "\\rule{PROOF-TERM}" (cons "\\end{simplify}" (nil String)))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0030,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The target rule is the same as rewrite. At least one rule is required." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0031,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Lowering uses `simp only [rules...]`, optionally at one named hypothesis. The ambient simp theorem set is not used. Kernel reduction and the fixed behavior of pinned Lean's `simp only` remain part of the Lean toolchain." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0032,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "16.6 Structured apply"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0033,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "When application yields zero or more than one residual premise, the structured form is required:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0034,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "latex",
+      (cons "\\begin{apply}{PROOF-TERM}" (cons "\\begin{premise}{1}" (cons "PROOF-STEPS" (cons "\\end{premise}" (cons "\\begin{premise}{2}" (cons "PROOF-STEPS" (cons "\\end{premise}" (cons "\\end{apply}" (nil String)))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0035,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Rules:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0036,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- premise labels are consecutive decimal integers beginning with 1;" (cons "- every residual premise occurs exactly once;" (cons "- each premise is a nested proof scope;" (cons "- branch order follows the explicit premise order in the selected proof constant's declared signature;" (cons "- a mismatch is a proof-shape diagnostic before Lean invocation when the signature suffices, otherwise a remapped Lean diagnostic." (nil String))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0037,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "16.7 Constructor"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0038,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Syntax:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0039,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "latex",
+      (cons "\\begin{constructor}" (cons "\\begin{branch}{1}" (cons "PROOF-STEPS" (cons "\\end{branch}" (cons "\\begin{branch}{2}" (cons "PROOF-STEPS" (cons "\\end{branch}" (cons "\\end{constructor}" (nil String)))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0040,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The branch count and order must match the target constructor's explicit proof fields. This form covers conjunction, biconditional constructors, and explicitly declared structures available through glossary metadata." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0041,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "16.8 Cases"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0042,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Syntax:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0043,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "latex",
+      (cons "\\begin{cases}{TERM}" (cons "\\begin{case}{qualified-constructor-entry}" (cons "\\bind{x;y}" (cons "PROOF-STEPS" (cons "\\end{case}" (cons "\\end{cases}" (nil String)))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0044,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Requirements:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0045,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- the scrutinee type has a glossary eliminator descriptor;" (cons "- every constructor appears exactly once;" (cons "- case order is canonicalized to descriptor order;" (cons "- `\\bind{}` contains a semicolon-separated list of fresh local spellings;" (cons "- binder count matches the descriptor's constructor fields;" (cons "- branch locals are scoped to the case;" (cons "- the backend emits pinned Lean `cases` syntax with named alternatives." (nil String))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0046,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "16.9 Induction"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0047,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Syntax:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0048,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "latex",
+      (cons "\\begin{induction}{TERM}" (cons "\\begin{case}{qualified-constructor-entry}" (cons "\\bind{x;ih}" (cons "PROOF-STEPS" (cons "\\end{case}" (cons "\\end{induction}" (nil String)))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0049,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Requirements mirror cases. The eliminator descriptor distinguishes constructor fields from induction hypotheses and fixes their binding order. Every case occurs exactly once." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0050,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The backend emits pinned Lean `induction` syntax. LexLean does not synthesize an induction principle or infer missing cases." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0051,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "16.10 Calculation chains"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0052,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Syntax:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0053,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "latex",
+      (cons "\\begin{calculate}" (cons "\\start{TERM}" (cons "\\step{qualified-relation-entry}{TERM}{PROOF-TERM}" (cons "\\step{qualified-relation-entry}{TERM}{PROOF-TERM}" (cons "\\end{calculate}" (nil String))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0054,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Rules:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0055,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- at least one step is required;" (cons "- every relation entry is identical;" (cons "- the relation has a glossary calculation descriptor;" (cons "- each proof term establishes the relation from the previous term to the new term;" (cons "- the first and last terms match the current goal's endpoints;" (cons "- language 1.0 ships an equality calculation descriptor;" (cons "- mixed-relation transitivity is not accepted." (nil String))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0056,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "The Lean backend emits a `calc` block." (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0057,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "16.11 Eliminator descriptors"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0058,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "A type entry may contain:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0059,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "toml",
+      (cons "[eliminator]" (cons "cases_lean_name = \"Nat.casesAuxOn\"" (cons "induction_lean_name = \"Nat.recAux\"" (cons "" (cons "[[eliminator.constructor]]" (cons "entry = \"lexlean.std.nat::zero\"" (cons "lean_name = \"Nat.zero\"" (cons "fields = []" (cons "induction_hypotheses = []" (cons "" (cons "[[eliminator.constructor]]" (cons "entry = \"lexlean.std.nat::succ\"" (cons "lean_name = \"Nat.succ\"" (cons "fields = [\"n\"]" (cons "induction_hypotheses = [\"ih\"]" (nil String))))))))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0060,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The descriptor is an interface, not trusted proof. External-interface probes and actual generated proofs must elaborate under Lean." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0061,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "16.12 Forbidden proof forms"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0062,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "The proof parser MUST reject:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0063,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- arbitrary imperative sentences;" (cons "- unregistered synonyms;" (cons "- raw tactic blocks;" (cons "- tactic quotations;" (cons "- semicolon tactic combinators;" (cons "- tactic repetition;" (cons "- unrestricted simplification;" (cons "- unrestricted search;" (cons "- `native_decide`;" (cons "- generated or authored proof holes;" (cons "- an empty proof;" (cons "- a proof step after the current branch has closed;" (cons "- a branch that does not close." (nil String))))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0064,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "---" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

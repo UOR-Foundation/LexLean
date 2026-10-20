@@ -1,0 +1,374 @@
+\begin{lexlean}{Chapter28}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{DocRows}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: i0001,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [2, 1, "28. Testing strategy"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0002,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "28.1 Test classes"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0003,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "The repository MUST contain:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0004,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "1. unit tests for scanners, parsers, LSE/LRE, IR, hashing, path rules, and output parsers;" (cons "2. property tests for normalization, canonical serialization, alpha-safe scope handling, and formatter idempotence;" (cons "3. golden tests for canonical `.lex.tex`, `.lean`, `.tex`, maps, coverage, manifests, diagnostics, and normalized process output;" (cons "4. integration tests invoking the public API;" (cons "5. CLI tests for every command and exit code;" (cons "6. conformance tests for every §31 ID;" (cons "7. positive end-to-end Lean verification fixtures;" (cons "8. negative fixtures for every rejection class;" (cons "9. two-directory reproducibility tests;" (cons "10. gate-falsifiability tests." (nil String)))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0005,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "28.2 Fixture layout"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0006,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "text",
+      (cons "tests/fixtures/<suite>/<id>/" (cons "├── project/" (cons "├── expected/" (cons "│   ├── command.json" (cons "│   ├── diagnostics.json" (cons "│   ├── artifacts.json" (cons "│   └── hashes.toml" (cons "└── case.toml" (nil String)))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0007,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "`case.toml` contains:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0008,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "toml",
+      (cons "spec = \"lexlean/test-case/1\"" (cons "command = \"check\"" (cons "args = []" (cons "expected_exit = 0" (cons "expect_artifacts = true" (nil String))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0009,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "A fixture may contain multiple invocations only when its conformance statement explicitly concerns sequence behavior, such as stale-lock detection. Such a fixture uses sorted `[[invocation]]` rows." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0010,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "A fixture whose subject is an operational environment variable (§23.1) states it in an optional `[environment]` table of string values, which holds while its invocations run." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0011,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Expected process-dependent hashes are stored separately from platform-independent golden hashes." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0012,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "28.3 Golden updates"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0013,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Golden output changes require:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0014,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- an explicit `just golden-write`;" (cons "- a reviewed diff;" (cons "- a compiler-semantics ID change when language or backend semantics changed;" (cons "- updated conformance evidence when behavior changed." (nil String)))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0015,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Tests MUST NOT automatically accept new output." (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0016,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "28.4 Reproducibility test"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0017,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The reproducibility gate copies one project into two distinct absolute directories, runs a clean `build` in each, and compares:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0018,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- generated Lean;" (cons "- canonical LaTeX;" (cons "- source maps after required normalization;" (cons "- coverage;" (cons "- lexicon closure;" (cons "- build manifest." (nil String)))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0019,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Verified attestations and `.olean` files are excluded because they are platform/process-bound. Their own internal hashes and normalization are tested separately." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0020,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "28.5 Negative requirements"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0021,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Tests MUST establish that LexLean rejects, at minimum:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0022,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- one unknown word;" (cons "- one unknown symbol;" (cons "- one unknown control;" (cons "- raw percent comments;" (cons "- raw Lean;" (cons "- a TeX macro;" (cons "- ambiguous lexical segmentation;" (cons "- ambiguous typed resolution;" (cons "- missing glossary entry;" (cons "- lexicon cycle;" (cons "- unsafe renderer control;" (cons "- forward document reference;" (cons "- recursive definition;" (cons "- missing proof;" (cons "- extra proof branch;" (cons "- unrestricted simplify;" (cons "- `native_decide`;" (cons "- a Lean elaboration failure;" (cons "- a `leanchecker` failure fixture;" (cons "- malformed axiom output;" (cons "- an axiom-policy excess;" (cons "- a path symlink;" (cons "- a stale lock;" (cons "- a toolchain mismatch;" (cons "- a malformed verification process width;" (cons "- a configured limit overrun;" (cons "- a PDF executable hash mismatch;" (cons "- a language-1.2 construct under language 1.1;" (cons "- a `lexlean/semantic-module/1` module under language 1.2;" (cons "- a `lexlean/semantic-module/2` module under language 1.1;" (cons "- an unsupported language version;" (cons "- a malformed language version;" (cons "- a language-1.1 lock with the language-1.2 lock schema, and a language-1.2" (cons "  lock with the language-1.1 lock schema;" (cons "- a builtin glossary reference with another language's version, from 1.2 to" (cons "  1.1 and from 1.1 to 1.2;" (cons "- a lexicon package whose language differs from the project's;" (cons "- a recursive occurrence inside another document type (positivity);" (cons "- a non-uniform recursive occurrence;" (cons "- an uninhabited recursive cycle;" (cons "- a self-referential structure;" (cons "- a noncontiguous mutual group;" (cons "- a recursive occurrence with the wrong number of type arguments;" (cons "- a constructor applied to the wrong number of arguments;" (cons "- a forward reference outside a mutual group;" (cons "- an uninhabited cycle through a mutual group;" (cons "- a match on a value of one type with the constructors of another;" (cons "- a binder spelled like a name the generated Lean refers to;" (cons "- a lambda that omits a used capture;" (cons "- a lambda that declares an unused capture;" (cons "- an application with the wrong number of arguments;" (cons "- an application of a non-function value;" (cons "- a lambda whose type differs from the expected function type;" (cons "- an executable definition that returns a closure;" (cons "- a generic call without its type arguments;" (cons "- a polymorphically recursive call;" (cons "- a recursive call inside a lambda;" (cons "- an executable definition that calls a non-executable definition;" (cons "- an executable definition that stores a closure in an `Option`;" (cons "- an executable definition that returns a structure of closures;" (nil String)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0023,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- an executable definition that receives a structure of closures;" (cons "- a type parameter spelled like a built-in Lean type;" (cons "- the universe `Type` as an explicit type argument;" (cons "- a non-decreasing call between mutual definitions;" (cons "- a mutual definition with a missing case;" (cons "- a mutual call on a value that is not a smaller family binder;" (cons "- mutual definitions decreasing on different families;" (cons "- a cyclic well-founded measure;" (cons "- forged well-founded evidence;" (cons "- missing well-founded evidence;" (cons "- well-founded evidence that omits the match enclosing its call;" (cons "- a semantic-module member outside the closed schema;" (cons "- a mutual label shared by an inductive group and a definition group;" (cons "- a call to another member of a mutual group under a lambda;" (cons "- a well-founded definition referring to itself as a value;" (cons "- a mutual member that calls no member of its group;" (cons "- a mutual group whose call graph is not strongly connected;" (cons "- a mutual group mixing structural and well-founded members;" (cons "- a well-founded measure that mentions a member of its group;" (cons "- false well-founded evidence stating the exact obligation, refused by" (cons "  verification (`LLV7002`)." (cons "- a duplicate key in a map literal;" (cons "- a map keyed by a type without a canonical order;" (cons "- a map literal keyed by a non-literal value;" (cons "- a map literal key with a noncanonical spelling;" (cons "- a set literal element outside its fixed-width range;" (cons "- a graph edge to an undeclared node;" (cons "- a duplicate graph edge;" (cons "- a fold step whose type does not thread the state;" (cons "- an iteration without its fuel;" (cons "- a collection literal beyond `max_ir_nodes` (`LLS8002`);" (cons "- a collection under language 1.1." (cons "- a production root on a target without allocation whose closure reaches allocation through two imported modules;" (cons "- a production root on a target without allocation that takes an unbounded list;" (cons "- a production root whose result is a proposition;" (cons "- a production root that takes a type universe;" (cons "- a production root that takes a named type holding a proposition in a field;" (cons "- a production root whose closure has an effect the root does not admit;" (cons "- a production root that takes a function;" (cons "- a production root whose closure binds a proposition-valued dependency;" (cons "- a production root with a literal outside the target width;" (cons "- a production root that is not declared executable;" (cons "- a production root with type parameters, whether or not its signature" (cons "  mentions them;" (cons "- a production root naming an unregistered target." (cons "- a contract declaration under language 1.1;" (cons "- an `artifact_source` under language 1.1 (`LLC0101`);" (cons "- a model declaration with a prompt member outside the closed schema;" (cons "- a floating-point artifact element;" (cons "- an unregistered evidence claim kind;" (cons "- a missing model artifact, an artifact whose bytes differ from the configured" (cons "  digest, a declared artifact with no configured source, and an artifact" (cons "  whose declared length differs from its bytes (`LLR3007`);" (cons "- an artifact that is a symlink (`LLS8001`) and an artifact beyond" (cons "  `max_file_bytes` (`LLS8002`);" (cons "- artifact bytes too short for the declared tensor shape, a `utf8_lines`" (cons "  artifact that is not UTF-8, a role its schema does not admit, and a" (cons "  one-byte tensor with a 40000-deep shape, refused before any byte is" (cons "  decoded (`LLR3008`);" (cons "- a layer whose artifact has the wrong shape, a width theorem stating" (nil String)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.cont,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0024,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "  another width, a model binding a contract to a realization of another" (cons "  interface, a predicate with another signature, and a validator soundness" (cons "  theorem stating another obligation (`LLT4006`);" (cons "- a sequence junction left unconditional before a stage with a precondition," (cons "  a junction theorem stating another obligation, a composite whose output" (cons "  type differs from its stages', and a model without its entry theorems" (cons "  (`LLT4007`);" (cons "- an executable application of a model without the check its precondition" (cons "  needs, without the postcondition check its evidence does not discharge, a" (cons "  check of a predicate without a validator, and a realization applied" (cons "  directly (`LLT4008`);" (cons "- a claim discharged by a theorem stating another obligation, an invariant" (cons "  claim about a stateless contract, and evidence about another realization" (cons "  (`LLT4009`);" (cons "- false evidence stating the exact claim, refused by verification" (cons "  (`LLV7002`)." (cons "- a logic declaration under language 1.1, a reasoner with an oracle member" (cons "  outside the closed schema, an unregistered strategy, and an unregistered" (cons "  reasoner claim kind (`LLT4001`);" (cons "- a binder spelled with the reserved generated prefix, and a declaration" (cons "  named like, or below, a namespace the generated Lean refers to" (cons "  (`LLT4001`);" (cons "- a logic binding its state and next-state names alike, a relation of" (cons "  another signature or that is not a definition or takes other type" (cons "  parameters than the logic's, an invariant or a ranking of another" (cons "  signature, a verifier specification of another signature, a reasoner" (cons "  naming a declaration that is not a rule, a rule whose conclusion is not of" (cons "  its state type, a generate-and-verify reasoner whose observation is not its" (cons "  verifier's subject, an invariant-preservation theorem stating another" (cons "  obligation, a rule over a declaration that is not a logic or with type" (cons "  arguments its logic does not take, a guard that is not Boolean, candidates" (cons "  that are not a list, a soundness or progress theorem stating another" (cons "  obligation, progress over a logic without a ranking, a verifier check that" (cons "  is not a Boolean function or is not executable, a completeness theorem" (cons "  stating another obligation, a reasoner naming a declaration that is not a" (cons "  verifier, a verifier of another candidate type, an answer that is not an" (cons "  option, an observation of another state type, no rules, a rule named" (cons "  twice, a non-executable rule in an executable reasoner, a rule over" (cons "  another logic, a rule used at type arguments other than its reasoner's" (cons "  logic, a verifier of another subject type, claims out of order or naming" (cons "  a kind twice, an initial-invariant claim over a logic without an" (cons "  invariant, and an initial-invariant or fuel-bound theorem stating another" (cons "  obligation (`LLT4010`);" (cons "- a generate-and-verify reasoner with rules, with a logic, with a claim, or" (cons "  with a generator that is not a list of its verifier's candidates; a" (cons "  rule-based reasoner without its logic; an answer-correctness theorem" (cons "  stating another obligation; an answer-correctness claim out of order; and" (cons "  an answer-correctness claim under the invariant without the initial" (cons "  invariant that makes it hold of every reached state, an observation" (cons "  invariant with a predicate of another signature, an initial or" (cons "  preservation theorem stating another obligation, or claimed out of order" (cons "  (`LLT4010`);" (cons "- a generate-and-verify reasoner without a budget, and a budget that is not" (cons "  a natural number (`LLT4011`);" (cons "- a reasoner whose elaboration would exceed `max_ir_nodes`, refused before it" (cons "  is elaborated (`LLS8002`);" (cons "- a forward reasoner without fuel, a search without a frontier, a frontier" (cons "  of zero, deduplication over a state type without a canonical order, a" (cons "  fuel or frontier that is not a natural number, a termination claim by a" (cons "  search, and a termination claim with a rule that states no progress, with" (nil String)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.cont,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0025,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "  no initial invariant for the progress it assumes, or over a logic without" (cons "  a ranking (`LLT4011`);" (cons "- an executable definition reaching a rule's unguarded conclusion and one" (cons "  reaching a reasoner's unverified answer, each by a call, a function value" (cons "  applied or folded or iterated, a name bound to one, a lambda body, a" (cons "  branch, a rule guard, a reasoner's observation, a generator, and another" (cons "  reasoner's answer, and one reaching the answer of a reasoner claimed" (cons "  correct only under an invariant (`LLT4012`);" (cons "- a rule whose guard admits a step its relation forbids, a rule that does" (cons "  not decrease the ranking, a verifier whose check accepts a candidate its" (cons "  specification forbids, a fuel bound false for the observation, and a" (cons "  forged trace claimed to replay, and an answer claimed correct on every" (cons "  state, or on every state satisfying the invariant or the observation" (cons "  invariant, that is not, each" (cons "  stating its exact obligation and refused by verification (`LLV7002`)." (nil String))))))))))))))))
+    ],
+    constructor: DocRows::Item.cont,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0026,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "28.6 Example verification"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0027,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Every directory under `examples/` is discovered rather than listed. Each example MUST include its lock and expected platform-independent build outputs. `cargo xtask verify-examples` runs `fmt --check`, `lock --check`, `check`, `build`, and `verify`. The `compiler/` project (§17.14, §17.15) and the `stdlib/` project (§17.22) pass the same gates as an example." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0028,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "---" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

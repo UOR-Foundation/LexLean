@@ -1,0 +1,964 @@
+\begin{lexlean}{Chapter13}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{DocRows}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: i0001,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [2, 1, "13. Lexicon packages"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0002,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "13.1 Package layout"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0003,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "A lexicon package is:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0004,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "text",
+      (cons "<package-root>/" (cons "├── lexicon.toml" (cons "└── entries/" (cons "    └── <local-entry-id path>.toml" (nil String)))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0005,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "`lexicon.toml` is:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0006,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "toml",
+      (cons "spec = \"lexlean/lexicon/1\"" (cons "package = \"example.algebra\"" (cons "version = \"1.2.3\"" (cons "language = \"1.0\"" (cons "imports = [\"lexlean.core@1.0.0\"]" (nil String))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0007,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Unknown fields and comments are errors. `imports` are exact, sorted, and unique." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0008,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "A local entry ID is dot-separated lower-case ASCII:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0009,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: ["text", (cons "[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)*" (nil String))],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0010,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The entry file path is `entries/` plus each dot-separated segment as a directory and `.toml` on the final segment. For example, `nat.add.zero` is stored at `entries/nat/add/zero.toml`." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0011,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "The globally qualified ID is:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0012,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: ["text", (cons "<package-id>::<local-entry-id>" (nil String))],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0013,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "13.2 Entry schema"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0014,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Every entry file has:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0015,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "toml",
+      (cons "spec = \"lexlean/entry/1\"" (cons "id = \"nat.add\"" (cons "category = \"infix-function\"" (cons "signature = \"(pi ((explicit a (const lexlean.std.nat::nat)) (explicit b (const lexlean.std.nat::nat))) (const lexlean.std.nat::nat))\"" (cons "surface_arity = 2" (cons "frame = \"infix\"" (cons "precedence = 65" (cons "associativity = \"left\"" (cons "" (cons "[denotation]" (cons "kind = \"lean\"" (cons "module = \"Init.Prelude\"" (cons "name = \"HAdd.hAdd\"" (cons "" (cons "[[form]]" (cons "id = \"plus\"" (cons "channel = \"math\"" (cons "surface = \"+\"" (cons "canonical_source = true" (cons "features = []" (cons "" (cons "[render]" (cons "math = \"(seq (slot 0) (space) (token plus) (space) (slot 1))\"" (nil String))))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0016,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Fields that do not apply to the selected category or denotation are forbidden rather than ignored." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0017,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "13.3 Categories"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0018,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "The exact language-1.0 categories are:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0019,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "| Category | Semantic role |" (cons "|---|---|" (cons "| `structural` | Core-only source structure. |" (cons "| `grammar` | Core-only determiner, connective, copula, or proof keyword. |" (cons "| `label-word` | A concept token allowed in titles and headings. |" (cons "| `type-noun` | A type-valued atom or phrase. |" (cons "| `term-constant` | A term-valued atom. |" (cons "| `function` | A function referenced by explicit call syntax. |" (cons "| `prefix-function` | One explicit surface argument. |" (cons "| `postfix-function` | One explicit surface argument. |" (cons "| `infix-function` | Two explicit surface arguments. |" (cons "| `noun-function` | Canonical “the SELF of ARG” function phrase. |" (cons "| `binary-noun-function` | Canonical “the SELF of ARG and ARG” phrase. |" (cons "| `predicate-constant` | A proposition-valued atom. |" (cons "| `adjective-predicate` | Canonical “ARG is SELF” predicate. |" (cons "| `intransitive-predicate` | Canonical “ARG SELF” predicate. |" (cons "| `transitive-predicate` | Canonical “ARG SELF ARG” predicate. |" (cons "| `infix-predicate` | Two-argument mathematical relation. |" (cons "| `proof-constant` | A proof term or theorem reference. |" (nil String))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.table,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0020,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "A non-core entry cannot use `structural` or `grammar`." (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0021,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Category/frame compatibility is exact:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0022,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "| Category | Permitted frame |" (cons "|---|---|" (cons "| `structural`, `grammar`, `label-word`, `type-noun`, `term-constant`, `predicate-constant` | `atom` |" (cons "| `function` | `call` |" (cons "| `prefix-function` | `prefix` |" (cons "| `postfix-function` | `postfix` |" (cons "| `infix-function`, `infix-predicate` | `infix` |" (cons "| `noun-function` | `noun-of` |" (cons "| `binary-noun-function` | `binary-noun-of` |" (cons "| `adjective-predicate` | `adjective` |" (cons "| `intransitive-predicate` | `intransitive` |" (cons "| `transitive-predicate` | `transitive` |" (cons "| `proof-constant` | `atom` when `surface_arity = 0`, otherwise `call` |" (nil String))))))))))))))
+    ],
+    constructor: DocRows::Item.table,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0023,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "13.4 Frames"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0024,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "The exact frame values and surface slot order are:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0025,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "| Frame | Surface pattern |" (cons "|---|---|" (cons "| `atom` | `SELF` |" (cons "| `call` | `SELF ( ARG_0, ..., ARG_n )` |" (cons "| `prefix` | `SELF ARG_0` |" (cons "| `postfix` | `ARG_0 SELF` |" (cons "| `infix` | `ARG_0 SELF ARG_1` |" (cons "| `noun-of` | `the SELF of ARG_0` |" (cons "| `binary-noun-of` | `the SELF of ARG_0 and ARG_1` |" (cons "| `adjective` | `ARG_0 is SELF` |" (cons "| `intransitive` | `ARG_0 SELF` |" (cons "| `transitive` | `ARG_0 SELF ARG_1` |" (nil String)))))))))))))
+    ],
+    constructor: DocRows::Item.table,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0026,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Category/frame compatibility is fixed by the category names above. A package cannot introduce arbitrary grammar productions." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0027,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "13.5 Forms"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0028,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Each form declares:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0029,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- `id`: unique local form ID;" (cons "- `channel`: `text`, `math`, or `both`;" (cons "- `surface`: exact normalized source spelling;" (cons "- `canonical_source`: Boolean;" (cons "- `features`: sorted unique values from:" (cons "  - `singular`;" (cons "  - `plural`;" (cons "  - `sentence-case`;" (cons "  - `lower-case`;" (cons "  - `article-a`;" (cons "  - `article-an`." (nil String))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0030,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Rules:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0031,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "1. leading, trailing, or repeated whitespace in `surface` is forbidden;" (cons "2. a surface is parsed into primitive atoms at package-load time;" (cons "3. control-sequence forms are aliases only and cannot be canonical source forms for non-core entries;" (cons "4. a non-core canonical text form contains only ASCII words and renderer-safe punctuation;" (cons "5. a non-core canonical math form contains only renderer-safe ASCII or Unicode symbols;" (cons "6. if no safe canonical surface exists, `fmt` emits `\\lexeme{qualified-id}`;" (cons "7. exactly one canonical source form exists for each channel required by the category;" (cons "8. forms are case-sensitive; capitalization variants are separate forms;" (cons "9. inflections are explicit; LexLean does not infer plurals or articles;" (cons "10. two entries may share a surface, but acceptance then requires unique grammar/type resolution." (nil String)))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0032,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "13.6 Denotations"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0033,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "A denotation is exactly one of:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0034,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [4, 1, "Core"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0035,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "toml",
+      (cons "[denotation]" (cons "kind = \"core\"" (cons "constructor = \"logic.forall\"" (nil String))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0036,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Only `lexlean.core` may use it." (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0037,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [4, 1, "External Lean"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0038,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "toml",
+      (cons "[denotation]" (cons "kind = \"lean\"" (cons "module = \"Init.Data.Nat.Basic\"" (cons "name = \"Nat.add_zero\"" (nil String)))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0039,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The module and name must use the conservative ASCII Lean-name grammar. The entry signature is the complete LexLean interface." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0040,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [4, 1, "Document declaration"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0041,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "toml",
+      (cons "[denotation]" (cons "kind = \"document\"" (cons "module = \"Main\"" (cons "component = \"double\"" (nil String)))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0042,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The declaration must exist in the named LexLean module and match the entry signature." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0043,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [4, 1, "Defined lexicon value"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0044,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "toml",
+      (cons "[denotation]" (cons "kind = \"defined\"" (cons "value = \"(lam ((explicit n (const lexlean.std.nat::nat))) (app (const lexlean.std.nat::succ) (local n)))\"" (nil String))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0045,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Defined values are nonrecursive, acyclic, and may reference only earlier entries in the package dependency order." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0046,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "No denotation contains an English description field. Fields named `description`, `documentation`, `note`, `meaning`, or any unknown name are rejected." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0047,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "13.7 Signature requirement"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0048,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Every semantic entry has a complete signature in the LexLean Semantic Expression encoding in §13.8. The compiler hashes the canonical signature and records the hash in the linked glossary closure." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0049,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "The signature is an interface declaration checked twice:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0050,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "1. LexLean uses it for controlled resolution and conservative elaboration." (cons "2. Verification generates an external-interface probe whose Lean elaboration must succeed." (nil String)))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0051,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "LexLean's Rust checker does not claim to replace Lean's dependent type checker." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0052,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "13.8 LexLean Semantic Expressions (LSE)"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0053,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "LSE is an S-expression language. Its grammar is:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0054,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "ebnf",
+      (cons "expr        = sort | const | local | app | pi | lam | let | nat ;" (cons "sort        = \"(\" \"sort\" \"prop\" \")\"" (cons "            | \"(\" \"sort\" \"(\" \"type\" universe \")\" \")\" ;" (cons "const       = \"(\" \"const\" qualified-id [universe-args] \")\" ;" (cons "local       = \"(\" \"local\" local-id \")\" ;" (cons "app         = \"(\" \"app\" expr expr {expr} \")\" ;" (cons "pi          = \"(\" \"pi\" \"(\" binder {binder} \")\" expr \")\" ;" (cons "lam         = \"(\" \"lam\" \"(\" binder {binder} \")\" expr \")\" ;" (cons "let         = \"(\" \"let\" local-id expr expr expr \")\" ;" (cons "nat         = \"(\" \"nat\" decimal \")\" ;" (cons "binder      = \"(\" binder-mode local-id expr \")\" ;" (cons "binder-mode = \"explicit\" | \"implicit\" | \"instance\" ;" (cons "universe-args = \"(\" universe {universe} \")\" ;" (cons "universe    = decimal" (cons "            | universe-id" (cons "            | \"(\" \"succ\" universe \")\"" (cons "            | \"(\" \"max\" universe universe {universe} \")\"" (cons "            | \"(\" \"imax\" universe universe \")\" ;" (nil String)))))))))))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0055,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Whitespace is one or more ASCII spaces or LF. Comments and quoted strings do not exist." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0056,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Rules:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0057,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- identifiers are ASCII and validated;" (cons "- each local resolves by lexical scope;" (cons "- binders are capture-free internal IDs after parsing;" (cons "- `app` has at least a function and one argument;" (cons "- `pi` and `lam` have at least one binder;" (cons "- universe variables are declared by the entry's optional sorted `universes` array;" (cons "- all semantic conveniences such as equality, conjunction, existence, and implication are applications of core constants after desugaring;" (cons "- canonical LSE prints one ASCII space between atoms, no redundant grouping, and final LF only when stored as a file field;" (cons "- alpha-equivalent LSE values are canonicalized by binder order before hashing." (nil String))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0058,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "13.9 Rendering expressions (LRE)"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0059,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "LRE is the only way a glossary entry influences canonical visible output." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0060,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "ebnf",
+      (cons "render      = form | self-form | slot | seq | space | token" (cons "            | group | paren | bracket | sub | sup | frac" (cons "            | operator-name ;" (cons "form        = \"(\" \"form\" qualified-id form-id \")\" ;" (cons "self-form   = \"(\" \"self-form\" form-id \")\" ;" (cons "slot        = \"(\" \"slot\" decimal \")\" ;" (cons "seq         = \"(\" \"seq\" render {render} \")\" ;" (cons "space       = \"(\" \"space\" \")\" ;" (cons "token       = \"(\" \"token\" renderer-token-id \")\" ;" (cons "group       = \"(\" \"group\" render \")\" ;" (cons "paren       = \"(\" \"paren\" render \")\" ;" (cons "bracket     = \"(\" \"bracket\" render \")\" ;" (cons "sub         = \"(\" \"sub\" render render \")\" ;" (cons "sup         = \"(\" \"sup\" render render \")\" ;" (cons "frac        = \"(\" \"frac\" render render \")\" ;" (cons "operator-name = \"(\" \"operator-name\" ascii-identifier \")\" ;" (nil String)))))))))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0061,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Rules:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0062,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- raw TeX strings do not exist;" (cons "- every `form` references an existing form;" (cons "- every `token` references `language/renderer-tokens.toml`;" (cons "- every slot index is less than `surface_arity`;" (cons "- every explicit surface argument appears exactly once in the canonical render template;" (cons "- implicit semantic parameters are not surface slots;" (cons "- `operator-name` accepts only `[A-Za-z][A-Za-z0-9_]*`;" (cons "- non-core packages cannot define renderer tokens;" (cons "- renderer expressions are acyclic." (nil String))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0063,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "13.10 Renderer-token registry"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0064,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "`language/renderer-tokens.toml` is the single source for trusted LaTeX controls and mathematical glyphs. Each row declares:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0065,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- token ID;" (cons "- exact emitted UTF-8 bytes;" (cons "- channel;" (cons "- arity;" (cons "- whether grouping is required;" (cons "- source package authority, always core." (nil String)))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0066,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The language-1.0 registry MUST be the minimal transitive closure of tokens referenced by the exact preamble, core LRE, and shipped standard-package LRE. Unused rows fail the language audit. It MUST contain the following semantic token IDs; document/package options and environment names in the fixed preamble are also individual core rows rather than unclassified text:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0067,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "text",
+      (cons "documentclass" (cons "usepackage" (cons "newtheorem" (cons "theoremstyle" (cons "begin" (cons "end" (cons "center" (cons "large" (cons "section" (cons "subsection" (cons "label" (cons "texttt" (cons "operatorname" (cons "mathbb" (cons "mathrm" (cons "proof" (cons "definition" (cons "theorem" (cons "lemma" (cons "corollary" (cons "plus" (cons "minus" (cons "times" (cons "cdot" (cons "slash" (cons "equals" (cons "not-equals" (cons "less" (cons "less-equal" (cons "greater" (cons "greater-equal" (cons "member" (cons "not-member" (cons "subset" (cons "subset-equal" (cons "union" (cons "intersection" (cons "forall" (cons "exists" (cons "exists-unique" (cons "logical-and" (cons "logical-or" (cons "logical-not" (cons "implies" (cons "iff" (cons "mapsto" (cons "arrow" (cons "left-arrow" (cons "comma" (cons "period" (cons "colon" (cons "semicolon" (cons "left-paren" (cons "right-paren" (cons "left-bracket" (cons "right-bracket" (nil String)))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0068,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Canonical math bytes are fixed: logical conjunction is `\\land`, disjunction `\\lor`, negation `\\lnot`, implication `\\to`, equivalence `\\leftrightarrow`, universal quantification `\\forall`, existence `\\exists`, unique existence `\\exists!`, membership `\\in`, and set inclusion `\\subseteq` where the corresponding token is used. Preamble option/package/environment atoms, braces, separators, and dynamically generated validated labels are all covered by core structural rows or source-derived metadata rows." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0069,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "A renderer token is not a source macro facility. It is a closed compiler datum included in the compiler-semantics hash." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0070,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "13.11 Package validation"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0071,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Loading a package MUST reject:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0072,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- schema mismatch;" (cons "- package/version mismatch with the lock;" (cons "- unknown fields;" (cons "- comments;" (cons "- duplicate package or entry IDs;" (cons "- invalid entry paths;" (cons "- invalid forms;" (cons "- missing canonical forms;" (cons "- form/category incompatibility;" (cons "- invalid LSE or LRE;" (cons "- unresolved references;" (cons "- import cycles;" (cons "- defined-denotation cycles;" (cons "- invalid renderer slots;" (cons "- raw control output;" (cons "- a document denotation whose declaration is unavailable;" (cons "- an eliminator descriptor that references absent constructors;" (cons "- a package whose `language` differs from the project's (`LLC0103`)." (nil String)))))))))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0073,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "---" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}
