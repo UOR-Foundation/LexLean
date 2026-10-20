@@ -34,7 +34,48 @@ and Unreleased holds what has landed since.
   consumer, the packages committed under `tests/production-export/helpdesk/`.
   The workspace file lists the three new members. No language data or schema
   moves, so no language-1.2 record other than the new projects' own is
-  regenerated. The register is 432 IDs.
+  regenerated. The register is 436 IDs.
+- The audit of certificate A checks a mutual group of implementation records
+  (`f._unsafe_rec`) by the union of the sets it prints for the group, against a
+  pin that is the group's union (SPEC.md §17.17, `LLV7013` names the group).
+  What Lean prints of one member is not a property of its term alone: it
+  stores axiom data by one shared traversal in the order of a hash map keyed by
+  names that carry the identity, so the first member of the bootstrap project's
+  R6 group, `__fits_76`, pinned `[]` row by row and printing `[]` on main's
+  identity only by that order, printed `[propext]` on others with identical
+  sources.
+  The pin and the check now state the same order-independent set. Found by the
+  slice 3 identity (#221).
+- Text classifiers, composition, and adapters, and the audit that no prompt is
+  code (SPEC.md §17.12, *Text components* rules 8 to 10, `LM-07`..`LM-09`,
+  slice 3 of #30; no new code). A `text_classifier` over a prior tokenizer and
+  a prior stateless `list int` model whose evidence discharges every runtime
+  check elaborates to `features` (the count of each token id below the
+  tokenizer's `size`), `classifyTokens` (the model applied to the features), and
+  `classify` over `string` through `encodeText`, and generates
+  `features_width` (exactly `size` entries), `features_total` (the features of
+  an encoded text sum to its token count, so no token is dropped), and
+  `features_fit` (`fitWidth`, the fixed-width map a linear or neural stage
+  needs to apply to an arbitrary `list int`, leaves them unchanged); the
+  declaration gains an `axioms` policy. A stateful model that steps by a
+  window's `push` composes under `scan`, its `satisfies_contract` evidence
+  proved by the window's generated `push_bounded`, and an adapter is a model
+  over `string` whose realization applies `classify` or `generate` and whose
+  evidence the generated laws prove, so the declaration kinds are those of
+  before. The audit walks the primitive registry, the production registry, and
+  the text declarations of the closed schema and refuses an operation that
+  takes a `string` or `bytes` operand and returns anything but data, a registry
+  that names an operation the other does not, and a free string member of a
+  text declaration. The classifier's functions and laws are new declarations
+  of the native `LexLeanText` module, authored once outside the release tree
+  and exported by the same round trip as the earlier slices
+  (`tests/text-laws/MIGRATION.md`, third record). The language-1.2 `semantic_ir`
+  and `latex_backend` versions move to 15 and 14, and the schema
+  `semantic-module-v2` gives `text_classifier` an `axioms` member, so every
+  language-1.2 lock, golden, fixture, and verification record is regenerated
+  with the maintainer's wave. Production (`text_rows`), `rust-std` and
+  `rust-core`, and the end-to-end example are not part of this change. The
+  register holds 433 IDs.
 - Context windows and text generators (SPEC.md §17.12, *Text components*,
   `LM-04`..`LM-06`, slice 2 of #30; new code `LLT4016`). A `context_window`
   of capacity at least 1 and overflow `refuse` or `keep_last` elaborates to
@@ -206,6 +247,19 @@ and Unreleased holds what has landed since.
   the gate are the rows of `.github/vv-rows.json`, the matrix the plan hands
   to `vv`. `release.yml` still runs `just vv` whole and reads no earlier run.
   The register is unchanged: the statement of `RP-14` is extended.
+- The host legs of CI may run for 240 minutes, where they were cut off at 120:
+  the Intel macOS leg took 74, 92, and 100 minutes on the three full gates
+  before 2026-10-20, then passed its 430 conformance tests in 99 minutes and
+  was cancelled at 120 during the last test binaries. A leg cancelled at its
+  limit is not a result about the code; the limit is again twice the slowest
+  observed time.
+- Release lines (SPEC.md §9.4, `RP-14`): the branch `release/vX.Y` is the
+  release X.Y, cut from `main` when work on it begins; a milestone's pull
+  requests target its line, tags are made from it, it is merged forward into
+  the next line after each landing, and `main` is the newest released line.
+  The three workflows run on a push to a release line as on a push to `main`,
+  under the same plan, and `RP-14` reads their push triggers. The register is
+  unchanged: the statement of `RP-14` is extended.
 - Measured stack bounds for every production root a conformance harness runs
   on a corpus and that admits `recursion` (SPEC.md §17.13, §17.23, `PD-08`,
   #105 step 3; no new diagnostic code, no change to any language identity).
@@ -255,6 +309,22 @@ and Unreleased holds what has landed since.
   twelve planted defects, and the certified packages against the committed
   ones. The Rust reasons are reproduced to the byte but for Rust's `Debug` of
   a string with a scalar beyond U+009F, which is outside the claim.
+- The Rust crate validator as language-1.2 source (SPEC.md §17.23, §17.16,
+  `BS-05`, #92; no new diagnostic code, no change to the language-1.2
+  identity). `bootstrap/src/RustValidate.lex.tex` declares `validateCrate` and
+  `correspondCrate` as production roots for `rust-std`, for a crate given as
+  the closed Rust AST as data, with the oracle's reasons to the byte and the
+  rules for a loop (`Expr::Loop`: ownership across a body that runs again, the
+  fallible-tail rule, the body as a block that is not a tail). `BS-05` runs the
+  223 distinct crates the renderer lowers from the committed programs, 132 +
+  12 rule runs that reach each of the 48 reachable refusals three times, and 17
+  + 34 hand-built crates (406 + 269 vectors) under the pinned `rustc` on every
+  host, and on the normative host the evaluator on the crates of at most 400
+  expressions and 500 seeded mutants, 2,000 more per root under `rustc`,
+  sixteen planted defects, and the certified packages against the committed
+  ones. The register is 430 IDs. A finding about the certificate generator,
+  #222, is worked around by building the correspondence table in a definition
+  of its own.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or
