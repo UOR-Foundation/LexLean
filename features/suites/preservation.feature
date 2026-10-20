@@ -157,3 +157,10 @@ Feature: preservation
     When RustSyntax is read for its machine primitives and the pinned Lean evaluates a call of each natural and integer primitive on the boundary values of the widths and on operands that overflow
     Then RustSyntax declares the nine primitives, and each evaluation is Some of the primitive's value, None on overflow, or the value for the two that cannot overflow
     And a statement of a wrong value for the same call is refused by the pinned Lean
+
+  @SP-22 @build
+  Scenario: Each function the `RustRuntime` module defines has its refinement statement: for every such function the module holds a theorem `refines_<function>` stating, for all arguments of the function's parameter types, that the declared Rust semantics' run of the function in the module's core crate equals the run of the runtime item of the same name, the pinned Lean accepts each with exactly the axioms its policy states, the set of theorems equals the set of functions the module defines, and a theorem for a function the module does not define, a function without a theorem, and a function whose body is changed to another result are each refused.
+    Given the committed module RustRuntime of the compiler project and the committed modules RustSyntax and RustSemantics it imports
+    When the pinned Lean elaborates the module and its theorems are listed by name
+    Then each function the module defines has its theorem, and each is accepted with exactly the axioms its policy states
+    And a theorem for another function, a function without a theorem, and a function whose body is changed are each refused
