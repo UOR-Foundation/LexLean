@@ -16521,3 +16521,37 @@ pins []
 
 The plant was restored with `git checkout`. The same verification with the fix in
 place is the regeneration of the bootstrap records in this change.
+
+## Planted defects for the chapter edit tool (`NS-07`, #244)
+
+Each case below was run on the real command, `cargo xtask spec`, on the
+committed tree, the result observed, and the tree restored with `git checkout`
+(§27.9). `conformance_ns_07` asserts the same cases on a scratch copy of the
+sources, with the source directory compared byte for byte before and after
+every refusal. Linux x86-64.
+
+| Case | Command | Observed |
+| --- | --- | --- |
+| a prose hunk and a hunk inside a derived region, in one merged text | `spec port --merged <SPEC.md with a paragraph and the RP-01 row changed>` | `spec: changed the block of Chapter01 at line 18`, `spec: lines 10080..10081 are in a derived region: regenerated, not ported`; one module and `SPEC.md` change by one line each, and the changed row is the register's again |
+| a first line that matches no block | `spec replace-block --chapter Chapter01 --first-line 'there is no such line' …` | ``R1: Chapter01: no block begins with `there is no such line` (NS-07)``; nothing written |
+| a first line that matches two blocks | `replace-block` with a first line two blocks begin with | ``R1: Chapter01: 2 blocks begin with `x` (items 3..3, 4..4); name another first line (NS-07)`` |
+| a hunk that spans two blocks (two paragraphs joined, both end lines changed) | `spec port --merged …` | ``R1: the hunk at lines 18..21 spans Chapter01 (`This document is the complete implementa`) and Chapter01 (`The key words **MUST**, **MUST NOT**, **`); it is not ported (NS-07)`` |
+| a block of 130 lines | `spec replace-block … --from <130 lines>` | the module holds the block as one item and two `cont` items (60, 60, 10); the regenerated SPEC.md has all 130 lines |
+| a percent sign | `spec replace-block … --from <a line with 50%>` | `SPEC.md` holds `50%`; the module holds no `%` (it holds U+FF05) |
+| the check itself: the intended text computed off by one (a defect planted in `replace_block`) | `spec replace-block … --from <one line>` | ``R1: the regenerated SPEC.md differs from the intended text at line 18: `a replacement line` against `This document is the complete implementation contract …` (NS-07)``; nothing written, tree unchanged |
+
+Further, in `conformance_ns_07`: a line holding U+FF05 is refused (the chapters
+reserve it); a deleted blank line between two blocks, which touches no block's
+lines, is refused and named by its neighbours; an inserted block's items are
+numbered in order; the written module is canonical (`to_notation` is the
+identity), so no separate formatting step exists to run; and the module keeps its
+own header.
+
+*What the evidence is.* The tool is Rust: it can falsify an edit and never
+establishes one (C9). What establishes an edit is the comparison of the
+regenerated SPEC.md with the text it was meant to produce, made on a scratch
+copy before anything is written, and the last case shows that comparison is not
+vacuous. A hunk the tool cannot place (it spans two blocks, adds a heading or a
+fence, or touches no block) is refused rather than split; that edit is made
+with `replace-block` and `insert-after` one block at a time, or by hand.
+`Ids*` rows stay hand-edited, as decided on #244.
