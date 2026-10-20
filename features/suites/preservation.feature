@@ -143,3 +143,9 @@ Feature: preservation
     When every loop of every rendering is read back into the recursive body it is the loop form of, the loop form of that body is computed by the library's form transliterated, and certificate B of the fixtures rendered as loops is compiled by the pinned Lean over the shipped library
     Then the loop form of each recovered body is the crate's function, and each certificate B compiles with exactly the axioms the audit states
     And a loop that is not the loop form of any recursive body is refused for each way it may differ
+
+  @SP-21 @build
+  Scenario: A production root that reads a content-addressed artifact lowers the artifact's decoded value as a data literal and not as a nullary function whose body builds it, and certificates A, B, and E cover the data literal on every committed root, so that no lowered program evaluates a build chain for an artifact on any call; a lowering that rebuilds the value per call is refused.
+    Given every committed production root that reads an artifact, and a copy that lowers the artifact to a nullary function
+    When it is lowered and certified
+    Then each lowered program holds the decoded value as data, certificates A, B, and E check, and the copy is refused

@@ -2154,3 +2154,23 @@ fn conformance_lm_06() {
 fn conformance_lm_13() {
     repo_conformance::cases::run("LM-13");
 }
+
+#[test]
+fn conformance_tc_08() {
+    repo_conformance::cases::run("TC-08");
+}
+
+#[test]
+fn conformance_rb_15() {
+    repo_conformance::cases::run("RB-15");
+}
+
+#[test]
+fn conformance_sp_21() {
+    repo_conformance::cases::run("SP-21");
+}
+
+#[test]
+fn conformance_md_14() {
+    repo_conformance::cases::run("MD-14");
+}

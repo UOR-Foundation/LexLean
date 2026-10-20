@@ -92,3 +92,9 @@ Feature: models
     When they are decoded to exact dyadic rationals and round(a * b / c * 2^32) is derived in LexLean
     Then the decoded rationals and rounded scale ratios equal the independent exact rational computation under Lean
     And non-finite and out-of-range patterns are rejected and a planted rounding or exponent mutation is refused by verification
+
+  @MD-14 @build
+  Scenario: The lowered program of a production root reading an artifact contains the artifact's decoded value as data equal to the decoding of its bytes and no per-call construction of it, and a root whose lowered program decodes or builds the value on a call is detected.
+    Given the committed models example, whose production roots read artifacts, and a copy whose lowered program builds an artifact per call
+    When it is built and verified
+    Then every artifact read is a data literal equal to its decoding, no function body builds an artifact value, and the copy is detected
