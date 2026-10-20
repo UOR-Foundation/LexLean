@@ -9,6 +9,8 @@
 **Status:** Normative implementation specification  
 **Target initial release:** `1.0.0`
 
+> **Generated.** This file is the projection of the modules of `spec/src` by `cargo xtask validate-model --write` (§27.5). It is never edited: edit the module that holds the text and run `just model-write`.
+
 ---
 
 ## 1. Normative force
@@ -9449,6 +9451,7 @@ The template audits are adapted as follows:
 - `audit-language-closure` checks built-in lexicons and renderer tokens;
 - `audit-no-unsafe` verifies the shipped crate forbids unsafe code;
 - `audit-production` verifies that the production-eligibility analysis classifies every IR variant explicitly, with no default branch (§17.13).
+- `audit-source-authority` verifies that the hand-edited normative inputs are the `.lex.tex` modules of `spec/` (`NS-06`): `model/` holds only the projected files and the copies an authority row vendors, every Markdown file at the root is a projection or on the closed list of hand-written documents, the projections say they are generated, and no hand-written document restates a registered statement.
 
 ---
 
@@ -10416,8 +10419,9 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `NS-03` | `normative-source` | A difference between a model file or SPEC.md and the projection of the specification project's modules, in either direction, fails the repository gate naming R1, a source edit that is not projected being such a difference, and the section references of the §31 table are checked against those the register modules carry. | §27.5, §27.6 |
 | `NS-04` | `normative-source` | The projector fails closed on a module of the specification project that holds a declaration kind, a term kind, a field, a name, a file, or a family it does not read, and on a duplicate identifier or code, and a plant of each is refused naming the file and, for a declaration, its position. | §17.21, §24.8 |
 | `NS-05` | `normative-source` | SPEC.md regenerates byte-identically from the chapter modules of the specification project, its conformance-ID table, its diagnostic-code table, and its stated total being derived from the register and registry modules and never typed, and the projector refuses a chapter item it does not read. | §26.3, §27.5, §31 |
+| `NS-06` | `normative-source` | The hand-edited normative inputs of the repository are the `.lex.tex` modules of the specification project: `model/` holds only the projected files and the copies an authority row vendors, every Markdown file at the root is a projection or is on the closed list of hand-written documents, the projections carry the notice that names their source, and no hand-written document restates a registered statement, a plant of each being refused naming R1. | §27.2, §27.5, §27.10 |
 
-**Total required capability IDs:** 435.
+**Total required capability IDs:** 436.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

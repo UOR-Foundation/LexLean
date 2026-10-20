@@ -8,7 +8,9 @@ repository.
 LexLean: a closed-lexicon LaTeX-to-Lean 4 compiler whose canonical document and
 prose-free Lean program are generated from one semantic representation.
 `SPEC.md` is the complete implementation contract; nothing here is normative
-beyond what it authorizes. Read `README.md` for the shape of the repository,
+beyond what it authorizes. It is itself LexLean source: the modules of `spec/`
+are the only hand-edited normative inputs, and `SPEC.md`, `model/*.toml`,
+`CONFORMANCE.md` and `ERRORS.md` are generated from them (`NS-02`, `NS-05`). Read `README.md` for the shape of the repository,
 then `VERIFICATION.md` for which gate discharges what.
 
 The repository was created from `UOR-Foundation/template` at commit
@@ -39,11 +41,14 @@ rules, from SPEC.md §27.2; nothing else in the repository defines an
 
 Expanded, in the order they are most often broken:
 
-1. **The model is the single source (R1).** `CONFORMANCE.md` and `ERRORS.md`
-   are *generated*; editing either is a mistake the gate catches. Run
-   `just model-write` after changing the model. `model/ids.toml` is itself
-   kept in byte-exact correspondence with the SPEC.md §31 table by
-   `cargo xtask validate-spec-links` (RP-07).
+1. **The model is the single source (R1).** The source is the `.lex.tex`
+   modules of `spec/`. `SPEC.md`, `model/*.toml`, `CONFORMANCE.md` and
+   `ERRORS.md` are *generated* from them; editing any is a mistake the gate
+   catches, and so is a second document that restates a registered statement
+   (`audit-source-authority`, `NS-06`). Run `just model-write` after changing
+   a module. The §31 table of `SPEC.md` is derived from the register modules,
+   and `cargo xtask validate-spec-links` still checks what a projection does
+   not give by itself (RP-07).
 
 2. **Nothing is deferred (R4).** If a change cannot be finished, it should not
    be started --- and `audit-deferral` will say so. It reads every crate,
@@ -64,9 +69,11 @@ Expanded, in the order they are most often broken:
 
 In this order, because the order is the discipline (R3):
 
-1. A row in `model/ids.toml`, with its level --- and, for a normative LexLean
-   capability, its row in the SPEC.md §31 table, because `validate-spec-links`
-   requires the two to be bijective.
+1. A row in the register module of its ID family (`spec/src/Ids<FAMILY>.lex.tex`,
+   one `IdRow` record named for the ID, its `sections` cell naming the SPEC.md
+   sections that state it), then `just model-write`, which writes `model/ids.toml`,
+   the §31 table of `SPEC.md`, and the generated documents. A new family is
+   added to `registerFamilies` in `spec/src/Order.lex.tex`.
 2. A scenario in `features/suites/`, tagged `@<ID> @build`, whose statement
    equals the register statement after trimming (§27.7).
 3. A failing test named exactly `conformance_<id>`, lowercased with
@@ -107,3 +114,16 @@ Two habits follow from that:
 Explain *why*, not *what*. The code says what it does. A comment earns its
 place by recording the reason a decision went one way when it could plausibly
 have gone another.
+
+## Editing the specification
+
+`SPEC.md` is written in the chapter modules `spec/src/Chapter*.lex.tex`: one
+`DocRows::Item` record per heading, paragraph, table, fenced block, continuation
+or derived block, in order. To change a sentence, change the string of its
+item; to add one, add an item and renumber `i0001`, `i0002`, ... in the module;
+keep an item to 60 lines (`cont` continues it). Write a `%` as U+FF05 (a source
+cannot hold a raw one, and the projector writes it back), a backslash as `\\`
+and a quote as `\"` inside a string. Then run `lexlean fmt` in `spec/` and
+`just model-write`. The §31 table, the §26.3 table and the total under §31 are
+derived blocks, not text: change the register or the registry module instead.
+The projector is Rust and can falsify a projection, never establish one (C9).

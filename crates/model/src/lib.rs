@@ -11,6 +11,7 @@
 
 #![deny(missing_docs)]
 
+pub mod authority;
 pub mod classification;
 pub mod codegen;
 pub mod correspondence;

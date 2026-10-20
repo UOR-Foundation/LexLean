@@ -15,6 +15,7 @@ pub fn run(id: &str) {
         "NS-03" => drift_is_refused(),
         "NS-04" => projector_fails_closed(),
         "NS-05" => specification_text(),
+        "NS-06" => source_authority(),
         other => panic!("no conformance case is wired for {other}"),
     }
 }
@@ -550,4 +551,111 @@ fn is_register_row(line: &str) -> bool {
         && bytes[7].is_ascii_digit()
         && bytes[8] == b'`'
         && line.split(" | ").count() == 4
+}
+
+// R1, `NS-06`: the audit passes on the committed repository and refuses a
+// second source of each kind.
+fn source_authority() {
+    let real = repo_root();
+    let projection = project(real.as_std_path()).expect("the sources project");
+    let model = repo_model::Model::load_from_repo_root().expect("the model loads");
+    let summary = repo_model::authority::audit(real.as_std_path(), &model, &projection)
+        .expect("the committed repository has one source of its normative text");
+    assert!(
+        summary.contains("hand-written Markdown files restate no registered statement"),
+        "{summary}"
+    );
+
+    let plant = |build: &dyn Fn(&Path), needles: &[&str]| {
+        let directory = tempfile::Builder::new()
+            .prefix("lexlean-ns06-case-")
+            .tempdir()
+            .expect("tempdir");
+        let root = directory.path();
+        std::fs::create_dir_all(root.join("model/authorities")).expect("model directory");
+        for file in [
+            "SPEC.md",
+            "CONFORMANCE.md",
+            "ERRORS.md",
+            "AGENTS.md",
+            "CHANGELOG.md",
+            "README.md",
+            "VERIFICATION.md",
+            "model/ids.toml",
+            "model/errors.toml",
+            "model/ledger.toml",
+            "model/authorities.toml",
+        ] {
+            std::fs::copy(real.join(file).as_std_path(), root.join(file)).expect("copy");
+        }
+        for entry in
+            std::fs::read_dir(real.join("model/authorities").as_std_path()).expect("copies")
+        {
+            let entry = entry.expect("entry");
+            std::fs::copy(
+                entry.path(),
+                root.join("model/authorities").join(entry.file_name()),
+            )
+            .expect("copy vendored");
+        }
+        repo_model::authority::audit(root, &model, &projection)
+            .expect("the scratch copy of the committed repository passes");
+        build(root);
+        let error = repo_model::authority::audit(root, &model, &projection)
+            .expect_err("the plant is refused")
+            .to_string();
+        assert!(error.contains("R1") && error.contains("NS-06"), "{error}");
+        for needle in needles {
+            assert!(error.contains(needle), "`{needle}` is not in: {error}");
+        }
+    };
+    plant(
+        &|root| std::fs::write(root.join("model/extra.toml"), "spec = \"x\"\n").expect("write"),
+        &["model/extra.toml"],
+    );
+    plant(
+        &|root| {
+            std::fs::write(
+                root.join("model/authorities/second.md"),
+                "# A second authority\n",
+            )
+            .expect("write")
+        },
+        &["model/authorities/second.md"],
+    );
+    plant(
+        &|root| std::fs::write(root.join("SPEC2.md"), "# A second specification\n").expect("write"),
+        &["SPEC2.md"],
+    );
+    plant(
+        &|root| {
+            let text = std::fs::read_to_string(root.join("SPEC.md")).expect("SPEC.md");
+            std::fs::write(
+                root.join("SPEC.md"),
+                text.replace(repo_model::authority::SPEC_NOTICE, "> **Hand-written.**"),
+            )
+            .expect("write");
+        },
+        &["SPEC.md", "notice"],
+    );
+    plant(
+        &|root| {
+            let text = std::fs::read_to_string(root.join("ERRORS.md")).expect("ERRORS.md");
+            std::fs::write(
+                root.join("ERRORS.md"),
+                text.replacen(repo_model::authority::GENERATED_MARKER, "<!--", 1),
+            )
+            .expect("write");
+        },
+        &["ERRORS.md"],
+    );
+    plant(
+        &|root| {
+            let row = &model.ids.id[0];
+            let mut text = std::fs::read_to_string(root.join("README.md")).expect("README.md");
+            text.push_str(&format!("\n{}\n", row.statement));
+            std::fs::write(root.join("README.md"), text).expect("write");
+        },
+        &["README.md", "restates a registered statement"],
+    );
 }
