@@ -4041,6 +4041,21 @@ with a literal heavier than one node (and `compiler/lexlean.lock`) still hold
 the bytes written before TC-08, so `conformance_tc_01`, `conformance_tc_03`, `conformance_tc_04`,
 and `conformance_tc_05` fail on this tree until they are rewritten.
 
+**The library follows the denotation.** With `TargetSemantics.lean` regenerated
+from the changed source (held in the working tree only) `conformance_sp_13`,
+which compiles the 13 library modules over the machine modules, refused
+`RustLemmas` at `LexLeanPreservation.Rust.sem_value`: the term applies
+`congrArg` to `eval.eq_2` with the explicit argument `Outcome.value v 1`, which
+the new equation lemma no longer states. The repair rewrites that argument to
+`Outcome.value v (weight v)` (one occurrence, on the module's data, written back
+in the notation). The loader stops at the first refusal, so the count was found
+by iteration: after the one repair `conformance_sp_13` passes over all 13
+modules (no second refusal), and `conformance_sp_14`, `conformance_sp_15` (the
+four corpora's certificates A as data and the production example verified under
+Lean) and `conformance_sp_16` pass over the same regenerated module. The
+examples' and `compiler/`'s locks were refreshed locally for these runs and are
+not committed.
+
 ### rust constants can fail (RB-18)
 
 Command: `cargo test -p repo-conformance --test conformance conformance_rb_18`.
