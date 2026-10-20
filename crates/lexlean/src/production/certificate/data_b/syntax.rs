@@ -606,8 +606,6 @@ impl Writer<'_, '_> {
                     &[fn_type, parameters, result, fallible, arms],
                 )
             }
-            // The machine reads a constant as the function of no parameters
-            // it caches: its value is the body's, whenever it is computed.
             ItemDef::Constant {
                 name,
                 result,
@@ -615,10 +613,9 @@ impl Writer<'_, '_> {
                 at: _,
             } => {
                 let name = self.rs_ident(name);
-                let parameters = self.rs_parameters(&[]);
                 let result = self.rs_type(result);
                 let body = self.rs_block(body);
-                self.rs_apply("ItemDef.function", &[name, parameters, result, body])
+                self.rs_apply("ItemDef.constant", &[name, result, body])
             }
             ItemDef::Function {
                 name,

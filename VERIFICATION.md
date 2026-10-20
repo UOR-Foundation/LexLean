@@ -4043,25 +4043,60 @@ and `conformance_tc_05` fail on this tree until they are rewritten.
 
 ### rust constants can fail (RB-18)
 
-Planted, three ways, all observed by `conformance_rb_18`. The oracle is the
-pinned rustc, a counting global allocator in the harness, and `validate`.
+Command: `cargo test -p repo-conformance --test conformance conformance_rb_18`.
+The oracles are the pinned rustc, a counting global allocator in the harness,
+`validate`, and the bootstrap validator.
 
-1. The same program with its constant rebuilt at each read (the crate's
-   `Constant` item printed as a `Function`): two reads allocate 4 times,
-   where the cached rendering allocates 0. The harness counts, so the
-   rebuilding rendering is detected by behavior, not by its text.
-2. A constant whose body is a call: `validate` refuses it
-   (`constant: ... is not an infallible closed literal`).
-3. A constant whose result is `R<T>`: the same refusal.
+Planted, five ways.
 
-Removed: the crate was restored to the lowering's own output. `rust-core`
-has no rendering of the heap literal at all (`lower` refuses it).
+1. The lowering stopped hoisting (`let cached = false && ...`). The case
+   refused it:
 
-`conformance_tc_07` passes with the new fixture `cached-literal`, whose
-function 1 renders as a constant read twice. On this tree
-`conformance_rb_01` fails with `correspondence rows no run package exercises:
-["constant"]` until the committed packages are rewritten from the fixtures,
-and `conformance_rb_07` fails with `the renderer changed without its record
+```text
+thread 'conformance_rb_18' panicked at crates/conformance/src/cases/rust_backend.rs:1711:5:
+a nullary heap literal is a constant: [Function { name: Function(0), parameters: [], result: List(Int), body: Block { lets: [], tail: Construct { ctor: Cons, args: [Lit(Int(7), ...
+```
+
+2. The same program with its constant printed as a function that rebuilds at
+   each read: two reads allocate 4 times where the cached rendering allocates
+   0 (counted by the harness; observed by printing the count once, the case
+   asserts `> 0` and `== 0`). The reviewer's variant, a rebuild behind the
+   cell, fails the same equality (`left: 4`, `right: 0`).
+3. A constant whose body is a call, one whose result can fail, and one with a
+   binding before the literal: `validate` refuses each with
+   ``constant: `f0` is not an infallible closed literal``. The bootstrap
+   validator refuses the same three crates with the same message (committed in
+   `constant_crates` of the BS-05 differential, with a literal it accepts and a
+   name declared twice by constants), so the differential holds the rule.
+4. A literal of a declared algebraic type holding a list is not a constant: the
+   case requires the lowering to leave it a function.
+5. `rust-core` has no rendering of the heap literal (`lower` refuses it).
+
+The expectation `Some(7) 5 5` of the harness is written by hand. That the
+rendering and the evaluator agree on a constant rests on `conformance_tc_07`,
+whose fixture `cached-literal` is generated and has no committed file until the
+fixtures are regenerated, so until then it is the case's own program and not
+the committed fixture that the differential runs.
+
+**The machine and the library.** `RustSyntax.ItemDef` grows by `constant` and
+`RustSemantics` gains an arm in each of its two matches over it (`findFunction`
+returns a constant as a function of no parameters, `findDispatch` skips it).
+With the regenerated `RustSyntax`/`RustSemantics` modules in place, the library
+refused the grown `ItemDef` at the first break the #91 stage-4 walk predicted,
+`LexLeanPreservation.Rust.findDispatch_some._f` in `RustMatches`
+(`(kernel) application type mismatch ... ItemDef.casesOn`). The repair is the
+fourth minor premise of that `casesOn`: the `function` minor with its parameters
+field removed and the constructor replaced, rewritten on the module's data and
+written back in the notation (the module round-trips byte for byte before the
+edit). After it `conformance_sp_13`, which compiles all 13 library modules
+over the machine modules, passes (299 s); no other declaration needed a repair.
+`lexlean verify` of `bootstrap/` with the grown `RustValidate` passes
+(`verified 6 modules`). Both runs used regenerated machine modules held in the
+working tree only; the committed ones are left for the regeneration.
+
+Removed: each plant was reverted. `conformance_rb_01` fails on this tree with
+`correspondence rows no run package exercises: ["constant"]` and
+`conformance_rb_07` with `the renderer changed without its record
 `rust_renderer``: both are records of the renderer's bytes.
 
 ### kernel-opaque classification is observed
@@ -9743,7 +9778,7 @@ Authoring found four shapes certificate A and certificate B do not accept, each 
 
 ### the bootstrap Rust crate validator can fail its oracle (SPEC.md §17.23, §17.16)
 
-`BS-05` holds the two production roots of `LexLeanBoot.RustValidate` (`bootstrap/src/RustValidate.lex.tex`) to the stage-0 oracle they replace, `calculus::rust::validate::{validate, correspond}`. The 164 distinct programs among the 247 committed package manifests and 122 fixtures lower to 223 distinct crates over both profiles; with 132 `validateCrate` and 12 `correspondCrate` rule runs (each of the 48 reachable refusals three times, found by a seeded mutation search at a fixed seed, which asserts that it reached the target and does not stop short of it), 17 hand-built crates of the merge of moved sets, and 34 hand-built crates of the loop rules, that is 406 `validateCrate` vectors (165 refused) and 269 `correspondCrate` vectors (46 refused), 675 in all. On every host both roots' rendered `rust-std` packages, compiled by the pinned rustc, agree with the oracle on all 675. On the normative host the evaluator agrees on the 200 crates of at most 400 expressions, the rule runs, and the hand-built crates (383 + 246 vectors), and on 500 seeded mutants (271 and 244 refused), and the rendered packages agree on 2,000 further seeded mutants per root. The case passed on the branch merged with `main` after wave 6 (#220), with the production export under the pinned Lean 4.32.1. Every one of these counts is an assertion of the case (`COMMITTED_*`, `RULE_*`, `VECTORS_*`, `EVALUATOR_*`, `SEEDED_*`), so a tree that no longer gives them fails the case instead of leaving this paragraph stale.
+`BS-05` holds the two production roots of `LexLeanBoot.RustValidate` (`bootstrap/src/RustValidate.lex.tex`) to the stage-0 oracle they replace, `calculus::rust::validate::{validate, correspond}`. The 164 distinct programs among the 247 committed package manifests and 122 fixtures lower to 223 distinct crates over both profiles; with 132 `validateCrate` and 12 `correspondCrate` rule runs (each of the 48 reachable refusals three times, found by a seeded mutation search at a fixed seed, which asserts that it reached the target and does not stop short of it), 17 hand-built crates of the merge of moved sets, and 34 hand-built crates of the loop rules, that is 406 `validateCrate` vectors (165 refused) and 269 `correspondCrate` vectors (46 refused), 675 in all. On every host both roots' rendered `rust-std` packages, compiled by the pinned rustc, agree with the oracle on all 675. On the normative host the evaluator agrees on the 200 crates of at most 400 expressions, the rule runs, and the hand-built crates (388 + 246 vectors), and on 500 seeded mutants (271 and 244 refused), and the rendered packages agree on 2,000 further seeded mutants per root. The case passed on the branch merged with `main` after wave 6 (#220), with the production export under the pinned Lean 4.32.1. Every one of these counts is an assertion of the case (`COMMITTED_*`, `RULE_*`, `VECTORS_*`, `EVALUATOR_*`, `SEEDED_*`), so a tree that no longer gives them fails the case instead of leaving this paragraph stale.
 
 The loop rules (the oracle's `Expr::Loop`, SP-19 and RB-14) are `ELoop [Id, Expr]` of the module: ownership of the state across a body that runs again (two refusals, for a name and for a component, naming the least offender in the oracle's order of names), the fallible-tail rule, `apply_types` with `tail = false` for the body, and the correspondence traversal treating the body as a block. The correspondence table was re-diffed against the oracle's `CORRESPONDENCE` after SP-19: 97 rows, and the six that gained `expr:call` (`destructure:pair`, `type:result`, `type:pair`, `construct:ok`, `construct:err`, `construct:pair`) are the only difference from the table first transcribed; the module's table and the oracle's are equal row for row and element for element.
 

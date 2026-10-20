@@ -1771,6 +1771,34 @@ fn cached_literal() {
     );
     assert!(allocations > 0, "a rebuilt literal allocates at each read");
 
+    // A literal whose type is a declared algebraic type is not a constant,
+    // although it holds a list: the type says no heap (`Type::heap`), so it
+    // stays a function that builds the value at each call (SPEC.md §17.16).
+    {
+        let int = |n: &str| serde_json::json!({"kind": "int", "value": n});
+        let ty = serde_json::json!({"kind": "adt", "index": 0});
+        let program = serde_json::json!({
+            "adts": [{"constructors": [[{"kind": "list", "element": {"kind": "int"}}]]}],
+            "functions": [{
+                "body": {"kind": "value", "type": ty, "value": {
+                    "kind": "adt", "constructor": 0,
+                    "fields": [{"kind": "list", "items": [int("1"), int("2")]}]}},
+                "parameters": [], "result": ty, "types": []
+            }],
+            "spec": "lexlean/target-program/1"
+        });
+        let program = target::load(program.to_string().as_bytes()).expect("the program loads");
+        let krate = rust::lower(&program, Profile::Std).expect("the program lowers");
+        assert!(
+            matches!(krate.items.as_slice(), [.., ItemDef::Function { .. }])
+                && !krate
+                    .items
+                    .iter()
+                    .any(|item| matches!(item, ItemDef::Constant { .. })),
+            "a literal of a declared type is a function: {:?}",
+            krate.items
+        );
+    }
     // Planted: a constant whose body calls, or that can fail, is refused
     // before printing.
     let mut called = cached.clone();
@@ -1784,6 +1812,20 @@ fn cached_literal() {
     }
     let error = validate::validate(&called).expect_err("a constant that calls is refused");
     assert!(error.contains("constant"), "{error}");
+    let mut bound = cached.clone();
+    if let ItemDef::Constant { body, .. } = &mut bound.items[0] {
+        body.lets.push(Let {
+            pat: Pat::Wild,
+            ty: None,
+            value: Expr::Lit(Lit::Unit, Origin::of("value:unit")),
+            at: Origin::of("let"),
+        });
+    }
+    let error = validate::validate(&bound).expect_err("a constant with a binding is refused");
+    assert!(
+        error.contains("not an infallible closed literal"),
+        "{error}"
+    );
     let mut failing = cached;
     if let ItemDef::Constant { result, .. } = &mut failing.items[0] {
         *result = Type::Fallible(Box::new(result.clone()));
