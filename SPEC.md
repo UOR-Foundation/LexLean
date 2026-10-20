@@ -9,6 +9,8 @@
 **Status:** Normative implementation specification  
 **Target initial release:** `1.0.0`
 
+> **Generated.** This file is the projection of the modules of `spec/src` by `cargo xtask validate-model --write` (§27.5). It is never edited: edit the module that holds the text and run `just model-write`.
+
 ---
 
 ## 1. Normative force
@@ -3936,9 +3938,49 @@ reaches a model only as the tokens `encodeText` makes of it.
    seed as their last input and return the next seed with their result, so
    the same prompt and seed give the same output. No claim is made about the
    quality of the generator, and `0` is its fixed point.
-8. **Classifiers.** A `text_classifier` is not elaborated by linking in this
-   release; one admitted under 1.2 is reported as a declaration linking did
-   not elaborate.
+8. **Classifiers** (`LLT4006`). `{"kind":"text_classifier","name":C,
+   "tokenizer":T,"model":{"member":M}}` names a prior tokenizer and a prior
+   stateless model whose contract maps `list int` to its label type and whose
+   evidence discharges every runtime check (it is applied on every text). It
+   elaborates to `C.features : list uint32 -> list int`, the count of each
+   token id below `T.size` in order, so that it has exactly `T.size` entries;
+   `C.classifyTokens : list uint32 -> L`, the model applied to the features;
+   and `C.classify : string -> L`, the same through `T.encodeText`, so that a
+   text reaches the model only as tokens. It generates `C.features_width`
+   (`C.features` has exactly `T.size` entries), `C.features_total` (the
+   features of an encoded text sum to its token count, so no token is
+   dropped, which `T.in_range` makes true because every token indexes the
+   vocabulary), and `C.features_fit` (the library's fixed-width map
+   `fitWidth T.size`, which pads a list of integers with zeros or truncates it
+   to `T.size` entries, leaves the features unchanged, so a linear or neural
+   stage whose evidence states its input width can be applied to an arbitrary
+   `list int`). The `axioms` row is the exact policy of everything it
+   elaborates to, as for a tokenizer.
+9. **Composition and adapters** (`LLT4006`). Text components compose with
+   the model constructs and add no declaration kind. A stateful model whose
+   state is a `list uint32`, whose step is `W.push` of a context window `W`,
+   and whose contract's postcondition states that the pushed context fits
+   (`fitsOption` of `W.capacity`, a function of the laws library, which a
+   statement may name like any registered function) composes under `scan` like
+   any stateful model, its `satisfies_contract` evidence proved by the
+   generated `W.push_bounded`. The proof is of the postcondition and not of
+   an invariant's preservation: a preservation obligation has the premise
+   `Invariant state →` and a theorem's `apply` proof is one `exact`, and the
+   proof language has no `Option` case on a non-local (the push), so the
+   invariant form has no `apply` proof from `push_bounded` today.
+   An adapter is a model over `string` whose realization applies
+   `C.classify` of a classifier or `G.generate` of a generator, and whose
+   `satisfies_contract` evidence is proved from the generated laws of that
+   classifier or generator; a realization that does not meet its contract
+   fails verification like any other model, and one that applies a
+   declaration of another kind is refused.
+10. **No prompt is code.** No operation of the closed language maps a
+   `string` or `bytes` operand to a function, a term, or source: every
+   primitive that takes either has a data result, the primitive registry and
+   the production registry's primitive rows list the same operations, and a
+   text declaration of `lexlean/semantic-module/2` states no member of type
+   `string`. A prompt is data, and reaches a model only as the tokens
+   `encodeText` makes of it.
 
 `examples/models` carries the vocabulary the conformance cases tokenize; the
 end-to-end text-model example is not part of this release.
@@ -4131,11 +4173,12 @@ that runs a reasoner admits `overflow` where the target requires it.
 Language-1.2 text declarations (§17.12, *Text components*) are `formal-only`
 (`declaration.tokenizer`, `declaration.context_window`,
 `declaration.text_generator`, `declaration.text_classifier`): the
-elaborated definitions of a tokenizer, a context window, and a text
-generator are reported with their construct and apply the embedded
+elaborated definitions of a tokenizer, a context window, a text
+generator, and a text classifier are reported with their construct and apply the embedded
 text-laws library, which no production target realizes, so a root whose
 closure reaches one fails, and their generated theorems are in no closure; a
-text classifier is not elaborated by linking in this release.
+text classifier is reported the same way, with its elaborated `features`,
+`classifyTokens`, and `classify`.
 
 **Rules.** A root is eligible for a target exactly when none of the following
 holds; otherwise `check` fails with `LLT4005`, naming the root, the target, the
@@ -5875,7 +5918,18 @@ the arms enclosing the call, so every numbered `if` and `match` of such a body
 is written by cases on its scrutinee with the equation the arm was taken by.
 The compiler's implementation record `f._unsafe_rec` of a recursive predicate,
 a partial definition beside the safe one, gives the code generator the direct
-recursion it has no code for in a recursor; no theorem depends on it. A
+recursion it has no code for in a recursor; no theorem depends on it. The
+records of one mutual group are pinned to the group's union, and the audit
+checks that the union of the sets it prints for the group's members equals that
+pin (`LLV7013`, naming the group), because what Lean prints of one member is not
+a property of the member's term alone: it stores axiom data for a module's
+constants by one shared traversal, in the order of a hash map keyed by names
+that carry the identity, with a sentinel for a constant in progress, so a member
+whose term refers to no other member, or only to a later one, printed `[]` on
+one identity and `[propext]` on another with identical sources (the first
+member of the bootstrap project's R6 group, `__fits_76`; and the core library's
+`__fits_78`, which calls the later `__fits_111`, #227). Every other row is
+checked row by row. A
 definition that a model construct elaborates to pins no axiom: the construct's
 declared set bounds it, and the audit finds none for a definition that proves
 nothing. Each row pins its axioms exactly, the audit module prints and checks
@@ -9491,6 +9545,7 @@ The template audits are adapted as follows:
 - `audit-language-closure` checks built-in lexicons and renderer tokens;
 - `audit-no-unsafe` verifies the shipped crate forbids unsafe code;
 - `audit-production` verifies that the production-eligibility analysis classifies every IR variant explicitly, with no default branch (§17.13).
+- `audit-source-authority` verifies that the hand-edited normative inputs are the `.lex.tex` modules of `spec/` (`NS-06`): `model/` holds only the projected files and the copies an authority row vendors, every Markdown file at the root is a projection or on the closed list of hand-written documents, the projections say they are generated, and no hand-written document restates a registered statement.
 
 ---
 
@@ -10459,14 +10514,18 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `LM-04` | `language-models` | A `context_window` is a closed language-1.2 declaration of a capacity of at least one token and an overflow disposition `refuse` or `keep_last` that elaborates to `capacity`, `fit` over `list uint32`, and `push` of one `uint32` token through the text-laws library, with its laws generated and kernel-checked: `bounded` and `push_bounded` state that every admitted or pushed context fits the capacity, `exact` that a context that fits is admitted unchanged, `suffix` under `keep_last` that what is kept is the end of the context, and `refuses` under `refuse` that a context that does not fit is not admitted; a capacity of 0 is refused (`LLT4016`), a disposition or capacity outside the closed schema is a schema violation (`LLT4001`), and a window whose laws observe an axiom its policy omits fails the audit. | §17.12 |
 | `LM-05` | `language-models` | A `text_generator` under the `greedy` policy names a prior tokenizer, a prior context window, a prior stateless model from `list uint32` to `list int` whose every runtime check its evidence discharges, a prior `uint32` stop token, and a `max_tokens` of at least one, and elaborates to the closed outcome types `End` (`stop`, `exhausted`) and `Failure` (`unknown_token`, `context_overflow`, `invalid_utf8`) and to a loop of at most `max_tokens` steps that takes the first maximum and no seed; its laws `bounded` (at most `max_tokens` tokens are generated) and `context_bounded` (the scorer is consulted only on contexts that fit the window) are generated and kernel-checked, the loop reaches each end and each failure in the kernel, a wrong claim about its output fails verification, a `max_tokens` of 0 is refused (`LLT4016`), and a member of another kind is refused (`LLT4006`). | §17.12 |
 | `LM-06` | `language-models` | Nondeterminism is an explicit contract: a `text_generator` under the `sample` policy draws through the closed `xorshift32` generator and `proportional` distribution only, takes its seed as an explicit `uint32` input and returns the next seed as an explicit output, so the same prompt and seed give the same output, which the kernel computes; it has the same generated and kernel-checked laws as a greedy generator, `xorshift32` agrees with the reference sequence, and a generator or distribution outside the closed members, a sample policy without one, or a seed stated on a policy is a schema violation (`LLT4001`). | §17.12 |
+| `LM-07` | `language-models` | A `text_classifier` is a closed language-1.2 declaration that names a prior tokenizer and a prior stateless model from `list int` to a label type whose every runtime check its evidence discharges, and elaborates to `features`, the count of each token id below the tokenizer's `size`, to `classifyTokens`, the model applied to the features, and to `classify` over `string` through `encodeText`, with its laws generated and kernel-checked: `features_width` states that the features have exactly `size` entries, `features_total` that the features of an encoded text sum to its token count so that no token is dropped, and `features_fit` that the fixed-width map `fitWidth` leaves the features unchanged; a classifier whose tokenizer is not a prior tokenizer, or whose model is not a stateless model from `list int` with every runtime check discharged, is refused (`LLT4006`), a member outside the closed schema is a schema violation (`LLT4001`), and a classifier whose laws observe an axiom its policy omits fails the audit. | §17.12 |
+| `LM-08` | `language-models` | Text components compose and adapt through the model constructs alone, and no new declaration kind exists for it: a stateful model whose state is a context window's `list uint32`, whose step is the window's `push`, and whose contract's postcondition states that the pushed context fits composes under `scan` with its `satisfies_contract` evidence proved by the window's generated `push_bounded`, and an adapter is a model over `string` whose realization applies the elaborated `classify` of a classifier or `generate` of a generator, with `satisfies_contract` evidence proved from the generated laws of that classifier or generator; the closed list of language-1.2 declaration kinds is unchanged by it, an adapter whose realization does not meet its contract fails verification, and an adapter that applies a declaration of another kind is refused (`LLT4006`). | §17.12 |
+| `LM-09` | `language-models` | No prompt is code: no member of the closed language maps `string` or `bytes` to a function, a term, or source — every operation of the primitive registry that takes a `string` or `bytes` operand is classified by the audit with a data result, the registry's schema enumeration and the production registry's primitive rows equal one another and equal that classified set, and the text declarations of `lexlean/semantic-module/2` state no `string`-typed member, so a prompt reaches a model only as the tokens `encodeText` makes of it; a planted operation or text member of that shape is caught by the audit with its name. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 | `NS-01` | `normative-source` | The specification project is a language-1.2 workspace member whose every module is a semantic module in the authoring notation; it is canonical under fmt, locked, checked, and built, and under the pinned toolchain it verifies, which establishes that each record definition elaborates against its row structure and that the generated modules replay with the audited axioms, and does not establish that a row's text is the normative text, that identifiers are distinct, or that a projection equals its committed file, which NS-02 to NS-04 measure. | §17.21, §27.5 |
 | `NS-02` | `normative-source` | The conformance register, the diagnostic registry, the honesty ledger, and the authority register are modules of the specification project, and `model/ids.toml`, `model/errors.toml`, `model/ledger.toml`, `model/authorities.toml`, `CONFORMANCE.md`, and `ERRORS.md` regenerate from them byte-identically. | §26.1, §27.5 |
 | `NS-03` | `normative-source` | A difference between a model file or SPEC.md and the projection of the specification project's modules, in either direction, fails the repository gate naming R1, a source edit that is not projected being such a difference, and the section references of the §31 table are checked against those the register modules carry. | §27.5, §27.6 |
 | `NS-04` | `normative-source` | The projector fails closed on a module of the specification project that holds a declaration kind, a term kind, a field, a name, a file, or a family it does not read, and on a duplicate identifier or code, and a plant of each is refused naming the file and, for a declaration, its position. | §17.21, §24.8 |
 | `NS-05` | `normative-source` | SPEC.md regenerates byte-identically from the chapter modules of the specification project, its conformance-ID table, its diagnostic-code table, its authority table, and its stated total being derived from the register, registry, and authority modules and never typed, and the projector refuses a chapter item it does not read. | §26.3, §27.5, §31 |
+| `NS-06` | `normative-source` | The hand-edited normative inputs of the repository are the `.lex.tex` modules of the specification project: `model/` holds only the projected files and the copies an authority row vendors, every Markdown file at the root is a projection or is on the closed list of hand-written documents, the projections carry the notice that names their source, and no hand-written document restates a registered statement, a plant of each being refused naming R1. | §27.2, §27.5, §27.10 |
 
-**Total required capability IDs:** 442.
+**Total required capability IDs:** 446.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 
