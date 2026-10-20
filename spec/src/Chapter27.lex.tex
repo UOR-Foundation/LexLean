@@ -1,7 +1,8 @@
 \begin{lexlean}{Chapter27}
 \useglossary{lexlean.std.nat@1.2.0}
+\useglossary{spec.titles@1.0.0}
 \importmodule{DocRows}
-\title{Natural number addition}
+\title{Repository claim and gate model}
 \begin{semanticmodule}
 definition{
   name: i0001,
@@ -589,7 +590,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "- `audit-deferral` scans all Rust, TOML, JSON, Markdown, Gherkin, `.lex.tex`, language, schema, example, and xtask source outside generated output and dependency caches;" (cons "- marker strings are assembled in pieces in the gate so it can scan its own source;" (cons "- mentions inside Markdown code spans or fenced code are allowed;" (cons "- `audit-errors` checks every public diagnostic against `model/errors.toml`;" (cons "- `audit-shipped` derives shipped crates from `publish = false`;" (cons "- `audit-generated` proves generated documents and schemas are current;" (cons "- `audit-language-closure` checks built-in lexicons and renderer tokens;" (cons "- `audit-no-unsafe` verifies the shipped crate forbids unsafe code;" (cons "- `audit-production` verifies that the production-eligibility analysis classifies every IR variant explicitly, with no default branch (§17.13)." (nil String))))))))))
+      (cons "- `audit-deferral` scans all Rust, TOML, JSON, Markdown, Gherkin, `.lex.tex`, language, schema, example, and xtask source outside generated output and dependency caches;" (cons "- marker strings are assembled in pieces in the gate so it can scan its own source;" (cons "- mentions inside Markdown code spans or fenced code are allowed;" (cons "- `audit-errors` checks every public diagnostic against `model/errors.toml`;" (cons "- `audit-shipped` derives shipped crates from `publish = false`;" (cons "- `audit-generated` proves generated documents and schemas are current;" (cons "- `audit-language-closure` checks built-in lexicons and renderer tokens;" (cons "- `audit-no-unsafe` verifies the shipped crate forbids unsafe code;" (cons "- `audit-production` verifies that the production-eligibility analysis classifies every IR variant explicitly, with no default branch (§17.13)." (cons "- `audit-source-authority` verifies that the hand-edited normative inputs are the `.lex.tex` modules of `spec/` (`NS-06`): `model/` holds only the projected files and the copies an authority row vendors, every Markdown file at the root is a projection or on the closed list of hand-written documents, the projections say they are generated, and no hand-written document restates a registered statement." (nil String)))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []

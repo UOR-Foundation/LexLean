@@ -65,6 +65,10 @@ pub fn check_model(root: &Path, write: bool) -> Result<(), Fail> {
     }
 
     // §27.5 step 8: the repository audits.
+    println!(
+        "audit-source-authority: {}",
+        repo_model::authority::audit(root, &model, &projection)?
+    );
     crate::audit::audit_deferral(root, &model)?;
     crate::audit::audit_errors(root, &model)?;
     crate::audit::audit_shipped(root)?;
