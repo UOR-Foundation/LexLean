@@ -11,6 +11,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use lexlean::calculus::rust::ast::{Ident, ItemDef};
 use lexlean::calculus::rust::{runtime, source};
+use lexlean::calculus::IntKind;
 
 use crate::rust_build::{cargo_in, workspace, Built};
 use crate::support::repo_root;
@@ -21,7 +22,7 @@ const SHIPPED: &str = "language/rust-runtime-1.2/RustRuntime.lex.tex";
 /// The calls the differential makes of each defined function: the `same!`
 /// of the harness runs the oracle's and the generated function on the same
 /// arguments and compares what they return and the work they count.
-const DIFFERENTIAL: [(&str, &str); 18] = [
+const SCALARS: [(&str, &str); 18] = [
     ("nat_add",
         "for &a in &nats { for &b in &nats { same!(nat_add(a, b)); } }\n    for _ in 0..1000 { let (a, b) = (next(), next()); same!(nat_add(a, b)); same!(nat_add(a >> 1, b >> 1)); }"),
     ("nat_sub",
@@ -66,6 +67,67 @@ const DIFFERENTIAL: [(&str, &str); 18] = [
     ),
 ];
 
+/// The differential over every function: the scalar functions, and the
+/// functions of each width on its boundary values and 200 seeded pairs.
+fn differential() -> Vec<(String, String)> {
+    let mut out: Vec<(String, String)> = SCALARS
+        .iter()
+        .map(|(name, calls)| ((*name).to_owned(), (*calls).to_owned()))
+        .collect();
+    for kind in IntKind::ALL {
+        let k = kind.name();
+        let values = format!(
+            "let v = [{k}::MIN, {k}::MIN.wrapping_add(1), (0 as {k}).wrapping_sub(1), 0, 1, 2, {k}::MAX / 2, {k}::MAX - 1, {k}::MAX];"
+        );
+        for name in [
+            "checked_add",
+            "checked_sub",
+            "checked_mul",
+            "checked_quot",
+            "bit_and",
+            "bit_or",
+            "bit_xor",
+        ] {
+            let path = format!("fixed_{k}::{name}");
+            out.push((
+                path.clone(),
+                format!(
+                    "{values}\n    for &a in &v {{ for &b in &v {{ same!({path}(a, b)); }} }}\n    for _ in 0..200 {{ let (a, b) = (next() as {k}, next() as {k}); same!({path}(a, b)); }}"
+                ),
+            ));
+        }
+        let path = format!("fixed_{k}::bit_not");
+        out.push((
+            path.clone(),
+            format!("{values}\n    for &a in &v {{ same!({path}(a)); }}"),
+        ));
+        for name in ["shift_left", "shift_right"] {
+            let path = format!("fixed_{k}::{name}");
+            out.push((
+                path.clone(),
+                format!(
+                    "{values}\n    for &a in &v {{ for &s in &[0u32, 1, {k}::BITS - 1, {k}::BITS, {k}::BITS + 1, 200] {{ same!({path}(a, s)); }} }}"
+                ),
+            ));
+        }
+        let path = format!("fixed_{k}::convert");
+        out.push((
+            path.clone(),
+            format!(
+                "for &w in &[i128::MIN, {k}::MIN as i128 - 1, {k}::MIN as i128, -1i128, 0, 1, {k}::MAX as i128, {k}::MAX as i128 + 1, i128::MAX] {{ same!({path}(w)); }}\n    for _ in 0..200 {{ let w = (next() as i128) << (next() % 64); same!({path}(w)); }}"
+            ),
+        ));
+        if kind.signed() {
+            let path = format!("checked_neg_{k}");
+            out.push((
+                path.clone(),
+                format!("{values}\n    for &a in &v {{ same!({path}(a)); }}"),
+            ));
+        }
+    }
+    out
+}
+
 /// The names of the functions a decoded module defines.
 fn defined(items: &[ItemDef]) -> Result<BTreeSet<String>, String> {
     items
@@ -85,10 +147,7 @@ fn defined(items: &[ItemDef]) -> Result<BTreeSet<String>, String> {
 /// Whether the differential covers exactly the functions the module defines.
 fn covered(items: &[ItemDef]) -> Result<(), String> {
     let defined = defined(items)?;
-    let differential: BTreeSet<String> = DIFFERENTIAL
-        .iter()
-        .map(|(name, _)| (*name).to_owned())
-        .collect();
+    let differential: BTreeSet<String> = differential().into_iter().map(|(name, _)| name).collect();
     if defined != differential {
         return Err(format!(
             "the module defines {defined:?}, the differential covers {differential:?}"
@@ -100,11 +159,11 @@ fn covered(items: &[ItemDef]) -> Result<(), String> {
 /// The harness: both runtimes, every function of the differential.
 fn harness() -> String {
     let mut out = String::from(
-        "use runtime_diff::{new, old};\nmacro_rules! same {\n    ($f:ident($($a:expr),*)) => {{\n        let (w0, w1) = (old::work(), new::work());\n        let x = old::$f($($a),*);\n        let y = new::$f($($a),*);\n        assert_eq!(format!(\"{x:?}\"), format!(\"{y:?}\"), \"{} result\", stringify!($f));\n        assert_eq!(old::work() - w0, new::work() - w1, \"{} work\", stringify!($f));\n    }};\n}\nfn main() {\n    let nats = [0u64, 1, 2, 3, 7, u32::MAX as u64, u32::MAX as u64 + 1, u64::MAX / 2, u64::MAX - 2, u64::MAX - 1, u64::MAX];\n    let ints = [i64::MIN, i64::MIN + 1, -3037000500, -2, -1, 0, 1, 2, 3037000500, i64::MAX - 1, i64::MAX];\n    let mut seed = 0x9e37_79b9_7f4a_7c15_u64;\n    let mut next = move || { seed ^= seed << 13; seed ^= seed >> 7; seed ^= seed << 17; seed };\n",
+        "use runtime_diff::{new, old};\nmacro_rules! same {\n    ($($f:ident)::+($($a:expr),*)) => {{\n        let (w0, w1) = (old::work(), new::work());\n        let x = old::$($f)::+($($a),*);\n        let y = new::$($f)::+($($a),*);\n        assert_eq!(format!(\"{x:?}\"), format!(\"{y:?}\"), \"{} result\", stringify!($($f)::+));\n        assert_eq!(old::work() - w0, new::work() - w1, \"{} work\", stringify!($($f)::+));\n    }};\n}\nfn main() {\n    let nats = [0u64, 1, 2, 3, 7, u32::MAX as u64, u32::MAX as u64 + 1, u64::MAX / 2, u64::MAX - 2, u64::MAX - 1, u64::MAX];\n    let ints = [i64::MIN, i64::MIN + 1, -3037000500, -2, -1, 0, 1, 2, 3037000500, i64::MAX - 1, i64::MAX];\n    let mut seed = 0x9e37_79b9_7f4a_7c15_u64;\n    let mut next = move || { seed ^= seed << 13; seed ^= seed >> 7; seed ^= seed << 17; seed };\n",
     );
-    for (_, calls) in DIFFERENTIAL {
+    for (_, calls) in differential() {
         out.push_str("    {\n    ");
-        out.push_str(calls);
+        out.push_str(&calls);
         out.push_str("\n    }\n");
     }
     out.push_str("    println!(\"runtime\");\n}\n");
@@ -174,14 +233,28 @@ pub fn run(id: &str) {
     // The generated functions replace the oracle's: the base holds none of
     // their names, so no function is declared twice.
     for name in defined(&decoded.core.items).expect("named functions") {
-        assert!(
-            !runtime::CORE_BASE.contains(&format!("pub fn {name}(")),
-            "the base still holds `{name}`"
-        );
-        assert!(
-            oracle.contains(&format!("pub fn {name}(")),
-            "the oracle lacks `{name}`"
-        );
+        let (module, last) = name
+            .rsplit_once("::")
+            .map_or((None, name.as_str()), |(m, l)| (Some(m), l));
+        if let Some(module) = module {
+            assert!(
+                !runtime::CORE_BASE.contains(&format!("pub mod {module} {{")),
+                "the base still holds the module `{module}`"
+            );
+            assert!(
+                oracle.contains(&format!("fixed!({module}, ")),
+                "the oracle lacks the module `{module}`"
+            );
+        } else {
+            assert!(
+                !runtime::CORE_BASE.contains(&format!("pub fn {last}(")),
+                "the base still holds `{name}`"
+            );
+            assert!(
+                oracle.contains(&format!("pub fn {last}(")),
+                "the oracle lacks `{name}`"
+            );
+        }
     }
     let generated = runtime::assemble(&decoded.core.items);
     let ran = differ(&oracle, &generated).expect("the generated runtime agrees with the oracle");
@@ -204,6 +277,21 @@ pub fn run(id: &str) {
         ),
         ("Machine.natLe", "Machine.natLt", "nat_le result"),
         ("Machine.natQuot", "Machine.natRem", "nat_quot result"),
+        (
+            "Machine.checkedAdd (ctor TargetSyntax::IntKind.u8)",
+            "Machine.checkedSub (ctor TargetSyntax::IntKind.u8)",
+            "fixed_u8::checked_addresult",
+        ),
+        (
+            "Machine.checkedShl (ctor TargetSyntax::IntKind.i32)",
+            "Machine.checkedShr (ctor TargetSyntax::IntKind.i32)",
+            "fixed_i32::shift_leftresult",
+        ),
+        (
+            "Machine.bitXor (ctor TargetSyntax::IntKind.u16)",
+            "Machine.bitOr (ctor TargetSyntax::IntKind.u16)",
+            "fixed_u16::bit_xorresult",
+        ),
     ] {
         let changed = shipped.replacen(from, to, 1);
         assert_ne!(changed, shipped, "the plant site exists");
@@ -213,7 +301,12 @@ pub fn run(id: &str) {
             .items;
         let error = differ(&oracle, &runtime::assemble(&items))
             .expect_err("a changed body disagrees with the oracle");
-        assert!(error.contains(caught), "{error}");
+        assert!(
+            error
+                .replace([' ', '\n'], "")
+                .contains(&caught.replace(' ', "")),
+            "{error}"
+        );
     }
 
     // A module the decoder refuses, each for the rule it breaks.

@@ -32,6 +32,9 @@ use crate::surface::module::{self, SEMANTIC};
 /// Where the module is in the embedded tree.
 pub const MODULE_PATH: &str = "language/rust-runtime-1.2/RustRuntime.lex.tex";
 
+/// The stack of the thread that decodes the module.
+const DECODER_STACK: usize = 256 * 1024 * 1024;
+
 /// The origin every decoded construct carries: the runtime realizes no
 /// calculus element, so nothing is checked against a correspondence table.
 fn origin() -> Origin {
@@ -800,6 +803,21 @@ impl<'a> Reader<'a> {
 /// core crate, or a term is not a constructor of `RustSyntax` with its
 /// arity.
 pub fn decode(source: &str) -> Result<Source, String> {
+    // The module is a list of a hundred functions and the notation, the data,
+    // and the terms nest with it, so the decoder runs on a stack of its own
+    // rather than on the caller's, which a test thread or a debug build gives
+    // two megabytes.
+    std::thread::scope(|scope| {
+        std::thread::Builder::new()
+            .stack_size(DECODER_STACK)
+            .spawn_scoped(scope, || decode_here(source))
+            .map_err(|error| format!("runtime source {MODULE_PATH}: {error}"))?
+            .join()
+            .map_err(|_| format!("runtime source {MODULE_PATH}: the decoder panicked"))?
+    })
+}
+
+fn decode_here(source: &str) -> Result<Source, String> {
     let Some(found) = module::locate(source) else {
         return fail("holds no module");
     };
