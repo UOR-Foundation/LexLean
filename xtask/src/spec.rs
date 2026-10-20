@@ -23,13 +23,24 @@ const USAGE: &str = "cargo xtask spec <operation> [--dry-run]\n\
     \n\
     --dry-run  verify the edit on a scratch copy and write nothing";
 
+/// A refusal that names its rule, as the library's do (R5): an argument or a
+/// file a person got wrong is a closed failure, never a panic.
+fn refusal(message: &str, usage: bool) -> Fail {
+    let line = format!("R1: {message} (NS-07)");
+    if usage {
+        format!("{line}\n\n{USAGE}").into()
+    } else {
+        line.into()
+    }
+}
+
 fn option<'a>(arguments: &'a [String], name: &str) -> Result<&'a str, Fail> {
     arguments
         .iter()
         .position(|argument| argument == name)
         .and_then(|at| arguments.get(at + 1))
         .map(String::as_str)
-        .ok_or_else(|| format!("missing {name}\n\n{USAGE}").into())
+        .ok_or_else(|| refusal(&format!("{name} is missing"), true))
 }
 
 fn lines_of_file(path: &str) -> Result<Vec<String>, Fail> {
@@ -46,7 +57,7 @@ fn lines_of_file(path: &str) -> Result<Vec<String>, Fail> {
 pub fn run(root: &Path, arguments: &[String]) -> Result<(), Fail> {
     let dry_run = arguments.iter().any(|argument| argument == "--dry-run");
     let Some(operation) = arguments.first() else {
-        return Err(USAGE.to_owned().into());
+        return Err(refusal("an operation is missing", true));
     };
     let outcome: Outcome = match operation.as_str() {
         "replace-block" => spec_edit::replace_block(
@@ -59,7 +70,12 @@ pub fn run(root: &Path, arguments: &[String]) -> Result<(), Fail> {
             let kind = match option(arguments, "--kind")? {
                 "para" => InsertKind::Paragraph,
                 "table" => InsertKind::Table,
-                other => return Err(format!("--kind is para or table, not `{other}`").into()),
+                other => {
+                    return Err(refusal(
+                        &format!("--kind is para or table, not `{other}`"),
+                        false,
+                    ))
+                }
             };
             spec_edit::insert_after(
                 root,
@@ -70,10 +86,14 @@ pub fn run(root: &Path, arguments: &[String]) -> Result<(), Fail> {
             )?
         }
         "port" => {
-            let merged = std::fs::read_to_string(option(arguments, "--merged")?)?;
+            let path = option(arguments, "--merged")?;
+            let merged = std::fs::read_to_string(path)
+                .map_err(|error| refusal(&format!("{path}: {error}"), false))?;
             spec_edit::port(root, &merged)?
         }
-        _ => return Err(USAGE.to_owned().into()),
+        other => {
+            return Err(refusal(&format!("`{other}` is not an operation"), true));
+        }
     };
     for line in &outcome.report {
         println!("spec: {line}");

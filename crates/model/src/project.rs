@@ -143,6 +143,8 @@ pub struct Projection {
     pub spec: String,
     /// Where the blocks and derived regions of SPEC.md come from.
     pub layout: Layout,
+    /// The chapter modules, in the order `DocOrder` lists them.
+    pub chapters: Vec<String>,
     /// Each register row's §31 "Primary specification" column, in register
     /// order.
     pub sections: Vec<(String, String)>,
@@ -1054,6 +1056,7 @@ pub fn project(root: &Path) -> Result<Projection, ModelError> {
     let projection = Projection {
         spec,
         layout,
+        chapters: chapter_names.clone(),
         ids: emit(&ids_header, &ids_spec, &IDS, &register),
         errors: emit(&errors_header, &errors_spec, &ERRORS, &errors),
         ledger: emit(&ledger_header, &ledger_spec, &LEDGER, &ledger),

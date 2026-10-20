@@ -169,7 +169,18 @@ fn block_items(constructor: &str, head: &[Value], lines: &[String]) -> Vec<ItemJ
     items
 }
 
-fn check_lines(lines: &[String]) -> Result<(), ModelError> {
+/// The lines of a block of `kind`: no line break, no U+FF05, and the lines
+/// the document would read as another structure refused. A paragraph or table
+/// holds no empty line (that starts another block), no line that begins a
+/// heading (`#`) and none that opens a fence; a fence holds none that closes it.
+/// The comparison of SPEC.md cannot see these, because the text is the same
+/// either way: only the structure of the module differs.
+fn check_lines(lines: &[String], kind: &BlockKind) -> Result<(), ModelError> {
+    if lines.is_empty() {
+        return Err(refuse(
+            "a block is at least one line: an empty block is removed by hand".to_owned(),
+        ));
+    }
     for line in lines {
         if line.contains('\n') || line.contains('\r') {
             return Err(refuse(format!(
@@ -181,8 +192,38 @@ fn check_lines(lines: &[String]) -> Result<(), ModelError> {
                 "`{line:.40}` holds U+FF05, which the chapters reserve to spell a percent sign"
             )));
         }
+        if line.starts_with("```") {
+            return Err(refuse(format!(
+                "`{line:.40}` opens or closes a fence: a fence is a block of its own, and its lines are not edited into another"
+            )));
+        }
+        if !matches!(kind, BlockKind::Fence(_)) {
+            if line.is_empty() {
+                return Err(refuse(
+                    "an empty line starts another block: replace-block takes the lines of one block, and insert-after adds the next".to_owned(),
+                ));
+            }
+            if line.starts_with('#') {
+                return Err(refuse(format!(
+                    "`{line:.40}` begins a heading, which is not a line of a paragraph or a table"
+                )));
+            }
+        }
     }
     Ok(())
+}
+
+fn chapter_name(chapter: &str) -> Result<(), ModelError> {
+    let shaped = chapter
+        .strip_prefix("Chapter")
+        .is_some_and(|digits| digits.len() == 2 && digits.bytes().all(|b| b.is_ascii_digit()));
+    if shaped {
+        Ok(())
+    } else {
+        Err(refuse(format!(
+            "`{chapter:.40}` is not a chapter module (`Chapter` and two digits)"
+        )))
+    }
 }
 
 /// The blocks of `chapter` whose first line is `first_line`.
@@ -191,6 +232,18 @@ fn find<'a>(
     chapter: &str,
     first_line: &str,
 ) -> Result<&'a BlockLayout, ModelError> {
+    chapter_name(chapter)?;
+    if !projection
+        .layout
+        .blocks
+        .iter()
+        .any(|block| block.chapter == chapter)
+        && !projection.chapters.iter().any(|name| name == chapter)
+    {
+        return Err(refuse(format!(
+            "{chapter}: not a chapter module of the specification project"
+        )));
+    }
     let found: Vec<&BlockLayout> = projection
         .layout
         .blocks
@@ -302,7 +355,7 @@ pub fn verify(
         }
         Intended::Merged(text) => {
             let wanted = lines_of(text);
-            for hunk in hunks(&regenerated, &wanted) {
+            for hunk in hunks(&regenerated, &wanted)? {
                 if !within(&projection.layout.derived, &hunk) {
                     return Err(refuse(format!(
                         "the regenerated SPEC.md differs from the merged text outside the derived regions at line {}: `{:.80}` against `{:.80}`",
@@ -342,9 +395,9 @@ pub fn replace_block(
     first_line: &str,
     new_lines: &[String],
 ) -> Result<Outcome, ModelError> {
-    check_lines(new_lines)?;
     let current = project(root)?;
     let block = find(&current, chapter, first_line)?;
+    check_lines(new_lines, &block.kind)?;
     let (text, mut items) = read_items(root, chapter)?;
     let mut intended = lines_of(&current.spec);
     intended.splice(block.body.clone(), new_lines.iter().cloned());
@@ -380,9 +433,11 @@ pub fn insert_after(
     kind: InsertKind,
     new_lines: &[String],
 ) -> Result<Outcome, ModelError> {
-    check_lines(new_lines)?;
-    if new_lines.is_empty() || new_lines.iter().any(String::is_empty) {
-        return Err(refuse("an inserted block is non-empty lines".to_owned()));
+    check_lines(new_lines, &BlockKind::Paragraph)?;
+    if kind == InsertKind::Table && new_lines.iter().any(|line| !line.starts_with('|')) {
+        return Err(refuse(
+            "a table is lines that each begin with `|`".to_owned(),
+        ));
     }
     let current = project(root)?;
     let block = find(&current, chapter, first_line)?;
@@ -427,21 +482,34 @@ pub struct Hunk {
     pub b: Range<usize>,
 }
 
-/// Is every changed line of `hunk` inside a derived region (an insertion
-/// counts when it falls inside or at the edge of one)?
+/// Is every changed line of `hunk` inside a derived region? A change is inside
+/// when its lines are among the region's; an insertion only when it falls
+/// strictly between the region's first and last line, so that a block inserted
+/// at an edge (before a table, say) is never excused as regenerated.
 fn within(derived: &[Range<usize>], hunk: &Hunk) -> bool {
     derived.iter().any(|region| {
         if hunk.a.is_empty() {
-            hunk.a.start >= region.start && hunk.a.start <= region.end
+            hunk.a.start > region.start && hunk.a.start < region.end
         } else {
             hunk.a.start >= region.start && hunk.a.end <= region.end
         }
     })
 }
 
+/// The most lines two texts may differ by for [`hunks`] to search for the
+/// difference. A merged SPEC.md shares nearly everything with the projection
+/// it is compared with; a text that shares little is not a merge of it, and
+/// the search for its difference costs memory in proportion to the square of
+/// the difference.
+pub const MAX_DIFFERENCE: usize = 2000;
+
 /// The hunks that turn `a` into `b` (Myers' O(ND) difference over lines).
-#[must_use]
-pub fn hunks(a: &[String], b: &[String]) -> Vec<Hunk> {
+///
+/// # Errors
+///
+/// Refuses when the texts differ by more than [`MAX_DIFFERENCE`] lines, before
+/// the search.
+pub fn hunks(a: &[String], b: &[String]) -> Result<Vec<Hunk>, ModelError> {
     let mut prefix = 0;
     while prefix < a.len() && prefix < b.len() && a[prefix] == b[prefix] {
         prefix += 1;
@@ -456,27 +524,37 @@ pub fn hunks(a: &[String], b: &[String]) -> Vec<Hunk> {
     let (x, y) = (&a[prefix..a.len() - suffix], &b[prefix..b.len() - suffix]);
     let (n, m) = (x.len(), y.len());
     if n == 0 && m == 0 {
-        return Vec::new();
+        return Ok(Vec::new());
     }
-    let max = n + m;
+    if n.abs_diff(m) > MAX_DIFFERENCE {
+        return Err(too_different(n, m));
+    }
+    let max = (n + m).min(MAX_DIFFERENCE);
+    let signed = |value: usize| isize::try_from(value).unwrap_or(0);
     let offset = max + 1;
+    let index = |k: isize| usize::try_from(k + signed(offset)).unwrap_or(0);
     let mut v = vec![0usize; 2 * max + 3];
+    // `trace[d]` is the furthest x on each diagonal after round d - 1, for the
+    // diagonals -(d - 1)..=(d - 1): the part of the row that round d reads.
     let mut trace: Vec<Vec<usize>> = Vec::new();
     let mut found = None;
     'search: for d in 0..=max {
-        trace.push(v.clone());
-        let mut k = -isize::try_from(d).unwrap_or(0);
-        while k <= isize::try_from(d).unwrap_or(0) {
-            let index =
-                |k: isize| usize::try_from(k + isize::try_from(offset).unwrap_or(0)).unwrap_or(0);
-            let down = k == -isize::try_from(d).unwrap_or(0)
-                || (k != isize::try_from(d).unwrap_or(0) && v[index(k - 1)] < v[index(k + 1)]);
+        trace.push(if d == 0 {
+            Vec::new()
+        } else {
+            (-(signed(d) - 1)..=signed(d) - 1)
+                .map(|k| v[index(k)])
+                .collect()
+        });
+        let mut k = -signed(d);
+        while k <= signed(d) {
+            let down = k == -signed(d) || (k != signed(d) && v[index(k - 1)] < v[index(k + 1)]);
             let mut xi = if down {
                 v[index(k + 1)]
             } else {
                 v[index(k - 1)] + 1
             };
-            let mut yi = usize::try_from(isize::try_from(xi).unwrap_or(0) - k).unwrap_or(0);
+            let mut yi = usize::try_from(signed(xi) - k).unwrap_or(0);
             while xi < n && yi < m && x[xi] == y[yi] {
                 xi += 1;
                 yi += 1;
@@ -489,20 +567,28 @@ pub fn hunks(a: &[String], b: &[String]) -> Vec<Hunk> {
             k += 2;
         }
     }
+    let Some(d_final) = found else {
+        return Err(too_different(n, m));
+    };
     // Walk back through the trace, collecting where a line of `x` was deleted
     // (`true`) or a line of `y` was inserted (`false`).
-    let signed = |value: usize| isize::try_from(value).unwrap_or(0);
-    let index = |k: isize| usize::try_from(k + signed(offset)).unwrap_or(0);
     let mut changes: Vec<(usize, usize, bool)> = Vec::new();
     let (mut xi, mut yi) = (n, m);
-    let d_final = found.unwrap_or(max);
     for d in (1..=d_final).rev() {
         let entering = &trace[d];
+        // A diagonal outside the saved window was never written before round
+        // `d`, and reads as 0, as in the search.
+        let at = |k: isize| {
+            let slot = k + signed(d) - 1;
+            usize::try_from(slot)
+                .ok()
+                .and_then(|slot| entering.get(slot).copied())
+                .unwrap_or(0)
+        };
         let k = signed(xi) - signed(yi);
-        let down =
-            k == -signed(d) || (k != signed(d) && entering[index(k - 1)] < entering[index(k + 1)]);
+        let down = k == -signed(d) || (k != signed(d) && at(k - 1) < at(k + 1));
         let previous_k = if down { k + 1 } else { k - 1 };
-        let previous_x = entering[index(previous_k)];
+        let previous_x = at(previous_k);
         let previous_y = usize::try_from(signed(previous_x) - previous_k).unwrap_or(0);
         changes.push((previous_x, previous_y, !down));
         xi = previous_x;
@@ -524,12 +610,19 @@ pub fn hunks(a: &[String], b: &[String]) -> Vec<Hunk> {
             }),
         }
     }
-    out.into_iter()
+    Ok(out
+        .into_iter()
         .map(|hunk| Hunk {
             a: hunk.a.start + prefix..hunk.a.end + prefix,
             b: hunk.b.start + prefix..hunk.b.end + prefix,
         })
-        .collect()
+        .collect())
+}
+
+fn too_different(n: usize, m: usize) -> ModelError {
+    refuse(format!(
+        "the merged text and SPEC.md differ by more than {MAX_DIFFERENCE} lines ({n} against {m} between their common ends): it is not a merge of this specification, so no hunk is searched for"
+    ))
 }
 
 /// What the hunks ask of one chapter module's items.
@@ -580,9 +673,24 @@ pub fn port(root: &Path, merged: &str) -> Result<Outcome, ModelError> {
     let mut replaced: std::collections::BTreeMap<(String, usize), (BlockLayout, Vec<String>)> =
         std::collections::BTreeMap::new();
     let mut inserted: Vec<Edit> = Vec::new();
-    for hunk in hunks(&before, &after).iter().rev() {
+    for found in hunks(&before, &after)?.iter().rev() {
+        let mut hunk = found.clone();
+        let mut new: Vec<String> = after[hunk.b.clone()].to_vec();
+        // The same insertion has two alignments: a paragraph and the blank line
+        // after it, or the blank line before it and the paragraph. Take the
+        // second, which is the form a block is inserted in.
+        if hunk.a.is_empty()
+            && hunk.a.start > 0
+            && before[hunk.a.start - 1].is_empty()
+            && new.first().is_some_and(|line| !line.is_empty())
+            && new.last().is_some_and(String::is_empty)
+        {
+            new.pop();
+            new.insert(0, String::new());
+            hunk.a = hunk.a.start - 1..hunk.a.start - 1;
+        }
         let (start, end) = (hunk.a.start, hunk.a.end);
-        if within(&current.layout.derived, hunk) {
+        if within(&current.layout.derived, &hunk) {
             report.push(format!(
                 "lines {}..{} are in a derived region: regenerated, not ported",
                 start + 1,
@@ -590,22 +698,16 @@ pub fn port(root: &Path, merged: &str) -> Result<Outcome, ModelError> {
             ));
             continue;
         }
-        let new: Vec<String> = after[hunk.b.clone()].to_vec();
-        check_lines(&new)?;
         // A paragraph or table inserted between blocks: the first new line is
         // the blank line that separates it.
         if hunk.a.is_empty() && new.first().is_some_and(String::is_empty) {
             let lines = &new[1..];
-            if lines.is_empty()
-                || lines
-                    .iter()
-                    .any(|l| l.is_empty() || l.starts_with('#') || l.starts_with("```"))
-            {
-                return Err(refuse(format!(
-                    "the hunk at line {} inserts more than one paragraph or table, a heading or a fence: edit it with insert-after, one block at a time",
+            check_lines(lines, &BlockKind::Paragraph).map_err(|error| {
+                refuse(format!(
+                    "the hunk at line {} inserts more than one paragraph or table, a heading or a fence, or a line a block cannot hold: edit it with insert-after, one block at a time ({error})",
                     start + 1
-                )));
-            }
+                ))
+            })?;
             let Some(block) =
                 current.layout.blocks.iter().find(|b| {
                     b.body.end + usize::from(matches!(b.kind, BlockKind::Fence(_))) == start
@@ -694,10 +796,17 @@ pub fn port(root: &Path, merged: &str) -> Result<Outcome, ModelError> {
         ));
     }
     report.reverse();
-    let mut edits: Vec<Edit> = replaced
-        .into_values()
-        .map(|(block, lines)| Edit::Replace(block, lines))
-        .collect();
+    let mut edits: Vec<Edit> = Vec::new();
+    for (block, lines) in replaced.into_values() {
+        check_lines(&lines, &block.kind).map_err(|error| {
+            refuse(format!(
+                "the hunks that change the block of {} that begins `{:.40}` leave it a block the document cannot hold: {error}",
+                block.chapter,
+                block.lines.first().map_or("", String::as_str)
+            ))
+        })?;
+        edits.push(Edit::Replace(block, lines));
+    }
     edits.extend(inserted);
     // From the last position of a module to the first, so that the positions
     // still to edit hold.
@@ -772,7 +881,7 @@ mod tests {
             let (a, b) = (strings(a), strings(b));
             let mut rebuilt: Vec<String> = Vec::new();
             let mut at = 0;
-            for hunk in hunks(&a, &b) {
+            for hunk in hunks(&a, &b).expect("a small difference") {
                 rebuilt.extend_from_slice(&a[at..hunk.a.start]);
                 rebuilt.extend_from_slice(&b[hunk.b.clone()]);
                 at = hunk.a.end;
@@ -785,10 +894,39 @@ mod tests {
     /// Neighbouring changes are one hunk, and a common line separates two.
     #[test]
     fn hunks_group_what_is_adjacent() {
-        let one = hunks(&strings("a b c d"), &strings("a x y d"));
+        let one = hunks(&strings("a b c d"), &strings("a x y d")).expect("a small difference");
         assert_eq!(one.len(), 1);
         assert_eq!((one[0].a.clone(), one[0].b.clone()), (1..3, 1..3));
-        let two = hunks(&strings("a b c d e"), &strings("a x c y e"));
+        let two = hunks(&strings("a b c d e"), &strings("a x c y e")).expect("a small difference");
         assert_eq!(two.len(), 2);
+    }
+
+    /// An insertion is inside a derived region only strictly between its first
+    /// and last line; a change is inside when its lines are the region's.
+    #[test]
+    fn an_insertion_at_the_edge_of_a_region_is_not_inside_it() {
+        let region = [10..20];
+        let hunk = |a: Range<usize>| Hunk { a, b: 0..1 };
+        assert!(!within(&region, &hunk(10..10)), "at the first line");
+        assert!(within(&region, &hunk(11..11)));
+        assert!(within(&region, &hunk(19..19)));
+        assert!(!within(&region, &hunk(20..20)), "at the end");
+        assert!(within(&region, &hunk(10..20)), "the whole region changed");
+        assert!(
+            !within(&region, &hunk(9..11)),
+            "a change that starts before it"
+        );
+    }
+
+    /// Texts that differ by more than the bound are refused before the search,
+    /// and a difference of exactly the bound's size is searched.
+    #[test]
+    fn a_difference_beyond_the_bound_is_refused() {
+        let many: Vec<String> = (0..=MAX_DIFFERENCE + 1).map(|n| n.to_string()).collect();
+        let error = hunks(&many, &[]).expect_err("beyond the bound");
+        assert!(error.to_string().contains("differ by more than"), "{error}");
+        let unrelated: Vec<String> = (0..300).map(|n| format!("u{n}")).collect();
+        let others: Vec<String> = (0..300).map(|n| format!("v{n}")).collect();
+        assert_eq!(hunks(&unrelated, &others).expect("small").len(), 1);
     }
 }
