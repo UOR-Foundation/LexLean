@@ -17,6 +17,14 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- `cargo xtask spec` (`NS-07`, #244): edit the chapter modules of `spec/` by
+  item. `replace-block` and `insert-after` act on the paragraph, table or fence
+  found by its first line; `port` applies the hunks of a merged SPEC.md that lie
+  outside the derived regions. The edit goes through `lexlean::sdk` (which keeps
+  a module's own header), is split into items of at most 60 lines, and is
+  written only when the regenerated SPEC.md equals the intended text. Register
+  443.
+
 - `spec/` chapters: #232 shipped seven chapters (05, 08, 09, 17, 21, 27, 30)
   with the SDK writer's template title and without the `spec.titles` glossary,
   because the prose ports wrote them through the writer. This restores their

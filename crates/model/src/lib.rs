@@ -20,6 +20,7 @@ pub mod isolation;
 pub mod project;
 pub mod registry;
 pub mod release;
+pub mod spec_edit;
 pub mod vocabulary;
 
 pub use registry::{Authorities, AuthorityRow, Claim, ErrorRow, Errors, IdRow, Ids, Ledger, Level};

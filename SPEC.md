@@ -9461,7 +9461,10 @@ writes back as `%`.
 9. run repository-specific audits.
 
 `model-write` is the only normal path that rewrites the model files, SPEC.md and
-the generated documentation.
+the generated documentation. The chapter modules are edited by item with
+`cargo xtask spec` (`replace-block`, `insert-after`, `port`; `NS-07`), which
+writes a module only when the regenerated SPEC.md is the intended text outside
+the derived regions.
 
 *What is and is not established (C9).* The projector is a Rust program, not
 LexLean: it can falsify a projection and never establishes one. What
