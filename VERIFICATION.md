@@ -4031,9 +4031,9 @@ the denotation charges a literal its weight
 Removed: the weight charge was restored in both. The kernel's own check of
 the rule, a fixture whose `rfl` theorem states the weighted step count, needs
 `cargo xtask check-calculus --write` and is not exercised here: the 14 fixtures
-with a literal heavier than one node (and `compiler/lexlean.lock`) are not yet
-regenerated, so `conformance_tc_01`, `conformance_tc_03`, `conformance_tc_04`,
-and `conformance_tc_05` fail on this tree until they are.
+with a literal heavier than one node (and `compiler/lexlean.lock`) still hold
+the bytes written before TC-08, so `conformance_tc_01`, `conformance_tc_03`, `conformance_tc_04`,
+and `conformance_tc_05` fail on this tree until they are rewritten.
 
 ### kernel-opaque classification is observed
 
