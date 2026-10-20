@@ -2030,6 +2030,12 @@ suite = "preservation"
 statement = "The declared Rust machine states the integer operations the runtime's scalar functions use as machine primitives beyond the first eight: RustSyntax declares machine primitives for the bitwise and, or, exclusive or, and not of a width, for the equality, less-or-equal, and less-than of two naturals, and for the remainder of two naturals and of two integers, and RustSemantics evaluates a call of each as the calculus primitive of the same name with the value the calculus states, stuck on an operand of another width, which the pinned Lean evaluates on the boundary values of the widths and refuses to evaluate to a wrong value."
 
 [[id]]
+id = "SP-23"
+level = "build"
+suite = "preservation"
+statement = "The declared Rust machine states the natural and integer arithmetic of the runtime's scalar functions with an overflow a body can observe: RustSyntax declares machine primitives for the checked sum and product of two naturals and the checked sum, difference, product, negation, and quotient of integers, each evaluated by RustSemantics as the calculus primitive of the same name, as `Some` of its value or as `None` when that primitive overflows, and for the difference and quotient of two naturals, which cannot overflow and are the primitive's value, which the pinned Lean evaluates on the boundary values of the widths and refuses to evaluate to a wrong value."
+
+[[id]]
 id = "MD-01"
 level = "build"
 suite = "models"

@@ -150,3 +150,10 @@ Feature: preservation
     When RustSyntax is read for its machine primitives and the pinned Lean evaluates a call of each new primitive on the boundary values of the widths and on an operand of another width
     Then RustSyntax declares the bitwise, order, and remainder primitives, and each evaluation is the value the calculus primitive of the same name states
     And a statement of a wrong value for the same call is refused by the pinned Lean
+
+  @SP-23 @build
+  Scenario: The declared Rust machine states the natural and integer arithmetic of the runtime's scalar functions with an overflow a body can observe: RustSyntax declares machine primitives for the checked sum and product of two naturals and the checked sum, difference, product, negation, and quotient of integers, each evaluated by RustSemantics as the calculus primitive of the same name, as `Some` of its value or as `None` when that primitive overflows, and for the difference and quotient of two naturals, which cannot overflow and are the primitive's value, which the pinned Lean evaluates on the boundary values of the widths and refuses to evaluate to a wrong value.
+    Given the committed modules RustSyntax and RustSemantics of the compiler project, shipped as the calculus modules the certificates import
+    When RustSyntax is read for its machine primitives and the pinned Lean evaluates a call of each natural and integer primitive on the boundary values of the widths and on operands that overflow
+    Then RustSyntax declares the nine primitives, and each evaluation is Some of the primitive's value, None on overflow, or the value for the two that cannot overflow
+    And a statement of a wrong value for the same call is refused by the pinned Lean
