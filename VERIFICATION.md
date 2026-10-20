@@ -1785,8 +1785,8 @@ constructors are its eight; its register statement no longer says "eight".
 ### a theorem proved by a split on a document term can fail (SM-35)
 
 `term_cases` is a language-1.2 proof form: a document term and a nonempty sorted unique
-list of prior document definitions, lowered to `cases llCase : <term> <;> simp (config :=
-{decide := true}) only [<definitions>, llCase]` (`SM-35`, §17.10, #91 stage 4). It exists
+list of prior document definitions, lowered to `set_option linter.unusedSimpArgs false in cases llCase : <term> <;> simp (config :=
+{decide := true}) only [<definitions>, llCase, ite_true, ite_false]` (`SM-35`, §17.10, #91 stage 4). It exists
 because the unbounded refinement of a runtime item, `runExport … = runItem …`, is true and
 provable only by that script (measured on the `nat_add` slice: six seconds, the axioms
 `propext`, `Classical.choice`, `Quot.sound`), and `simplify` (plain `simp only`), `cases` on
@@ -1797,7 +1797,7 @@ match wrapped in a second match, proves it by `term_cases{scrutinee: (flagOf n),
 formatter keeps the proof and its fixed point links to the same module, that the notation
 reads back to the same module, that the generated Lean has the stated lowering, that the
 pinned Lean verifies the module with exactly `[propext]` (where the toolchain is installed),
-and that the LaTeX catalog carries the theorem's statement and policy. Seven misuses are
+and that the LaTeX catalog carries the theorem's statement and policy. The first lowering named the definitions and `llCase` alone; the runtime's `nat_add` refinement, tried against it, ran out of heartbeats at `isDefEq` because the unfolded `itemFallible item` leaves a conditional on a decided condition that `simp only` without `ite_true` and `ite_false` does not reduce, so the lowering names those two lemmas and, because they are unused in a proof with no conditional, turns the unused-argument linter off for its one script; with them the same statement is proved in six seconds. Seven misuses are
 refused as `LLT4001` naming the misuse (the planted projects of the case): language 1.1 (data form, schema 1: "a language-1.2
 construct"), an empty list, definitions out of order, a repeated definition, a definition that
 is absent, a term of type `Nat`, and a theorem parameter named `llCase`. Each of the seven misuses is also a committed fixture under `tests/negative/`
