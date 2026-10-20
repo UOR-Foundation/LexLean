@@ -41,6 +41,7 @@ mod rust_scaffold;
 mod security;
 mod semantic_ir;
 mod stdlib;
+mod stdlib_digest;
 mod stdlib_sha256;
 mod tooling;
 mod typed_diagnostics;

@@ -15,3 +15,9 @@ Feature: stdlib
     When the project is checked and built, `sha256` and `sha256Hex` are lowered and run by the evaluator and by their rendered rust-std packages on the vectors and on a seeded corpus, one bit of the round function is planted, and the project is exported under the pinned Lean
     Then both roots are eligible for rust-std with exactly their declared effects, every vector is computed and no run disagrees with the oracle
     And the planted round function disagrees on the first vector, and every exported package is byte-identical to its committed package and realizes the root's lowered program
+
+  @SL-05 @build
+  Scenario: The compiler computes its content identities with the standard library's certified `Sha256` package instead of the `sha2` crate: the manifest of the shipped `lexlean` crate has no `sha2` dependency, and through the compiler's own `Sha256Digest::of` the digest of every FIPS 180-4 example and every NIST CAVP SHA-256 short- and long-message vector, of every message length from 0 to 300 bytes, and of a seeded corpus agrees with the authority's digest and with the `sha2` crate as an oracle that can falsify and never establish, a disagreement failing closed and never resolved by adopting the oracle's digest.
+    Given the manifest of the shipped `lexlean` crate, the FIPS 180-4 example digests, the NIST CAVP `SHA256ShortMsg` and `SHA256LongMsg` vectors, and the `sha2` crate as the oracle
+    When the compiler's `Sha256Digest::of` digests every vector, every message length from 0 to 300 bytes, and a seeded corpus, and the manifest is read
+    Then the manifest names no `sha2` dependency and no digest disagrees with the vector or with the oracle

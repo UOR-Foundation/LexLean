@@ -667,6 +667,8 @@ pub fn run(id: &str) {
         }
         // §17.22: SHA-256 (#126 stage 1).
         "SL-02" => super::stdlib_sha256::run(id),
+        // §17.22: the compiler's digest is the package (#126 stage 2).
+        "SL-05" => super::stdlib_digest::run(id),
         other => panic!("no stdlib case is wired for {other}"),
     }
 }
