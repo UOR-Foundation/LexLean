@@ -214,6 +214,7 @@ pub const LIBRARY: &[(Kind, &str, Role)] = &[
     (Kind::Path, "<int>::from", Role::Primitive("convert")),
     (Kind::Path, "<int>::try_from", Role::Primitive("convert")),
     (Kind::Path, "AtomicU64::new", Role::Primitive("work")),
+    (Kind::Path, "Err", Role::Construct),
     (Kind::Path, "Memory::Relaxed", Role::Primitive("work")),
     (Kind::Path, "Ordering::Equal", Role::Construct),
     (Kind::Path, "Ordering::Greater", Role::Construct),

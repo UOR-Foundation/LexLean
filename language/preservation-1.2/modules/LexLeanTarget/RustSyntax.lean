@@ -40,6 +40,7 @@ public inductive RustType where
   | rc (_ : RustType)
   | fallible (_ : RustType)
   | ref (_ : RustType)
+  | overflow
 
 public inductive Lit where
   | unit

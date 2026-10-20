@@ -11,7 +11,7 @@
 use std::sync::OnceLock;
 
 use super::super::IntKind;
-use super::{ast, source};
+use super::{ast, source, validate};
 
 /// The text of the runtime both profiles carry that the `RustRuntime` module
 /// does not define: [`core`] is this text and the functions the module
@@ -90,10 +90,18 @@ pub fn assemble(items: &[ast::ItemDef]) -> String {
 /// Returns the reason the module cannot be read.
 pub fn core() -> Result<&'static str, String> {
     static CORE: OnceLock<Result<String, String>> = OnceLock::new();
-    CORE.get_or_init(|| Ok(assemble(&source::get()?.core.items)))
-        .as_ref()
-        .map(String::as_str)
-        .map_err(Clone::clone)
+    CORE.get_or_init(|| {
+        // The runtime crate is the one crate no lowering produces, so the
+        // validator that checks every rendering checks it too: its functions
+        // fail only with `Err(Overflow)`, own what they return, and allocate
+        // nothing.
+        validate::validate(&source::get()?.core)
+            .map_err(|error| format!("the core runtime is not a valid crate: {error}"))?;
+        Ok(assemble(&source::get()?.core.items))
+    })
+    .as_ref()
+    .map(String::as_str)
+    .map_err(Clone::clone)
 }
 
 /// The runtime only `rust-std` carries. Every loop ticks the work counter

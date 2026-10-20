@@ -120,6 +120,8 @@ pub enum Type {
     Fallible(Box<Type>),
     /// A borrowed parameter of an exported function.
     Ref(Box<Type>),
+    /// `Overflow`, the error type of `R<T>`: the runtime's own unit struct.
+    Overflow,
 }
 
 impl Type {
@@ -142,6 +144,7 @@ impl Type {
             Self::Rc(inner) => format!("std::rc::Rc<{}>", inner.text()),
             Self::Fallible(inner) => format!("R<{}>", inner.text()),
             Self::Ref(inner) => format!("&{}", inner.text()),
+            Self::Overflow => "Overflow".to_owned(),
         }
     }
 
@@ -157,6 +160,7 @@ impl Type {
             | Self::Nat
             | Self::Int
             | Self::Fixed(_)
+            | Self::Overflow
             | Self::Ordering
             | Self::Adt(_)
             | Self::Fn(_) => false,
@@ -168,9 +172,13 @@ impl Type {
     #[must_use]
     pub fn copy(&self) -> bool {
         match self {
-            Self::Unit | Self::Bool | Self::Nat | Self::Int | Self::Fixed(_) | Self::Ordering => {
-                true
-            }
+            Self::Unit
+            | Self::Bool
+            | Self::Nat
+            | Self::Int
+            | Self::Fixed(_)
+            | Self::Overflow
+            | Self::Ordering => true,
             Self::Option(inner) => inner.copy(),
             Self::Result(left, right) | Self::Pair(left, right) => left.copy() && right.copy(),
             Self::Str
@@ -877,16 +885,8 @@ impl Printer {
                 )
             }
             Expr::Construct { ctor, args, .. } => {
-                // The failure of a runtime function is `Overflow` of `R<T>`;
-                // its error type is the runtime's own and has no node, so the
-                // constructor leaves its type arguments to the signature.
-                let failing = matches!(ctor, Ctor::Err(..))
-                    && matches!(args.as_slice(), [Expr::Lit(Lit::Overflow, _)]);
                 let args: Vec<String> = args.iter().map(|arg| self.expr(arg, depth)).collect();
                 let joined = args.join(", ");
-                if failing {
-                    return format!("Err({joined})");
-                }
                 match ctor {
                     Ctor::None(ty) => format!("None::<{}>", ty.text()),
                     Ctor::Some => format!("Some({joined})"),

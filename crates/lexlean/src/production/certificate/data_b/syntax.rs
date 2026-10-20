@@ -161,6 +161,7 @@ impl Writer<'_, '_> {
                 let held = self.rs_type(held);
                 self.rs_apply("RustType.ref", &[held])
             }
+            Type::Overflow => self.rs("RustType.overflow"),
         }
     }
 

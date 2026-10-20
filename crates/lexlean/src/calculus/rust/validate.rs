@@ -119,6 +119,7 @@ impl Checker<'_> {
             | Type::Nat
             | Type::Int
             | Type::Fixed(..)
+            | Type::Overflow
             | Type::Ordering
             | Type::Str
             | Type::Bytes
@@ -565,6 +566,18 @@ impl Checker<'_> {
 /// Whether `expr` is a value a fallible function may return: see
 /// [`Checker::expr`].
 fn returns_result(expr: &Expr) -> bool {
+    // The runtime fails with `Err(Overflow)` (`RB-16`), the dual of the
+    // overflow literal a machine call never raises: an `Err` of that value is
+    // a fallible value, and an `Err` of any other is not.
+    if let Expr::Construct {
+        ctor: Ctor::Err(_, error),
+        args,
+        ..
+    } = expr
+    {
+        return *error == Type::Overflow
+            && matches!(args.as_slice(), [Expr::Lit(Lit::Overflow, _)]);
+    }
     matches!(
         expr,
         Expr::Succeed(..)
@@ -916,6 +929,7 @@ impl Found {
             Type::Nat => "nat",
             Type::Int => "int",
             Type::Fixed(_) => "fixed",
+            Type::Overflow => "overflow",
             Type::Ordering => "ordering",
             Type::Str => "string",
             Type::Bytes => "bytes",
@@ -945,6 +959,7 @@ impl Found {
             | Type::Nat
             | Type::Int
             | Type::Fixed(..)
+            | Type::Overflow
             | Type::Ordering
             | Type::Str
             | Type::Bytes

@@ -1971,6 +1971,19 @@ the records bound to the compiler-semantics ID (`rust_renderer`, `rust_runtime_c
 
 `rb_06` found one more break of the generated text: the machine primitives `int_rem` and `int_quot` print as block expressions, and Clippy's default lints refuse a block as a `match` scrutinee (`blocks_in_conditions`) in the package that carries `int_quot`. The printer binds a scrutinee that begins with a block, `{ let value = <block>; match value { … } }`, as it binds a loop's step; with it `rb_06` passes on every committed package.
 
+The runtime crate is checked by `validate` (`runtime::core` runs it on the decoded crate), which
+refused the first decoded `nat_add`: `arithmetic: the value a fallible function returns,
+construct:err, is not a fallible value`. The arithmetic rule now reads an `Err` whose error type is
+`RustType.overflow` and whose one payload is the overflow value as a fallible value, the dual of
+`RB-15`'s overflow literal, and nothing else the runtime builds as one. The error type, which the
+first head stood in for with `unit` and printed without type arguments, is the node
+`RustType.overflow` (`Type::Overflow`, the Lean constructor `RustType.overflow`, the leaf
+`LkOverflow` of `RustValidate`'s `Ty`), and the printer states `Err::<u64, Overflow>(Overflow)`.
+Three plants of the module are refused by `validate` in the case: an `Err` of the natural zero,
+an `Err` whose error type is `nat`, and a parameter of type `str` in the core runtime
+(`hidden allocation`). The case also requires `tests/rust-runtime-oracle/std.rs.txt` to be the
+text `runtime::STD` holds.
+
 Plants were run with `cargo test -p repo-conformance --test conformance conformance_rb_16`,
 each restored with `git checkout` or the saved file.
 
@@ -2006,6 +2019,20 @@ project of the five modules the runtime module imports, and has the pinned Lean 
 (about 100 s: 60 for the project, 40 for the planted one). The proof reached the
 conditional of `itemFallible` only through `ite_true` and `ite_false`, which the lowering of
 `term_cases` therefore names (see `SM-35`).
+
+Command and host: `cargo test -p repo-conformance --test conformance -- conformance_sp_22`, in the
+`preservation` part of `bdd` (`.github/bdd-parts.json`). The theorem-list assertions and their
+plants run on every host; the elaboration of the module and its plants run where
+`leanprover/lean4:v4.32.1` is installed (`lean_backed("SP-22")`), and on the normative host
+(Linux x86-64, §8.3) the case panics rather than skip. Cost on a 4-core container: 142 s for the
+case, of which about 60 s is the project of the five modules and about 70 s the planted one; the
+18 theorems add under ten seconds to the module (71 s with them, 80 s with none, on the same
+machine, so the difference is inside the noise): under half a second a theorem. **That is not
+the cost of the next functions**: the width families (92 more functions, each of the same form,
+on branch `claude/issue-91-stage4-widths`) put 110 theorems in one module, and its verification
+did not end in an hour, because every theorem unfolds `findFunction` through the whole crate, so
+the cost grows with the crate's length per theorem. The width families will need their own
+crates or a faster lookup before they are verified, and `SP-22` its own part of `bdd`.
 
 Plants, each restored: a theorem renamed to `refines_nat_other` (`the module defines` the eighteen names,
 `its refinement theorems are for` the seventeen and `nat_other`); the theorem removed (the same message); the theorem

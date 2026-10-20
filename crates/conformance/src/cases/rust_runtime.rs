@@ -160,6 +160,14 @@ pub fn run(id: &str) {
     // proofs are about one, the Rust crate reads the other.
     assert_eq!(module, shipped, "{SHIPPED} differs from {MODULE}");
     let oracle = read("tests/rust-runtime-oracle/core.rs.txt");
+    // The handwritten text of the `rust-std` runtime is kept beside it and is
+    // still the text the compiler prints: no function of it is defined by the
+    // module yet, so the oracle is that text exactly.
+    assert_eq!(
+        read("tests/rust-runtime-oracle/std.rs.txt"),
+        runtime::STD,
+        "the std oracle is the std runtime"
+    );
     let decoded = source::decode(&shipped).expect("the module decodes");
     assert!(
         !decoded.core.items.is_empty(),
@@ -214,6 +222,38 @@ pub fn run(id: &str) {
         let error = differ(&oracle, &runtime::assemble(&items))
             .expect_err("a changed body disagrees with the oracle");
         assert!(error.contains(caught), "{error}");
+    }
+
+    // The runtime crate is checked by the validator that checks every
+    // rendering, with the runtime's reading of its arithmetic rule: its
+    // functions fail only with `Err(Overflow)`, and a core function
+    // allocates nothing.
+    lexlean::calculus::rust::validate::validate(&decoded.core).expect("the runtime is valid");
+    for (what, from, to, message) in [
+        (
+            "an Err of a value that is not the overflow value",
+            "(ctor RustSyntax::Expr.lit (ctor RustSyntax::Lit.overflow))",
+            "(ctor RustSyntax::Expr.lit (ctor RustSyntax::Lit.nat 0))",
+            "is not a fallible value",
+        ),
+        (
+            "an Err whose error type is not the runtime's",
+            "(ctor RustSyntax::RustType.nat) (ctor RustSyntax::RustType.overflow)",
+            "(ctor RustSyntax::RustType.nat) (ctor RustSyntax::RustType.nat)",
+            "is not a fallible value",
+        ),
+        (
+            "a heap type in the core runtime",
+            "type := (ctor RustSyntax::RustType.nat)",
+            "type := (ctor RustSyntax::RustType.str)",
+            "hidden allocation",
+        ),
+    ] {
+        let edited = shipped.replacen(from, to, 1);
+        assert_ne!(edited, shipped, "{what}: the plant site exists");
+        let krate = source::decode(&edited).expect(what).core;
+        let error = lexlean::calculus::rust::validate::validate(&krate).expect_err(what);
+        assert!(error.contains(message), "{what}: {error}");
     }
 
     // A module the decoder refuses, each for the rule it breaks.

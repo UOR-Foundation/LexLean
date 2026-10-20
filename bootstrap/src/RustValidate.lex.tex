@@ -62,7 +62,8 @@ inductive{
     {name: LkInt, fields: []},
     {name: LkOrdering, fields: []},
     {name: LkStr, fields: []},
-    {name: LkBytes, fields: []}
+    {name: LkBytes, fields: []},
+    {name: LkOverflow, fields: []}
   ]
 }
 
@@ -585,7 +586,8 @@ definition{
     | LeafKind.LkInt => (text "Int")
     | LeafKind.LkOrdering => (text "Ordering")
     | LeafKind.LkStr => (text "Str")
-    | LeafKind.LkBytes => (text "Bytes")),
+    | LeafKind.LkBytes => (text "Bytes")
+    | LeafKind.LkOverflow => (text "Overflow")),
   executable: true
 }
 
@@ -600,7 +602,8 @@ definition{
     | LeafKind.LkInt => (text "int")
     | LeafKind.LkOrdering => (text "ordering")
     | LeafKind.LkStr => (text "string")
-    | LeafKind.LkBytes => (text "bytes")),
+    | LeafKind.LkBytes => (text "bytes")
+    | LeafKind.LkOverflow => (text "overflow")),
   executable: true
 }
 
@@ -615,7 +618,8 @@ definition{
     | LeafKind.LkInt => false
     | LeafKind.LkOrdering => false
     | LeafKind.LkStr => true
-    | LeafKind.LkBytes => true),
+    | LeafKind.LkBytes => true
+    | LeafKind.LkOverflow => false),
   executable: true
 }
 

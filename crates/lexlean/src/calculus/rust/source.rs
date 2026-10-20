@@ -406,6 +406,10 @@ impl<'a> Reader<'a> {
             "rc" => Type::Rc(boxed(self, &take(1)?[0])?),
             "fallible" => Type::Fallible(boxed(self, &take(1)?[0])?),
             "ref" => Type::Ref(boxed(self, &take(1)?[0])?),
+            "overflow" => {
+                take(0)?;
+                Type::Overflow
+            }
             other => return fail(format!("`RustType.{other}` is not a type")),
         })
     }
