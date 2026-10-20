@@ -451,6 +451,35 @@ fn copy_example(example: &std::path::Path, temp: &std::path::Path) {
     }
 }
 
+/// The repository-relative directories of the source packages an example
+/// declares, and of those they declare in turn (SPEC.md §10.5), read from the
+/// manifests rather than listed.
+fn package_directories(root: &std::path::Path, example: &std::path::Path) -> Vec<String> {
+    let read = |directory: &std::path::Path| {
+        let bytes = std::fs::read(directory.join("lexlean.toml")).expect("manifest");
+        lexlean::config::parse_project("lexlean.toml", &bytes).expect("the manifest parses")
+    };
+    let mut found: Vec<String> = Vec::new();
+    let mut pending: Vec<String> = read(example)
+        .source_packages
+        .iter()
+        .map(|package| package.path.clone())
+        .collect();
+    while let Some(path) = pending.pop() {
+        if found.contains(&path) {
+            continue;
+        }
+        pending.extend(
+            read(&root.join(&path))
+                .source_packages
+                .iter()
+                .map(|package| package.path.clone()),
+        );
+        found.push(path);
+    }
+    found
+}
+
 /// Every `.lex.tex` module of an example, relative to the example root,
 /// with its committed source.
 fn example_modules(example: &std::path::Path) -> BTreeMap<String, String> {
@@ -521,9 +550,9 @@ fn formatter_is_idempotent_on_every_example() {
                     temp.path().join("lexlean-workspace.toml"),
                 )
                 .expect("workspace file");
-                for package in ["stdlib", "std-models", "std-reasoning"] {
-                    std::fs::create_dir_all(temp.path().join(package)).expect("mkdir");
-                    copy_example(&root.join(package), &temp.path().join(package));
+                for package in package_directories(&root, example) {
+                    std::fs::create_dir_all(temp.path().join(&package)).expect("mkdir");
+                    copy_example(&root.join(&package), &temp.path().join(&package));
                 }
                 temp.path()
                     .join(example.strip_prefix(&root).expect("under the root"))

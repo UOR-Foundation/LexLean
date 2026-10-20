@@ -1490,7 +1490,7 @@ fn lowered_projects() -> Vec<(String, P)> {
             .join("lexlean.toml");
         let text = std::fs::read_to_string(config.as_std_path()).unwrap_or_default();
         if text.contains("language = \"1.2\"") {
-            out.push((name.clone(), P::copy_example(&name)));
+            out.push((name.clone(), P::example_with_packages(&name)));
         }
     }
     out

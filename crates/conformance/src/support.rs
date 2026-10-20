@@ -628,6 +628,58 @@ impl P {
         Self { temp, root }
     }
 
+    /// The repository-relative directories a project needs beside itself: its
+    /// own, then every source package it declares and every package those
+    /// declare (SPEC.md §10.5), read from the manifests as `xtask` stages them.
+    #[must_use]
+    pub fn package_members(project: &str) -> Vec<String> {
+        let read = |directory: &str| {
+            let bytes = std::fs::read(
+                repo_root()
+                    .join(directory)
+                    .join("lexlean.toml")
+                    .as_std_path(),
+            )
+            .unwrap_or_else(|error| panic!("{directory}/lexlean.toml: {error}"));
+            lexlean::config::parse_project("lexlean.toml", &bytes)
+                .unwrap_or_else(|error| panic!("{directory}: {error:?}"))
+        };
+        let mut members = vec![project.to_owned()];
+        let mut pending: Vec<String> = read(project)
+            .source_packages
+            .iter()
+            .map(|package| package.path.clone())
+            .collect();
+        while let Some(path) = pending.pop() {
+            if members.contains(&path) {
+                continue;
+            }
+            pending.extend(
+                read(&path)
+                    .source_packages
+                    .iter()
+                    .map(|package| package.path.clone()),
+            );
+            members.push(path);
+        }
+        members
+    }
+
+    /// A fresh copy of the example `name`: alone when it declares no source
+    /// package, and beside the workspace file and the packages it imports
+    /// when it does, since a project outside a workspace cannot declare one
+    /// (`LLC0108`).
+    #[must_use]
+    pub fn example_with_packages(name: &str) -> Self {
+        let project = format!("examples/{name}");
+        let members = Self::package_members(&project);
+        if members.len() == 1 {
+            return Self::copy_example(name);
+        }
+        let members: Vec<&str> = members.iter().map(String::as_str).collect();
+        Self::workspace_project(&project, &members)
+    }
+
     /// Assert that a link-time failure also refuses `build` and leaves no
     /// backend output (§17.12). `check` alone never runs a backend, so the
     /// assertion is made against the command that would: the §21.8 mutation
