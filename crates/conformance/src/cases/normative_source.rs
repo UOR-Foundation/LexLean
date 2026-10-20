@@ -14,6 +14,7 @@ pub fn run(id: &str) {
         "NS-02" => projection_is_the_model(),
         "NS-03" => drift_is_refused(),
         "NS-04" => projector_fails_closed(),
+        "NS-05" => specification_text(),
         other => panic!("no conformance case is wired for {other}"),
     }
 }
@@ -162,6 +163,8 @@ impl Scratch {
             )
             .expect("copy source");
         }
+        std::fs::copy(real.join("SPEC.md").as_std_path(), root.join("SPEC.md"))
+            .expect("copy SPEC.md");
         for file in ["ids", "errors", "ledger", "authorities"] {
             std::fs::copy(
                 real.join(format!("model/{file}.toml")).as_std_path(),
@@ -222,6 +225,23 @@ fn drift_is_refused() {
         "{error}"
     );
 
+    // A hand edit of SPEC.md.
+    let scratch = Scratch::new();
+    scratch.plant(
+        "SPEC.md",
+        "The repository, crate, executable, metadata, and licenses",
+        "The repository, crate, executable, metadata, and some licenses",
+    );
+    let error = project(scratch.root())
+        .expect("sources unchanged")
+        .check_committed(scratch.root())
+        .expect_err("a hand-edited SPEC.md is refused")
+        .to_string();
+    assert!(
+        error.contains("R1") && error.contains("SPEC.md") && error.contains("NS-03"),
+        "{error}"
+    );
+
     // A source edit that is not projected.
     let scratch = Scratch::new();
     scratch.plant(
@@ -235,7 +255,7 @@ fn drift_is_refused() {
         .expect_err("an unprojected source edit is refused")
         .to_string();
     assert!(
-        error.contains("R1") && error.contains("model/ids.toml"),
+        error.contains("R1") && error.contains("model/ids.toml") && error.contains("SPEC.md"),
         "{error}"
     );
 
@@ -394,4 +414,157 @@ fn projector_fails_closed() {
     std::fs::remove_file(scratch.source("Ledger.lex.tex")).expect("remove");
     let error = project(scratch.root()).expect_err("refused").to_string();
     assert!(error.contains("Ledger.lex.tex"), "{error}");
+}
+
+// §27.5: SPEC.md is the projection of the chapter modules, its three derived
+// regions are the register's and the registry's, and the projector refuses a
+// chapter it does not read.
+fn specification_text() {
+    let real = repo_root();
+    let committed = project(real.as_std_path()).expect("the sources project");
+    assert_eq!(
+        committed.spec,
+        root_file("SPEC.md"),
+        "SPEC.md is the projection of the chapter modules"
+    );
+    let model = repo_model::Model::from_texts(real.as_std_path(), &committed)
+        .expect("the projection parses as the model");
+    let spec = &committed.spec;
+    assert!(
+        spec.lines().count() > 10_000,
+        "anti-vacuity: the specification text is projected"
+    );
+
+    // The derived regions are the register's and the registry's, not typed.
+    let register_rows = spec.lines().filter(|line| is_register_row(line)).count();
+    assert_eq!(register_rows, model.ids.id.len(), "§31 lists the register");
+    for row in &model.ids.id {
+        let line = spec
+            .lines()
+            .find(|line| line.starts_with(&format!("| `{}` | `{}` | ", row.id, row.suite)))
+            .unwrap_or_else(|| panic!("{}: §31 has its row", row.id));
+        assert!(
+            line.contains(&format!(" | {} | ", row.statement)),
+            "{}: §31 states the register's statement",
+            row.id
+        );
+    }
+    for row in &model.errors.error {
+        assert!(
+            spec.contains(&format!("| `{}` | {} |\n", row.code, row.statement)),
+            "{}: §26.3 states the registry's meaning",
+            row.code
+        );
+    }
+    for row in &model.authorities.authority {
+        assert!(
+            spec.contains(&format!("| `{}` | ", row.id)),
+            "{}: §27.4 lists every authority of the register",
+            row.id
+        );
+    }
+    assert!(
+        spec.contains(&format!(
+            "**Total required capability IDs:** {}.\n",
+            model.ids.id.len()
+        )),
+        "the total is the register's"
+    );
+
+    // A register edit that is not projected is a difference in SPEC.md too.
+    let scratch = Scratch::new();
+    scratch.plant(
+        "spec/src/IdsRP.lex.tex",
+        "The repository, crate, executable, metadata, and licenses",
+        "The repository, crate, executable, metadata, and some licenses",
+    );
+    let planted = project(scratch.root()).expect("the edited source projects");
+    assert!(
+        planted
+            .spec
+            .contains("The repository, crate, executable, metadata, and some licenses"),
+        "the edited statement reaches the derived §31 table"
+    );
+    let error = planted
+        .check_committed(scratch.root())
+        .expect_err("an unprojected register edit is refused")
+        .to_string();
+    assert!(error.contains("R1") && error.contains("SPEC.md"), "{error}");
+
+    // A hand edit of a derived table.
+    let scratch = Scratch::new();
+    scratch.plant(
+        "SPEC.md",
+        "| `LLC0001` | Invalid command-line usage. |",
+        "| `LLC0001` | Invalid usage. |",
+    );
+    let error = project(scratch.root())
+        .expect("sources unchanged")
+        .check_committed(scratch.root())
+        .expect_err("a hand-edited derived table is refused")
+        .to_string();
+    assert!(error.contains("R1") && error.contains("SPEC.md"), "{error}");
+
+    // U+FF05 is reserved to spell a percent sign in the chapters: a register
+    // statement that carries one would reach SPEC.md unmapped, so it is refused.
+    let scratch = Scratch::new();
+    scratch.plant(
+        "spec/src/IdsRP.lex.tex",
+        "The repository, crate, executable",
+        "The repository\u{ff05} crate, executable",
+    );
+    expect_refusal(&scratch, &["U+FF05", "NS-05"]);
+
+    // Chapter items the projector does not read.
+    let chapter = "spec/src/Chapter00.lex.tex";
+    let scratch = Scratch::new();
+    scratch.plant(chapter, "DocRows::Item.para", "DocRows::Item.quote");
+    expect_refusal(
+        &scratch,
+        &["Chapter00.lex.tex", "not one of `DocRows.Item`", "NS-04"],
+    );
+    let scratch = Scratch::new();
+    scratch.plant(chapter, "name: i0002,", "name: i0009,");
+    expect_refusal(
+        &scratch,
+        &["Chapter00.lex.tex", "declaration 2", "expected `i0002`"],
+    );
+    let scratch = Scratch::new();
+    let long = format!(
+        "{}(nil String){}",
+        "(cons \"x\" ".repeat(61),
+        ")".repeat(61)
+    );
+    scratch.plant(chapter, "(nil String)", &long);
+    expect_refusal(&scratch, &["Chapter00.lex.tex", "at most 60 lines"]);
+    let scratch = Scratch::new();
+    scratch.plant(
+        "spec/src/Chapter31.lex.tex",
+        "\"register-table\"",
+        "\"no-such-table\"",
+    );
+    expect_refusal(&scratch, &["Chapter31.lex.tex", "not a derived block"]);
+    let scratch = Scratch::new();
+    let order = std::fs::read_to_string(scratch.source("DocOrder.lex.tex")).expect("module");
+    assert!(order.contains("(cons \"Chapter32\" (nil String))"));
+    scratch.plant(
+        "spec/src/DocOrder.lex.tex",
+        "(cons \"Chapter32\" (nil String))",
+        "(nil String)",
+    );
+    expect_refusal(&scratch, &["Chapter32.lex.tex", "belongs to no part"]);
+}
+
+/// Is this line a row of the §31 table: `| `XX-00` | `suite` | … | … |`?
+fn is_register_row(line: &str) -> bool {
+    let bytes = line.as_bytes();
+    line.starts_with("| `")
+        && bytes.len() > 10
+        && bytes[3].is_ascii_uppercase()
+        && bytes[4].is_ascii_uppercase()
+        && bytes[5] == b'-'
+        && bytes[6].is_ascii_digit()
+        && bytes[7].is_ascii_digit()
+        && bytes[8] == b'`'
+        && line.split(" | ").count() == 4
 }

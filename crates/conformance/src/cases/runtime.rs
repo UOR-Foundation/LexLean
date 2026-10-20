@@ -189,7 +189,7 @@ fn rt_01() {
         for path in files(root.join(directory).as_std_path(), &["tex"]) {
             let text = std::fs::read_to_string(&path).unwrap_or_default();
             // A core module written as data or in the notation (§17.21.8).
-            if !text.contains("\\coredata{") && !text.contains("\\begin{coremodule}") {
+            if lexlean::sdk::module_kind(&text) != Some(lexlean::sdk::ModuleKind::Core) {
                 continue;
             }
             for namespace in NAMESPACES {

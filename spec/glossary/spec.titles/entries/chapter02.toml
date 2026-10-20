@@ -1,0 +1,16 @@
+spec = "lexlean/entry/1"
+id = "chapter02"
+category = "label-word"
+surface_arity = 0
+frame = "atom"
+
+[denotation]
+kind = "defined"
+value = "(const lexlean.std.nat::nat)"
+
+[[form]]
+id = "chapter02"
+channel = "text"
+surface = "Repository identity and initialization"
+canonical_source = true
+features = ["sentence-case", "singular"]

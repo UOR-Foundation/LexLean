@@ -59,5 +59,45 @@ definition{
   body: (record Rows::LedgerClaim {id := "AUTH-UOR-GNAF-1-DRAFT-2", level := "some-true", statement := "UOR-GNAF normative draft uor-gnaf/1-draft.2 requires an optimality claim's machine contract, accounting model, complete-system universe and its optimizer-independent completeness evidence, objective order, and claim class to be fixed before optimization, and treats UOR-NAF as informative only.", authority := "UOR-GNAF-1-DRAFT-2"}),
   executable: true
 }
+
+definition{
+  name: authNistFips1804,
+  parameters: [],
+  result: Rows::LedgerClaim,
+  body: (record Rows::LedgerClaim {id := "AUTH-NIST-FIPS-180-4", level := "some-true", statement := "SHA-256 is the function FIPS 180-4 specifies in its section 6.2, defined for messages of fewer than 2^64 bits.", authority := "NIST-FIPS-180-4"}),
+  executable: true
+}
+
+definition{
+  name: authNistSha256Examples,
+  parameters: [],
+  result: Rows::LedgerClaim,
+  body: (record Rows::LedgerClaim {id := "AUTH-NIST-SHA256-EXAMPLES", level := "some-true", statement := "NIST's SHA-256 examples give ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad as the digest of abc and 248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1 as the digest of the 448-bit message abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq.", authority := "NIST-SHA256-EXAMPLES"}),
+  executable: true
+}
+
+definition{
+  name: authNistFips1802,
+  parameters: [],
+  result: Rows::LedgerClaim,
+  body: (record Rows::LedgerClaim {id := "AUTH-NIST-FIPS-180-2", level := "some-true", statement := "FIPS 180-2 gives cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0 as the SHA-256 digest of one million repetitions of a.", authority := "NIST-FIPS-180-2"}),
+  executable: true
+}
+
+definition{
+  name: authNistCavpSha256Shortmsg,
+  parameters: [],
+  result: Rows::LedgerClaim,
+  body: (record Rows::LedgerClaim {id := "AUTH-NIST-CAVP-SHA256-SHORTMSG", level := "some-true", statement := "The NIST CAVP file SHA256ShortMsg.rsp states 65 SHA-256 message and digest pairs, of lengths 0 to 512 bits in multiples of 8, among them e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 as the digest of the empty message.", authority := "NIST-CAVP-SHA256-SHORTMSG"}),
+  executable: true
+}
+
+definition{
+  name: authNistCavpSha256Longmsg,
+  parameters: [],
+  result: Rows::LedgerClaim,
+  body: (record Rows::LedgerClaim {id := "AUTH-NIST-CAVP-SHA256-LONGMSG", level := "some-true", statement := "The NIST CAVP file SHA256LongMsg.rsp states 64 SHA-256 message and digest pairs, of lengths 1304 to 51200 bits.", authority := "NIST-CAVP-SHA256-LONGMSG"}),
+  executable: true
+}
 \end{semanticmodule}
 \end{lexlean}

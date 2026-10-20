@@ -163,7 +163,7 @@ Complex Lean objects that LexLean 1.0 cannot define MAY be imported as closed ex
 
 A verification attestation depends on:
 
-1. the exact LexLean compiler semantics identified in the build manifest;
+1. the exact LexLean compiler semantics identified in the build manifest, and the SHA-256 that computes every identity (the certified standard-library package of §17.22);
 2. the pinned Lean 4 toolchain;
 3. Lean's elaborator and kernel;
 4. the `leanchecker` executable from that same toolchain, used as a separate-process replay check;
@@ -605,7 +605,6 @@ Every dependency the shipped crate declares, for any target and of any kind but 
 | `semver` | semantic-version parsing |
 | `serde` | JSON and TOML deserialization and serialization |
 | `serde_json` | JSON parsing and serialization |
-| `sha2` | SHA-256 |
 | `signal-hook` | interrupt handling (SIGINT, SIGTERM, SIGHUP, SIGQUIT end the live child process groups; §17.17) |
 | `tempfile` | temporary directories |
 | `toml` | TOML parsing |
@@ -7274,10 +7273,34 @@ bound (§17.16), and a linear chain of sixty-four is past it. Its roots and orac
 | `sha256Hex (message : Bytes) : Bytes` | the FIPS 180-4 example digests, every vector of the NIST CAVP `SHA256ShortMsg` and `SHA256LongMsg` files under `tests/stdlib/sha256/`, and the `sha2` crate on a seeded corpus whose lengths cover every padding boundary |
 
 A disagreement with an oracle fails the case (`SL-02`) and is a defect; it is
-never resolved by adopting the oracle's digest. The module is the first stage
-of #126: the compiler's own identities (§8, §21) are still computed by the
-`sha2` crate, and switching them to the module is the second stage, which
-waits on the measured cost of the rendered package against `sha2`.
+never resolved by adopting the oracle's digest. **The compiler's digest (`SL-05`, #126 stage 2).** Every content identity of
+§21 is computed by the rendered `rust-std` package of `sha256`, and no other
+implementation of SHA-256 is part of the compiler: the shipped crate links the
+committed export (`tests/production-export/stdlib/packages/rust-std/sha256/src/lib.rs`)
+through the in-crate link `crates/lexlean/sha256_package.rs`, which `cargo
+package` dereferences and `audit-shipped` requires to resolve to that file,
+and its manifest has no `sha2` dependency. The crate is a dependency of the
+product's identities, not of their inputs, which is why it does not recurse on
+itself: the file contains no digest of anything (the digests that describe the
+package, its file hashes, program identity, and source identity, are in its
+`provenance.json`, beside it), the compiler is built from the committed file
+and not from a build of the project, and the package is not part of any
+compiler-semantics ID (§21.2), exactly as the `sha2` crate was not. What holds
+the function instead is the case of `SL-05` (the authorities, the oracle, and
+the planted defects) and the byte-identity of every committed identity.
+Regenerating the export is two steps for that reason: the export is rewritten
+by the compiler, the compiler is rebuilt from the rewritten file, and the
+export is checked again. Of the compression function, the standard's
+authorities (the rows `NIST-FIPS-180-4`, `NIST-SHA256-EXAMPLES`, `NIST-FIPS-180-2`,
+and `NIST-CAVP-SHA256-SHORTMSG` and `-LONGMSG` of `model/authorities.toml`, level
+`some-true`) establish the digest and the Lean certificates of the package
+establish its program; `sha2` falsifies and establishes nothing. The Rust
+runtime text the package embeds (§17.16) is the declared Rust machine's, as it
+is for every production package, so what remains outside LexLean source under
+the digest is that text and the framing of §21.1, which is Rust until it is
+authored in LexLean (#92). A message of 2^61 bytes or more is outside the
+domain of FIPS 180-4 and is not allocatable on any supported host, so the
+package's `Overflow` for it is a host impossibility and not a public failure.
 
 ### 17.23 The bootstrap project
 
@@ -8024,6 +8047,11 @@ frame(label, bytes) =
 ```
 
 Labels are ASCII and unique within each hash recipe.
+
+Every SHA-256 in these recipes is the standard library's `Sha256` package
+(§17.22). The package digests one message, so a recipe holds its frames until
+it finishes. FIPS 180-4 defines SHA-256 for messages of fewer than 2^64 bits,
+that is fewer than 2^61 bytes; no host allocates a larger one.
 
 ### 21.2 Compiler-semantics ID
 
@@ -9187,7 +9215,7 @@ An internal invariant failure:
 
 ### 26.1 `model/errors.toml`
 
-Every public diagnostic code is registered once:
+Every public diagnostic code is registered once. `model/errors.toml` is generated from the registry module of the specification project (§27.5), and its rows are:
 
 ```toml
 spec = "lexlean/errors/1"
@@ -9221,24 +9249,37 @@ Rows sort by code. Unknown fields, duplicate codes, invalid class/exit combinati
 
 ### 26.3 Required diagnostic codes
 
-The initial registry MUST include at least these exact codes and meanings:
+The registry holds exactly these codes and meanings. The table is generated from `model/errors.toml` (§26.1), so a meaning is stated once:
 
 | Code | Meaning |
 |---|---|
+| `LLB6001` | Lean lowering has no defined form. |
+| `LLB6002` | LaTeX lowering or renderer-token coverage failure. |
+| `LLB6003` | Artifact hash, schema, or atomic publication failure. |
+| `LLB6004` | PDF-provider protocol failure. |
+| `LLB6005` | A production-realization target program is malformed, violates the calculus's static rules, or cannot be rendered faithfully to the Rust profile, or a Rust package manifest is malformed or misstates its crate name, version, sources, exports, or the interface of the program it packages. |
+| `LLB6006` | A GNAF request is not a closed `lexlean/gnaf-request/1` document, its reference program or a system its universe realizes is not a valid target program, its reference returns no value on a domain argument, its grammar repeats a threshold or misdeclares a plan's preparation, or its stated universe identity is not the one its components determine. |
+| `LLB6007` | A GNAF certificate is not a closed `lexlean/gnaf-certificate/1` document, or a certificate fixture states an identity other than its certificate's. |
 | `LLC0001` | Invalid command-line usage. |
 | `LLC0002` | Mutually exclusive or empty selection. |
 | `LLC0101` | Invalid or unknown project configuration field. |
 | `LLC0102` | Missing, stale, or noncanonical lock file. |
 | `LLC0103` | Unsupported schema or language version. |
 | `LLC0104` | Duplicate module or case-folded path collision. |
-| `LLC0105` | Source package is not the package the lock pins (§10.5). |
-| `LLC0106` | Source package undeclared, or declared with two sources (§10.5). |
-| `LLC0107` | Module prefix claimed by two sources (§10.5). |
-| `LLC0108` | Source package outside the workspace rule (§10.5). |
-| `LLC0201` | Production request malformed (§24.7). |
-| `LLC0202` | Requested root is not a production root (§24.7). |
-| `LLC0203` | Unknown or mismatched production target (§24.7). |
-| `LLC0204` | Stale production expectation (§24.7). |
+| `LLC0105` | A source package's version, source, module prefix, manifest digest, tree digest, or declared packages differ from the lock's row, naming the package and both digests. |
+| `LLC0106` | The lock pins a source package the project does not declare, or one identifier names two sources in the closure. |
+| `LLC0107` | A module prefix is claimed by the project and a source package, or by two source packages, equal or one beneath the other, or an import names a module both the project and a package provide. |
+| `LLC0108` | A project that declares a source package is outside any workspace or is not a member of it, a package is not a member of the workspace, or the workspace file or a package is malformed. |
+| `LLC0201` | A production request is not a closed `lexlean/production-request/1` document: an unknown or missing field, another spec, roots, targets, or evidence that are empty, unsorted, or repeated, a root, package, or path that is not of its form, or a package name used twice for one target. |
+| `LLC0202` | A production request names a root that is not a linked production root of the project's entrypoint closure. |
+| `LLC0203` | A production request names a target that is not registered, that its root does not declare, or whose descriptor digest is not the registered target's. |
+| `LLC0204` | The source ID, semantic ID, or lock digest a production request pins differs from the project's, or the project changed while it was being exported. |
+| `LLF5001` | Invalid definition form, self head, or recursion. |
+| `LLF5002` | Invalid proof step for the current goal. |
+| `LLF5003` | Missing, duplicate, or malformed proof branch. |
+| `LLF5004` | Proof does not close all goals. |
+| `LLF5005` | Forbidden proof form or proof hole. |
+| `LLI9001` | Internal invariant failure. |
 | `LLL1001` | Invalid UTF-8, forbidden scalar, or line-ending form. |
 | `LLL1002` | Forbidden comment, raw percent, tab, or TeX escape. |
 | `LLL1003` | Non-NFC or noncanonical source requiring formatting. |
@@ -9255,37 +9296,29 @@ The initial registry MUST include at least these exact codes and meanings:
 | `LLR3004` | Invalid LSE, LRE, frame, form, or renderer token. |
 | `LLR3005` | Unavailable or invalid document/external reference. |
 | `LLR3006` | Unsafe canonical form or raw renderer output. |
-| `LLR3007` | Model artifact unavailable or its digest or length mismatched (§10.1, §17.12). |
-| `LLR3008` | Model artifact bytes violate the declared schema, type, or role (§17.12). |
-| `LLR3009` | Import of a module of a source package the importing scope does not declare (§10.5). |
+| `LLR3007` | Model artifact unavailable or its digest or length mismatched. |
+| `LLR3008` | Model artifact bytes violate the declared schema, type, or role. |
+| `LLR3009` | A module imports a module of a source package that the project, or the package the module belongs to, does not declare. |
+| `LLS8001` | Path escape, symlink, special file, or filesystem identity conflict. |
+| `LLS8002` | An explicit project resource limit, or the declared capacity of an evaluator such as the GNAF host's (§17.15), is exceeded. |
+| `LLS8003` | Network operation attempted outside permitted lock acquisition. |
+| `LLS8004` | Child environment, executable, hash, or shell-policy violation. |
 | `LLT4001` | Arity, binder, category, or conservative type mismatch. |
 | `LLT4002` | Unresolved overloaded entry. |
 | `LLT4003` | External-interface probe mismatch. |
 | `LLT4004` | Document-entry signature mismatch. |
 | `LLT4005` | Production root not eligible for a declared target. |
-| `LLT4006` | Model contract, realization, or artifact interface mismatch (§17.12). |
-| `LLT4007` | Invalid model composition or entry obligation (§17.12). |
-| `LLT4008` | Unvalidated model runtime boundary (§17.12). |
-| `LLT4009` | Model evidence not established (§17.12). |
-| `LLT4010` | Reasoning interface or obligation mismatch (§17.12). |
-| `LLT4011` | Unbounded reasoning or missing termination evidence (§17.12). |
-| `LLT4012` | Unvalidated reasoning runtime boundary (§17.12). |
-| `LLT4013` | Tooling module malformed or out of context (§17.20). |
-| `LLT4014` | Tooling authority registry invalid (§17.20). |
-| `LLT4015` | Tooling term ill-typed or unlicensed (§17.20). |
-| `LLT4016` | Unbounded or unspecified text generation (§17.12). |
-| `LLF5001` | Invalid definition form, self head, or recursion. |
-| `LLF5002` | Invalid proof step for the current goal. |
-| `LLF5003` | Missing, duplicate, or malformed proof branch. |
-| `LLF5004` | Proof does not close all goals. |
-| `LLF5005` | Forbidden proof form or proof hole. |
-| `LLB6001` | Lean lowering has no defined form. |
-| `LLB6002` | LaTeX lowering or renderer-token coverage failure. |
-| `LLB6003` | Artifact hash, schema, or atomic publication failure. |
-| `LLB6004` | PDF-provider protocol failure. |
-| `LLB6005` | Target realization program or Rust package invalid or unrenderable (§17.14, §17.16). |
-| `LLB6006` | GNAF request malformed (§17.15). |
-| `LLB6007` | GNAF certificate malformed (§17.18). |
+| `LLT4006` | Model contract, realization, or artifact interface mismatch. |
+| `LLT4007` | Invalid model composition or entry obligation. |
+| `LLT4008` | Unvalidated model runtime boundary. |
+| `LLT4009` | Model evidence not established. |
+| `LLT4010` | Reasoning interface or obligation mismatch. |
+| `LLT4011` | Unbounded reasoning or missing termination evidence. |
+| `LLT4012` | Unvalidated reasoning runtime boundary. |
+| `LLT4013` | A tooling module is not canonical JSON of the closed schema lexlean/tooling-module/1, has a member the schema does not close, nests deeper than the decoder allows, or is not in a language-1.2 project the compiler embeds. |
+| `LLT4014` | A tooling module pins an authority other than the compiler's Lean release, or its registry of types, calls, and plumbing is not closed: a name declared twice, a signature or field naming an unregistered constant or an unbound variable, a type whose parameters, constructors, index requirements, or abbreviation are inconsistent, a plumbing row that is empty, unsorted, or repeats a constant, or a source pin that is not a toolchain path with a SHA-256. |
+| `LLT4015` | A tooling term is not well typed: a call with the wrong type arguments or arguments, a match that is not exhaustive at its scrutinee's index, or a binder that shadows another; a function recurses without a licence (partial, or its contiguous mutual group); a command, invocation, or evaluation does not match its grammar; or a traversal does not recurse into every field of its recursive family. |
+| `LLT4016` | A text declaration does not state the bound it must: a context window with capacity 0, or a text generator with max_tokens 0. |
 | `LLV7001` | Lean/Lake/leanchecker version or executable mismatch. |
 | `LLV7002` | Generated Lean elaboration or compilation failure. |
 | `LLV7003` | `leanchecker` replay failure. |
@@ -9293,21 +9326,19 @@ The initial registry MUST include at least these exact codes and meanings:
 | `LLV7005` | Axiom policy violation. |
 | `LLV7006` | Lean warning or unexpected successful-process output. |
 | `LLV7007` | Lake workspace lock or dependency availability mismatch. |
-| `LLV7011` | Named-root extraction rejected (§22.10). |
-| `LLV7012` | Lean compiler-front-end authority drift (§22.10). |
-| `LLV7013` | Certificate A rejected (§17.17). |
-| `LLV7014` | Preservation environment drift (§17.17). |
-| `LLV7015` | Certificate B rejected (§17.17). |
-| `LLV7016` | Certificate E rejected (§17.17). |
-| `LLV7017` | Invalid verification resource profile (§22.11). |
-| `LLV7018` | Child start refused after the host ended the live children (§24.6). |
-| `LLV7101` | Certificate evidence does not certify the root (§24.7). |
-| `LLV7102` | Production artifact replay rejected (§24.7). |
-| `LLS8001` | Path escape, symlink, special file, or filesystem identity conflict. |
-| `LLS8002` | Explicit resource limit exceeded: a project limit or an evaluator's declared capacity (§17.15). |
-| `LLS8003` | Network operation attempted outside permitted lock acquisition. |
-| `LLS8004` | Child environment, executable, hash, or shell-policy violation. |
-| `LLI9001` | Internal invariant failure. |
+| `LLV7008` | A host path, working directory, or command-line argument is not valid UTF-8; non-UTF-8 project paths are outside language 1.0 (§8.3). |
+| `LLV7009` | During `lock --allow-network`, the git executable could not be resolved or run, or the exact configured commit could not be fetched or checked out from the HTTPS remote. |
+| `LLV7010` | A host filesystem or platform operation under the project (creating, writing, renaming, or locking a file) failed for a reason outside the project's control. |
+| `LLV7011` | Lean's compiler front end could not extract a production root's computational closure, or the extracted closure names an unknown root, an opaque, unsafe, partial, or noncomputable dependency, an unresolved or unsupported constant, an unsupported compiler form, or disagrees with the production-eligibility closure. |
+| `LLV7012` | The pinned Lean compiler-front-end interface no longer matches its registry: a signature probe or the pinned extraction adapter fails to elaborate, or the running Lean reports another version or source commit. |
+| `LLV7013` | A production root's preservation certificate does not compile silently under the pinned Lean, its leanchecker replay fails, or its root theorem depends on axioms other than exactly Classical.choice, Quot.sound, and propext. |
+| `LLV7014` | The shipped preservation library or calculus modules fail their token audit, do not compile silently under the pinned Lean, or a library declaration depends on axioms other than those its registry row states. |
+| `LLV7015` | A production root's rendering in one of its targets admits no derivation of the correspondence with its lowered program, its certificate does not compile silently under the pinned Lean, its leanchecker replay fails, or its simulation theorem depends on axioms other than exactly Classical.choice, Quot.sound, and propext. |
+| `LLV7016` | The composition of a production root's certificates A and B for one of its targets does not compile silently under the pinned Lean, its leanchecker replay fails, or its end-to-end theorem depends on axioms other than exactly Classical.choice, Quot.sound, and propext. |
+| `LLV7017` | The operational verification process width the environment selects is not a decimal integer from 1 to 64. |
+| `LLV7018` | A child process could not be started because the host ended the live children of this process through `lexlean::verify::end_live_children` and has not re-enabled starting children. |
+| `LLV7101` | Certificate evidence a production request supplies is not the certificate whose identity it pins, earns a refused verdict for its request, or is for a request whose reference program is not the root's lowered program. |
+| `LLV7102` | A production bundle does not replay: its result identity, a file digest, a binding between the result, the attestation, the preservation record, and its packages, a re-rendered package, a target descriptor, the producing compiler's semantics, or a recomputed certificate verdict disagrees with what the bundle states, or the bundle holds a file it does not state. |
 
 An implementation may add a more specific code only by adding the model row, scenario, test, generated documentation, and behavior in the same change.
 
@@ -9354,7 +9385,7 @@ The initial repository has no `open` implementation claim. An open research or p
 
 ### 27.4 Authorities
 
-`model/authorities.toml` MUST initially identify:
+The authority register (`model/authorities.toml`, generated from the authority module of the specification project, §27.5) identifies:
 
 | Authority ID | Subject |
 |---|---|
@@ -9362,6 +9393,14 @@ The initial repository has no `open` implementation claim. An open research or p
 | `LAKE-4-32-1` | Lake distributed with Lean 4.32.1 |
 | `LEANCHECKER-4-32-1` | `leanchecker` replay behavior and its stated non-independent status |
 | `PRINT-AXIOMS-4-32-1` | Lean 4.32.1 `#print axioms` output behavior |
+| `LEAN-LCNF-4-32-1` | Lean 4.32.1 compiler front end (LCNF): the translation of a definition and the run-time dependencies it names |
+| `UOR-GNAF-1-DRAFT-2` | UOR-GNAF v1 normative draft 0.2: what an optimality claim fixes before optimization |
+| `RUSTC-1-97-1` | Rust 1.97.1 compiler (`rustc`): the semantics of a safe Rust 2021 crate |
+| `NIST-FIPS-180-4` | FIPS PUB 180-4: the definition of SHA-256 |
+| `NIST-SHA256-EXAMPLES` | NIST worked examples of SHA-256 on `abc` and on the 448-bit message |
+| `NIST-FIPS-180-2` | FIPS PUB 180-2, appendix B.3: the SHA-256 digest of one million `a` |
+| `NIST-CAVP-SHA256-SHORTMSG` | NIST CAVP SHA-256 byte-oriented short-message vectors |
+| `NIST-CAVP-SHA256-LONGMSG` | NIST CAVP SHA-256 byte-oriented long-message vectors |
 
 Corresponding ledger claims are `some-true`. LexLean tests realize compatibility with those authorities but do not re-register Lean's guarantees as LexLean proofs.
 
@@ -9380,19 +9419,29 @@ The conformance register, the diagnostic registry, the honesty ledger and the
 authority register are LexLean source: the semantic modules of the
 language-1.2 project `spec/`, a member of the workspace (§10.5) written in the
 authoring notation (§17.21), one module per ID family for the register and one
-each for the registry, the ledger and the authorities. `model/ids.toml`,
-`model/errors.toml`, `model/ledger.toml` and `model/authorities.toml` are
-generated from them, with `CONFORMANCE.md` and `ERRORS.md` generated from the
-model, and none of the six is edited by hand (`NS-02`). A register row is the
-`IdRow` record of a definition named for its ID, with the §31 "Primary
-specification" cell in `sections`; the projector accepts exactly the shapes
-the modules are made of and refuses any other declaration, term, field, name,
-file or family, naming the file and the declaration (`NS-04`).
+each for the registry, the ledger and the authorities. This document is LexLean
+source too: its chapters are the modules `Chapter00`, `Chapter01`, … of the same
+project, each a sequence of `DocRows.Item` records (a heading with its level and
+the blank lines before it, a paragraph, a table, a fenced block with its info
+string, a continuation of the previous block, or a derived block). A derived
+block is not text: the §31 table, the §26.3 table, the §27.4 table and the total
+under §31 are generated from the register, registry and authority modules. `model/ids.toml`,
+`model/errors.toml`, `model/ledger.toml`, `model/authorities.toml` and
+`SPEC.md` are generated from the modules, with `CONFORMANCE.md` and `ERRORS.md`
+generated from the model, and none of the seven is edited by hand (`NS-02`,
+`NS-05`). A register row is the `IdRow` record of a definition named for its
+ID, with the §31 "Primary specification" cell in `sections`; the projector
+accepts exactly the shapes the modules are made of and refuses any other
+declaration, term, field, name, file or family, naming the file and the
+declaration (`NS-04`). A source cannot hold a raw percent sign (§12.1), so the
+chapters spell it as the fullwidth percent sign U+FF05, which the projector
+writes back as `%`.
 
 `cargo xtask validate-model` MUST:
 
 1. project the modules of `spec/` in memory and compare the bytes of each model
-   file with its projection, failing naming R1 on a difference (`NS-03`);
+   file and of SPEC.md with its projection, failing naming R1 on a difference
+   (`NS-03`, `NS-05`);
 2. parse all model files with unknown-field rejection;
 3. validate IDs, levels, authorities, errors, and cross-references;
 4. generate `CONFORMANCE.md` and `ERRORS.md` in memory;
@@ -9402,17 +9451,19 @@ file or family, naming the file and the declaration (`NS-04`).
 8. run the honesty vocabulary checks;
 9. run repository-specific audits.
 
-`model-write` is the only normal path that rewrites the model files and the
-generated documentation.
+`model-write` is the only normal path that rewrites the model files, SPEC.md and
+the generated documentation.
 
 *What is and is not established (C9).* The projector is a Rust program, not
 LexLean: it can falsify a projection and never establishes one. What
 establishes it is the byte equality of every projection with the file it
-replaced when the register moved into `spec/`, and the plants of `NS-03` and
-`NS-04`. Verifying `spec/` (`NS-01`) has the pinned Lean elaborate each record
-definition against its row structure and replay the generated modules with the
+replaced when the text moved into `spec/` (VERIFICATION.md records the few
+deliberate differences), and the plants of `NS-03`, `NS-04` and `NS-05`.
+Verifying `spec/` (`NS-01`) has the pinned Lean elaborate each definition
+against its structure or inductive and replay the generated modules with the
 audited axioms; it does not establish that a row's text is the normative text,
-that identifiers are distinct, or that a projection is the committed file.
+that identifiers are distinct, that a document chapter says what the
+specification means, or that a projection is the committed file.
 
 ### 27.6 Specification links
 
@@ -9424,7 +9475,7 @@ that identifiers are distinct, or that a projection is the committed file.
 - all IDs are `build`;
 - every source section referenced by an ID exists.
 
-The conformance table is therefore a normative requirement index while the model remains the source of the repository's implemented-claim register.
+The table is generated from the register modules of the specification project (§27.5), as is `model/ids.toml`, so the bijection is by construction (`NS-05`); what the gate still checks is what a projection does not give by itself: the properties above, and that the table in the committed SPEC.md is the one the modules project.
 
 ### 27.7 Gherkin subset
 
@@ -10009,7 +10060,7 @@ The default branch and every release line must remain passing at each merge; a c
 
 ## 31. Complete conformance-ID registry
 
-Every row below is normative, has honesty level `build`, and MUST be copied byte-for-byte into `model/ids.toml` as its `statement`. The `suite` column names `features/suites/<suite>.feature`. The required Rust test name is `conformance_<id>` after lower-casing and replacing `-` with `_`.
+Every row below is normative, has honesty level `build`, and is projected byte-for-byte into `model/ids.toml` as its `statement` from the register modules of the specification project (§27.5). The `suite` column names `features/suites/<suite>.feature`. The required Rust test name is `conformance_<id>` after lower-casing and replacing `-` with `_`.
 
 | ID | Suite | Normative statement | Primary specification |
 |---|---|---|---|
@@ -10019,7 +10070,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RP-04` | `repository` | Only the lexlean crate is shipped and no shipped crate depends on repository-only tooling. | §7, §8.4 |
 | `RP-05` | `repository` | The just vv recipe runs every normative acceptance gate in the specified order. | §9.2 |
 | `RP-06` | `repository` | `model/*.toml`, `CONFORMANCE.md`, and `ERRORS.md` are exact generated views of the register modules of the specification project. | §27.5 |
-| `RP-07` | `repository` | The specification conformance table and model register are bijective and text-consistent. | §27.6 |
+| `RP-07` | `repository` | The specification conformance table, generated from the register modules of the specification project, and the model register are bijective and text-consistent. | §27.6 |
 | `RP-08` | `repository` | Repository source contains no unsanctioned deferral marker, stub, placeholder, ignored capability, or disabling feature; the deferral audit reads every text file of the repository, the root documents, workflows, scripts, devcontainer, API, oracle, and tooling data included, except a vendored authority copy whose bytes its checksum pins, and its markers include the phrases that put work in the future. | §27.10 |
 | `RP-09` | `repository` | The shipped crate forbids unsafe Rust and the audit proves the prohibition is active. | §8.1, §27.10 |
 | `RP-10` | `repository` | The embedded compiler-semantics ID equals a clean recomputation from normative language and schema inputs. | §21.2 |
@@ -10387,7 +10438,6 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `OR-06` | `oracle` | The differential compares outcomes, contracts, and resources and never bytes: a rendering that is deliberately better than LexLean's and semantically equivalent to it, a loop for a recursion and a closed form for an iteration, byte-different from LexLean's rendering and from the oracle's, is accepted on every input, and a rendering that differs in one result on one input, that takes a parameter of another width, that does more work than LexLean's as its own runtime counts it, or that allocates more as an allocator it cannot reach counts it is refused. | §17.16, §17.19 |
 | `OR-07` | `oracle` | An oracle that was not acquired, whose checkout is not the pin, that did not build, that crashed, was killed, overran its time (and with it everything it started), wrote nothing or an IR defining nothing, or whose generator failed without refusing a program, a fetch that fails leaving nothing that a later run takes for a checkout, a cache that is not the pin discarded and fetched once more, a transient failure of the network tried again twice and a permanent one not, and a comparison over no root or no case, are each unavailable and never validated, which fails the gate on the normative host and is reported as not validated elsewhere, while the oracle's own structured refusals are answers and a tool that is not meant to overrun its time is given a generous one; and a disagreement fails closed with a record of both sides' evidence for every difference. | §17.19 |
 | `OR-08` | `oracle` | The oracle is validation evidence and an input to no identity: no file the shipped crate, the language data, the schemas, the compiler project, the committed examples' records, or the authority and ledger files hold names the oracle, its pinned commit, or its digest, so that planting any of them in any of those places fails audit-oracle-isolation; no input of the compiler-semantics ID names it, an oracle field in a build manifest, a preservation record, an attestation, a snapshot, a compiler input, or a GNAF certificate fails its closed schema, and no module of the conformance crate but the oracle's own uses it, so that removing it changes none of them. | §17.19, §27.2 |
-
 | `PX-01` | `production-export` | A consumer that names only lexlean::api::production and the stable crate-root types exports every production root of examples/production and examples/production-coverage through production::build into a bundle whose every Rust package is byte-identical to its committed expected package and renders the certified crate followed by one export, run, of the root's recorded entry, and whose result binds every output to the project's source, semantic, and lock identities, the compiler-semantics ID, its target ID and descriptor digest, the compiler input and preservation record the attestation binds, certificates A, B, and E, and the certification status kernel-checked, with optimality not-claimed. | §24.7 |
 | `PX-02` | `production-export` | A production request naming an unknown root, a declaration that is not a production root, or a formal-only theorem fails with LLC0202 before any Lean process runs and publishes no build, verification, or production directory. | §24.7 |
 | `PX-03` | `production-export` | A production request naming an unregistered target, a registered target its root does not declare, or a registered target with any other descriptor digest fails with LLC0203 before any Lean process runs and publishes nothing, and production::targets returns each registered target's descriptor with a digest that changes with any field of it. | §24.7 |
@@ -10431,6 +10481,9 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RT-04` | `runtime` | No Lean runtime text remains in the language-1.2 compiler: a generated language-1.2 module imports the runtime modules whose constants it names and declares nothing under a runtime namespace, and the only Lean runtime text in the compiler's source outside unit-test items, in one string literal or in several written together, is the decoder of core module 2, which loads native modules and so cannot be one; a runtime text planted in any of its shapes, raw or escaped, with or without a namespace line, split across literals, or after a test module, is found. | §17.12, §18.1 |
 | `SL-01` | `stdlib` | The standard library's `Text` module is language-1.2 source whose seven members over `Bytes` (`startsWith`, `endsWith`, `trim`, `lines`, `splitOn`, `joinWith`, `find`) are production roots eligible for `rust-std` with exactly their declared effects; each member's lowered program under the calculus evaluator and its rendered `rust-std` package under the pinned rustc agree with Rust's `starts_with`, `ends_with`, `trim_ascii`, `lines`, `split`, `join`, and `find` on a seeded corpus; a planted defect in a member is detected; and the certified packages the production export publishes for it are the committed ones. | §17.22 |
 | `SL-02` | `stdlib` | The standard library's `Sha256` module is language-1.2 source stating FIPS 180-4 SHA-256 over `UInt32` bit operations and `iterate` (modular addition by widening to `UInt64`, rotation as two shifts, padding read by position, the message schedule as a sixteen-word window, sixty-four rounds over the round-constant list), whose roots `sha256 : Bytes -> Digest` and `sha256Hex : Bytes -> Bytes` are production roots eligible for `rust-std` with exactly their declared effects; the lowered program under the calculus evaluator and the rendered `rust-std` package under the pinned rustc compute the FIPS 180-4 example digests and every NIST CAVP SHA-256 short- and long-message vector, and agree with the `sha2` crate on a seeded corpus whose lengths cover every padding boundary, a disagreement failing closed and never resolved by adopting the oracle's digest; a planted one-bit error in the round function is detected; and the certified packages the production export publishes for the two roots are the committed ones. | §17.22 |
+| `SL-05` | `stdlib` | The compiler computes its content identities with the standard library's certified `Sha256` package instead of the `sha2` crate: the shipped `lexlean` crate links the committed production export of `LexLeanStd.Sha256` through an in-crate link that resolves to that file and nothing else, its manifest has no `sha2` dependency, and `Sha256Digest::of`, `FramedHasher`, and `tree_digest` compute through the package; through the compiler's own API the digest of every example NIST states (the examples of FIPS 180-4 and the million-`a` message of FIPS 180-2) and every NIST CAVP SHA-256 short- and long-message vector, each cited by a `some-true` row of `model/authorities.toml` that vendors it or states its digest,, of every message length from 0 to 300 bytes and around each power of two up to 4 MiB, and of a seeded corpus agrees with the authority's digest and with the `sha2` crate as an oracle that can falsify and never establish, and the frames and tree rows agree with an independent recomputation of the §21.1 and §11.5 encodings, a disagreement failing closed and never resolved by adopting the oracle's digest; and a planted bit of the first round constant in a built copy of the package, a link that differs from the export by one byte, a `sha2` dependency added to the manifest, a message truncated by one byte, and a frame length written little-endian are each detected. | §17.22 |
+| `SL-06` | `stdlib` | Every content identity the compiler computes is byte-identical under the standard library's `Sha256` package to the identity it computed with the `sha2` crate: every tracked file of the repository digests identically under the compiler's `Sha256Digest::of` and under `sha2`; the compiler-semantics IDs of languages 1.0, 1.1, and 1.2 equal the values pinned in the committed example locks; the frame, tree, source, and semantic identities equal their independent recomputations (`AR-05`, `AR-06`, `SM-10`, `CF-07`, `CF-09`, `TX-10`); every example other than `uor-atlas`, the standard library, the compiler project, and the bootstrap project recompute their locks and pins on `check`; and a bit changed in a tracked file's digest, in a pinned compiler-semantics ID, or in the order of a source-ID recipe's frames is detected. | §21 |
+| `SL-07` | `stdlib` | The compiler running the standard library's `Sha256` package reproduces that package: the digest of every file that the `provenance.json` of every committed production export names equals the digest `sha2` gives its bytes; `lib.rs` of the two SHA-256 packages holds none of the digests their provenance records; and, under the pinned Lean, rebuilding the standard library with the compiler yields packages byte-identical to the committed ones and a `lib.rs` for `sha256` that is the file the compiler links, so that regenerating the export a second time changes nothing; a bit changed in a recorded digest, a digest written into `lib.rs`, and a link that is not the rebuilt `lib.rs` are each detected. | §17.22 |
 | `BS-01` | `bootstrap` | The axiom-output parser of SPEC.md §22.5 is language-1.2 source in the `bootstrap/` project: `parseAuditOutput` and the closed Lean-name check `isClosedLeanName` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle on the committed golden vectors and boundary edges; on the normative host, both roots' lowered programs under the calculus evaluator agree with the Rust oracle on every committed golden vector and a seeded corpus, the rendered packages under the pinned rustc agree with the oracle on the large seeded corpus of generated, wrapped, and mutated audit outputs and names with no disagreement, a planted defect in the source is detected, and the certified packages the production export publishes for the project are the committed ones. | §17.23, §22.5 |
 | `BS-02` | `bootstrap` | The preservation lexer and token audit of SPEC.md §17.17 are language-1.2 source in the `bootstrap/` project: `lex` and `auditTokens` of `TokenAudit` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle `production::preserve::{lex, audit_tokens}` on every lexeme, position, and rejection message for the first 1,500 characters of every module of the shipped preservation library and calculus modules, the number-lexing corpus, and every token-audit unit vector; on the normative host, both roots' lowered programs under the calculus evaluator agree with the Rust oracle on those vectors and a seeded corpus, the rendered packages under the pinned rustc agree with the oracle on the large seeded corpus of generated and mutated Lean texts with no disagreement, a planted defect in the source is detected, and the certified packages the production export publishes for the project are the committed ones. | §17.17, §17.23 |
 | `BS-03` | `bootstrap` | The primitive scanner of SPEC.md §12.2 is language-1.2 source in the `bootstrap/` project: `scanSource` and `rejectAtoms` of `PrimitiveScan` are production roots eligible for `rust-std` with exactly their declared effects; on every host of the matrix, both roots' rendered `rust-std` packages under that host's pinned rustc agree with the Rust oracle `source::scan::{scan, reject_forbidden_atoms}` on every atom with its class, text, and byte, line, and column spans and on every rejection with its code, message, span, and help, for the deterministic vectors (the oracle's unit inputs, the atom limit at N and N+1, atom lists with gaps, payload strings, and notation bodies), a 128-byte window and a 2,048-byte prefix of every committed `.lex.tex` source, and the whole of each such source up to 8,192 bytes (up to 1,024 bytes, one source in four, for `rejectAtoms`); on the normative host, both roots' lowered programs under the calculus evaluator agree with the oracle on the vectors and the 128-byte windows and on 80 seeded texts, the packages agree on 2,500 seeded texts, each of ten planted defects in the source is detected, and the certified packages the production export publishes for the project are the committed ones. | §12.2, §17.23 |
@@ -10450,10 +10503,11 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 | `NS-01` | `normative-source` | The specification project is a language-1.2 workspace member whose every module is a semantic module in the authoring notation; it is canonical under fmt, locked, checked, and built, and under the pinned toolchain it verifies, which establishes that each record definition elaborates against its row structure and that the generated modules replay with the audited axioms, and does not establish that a row's text is the normative text, that identifiers are distinct, or that a projection equals its committed file, which NS-02 to NS-04 measure. | §17.21, §27.5 |
 | `NS-02` | `normative-source` | The conformance register, the diagnostic registry, the honesty ledger, and the authority register are modules of the specification project, and `model/ids.toml`, `model/errors.toml`, `model/ledger.toml`, `model/authorities.toml`, `CONFORMANCE.md`, and `ERRORS.md` regenerate from them byte-identically. | §26.1, §27.5 |
-| `NS-03` | `normative-source` | A difference between a model file and the projection of the specification project's modules, in either direction, fails the repository gate naming R1, a source edit that is not projected being such a difference, and the section references of the §31 table are checked against those the register modules carry. | §27.5, §27.6 |
+| `NS-03` | `normative-source` | A difference between a model file or SPEC.md and the projection of the specification project's modules, in either direction, fails the repository gate naming R1, a source edit that is not projected being such a difference, and the section references of the §31 table are checked against those the register modules carry. | §27.5, §27.6 |
 | `NS-04` | `normative-source` | The projector fails closed on a module of the specification project that holds a declaration kind, a term kind, a field, a name, a file, or a family it does not read, and on a duplicate identifier or code, and a plant of each is refused naming the file and, for a declaration, its position. | §17.21, §24.8 |
+| `NS-05` | `normative-source` | SPEC.md regenerates byte-identically from the chapter modules of the specification project, its conformance-ID table, its diagnostic-code table, its authority table, and its stated total being derived from the register, registry, and authority modules and never typed, and the projector refuses a chapter item it does not read. | §26.3, §27.5, §31 |
 
-**Total required capability IDs:** 438.
+**Total required capability IDs:** 442.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

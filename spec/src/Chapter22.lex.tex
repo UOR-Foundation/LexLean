@@ -1,0 +1,1092 @@
+\begin{lexlean}{Chapter22}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{spec.titles@1.0.0}
+\importmodule{DocRows}
+\title{Verification}
+\begin{semanticmodule}
+definition{
+  name: i0001,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [2, 1, "22. Verification"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0002,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "22.1 Verification stages"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0003,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "`lexlean verify` performs exactly:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0004,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "1. project/config/lock validation;" (cons "2. check and linked-IR construction;" (cons "3. deterministic build rendering;" (cons "4. Lean/Lake/leanchecker toolchain preflight;" (cons "5. Lake-workspace lock preflight;" (cons "6. external-interface probe generation and elaboration;" (cons "7. generated-module elaboration and `.olean` production;" (cons "8. separate-process `leanchecker` replay for every generated module;" (cons "9. process-sized axiom-audit module-family generation and execution;" (cons "10. exact axiom-output parsing;" (cons "11. per-declaration policy enforcement;" (cons "12. named-root extraction, then certificate A for every production root and certificates B and E for its rendering in each of its targets, when the project has a production root (§22.10, §17.17);" (cons "13. optional configured PDF rendering;" (cons "14. process-output normalization;" (cons "15. verification-attestation construction;" (cons "16. atomic publication." (nil String)))))))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0005,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "No stage is optional. PDF is absent only when the project configuration has no PDF provider, and named-root extraction and certificates A, B, and E only when no module declares a production root." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0006,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "22.2 Lake-resolved execution"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0007,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "All Lean processes run with working directory equal to the configured Lake workspace and through the environment produced by:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0008,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: ["text", (cons "lake env <tool> <arguments...>" (nil String))],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0009,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "LexLean locates `lake` from the pinned toolchain, uses an absolute executable path, and verifies its version and digest." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0010,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Generated source and `.olean` roots are prepended to `LEAN_PATH` for the invocation. Every generated-module compilation also passes `-R <generated-source-root>` so Lean derives the module name from a normalized package root rather than embedding a random staging path in `.olean` bytes. Source and output paths mirror module names, so Lean module discovery and same-platform `.olean` bytes are deterministic across absolute project and staging roots." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0011,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "LexLean does not run `lake update`, fetch dependencies, or modify the user's Lake files." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0012,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "22.3 Module compilation"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0013,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Modules compile in topological import order using the pinned `lean` executable. The runtime modules the project's generated modules import, and, for a project with a production root, those the calculus modules of its certificates import (§17.12, *Runtime modules*), compile first, in their dependency order, are replayed (§22.4), and their declarations are audited against the axioms their rows pin (§22.5, §22.6); their `.olean`s are verification artifacts with the project's. Each compilation emits:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0014,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- one `.olean`;" (cons "- captured normalized stdout;" (cons "- captured normalized stderr;" (cons "- exit status;" (cons "- process argv with normalized paths;" (cons "- executable digest." (nil String)))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0015,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "LexLean does not request or include `.ilean`. Editor-information artifacts are not part of the normative proof artifact set." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0016,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Any nonzero exit, warning, unknown informational message, missing `.olean`, or output overflow fails verification." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0017,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "22.4 `leanchecker`"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0018,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "For each generated module, sorted by full module name, LexLean invokes the pinned `leanchecker` in a separate process with that module prefix." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0019,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "A zero exit is required. Normalized output is recorded." (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0020,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "This replay checks the newly loaded environment through Lean's kernel and is intended to detect environment manipulation. It is explicitly not described as an independent verifier." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0021,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "22.5 Axiom output"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0022,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "With Lean 4.32.1, the accepted normalized payloads for one declaration are exactly:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0023,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: ["text", (cons "'<name>' does not depend on any axioms" (nil String))],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0024,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "or:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0025,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "text",
+      (cons "'<name>' depends on axioms: [<comma-separated Lean names>]" (nil String))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0026,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Each audit member's output is parsed against that member's declarations before" (cons "the observed maps are merged. The parser:" (nil String)))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0027,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- accepts an optional Lean location/information envelope;" (cons "- requires the quoted declaration name to equal the expected full name;" (cons "- parses zero or one record per generated command and requires exactly one;" (cons "- trims only envelope whitespace;" (cons "- sorts and deduplicates the parsed axiom set, rejecting duplicate textual names;" (cons "- rejects any unrecognized payload;" (cons "- rejects missing or extra records." (nil String))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0028,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Golden fixtures are taken from the pinned toolchain's `#print axioms` behavior." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0029,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "22.6 Policy enforcement"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0030,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "For observed set `O` and configured set `A`:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0031,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- `none` succeeds iff `O = ∅`;" (cons "- `allow` succeeds iff `O ⊆ A`;" (cons "- `exact` succeeds iff `O = A`." (nil String))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0032,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The attestation records policy, allowed set, observed set, and result for every declaration." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0033,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "An imported theorem's axioms are not exempt because the theorem is upstream. If they flow into a generated declaration, the generated declaration's policy must permit them." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0034,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "A language-1.2 model declaration (§17.12) is audited through the Lean" (cons "declarations it generates: its elaborated definitions and theorems, its" (cons "cross-checks, and its artifacts' `.bytes` and `.decoded` declarations. Each" (cons "is recorded with policy `allow` over the owner's axiom set, and the union of" (cons "their observed sets must equal the owner's set exactly (`LLV7005`" (cons "otherwise), so the owner's `exact` policy is met by its elaboration as a" (cons "whole and no generated declaration may use an axiom the owner does not state." (nil String))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0035,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "22.7 Process normalization"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0036,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "Before process output is hashed:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0037,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "1. CRLF and CR become LF;" (cons "2. ANSI escape sequences are removed;" (cons "3. the longest matching absolute prefixes are replaced, in this order:" (cons "   - staging root → `$STAGING`;" (cons "   - project root → `$PROJECT`;" (cons "   - Lake workspace → `$LAKE_WORKSPACE`;" (cons "   - toolchain root → `$TOOLCHAIN`;" (cons "   - user home → `$HOME`;" (cons "4. trailing spaces are removed;" (cons "5. blank final lines collapse to one final LF." (nil String)))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0038,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Unexpected absolute paths remaining in successful normalized output fail attestation construction." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0039,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "22.8 Verification layout"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0040,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "After success, the staging directory is renamed to:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0041,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: ["text", (cons ".lexlean/verified/<attestation-id>/" (nil String))],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0042,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "It contains:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0043,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "text",
+      (cons "attestation.json" (cons "build-manifest.json" (cons "modules/*.lean" (cons "modules/*.tex" (cons "maps/*.map.json" (cons "coverage/*.coverage.json" (cons "lexicons/*.closure.json" (cons "oleans/*.olean" (cons "probe/<probe-module>.lean" (cons "probe/process.json" (cons "audit/<audit-module-member>.lean" (cons "audit/output.txt" (cons "audit/<audit-module-member>.process.json" (cons "process/lean/*.json" (cons "process/leanchecker/*.json" (cons "production/*.eligibility.json              # when a production root exists" (cons "extract/<extraction-module>.lean           # when a production root exists" (cons "extract/process.json                       # when a production root exists" (cons "production/compiler-input.json             # when a production root exists" (cons "preserve/LexLeanPreserve/*/R<i>.lex.tex    # certificate A, as data (§17.17)" (cons "preserve/LexLeanPreserve/*/R<i>/<Target>.lex.tex  # certificate B, as data (§17.17)" (cons "preserve/LexLeanPreserve/*/*/Compose/*.lex.tex  # certificate E, as data (§17.17)" (cons "preserve/program/R<i>.json                 # when a production root exists" (cons "preserve/crate/R<i>.<target>.rs            # when a production root exists" (cons "preserve/audit.txt                         # when a production root exists" (cons "preserve/preservation.json                 # when a production root exists" (cons "process/preserve/*.json                    # when a production root exists" (cons "pdf/*                                      # when configured" (nil String)))))))))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0044,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The artifact set is fixed. `verify` has no output-directory option and no option to omit maps, coverage, source, audit records, or process records." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0045,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "22.9 Attestation ID"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0046,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The attestation object contains `attestation_id`, but the ID is computed over the canonical object with that field removed:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0047,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "text",
+      (cons "SHA256(" (cons "  \"lexlean-attestation-v1\\0\"" (cons "  || frame(\"attestation-body\", canonical_json(body_without_attestation_id))" (cons ")" (nil String)))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0048,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "The body records:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0049,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- build manifest bytes and SHA-256;" (cons "- semantic ID;" (cons "- host OS and architecture;" (cons "- LexLean version and executable hash;" (cons "- Lean, Lake, and leanchecker version output and executable hashes;" (cons "- Lake workspace lock hashes;" (cons "- every process record;" (cons "- generated `.olean` hashes;" (cons "- axiom policies and observed sets;" (cons "- the canonical compiler input's byte length and SHA-256, when a production root exists;" (cons "- `preservation.json`'s byte length and SHA-256, when a production root exists;" (cons "- optional PDF process and bytes;" (cons "- overall status exactly `verified`." (nil String))))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0050,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "A language-1.0 or 1.1 project's attestation is `lexlean/attestation/1`" (cons "(`schemas/attestation.schema.json`). A language-1.2 project's is" (cons "`lexlean/attestation/2` (`schemas/attestation-v2.schema.json`, in the 1.2-only" (cons "partition): the same body plus `compiler_input` and `preservation`, each" (cons "present exactly when a production root exists. Routing is fixed by the project language." (nil String))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0051,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "There is no timestamp in the hashed attestation. Digital signing is outside language 1.0; release automation may sign the completed file without changing its contents." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0052,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "22.10 Named-root extraction"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0053,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "A LexLean-authored compiler consumes verified generated Lean only through" (cons "Lean's own compiler front end, at one explicit authority boundary. Lean's" (cons "behavior there is an external authority (`LEAN-LCNF-4-32-1`), cited and pinned," (cons "never a LexLean-proved fact." (nil String)))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0054,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "**Authority interface.** The adapter is a *tooling module* (§17.20): the one" (cons "module of the embedded project `language/lcnf-1.2/tooling/`, whose registry is" (cons "the closed interface of every constant the adapter's own definitions use. Each" (cons "is exactly one row, in one class:" (nil String)))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0055,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- a *call* (a definition of Lean's `Lean` namespace other than a projection," (cons "  recursor, instance, or matcher) names its exact signature at Lean 4.32.1" (cons "  (`f054605aea4b840552cca2e725580bffd1e1b704`), the defining source file at" (cons "  that revision with its SHA-256, and its role;" (cons "- a *type* names its complete constructor list in Lean's order with every" (cons "  field typed, or is *opaque* when no definition of the adapter matches," (cons "  constructs, or projects it, and then pins no constructors;" (cons "- *plumbing* lists every other used constant by name: structural constants," (cons "  instances, matchers, recursors, and core-library data, whose meaning the" (cons "  calls and types fix." (nil String)))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0056,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The registry is not written by hand. `tests/lcnf/export.lean` reads the" (cons "pinned Lean's type of every constant the adapter's terms name and the" (cons "constructors of every type they match, construct, or project, closes the set" (cons "over what those signatures and fields mention, and states each as a row; the" (cons "elaborated adapter's own constants complete it, and what no row declares is" (cons "plumbing. `tests/lcnf/registry.json` is that output, `cargo xtask" (cons "check-calculus` requires the committed project to equal what its generator" (cons "renders over it, and `conformance_ne_04` requires the registry to equal a" (cons "fresh derivation from the pinned toolchain." (nil String))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0057,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The project is in the language-1.2 partition (§21.2), so it is part of the" (cons "compiler-semantics ID. No user source can supply LCNF, a Lean expression, or a" (cons "root name: roots are the linked production roots (§17.13)." (nil String))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0058,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "**Adapter.** The adapter is the only Lean the extraction runs, and it" (cons "is not written as Lean: its functions are terms of the closed tooling language" (cons "over that registry, and the compiler renders them, so that the Lean it runs" (cons "contains no comment, no hand-written definition, and no template. It reports" (cons "facts, not decisions, and contains no optimization or application policy. From" (cons "the roots it follows the code of every translated definition: a constant of" (cons "the project's generated modules or of the runtime modules they import (§17.12," (cons "*Runtime modules*; the namespaces `LexLeanRuntime` and `LexLeanCollections`)" (cons "that is a computable definition Lean generates code for is translated with" (cons "`Lean.Compiler.LCNF.toDecl` in the base phase, and no LCNF pass runs" (cons "afterwards. It records, for every project constant reached through code or" (cons "named by a reached kernel value, its kind, the kind it was declared with" (cons "(`Lean.getOriginalConstKind?`), defining module, computability, whether code is" (cons "generated for it, whether it is a compiler-generated helper, and the constants" (cons "its kernel value names; for a translated definition, its safety, universe" (cons "parameters, LCNF type, parameters, code, and the constants that code names; for" (cons "a project inductive, its constructors with their LCNF types; and, for every" (cons "other constant translated code names, the same facts and whether Lean's" (cons "compiler holds code for it (`Lean.IR.findEnvDecl`). Universe levels are" (cons "recorded wherever a constant is instantiated. An LCNF type's only metadata," (cons "the `borrowed` annotation `toLCNFType` places on the domain of an arrow whose" (cons "parameter is borrowed (`Lean/Compiler/LCNF/Types.lean`), is recorded as such;" (cons "any other metadata is recorded as an unsupported form. It prints one" (cons "`lexlean/lcnf-extraction/2` record." (nil String)))))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0059,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Lean orders the join points of a function by the numbering of its fresh" (cons "variables, and that numbering depends on everything the process elaborated" (cons "before the translation, the adapter's own text included. The adapter therefore" (cons "starts each translation from the name generator's initial state (a" (cons "`Lean.NameGenerator` with its defaults), so that its record is a function of" (cons "the project and the pinned Lean and not of the adapter: `conformance_ne_04`" (cons "requires the same bytes whatever number of definitions Lean elaborated before" (cons "the extraction." (nil String)))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0060,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The adapter replaced a handwritten Lean file, which is kept as the *oracle*" (cons "`tests/lcnf/oracle/extract.lean`, outside the language data and so outside the" (cons "compiler-semantics ID: `conformance_ne_04` runs both over every kind of" (cons "constant the extraction classifies, in a function with at most one join point" (cons "(the oracle does not restart Lean's numbering, so it may order two otherwise)," (cons "and requires the same record, up to the numbering of the variables of each" (cons "constant. The oracle is a validation of the adapter, evidence at the `build`" (cons "level, and takes no part in any build." (nil String)))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0061,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "**Driver.** Verification generates the module `LexLeanExtract.X<hex32>` (the" (cons "first 32 hex digits of the semantic ID; a reserved module name) by rendering" (cons "the adapter's tooling module with the declarations the compiler appends to" (cons "it, which it checks against the adapter's registry like any other use of a" (cons "tooling module: `module`, `public meta import Lean`, one `import all` per" (cons "generated module, the fixed options, the adapter, a `universe` declaration of" (cons "the universe variables the registered signatures name, one invocation of the" (cons "adapter's `lexlean_signature` command per registry call in registry order, one" (cons "evaluation of the registry check, and one evaluation naming the roots and the" (cons "modules. Roots and modules are text the adapter reads as names, so no Lean" (cons "syntax is written for them. It is elaborated with `lake env lean` against the" (cons "staged module outputs, after policy enforcement (stage 12, §22.1)." (nil String)))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0062,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- `lexlean_signature` fails unless the constant's type equals the registered" (cons "  signature structurally up to binder names: a changed result, argument," (cons "  binder kind, universe, or default value is drift, even where definitional" (cons "  equality would hide it." (cons "- The registry check fails unless the adapter's own definitions use exactly" (cons "  the registered constants, each in its registered class, and every registered" (cons "  type that lists constructors has exactly them, in Lean's order." (cons "- Any Lean message on a probe, on the registry check, or inside the adapter," (cons "  and any message the adapter raises as drift, is authority drift (`LLV7012`)," (cons "  whether or not Lean exits successfully; Lean reports messages on standard" (cons "  output, so a warning is never mistaken for part of the record. Which part a" (cons "  message belongs to is read from where the compiler placed each declaration" (cons "  in the text it generated." (cons "- An error the adapter raises by name (an unknown root, an unresolved" (cons "  constant) is a rejection (`LLV7011`)." (nil String))))))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0063,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "**Decisions.** The host decides everything the facts admit:" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0064,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- each root's *closure* is the translated project definitions reached from" (cons "  it through translated code; a reached project constant that Lean does not" (cons "  translate is refused by its facts;" (cons "- the closure's *runtime members* are those of the runtime namespaces" (cons "  `LexLeanRuntime` and `LexLeanCollections`; its" (cons "  *source members* must equal the root's production-eligibility closure;" (cons "- its *erased proofs* are the project theorems its members' kernel values" (cons "  name, directly or through compiler-generated helpers, and the non-helper" (cons "  ones must equal the eligibility analysis's erased dependencies;" (cons "- a definition is *recursive* exactly when it lies on a cycle of the" (cons "  translations' use graph;" (cons "- each closure carries the eligibility analysis's monomorphization plan: every" (cons "  instance with its declaration and type arguments." (nil String))))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0065,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "**Fail-closed rejection (`LLV7011`).** The host reads the record with a closed" (cons "schema and rejects:" (nil String)))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0066,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- a record that is malformed, reports a constant twice, carries extra output," (cons "  or answers other roots;" (cons "- a Lean version or source commit other than the pin (`LLV7012`);" (cons "- a translation reported for a constant Lean does not compile, or whose" (cons "  listed uses differ from what its code names;" (cons "- a closure member that is a theorem (a proof-as-runtime dependency), an" (cons "  axiom, an opaque (Lean's form of a partial definition), unsafe," (cons "  noncomputable, without generated code, or implemented externally;" (cons "- an unsupported compiler form: an LCNF type with no closed representation, or" (cons "  a variable used outside the lexical scope that binds it;" (cons "- an external that is not a constant of Lean's `Init` library, or that is an" (cons "  axiom, opaque, or noncomputable (an unresolved dependency);" (cons "- a constant whose reported kind differs from the kind it was declared with," (cons "  except a definition exported as an axiom (below)." (nil String)))))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0067,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "*Exported axioms.* A `module` exports a definition whose body it does not" (cons "expose as an axiom, so `Init` functions such as `String.toInt?`," (cons "`String.toUTF8`, and `List.takeTR` appear as axioms to the generated modules" (cons "that import them. Lean's code generator decides such a reference by the kind" (cons "the constant was declared with (`checkComputable`," (cons "`Lean/Compiler/LCNF/ToLCNF.lean`), and so does the host: an `Init` external" (cons "reported as an axiom is admitted exactly when it was declared a definition," (cons "is computable, and Lean's compiler holds its code, and the compiler input" (cons "records it as that definition with that code. A constant declared an axiom," (cons "an opaque, a theorem, or any other kind remains refused, and a project" (cons "constant, whose module is imported in full, must report the kind it was" (cons "declared with. The ownership hint of a `borrowed` annotation is each" (cons "parameter's own `borrow` fact and LCNF type equivalence looks through it" (cons "(`eqvTypes`, `Lean/Compiler/LCNF/InferType.lean`), so the host reads an" (cons "annotated type as the type it annotates; a canonical type carries no" (cons "metadata. An external's compiler-input `kind` is the kind it was declared" (cons "with and its `generates_code` whether Lean's compiler holds its code." (cons "- a constant translated code names that is neither reported as a project" (cons "  constant nor recorded as an external (a dropped dependency), and a project" (cons "  constant a kernel value names that is not reported (an unresolved" (cons "  dependency);" (cons "- a root whose source members differ from its production-eligibility closure:" (cons "  a member only Lean reaches is a dependency the eligibility analysis dropped," (cons "  and a member only the analysis reaches is one Lean does not compile;" (cons "- a root whose erased proofs differ from the eligibility analysis's." (nil String))))))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0068,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Base-phase translation names fixed-width literals through their `OfNat`" (cons "instances, so the record's fixed-width literal forms, which the schema admits," (cons "are exercised only by the host's record tests, not by pinned Lean." (nil String))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0069,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "**Compiler input.** On success verification publishes" (cons "`production/compiler-input.json` (`lexlean/compiler-input/2`," (cons "`schemas/compiler-input.schema.json`): the Lean identity, the roots, each" (cons "root's closure with its source members, runtime members, instances, and erased" (cons "proofs, every closure definition with its recursion, universe parameters," (cons "type, parameters, and LCNF code, the project inductives, the externals, and" (cons "the erased proofs. Every LCNF variable is renamed `v<n>` in binding order" (cons "within its declaration and every list is sorted, so the bytes and their" (cons "SHA-256 (the compiler-input ID) depend on neither Lean's unique-name counter," (cons "the source path, nor the host. The attestation records the byte length and" (cons "SHA-256, and the normalized verification records include the input, the" (cons "driver, and its process record." (nil String)))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0070,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "22.11 Verification resource profile"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0071,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "How many `lean`, `leanchecker`, and audit processes `verify` runs at once, in which start order, and within what memory budget, is an operational resource profile, never an input of verification. Its parameters:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0072,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- the verification process width `W`, an integer from 1 to 64, selected only by the environment variable `LEXLEAN_VERIFY_WIDTH`, a decimal integer without sign or space; an unset or empty variable selects the default `W = 1`, the conservative profile, and any other value, including one that is not Unicode, fails as `LLV7017` before any stage runs;" (cons "- the scheduling hints, selected only by `LEXLEAN_VERIFY_HINTS`, the path of a JSON object keyed by the labels of the processes of a stage (this verifier: full Lean module names and audit-member names), each entry an object with `wall_ms` and an optional `peak_rss_kib`; an unset or empty variable selects no hints, and an unreadable, oversized, or malformed file, including a path that is not Unicode, fails as `LLV7017` before any stage runs;" (cons "- the process memory budget, selected only by `LEXLEAN_VERIFY_MEMORY_KIB`, a decimal integer of KiB without sign or space; an unset or empty variable selects no budget, and any other value, including one that is not Unicode, fails as `LLV7017` before any stage runs." (nil String))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0073,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "None is a field of `lexlean.toml`, the lock, a request, or the command line; none is recorded by any artifact; none enters a source, semantic, build, or attestation ID: a project verifies to the same artifacts at every profile." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0074,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The profile changes how processes are scheduled and nothing else:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0075,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "1. Module elaboration (§22.3) proceeds in topological frontiers of the import graph. A module is elaborated only after every module it imports has been elaborated and its `.olean` produced by a successful process, so the import barriers hold at every width; the members of one frontier may run together, at most `W` at a time, and the next frontier starts when every member of the previous one has finished. The start order within a frontier is a scheduling decision: without hints it is the members' canonical order, and with hints it is the heaviest first by observed `wall_ms`, then by expected `peak_rss_kib`, then canonical order." (cons "2. Replay (§22.4) starts when every elaboration has finished and audit (§22.5) when every replay has finished: no replay overlaps an audit member, and neither overlaps an elaboration. The replays of different modules read the staged `.olean` files and write none, and the audit members each import one generated module and write none, so within each of those two stages the processes are independent and at most `W` run together." (cons "3. Results are consumed in the canonical order and never in completion order: the members of a frontier in module-declaration order, replays in sorted full module name, audit members in the order of the audit family. The process records, the staged files, the merge of the observed axiom sets, the policy rows, and the attestation body are functions of that order. When several processes fail, the diagnostic reported is the one of the first failing process in that order, which is the diagnostic width 1 reports; no process later in that order than a known failure is started, and every process started is finished before `verify` returns. Width 1 is exactly the sequence the verifier ran before there was a width: a process starts only after the result of the one before it has been consumed, so a failure that only the consumer can see (a missing `.olean`, a staging error) stops the stage before another process starts." (cons "4. The verifier does not measure the host. A width above 1 is for a host whose memory envelope is known; a width the host cannot hold is a failure of that host's run, never a verification result. The normative job's `examples` leg names its profile (§9.4); every other run uses the default unless its environment selects one, and the conformance cases exercise widths above 1 on small projects." (cons "5. Hints and the memory budget are schedule inputs, never verdicts. A hint only reorders the start of items inside a stage, and the memory budget only gates a worker from starting an item whose expected peak (plus the expected peaks of the running items) would pass it. An item whose expected peak alone passes the budget runs alone rather than waiting forever: a wrong hint is a wrong schedule, never a fence and never a kill. A process that outgrows its hinted peak runs to completion; the stage measures it for the next hints. Hints change which ready item a worker starts first; results are consumed in the canonical order exactly as at width 1, so a failure reported is still the first failure in that order." (nil String))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0076,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "For every project, the directory published at any profile equals, byte for byte, the directory published at width 1 without hints and without a budget, on the same host and toolchain; in particular the attestation ID, the observed axiom sets, the policy rows, the canonical compiler input, and every normalized verification record (§29.5) are identical." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0077,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "A verification may also run as the parts of one run (§9.4): each part runs the processes of its plan at the profile of its own host, a part reads from another only the `.olean` files and process records that part's processes produced, and the join judges every record it reads as the stage that produced it judges its own, after requiring it to name the join's own digest of the executable that stage runs. The directory the join publishes equals, byte for byte, the one the whole verification publishes, attestation ID included (`VR-23`); a part is defined for a project without production roots and without PDF rendering." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0078,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "22.12 Performance telemetry"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0079,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Wall time, resident-set and swap measurements, scheduling and completion order, and the host's memory and processor count depend on the host. `lexlean verify` records them only when the environment variable `LEXLEAN_CI_TELEMETRY` names a directory, as JSON lines appended to `verify-telemetry.jsonl` in it: one line for the start of a verification, one for each stage, each frontier of module elaboration, and each process (with the peak resident set and swap of the process and what it started, where the host exposes them), and one for the end. `cargo xtask verify-examples` appends one line per example to `examples-telemetry.jsonl` of the same directory, and the conformance runner one line per case, with its wall time, to `cases-telemetry.jsonl`. The directory is CI evidence, `ci-evidence/` in CI (§9.4)." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0080,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Telemetry is write-only: no stage reads it, no ID or verified artifact contains any of it, and a failure to write it changes no result. Every key it uses is in a closed vocabulary (`wall_ms`, `started_unix_ms`, `peak_rss_kib`, `peak_swap_kib`, `mem_total_kib`, `mem_available_kib`, `swap_total_kib`, `swap_used_kib`, `host_cpus`, `process_width`, `completion_seq`), and a JSON key of that vocabulary anywhere in a verified directory fails the gate: `cargo xtask verify-examples` checks every example's verified directory for one." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0081,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [(cons "---" (nil String))],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}
