@@ -5907,7 +5907,18 @@ the arms enclosing the call, so every numbered `if` and `match` of such a body
 is written by cases on its scrutinee with the equation the arm was taken by.
 The compiler's implementation record `f._unsafe_rec` of a recursive predicate,
 a partial definition beside the safe one, gives the code generator the direct
-recursion it has no code for in a recursor; no theorem depends on it. A
+recursion it has no code for in a recursor; no theorem depends on it. The
+records of one mutual group are pinned to the group's union, and the audit
+checks that the union of the sets it prints for the group's members equals that
+pin (`LLV7013`, naming the group), because what Lean prints of one member is not
+a property of the member's term alone: it stores axiom data for a module's
+constants by one shared traversal, in the order of a hash map keyed by names
+that carry the identity, with a sentinel for a constant in progress, so a member
+whose term refers to no other member, or only to a later one, printed `[]` on
+one identity and `[propext]` on another with identical sources (the first
+member of the bootstrap project's R6 group, `__fits_76`; and the core library's
+`__fits_78`, which calls the later `__fits_111`, #227). Every other row is
+checked row by row. A
 definition that a model construct elaborates to pins no axiom: the construct's
 declared set bounds it, and the audit finds none for a definition that proves
 nothing. Each row pins its axioms exactly, the audit module prints and checks

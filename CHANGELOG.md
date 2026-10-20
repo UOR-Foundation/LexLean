@@ -17,6 +17,17 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- The audit of certificate A checks a mutual group of implementation records
+  (`f._unsafe_rec`) by the union of the sets it prints for the group, against a
+  pin that is the group's union (SPEC.md §17.17, `LLV7013` names the group).
+  What Lean prints of one member is not a property of its term alone: it
+  stores axiom data by one shared traversal in the order of a hash map keyed by
+  names that carry the identity, so the first member of the bootstrap project's
+  R6 group, `__fits_76`, pinned `[]` row by row and printing `[]` on main's
+  identity only by that order, printed `[propext]` on others with identical
+  sources.
+  The pin and the check now state the same order-independent set. Found by the
+  slice 3 identity (#221).
 - Text classifiers, composition, and adapters, and the audit that no prompt is
   code (SPEC.md §17.12, *Text components* rules 8 to 10, `LM-07`..`LM-09`,
   slice 3 of #30; no new code). A `text_classifier` over a prior tokenizer and
