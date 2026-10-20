@@ -250,3 +250,10 @@ Feature: semantic-ir
     When the project is linked, built, and verified by the pinned Lean, its formatted source and its LaTeX are read back, and each planted project is linked
     Then the theorem verifies with exactly the axioms its policy states, the formatter writes the proof unchanged, and the LaTeX states the term and the definitions
     And each planted project is refused naming the misuse
+
+  @SM-36 @build
+  Scenario: A language-1.2 `cases` proof may split a local of type `Bool` into its two constructors: the proof names the local and gives a branch for `false` and one for `true`, each with no binders, the backend lowers it to `cases` on the local with those two alternatives, the theorem verifies with exactly the axioms its policy states, and the schema, the linker, the notation, the formatter, and the canonical LaTeX accept it; a use in language 1.1, a missing branch, a repeated branch, a branch with a binder, and an `induction` on a Boolean are each refused.
+    Given a language-1.2 project whose theorem is proved by a split on a Boolean local, and the planted projects that misuse the form
+    When the project is linked, built, and verified by the pinned Lean, its formatted source and its LaTeX are read back, and each planted project is linked
+    Then the theorem verifies with exactly the axioms its policy states and the formatter writes the proof unchanged
+    And each planted project is refused naming the misuse
