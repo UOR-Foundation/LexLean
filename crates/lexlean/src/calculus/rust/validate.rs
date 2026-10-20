@@ -56,6 +56,13 @@ fn declared(krate: &Crate) -> Result<Declared, String> {
                     return fail(format!("hygiene: Fn{fn_type}::apply is declared twice"));
                 }
             }
+            ItemDef::Constant { name, .. } => {
+                if let Ident::Function(n) = name {
+                    if out.functions.insert(*n, false).is_some() {
+                        return fail(format!("hygiene: f{n} is declared twice"));
+                    }
+                }
+            }
             ItemDef::Function { name, result, .. } => {
                 if let Ident::Function(n) = name {
                     if out
@@ -761,6 +768,25 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
                     }
                 }
             }
+            ItemDef::Constant {
+                name, result, body, ..
+            } => {
+                checker.ty(result)?;
+                // A thread-local initializer cannot propagate a failure, and
+                // a body that calls could reach the constant it initializes,
+                // which Rust refuses at run time, so the body is a literal.
+                if matches!(result, Type::Fallible(_))
+                    || !body.lets.is_empty()
+                    || !literal(&body.tail)
+                {
+                    return fail(format!(
+                        "constant: `{}` is not an infallible closed literal",
+                        ident_text(name)
+                    ));
+                }
+                checker.fallible = false;
+                checker.block(body, true)?;
+            }
             ItemDef::Function {
                 name,
                 parameters,
@@ -835,6 +861,13 @@ pub fn instances(krate: &Crate) -> (Vec<Instance>, BTreeSet<String>) {
                 for ty in parameters.iter().chain([result]) {
                     found.ty(ty);
                 }
+            }
+            ItemDef::Constant {
+                result, body, at, ..
+            } => {
+                found.at("constant", at);
+                found.ty(result);
+                found.block(body);
             }
             ItemDef::Function {
                 parameters,
@@ -1078,6 +1111,18 @@ impl Found {
     }
 }
 
+/// Whether an expression is built from literals alone: scalars, constructors,
+/// pairs, and boxes of literals.
+pub(super) fn literal(expr: &Expr) -> bool {
+    match expr {
+        Expr::Lit(..) => true,
+        Expr::Construct { args, .. } => args.iter().all(literal),
+        Expr::Pair(left, right, _) => literal(left) && literal(right),
+        Expr::Box(inner, _) => literal(inner),
+        _ => false,
+    }
+}
+
 /// The calculus primitive a runtime function realizes, by its path's last
 /// segment: fixed-width paths share one name per operation.
 fn runtime_kind(base: &str) -> String {
@@ -1106,6 +1151,7 @@ fn runtime_kind(base: &str) -> String {
 /// the realized program uses that element.
 pub const CORRESPONDENCE: &[(&str, &[&str])] = &[
     ("function", &["function", "export"]),
+    ("constant", &["function"]),
     ("enum:adt", &["type:adt"]),
     ("enum:closures", &["type:fn", "expr:closure"]),
     ("apply:dispatch", &["type:fn", "expr:closure"]),

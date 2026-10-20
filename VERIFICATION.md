@@ -4035,6 +4035,29 @@ with a literal heavier than one node (and `compiler/lexlean.lock`) still hold
 the bytes written before TC-08, so `conformance_tc_01`, `conformance_tc_03`, `conformance_tc_04`,
 and `conformance_tc_05` fail on this tree until they are rewritten.
 
+### rust constants can fail (RB-18)
+
+Planted, three ways, all observed by `conformance_rb_18`. The oracle is the
+pinned rustc, a counting global allocator in the harness, and `validate`.
+
+1. The same program with its constant rebuilt at each read (the crate's
+   `Constant` item printed as a `Function`): two reads allocate 4 times,
+   where the cached rendering allocates 0. The harness counts, so the
+   rebuilding rendering is detected by behavior, not by its text.
+2. A constant whose body is a call: `validate` refuses it
+   (`constant: ... is not an infallible closed literal`).
+3. A constant whose result is `R<T>`: the same refusal.
+
+Removed: the crate was restored to the lowering's own output. `rust-core`
+has no rendering of the heap literal at all (`lower` refuses it).
+
+`conformance_tc_07` passes with the new fixture `cached-literal`, whose
+function 1 renders as a constant read twice. On this tree
+`conformance_rb_01` fails with `correspondence rows no run package exercises:
+["constant"]` until the committed packages are rewritten from the fixtures,
+and `conformance_rb_07` fails with `the renderer changed without its record
+`rust_renderer``: both are records of the renderer's bytes.
+
 ### kernel-opaque classification is observed
 
 Probe: `compare_bytes` and byte equality were both treated as reducible, and

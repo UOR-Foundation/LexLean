@@ -95,7 +95,7 @@ Feature: rust-backend
     And every other template renders as a call and keeps `recursion = true`, and a template rendered with a self call it could have as a loop, or a row that disagrees with its rendering, is refused
 
   @RB-18 @build
-  Scenario: The Rust backend renders each closed data literal of a program once per thread and a read of it as a clone of that value, so that a production root reads a constant without rebuilding it, and the counted work of a read never exceeds the denotation's steps; a rendering that rebuilds the literal at each read is detected by the work gate.
-    Given the calculus fixtures that read a data literal, and a copy whose rendering rebuilds the literal at each read
-    When it is rendered as rust-std packages and run under the pinned rustc
-    Then each package prints the denotation's value with counted work no greater than its steps, the literal is constructed once per thread, and the rebuilding copy is detected
+  Scenario: A function of no parameters that cannot fail and whose body is a closed literal holding heap storage is a constant in rust-std, a thread-local cell evaluated once per thread whose every call returns a clone of the value, so that a production root reads a decoded constant without rebuilding it and a read allocates nothing; the machine reads a constant as the function it caches, rust-core has no rendering of it, and a constant whose body calls, or that can fail, is refused before printing, while a rendering that rebuilds the literal at each read is detected by counting its allocations.
+    Given a program whose function of no parameters is a list literal over int, rendered in both profiles, and copies that rebuild the literal at each read, call from a constant's body, or make a constant fallible
+    When the rust-std rendering is compiled by the pinned rustc with warnings denied and read three times under a counting allocator
+    Then the constant is one thread-local cell, a read returns the denotation's value and allocates nothing, rust-core refuses the literal, and each copy is detected or refused

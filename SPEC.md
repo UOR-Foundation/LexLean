@@ -4769,6 +4769,23 @@ writes differently are fixed:
 Each of these renders the same denotation with no more work than the plain
 rendering.
 
+**Constants.** A function of no parameters that cannot fail, whose body is a
+closed literal (scalars, constructors, pairs, and boxes of literals only) whose
+result holds heap storage, is rendered in `rust-std` as a *constant*: a
+`thread_local!` cell initialised once per thread by the literal, and a function
+whose every call is `CELL.with(|cell| cell.clone())`. A clone of a list, a
+string, or a byte string shares its storage, so a read allocates nothing, where
+a rebuilt literal allocates at each read (`RB-18`). A constant is not a new
+construct of the calculus: its row in `validate::CORRESPONDENCE` is `constant`,
+realizing `function`, and calls to it are ordinary calls. The machine of §17.17
+reads a constant as the function of no parameters it caches, whose value is the
+body's; when the value is computed is not part of the denotation, so the work
+the machine counts and the steps of §17.14 are unchanged. `rust::validate`
+refuses, as `LLB6005`, a constant whose result can fail or whose body is not a
+closed literal: a thread-local initializer cannot propagate a failure, and a
+body that calls could reach the constant it initializes. `rust-core` renders no
+constant, because the literal holds heap storage.
+
 **Failure typing.** A function can overflow exactly when its body reaches a
 primitive or successor that can (`nat_add`, `nat_mul`, `int_add`, `int_sub`,
 `int_mul`, `int_neg`, `int_quot`, `parse_decimal` at `int`, `succ`), a call to
@@ -10238,7 +10255,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RB-12` | `rust-backend` | The language-1.2 compiler-semantics ID covers the package scaffold: changing a lint row, the edition, or a gate of a copy of the embedded tree changes it, writing the module in its data form or reformatting its notation does not, and the module is outside the identities of languages 1.0 and 1.1. | §17.16, §21.2 |
 | `RB-13` | `rust-backend` | A package states the effects of its realization: `package.json` and `provenance.json` record them, ascending and registered, the production registry says that exhausting the stack aborts the process, and an unregistered or unordered list, or one that states allocation on `rust-core`, is refused. | §17.13, §17.16 |
 | `RB-14` | `rust-backend` | A library template whose self calls are all tail calls is rendered as a loop over its accumulator that breaks with its result, so that the production rows of the primitives it realizes carry no `recursion`, while a template with a call that is not a tail call is rendered as a call and keeps the effect; a rendering that states a self call where a loop is possible, and a row whose `recursion` differs from its rendering, are refused. | §17.13, §17.14, §17.16 |
-| `RB-18` | `rust-backend` | The Rust backend renders each closed data literal of a program once per thread and a read of it as a clone of that value, so that a production root reads a constant without rebuilding it, and the counted work of a read never exceeds the denotation's steps; a rendering that rebuilds the literal at each read is detected by the work gate. | §17.16 |
+| `RB-18` | `rust-backend` | A function of no parameters that cannot fail and whose body is a closed literal holding heap storage is a constant in rust-std, a thread-local cell evaluated once per thread whose every call returns a clone of the value, so that a production root reads a decoded constant without rebuilding it and a read allocates nothing; the machine reads a constant as the function it caches, rust-core has no rendering of it, and a constant whose body calls, or that can fail, is refused before printing, while a rendering that rebuilds the literal at each read is detected by counting its allocations. | §17.16 |
 | `GN-01` | `gnaf` | Every committed GNAF request and fixture is canonical, validates against the GNAF schemas whose calculus definitions are the target program schema's, and states its components' universe identity; a malformed request, an invalid reference, plan, or realized program, a reference without a value on a domain argument, or a wrong universe identity fails closed with LLB6006, and a machine or request beyond the host's capacity fails closed with LLS8002. | §17.15, §26.3 |
 | `GN-02` | `gnaf` | The GNAF model is a kernel-checked LexLean definition, Lean's kernel reduces the universe, the system statuses, and the answer of every committed request to what the host transcription computes, and a wrong answer, an answer computed from a universe with a system omitted, a tie with a member dropped, and a universe with a system omitted are rejected by Lean. | §17.15 |
 | `GN-03` | `gnaf` | Candidate membership is the grammar's expansion, which a kernel-checked theorem proves equal to the grammar's well-formed selectors for every grammar, independent of evaluation and fixed by a universe identity before any optimizer, and optimizer-defined, discovered, cached, and internal-plan universes and missing, self-referential, or optimizer-citing completeness evidence are rejected. | §17.15 |

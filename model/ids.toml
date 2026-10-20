@@ -1793,7 +1793,7 @@ statement = "A library template whose self calls are all tail calls is rendered 
 id = "RB-18"
 level = "build"
 suite = "rust-backend"
-statement = "The Rust backend renders each closed data literal of a program once per thread and a read of it as a clone of that value, so that a production root reads a constant without rebuilding it, and the counted work of a read never exceeds the denotation's steps; a rendering that rebuilds the literal at each read is detected by the work gate."
+statement = "A function of no parameters that cannot fail and whose body is a closed literal holding heap storage is a constant in rust-std, a thread-local cell evaluated once per thread whose every call returns a clone of the value, so that a production root reads a decoded constant without rebuilding it and a read allocates nothing; the machine reads a constant as the function it caches, rust-core has no rendering of it, and a constant whose body calls, or that can fail, is refused before printing, while a rendering that rebuilds the literal at each read is detected by counting its allocations."
 
 [[id]]
 id = "GN-01"

@@ -43,7 +43,7 @@ pub use align::RULES;
 
 use super::data_a::{RowKind, Writer};
 use super::{Gen, Source};
-use crate::calculus::rust::ast::{Crate, ItemDef};
+use crate::calculus::rust::ast::Crate;
 use crate::calculus::{Function, Program};
 use crate::ir::core::{CoreBinderInfo, CoreLevel, CoreModule, CoreNode};
 use crate::production::kernel::Term as K;
@@ -189,14 +189,10 @@ impl<'g, 'a> Aligner<'g, 'a> {
             .krate()
             .items
             .iter()
-            .find_map(|item| match item {
-                ItemDef::Function {
-                    name: crate::calculus::rust::ast::Ident::Function(found),
-                    parameters,
-                    body,
-                    ..
-                } if *found == index => Some((parameters, body)),
-                _ => None,
+            .find_map(|item| {
+                let (name, parameters, _, body, _) = item.function()?;
+                matches!(name, crate::calculus::rust::ast::Ident::Function(found) if *found == index)
+                    .then_some((parameters, body))
             })
             .ok_or_else(|| format!("the crate does not render function {index}"))?;
         let (direct, looping) = self.fun_ok_halves(index)?;
@@ -402,13 +398,10 @@ impl<'g, 'a> Aligner<'g, 'a> {
             .krate()
             .items
             .iter()
-            .find_map(|item| match item {
-                ItemDef::Function {
-                    name: crate::calculus::rust::ast::Ident::Function(found),
-                    result,
-                    ..
-                } if *found == index => Some(result),
-                _ => None,
+            .find_map(|item| {
+                let (name, _, result, _, _) = item.function()?;
+                matches!(name, crate::calculus::rust::ast::Ident::Function(found) if *found == index)
+                    .then_some(result)
             })
             .ok_or_else(|| format!("the crate does not render function {index}"))?;
         Ok(self.w.rs_type(result))

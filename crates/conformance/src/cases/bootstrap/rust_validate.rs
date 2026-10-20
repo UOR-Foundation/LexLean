@@ -472,6 +472,24 @@ fn enc_item_def(item: &ItemDef) -> Value {
                 enc_origin(at),
             ],
         ),
+        // The bootstrap validator reads a constant as the function of no
+        // parameters it caches; the rule that its body is a literal is
+        // `validate.rs`'s alone.
+        ItemDef::Constant {
+            name,
+            result,
+            body,
+            at,
+        } => adt(
+            2,
+            vec![
+                enc_ident(name),
+                enc_params(&[]),
+                enc_type(result),
+                enc_block(body),
+                enc_origin(at),
+            ],
+        ),
         ItemDef::Function {
             name,
             parameters,
@@ -857,6 +875,17 @@ fn visit_crate(krate: &mut Crate, f: &mut Visitor<'_>) {
                 parameters.iter_mut().for_each(|ty| visit_ty(ty, f));
                 visit_ty(result, f);
                 arms.iter_mut().for_each(|arm| f(Node::Dispatch(arm)));
+                f(Node::Origin(at));
+            }
+            ItemDef::Constant {
+                name,
+                result,
+                body,
+                at,
+            } => {
+                f(Node::Ident(name));
+                visit_ty(result, f);
+                visit_block(body, f);
                 f(Node::Origin(at));
             }
             ItemDef::Function {
@@ -1261,12 +1290,16 @@ fn mutate_once(krate: &mut Crate, seeded: &mut Seeded, pool: &Pool) -> bool {
                         };
                     }
                     ItemDef::Apply { fn_type, .. } => *fn_type += number + 1,
-                    ItemDef::Function { name, .. } => *name = Ident::Function(number),
+                    ItemDef::Function { name, .. } | ItemDef::Constant { name, .. } => {
+                        *name = Ident::Function(number);
+                    }
                 },
                 4 => {
                     if let ItemDef::Apply { fallible, .. } = &mut krate.items[at] {
                         *fallible = !*fallible;
-                    } else if let ItemDef::Function { result, .. } = &mut krate.items[at] {
+                    } else if let ItemDef::Function { result, .. }
+                    | ItemDef::Constant { result, .. } = &mut krate.items[at]
+                    {
                         *result = match result.clone() {
                             Type::Fallible(inner) => *inner,
                             other => Type::Fallible(Box::new(other)),
