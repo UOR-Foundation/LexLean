@@ -1463,6 +1463,13 @@ pub fn audit(output: &str, certificates: &[Certificate]) -> Result<(), String> {
         }
         if let Some(data) = &certificate.data {
             for row in &data.declarations {
+                if let Some(members) = mutual_partial_group(row) {
+                    // Checked once, at the group's first member.
+                    if members.first() == Some(&row.name) {
+                        check_mutual_group(&printed, data, members)?;
+                    }
+                    continue;
+                }
                 let mut pinned = row.policy.axioms().to_vec();
                 pinned.sort();
                 match printed.get(&row.name) {
@@ -1481,6 +1488,64 @@ pub fn audit(output: &str, certificates: &[Certificate]) -> Result<(), String> {
                     }
                 }
             }
+        }
+    }
+    Ok(())
+}
+
+/// The members of the mutual group of implementation records a row belongs
+/// to: two or more `partial` rows named in each other's `all`.
+fn mutual_partial_group(row: &crate::ir::core::CoreDeclaration) -> Option<&[String]> {
+    let members = row.all.as_deref()?;
+    (members.len() > 1 && row.safety == Some(crate::ir::core::CoreSafety::Partial))
+        .then_some(members)
+}
+
+/// The union of the sets the audit printed for the members of a mutual group,
+/// sorted.
+fn group_union(
+    printed: &BTreeMap<String, Vec<String>>,
+    members: &[String],
+) -> Result<Vec<String>, String> {
+    let mut union: BTreeSet<String> = BTreeSet::new();
+    for member in members {
+        let Some(axioms) = printed.get(member) else {
+            return Err(format!(
+                "the audit printed no axioms for the certificate row `{member}` of the mutual group {members:?}"
+            ));
+        };
+        union.extend(axioms.iter().cloned());
+    }
+    Ok(union.into_iter().collect())
+}
+
+/// The expectation of a mutual group of implementation records: the union of
+/// the sets the audit prints for its members equals the pin of every member.
+///
+/// The members call one another, so each depends on all of them. Lean prints
+/// the first member its traversal reaches with the group's whole closure and
+/// the others with what was found before its sentinel closed the cycle, in an
+/// order that follows the hash of the names, so no member's print is a
+/// property of the member alone; the union of the group's prints is the
+/// closure whatever the order, and is what the pins state.
+fn check_mutual_group(
+    printed: &BTreeMap<String, Vec<String>>,
+    data: &crate::ir::core::CoreModule,
+    members: &[String],
+) -> Result<(), String> {
+    let union = group_union(printed, members)?;
+    for member in members {
+        let Some(row) = data.declarations.iter().find(|row| &row.name == member) else {
+            return Err(format!(
+                "the mutual group {members:?} names the row `{member}`, which the certificate does not declare"
+            ));
+        };
+        let mut pinned = row.policy.axioms().to_vec();
+        pinned.sort();
+        if pinned != union {
+            return Err(format!(
+                "the certificate rows of the mutual group {members:?} print the union {union:?}, but the policy of `{member}` pins {pinned:?}"
+            ));
         }
     }
     Ok(())
@@ -2026,5 +2091,52 @@ mod tests {
     #[test]
     fn the_shipped_library_audits() {
         super::workspace(&[], &[]).expect("the shipped environment audits");
+    }
+}
+
+#[cfg(test)]
+mod group_tests {
+    use super::*;
+
+    fn printed(rows: &[(&str, &[&str])]) -> BTreeMap<String, Vec<String>> {
+        rows.iter()
+            .map(|(name, axioms)| {
+                (
+                    (*name).to_owned(),
+                    axioms.iter().map(|axiom| (*axiom).to_owned()).collect(),
+                )
+            })
+            .collect()
+    }
+
+    /// The union of a mutual group's prints is the closure for every visit
+    /// order: whichever member Lean reaches first prints the whole closure and
+    /// the others print what the sentinel left them.
+    #[test]
+    fn a_mutual_group_has_one_union_for_every_visit_order() {
+        let members: Vec<String> = ["a", "b", "c"].map(str::to_owned).to_vec();
+        let closure = vec!["propext".to_owned()];
+        for first in 0..3 {
+            let rows: Vec<(&str, &[&str])> = members
+                .iter()
+                .enumerate()
+                .map(|(index, name)| {
+                    let set: &[&str] = if index == first { &["propext"] } else { &[] };
+                    (name.as_str(), set)
+                })
+                .collect();
+            assert_eq!(group_union(&printed(&rows), &members), Ok(closure.clone()));
+        }
+    }
+
+    /// A member the audit did not print is refused, not read as axiom-free.
+    #[test]
+    fn a_member_the_audit_did_not_print_is_refused() {
+        let members: Vec<String> = ["a", "b"].map(str::to_owned).to_vec();
+        let error = group_union(&printed(&[("a", &[])]), &members).unwrap_err();
+        assert!(
+            error.contains("`b`") && error.contains("mutual group"),
+            "{error}"
+        );
     }
 }
