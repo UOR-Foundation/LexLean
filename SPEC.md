@@ -9310,7 +9310,7 @@ The initial repository has no `open` implementation claim. An open research or p
 
 ### 27.4 Authorities
 
-`model/authorities.toml` MUST initially identify:
+The authority register (`model/authorities.toml`, generated from the authority module of the specification project, §27.5) identifies:
 
 | Authority ID | Subject |
 |---|---|
@@ -9318,6 +9318,9 @@ The initial repository has no `open` implementation claim. An open research or p
 | `LAKE-4-32-1` | Lake distributed with Lean 4.32.1 |
 | `LEANCHECKER-4-32-1` | `leanchecker` replay behavior and its stated non-independent status |
 | `PRINT-AXIOMS-4-32-1` | Lean 4.32.1 `#print axioms` output behavior |
+| `LEAN-LCNF-4-32-1` | Lean 4.32.1 compiler front end (LCNF): the translation of a definition and the run-time dependencies it names |
+| `UOR-GNAF-1-DRAFT-2` | UOR-GNAF v1 normative draft 0.2: what an optimality claim fixes before optimization |
+| `RUSTC-1-97-1` | Rust 1.97.1 compiler (`rustc`): the semantics of a safe Rust 2021 crate |
 
 Corresponding ledger claims are `some-true`. LexLean tests realize compatibility with those authorities but do not re-register Lean's guarantees as LexLean proofs.
 
@@ -9341,8 +9344,8 @@ source too: its chapters are the modules `Chapter00`, `Chapter01`, … of the sa
 project, each a sequence of `DocRows.Item` records (a heading with its level and
 the blank lines before it, a paragraph, a table, a fenced block with its info
 string, a continuation of the previous block, or a derived block). A derived
-block is not text: the §31 table, the §26.3 table and the total under §31 are
-generated from the register and registry modules. `model/ids.toml`,
+block is not text: the §31 table, the §26.3 table, the §27.4 table and the total
+under §31 are generated from the register, registry and authority modules. `model/ids.toml`,
 `model/errors.toml`, `model/ledger.toml`, `model/authorities.toml` and
 `SPEC.md` are generated from the modules, with `CONFORMANCE.md` and `ERRORS.md`
 generated from the model, and none of the seven is edited by hand (`NS-02`,
@@ -10415,7 +10418,7 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `NS-02` | `normative-source` | The conformance register, the diagnostic registry, the honesty ledger, and the authority register are modules of the specification project, and `model/ids.toml`, `model/errors.toml`, `model/ledger.toml`, `model/authorities.toml`, `CONFORMANCE.md`, and `ERRORS.md` regenerate from them byte-identically. | §26.1, §27.5 |
 | `NS-03` | `normative-source` | A difference between a model file or SPEC.md and the projection of the specification project's modules, in either direction, fails the repository gate naming R1, a source edit that is not projected being such a difference, and the section references of the §31 table are checked against those the register modules carry. | §27.5, §27.6 |
 | `NS-04` | `normative-source` | The projector fails closed on a module of the specification project that holds a declaration kind, a term kind, a field, a name, a file, or a family it does not read, and on a duplicate identifier or code, and a plant of each is refused naming the file and, for a declaration, its position. | §17.21, §24.8 |
-| `NS-05` | `normative-source` | SPEC.md regenerates byte-identically from the chapter modules of the specification project, its conformance-ID table, its diagnostic-code table, and its stated total being derived from the register and registry modules and never typed, and the projector refuses a chapter item it does not read. | §26.3, §27.5, §31 |
+| `NS-05` | `normative-source` | SPEC.md regenerates byte-identically from the chapter modules of the specification project, its conformance-ID table, its diagnostic-code table, its authority table, and its stated total being derived from the register, registry, and authority modules and never typed, and the projector refuses a chapter item it does not read. | §26.3, §27.5, §31 |
 
 **Total required capability IDs:** 435.
 

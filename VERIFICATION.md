@@ -10352,3 +10352,21 @@ the projection (C9). `%` is spelled U+FF05 in the chapters because a source
 cannot hold a raw percent sign (§12.1, `LLL1002`) and the formatter would write
 one back; no text of SPEC.md contains U+FF05. `NS-01` now has the pinned Lean
 elaborate and replay 75 modules (about 78 seconds for the case).
+
+### §27.4 derived, U+FF05 standing check, titles (#232 review)
+
+- §27.4 is now a `derived` item (`authority-table`) generated from the authority
+  module, which carries a `subject` per row that `authorities.toml` does not.
+  The table lists all 7 authorities (the typed one listed 4). Planted on the
+  real gate: the Subject of `LAKE-4-32-1` edited by hand in SPEC.md, refused as
+  ``R1: SPEC.md differs from the projection of spec/src ... (NS-03)``.
+- U+FF05 is reserved to spell a percent sign in the chapters, and the projector
+  now refuses, on every run, a projection that would hold it: a register
+  statement carrying one reached SPEC.md unmapped. Planted on the real gate
+  (`U+FF05` in the statement of `RP-01`): ``R1: SPEC.md would hold U+FF05, which the
+  chapters reserve to spell a percent sign (NS-05)``. `conformance_ns_05`
+  asserts it.
+- Each of the 75 modules has its own title, from the local glossary
+  `spec/glossary/spec.titles` (a numeral is not renderer-safe in a title, so a
+  chapter is titled by its heading's words). The mention scan skips the chapter
+  modules, as it skips SPEC.md, because they state the same code ranges.
