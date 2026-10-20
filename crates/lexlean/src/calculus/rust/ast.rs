@@ -272,6 +272,15 @@ pub enum Machine {
     NatLt,
     NatRem,
     IntRem,
+    CheckedNatAdd,
+    NatSub,
+    CheckedNatMul,
+    NatQuot,
+    CheckedIntAdd,
+    CheckedIntSub,
+    CheckedIntMul,
+    CheckedIntNeg,
+    CheckedIntQuot,
 }
 
 impl Machine {
@@ -284,6 +293,15 @@ impl Machine {
             Self::NatLt,
             Self::NatRem,
             Self::IntRem,
+            Self::CheckedNatAdd,
+            Self::NatSub,
+            Self::CheckedNatMul,
+            Self::NatQuot,
+            Self::CheckedIntAdd,
+            Self::CheckedIntSub,
+            Self::CheckedIntMul,
+            Self::CheckedIntNeg,
+            Self::CheckedIntQuot,
         ];
         for kind in IntKind::ALL {
             out.extend([
@@ -322,7 +340,20 @@ impl Machine {
             | Self::BitOr(kind)
             | Self::BitXor(kind)
             | Self::BitNot(kind) => Some(kind),
-            Self::NatEq | Self::NatLe | Self::NatLt | Self::NatRem | Self::IntRem => None,
+            Self::NatEq
+            | Self::NatLe
+            | Self::NatLt
+            | Self::NatRem
+            | Self::IntRem
+            | Self::CheckedNatAdd
+            | Self::NatSub
+            | Self::CheckedNatMul
+            | Self::NatQuot
+            | Self::CheckedIntAdd
+            | Self::CheckedIntSub
+            | Self::CheckedIntMul
+            | Self::CheckedIntNeg
+            | Self::CheckedIntQuot => None,
         }
     }
 
@@ -348,6 +379,15 @@ impl Machine {
             Self::NatLt => "nat_lt",
             Self::NatRem => "nat_rem",
             Self::IntRem => "int_rem",
+            Self::CheckedNatAdd => "nat_add",
+            Self::NatSub => "nat_sub",
+            Self::CheckedNatMul => "nat_mul",
+            Self::NatQuot => "nat_quot",
+            Self::CheckedIntAdd => "int_add",
+            Self::CheckedIntSub => "int_sub",
+            Self::CheckedIntMul => "int_mul",
+            Self::CheckedIntNeg => "int_neg",
+            Self::CheckedIntQuot => "int_quot",
         }
     }
 
@@ -355,8 +395,8 @@ impl Machine {
     #[must_use]
     pub const fn arity(self) -> usize {
         match self {
-            Self::CheckedNeg(_) | Self::TryFrom(_) | Self::BitNot(_) => 1,
-            Self::NatRem | Self::IntRem => 3,
+            Self::CheckedNeg(_) | Self::TryFrom(_) | Self::BitNot(_) | Self::CheckedIntNeg => 1,
+            Self::NatRem | Self::IntRem | Self::NatQuot | Self::CheckedIntQuot => 3,
             _ => 2,
         }
     }
@@ -388,6 +428,18 @@ impl Machine {
             Self::NatRem => format!("u64::checked_rem({}, {}).unwrap_or({})", args[0], args[1], args[2]),
             Self::IntRem => format!(
                 "{{ let (a, b, z): (i64, i64, i64) = ({}, {}, {}); if b == 0 {{ z }} else {{ a.wrapping_rem(b) }} }}",
+                args[0], args[1], args[2]
+            ),
+            Self::CheckedNatAdd => format!("u64::checked_add({}, {})", args[0], args[1]),
+            Self::NatSub => format!("u64::saturating_sub({}, {})", args[0], args[1]),
+            Self::CheckedNatMul => format!("u64::checked_mul({}, {})", args[0], args[1]),
+            Self::NatQuot => format!("u64::checked_div({}, {}).unwrap_or({})", args[0], args[1], args[2]),
+            Self::CheckedIntAdd => format!("i64::checked_add({}, {})", args[0], args[1]),
+            Self::CheckedIntSub => format!("i64::checked_sub({}, {})", args[0], args[1]),
+            Self::CheckedIntMul => format!("i64::checked_mul({}, {})", args[0], args[1]),
+            Self::CheckedIntNeg => format!("i64::checked_neg({})", args[0]),
+            Self::CheckedIntQuot => format!(
+                "{{ let (a, b, z): (i64, i64, i64) = ({}, {}, {}); if b == 0 {{ Some(z) }} else {{ a.checked_div(b) }} }}",
                 args[0], args[1], args[2]
             ),
         }

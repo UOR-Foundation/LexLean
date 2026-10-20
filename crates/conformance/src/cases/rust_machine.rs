@@ -41,6 +41,21 @@ fn signature(machine: Machine) -> (Vec<Type>, Type) {
         }
         Machine::NatRem => (vec![Type::Nat, Type::Nat, Type::Nat], Type::Nat),
         Machine::IntRem => (vec![Type::Int, Type::Int, Type::Int], Type::Int),
+        Machine::CheckedNatAdd | Machine::CheckedNatMul => (
+            vec![Type::Nat, Type::Nat],
+            Type::Option(Box::new(Type::Nat)),
+        ),
+        Machine::NatSub => (vec![Type::Nat, Type::Nat], Type::Nat),
+        Machine::NatQuot => (vec![Type::Nat, Type::Nat, Type::Nat], Type::Nat),
+        Machine::CheckedIntAdd | Machine::CheckedIntSub | Machine::CheckedIntMul => (
+            vec![Type::Int, Type::Int],
+            Type::Option(Box::new(Type::Int)),
+        ),
+        Machine::CheckedIntNeg => (vec![Type::Int], Type::Option(Box::new(Type::Int))),
+        Machine::CheckedIntQuot => (
+            vec![Type::Int, Type::Int, Type::Int],
+            Type::Option(Box::new(Type::Int)),
+        ),
     }
 }
 
@@ -134,9 +149,22 @@ fn harness(machines: &[Machine]) -> String {
         name(Machine::NatRem),
         name(Machine::IntRem),
     );
+    let (nat_add, nat_sub, nat_mul, nat_quot) = (
+        name(Machine::CheckedNatAdd),
+        name(Machine::NatSub),
+        name(Machine::CheckedNatMul),
+        name(Machine::NatQuot),
+    );
+    let (int_add, int_sub, int_mul, int_neg, int_quot) = (
+        name(Machine::CheckedIntAdd),
+        name(Machine::CheckedIntSub),
+        name(Machine::CheckedIntMul),
+        name(Machine::CheckedIntNeg),
+        name(Machine::CheckedIntQuot),
+    );
     write!(
         out,
-        "    let nats = [0u64, 1, 2, u64::MAX - 1, u64::MAX];\n    for &a in &nats {{\n        for &b in &nats {{\n            assert_eq!({eq}(a, b), a == b);\n            assert_eq!({le}(a, b), a <= b);\n            assert_eq!({lt}(a, b), a < b);\n            assert_eq!({nat_rem}(a, b, 7), if b == 0 {{ 7 }} else {{ a % b }}, \"nat_rem {{a}} {{b}}\");\n        }}\n    }}\n    let ints = [i64::MIN, i64::MIN + 1, -7, -1, 0, 1, 2, i64::MAX];\n    for &a in &ints {{\n        for &b in &ints {{\n            let expected = if b == 0 {{ 7 }} else {{ ((a as i128) % (b as i128)) as i64 }};\n            assert_eq!({int_rem}(a, b, 7), expected, \"int_rem {{a}} {{b}}\");\n        }}\n    }}\n    println!(\"machine\");\n}}\n"
+        "    let nats = [0u64, 1, 2, u64::MAX - 1, u64::MAX];\n    for &a in &nats {{\n        for &b in &nats {{\n            assert_eq!({eq}(a, b), a == b);\n            assert_eq!({le}(a, b), a <= b);\n            assert_eq!({lt}(a, b), a < b);\n            assert_eq!({nat_rem}(a, b, 7), if b == 0 {{ 7 }} else {{ a % b }}, \"nat_rem {{a}} {{b}}\");\n            let fit = |v: u128| if v <= u64::MAX as u128 {{ Some(v as u64) }} else {{ None }};\n            assert_eq!({nat_add}(a, b), fit(a as u128 + b as u128), \"nat_add {{a}} {{b}}\");\n            assert_eq!({nat_mul}(a, b), fit(a as u128 * b as u128), \"nat_mul {{a}} {{b}}\");\n            assert_eq!({nat_sub}(a, b), if a >= b {{ a - b }} else {{ 0 }}, \"nat_sub {{a}} {{b}}\");\n            assert_eq!({nat_quot}(a, b, 7), if b == 0 {{ 7 }} else {{ a / b }}, \"nat_quot {{a}} {{b}}\");\n        }}\n    }}\n    let ints = [i64::MIN, i64::MIN + 1, -7, -1, 0, 1, 2, i64::MAX];\n    for &a in &ints {{\n        for &b in &ints {{\n            let expected = if b == 0 {{ 7 }} else {{ ((a as i128) % (b as i128)) as i64 }};\n            assert_eq!({int_rem}(a, b, 7), expected, \"int_rem {{a}} {{b}}\");\n            let fit = |v: i128| if v >= i64::MIN as i128 && v <= i64::MAX as i128 {{ Some(v as i64) }} else {{ None }};\n            let (x, y) = (a as i128, b as i128);\n            assert_eq!({int_add}(a, b), fit(x + y), \"int_add {{a}} {{b}}\");\n            assert_eq!({int_sub}(a, b), fit(x - y), \"int_sub {{a}} {{b}}\");\n            assert_eq!({int_mul}(a, b), fit(x * y), \"int_mul {{a}} {{b}}\");\n            assert_eq!({int_quot}(a, b, 7), if b == 0 {{ Some(7) }} else {{ fit(x / y) }}, \"int_quot {{a}} {{b}}\");\n        }}\n        assert_eq!({int_neg}(a), if a == i64::MIN {{ None }} else {{ Some(-a) }}, \"int_neg {{a}}\");\n    }}\n    println!(\"machine\");\n}}\n"
     )
     .expect("write");
     out
@@ -153,7 +181,7 @@ pub fn run(id: &str) {
     let machines = Machine::all();
     // Seventeen constructors, eleven of them at each of eight widths and one
     // at the four signed ones: the list is the Lean `Machine` type's.
-    assert_eq!(machines.len(), 5 + 8 * 11 + 4);
+    assert_eq!(machines.len(), 5 + 9 + 8 * 11 + 4);
     let items: Vec<ItemDef> = machines
         .iter()
         .enumerate()

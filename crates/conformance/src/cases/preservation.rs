@@ -4798,6 +4798,114 @@ pub fn run(id: &str) {
                 );
             }
         }
+        // §17.14, §17.16: the natural and integer arithmetic of the machine.
+        "SP-23" => {
+            let syntax = support::module_json(
+                &std::fs::read_to_string(
+                    repo_root()
+                        .join("compiler/src/RustSyntax.lex.tex")
+                        .as_std_path(),
+                )
+                .expect("compiler/src/RustSyntax.lex.tex"),
+            );
+            let machine: Vec<(String, usize)> = syntax["declarations"]
+                .as_array()
+                .and_then(|all| {
+                    all.iter()
+                        .find(|declaration| declaration["name"] == "Machine")
+                })
+                .expect("`Machine` is declared")["constructors"]
+                .as_array()
+                .expect("constructors")
+                .iter()
+                .map(|constructor| {
+                    (
+                        constructor["name"].as_str().expect("a name").to_owned(),
+                        constructor["fields"].as_array().expect("fields").len(),
+                    )
+                })
+                .collect();
+            let declared: Vec<(&str, usize)> = machine[17..]
+                .iter()
+                .map(|(name, fields)| (name.as_str(), *fields))
+                .collect();
+            assert_eq!(
+                declared,
+                [
+                    ("checkedNatAdd", 0),
+                    ("natSub", 0),
+                    ("checkedNatMul", 0),
+                    ("natQuot", 0),
+                    ("checkedIntAdd", 0),
+                    ("checkedIntSub", 0),
+                    ("checkedIntMul", 0),
+                    ("checkedIntNeg", 0),
+                    ("checkedIntQuot", 0),
+                ],
+                "the natural and integer primitives"
+            );
+            assert_eq!(machine.len(), 26, "the first seventeen and these nine");
+            if !support::lean_backed("SP-23") {
+                return;
+            }
+            let header = "import LexLeanTarget.RustSemantics\nopen LexLeanTarget LexLeanTarget.RustSyntax LexLeanTarget.RustSemantics LexLeanTarget.TargetSyntax\n\ndef machineCrate : Crate := { profile := Profile.std, items := [] }\ndef top : Nat := 18446744073709551615\n";
+            let claims = [
+                "runMachine Machine.checkedNatAdd [Value.nat 2, Value.nat 3] = ROutcome.value (Value.some (Value.nat 5))",
+                "runMachine Machine.checkedNatAdd [Value.nat top, Value.nat 1] = ROutcome.value Value.none",
+                "runMachine Machine.checkedNatMul [Value.nat top, Value.nat 2] = ROutcome.value Value.none",
+                "runMachine Machine.checkedNatMul [Value.nat 6, Value.nat 7] = ROutcome.value (Value.some (Value.nat 42))",
+                "runMachine Machine.natSub [Value.nat 3, Value.nat 5] = ROutcome.value (Value.nat 0)",
+                "runMachine Machine.natSub [Value.nat 5, Value.nat 3] = ROutcome.value (Value.nat 2)",
+                "runMachine Machine.natQuot [Value.nat 7, Value.nat 2, Value.nat 9] = ROutcome.value (Value.nat 3)",
+                "runMachine Machine.natQuot [Value.nat 7, Value.nat 0, Value.nat 9] = ROutcome.value (Value.nat 9)",
+                "runMachine Machine.checkedIntAdd [Value.int 9223372036854775807, Value.int 1] = ROutcome.value Value.none",
+                "runMachine Machine.checkedIntAdd [Value.int (-4), Value.int 3] = ROutcome.value (Value.some (Value.int (-1)))",
+                "runMachine Machine.checkedIntSub [Value.int (-9223372036854775808), Value.int 1] = ROutcome.value Value.none",
+                "runMachine Machine.checkedIntMul [Value.int 3037000500, Value.int 3037000500] = ROutcome.value Value.none",
+                "runMachine Machine.checkedIntNeg [Value.int (-9223372036854775808)] = ROutcome.value Value.none",
+                "runMachine Machine.checkedIntNeg [Value.int 5] = ROutcome.value (Value.some (Value.int (-5)))",
+                "runMachine Machine.checkedIntQuot [Value.int (-9223372036854775808), Value.int (-1), Value.int 0] = ROutcome.value Value.none",
+                "runMachine Machine.checkedIntQuot [Value.int 7, Value.int 0, Value.int 9] = ROutcome.value (Value.some (Value.int 9))",
+                "runMachine Machine.checkedIntQuot [Value.int (-7), Value.int 2, Value.int 0] = ROutcome.value (Value.some (Value.int (-3)))",
+                "runMachine Machine.checkedNatAdd [Value.u64 1, Value.u64 1] = ROutcome.stuck",
+            ];
+            let shipped = preservation::shipped();
+            let compile = |name: &str, text: &str| {
+                let directory = tempfile::tempdir().expect("a directory");
+                let source = directory.path().join(format!("{name}.lean"));
+                std::fs::write(&source, text).expect("write");
+                preservation::pinned_with(
+                    "lean",
+                    directory.path(),
+                    std::slice::from_ref(&shipped.build),
+                )
+                .arg(&source)
+                .output()
+                .expect("lean runs")
+            };
+            let mut text = header.to_owned();
+            for claim in claims {
+                text.push_str(&format!("example : {claim} := rfl\n"));
+            }
+            let output = compile("Machine", &text);
+            assert!(
+                output.status.success(),
+                "the machine does not evaluate as stated:\n{}",
+                preservation::joined(&output)
+            );
+            for wrong in [
+                "runMachine Machine.checkedNatAdd [Value.nat top, Value.nat 1] = ROutcome.abort",
+                "runMachine Machine.natSub [Value.nat 3, Value.nat 5] = ROutcome.value (Value.some (Value.nat 0))",
+                "runMachine Machine.checkedIntNeg [Value.int (-9223372036854775808)] = ROutcome.value (Value.some (Value.int (-9223372036854775808)))",
+                "runMachine Machine.checkedIntQuot [Value.int 7, Value.int 0, Value.int 9] = ROutcome.value Value.none",
+            ] {
+                let refused = compile("Wrong", &format!("{header}example : {wrong} := rfl\n"));
+                assert!(
+                    !refused.status.success(),
+                    "Lean accepts the wrong statement `{wrong}`"
+                );
+            }
+        }
         // §17.14, §17.16: the bitwise, order, and remainder primitives.
         "SP-21" => {
             let syntax = support::module_json(
@@ -4825,7 +4933,7 @@ pub fn run(id: &str) {
                     )
                 })
                 .collect();
-            let declared: Vec<(&str, usize)> = machine[8..]
+            let declared: Vec<(&str, usize)> = machine[8..17]
                 .iter()
                 .map(|(name, fields)| (name.as_str(), *fields))
                 .collect();
@@ -4844,7 +4952,7 @@ pub fn run(id: &str) {
                 ],
                 "the bitwise primitives at a width, the order of naturals, and the remainders"
             );
-            assert_eq!(machine.len(), 17, "the first eight and these nine");
+            assert!(machine.len() >= 17, "the first eight and these nine");
             if !support::lean_backed("SP-21") {
                 return;
             }

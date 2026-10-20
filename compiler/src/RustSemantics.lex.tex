@@ -1206,7 +1206,16 @@ definition{
     | RustSyntax::Machine.natLe => (ctor TargetSyntax::Prim.natLe)
     | RustSyntax::Machine.natLt => (ctor TargetSyntax::Prim.natLt)
     | RustSyntax::Machine.natRem => (ctor TargetSyntax::Prim.natRem)
-    | RustSyntax::Machine.intRem => (ctor TargetSyntax::Prim.intRem))
+    | RustSyntax::Machine.intRem => (ctor TargetSyntax::Prim.intRem)
+    | RustSyntax::Machine.checkedNatAdd => (ctor TargetSyntax::Prim.natAdd)
+    | RustSyntax::Machine.natSub => (ctor TargetSyntax::Prim.natSub)
+    | RustSyntax::Machine.checkedNatMul => (ctor TargetSyntax::Prim.natMul)
+    | RustSyntax::Machine.natQuot => (ctor TargetSyntax::Prim.natQuot)
+    | RustSyntax::Machine.checkedIntAdd => (ctor TargetSyntax::Prim.intAdd)
+    | RustSyntax::Machine.checkedIntSub => (ctor TargetSyntax::Prim.intSub)
+    | RustSyntax::Machine.checkedIntMul => (ctor TargetSyntax::Prim.intMul)
+    | RustSyntax::Machine.checkedIntNeg => (ctor TargetSyntax::Prim.intNeg)
+    | RustSyntax::Machine.checkedIntQuot => (ctor TargetSyntax::Prim.intQuot))
 }
 
 definition{
@@ -1230,7 +1239,16 @@ definition{
     | RustSyntax::Machine.natLe => (ctor Option.none [TargetSyntax::IntKind])
     | RustSyntax::Machine.natLt => (ctor Option.none [TargetSyntax::IntKind])
     | RustSyntax::Machine.natRem => (ctor Option.none [TargetSyntax::IntKind])
-    | RustSyntax::Machine.intRem => (ctor Option.none [TargetSyntax::IntKind]))
+    | RustSyntax::Machine.intRem => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.checkedNatAdd => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.natSub => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.checkedNatMul => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.natQuot => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.checkedIntAdd => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.checkedIntSub => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.checkedIntMul => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.checkedIntNeg => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.checkedIntQuot => (ctor Option.none [TargetSyntax::IntKind]))
 }
 
 definition{
@@ -1254,7 +1272,49 @@ definition{
     | RustSyntax::Machine.natLe => false
     | RustSyntax::Machine.natLt => false
     | RustSyntax::Machine.natRem => false
-    | RustSyntax::Machine.intRem => false)
+    | RustSyntax::Machine.intRem => false
+    | RustSyntax::Machine.checkedNatAdd => false
+    | RustSyntax::Machine.natSub => false
+    | RustSyntax::Machine.checkedNatMul => false
+    | RustSyntax::Machine.natQuot => false
+    | RustSyntax::Machine.checkedIntAdd => false
+    | RustSyntax::Machine.checkedIntSub => false
+    | RustSyntax::Machine.checkedIntMul => false
+    | RustSyntax::Machine.checkedIntNeg => false
+    | RustSyntax::Machine.checkedIntQuot => false)
+}
+
+definition{
+  name: machineOptional,
+  parameters: [machine : RustSyntax::Machine],
+  result: Bool,
+  body: (match machine
+    | RustSyntax::Machine.checkedAdd ignoredWidth => false
+    | RustSyntax::Machine.checkedSub ignoredWidth => false
+    | RustSyntax::Machine.checkedMul ignoredWidth => false
+    | RustSyntax::Machine.checkedQuot ignoredWidth => false
+    | RustSyntax::Machine.checkedNeg ignoredWidth => false
+    | RustSyntax::Machine.checkedShl ignoredWidth => false
+    | RustSyntax::Machine.checkedShr ignoredWidth => false
+    | RustSyntax::Machine.tryFrom ignoredTarget => false
+    | RustSyntax::Machine.bitAnd ignoredWidth => false
+    | RustSyntax::Machine.bitOr ignoredWidth => false
+    | RustSyntax::Machine.bitXor ignoredWidth => false
+    | RustSyntax::Machine.bitNot ignoredWidth => false
+    | RustSyntax::Machine.natEq => false
+    | RustSyntax::Machine.natLe => false
+    | RustSyntax::Machine.natLt => false
+    | RustSyntax::Machine.natRem => false
+    | RustSyntax::Machine.intRem => false
+    | RustSyntax::Machine.checkedNatAdd => true
+    | RustSyntax::Machine.natSub => false
+    | RustSyntax::Machine.checkedNatMul => true
+    | RustSyntax::Machine.natQuot => false
+    | RustSyntax::Machine.checkedIntAdd => true
+    | RustSyntax::Machine.checkedIntSub => true
+    | RustSyntax::Machine.checkedIntMul => true
+    | RustSyntax::Machine.checkedIntNeg => true
+    | RustSyntax::Machine.checkedIntQuot => true)
 }
 
 definition{
@@ -1273,8 +1333,8 @@ definition{
   parameters: [machine : RustSyntax::Machine, values : (List TargetSyntax::Value)],
   result: ROutcome,
   body: (if (machineAccepts machine values) then (match (TargetSemantics::primitive (machinePrimitive machine) values)
-    | TargetSemantics::Outcome.value computed ignoredSteps => (ctor ROutcome.value computed)
-    | TargetSemantics::Outcome.overflow ignoredOverflow => (ctor ROutcome.abort)
+    | TargetSemantics::Outcome.value computed ignoredSteps => (if (machineOptional machine) then (ctor ROutcome.value (ctor TargetSyntax::Value.some computed)) else (ctor ROutcome.value computed))
+    | TargetSemantics::Outcome.overflow ignoredOverflow => (if (machineOptional machine) then (ctor ROutcome.value (ctor TargetSyntax::Value.none)) else (ctor ROutcome.abort))
     | TargetSemantics::Outcome.stuck => (ctor ROutcome.stuck)
     | TargetSemantics::Outcome.exhausted => (ctor ROutcome.stuck)) else (ctor ROutcome.stuck)),
   axioms: [Classical.choice, Quot.sound, propext]

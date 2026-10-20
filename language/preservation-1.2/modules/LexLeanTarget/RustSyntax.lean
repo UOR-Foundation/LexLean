@@ -144,6 +144,15 @@ public inductive Machine where
   | natLt
   | natRem
   | intRem
+  | checkedNatAdd
+  | natSub
+  | checkedNatMul
+  | natQuot
+  | checkedIntAdd
+  | checkedIntSub
+  | checkedIntMul
+  | checkedIntNeg
+  | checkedIntQuot
 
 public inductive Callee where
   | function (_ : Nat)

@@ -493,6 +493,15 @@ impl Writer<'_, '_> {
             Machine::NatLt => "natLt",
             Machine::NatRem => "natRem",
             Machine::IntRem => "intRem",
+            Machine::CheckedNatAdd => "checkedNatAdd",
+            Machine::NatSub => "natSub",
+            Machine::CheckedNatMul => "checkedNatMul",
+            Machine::NatQuot => "natQuot",
+            Machine::CheckedIntAdd => "checkedIntAdd",
+            Machine::CheckedIntSub => "checkedIntSub",
+            Machine::CheckedIntMul => "checkedIntMul",
+            Machine::CheckedIntNeg => "checkedIntNeg",
+            Machine::CheckedIntQuot => "checkedIntQuot",
         };
         match machine.width() {
             Some(width) => {
