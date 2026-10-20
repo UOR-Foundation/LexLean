@@ -27,7 +27,7 @@ Feature: normative-source
     Then each plant is refused naming the file and, for a declaration, its position, and the committed modules project
 
   @NS-05 @build
-  Scenario: SPEC.md regenerates byte-identically from the chapter modules of the specification project, its conformance-ID table, its diagnostic-code table, and its stated total being derived from the register and registry modules and never typed, and the projector refuses a chapter item it does not read.
+  Scenario: SPEC.md regenerates byte-identically from the chapter modules of the specification project, its conformance-ID table, its diagnostic-code table, its authority table, and its stated total being derived from the register, registry, and authority modules and never typed, and the projector refuses a chapter item it does not read.
     Given the chapter, register, and registry modules of the committed `spec` project, and a plant of each foreign chapter item, a hand edit of a derived table, and a register edit that is not projected
     When the modules are projected to SPEC.md and the repository gate runs on each plant
     Then SPEC.md is byte-identical to the projection, each derived region equals what the register and registry modules give, and each plant is refused naming R1 and its position
