@@ -2673,7 +2673,37 @@ fn rustc_differential(roots: &[(&str, &Lowered, &[Run])], label: &str) -> usize 
 
 /// A defect planted in the source: the check it removes, the text of the
 /// source it is made at, and the root whose differential must catch it.
-const PLANTS: [super::Plant; 16] = [
+const PLANTS: [super::Plant; 20] = [
+    // The number of operands of a machine call is not compared with the
+    // primitive's.
+    super::Plant {
+        label: "machine arity not checked",
+        site: "(match ((exprLen args) =? (machineArity m))",
+        replacement: "(match true",
+        root: "validateCrate",
+    },
+    // The overflow value outside the payload of an `Err` is accepted.
+    super::Plant {
+        label: "stray overflow value accepted",
+        site: "| Lit.LitOverflow => (ctor Result.error [St, Bytes] (text \"overflow: the overflow value stands outside the payload of an `Err`\"))",
+        replacement: "| Lit.LitOverflow => (ctor Result.ok [St, Bytes] st)",
+        root: "validateCrate",
+    },
+    // The overflow value in the payload of an `Err` is refused too.
+    super::Plant {
+        label: "overflow value in an Err refused",
+        site: "(let skip : Bool := (if err then (isOverflowExpr head) else false);",
+        replacement: "(let skip : Bool := false;",
+        root: "validateCrate",
+    },
+    // A machine call is not an instance of correspondence, so no row is
+    // asked for it.
+    super::Plant {
+        label: "machine call not an instance of correspondence",
+        site: "| Callee.CalMachine m => (foundAt found (text \"call:machine\") org)",
+        replacement: "| Callee.CalMachine m => found",
+        root: "correspondCrate",
+    },
     // The profile check of a type is skipped: a heap type passes under
     // `rust-core`.
     super::Plant {
