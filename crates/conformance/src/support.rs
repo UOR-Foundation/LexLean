@@ -2390,6 +2390,20 @@ pub fn try_module_json(text: &str) -> Result<serde_json::Value, String> {
     lexlean::sdk::read_module(text).map_err(|error| error.to_string())
 }
 
+/// The `spec` tag of the module a source states, read from the parsed module
+/// and never from a substring of the text. The chapters of `spec/` quote every
+/// environment marker and control in their strings, so a scanner that selects
+/// sources by what their text contains selects the specification too; the tag
+/// is what a module is.
+#[must_use]
+pub fn module_spec(text: &str) -> Option<String> {
+    try_module_json(text)
+        .ok()?
+        .get("spec")?
+        .as_str()
+        .map(str::to_owned)
+}
+
 /// [`try_module_json`] for a source that is known to be well formed.
 ///
 /// # Panics

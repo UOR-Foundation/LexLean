@@ -2,7 +2,7 @@
 //! hashing, path rules, and output parsers, each against its §-oracle.
 
 use lexlean::artifact::canonical_json::Json;
-use lexlean::artifact::content_id::{FramedHasher, Sha256Digest};
+use lexlean::artifact::content_id::FramedHasher;
 use lexlean::ir::term::{Binder, LocalId, Term};
 use lexlean::lexicon::lse;
 use lexlean::source::atom::AtomClass;
@@ -66,20 +66,17 @@ fn lse_rejects_unbound_locals() {
     );
 }
 
-/// §21.1: the frame function has the exact byte layout.
+/// §21.1: the frame function has the exact byte layout. The expected digest
+/// is that of `d\0 || u32be(5) || "label" || u64be(4) || "body"`, computed
+/// outside this crate, which has no second implementation to compare with.
 #[test]
 fn frame_layout_is_exact() {
-    use sha2::Digest;
     let mut framed = FramedHasher::new("d");
     framed.frame("label", b"body");
-    let mut manual = sha2::Sha256::new();
-    manual.update(b"d\0");
-    manual.update(5u32.to_be_bytes());
-    manual.update(b"label");
-    manual.update(4u64.to_be_bytes());
-    manual.update(b"body");
-    let digest: [u8; 32] = manual.finalize().into();
-    assert_eq!(framed.finish(), Sha256Digest(digest));
+    assert_eq!(
+        framed.finish().to_hex(),
+        "b82a03486854ed54dbbd42f2e9976d311fd99389b8c089ff0eed7d477406159a"
+    );
 }
 
 /// §21.7: canonical JSON sorts keys, refuses floats and null, and

@@ -1,8 +1,7 @@
 \begin{lexlean}{Chapter08}
 \useglossary{lexlean.std.nat@1.2.0}
-\useglossary{spec.titles@1.0.0}
 \importmodule{DocRows}
-\title{Toolchains platforms and dependency policy}
+\title{Natural number addition}
 \begin{semanticmodule}
 definition{
   name: i0001,
@@ -311,7 +310,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "| Dependency | Role |" (cons "| --- | --- |" (cons "| `camino` | UTF-8 path handling |" (cons "| `clap` | CLI parsing |" (cons "| `fs4` | file locking |" (cons "| `rustix` | process-group signalling (`kill` of a group, without an external `kill`; safe wrappers, the crate forbids unsafe code) |" (cons "| `same-file` | file identity |" (cons "| `semver` | semantic-version parsing |" (cons "| `serde` | JSON and TOML deserialization and serialization |" (cons "| `serde_json` | JSON parsing and serialization |" (cons "| `sha2` | SHA-256 |" (cons "| `signal-hook` | interrupt handling (SIGINT, SIGTERM, SIGHUP, SIGQUIT end the live child process groups; §17.17) |" (cons "| `tempfile` | temporary directories |" (cons "| `toml` | TOML parsing |" (cons "| `unicode-normalization` | Unicode NFC normalization |" (cons "| `walkdir` | directory walking |" (nil String)))))))))))))))))
+      (cons "| Dependency | Role |" (cons "| --- | --- |" (cons "| `camino` | UTF-8 path handling |" (cons "| `clap` | CLI parsing |" (cons "| `fs4` | file locking |" (cons "| `rustix` | process-group signalling (`kill` of a group, without an external `kill`; safe wrappers, the crate forbids unsafe code) |" (cons "| `same-file` | file identity |" (cons "| `semver` | semantic-version parsing |" (cons "| `serde` | JSON and TOML deserialization and serialization |" (cons "| `serde_json` | JSON parsing and serialization |" (cons "| `signal-hook` | interrupt handling (SIGINT, SIGTERM, SIGHUP, SIGQUIT end the live child process groups; §17.17) |" (cons "| `tempfile` | temporary directories |" (cons "| `toml` | TOML parsing |" (cons "| `unicode-normalization` | Unicode NFC normalization |" (cons "| `walkdir` | directory walking |" (nil String))))))))))))))))
     ],
     constructor: DocRows::Item.table,
     type_arguments: []

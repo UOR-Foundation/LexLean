@@ -1,7 +1,26 @@
 //! Content identity (SPEC.md §21.1–§21.5, §22.9, §19.8): the frame function,
 //! the tree digest, and every labeled hash recipe.
 
-use sha2::{Digest, Sha256};
+include!(concat!(env!("OUT_DIR"), "/sha256_package.rs"));
+
+/// SHA-256 (SPEC.md §17.22, §21.1): the standard library's certified `Sha256`
+/// package, linked from the committed production export, and no other
+/// implementation.
+fn sha256(message: &[u8]) -> [u8; 32] {
+    // The package declares the effect `overflow` and its certificate states
+    // the result `Result<Digest, Overflow>`: `Overflow` is returned exactly
+    // when the message length in bits does not fit 64 bits, the end of FIPS
+    // 180-4's domain (2^61 bytes). No host allocates such a message, so this
+    // is an impossibility of the host and not a failure of any input (R5).
+    let sha256_package::Adt0::C0(a, b, c, d, e, f, g, h) =
+        sha256_package::run(sha256_package::Bytes::lit(message))
+            .expect("a message under 2^61 bytes is inside the domain of FIPS 180-4");
+    let mut out = [0u8; 32];
+    for (chunk, word) in out.chunks_exact_mut(4).zip([a, b, c, d, e, f, g, h]) {
+        chunk.copy_from_slice(&word.to_be_bytes());
+    }
+    out
+}
 
 /// A SHA-256 digest with lowercase-hex display.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -11,9 +30,7 @@ impl Sha256Digest {
     /// Hash raw bytes.
     #[must_use]
     pub fn of(bytes: &[u8]) -> Self {
-        let mut hasher = Sha256::new();
-        hasher.update(bytes);
-        Self(hasher.finalize().into())
+        Self(sha256(bytes))
     }
 
     /// The 64-character lowercase hexadecimal form.
@@ -68,8 +85,10 @@ impl<'de> serde::Deserialize<'de> for Sha256Digest {
 }
 
 /// An incremental framed hasher over one labeled recipe (§21.1).
+///
+/// The package digests a whole message, so the frames are held until `finish`.
 pub struct FramedHasher {
-    hasher: Sha256,
+    message: Vec<u8>,
 }
 
 impl FramedHasher {
@@ -77,29 +96,29 @@ impl FramedHasher {
     /// `"lexlean-source-v1\0"`.
     #[must_use]
     pub fn new(domain: &str) -> Self {
-        let mut hasher = Sha256::new();
-        hasher.update(domain.as_bytes());
-        hasher.update([0u8]);
-        Self { hasher }
+        let mut message = domain.as_bytes().to_vec();
+        message.push(0u8);
+        Self { message }
     }
 
     /// Append one `frame(label, bytes)` (§21.1).
     pub fn frame(&mut self, label: &str, bytes: &[u8]) {
         let label_bytes = label.as_bytes();
-        self.hasher.update(
-            u32::try_from(label_bytes.len())
+        self.message.extend_from_slice(
+            &u32::try_from(label_bytes.len())
                 .expect("label fits u32")
                 .to_be_bytes(),
         );
-        self.hasher.update(label_bytes);
-        self.hasher.update((bytes.len() as u64).to_be_bytes());
-        self.hasher.update(bytes);
+        self.message.extend_from_slice(label_bytes);
+        self.message
+            .extend_from_slice(&(bytes.len() as u64).to_be_bytes());
+        self.message.extend_from_slice(bytes);
     }
 
     /// Finish the recipe.
     #[must_use]
     pub fn finish(self) -> Sha256Digest {
-        Sha256Digest(self.hasher.finalize().into())
+        Sha256Digest(sha256(&self.message))
     }
 }
 
@@ -114,21 +133,19 @@ pub fn tree_digest(files: &[(&str, &[u8])]) -> Sha256Digest {
             .all(|pair| pair[0].0.as_bytes() < pair[1].0.as_bytes()),
         "tree digest input must be strictly sorted by path bytes"
     );
-    let mut hasher = Sha256::new();
-    hasher.update(b"lexlean-tree-v1");
-    hasher.update([0u8]);
+    let mut message = b"lexlean-tree-v1\0".to_vec();
     for (path, bytes) in files {
         let path_bytes = path.as_bytes();
-        hasher.update(
-            u32::try_from(path_bytes.len())
+        message.extend_from_slice(
+            &u32::try_from(path_bytes.len())
                 .expect("path fits u32")
                 .to_be_bytes(),
         );
-        hasher.update(path_bytes);
-        hasher.update((bytes.len() as u64).to_be_bytes());
-        hasher.update(bytes);
+        message.extend_from_slice(path_bytes);
+        message.extend_from_slice(&(bytes.len() as u64).to_be_bytes());
+        message.extend_from_slice(bytes);
     }
-    Sha256Digest(hasher.finalize().into())
+    Sha256Digest(sha256(&message))
 }
 
 /// The source ID (§21.3). `sources` are `(project-relative path, normalized

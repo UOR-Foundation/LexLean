@@ -139,3 +139,7 @@ and a quote as `\"` inside a string. Then run `lexlean fmt` in `spec/` and
 `just model-write`. The §31, §26.3 and §27.4 tables and the total under §31 are
 derived blocks, not text: change the register, registry or authority module instead.
 The projector is Rust and can falsify a projection, never establish one (C9).
+
+A scanner over `.lex.tex` sources selects a module by its parsed `spec`, never by
+a substring of its text: the chapters quote every marker and control in their
+strings (`conformance_au_05` found one that did not).
