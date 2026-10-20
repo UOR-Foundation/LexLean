@@ -1771,6 +1771,53 @@ fn cached_literal() {
     );
     assert!(allocations > 0, "a rebuilt literal allocates at each read");
 
+    // Certificate B states the constant as the machine's `ItemDef.constant`
+    // (SPEC.md §17.17), not as a function: the text and the data of the
+    // certificate of the cached crate name it, and the certificate of the
+    // rebuilding copy, a function, does not.
+    {
+        let module =
+            lexlean::production::rust_cert::module_for("LexLeanPreserve.C0.R0", "rust-std")
+                .expect("a Rust target");
+        let constant = "LexLeanTarget.RustSyntax.ItemDef.constant";
+        let states = |krate: &Crate| {
+            let b =
+                lexlean::production::rust_cert::certificate_b(&program, krate, &module, u64::MAX)
+                    .expect("certificate B builds");
+            let in_data = b.data.nodes.iter().any(|node| {
+                matches!(node, lexlean::ir::core::CoreNode::Const { n, .. } if n == constant)
+            });
+            (b.text.contains("ItemDef.constant"), in_data)
+        };
+        assert_eq!(
+            states(&cached),
+            (true, true),
+            "certificate B states the constant"
+        );
+        let mut as_function = cached.clone();
+        for item in &mut as_function.items {
+            if let ItemDef::Constant {
+                name,
+                result,
+                body,
+                at,
+            } = item.clone()
+            {
+                *item = ItemDef::Function {
+                    name,
+                    parameters: Vec::new(),
+                    result,
+                    body,
+                    at,
+                };
+            }
+        }
+        assert_eq!(
+            states(&as_function),
+            (false, false),
+            "a function is not stated as a constant"
+        );
+    }
     // A literal whose type is a declared algebraic type is not a constant,
     // although it holds a list: the type says no heap (`Type::heap`), so it
     // stays a function that builds the value at each call (SPEC.md §17.16).
