@@ -145,6 +145,9 @@ fn enc_lit(literal: &Lit) -> Value {
         Lit::Str(_) => adt(5, Vec::new()),
         Lit::Bytes(_) => adt(6, Vec::new()),
         Lit::Ordering(_) => adt(7, Vec::new()),
+        // The runtime profile's literal (`RB-15`): the corpus never holds one,
+        // and the validator program has no node for it.
+        Lit::Overflow => panic!("BS-05: the validator program has no node for the overflow value"),
     }
 }
 
@@ -256,6 +259,9 @@ fn enc_callee(callee: &Callee) -> Value {
     match callee {
         Callee::Function(n) => adt(0, vec![nat(*n)]),
         Callee::Runtime(item) => adt(1, vec![enc_item(*item)]),
+        // The runtime profile's callee (`RB-15`): the corpus never holds one,
+        // and the validator program has no node for it.
+        Callee::Machine(_) => panic!("BS-05: the validator program has no node for a machine call"),
     }
 }
 
