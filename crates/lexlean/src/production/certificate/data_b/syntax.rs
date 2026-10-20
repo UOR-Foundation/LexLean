@@ -10,7 +10,8 @@
 
 use super::super::data_a::Writer;
 use crate::calculus::rust::ast::{
-    Block, Callee, CaptureRead, Crate, Ctor, Dispatch, Expr, Ident, ItemDef, Let, Lit, Pat, Type,
+    Block, Callee, CaptureRead, Crate, Ctor, Dispatch, Expr, Ident, ItemDef, Let, Lit, Machine,
+    Pat, Type,
 };
 use crate::calculus::rust::runtime::Item;
 use crate::calculus::rust::Profile;
@@ -210,6 +211,7 @@ impl Writer<'_, '_> {
                 let value = self.order_term(*value);
                 self.rs_apply("Lit.ordering", &[value])
             }
+            Lit::Overflow => self.rs("Lit.overflow"),
         }
     }
 
@@ -471,6 +473,36 @@ impl Writer<'_, '_> {
         }
     }
 
+    /// A machine primitive as a `RustSyntax.Machine` term.
+    fn rs_machine(&mut self, machine: Machine) -> Term {
+        let name = match machine {
+            Machine::CheckedAdd(_) => "checkedAdd",
+            Machine::CheckedSub(_) => "checkedSub",
+            Machine::CheckedMul(_) => "checkedMul",
+            Machine::CheckedQuot(_) => "checkedQuot",
+            Machine::CheckedNeg(_) => "checkedNeg",
+            Machine::CheckedShl(_) => "checkedShl",
+            Machine::CheckedShr(_) => "checkedShr",
+            Machine::TryFrom(_) => "tryFrom",
+            Machine::BitAnd(_) => "bitAnd",
+            Machine::BitOr(_) => "bitOr",
+            Machine::BitXor(_) => "bitXor",
+            Machine::BitNot(_) => "bitNot",
+            Machine::NatEq => "natEq",
+            Machine::NatLe => "natLe",
+            Machine::NatLt => "natLt",
+            Machine::NatRem => "natRem",
+            Machine::IntRem => "intRem",
+        };
+        match machine.width() {
+            Some(width) => {
+                let kind = self.kind_of(width);
+                self.rs_apply(&format!("Machine.{name}"), &[kind])
+            }
+            None => self.rs(&format!("Machine.{name}")),
+        }
+    }
+
     fn rs_callee(&mut self, callee: &Callee) -> Term {
         match callee {
             Callee::Function(n) => {
@@ -480,6 +512,10 @@ impl Writer<'_, '_> {
             Callee::Runtime(runtime) => {
                 let item = self.rs_item(*runtime);
                 self.rs_apply("Callee.runtime", &[item])
+            }
+            Callee::Machine(machine) => {
+                let machine = self.rs_machine(*machine);
+                self.rs_apply("Callee.machine", &[machine])
             }
         }
     }

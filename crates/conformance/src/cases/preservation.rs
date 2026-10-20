@@ -4798,6 +4798,111 @@ pub fn run(id: &str) {
                 );
             }
         }
+        // §17.14, §17.16: the bitwise, order, and remainder primitives.
+        "SP-21" => {
+            let syntax = support::module_json(
+                &std::fs::read_to_string(
+                    repo_root()
+                        .join("compiler/src/RustSyntax.lex.tex")
+                        .as_std_path(),
+                )
+                .expect("compiler/src/RustSyntax.lex.tex"),
+            );
+            let machine: Vec<(String, usize)> = syntax["declarations"]
+                .as_array()
+                .and_then(|all| {
+                    all.iter()
+                        .find(|declaration| declaration["name"] == "Machine")
+                })
+                .expect("`Machine` is declared")["constructors"]
+                .as_array()
+                .expect("constructors")
+                .iter()
+                .map(|constructor| {
+                    (
+                        constructor["name"].as_str().expect("a name").to_owned(),
+                        constructor["fields"].as_array().expect("fields").len(),
+                    )
+                })
+                .collect();
+            let declared: Vec<(&str, usize)> = machine[8..]
+                .iter()
+                .map(|(name, fields)| (name.as_str(), *fields))
+                .collect();
+            assert_eq!(
+                declared,
+                [
+                    ("bitAnd", 1),
+                    ("bitOr", 1),
+                    ("bitXor", 1),
+                    ("bitNot", 1),
+                    ("natEq", 0),
+                    ("natLe", 0),
+                    ("natLt", 0),
+                    ("natRem", 0),
+                    ("intRem", 0),
+                ],
+                "the bitwise primitives at a width, the order of naturals, and the remainders"
+            );
+            assert_eq!(machine.len(), 17, "the first eight and these nine");
+            if !support::lean_backed("SP-21") {
+                return;
+            }
+            let header = "import LexLeanTarget.RustSemantics\nopen LexLeanTarget LexLeanTarget.RustSyntax LexLeanTarget.RustSemantics LexLeanTarget.TargetSyntax\n\ndef machineCrate : Crate := { profile := Profile.std, items := [] }\n";
+            let claims = [
+                "runMachine (Machine.bitAnd IntKind.u8) [Value.u8 240, Value.u8 60] = ROutcome.value (Value.u8 48)",
+                "runMachine (Machine.bitOr IntKind.u8) [Value.u8 240, Value.u8 60] = ROutcome.value (Value.u8 252)",
+                "runMachine (Machine.bitXor IntKind.u8) [Value.u8 240, Value.u8 60] = ROutcome.value (Value.u8 204)",
+                "runMachine (Machine.bitNot IntKind.u8) [Value.u8 0] = ROutcome.value (Value.u8 255)",
+                "runMachine (Machine.bitNot IntKind.i8) [Value.i8 0] = ROutcome.value (Value.i8 (-1))",
+                "runMachine (Machine.bitAnd IntKind.u8) [Value.u8 1, Value.u16 1] = ROutcome.stuck",
+                "runMachine Machine.natEq [Value.nat 3, Value.nat 3] = ROutcome.value (Value.bool true)",
+                "runMachine Machine.natEq [Value.nat 3, Value.nat 4] = ROutcome.value (Value.bool false)",
+                "runMachine Machine.natLe [Value.nat 4, Value.nat 4] = ROutcome.value (Value.bool true)",
+                "runMachine Machine.natLt [Value.nat 4, Value.nat 4] = ROutcome.value (Value.bool false)",
+                "runMachine Machine.natRem [Value.nat 7, Value.nat 2, Value.nat 0] = ROutcome.value (Value.nat 1)",
+                "runMachine Machine.natRem [Value.nat 7, Value.nat 0, Value.nat 9] = ROutcome.value (Value.nat 9)",
+                "runMachine Machine.intRem [Value.int (-7), Value.int 2, Value.int 0] = ROutcome.value (Value.int (-1))",
+                "runMachine Machine.intRem [Value.int 5, Value.int 0, Value.int 9] = ROutcome.value (Value.int 9)",
+                "eval 4 machineCrate [] (Expr.call (Callee.machine (Machine.bitXor IntKind.u8)) [Expr.lit (Lit.fixed IntKind.u8 240), Expr.lit (Lit.fixed IntKind.u8 60)] false) = ROutcome.value (Value.u8 204)",
+            ];
+            let shipped = preservation::shipped();
+            let compile = |name: &str, text: &str| {
+                let directory = tempfile::tempdir().expect("a directory");
+                let source = directory.path().join(format!("{name}.lean"));
+                std::fs::write(&source, text).expect("write");
+                preservation::pinned_with(
+                    "lean",
+                    directory.path(),
+                    std::slice::from_ref(&shipped.build),
+                )
+                .arg(&source)
+                .output()
+                .expect("lean runs")
+            };
+            let mut text = header.to_owned();
+            for claim in claims {
+                text.push_str(&format!("example : {claim} := rfl\n"));
+            }
+            let output = compile("Machine", &text);
+            assert!(
+                output.status.success(),
+                "the machine does not evaluate as stated:\n{}",
+                preservation::joined(&output)
+            );
+            for wrong in [
+                "runMachine (Machine.bitAnd IntKind.u8) [Value.u8 240, Value.u8 60] = ROutcome.value (Value.u8 60)",
+                "runMachine Machine.natLt [Value.nat 4, Value.nat 4] = ROutcome.value (Value.bool true)",
+                "runMachine Machine.natRem [Value.nat 7, Value.nat 0, Value.nat 9] = ROutcome.value (Value.nat 7)",
+                "runMachine Machine.intRem [Value.int (-7), Value.int 2, Value.int 0] = ROutcome.value (Value.int 1)",
+            ] {
+                let refused = compile("Wrong", &format!("{header}example : {wrong} := rfl\n"));
+                assert!(
+                    !refused.status.success(),
+                    "Lean accepts the wrong statement `{wrong}`"
+                );
+            }
+        }
         // §17.14, §17.16: the machine's primitives and the overflow literal.
         "SP-18" => {
             let read = |file: &str| {
@@ -4832,7 +4937,7 @@ pub fn run(id: &str) {
                     .collect()
             };
             assert_eq!(
-                constructors(&syntax, "Machine"),
+                constructors(&syntax, "Machine")[..8],
                 expected(&[
                     ("checkedAdd", 1),
                     ("checkedSub", 1),
@@ -4842,8 +4947,8 @@ pub fn run(id: &str) {
                     ("checkedShl", 1),
                     ("checkedShr", 1),
                     ("tryFrom", 1),
-                ]),
-                "the machine's primitives, each at a width"
+                ])[..],
+                "the machine's first eight primitives, each at a width"
             );
             assert_eq!(
                 constructors(&syntax, "Callee"),

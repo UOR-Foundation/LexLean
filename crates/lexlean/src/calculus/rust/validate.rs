@@ -333,6 +333,12 @@ impl Checker<'_> {
                 | Lit::Int(_)
                 | Lit::Fixed(..)
                 | Lit::Ordering(_) => Ok(()),
+                // Reached only outside the payload of an `Err`, which
+                // `Construct` below passes over.
+                Lit::Overflow => fail(
+                    "overflow: the overflow value stands outside the payload of an `Err`"
+                        .to_owned(),
+                ),
             },
             Expr::Move(ident, _) => self.consume(ident),
             Expr::Not(inner, _) => {
@@ -384,6 +390,24 @@ impl Checker<'_> {
                             .ok_or_else(|| format!("f{n} is not declared"))?;
                         self.call(fallible, *propagate, tail, &format!("f{n}"))
                     }
+                    Callee::Machine(machine) => {
+                        if args.len() != machine.arity() {
+                            return fail(format!(
+                                "machine: `{}` receives {} operands of {}",
+                                machine.primitive(),
+                                args.len(),
+                                machine.arity()
+                            ));
+                        }
+                        // A machine primitive returns its value or an
+                        // `Option` of it and never fails with `Overflow`.
+                        self.call(
+                            false,
+                            *propagate,
+                            tail,
+                            &format!("`{}`", machine.primitive()),
+                        )
+                    }
                     Callee::Runtime(item) => {
                         if item.heap() {
                             self.heap(&format!("the runtime function `{}`", item.path()))?;
@@ -414,6 +438,9 @@ impl Checker<'_> {
             }
             Expr::Construct { ctor, args, .. } => {
                 for arg in args {
+                    if matches!(ctor, Ctor::Err(..)) && matches!(arg, Expr::Lit(Lit::Overflow, _)) {
+                        continue;
+                    }
                     self.expr(arg, false)?;
                 }
                 match ctor {
@@ -964,6 +991,9 @@ impl Found {
                     Lit::Str(_) => ("string", None),
                     Lit::Bytes(_) => ("bytes", None),
                     Lit::Ordering(_) => ("ordering", None),
+                    // The payload of an `Err`, not a construct lowered from
+                    // a calculus element: it has no row.
+                    Lit::Overflow => return,
                 };
                 self.wide(&format!("lit:{kind}"), origin, width);
             }
@@ -985,6 +1015,9 @@ impl Found {
             } => {
                 match callee {
                     Callee::Function(_) => self.at("call:function", at),
+                    // Only runtime crates call a machine primitive; none is
+                    // lowered from a calculus element.
+                    Callee::Machine(_) => {}
                     Callee::Runtime(item) => {
                         let path = item.path();
                         let base = path.rsplit("::").next().unwrap_or(&path).to_owned();
