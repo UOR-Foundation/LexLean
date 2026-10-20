@@ -400,6 +400,12 @@ A tooling term is not well typed: a call with the wrong type arguments or argume
 
 Class: `language`. Exit code: 1.
 
+## `LLT4016` --- Unbounded or unspecified text generation
+
+A text declaration does not state the bound it must: a context window with capacity 0, or a text generator with max_tokens 0.
+
+Class: `language`. Exit code: 1.
+
 ## `LLV7001` --- Lean/Lake/leanchecker version or executable mismatch
 
 Lean/Lake/leanchecker version or executable mismatch.

@@ -10234,3 +10234,30 @@ imposes and not a gap in the case that reaches them:
   certificates that the library and `cargo xtask check-calculus` read; no
   command takes one, and the one production path to `LLB6005` is a package the
   Rust profile cannot render, which no committed project builds.
+
+## Planted defects for the context windows and text generators (slice 2 of #30)
+
+Each defect below was planted alone in `ir/semantic/language_model.rs`, the named
+test run once with `cargo test -p repo-conformance --test conformance <test> --
+--exact`, the failure observed, and the plant restored with `git checkout`
+(§27.9). The runs were made on a Linux x86-64 host with `leanprover/lean4:v4.32.1`
+installed through `elan`, with `schemas/semantic-module-v2.schema.json` at its
+content before the `minimum: 0` change for `capacity` and `max_tokens`, because
+that change moves the compiler-semantics ID and the committed example locks
+were not regenerated in the same change; the planted source is not an input of
+that ID. The signatures are the first panic message, trimmed.
+
+| ID | Planted defect | Expected failure signature |
+| --- | --- | --- |
+| `LM-04` | `check_context_window`: the `keep_last` arm names `ADMIT_REFUSE` where it named `ADMIT_KEEP_LAST` | `the module verifies with real Lean: ... LLV7002 ... Lean rejected `Models.Recognizer` (error): Type mismatch LexLeanText.admitKeepLast_bounded capacity __tokens has type ... admitKeepLast ... but is expected to have type ... admitRefuse ...` |
+| `LLT4016` (window) | `check_context_window`: the capacity-0 test made `false &&` | `check fails` (a window of capacity 0 must be refused) |
+| `LLT4016` (generator) | `check_text_generator`: the `max_tokens`-0 test made `false &&` | `check fails` (a generator of `max_tokens` 0 must be refused) |
+| `LM-05` | `check_text_generator`: the stateful-scorer refusal made `false &&` | `expected "is stateful" under LLT4006, got LLT4006: ... scorer `CountingModel` needs runtime checks its evidence does not discharge` |
+| `LM-05` | `check_text_generator`: the undischarged-runtime-check refusal made `false &&` | `check fails` (a scorer whose postcondition is a runtime check must be refused) |
+| `LM-05` | `check_text_generator`: the `Option.none` arm of `generate` returns `unknown_token` where it returned `invalid_utf8` | `the module verifies with real Lean: ... LLV7002 ... Tactic `rfl` failed: The left-hand side Garble.generate "a" is not definitionally equal to the right-hand side Except.error Garble.Failure.invalid_utf8` |
+| `LM-06` | `check_text_generator`: `sampled` made `false &&` | `assertion `left == right` failed: Draw.run takes the seed as its last input` (`left: Some(String("list"))`, `right: Some(String("uint32"))`) |
+
+The wrong-shape scorer refusals (a contract that maps to `nat`, a contract over
+`list int`) share the stateful and undischarged refusals' branch structure in
+`check_text_generator` but were not planted separately; the case asserts each
+by its reason (`does not map `list uint32` to `list int``).
