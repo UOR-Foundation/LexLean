@@ -124,7 +124,7 @@ pub fn run(id: &str) {
 
     // A theorem for another function, a function without one, and a theorem
     // that runs another function than its name says are each refused.
-    let renamed = text.replacen("name: refines_nat_add", "name: refines_nat_sub", 1);
+    let renamed = text.replacen("name: refines_nat_add", "name: refines_nat_other", 1);
     assert_ne!(renamed, text, "the plant site exists");
     let error = complete(&renamed).expect_err("a theorem for another function");
     assert!(error.contains("refinement theorems are for"), "{error}");

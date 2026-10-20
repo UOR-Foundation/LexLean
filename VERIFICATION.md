@@ -1953,6 +1953,8 @@ detected. `rb_07` and the `lexlean` unit tests of the renderer and runtime diges
 the records bound to the compiler-semantics ID (`rust_renderer`, `rust_runtime_core`,
 `rust_runtime_std` in `language/semantics-1.2.toml`), which are left to the regeneration wave.
 
+`rb_06` found one more break of the generated text: the machine primitives `int_rem` and `int_quot` print as block expressions, and Clippy's default lints refuse a block as a `match` scrutinee (`blocks_in_conditions`) in the package that carries `int_quot`. The printer binds a scrutinee that begins with a block, `{ let value = <block>; match value { … } }`, as it binds a loop's step; with it `rb_06` passes on every committed package.
+
 Plants were run with `cargo test -p repo-conformance --test conformance conformance_rb_16`,
 each restored with `git checkout` or the saved file.
 
@@ -1989,8 +1991,8 @@ project of the five modules the runtime module imports, and has the pinned Lean 
 conditional of `itemFallible` only through `ite_true` and `ite_false`, which the lowering of
 `term_cases` therefore names (see `SM-35`).
 
-Plants, each restored: a theorem renamed to `refines_nat_sub` (`the module defines {"nat_add"},
-its refinement theorems are for {"nat_sub"}`); the theorem removed (the same message); the theorem
+Plants, each restored: a theorem renamed to `refines_nat_other` (`the module defines` the fifteen names,
+`its refinement theorems are for` the fourteen and `nat_other`); the theorem removed (the same message); the theorem
 run on `"nat_sub"` (`refines_nat_add states the run of nat_sub`); the body changed to the checked
 product (`LLV7002` with `unsolved goals`); the axiom policy changed to `[propext]` (`LLV7005`,
 `violates its exact axiom policy: observed [Classical.choice, Quot.sound, propext]`).

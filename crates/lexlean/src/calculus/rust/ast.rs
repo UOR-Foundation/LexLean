@@ -940,7 +940,18 @@ impl Printer {
                 if arms.is_empty() {
                     return format!("match {scrutinee} {{}}");
                 }
-                let mut out = format!("match {scrutinee} {{\n");
+                // A scrutinee that is a block is bound first, as a loop's step
+                // is: Rust's lint gate refuses a block as a scrutinee.
+                let (open, close, scrutinee) = if scrutinee.starts_with('{') {
+                    (
+                        format!("{{ let value = {scrutinee}; "),
+                        " }",
+                        "value".to_owned(),
+                    )
+                } else {
+                    (String::new(), "", scrutinee)
+                };
+                let mut out = format!("{open}match {scrutinee} {{\n");
                 for (pattern, body) in arms {
                     let body = self.block_inline(body, depth + 1);
                     let _ = writeln!(
@@ -950,7 +961,7 @@ impl Printer {
                         pat(pattern)
                     );
                 }
-                let _ = write!(out, "{}}}", "    ".repeat(depth));
+                let _ = write!(out, "{}}}{close}", "    ".repeat(depth));
                 out
             }
             Expr::Block(block) => self.block_inline(block, depth),
