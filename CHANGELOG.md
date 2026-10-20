@@ -17,6 +17,14 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- Normative text as LexLean source, SPEC.md (`NS-05`, stage 2 of #111).
+  SPEC.md is the projection of 33 chapter modules of `spec/` (1,330 `DocRows.Item`
+  records: headings, paragraphs, tables, fences, continuations, derived blocks);
+  the §31 table, the §26.3 table and the total under §31 are generated from the
+  register and registry modules. §26.3 now equals `model/errors.toml` (39 rows
+  differed: 36 meanings, three codes the table lacked); the §31 table is one
+  table. Count 434 becomes 435.
+
 - Normative text as LexLean source, the register (SPEC.md §27.5, `NS-01`..`NS-04`,
   stage 1 of #111). The conformance register, the diagnostic registry, the
   ledger and the authority register are the semantic modules of the new

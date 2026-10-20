@@ -10298,3 +10298,41 @@ projection, never establish one (C9, SPEC.md §27.5). `NS-01` has the pinned
 Lean elaborate and replay the 40 modules of `spec/` (about 34 seconds on the
 host above); that proves each record definition is a well-typed closed term of
 its row structure and nothing about what the strings say.
+
+## Planted defects for SPEC.md as LexLean source (`NS-05`, #111)
+
+Planted alone on the committed tree, `cargo xtask validate-model` run once, the
+failure observed, the plant restored with `git checkout` (§27.9). Linux x86-64.
+`conformance_ns_03` and `conformance_ns_05` assert the same plants in scratch
+copies on every run, and `conformance_ns_05` adds a chapter missing from
+`DocOrder`.
+
+| ID | Planted defect | Observed (after `gate failed: model is inconsistent:`) |
+| --- | --- | --- |
+| `NS-05` | `SPEC.md` §26.3: the meaning of `LLC0001` edited by hand | ``R1: SPEC.md differs from the projection of spec/src: a generated view is never edited, so edit the module and run `just model-write` (NS-03)`` |
+| `NS-05` | `SPEC.md` §17.21: a sentence of prose edited by hand | the same |
+| `NS-05` | `spec/src/IdsRP.lex.tex`: the statement of `RP-01` edited, nothing projected | ``R1: SPEC.md, model/ids.toml differ from the projection of spec/src: ... (NS-03)`` |
+| `NS-05` | `spec/src/Chapter00.lex.tex`: `DocRows::Item.para` made `DocRows::Item.quote` | ``R1: spec/src/Chapter00.lex.tex: declaration 2 `i0002` (byte 393 of the module body): the constructor is not one of `DocRows.Item` (NS-04)`` |
+| `NS-05` | `spec/src/Chapter31.lex.tex`: the derived block `register-table` made `no-such-table` | ``R1: spec/src/Chapter31.lex.tex: declaration 3 `i0003` (byte 966 of the module body): `no-such-table` is not a derived block (NS-04)`` |
+| `NS-05` | `spec/src/Chapter00.lex.tex`: a paragraph item of 61 lines | ``R1: spec/src/Chapter00.lex.tex: declaration 2 `i0002` (...): an item holds at most 60 lines; the rest continues in a `cont` item (NS-04)`` |
+
+*What the evidence is.* SPEC.md at the base commit and the projection of the
+chapter modules differ in exactly two ways, both deliberate:
+
+1. §31's table was two tables in the file, split by a blank line after `OR-08`;
+   the projection is one table, as the section intends.
+2. §26.3 is the projection of `model/errors.toml`: 39 of its 86 rows differ from
+   the text SPEC.md had (36 changed meanings and the three codes
+   `LLV7008`–`LLV7010` that the table lacked), and the rows follow the registry's
+   order. `errors.toml` is unchanged, so the shipped crate's embedded bytes are.
+   The old and new text of the 39 are in the pull request.
+
+Every other line of SPEC.md is byte-identical to the file it replaced, outside
+the sentences of §26.1, §26.3, §27.5, §27.6 and §31 that now say they are
+generated. The conversion was a one-time program, not committed: the chapters
+carry the text as typed strings (headings, paragraphs, tables, fences), and the
+comparison with the previous bytes, with the plants above, is what establishes
+the projection (C9). `%` is spelled U+FF05 in the chapters because a source
+cannot hold a raw percent sign (§12.1, `LLL1002`) and the formatter would write
+one back; no text of SPEC.md contains U+FF05. `NS-01` now has the pinned Lean
+elaborate and replay 75 modules (about 78 seconds for the case).
