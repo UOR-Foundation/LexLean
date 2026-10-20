@@ -4011,6 +4011,7 @@ interpreter was restored and the fixtures regenerated; `compiler/` verifies.
 
 ### calculus literal weight can fail (TC-08)
 
+Command: `cargo test -p repo-conformance --test conformance conformance_tc_08`.
 Planted, in two steps. First the reference interpreter charged a literal one
 step (the rule before TC-08); `conformance_tc_08` refused it at the string
 literal, whose weight is 4 for `"h\u{e9}\u{e9}"`:
@@ -4027,6 +4028,11 @@ Second, with the interpreter correct, `TargetSemantics.lex.tex` was restored to
 ```text
 the denotation charges a literal its weight
 ```
+
+The second plant is a text check: the case reads `TargetSemantics.lex.tex` and
+requires the line that charges `weight literal`. It shows the source was not
+restored to the old charge; it does not show the kernel's reduction agrees
+with the interpreter, which needs the regenerated fixtures.
 
 Removed: the weight charge was restored in both. The kernel's own check of
 the rule, a fixture whose `rfl` theorem states the weighted step count, needs
