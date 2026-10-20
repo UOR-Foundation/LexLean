@@ -901,6 +901,7 @@ pub fn audit_deferral(root: &Path, model: &repo_model::Model) -> Result<(), Fail
             "features",
             "examples",
             "model",
+            "spec",
             "tests",
             "lean",
             "compiler",
@@ -1139,11 +1140,12 @@ pub fn audit_errors(root: &Path, model: &repo_model::Model) -> Result<(), Fail> 
             "features",
             "examples",
             "model",
+            "spec",
             "compiler",
             "stdlib",
             "bootstrap",
         ],
-        &[".toml", ".json", ".feature", ".md", ".txt"],
+        &[".toml", ".json", ".feature", ".md", ".txt", ".lex.tex"],
         &mut mention_files,
     );
     for path in mention_files {
@@ -1151,6 +1153,18 @@ pub fn audit_errors(root: &Path, model: &repo_model::Model) -> Result<(), Fail> 
         // (SPEC.md 26.2); range bounds are not claims this repository
         // makes, so the specification is not scanned.
         if path.file_name().is_some_and(|name| name == "SPEC.md") {
+            continue;
+        }
+        // The chapter modules of spec/ are SPEC.md's source and state the same
+        // ranges.
+        if path
+            .parent()
+            .is_some_and(|parent| parent.ends_with("spec/src"))
+            && path.file_name().is_some_and(|name| {
+                let name = name.to_string_lossy();
+                name.starts_with("Chapter") && name.ends_with(".lex.tex")
+            })
+        {
             continue;
         }
         let Ok(text) = std::fs::read_to_string(&path) else {

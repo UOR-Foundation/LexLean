@@ -2618,7 +2618,7 @@ statement = "The projector fails closed on a module of the specification project
 id = "NS-05"
 level = "build"
 suite = "normative-source"
-statement = "SPEC.md regenerates byte-identically from the chapter modules of the specification project, its conformance-ID table, its diagnostic-code table, and its stated total being derived from the register and registry modules and never typed, and the projector refuses a chapter item it does not read."
+statement = "SPEC.md regenerates byte-identically from the chapter modules of the specification project, its conformance-ID table, its diagnostic-code table, its authority table, and its stated total being derived from the register, registry, and authority modules and never typed, and the projector refuses a chapter item it does not read."
 
 [[id]]
 id = "NS-06"

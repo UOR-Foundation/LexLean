@@ -10299,6 +10299,22 @@ Lean elaborate and replay the 40 modules of `spec/` (about 34 seconds on the
 host above); that proves each record definition is a well-typed closed term of
 its row structure and nothing about what the strings say.
 
+### `audit-deferral` and the code-mention scan read `spec/` (#231 review)
+
+`spec` is among the directories R4 reads, and among those the diagnostic-code
+mention scan reads (`.lex.tex` included). Planted on the real gate after
+`model-write`, so that the projection, the scenario and the §31 row agree and
+only the audit can object:
+
+| Rule | Planted defect | Observed |
+| --- | --- | --- |
+| R4 | the deferral marker (spelled in halves here) at the head of the `NS-01` statement in `spec/src/IdsNS.lex.tex` | the audit names `spec/src/IdsNS.lex.tex:11` (and `model/ids.toml:2597`, which carries the same text) |
+| R4 | the marker as a comment in `spec/glossary/spec.titles/lexicon.toml`, a file only `spec/` holds | ``spec/glossary/spec.titles/lexicon.toml:6: # <marker>`` |
+| R5 | a code-shaped token that is not registered, as a comment in `spec/glossary/spec.titles/lexicon.toml` | `R5:` the token, `in .../spec/glossary/spec.titles/lexicon.toml is not a registered diagnostic code` |
+
+An unregistered code written in a `.lex.tex` statement is caught first in
+`CONFORMANCE.md`, which carries the same text, so the `.lex.tex` extension of
+the mention scan is not isolated by a plant; the `spec/` directory is.
 ## Planted defects for SPEC.md as LexLean source (`NS-05`, #111)
 
 Planted alone on the committed tree, `cargo xtask validate-model` run once, the
@@ -10337,6 +10353,23 @@ cannot hold a raw percent sign (§12.1, `LLL1002`) and the formatter would write
 one back; no text of SPEC.md contains U+FF05. `NS-01` now has the pinned Lean
 elaborate and replay 75 modules (about 78 seconds for the case).
 
+### §27.4 derived, U+FF05 standing check, titles (#232 review)
+
+- §27.4 is now a `derived` item (`authority-table`) generated from the authority
+  module, which carries a `subject` per row that `authorities.toml` does not.
+  The table lists all 7 authorities (the typed one listed 4). Planted on the
+  real gate: the Subject of `LAKE-4-32-1` edited by hand in SPEC.md, refused as
+  ``R1: SPEC.md differs from the projection of spec/src ... (NS-03)``.
+- U+FF05 is reserved to spell a percent sign in the chapters, and the projector
+  now refuses, on every run, a projection that would hold it: a register
+  statement carrying one reached SPEC.md unmapped. Planted on the real gate
+  (`U+FF05` in the statement of `RP-01`): ``R1: SPEC.md would hold U+FF05, which the
+  chapters reserve to spell a percent sign (NS-05)``. `conformance_ns_05`
+  asserts it.
+- Each of the 75 modules has its own title, from the local glossary
+  `spec/glossary/spec.titles` (a numeral is not renderer-safe in a title, so a
+  chapter is titled by its heading's words). The mention scan skips the chapter
+  modules, as it skips SPEC.md, because they state the same code ranges.
 ## Planted defects for the source-authority audit (`NS-06`, #111)
 
 Planted alone on the committed tree, `cargo xtask validate-model` run once, the
@@ -10349,12 +10382,13 @@ copies on every run.
 | --- | --- | --- |
 | `NS-06` | `model/extra.toml` | ``R1: model/extra.toml is a file of model/ that is not a projection of spec/src (NS-06)`` |
 | `NS-06` | `SPEC2.md` at the root | ``R1: SPEC2.md is a Markdown file at the root that is neither generated from spec/src nor on the list of hand-written documents (NS-06)`` |
+| `NS-06` | the statement of `RP-06` in a new `spec/README.md` (Markdown under `spec/` is read; only build output and `expected` directories are skipped by name) | ``R1: spec/README.md restates a registered statement, which makes it a second source: ... (NS-06)`` |
 | `NS-06` | the statement of `RP-06` appended to `README.md` | ``R1: README.md restates a registered statement, which makes it a second source: ... (NS-06)`` |
 
 At the base the audit found nothing to refuse: 7 root documents are
 projections or on the list, `model/` holds the four projections and the one
-vendored copy, and 17 hand-written Markdown files restate none of the 435
-register or 86 registry statements of 40 characters or more. The restatement
+vendored copy, and 17 hand-written Markdown files restate none of the register or
+registry statements of 40 characters or more (the audit prints its counts on every run). The restatement
 rule is a heuristic with a threshold, not a proof that no second source exists:
 a paraphrase is not found. What it excludes is the cheap failure, a copied
 register.

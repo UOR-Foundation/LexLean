@@ -13,6 +13,11 @@ lean_toolchain = "leanprover/lean4:v4.32.1"
 package = "lexlean.std.nat"
 kind = "builtin"
 
+[[lexicon_source]]
+package = "spec.titles"
+kind = "path"
+path = "glossary/spec.titles"
+
 [limits]
 max_file_bytes = 4194304
 max_total_source_bytes = 67108864

@@ -106,6 +106,9 @@ const AUTHORITIES: Table = Table {
         ("redistribution", Kind::Text, true),
         ("retrievalDate", Kind::Text, true),
         ("supersessionPolicy", Kind::Text, true),
+        // The "Subject" column of the §27.4 table: it has no place in
+        // `authorities.toml`, so the source alone carries it.
+        ("subject", Kind::Text, false),
     ],
 };
 
@@ -770,7 +773,12 @@ fn read_item(module: &Module, index: usize) -> Result<Item, ModelError> {
 }
 
 /// The lines a `derived` item stands for, from the register and the registry.
-fn derived(name: &str, register: &[Vec<Lit>], errors: &[Vec<Lit>]) -> Option<Vec<String>> {
+fn derived(
+    name: &str,
+    register: &[Vec<Lit>],
+    errors: &[Vec<Lit>],
+    authorities: &[Vec<Lit>],
+) -> Option<Vec<String>> {
     let text = |lit: &Lit| match lit {
         Lit::Text(text) => text.clone(),
         _ => String::new(),
@@ -796,6 +804,17 @@ fn derived(name: &str, register: &[Vec<Lit>], errors: &[Vec<Lit>]) -> Option<Vec
             let mut lines = vec!["| Code | Meaning |".to_owned(), "|---|---|".to_owned()];
             for row in errors {
                 lines.push(format!("| `{}` | {} |", text(&row[0]), text(&row[4])));
+            }
+            lines
+        }
+        "authority-table" => {
+            let mut lines = vec![
+                "| Authority ID | Subject |".to_owned(),
+                "|---|---|".to_owned(),
+            ];
+            for row in authorities {
+                let last = row.len() - 1;
+                lines.push(format!("| `{}` | {} |", text(&row[0]), text(&row[last])));
             }
             lines
         }
@@ -842,6 +861,7 @@ fn document(
     chapters: &[String],
     register: &[Vec<Lit>],
     errors: &[Vec<Lit>],
+    authorities: &[Vec<Lit>],
 ) -> Result<String, ModelError> {
     check_item_type(&Module::load(root, "DocRows")?)?;
     let mut lines: Vec<String> = Vec::new();
@@ -875,9 +895,10 @@ fn document(
                 }
                 Item::Derived(name) => {
                     close(&mut lines, &mut open);
-                    let expanded = derived(&name, register, errors).ok_or_else(|| {
-                        module.refuse(index, &format!("`{name}` is not a derived block"))
-                    })?;
+                    let expanded =
+                        derived(&name, register, errors, authorities).ok_or_else(|| {
+                            module.refuse(index, &format!("`{name}` is not a derived block"))
+                        })?;
                     lines.push(String::new());
                     lines.extend(expanded);
                 }
@@ -975,8 +996,8 @@ pub fn project(root: &Path) -> Result<Projection, ModelError> {
         <[_; 4]>::try_from(headers).map_err(|_| {
             ModelError::Inconsistent("R1: Headers does not hold four headers (NS-04)".to_owned())
         })?;
-    let spec = document(root, &chapter_names, &register, &errors)?;
-    Ok(Projection {
+    let spec = document(root, &chapter_names, &register, &errors, &authorities)?;
+    let projection = Projection {
         spec,
         ids: emit(&ids_header, &ids_spec, &IDS, &register),
         errors: emit(&errors_header, &errors_spec, &ERRORS, &errors),
@@ -988,7 +1009,18 @@ pub fn project(root: &Path) -> Result<Projection, ModelError> {
             &authorities,
         ),
         sections,
-    })
+    };
+    // The chapters spell a percent sign as U+FF05, so a projection that holds
+    // one is ambiguous: a register statement carrying it would reach SPEC.md
+    // unmapped. Refused here, every time, not just when the text was converted.
+    for (path, text) in projection.files() {
+        if text.contains('\u{ff05}') {
+            return Err(ModelError::Inconsistent(format!(
+                "R1: {path} would hold U+FF05, which the chapters reserve to spell a percent sign (NS-05)"
+            )));
+        }
+    }
+    Ok(projection)
 }
 
 #[cfg(test)]

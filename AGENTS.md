@@ -124,6 +124,6 @@ item; to add one, add an item and renumber `i0001`, `i0002`, ... in the module;
 keep an item to 60 lines (`cont` continues it). Write a `%` as U+FF05 (a source
 cannot hold a raw one, and the projector writes it back), a backslash as `\\`
 and a quote as `\"` inside a string. Then run `lexlean fmt` in `spec/` and
-`just model-write`. The §31 table, the §26.3 table and the total under §31 are
-derived blocks, not text: change the register or the registry module instead.
+`just model-write`. The §31, §26.3 and §27.4 tables and the total under §31 are
+derived blocks, not text: change the register, registry or authority module instead.
 The projector is Rust and can falsify a projection, never establish one (C9).

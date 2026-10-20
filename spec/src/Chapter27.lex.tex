@@ -190,7 +190,9 @@ definition{
   parameters: [],
   result: DocRows::Item,
   body: constructor{
-    arguments: [(cons "`model/authorities.toml` MUST initially identify:" (nil String))],
+    arguments: [
+      (cons "The authority register (`model/authorities.toml`, generated from the authority module of the specification project, §27.5) identifies:" (nil String))
+    ],
     constructor: DocRows::Item.para,
     type_arguments: []
   },
@@ -202,10 +204,8 @@ definition{
   parameters: [],
   result: DocRows::Item,
   body: constructor{
-    arguments: [
-      (cons "| Authority ID | Subject |" (cons "|---|---|" (cons "| `LEAN-REL-4-32-1` | Lean 4.32.1 release/tag and source commit |" (cons "| `LAKE-4-32-1` | Lake distributed with Lean 4.32.1 |" (cons "| `LEANCHECKER-4-32-1` | `leanchecker` replay behavior and its stated non-independent status |" (cons "| `PRINT-AXIOMS-4-32-1` | Lean 4.32.1 `#print axioms` output behavior |" (nil String)))))))
-    ],
-    constructor: DocRows::Item.table,
+    arguments: ["authority-table"],
+    constructor: DocRows::Item.derived,
     type_arguments: []
   },
   executable: true
@@ -257,7 +257,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "The conformance register, the diagnostic registry, the honesty ledger and the" (cons "authority register are LexLean source: the semantic modules of the" (cons "language-1.2 project `spec/`, a member of the workspace (§10.5) written in the" (cons "authoring notation (§17.21), one module per ID family for the register and one" (cons "each for the registry, the ledger and the authorities. This document is LexLean" (cons "source too: its chapters are the modules `Chapter00`, `Chapter01`, … of the same" (cons "project, each a sequence of `DocRows.Item` records (a heading with its level and" (cons "the blank lines before it, a paragraph, a table, a fenced block with its info" (cons "string, a continuation of the previous block, or a derived block). A derived" (cons "block is not text: the §31 table, the §26.3 table and the total under §31 are" (cons "generated from the register and registry modules. `model/ids.toml`," (cons "`model/errors.toml`, `model/ledger.toml`, `model/authorities.toml` and" (cons "`SPEC.md` are generated from the modules, with `CONFORMANCE.md` and `ERRORS.md`" (cons "generated from the model, and none of the seven is edited by hand (`NS-02`," (cons "`NS-05`). A register row is the `IdRow` record of a definition named for its" (cons "ID, with the §31 \"Primary specification\" cell in `sections`; the projector" (cons "accepts exactly the shapes the modules are made of and refuses any other" (cons "declaration, term, field, name, file or family, naming the file and the" (cons "declaration (`NS-04`). A source cannot hold a raw percent sign (§12.1), so the" (cons "chapters spell it as the fullwidth percent sign U+FF05, which the projector" (cons "writes back as `％`." (nil String))))))))))))))))))))))
+      (cons "The conformance register, the diagnostic registry, the honesty ledger and the" (cons "authority register are LexLean source: the semantic modules of the" (cons "language-1.2 project `spec/`, a member of the workspace (§10.5) written in the" (cons "authoring notation (§17.21), one module per ID family for the register and one" (cons "each for the registry, the ledger and the authorities. This document is LexLean" (cons "source too: its chapters are the modules `Chapter00`, `Chapter01`, … of the same" (cons "project, each a sequence of `DocRows.Item` records (a heading with its level and" (cons "the blank lines before it, a paragraph, a table, a fenced block with its info" (cons "string, a continuation of the previous block, or a derived block). A derived" (cons "block is not text: the §31 table, the §26.3 table, the §27.4 table and the total" (cons "under §31 are generated from the register, registry and authority modules. `model/ids.toml`," (cons "`model/errors.toml`, `model/ledger.toml`, `model/authorities.toml` and" (cons "`SPEC.md` are generated from the modules, with `CONFORMANCE.md` and `ERRORS.md`" (cons "generated from the model, and none of the seven is edited by hand (`NS-02`," (cons "`NS-05`). A register row is the `IdRow` record of a definition named for its" (cons "ID, with the §31 \"Primary specification\" cell in `sections`; the projector" (cons "accepts exactly the shapes the modules are made of and refuses any other" (cons "declaration, term, field, name, file or family, naming the file and the" (cons "declaration (`NS-04`). A source cannot hold a raw percent sign (§12.1), so the" (cons "chapters spell it as the fullwidth percent sign U+FF05, which the projector" (cons "writes back as `％`." (nil String))))))))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []

@@ -32,6 +32,10 @@ fn refuse(message: String) -> ModelError {
     ModelError::Inconsistent(format!("R1: {message} (NS-06)"))
 }
 
+/// Directories no document of the repository lives in: build output and
+/// caches, and the `expected` oracles, which hold generated copies of the
+/// committed projects (the audit of `spec/` is not exempted by this; a
+/// Markdown file anywhere else under `spec/` is read).
 fn skipped(name: &str) -> bool {
     matches!(
         name,
@@ -145,8 +149,7 @@ pub fn audit(root: &Path, model: &Model, projection: &Projection) -> Result<Stri
         let generated = projected.contains(relative.as_str())
             || relative == crate::codegen::CONFORMANCE_PATH
             || relative == crate::codegen::ERRORS_PATH
-            || relative.starts_with("model/authorities/")
-            || relative.starts_with("spec/");
+            || relative.starts_with("model/authorities/");
         if !entry.file_type().is_file() || !is_markdown || generated {
             continue;
         }

@@ -457,6 +457,13 @@ fn specification_text() {
             row.code
         );
     }
+    for row in &model.authorities.authority {
+        assert!(
+            spec.contains(&format!("| `{}` | ", row.id)),
+            "{}: §27.4 lists every authority of the register",
+            row.id
+        );
+    }
     assert!(
         spec.contains(&format!(
             "**Total required capability IDs:** {}.\n",
@@ -498,6 +505,16 @@ fn specification_text() {
         .expect_err("a hand-edited derived table is refused")
         .to_string();
     assert!(error.contains("R1") && error.contains("SPEC.md"), "{error}");
+
+    // U+FF05 is reserved to spell a percent sign in the chapters: a register
+    // statement that carries one would reach SPEC.md unmapped, so it is refused.
+    let scratch = Scratch::new();
+    scratch.plant(
+        "spec/src/IdsRP.lex.tex",
+        "The repository, crate, executable",
+        "The repository\u{ff05} crate, executable",
+    );
+    expect_refusal(&scratch, &["U+FF05", "NS-05"]);
 
     // Chapter items the projector does not read.
     let chapter = "spec/src/Chapter00.lex.tex";
@@ -626,6 +643,18 @@ fn source_authority() {
     plant(
         &|root| std::fs::write(root.join("SPEC2.md"), "# A second specification\n").expect("write"),
         &["SPEC2.md"],
+    );
+    // Markdown inside the specification project is read like any other.
+    plant(
+        &|root| {
+            std::fs::create_dir_all(root.join("spec")).expect("spec directory");
+            std::fs::write(
+                root.join("spec/README.md"),
+                format!("# Notes\n\n{}\n", model.ids.id[0].statement),
+            )
+            .expect("write");
+        },
+        &["spec/README.md", "restates a registered statement"],
     );
     plant(
         &|root| {
