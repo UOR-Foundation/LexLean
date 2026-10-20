@@ -162,6 +162,7 @@ impl Writer<'_, '_> {
                 self.rs_apply("RustType.ref", &[held])
             }
             Type::Overflow => self.rs("RustType.overflow"),
+            Type::I128 => self.rs("RustType.i128"),
         }
     }
 

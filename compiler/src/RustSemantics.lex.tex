@@ -1458,7 +1458,8 @@ definition{
     | RustSyntax::RustType.rc ignored555 => false
     | RustSyntax::RustType.fallible ignoredInner => true
     | RustSyntax::RustType.ref ignored556 => false
-    | RustSyntax::RustType.overflow => false)
+    | RustSyntax::RustType.overflow => false
+    | RustSyntax::RustType.i128 => false)
 }
 
 definition{

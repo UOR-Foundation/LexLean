@@ -99,7 +99,7 @@ fn enc_types(types: &[Type]) -> Value {
     chain(5, 6, types.iter().map(enc_type).collect())
 }
 
-/// `Ty`: a leaf (unit, bool, nat, int, ordering, str, bytes, overflow), fixed, a unary
+/// `Ty`: a leaf (unit, bool, nat, int, ordering, str, bytes, overflow, i128), fixed, a unary
 /// (option, list, rc, fallible, ref), a binary (result, pair), a name (adt,
 /// fn), then the chain's nil and cons.
 fn enc_type(ty: &Type) -> Value {
@@ -121,6 +121,7 @@ fn enc_type(ty: &Type) -> Value {
         Type::Str => leaf(5),
         Type::Bytes => leaf(6),
         Type::Overflow => leaf(7),
+        Type::I128 => leaf(8),
         Type::Fixed(kind) => adt(1, vec![enc_kind(*kind)]),
         Type::Option(inner) => unary(0, inner),
         Type::List(element) => unary(1, element),
@@ -2046,18 +2047,20 @@ fn machine_crates() -> Vec<Crate> {
         args: vec![Expr::Lit(Lit::Overflow, at("overflow"))],
         at: at("construct:err"),
     }));
-    // The type `Overflow` has no row of the correspondence: a function that
-    // takes one is valid and is refused by `correspond`.
+    // The types `Overflow` and `i128` have no row of the correspondence: a
+    // function that takes one is valid and is refused by `correspond`.
+    for ty in [Type::Overflow, Type::I128] {
     crates.push(Crate {
         profile: lexlean::calculus::rust::Profile::Core,
         items: vec![ItemDef::Function {
             name: Ident::Function(0),
-            parameters: vec![(Pat::Bind(Ident::Param(0)), Type::Overflow)],
-            result: Type::Overflow,
+            parameters: vec![(Pat::Bind(Ident::Param(0)), ty.clone())],
+            result: ty,
             body: Block::of(Expr::Copy(Ident::Param(0), at("read:param"))),
             at: at("function"),
         }],
     });
+    }
     crates
 }
 
@@ -2911,14 +2914,14 @@ const RULE_VALIDATE_RUNS: usize = 132;
 const RULE_CORRESPOND_RUNS: usize = 12;
 const BRANCH_CRATES: usize = 17;
 const LOOP_CRATES: usize = 34;
-const MACHINE_CRATES: usize = 26 + 3 + 1 + 2 + 1;
-const VECTORS_VALIDATE: usize = 439;
+const MACHINE_CRATES: usize = 26 + 3 + 1 + 2 + 2;
+const VECTORS_VALIDATE: usize = 440;
 const REFUSED_VALIDATE: usize = 193;
-const VECTORS_CORRESPOND: usize = 302;
-const REFUSED_CORRESPOND: usize = 78;
+const VECTORS_CORRESPOND: usize = 303;
+const REFUSED_CORRESPOND: usize = 79;
 const EVALUATOR_CRATES: usize = 200;
-const EVALUATOR_VALIDATE: usize = 416;
-const EVALUATOR_CORRESPOND: usize = 279;
+const EVALUATOR_VALIDATE: usize = 417;
+const EVALUATOR_CORRESPOND: usize = 280;
 const SEEDED_REFUSED_VALIDATE: usize = 271;
 const SEEDED_REFUSED_CORRESPOND: usize = 244;
 

@@ -120,6 +120,7 @@ impl Checker<'_> {
             | Type::Int
             | Type::Fixed(..)
             | Type::Overflow
+            | Type::I128
             | Type::Ordering
             | Type::Str
             | Type::Bytes
@@ -930,6 +931,7 @@ impl Found {
             Type::Int => "int",
             Type::Fixed(_) => "fixed",
             Type::Overflow => "overflow",
+            Type::I128 => "i128",
             Type::Ordering => "ordering",
             Type::Str => "string",
             Type::Bytes => "bytes",
@@ -960,6 +962,7 @@ impl Found {
             | Type::Int
             | Type::Fixed(..)
             | Type::Overflow
+            | Type::I128
             | Type::Ordering
             | Type::Str
             | Type::Bytes

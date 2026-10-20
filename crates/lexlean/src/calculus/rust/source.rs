@@ -410,6 +410,10 @@ impl<'a> Reader<'a> {
                 take(0)?;
                 Type::Overflow
             }
+            "i128" => {
+                take(0)?;
+                Type::I128
+            }
             other => return fail(format!("`RustType.{other}` is not a type")),
         })
     }

@@ -122,6 +122,8 @@ pub enum Type {
     Ref(Box<Type>),
     /// `Overflow`, the error type of `R<T>`: the runtime's own unit struct.
     Overflow,
+    /// `i128`, the operand type of the runtime's conversions to a width.
+    I128,
 }
 
 impl Type {
@@ -145,6 +147,7 @@ impl Type {
             Self::Fallible(inner) => format!("R<{}>", inner.text()),
             Self::Ref(inner) => format!("&{}", inner.text()),
             Self::Overflow => "Overflow".to_owned(),
+            Self::I128 => "i128".to_owned(),
         }
     }
 
@@ -161,6 +164,7 @@ impl Type {
             | Self::Int
             | Self::Fixed(_)
             | Self::Overflow
+            | Self::I128
             | Self::Ordering
             | Self::Adt(_)
             | Self::Fn(_) => false,
@@ -178,6 +182,7 @@ impl Type {
             | Self::Int
             | Self::Fixed(_)
             | Self::Overflow
+            | Self::I128
             | Self::Ordering => true,
             Self::Option(inner) => inner.copy(),
             Self::Result(left, right) | Self::Pair(left, right) => left.copy() && right.copy(),
