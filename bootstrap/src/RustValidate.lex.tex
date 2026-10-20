@@ -285,7 +285,8 @@ inductive{
     {name: DApply, fields: [Nat, Ty, Ty, Bool, Dis, Origin]},
     {name: DFunction, fields: [Id, Par, Ty, Expr, Origin]},
     {name: DNil, fields: []},
-    {name: DCons, fields: [Def, Def]}
+    {name: DCons, fields: [Def, Def]},
+    {name: DConstant, fields: [Id, Ty, Expr, Origin]}
   ]
 }
 
@@ -958,6 +959,7 @@ definition{
     | Def.DEnum d0 d1 d2 => (ctor Result.ok [Decl, Bytes] decl)
     | Def.DApply d0 d1 d2 d3 d4 d5 => (ctor Result.ok [Decl, Bytes] decl)
     | Def.DFunction d0 d1 d2 d3 d4 => (ctor Result.ok [Decl, Bytes] decl)
+    | Def.DConstant d0 d1 d2 d3 => (ctor Result.ok [Decl, Bytes] decl)
     | Def.DNil => (ctor Result.ok [Decl, Bytes] decl)
     | Def.DCons head tail => (match head
       | Def.DEnum name variants origin => (match name
@@ -989,6 +991,19 @@ definition{
         | Id.IdFunction n => (match (hasFlag (project decl functions) n)
           | Bool.true => (ctor Result.error [Decl, Bytes] (cat (text "hygiene: f") (cat (decimal n) (text " is declared twice"))))
           | Bool.false => (declareDefs (record Decl {adts := (project decl adts), closures := (project decl closures), applies := (project decl applies), functions := (cons (n, (tyIsFallible result)) (project decl functions))}) tail))
+        | Id.IdExport d0 => (declareDefs decl tail))
+      | Def.DConstant name result body origin => (match name
+        | Id.IdLocal d0 => (declareDefs decl tail)
+        | Id.IdHolder d0 => (declareDefs decl tail)
+        | Id.IdOperand d0 => (declareDefs decl tail)
+        | Id.IdCallee d0 => (declareDefs decl tail)
+        | Id.IdBoxed d0 => (declareDefs decl tail)
+        | Id.IdPart d0 => (declareDefs decl tail)
+        | Id.IdCapture d0 => (declareDefs decl tail)
+        | Id.IdParam d0 => (declareDefs decl tail)
+        | Id.IdFunction n => (match (hasFlag (project decl functions) n)
+          | Bool.true => (ctor Result.error [Decl, Bytes] (cat (text "hygiene: f") (cat (decimal n) (text " is declared twice"))))
+          | Bool.false => (declareDefs (record Decl {adts := (project decl adts), closures := (project decl closures), applies := (project decl applies), functions := (cons (n, false) (project decl functions))}) tail))
         | Id.IdExport d0 => (declareDefs decl tail))
       | Def.DNil => (declareDefs decl tail)
       | Def.DCons d0 d1 => (declareDefs decl tail))),
@@ -2660,6 +2675,95 @@ definition{
 }
 
 definition{
+  name: literalOk,
+  parameters: [e : Expr],
+  result: Bool,
+  body: (match e
+    | Expr.ELit d0 d1 => true
+    | Expr.ERead d0 d1 d2 => false
+    | Expr.EWrap kind inner d2 => (match kind
+      | WrapKind.WkNot => false
+      | WrapKind.WkBox => (literalOk inner)
+      | WrapKind.WkWiden => false
+      | WrapKind.WkSucceed => false)
+    | Expr.ECall d0 d1 d2 d3 => false
+    | Expr.EApply d0 d1 d2 d3 => false
+    | Expr.EConstruct d0 args d2 => (literalOk args)
+    | Expr.EPair left right d2 => (match (literalOk left)
+      | Bool.true => (literalOk right)
+      | Bool.false => false)
+    | Expr.EIf d0 d1 d2 d3 => false
+    | Expr.EMatch d0 d1 d2 => false
+    | Expr.EBlockE d0 => false
+    | Expr.EProbe d0 d1 d2 => false
+    | Expr.EBlock d0 d1 => false
+    | Expr.ENil => true
+    | Expr.ECons head tail => (match (literalOk head)
+      | Bool.true => (literalOk tail)
+      | Bool.false => false)
+    | Expr.ELet d0 d1 d2 d3 d4 d5 => false
+    | Expr.EArm d0 d1 d2 => false
+    | Expr.ELoop d0 d1 => false),
+  axioms: [],
+  executable: true,
+  recursive_argument: e
+}
+
+definition{
+  name: noLets,
+  parameters: [e : Expr],
+  result: Bool,
+  body: (match e
+    | Expr.ELit d0 d1 => false
+    | Expr.ERead d0 d1 d2 => false
+    | Expr.EWrap d0 d1 d2 => false
+    | Expr.ECall d0 d1 d2 d3 => false
+    | Expr.EApply d0 d1 d2 d3 => false
+    | Expr.EConstruct d0 d1 d2 => false
+    | Expr.EPair d0 d1 d2 => false
+    | Expr.EIf d0 d1 d2 d3 => false
+    | Expr.EMatch d0 d1 d2 => false
+    | Expr.EBlockE d0 => false
+    | Expr.EProbe d0 d1 d2 => false
+    | Expr.EBlock d0 d1 => false
+    | Expr.ENil => true
+    | Expr.ECons d0 d1 => false
+    | Expr.ELet d0 d1 d2 d3 d4 d5 => false
+    | Expr.EArm d0 d1 d2 => false
+    | Expr.ELoop d0 d1 => false),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: constantShape,
+  parameters: [result : Ty, body : Expr],
+  result: Bool,
+  body: (match body
+    | Expr.ELit d0 d1 => false
+    | Expr.ERead d0 d1 d2 => false
+    | Expr.EWrap d0 d1 d2 => false
+    | Expr.ECall d0 d1 d2 d3 => false
+    | Expr.EApply d0 d1 d2 d3 => false
+    | Expr.EConstruct d0 d1 d2 => false
+    | Expr.EPair d0 d1 d2 => false
+    | Expr.EIf d0 d1 d2 d3 => false
+    | Expr.EMatch d0 d1 d2 => false
+    | Expr.EBlockE d0 => false
+    | Expr.EProbe d0 d1 d2 => false
+    | Expr.EBlock lets tail => (match (tyIsFallible result)
+      | Bool.true => false
+      | Bool.false => (match (noLets lets) | Bool.true => (literalOk tail) | Bool.false => false))
+    | Expr.ENil => false
+    | Expr.ECons d0 d1 => false
+    | Expr.ELet d0 d1 d2 d3 d4 d5 => false
+    | Expr.EArm d0 d1 d2 => false
+    | Expr.ELoop d0 d1 => false),
+  axioms: [],
+  executable: true
+}
+
+definition{
   name: validateItem,
   parameters: [core : Bool, decl : Decl, rows : (List ItemRow), item : Def],
   result: (Result Unit Bytes),
@@ -2681,6 +2785,13 @@ definition{
           | Result.error problem55 => (ctor Result.error [Unit, Bytes] problem55))
         | Result.error problem56 => (ctor Result.error [Unit, Bytes] problem56))
       | Result.error problem57 => (ctor Result.error [Unit, Bytes] problem57))))
+    | Def.DConstant name result body org => (let cx : Cx := (record Cx {core := core, decl := decl, fallible := false, items := rows}); (match (tyOk cx result)
+      | Result.ok done => (match (constantShape result body)
+        | Bool.false => (ctor Result.error [Unit, Bytes] (cat (text "constant: ") (cat (tick (idText name)) (text " is not an infallible closed literal"))))
+        | Bool.true => (match (blockC (record St {bound := (nil Id), scope := (nil Id), moved := (nil Id), parted := (nil (Id * (List Nat))), propagates := false}) cx body true)
+          | Result.ok s2 => (ctor Result.ok [Unit, Bytes] ())
+          | Result.error problem90 => (ctor Result.error [Unit, Bytes] problem90)))
+      | Result.error problem91 => (ctor Result.error [Unit, Bytes] problem91)))
     | Def.DNil => (ctor Result.ok [Unit, Bytes] ())
     | Def.DCons d0 d1 => (ctor Result.ok [Unit, Bytes] ())),
   axioms: [propext],
@@ -2695,6 +2806,7 @@ definition{
     | Def.DEnum d0 d1 d2 => (ctor Result.ok [Unit, Bytes] ())
     | Def.DApply d0 d1 d2 d3 d4 d5 => (ctor Result.ok [Unit, Bytes] ())
     | Def.DFunction d0 d1 d2 d3 d4 => (ctor Result.ok [Unit, Bytes] ())
+    | Def.DConstant d0 d1 d2 d3 => (ctor Result.ok [Unit, Bytes] ())
     | Def.DNil => (ctor Result.ok [Unit, Bytes] ())
     | Def.DCons head tail => (match (validateItem core decl rows head)
       | Result.ok done => (validateItems core decl rows tail)
@@ -2765,6 +2877,7 @@ definition{
       | Bool.false => (text "enum:adt")) org) variants)
     | Def.DApply fnType parameters result fallible arms org => (foundTy (foundTy (foundAt found (text "apply:dispatch") org) parameters) result)
     | Def.DFunction name parameters result body org => (foundExpr (foundTy (foundParTys (foundAt found (text "function") org) parameters) result) body)
+    | Def.DConstant name result body org => (foundExpr (foundTy (foundAt found (text "constant") org) result) body)
     | Def.DNil => found
     | Def.DCons head tail => (let f1 : Found := (foundDefs found head); (foundDefs f1 tail))),
   axioms: [propext],
@@ -2840,7 +2953,7 @@ definition{
   name: correspondTable,
   parameters: [unit : Unit],
   result: (List (Bytes * (List Bytes))),
-  body: (let rows0 : (List (Bytes * (List Bytes))) := (cons ((text "function"), (cons (text "function") (cons (text "export") (nil Bytes)))) (cons ((text "enum:adt"), (cons (text "type:adt") (nil Bytes))) (cons ((text "enum:closures"), (cons (text "type:fn") (cons (text "expr:closure") (nil Bytes)))) (cons ((text "apply:dispatch"), (cons (text "type:fn") (cons (text "expr:closure") (nil Bytes)))) (cons ((text "let"), (cons (text "expr:let") (cons (text "expr:match") (cons (text "expr:prim") (cons (text "expr:apply") (cons (text "expr:call") (cons (text "expr:closure") (cons (text "expr:cond") (cons (text "expr:field") (cons (text "shape:some") (cons (text "shape:ok") (cons (text "shape:error") (cons (text "shape:cons") (cons (text "shape:adt") (cons (text "shape:succ") (cons (text "shape:zero") (cons (text "shape:unit") (cons (text "shape:true") (cons (text "indirection") (cons (text "overflow") (nil Bytes))))))))))))))))))))) (cons ((text "read"), (cons (text "expr:var") (cons (text "expr:match") (cons (text "expr:prim") (cons (text "expr:call") (cons (text "expr:apply") (cons (text "expr:closure") (cons (text "expr:first") (cons (text "expr:second") (cons (text "expr:field") (cons (text "expr:cond") (cons (text "shape:true") (cons (text "shape:zero") (cons (text "shape:some") (cons (text "shape:ok") (cons (text "shape:error") (cons (text "shape:cons") (cons (text "shape:adt") (cons (text "export") (cons (text "type:fn") (cons (text "type:adt") (cons (text "type:pair") (cons (text "type:result") (nil Bytes)))))))))))))))))))))))) (nil (Bytes * (List Bytes))))))))); (let rows1 : (List (Bytes * (List Bytes))) := (cons ((text "box"), (cons (text "indirection") (nil Bytes))) (cons ((text "destructure:pair"), (cons (text "expr:first") (cons (text "expr:second") (cons (text "shape:pair") (cons (text "expr:call") (nil Bytes)))))) (cons ((text "type:unit"), (cons (text "type:unit") (nil Bytes))) (cons ((text "type:bool"), (cons (text "type:bool") (nil Bytes))) (cons ((text "type:nat"), (cons (text "type:nat") (cons (text "type:fixed") (nil Bytes)))) (cons ((text "type:int"), (cons (text "type:int") (cons (text "type:fixed") (nil Bytes)))) rows0)))))); (let rows2 : (List (Bytes * (List Bytes))) := (cons ((text "type:fixed"), (cons (text "type:fixed") (nil Bytes))) (cons ((text "type:ordering"), (cons (text "type:ordering") (nil Bytes))) (cons ((text "type:string"), (cons (text "type:string") (nil Bytes))) (cons ((text "type:bytes"), (cons (text "type:bytes") (nil Bytes))) (cons ((text "type:option"), (cons (text "type:option") (nil Bytes))) (cons ((text "type:result"), (cons (text "type:result") (cons (text "expr:call") (nil Bytes)))) rows1)))))); (let rows3 : (List (Bytes * (List Bytes))) := (cons ((text "type:list"), (cons (text "type:list") (nil Bytes))) (cons ((text "type:pair"), (cons (text "type:pair") (cons (text "expr:call") (nil Bytes)))) (cons ((text "type:adt"), (cons (text "type:adt") (nil Bytes))) (cons ((text "type:fn"), (cons (text "type:fn") (cons (text "expr:closure") (nil Bytes)))) (cons ((text "type:rc"), (cons (text "indirection") (nil Bytes))) (cons ((text "type:fallible"), (cons (text "overflow") (nil Bytes))) rows2)))))); (let rows4 : (List (Bytes * (List Bytes))) := (cons ((text "type:ref"), (cons (text "export") (nil Bytes))) (cons ((text "lit:unit"), (cons (text "value:unit") (cons (text "shape:unit") (cons (text "expr:var") (cons (text "expr:call") (cons (text "expr:apply") (cons (text "expr:closure") (cons (text "shape:some") (cons (text "shape:ok") (cons (text "shape:error") (cons (text "shape:cons") (cons (text "shape:adt") (cons (text "export") (cons (text "overflow") (nil Bytes))))))))))))))) (cons ((text "lit:bool"), (cons (text "value:bool") (cons (text "shape:true") (cons (text "shape:false") (cons (text "expr:cond") (nil Bytes)))))) (cons ((text "lit:nat"), (cons (text "value:nat") (cons (text "shape:zero") (nil Bytes)))) (cons ((text "lit:int"), (cons (text "value:int") (nil Bytes))) (cons ((text "lit:fixed"), (cons (text "value:u8") (cons (text "value:u16") (cons (text "value:u32") (cons (text "value:u64") (cons (text "value:i8") (cons (text "value:i16") (cons (text "value:i32") (cons (text "value:i64") (nil Bytes)))))))))) rows3)))))); (let rows5 : (List (Bytes * (List Bytes))) := (cons ((text "lit:string"), (cons (text "value:string") (nil Bytes))) (cons ((text "lit:bytes"), (cons (text "value:bytes") (nil Bytes))) (cons ((text "lit:ordering"), (cons (text "value:ordering") (cons (text "shape:lt") (cons (text "shape:eq") (cons (text "shape:gt") (nil Bytes)))))) (cons ((text "construct:none"), (cons (text "value:none") (cons (text "shape:none") (nil Bytes)))) (cons ((text "construct:some"), (cons (text "value:some") (cons (text "shape:some") (nil Bytes)))) (cons ((text "construct:ok"), (cons (text "value:ok") (cons (text "shape:ok") (cons (text "expr:call") (nil Bytes))))) rows4)))))); (let rows6 : (List (Bytes * (List Bytes))) := (cons ((text "construct:err"), (cons (text "value:error") (cons (text "shape:error") (cons (text "expr:call") (nil Bytes))))) (cons ((text "construct:adt"), (cons (text "value:adt") (cons (text "shape:adt") (nil Bytes)))) (cons ((text "construct:closure"), (cons (text "expr:closure") (nil Bytes))) (cons ((text "construct:cons"), (cons (text "value:list") (cons (text "shape:cons") (nil Bytes)))) (cons ((text "construct:nil"), (cons (text "value:list") (cons (text "shape:nil") (nil Bytes)))) (cons ((text "construct:pair"), (cons (text "value:pair") (cons (text "shape:pair") (cons (text "expr:call") (nil Bytes))))) rows5)))))); (let rows7 : (List (Bytes * (List Bytes))) := (cons ((text "if"), (cons (text "expr:cond") (cons (text "shape:true") (cons (text "shape:zero") (nil Bytes))))) (cons ((text "match:nat"), (cons (text "shape:zero") (nil Bytes))) (cons ((text "match:list"), (cons (text "shape:nil") (nil Bytes))) (cons ((text "match:option"), (cons (text "shape:none") (nil Bytes))) (cons ((text "match:result"), (cons (text "shape:ok") (nil Bytes))) (cons ((text "match:ordering"), (cons (text "shape:lt") (nil Bytes))) rows6)))))); (let rows8 : (List (Bytes * (List Bytes))) := (cons ((text "match:adt"), (cons (text "shape:adt") (cons (text "expr:field") (nil Bytes)))) (cons ((text "match:empty"), (cons (text "type:fn") (cons (text "type:adt") (cons (text "type:pair") (cons (text "type:result") (nil Bytes)))))) (cons ((text "call:function"), (cons (text "expr:call") (cons (text "export") (nil Bytes)))) (cons ((text "apply"), (cons (text "expr:apply") (nil Bytes))) (cons ((text "widen"), (cons (text "prim:convert") (nil Bytes))) (cons ((text "succeed"), (cons (text "overflow") (nil Bytes))) rows7)))))); (let rows9 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:succ"), (cons (text "shape:succ") (nil Bytes))) (cons ((text "call:runtime:nat_add"), (cons (text "prim:nat_add") (nil Bytes))) (cons ((text "call:runtime:nat_sub"), (cons (text "prim:nat_sub") (nil Bytes))) (cons ((text "call:runtime:nat_mul"), (cons (text "prim:nat_mul") (nil Bytes))) (cons ((text "call:runtime:nat_quot"), (cons (text "prim:nat_quot") (nil Bytes))) (cons ((text "call:runtime:nat_rem"), (cons (text "prim:nat_rem") (nil Bytes))) rows8)))))); (let rows10 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:nat_eq"), (cons (text "prim:nat_eq") (nil Bytes))) (cons ((text "call:runtime:nat_le"), (cons (text "prim:nat_le") (nil Bytes))) (cons ((text "call:runtime:nat_lt"), (cons (text "prim:nat_lt") (nil Bytes))) (cons ((text "call:runtime:int_add"), (cons (text "prim:int_add") (nil Bytes))) (cons ((text "call:runtime:int_sub"), (cons (text "prim:int_sub") (nil Bytes))) (cons ((text "call:runtime:int_mul"), (cons (text "prim:int_mul") (nil Bytes))) rows9)))))); (let rows11 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:int_neg"), (cons (text "prim:int_neg") (nil Bytes))) (cons ((text "call:runtime:int_quot"), (cons (text "prim:int_quot") (nil Bytes))) (cons ((text "call:runtime:int_rem"), (cons (text "prim:int_rem") (nil Bytes))) (cons ((text "call:runtime:bool_not"), (cons (text "prim:bool_not") (nil Bytes))) (cons ((text "call:runtime:bool_and"), (cons (text "prim:bool_and") (nil Bytes))) (cons ((text "call:runtime:bool_or"), (cons (text "prim:bool_or") (nil Bytes))) rows10)))))); (let rows12 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:equal"), (cons (text "prim:equal") (nil Bytes))) (cons ((text "call:runtime:compare"), (cons (text "prim:compare") (nil Bytes))) (cons ((text "call:runtime:checked_add"), (cons (text "prim:checked_add") (nil Bytes))) (cons ((text "call:runtime:checked_sub"), (cons (text "prim:checked_sub") (nil Bytes))) (cons ((text "call:runtime:checked_mul"), (cons (text "prim:checked_mul") (nil Bytes))) (cons ((text "call:runtime:checked_quot"), (cons (text "prim:checked_quot") (nil Bytes))) rows11)))))); (let rows13 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:checked_neg"), (cons (text "prim:checked_neg") (nil Bytes))) (cons ((text "call:runtime:bit_and"), (cons (text "prim:bit_and") (nil Bytes))) (cons ((text "call:runtime:bit_or"), (cons (text "prim:bit_or") (nil Bytes))) (cons ((text "call:runtime:bit_xor"), (cons (text "prim:bit_xor") (nil Bytes))) (cons ((text "call:runtime:bit_not"), (cons (text "prim:bit_not") (nil Bytes))) (cons ((text "call:runtime:shift_left"), (cons (text "prim:shift_left") (nil Bytes))) rows12)))))); (let rows14 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:shift_right"), (cons (text "prim:shift_right") (nil Bytes))) (cons ((text "call:runtime:convert"), (cons (text "prim:convert") (nil Bytes))) (cons ((text "call:runtime:append"), (cons (text "prim:append") (nil Bytes))) (cons ((text "call:runtime:length"), (cons (text "prim:length") (nil Bytes))) (cons ((text "call:runtime:index"), (cons (text "prim:index") (nil Bytes))) (cons ((text "call:runtime:slice"), (cons (text "prim:slice") (nil Bytes))) rows13)))))); (let rows15 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:utf8_encode"), (cons (text "prim:utf8_encode") (nil Bytes))) (cons ((text "call:runtime:utf8_decode"), (cons (text "prim:utf8_decode") (nil Bytes))) (cons ((text "call:runtime:compare_bytes"), (cons (text "prim:compare_bytes") (nil Bytes))) (cons ((text "call:runtime:split_exact"), (cons (text "prim:split_exact") (nil Bytes))) (cons ((text "call:runtime:join"), (cons (text "prim:join") (nil Bytes))) (cons ((text "call:runtime:format_decimal"), (cons (text "prim:format_decimal") (nil Bytes))) rows14)))))); (let rows16 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:parse_decimal"), (cons (text "prim:parse_decimal") (nil Bytes))) rows15); rows16))))))))))))))))),
+  body: (let rows0 : (List (Bytes * (List Bytes))) := (cons ((text "function"), (cons (text "function") (cons (text "export") (nil Bytes)))) (cons ((text "enum:adt"), (cons (text "type:adt") (nil Bytes))) (cons ((text "enum:closures"), (cons (text "type:fn") (cons (text "expr:closure") (nil Bytes)))) (cons ((text "apply:dispatch"), (cons (text "type:fn") (cons (text "expr:closure") (nil Bytes)))) (cons ((text "let"), (cons (text "expr:let") (cons (text "expr:match") (cons (text "expr:prim") (cons (text "expr:apply") (cons (text "expr:call") (cons (text "expr:closure") (cons (text "expr:cond") (cons (text "expr:field") (cons (text "shape:some") (cons (text "shape:ok") (cons (text "shape:error") (cons (text "shape:cons") (cons (text "shape:adt") (cons (text "shape:succ") (cons (text "shape:zero") (cons (text "shape:unit") (cons (text "shape:true") (cons (text "indirection") (cons (text "overflow") (nil Bytes))))))))))))))))))))) (cons ((text "read"), (cons (text "expr:var") (cons (text "expr:match") (cons (text "expr:prim") (cons (text "expr:call") (cons (text "expr:apply") (cons (text "expr:closure") (cons (text "expr:first") (cons (text "expr:second") (cons (text "expr:field") (cons (text "expr:cond") (cons (text "shape:true") (cons (text "shape:zero") (cons (text "shape:some") (cons (text "shape:ok") (cons (text "shape:error") (cons (text "shape:cons") (cons (text "shape:adt") (cons (text "export") (cons (text "type:fn") (cons (text "type:adt") (cons (text "type:pair") (cons (text "type:result") (nil Bytes)))))))))))))))))))))))) (nil (Bytes * (List Bytes))))))))); (let rows1 : (List (Bytes * (List Bytes))) := (cons ((text "box"), (cons (text "indirection") (nil Bytes))) (cons ((text "destructure:pair"), (cons (text "expr:first") (cons (text "expr:second") (cons (text "shape:pair") (cons (text "expr:call") (nil Bytes)))))) (cons ((text "type:unit"), (cons (text "type:unit") (nil Bytes))) (cons ((text "type:bool"), (cons (text "type:bool") (nil Bytes))) (cons ((text "type:nat"), (cons (text "type:nat") (cons (text "type:fixed") (nil Bytes)))) (cons ((text "type:int"), (cons (text "type:int") (cons (text "type:fixed") (nil Bytes)))) rows0)))))); (let rows2 : (List (Bytes * (List Bytes))) := (cons ((text "type:fixed"), (cons (text "type:fixed") (nil Bytes))) (cons ((text "type:ordering"), (cons (text "type:ordering") (nil Bytes))) (cons ((text "type:string"), (cons (text "type:string") (nil Bytes))) (cons ((text "type:bytes"), (cons (text "type:bytes") (nil Bytes))) (cons ((text "type:option"), (cons (text "type:option") (nil Bytes))) (cons ((text "type:result"), (cons (text "type:result") (cons (text "expr:call") (nil Bytes)))) rows1)))))); (let rows3 : (List (Bytes * (List Bytes))) := (cons ((text "type:list"), (cons (text "type:list") (nil Bytes))) (cons ((text "type:pair"), (cons (text "type:pair") (cons (text "expr:call") (nil Bytes)))) (cons ((text "type:adt"), (cons (text "type:adt") (nil Bytes))) (cons ((text "type:fn"), (cons (text "type:fn") (cons (text "expr:closure") (nil Bytes)))) (cons ((text "type:rc"), (cons (text "indirection") (nil Bytes))) (cons ((text "type:fallible"), (cons (text "overflow") (nil Bytes))) rows2)))))); (let rows4 : (List (Bytes * (List Bytes))) := (cons ((text "type:ref"), (cons (text "export") (nil Bytes))) (cons ((text "lit:unit"), (cons (text "value:unit") (cons (text "shape:unit") (cons (text "expr:var") (cons (text "expr:call") (cons (text "expr:apply") (cons (text "expr:closure") (cons (text "shape:some") (cons (text "shape:ok") (cons (text "shape:error") (cons (text "shape:cons") (cons (text "shape:adt") (cons (text "export") (cons (text "overflow") (nil Bytes))))))))))))))) (cons ((text "lit:bool"), (cons (text "value:bool") (cons (text "shape:true") (cons (text "shape:false") (cons (text "expr:cond") (nil Bytes)))))) (cons ((text "lit:nat"), (cons (text "value:nat") (cons (text "shape:zero") (nil Bytes)))) (cons ((text "lit:int"), (cons (text "value:int") (nil Bytes))) (cons ((text "lit:fixed"), (cons (text "value:u8") (cons (text "value:u16") (cons (text "value:u32") (cons (text "value:u64") (cons (text "value:i8") (cons (text "value:i16") (cons (text "value:i32") (cons (text "value:i64") (nil Bytes)))))))))) rows3)))))); (let rows5 : (List (Bytes * (List Bytes))) := (cons ((text "lit:string"), (cons (text "value:string") (nil Bytes))) (cons ((text "lit:bytes"), (cons (text "value:bytes") (nil Bytes))) (cons ((text "lit:ordering"), (cons (text "value:ordering") (cons (text "shape:lt") (cons (text "shape:eq") (cons (text "shape:gt") (nil Bytes)))))) (cons ((text "construct:none"), (cons (text "value:none") (cons (text "shape:none") (nil Bytes)))) (cons ((text "construct:some"), (cons (text "value:some") (cons (text "shape:some") (nil Bytes)))) (cons ((text "construct:ok"), (cons (text "value:ok") (cons (text "shape:ok") (cons (text "expr:call") (nil Bytes))))) rows4)))))); (let rows6 : (List (Bytes * (List Bytes))) := (cons ((text "construct:err"), (cons (text "value:error") (cons (text "shape:error") (cons (text "expr:call") (nil Bytes))))) (cons ((text "construct:adt"), (cons (text "value:adt") (cons (text "shape:adt") (nil Bytes)))) (cons ((text "construct:closure"), (cons (text "expr:closure") (nil Bytes))) (cons ((text "construct:cons"), (cons (text "value:list") (cons (text "shape:cons") (nil Bytes)))) (cons ((text "construct:nil"), (cons (text "value:list") (cons (text "shape:nil") (nil Bytes)))) (cons ((text "construct:pair"), (cons (text "value:pair") (cons (text "shape:pair") (cons (text "expr:call") (nil Bytes))))) rows5)))))); (let rows7 : (List (Bytes * (List Bytes))) := (cons ((text "if"), (cons (text "expr:cond") (cons (text "shape:true") (cons (text "shape:zero") (nil Bytes))))) (cons ((text "match:nat"), (cons (text "shape:zero") (nil Bytes))) (cons ((text "match:list"), (cons (text "shape:nil") (nil Bytes))) (cons ((text "match:option"), (cons (text "shape:none") (nil Bytes))) (cons ((text "match:result"), (cons (text "shape:ok") (nil Bytes))) (cons ((text "match:ordering"), (cons (text "shape:lt") (nil Bytes))) rows6)))))); (let rows8 : (List (Bytes * (List Bytes))) := (cons ((text "match:adt"), (cons (text "shape:adt") (cons (text "expr:field") (nil Bytes)))) (cons ((text "match:empty"), (cons (text "type:fn") (cons (text "type:adt") (cons (text "type:pair") (cons (text "type:result") (nil Bytes)))))) (cons ((text "call:function"), (cons (text "expr:call") (cons (text "export") (nil Bytes)))) (cons ((text "apply"), (cons (text "expr:apply") (nil Bytes))) (cons ((text "widen"), (cons (text "prim:convert") (nil Bytes))) (cons ((text "succeed"), (cons (text "overflow") (nil Bytes))) rows7)))))); (let rows9 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:succ"), (cons (text "shape:succ") (nil Bytes))) (cons ((text "call:runtime:nat_add"), (cons (text "prim:nat_add") (nil Bytes))) (cons ((text "call:runtime:nat_sub"), (cons (text "prim:nat_sub") (nil Bytes))) (cons ((text "call:runtime:nat_mul"), (cons (text "prim:nat_mul") (nil Bytes))) (cons ((text "call:runtime:nat_quot"), (cons (text "prim:nat_quot") (nil Bytes))) (cons ((text "call:runtime:nat_rem"), (cons (text "prim:nat_rem") (nil Bytes))) rows8)))))); (let rows10 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:nat_eq"), (cons (text "prim:nat_eq") (nil Bytes))) (cons ((text "call:runtime:nat_le"), (cons (text "prim:nat_le") (nil Bytes))) (cons ((text "call:runtime:nat_lt"), (cons (text "prim:nat_lt") (nil Bytes))) (cons ((text "call:runtime:int_add"), (cons (text "prim:int_add") (nil Bytes))) (cons ((text "call:runtime:int_sub"), (cons (text "prim:int_sub") (nil Bytes))) (cons ((text "call:runtime:int_mul"), (cons (text "prim:int_mul") (nil Bytes))) rows9)))))); (let rows11 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:int_neg"), (cons (text "prim:int_neg") (nil Bytes))) (cons ((text "call:runtime:int_quot"), (cons (text "prim:int_quot") (nil Bytes))) (cons ((text "call:runtime:int_rem"), (cons (text "prim:int_rem") (nil Bytes))) (cons ((text "call:runtime:bool_not"), (cons (text "prim:bool_not") (nil Bytes))) (cons ((text "call:runtime:bool_and"), (cons (text "prim:bool_and") (nil Bytes))) (cons ((text "call:runtime:bool_or"), (cons (text "prim:bool_or") (nil Bytes))) rows10)))))); (let rows12 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:equal"), (cons (text "prim:equal") (nil Bytes))) (cons ((text "call:runtime:compare"), (cons (text "prim:compare") (nil Bytes))) (cons ((text "call:runtime:checked_add"), (cons (text "prim:checked_add") (nil Bytes))) (cons ((text "call:runtime:checked_sub"), (cons (text "prim:checked_sub") (nil Bytes))) (cons ((text "call:runtime:checked_mul"), (cons (text "prim:checked_mul") (nil Bytes))) (cons ((text "call:runtime:checked_quot"), (cons (text "prim:checked_quot") (nil Bytes))) rows11)))))); (let rows13 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:checked_neg"), (cons (text "prim:checked_neg") (nil Bytes))) (cons ((text "call:runtime:bit_and"), (cons (text "prim:bit_and") (nil Bytes))) (cons ((text "call:runtime:bit_or"), (cons (text "prim:bit_or") (nil Bytes))) (cons ((text "call:runtime:bit_xor"), (cons (text "prim:bit_xor") (nil Bytes))) (cons ((text "call:runtime:bit_not"), (cons (text "prim:bit_not") (nil Bytes))) (cons ((text "call:runtime:shift_left"), (cons (text "prim:shift_left") (nil Bytes))) rows12)))))); (let rows14 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:shift_right"), (cons (text "prim:shift_right") (nil Bytes))) (cons ((text "call:runtime:convert"), (cons (text "prim:convert") (nil Bytes))) (cons ((text "call:runtime:append"), (cons (text "prim:append") (nil Bytes))) (cons ((text "call:runtime:length"), (cons (text "prim:length") (nil Bytes))) (cons ((text "call:runtime:index"), (cons (text "prim:index") (nil Bytes))) (cons ((text "call:runtime:slice"), (cons (text "prim:slice") (nil Bytes))) rows13)))))); (let rows15 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:utf8_encode"), (cons (text "prim:utf8_encode") (nil Bytes))) (cons ((text "call:runtime:utf8_decode"), (cons (text "prim:utf8_decode") (nil Bytes))) (cons ((text "call:runtime:compare_bytes"), (cons (text "prim:compare_bytes") (nil Bytes))) (cons ((text "call:runtime:split_exact"), (cons (text "prim:split_exact") (nil Bytes))) (cons ((text "call:runtime:join"), (cons (text "prim:join") (nil Bytes))) (cons ((text "call:runtime:format_decimal"), (cons (text "prim:format_decimal") (nil Bytes))) rows14)))))); (let rows16 : (List (Bytes * (List Bytes))) := (cons ((text "call:runtime:parse_decimal"), (cons (text "prim:parse_decimal") (nil Bytes))) rows15); (let rows17 : (List (Bytes * (List Bytes))) := (cons ((text "constant"), (cons (text "function") (nil Bytes))) rows16); rows17)))))))))))))))))),
   executable: true
 }
 

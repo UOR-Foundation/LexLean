@@ -6637,7 +6637,7 @@ theorem LexLeanPreservation.Rust.typedLit_wt : @363898 := @363992 {
   tags: [recursive],
   transparency: semireducible
 }
-theorem LexLeanPreservation.Rust.sem_value : @364016 := @364223 {
+theorem LexLeanPreservation.Rust.sem_value : @364016 := @397055 {
   all: [LexLeanPreservation.Rust.sem_value],
   class: false,
   generated: false,
@@ -294552,6 +294552,17 @@ theorem _private.LexLeanPreservation.RustLemmas.#0.LexLeanTarget.TargetSemantics
 @364170 := proof(@1093 @364166)
 @364171 := proof(@23840 @638)
 @364172 := proof(@23828 @364171)
+@364175 := proof(proof(@364170 proof(@364172 @130388)) @364168)
+@364177 := proof(proof(@37899 @364165) @364172)
+@364180 := proof(proof(proof(@37904 @364164) @364171) @23828)
+@364185 := proof(@37910 proof(proof(proof(proof(@23830 @40758) @618) @53) @364162))
+@364188 := proof(proof(@364185 proof(@48773 @311)) @37931)
+@364194 := proof(proof(proof(proof(proof(proof(LexLeanTarget.TargetSemantics.eval.eq_2) @618) @53)
+          @610)
+        @51)
+      @203)
+@364199 := proof(@364175 proof(proof(@364177 proof(@364180 proof(@364188 @364194))) @130388))
+@364201 := proof(proof(@38106 @638) @21)
 @364223 := proof(fun {p : @847} =>
     proof(fun {c : @13} =>
       proof(fun {A : @848} =>
@@ -294570,32 +294581,7 @@ theorem _private.LexLeanPreservation.RustLemmas.#0.LexLeanTarget.TargetSemantics
                                 proof(fun (ho : @364023) =>
                                   proof(fun (hs : @24323) =>
                                     proof(proof(@364159
-                                          proof(proof(@364169
-                                                proof(proof(proof(proof(@364170
-                                                          proof(@364172 @130388))
-                                                        @364168)
-                                                      proof(proof(proof(proof(@37899 @364165)
-                                                              @364172)
-                                                            proof(proof(proof(proof(@37904 @364164)
-                                                                    @364171)
-                                                                  @23828)
-                                                                proof(proof(proof(proof(@37910
-                                                                          proof(proof(proof(proof(@23830
-                                                                                    @40758)
-                                                                                  @618)
-                                                                                @53)
-                                                                              @364162))
-                                                                        proof(@48773 @311))
-                                                                      @37931)
-                                                                    proof(proof(proof(proof(proof(proof(LexLeanTarget.TargetSemantics.eval.eq_2)
-                                                                                @618)
-                                                                              @53)
-                                                                            @610)
-                                                                          @51)
-                                                                        @203))))
-                                                          @130388))
-                                                    proof(proof(@38106 @638) @21)))
-                                              @23))
+                                          proof(proof(@364169 proof(@364199 @364201)) @23))
                                         @5))))))))))))))))))
 @364241 := {p : @847} ->
   {c : @13} ->
@@ -317260,5 +317246,31 @@ theorem _private.LexLeanPreservation.RustLemmas.#0.LexLeanTarget.TargetSemantics
     @396824
     @396989
     @395839
+@397055 := fun {p : @847} =>
+  fun {c : @13} =>
+  fun {A : @848} =>
+  fun {n : @145} =>
+  fun {Γ : @109198} =>
+  fun {fl : @549} =>
+  fun {t : @852} =>
+  fun {v : @69} =>
+  fun {r : @49} =>
+  fun (hl : @143499) =>
+  fun (ht : @363996) =>
+  fun (env : @23751) =>
+  fun (renv : @28457) =>
+  fun (he : @230630) =>
+  fun (o : @528) =>
+  fun (ho : @364023) =>
+  fun (hs : @24323) =>
+  @364159
+    (@364169
+      (@364175
+        (@364177
+          (@364180 (@364185 (@48773 (LexLeanTarget.TargetSemantics.weight @203)) @37931 @364194))
+          @130388)
+        @364201)
+      @23)
+    @5
 \end{coremodule}
 \end{lexlean}

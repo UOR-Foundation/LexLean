@@ -2379,12 +2379,30 @@ impl<'a> Lowering<'a> {
                 super::moves::apply(&mut body);
                 (parameters, body)
             };
-            items.push(ItemDef::Function {
-                name: Ident::Function(position as u64),
-                parameters,
-                result,
-                body,
-                at: Origin::of("function"),
+            // A function of no parameters whose body is a literal that holds
+            // heap storage is evaluated once per thread, so a constant read
+            // from many calls is built once, not at each (§17.16 *Constants*).
+            let cached = parameters.is_empty()
+                && !fallible
+                && result.heap()
+                && matches!(function.body, Term::Value { .. })
+                && body.lets.is_empty()
+                && super::validate::literal(&body.tail);
+            items.push(if cached {
+                ItemDef::Constant {
+                    name: Ident::Function(position as u64),
+                    result,
+                    body,
+                    at: Origin::of("function"),
+                }
+            } else {
+                ItemDef::Function {
+                    name: Ident::Function(position as u64),
+                    parameters,
+                    result,
+                    body,
+                    at: Origin::of("function"),
+                }
             });
         }
         Ok(Crate {

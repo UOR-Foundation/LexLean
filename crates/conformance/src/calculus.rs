@@ -2079,6 +2079,36 @@ fn renderer_cases() -> Vec<Case> {
         vec![natv(1)],
         100,
     ));
+    // A list literal read from a function of no parameters, twice: the
+    // `rust-std` rendering holds it as a constant built once (§17.16).
+    out.push(case(
+        "cached-literal",
+        program(
+            Vec::new(),
+            vec![
+                function(
+                    Vec::new(),
+                    pair_t(list_t(nat_t()), nat_t()),
+                    build(
+                        Shape::Pair,
+                        pair_t(list_t(nat_t()), nat_t()),
+                        vec![
+                            call(1, Vec::new()),
+                            p(Prim::Length, vec![call(1, Vec::new())]),
+                        ],
+                    ),
+                ),
+                function(
+                    Vec::new(),
+                    list_t(nat_t()),
+                    lit(list_t(nat_t()), listv(vec![natv(3), natv(1), natv(2)])),
+                ),
+            ],
+        ),
+        0,
+        Vec::new(),
+        100,
+    ));
     // Units: computed, passed, bound, matched, returned by a function that
     // can overflow, and chosen by a conditional without an alternative.
     out.push(case(

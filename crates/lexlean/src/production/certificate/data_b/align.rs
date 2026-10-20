@@ -537,7 +537,7 @@ impl<'g, 'a> Aligner<'g, 'a> {
                             && function.result == *result)
                     })
             }),
-            ItemDef::Enum { .. } | ItemDef::Function { .. } => true,
+            ItemDef::Enum { .. } | ItemDef::Function { .. } | ItemDef::Constant { .. } => true,
         })
     }
 
