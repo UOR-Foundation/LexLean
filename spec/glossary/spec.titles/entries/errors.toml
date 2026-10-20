@@ -1,0 +1,16 @@
+spec = "lexlean/entry/1"
+id = "errors"
+category = "label-word"
+surface_arity = 0
+frame = "atom"
+
+[denotation]
+kind = "defined"
+value = "(const lexlean.std.nat::nat)"
+
+[[form]]
+id = "errors"
+channel = "text"
+surface = "Diagnostic registry"
+canonical_source = true
+features = ["sentence-case", "singular"]

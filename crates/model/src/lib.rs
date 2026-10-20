@@ -16,6 +16,7 @@ pub mod codegen;
 pub mod correspondence;
 pub mod exhaustive;
 pub mod isolation;
+pub mod project;
 pub mod registry;
 pub mod release;
 pub mod vocabulary;
@@ -72,6 +73,24 @@ impl Model {
             authorities: read(dir, "authorities.toml")?,
             errors: read(dir, "errors.toml")?,
             root: dir.parent().map_or_else(PathBuf::new, Path::to_path_buf),
+        })
+    }
+
+    /// The model of the four files' texts, as the projector produces them
+    /// (R1, `NS-02`): parsed exactly as [`Model::load`] parses the committed
+    /// files, so a projection is held to the same unknown-field rejection.
+    ///
+    /// # Errors
+    ///
+    /// Fails when a text does not parse as its model file.
+    pub fn from_texts(root: &Path, projection: &project::Projection) -> Result<Self, ModelError> {
+        let parse = |file: &str| root.join("model").join(file);
+        Ok(Self {
+            ledger: parse_text(&parse("ledger.toml"), &projection.ledger)?,
+            ids: parse_text(&parse("ids.toml"), &projection.ids)?,
+            authorities: parse_text(&parse("authorities.toml"), &projection.authorities)?,
+            errors: parse_text(&parse("errors.toml"), &projection.errors)?,
+            root: root.to_path_buf(),
         })
     }
 
@@ -245,6 +264,10 @@ impl Model {
         }
         Ok(())
     }
+}
+
+fn parse_text<T: serde::de::DeserializeOwned>(path: &Path, text: &str) -> Result<T, ModelError> {
+    toml::from_str(text).map_err(|e| ModelError::Parse(path.to_path_buf(), e))
 }
 
 fn read<T: serde::de::DeserializeOwned>(dir: &Path, name: &str) -> Result<T, ModelError> {

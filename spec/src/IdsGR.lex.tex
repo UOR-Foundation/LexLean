@@ -1,0 +1,135 @@
+\begin{lexlean}{IdsGR}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{spec.titles@1.0.0}
+\importmodule{Rows}
+\title{Grammar conformance claims}
+\begin{semanticmodule}
+definition{
+  name: gr01,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GR-01", level := "build", suite := "grammar", statement := "A source module parses only under the exact structural grammar and environment set.", sections := "§15.1, §15.2"}),
+  executable: true
+}
+
+definition{
+  name: gr02,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GR-02", level := "build", suite := "grammar", statement := "Glossary imports, module imports, title, and blocks obey exact header order and cardinality.", sections := "§15.1"}),
+  executable: true
+}
+
+definition{
+  name: gr03,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GR-03", level := "build", suite := "grammar", statement := "Sections nest within the configured scope limit and section parameters introduce explicit inherited context.", sections := "§15.1, §15.4"}),
+  executable: true
+}
+
+definition{
+  name: gr04,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GR-04", level := "build", suite := "grammar", statement := "Titles and headings accept only bounded concept phrases and cannot encode an unproved proposition.", sections := "§15.3"}),
+  executable: true
+}
+
+definition{
+  name: gr05,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GR-05", level := "build", suite := "grammar", statement := "Only parenthesized and display control delimiters create math islands; dollar math is rejected.", sections := "§15.5"}),
+  executable: true
+}
+
+definition{
+  name: gr06,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GR-06", level := "build", suite := "grammar", statement := "Dynamic mathematical operators obey declared precedence, associativity, and explicit grouping.", sections := "§15.5"}),
+  executable: true
+}
+
+definition{
+  name: gr07,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GR-07", level := "build", suite := "grammar", statement := "Mathematical juxtaposition is never interpreted as implicit multiplication or application.", sections := "§15.5"}),
+  executable: true
+}
+
+definition{
+  name: gr08,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GR-08", level := "build", suite := "grammar", statement := "Universal, existential, unique-existential, conditional, and connective proposition forms have the specified compositional semantics.", sections := "§15.6"}),
+  executable: true
+}
+
+definition{
+  name: gr09,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GR-09", level := "build", suite := "grammar", statement := "Proposition precedence and associativity produce the specified parse or an ambiguity error.", sections := "§15.6"}),
+  executable: true
+}
+
+definition{
+  name: gr10,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GR-10", level := "build", suite := "grammar", statement := "Articles, plural forms, capitalization, and inflections are explicit lexicon data rather than inferred language rules.", sections := "§13.5, §15.6"}),
+  executable: true
+}
+
+definition{
+  name: gr11,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GR-11", level := "build", suite := "grammar", statement := "A component with no complete grammar parse fails with a bounded structured diagnostic.", sections := "§6 I3, §26"}),
+  executable: true
+}
+
+definition{
+  name: gr12,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GR-12", level := "build", suite := "grammar", statement := "Distinct surviving parses fail as ambiguity while semantically identical canonical IR alternatives collapse.", sections := "§14.4"}),
+  executable: true
+}
+
+definition{
+  name: gr13,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GR-13", level := "build", suite := "grammar", statement := "Free expository paragraphs and opaque text nodes are rejected.", sections := "§4.2, §15"}),
+  executable: true
+}
+
+definition{
+  name: gr14,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GR-14", level := "build", suite := "grammar", statement := "Definition and theorem-like components enforce exact sentence, policy, and proof cardinalities.", sections := "§15.7, §15.8"}),
+  executable: true
+}
+
+definition{
+  name: gr15,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GR-15", level := "build", suite := "grammar", statement := "Explicit module imports form an acyclic graph and selected builds include their transitive closure.", sections := "§15.1"}),
+  executable: true
+}
+
+definition{
+  name: gr16,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GR-16", level := "build", suite := "grammar", statement := "A same-module declaration cannot reference a later declaration.", sections := "§15.1, §17.7"}),
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}
