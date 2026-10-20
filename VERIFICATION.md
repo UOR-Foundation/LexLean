@@ -10370,3 +10370,77 @@ test of `crates/lexlean/tests/property.rs`,
 `formatter_is_idempotent_on_every_example`, fails with `LLC0102` ("the compiler
 semantics changed since locking") on the committed lock of `examples/collections`,
 which is the stale record described above and is regenerated in the wave.
+
+## A mutual group of implementation records is pinned and audited by its union (LLV7013, found by the slice 3 identity, #221)
+
+### The defect
+
+On the tree of #221 merged with `main` 17f7e462c, `lexlean verify` of the
+bootstrap project stopped with
+
+```
+error[LLV7013]: certificate A: the certificate row
+`LexLeanPreserve.C3df453b80ed6295dbadd323b69d0f1c6.R6.__fits_76._unsafe_rec`
+depends on ["propext"], its policy pins []
+```
+
+and did so again on a second identity (`Caf08…`, the same tree with
+`latex_backend` bumped), while `main` verifies. The staged Lean sources of the
+preserve stage (the environment modules, every certificate, `Compose`, the audit
+module) and the generated `LexLeanBoot` modules are byte-identical between
+`main` and the failing tree once the identity hash is substituted
+(`diff -rq`: no difference), so the verdict differs only through the hash in the
+certificate module names.
+
+The row is the first of a mutual group of three implementation records
+(`__fits_76`, `__fits_106`, `__fits_147` of root R6, `all` naming the three),
+pinned `[]`, `[propext]`, `[propext]`: the generator pinned each row from what
+it referenced when it was pushed. In the certificate's data the terms of the
+three do not refer to one another (`__fits_76` and `__fits_147` refer to no
+other row; `__fits_106` to `__enc_2` and `__enc_8._unsafe_rec`), and the
+constants `__fits_76` does refer to (`LexLeanBoot.RustValidate.Cap`,
+`Cap.casesOn`, `Cap.rec`, `LexLeanTarget.TargetSyntax.Value`, `Value.adt`)
+print as axiom-free on both identities, so the difference is not in what the
+row's term names. Lean 4.32.1 stores axiom data for a module's constants
+(`Lean/Util/CollectAxioms.lean`, `exportedAxiomsExt`) by one shared traversal,
+over the module's constants in the order of a hash map keyed by names, with an
+empty-set sentinel for a constant in progress; the audit printed, on `main`'s
+identity, `[]`, `[propext]`, `[propext]` (the pins), and on the failing
+identities `[propext]` for all three. The exact path by which the traversal
+gives `__fits_76` the set of its group on those identities is not established
+here; what is established is that identical sources print differently and that
+the union of the group's prints is `[propext]` on every identity tried. The
+second occurrence is #227's core-library case, where `__fits_78._unsafe_rec`
+calls the later `__fits_111._unsafe_rec` and is pinned `[]` where Lean prints
+`propext`: a forward reference inside a mutual group.
+
+### The fix
+
+`group_rows` in `production/certificate/data_a.rs` gives every member of a
+group of `RowKind::Partial` rows the union of the members' axioms once the group
+is complete; `audit` in `production/preserve.rs` checks such a group once, at
+its first member: the union of the sets printed for its members must equal the
+pin of each member, and the message names the group. Every other row is checked
+row by row, as before. SPEC.md §17.17 states it.
+`cargo test -p lexlean --lib group_tests` passes: the union is the same whichever
+member Lean reaches first, and a member the audit did not print is refused.
+
+### The check can fail
+
+The per-row pin was restored (the union block of `group_rows` skipped with
+`if true ||`), and `lexlean verify` run in `bootstrap/` on the identity of this
+tree (`C3df…`, about 17 minutes under `LEXLEAN_VERIFY_WIDTH=2` and
+`LEXLEAN_VERIFY_MEMORY_KIB=12582912`, with the pinned Lean installed):
+
+```
+error[LLV7013]: certificate A: the certificate rows of the mutual group
+["LexLeanPreserve.C3df453b80ed6295dbadd323b69d0f1c6.R6.__fits_76._unsafe_rec",
+ "LexLeanPreserve.C3df453b80ed6295dbadd323b69d0f1c6.R6.__fits_106._unsafe_rec",
+ "LexLeanPreserve.C3df453b80ed6295dbadd323b69d0f1c6.R6.__fits_147._unsafe_rec"]
+print the union ["propext"], but the policy of
+`LexLeanPreserve.C3df453b80ed6295dbadd323b69d0f1c6.R6.__fits_76._unsafe_rec`
+pins []
+```
+
+The plant was restored with `git checkout`. The same verification with the fix in
+place is the regeneration of the bootstrap records in this change.
