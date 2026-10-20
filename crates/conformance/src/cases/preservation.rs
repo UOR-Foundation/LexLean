@@ -5317,11 +5317,33 @@ fn artifacts_as_data() {
         let krate =
             lexlean::calculus::rust::lower(&entry.program, lexlean::calculus::rust::Profile::Std)
                 .expect("the program renders in rust-std");
-        constants += krate
+        let here = krate
             .items
             .iter()
             .filter(|item| matches!(item, ItemDef::Constant { .. }))
             .count();
+        constants += here;
+        // Certificate B states a constant as the machine's `ItemDef.constant`,
+        // in its text and in its data, exactly for the roots that have one: a
+        // certificate that compiled but encoded the constant as a function
+        // would not name it.
+        for (target, certificate) in &entry.renderings {
+            let in_data = certificate.data.as_ref().is_some_and(|data| {
+                data.nodes.iter().any(|node| {
+                    matches!(node, lexlean::ir::core::CoreNode::Const { n, .. }
+                        if n == "LexLeanTarget.RustSyntax.ItemDef.constant")
+                })
+            });
+            assert_eq!(
+                (certificate.text.contains("ItemDef.constant"), in_data),
+                (
+                    here > 0 && target == "rust-std",
+                    here > 0 && target == "rust-std"
+                ),
+                "{} on {target}: certificate B states the constant exactly when the crate has one",
+                entry.root
+            );
+        }
     }
     assert_eq!(constants, 10, "each literal renders as a constant");
     if !support::lean_backed("SP-24") {

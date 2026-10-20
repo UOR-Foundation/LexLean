@@ -182,6 +182,9 @@ impl<'a> Writer<'_, 'a> {
     ) -> Result<Pf, String> {
         let site = scope.ctx.site.clone();
         let (p, env) = (self.prog, scope.env);
+        // Keyed on the shape, not on the artifact declaration: only an artifact's
+        // list folds today (`production::lower`), so no other definition meets
+        // this branch, and a second folding construct would need its own check.
         // An artifact's list, held by the lowering as one literal, is related
         // to the source's construction of it by the lemma that relates any
         // literal to its value (§17.17 *Artifacts as data*).

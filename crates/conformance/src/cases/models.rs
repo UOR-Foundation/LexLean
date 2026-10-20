@@ -3864,6 +3864,53 @@ fn builds_per_call(body: &lexlean::calculus::Expr) -> bool {
     matches!(body, lexlean::calculus::Expr::Build { .. })
 }
 
+/// The checks of MD-14 on one lowered root: every artifact definition is a
+/// literal equal to the decoding of its file, and no function of no
+/// parameters builds a list with constructors. Returns the number of literals
+/// checked, or the first defect.
+fn check_artifacts_as_data(
+    lowered: &lexlean::production::lower::Lowered,
+    root: &str,
+    artifacts: &BTreeSet<String>,
+    schemas: &std::collections::BTreeMap<String, (lexlean::ir::semantic::ArtifactSchema, String)>,
+    files: &std::collections::BTreeMap<String, Vec<u8>>,
+) -> Result<usize, String> {
+    use lexlean::calculus::{Expr, Shape};
+    let mut literals = 0;
+    for (name, body) in artifact_literals(lowered, artifacts) {
+        let Expr::Value { value, .. } = body else {
+            return Err(format!(
+                "{root}: `{name}` is built on each call, not held as data"
+            ));
+        };
+        let (schema, sha256) = &schemas[&name];
+        let bytes = files
+            .get(sha256)
+            .ok_or_else(|| format!("{name}: no file has digest {sha256}"))?;
+        if value != &decoded_artifact(schema, bytes) {
+            return Err(format!(
+                "{root}: the literal of `{name}` is not the decoding of the artifact's bytes"
+            ));
+        }
+        literals += 1;
+    }
+    for function in &lowered.program.functions {
+        if function.parameters.is_empty()
+            && builds_per_call(&function.body)
+            && matches!(
+                function.body,
+                Expr::Build {
+                    shape: Shape::Cons,
+                    ..
+                }
+            )
+        {
+            return Err(format!("{root}: a list is built on each call"));
+        }
+    }
+    Ok(literals)
+}
+
 fn md_14() {
     use lexlean::calculus::{Expr, Shape, Value};
     use lexlean::ir::semantic::SemanticDeclaration;
@@ -3899,6 +3946,7 @@ fn md_14() {
     assert_eq!(schemas.len(), 8, "the example declares eight artifacts");
     let artifacts: BTreeSet<String> = schemas.keys().cloned().collect();
     let mut literals = 0;
+    let mut planted = None;
     for report in roots(&checked).expect("the eligibility reports") {
         let lowered = lower_root(
             &modules,
@@ -3908,82 +3956,80 @@ fn md_14() {
             &limits,
         )
         .unwrap_or_else(|diagnostic| panic!("{}: {diagnostic:?}", report.report.root));
-        for (name, body) in artifact_literals(&lowered, &artifacts) {
-            let Expr::Value { value, .. } = body else {
-                panic!(
-                    "{}: `{name}` is built on each call, not held as data: {body:?}",
-                    report.report.root
-                );
-            };
-            let (schema, sha256) = &schemas[&name];
-            let bytes = files
-                .get(sha256)
-                .unwrap_or_else(|| panic!("{name}: no file has digest {sha256}"));
-            assert_eq!(
-                value,
-                &decoded_artifact(schema, bytes),
-                "{name}: the literal is the decoding of the artifact's bytes"
-            );
-            literals += 1;
-        }
-        // No function of no parameters builds a constant with constructors:
-        // the shape of the per-call construction this removes.
-        for function in &lowered.program.functions {
-            assert!(
-                !(function.parameters.is_empty()
-                    && builds_per_call(&function.body)
-                    && matches!(
-                        function.body,
-                        Expr::Build {
-                            shape: Shape::Cons,
-                            ..
-                        }
-                    )),
-                "{}: a list is built on each call",
-                report.report.root
-            );
-        }
-        // Planted: a literal turned back into its chain, and a literal with
-        // one element changed, are each detected by the same checks.
-        if let Some((
-            _,
-            Expr::Value {
-                value: Value::List { items },
-                ty,
-            },
-        )) = artifact_literals(&lowered, &artifacts).into_iter().next()
-        {
-            let chain = items.iter().rev().fold(
-                Expr::Build {
-                    shape: Shape::Nil,
-                    ty: ty.clone(),
-                    operands: Vec::new(),
-                },
-                |tail, item| Expr::Build {
-                    shape: Shape::Cons,
-                    ty: ty.clone(),
-                    operands: vec![
-                        Expr::Value {
-                            ty: ty.clone(),
-                            value: item.clone(),
-                        },
-                        tail,
-                    ],
-                },
-            );
-            assert!(builds_per_call(&chain), "a rebuilt constant is detected");
-            let mut changed = items.clone();
-            changed[0] = Value::Int {
-                value: "424242".to_owned(),
-            };
-            assert_ne!(
-                Value::List { items: changed },
-                Value::List {
-                    items: items.clone()
-                },
-                "a changed element is detected by the equality with the decoding"
-            );
+        literals +=
+            check_artifacts_as_data(&lowered, &report.report.root, &artifacts, &schemas, &files)
+                .unwrap_or_else(|defect| panic!("{defect}"));
+        if planted.is_none() && !artifact_literals(&lowered, &artifacts).is_empty() {
+            planted = Some((lowered, report.report.root.clone()));
         }
     }
     assert_eq!(literals, 10, "R0, R1, and R2 hold ten artifact literals");
+
+    // Planted: the same checks, run on a lowered program of a root that reads
+    // an artifact after its literal is turned back into the chain a lowering
+    // that stopped folding would leave, and after one element is changed.
+    let (lowered, root) = planted.expect("a root reads an artifact");
+    let target = lowered
+        .layout
+        .functions
+        .iter()
+        .zip(&lowered.program.functions)
+        .position(|(origin, function)| {
+            matches!(
+                (&function.body, origin),
+                (
+                    Expr::Value {
+                        value: Value::List { .. },
+                        ..
+                    },
+                    lexlean::production::lower::Origin::Definition { .. }
+                )
+            )
+        })
+        .expect("a literal-bodied definition");
+    let Expr::Value {
+        value: Value::List { items },
+        ty,
+    } = lowered.program.functions[target].body.clone()
+    else {
+        panic!("the target is a list literal");
+    };
+    let mut chained = lowered.clone();
+    chained.program.functions[target].body = items.iter().rev().fold(
+        Expr::Build {
+            shape: Shape::Nil,
+            ty: ty.clone(),
+            operands: Vec::new(),
+        },
+        |tail, item| Expr::Build {
+            shape: Shape::Cons,
+            ty: ty.clone(),
+            operands: vec![
+                Expr::Value {
+                    ty: ty.clone(),
+                    value: item.clone(),
+                },
+                tail,
+            ],
+        },
+    );
+    let defect = check_artifacts_as_data(&chained, &root, &artifacts, &schemas, &files)
+        .expect_err("a rebuilt constant is refused");
+    assert!(defect.contains("is built on each call"), "{defect}");
+    let mut changed = lowered.clone();
+    if let Expr::Value {
+        value: Value::List { items },
+        ..
+    } = &mut changed.program.functions[target].body
+    {
+        items[0] = Value::Int {
+            value: "424242".to_owned(),
+        };
+    }
+    let defect = check_artifacts_as_data(&changed, &root, &artifacts, &schemas, &files)
+        .expect_err("a changed element is refused");
+    assert!(
+        defect.contains("is not the decoding of the artifact's bytes"),
+        "{defect}"
+    );
 }

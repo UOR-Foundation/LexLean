@@ -4125,7 +4125,11 @@ Removed: each plant was reverted. `conformance_rb_01` fails on this tree with
 
 ### artifacts as data can fail (SP-24, MD-14)
 
-Planted, three ways.
+Command: `cargo test -p repo-conformance --test conformance -- conformance_md_14 conformance_sp_24`
+(`conformance_md_14` needs the models lock rewritten and `conformance_sp_24`
+the regenerated machine modules; both were held in the working tree only).
+
+Planted, five ways.
 
 1. The lowering stopped folding artifacts (`is_artifact` replaced by `false`).
    `conformance_md_14` refused it at the first artifact read:
@@ -4134,22 +4138,34 @@ Planted, three ways.
 Models.Main.classify: `Recognizer.outputBias` is built on each call, not held as data: Build { shape: Cons, ty: List { element: Int }, operands: [Value { ty: Int, value: Int { value: "-6" } }, Build { shape: Cons, ...
 ```
 
-2. A literal turned back into its construction chain, and a literal with one
-   element changed: the first is a `Build` of constructors, which the
-   per-call check names; the second is unequal to the closed schemas'
-   decoding of the artifact's bytes, which the case computes from the file
-   alone.
-3. Certificate B and E: `conformance_sp_24` stages and compiles the certificates of every root of the models example with the crate's ten constants encoded as `ItemDef.constant`, over the regenerated machine modules and the repaired library held in the working tree only (289 s, with `conformance_md_14`).
-4. In certificate A of a root that holds a literal, every `conv_value` was
+2. A lowered program of a root that reads an artifact with one literal turned
+   back into the chain a lowering that stopped folding would leave: the
+   case's own check (`check_artifacts_as_data`, the function it runs on every
+   root) returns the defect ``... is built on each call``.
+3. The same program with one element of a literal changed: the check returns
+   ``the literal of `...` is not the decoding of the artifact's bytes``, the
+   decoding being computed from the file by the closed schemas alone.
+4. Certificate B: `conformance_sp_24` requires a certificate B text and data
+   to name `LexLeanTarget.RustSyntax.ItemDef.constant` exactly for the roots
+   whose crate has a constant, and stages and compiles the certificates A, B,
+   and E of every root of the models example with its ten constants, over the
+   regenerated machine modules and the repaired library (108 s with
+   `conformance_md_14`).
+5. In certificate A of a root that holds a literal, every `conv_value` was
    replaced by `conv_var`. `conformance_sp_24` compiles the planted module
    under the pinned Lean and requires it to be refused.
+
+Certificate A relates the lowered literal to its own value (`conv_value` has no
+source argument, as the existing path for a scalar literal); that the literal
+is the decoding of the artifact's bytes is established by MD-14's independent
+decoding and by nothing else.
 
 Before the aligner learned the case, the same run printed
 `LLI9001 phase preservation: the lowering of a cons is not a build of two`:
 certificate A had no derivation for a source list lowered to one literal. The
 fix is one branch in `data_a/prove.rs` using the lemma that relates any
-literal to its value; `git diff -- language/` is empty, so the preservation
-library did not grow. Removed: each plant was reverted.
+literal to its value; this PR changes nothing under `language/`, so the
+preservation library did not grow for it. Removed: each plant was reverted.
 
 ### kernel-opaque classification is observed
 
