@@ -1,0 +1,151 @@
+\begin{lexlean}{IdsDF}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{spec.titles@1.0.0}
+\importmodule{Rows}
+\title{Declarations conformance claims}
+\begin{semanticmodule}
+definition{
+  name: df01,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "DF-01", level := "build", suite := "declarations", statement := "A valid type-definition sentence emits one nonrecursive sort-valued Lean def linked to its document entry.", sections := "§15.7, §18.6"}),
+  executable: true
+}
+
+definition{
+  name: df02,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "DF-02", level := "build", suite := "declarations", statement := "A valid term-definition sentence emits one nonrecursive explicitly typed Lean def.", sections := "§15.7, §18.6"}),
+  executable: true
+}
+
+definition{
+  name: df03,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "DF-03", level := "build", suite := "declarations", statement := "A valid predicate-definition sentence emits one nonrecursive Prop-valued Lean def.", sections := "§15.7, §18.6"}),
+  executable: true
+}
+
+definition{
+  name: df04,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "DF-04", level := "build", suite := "declarations", statement := "Self recursion, mutual recursion, and later-declaration references are rejected.", sections := "§15.7"}),
+  executable: true
+}
+
+definition{
+  name: df05,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "DF-05", level := "build", suite := "declarations", statement := "A definition's self head, explicit arguments, and signature order are checked exactly.", sections := "§15.7"}),
+  executable: true
+}
+
+definition{
+  name: df06,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "DF-06", level := "build", suite := "declarations", statement := "Every generated definition and theorem-like declaration carries one explicit axiom policy.", sections := "§15.9, §22.6"}),
+  executable: true
+}
+
+definition{
+  name: df07,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "DF-07", level := "build", suite := "declarations", statement := "Theorem, lemma, and corollary each emit Lean theorem declarations while retaining distinct document metadata.", sections := "§15.8, §18.6"}),
+  executable: true
+}
+
+definition{
+  name: df08,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "DF-08", level := "build", suite := "declarations", statement := "Author-defined axioms, opaque declarations, and proofless theorem-like components are rejected.", sections := "§4.2, §15.8"}),
+  executable: true
+}
+
+definition{
+  name: df09,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "DF-09", level := "build", suite := "declarations", statement := "Every theorem-like component contains exactly one nonempty structured proof.", sections := "§15.8, §16"}),
+  executable: true
+}
+
+definition{
+  name: df10,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "DF-10", level := "build", suite := "declarations", statement := "Generated declarations preserve source order and every document reference respects that order.", sections := "§18.3"}),
+  executable: true
+}
+
+definition{
+  name: df11,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "DF-11", level := "build", suite := "declarations", statement := "Language 1.1 checks and lowers generic structures, classes, instances, inductives, definitions, structural recursion, matches, Boolean validators, and closed proofs from semantic source data.", sections := "§17.11"}),
+  executable: true
+}
+
+definition{
+  name: df12,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "DF-12", level := "build", suite := "declarations", statement := "Language 1.2 inductives admit uniform, strictly positive self, nested, and mutual recursion with a buildable base case, all checked before either backend runs.", sections := "§17.12"}),
+  executable: true
+}
+
+definition{
+  name: df13,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "DF-13", level := "build", suite := "declarations", statement := "Language 1.2 structural recursion and induction over a recursive inductive use exactly its direct recursive fields, across modules, with one induction hypothesis per recursive field.", sections := "§17.12"}),
+  executable: true
+}
+
+definition{
+  name: df14,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "DF-14", level := "build", suite := "declarations", statement := "Language 1.2 generic definitions and theorems take explicit type parameters, every use supplies exactly their type arguments, recursion is never polymorphic, and every written type mentions only declared parameters.", sections := "§17.12"}),
+  executable: true
+}
+
+definition{
+  name: df15,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "DF-15", level := "build", suite := "declarations", statement := "An executable language-1.2 definition forms only non-escaping closures and calls only executable definitions; every violation fails before either backend runs.", sections := "§17.12"}),
+  executable: true
+}
+
+definition{
+  name: df16,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "DF-16", level := "build", suite := "declarations", statement := "Language 1.2 mutual definition groups recurse structurally over one recursive family, including nested and mutual inductives, and every call between members passes a structurally smaller family binder.", sections := "§17.12"}),
+  executable: true
+}
+
+definition{
+  name: df17,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "DF-17", level := "build", suite := "declarations", statement := "Language 1.2 well-founded definitions carry a binder-free natural-number measure and, per recursive call site, a prior theorem stating exactly that call's decrease obligation; linking checks the statements and Lean checks the proofs.", sections := "§17.12"}),
+  executable: true
+}
+
+definition{
+  name: df18,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "DF-18", level := "build", suite := "declarations", statement := "Language 1.2 state threading is explicit: ordered folds and bounded iteration pass the state through a direct closure, executable definitions may use them, and every iteration carries a natural-number bound.", sections := "§17.12"}),
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

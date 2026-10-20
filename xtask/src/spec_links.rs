@@ -14,6 +14,8 @@ struct TableRow {
     suite: String,
     statement: String,
     sections: Vec<String>,
+    /// The "Primary specification" cell as written.
+    cell: String,
 }
 
 fn parse_table(spec: &str) -> Result<Vec<TableRow>, Fail> {
@@ -52,6 +54,7 @@ fn parse_table(spec: &str) -> Result<Vec<TableRow>, Fail> {
             suite: strip_ticks(cells[1]),
             statement: cells[2].to_owned(),
             sections,
+            cell: cells[3].to_owned(),
         });
     }
     Ok(rows)
@@ -61,8 +64,16 @@ fn parse_table(spec: &str) -> Result<Vec<TableRow>, Fail> {
 pub fn validate(root: &Path) -> Result<(), Fail> {
     let spec = std::fs::read_to_string(root.join("SPEC.md"))?;
     let rows = parse_table(&spec)?;
-    if rows.len() != 431 {
-        return Err(format!("RP-07: the §31 table has {} rows, not 431", rows.len()).into());
+    let model = Model::load(&root.join("model"))?;
+    // The count is the register's, which is the projection of the sources
+    // (NS-03): no literal here to go stale.
+    if rows.len() != model.ids.id.len() {
+        return Err(format!(
+            "RP-07: the §31 table has {} rows but the register has {}",
+            rows.len(),
+            model.ids.id.len()
+        )
+        .into());
     }
     // The prose total under the table is part of the contract a reader
     // relies on; a row added without it would leave §31 contradicting itself.
@@ -86,7 +97,14 @@ pub fn validate(root: &Path) -> Result<(), Fail> {
         }
     }
 
-    let model = Model::load(&root.join("model"))?;
+    let projection = repo_model::project::project(root)?;
+    let cells: Vec<(String, String)> = rows
+        .iter()
+        .map(|row| (row.id.clone(), row.cell.clone()))
+        .collect();
+    if let Some(difference) = projection.first_section_difference(&cells) {
+        return Err(difference.into());
+    }
     let register: BTreeSet<&str> = model.ids.id.iter().map(|row| row.id.as_str()).collect();
     for row in &rows {
         let Some(model_row) = model.ids.get(&row.id) else {
