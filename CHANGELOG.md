@@ -46,7 +46,7 @@ and Unreleased holds what has landed since.
   language-1.2 lock, golden, fixture, and verification record is regenerated
   with the maintainer's wave. Production (`text_rows`), `rust-std` and
   `rust-core`, and the end-to-end example are not part of this change. The
-  register holds 429 IDs.
+  register holds 432 IDs.
 - Context windows and text generators (SPEC.md §17.12, *Text components*,
   `LM-04`..`LM-06`, slice 2 of #30; new code `LLT4016`). A `context_window`
   of capacity at least 1 and overflow `refuse` or `keep_last` elaborates to
