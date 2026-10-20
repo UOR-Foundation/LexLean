@@ -66,13 +66,8 @@ pub(super) fn run(id: &str) {
     let root = support::repo_root();
 
     // Armed: the two sides are two implementations, so agreement is evidence.
-    let manifest = std::fs::read_to_string(root.join("crates/lexlean/Cargo.toml").as_std_path())
-        .expect("the shipped crate's manifest");
-    assert!(
-        !manifest
-            .lines()
-            .any(|line| line.trim_start().starts_with("sha2")),
-        "R6: the compiler's digest and the oracle are one implementation"
+    super::stdlib_digest::has_no_sha2(&super::stdlib_digest::workspace_metadata()).unwrap_or_else(
+        |reason| panic!("{reason}: the compiler's digest and the oracle are one implementation"),
     );
 
     // Every tracked file, by the compiler and by the oracle.
@@ -89,10 +84,15 @@ pub(super) fn run(id: &str) {
         .filter(|p| !p.is_empty())
     {
         let path = String::from_utf8(path.to_vec()).expect("tracked paths are UTF-8");
-        // A tracked link to a directory has no bytes of its own.
-        let Ok(bytes) = std::fs::read(root.join(&path).as_std_path()) else {
+        // A tracked link to a directory has no bytes of its own; any other
+        // path that cannot be read fails the case, so the tree cannot thin
+        // silently.
+        let full = root.join(&path);
+        if full.as_std_path().is_dir() {
             continue;
-        };
+        }
+        let bytes = std::fs::read(full.as_std_path())
+            .unwrap_or_else(|error| panic!("{path}: a tracked file cannot be read: {error}"));
         files.push((path, bytes));
     }
     assert!(
