@@ -31,3 +31,9 @@ Feature: normative-source
     Given the chapter, register, and registry modules of the committed `spec` project, and a plant of each foreign chapter item, a hand edit of a derived table, and a register edit that is not projected
     When the modules are projected to SPEC.md and the repository gate runs on each plant
     Then SPEC.md is byte-identical to the projection, each derived region equals what the register and registry modules give, and each plant is refused naming R1 and its position
+
+  @NS-06 @build
+  Scenario: The hand-edited normative inputs of the repository are the `.lex.tex` modules of the specification project: `model/` holds only the projected files and the copies an authority row vendors, every Markdown file at the root is a projection or is on the closed list of hand-written documents, the projections carry the notice that names their source, and no hand-written document restates a registered statement, a plant of each being refused naming R1.
+    Given the committed repository, and a plant of a file in `model/` that is not a projection, of a root Markdown file on no list, of a projection without its notice, and of a hand-written document that restates a registered statement
+    When the source-authority audit runs on the committed repository and on each plant
+    Then the committed repository passes and each plant is refused naming R1 and the file

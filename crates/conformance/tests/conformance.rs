@@ -2166,6 +2166,21 @@ fn conformance_lm_06() {
 }
 
 #[test]
+fn conformance_lm_07() {
+    repo_conformance::cases::run("LM-07");
+}
+
+#[test]
+fn conformance_lm_08() {
+    repo_conformance::cases::run("LM-08");
+}
+
+#[test]
+fn conformance_lm_09() {
+    repo_conformance::cases::run("LM-09");
+}
+
+#[test]
 fn conformance_lm_13() {
     repo_conformance::cases::run("LM-13");
 }
@@ -2213,4 +2228,9 @@ fn conformance_ns_04() {
 #[test]
 fn conformance_ns_05() {
     repo_conformance::cases::run("NS-05");
+}
+
+#[test]
+fn conformance_ns_06() {
+    repo_conformance::cases::run("NS-06");
 }
