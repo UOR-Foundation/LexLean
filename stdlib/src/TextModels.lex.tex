@@ -1,0 +1,52 @@
+\begin{lexlean}{TextModels}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: withIndex,
+  parameters: [vocabulary : (List String), start : Nat],
+  result: (List (Nat * String)),
+  body: (match vocabulary
+    | List.nil => (nil (Nat * String))
+    | List.cons head tail => (cons (start, head) (withIndex tail (start + 1)))),
+  executable: true,
+  recursive_argument: vocabulary,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: takeInts,
+  parameters: [count : Nat, values : (List Int)],
+  result: (List Int),
+  body: (match count
+    | Nat.zero => (nil Int)
+    | Nat.succ previous => (match values
+      | List.nil => (nil Int)
+      | List.cons head tail => (cons head (takeInts previous tail)))),
+  executable: true,
+  recursive_argument: count,
+  production: {effects: [allocation, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: zerosInts,
+  parameters: [count : Nat],
+  result: (List Int),
+  body: (match count
+    | Nat.zero => (nil Int)
+    | Nat.succ previous => (cons (0 : Int) (zerosInts previous))),
+  executable: true,
+  recursive_argument: count,
+  production: {effects: [allocation, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: fitWidth,
+  parameters: [width : Nat, values : (List Int)],
+  result: (List Int),
+  body: (prim append (takeInts width values) (zerosInts (prim subtract width (prim length values : Nat) : Nat)) : (List Int)),
+  executable: true,
+  production: {effects: [allocation, recursion], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}
