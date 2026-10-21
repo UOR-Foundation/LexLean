@@ -988,14 +988,14 @@ pub fn run(id: &str) {
                 .extend_from_slice(b"\npub fn planted(a: u64) -> u64 {\n    a.clone()\n}\n");
             let mut wrong_files = committed_files(&committed);
             let library = String::from_utf8(wrong_files["src/lib.rs"].clone()).expect("utf8");
-            let from = "pub fn nat_sub(a: u64, b: u64) -> u64 { a.saturating_sub(b) }";
+            let from = "pub fn nat_sub(p0: u64, p1: u64) -> u64 {\n    u64::saturating_sub(p0, p1)\n}";
             assert!(library.contains(from), "the plant site exists");
             wrong_files.insert(
                 "src/lib.rs".to_owned(),
                 library
                     .replacen(
                         from,
-                        "pub fn nat_sub(a: u64, b: u64) -> u64 { a.wrapping_sub(b) }",
+                        "pub fn nat_sub(p0: u64, p1: u64) -> u64 {\n    u64::wrapping_sub(p0, p1)\n}",
                         1,
                     )
                     .into_bytes(),
