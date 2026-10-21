@@ -251,8 +251,14 @@ pub fn run(id: &str) {
     // §17.16 lists it, and the register states its size.
     let spec = read("SPEC.md").replace('\n', " ");
     let names = |from: &str, to: &str| -> Vec<String> {
-        let start = spec.find(from).unwrap_or_else(|| panic!("SPEC.md lacks `{from}`")) + from.len();
-        let end = start + spec[start..].find(to).unwrap_or_else(|| panic!("SPEC.md lacks `{to}`"));
+        let start = spec
+            .find(from)
+            .unwrap_or_else(|| panic!("SPEC.md lacks `{from}`"))
+            + from.len();
+        let end = start
+            + spec[start..]
+                .find(to)
+                .unwrap_or_else(|| panic!("SPEC.md lacks `{to}`"));
         let mut out: Vec<String> = spec[start..end]
             .split('`')
             .enumerate()
@@ -265,7 +271,10 @@ pub fn run(id: &str) {
     let mut table = rt_validate::table();
     table.sort();
     assert_eq!(
-        names("The closed table of the standard library (51 names): ", ". A call"),
+        names(
+            "The closed table of the standard library (51 names): ",
+            ". A call"
+        ),
         table,
         "SPEC.md §17.16 lists the validator's table"
     );
@@ -273,12 +282,18 @@ pub fn run(id: &str) {
     let mut allocating = rt_validate::allocating();
     allocating.sort();
     assert_eq!(
-        names("The names of the table that allocate (", ") are refused in the core profile"),
+        names(
+            "The names of the table that allocate (",
+            ") are refused in the core profile"
+        ),
         allocating,
         "SPEC.md §17.16 lists the names that allocate"
     );
     let register = read("model/ids.toml");
-    assert!(register.contains("(51 names, which SPEC.md §17.16 lists"), "the register states the size");
+    assert!(
+        register.contains("(51 names, which SPEC.md §17.16 lists"),
+        "the register states the size"
+    );
 
     // The core profile refuses every allocating name of the table as the
     // hidden allocation the validator refuses in every `rust-core` crate.

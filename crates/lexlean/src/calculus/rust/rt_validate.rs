@@ -102,7 +102,11 @@ pub fn table() -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
     out.extend(TYPES.iter().map(|(name, ..)| (*name).to_owned()));
     out.push(STRING.to_owned());
-    out.extend(CALLS.iter().map(|(owner, name, ..)| format!("{owner}::{name}")));
+    out.extend(
+        CALLS
+            .iter()
+            .map(|(owner, name, ..)| format!("{owner}::{name}")),
+    );
     out.extend(WRAPPERS.iter().map(|(name, _)| (*name).to_owned()));
     out.extend(METHODS.iter().map(|(name, ..)| (*name).to_owned()));
     for (name, ..) in TURBOFISH {
@@ -118,7 +122,12 @@ pub fn table() -> Vec<String> {
 #[must_use]
 pub fn allocating() -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
-    out.extend(TYPES.iter().filter(|(.., heap)| *heap).map(|(name, ..)| (*name).to_owned()));
+    out.extend(
+        TYPES
+            .iter()
+            .filter(|(.., heap)| *heap)
+            .map(|(name, ..)| (*name).to_owned()),
+    );
     out.push(STRING.to_owned());
     out.extend(
         CALLS
@@ -126,7 +135,12 @@ pub fn allocating() -> Vec<String> {
             .filter(|(.., heap)| *heap)
             .map(|(owner, name, ..)| format!("{owner}::{name}")),
     );
-    out.extend(METHODS.iter().filter(|(.., heap)| *heap).map(|(name, ..)| (*name).to_owned()));
+    out.extend(
+        METHODS
+            .iter()
+            .filter(|(.., heap)| *heap)
+            .map(|(name, ..)| (*name).to_owned()),
+    );
     out
 }
 
@@ -727,16 +741,12 @@ impl<'a> Scope<'a> {
     /// The root variable of a place and whether the place may be assigned.
     fn assignable(&self, place: &Expr, frame: &Frame<'_>) -> Result<(), String> {
         let mut at = place;
-        let mut through = false;
         loop {
             match at {
                 Expr::Field(inner, _) | Expr::FieldNamed(inner, _) | Expr::Index(inner, _) => {
                     at = inner;
                 }
-                Expr::Deref(inner) => {
-                    through = true;
-                    at = inner;
-                }
+                Expr::Deref(inner) => at = inner,
                 Expr::Var(name) => {
                     let Some((_, mutable, ty)) =
                         frame.variables.iter().rev().find(|(held, ..)| held == name)
@@ -744,7 +754,6 @@ impl<'a> Scope<'a> {
                         return rule("variable-scope", format!("`{name}` is not in scope"));
                     };
                     let exclusive = matches!(ty, Some(Type::RefMut(_)));
-                    let _ = through;
                     return if *mutable || exclusive {
                         Ok(())
                     } else {
@@ -754,7 +763,33 @@ impl<'a> Scope<'a> {
                         )
                     };
                 }
-                _ => return rule("assign-place", "an assignment to a value that is no place"),
+                Expr::Lit(_)
+                | Expr::Path(_)
+                | Expr::Call(..)
+                | Expr::Method(..)
+                | Expr::MethodOf(..)
+                | Expr::Borrow(_)
+                | Expr::BorrowMut(_)
+                | Expr::Equals(..)
+                | Expr::Match(..)
+                | Expr::Let(..)
+                | Expr::Assign(..)
+                | Expr::If(..)
+                | Expr::While(..)
+                | Expr::WhileLet(..)
+                | Expr::Loop(_)
+                | Expr::For(..)
+                | Expr::Break
+                | Expr::Return(_)
+                | Expr::Tuple(_)
+                | Expr::StructLit(..)
+                | Expr::Binary(..)
+                | Expr::Not(_)
+                | Expr::Cast(..)
+                | Expr::RangeSlice(..)
+                | Expr::Block(_) => {
+                    return rule("assign-place", "an assignment to a value that is no place");
+                }
             }
         }
     }

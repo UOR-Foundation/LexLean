@@ -355,7 +355,18 @@ impl Expr {
             | Expr::FieldNamed(..)
             | Expr::Index(..)
             | Expr::Call(..) => POSTFIX,
-            _ => ATOM,
+            Expr::Var(_)
+            | Expr::Lit(_)
+            | Expr::Path(_)
+            | Expr::Match(..)
+            | Expr::If(..)
+            | Expr::While(..)
+            | Expr::WhileLet(..)
+            | Expr::Loop(_)
+            | Expr::For(..)
+            | Expr::Tuple(_)
+            | Expr::StructLit(..)
+            | Expr::Block(_) => ATOM,
         }
     }
 
