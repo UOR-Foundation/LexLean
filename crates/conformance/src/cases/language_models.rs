@@ -1553,13 +1553,13 @@ fn lm_07() {
     let lean = support::lean_text(&build, MODULE);
     assert!(
         lean.contains("LexLeanText.features"),
-        "the generated Lean applies the library's features"
+        "the generated Lean states the library's features"
     );
     for lemma in [
-        "LexLeanText.features_width",
-        "LexLeanText.features_fit",
-        "LexLeanText.features_total_text ",
-        "LexLeanText.features_total_text_bytes",
+        "LexLeanText.features_width_of",
+        "LexLeanText.features_fit_bridge_of",
+        "LexLeanText.features_total_text_of",
+        "LexLeanText.features_total_text_bytes_of",
     ] {
         assert!(lean.contains(lemma), "the generated Lean proves by {lemma}");
     }
@@ -1674,7 +1674,7 @@ fn lm_07() {
         .as_array_mut()
         .expect("declarations")
         .extend(facts.into_iter().map(|mut fact| {
-            fact["axioms"] = json!(["propext"]);
+            fact["axioms"] = json!(["Quot.sound", "propext"]);
             fact
         }));
     write_module_data(&evaluated, MODULE, &data);

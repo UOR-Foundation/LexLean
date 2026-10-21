@@ -270,6 +270,19 @@ pub mod names {
     /// The text round trip under `byte_level`, for any encoder and decoder equal to the library's.
     pub const TEXT_ROUNDTRIP_BYTES_OF: &str = "text_roundtrip_bytes_of";
 
+    /// The production `countOf` equals the library's, given the token's value.
+    pub const COUNT_OF_BRIDGE: &str = "countOf_bridge";
+    /// The production `features` equals the library's.
+    pub const FEATURES_BRIDGE: &str = "features_bridge";
+    /// The classifier's `features_width` law, for any function equal to `features`.
+    pub const FEATURES_WIDTH_OF: &str = "features_width_of";
+    /// The classifier's `features_fit` law, for any fixed-width map and any features equal to the library's.
+    pub const FEATURES_FIT_BRIDGE_OF: &str = "features_fit_bridge_of";
+    /// The classifier's `features_total` law under `longest_match`, for any features, encoder and size equal to the library's.
+    pub const FEATURES_TOTAL_TEXT_OF: &str = "features_total_text_of";
+    /// The classifier's `features_total` law under `byte_level`, for any features, encoder and size equal to the library's.
+    pub const FEATURES_TOTAL_TEXT_BYTES_OF: &str = "features_total_text_bytes_of";
+
     /// `features : Nat -> List UInt32 -> List Int`, the count of each id
     /// below a size.
     pub const FEATURES: &str = "features";
@@ -296,7 +309,7 @@ pub mod names {
     pub const FEATURES_TOTAL_TEXT_BYTES: &str = "features_total_text_bytes";
 
     /// Every name above, each of which the native module must declare.
-    pub const ALL: [&str; 107] = [
+    pub const ALL: [&str; 113] = [
         VOCAB_SIZE,
         ENCODE_WITH,
         ENCODE_BYTES,
@@ -394,6 +407,12 @@ pub mod names {
         ROUNDTRIP_BYTES_OF,
         TEXT_ROUNDTRIP_OF,
         TEXT_ROUNDTRIP_BYTES_OF,
+        COUNT_OF_BRIDGE,
+        FEATURES_BRIDGE,
+        FEATURES_WIDTH_OF,
+        FEATURES_FIT_BRIDGE_OF,
+        FEATURES_TOTAL_TEXT_OF,
+        FEATURES_TOTAL_TEXT_BYTES_OF,
         FEATURES,
         FIT_WIDTH,
         TOTAL,

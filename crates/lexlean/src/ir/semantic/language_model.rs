@@ -446,36 +446,6 @@ fn register_library(env: &mut Environment<'_>) {
     }
 }
 
-/// A generated theorem over several binders, proved by one library lemma
-/// applied to `arguments` after unfolding exactly the named derived
-/// definitions.
-fn law_over(
-    name: String,
-    binders: Vec<SemanticParameter>,
-    statement: SemanticTerm,
-    unfold: &[&str],
-    lemma: &str,
-    arguments: Vec<SemanticTerm>,
-) -> GeneratedTheorem {
-    GeneratedTheorem {
-        name,
-        type_parameters: Vec::new(),
-        parameters: binders,
-        statement: Formula::Term { term: statement },
-        proof: Proof::Unfold {
-            definitions: unfold.iter().map(|name| model::local(name)).collect(),
-            term: ProofTerm::Theorem {
-                theorem: library_member(lemma),
-                type_arguments: Vec::new(),
-                arguments: arguments
-                    .into_iter()
-                    .map(|term| ProofTerm::Term { term })
-                    .collect(),
-            },
-        },
-    }
-}
-
 /// A generated theorem over several binders proved by one library lemma
 /// applied to proof-term `arguments`, with nothing unfolded: the lemma is of
 /// the form that takes a production form and its bridge as arguments
@@ -626,15 +596,6 @@ fn local_call(function: &str, arguments: Vec<SemanticTerm>) -> SemanticTerm {
 
 fn is_true(term: SemanticTerm) -> SemanticTerm {
     model::eq(term, SemanticTerm::Bool { value: true })
-}
-
-fn plain_definition(
-    name: &str,
-    parameters: Vec<SemanticParameter>,
-    result: SemanticType,
-    body: SemanticTerm,
-) -> SemanticDeclaration {
-    model::ordinary_definition(name.to_owned(), &[], parameters, result, body, false)
 }
 
 /// A definition a production root may call: its body applies only
@@ -1331,6 +1292,74 @@ fn decode_with_bridge() -> ProofTerm {
             unfolds(2),
         ],
     )
+}
+
+/// The bridge of the production `features` to the library's.
+fn features_bridge_proof() -> ProofTerm {
+    let counting = applied(
+        names::COUNT_OF_BRIDGE,
+        vec![
+            production_value("natOfToken", &[SemanticType::UInt32]),
+            nat_bits_bridge(),
+            production_value("countOf", &[SemanticType::Nat, tokens()]),
+            unfolds(1),
+            unfolds(3),
+        ],
+    );
+    applied(
+        names::FEATURES_BRIDGE,
+        vec![
+            production_value("countOf", &[SemanticType::Nat, tokens()]),
+            counting,
+            production_value(
+                "featuresFrom",
+                &[SemanticType::Nat, SemanticType::Nat, tokens()],
+            ),
+            unfolds(2),
+            unfolds(3),
+            production_value("features", &[SemanticType::Nat, tokens()]),
+            unfolds(2),
+        ],
+    )
+}
+
+/// The bridge of the production `vocabSize` to the library's.
+fn size_bridge_proof() -> ProofTerm {
+    applied(
+        names::VOCAB_SIZE_BRIDGE,
+        vec![
+            proof_term(production_call("byteVocab", Vec::new())),
+            ProofTerm::Refl,
+            production_value("vocabSize", &[strings()]),
+            unfolds(1),
+        ],
+    )
+}
+
+/// The bridge of the production text encoder of a tokenizer under `scheme`
+/// to the library's.
+fn encode_text_bridge_proof(longest: bool) -> ProofTerm {
+    if longest {
+        applied(
+            names::ENCODE_TEXT_BRIDGE,
+            vec![
+                production_value("encodeWith", &[strings(), SemanticType::Bytes]),
+                encode_with_bridge(),
+                production_value("encodeText", &[strings(), SemanticType::String]),
+                unfolds(2),
+            ],
+        )
+    } else {
+        applied(
+            names::ENCODE_TEXT_BYTES_BRIDGE,
+            vec![
+                production_value("encodeBytes", &[SemanticType::Bytes]),
+                encode_bytes_bridge(),
+                production_value("encodeTextBytes", &[SemanticType::String]),
+                unfolds(1),
+            ],
+        )
+    }
 }
 
 /// The generated bridges of a window: its production admission and push
@@ -2622,15 +2651,27 @@ fn check_text_classifier(
         )
     };
     let featured = |tokens: SemanticTerm| local_call(&features, vec![tokens]);
+    // The classifier is realized by the production `features`; what it
+    // applies beyond that is executable when the model and the tokenizer's
+    // text encoder are.
+    let model_executable = env
+        .functions
+        .get(&model_key)
+        .is_some_and(|info| info.executable);
+    let encode_executable = env
+        .functions
+        .get(&super::member_key(&sibling(tokenizer, "encodeText")))
+        .is_some_and(|info| info.executable);
     let declarations = vec![
-        plain_definition(
+        executable_definition(
             &features,
             vec![parameter(TOKENS, tokens())],
             list_of(SemanticType::Int),
-            library_call(names::FEATURES, vec![size(), model::var(TOKENS)]),
+            production_call(names::FEATURES, vec![size(), model::var(TOKENS)]),
         ),
-        plain_definition(
-            &classify_tokens,
+        model::ordinary_definition(
+            classify_tokens.clone(),
+            &[],
             vec![parameter(TOKENS, tokens())],
             label.clone(),
             model::call(
@@ -2638,22 +2679,35 @@ fn check_text_classifier(
                 &classifier_model.type_arguments,
                 vec![featured(model::var(TOKENS))],
             ),
+            model_executable,
         ),
-        plain_definition(
-            &classify,
+        model::ordinary_definition(
+            classify.clone(),
+            &[],
             vec![parameter(TEXT, SemanticType::String)],
             label,
             local_call(&classify_tokens, vec![encoded()]),
+            model_executable && encode_executable,
         ),
     ];
-    let total_lemma = match scheme {
-        TokenizerScheme::LongestMatch => names::FEATURES_TOTAL_TEXT,
-        TokenizerScheme::ByteLevel => names::FEATURES_TOTAL_TEXT_BYTES,
+    let longest = matches!(scheme, TokenizerScheme::LongestMatch);
+    let (total_lemma, encoder_value) = if longest {
+        (
+            names::FEATURES_TOTAL_TEXT_OF,
+            production_value("encodeText", &[strings(), SemanticType::String]),
+        )
+    } else {
+        (
+            names::FEATURES_TOTAL_TEXT_BYTES_OF,
+            production_value("encodeTextBytes", &[SemanticType::String]),
+        )
     };
+    let features_value =
+        || production_value(names::FEATURES, &[SemanticType::Nat, tokens()]);
     let over_tokens = || vec![parameter(TOKENS, tokens())];
     let theorems = vec![
         // The features have exactly `size` entries.
-        law_over(
+        law_of(
             format!("{name}.features_width"),
             over_tokens(),
             model::eq(
@@ -2665,12 +2719,17 @@ fn check_text_classifier(
                 size(),
             ),
             &[&features],
-            names::FEATURES_WIDTH,
-            vec![size(), model::var(TOKENS)],
+            names::FEATURES_WIDTH_OF,
+            vec![
+                features_value(),
+                features_bridge_proof(),
+                proof_term(size()),
+                proof_term(model::var(TOKENS)),
+            ],
         ),
         // The features of an encoded text sum to its token count: no token
         // is dropped, because every token indexes the vocabulary.
-        law_over(
+        law_of(
             format!("{name}.features_total"),
             vec![parameter(TEXT, SemanticType::String)],
             model::eq(
@@ -2679,7 +2738,16 @@ fn check_text_classifier(
             ),
             &[&features],
             total_lemma,
-            vec![pieces(), model::var(TEXT)],
+            vec![
+                features_value(),
+                features_bridge_proof(),
+                encoder_value,
+                encode_text_bridge_proof(longest),
+                production_value("vocabSize", &[strings()]),
+                size_bridge_proof(),
+                proof_term(pieces()),
+                proof_term(model::var(TEXT)),
+            ],
         ),
         // The fixed-width map leaves the features unchanged. It is the
         // production form of the map that is applied, so the library's law is
@@ -2692,21 +2760,17 @@ fn check_text_classifier(
                 production_call(names::FIT_WIDTH, vec![size(), featured(model::var(TOKENS))]),
                 featured(model::var(TOKENS)),
             ),
-            &[],
-            names::FEATURES_FIT_OF,
+            &[&features],
+            names::FEATURES_FIT_BRIDGE_OF,
             vec![
-                proof_term(model::lambda(
-                    vec![("width", SemanticType::Nat), ("values", list_of(SemanticType::Int))],
-                    production_call(
-                        names::FIT_WIDTH,
-                        vec![model::var("width"), model::var("values")],
-                    ),
-                )),
+                production_value(names::FIT_WIDTH, &[SemanticType::Nat, list_of(SemanticType::Int)]),
                 ProofTerm::Theorem {
                     theorem: model::local(&format!("{name}.fitWidth_bridge")),
                     type_arguments: Vec::new(),
                     arguments: Vec::new(),
                 },
+                features_value(),
+                features_bridge_proof(),
                 proof_term(size()),
                 proof_term(model::var(TOKENS)),
             ],
