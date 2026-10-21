@@ -44,5 +44,66 @@ definition{
   body: (prim append (takeInts width values) (zerosInts (prim subtract width (prim length values : Nat) : Nat)) : (List Int)),
   executable: true
 }
+
+definition{
+  name: fits,
+  parameters: [capacity : Nat, context : (List UInt32)],
+  result: Bool,
+  body: ((prim length context : Nat) <=? capacity),
+  executable: true
+}
+
+definition{
+  name: dropTokens,
+  parameters: [count : Nat, context : (List UInt32)],
+  result: (List UInt32),
+  body: (match count
+    | Nat.zero => context
+    | Nat.succ previous => (match context
+      | List.nil => (nil UInt32)
+      | List.cons head tail => (dropTokens previous tail))),
+  executable: true,
+  recursive_argument: count
+}
+
+definition{
+  name: keepLast,
+  parameters: [capacity : Nat, context : (List UInt32)],
+  result: (List UInt32),
+  body: (dropTokens (prim subtract (prim length context : Nat) capacity : Nat) context),
+  executable: true
+}
+
+definition{
+  name: admitRefuse,
+  parameters: [capacity : Nat, context : (List UInt32)],
+  result: (Option (List UInt32)),
+  body: (if (fits capacity context) then (ctor Option.some [(List UInt32)] context) else (ctor Option.none [(List UInt32)])),
+  executable: true
+}
+
+definition{
+  name: admitKeepLast,
+  parameters: [capacity : Nat, context : (List UInt32)],
+  result: (Option (List UInt32)),
+  body: (ctor Option.some [(List UInt32)] (keepLast capacity context)),
+  executable: true
+}
+
+definition{
+  name: pushRefuse,
+  parameters: [capacity : Nat, context : (List UInt32), token : UInt32],
+  result: (Option (List UInt32)),
+  body: (admitRefuse capacity (prim append context (cons token (nil UInt32)) : (List UInt32))),
+  executable: true
+}
+
+definition{
+  name: pushKeepLast,
+  parameters: [capacity : Nat, context : (List UInt32), token : UInt32],
+  result: (Option (List UInt32)),
+  body: (admitKeepLast capacity (prim append context (cons token (nil UInt32)) : (List UInt32))),
+  executable: true
+}
 \end{semanticmodule}
 \end{lexlean}
