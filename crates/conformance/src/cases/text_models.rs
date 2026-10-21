@@ -652,6 +652,29 @@ fn lm_10() {
         "the window keeps the last tokens"
     );
 
+    // Certificate A pins a definition a text component elaborates to by the
+    // forms it applies: the rows that mention `decodeText` of the generator's
+    // tokenizer carry the axiom `Classical.choice` that Lean finds for it, and
+    // a pin without it is refused by the audit only after minutes of Lean.
+    let certified = crate::preservation::certificates(&project);
+    let greedy = certified
+        .iter()
+        .find(|certified| certified.root == format!("{MODULE}.continueGreedy"))
+        .expect("continueGreedy is certified");
+    let rows = &greedy
+        .certificate
+        .data
+        .as_ref()
+        .expect("certificate A is held as data")
+        .declarations;
+    assert!(
+        rows.iter().any(|row| row
+            .policy
+            .axioms()
+            .iter()
+            .any(|axiom| axiom == "Classical.choice")),
+        "a row of continueGreedy's certificate A pins the axioms of the tokenizer it applies"
+    );
     if !support::lean_backed("LM-10") {
         return;
     }
