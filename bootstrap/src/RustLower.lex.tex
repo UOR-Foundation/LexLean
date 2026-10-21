@@ -202,7 +202,8 @@ definition{
     | CalculusCheck::Outcome.OCovered seen => (ctor CalculusCheck::Ty.TNil)
     | CalculusCheck::Outcome.OFine => (ctor CalculusCheck::Ty.TNil)),
   axioms: [Quot.sound, propext],
-  executable: true
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
 }
 
 definition{
