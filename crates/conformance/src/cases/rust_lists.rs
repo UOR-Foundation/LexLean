@@ -311,11 +311,11 @@ const PLANTS: [(&str, &[&str], &str, &str, &str, &str); 9] = [
 ];
 
 /// The theorems a diagnostic names, by the line of the module it points at:
-/// each `RustLists.lex.tex:LINE:` falls in the block of one theorem.
+/// each `line_start: LINE` of a span falls on the block of one theorem.
 fn refused_theorems(shown: &str, module: &str) -> BTreeSet<String> {
     let lines: Vec<&str> = module.lines().collect();
     let mut refused = BTreeSet::new();
-    for piece in shown.split("RustLists.lex.tex:").skip(1) {
+    for piece in shown.split("line_start: ").skip(1) {
         let digits: String = piece.chars().take_while(char::is_ascii_digit).collect();
         let line: usize = digits.parse().expect("a line number");
         let name = lines[line - 1..]
