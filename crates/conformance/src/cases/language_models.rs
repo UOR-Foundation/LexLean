@@ -141,10 +141,11 @@ fn lm_01() {
             names(row.theorems()),
             [
                 format!("{name}.roundtrip"),
+                format!("{name}.size_bridge"),
                 format!("{name}.in_range"),
                 format!("{name}.text_roundtrip")
             ],
-            "{name} generates its three laws"
+            "{name} generates its three laws and the bridge of its production size"
         );
         let typed: Vec<(String, String)> = row
             .declarations()
@@ -280,7 +281,7 @@ fn lm_02() {
         .as_array()
         .expect("declarations");
     for tokenizer in ["Digits", "Raw"] {
-        for law in ["roundtrip", "in_range", "text_roundtrip"] {
+        for law in ["roundtrip", "size_bridge", "in_range", "text_roundtrip"] {
             let name = format!("{LEAN_MODULE}.{tokenizer}.{law}");
             let row = rows
                 .iter()
@@ -749,6 +750,9 @@ fn evaluates(name: &str, left: serde_json::Value, right: serde_json::Value) -> s
         "parameters": [],
         "statement": {"kind": "eq", "left": left, "right": right},
         "proof": {"kind": "reflexivity"},
+        // The kernel evaluates the production forms the generator applies,
+        // whose definitions observe these axioms.
+        "axioms": ["Quot.sound", "propext"],
     })
 }
 
@@ -938,8 +942,12 @@ fn lm_05() {
         );
         assert_eq!(
             names(row.theorems()),
-            [format!("{name}.bounded"), format!("{name}.context_bounded")],
-            "{name} generates its laws"
+            [
+                format!("{name}.run_bridge"),
+                format!("{name}.bounded"),
+                format!("{name}.context_bounded")
+            ],
+            "{name} generates the bridge of its production loop and its laws"
         );
         // Greedy is deterministic by type: nothing it elaborates to takes a seed.
         for declaration in row.declarations() {

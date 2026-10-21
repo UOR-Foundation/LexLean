@@ -46,6 +46,12 @@ pub const LAWS_MODULE: &str = "LexLeanText.LexLeanText";
 /// and its project lists the `std` source package.
 pub const PRODUCTION_MODULE: &str = "LexLeanStd.TextModels";
 
+/// The modules of the language-1.2 runtime library the laws library imports
+/// (SPEC.md §17.12): the production forms' bridges state the runtime's checked
+/// conversions and collections as the production forms apply them, so the
+/// library names them, and nothing else outside `Init` and itself.
+pub const RUNTIME_IMPORTS: [&str; 2] = ["LexLeanRuntime.Portable", "LexLeanRuntime.Collections"];
+
 /// The import line a generated module carries for the laws module.
 pub const IMPORT_LINE: &str = "public import LexLeanText.LexLeanText";
 
@@ -169,6 +175,35 @@ pub mod names {
     /// The window's `refuses` law under `refuse`, for any function equal to `admitRefuse`.
     pub const ADMIT_REFUSE_REFUSES_OF: &str = "admitRefuse_refuses_of";
 
+    /// The production `tokenId` counts to the library's `Nat.toUInt32` below `idBound`, given its step and the counting loop.
+    pub const TOKEN_ID_BRIDGE: &str = "tokenId_bridge";
+    /// The production `firstMaxGo` equals the library's, given its defining equations.
+    pub const FIRST_MAX_GO_BRIDGE: &str = "firstMaxGo_bridge";
+    /// The production `firstMax` equals the library's, given the bridge of `firstMaxGo`.
+    pub const FIRST_MAX_BRIDGE: &str = "firstMax_bridge";
+    /// The production `chooseGreedy` equals the library's, given the bridge of `firstMax`.
+    pub const CHOOSE_GREEDY_BRIDGE: &str = "chooseGreedy_bridge";
+    /// The production `admitWith` equals the library's `admit`, given the bridges of both admissions.
+    pub const ADMIT_WITH_BRIDGE: &str = "admitWith_bridge";
+    /// The production `pushWith` equals the library's `push`, given the bridges of both pushes.
+    pub const PUSH_WITH_BRIDGE: &str = "pushWith_bridge";
+    /// The production `genGo` equals the library's, given the bridges of `tokenId` and `pushWith`.
+    pub const GEN_GO_BRIDGE: &str = "genGo_bridge";
+    /// The production `generateWith` equals the library's, given the bridges of `admitWith` and `genGo`.
+    pub const GENERATE_WITH_BRIDGE: &str = "generateWith_bridge";
+    /// The production `generateGreedy` equals the library's, given the bridges of `generateWith` and `chooseGreedy`.
+    pub const GENERATE_GREEDY_BRIDGE: &str = "generateGreedy_bridge";
+    /// The generator's `bounded` law under `greedy`, for any function equal to `generateGreedy`.
+    pub const GENERATE_GREEDY_BOUNDED_OF: &str = "generateGreedy_bounded_of";
+    /// The generator's `context_bounded` law under `greedy`, for any function equal to `generateGreedy`.
+    pub const GENERATE_GREEDY_GUARDED_OF: &str = "generateGreedy_guarded_of";
+    /// The production `vocabSize` equals the library's, given its constant.
+    pub const VOCAB_SIZE_BRIDGE: &str = "vocabSize_bridge";
+    /// The tokenizer's `in_range` law under `longest_match`, for any size function equal to `vocabSize`.
+    pub const IN_RANGE_OF: &str = "in_range_of";
+    /// The tokenizer's `in_range` law under `byte_level`, for any size function equal to `vocabSize`.
+    pub const IN_RANGE_BYTES_OF: &str = "in_range_bytes_of";
+
     /// `features : Nat -> List UInt32 -> List Int`, the count of each id
     /// below a size.
     pub const FEATURES: &str = "features";
@@ -195,7 +230,7 @@ pub mod names {
     pub const FEATURES_TOTAL_TEXT_BYTES: &str = "features_total_text_bytes";
 
     /// Every name above, each of which the native module must declare.
-    pub const ALL: [&str; 61] = [
+    pub const ALL: [&str; 75] = [
         VOCAB_SIZE,
         ENCODE_WITH,
         ENCODE_BYTES,
@@ -247,6 +282,20 @@ pub mod names {
         ADMIT_KEEP_LAST_EXACT_OF,
         ADMIT_KEEP_LAST_SUFFIX_OF,
         ADMIT_REFUSE_REFUSES_OF,
+        TOKEN_ID_BRIDGE,
+        FIRST_MAX_GO_BRIDGE,
+        FIRST_MAX_BRIDGE,
+        CHOOSE_GREEDY_BRIDGE,
+        ADMIT_WITH_BRIDGE,
+        PUSH_WITH_BRIDGE,
+        GEN_GO_BRIDGE,
+        GENERATE_WITH_BRIDGE,
+        GENERATE_GREEDY_BRIDGE,
+        GENERATE_GREEDY_BOUNDED_OF,
+        GENERATE_GREEDY_GUARDED_OF,
+        VOCAB_SIZE_BRIDGE,
+        IN_RANGE_OF,
+        IN_RANGE_BYTES_OF,
         FEATURES,
         FIT_WIDTH,
         TOTAL,
@@ -427,7 +476,7 @@ fn checked(library: Library) -> Result<Library, String> {
 }
 
 /// Build the native library from the registry and the native sources it
-/// names: every module parsed, its imports closed over `Init` and the
+/// names: every module parsed, its imports closed over `Init`, the runtime library and the
 /// earlier library modules, its Lean generated, its declarations collected,
 /// and every name the elaboration applies found among them.
 fn build_native(
@@ -445,7 +494,10 @@ fn build_native(
         let core = crate::ir::core::CoreModule::from_source(&source, "1.2")
             .map_err(|reason| format!("{path}: {reason}"))?;
         for import in &core.imports {
-            if import != "Init" && !seen_modules.contains(import) {
+            if import != "Init"
+                && !RUNTIME_IMPORTS.contains(&import.as_str())
+                && !seen_modules.contains(import)
+            {
                 return Err(format!(
                     "{path}: imports `{import}`, which is neither `Init` nor an earlier library module"
                 ));

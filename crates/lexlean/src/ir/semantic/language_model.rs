@@ -698,6 +698,295 @@ fn window_function(function: &str, arity: usize) -> SemanticTerm {
     model::lambda(parameters, production_call(function, arguments))
 }
 
+/// A production function as a value: `fun p0 .. pn => function p0 .. pn` over
+/// parameters of the given types.
+fn production_value(function: &str, types: &[SemanticType]) -> ProofTerm {
+    let names: Vec<String> = (0..types.len()).map(|index| format!("p{index}")).collect();
+    let parameters: Vec<(&str, SemanticType)> = names
+        .iter()
+        .map(String::as_str)
+        .zip(types.iter().cloned())
+        .collect();
+    let arguments = names.iter().map(|name| model::var(name)).collect();
+    proof_term(model::lambda(parameters, production_call(function, arguments)))
+}
+
+/// `fun _ .. _ => rfl` over `count` binders: a defining equation of a
+/// production form, which holds by unfolding it.
+fn unfolds(count: usize) -> ProofTerm {
+    let names: Vec<String> = (0..count).map(|index| format!("_u{index}")).collect();
+    by_unfolding(&names.iter().map(String::as_str).collect::<Vec<_>>())
+}
+
+/// A library lemma applied to proof-term arguments.
+fn applied(lemma: &str, arguments: Vec<ProofTerm>) -> ProofTerm {
+    ProofTerm::Theorem {
+        theorem: library_member(lemma),
+        type_arguments: Vec::new(),
+        arguments,
+    }
+}
+
+fn chooser_type() -> SemanticType {
+    SemanticType::Function {
+        parameters: vec![list_of(SemanticType::Int), SemanticType::UInt32],
+        result: Box::new(model::product(
+            model::option_type(SemanticType::Nat),
+            SemanticType::UInt32,
+        )),
+    }
+}
+
+/// The bridge of the production admissions and pushes to the library's
+/// `admit` and `push`: both dispositions, whichever the window keeps.
+fn admission_bridges() -> (ProofTerm, ProofTerm) {
+    let context = tokens();
+    let keep_admit = applied(
+        names::ADMIT_KEEP_LAST_BRIDGE,
+        vec![
+            production_value("dropTokens", &[SemanticType::Nat, context.clone()]),
+            production_value("admitKeepLast", &[SemanticType::Nat, context.clone()]),
+            unfolds(1),
+            unfolds(1),
+            unfolds(3),
+            unfolds(2),
+        ],
+    );
+    let refuse_admit = applied(
+        names::ADMIT_REFUSE_BRIDGE,
+        vec![
+            production_value(names::FITS, &[SemanticType::Nat, context.clone()]),
+            production_value("admitRefuse", &[SemanticType::Nat, context.clone()]),
+            unfolds(2),
+            unfolds(2),
+        ],
+    );
+    let push_types = [SemanticType::Nat, context.clone(), SemanticType::UInt32];
+    let with_admit = applied(
+        names::ADMIT_WITH_BRIDGE,
+        vec![
+            production_value(
+                "admitWith",
+                &[SemanticType::Bool, SemanticType::Nat, context.clone()],
+            ),
+            production_value("admitKeepLast", &[SemanticType::Nat, context.clone()]),
+            production_value("admitRefuse", &[SemanticType::Nat, context.clone()]),
+            keep_admit.clone(),
+            refuse_admit.clone(),
+            unfolds(3),
+        ],
+    );
+    let keep_push = applied(
+        names::PUSH_KEEP_LAST_BRIDGE,
+        vec![
+            production_value("admitKeepLast", &[SemanticType::Nat, context.clone()]),
+            production_value("pushKeepLast", &push_types),
+            keep_admit,
+            unfolds(3),
+        ],
+    );
+    let refuse_push = applied(
+        names::PUSH_REFUSE_BRIDGE,
+        vec![
+            production_value("admitRefuse", &[SemanticType::Nat, context.clone()]),
+            production_value("pushRefuse", &push_types),
+            refuse_admit,
+            unfolds(3),
+        ],
+    );
+    let with_push = applied(
+        names::PUSH_WITH_BRIDGE,
+        vec![
+            production_value(
+                "pushWith",
+                &[
+                    SemanticType::Bool,
+                    SemanticType::Nat,
+                    context,
+                    SemanticType::UInt32,
+                ],
+            ),
+            production_value("pushKeepLast", &push_types),
+            production_value("pushRefuse", &push_types),
+            keep_push,
+            refuse_push,
+            unfolds(4),
+        ],
+    );
+    (with_admit, with_push)
+}
+
+/// The bridge of the production `genGo` to the library's, which is the loop
+/// under every policy.
+fn generation_loop_bridge(with_push: ProofTerm) -> ProofTerm {
+    let counting = applied(
+        names::TOKEN_ID_BRIDGE,
+        vec![
+            production_value("tokenIdFrom", &[SemanticType::Nat, SemanticType::UInt32]),
+            production_value("tokenId", &[SemanticType::Nat]),
+            unfolds(1),
+            unfolds(2),
+            unfolds(1),
+        ],
+    );
+    applied(
+        names::GEN_GO_BRIDGE,
+        vec![
+            production_value("tokenId", &[SemanticType::Nat]),
+            counting,
+            production_value(
+                "pushWith",
+                &[
+                    SemanticType::Bool,
+                    SemanticType::Nat,
+                    tokens(),
+                    SemanticType::UInt32,
+                ],
+            ),
+            with_push,
+            production_value(
+                "genGo",
+                &[
+                    scorer_type(),
+                    chooser_type(),
+                    SemanticType::Nat,
+                    SemanticType::Nat,
+                    SemanticType::Bool,
+                    SemanticType::UInt32,
+                    SemanticType::Nat,
+                    tokens(),
+                    tokens(),
+                    SemanticType::UInt32,
+                ],
+            ),
+            unfolds(9),
+            unfolds(10),
+        ],
+    )
+}
+
+/// The bridge of the production `generateWith` to the library's.
+fn generate_with_bridge() -> ProofTerm {
+    let (with_admit, with_push) = admission_bridges();
+    applied(
+        names::GENERATE_WITH_BRIDGE,
+        vec![
+            production_value(
+                "admitWith",
+                &[SemanticType::Bool, SemanticType::Nat, tokens()],
+            ),
+            with_admit,
+            production_value(
+                "genGo",
+                &[
+                    scorer_type(),
+                    chooser_type(),
+                    SemanticType::Nat,
+                    SemanticType::Nat,
+                    SemanticType::Bool,
+                    SemanticType::UInt32,
+                    SemanticType::Nat,
+                    tokens(),
+                    tokens(),
+                    SemanticType::UInt32,
+                ],
+            ),
+            generation_loop_bridge(with_push),
+            production_value(
+                "generateWith",
+                &[
+                    scorer_type(),
+                    chooser_type(),
+                    SemanticType::Nat,
+                    SemanticType::Nat,
+                    SemanticType::Bool,
+                    SemanticType::UInt32,
+                    SemanticType::Nat,
+                    tokens(),
+                    SemanticType::UInt32,
+                ],
+            ),
+            unfolds(9),
+        ],
+    )
+}
+
+/// The bridge of the greedy choice: the first maximum, with the seed kept.
+fn choose_greedy_bridge() -> ProofTerm {
+    let ints = list_of(SemanticType::Int);
+    let first_max_go = production_value(
+        "firstMaxGo",
+        &[
+            ints.clone(),
+            SemanticType::Nat,
+            SemanticType::Nat,
+            SemanticType::Int,
+        ],
+    );
+    let go_bridge = applied(
+        names::FIRST_MAX_GO_BRIDGE,
+        vec![first_max_go.clone(), unfolds(3), unfolds(5)],
+    );
+    let first_max = applied(
+        names::FIRST_MAX_BRIDGE,
+        vec![
+            first_max_go,
+            go_bridge,
+            production_value("firstMax", &[ints.clone()]),
+            unfolds(1),
+        ],
+    );
+    applied(
+        names::CHOOSE_GREEDY_BRIDGE,
+        vec![
+            production_value("firstMax", &[ints.clone()]),
+            first_max,
+            production_value("chooseGreedy", &[ints, SemanticType::UInt32]),
+            unfolds(2),
+        ],
+    )
+}
+
+/// The bridge of the production greedy loop to the library's, applied to the
+/// seven arguments of the loop.
+fn greedy_loop_bridge() -> ProofTerm {
+    applied(
+        names::GENERATE_GREEDY_BRIDGE,
+        vec![
+            production_value(
+                "generateWith",
+                &[
+                    scorer_type(),
+                    chooser_type(),
+                    SemanticType::Nat,
+                    SemanticType::Nat,
+                    SemanticType::Bool,
+                    SemanticType::UInt32,
+                    SemanticType::Nat,
+                    tokens(),
+                    SemanticType::UInt32,
+                ],
+            ),
+            generate_with_bridge(),
+            production_value("chooseGreedy", &[list_of(SemanticType::Int), SemanticType::UInt32]),
+            choose_greedy_bridge(),
+            production_value(
+                "generateGreedy",
+                &[
+                    scorer_type(),
+                    SemanticType::Nat,
+                    SemanticType::Nat,
+                    SemanticType::Bool,
+                    SemanticType::UInt32,
+                    SemanticType::Nat,
+                    tokens(),
+                ],
+            ),
+            unfolds(7),
+        ],
+    )
+}
+
 /// The generated bridges of a window: its production admission and push
 /// equal the library's, by the library's bridge lemmas applied to the
 /// production forms with their defining equations proved by unfolding.
@@ -1159,9 +1448,26 @@ fn check_text_generator(
             )));
         }
     }
+    require_production("text generator", name, env)?;
     register_library(env);
 
     let sampled = matches!(policy, GenerationPolicy::Sample { .. });
+    // A greedy generator is realized by the production loop; a definition is
+    // executable when everything it applies is. The scorer is the model the
+    // generator names, the tokenizer's size is a production form, and the
+    // text steps (`generate`) wait for the tokenizer's own production.
+    let scorer_executable = env
+        .functions
+        .get(&scorer_key)
+        .is_some_and(|info| info.executable);
+    let text_executable = !sampled
+        && scorer_executable
+        && ["encodeText", "decodeText"].iter().all(|member| {
+            env.functions
+                .get(&super::member_key(&sibling(tokenizer, member)))
+                .is_some_and(|info| info.executable)
+        });
+    let run_executable = !sampled && scorer_executable;
     let score = format!("{name}.score");
     let end_type = format!("{name}.End");
     let failure_type = format!("{name}.Failure");
@@ -1346,8 +1652,9 @@ fn check_text_generator(
     );
 
     let declarations = vec![
-        plain_definition(
-            &score,
+        model::ordinary_definition(
+            score.clone(),
+            &[],
             vec![parameter(TOKENS, tokens())],
             list_of(SemanticType::Int),
             model::call(
@@ -1355,26 +1662,37 @@ fn check_text_generator(
                 &scorer.type_arguments,
                 vec![model::var(TOKENS)],
             ),
+            scorer_executable,
         ),
         enumeration(&end_type, &ENDS),
         enumeration(&failure_type, &FAILURES),
-        plain_definition(
-            &run,
+        model::ordinary_definition(
+            run.clone(),
+            &[],
             seeded(vec![parameter(TOKENS, tokens())]),
             run_type.clone(),
-            library_call(loop_function, loop_arguments(model::var(TOKENS))),
+            if sampled {
+                library_call(loop_function, loop_arguments(model::var(TOKENS)))
+            } else {
+                production_call(loop_function, loop_arguments(model::var(TOKENS)))
+            },
+            run_executable,
         ),
-        plain_definition(
-            &generate_tokens,
+        model::ordinary_definition(
+            generate_tokens.clone(),
+            &[],
             seeded(vec![parameter(TOKENS, tokens())]),
             token_result,
             tokens_body,
+            run_executable,
         ),
-        plain_definition(
-            &generate,
+        model::ordinary_definition(
+            generate.clone(),
+            &[],
             seeded(vec![parameter(TEXT, SemanticType::String)]),
             result_of(text_ok.clone(), failure()),
             text_body,
+            text_executable,
         ),
     ];
 
@@ -1384,33 +1702,122 @@ fn check_text_generator(
     } else {
         model::first(ran.clone())
     };
-    let theorems = vec![
-        // At most `max_tokens` tokens are generated.
-        law_over(
-            format!("{name}.bounded"),
-            seeded(vec![parameter(TOKENS, tokens())]),
-            is_true(library_call(
-                names::AT_MOST,
-                vec![model::nat(*max_tokens), generated_tokens],
-            )),
-            &[&run],
-            bounded_lemma,
-            loop_arguments(model::var(TOKENS)),
-        ),
-        // The scorer is consulted only on contexts that fit the window: the
-        // run equals the run whose scorer sees nothing that does not fit.
-        law_over(
-            format!("{name}.context_bounded"),
-            seeded(vec![parameter(TOKENS, tokens())]),
-            model::eq(
-                ran,
-                library_call(guarded_function, loop_arguments(model::var(TOKENS))),
+    let bounded_statement = is_true(library_call(
+        names::AT_MOST,
+        vec![model::nat(*max_tokens), generated_tokens],
+    ));
+    let guarded_statement = model::eq(
+        ran,
+        library_call(guarded_function, loop_arguments(model::var(TOKENS))),
+    );
+    let theorems = if sampled {
+        vec![
+            // At most `max_tokens` tokens are generated.
+            law_over(
+                format!("{name}.bounded"),
+                seeded(vec![parameter(TOKENS, tokens())]),
+                bounded_statement,
+                &[&run],
+                bounded_lemma,
+                loop_arguments(model::var(TOKENS)),
             ),
-            &[&run],
-            guarded_lemma,
-            loop_arguments(model::var(TOKENS)),
-        ),
-    ];
+            // The scorer is consulted only on contexts that fit the window:
+            // the run equals the run whose scorer sees nothing that does not
+            // fit.
+            law_over(
+                format!("{name}.context_bounded"),
+                seeded(vec![parameter(TOKENS, tokens())]),
+                guarded_statement,
+                &[&run],
+                guarded_lemma,
+                loop_arguments(model::var(TOKENS)),
+            ),
+        ]
+    } else {
+        // The production loop equals the library's, and the library's laws
+        // are reached through that bridge.
+        let loop_names = [
+            "score", "size", "capacity", "keep", "stop", "fuel", "prompt",
+        ];
+        let loop_binders = vec![
+            parameter("score", scorer_type()),
+            parameter("size", SemanticType::Nat),
+            parameter("capacity", SemanticType::Nat),
+            parameter("keep", SemanticType::Bool),
+            parameter("stop", SemanticType::UInt32),
+            parameter("fuel", SemanticType::Nat),
+            parameter("prompt", tokens()),
+        ];
+        let loop_variables = || loop_names.iter().map(|name| model::var(name)).collect();
+        let bridge_name = format!("{name}.run_bridge");
+        let mut bridge_arguments = match greedy_loop_bridge() {
+            ProofTerm::Theorem { arguments, .. } => arguments,
+            other => vec![other],
+        };
+        bridge_arguments.extend(loop_names.iter().map(|name| proof_term(model::var(name))));
+        let bridge = law_of(
+            bridge_name.clone(),
+            loop_binders,
+            model::eq(
+                production_call(loop_function, loop_variables()),
+                library_call(loop_function, loop_variables()),
+            ),
+            &[],
+            names::GENERATE_GREEDY_BRIDGE,
+            bridge_arguments,
+        );
+        let through_bridge = |lemma: &str, statement: SemanticTerm, law: &str| {
+            let mut arguments = vec![
+                production_value(
+                    loop_function,
+                    &[
+                        scorer_type(),
+                        SemanticType::Nat,
+                        SemanticType::Nat,
+                        SemanticType::Bool,
+                        SemanticType::UInt32,
+                        SemanticType::Nat,
+                        tokens(),
+                    ],
+                ),
+                ProofTerm::Theorem {
+                    theorem: model::local(&bridge_name),
+                    type_arguments: Vec::new(),
+                    arguments: Vec::new(),
+                },
+            ];
+            arguments.extend(
+                loop_arguments(model::var(TOKENS))
+                    .into_iter()
+                    .map(proof_term),
+            );
+            law_of(
+                format!("{name}.{law}"),
+                vec![parameter(TOKENS, tokens())],
+                statement,
+                &[&run],
+                lemma,
+                arguments,
+            )
+        };
+        vec![
+            bridge,
+            // At most `max_tokens` tokens are generated.
+            through_bridge(
+                names::GENERATE_GREEDY_BOUNDED_OF,
+                bounded_statement,
+                "bounded",
+            ),
+            // The scorer is consulted only on contexts that fit the window:
+            // the run equals the run whose scorer sees nothing that does not
+            // fit.
+            through_bridge(
+                names::GENERATE_GREEDY_GUARDED_OF,
+                guarded_statement,
+                "context_bounded",
+            ),
+        ]
+    };
     Ok(Lowering {
         declarations,
         theorems,
@@ -1472,6 +1879,7 @@ fn check_tokenizer(
             model::schema_kind(&schema)
         )));
     }
+    require_production("tokenizer", name, env)?;
     register_library(env);
 
     let pieces = format!("{name}.pieces");
@@ -1489,14 +1897,14 @@ fn check_tokenizer(
             library(names::ENCODE_WITH, vec![pieces_term(), model::var(BYTES)]),
             library(names::ENCODE_TEXT, vec![pieces_term(), model::var(TEXT)]),
             names::ROUNDTRIP,
-            names::IN_RANGE,
+            names::IN_RANGE_OF,
             names::TEXT_ROUNDTRIP,
         ),
         TokenizerScheme::ByteLevel => (
             library(names::ENCODE_BYTES, vec![model::var(BYTES)]),
             library(names::ENCODE_TEXT_BYTES, vec![model::var(TEXT)]),
             names::ROUNDTRIP_BYTES,
-            names::IN_RANGE_BYTES,
+            names::IN_RANGE_BYTES_OF,
             names::TEXT_ROUNDTRIP_BYTES,
         ),
     };
@@ -1504,17 +1912,17 @@ fn check_tokenizer(
         model::ordinary_definition(name.to_owned(), &[], parameters, result, body, false)
     };
     let declarations = vec![
-        definition(
+        executable_definition(
             &pieces,
             Vec::new(),
             strings(),
             model::call(&vocabulary.member, &[], Vec::new()),
         ),
-        definition(
+        executable_definition(
             &size,
             Vec::new(),
             SemanticType::Nat,
-            library(names::VOCAB_SIZE, vec![pieces_term()]),
+            production_call("vocabSize", vec![pieces_term()]),
         ),
         definition(
             &encode,
@@ -1561,10 +1969,28 @@ fn check_tokenizer(
             roundtrip,
             pieces_term(),
         ),
+        // The production size is the library's.
+        law_of(
+            format!("{name}.size_bridge"),
+            vec![parameter("vocabulary", strings())],
+            model::eq(
+                production_call("vocabSize", vec![model::var("vocabulary")]),
+                library_call(names::VOCAB_SIZE, vec![model::var("vocabulary")]),
+            ),
+            &[],
+            names::VOCAB_SIZE_BRIDGE,
+            vec![
+                proof_term(production_call("byteVocab", Vec::new())),
+                ProofTerm::Refl,
+                production_value("vocabSize", &[strings()]),
+                unfolds(1),
+                proof_term(model::var("vocabulary")),
+            ],
+        ),
         // Every token `encode b` produces is below `size`.
-        law(
+        law_of(
             format!("{name}.in_range"),
-            parameter(BYTES, SemanticType::Bytes),
+            vec![parameter(BYTES, SemanticType::Bytes)],
             model::eq(
                 library(
                     names::ALL_BELOW,
@@ -1577,7 +2003,16 @@ fn check_tokenizer(
             ),
             &[&size, &encode],
             in_range,
-            pieces_term(),
+            vec![
+                production_value("vocabSize", &[strings()]),
+                ProofTerm::Theorem {
+                    theorem: model::local(&format!("{name}.size_bridge")),
+                    type_arguments: Vec::new(),
+                    arguments: Vec::new(),
+                },
+                proof_term(pieces_term()),
+                proof_term(model::var(BYTES)),
+            ],
         ),
         // `decodeText (encodeText s) = some s`.
         law(
