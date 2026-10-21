@@ -1294,7 +1294,15 @@ mod terms {
                         ],
                     ));
                 }
-                match word.as_str() {
+                // A keyword followed by `{` is the generic spelling of a node of
+                // that kind (a `match` holding a variable named like a keyword is
+                // written so), not the keyword's own form.
+                let keyword = if reader.peek_at(1) == Some(&Token::LBrace) {
+                    ""
+                } else {
+                    word.as_str()
+                };
+                match keyword {
                     "not" | "first" | "second" => {
                         reader.bump();
                         let value = sub(reader)?;
@@ -1922,6 +1930,23 @@ mod tests {
         ];
         for (generic, position) in cases {
             let text = round_trip(&json(generic), position);
+            assert!(text.contains('{'), "{text} is written generically");
+        }
+    }
+
+    /// A node whose kind is a keyword of the notation (`match`, `not`, `first`)
+    /// and that a readable form cannot carry is written generically inside a
+    /// parenthesised operand and reads back: a `match` with a variable named
+    /// like a keyword in a branch is the case the SDK stdlib has.
+    #[test]
+    fn a_keyword_kind_written_generically_reads_back_in_parentheses() {
+        let cases = [
+            r#"and{left: bool{value: true}, right: match{scrutinee: var{name: x}, branches: [{binders: [], body: var{name: first}, constructor: {name: Option.none}}]}}"#,
+            r#"and{left: bool{value: true}, right: not{value: var{name: first}, extra: true}}"#,
+            r#"and{left: bool{value: true}, right: first{value: var{name: x}, extra: true}}"#,
+        ];
+        for generic in cases {
+            let text = round_trip(&json(generic), Position::Term);
             assert!(text.contains('{'), "{text} is written generically");
         }
     }
