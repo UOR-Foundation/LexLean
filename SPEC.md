@@ -7376,6 +7376,27 @@ holds no file of Lean or Rust source, its export is committed under
 of a package is `LLC0105`, a module of a package the example does not declare
 `LLR3009`, and a tampered artifact `LLR3007`.
 
+`LexLeanStd.TextModels` (`stdlib/src/TextModels.lex.tex`) holds the production
+forms of the text components (§17.12, *Text components*, rule 11): one
+executable definition for each function of the text-laws library that an
+elaboration applies, written over the portable runtime and the collections,
+with its measured axioms pinned exactly. It is source of the package `std`
+and a root of no project; a module that declares a text component imports it
+by name. The widening conversions it needs do not exist in the calculus for
+`Nat` to a fixed width or `Int` to `Nat`, so a form that counts ids uses a
+`UInt32` counter, and the library relates it to the `Nat` counter by a bridge.
+
+The `text-models` example (`examples/text-models`, `LM-11`) is the application
+of the text components: a longest-match and a byte-level tokenizer over one
+content-addressed vocabulary, a window that keeps the last tokens and one that
+refuses overflow, a greedy and a seeded sampling generator scored by a model,
+and a classifier of each tokenizer, with a production root for each, nine in
+all. Its kernel-evaluated facts are stated on bytes and tokens, because the
+kernel does not reduce Lean's string primitives; the longest-match scheme, and
+every root's behavior on text, are covered by the generated bridges and by the
+oracle differential of the roots, not by a kernel fact. The example holds no
+file of Lean or Rust source.
+
 ### 17.23 The bootstrap project
 
 The bootstrap project, `bootstrap/` beside `compiler/` and `stdlib/`, holds the
