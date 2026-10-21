@@ -218,8 +218,8 @@ impl<'g, 'a> Writer<'g, 'a> {
         // A text component's definitions apply production forms of the
         // standard library, so what the audit finds for one is what those
         // forms depend on, and the construct's declared set is only an upper
-        // bound on it. Each derived definition of a module that imports the
-        // production module takes the union of the sets of the definitions it
+        // bound on it. Each derived definition of a module with text components
+        // (which imports the laws module) takes the union of the sets of the definitions it
         // calls, to a fixed point (the sets only grow, and are finite).
         loop {
             let mut changed = false;
@@ -229,7 +229,7 @@ impl<'g, 'a> Writer<'g, 'a> {
                     .elaboration
                     .imports
                     .iter()
-                    .any(|import| import == crate::text_laws::PRODUCTION_MODULE)
+                    .any(|import| import == crate::text_laws::LAWS_MODULE)
                 {
                     continue;
                 }
