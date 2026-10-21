@@ -225,6 +225,51 @@ pub mod names {
     /// The generator's `context_bounded` law under `sample`, for any function equal to `generateSample`.
     pub const GENERATE_SAMPLE_GUARDED_OF: &str = "generateSample_guarded_of";
 
+    /// The runtime's checked widening of a byte to a token is the token of that value.
+    pub const CONV_U8_U32: &str = "conv_u8_u32";
+    /// The production `byteToken` is the byte's value as a token.
+    pub const BYTE_TOKEN_BRIDGE: &str = "byteToken_bridge";
+    /// The production bytes-to-list conversion reads the bytes in order.
+    pub const BYTES_FROM_BRIDGE: &str = "bytesFrom_bridge";
+    /// The production token read bit by bit as a `Nat` is the token's value.
+    pub const NAT_BITS_BRIDGE: &str = "natBits_bridge";
+    /// The production `pieceBytes` equals the library's, given the conversion.
+    pub const PIECE_BYTES_BRIDGE: &str = "pieceBytes_bridge";
+    /// The production `pieceOf` equals the library's.
+    pub const PIECE_OF_BRIDGE: &str = "pieceOf_bridge";
+    /// The production `isPrefixOfBytes` equals the library's.
+    pub const IS_PREFIX_BRIDGE: &str = "isPrefixOfBytes_bridge";
+    /// The production `candidates`, over identifier-carrying entries, is the library's with each index read as its token.
+    pub const CANDIDATES_BRIDGE: &str = "candidates_bridge";
+    /// The production `bestPiece` is the library's with the index read as its token.
+    pub const BEST_PIECE_BRIDGE: &str = "bestPiece_bridge";
+    /// The production `dropBytes` is `List.drop`.
+    pub const DROP_BYTES_BRIDGE: &str = "dropBytes_bridge";
+    /// The production `encodeGo` equals the library's.
+    pub const ENCODE_GO_BRIDGE: &str = "encodeGo_bridge";
+    /// The production `encodeWith` equals the library's.
+    pub const ENCODE_WITH_BRIDGE: &str = "encodeWith_bridge";
+    /// The production `encodeBytes` equals the library's.
+    pub const ENCODE_BYTES_BRIDGE: &str = "encodeBytes_bridge";
+    /// The production `encodeText` equals the library's.
+    pub const ENCODE_TEXT_BRIDGE: &str = "encodeText_bridge";
+    /// The production `encodeTextBytes` equals the library's.
+    pub const ENCODE_TEXT_BYTES_BRIDGE: &str = "encodeTextBytes_bridge";
+    /// The production `decodeGo` equals the library's.
+    pub const DECODE_GO_BRIDGE: &str = "decodeGo_bridge";
+    /// The production `decodeWith`, building bytes from the table of all byte values, equals the library's.
+    pub const DECODE_WITH_BRIDGE: &str = "decodeWith_bridge";
+    /// The production `decodeText` equals the library's.
+    pub const DECODE_TEXT_BRIDGE: &str = "decodeText_bridge";
+    /// The round trip under `longest_match`, for any encoder and decoder equal to the library's.
+    pub const ROUNDTRIP_OF: &str = "roundtrip_of";
+    /// The round trip under `byte_level`, for any encoder and decoder equal to the library's.
+    pub const ROUNDTRIP_BYTES_OF: &str = "roundtrip_bytes_of";
+    /// The text round trip under `longest_match`, for any encoder and decoder equal to the library's.
+    pub const TEXT_ROUNDTRIP_OF: &str = "text_roundtrip_of";
+    /// The text round trip under `byte_level`, for any encoder and decoder equal to the library's.
+    pub const TEXT_ROUNDTRIP_BYTES_OF: &str = "text_roundtrip_bytes_of";
+
     /// `features : Nat -> List UInt32 -> List Int`, the count of each id
     /// below a size.
     pub const FEATURES: &str = "features";
@@ -251,7 +296,7 @@ pub mod names {
     pub const FEATURES_TOTAL_TEXT_BYTES: &str = "features_total_text_bytes";
 
     /// Every name above, each of which the native module must declare.
-    pub const ALL: [&str; 85] = [
+    pub const ALL: [&str; 107] = [
         VOCAB_SIZE,
         ENCODE_WITH,
         ENCODE_BYTES,
@@ -327,6 +372,28 @@ pub mod names {
         GENERATE_SAMPLE_BRIDGE,
         GENERATE_SAMPLE_BOUNDED_OF,
         GENERATE_SAMPLE_GUARDED_OF,
+        CONV_U8_U32,
+        BYTE_TOKEN_BRIDGE,
+        BYTES_FROM_BRIDGE,
+        NAT_BITS_BRIDGE,
+        PIECE_BYTES_BRIDGE,
+        PIECE_OF_BRIDGE,
+        IS_PREFIX_BRIDGE,
+        CANDIDATES_BRIDGE,
+        BEST_PIECE_BRIDGE,
+        DROP_BYTES_BRIDGE,
+        ENCODE_GO_BRIDGE,
+        ENCODE_WITH_BRIDGE,
+        ENCODE_BYTES_BRIDGE,
+        ENCODE_TEXT_BRIDGE,
+        ENCODE_TEXT_BYTES_BRIDGE,
+        DECODE_GO_BRIDGE,
+        DECODE_WITH_BRIDGE,
+        DECODE_TEXT_BRIDGE,
+        ROUNDTRIP_OF,
+        ROUNDTRIP_BYTES_OF,
+        TEXT_ROUNDTRIP_OF,
+        TEXT_ROUNDTRIP_BYTES_OF,
         FEATURES,
         FIT_WIDTH,
         TOTAL,

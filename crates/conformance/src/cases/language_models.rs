@@ -140,12 +140,16 @@ fn lm_01() {
         assert_eq!(
             names(row.theorems()),
             [
+                format!("{name}.encode_bridge"),
+                format!("{name}.decode_bridge"),
+                format!("{name}.encodeText_bridge"),
+                format!("{name}.decodeText_bridge"),
                 format!("{name}.roundtrip"),
                 format!("{name}.size_bridge"),
                 format!("{name}.in_range"),
                 format!("{name}.text_roundtrip")
             ],
-            "{name} generates its three laws and the bridge of its production size"
+            "{name} generates the bridges of its production forms and its three laws"
         );
         let typed: Vec<(String, String)> = row
             .declarations()
@@ -281,7 +285,16 @@ fn lm_02() {
         .as_array()
         .expect("declarations");
     for tokenizer in ["Digits", "Raw"] {
-        for law in ["roundtrip", "size_bridge", "in_range", "text_roundtrip"] {
+        for law in [
+            "encode_bridge",
+            "decode_bridge",
+            "encodeText_bridge",
+            "decodeText_bridge",
+            "roundtrip",
+            "size_bridge",
+            "in_range",
+            "text_roundtrip",
+        ] {
             let name = format!("{LEAN_MODULE}.{tokenizer}.{law}");
             let row = rows
                 .iter()

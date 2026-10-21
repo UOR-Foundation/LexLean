@@ -446,28 +446,6 @@ fn register_library(env: &mut Environment<'_>) {
     }
 }
 
-/// A generated theorem: an ordinary statement over one binder, proved by one
-/// library lemma applied to the vocabulary and the binder after unfolding
-/// exactly the named derived definitions.
-fn law(
-    name: String,
-    binder: SemanticParameter,
-    statement: SemanticTerm,
-    unfold: &[&str],
-    lemma: &str,
-    pieces: SemanticTerm,
-) -> GeneratedTheorem {
-    let bound = model::var(&binder.name);
-    law_over(
-        name,
-        vec![binder],
-        statement,
-        unfold,
-        lemma,
-        vec![pieces, bound],
-    )
-}
-
 /// A generated theorem over several binders, proved by one library lemma
 /// applied to `arguments` after unfolding exactly the named derived
 /// definitions.
@@ -1116,6 +1094,241 @@ fn sample_loop_bridge() -> ProofTerm {
                 ],
             ),
             unfolds(8),
+        ],
+    )
+}
+
+/// The bytes of a text, as the production forms read them: `list uint8`.
+fn byte_list() -> SemanticType {
+    list_of(SemanticType::UInt8)
+}
+
+/// A production-form lemma applied to proof-term arguments, named for what it
+/// bridges: the production tokenizer reads the vocabulary's pieces in
+/// identifier-carrying entries, a token's value bit by bit, and a byte's
+/// value through the table of all byte values, because the calculus has no
+/// narrowing of a `Nat` and no widening of a token to state them by.
+fn piece_bytes_bridge() -> ProofTerm {
+    let bytes = SemanticType::Bytes;
+    let from = applied(
+        names::BYTES_FROM_BRIDGE,
+        vec![
+            production_value(
+                "bytesFrom",
+                &[bytes.clone(), SemanticType::Nat, SemanticType::Nat],
+            ),
+            unfolds(2),
+            unfolds(3),
+            production_value("bytesList", &[bytes]),
+            unfolds(1),
+        ],
+    );
+    applied(
+        names::PIECE_BYTES_BRIDGE,
+        vec![
+            production_value("bytesList", &[SemanticType::Bytes]),
+            from,
+            production_value("pieceBytes", &[SemanticType::String]),
+            unfolds(1),
+        ],
+    )
+}
+
+fn bytes_list_bridge() -> ProofTerm {
+    let bytes = SemanticType::Bytes;
+    applied(
+        names::BYTES_FROM_BRIDGE,
+        vec![
+            production_value(
+                "bytesFrom",
+                &[bytes.clone(), SemanticType::Nat, SemanticType::Nat],
+            ),
+            unfolds(2),
+            unfolds(3),
+            production_value("bytesList", &[bytes]),
+            unfolds(1),
+        ],
+    )
+}
+
+fn byte_token_bridge() -> ProofTerm {
+    applied(
+        names::BYTE_TOKEN_BRIDGE,
+        vec![
+            production_value("byteToken", &[SemanticType::UInt8]),
+            unfolds(1),
+        ],
+    )
+}
+
+fn nat_bits_bridge() -> ProofTerm {
+    applied(
+        names::NAT_BITS_BRIDGE,
+        vec![
+            production_value(
+                "natBits",
+                &[
+                    SemanticType::UInt32,
+                    SemanticType::Nat,
+                    SemanticType::Nat,
+                    SemanticType::Nat,
+                ],
+            ),
+            unfolds(3),
+            unfolds(4),
+        ],
+    )
+}
+
+fn piece_of_bridge() -> ProofTerm {
+    applied(
+        names::PIECE_OF_BRIDGE,
+        vec![
+            proof_term(production_call("byteVocab", Vec::new())),
+            ProofTerm::Refl,
+            production_value("natOfToken", &[SemanticType::UInt32]),
+            nat_bits_bridge(),
+            production_value("pieceBytes", &[SemanticType::String]),
+            piece_bytes_bridge(),
+            production_value("pieceOf", &[strings(), SemanticType::UInt32]),
+            unfolds(2),
+        ],
+    )
+}
+
+fn candidates_bridge() -> ProofTerm {
+    let entries = list_of(model::product(SemanticType::UInt32, SemanticType::String));
+    applied(
+        names::CANDIDATES_BRIDGE,
+        vec![
+            production_value("pieceBytes", &[SemanticType::String]),
+            piece_bytes_bridge(),
+            production_value("isPrefixOfBytes", &[byte_list(), byte_list()]),
+            applied(
+                names::IS_PREFIX_BRIDGE,
+                vec![
+                    production_value("isPrefixOfBytes", &[byte_list(), byte_list()]),
+                    unfolds(1),
+                    unfolds(3),
+                ],
+            ),
+            production_value("withIds", &[strings(), SemanticType::UInt32]),
+            unfolds(1),
+            unfolds(3),
+            production_value("candidatesFrom", &[entries, byte_list()]),
+            unfolds(1),
+            unfolds(3),
+            production_value("candidates", &[strings(), byte_list()]),
+            unfolds(2),
+        ],
+    )
+}
+
+fn best_piece_bridge() -> ProofTerm {
+    let choice = model::product(SemanticType::UInt32, SemanticType::Nat);
+    applied(
+        names::BEST_PIECE_BRIDGE,
+        vec![
+            production_value("pick", &[model::option_type(choice.clone()), choice.clone()]),
+            unfolds(2),
+            production_value(
+                "bestFrom",
+                &[model::option_type(choice.clone()), list_of(choice)],
+            ),
+            unfolds(1),
+            unfolds(3),
+            production_value("candidates", &[strings(), byte_list()]),
+            candidates_bridge(),
+            production_value("bestPiece", &[strings(), byte_list()]),
+            unfolds(2),
+        ],
+    )
+}
+
+fn encode_go_bridge() -> ProofTerm {
+    applied(
+        names::ENCODE_GO_BRIDGE,
+        vec![
+            production_value("byteToken", &[SemanticType::UInt8]),
+            byte_token_bridge(),
+            production_value("bestPiece", &[strings(), byte_list()]),
+            best_piece_bridge(),
+            production_value("dropBytes", &[SemanticType::Nat, byte_list()]),
+            applied(
+                names::DROP_BYTES_BRIDGE,
+                vec![
+                    production_value("dropBytes", &[SemanticType::Nat, byte_list()]),
+                    unfolds(1),
+                    unfolds(1),
+                    unfolds(3),
+                ],
+            ),
+            production_value("encodeGo", &[strings(), SemanticType::Nat, byte_list()]),
+            unfolds(2),
+            unfolds(3),
+        ],
+    )
+}
+
+fn encode_with_bridge() -> ProofTerm {
+    applied(
+        names::ENCODE_WITH_BRIDGE,
+        vec![
+            production_value("bytesList", &[SemanticType::Bytes]),
+            bytes_list_bridge(),
+            production_value("encodeGo", &[strings(), SemanticType::Nat, byte_list()]),
+            encode_go_bridge(),
+            production_value("encodeWith", &[strings(), SemanticType::Bytes]),
+            unfolds(2),
+        ],
+    )
+}
+
+fn encode_bytes_bridge() -> ProofTerm {
+    applied(
+        names::ENCODE_BYTES_BRIDGE,
+        vec![
+            production_value("bytesList", &[SemanticType::Bytes]),
+            bytes_list_bridge(),
+            production_value("byteToken", &[SemanticType::UInt8]),
+            byte_token_bridge(),
+            production_value("bytesTokens", &[byte_list()]),
+            ProofTerm::Refl,
+            unfolds(2),
+            production_value("encodeBytes", &[SemanticType::Bytes]),
+            unfolds(1),
+        ],
+    )
+}
+
+fn decode_with_bridge() -> ProofTerm {
+    applied(
+        names::DECODE_WITH_BRIDGE,
+        vec![
+            proof_term(production_call("byteTable", Vec::new())),
+            ProofTerm::Refl,
+            production_value("natOfToken", &[SemanticType::UInt32]),
+            nat_bits_bridge(),
+            production_value("byteToken", &[SemanticType::UInt8]),
+            byte_token_bridge(),
+            production_value("byteOf", &[SemanticType::UInt8]),
+            unfolds(1),
+            production_value("listBytes", &[byte_list()]),
+            ProofTerm::Refl,
+            unfolds(2),
+            production_value("decodeGo", &[strings(), tokens()]),
+            applied(
+                names::DECODE_GO_BRIDGE,
+                vec![
+                    production_value("pieceOf", &[strings(), SemanticType::UInt32]),
+                    piece_of_bridge(),
+                    production_value("decodeGo", &[strings(), tokens()]),
+                    unfolds(1),
+                    unfolds(3),
+                ],
+            ),
+            production_value("decodeWith", &[strings(), tokens()]),
+            unfolds(2),
         ],
     )
 }
@@ -1998,24 +2211,20 @@ fn check_tokenizer(
     let library = |function: &str, arguments: Vec<SemanticTerm>| {
         model::call(&library_member(function), &[], arguments)
     };
-    let (encode_body, encode_text_body, roundtrip, in_range, text_roundtrip) = match scheme {
-        TokenizerScheme::LongestMatch => (
-            library(names::ENCODE_WITH, vec![pieces_term(), model::var(BYTES)]),
-            library(names::ENCODE_TEXT, vec![pieces_term(), model::var(TEXT)]),
-            names::ROUNDTRIP,
-            names::IN_RANGE_OF,
-            names::TEXT_ROUNDTRIP,
-        ),
-        TokenizerScheme::ByteLevel => (
-            library(names::ENCODE_BYTES, vec![model::var(BYTES)]),
-            library(names::ENCODE_TEXT_BYTES, vec![model::var(TEXT)]),
-            names::ROUNDTRIP_BYTES,
-            names::IN_RANGE_BYTES_OF,
-            names::TEXT_ROUNDTRIP_BYTES,
-        ),
+    let longest = matches!(scheme, TokenizerScheme::LongestMatch);
+    let (encode_function, encode_text_function) = if longest {
+        (names::ENCODE_WITH, names::ENCODE_TEXT)
+    } else {
+        (names::ENCODE_BYTES, names::ENCODE_TEXT_BYTES)
     };
-    let definition = |name: &str, parameters: Vec<SemanticParameter>, result, body| {
-        model::ordinary_definition(name.to_owned(), &[], parameters, result, body, false)
+    let with_vocabulary = |arguments: Vec<SemanticTerm>| -> Vec<SemanticTerm> {
+        if longest {
+            let mut all = vec![pieces_term()];
+            all.extend(arguments);
+            all
+        } else {
+            arguments
+        }
     };
     let declarations = vec![
         executable_definition(
@@ -2030,39 +2239,214 @@ fn check_tokenizer(
             SemanticType::Nat,
             production_call("vocabSize", vec![pieces_term()]),
         ),
-        definition(
+        executable_definition(
             &encode,
             vec![parameter(BYTES, SemanticType::Bytes)],
             tokens(),
-            encode_body,
+            production_call(encode_function, with_vocabulary(vec![model::var(BYTES)])),
         ),
-        definition(
+        executable_definition(
             &decode,
             vec![parameter(TOKENS, tokens())],
             model::option_type(SemanticType::Bytes),
-            library(names::DECODE_WITH, vec![pieces_term(), model::var(TOKENS)]),
+            production_call("decodeWith", vec![pieces_term(), model::var(TOKENS)]),
         ),
-        definition(
+        executable_definition(
             &encode_text,
             vec![parameter(TEXT, SemanticType::String)],
             tokens(),
-            encode_text_body,
+            production_call(
+                encode_text_function,
+                with_vocabulary(vec![model::var(TEXT)]),
+            ),
         ),
-        definition(
+        executable_definition(
             &decode_text,
             vec![parameter(TOKENS, tokens())],
             model::option_type(SemanticType::String),
-            library(names::DECODE_TEXT, vec![pieces_term(), model::var(TOKENS)]),
+            production_call("decodeText", vec![pieces_term(), model::var(TOKENS)]),
         ),
     ];
     let apply = |function: &str, arguments: Vec<SemanticTerm>| {
         model::call(&model::local(function), &[], arguments)
     };
+    let theorem_ref = |suffix: &str| ProofTerm::Theorem {
+        theorem: model::local(&format!("{name}.{suffix}")),
+        type_arguments: Vec::new(),
+        arguments: Vec::new(),
+    };
+    // A bridge states that a production form equals the library's, over the
+    // vocabulary (under `longest_match`) and its one argument.
+    let bridge = |suffix: &str,
+                  production: &str,
+                  library_function: &str,
+                  extra: Vec<(&str, SemanticType)>,
+                  with_vocab: bool,
+                  lemma: &str,
+                  proof: ProofTerm| {
+        let mut binders = Vec::new();
+        if with_vocab {
+            binders.push(parameter("vocabulary", strings()));
+        }
+        for (binder, ty) in &extra {
+            binders.push(parameter(binder, ty.clone()));
+        }
+        let variables = || -> Vec<SemanticTerm> {
+            let mut all = Vec::new();
+            if with_vocab {
+                all.push(model::var("vocabulary"));
+            }
+            all.extend(extra.iter().map(|(binder, _)| model::var(binder)));
+            all
+        };
+        let mut arguments = match proof {
+            ProofTerm::Theorem { arguments, .. } => arguments,
+            other => vec![other],
+        };
+        arguments.extend(variables().into_iter().map(proof_term));
+        law_of(
+            format!("{name}.{suffix}"),
+            binders,
+            model::eq(
+                production_call(production, variables()),
+                library_call(library_function, variables()),
+            ),
+            &[],
+            lemma,
+            arguments,
+        )
+    };
+    let (encode_bridge, encode_text_bridge) = if longest {
+        (
+            bridge(
+                "encode_bridge",
+                "encodeWith",
+                names::ENCODE_WITH,
+                vec![("source", SemanticType::Bytes)],
+                true,
+                names::ENCODE_WITH_BRIDGE,
+                encode_with_bridge(),
+            ),
+            bridge(
+                "encodeText_bridge",
+                "encodeText",
+                names::ENCODE_TEXT,
+                vec![("text", SemanticType::String)],
+                true,
+                names::ENCODE_TEXT_BRIDGE,
+                applied(
+                    names::ENCODE_TEXT_BRIDGE,
+                    vec![
+                        production_value("encodeWith", &[strings(), SemanticType::Bytes]),
+                        encode_with_bridge(),
+                        production_value("encodeText", &[strings(), SemanticType::String]),
+                        unfolds(2),
+                    ],
+                ),
+            ),
+        )
+    } else {
+        (
+            bridge(
+                "encode_bridge",
+                "encodeBytes",
+                names::ENCODE_BYTES,
+                vec![("source", SemanticType::Bytes)],
+                false,
+                names::ENCODE_BYTES_BRIDGE,
+                encode_bytes_bridge(),
+            ),
+            bridge(
+                "encodeText_bridge",
+                "encodeTextBytes",
+                names::ENCODE_TEXT_BYTES,
+                vec![("text", SemanticType::String)],
+                false,
+                names::ENCODE_TEXT_BYTES_BRIDGE,
+                applied(
+                    names::ENCODE_TEXT_BYTES_BRIDGE,
+                    vec![
+                        production_value("encodeBytes", &[SemanticType::Bytes]),
+                        encode_bytes_bridge(),
+                        production_value("encodeTextBytes", &[SemanticType::String]),
+                        unfolds(1),
+                    ],
+                ),
+            ),
+        )
+    };
+    let decode_bridge = bridge(
+        "decode_bridge",
+        "decodeWith",
+        names::DECODE_WITH,
+        vec![("tokens", tokens())],
+        true,
+        names::DECODE_WITH_BRIDGE,
+        decode_with_bridge(),
+    );
+    let decode_text_bridge = bridge(
+        "decodeText_bridge",
+        "decodeText",
+        names::DECODE_TEXT,
+        vec![("tokens", tokens())],
+        true,
+        names::DECODE_TEXT_BRIDGE,
+        applied(
+            names::DECODE_TEXT_BRIDGE,
+            vec![
+                production_value("decodeWith", &[strings(), tokens()]),
+                decode_with_bridge(),
+                production_value("decodeText", &[strings(), tokens()]),
+                unfolds(2),
+            ],
+        ),
+    );
+    let (roundtrip, text_roundtrip, in_range) = if longest {
+        (
+            names::ROUNDTRIP_OF,
+            names::TEXT_ROUNDTRIP_OF,
+            names::IN_RANGE_OF,
+        )
+    } else {
+        (
+            names::ROUNDTRIP_BYTES_OF,
+            names::TEXT_ROUNDTRIP_BYTES_OF,
+            names::IN_RANGE_BYTES_OF,
+        )
+    };
+    // The production encoder as a value, over the vocabulary under
+    // `longest_match`.
+    let encoder = |function: &str, argument: SemanticType| {
+        if longest {
+            production_value(function, &[strings(), argument])
+        } else {
+            production_value(function, &[argument])
+        }
+    };
+    let decoder = |function: &str| production_value(function, &[strings(), tokens()]);
+    let law_arguments = |encoder: ProofTerm,
+                         encoder_bridge: &str,
+                         decoder: ProofTerm,
+                         decoder_bridge: &str,
+                         argument: &str| {
+        vec![
+            encoder,
+            theorem_ref(encoder_bridge),
+            decoder,
+            theorem_ref(decoder_bridge),
+            proof_term(pieces_term()),
+            proof_term(model::var(argument)),
+        ]
+    };
     let theorems = vec![
+        encode_bridge,
+        decode_bridge,
+        encode_text_bridge,
+        decode_text_bridge,
         // `decode (encode b) = some b`.
-        law(
+        law_of(
             format!("{name}.roundtrip"),
-            parameter(BYTES, SemanticType::Bytes),
+            vec![parameter(BYTES, SemanticType::Bytes)],
             model::eq(
                 apply(&decode, vec![apply(&encode, vec![model::var(BYTES)])]),
                 model::constructor(
@@ -2073,7 +2457,16 @@ fn check_tokenizer(
             ),
             &[&encode, &decode],
             roundtrip,
-            pieces_term(),
+            law_arguments(
+                encoder(
+                    if longest { "encodeWith" } else { "encodeBytes" },
+                    SemanticType::Bytes,
+                ),
+                "encode_bridge",
+                decoder("decodeWith"),
+                "decode_bridge",
+                BYTES,
+            ),
         ),
         // The production size is the library's.
         law_of(
@@ -2111,19 +2504,20 @@ fn check_tokenizer(
             in_range,
             vec![
                 production_value("vocabSize", &[strings()]),
-                ProofTerm::Theorem {
-                    theorem: model::local(&format!("{name}.size_bridge")),
-                    type_arguments: Vec::new(),
-                    arguments: Vec::new(),
-                },
+                theorem_ref("size_bridge"),
+                encoder(
+                    if longest { "encodeWith" } else { "encodeBytes" },
+                    SemanticType::Bytes,
+                ),
+                theorem_ref("encode_bridge"),
                 proof_term(pieces_term()),
                 proof_term(model::var(BYTES)),
             ],
         ),
         // `decodeText (encodeText s) = some s`.
-        law(
+        law_of(
             format!("{name}.text_roundtrip"),
-            parameter(TEXT, SemanticType::String),
+            vec![parameter(TEXT, SemanticType::String)],
             model::eq(
                 apply(
                     &decode_text,
@@ -2137,7 +2531,16 @@ fn check_tokenizer(
             ),
             &[&encode_text, &decode_text],
             text_roundtrip,
-            pieces_term(),
+            law_arguments(
+                encoder(
+                    if longest { "encodeText" } else { "encodeTextBytes" },
+                    SemanticType::String,
+                ),
+                "encodeText_bridge",
+                decoder("decodeText"),
+                "decodeText_bridge",
+                TEXT,
+            ),
         ),
     ];
     env.texts.tokenizers.insert(name.clone(), *scheme);
