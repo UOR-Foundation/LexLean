@@ -5893,6 +5893,36 @@ The claim is the model's. That the runtime's `Vec` has this behaviour, that a sl
 model reads, and that a push beyond the capacity reallocates (the declared effect `allocation`) are the
 evidence of the differential and of rustc, and the growth of a capacity is not part of this row.
 
+The representation of a list (`SP-27`). `RustLists`, a module of the compiler project on the slots of
+`RustMemory` and over the calculus's values, models the runtime's `List` as a *handle*: the items of the
+cells in front of it (`spine`, the newest first) and a *terminal*, either the empty list or a *run*, the
+first `more + 1` slots of the buffer at an address of a *store*. A store is a chain of buffers indexed
+by position, a write to an address beyond it extends it, and a read beyond it finds no cells, so that no
+operation faults. A handle reads as the list of the calculus (`absHandle`): its spine followed by its
+run's slots in reverse, the newest slot first. The counting of references is derived and not stored: a
+handle holds a buffer when its terminal is a run on the buffer's address (`holds`, which is the sameness
+of addresses, `same_is_no_gap` and `same_with_itself`), and `aloneOn` is the test that no other handle
+holds it, the flag `Rc::get_mut` answers; it is the `unique` argument of `consWorld`. The cons of a run
+whose buffer nobody else holds truncates the buffer to the run's length and pushes the item
+(`consRun`), and the run read back is the item before the old list (`run_cons_abs` for the cells,
+`walk_cons` through a store, `cons_inplace_abs` for the handle); the first cons onto the empty list
+writes a buffer of one (`walk_alloc`, `cons_alloc_abs`); a cons onto a spine, or onto a run another
+handle holds, adds a cell and writes no buffer (`cons_cell_abs`, `cons_shared_abs`). The uncons of a
+spine takes its first item, the uncons of a run reads the slot at its last position and leaves the run
+one shorter, or the empty list when it was the last (`run_uncons_abs`, `walk_uncons`,
+`walk_uncons_last`, `uncons_cell_abs`, `uncons_cell_taken`, `uncons_run_abs`, `uncons_run_taken`,
+`uncons_last_abs`, `uncons_last_taken`). A write to the buffer at one address is read through that address
+and through no other: `walk_frame` states it for every pair of addresses by the gap between them
+(`same`, `under`, or `over`), and `inplace_frame` for a run on another buffer, so that the handles that
+do not hold the buffer written read as they did. A cons takes at most three steps of the model and an
+uncons at most three, whatever the list (`cons_steps_bounded`, `uncons_steps_bounded`). Releasing a
+chain of cells one at a time, as the `Drop` of a node does and stopping at the first cell another handle
+holds, ends within as many steps as the chain has cells, needs that many for a chain of cells nobody else
+holds, and takes one step for each cell (`release_ends`, `release_needs_fuel`, `release_one_cell`).
+Every theorem is total, for the reason of `SP-26`. The claim is the model's: that the runtime's
+`Rc`, `Vec`, and `List` behave as the model, that the model's reference count is the `Rc`'s, and that
+the `Drop` loop is the release loop are the evidence of the differential and of the pinned rustc.
+
 A *loop*
 (`Expr.loop`, `SP-19`) is the one construct of the machine that repeats: it names
 a state, a local the enclosing block has bound, and a body block. The body is
