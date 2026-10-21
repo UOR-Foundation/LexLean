@@ -635,5 +635,38 @@ definition{
   axioms: [Classical.choice, Quot.sound, propext],
   executable: true
 }
+
+definition{
+  name: countOf,
+  parameters: [index : Nat, tokens : (List UInt32)],
+  result: Int,
+  body: (match tokens
+    | List.nil => (0 : Int)
+    | List.cons token rest => (if (prim equal (natOfToken token) index : Bool) then (prim subtract (countOf index rest) (prim negate (1 : Int) : Int) : Int) else (countOf index rest))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: tokens
+}
+
+definition{
+  name: featuresFrom,
+  parameters: [index : Nat, remaining : Nat, tokens : (List UInt32)],
+  result: (List Int),
+  body: (match remaining
+    | Nat.zero => (nil Int)
+    | Nat.succ previous => (cons (countOf index tokens) (featuresFrom (index + 1) previous tokens))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: remaining
+}
+
+definition{
+  name: features,
+  parameters: [size : Nat, tokens : (List UInt32)],
+  result: (List Int),
+  body: (featuresFrom 0 size tokens),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
 \end{semanticmodule}
 \end{lexlean}
