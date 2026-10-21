@@ -1,0 +1,81 @@
+\begin{lexlean}{RuntimeKeysI32}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{TargetSyntax}
+\importmodule{TargetSemantics}
+\importmodule{RuntimeSemantics}
+\importmodule{RuntimeSupport}
+\title{Natural number addition}
+\begin{semanticmodule}
+theorem{
+  name: compare_pair_i32_bool,
+  parameters: [x1 : Int32, y1 : Int32, x2 : Bool, y2 : Bool],
+  statement: ((RuntimeSemantics::rtRun 24 (RuntimeSupport::supportCrate) "compare" (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 x1) (ctor TargetSyntax::Value.bool x2)) (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 y1) (ctor TargetSyntax::Value.bool y2)) (nil TargetSyntax::Value)))) = (RuntimeSemantics::fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 x1) (ctor TargetSyntax::Value.bool x2)) (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 y1) (ctor TargetSyntax::Value.bool y2)) (nil TargetSyntax::Value)))))),
+  proof: term_cases{scrutinee: (TargetSemantics::orderI32 x1 y1), definitions: [RuntimeSemantics::bindParams, RuntimeSemantics::findFree, RuntimeSemantics::findIn, RuntimeSemantics::findMethod, RuntimeSemantics::fromPrimitive, RuntimeSemantics::kindIndex, RuntimeSemantics::lookupVar, RuntimeSemantics::matchesTy, RuntimeSemantics::orderOfPath, RuntimeSemantics::pairParts, RuntimeSemantics::rtApply, RuntimeSemantics::rtEval, RuntimeSemantics::rtEvalArms, RuntimeSemantics::rtEvalBlock, RuntimeSemantics::rtEvalList, RuntimeSemantics::rtRun, RuntimeSemantics::tagOf, RuntimeSupport::supportCrate, TargetSemantics::compareValue, TargetSemantics::primitive, TargetSemantics::sameOrder]},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: compare_pair_i32_u8,
+  parameters: [x1 : Int32, y1 : Int32, x2 : UInt8, y2 : UInt8],
+  statement: ((RuntimeSemantics::rtRun 24 (RuntimeSupport::supportCrate) "compare" (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 x1) (ctor TargetSyntax::Value.u8 x2)) (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 y1) (ctor TargetSyntax::Value.u8 y2)) (nil TargetSyntax::Value)))) = (RuntimeSemantics::fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 x1) (ctor TargetSyntax::Value.u8 x2)) (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 y1) (ctor TargetSyntax::Value.u8 y2)) (nil TargetSyntax::Value)))))),
+  proof: term_cases{scrutinee: (TargetSemantics::orderI32 x1 y1), definitions: [RuntimeSemantics::bindParams, RuntimeSemantics::findFree, RuntimeSemantics::findIn, RuntimeSemantics::findMethod, RuntimeSemantics::fromPrimitive, RuntimeSemantics::kindIndex, RuntimeSemantics::lookupVar, RuntimeSemantics::matchesTy, RuntimeSemantics::orderOfPath, RuntimeSemantics::pairParts, RuntimeSemantics::rtApply, RuntimeSemantics::rtEval, RuntimeSemantics::rtEvalArms, RuntimeSemantics::rtEvalBlock, RuntimeSemantics::rtEvalList, RuntimeSemantics::rtRun, RuntimeSemantics::tagOf, RuntimeSupport::supportCrate, TargetSemantics::compareValue, TargetSemantics::primitive, TargetSemantics::sameOrder]},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: compare_pair_i32_u16,
+  parameters: [x1 : Int32, y1 : Int32, x2 : UInt16, y2 : UInt16],
+  statement: ((RuntimeSemantics::rtRun 24 (RuntimeSupport::supportCrate) "compare" (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 x1) (ctor TargetSyntax::Value.u16 x2)) (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 y1) (ctor TargetSyntax::Value.u16 y2)) (nil TargetSyntax::Value)))) = (RuntimeSemantics::fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 x1) (ctor TargetSyntax::Value.u16 x2)) (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 y1) (ctor TargetSyntax::Value.u16 y2)) (nil TargetSyntax::Value)))))),
+  proof: term_cases{scrutinee: (TargetSemantics::orderI32 x1 y1), definitions: [RuntimeSemantics::bindParams, RuntimeSemantics::findFree, RuntimeSemantics::findIn, RuntimeSemantics::findMethod, RuntimeSemantics::fromPrimitive, RuntimeSemantics::kindIndex, RuntimeSemantics::lookupVar, RuntimeSemantics::matchesTy, RuntimeSemantics::orderOfPath, RuntimeSemantics::pairParts, RuntimeSemantics::rtApply, RuntimeSemantics::rtEval, RuntimeSemantics::rtEvalArms, RuntimeSemantics::rtEvalBlock, RuntimeSemantics::rtEvalList, RuntimeSemantics::rtRun, RuntimeSemantics::tagOf, RuntimeSupport::supportCrate, TargetSemantics::compareValue, TargetSemantics::primitive, TargetSemantics::sameOrder]},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: compare_pair_i32_u32,
+  parameters: [x1 : Int32, y1 : Int32, x2 : UInt32, y2 : UInt32],
+  statement: ((RuntimeSemantics::rtRun 24 (RuntimeSupport::supportCrate) "compare" (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 x1) (ctor TargetSyntax::Value.u32 x2)) (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 y1) (ctor TargetSyntax::Value.u32 y2)) (nil TargetSyntax::Value)))) = (RuntimeSemantics::fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 x1) (ctor TargetSyntax::Value.u32 x2)) (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 y1) (ctor TargetSyntax::Value.u32 y2)) (nil TargetSyntax::Value)))))),
+  proof: term_cases{scrutinee: (TargetSemantics::orderI32 x1 y1), definitions: [RuntimeSemantics::bindParams, RuntimeSemantics::findFree, RuntimeSemantics::findIn, RuntimeSemantics::findMethod, RuntimeSemantics::fromPrimitive, RuntimeSemantics::kindIndex, RuntimeSemantics::lookupVar, RuntimeSemantics::matchesTy, RuntimeSemantics::orderOfPath, RuntimeSemantics::pairParts, RuntimeSemantics::rtApply, RuntimeSemantics::rtEval, RuntimeSemantics::rtEvalArms, RuntimeSemantics::rtEvalBlock, RuntimeSemantics::rtEvalList, RuntimeSemantics::rtRun, RuntimeSemantics::tagOf, RuntimeSupport::supportCrate, TargetSemantics::compareValue, TargetSemantics::primitive, TargetSemantics::sameOrder]},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: compare_pair_i32_u64,
+  parameters: [x1 : Int32, y1 : Int32, x2 : UInt64, y2 : UInt64],
+  statement: ((RuntimeSemantics::rtRun 24 (RuntimeSupport::supportCrate) "compare" (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 x1) (ctor TargetSyntax::Value.u64 x2)) (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 y1) (ctor TargetSyntax::Value.u64 y2)) (nil TargetSyntax::Value)))) = (RuntimeSemantics::fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 x1) (ctor TargetSyntax::Value.u64 x2)) (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 y1) (ctor TargetSyntax::Value.u64 y2)) (nil TargetSyntax::Value)))))),
+  proof: term_cases{scrutinee: (TargetSemantics::orderI32 x1 y1), definitions: [RuntimeSemantics::bindParams, RuntimeSemantics::findFree, RuntimeSemantics::findIn, RuntimeSemantics::findMethod, RuntimeSemantics::fromPrimitive, RuntimeSemantics::kindIndex, RuntimeSemantics::lookupVar, RuntimeSemantics::matchesTy, RuntimeSemantics::orderOfPath, RuntimeSemantics::pairParts, RuntimeSemantics::rtApply, RuntimeSemantics::rtEval, RuntimeSemantics::rtEvalArms, RuntimeSemantics::rtEvalBlock, RuntimeSemantics::rtEvalList, RuntimeSemantics::rtRun, RuntimeSemantics::tagOf, RuntimeSupport::supportCrate, TargetSemantics::compareValue, TargetSemantics::primitive, TargetSemantics::sameOrder]},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: compare_pair_i32_i8,
+  parameters: [x1 : Int32, y1 : Int32, x2 : Int8, y2 : Int8],
+  statement: ((RuntimeSemantics::rtRun 24 (RuntimeSupport::supportCrate) "compare" (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 x1) (ctor TargetSyntax::Value.i8 x2)) (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 y1) (ctor TargetSyntax::Value.i8 y2)) (nil TargetSyntax::Value)))) = (RuntimeSemantics::fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 x1) (ctor TargetSyntax::Value.i8 x2)) (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 y1) (ctor TargetSyntax::Value.i8 y2)) (nil TargetSyntax::Value)))))),
+  proof: term_cases{scrutinee: (TargetSemantics::orderI32 x1 y1), definitions: [RuntimeSemantics::bindParams, RuntimeSemantics::findFree, RuntimeSemantics::findIn, RuntimeSemantics::findMethod, RuntimeSemantics::fromPrimitive, RuntimeSemantics::kindIndex, RuntimeSemantics::lookupVar, RuntimeSemantics::matchesTy, RuntimeSemantics::orderOfPath, RuntimeSemantics::pairParts, RuntimeSemantics::rtApply, RuntimeSemantics::rtEval, RuntimeSemantics::rtEvalArms, RuntimeSemantics::rtEvalBlock, RuntimeSemantics::rtEvalList, RuntimeSemantics::rtRun, RuntimeSemantics::tagOf, RuntimeSupport::supportCrate, TargetSemantics::compareValue, TargetSemantics::primitive, TargetSemantics::sameOrder]},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: compare_pair_i32_i16,
+  parameters: [x1 : Int32, y1 : Int32, x2 : Int16, y2 : Int16],
+  statement: ((RuntimeSemantics::rtRun 24 (RuntimeSupport::supportCrate) "compare" (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 x1) (ctor TargetSyntax::Value.i16 x2)) (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 y1) (ctor TargetSyntax::Value.i16 y2)) (nil TargetSyntax::Value)))) = (RuntimeSemantics::fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 x1) (ctor TargetSyntax::Value.i16 x2)) (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 y1) (ctor TargetSyntax::Value.i16 y2)) (nil TargetSyntax::Value)))))),
+  proof: term_cases{scrutinee: (TargetSemantics::orderI32 x1 y1), definitions: [RuntimeSemantics::bindParams, RuntimeSemantics::findFree, RuntimeSemantics::findIn, RuntimeSemantics::findMethod, RuntimeSemantics::fromPrimitive, RuntimeSemantics::kindIndex, RuntimeSemantics::lookupVar, RuntimeSemantics::matchesTy, RuntimeSemantics::orderOfPath, RuntimeSemantics::pairParts, RuntimeSemantics::rtApply, RuntimeSemantics::rtEval, RuntimeSemantics::rtEvalArms, RuntimeSemantics::rtEvalBlock, RuntimeSemantics::rtEvalList, RuntimeSemantics::rtRun, RuntimeSemantics::tagOf, RuntimeSupport::supportCrate, TargetSemantics::compareValue, TargetSemantics::primitive, TargetSemantics::sameOrder]},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: compare_pair_i32_i32,
+  parameters: [x1 : Int32, y1 : Int32, x2 : Int32, y2 : Int32],
+  statement: ((RuntimeSemantics::rtRun 24 (RuntimeSupport::supportCrate) "compare" (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 x1) (ctor TargetSyntax::Value.i32 x2)) (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 y1) (ctor TargetSyntax::Value.i32 y2)) (nil TargetSyntax::Value)))) = (RuntimeSemantics::fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 x1) (ctor TargetSyntax::Value.i32 x2)) (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 y1) (ctor TargetSyntax::Value.i32 y2)) (nil TargetSyntax::Value)))))),
+  proof: term_cases{scrutinee: (TargetSemantics::orderI32 x1 y1), definitions: [RuntimeSemantics::bindParams, RuntimeSemantics::findFree, RuntimeSemantics::findIn, RuntimeSemantics::findMethod, RuntimeSemantics::fromPrimitive, RuntimeSemantics::kindIndex, RuntimeSemantics::lookupVar, RuntimeSemantics::matchesTy, RuntimeSemantics::orderOfPath, RuntimeSemantics::pairParts, RuntimeSemantics::rtApply, RuntimeSemantics::rtEval, RuntimeSemantics::rtEvalArms, RuntimeSemantics::rtEvalBlock, RuntimeSemantics::rtEvalList, RuntimeSemantics::rtRun, RuntimeSemantics::tagOf, RuntimeSupport::supportCrate, TargetSemantics::compareValue, TargetSemantics::primitive, TargetSemantics::sameOrder]},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: compare_pair_i32_i64,
+  parameters: [x1 : Int32, y1 : Int32, x2 : Int64, y2 : Int64],
+  statement: ((RuntimeSemantics::rtRun 24 (RuntimeSupport::supportCrate) "compare" (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 x1) (ctor TargetSyntax::Value.i64 x2)) (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 y1) (ctor TargetSyntax::Value.i64 y2)) (nil TargetSyntax::Value)))) = (RuntimeSemantics::fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 x1) (ctor TargetSyntax::Value.i64 x2)) (cons (ctor TargetSyntax::Value.pair (ctor TargetSyntax::Value.i32 y1) (ctor TargetSyntax::Value.i64 y2)) (nil TargetSyntax::Value)))))),
+  proof: term_cases{scrutinee: (TargetSemantics::orderI32 x1 y1), definitions: [RuntimeSemantics::bindParams, RuntimeSemantics::findFree, RuntimeSemantics::findIn, RuntimeSemantics::findMethod, RuntimeSemantics::fromPrimitive, RuntimeSemantics::kindIndex, RuntimeSemantics::lookupVar, RuntimeSemantics::matchesTy, RuntimeSemantics::orderOfPath, RuntimeSemantics::pairParts, RuntimeSemantics::rtApply, RuntimeSemantics::rtEval, RuntimeSemantics::rtEvalArms, RuntimeSemantics::rtEvalBlock, RuntimeSemantics::rtEvalList, RuntimeSemantics::rtRun, RuntimeSemantics::tagOf, RuntimeSupport::supportCrate, TargetSemantics::compareValue, TargetSemantics::primitive, TargetSemantics::sameOrder]},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+\end{semanticmodule}
+\end{lexlean}
