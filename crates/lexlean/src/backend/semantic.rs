@@ -2996,6 +2996,18 @@ fn latex_text(
         latex_line(text, "Laws", &laws());
         latex_line(text, "Axiom policy", &latex_policy(axioms));
     }
+    if let SemanticDeclaration::TextClassifier {
+        tokenizer,
+        model,
+        axioms,
+        ..
+    } = declaration
+    {
+        latex_line(text, "Tokenizer", &render.member(tokenizer));
+        latex_line(text, "Model", &latex_use(render, model));
+        latex_line(text, "Laws", &laws());
+        latex_line(text, "Axiom policy", &latex_policy(axioms));
+    }
     for derived in module.elaboration.lowered(index) {
         if let SemanticDeclaration::Inductive {
             name, constructors, ..
@@ -3278,17 +3290,9 @@ pub fn render_latex(
             }
             SemanticDeclaration::Tokenizer { .. }
             | SemanticDeclaration::ContextWindow { .. }
-            | SemanticDeclaration::TextGenerator { .. } => {
+            | SemanticDeclaration::TextGenerator { .. }
+            | SemanticDeclaration::TextClassifier { .. } => {
                 latex_text(&render, module, index, declaration, &mut text);
-            }
-            SemanticDeclaration::TextClassifier { .. } => {
-                return Err(Diagnostic::new(
-                    code!("LLI9001"),
-                    format!(
-                        "phase latex-backend: text declaration `{}` was not elaborated",
-                        declaration.name()
-                    ),
-                ));
             }
         }
     }
