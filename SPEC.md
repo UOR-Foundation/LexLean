@@ -153,6 +153,8 @@ The following are outside the LexLean 1.0 language and MUST be rejected rather t
 - a claim that successful Rust generation alone establishes a theorem;
 - a claim that imported libraries are proved by LexLean.
 
+The list above is the language-1.0 boundary and is frozen with it (§30.2). Languages 1.1 and 1.2 extend the closed language through semantic modules (§17), for example with document-defined inductive types, recursive definitions, and instances, which the list marks unsupported for 1.0; what each of them admits is fixed by §17 and its language data, not by this list.
+
 Complex Lean objects that LexLean 1.0 cannot define MAY be imported as closed external glossary entries. Their guarantees belong to their upstream repositories. LexLean verifies only that the generated declarations elaborate and check in the pinned environment and that their observed axiom dependencies satisfy their explicit policies.
 
 ---
@@ -4485,7 +4487,7 @@ linked with a harness, and run; its output must equal the denotation's, its
 work count must not exceed the steps, and planted value and work
 discrepancies must be detected. This is `build` evidence for the renderings,
 not a proof of them; preservation of meaning from LexLean to the calculus is
-§17.17, and from the calculus to Rust is a separate obligation.
+§17.17, which also states what certificates B and E establish about a rendering on the declared Rust machine; that `rustc` agrees with that machine is `build` evidence there, not a proof.
 
 ### 17.15 GNAF requests over the calculus
 
