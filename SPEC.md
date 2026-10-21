@@ -5947,6 +5947,29 @@ step for each cell of a chain nobody else holds, and takes one step for each cel
 model's reference count is the `Rc`'s, and that the `Drop` loop is the release loop are the evidence of the
 differential and of the pinned rustc. The model does not count the steps of a cons or an uncons.
 
+The meaning of the primitives (`SP-28`). `RustPrims`, a module of the compiler project on `RustMemory` and
+`RustLists`, states what the runtime's buffer, share, and replace primitives are, for the semantics that reads a
+`Vec` or an `Rc` as the value it holds. A buffer reads as the list of its items in order (`readBuf`: the first
+`len` slots, `firstOf`), and the primitives have an erased meaning on that list: `buffer_push` appends
+(`erasedPush`), `buffer_truncate` keeps a prefix (`erasedTruncate`), `buffer_len` counts (`erasedLength`),
+`buffer_new` is the empty list. What the runtime does is the model's: the push of `RustMemory` after a growth
+when the buffer is full (`pushGrow`, with the growth of `RustLists`), `bufTruncate`, and the length field. The laws
+that a statement `runExport … = runItem …` of a heap function needs are these: the push reads as the items and the
+item after them for a buffer whose items are in front of its room, whether the room is a slot or the buffer must
+grow (`push_reads`, built from `first_of_front`, `first_of_snoc`, `append_nothing`, `less_than_itself`,
+`put_into_blank`); a new buffer reads as no items (`new_reads`); a truncation reads as the first items
+(`truncate_reads`, `first_of_take`); the length is the number of items (`length_reads`, `length_of_items`). A buffer is
+valid when its length is the number of its items in front of its room, which the statements encode as
+`append front back` with length `size front` because the proof language has no premises. `share_copy` is a clone
+(`shareCopy`): it reads as the handle it clones, holds the buffer that handle holds, and so keeps the buffer from being
+alone (`copy_reads`, `copy_holds`, `copy_blocks`); `share_unique` is `aloneOn`, true with no other handle
+(`alone_without_others`) and false with a holder (`holder_blocks` of `SP-27`); `share_release` is the release of
+`SP-27`; `replace` returns the old value and installs the new one (`replaceHandle`, `replace_old_reads`,
+`replace_now_reads`). The claim is the model's. That the runtime's `Vec`, `Rc`, and `mem::replace` behave as the
+model, and that the declared semantics gives these primitives these readings (the `Machine` constructors of
+`RustSyntax` and their evaluation in `RustSemantics`, which move the compiler-semantics ID), are not claimed here:
+the second is the opening of the first function of H4a, measured before the others.
+
 A *loop*
 (`Expr.loop`, `SP-19`) is the one construct of the machine that repeats: it names
 a state, a local the enclosing block has bound, and a body block. The body is

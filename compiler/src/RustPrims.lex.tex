@@ -1,0 +1,431 @@
+\begin{lexlean}{RustPrims}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{RustLists}
+\importmodule{RustMemory}
+\importmodule{TargetSyntax}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: itemsOf,
+  parameters: [cells : RustMemory::Cells],
+  result: (List TargetSyntax::Value),
+  body: (match cells
+    | RustMemory::Cells.CNil => (nil TargetSyntax::Value)
+    | RustMemory::Cells.CCons head tail => (cons head (itemsOf tail))),
+  recursive_argument: cells
+}
+
+structure{
+  name: Replaced,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: old, type: RustLists::Handle}, {name: now, type: RustLists::Handle}]
+}
+
+definition{
+  name: firstOf,
+  parameters: [cells : RustMemory::Cells, count : Nat],
+  result: (List TargetSyntax::Value),
+  body: (match count
+    | Nat.zero => (nil TargetSyntax::Value)
+    | Nat.succ less => (match cells
+      | RustMemory::Cells.CNil => (nil TargetSyntax::Value)
+      | RustMemory::Cells.CCons head tail => (cons head (firstOf tail less)))),
+  recursive_argument: count
+}
+
+definition{
+  name: takeItems,
+  parameters: [items : (List TargetSyntax::Value), count : Nat],
+  result: (List TargetSyntax::Value),
+  body: (match count
+    | Nat.zero => (nil TargetSyntax::Value)
+    | Nat.succ less => (match items
+      | List.nil => (nil TargetSyntax::Value)
+      | List.cons head tail => (cons head (takeItems tail less)))),
+  recursive_argument: count
+}
+
+definition{
+  name: lengthItems,
+  parameters: [items : (List TargetSyntax::Value)],
+  result: Nat,
+  body: (match items | List.nil => 0 | List.cons head tail => ((lengthItems tail) + 1)),
+  recursive_argument: items
+}
+
+definition{
+  name: erasedPush,
+  parameters: [items : (List TargetSyntax::Value), item : TargetSyntax::Value],
+  result: (List TargetSyntax::Value),
+  body: (RustLists::listAppend items (cons item (nil TargetSyntax::Value)))
+}
+
+definition{
+  name: erasedTruncate,
+  parameters: [items : (List TargetSyntax::Value), count : Nat],
+  result: (List TargetSyntax::Value),
+  body: (takeItems items count)
+}
+
+definition{
+  name: erasedLength,
+  parameters: [items : (List TargetSyntax::Value)],
+  result: Nat,
+  body: (lengthItems items)
+}
+
+definition{
+  name: readBuf,
+  parameters: [buf : RustMemory::Buf],
+  result: (List TargetSyntax::Value),
+  body: (firstOf (project buf slots) (project buf len))
+}
+
+definition{
+  name: pushGrow,
+  parameters: [buf : RustMemory::Buf, item : TargetSyntax::Value],
+  result: RustMemory::Buf,
+  body: (match (RustMemory::bufPush buf item)
+    | Option.some got => got
+    | Option.none => (RustLists::keepOr (RustMemory::bufPush (RustLists::growBuf buf ((project buf len) + 1) item) item) buf))
+}
+
+definition{
+  name: shareCopy,
+  parameters: [handle : RustLists::Handle],
+  result: RustLists::Handle,
+  body: handle
+}
+
+definition{
+  name: replaceHandle,
+  parameters: [place : RustLists::Handle, value : RustLists::Handle],
+  result: Replaced,
+  body: (record Replaced {old := place, now := value})
+}
+
+theorem{
+  name: first_of_front,
+  parameters: [front : RustMemory::Cells, back : RustMemory::Cells],
+  statement: ((firstOf (RustMemory::append front back) (RustMemory::size front)) = (itemsOf front)),
+  proof: induction{
+    branches: [
+      {
+        proof: simplify{definitions: [firstOf, itemsOf, RustMemory::append, RustMemory::size]},
+        binders: [],
+        constructor: CNil
+      },
+      {
+        proof: simplify{
+          definitions: [firstOf, hypothesis, itemsOf, RustMemory::append, RustMemory::size]
+        },
+        binders: [head, tail, hypothesis],
+        constructor: CCons
+      }
+    ],
+    scrutinee: front
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: first_of_snoc,
+  parameters: [front : RustMemory::Cells, item : TargetSyntax::Value, back : RustMemory::Cells],
+  statement: ((firstOf (RustMemory::append front (ctor RustMemory::Cells.CCons item back)) ((RustMemory::size front) + 1)) = (RustLists::listAppend (itemsOf front) (cons item (nil TargetSyntax::Value)))),
+  proof: induction{
+    branches: [
+      {
+        proof: simplify{
+          definitions: [
+            firstOf,
+            itemsOf,
+            RustLists::listAppend,
+            RustMemory::append,
+            RustMemory::size
+          ]
+        },
+        binders: [],
+        constructor: CNil
+      },
+      {
+        proof: simplify{
+          definitions: [
+            firstOf,
+            hypothesis,
+            itemsOf,
+            RustLists::listAppend,
+            RustMemory::append,
+            RustMemory::size
+          ]
+        },
+        binders: [head, tail, hypothesis],
+        constructor: CCons
+      }
+    ],
+    scrutinee: front
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: first_of_take,
+  parameters: [front : RustMemory::Cells, back : RustMemory::Cells, keep : Nat],
+  statement: ((firstOf (RustMemory::append front back) (RustMemory::minNat keep (RustMemory::size front))) = (takeItems (itemsOf front) keep)),
+  proof: induction{
+    branches: [
+      {
+        proof: simplify{definitions: [firstOf, takeItems, RustMemory::minNat]},
+        binders: [],
+        constructor: zero
+      },
+      {
+        proof: cases{
+          branches: [
+            {
+              proof: simplify{
+                definitions: [
+                  firstOf,
+                  itemsOf,
+                  takeItems,
+                  RustMemory::append,
+                  RustMemory::minNat,
+                  RustMemory::size
+                ]
+              },
+              binders: [],
+              constructor: CNil
+            },
+            {
+              proof: simplify{
+                definitions: [
+                  firstOf,
+                  hypothesis,
+                  itemsOf,
+                  takeItems,
+                  RustMemory::append,
+                  RustMemory::minNat,
+                  RustMemory::size
+                ]
+              },
+              binders: [head, tail],
+              constructor: CCons
+            }
+          ],
+          scrutinee: front
+        },
+        binders: [less, hypothesis],
+        constructor: succ
+      }
+    ],
+    generalizing: [front],
+    scrutinee: keep
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: length_of_items,
+  parameters: [front : RustMemory::Cells],
+  statement: ((lengthItems (itemsOf front)) = (RustMemory::size front)),
+  proof: induction{
+    branches: [
+      {
+        proof: simplify{definitions: [itemsOf, lengthItems, RustMemory::size]},
+        binders: [],
+        constructor: CNil
+      },
+      {
+        proof: simplify{definitions: [hypothesis, itemsOf, lengthItems, RustMemory::size]},
+        binders: [head, tail, hypothesis],
+        constructor: CCons
+      }
+    ],
+    scrutinee: front
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: less_than_itself,
+  parameters: [count : Nat],
+  statement: ((RustMemory::lessThan count count) = (ctor RustMemory::Flag.no)),
+  proof: induction{
+    branches: [
+      {proof: simplify{definitions: [RustMemory::lessThan]}, binders: [], constructor: zero},
+      {
+        proof: simplify{definitions: [hypothesis, RustMemory::lessThan]},
+        binders: [less, hypothesis],
+        constructor: succ
+      }
+    ],
+    scrutinee: count
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: append_nothing,
+  parameters: [front : RustMemory::Cells],
+  statement: ((RustMemory::append front (ctor RustMemory::Cells.CNil)) = front),
+  proof: induction{
+    branches: [
+      {proof: simplify{definitions: [RustMemory::append]}, binders: [], constructor: CNil},
+      {
+        proof: simplify{definitions: [hypothesis, RustMemory::append]},
+        binders: [head, tail, hypothesis],
+        constructor: CCons
+      }
+    ],
+    scrutinee: front
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: put_into_blank,
+  parameters: [
+    front : RustMemory::Cells,
+    extra : Nat,
+    fill : TargetSyntax::Value,
+    item : TargetSyntax::Value
+  ],
+  statement: ((RustMemory::put (RustMemory::append front (RustMemory::blank (extra + 1) fill)) (RustMemory::size front) item) = (RustMemory::append front (ctor RustMemory::Cells.CCons item (RustMemory::blank extra fill)))),
+  proof: induction{
+    branches: [
+      {
+        proof: simplify{
+          definitions: [RustMemory::append, RustMemory::blank, RustMemory::put, RustMemory::size]
+        },
+        binders: [],
+        constructor: CNil
+      },
+      {
+        proof: simplify{
+          definitions: [hypothesis, RustMemory::append, RustMemory::put, RustMemory::size]
+        },
+        binders: [head, tail, hypothesis],
+        constructor: CCons
+      }
+    ],
+    scrutinee: front
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: push_reads,
+  parameters: [front : RustMemory::Cells, back : RustMemory::Cells, item : TargetSyntax::Value],
+  statement: ((readBuf (pushGrow (record RustMemory::Buf {slots := (RustMemory::append front back), len := (RustMemory::size front)}) item)) = (erasedPush (itemsOf front) item)),
+  proof: cases{
+    branches: [
+      {
+        proof: simplify{
+          definitions: [
+            append_nothing,
+            erasedPush,
+            first_of_snoc,
+            less_than_itself,
+            pushGrow,
+            put_into_blank,
+            readBuf,
+            RustLists::growBuf,
+            RustLists::keepOr,
+            RustLists::room_after_growth,
+            RustMemory::bufPush
+          ]
+        },
+        binders: [],
+        constructor: CNil
+      },
+      {
+        proof: simplify{
+          definitions: [erasedPush, first_of_snoc, pushGrow, readBuf, RustMemory::push_with_room]
+        },
+        binders: [slot, rest],
+        constructor: CCons
+      }
+    ],
+    scrutinee: back
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: new_reads,
+  parameters: [capacity : Nat, fill : TargetSyntax::Value],
+  statement: ((readBuf (record RustMemory::Buf {slots := (RustMemory::blank capacity fill), len := 0})) = (nil TargetSyntax::Value)),
+  proof: simplify{definitions: [firstOf, readBuf]},
+  axioms: [propext]
+}
+
+theorem{
+  name: truncate_reads,
+  parameters: [front : RustMemory::Cells, back : RustMemory::Cells, keep : Nat],
+  statement: ((readBuf (RustMemory::bufTruncate (record RustMemory::Buf {slots := (RustMemory::append front back), len := (RustMemory::size front)}) keep)) = (erasedTruncate (itemsOf front) keep)),
+  proof: simplify{definitions: [erasedTruncate, first_of_take, readBuf, RustMemory::bufTruncate]},
+  axioms: [propext]
+}
+
+theorem{
+  name: length_reads,
+  parameters: [front : RustMemory::Cells, back : RustMemory::Cells],
+  statement: ((erasedLength (readBuf (record RustMemory::Buf {slots := (RustMemory::append front back), len := (RustMemory::size front)}))) = (project (record RustMemory::Buf {slots := (RustMemory::append front back), len := (RustMemory::size front)}) len)),
+  proof: simplify{definitions: [erasedLength, first_of_front, length_of_items, readBuf]},
+  axioms: [propext]
+}
+
+theorem{
+  name: copy_reads,
+  parameters: [store : RustLists::Store, handle : RustLists::Handle],
+  statement: ((RustLists::absHandle store (shareCopy handle)) = (RustLists::absHandle store handle)),
+  proof: reflexivity{},
+  axioms: []
+}
+
+theorem{
+  name: copy_holds,
+  parameters: [address : Nat, spine : (List TargetSyntax::Value), more : Nat],
+  statement: ((RustLists::holds address (shareCopy (record RustLists::Handle {spine := spine, base := (ctor RustLists::Terminal.TRun address more)}))) = (ctor RustMemory::Flag.yes)),
+  proof: simplify{definitions: [shareCopy, RustLists::holder_on_own_buffer]},
+  axioms: [propext]
+}
+
+theorem{
+  name: copy_blocks,
+  parameters: [
+    address : Nat,
+    spine : (List TargetSyntax::Value),
+    more : Nat,
+    rest : (List RustLists::Handle)
+  ],
+  statement: ((RustLists::aloneOn address (cons (shareCopy (record RustLists::Handle {spine := spine, base := (ctor RustLists::Terminal.TRun address more)})) rest)) = (ctor RustMemory::Flag.no)),
+  proof: simplify{definitions: [shareCopy, RustLists::holder_blocks]},
+  axioms: [propext]
+}
+
+theorem{
+  name: alone_without_others,
+  parameters: [address : Nat],
+  statement: ((RustLists::aloneOn address (nil RustLists::Handle)) = (ctor RustMemory::Flag.yes)),
+  proof: simplify{definitions: [RustLists::aloneOn]},
+  axioms: [propext]
+}
+
+theorem{
+  name: replace_old_reads,
+  parameters: [store : RustLists::Store, place : RustLists::Handle, value : RustLists::Handle],
+  statement: ((RustLists::absHandle store (project (replaceHandle place value) old)) = (RustLists::absHandle store place)),
+  proof: simplify{definitions: [replaceHandle]},
+  axioms: [propext]
+}
+
+theorem{
+  name: replace_now_reads,
+  parameters: [store : RustLists::Store, place : RustLists::Handle, value : RustLists::Handle],
+  statement: ((RustLists::absHandle store (project (replaceHandle place value) now)) = (RustLists::absHandle store value)),
+  proof: simplify{definitions: [replaceHandle]},
+  axioms: [propext]
+}
+\end{semanticmodule}
+\end{lexlean}
