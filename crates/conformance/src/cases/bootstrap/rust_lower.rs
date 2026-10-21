@@ -8,17 +8,13 @@
 //! `check::check`, and the host composes the two roots, so a program the
 //! oracle refuses is not a vector of this root.
 
-use std::collections::BTreeMap;
-
 use lexlean::calculus::rust::{self};
-use lexlean::calculus::{
-    Adt, Arm, Expr, Function, Prim, Program, Shape, Ty, Value, PROGRAM_SPEC,
-};
+use lexlean::calculus::{Arm, Expr, Function, Prim, Program, Shape, Ty, Value};
 use serde_json::Value as Json;
 
 use super::calculus_check::{
-    committed, constant, literal_corpus, mutants, prim_corpus, program_arguments, program_of,
-    program_size, sample_tys, sample_values, shape_corpus, targeted, unit_expr, Source,
+    committed, literal_corpus, mutants, prim_corpus, program_arguments, program_of, program_size,
+    shape_corpus, targeted, Source,
 };
 use super::{bool_val as boolean, list, Run, Seeded};
 use crate::support;
@@ -165,16 +161,8 @@ fn analysis() -> Vec<Program> {
                     operands: vec![nat(1)],
                 },
             ),
-            function(
-                Vec::new(),
-                Ty::Nat,
-                call(2, vec![closure(1, Vec::new())]),
-            ),
-            function(
-                Vec::new(),
-                fun.clone(),
-                closure(0, Vec::new()),
-            ),
+            function(Vec::new(), Ty::Nat, call(2, vec![closure(1, Vec::new())])),
+            function(Vec::new(), fun.clone(), closure(0, Vec::new())),
             function(
                 vec![other.clone()],
                 Ty::Bool,
@@ -191,22 +179,14 @@ fn analysis() -> Vec<Program> {
                     value: Value::Bool { value: true },
                 },
             ),
-            function(
-                Vec::new(),
-                Ty::Bool,
-                call(5, vec![closure(6, Vec::new())]),
-            ),
+            function(Vec::new(), Ty::Bool, call(5, vec![closure(6, Vec::new())])),
         ],
     ));
     // A closure that captures, applied through a pair.
     out.push(program_of(
         Vec::new(),
         vec![
-            function(
-                vec![Ty::Nat, Ty::Nat],
-                Ty::Nat,
-                add(var(0), var(1)),
-            ),
+            function(vec![Ty::Nat, Ty::Nat], Ty::Nat, add(var(0), var(1))),
             function(
                 vec![Ty::Pair {
                     left: Box::new(fun.clone()),
@@ -420,23 +400,180 @@ fn analysis() -> Vec<Program> {
             ),
         ],
     ));
-    let _ = (constant, unit_expr, Adt { constructors: Vec::new() });
-    let _ = PROGRAM_SPEC;
     out
 }
 
-/// The vectors every host runs: the committed programs, the programs of the
-/// rules, the programs the other corpora of `BS-04` make, and the refusals
-/// that the oracle's checker does not make.
-fn vectors(sources: &[Source]) -> Vec<Run> {
+/// A program with its run: the oracle's Booleans, the arguments of the root.
+struct Vector {
+    nodes: usize,
+    run: Run,
+}
+
+fn vector(program: &Program) -> Option<Vector> {
+    run(program).map(|run| Vector {
+        nodes: program_size(program),
+        run,
+    })
+}
+
+/// The vectors every host runs: the programs of each rule, the programs
+/// `BS-04` makes (the refusals of `check` are no vector of this root), and the
+/// committed programs.
+fn vectors(sources: &[Source]) -> Vec<Vector> {
     let mut seeded = Seeded(0x00B5_0007);
     let mut programs: Vec<Program> = analysis();
     programs.extend(targeted());
-    programs.extend(literal_corpus(&mut seeded, 200));
-    programs.extend(prim_corpus(&mut seeded, 3));
+    programs.extend(literal_corpus(&mut seeded, LITERALS));
+    programs.extend(prim_corpus(&mut seeded, PRIM_ROUNDS));
     programs.extend(shape_corpus(&mut seeded));
     programs.extend(sources.iter().map(|source| source.program.clone()));
-    programs.iter().filter_map(run).collect()
+    programs.iter().filter_map(vector).collect()
+}
+
+/// `count` seeded mutants of the smaller committed programs that the oracle's
+/// checker still accepts.
+fn seeded_mutants(
+    sources: &[Source],
+    seeded: &mut Seeded,
+    count: usize,
+    limit: usize,
+) -> Vec<Vector> {
+    let mut out = Vec::new();
+    while out.len() < count {
+        let batch = mutants(sources, seeded, count - out.len(), limit);
+        out.extend(batch.iter().filter_map(vector));
+    }
+    out
+}
+
+fn runs(vectors: &[&Vector]) -> Vec<Run> {
+    vectors.iter().map(|vector| vector.run.clone()).collect()
+}
+
+// The counts SPEC.md §17.23, the register statement of BS-07, its scenario,
+// and VERIFICATION.md state: the case fails when the tree no longer gives them.
+const LITERALS: usize = 200;
+const PRIM_ROUNDS: usize = 3;
+/// The programs the evaluator is given in full: those of at most this many nodes.
+const EVALUATOR_NODES: usize = 300;
+/// Programs a mutation draws on, at most this many nodes.
+const BASE_NODES: usize = 150;
+const EVALUATOR_MUTANTS: usize = 150;
+const RUSTC_MUTANTS: usize = 1_500;
+
+/// A defect planted in the source and the corpus it is caught on.
+const PLANTS: [super::Plant; 10] = [
+    super::Plant {
+        label: "an addition of naturals does not fail",
+        site: "| CalculusCheck::Prim.NatAdd => true",
+        replacement: "| CalculusCheck::Prim.NatAdd => false",
+        root: "fallibleFunctions",
+    },
+    super::Plant {
+        label: "a successor does not fail",
+        site: "{field: own, value: true},",
+        replacement: "{field: own, value: false},",
+        root: "fallibleFunctions",
+    },
+    super::Plant {
+        label: "a parse of an integer does not fail",
+        site: "((CalculusCheck::tyTag target) =? 3)",
+        replacement: "false",
+        root: "fallibleFunctions",
+    },
+    super::Plant {
+        label: "a call is not an edge",
+        site: "(if (natMember (project inner calls) function) then (project inner calls) else (cons function (project inner calls)))",
+        replacement: "(project inner calls)",
+        root: "fallibleFunctions",
+    },
+    super::Plant {
+        label: "an application is not an edge",
+        site: "(tyAddNew (project two applies) (inferTy program target scope))",
+        replacement: "(project two applies)",
+        root: "fallibleFunctions",
+    },
+    super::Plant {
+        label: "the closures of a dead function count",
+        site: "} bodies 0 dead) closures)",
+        replacement: "} bodies 0 (nil Bool)) closures)",
+        root: "fallibleFunctions",
+    },
+    super::Plant {
+        label: "the failures are followed one round",
+        site: "(1 + count) (falses count) : ((List Bool) * Bool)",
+        replacement: "1 (falses count) : ((List Bool) * Bool)",
+        root: "fallibleFunctions",
+    },
+    super::Plant {
+        label: "a closure of any function type makes an application fail",
+        site: "(if (CalculusCheck::tyEq known fnTy) then (if (flagAt flags member)",
+        replacement: "(if true then (if (flagAt flags member)",
+        root: "fallibleFunctions",
+    },
+    super::Plant {
+        label: "no type holds itself",
+        site: "(anyHeld owner edges (inPlace known (ctor CalculusCheck::Ty.TNil) ty))",
+        replacement: "false",
+        root: "fallibleFunctions",
+    },
+    super::Plant {
+        label: "every function type is inhabited",
+        site: "| CalculusCheck::Ty.TFn parameters result => (tyMember inhabited ty)",
+        replacement: "| CalculusCheck::Ty.TFn parameters result => true",
+        root: "fallibleFunctions",
+    },
+];
+
+fn eligibility(project: &support::P) {
+    let built = project.build_ok();
+    let build_id = built.build_id.expect("built");
+    let report: Json = serde_json::from_slice(
+        &std::fs::read(
+            project
+                .build_dir(&build_id)
+                .join("production/LexLeanBoot/RustLower.eligibility.json")
+                .as_std_path(),
+        )
+        .expect("the eligibility report"),
+    )
+    .expect("the report is JSON");
+    let reported = report["roots"].as_array().expect("roots");
+    assert_eq!(
+        reported
+            .iter()
+            .map(|row| row["root"].as_str().expect("root").to_owned())
+            .collect::<Vec<_>>(),
+        ROOTS
+            .iter()
+            .map(|(root, _)| format!("{MODULE}.{root}"))
+            .collect::<Vec<_>>(),
+        "the roots are the module's production roots, in order"
+    );
+    for (row, (root, effects)) in reported.iter().zip(ROOTS) {
+        let declared: Vec<&str> = row["declared_effects"]
+            .as_array()
+            .expect("declared effects")
+            .iter()
+            .map(|effect| effect.as_str().expect("an effect"))
+            .collect();
+        assert_eq!(declared, effects, "{root}: the declared effects");
+        let targets = row["targets"].as_array().expect("targets");
+        assert_eq!(targets.len(), 1, "{root}: one target");
+        let target = &targets[0];
+        assert_eq!(target["target"], "rust-std", "{root}: the target");
+        assert_eq!(target["status"], "eligible", "{root}: eligible");
+        let realized: Vec<&str> = target["effects"]
+            .as_array()
+            .expect("effects")
+            .iter()
+            .map(|effect| effect["effect"].as_str().expect("an effect"))
+            .collect();
+        assert_eq!(
+            realized, effects,
+            "{root}: the declaration admits exactly the realized effects"
+        );
+    }
 }
 
 pub(super) fn case() {
@@ -448,27 +585,144 @@ pub(super) fn case() {
             && checked_units.units.contains_key("CalculusCheck"),
         "RustLower and CalculusCheck are linked modules of the project"
     );
+    eligibility(&project);
     let sources = committed();
-    let runs = vectors(&sources);
+    let all = vectors(&sources);
+    let evaluator: Vec<&Vector> = all
+        .iter()
+        .filter(|vector| vector.nodes <= EVALUATOR_NODES)
+        .collect();
+    let mut seeded = Seeded(0x00B5_0107);
+    let evaluator_mutants = seeded_mutants(&sources, &mut seeded, EVALUATOR_MUTANTS, BASE_NODES);
+    let mut large = Seeded(0x00B5_0207);
+    let rustc_mutants = seeded_mutants(&sources, &mut large, RUSTC_MUTANTS, BASE_NODES);
     eprintln!(
-        "BS-07: {} vectors, {} functions ({:?})",
-        runs.len(),
-        runs.iter()
-            .map(|(_, expected)| expected["items"].as_array().map_or(0, Vec::len))
-            .sum::<usize>(),
+        "BS-07: {} vectors ({} within {EVALUATOR_NODES} nodes), {} + {} mutants ({:?})",
+        all.len(),
+        evaluator.len(),
+        evaluator_mutants.len(),
+        rustc_mutants.len(),
         started.elapsed()
     );
     let checked = support::checked_project(&project);
     let root = super::lower(&checked, &project, MODULE, "fallibleFunctions");
-    let disagreements = super::evaluate(&root, &runs, 5);
-    assert!(disagreements.is_empty(), "{disagreements:?}");
-    let _ = (
-        BTreeMap::<u8, u8>::new(),
-        Json::Null,
-        program_size,
-        mutants,
-        sample_tys,
-        sample_values,
-        ROOTS,
+    let every: Vec<&Vector> = all.iter().collect();
+    // On every host: the rendered rust-std package, compiled by that host's
+    // pinned rustc, agrees with the oracle on the vectors.
+    super::rust_validate::rustc_differential(
+        "BS-07",
+        &[("fallibleFunctions", &root, &runs(&every))],
+        "vectors",
     );
+    if !support::normative_host() {
+        eprintln!("BS-07: platform-bound host: the evaluator, the seeded corpora, and the planted defects run on the normative host");
+        return;
+    }
+    let evaluated = runs(&evaluator);
+    let disagreements = super::evaluate(&root, &evaluated, 5);
+    assert!(
+        disagreements.is_empty(),
+        "the evaluator and the Rust analysis disagree on the vectors: {disagreements:?}"
+    );
+    eprintln!(
+        "BS-07: the evaluator agrees on {} vectors ({:?})",
+        evaluated.len(),
+        started.elapsed()
+    );
+    let mutated: Vec<&Vector> = evaluator_mutants.iter().collect();
+    let mutated_runs = runs(&mutated);
+    let disagreements = super::evaluate(&root, &mutated_runs, 5);
+    assert!(
+        disagreements.is_empty(),
+        "the evaluator and the Rust analysis disagree on the seeded mutants: {disagreements:?}"
+    );
+    eprintln!(
+        "BS-07: the evaluator agrees on {} seeded mutants ({:?})",
+        mutated_runs.len(),
+        started.elapsed()
+    );
+    let large: Vec<&Vector> = rustc_mutants.iter().collect();
+    super::rust_validate::rustc_differential(
+        "BS-07",
+        &[("fallibleFunctions", &root, &runs(&large))],
+        "seeded",
+    );
+    // The gate is armed: each defect planted in a copy of the source is a
+    // disagreement with the oracle.
+    let detection: Vec<Run> = evaluated.iter().chain(&mutated_runs).cloned().collect();
+    for plant in &PLANTS {
+        let planted = support::P::bootstrap();
+        let source = planted.read_raw("src/RustLower.lex.tex");
+        assert_eq!(
+            source.matches(plant.site).count(),
+            1,
+            "{}: the plant site occurs once",
+            plant.label
+        );
+        planted.write(
+            "src/RustLower.lex.tex",
+            &source.replacen(plant.site, plant.replacement, 1),
+        );
+        let checked = support::checked_project(&planted);
+        let low = super::lower(&checked, &planted, MODULE, plant.root);
+        let disagreements = super::evaluate(&low, &detection, 1);
+        assert!(
+            !disagreements.is_empty(),
+            "{}: the planted defect is detected by the differential",
+            plant.label
+        );
+        eprintln!(
+            "BS-07: plant detected: {}: {}",
+            plant.label, disagreements[0]
+        );
+    }
+    // Under the pinned Lean, the production export certifies the root; its
+    // package is the committed one and realizes the program the differential ran.
+    if !support::lean_backed("BS-07") {
+        return;
+    }
+    let exported = harness::exported("bootstrap");
+    let bundle = exported.bundle();
+    let packages = harness::tree(&bundle.join("packages"));
+    let committed_packages = harness::tree(&harness::fixture_dir("bootstrap").join("packages"));
+    assert_eq!(
+        packages.keys().collect::<Vec<_>>(),
+        committed_packages.keys().collect::<Vec<_>>(),
+        "the exported package files are the committed ones"
+    );
+    for (relative, content) in &packages {
+        assert!(
+            committed_packages.get(relative) == Some(content),
+            "packages/{relative} differs from the committed package"
+        );
+    }
+    let mut realized = 0usize;
+    for exported_root in &exported.output.result.roots {
+        let Some(member) = exported_root.root.strip_prefix(&format!("{MODULE}.")) else {
+            continue;
+        };
+        assert_eq!(member, "fallibleFunctions");
+        for output in &exported_root.outputs {
+            let package: Json = serde_json::from_slice(
+                &std::fs::read(
+                    bundle
+                        .join(&output.package.directory)
+                        .join("package.json")
+                        .as_std_path(),
+                )
+                .expect("package.json"),
+            )
+            .expect("package JSON");
+            assert_eq!(
+                package["program"],
+                serde_json::to_value(&root.program).expect("a program is JSON"),
+                "{member}: the exported package realizes the program the differential ran"
+            );
+            realized += 1;
+        }
+    }
+    assert_eq!(realized, ROOTS.len(), "one certified package per root");
+    eprintln!("BS-07: passed in {:?}", started.elapsed());
 }
+
+use crate::production_export as harness;

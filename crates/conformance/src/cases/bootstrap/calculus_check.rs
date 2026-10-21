@@ -2244,7 +2244,12 @@ fn rustc_differential(roots: &[(&str, &Lowered, &[Run])], label: &str) -> usize 
 const MODULE: &str = "LexLeanBoot.CalculusCheck";
 
 /// Mutants of the smaller committed programs: the mutation corpus.
-pub(super) fn mutants(sources: &[Source], seeded: &mut Seeded, count: usize, limit: usize) -> Vec<Program> {
+pub(super) fn mutants(
+    sources: &[Source],
+    seeded: &mut Seeded,
+    count: usize,
+    limit: usize,
+) -> Vec<Program> {
     let values = sample_values(seeded);
     let pool = sample_tys();
     let small: Vec<&Source> = sources

@@ -44,7 +44,11 @@ structure{
   name: Reach,
   type_parameters: [],
   parameters: [],
-  fields: [{name: own, type: Bool}, {name: calls, type: (List Nat)}, {name: applies, type: CalculusCheck::Ty}]
+  fields: [
+    {name: own, type: Bool},
+    {name: calls, type: (List Nat)},
+    {name: applies, type: CalculusCheck::Ty}
+  ]
 }
 
 definition{
@@ -186,7 +190,11 @@ definition{
 
 definition{
   name: inferTy,
-  parameters: [program : CalculusCheck::Program, expr : CalculusCheck::Expr, scope : (List (Nat * CalculusCheck::Ty))],
+  parameters: [
+    program : CalculusCheck::Program,
+    expr : CalculusCheck::Expr,
+    scope : (List (Nat * CalculusCheck::Ty))
+  ],
   result: CalculusCheck::Ty,
   body: (match (CalculusCheck::walk program expr scope 0 (ctor CalculusCheck::Ty.TNil) (ctor CalculusCheck::Ty.TNil) (prim utf8_encode "" : Bytes) 0 (nil CalculusCheck::Shape))
     | CalculusCheck::Outcome.OTyped found => found
@@ -199,7 +207,11 @@ definition{
 
 definition{
   name: armFields,
-  parameters: [program : CalculusCheck::Program, shape : CalculusCheck::Shape, subject : CalculusCheck::Ty],
+  parameters: [
+    program : CalculusCheck::Program,
+    shape : CalculusCheck::Shape,
+    subject : CalculusCheck::Ty
+  ],
   result: CalculusCheck::Ty,
   body: (match (CalculusCheck::shapeFields program shape subject)
     | Result.ok fields => fields
@@ -270,7 +282,12 @@ definition{
 
 definition{
   name: closAdd,
-  parameters: [closures : Clos, fnTy : CalculusCheck::Ty, function : Nat, captured : CalculusCheck::Ty],
+  parameters: [
+    closures : Clos,
+    fnTy : CalculusCheck::Ty,
+    function : Nat,
+    captured : CalculusCheck::Ty
+  ],
   result: Clos,
   body: (if (closHas closures fnTy function) then closures else (ctor Clos.ClCons fnTy function captured closures)),
   executable: true
@@ -289,17 +306,68 @@ definition{
 
 definition{
   name: collectTerm,
-  parameters: [program : CalculusCheck::Program, state : Collect, expr : CalculusCheck::Expr, scope : (List (Nat * CalculusCheck::Ty)), subject : CalculusCheck::Ty],
+  parameters: [
+    program : CalculusCheck::Program,
+    state : Collect,
+    expr : CalculusCheck::Expr,
+    scope : (List (Nat * CalculusCheck::Ty)),
+    subject : CalculusCheck::Ty
+  ],
   result: Collect,
   body: (match expr
-    | CalculusCheck::Expr.EValue ty value => (record Collect [] {known := (register (project state known) ty), closures := (project state closures)})
+    | CalculusCheck::Expr.EValue ty value => record{
+      type: Collect,
+      fields: [
+        {field: known, value: (register (project state known) ty)},
+        {field: closures, value: (project state closures)}
+      ],
+      type_arguments: []
+    }
     | CalculusCheck::Expr.EVar name => state
-    | CalculusCheck::Expr.ELet name ty bound body => (let registered : Collect := (record Collect [] {known := (register (project state known) ty), closures := (project state closures)}); (let inner : Collect := (collectTerm program registered bound scope (ctor CalculusCheck::Ty.TNil)); (collectTerm program inner body (CalculusCheck::extendScope name ty scope) (ctor CalculusCheck::Ty.TNil))))
+    | CalculusCheck::Expr.ELet name ty bound body => (let registered : Collect := record{
+      type: Collect,
+      fields: [
+        {field: known, value: (register (project state known) ty)},
+        {field: closures, value: (project state closures)}
+      ],
+      type_arguments: []
+    }; (let inner : Collect := (collectTerm program registered bound scope (ctor CalculusCheck::Ty.TNil)); (collectTerm program inner body (CalculusCheck::extendScope name ty scope) (ctor CalculusCheck::Ty.TNil))))
     | CalculusCheck::Expr.ECond condition thenBranch elseBranch => (let one : Collect := (collectTerm program state condition scope (ctor CalculusCheck::Ty.TNil)); (let two : Collect := (collectTerm program one thenBranch scope (ctor CalculusCheck::Ty.TNil)); (collectTerm program two elseBranch scope (ctor CalculusCheck::Ty.TNil))))
-    | CalculusCheck::Expr.EMatch ty scrutinee arms => (let registered : Collect := (record Collect [] {known := (register (project state known) ty), closures := (project state closures)}); (let inner : Collect := (collectTerm program registered scrutinee scope (ctor CalculusCheck::Ty.TNil)); (collectTerm program inner arms scope (inferTy program scrutinee scope))))
-    | CalculusCheck::Expr.EBuild shape ty operands => (let registered : Collect := (record Collect [] {known := (register (project state known) ty), closures := (project state closures)}); (collectTerm program registered operands scope (ctor CalculusCheck::Ty.TNil)))
+    | CalculusCheck::Expr.EMatch ty scrutinee arms => (let registered : Collect := record{
+      type: Collect,
+      fields: [
+        {field: known, value: (register (project state known) ty)},
+        {field: closures, value: (project state closures)}
+      ],
+      type_arguments: []
+    }; (let inner : Collect := (collectTerm program registered scrutinee scope (ctor CalculusCheck::Ty.TNil)); (collectTerm program inner arms scope (inferTy program scrutinee scope))))
+    | CalculusCheck::Expr.EBuild shape ty operands => (let registered : Collect := record{
+      type: Collect,
+      fields: [
+        {field: known, value: (register (project state known) ty)},
+        {field: closures, value: (project state closures)}
+      ],
+      type_arguments: []
+    }; (collectTerm program registered operands scope (ctor CalculusCheck::Ty.TNil)))
     | CalculusCheck::Expr.ECall function operands => (collectTerm program state operands scope (ctor CalculusCheck::Ty.TNil))
-    | CalculusCheck::Expr.EClosure function captures => (let inner : Collect := (collectTerm program state captures scope (ctor CalculusCheck::Ty.TNil)); (let declared : CalculusCheck::Ty := (CalculusCheck::functionTypesOr program function); (let count : Nat := (CalculusCheck::exprChainLength captures); (let closureType : CalculusCheck::Ty := (ctor CalculusCheck::Ty.TFn (tyDrop declared count) (CalculusCheck::functionResult program function)); (let registered : Collect := (record Collect [] {known := (register (project inner known) closureType), closures := (project inner closures)}); (record Collect [] {known := (project registered known), closures := (closAdd (project registered closures) closureType function (tyTake declared count))}))))))
+    | CalculusCheck::Expr.EClosure function captures => (let inner : Collect := (collectTerm program state captures scope (ctor CalculusCheck::Ty.TNil)); (let declared : CalculusCheck::Ty := (CalculusCheck::functionTypesOr program function); (let count : Nat := (CalculusCheck::exprChainLength captures); (let closureType : CalculusCheck::Ty := (ctor CalculusCheck::Ty.TFn (tyDrop declared count) (CalculusCheck::functionResult program function)); (let registered : Collect := record{
+      type: Collect,
+      fields: [
+        {field: known, value: (register (project inner known) closureType)},
+        {field: closures, value: (project inner closures)}
+      ],
+      type_arguments: []
+    }; record{
+      type: Collect,
+      fields: [
+        {field: known, value: (project registered known)},
+        {
+          field: closures,
+          value: (closAdd (project registered closures) closureType function (tyTake declared count))
+        }
+      ],
+      type_arguments: []
+    })))))
     | CalculusCheck::Expr.EApply target operands => (let inner : Collect := (collectTerm program state target scope (ctor CalculusCheck::Ty.TNil)); (collectTerm program inner operands scope (ctor CalculusCheck::Ty.TNil)))
     | CalculusCheck::Expr.EPrim operation operands => (collectTerm program state operands scope (ctor CalculusCheck::Ty.TNil))
     | CalculusCheck::Expr.EFirst value => (collectTerm program state value scope (ctor CalculusCheck::Ty.TNil))
@@ -315,7 +383,13 @@ definition{
 
 definition{
   name: collectFunctions,
-  parameters: [program : CalculusCheck::Program, state : Collect, bodies : CalculusCheck::Expr, index : Nat, dead : (List Bool)],
+  parameters: [
+    program : CalculusCheck::Program,
+    state : Collect,
+    bodies : CalculusCheck::Expr,
+    index : Nat,
+    dead : (List Bool)
+  ],
   result: Collect,
   body: (match bodies
     | CalculusCheck::Expr.EValue d0 d1 => state
@@ -354,7 +428,13 @@ definition{
 
 definition{
   name: reachTerm,
-  parameters: [program : CalculusCheck::Program, found : Reach, expr : CalculusCheck::Expr, scope : (List (Nat * CalculusCheck::Ty)), subject : CalculusCheck::Ty],
+  parameters: [
+    program : CalculusCheck::Program,
+    found : Reach,
+    expr : CalculusCheck::Expr,
+    scope : (List (Nat * CalculusCheck::Ty)),
+    subject : CalculusCheck::Ty
+  ],
   result: Reach,
   body: (match expr
     | CalculusCheck::Expr.EValue ty value => found
@@ -363,7 +443,15 @@ definition{
     | CalculusCheck::Expr.ECond condition thenBranch elseBranch => (let one : Reach := (reachTerm program found condition scope (ctor CalculusCheck::Ty.TNil)); (let two : Reach := (reachTerm program one thenBranch scope (ctor CalculusCheck::Ty.TNil)); (reachTerm program two elseBranch scope (ctor CalculusCheck::Ty.TNil))))
     | CalculusCheck::Expr.EMatch ty scrutinee arms => (let inner : Reach := (reachTerm program found scrutinee scope (ctor CalculusCheck::Ty.TNil)); (reachTerm program inner arms scope (inferTy program scrutinee scope)))
     | CalculusCheck::Expr.EBuild shape ty operands => (let inner : Reach := (reachTerm program found operands scope (ctor CalculusCheck::Ty.TNil)); (match shape
-      | CalculusCheck::Shape.SSucc => (record Reach [] {own := true, calls := (project inner calls), applies := (project inner applies)})
+      | CalculusCheck::Shape.SSucc => record{
+        type: Reach,
+        fields: [
+          {field: own, value: true},
+          {field: calls, value: (project inner calls)},
+          {field: applies, value: (project inner applies)}
+        ],
+        type_arguments: []
+      }
       | CalculusCheck::Shape.SNone => inner
       | CalculusCheck::Shape.SSome => inner
       | CalculusCheck::Shape.SOk => inner
@@ -379,10 +467,37 @@ definition{
       | CalculusCheck::Shape.SEq => inner
       | CalculusCheck::Shape.SGt => inner
       | CalculusCheck::Shape.SAdt d0 => inner))
-    | CalculusCheck::Expr.ECall function operands => (let inner : Reach := (reachTerm program found operands scope (ctor CalculusCheck::Ty.TNil)); (record Reach [] {own := (project inner own), calls := (if (natMember (project inner calls) function) then (project inner calls) else (cons function (project inner calls))), applies := (project inner applies)}))
+    | CalculusCheck::Expr.ECall function operands => (let inner : Reach := (reachTerm program found operands scope (ctor CalculusCheck::Ty.TNil)); record{
+      type: Reach,
+      fields: [
+        {field: own, value: (project inner own)},
+        {
+          field: calls,
+          value: (if (natMember (project inner calls) function) then (project inner calls) else (cons function (project inner calls)))
+        },
+        {field: applies, value: (project inner applies)}
+      ],
+      type_arguments: []
+    })
     | CalculusCheck::Expr.EClosure function captures => (reachTerm program found captures scope (ctor CalculusCheck::Ty.TNil))
-    | CalculusCheck::Expr.EApply target operands => (let one : Reach := (reachTerm program found target scope (ctor CalculusCheck::Ty.TNil)); (let two : Reach := (reachTerm program one operands scope (ctor CalculusCheck::Ty.TNil)); (record Reach [] {own := (project two own), calls := (project two calls), applies := (tyAddNew (project two applies) (inferTy program target scope))})))
-    | CalculusCheck::Expr.EPrim operation operands => (let inner : Reach := (reachTerm program found operands scope (ctor CalculusCheck::Ty.TNil)); (record Reach [] {own := (if (project inner own) then true else (primFails operation)), calls := (project inner calls), applies := (project inner applies)}))
+    | CalculusCheck::Expr.EApply target operands => (let one : Reach := (reachTerm program found target scope (ctor CalculusCheck::Ty.TNil)); (let two : Reach := (reachTerm program one operands scope (ctor CalculusCheck::Ty.TNil)); record{
+      type: Reach,
+      fields: [
+        {field: own, value: (project two own)},
+        {field: calls, value: (project two calls)},
+        {field: applies, value: (tyAddNew (project two applies) (inferTy program target scope))}
+      ],
+      type_arguments: []
+    }))
+    | CalculusCheck::Expr.EPrim operation operands => (let inner : Reach := (reachTerm program found operands scope (ctor CalculusCheck::Ty.TNil)); record{
+      type: Reach,
+      fields: [
+        {field: own, value: (if (project inner own) then true else (primFails operation))},
+        {field: calls, value: (project inner calls)},
+        {field: applies, value: (project inner applies)}
+      ],
+      type_arguments: []
+    })
     | CalculusCheck::Expr.EFirst value => (reachTerm program found value scope (ctor CalculusCheck::Ty.TNil))
     | CalculusCheck::Expr.ESecond value => (reachTerm program found value scope (ctor CalculusCheck::Ty.TNil))
     | CalculusCheck::Expr.EField value index => (reachTerm program found value scope (ctor CalculusCheck::Ty.TNil))
@@ -413,7 +528,15 @@ definition{
     | CalculusCheck::Expr.ESecond d0 => (ctor Facts.FactsNil)
     | CalculusCheck::Expr.EField d0 d1 => (ctor Facts.FactsNil)
     | CalculusCheck::Expr.ENil => (ctor Facts.FactsNil)
-    | CalculusCheck::Expr.ECons body rest => (let found : Reach := (reachTerm program (record Reach [] {own := false, calls := (nil Nat), applies := (ctor CalculusCheck::Ty.TNil)}) body (CalculusCheck::bindAll (CalculusCheck::functionNames program index) (CalculusCheck::functionTypesOr program index) (nil (Nat * CalculusCheck::Ty))) (ctor CalculusCheck::Ty.TNil)); (ctor Facts.FactsCons (project found own) (project found calls) (project found applies) (reachFunctions program rest (index + 1))))
+    | CalculusCheck::Expr.ECons body rest => (let found : Reach := (reachTerm program record{
+      type: Reach,
+      fields: [
+        {field: own, value: false},
+        {field: calls, value: (nil Nat)},
+        {field: applies, value: (ctor CalculusCheck::Ty.TNil)}
+      ],
+      type_arguments: []
+    } body (CalculusCheck::bindAll (CalculusCheck::functionNames program index) (CalculusCheck::functionTypesOr program index) (nil (Nat * CalculusCheck::Ty))) (ctor CalculusCheck::Ty.TNil)); (ctor Facts.FactsCons (project found own) (project found calls) (project found applies) (reachFunctions program rest (index + 1))))
     | CalculusCheck::Expr.EArm d0 d1 d2 => (ctor Facts.FactsNil)),
   axioms: [Quot.sound, propext],
   executable: true,
@@ -513,7 +636,12 @@ definition{
 
 definition{
   name: edgesOfFields,
-  parameters: [known : CalculusCheck::Ty, owner : CalculusCheck::Ty, fields : CalculusCheck::Ty, edges : Edges],
+  parameters: [
+    known : CalculusCheck::Ty,
+    owner : CalculusCheck::Ty,
+    fields : CalculusCheck::Ty,
+    edges : Edges
+  ],
   result: Edges,
   body: (match fields
     | CalculusCheck::Ty.TUnit => edges
@@ -538,7 +666,12 @@ definition{
 
 definition{
   name: edgesOfVariants,
-  parameters: [known : CalculusCheck::Ty, owner : CalculusCheck::Ty, variants : CalculusCheck::Ty, edges : Edges],
+  parameters: [
+    known : CalculusCheck::Ty,
+    owner : CalculusCheck::Ty,
+    variants : CalculusCheck::Ty,
+    edges : Edges
+  ],
   result: Edges,
   body: (match variants
     | CalculusCheck::Ty.TUnit => edges
@@ -589,7 +722,13 @@ definition{
 
 definition{
   name: allEdges,
-  parameters: [program : CalculusCheck::Program, known : CalculusCheck::Ty, closures : Clos, owners : CalculusCheck::Ty, edges : Edges],
+  parameters: [
+    program : CalculusCheck::Program,
+    known : CalculusCheck::Ty,
+    closures : Clos,
+    owners : CalculusCheck::Ty,
+    edges : Edges
+  ],
   result: Edges,
   body: (match owners
     | CalculusCheck::Ty.TUnit => edges
@@ -702,7 +841,12 @@ definition{
 
 definition{
   name: cyclic,
-  parameters: [known : CalculusCheck::Ty, edges : Edges, owner : CalculusCheck::Ty, ty : CalculusCheck::Ty],
+  parameters: [
+    known : CalculusCheck::Ty,
+    edges : Edges,
+    owner : CalculusCheck::Ty,
+    ty : CalculusCheck::Ty
+  ],
   result: Bool,
   body: (anyHeld owner edges (inPlace known (ctor CalculusCheck::Ty.TNil) ty)),
   executable: true
@@ -710,7 +854,13 @@ definition{
 
 definition{
   name: fieldsOk,
-  parameters: [known : CalculusCheck::Ty, edges : Edges, inhabited : CalculusCheck::Ty, owner : CalculusCheck::Ty, fields : CalculusCheck::Ty],
+  parameters: [
+    known : CalculusCheck::Ty,
+    edges : Edges,
+    inhabited : CalculusCheck::Ty,
+    owner : CalculusCheck::Ty,
+    fields : CalculusCheck::Ty
+  ],
   result: Bool,
   body: (match fields
     | CalculusCheck::Ty.TUnit => true
@@ -735,7 +885,13 @@ definition{
 
 definition{
   name: someVariantOk,
-  parameters: [known : CalculusCheck::Ty, edges : Edges, inhabited : CalculusCheck::Ty, owner : CalculusCheck::Ty, variants : CalculusCheck::Ty],
+  parameters: [
+    known : CalculusCheck::Ty,
+    edges : Edges,
+    inhabited : CalculusCheck::Ty,
+    owner : CalculusCheck::Ty,
+    variants : CalculusCheck::Ty
+  ],
   result: Bool,
   body: (match variants
     | CalculusCheck::Ty.TUnit => false
@@ -760,7 +916,14 @@ definition{
 
 definition{
   name: inhabitRound,
-  parameters: [program : CalculusCheck::Program, known : CalculusCheck::Ty, closures : Clos, edges : Edges, owners : CalculusCheck::Ty, inhabited : CalculusCheck::Ty],
+  parameters: [
+    program : CalculusCheck::Program,
+    known : CalculusCheck::Ty,
+    closures : Clos,
+    edges : Edges,
+    owners : CalculusCheck::Ty,
+    inhabited : CalculusCheck::Ty
+  ],
   result: CalculusCheck::Ty,
   body: (match owners
     | CalculusCheck::Ty.TUnit => inhabited
@@ -785,7 +948,14 @@ definition{
 
 definition{
   name: inhabitStep,
-  parameters: [program : CalculusCheck::Program, known : CalculusCheck::Ty, closures : Clos, edges : Edges, owners : CalculusCheck::Ty, inhabited : CalculusCheck::Ty],
+  parameters: [
+    program : CalculusCheck::Program,
+    known : CalculusCheck::Ty,
+    closures : Clos,
+    edges : Edges,
+    owners : CalculusCheck::Ty,
+    inhabited : CalculusCheck::Ty
+  ],
   result: (Option CalculusCheck::Ty),
   body: (let next : CalculusCheck::Ty := (inhabitRound program known closures edges owners inhabited); (if ((CalculusCheck::tyChainLength next) =? (CalculusCheck::tyChainLength inhabited)) then (ctor Option.none [CalculusCheck::Ty]) else (ctor Option.some [CalculusCheck::Ty] next))),
   executable: true
@@ -793,7 +963,13 @@ definition{
 
 definition{
   name: inhabitation,
-  parameters: [program : CalculusCheck::Program, known : CalculusCheck::Ty, closures : Clos, edges : Edges, owners : CalculusCheck::Ty],
+  parameters: [
+    program : CalculusCheck::Program,
+    known : CalculusCheck::Ty,
+    closures : Clos,
+    edges : Edges,
+    owners : CalculusCheck::Ty
+  ],
   result: CalculusCheck::Ty,
   body: (first (prim iterate_until (fun [closures, edges, known, owners, program] (inhabited : CalculusCheck::Ty) => (inhabitStep program known closures edges owners inhabited)) (1 + (CalculusCheck::tyChainLength owners)) (ctor CalculusCheck::Ty.TNil) : (CalculusCheck::Ty * Bool))),
   executable: true
@@ -854,12 +1030,10 @@ definition{
   parameters: [left : (List Bool), right : (List Bool)],
   result: Bool,
   body: (match left
-    | List.nil => (match right
-        | List.nil => true
-        | List.cons rh rt => false)
+    | List.nil => (match right | List.nil => true | List.cons rh rt => false)
     | List.cons lh lt => (match right
-        | List.nil => false
-        | List.cons rh rt => (if (prim equal lh rh : Bool) then (boolsEq lt rt) else false))),
+      | List.nil => false
+      | List.cons rh rt => (if (prim equal lh rh : Bool) then (boolsEq lt rt) else false))),
   executable: true,
   recursive_argument: left
 }
@@ -873,9 +1047,30 @@ structure{
 
 definition{
   name: livenessStep,
-  parameters: [program : CalculusCheck::Program, bodies : CalculusCheck::Expr, known : CalculusCheck::Ty, edges : Edges, owners : CalculusCheck::Ty, state : Liveness],
+  parameters: [
+    program : CalculusCheck::Program,
+    bodies : CalculusCheck::Expr,
+    known : CalculusCheck::Ty,
+    edges : Edges,
+    owners : CalculusCheck::Ty,
+    state : Liveness
+  ],
   result: (Option Liveness),
-  body: (let inhabited : CalculusCheck::Ty := (inhabitation program known (project state closures) edges owners); (let dead : (List Bool) := (deadFlags (project program types) inhabited); (if (boolsEq dead (project state dead)) then (ctor Option.none [Liveness]) else (ctor Option.some [Liveness] (record Liveness [] {dead := dead, closures := (project (collectFunctions program (record Collect [] {known := known, closures := (ctor Clos.ClNil)}) bodies 0 dead) closures)}))))),
+  body: (let inhabited : CalculusCheck::Ty := (inhabitation program known (project state closures) edges owners); (let dead : (List Bool) := (deadFlags (project program types) inhabited); (if (boolsEq dead (project state dead)) then (ctor Option.none [Liveness]) else (ctor Option.some [Liveness] record{
+    type: Liveness,
+    fields: [
+      {field: dead, value: dead},
+      {
+        field: closures,
+        value: (project (collectFunctions program record{
+          type: Collect,
+          fields: [{field: known, value: known}, {field: closures, value: (ctor Clos.ClNil)}],
+          type_arguments: []
+        } bodies 0 dead) closures)
+      }
+    ],
+    type_arguments: []
+  })))),
   axioms: [Quot.sound, propext],
   executable: true
 }
@@ -969,9 +1164,27 @@ definition{
 
 definition{
   name: fallibleFunctions,
-  parameters: [spec : Bytes, adts : CalculusCheck::Ty, parameters : (List (List Nat)), types : CalculusCheck::Ty, results : CalculusCheck::Ty, bodies : CalculusCheck::Expr],
+  parameters: [
+    spec : Bytes,
+    adts : CalculusCheck::Ty,
+    parameters : (List (List Nat)),
+    types : CalculusCheck::Ty,
+    results : CalculusCheck::Ty,
+    bodies : CalculusCheck::Expr
+  ],
   result: (List Bool),
-  body: (let program : CalculusCheck::Program := (record CalculusCheck::Program {spec := spec, adts := adts, parameters := parameters, types := types, results := results, bodies := bodies}); (let count : Nat := (CalculusCheck::exprChainLength bodies); (let registered : CalculusCheck::Ty := (register (register (register (ctor CalculusCheck::Ty.TNil) types) results) adts); (let initial : Collect := (collectFunctions program (record Collect [] {known := registered, closures := (ctor Clos.ClNil)}) bodies 0 (nil Bool)); (let known : CalculusCheck::Ty := (project initial known); (let owners : CalculusCheck::Ty := (tyAppend (adtOwners (CalculusCheck::tyChainLength adts)) known); (let direct : Edges := (allEdges program known (project initial closures) owners (ctor Edges.EdgeNil)); (let edges : Edges := (closeEdges direct (1 + (prim multiply (CalculusCheck::tyChainLength owners) (CalculusCheck::tyChainLength owners) : Nat))); (let live : Liveness := (first (prim iterate_until (fun [bodies, edges, known, owners, program] (state : Liveness) => (livenessStep program bodies known edges owners state)) (1 + count) (record Liveness [] {dead := (falses count), closures := (project initial closures)}) : (Liveness * Bool))); (let facts : Facts := (reachFunctions program bodies 0); (first (prim iterate_until (fun [facts, live] (flags : (List Bool)) => (failNext facts (project live closures) flags)) (1 + count) (falses count) : ((List Bool) * Bool))))))))))))),
+  body: (let program : CalculusCheck::Program := (record CalculusCheck::Program {spec := spec, adts := adts, parameters := parameters, types := types, results := results, bodies := bodies}); (let count : Nat := (CalculusCheck::exprChainLength bodies); (let registered : CalculusCheck::Ty := (register (register (register (ctor CalculusCheck::Ty.TNil) types) results) adts); (let initial : Collect := (collectFunctions program record{
+    type: Collect,
+    fields: [{field: known, value: registered}, {field: closures, value: (ctor Clos.ClNil)}],
+    type_arguments: []
+  } bodies 0 (nil Bool)); (let known : CalculusCheck::Ty := (project initial known); (let owners : CalculusCheck::Ty := (tyAppend (adtOwners (CalculusCheck::tyChainLength adts)) known); (let direct : Edges := (allEdges program known (project initial closures) owners (ctor Edges.EdgeNil)); (let edges : Edges := (closeEdges direct (1 + (prim multiply (CalculusCheck::tyChainLength owners) (CalculusCheck::tyChainLength owners) : Nat))); (let live : Liveness := (first (prim iterate_until (fun [bodies, edges, known, owners, program] (state : Liveness) => (livenessStep program bodies known edges owners state)) (1 + count) record{
+    type: Liveness,
+    fields: [
+      {field: dead, value: (falses count)},
+      {field: closures, value: (project initial closures)}
+    ],
+    type_arguments: []
+  } : (Liveness * Bool))); (let facts : Facts := (reachFunctions program bodies 0); (first (prim iterate_until (fun [facts, live] (flags : (List Bool)) => (failNext facts (project live closures) flags)) (1 + count) (falses count) : ((List Bool) * Bool))))))))))))),
   axioms: [Quot.sound, propext],
   executable: true,
   production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
