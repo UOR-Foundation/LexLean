@@ -1427,6 +1427,16 @@ pub(crate) fn run(id: &str) {
             // discriminator and builtin versions, fails in linking.
             let eleven = P::language_1_2_example();
             eleven.edit("lexlean.toml", "language = \"1.2\"", "language = \"1.1\"");
+            eleven.edit(
+                "glossary/languagetwelve.titles/lexicon.toml",
+                "language = \"1.2\"",
+                "language = \"1.1\"",
+            );
+            eleven.edit(
+                "glossary/languagetwelve.titles/lexicon.toml",
+                "\"lexlean.core@1.2.0\", \"lexlean.std.nat@1.2.0\"",
+                "\"lexlean.core@1.1.0\", \"lexlean.std.nat@1.1.0\"",
+            );
             eleven.edit("src/Main.lex.tex", "@1.2.0", "@1.1.0");
             eleven.edit(
                 "src/Main.lex.tex",
@@ -1488,6 +1498,16 @@ pub(crate) fn run(id: &str) {
             // A language-1.0 document has no semantic module at all.
             let ten = P::language_1_2_example();
             ten.edit("lexlean.toml", "language = \"1.2\"", "language = \"1.0\"");
+            ten.edit(
+                "glossary/languagetwelve.titles/lexicon.toml",
+                "language = \"1.2\"",
+                "language = \"1.0\"",
+            );
+            ten.edit(
+                "glossary/languagetwelve.titles/lexicon.toml",
+                "\"lexlean.core@1.2.0\", \"lexlean.std.nat@1.2.0\"",
+                "\"lexlean.core@1.0.0\", \"lexlean.std.nat@1.0.0\"",
+            );
             ten.edit("src/Main.lex.tex", "@1.2.0", "@1.0.0");
             ten.relock();
             let error = ten.check_fails_with("LLP2003");
