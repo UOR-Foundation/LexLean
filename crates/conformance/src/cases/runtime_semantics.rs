@@ -51,7 +51,11 @@ fn key_names() -> Vec<String> {
         .iter()
         .map(|t| {
             let mut chars = t.chars();
-            let first = chars.next().expect("a name").to_uppercase().collect::<String>();
+            let first = chars
+                .next()
+                .expect("a name")
+                .to_uppercase()
+                .collect::<String>();
             format!("RuntimeKeys{first}{}", chars.as_str())
         })
         .collect()
@@ -126,7 +130,11 @@ fn complete(texts: &[&str]) -> Result<(), String> {
         ));
     }
     for (name, statement) in &stated {
-        let function = if name.starts_with("equal_") { "equal" } else { "compare" };
+        let function = if name.starts_with("equal_") {
+            "equal"
+        } else {
+            "compare"
+        };
         if !statement.contains(&format!("\"value\":\"{function}\""))
             || statement.matches(&format!("Prim.{function}")).count() != 1
         {
@@ -190,13 +198,19 @@ fn check(id: &str) {
     let mut without = keys.clone();
     without[1] = format!("{}{}", &key[..start], &key[end..]);
     let error = all(&text, &without).expect_err("a value without a theorem");
-    assert!(error.contains(&format!("missing [\"{dropped}\"]")), "{error}");
+    assert!(
+        error.contains(&format!("missing [\"{dropped}\"]")),
+        "{error}"
+    );
     let block = &key[start..end];
     let mut other = keys.clone();
     other[1] = key.replacen(block, &block.replace("Prim.compare", "Prim.equal"), 1);
     assert_ne!(other[1], *key, "the plant site exists");
     let error = all(&text, &other).expect_err("a theorem that states another primitive");
-    assert!(error.contains(&format!("`{dropped}` does not state")), "{error}");
+    assert!(
+        error.contains(&format!("`{dropped}` does not state")),
+        "{error}"
+    );
 
     if !support::lean_backed("SP-25") {
         return;
@@ -205,7 +219,12 @@ fn check(id: &str) {
     // states, each module apart.
     let names = key_names();
     let mut modules: Vec<(&str, &str)> = vec![("RuntimeSupport", text.as_str())];
-    modules.extend(names.iter().map(String::as_str).zip(keys.iter().map(String::as_str)));
+    modules.extend(
+        names
+            .iter()
+            .map(String::as_str)
+            .zip(keys.iter().map(String::as_str)),
+    );
     let mut imported = IMPORTED.to_vec();
     imported.extend(names.iter().map(String::as_str));
     let accepted = project_of(&modules, &imported);
@@ -224,7 +243,11 @@ fn check(id: &str) {
     let missing = text.replacen(key_of_u8, "\"Key\") (ctor RuntimeSyntax::RtType.bool)", 1);
     assert_ne!(missing, text, "the plant site exists");
     for (what, planted, kept) in [
-        ("an impl that returns another result", reversed, "compare_bool"),
+        (
+            "an impl that returns another result",
+            reversed,
+            "compare_bool",
+        ),
         ("an impl that is missing", missing, "compare_u8"),
     ] {
         let kept_text = keeping(&planted, kept);

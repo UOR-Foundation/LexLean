@@ -94,8 +94,14 @@ pub fn run(id: &str) {
     assert_eq!(ran.lines().last(), Some("runtime"));
     // The nested-key corpus is measured: how many of its comparisons the
     // depth-three keys decide as less, equal, and greater.
-    let nested = ran.lines().find(|line| line.starts_with("nested")).expect("the tally");
-    eprintln!("RB-17: {nested} over {} depth-three comparisons", 2 * NESTED);
+    let nested = ran
+        .lines()
+        .find(|line| line.starts_with("nested"))
+        .expect("the tally");
+    eprintln!(
+        "RB-17: {nested} over {} depth-three comparisons",
+        2 * NESTED
+    );
     assert!(
         !nested.contains(" 0,") && !nested.contains(" 0]"),
         "the corpus decides every order: {nested}"

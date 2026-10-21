@@ -252,14 +252,23 @@ fn check(id: &str) {
     let stray = text.replacen("\"nat_add\"", "\"nat_addd\"", 1);
     assert_ne!(stray, text, "the plant site exists");
     let error = held(&stray, &support_text, &keys).expect_err("a function that is no item");
-    assert!(error.contains("`nat_addd` is an authored function"), "{error}");
+    assert!(
+        error.contains("`nat_addd` is an authored function"),
+        "{error}"
+    );
     let alien = support_text.replacen("name := \"tick\"", "name := \"frobnicate\"", 1);
     assert_ne!(alien, support_text, "the plant site exists");
     let error = held(&text, &alien, &keys).expect_err("a support function in neither set");
-    assert!(error.contains("`frobnicate` is an authored item in neither"), "{error}");
+    assert!(
+        error.contains("`frobnicate` is an authored item in neither"),
+        "{error}"
+    );
     let bare = support_text.replace("name: equal_", "name: sameness_");
     let error = held(&text, &bare, &keys).expect_err("a trait function without theorems");
-    assert!(error.contains("`equal` is an authored item in neither"), "{error}");
+    assert!(
+        error.contains("`equal` is an authored item in neither"),
+        "{error}"
+    );
 
     // A theorem for another function, a function without one, and a theorem
     // that runs another function than its name says are each refused.
