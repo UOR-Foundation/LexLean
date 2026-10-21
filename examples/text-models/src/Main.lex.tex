@@ -1,0 +1,333 @@
+\begin{lexlean}{Main}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.TextModels}
+\title{Natural number addition}
+\begin{semanticmodule}
+artifact{
+  name: pieces,
+  type: (List String),
+  axioms: [Classical.choice, Quot.sound, propext],
+  length: 25,
+  role: vocabulary,
+  schema: utf8_lines{},
+  sha256: c2a671b13cf191d6570a3a59b6b8b016ecf2ae5d5d80f247756f5887f67eb8bd
+}
+
+tokenizer{
+  name: Words,
+  axioms: [Classical.choice, Quot.sound, propext],
+  scheme: longest_match,
+  vocabulary: {member: pieces}
+}
+
+tokenizer{
+  name: Raw,
+  axioms: [Classical.choice, Quot.sound, propext],
+  scheme: byte_level,
+  vocabulary: {member: pieces}
+}
+
+context_window{name: Recent, axioms: [Quot.sound, propext], capacity: 6, overflow: keep_last}
+
+context_window{name: Strict, capacity: 6, overflow: refuse}
+
+definition{
+  name: padZeros,
+  parameters: [count : Nat, rest : (List Int)],
+  result: (List Int),
+  body: (match count
+    | Nat.zero => rest
+    | Nat.succ previous => (cons (0 : Int) (padZeros previous rest))),
+  executable: true,
+  recursive_argument: count
+}
+
+definition{
+  name: weights,
+  parameters: [],
+  result: (List Int),
+  body: (padZeros 256 (cons (5 : Int) (cons (4 : Int) (cons (3 : Int) (cons (2 : Int) (cons (6 : Int) (cons (1 : Int) (nil Int)))))))),
+  executable: true
+}
+
+definition{
+  name: FavorWidth,
+  parameters: [context : (List UInt32), scores : (List Int)],
+  result: Prop,
+  body: ((prim length scores : Nat) = 262)
+}
+
+contract{
+  name: FavorContract,
+  input: {name: context, type: (List UInt32)},
+  output: {name: scores, type: (List Int)},
+  postcondition: FavorWidth
+}
+
+realization{
+  name: Favor,
+  descriptor: deterministic{body: (weights)},
+  executable: true,
+  input: {name: context, type: (List UInt32)},
+  output: (List Int)
+}
+
+theorem{
+  name: favor_width,
+  parameters: [context : (List UInt32)],
+  statement: (FavorWidth context (Favor context)),
+  proof: reflexivity{}
+}
+
+evidence{
+  name: FavorEvidence,
+  claims: [satisfies_contract{theorem: favor_width}],
+  contract: {member: FavorContract},
+  realization: {member: Favor}
+}
+
+model{
+  name: FavorModel,
+  contract: {member: FavorContract},
+  evidence: [{member: FavorEvidence}],
+  realization: {member: Favor}
+}
+
+definition{name: halt, parameters: [], result: UInt32, body: (261 : UInt32), executable: true}
+
+text_generator{
+  name: Greedy,
+  axioms: [Classical.choice, Quot.sound, propext],
+  max_tokens: 5,
+  policy: greedy{},
+  scorer: {member: FavorModel},
+  stop: halt,
+  tokenizer: Words,
+  window: Recent
+}
+
+text_generator{
+  name: Drawn,
+  axioms: [Classical.choice, Quot.sound, propext],
+  max_tokens: 5,
+  policy: sample{distribution: proportional, generator: xorshift32},
+  scorer: {member: FavorModel},
+  stop: halt,
+  tokenizer: Words,
+  window: Recent
+}
+
+definition{
+  name: DistinctCount,
+  parameters: [features : (List Int), label : Nat],
+  result: Prop,
+  body: (label = (prim list_fold (fun (seen : Nat) (feature : Int) => (if (prim less_than (0 : Int) feature : Bool) then (seen + 1) else seen)) 0 features : Nat)),
+  axioms: [propext]
+}
+
+contract{
+  name: DistinctContract,
+  input: {name: features, type: (List Int)},
+  output: {name: label, type: Nat},
+  postcondition: DistinctCount
+}
+
+realization{
+  name: Distinct,
+  axioms: [propext],
+  descriptor: deterministic{
+    body: (prim list_fold (fun (seen : Nat) (feature : Int) => (if (prim less_than (0 : Int) feature : Bool) then (seen + 1) else seen)) 0 features : Nat)
+  },
+  executable: true,
+  input: {name: features, type: (List Int)},
+  output: Nat
+}
+
+theorem{
+  name: distinct_count,
+  parameters: [features : (List Int)],
+  statement: (DistinctCount features (Distinct features)),
+  proof: reflexivity{},
+  axioms: [propext]
+}
+
+evidence{
+  name: DistinctEvidence,
+  axioms: [propext],
+  claims: [satisfies_contract{theorem: distinct_count}],
+  contract: {member: DistinctContract},
+  realization: {member: Distinct}
+}
+
+model{
+  name: DistinctModel,
+  axioms: [propext],
+  contract: {member: DistinctContract},
+  evidence: [{member: DistinctEvidence}],
+  realization: {member: Distinct}
+}
+
+text_classifier{
+  name: Topic,
+  axioms: [Classical.choice, Quot.sound, propext],
+  model: {member: DistinctModel},
+  tokenizer: Words
+}
+
+theorem{
+  name: letters_encode,
+  parameters: [],
+  statement: ((Raw.encode 0x6162) = (cons (97 : UInt32) (cons (98 : UInt32) (nil UInt32)))),
+  proof: reflexivity{},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: letters_decode,
+  parameters: [],
+  statement: ((Raw.decode (cons (97 : UInt32) (cons (98 : UInt32) (nil UInt32)))) = (ctor Option.some [Bytes] 0x6162)),
+  proof: reflexivity{},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: window_keeps_last,
+  parameters: [],
+  statement: ((Recent.fit (cons (1 : UInt32) (cons (2 : UInt32) (cons (3 : UInt32) (cons (4 : UInt32) (cons (5 : UInt32) (cons (6 : UInt32) (cons (7 : UInt32) (cons (8 : UInt32) (nil UInt32)))))))))) = (ctor Option.some [(List UInt32)] (cons (3 : UInt32) (cons (4 : UInt32) (cons (5 : UInt32) (cons (6 : UInt32) (cons (7 : UInt32) (cons (8 : UInt32) (nil UInt32))))))))),
+  proof: reflexivity{},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: window_refuses,
+  parameters: [],
+  statement: ((Strict.fit (cons (1 : UInt32) (cons (2 : UInt32) (cons (3 : UInt32) (cons (4 : UInt32) (cons (5 : UInt32) (cons (6 : UInt32) (cons (7 : UInt32) (cons (8 : UInt32) (nil UInt32)))))))))) = (ctor Option.none [(List UInt32)])),
+  proof: reflexivity{},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: topic_counts,
+  parameters: [],
+  statement: ((Topic.classifyTokens (cons (256 : UInt32) (cons (257 : UInt32) (cons (258 : UInt32) (cons (259 : UInt32) (cons (32 : UInt32) (cons (256 : UInt32) (cons (260 : UInt32) (nil UInt32))))))))) = 6),
+  proof: reflexivity{},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: greedy_continues,
+  parameters: [],
+  statement: ((Greedy.generateTokens (cons (256 : UInt32) (cons (257 : UInt32) (nil UInt32)))) = (ctor Result.ok [((List UInt32) * Greedy.End), Greedy.Failure] ((cons (260 : UInt32) (cons (260 : UInt32) (cons (260 : UInt32) (cons (260 : UInt32) (cons (260 : UInt32) (nil UInt32)))))), constructor{
+    arguments: [],
+    constructor: Greedy.End.exhausted,
+    type_arguments: []
+  }))),
+  proof: reflexivity{},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: drawn_seed_1,
+  parameters: [],
+  statement: ((Drawn.generateTokens (cons (256 : UInt32) (cons (257 : UInt32) (nil UInt32))) (1 : UInt32)) = (ctor Result.ok [(((List UInt32) * Drawn.End) * UInt32), Drawn.Failure] (((cons (260 : UInt32) (cons (258 : UInt32) (cons (257 : UInt32) (cons (258 : UInt32) (cons (260 : UInt32) (nil UInt32)))))), constructor{
+    arguments: [],
+    constructor: Drawn.End.exhausted,
+    type_arguments: []
+  }), (2398689233 : UInt32)))),
+  proof: reflexivity{},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: drawn_seed_5,
+  parameters: [],
+  statement: ((Drawn.generateTokens (cons (256 : UInt32) (cons (257 : UInt32) (nil UInt32))) (5 : UInt32)) = (ctor Result.ok [(((List UInt32) * Drawn.End) * UInt32), Drawn.Failure] (((cons (259 : UInt32) (cons (260 : UInt32) (cons (258 : UInt32) (cons (257 : UInt32) (cons (258 : UInt32) (nil UInt32)))))), constructor{
+    arguments: [],
+    constructor: Drawn.End.exhausted,
+    type_arguments: []
+  }), (1234782181 : UInt32)))),
+  proof: reflexivity{},
+  axioms: [Quot.sound, propext]
+}
+
+definition{
+  name: tokenize,
+  parameters: [text : String],
+  result: (List UInt32),
+  body: (Words.encodeText text),
+  axioms: [Classical.choice, Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: detokenize,
+  parameters: [tokens : (List UInt32)],
+  result: (Option String),
+  body: (Words.decodeText tokens),
+  axioms: [Classical.choice, Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: letters,
+  parameters: [text : String],
+  result: (List UInt32),
+  body: (Raw.encodeText text),
+  axioms: [Classical.choice, Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: keepRecent,
+  parameters: [tokens : (List UInt32)],
+  result: (Option (List UInt32)),
+  body: (Recent.fit tokens),
+  axioms: [Classical.choice, Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: admitStrict,
+  parameters: [tokens : (List UInt32)],
+  result: (Option (List UInt32)),
+  body: (Strict.fit tokens),
+  axioms: [Classical.choice, Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: topicOf,
+  parameters: [text : String],
+  result: Nat,
+  body: (Topic.classify text),
+  axioms: [Classical.choice, Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: continueGreedy,
+  parameters: [prompt : String],
+  result: (Result (String * Greedy.End) Greedy.Failure),
+  body: (Greedy.generate prompt),
+  axioms: [Classical.choice, Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: continueDrawn,
+  parameters: [prompt : String, seed : UInt32],
+  result: (Result ((String * Drawn.End) * UInt32) Drawn.Failure),
+  body: (Drawn.generate prompt seed),
+  axioms: [Classical.choice, Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

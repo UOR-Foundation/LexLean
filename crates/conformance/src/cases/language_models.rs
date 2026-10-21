@@ -44,6 +44,7 @@ pub fn run(id: &str) {
         "LM-07" => lm_07(),
         "LM-08" => lm_08(),
         "LM-09" => lm_09(),
+        "LM-10" | "LM-11" | "LM-12" => super::text_models::run(id),
         "LM-13" => lm_13(),
         _ => panic!("no language-models conformance case is wired for {id}"),
     }
@@ -2032,7 +2033,10 @@ fn lm_09() {
             .expect("eligibility schema");
     let audited = audit_text_rows(&report)
         .unwrap_or_else(|reason| panic!("the text row audit holds: {reason}"));
-    assert!(audited > 0, "the text row audit is armed: a row has members");
+    assert!(
+        audited > 0,
+        "the text row audit is armed: a row has members"
+    );
     let mut leaking = report.clone();
     leaking["$defs"]["text_row"]["properties"]["prompt"] = json!({"type": "string"});
     let error = audit_text_rows(&leaking).expect_err("a free string row member is caught");
