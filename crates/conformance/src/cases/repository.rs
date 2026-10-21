@@ -538,7 +538,11 @@ pub(crate) fn run(id: &str) {
             // sanctioned `expected/` oracle directories), so no tracked subtree
             // can hide from the walkers.
             let is_sanctioned_expected = |parts: &[&str], index: usize| -> bool {
-                (index == 1 && matches!(parts[0], "bootstrap" | "compiler" | "stdlib"))
+                (index == 1
+                    && matches!(
+                        parts[0],
+                        "bootstrap" | "compiler" | "std-models" | "std-reasoning" | "stdlib"
+                    ))
                     || (index == 2 && parts[0] == "examples")
                     || (index == 3
                         && parts[0] == "tests"
@@ -756,7 +760,7 @@ pub(crate) fn run(id: &str) {
             let model = repo_model::Model::load(&root.join("model").into_std_path_buf())
                 .expect("the model loads");
             let table = spec_table();
-            assert_eq!(table.len(), 437, "§31 has 437 rows");
+            assert_eq!(table.len(), 443, "§31 has 443 rows");
             assert_eq!(model.ids.id.len(), table.len(), "register row count");
             for ((spec_id, spec_suite, spec_statement), row) in
                 table.iter().zip(model.ids.id.iter())
