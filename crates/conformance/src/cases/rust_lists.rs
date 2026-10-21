@@ -19,11 +19,12 @@ const IMPORTED: [&str; 2] = ["RustMemory", "TargetSyntax"];
 
 /// Each law with the functions its statement must be about: a theorem of the
 /// right name that states another function is refused.
-const LAWS: [(&str, &[&str]); 43] = [
+const LAWS: [(&str, &[&str]); 45] = [
     (
         "push_run_abs",
         &["flagPick", "absRun", "put", "lessThan", "size"],
     ),
+    ("put_run_abs", &["absRun", "put", "append", "size"]),
     ("run_uncons_abs", &["absRun", "unconsAbs", "get"]),
     ("run_last_abs", &["absRun", "unconsAbs", "get"]),
     ("append_run_abs", &["absRun", "append", "size"]),
@@ -58,6 +59,10 @@ const LAWS: [(&str, &[&str]); 43] = [
     ),
     ("walk_uncons", &["runWalk", "unconsAbs", "headAt"]),
     ("walk_uncons_last", &["runWalk", "unconsAbs", "headAt"]),
+    (
+        "cons_in_place",
+        &["view", "consWorld", "absHandle", "append", "plus", "size"],
+    ),
     ("cons_cell_view", &["view", "consWorld", "absHandle"]),
     ("cons_cell_store", &["storeOf", "consWorld"]),
     ("cons_alloc_view", &["view", "consWorld", "absHandle"]),
@@ -238,7 +243,7 @@ fn check(id: &str) {
 const PLANTS: [(&str, &[&str], &str, &str, &str, &str); 9] = [
     (
         "a cons that writes the wrong slot, the buffer not truncated to the run",
-        &["walk_cons"],
+        &["walk_cons", "cons_in_place"],
         "unsolved goals",
         "⊢ absRun",
         "(RustMemory::bufPush (RustMemory::bufTruncate b length) item) b) rest)",
@@ -294,7 +299,7 @@ const PLANTS: [(&str, &[&str], &str, &str, &str, &str); 9] = [
     ),
     (
         "a refusal that is the opposite of the capacity",
-        &["full_is_capacity"],
+        &["full_is_capacity", "cons_in_place"],
         "unsolved goals",
         "⊢ RustMemory.Flag.yes = RustMemory.Flag.no",
         "    | Option.none => (ctor RustMemory::Flag.yes)\n    | Option.some got => (ctor RustMemory::Flag.no))",

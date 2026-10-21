@@ -508,6 +508,39 @@ theorem{
 }
 
 theorem{
+  name: put_run_abs,
+  parameters: [
+    front : RustMemory::Cells,
+    old : TargetSyntax::Value,
+    back : RustMemory::Cells,
+    item : TargetSyntax::Value,
+    onto : (List TargetSyntax::Value)
+  ],
+  statement: ((absRun (RustMemory::put (RustMemory::append front (ctor RustMemory::Cells.CCons old back)) (RustMemory::size front) item) ((RustMemory::size front) + 1) onto) = (cons item (absRun (RustMemory::append front (ctor RustMemory::Cells.CCons old back)) (RustMemory::size front) onto))),
+  proof: induction{
+    branches: [
+      {
+        proof: simplify{
+          definitions: [absRun, RustMemory::append, RustMemory::put, RustMemory::size]
+        },
+        binders: [],
+        constructor: CNil
+      },
+      {
+        proof: simplify{
+          definitions: [absRun, hypothesis, RustMemory::append, RustMemory::put, RustMemory::size]
+        },
+        binders: [head, tail, hypothesis],
+        constructor: CCons
+      }
+    ],
+    generalizing: [onto],
+    scrutinee: front
+  },
+  axioms: [propext]
+}
+
+theorem{
   name: cons_frame,
   parameters: [
     store : Store,
@@ -1006,6 +1039,46 @@ theorem{
   proof: apply{
     arguments: [store, address, length, item, other, (more + 1), (nil TargetSyntax::Value)],
     theorem: cons_frame
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: cons_in_place,
+  parameters: [
+    rest : Store,
+    lead : TargetSyntax::Value,
+    front : RustMemory::Cells,
+    old : TargetSyntax::Value,
+    back : RustMemory::Cells,
+    gap : Nat,
+    item : TargetSyntax::Value
+  ],
+  statement: ((view (consWorld (ctor Store.SCons (record RustMemory::Buf {slots := (ctor RustMemory::Cells.CCons lead (RustMemory::append front (ctor RustMemory::Cells.CCons old back))), len := (RustMemory::plus ((RustMemory::size front) + 1) gap)}) rest) (nil Handle) item (record Handle {spine := (nil TargetSyntax::Value), base := (ctor Terminal.TRun 0 (RustMemory::size front))})) (absHandle (ctor Store.SCons (record RustMemory::Buf {slots := (ctor RustMemory::Cells.CCons lead (RustMemory::append front (ctor RustMemory::Cells.CCons old back))), len := (RustMemory::plus ((RustMemory::size front) + 1) gap)}) rest) (record Handle {spine := (nil TargetSyntax::Value), base := (ctor Terminal.TRun 0 (RustMemory::size front))}))) = (cons item (absHandle (ctor Store.SCons (record RustMemory::Buf {slots := (ctor RustMemory::Cells.CCons lead (RustMemory::append front (ctor RustMemory::Cells.CCons old back))), len := (RustMemory::plus ((RustMemory::size front) + 1) gap)}) rest) (record Handle {spine := (nil TargetSyntax::Value), base := (ctor Terminal.TRun 0 (RustMemory::size front))})))),
+  proof: simplify{
+    definitions: [
+      absHandle,
+      absRun,
+      absTerm,
+      aloneOn,
+      bufAt,
+      consIn,
+      consWorld,
+      inPlace,
+      isFull,
+      keepOr,
+      listAppend,
+      put_run_abs,
+      runWalk,
+      truncate_keeps_run,
+      view,
+      RustMemory::bufPush,
+      RustMemory::bufTruncate,
+      RustMemory::lessThan,
+      RustMemory::put,
+      RustMemory::room_before_slot,
+      RustMemory::size
+    ]
   },
   axioms: [propext]
 }
