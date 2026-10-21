@@ -356,7 +356,7 @@ pub fn verify(
         Intended::Merged(text) => {
             let wanted = lines_of(text);
             for hunk in hunks(&regenerated, &wanted)? {
-                if !within(&projection.layout.derived, &hunk) {
+                if !within(&projection.layout.derived, &hunk, &wanted) {
                     return Err(refuse(format!(
                         "the regenerated SPEC.md differs from the merged text outside the derived regions at line {}: `{:.80}` against `{:.80}`",
                         hunk.a.start + 1,
@@ -482,16 +482,28 @@ pub struct Hunk {
     pub b: Range<usize>,
 }
 
-/// Is every changed line of `hunk` inside a derived region? A change is inside
-/// when its lines are among the region's; an insertion only when it falls
-/// strictly between the region's first and last line, so that a block inserted
-/// at an edge (before a table, say) is never excused as regenerated.
-fn within(derived: &[Range<usize>], hunk: &Hunk) -> bool {
+/// Is every changed line of `hunk` inside a derived region? `wanted` holds the
+/// lines of the second text, which the hunk's `b` indexes. Both sides are
+/// judged: a change is inside when its old lines are among the region's and
+/// its new lines hold no blank line (a blank line is a block boundary, so a
+/// paragraph inserted before a changed first row is not a regenerated row). An
+/// insertion is inside strictly between the region's first and last line, or
+/// at its end when every new line is a table row (a row appended to a derived
+/// table, as a forward merge appends a register row); a blank-led insertion at
+/// an edge is a block inserted beside the table and is never excused as
+/// regenerated.
+fn within(derived: &[Range<usize>], hunk: &Hunk, wanted: &[String]) -> bool {
+    let new = &wanted[hunk.b.clone()];
     derived.iter().any(|region| {
         if hunk.a.is_empty() {
-            hunk.a.start > region.start && hunk.a.start < region.end
+            let appended = hunk.a.start == region.end
+                && !new.is_empty()
+                && new.iter().all(|line| line.starts_with('|'));
+            appended || (hunk.a.start > region.start && hunk.a.start < region.end)
         } else {
-            hunk.a.start >= region.start && hunk.a.end <= region.end
+            hunk.a.start >= region.start
+                && hunk.a.end <= region.end
+                && !new.iter().any(String::is_empty)
         }
     })
 }
@@ -690,7 +702,7 @@ pub fn port(root: &Path, merged: &str) -> Result<Outcome, ModelError> {
             hunk.a = hunk.a.start - 1..hunk.a.start - 1;
         }
         let (start, end) = (hunk.a.start, hunk.a.end);
-        if within(&current.layout.derived, &hunk) {
+        if within(&current.layout.derived, &hunk, &after) {
             report.push(format!(
                 "lines {}..{} are in a derived region: regenerated, not ported",
                 start + 1,
@@ -901,19 +913,34 @@ mod tests {
         assert_eq!(two.len(), 2);
     }
 
-    /// An insertion is inside a derived region only strictly between its first
-    /// and last line; a change is inside when its lines are the region's.
+    /// An insertion is inside a derived region strictly between its first and
+    /// last line, or at its end when it is table rows; a change is inside when
+    /// its old lines are the region's and its new lines hold no blank line.
     #[test]
-    fn an_insertion_at_the_edge_of_a_region_is_not_inside_it() {
+    fn the_edges_of_a_derived_region() {
         let region = [Range { start: 10, end: 20 }];
-        let hunk = |a: Range<usize>| Hunk { a, b: 0..1 };
-        assert!(!within(&region, &hunk(10..10)), "at the first line");
-        assert!(within(&region, &hunk(11..11)));
-        assert!(within(&region, &hunk(19..19)));
-        assert!(!within(&region, &hunk(20..20)), "at the end");
-        assert!(within(&region, &hunk(10..20)), "the whole region changed");
+        let rows = vec!["| a |".to_owned(), "| b |".to_owned()];
+        let block = vec![String::new(), "text".to_owned()];
+        let hunk = |a: Range<usize>| Hunk { a, b: 0..2 };
+        assert!(!within(&region, &hunk(10..10), &rows), "at the first line");
+        assert!(within(&region, &hunk(11..11), &block));
+        assert!(within(&region, &hunk(19..19), &block));
         assert!(
-            !within(&region, &hunk(9..11)),
+            !within(&region, &hunk(20..20), &block),
+            "a block at the end"
+        );
+        assert!(within(&region, &hunk(20..20), &rows), "rows appended");
+        assert!(!within(&region, &hunk(21..21), &rows), "past the end");
+        assert!(
+            within(&region, &hunk(10..20), &rows),
+            "the whole region changed"
+        );
+        assert!(
+            !within(&region, &hunk(10..11), &block),
+            "a paragraph inserted before a changed first row"
+        );
+        assert!(
+            !within(&region, &hunk(9..11), &rows),
             "a change that starts before it"
         );
     }

@@ -1,6 +1,7 @@
 //! Normative text as LexLean source (`NS-01`..`NS-04`): the `spec/` project
 //! and the projection of its register modules to `model/*.toml`.
 
+use std::ops::Range;
 use std::path::Path;
 
 use repo_model::project::{project, SOURCE_DIR};
@@ -1095,9 +1096,64 @@ fn chapter_editing() {
         "the row is not ported"
     );
 
+    // A row appended at the end of a derived table is regenerated, as a
+    // forward merge appends register rows; the same row in front of a block
+    // inserted beside the table is not. Every derived table is tried.
+    let tables: Vec<Range<usize>> = state
+        .layout
+        .derived
+        .iter()
+        .filter(|region| lines(&state.spec)[region.start].starts_with('|'))
+        .cloned()
+        .collect();
+    assert!(!tables.is_empty(), "the projection has derived tables");
+    for region in &tables {
+        let mut appended = lines(&state.spec);
+        appended.insert(
+            region.end,
+            "| `ZZ-99` | `none` | a row appended by a merge | §1 |".to_owned(),
+        );
+        let appended = appended.join("\n") + "\n";
+        let outcome = port(root, &appended).expect("a row appended to a derived table");
+        assert!(
+            outcome.changes.is_empty() && !outcome.spec.contains("ZZ-99"),
+            "the appended row is regenerated, not ported (table at line {})",
+            region.start + 1
+        );
+        assert!(
+            outcome.report.iter().any(|r| r.contains("derived region")),
+            "it is reported as regenerated: {:?}",
+            outcome.report
+        );
+    }
+
+    // A paragraph inserted before a table whose first row changes in the same
+    // merge is one hunk whose new lines hold a block boundary: it is judged on
+    // those lines too, and refused rather than dropped.
+    for region in &tables {
+        let mut both = lines(&state.spec);
+        let header = both[region.start].clone();
+        both.splice(
+            region.start..=region.start,
+            [
+                "A paragraph before a changed table.".to_owned(),
+                String::new(),
+                format!("{header} "),
+            ],
+        );
+        let both = both.join("\n") + "\n";
+        expect_untouched(
+            &|| port(root, &both).map(|_| ()).map_err(|e| e.to_string()),
+            &[],
+        );
+    }
+
     // A merged text that shares little with SPEC.md is refused before the
     // search for its difference, not by running out of memory.
-    for text in ["", "one line\n", &"unrelated\n".repeat(5000)] {
+    let same_count: String = (0..lines(&state.spec).len())
+        .map(|n| format!("unrelated {n}\n"))
+        .collect();
+    for text in ["", "one line\n", &"unrelated\n".repeat(5000), &same_count] {
         expect_untouched(
             &|| port(root, text).map(|_| ()).map_err(|e| e.to_string()),
             &["differ by more than"],
