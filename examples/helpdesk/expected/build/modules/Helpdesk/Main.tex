@@ -1,0 +1,51 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{threshold}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Int}.\par
+\noindent Definition: \texttt{(2 : Int)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{committed}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(seen : Option (Nat))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match seen with | Option.some \_ => true | Option.none => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{classify}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(request : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match (checked Helpdesk.Router.ScoringModel (LexLeanStd.Text.trim (request)) [precondition]) with | Except.ok scores => (match LexLeanStdModels.Scores.decideOr (threshold) (scores) with | Option.some index => index | Option.none => 8) | Except.error \_ => 9)}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{plan}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(code : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{Helpdesk.Reply.stepsFor (Helpdesk.Router.topicAt (code))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{dispatch}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(request : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match (checked Helpdesk.Router.ScoringModel (LexLeanStd.Text.trim (request)) [precondition]) with | Except.ok scores => (let topic : Helpdesk.Router.Topic := Helpdesk.Router.topicAt (LexLeanStdModels.Scores.best (scores)); (match LexLeanStdModels.Scores.GateModel (Helpdesk.Router.Topic) ((if committed (LexLeanStdModels.Scores.decideOr (threshold) (scores)) then LexLeanStdModels.Scores.Candidate.confident (topic) else LexLeanStdModels.Scores.Candidate.unsure (topic))) with | Option.some answered => Helpdesk.Reply.message (answered) | Option.none => ByteArray.mk \#[104, 117, 109, 97, 110])) | Except.error \_ => ByteArray.mk \#[114, 101, 102, 117, 115, 101, 100])}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{plan\_outage}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(plan (0) = 2)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{plan\_access}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(plan (2) = 1)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\end{document}

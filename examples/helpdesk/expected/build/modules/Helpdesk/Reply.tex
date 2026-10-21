@@ -1,0 +1,45 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{workFor}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(topic : Helpdesk.Router.Topic)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match topic with | Helpdesk.Router.Topic.outage => 3 | Helpdesk.Router.Topic.billing => 2 | Helpdesk.Router.Topic.access => 1)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{stepsFor}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(topic : Helpdesk.Router.Topic)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match LexLeanStdReasoning.Worklist.Drain (Helpdesk.Router.Topic) ((topic, workFor (topic))) with | Except.ok explained => (LexLeanRuntime.length ((explained).2) : Nat) | Except.error \_ => 0)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{topicName}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(topic : Helpdesk.Router.Topic)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match topic with | Helpdesk.Router.Topic.outage => ByteArray.mk \#[111, 117, 116, 97, 103, 101] | Helpdesk.Router.Topic.billing => ByteArray.mk \#[98, 105, 108, 108, 105, 110, 103] | Helpdesk.Router.Topic.access => ByteArray.mk \#[97, 99, 99, 101, 115, 115])}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{digit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(count : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(if (Nat.beq (count) (0)) then ByteArray.mk \#[48] else (if (Nat.beq (count) (1)) then ByteArray.mk \#[49] else (if (Nat.beq (count) (2)) then ByteArray.mk \#[50] else (if (Nat.beq (count) (3)) then ByteArray.mk \#[51] else ByteArray.mk \#[43]))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{message}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(topic : Helpdesk.Router.Topic)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.append (topicName (topic)) ((LexLeanRuntime.append (ByteArray.mk \#[58]) (digit (stepsFor (topic))) : ByteArray)) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{outage\_takes\_two\_steps}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(stepsFor (Helpdesk.Router.Topic.outage) = 2)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\end{document}

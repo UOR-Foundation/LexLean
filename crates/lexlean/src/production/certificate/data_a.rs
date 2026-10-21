@@ -437,6 +437,17 @@ impl<'g, 'a> Writer<'g, 'a> {
 
     /// Name the rows of one mutual group (their short names) as each other's
     /// group.
+    ///
+    /// The members of a group of implementation records (`RowKind::Partial`)
+    /// are pinned to the group's union, taken here once the group is complete
+    /// and not row by row as each was pushed. What Lean prints of one member is
+    /// not a property of that member's term alone: Lean stores axiom data for a
+    /// module's constants by one shared traversal, in the order of a hash map
+    /// keyed by names that carry the identity, with a sentinel for a constant in
+    /// progress, so on identical sources the first member of the bootstrap
+    /// project's R6 group printed `[]` on one identity and `[propext]` on
+    /// another (`LLV7013`). The union of the group's printed sets is the same on
+    /// every identity, and the audit compares that union with this pin.
     pub(super) fn group_rows(&mut self, short_names: &[String]) {
         let full: Vec<String> = short_names
             .iter()
@@ -446,6 +457,29 @@ impl<'g, 'a> Writer<'g, 'a> {
             if full.contains(&row.name) {
                 row.group = Some(full.clone());
             }
+        }
+        let members: Vec<usize> = self
+            .rows
+            .iter()
+            .enumerate()
+            .filter(|(_, row)| full.contains(&row.name))
+            .map(|(index, _)| index)
+            .collect();
+        if members.len() < 2
+            || members
+                .iter()
+                .any(|index| self.rows[*index].kind != RowKind::Partial)
+        {
+            return;
+        }
+        let union: BTreeSet<String> = members
+            .iter()
+            .flat_map(|index| self.rows[*index].axioms.iter().cloned())
+            .collect();
+        for index in members {
+            self.rows[index].axioms.clone_from(&union);
+            self.row_axioms
+                .insert(self.rows[index].name.clone(), union.clone());
         }
     }
 

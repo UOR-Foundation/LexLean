@@ -1,0 +1,186 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{Spent}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type parameters: \texttt{(T)}.\par
+\noindent Parameters: \texttt{(s : (Prod (T) (Nat))) (t : (Prod (T) (Nat)))}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(((t).1 = (s).1) /\textbackslash{} ((t).2 < (s).2))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{Remaining}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type parameters: \texttt{(T)}.\par
+\noindent Parameters: \texttt{(s : (Prod (T) (Nat)))}.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(s).2}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{Countdown}}
+\noindent Kind: \texttt{logic}.\par
+\noindent States: \texttt{s, t : (Prod (T) (Nat))}.\par
+\noindent Relation: \texttt{Spent}.\par
+\noindent Ranking: \texttt{Remaining}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tick\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Type parameters: \texttt{(T)}.\par
+\noindent Parameters: \texttt{(s : (Prod (T) (Nat)))}.\par
+\noindent Statement: \texttt{(((Nat.blt (2) ((s).2)) = true) -> Spent (T) (s) (((s).1, (LexLeanRuntime.subtract ((s).2) (1) : Nat))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{tick\_progress}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Type parameters: \texttt{(T)}.\par
+\noindent Parameters: \texttt{(s : (Prod (T) (Nat)))}.\par
+\noindent Statement: \texttt{(((Nat.blt (2) ((s).2)) = true) -> (Remaining (T) (((s).1, (LexLeanRuntime.subtract ((s).2) (1) : Nat))) < Remaining (T) (s)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{Tick}}
+\noindent Kind: \texttt{inference_rule}.\par
+\noindent Logic: \texttt{Countdown (T)}.\par
+\noindent Guard: \texttt{(Nat.blt (2) ((s).2))}.\par
+\noindent Conclusion: \texttt{((s).1, (LexLeanRuntime.subtract ((s).2) (1) : Nat))}.\par
+\noindent Soundness: \texttt{tick\_sound}.\par
+\noindent Progress: \texttt{tick\_progress}.\par
+\noindent Execution: \texttt{executable, applied only through its guard}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\noindent Obligation (inference rule Tick soundness): \texttt{forall (s : (Prod (T) (Nat))), (((Nat.blt (2) ((s).2)) = true) -> Spent (T) (s) (((s).1, (LexLeanRuntime.subtract ((s).2) (1) : Nat)))); stated exactly by tick\_sound}.\par
+\noindent Obligation (inference rule Tick progress): \texttt{forall (s : (Prod (T) (Nat))), (((Nat.blt (2) ((s).2)) = true) -> (Remaining (T) (((s).1, (LexLeanRuntime.subtract ((s).2) (1) : Nat))) < Remaining (T) (s))); stated exactly by tick\_progress}.\par
+\noindent Elaborates to: \texttt{Tick.guard (s : (Prod (T) (Nat))) : Bool := (Nat.blt (2) ((s).2))}.\par
+\noindent Elaborates to: \texttt{Tick.conclusion (s : (Prod (T) (Nat))) : (Prod (T) (Nat)) := ((s).1, (LexLeanRuntime.subtract ((s).2) (1) : Nat))}.\par
+\noindent Elaborates to: \texttt{Tick.apply (s : (Prod (T) (Nat))) : Option ((Prod (T) (Nat))) := (if Tick.guard (T) (s) then Option.some (Tick.conclusion (T) (s)) else Option.none)}.\par
+\noindent Generates theorem (term template): \texttt{Tick.apply\_sound : forall (s : (Prod (T) (Nat))) (\_\_t : (Prod (T) (Nat))), ((Tick.apply (T) (s) = Option.some (\_\_t)) -> Spent (T) (s) (\_\_t))}.\par
+\noindent Generates theorem (term template): \texttt{Tick.apply\_progress : forall (s : (Prod (T) (Nat))) (\_\_t : (Prod (T) (Nat))), ((Tick.apply (T) (s) = Option.some (\_\_t)) -> (Remaining (T) (\_\_t) < Remaining (T) (s)))}.\par
+\subsection*{\texttt{burn\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Type parameters: \texttt{(T)}.\par
+\noindent Parameters: \texttt{(s : (Prod (T) (Nat))) (k : Nat)}.\par
+\noindent Statement: \texttt{((((Nat.ble (k) ((s).2)) \&\& (Nat.blt (0) (k))) = true) -> Spent (T) (s) (((s).1, (LexLeanRuntime.subtract ((s).2) (k) : Nat))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{burn\_progress}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Type parameters: \texttt{(T)}.\par
+\noindent Parameters: \texttt{(s : (Prod (T) (Nat))) (k : Nat)}.\par
+\noindent Statement: \texttt{((((Nat.ble (k) ((s).2)) \&\& (Nat.blt (0) (k))) = true) -> (Remaining (T) (((s).1, (LexLeanRuntime.subtract ((s).2) (k) : Nat))) < Remaining (T) (s)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{Burn}}
+\noindent Kind: \texttt{inference_rule}.\par
+\noindent Logic: \texttt{Countdown (T)}.\par
+\noindent Binding: \texttt{k : Nat, ranging over (2 :: (1 :: ([] : List (Nat)))) in order}.\par
+\noindent Guard: \texttt{((Nat.ble (k) ((s).2)) \&\& (Nat.blt (0) (k)))}.\par
+\noindent Conclusion: \texttt{((s).1, (LexLeanRuntime.subtract ((s).2) (k) : Nat))}.\par
+\noindent Soundness: \texttt{burn\_sound}.\par
+\noindent Progress: \texttt{burn\_progress}.\par
+\noindent Execution: \texttt{executable, applied only through its guard}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\noindent Obligation (inference rule Burn soundness): \texttt{forall (s : (Prod (T) (Nat))) (k : Nat), ((((Nat.ble (k) ((s).2)) \&\& (Nat.blt (0) (k))) = true) -> Spent (T) (s) (((s).1, (LexLeanRuntime.subtract ((s).2) (k) : Nat)))); stated exactly by burn\_sound}.\par
+\noindent Obligation (inference rule Burn progress): \texttt{forall (s : (Prod (T) (Nat))) (k : Nat), ((((Nat.ble (k) ((s).2)) \&\& (Nat.blt (0) (k))) = true) -> (Remaining (T) (((s).1, (LexLeanRuntime.subtract ((s).2) (k) : Nat))) < Remaining (T) (s))); stated exactly by burn\_progress}.\par
+\noindent Elaborates to: \texttt{Burn.guard (s : (Prod (T) (Nat))) (k : Nat) : Bool := ((Nat.ble (k) ((s).2)) \&\& (Nat.blt (0) (k)))}.\par
+\noindent Elaborates to: \texttt{Burn.conclusion (s : (Prod (T) (Nat))) (k : Nat) : (Prod (T) (Nat)) := ((s).1, (LexLeanRuntime.subtract ((s).2) (k) : Nat))}.\par
+\noindent Elaborates to: \texttt{Burn.candidates (s : (Prod (T) (Nat))) : List (Nat) := (2 :: (1 :: ([] : List (Nat))))}.\par
+\noindent Elaborates to: \texttt{Burn.apply (s : (Prod (T) (Nat))) (k : Nat) : Option ((Prod (T) (Nat))) := (if Burn.guard (T) (s) (k) then Option.some (Burn.conclusion (T) (s) (k)) else Option.none)}.\par
+\noindent Generates theorem (term template): \texttt{Burn.apply\_sound : forall (s : (Prod (T) (Nat))) (k : Nat) (\_\_t : (Prod (T) (Nat))), ((Burn.apply (T) (s) (k) = Option.some (\_\_t)) -> Spent (T) (s) (\_\_t))}.\par
+\noindent Generates theorem (term template): \texttt{Burn.apply\_progress : forall (s : (Prod (T) (Nat))) (k : Nat) (\_\_t : (Prod (T) (Nat))), ((Burn.apply (T) (s) (k) = Option.some (\_\_t)) -> (Remaining (T) (\_\_t) < Remaining (T) (s)))}.\par
+\subsection*{\texttt{Empty}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type parameters: \texttt{(T)}.\par
+\noindent Parameters: \texttt{(x : T) (r : Nat)}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(r = 0)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{emptyCheck}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type parameters: \texttt{(T)}.\par
+\noindent Parameters: \texttt{(x : T) (r : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(Nat.beq (r) (0))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{empty\_sound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Type parameters: \texttt{(T)}.\par
+\noindent Parameters: \texttt{(x : T) (r : Nat)}.\par
+\noindent Statement: \texttt{((emptyCheck (T) (x) (r) = true) -> Empty (T) (x) (r))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{Drained}}
+\noindent Kind: \texttt{verifier}.\par
+\noindent Subject: \texttt{x : T}.\par
+\noindent Candidate: \texttt{r : Nat}.\par
+\noindent Specification: \texttt{Empty}.\par
+\noindent Check: \texttt{emptyCheck}.\par
+\noindent Soundness: \texttt{empty\_sound}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (verifier Drained sound): \texttt{forall (x : T) (r : Nat), ((emptyCheck (T) (x) (r) = true) -> Empty (T) (x) (r)); stated exactly by empty\_sound}.\par
+\noindent Generates theorem (term template): \texttt{Drained.sound : (LexLeanReasoning.Sound ((emptyCheck (T))) ((Empty (T))))}.\par
+\subsection*{\texttt{drain\_bound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Type parameters: \texttt{(T)}.\par
+\noindent Parameters: \texttt{(x : (Prod (T) (Nat)))}.\par
+\noindent Statement: \texttt{(Remaining (T) (x) < ((x).2 + 1))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{Drain}}
+\noindent Kind: \texttt{reasoner}.\par
+\noindent Type parameters: \texttt{T}.\par
+\noindent Logic: \texttt{Countdown (T)}.\par
+\noindent Observation: \texttt{x : (Prod (T) (Nat)), observed as x}.\par
+\noindent Rules in priority order: \texttt{Tick (T), Burn (T)}.\par
+\noindent Strategy: \texttt{forward, at most ((x).2 + 1) iterations}.\par
+\noindent Answer: \texttt{account |-> Option.some ((account).2) : Option (Nat)}.\par
+\noindent Verifier: \texttt{Drained ((Prod (T) (Nat)))}.\par
+\noindent Claim: \texttt{terminates, discharged by drain\_bound}.\par
+\noindent Execution: \texttt{executable through its verifier}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\noindent Obligation (reasoner Drain fuel bound): \texttt{forall (x : (Prod (T) (Nat))), (Remaining (T) (x) < ((x).2 + 1)); stated exactly by drain\_bound}.\par
+\noindent Elaborates to: \texttt{inductive Drain.Step with Tick(), Burn(Nat)}.\par
+\noindent Elaborates to: \texttt{structure Drain.Ledger with iterations : Nat, attempts : Nat, firings : Nat, expansions : Nat, verifications : Nat, frontier : Nat}.\par
+\noindent Elaborates to: \texttt{Drain.observe (x : (Prod (T) (Nat))) : (Prod (T) (Nat)) := x}.\par
+\noindent Elaborates to: \texttt{Drain.fire (\_\_s : (Prod (T) (Nat))) (\_\_step : Drain.Step (T)) : Option ((Prod (T) (Nat))) := (match \_\_step with | Drain.Step.Tick => Tick.apply (T) (\_\_s) | Drain.Step.Burn \_\_b => Burn.apply (T) (\_\_s) (\_\_b))}.\par
+\noindent Elaborates to: \texttt{Drain.replay (\_\_acc : Except (ReasoningFailure) ((Prod (T) (Nat)))) (\_\_step : Drain.Step (T)) : Except (ReasoningFailure) ((Prod (T) (Nat))) := (match \_\_acc with | Except.error \_\_e => Except.error (\_\_e) | Except.ok \_\_s => (match Drain.fire (T) (\_\_s) (\_\_step) with | Option.none => Except.error (ReasoningFailure.invalid\_step) | Option.some \_\_t => Except.ok (\_\_t)))}.\par
+\noindent Elaborates to: \texttt{Drain.follow (x : (Prod (T) (Nat))) (\_\_trace : List (Drain.Step (T))) : Except (ReasoningFailure) ((Prod (T) (Nat))) := (LexLeanCollections.listFold ((Drain.replay (T))) (Except.ok (Drain.observe (T) (x))) (\_\_trace) : Except (ReasoningFailure) ((Prod (T) (Nat))))}.\par
+\noindent Elaborates to: \texttt{Drain.extract (account : (Prod (T) (Nat))) : Option (Nat) := Option.some ((account).2)}.\par
+\noindent Elaborates to: \texttt{Drain.accept (x : (Prod (T) (Nat))) (\_\_s : (Prod (T) (Nat))) : Option (Nat) := (match Drain.extract (T) (\_\_s) with | Option.none => Option.none | Option.some \_\_v => (if emptyCheck ((Prod (T) (Nat))) (x) (\_\_v) then Option.some (\_\_v) else Option.none))}.\par
+\noindent Elaborates to: \texttt{Drain.answer (x : (Prod (T) (Nat))) (\_\_trace : List (Drain.Step (T))) : Option (Nat) := (match Drain.follow (T) (x) (\_\_trace) with | Except.ok \_\_s => Drain.accept (T) (x) (\_\_s) | Except.error \_ => Option.none)}.\par
+\noindent Elaborates to: \texttt{Drain.select (\_\_s : (Prod (T) (Nat))) : Option (Drain.Step (T)) := (match (if Tick.guard (T) (\_\_s) then Option.some (Drain.Step.Tick) else Option.none) with | Option.some \_\_found => Option.some (\_\_found) | Option.none => (LexLeanCollections.listFold ((fun (\_\_acc : Option (Drain.Step (T))) (\_\_b : Nat) => (match \_\_acc with | Option.some \_\_found => Option.some (\_\_found) | Option.none => (if Burn.guard (T) (\_\_s) (\_\_b) then Option.some (Drain.Step.Burn (\_\_b)) else Option.none)))) (Option.none) (Burn.candidates (T) (\_\_s)) : Option (Drain.Step (T))))}.\par
+\noindent Elaborates to: \texttt{Drain.attempts (\_\_s : (Prod (T) (Nat))) : Nat := ((let \_\_scan0l : (Prod (Bool) (Nat)) := (Tick.guard (T) (\_\_s), 1); (if (\_\_scan0l).1 then \_\_scan0l else (let \_\_scan0r : (Prod (Bool) (Nat)) := (LexLeanCollections.listFold ((fun (\_\_acc : (Prod (Bool) (Nat))) (\_\_b : Nat) => (if (\_\_acc).1 then \_\_acc else (Burn.guard (T) (\_\_s) (\_\_b), ((\_\_acc).2 + 1))))) ((false, 0)) (Burn.candidates (T) (\_\_s)) : (Prod (Bool) (Nat))); ((\_\_scan0r).1, ((\_\_scan0l).2 + (\_\_scan0r).2)))))).2}.\par
+\noindent Elaborates to: \texttt{Drain.next (\_\_s : (Prod (T) (Nat))) : Option ((Prod (T) (Nat))) := (match Drain.select (T) (\_\_s) with | Option.none => Option.none | Option.some \_\_step => Drain.fire (T) (\_\_s) (\_\_step))}.\par
+\noindent Elaborates to: \texttt{Drain.saturate (x : (Prod (T) (Nat))) : (Prod ((Prod (T) (Nat))) (Bool)) := (LexLeanCollections.iterateUntil ((Drain.next (T))) (((x).2 + 1)) (Drain.observe (T) (x)) : (Prod ((Prod (T) (Nat))) (Bool)))}.\par
+\noindent Elaborates to: \texttt{structure Drain.Run with state : (Prod (T) (Nat)), trace : List (Drain.Step (T)), ledger : Drain.Ledger (T)}.\par
+\noindent Elaborates to: \texttt{Drain.start (x : (Prod (T) (Nat))) : Drain.Run (T) := (\{ state := Drain.observe (T) (x), trace := ([] : List (Drain.Step (T))), ledger := (\{ iterations := 0, attempts := 0, firings := 0, expansions := 0, verifications := 0, frontier := 0 \} : Drain.Ledger (T)) \} : Drain.Run (T))}.\par
+\noindent Elaborates to: \texttt{Drain.step (\_\_r : Drain.Run (T)) : Option (Drain.Run (T)) := (match Drain.select (T) ((\_\_r).state) with | Option.none => Option.none | Option.some \_\_step => (match Drain.fire (T) ((\_\_r).state) (\_\_step) with | Option.none => Option.none | Option.some \_\_t => Option.some ((\{ state := \_\_t, trace := (LexLeanRuntime.append ((\_\_r).trace) ((\_\_step :: ([] : List (Drain.Step (T))))) : List (Drain.Step (T))), ledger := (\{ iterations := (((\_\_r).ledger).iterations + 1), attempts := (((\_\_r).ledger).attempts + Drain.attempts (T) ((\_\_r).state)), firings := (((\_\_r).ledger).firings + 1), expansions := ((\_\_r).ledger).expansions, verifications := ((\_\_r).ledger).verifications, frontier := ((\_\_r).ledger).frontier \} : Drain.Ledger (T)) \} : Drain.Run (T)))))}.\par
+\noindent Elaborates to: \texttt{Drain.run (x : (Prod (T) (Nat))) : (Prod (Drain.Run (T)) (Bool)) := (LexLeanCollections.iterateUntil ((Drain.step (T))) (((x).2 + 1)) (Drain.start (T) (x)) : (Prod (Drain.Run (T)) (Bool)))}.\par
+\noindent Elaborates to: \texttt{Drain.account (x : (Prod (T) (Nat))) : Drain.Ledger (T) := (let \_\_final : (Prod (Drain.Run (T)) (Bool)) := Drain.run (T) (x); (match (\_\_final).2 with | Bool.true => (\{ iterations := (((\_\_final).1).ledger).iterations, attempts := ((((\_\_final).1).ledger).attempts + Drain.attempts (T) (((\_\_final).1).state)), firings := (((\_\_final).1).ledger).firings, expansions := (((\_\_final).1).ledger).expansions, verifications := ((((\_\_final).1).ledger).verifications + 1), frontier := (((\_\_final).1).ledger).frontier \} : Drain.Ledger (T)) | Bool.false => ((\_\_final).1).ledger))}.\par
+\noindent Elaborates to: \texttt{Drain.conclude (x : (Prod (T) (Nat))) (\_\_s : (Prod (T) (Nat))) : Except (ReasoningFailure) (Nat) := (match Drain.accept (T) (x) (\_\_s) with | Option.some \_\_v => Except.ok (\_\_v) | Option.none => (match Drain.extract (T) (\_\_s) with | Option.some \_ => Except.error (ReasoningFailure.rejected) | Option.none => Except.error (ReasoningFailure.unsolved)))}.\par
+\noindent Elaborates to: \texttt{Drain.verdict (x : (Prod (T) (Nat))) : Except (ReasoningFailure) (Nat) := (let \_\_final : (Prod ((Prod (T) (Nat))) (Bool)) := Drain.saturate (T) (x); (match (\_\_final).2 with | Bool.true => Drain.conclude (T) (x) ((\_\_final).1) | Bool.false => Except.error (ReasoningFailure.exhausted)))}.\par
+\noindent Elaborates to: \texttt{Drain (x : (Prod (T) (Nat))) : Except (ReasoningFailure) ((Prod (Nat) (List (Drain.Step (T))))) := (let \_\_final : (Prod (Drain.Run (T)) (Bool)) := Drain.run (T) (x); (match (\_\_final).2 with | Bool.true => (match Drain.conclude (T) (x) (((\_\_final).1).state) with | Except.ok \_\_v => Except.ok ((\_\_v, ((\_\_final).1).trace)) | Except.error \_\_e => Except.error (\_\_e)) | Bool.false => Except.error (ReasoningFailure.exhausted)))}.\par
+\noindent Generates theorem (fire cases template): \texttt{Drain.fire\_sound : forall (\_\_s : (Prod (T) (Nat))) (\_\_step : Drain.Step (T)) (\_\_t : (Prod (T) (Nat))), ((Drain.fire (T) (\_\_s) (\_\_step) = Option.some (\_\_t)) -> Spent (T) (\_\_s) (\_\_t))}.\par
+\noindent Generates theorem (fire cases template): \texttt{Drain.fire\_progress : forall (\_\_s : (Prod (T) (Nat))) (\_\_step : Drain.Step (T)) (\_\_t : (Prod (T) (Nat))), ((Drain.fire (T) (\_\_s) (\_\_step) = Option.some (\_\_t)) -> (Remaining (T) (\_\_t) < Remaining (T) (\_\_s)))}.\par
+\noindent Generates theorem (replay fire template): \texttt{Drain.replay\_fire : forall (\_\_s : (Prod (T) (Nat))) (\_\_step : Drain.Step (T)) (\_\_t : (Prod (T) (Nat))), ((Drain.fire (T) (\_\_s) (\_\_step) = Option.some (\_\_t)) -> (Drain.replay (T) (Except.ok (\_\_s)) (\_\_step) = Except.ok (\_\_t)))}.\par
+\noindent Generates theorem (replay sound template): \texttt{Drain.replay\_sound : forall (x : (Prod (T) (Nat))) (\_\_acc : Except (ReasoningFailure) ((Prod (T) (Nat)))) (\_\_step : Drain.Step (T)), ((LexLeanReasoning.Reaches ((Spent (T))) (Drain.observe (T) (x)) (\_\_acc)) -> (LexLeanReasoning.Reaches ((Spent (T))) (Drain.observe (T) (x)) (Drain.replay (T) (\_\_acc) (\_\_step))))}.\par
+\noindent Generates theorem (term template): \texttt{Drain.derivation : forall (x : (Prod (T) (Nat))) (\_\_trace : List (Drain.Step (T))), (LexLeanReasoning.Reaches ((Spent (T))) (Drain.observe (T) (x)) (Drain.follow (T) (x) (\_\_trace)))}.\par
+\noindent Generates theorem (accept sound template): \texttt{Drain.accept\_sound : forall (x : (Prod (T) (Nat))) (\_\_s : (Prod (T) (Nat))) (\_\_v : Nat), ((Drain.accept (T) (x) (\_\_s) = Option.some (\_\_v)) -> Empty ((Prod (T) (Nat))) (x) (\_\_v))}.\par
+\noindent Generates theorem (next sound template): \texttt{Drain.next\_sound : forall (\_\_s : (Prod (T) (Nat))) (\_\_t : (Prod (T) (Nat))), ((Drain.next (T) (\_\_s) = Option.some (\_\_t)) -> Spent (T) (\_\_s) (\_\_t))}.\par
+\noindent Generates theorem (next progress template): \texttt{Drain.next\_progress : forall (\_\_s : (Prod (T) (Nat))) (\_\_t : (Prod (T) (Nat))), ((Drain.next (T) (\_\_s) = Option.some (\_\_t)) -> (Remaining (T) (\_\_t) < Remaining (T) (\_\_s)))}.\par
+\noindent Generates theorem (step none template): \texttt{Drain.step\_none : forall (\_\_r : Drain.Run (T)), ((Drain.step (T) (\_\_r) = Option.none) -> (Drain.next (T) ((\_\_r).state) = Option.none))}.\par
+\noindent Generates theorem (step some template): \texttt{Drain.step\_some : forall (\_\_r : Drain.Run (T)) (\_\_q : Drain.Run (T)), ((Drain.step (T) (\_\_r) = Option.some (\_\_q)) -> (Drain.next (T) ((\_\_r).state) = Option.some ((\_\_q).state)))}.\par
+\noindent Generates theorem (step trace template): \texttt{Drain.step\_trace : forall (x : (Prod (T) (Nat))) (\_\_r : Drain.Run (T)) (\_\_q : Drain.Run (T)), ((Drain.step (T) (\_\_r) = Option.some (\_\_q)) -> ((Drain.follow (T) (x) ((\_\_r).trace) = Except.ok ((\_\_r).state)) -> (Drain.follow (T) (x) ((\_\_q).trace) = Except.ok ((\_\_q).state))))}.\par
+\noindent Generates theorem (step count template): \texttt{Drain.step\_count : forall (\_\_r : Drain.Run (T)) (\_\_q : Drain.Run (T)), ((Drain.step (T) (\_\_r) = Option.some (\_\_q)) -> (((\_\_q).ledger).iterations = (((\_\_r).ledger).iterations + 1)))}.\par
+\noindent Generates theorem (step count template): \texttt{Drain.step\_fired : forall (\_\_r : Drain.Run (T)) (\_\_q : Drain.Run (T)), ((Drain.step (T) (\_\_r) = Option.some (\_\_q)) -> (((\_\_q).ledger).firings = (((\_\_r).ledger).firings + 1)))}.\par
+\noindent Generates theorem (unfold template): \texttt{Drain.saturate\_derivation : forall (x : (Prod (T) (Nat))), (LexLeanReasoning.Star ((Spent (T))) (Drain.observe (T) (x)) ((Drain.saturate (T) (x)).1))}.\par
+\noindent Generates theorem (unfold template): \texttt{Drain.run\_state : forall (x : (Prod (T) (Nat))), ((((Drain.run (T) (x)).1).state = (Drain.saturate (T) (x)).1) /\textbackslash{} ((Drain.run (T) (x)).2 = (Drain.saturate (T) (x)).2))}.\par
+\noindent Generates theorem (unfold template): \texttt{Drain.run\_trace : forall (x : (Prod (T) (Nat))), (Drain.follow (T) (x) (((Drain.run (T) (x)).1).trace) = Except.ok (((Drain.run (T) (x)).1).state))}.\par
+\noindent Generates theorem (unfold template): \texttt{Drain.iterations\_bounded : forall (x : (Prod (T) (Nat))), ((((Drain.run (T) (x)).1).ledger).iterations <= ((x).2 + 1))}.\par
+\noindent Generates theorem (unfold template): \texttt{Drain.firings\_bounded : forall (x : (Prod (T) (Nat))), ((((Drain.run (T) (x)).1).ledger).firings <= ((x).2 + 1))}.\par
+\noindent Generates theorem (unfold template): \texttt{Drain.saturates : forall (x : (Prod (T) (Nat))), ((Drain.saturate (T) (x)).2 = true)}.\par
+\noindent Generates theorem (conclude accept template): \texttt{Drain.conclude\_accept : forall (x : (Prod (T) (Nat))) (\_\_s : (Prod (T) (Nat))) (\_\_v : Nat), ((Drain.conclude (T) (x) (\_\_s) = Except.ok (\_\_v)) -> (Drain.accept (T) (x) (\_\_s) = Option.some (\_\_v)))}.\par
+\noindent Generates theorem (conclude sound template): \texttt{Drain.conclude\_sound : forall (x : (Prod (T) (Nat))) (\_\_s : (Prod (T) (Nat))) (\_\_v : Nat), ((Drain.conclude (T) (x) (\_\_s) = Except.ok (\_\_v)) -> Empty ((Prod (T) (Nat))) (x) (\_\_v))}.\par
+\noindent Generates theorem (verdict forward template): \texttt{Drain.verdict\_sound : forall (x : (Prod (T) (Nat))), (forall (\_\_v : Nat), ((Drain.verdict (T) (x) = Except.ok (\_\_v)) -> Empty ((Prod (T) (Nat))) (x) (\_\_v)))}.\par
+\noindent Generates theorem (explained forward template): \texttt{Drain.explained : forall (x : (Prod (T) (Nat))), (forall (\_\_v : Nat), (forall (\_\_trace : List (Drain.Step (T))), ((Drain (T) (x) = Except.ok ((\_\_v, \_\_trace))) -> ((Drain.answer (T) (x) (\_\_trace) = Option.some (\_\_v)) /\textbackslash{} Empty ((Prod (T) (Nat))) (x) (\_\_v)))))}.\par
+\subsection*{\texttt{drain\_clears\_three}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(Drain.verdict (Nat) ((7, 3)) = Except.ok (0))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{drain\_steps\_three}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{((match Drain (Nat) ((7, 3)) with | Except.ok explained => (LexLeanRuntime.length ((explained).2) : Nat) | Except.error \_ => 99) = 2)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\end{document}
