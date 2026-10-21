@@ -10060,7 +10060,7 @@ Authoring found four shapes certificate A and certificate B do not accept, each 
 
 ### the bootstrap Rust crate validator can fail its oracle (SPEC.md §17.23, §17.16)
 
-`BS-05` holds the two production roots of `LexLeanBoot.RustValidate` (`bootstrap/src/RustValidate.lex.tex`) to the stage-0 oracle they replace, `calculus::rust::validate::{validate, correspond}`. The 164 distinct programs among the 247 committed package manifests and 122 fixtures lower to 223 distinct crates over both profiles; with 132 `validateCrate` and 12 `correspondCrate` rule runs (each of the 48 reachable refusals three times, found by a seeded mutation search at a fixed seed, which asserts that it reached the target and does not stop short of it), 17 hand-built crates of the merge of moved sets, 34 hand-built crates of the loop rules, and 37 hand-built crates of the machine callee and the overflow value (#91 stage 4, `SP-18`, `RB-15`), that is 443 `validateCrate` vectors (195 refused) and 306 `correspondCrate` vectors (82 refused), 749 in all. On every host both roots' rendered `rust-std` packages, compiled by the pinned rustc, agree with the oracle on all 749. On the normative host the evaluator agrees on the 200 crates of at most 400 expressions, the rule runs, and the hand-built crates (420 + 283 vectors), and on 500 seeded mutants (271 and 244 refused), and the rendered packages agree on 2,000 further seeded mutants per root. The case passed on the branch merged with `main` after wave 6 (#220), with the production export under the pinned Lean 4.32.1. Every one of these counts is an assertion of the case (`COMMITTED_*`, `RULE_*`, `VECTORS_*`, `EVALUATOR_*`, `SEEDED_*`), so a tree that no longer gives them fails the case instead of leaving this paragraph stale. The figures of this paragraph were measured on the head with `bootstrap/lexlean.lock` relocked locally, because every committed lock is stale under the head's compiler (the compiler-semantics ID has moved); the lock is not committed on a branch, and the regeneration at landing commits the relock.
+`BS-05` holds the two production roots of `LexLeanBoot.RustValidate` (`bootstrap/src/RustValidate.lex.tex`) to the stage-0 oracle they replace, `calculus::rust::validate::{validate, correspond}`. The 167 distinct programs among the 250 committed package manifests and 122 fixtures lower to 226 distinct crates over both profiles; with 132 `validateCrate` and 12 `correspondCrate` rule runs (each of the 48 reachable refusals three times, found by a seeded mutation search at a fixed seed, which asserts that it reached the target and does not stop short of it), 17 hand-built crates of the merge of moved sets, 34 hand-built crates of the loop rules, and 37 hand-built crates of the machine callee and the overflow value (#91 stage 4, `SP-18`, `RB-15`), that is 443 `validateCrate` vectors (195 refused) and 306 `correspondCrate` vectors (82 refused), 749 in all. On every host both roots' rendered `rust-std` packages, compiled by the pinned rustc, agree with the oracle on all 749. On the normative host the evaluator agrees on the 200 crates of at most 400 expressions, the rule runs, and the hand-built crates (420 + 283 vectors), and on 500 seeded mutants (271 and 244 refused), and the rendered packages agree on 2,000 further seeded mutants per root. The case passed on the branch merged with `main` after wave 6 (#220), with the production export under the pinned Lean 4.32.1. Every one of these counts is an assertion of the case (`COMMITTED_*`, `RULE_*`, `VECTORS_*`, `EVALUATOR_*`, `SEEDED_*`), so a tree that no longer gives them fails the case instead of leaving this paragraph stale. The figures of this paragraph were measured on the head with `bootstrap/lexlean.lock` relocked locally, because every committed lock is stale under the head's compiler (the compiler-semantics ID has moved); the lock is not committed on a branch, and the regeneration at landing commits the relock.
 
 The loop rules (the oracle's `Expr::Loop`, SP-19 and RB-14) are `ELoop [Id, Expr]` of the module: ownership of the state across a body that runs again (two refusals, for a name and for a component, naming the least offender in the oracle's order of names), the fallible-tail rule, `apply_types` with `tail = false` for the body, and the correspondence traversal treating the body as a block. The correspondence table was re-diffed against the oracle's `CORRESPONDENCE` after SP-19: 97 rows, and the six that gained `expr:call` (`destructure:pair`, `type:result`, `type:pair`, `construct:ok`, `construct:err`, `construct:pair`) are the only difference from the table first transcribed; the module's table and the oracle's are equal row for row and element for element.
 
@@ -10144,6 +10144,83 @@ derived from them alone (the compiler-semantics, source, semantic, and build
 IDs, and the digests of its lock and its source map); the committed
 language-1.2 records are regenerated in the wave the maintainer names, not by
 this change.
+
+### the standard-library source packages and the helpdesk can fail (`SL-03`, `SL-04`, `EX-09`, #32)
+
+The three cases were written before the packages and the example existed (R3).
+With the sources moved out of the tree, `conformance_sl_03`, `conformance_sl_04`,
+and `conformance_ex_09` each failed at their first read:
+
+```text
+SL-03: std-models/lexlean.toml: No such file or directory (os error 2)
+SL-04: std-reasoning/lexlean.toml: No such file or directory (os error 2)
+EX-09: examples/helpdesk/lexlean.toml: No such file or directory (os error 2)
+```
+
+Each defect below was planted in the committed source, the named case run with
+`cargo test -p repo-conformance --test conformance <case> -- --exact --test-threads=1`,
+and the defect removed. The observed lines are the cases' own, cut for width.
+
+| Planted defect | Case | Observed |
+| --- | --- | --- |
+| `Scores` declares a `composite{}` | `conformance_sl_03` | `no composite takes an importer's models` |
+| a file `std-models/src/Hand.lean` | `conformance_sl_03` | `std-models/src/Hand.lean is Lean source` |
+| the manifest declares an `[[artifact_source]]` | `conformance_sl_03` | `the package declares no source package and no artifact` |
+| the law `margin_tie` is renamed away | `conformance_sl_03` | `the module states `margin_tie`` |
+| `leaderStep` keeps the last maximal score | `conformance_sl_03` | `LLV7002`: `Tactic `decide` proved that the proposition best [3, 9, 9, 4] = 1 is false` |
+| `drain_bound` states `Remaining x < second x`, a bound the ranking does not meet | `conformance_sl_04` | `LLT4010`: `reasoner `Drain` fuel bound: `drain_bound` does not state exactly the generated obligation` |
+| the manifest of `std-reasoning` declares a source package | `conformance_sl_04` | `the package declares no source package and no artifact` |
+| the abstention threshold is 1, not 2 | `conformance_ex_09` | `classify disagrees with the oracle: on "invoice down": 0 != 8` |
+| a file `examples/helpdesk/src/Glue.rs` | `conformance_ex_09` | `Glue.rs is handwritten Lean or Rust` |
+| the keyword `refund` is misspelled in `Router.features` | `conformance_ex_09` | `classify disagrees with the oracle: on "help refund is": 8 != 1` |
+| `Reply.workFor` gives an outage four items of work, not three | `conformance_ex_09` | `dispatch disagrees with the oracle: on "my site is down": outage:3 != outage:2` |
+| `plan` loses its `production:` clause | `conformance_ex_09` | `the packages' own roots are not the example's` (`left == right`: two roots) |
+| `classify` applies the model with no checks | `conformance_ex_09` | `LLT4008`: `executable `classify` applies model `Router::ScoringModel` without the runtime checks [precondition]` |
+
+The threshold plant was not caught where it was first made. With the topics
+weighted alike a request mentioning one topic scored a margin of 3 and every
+other request 0, so a threshold of 1, 2, or 3 gave the same answers and the
+differential passed; only the comparison with the committed export caught it
+(`packages/rust-std/classify/package.json differs from the committed package`).
+The weights are now 4, 3, and 2, so the margins 1, 2, 3, and 4 all occur and
+the differential itself catches the plant, as the row above records. The
+plants of `std-models` and `std-reasoning` that need only the manifest or the
+source text fail before any Lean runs; the `leaderStep` plant fails in the
+kernel, and the `drain_bound` plant at link.
+
+Three more refusals are the case's own planted copies, each required to be
+refused with exactly its code before any backend output: a changed byte of
+`std-models` and a changed version of it in the example's manifest (`LLC0105`),
+an import of `LexLeanStdModels.Scores` by an example that does not declare the
+package while `std-reasoning` does (`LLR3009`), a flipped bit of the weights
+artifact (`LLR3007`), and a `checked` application without its precondition
+(`LLT4008`). The same pin check refused the example when the packages were
+edited under a lock that predated them, before any case was run:
+
+```text
+error[LLC0105]: source package `std-models` is not the package the lock pins: tree_sha256: locked dddefafb…, found 50c65a4e…
+```
+
+The proof forms bound what the combinators claim. `linear_arithmetic` could
+not prove that `decideOr` abstains below the threshold for every list (Lean
+reported `omega could not prove the goal` with the counterexample
+`c ≥ 2, a - b ≥ 1`, where `a` is the threshold and `b` the margin), and a theorem about `classify` over a byte literal is not reducible by the
+kernel (`Tactic `decide` failed` and `Tactic `rfl` failed` on `classify`
+applied to `"hello"`), so the laws of the score combinators are stated at
+closed instances and the behavior of the roots is held by the differential
+against an oracle written in the case, the way `SL-01` holds `Text`. The
+gate law of `GateModel` is general over the type parameter.
+
+Measured on Linux x86-64 with Lean 4.32.1: `conformance_sl_03` and
+`conformance_sl_04` together in 92 s (each verifies its package, replays it
+with `leanchecker`, and audits its axioms); `conformance_ex_09` in 821 s (the
+example formatted, built, and verified with its three packages, the evaluator
+differential, and the production export compared with the committed packages).
+No language data, schema, or fixture moved for these rows: after the merge of
+the wave-6 identity `cargo xtask check-golden --write` changed only the files
+of `std-models`, `std-reasoning`, and `examples/helpdesk`, and
+`cargo xtask check-production-export --write` only
+`tests/production-export/helpdesk/`.
 
 ### byte-to-fixed-width widening conversions in language 1.2 (`SM-32`, #114)
 
@@ -10638,3 +10715,186 @@ The wrong-shape scorer refusals (a contract that maps to `nat`, a contract over
 `list int`) share the stateful and undischarged refusals' branch structure in
 `check_text_generator` but were not planted separately; the case asserts each
 by its reason (`does not map `list uint32` to `list int``).
+## Text classifiers, composition, and the no-prompt audit (LM-07, LM-08, LM-09, slice 3 of #30)
+
+`LM-07` (classifiers), `LM-08` (composition and adapters through the model
+constructs alone), and `LM-09` (no prompt is code) are `build` rows, validated
+against Lean's kernel and the compiler's own registries and not proved here.
+Lean's guarantees are the authority rows' (`model/authorities.toml`); the
+library's lemmas are checked by the pinned Lean when the generated module is
+decoded, and a classifier's, a window model's, and an adapter's generated
+theorems are checked by it again in each module that declares them.
+
+### What each case establishes
+
+- **`conformance_lm_07`** links classifiers `Words` (over the `longest_match`
+  tokenizer) and `Letters` (over the `byte_level` one) over a stateless
+  `list int -> nat` model, reads their elaboration (`features`,
+  `classifyTokens`, `classify`, and the laws `features_width`,
+  `features_total`, `features_fit`), checks the generated Lean applies the
+  library's `features` and proves by its four lemmas without splicing any,
+  refuses a non-tokenizer (`LLT4006`), an unknown model (`LLT4006`), an unsorted
+  policy (`LLT4006`), a model from `list uint32` (`LLT4006`), a model whose
+  postcondition is checked at run time (`LLT4006`), a stateful model
+  (`LLT4006`), and an unknown member (`LLT4001`); verifies the laws with the
+  pinned Lean; evaluates four classifications in the kernel; refuses a wrong
+  claim (`LLV7002`); and fails a classifier whose policy omits an axiom its
+  laws observe (`LLV7005`).
+- **`conformance_lm_08`** links a stateful model over the window `Last2` whose
+  step is `Last2.push` and whose contract's postcondition is
+  `fitsOption Last2.capacity pushed`, so that `Last2.push_bounded` is the whole
+  proof of its `satisfies_contract` evidence; composes it under `scan`; links
+  adapters over `string` that apply `Words.classify` and `Halt.generate`, whose
+  evidence is `Words.features_width` and `Digits.text_roundtrip`; reads the
+  schema's declaration kinds and asserts they are the nineteen of the language
+  (none for composition or adapters); refuses a model whose realization is a
+  classifier (`LLT4006`); verifies all of it with the pinned Lean, including the
+  kernel evaluation of the scan's stream; and fails an adapter whose
+  realization is not the contract's label (`LLV7002`).
+- **`conformance_lm_09`** reads `schemas/semantic-module-v2.schema.json` and
+  `language/production-1.2.toml`: the 56 operations of the schema's primitive
+  node are the 56 `primitive.*` rows of the registry, each is a variant of the
+  compiler's `SemanticPrimitive`, each is classified by the audit (18 may take
+  a `string` or `bytes` operand, and every one of those returns data), and none
+  of the four text declarations states a member that is a free `string` (a
+  string type no pattern, enumeration, or constant closes, found through
+  references). The audit is armed by those 18 operations; a planted
+  `eval_string` row in either registry, an unclassified operation, a missing
+  classification, a text member `prompt` of type string on each of the four
+  declarations, and one reached through a reference are each caught, with their
+  names, inside the case.
+
+### Where it was run
+
+Linux x86-64, `leanprover/lean4:v4.32.1` installed through `elan`,
+`LEXLEAN_VERIFY_WIDTH=2` and `LEXLEAN_VERIFY_MEMORY_KIB=12582912`. The change
+moves the language-1.2 compiler-semantics ID (the text library, the schema, and
+the `semantic_ir` and `latex_backend` versions), so the committed lock of
+`examples/models` is stale (`LLC0102`); the cases were run with that one lock
+rewritten by `lexlean lock` in the working tree, and the rewrite is not part of
+this change, because the maintainer regenerates every record in the identity
+wave. With it, on the tree merged with the head of #176 (`8153ee5f7`):
+
+```
+cargo test -p repo-conformance --test conformance conformance_lm_
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 419 filtered out; finished in 555.69s
+```
+
+The ten are `LM-01`..`LM-09` and `LM-13`. `LM-07` and `LM-08` narrow the
+example's entrypoint from `Main` to `Recognizer` and lock again in their own
+copy of the project, as the helper `narrowed` says, so that verifying one of
+them does not verify the rest of the example once more.
+
+### The cases can fail
+
+Each defect was planted alone in the named file, the named test run once with
+`cargo test -p repo-conformance --test conformance <test> -- --exact`, the
+failure observed, and the plant restored with `git checkout`. The signatures
+are the first panic message, trimmed.
+
+| ID | Planted defect | Expected failure signature |
+| --- | --- | --- |
+| `LM-07` | `ir/semantic/language_model.rs`: the stateful-model test of `check_text_classifier` made `false &&` | `expected "is stateful" under LLT4006, got LLT4006: phase link: text classifier `Remembering` model `RecentModel` does not take `list int`` |
+| `LM-07` | the same file: the open-runtime-checks test made `false &&` | `expected "needs runtime checks" under LLT4006, got LLT4006: phase link: text classifier `Words` model `RawDigitModel` does not take `list int`` |
+| `LM-07` | the same file: `features_width` states a width of `0` for `size` | `the module verifies with real Lean: ... LLV7002 ... Lean rejected `Models.Recognizer` (error): Type mismatch LexLeanText.features_width Digits.size __tokens ... but is expected to have type LexLeanRuntime.length (LexLeanText.features Digits.size __tokens) = 0` |
+| `LM-07` | the same file: `features_fit` proved by the `features_width` lemma | `the generated Lean proves by LexLeanText.features_fit` |
+| `LM-07` | the same file: the `byte_level` total law proved by the `longest_match` lemma | `the generated Lean proves by LexLeanText.features_total_text_bytes` |
+| `LM-08` | `ir/semantic/language_model.rs`: the window's generated law renamed `push_fits` | `check succeeds: ... LLT4001 ... proof application names a forward or missing theorem `Last2.push_bounded`` |
+| `LM-08` | the same file: `features_width` states a width of `0` for `size` | `the module verifies with real Lean: ... LLV7002 ... Lean rejected `Models.Recognizer` (error): Type mismatch LexLeanText.features_width Digits.size __tokens` |
+| `LM-09` | `language/production-1.2.toml`: a `primitive.eval_string` row | `the audit holds: primitive `eval_string` is in the production registry and not in the schema enumeration` |
+| `LM-09` | `schemas/semantic-module-v2.schema.json`: a `prompt` member of type string on `text_classifier` | `the audit holds: text declaration `text_classifier` member `prompt` is a free string` |
+
+Two attempts at planting a new declaration kind (`text_adapter`) in the schema
+were not evidence for `LM-08`: the schema is an input of the compiler-semantics
+ID, so the lock is stale (`LLC0102`) before the case reads the kinds. The
+kinds assertion is reached only in a tree whose records are current.
+
+### Gates run
+
+```
+cargo xtask validate-model         validate-model: documents current, 429 ids, 86 codes, meta-gate and audits clean (R1)
+cargo xtask validate-spec-links    validate-spec-links: 429 table rows bijective with the register (RP-07)
+cargo fmt --all -- --check         (no output)
+cargo clippy --workspace --all-targets -- -D warnings   (no output)
+cargo test --workspace --exclude repo-conformance --all-features
+```
+
+The last runs 204 unit tests of `lexlean` and the rest of the workspace; one
+test of `crates/lexlean/tests/property.rs`,
+`formatter_is_idempotent_on_every_example`, fails with `LLC0102` ("the compiler
+semantics changed since locking") on the committed lock of `examples/collections`,
+which is the stale record described above and is regenerated in the wave.
+
+## A mutual group of implementation records is pinned and audited by its union (LLV7013, found by the slice 3 identity, #221)
+
+### The defect
+
+On the tree of #221 merged with `main` 17f7e462c, `lexlean verify` of the
+bootstrap project stopped with
+
+```
+error[LLV7013]: certificate A: the certificate row
+`LexLeanPreserve.C3df453b80ed6295dbadd323b69d0f1c6.R6.__fits_76._unsafe_rec`
+depends on ["propext"], its policy pins []
+```
+
+and did so again on a second identity (`Caf08…`, the same tree with
+`latex_backend` bumped), while `main` verifies. The staged Lean sources of the
+preserve stage (the environment modules, every certificate, `Compose`, the audit
+module) and the generated `LexLeanBoot` modules are byte-identical between
+`main` and the failing tree once the identity hash is substituted
+(`diff -rq`: no difference), so the verdict differs only through the hash in the
+certificate module names.
+
+The row is the first of a mutual group of three implementation records
+(`__fits_76`, `__fits_106`, `__fits_147` of root R6, `all` naming the three),
+pinned `[]`, `[propext]`, `[propext]`: the generator pinned each row from what
+it referenced when it was pushed. In the certificate's data the terms of the
+three do not refer to one another (`__fits_76` and `__fits_147` refer to no
+other row; `__fits_106` to `__enc_2` and `__enc_8._unsafe_rec`), and the
+constants `__fits_76` does refer to (`LexLeanBoot.RustValidate.Cap`,
+`Cap.casesOn`, `Cap.rec`, `LexLeanTarget.TargetSyntax.Value`, `Value.adt`)
+print as axiom-free on both identities, so the difference is not in what the
+row's term names. Lean 4.32.1 stores axiom data for a module's constants
+(`Lean/Util/CollectAxioms.lean`, `exportedAxiomsExt`) by one shared traversal,
+over the module's constants in the order of a hash map keyed by names, with an
+empty-set sentinel for a constant in progress; the audit printed, on `main`'s
+identity, `[]`, `[propext]`, `[propext]` (the pins), and on the failing
+identities `[propext]` for all three. The exact path by which the traversal
+gives `__fits_76` the set of its group on those identities is not established
+here; what is established is that identical sources print differently and that
+the union of the group's prints is `[propext]` on every identity tried. The
+second occurrence is #227's core-library case, where `__fits_78._unsafe_rec`
+calls the later `__fits_111._unsafe_rec` and is pinned `[]` where Lean prints
+`propext`: a forward reference inside a mutual group.
+
+### The fix
+
+`group_rows` in `production/certificate/data_a.rs` gives every member of a
+group of `RowKind::Partial` rows the union of the members' axioms once the group
+is complete; `audit` in `production/preserve.rs` checks such a group once, at
+its first member: the union of the sets printed for its members must equal the
+pin of each member, and the message names the group. Every other row is checked
+row by row, as before. SPEC.md §17.17 states it.
+`cargo test -p lexlean --lib group_tests` passes: the union is the same whichever
+member Lean reaches first, and a member the audit did not print is refused.
+
+### The check can fail
+
+The per-row pin was restored (the union block of `group_rows` skipped with
+`if true ||`), and `lexlean verify` run in `bootstrap/` on the identity of this
+tree (`C3df…`, about 17 minutes under `LEXLEAN_VERIFY_WIDTH=2` and
+`LEXLEAN_VERIFY_MEMORY_KIB=12582912`, with the pinned Lean installed):
+
+```
+error[LLV7013]: certificate A: the certificate rows of the mutual group
+["LexLeanPreserve.C3df453b80ed6295dbadd323b69d0f1c6.R6.__fits_76._unsafe_rec",
+ "LexLeanPreserve.C3df453b80ed6295dbadd323b69d0f1c6.R6.__fits_106._unsafe_rec",
+ "LexLeanPreserve.C3df453b80ed6295dbadd323b69d0f1c6.R6.__fits_147._unsafe_rec"]
+print the union ["propext"], but the policy of
+`LexLeanPreserve.C3df453b80ed6295dbadd323b69d0f1c6.R6.__fits_76._unsafe_rec`
+pins []
+```
+
+The plant was restored with `git checkout`. The same verification with the fix in
+place is the regeneration of the bootstrap records in this change.

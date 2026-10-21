@@ -261,3 +261,87 @@ both environments.
 3. **Layout.** Line breaks differ where the longer binder name was wrapped.
 
 Apart from these, the two modules are equal.
+
+## Third record: classifiers (slice 3 of #30)
+
+Slice 3 (`LM-07`) adds the features of a text classifier and their laws to the
+same module, by the round trip of the first record, in the way the second
+record added windows and generation. The 198 declarations the module already
+held are not re-exported: the additions are exported alone and joined to the
+committed data, so the existing rows and nodes are the ones the earlier
+records evidence. Nothing in the release tree is hand-written Lean.
+
+### What was added
+
+The additions were authored once as Lean outside the release tree, in a scratch
+module `LexLeanText.Ext` that imports the library module the compiler generates
+from the committed data, and proved under `leanprover/lean4:v4.32.1` with no
+`sorry`, no `admit`, and no new axiom. Thirty-one declarations were exported,
+among them eight the elaboration names:
+
+- **Functions:** `features` (the count of each token id below a size, in
+  order, over `countOf`), `fitWidth` (pad with zeros or truncate to a width),
+  `total` (the sum of a list of integers), and `tokenCount`.
+- **Laws:** `features_width`, `features_fit`, `features_total_text` (under
+  `longest_match`), and `features_total_text_bytes` (under `byte_level`); both
+  totals apply `features_total_of` to the tokenizer's `in_range`.
+- **Support:** `countOf`, `hot`, `total_nil`, `total_cons`, `total_append`,
+  `total_map_add`, `total_map_zero`, `total_one_hot`, `countOf_cons`,
+  `features_total_of`, and the equation, `_proof_` and matcher declarations
+  Lean generated for them.
+
+The exact axioms `#print axioms` reports for the laws an elaboration names:
+
+```
+'LexLeanText.features_width' depends on axioms: [propext]
+'LexLeanText.features_fit' depends on axioms: [propext, Quot.sound]
+'LexLeanText.features_total_text' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanText.features_total_text_bytes' depends on axioms: [propext, Classical.choice, Quot.sound]
+```
+
+### How
+
+```
+lexlean build                       # in a locked scratch copy of the library project
+lean -o LexLeanText/LexLeanText.olean   # the generated Lean of the committed module
+lean -o LexLeanText/Ext.olean Ext.lean  # the additions, importing that module
+lean --run flags.lean               # the second record's flags.lean, over LexLeanText.Ext
+lean --run export.lean              # the second record's export.lean, libMods = [LexLeanText.Ext]
+```
+
+The exporter's output is converted with the same `canon.py` and joined to the
+committed data by a scratch script that renumbers the additions' nodes into the
+committed node table, reusing an existing node wherever a node is structurally
+equal (so a shared `Nat` or `List` is one node), appends the thirty-one
+declaration rows after the 198, and recomputes `proof_nodes` by the same
+definition `canon.py` uses (the nodes the values of theorems reach and no type
+reaches). `lexlean` then wrote the notation (`sdk::to_notation`), the form of
+every language-1.2 source (`AU-04`).
+
+### Equivalence
+
+The committed module, read back by the compiler, has:
+
+- 22,774 DAG nodes, of which the first 19,448 are equal, node for node, to the
+  nodes of the committed module before this record;
+- 229 declarations, of which the first 198 are equal, row for row (kind,
+  universe parameters, type and value indices, reducibility, transparency,
+  tags, inlining, compiled flag, and exact axioms), to the declarations before
+  this record, in the same order;
+- the same `imports`, `["Init"]`.
+
+The Lean the compiler generates from the committed data was compiled by the
+pinned Lean as `LexLeanText.LexLeanText` (the kernel replays every
+declaration when the module is decoded), and `#print axioms` on the four laws
+above printed the lines recorded above.
+
+### Differences, stated plainly
+
+1. **Twenty nodes are no longer proof data.** `proof_nodes` is derived: the
+   nodes the values of theorems reach and no declaration's type reaches. The
+   additions' types reach twenty nodes that only proofs reached before, so
+   those twenty are written as ordinary nodes (without `proof(`) in the
+   notation. No node, declaration, or value changed.
+2. **The Lean source is not committed.** The additions' Lean is the scratch
+   input of the round trip, as the first two records' was; the committed data
+   is the module, and a change to it goes through the same round trip.

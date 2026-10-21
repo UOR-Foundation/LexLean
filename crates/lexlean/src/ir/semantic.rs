@@ -1491,6 +1491,8 @@ pub enum SemanticDeclaration {
         name: String,
         tokenizer: MemberRef,
         model: ModelUse,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        axioms: Vec<String>,
     },
 }
 
@@ -1561,12 +1563,12 @@ impl SemanticDeclaration {
             | Self::Reasoner { axioms, .. }
             | Self::Tokenizer { axioms, .. }
             | Self::ContextWindow { axioms, .. }
-            | Self::TextGenerator { axioms, .. } => axioms,
+            | Self::TextGenerator { axioms, .. }
+            | Self::TextClassifier { axioms, .. } => axioms,
             Self::Structure { .. }
             | Self::Class { .. }
             | Self::Instance { .. }
-            | Self::Inductive { .. }
-            | Self::TextClassifier { .. } => &[],
+            | Self::Inductive { .. } => &[],
         }
     }
 
@@ -9489,7 +9491,8 @@ impl SemanticModule {
                 }
                 SemanticDeclaration::Tokenizer { .. }
                 | SemanticDeclaration::ContextWindow { .. }
-                | SemanticDeclaration::TextGenerator { .. } => {
+                | SemanticDeclaration::TextGenerator { .. }
+                | SemanticDeclaration::TextClassifier { .. } => {
                     // §17.12 (text): a tokenizer states no law of its own.
                     // Its meaning is the sealed laws library the compiler
                     // embeds — `encode`, `decode`, `encodeText`, `decodeText`
@@ -9513,14 +9516,6 @@ impl SemanticModule {
                     if !text_imports.iter().any(|import| import == laws) {
                         text_imports.push(laws.to_owned());
                     }
-                }
-                SemanticDeclaration::TextClassifier { .. } => {
-                    // §17.12 (text): a text classifier carries its own
-                    // elaboration, in its own slice of #30. One admitted
-                    // under 1.2 without one is reported by `Builder::finish`
-                    // exactly as it reports any family declaration linking
-                    // did not elaborate.
-                    require_language_1_2(&env, "text declaration")?;
                 }
             }
         }
