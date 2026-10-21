@@ -194,6 +194,9 @@
     ],
     "bootstrap-runtime": [
       "BS-09"
+    ],
+    "preservation-prims": [
+      "SP-28"
     ]
   }
 }
