@@ -13,6 +13,11 @@ lean_toolchain = "leanprover/lean4:v4.32.1"
 package = "lexlean.std.nat"
 kind = "builtin"
 
+[[lexicon_source]]
+package = "textmodels.titles"
+kind = "path"
+path = "glossary/textmodels.titles"
+
 [[artifact_source]]
 sha256 = "c2a671b13cf191d6570a3a59b6b8b016ecf2ae5d5d80f247756f5887f67eb8bd"
 path = "artifacts/pieces.txt"
