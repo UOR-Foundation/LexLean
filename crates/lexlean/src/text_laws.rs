@@ -204,6 +204,27 @@ pub mod names {
     /// The tokenizer's `in_range` law under `byte_level`, for any size function equal to `vocabSize`.
     pub const IN_RANGE_BYTES_OF: &str = "in_range_bytes_of";
 
+    /// The production `xorshift32` equals the library's.
+    pub const XORSHIFT32_BRIDGE: &str = "xorshift32_bridge";
+    /// The production seed read bit by bit as an `Int` is the seed's `Nat`.
+    pub const SEED_BITS_BRIDGE: &str = "seedBits_bridge";
+    /// The production `weight` is the library's, read as an `Int`.
+    pub const WEIGHT_BRIDGE: &str = "weight_bridge";
+    /// The production `totalWeight` is the library's, read as an `Int`.
+    pub const TOTAL_WEIGHT_BRIDGE: &str = "totalWeight_bridge";
+    /// The production `drawGo` over an `Int` remainder equals the library's over a `Nat`.
+    pub const DRAW_GO_BRIDGE: &str = "drawGo_bridge";
+    /// The production `proportional` equals the library's.
+    pub const PROPORTIONAL_BRIDGE: &str = "proportional_bridge";
+    /// The production `chooseSample` equals the library's.
+    pub const CHOOSE_SAMPLE_BRIDGE: &str = "chooseSample_bridge";
+    /// The production `generateSample` equals the library's.
+    pub const GENERATE_SAMPLE_BRIDGE: &str = "generateSample_bridge";
+    /// The generator's `bounded` law under `sample`, for any function equal to `generateSample`.
+    pub const GENERATE_SAMPLE_BOUNDED_OF: &str = "generateSample_bounded_of";
+    /// The generator's `context_bounded` law under `sample`, for any function equal to `generateSample`.
+    pub const GENERATE_SAMPLE_GUARDED_OF: &str = "generateSample_guarded_of";
+
     /// `features : Nat -> List UInt32 -> List Int`, the count of each id
     /// below a size.
     pub const FEATURES: &str = "features";
@@ -230,7 +251,7 @@ pub mod names {
     pub const FEATURES_TOTAL_TEXT_BYTES: &str = "features_total_text_bytes";
 
     /// Every name above, each of which the native module must declare.
-    pub const ALL: [&str; 75] = [
+    pub const ALL: [&str; 85] = [
         VOCAB_SIZE,
         ENCODE_WITH,
         ENCODE_BYTES,
@@ -296,6 +317,16 @@ pub mod names {
         VOCAB_SIZE_BRIDGE,
         IN_RANGE_OF,
         IN_RANGE_BYTES_OF,
+        XORSHIFT32_BRIDGE,
+        SEED_BITS_BRIDGE,
+        WEIGHT_BRIDGE,
+        TOTAL_WEIGHT_BRIDGE,
+        DRAW_GO_BRIDGE,
+        PROPORTIONAL_BRIDGE,
+        CHOOSE_SAMPLE_BRIDGE,
+        GENERATE_SAMPLE_BRIDGE,
+        GENERATE_SAMPLE_BOUNDED_OF,
+        GENERATE_SAMPLE_GUARDED_OF,
         FEATURES,
         FIT_WIDTH,
         TOTAL,

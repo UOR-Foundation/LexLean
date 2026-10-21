@@ -911,8 +911,8 @@ fn generate_with_bridge() -> ProofTerm {
     )
 }
 
-/// The bridge of the greedy choice: the first maximum, with the seed kept.
-fn choose_greedy_bridge() -> ProofTerm {
+/// The bridge of the production `firstMax` to the library's.
+fn first_max_bridge() -> ProofTerm {
     let ints = list_of(SemanticType::Int);
     let first_max_go = production_value(
         "firstMaxGo",
@@ -927,21 +927,109 @@ fn choose_greedy_bridge() -> ProofTerm {
         names::FIRST_MAX_GO_BRIDGE,
         vec![first_max_go.clone(), unfolds(3), unfolds(5)],
     );
-    let first_max = applied(
+    applied(
         names::FIRST_MAX_BRIDGE,
         vec![
             first_max_go,
             go_bridge,
-            production_value("firstMax", &[ints.clone()]),
+            production_value("firstMax", &[ints]),
             unfolds(1),
         ],
-    );
+    )
+}
+
+/// The bridge of the greedy choice: the first maximum, with the seed kept.
+fn choose_greedy_bridge() -> ProofTerm {
+    let ints = list_of(SemanticType::Int);
     applied(
         names::CHOOSE_GREEDY_BRIDGE,
         vec![
             production_value("firstMax", &[ints.clone()]),
-            first_max,
+            first_max_bridge(),
             production_value("chooseGreedy", &[ints, SemanticType::UInt32]),
+            unfolds(2),
+        ],
+    )
+}
+
+/// The bridge of the sampling choice: the draw proportional to the
+/// non-negative scores against the next seed of `xorshift32`, which is read
+/// bit by bit as an `Int` because the calculus has no widening to `Nat` of
+/// its own to state it by.
+fn choose_sample_bridge() -> ProofTerm {
+    let ints = list_of(SemanticType::Int);
+    let weight = applied(
+        names::WEIGHT_BRIDGE,
+        vec![production_value("weight", &[SemanticType::Int]), unfolds(1)],
+    );
+    let total = applied(
+        names::TOTAL_WEIGHT_BRIDGE,
+        vec![
+            production_value("weight", &[SemanticType::Int]),
+            weight.clone(),
+            production_value("totalWeight", &[ints.clone()]),
+            ProofTerm::Refl,
+            unfolds(2),
+        ],
+    );
+    let draw = applied(
+        names::DRAW_GO_BRIDGE,
+        vec![
+            production_value("weight", &[SemanticType::Int]),
+            weight,
+            production_value(
+                "drawGo",
+                &[ints.clone(), SemanticType::Nat, SemanticType::Int],
+            ),
+            unfolds(2),
+            unfolds(4),
+        ],
+    );
+    let seed = applied(
+        names::SEED_BITS_BRIDGE,
+        vec![
+            production_value(
+                "seedBits",
+                &[
+                    SemanticType::UInt32,
+                    SemanticType::Nat,
+                    SemanticType::Int,
+                    SemanticType::Int,
+                ],
+            ),
+            unfolds(3),
+            unfolds(4),
+        ],
+    );
+    let proportional = applied(
+        names::PROPORTIONAL_BRIDGE,
+        vec![
+            production_value("seedInt", &[SemanticType::UInt32]),
+            seed,
+            production_value("totalWeight", &[ints.clone()]),
+            total,
+            production_value("firstMax", &[ints.clone()]),
+            first_max_bridge(),
+            production_value(
+                "drawGo",
+                &[ints.clone(), SemanticType::Nat, SemanticType::Int],
+            ),
+            draw,
+            production_value("proportional", &[ints.clone(), SemanticType::UInt32]),
+            unfolds(2),
+        ],
+    );
+    applied(
+        names::CHOOSE_SAMPLE_BRIDGE,
+        vec![
+            production_value("xorshift32", &[SemanticType::UInt32]),
+            applied(
+                names::XORSHIFT32_BRIDGE,
+                vec![production_value("xorshift32", &[SemanticType::UInt32]), unfolds(1)],
+            ),
+            production_value("proportional", &[ints.clone(), SemanticType::UInt32]),
+            proportional,
+            production_value("chooseSample", &[ints, SemanticType::UInt32]),
             unfolds(2),
         ],
     )
@@ -983,6 +1071,51 @@ fn greedy_loop_bridge() -> ProofTerm {
                 ],
             ),
             unfolds(7),
+        ],
+    )
+}
+
+/// The bridge of the production sampling loop to the library's, applied to
+/// the eight arguments of the loop.
+fn sample_loop_bridge() -> ProofTerm {
+    let chooser = chooser_type();
+    applied(
+        names::GENERATE_SAMPLE_BRIDGE,
+        vec![
+            production_value(
+                "generateWith",
+                &[
+                    scorer_type(),
+                    chooser,
+                    SemanticType::Nat,
+                    SemanticType::Nat,
+                    SemanticType::Bool,
+                    SemanticType::UInt32,
+                    SemanticType::Nat,
+                    tokens(),
+                    SemanticType::UInt32,
+                ],
+            ),
+            generate_with_bridge(),
+            production_value(
+                "chooseSample",
+                &[list_of(SemanticType::Int), SemanticType::UInt32],
+            ),
+            choose_sample_bridge(),
+            production_value(
+                "generateSample",
+                &[
+                    scorer_type(),
+                    SemanticType::Nat,
+                    SemanticType::Nat,
+                    SemanticType::Bool,
+                    SemanticType::UInt32,
+                    SemanticType::Nat,
+                    tokens(),
+                    SemanticType::UInt32,
+                ],
+            ),
+            unfolds(8),
         ],
     )
 }
@@ -1460,14 +1593,13 @@ fn check_text_generator(
         .functions
         .get(&scorer_key)
         .is_some_and(|info| info.executable);
-    let text_executable = !sampled
-        && scorer_executable
+    let text_executable = scorer_executable
         && ["encodeText", "decodeText"].iter().all(|member| {
             env.functions
                 .get(&super::member_key(&sibling(tokenizer, member)))
                 .is_some_and(|info| info.executable)
         });
-    let run_executable = !sampled && scorer_executable;
+    let run_executable = scorer_executable;
     let score = format!("{name}.score");
     let end_type = format!("{name}.End");
     let failure_type = format!("{name}.Failure");
@@ -1507,20 +1639,16 @@ fn check_text_generator(
         }
         arguments
     };
-    let (loop_function, guarded_function, bounded_lemma, guarded_lemma, run_type) = if sampled {
+    let (loop_function, guarded_function, run_type) = if sampled {
         (
             names::GENERATE_SAMPLE,
             names::GENERATE_SAMPLE_GUARDED,
-            names::GENERATE_SAMPLE_BOUNDED,
-            names::GENERATE_SAMPLE_GUARDED_LAW,
             sample_run(),
         )
     } else {
         (
             names::GENERATE_GREEDY,
             names::GENERATE_GREEDY_GUARDED,
-            names::GENERATE_GREEDY_BOUNDED,
-            names::GENERATE_GREEDY_GUARDED_LAW,
             greedy_run(),
         )
     };
@@ -1671,11 +1799,7 @@ fn check_text_generator(
             &[],
             seeded(vec![parameter(TOKENS, tokens())]),
             run_type.clone(),
-            if sampled {
-                library_call(loop_function, loop_arguments(model::var(TOKENS)))
-            } else {
-                production_call(loop_function, loop_arguments(model::var(TOKENS)))
-            },
+            production_call(loop_function, loop_arguments(model::var(TOKENS))),
             run_executable,
         ),
         model::ordinary_definition(
@@ -1710,114 +1834,96 @@ fn check_text_generator(
         ran,
         library_call(guarded_function, loop_arguments(model::var(TOKENS))),
     );
-    let theorems = if sampled {
-        vec![
-            // At most `max_tokens` tokens are generated.
-            law_over(
-                format!("{name}.bounded"),
-                seeded(vec![parameter(TOKENS, tokens())]),
-                bounded_statement,
-                &[&run],
-                bounded_lemma,
-                loop_arguments(model::var(TOKENS)),
-            ),
-            // The scorer is consulted only on contexts that fit the window:
-            // the run equals the run whose scorer sees nothing that does not
-            // fit.
-            law_over(
-                format!("{name}.context_bounded"),
-                seeded(vec![parameter(TOKENS, tokens())]),
-                guarded_statement,
-                &[&run],
-                guarded_lemma,
-                loop_arguments(model::var(TOKENS)),
-            ),
-        ]
+    // The production loop equals the library's, and the library's laws are
+    // reached through that bridge.
+    let mut loop_names = vec!["score", "size", "capacity", "keep", "stop", "fuel", "prompt"];
+    let mut loop_binders = vec![
+        parameter("score", scorer_type()),
+        parameter("size", SemanticType::Nat),
+        parameter("capacity", SemanticType::Nat),
+        parameter("keep", SemanticType::Bool),
+        parameter("stop", SemanticType::UInt32),
+        parameter("fuel", SemanticType::Nat),
+        parameter("prompt", tokens()),
+    ];
+    let mut loop_types = vec![
+        scorer_type(),
+        SemanticType::Nat,
+        SemanticType::Nat,
+        SemanticType::Bool,
+        SemanticType::UInt32,
+        SemanticType::Nat,
+        tokens(),
+    ];
+    if sampled {
+        loop_names.push("seed");
+        loop_binders.push(parameter("seed", SemanticType::UInt32));
+        loop_types.push(SemanticType::UInt32);
+    }
+    let loop_variables = || loop_names.iter().map(|name| model::var(name)).collect();
+    let bridge_name = format!("{name}.run_bridge");
+    let (bridge_lemma, loop_bridge, bounded_of, guarded_of) = if sampled {
+        (
+            names::GENERATE_SAMPLE_BRIDGE,
+            sample_loop_bridge(),
+            names::GENERATE_SAMPLE_BOUNDED_OF,
+            names::GENERATE_SAMPLE_GUARDED_OF,
+        )
     } else {
-        // The production loop equals the library's, and the library's laws
-        // are reached through that bridge.
-        let loop_names = [
-            "score", "size", "capacity", "keep", "stop", "fuel", "prompt",
-        ];
-        let loop_binders = vec![
-            parameter("score", scorer_type()),
-            parameter("size", SemanticType::Nat),
-            parameter("capacity", SemanticType::Nat),
-            parameter("keep", SemanticType::Bool),
-            parameter("stop", SemanticType::UInt32),
-            parameter("fuel", SemanticType::Nat),
-            parameter("prompt", tokens()),
-        ];
-        let loop_variables = || loop_names.iter().map(|name| model::var(name)).collect();
-        let bridge_name = format!("{name}.run_bridge");
-        let mut bridge_arguments = match greedy_loop_bridge() {
-            ProofTerm::Theorem { arguments, .. } => arguments,
-            other => vec![other],
-        };
-        bridge_arguments.extend(loop_names.iter().map(|name| proof_term(model::var(name))));
-        let bridge = law_of(
-            bridge_name.clone(),
-            loop_binders,
-            model::eq(
-                production_call(loop_function, loop_variables()),
-                library_call(loop_function, loop_variables()),
-            ),
-            &[],
+        (
             names::GENERATE_GREEDY_BRIDGE,
-            bridge_arguments,
-        );
-        let through_bridge = |lemma: &str, statement: SemanticTerm, law: &str| {
-            let mut arguments = vec![
-                production_value(
-                    loop_function,
-                    &[
-                        scorer_type(),
-                        SemanticType::Nat,
-                        SemanticType::Nat,
-                        SemanticType::Bool,
-                        SemanticType::UInt32,
-                        SemanticType::Nat,
-                        tokens(),
-                    ],
-                ),
-                ProofTerm::Theorem {
-                    theorem: model::local(&bridge_name),
-                    type_arguments: Vec::new(),
-                    arguments: Vec::new(),
-                },
-            ];
-            arguments.extend(
-                loop_arguments(model::var(TOKENS))
-                    .into_iter()
-                    .map(proof_term),
-            );
-            law_of(
-                format!("{name}.{law}"),
-                vec![parameter(TOKENS, tokens())],
-                statement,
-                &[&run],
-                lemma,
-                arguments,
-            )
-        };
-        vec![
-            bridge,
-            // At most `max_tokens` tokens are generated.
-            through_bridge(
-                names::GENERATE_GREEDY_BOUNDED_OF,
-                bounded_statement,
-                "bounded",
-            ),
-            // The scorer is consulted only on contexts that fit the window:
-            // the run equals the run whose scorer sees nothing that does not
-            // fit.
-            through_bridge(
-                names::GENERATE_GREEDY_GUARDED_OF,
-                guarded_statement,
-                "context_bounded",
-            ),
-        ]
+            greedy_loop_bridge(),
+            names::GENERATE_GREEDY_BOUNDED_OF,
+            names::GENERATE_GREEDY_GUARDED_OF,
+        )
     };
+    let mut bridge_arguments = match loop_bridge {
+        ProofTerm::Theorem { arguments, .. } => arguments,
+        other => vec![other],
+    };
+    bridge_arguments.extend(loop_names.iter().map(|name| proof_term(model::var(name))));
+    let bridge = law_of(
+        bridge_name.clone(),
+        loop_binders,
+        model::eq(
+            production_call(loop_function, loop_variables()),
+            library_call(loop_function, loop_variables()),
+        ),
+        &[],
+        bridge_lemma,
+        bridge_arguments,
+    );
+    let through_bridge = |lemma: &str, statement: SemanticTerm, law: &str| {
+        let mut arguments = vec![
+            production_value(loop_function, &loop_types),
+            ProofTerm::Theorem {
+                theorem: model::local(&bridge_name),
+                type_arguments: Vec::new(),
+                arguments: Vec::new(),
+            },
+        ];
+        arguments.extend(
+            loop_arguments(model::var(TOKENS))
+                .into_iter()
+                .map(proof_term),
+        );
+        law_of(
+            format!("{name}.{law}"),
+            seeded(vec![parameter(TOKENS, tokens())]),
+            statement,
+            &[&run],
+            lemma,
+            arguments,
+        )
+    };
+    let theorems = vec![
+        bridge,
+        // At most `max_tokens` tokens are generated.
+        through_bridge(bounded_of, bounded_statement, "bounded"),
+        // The scorer is consulted only on contexts that fit the window: the
+        // run equals the run whose scorer sees nothing that does not fit.
+        through_bridge(guarded_of, guarded_statement, "context_bounded"),
+    ];
     Ok(Lowering {
         declarations,
         theorems,

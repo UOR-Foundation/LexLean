@@ -1278,8 +1278,8 @@ fn lm_06() {
     }
     assert_eq!(
         names(row.theorems()),
-        ["Draw.bounded", "Draw.context_bounded"],
-        "a sampling generator has the same laws"
+        ["Draw.run_bridge", "Draw.bounded", "Draw.context_bounded"],
+        "a sampling generator has the same laws and the bridge of its loop"
     );
     let build = support::rendered(&project);
     let lean = support::lean_text(&build, MODULE);
