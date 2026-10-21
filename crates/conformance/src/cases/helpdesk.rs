@@ -232,7 +232,7 @@ pub(super) fn run(id: &str) {
     // LexLean source, the manifest and lock, the lake host, two artifacts, and
     // the glossary of titles.
     for file in source_tree_files(EXAMPLE) {
-        let relative = file.to_string_lossy();
+        let relative = file.to_string_lossy().replace('\\', "/");
         if relative.contains("/expected/") || relative.contains("/.lexlean/") {
             continue;
         }
