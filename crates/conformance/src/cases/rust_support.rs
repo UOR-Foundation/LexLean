@@ -14,6 +14,9 @@ use crate::support::repo_root;
 
 const MODULE: &str = "compiler/src/RuntimeSupport.lex.tex";
 const SHIPPED: &str = "language/rust-runtime-1.2/RuntimeSupport.lex.tex";
+/// The seeded rounds of nested keys, four comparisons each: two of depth two
+/// and two of depth three.
+pub const NESTED: usize = 500;
 const WIDTHS: [&str; 8] = ["u8", "u16", "u32", "u64", "i8", "i16", "i32", "i64"];
 
 /// The calls the differential makes: `equal` and `compare` at every scalar
@@ -28,6 +31,14 @@ fn harness() -> String {
             "    {{ let v = [{k}::MIN, {k}::MIN.wrapping_add(1), (0 as {k}).wrapping_sub(1), 0, 1, 2, {k}::MAX / 2, {k}::MAX - 1, {k}::MAX];\n      for &a in &v {{ for &b in &v {{ same!(equal(a, b)); same!(compare(a, b)); same!(compare((a, true), (b, false))); same!(compare((false, a), (true, b))); same!(compare((a, b), (b, a))); same!(compare((a, 1u8), (b, 2u8))); }} }}\n      for _ in 0..200 {{ let (a, b) = (next() as {k}, next() as {k}); same!(equal(a, b)); same!(compare(a, b)); same!(compare((a, b), (b, a))); }} }}\n"
         ));
     }
+    // Nested keys, which `SP-25` does not prove (each pair level spends
+    // fuel of the declared semantics) and this differential validates: pairs
+    // of depth two and three whose components come from a domain of three
+    // values, so that the first components tie and the comparison falls
+    // through to the next level.
+    out.push_str(&format!(
+        "    let mut tally = [0usize; 3];\n    for _ in 0..{NESTED} {{\n      let t = |n: u64| n % 3;\n      let (a, b, c, d) = (t(next()), t(next()), t(next()), t(next()));\n      let (e, f, g, h) = (t(next()), t(next()), t(next()), t(next()));\n      same!(compare(((a as u8, b as i64), c % 2 == 0), ((e as u8, f as i64), g % 2 == 0)));\n      same!(compare((a as u32, (b as i8, c as u64)), (e as u32, (f as i8, g as u64))));\n      same!(compare((((a as u8, b == 0), (c as i32, d as u64)), (h as i8, a as i16)), (((e as u8, f == 0), (g as i32, h as u64)), (h as i8, a as i16))));\n      same!(compare((((a as u8, b == 0), (c as i32, d as u64)), (h as i8, a as i16)), (((a as u8, b == 0), (c as i32, h as u64)), (e as i8, f as i16))));\n      for o in [new::compare((((a as u8, b == 0), (c as i32, d as u64)), (h as i8, a as i16)), (((e as u8, f == 0), (g as i32, h as u64)), (h as i8, a as i16))), new::compare((((a as u8, b == 0), (c as i32, d as u64)), (h as i8, a as i16)), (((a as u8, b == 0), (c as i32, h as u64)), (e as i8, f as i16)))] {{ tally[(o as i8 + 1) as usize] += 1; }}\n    }}\n    println!(\"nested {{tally:?}}\");\n"
+    ));
     out.push_str("    same!(compare((1u8, -1i64), (1u8, 5i64)));\n    same!(compare((1u64, 2u8), (1u64, 2u8)));\n");
     out.push_str("    for &u in &[0u64, 1, 7, 1 << 40, u64::MAX / 2] { same!(tick(u)); same!(work()); }\n    println!(\"runtime\");\n}\n");
     out
@@ -80,7 +91,15 @@ pub fn run(id: &str) {
     let generated = runtime::core_over(&support, &runtime_module).expect("the runtime assembles");
     let ran = differ_with(&oracle, &generated, harness())
         .expect("the printed support agrees with the oracle");
-    assert_eq!(ran, "runtime");
+    assert_eq!(ran.lines().last(), Some("runtime"));
+    // The nested-key corpus is measured: how many of its comparisons the
+    // depth-three keys decide as less, equal, and greater.
+    let nested = ran.lines().find(|line| line.starts_with("nested")).expect("the tally");
+    eprintln!("RB-17: {nested} over {} depth-three comparisons", 2 * NESTED);
+    assert!(
+        !nested.contains(" 0,") && !nested.contains(" 0]"),
+        "the corpus decides every order: {nested}"
+    );
 
     // A changed body is caught by the differential, not by the validator.
     for (what, from, to, nth, caught) in [
