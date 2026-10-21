@@ -50,7 +50,8 @@ inductive{
     {name: fallible, fields: [RustType]},
     {name: ref, fields: [RustType]},
     {name: overflow, fields: []},
-    {name: i128, fields: []}
+    {name: i128, fields: []},
+    {name: param, fields: [Nat]}
   ]
 }
 
@@ -307,7 +308,11 @@ inductive{
   constructors: [
     {name: enum, fields: [RustType, (List Variant)]},
     {name: apply, fields: [Nat, (List RustType), RustType, Bool, (List Dispatch)]},
-    {name: function, fields: [Ident, (List Parameter), RustType, Block]}
+    {name: function, fields: [Ident, (List Parameter), RustType, Block]},
+    {name: useItem, fields: [(List String), (Option String)]},
+    {name: unitStruct, fields: [String, (List String)]},
+    {name: alias, fields: [String, Nat, RustType]},
+    {name: workCounter, fields: []}
   ]
 }
 

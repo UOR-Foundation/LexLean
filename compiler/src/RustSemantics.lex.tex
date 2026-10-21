@@ -1407,6 +1407,10 @@ definition{
     | List.cons item rest => (match item
       | RustSyntax::ItemDef.enum ignored533 ignored534 => (findFunction rest wanted)
       | RustSyntax::ItemDef.apply ignored535 ignored536 ignored537 ignored538 ignored539 => (findFunction rest wanted)
+      | RustSyntax::ItemDef.useItem ignoredUsePath ignoredUseAlias => (findFunction rest wanted)
+      | RustSyntax::ItemDef.unitStruct ignoredStructName ignoredDerives => (findFunction rest wanted)
+      | RustSyntax::ItemDef.alias ignoredAliasName ignoredAliasCount ignoredAliasTarget => (findFunction rest wanted)
+      | RustSyntax::ItemDef.workCounter => (findFunction rest wanted)
       | RustSyntax::ItemDef.function name parameters result body => (if (sameIdent name wanted) then (ctor Option.some [((List RustSyntax::Parameter) * (RustSyntax::RustType * RustSyntax::Block))] (parameters, (result, body))) else (findFunction rest wanted)))),
   recursive_argument: items
 }
@@ -1432,6 +1436,10 @@ definition{
       | RustSyntax::ItemDef.apply ignoredFnType ignoredParameters ignoredResult fallible arms => (match (findArm arms function count)
         | Option.none => (findDispatch rest function count)
         | Option.some armFallible => (ctor Option.some [(Bool * Bool)] (fallible, armFallible)))
+      | RustSyntax::ItemDef.useItem ignoredUsePath2 ignoredUseAlias2 => (findDispatch rest function count)
+      | RustSyntax::ItemDef.unitStruct ignoredStructName2 ignoredDerives2 => (findDispatch rest function count)
+      | RustSyntax::ItemDef.alias ignoredAliasName2 ignoredAliasCount2 ignoredAliasTarget2 => (findDispatch rest function count)
+      | RustSyntax::ItemDef.workCounter => (findDispatch rest function count)
       | RustSyntax::ItemDef.function ignored542 ignored543 ignored544 ignored545 => (findDispatch rest function count))),
   recursive_argument: items
 }
@@ -1459,7 +1467,8 @@ definition{
     | RustSyntax::RustType.fallible ignoredInner => true
     | RustSyntax::RustType.ref ignored556 => false
     | RustSyntax::RustType.overflow => false
-    | RustSyntax::RustType.i128 => false)
+    | RustSyntax::RustType.i128 => false
+    | RustSyntax::RustType.param ignoredParameter => false)
 }
 
 definition{

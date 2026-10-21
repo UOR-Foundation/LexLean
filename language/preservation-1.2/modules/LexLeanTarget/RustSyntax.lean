@@ -42,6 +42,7 @@ public inductive RustType where
   | ref (_ : RustType)
   | overflow
   | i128
+  | param (_ : Nat)
 
 public inductive Lit where
   | unit
@@ -219,6 +220,10 @@ public inductive ItemDef where
   | enum (_ : RustType) (_ : List (Variant))
   | apply (_ : Nat) (_ : List (RustType)) (_ : RustType) (_ : Bool) (_ : List (Dispatch))
   | function (_ : Ident) (_ : List (Parameter)) (_ : RustType) (_ : Block)
+  | useItem (_ : List (String)) (_ : Option (String))
+  | unitStruct (_ : String) (_ : List (String))
+  | alias (_ : String) (_ : Nat) (_ : RustType)
+  | workCounter
 
 public inductive Profile where
   | core
