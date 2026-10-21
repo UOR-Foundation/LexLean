@@ -3977,8 +3977,21 @@ reaches a model only as the tokens `encodeText` makes of it.
    `string`. A prompt is data, and reaches a model only as the tokens
    `encodeText` makes of it.
 
-`examples/models` carries the vocabulary the conformance cases tokenize; the
-end-to-end text-model example is not part of this release.
+11. **Production.** A text component is produced as ordinary executable
+   language-1.2 definitions (§17.13, §17.22): each library function an
+   elaboration applies has a production form in `LexLeanStd.TextModels`, and
+   the generated laws are proved of the production forms by a kernel-checked
+   equality (a bridge) between the form and the library function. A bridge
+   states the equality in the user module, so a law of the library takes the
+   form of a function-parameterized lemma whose bridge is a hypothesis and
+   adds no proof variant. The tokenizer, the windows, both generation
+   policies, and the classifier are produced; the oracle differential and
+   certificates A, B, and E apply to a text root like any other.
+
+`examples/models` carries the vocabulary the conformance cases tokenize, and
+`examples/text-models` is the end-to-end text-model example (§17.22): a
+tokenizer of each scheme, two windows, a greedy and a sampling generator, and
+a classifier of each tokenizer, with production roots for each.
 
 #### Widening conversions (language 1.2)
 
@@ -4165,15 +4178,22 @@ terms are ordinary closure members, and a natural-number counter of its
 ledger is subject to the same width rule as any natural number, so a root
 that runs a reasoner admits `overflow` where the target requires it.
 
-Language-1.2 text declarations (§17.12, *Text components*) are `formal-only`
+Language-1.2 text declarations (§17.12, *Text components*) are `runtime`
 (`declaration.tokenizer`, `declaration.context_window`,
-`declaration.text_generator`, `declaration.text_classifier`): the
-elaborated definitions of a tokenizer, a context window, a text
-generator, and a text classifier are reported with their construct and apply the embedded
-text-laws library, which no production target realizes, so a root whose
-closure reaches one fails, and their generated theorems are in no closure; a
-text classifier is reported the same way, with its elaborated `features`,
-`classifyTokens`, and `classify`.
+`declaration.text_generator`, `declaration.text_classifier`): the elaborated
+definitions of a tokenizer, a context window, a text generator, and a text
+classifier are ordinary executable definitions, reported with their construct
+and walked like any other member, and each applies a production form of
+`LexLeanStd.TextModels` (§17.22), an executable definition of the source
+package `std`, never a function of the text-laws library. The library and every
+generated theorem, including the bridges that relate a production form to the
+library function it realizes, are formal-only and in no closure. A text
+component allocates (strings, bytes, lists) and recurses, so a closure that
+reaches one admits `allocation`, `overflow`, and `recursion`, is eligible for
+`rust-std`, and is refused for `rust-core` with `LLT4005` naming the
+allocating member. A module that declares a text component imports
+`LexLeanStd.TextModels` explicitly, and its project lists the `std` source
+package; without either the declaration is refused naming the import.
 
 **Rules.** A root is eligible for a target exactly when none of the following
 holds; otherwise `check` fails with `LLT4005`, naming the root, the target, the
@@ -4251,7 +4271,15 @@ members using it, and, per target, each realized effect with every
 representation crossing the root boundary (`parameter <name>` or `result`,
 directly or inside a container or a named type's fields) with the width in
 which the target realizes it, so the first realization obligation above is
-stated per root. A root whose closure runs a reasoner also records, in
+stated per root. A root whose closure reaches a text component also records,
+in `text_rows`, one row per component: its qualified name and kind, a
+tokenizer's scheme, a window's capacity and overflow disposition, a
+generator's policy and bound, and, for a `sample` generator, its closed
+generator and distribution and the positions of the seed it takes (`last` of
+its inputs) and of the next seed it returns (`second` of its result); a
+`greedy` generator takes no seed and states none. Every member of a row is a
+number, a closed member, or a qualified name, and none is a free string. The
+row also names the generated theorems that state the component's bound. A root whose closure runs a reasoner also records, in
 `reasoning`, one row per reasoner: its qualified name, its strategy
 (`forward`, `breadth_first`, `depth_first`, or `generate_and_verify`),
 whether a search deduplicates, the canonical semantic JSON of its fuel, or of
@@ -10491,7 +10519,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-06` | `language-models` | Nondeterminism is an explicit contract: a `text_generator` under the `sample` policy draws through the closed `xorshift32` generator and `proportional` distribution only, takes its seed as an explicit `uint32` input and returns the next seed as an explicit output, so the same prompt and seed give the same output, which the kernel computes; it has the same generated and kernel-checked laws as a greedy generator, `xorshift32` agrees with the reference sequence, and a generator or distribution outside the closed members, a sample policy without one, or a seed stated on a policy is a schema violation (`LLT4001`). | §17.12 |
 | `LM-07` | `language-models` | A `text_classifier` is a closed language-1.2 declaration that names a prior tokenizer and a prior stateless model from `list int` to a label type whose every runtime check its evidence discharges, and elaborates to `features`, the count of each token id below the tokenizer's `size`, to `classifyTokens`, the model applied to the features, and to `classify` over `string` through `encodeText`, with its laws generated and kernel-checked: `features_width` states that the features have exactly `size` entries, `features_total` that the features of an encoded text sum to its token count so that no token is dropped, and `features_fit` that the fixed-width map `fitWidth` leaves the features unchanged; a classifier whose tokenizer is not a prior tokenizer, or whose model is not a stateless model from `list int` with every runtime check discharged, is refused (`LLT4006`), a member outside the closed schema is a schema violation (`LLT4001`), and a classifier whose laws observe an axiom its policy omits fails the audit. | §17.12 |
 | `LM-08` | `language-models` | Text components compose and adapt through the model constructs alone, and no new declaration kind exists for it: a stateful model whose state is a context window's `list uint32`, whose step is the window's `push`, and whose contract's postcondition states that the pushed context fits composes under `scan` with its `satisfies_contract` evidence proved by the window's generated `push_bounded`, and an adapter is a model over `string` whose realization applies the elaborated `classify` of a classifier or `generate` of a generator, with `satisfies_contract` evidence proved from the generated laws of that classifier or generator; the closed list of language-1.2 declaration kinds is unchanged by it, an adapter whose realization does not meet its contract fails verification, and an adapter that applies a declaration of another kind is refused (`LLT4006`). | §17.12 |
-| `LM-09` | `language-models` | No prompt is code: no member of the closed language maps `string` or `bytes` to a function, a term, or source — every operation of the primitive registry that takes a `string` or `bytes` operand is classified by the audit with a data result, the registry's schema enumeration and the production registry's primitive rows equal one another and equal that classified set, and the text declarations of `lexlean/semantic-module/2` state no `string`-typed member, so a prompt reaches a model only as the tokens `encodeText` makes of it; a planted operation or text member of that shape is caught by the audit with its name. | §17.12 |
+| `LM-09` | `language-models` | No prompt is code: no member of the closed language maps `string` or `bytes` to a function, a term, or source — every operation of the primitive registry that takes a `string` or `bytes` operand is classified by the audit with a data result, the registry's schema enumeration and the production registry's primitive rows equal one another and equal that classified set, and the text declarations of `lexlean/semantic-module/2` state no `string`-typed member and neither do the `text_rows` of a production eligibility report, whose members are numbers, closed members, and qualified names, so a prompt reaches a model only as the tokens `encodeText` makes of it; a planted operation, text member, or report member of that shape is caught by the audit with its name. | §17.12 |
 | `LM-10` | `language-models` | Text components are produced as ordinary executable language-1.2 definitions: a production root whose runtime closure reaches a tokenizer, a context window, a text generator, or a text classifier is eligible for `rust-std` and is refused for `rust-core` with `LLT4005` because strings and bytes allocate; every library function an elaboration applies has a production form in `LexLeanStd.TextModels` related to it by a kernel-checked equality, so that the generated laws are proved of the realized definitions; the eligibility report records in `text_rows`, one row per text component the closure reaches, its closed nondeterminism contract — its scheme or disposition, its bound, its policy, and for `sample` the closed generator and distribution and the positions of the seed and of the next seed, and for `greedy` that it takes no seed — and the generated laws that state the bound, with no member of type `string`; and the `rust-std` rendering of a text root agrees with its oracle on the differential and satisfies certificates A, B, and E. | §17.12 |
 | `LM-11` | `language-models` | `examples/text-models` is a language-1.2 project that builds, verifies, and produces through the real pipeline a tokenizer, a context window, a greedy and a sampled text generator, a text classifier, and an adapter over `string`, with the records of that run under `expected/`; the round trip and token boundary, the context overflow, the invalid UTF-8 text and artifact, and the nondeterminism-contract negatives are each refused by name, and a planted mutation of the example is detected. | §17.12 |
 | `LM-12` | `language-models` | Every fixed helper of the text-laws library is covered by the conformance suite: each of the library functions an elaboration applies is realized, produced or evaluated by the kernel against a reference vector, and each of its lemmas is applied by a generated proof that the pinned Lean checks; a library function or lemma that no case reaches fails the coverage audit with its name. | §17.12 |

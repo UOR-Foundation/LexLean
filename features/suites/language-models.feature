@@ -61,8 +61,8 @@ Feature: language-models
     And the declaration kinds are unchanged and a false contract fails verification
 
   @LM-09 @build
-  Scenario: No prompt is code: no member of the closed language maps `string` or `bytes` to a function, a term, or source — every operation of the primitive registry that takes a `string` or `bytes` operand is classified by the audit with a data result, the registry's schema enumeration and the production registry's primitive rows equal one another and equal that classified set, and the text declarations of `lexlean/semantic-module/2` state no `string`-typed member, so a prompt reaches a model only as the tokens `encodeText` makes of it; a planted operation or text member of that shape is caught by the audit with its name.
-    Given the primitive registry, the production registry, and the text declarations of the closed schema
+  Scenario: No prompt is code: no member of the closed language maps `string` or `bytes` to a function, a term, or source — every operation of the primitive registry that takes a `string` or `bytes` operand is classified by the audit with a data result, the registry's schema enumeration and the production registry's primitive rows equal one another and equal that classified set, and the text declarations of `lexlean/semantic-module/2` state no `string`-typed member and neither do the `text_rows` of a production eligibility report, whose members are numbers, closed members, and qualified names, so a prompt reaches a model only as the tokens `encodeText` makes of it; a planted operation, text member, or report member of that shape is caught by the audit with its name.
+    Given the primitive registry, the production registry, the text declarations of the closed schema, and the text rows of the eligibility report
     When the audit classifies every operation that takes a `string` or `bytes` operand
     Then every one has a data result and the two registries agree
     And a planted operation or text member that maps a string to code is caught by name

@@ -15,7 +15,7 @@ use serde_json::json;
 
 use super::models::{
     edit_declaration, elaboration, module_data, names, refused, replace_artifact, snapshot,
-    write_module_data, EXAMPLE,
+    write_module_data,
 };
 use crate::support::{self, repo_root, P};
 
@@ -1978,6 +1978,26 @@ fn audit_no_prompt_as_code(
     Ok(taking_text)
 }
 
+/// The audit over the eligibility report: each member of a `text_rows` row is
+/// a closed member, a number, or a qualified name, and none is a free string,
+/// so a row records what bounds a component and never text a prompt could
+/// reach. Returns the number of members audited, or the first violation.
+fn audit_text_rows(report: &serde_json::Value) -> Result<usize, String> {
+    let row = &report["$defs"]["text_row"];
+    let properties = row["properties"]
+        .as_object()
+        .ok_or("the eligibility schema states no text row")?;
+    if report["$defs"]["root"]["properties"]["text_rows"]["items"]["$ref"] != "#/$defs/text_row" {
+        return Err("`text_rows` does not state its rows as `text_row`".to_owned());
+    }
+    for (member, node) in properties {
+        if free_string(report, node, &mut Vec::new()) {
+            return Err(format!("text row member `{member}` is a free string"));
+        }
+    }
+    Ok(properties.len())
+}
+
 /// LM-09 (§17.12): no operation of the closed language maps a `string` or
 /// `bytes` operand to a function, a term, or source, and no text declaration
 /// states a string; a planted operation or member of that shape is caught
@@ -2005,6 +2025,31 @@ fn lm_09() {
         serde_json::from_value::<lexlean::SnapshotPrimitive>(json!(operation))
             .unwrap_or_else(|error| panic!("`{operation}` is a compiler primitive: {error}"));
     }
+    // The eligibility report's text rows are audited the same way: a root
+    // reports the contract of each text component it runs and no free text.
+    let report: serde_json::Value =
+        serde_json::from_str(&read("schemas/production-eligibility.schema.json"))
+            .expect("eligibility schema");
+    let audited = audit_text_rows(&report)
+        .unwrap_or_else(|reason| panic!("the text row audit holds: {reason}"));
+    assert!(audited > 0, "the text row audit is armed: a row has members");
+    let mut leaking = report.clone();
+    leaking["$defs"]["text_row"]["properties"]["prompt"] = json!({"type": "string"});
+    let error = audit_text_rows(&leaking).expect_err("a free string row member is caught");
+    assert!(
+        error.contains("prompt") && error.contains("free string"),
+        "the audit names the member: {error}"
+    );
+    let mut unpatterned = report.clone();
+    unpatterned["$defs"]["text_row"]["properties"]["component"] = json!({"type": "string"});
+    let error = audit_text_rows(&unpatterned).expect_err("an open component name is caught");
+    assert!(error.contains("component"), "{error}");
+    let mut unreached = report.clone();
+    unreached["$defs"]["root"]["properties"]["text_rows"]["items"] = json!({"type": "object"});
+    assert!(
+        audit_text_rows(&unreached).is_err(),
+        "a report that does not state its rows as text rows is caught"
+    );
     // The audit reads every text member of every text declaration: a
     // `prompt` member of type string on any of them is caught by name.
     let declarations = schema["$defs"]["declaration"]["oneOf"]
