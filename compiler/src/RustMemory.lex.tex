@@ -52,6 +52,18 @@ definition{
 }
 
 definition{
+  name: sameNat,
+  parameters: [left : Nat, right : Nat],
+  result: Flag,
+  body: (match right
+    | Nat.zero => (match left | Nat.zero => (ctor Flag.yes) | Nat.succ leftLess => (ctor Flag.no))
+    | Nat.succ rightLess => (match left
+      | Nat.zero => (ctor Flag.no)
+      | Nat.succ leftLess => (sameNat leftLess rightLess))),
+  recursive_argument: right
+}
+
+definition{
   name: minNat,
   parameters: [left : Nat, right : Nat],
   result: Nat,
