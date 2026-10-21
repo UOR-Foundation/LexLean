@@ -1540,10 +1540,19 @@ definition{
 }
 
 definition{
+  name: countIn,
+  parameters: [names : (List Bytes), wanted : Bytes],
+  result: Nat,
+  body: (prim list_fold (fun [wanted] (count : Nat) (name : Bytes) => (if (bEq name wanted) then (count + 1) else count)) 0 names : Nat),
+  axioms: [],
+  executable: true
+}
+
+definition{
   name: sameFields,
   parameters: [names : (List Bytes), held : (List Bytes), values : Nat],
   result: Bool,
-  body: (if ((prim length names : Nat) =? (prim length held : Nat)) then (if ((prim length names : Nat) =? values) then (if (prim list_fold (fun [held] (all : Bool) (name : Bytes) => (if all then (inList held name) else false)) true names : Bool) then (prim list_fold (fun [names] (all : Bool) (name : Bytes) => (if all then (inList names name) else false)) true held : Bool) else false) else false) else false),
+  body: (if ((prim length names : Nat) =? (prim length held : Nat)) then (if ((prim length names : Nat) =? values) then (prim list_fold (fun [held, names] (all : Bool) (name : Bytes) => (if all then ((countIn names name) =? (countIn held name)) else false)) true held : Bool) else false) else false),
   axioms: [],
   executable: true
 }
