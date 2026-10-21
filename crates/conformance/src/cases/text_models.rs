@@ -600,8 +600,8 @@ fn lm_10() {
     // backend runs.
     let core = planted(
         "examples/text-models/src/Main.lex.tex",
-        "name: tokenize,\n  parameters: [text : String],\n  result: (List UInt32),\n  body: (Words.encodeText text),\n  axioms: [Classical.choice, Quot.sound, propext],\n  executable: true,\n  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}",
-        "name: tokenize,\n  parameters: [text : String],\n  result: (List UInt32),\n  body: (Words.encodeText text),\n  axioms: [Classical.choice, Quot.sound, propext],\n  executable: true,\n  production: {effects: [allocation, overflow, recursion], targets: [rust-core]}",
+        "body: (Words.encodeText text),\n  axioms: [Quot.sound, propext],\n  executable: true,\n  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}",
+        "body: (Words.encodeText text),\n  axioms: [Quot.sound, propext],\n  executable: true,\n  production: {effects: [allocation, overflow, recursion], targets: [rust-core]}",
     );
     core.check_fails_with("LLT4005");
     for output in [".lexlean/build", ".lexlean/verified"] {
