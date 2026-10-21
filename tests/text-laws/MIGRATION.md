@@ -345,3 +345,54 @@ above printed the lines recorded above.
 2. **The Lean source is not committed.** The additions' Lean is the scratch
    input of the round trip, as the first two records' was; the committed data
    is the module, and a change to it goes through the same round trip.
+
+## Fourth record: the production bridge (slice 4 of #30)
+
+Slice 4 (`LM-10`) realizes text components as ordinary executable language-1.2
+definitions (`LexLeanStd.TextModels`, SPEC.md §17.12) and relates each to the
+library function it replaces by a **uniqueness lemma** of the library: any
+function that satisfies the helper's defining equations equals the helper. The
+library names no generated constant, so the lemma takes the production form as
+an argument, and an elaboration applies it to the production form with the
+equations proved by unfolding. This record adds the first two, by the round
+trip of the third record: authored once as Lean outside the release tree in the
+scratch module `LexLeanText.Ext`, which imports the library module the compiler
+generates from the committed data, proved under `leanprover/lean4:v4.32.1` with
+no `sorry`, no `admit`, and no new axiom, exported alone with the first
+record's `export.lean` and `flags.lean`, and joined to the committed data.
+
+### What was added
+
+- `withIndex_unique`: a function `f : List String -> Nat -> List (Nat x
+  String)` with `f [] i = []` and `f (s :: ss) i = (i, s) :: f ss (i + 1)` is
+  `withIndex`.
+- `fitWidth_of`: for a `take` and a `zeros` that satisfy the equations of
+  `List.take` and `List.replicate n 0`, `take n xs ++ zeros (n - xs.length)`
+  is `fitWidth n xs`.
+
+```
+'LexLeanText.withIndex_unique' does not depend on any axioms
+'LexLeanText.fitWidth_of' depends on axioms: [propext]
+```
+
+### Equivalence
+
+The Lean the compiler generates from the committed data was compiled by the
+pinned Lean as `LexLeanText.LexLeanText`, and `#print axioms` printed the lines
+above. The export of the additions has 2 declarations and 656 nodes; joined by
+the third record's method (nodes renumbered into the committed table, an
+existing node reused wherever structurally equal, `proof_nodes` recomputed over
+the whole table), the committed module holds 23,226 nodes and 231
+declarations, of which the first 229 are equal to the declarations of the third
+record. The same `imports`, `["Init"]`, are kept: the lemma statements name
+only `Init` constants, so the library imports no runtime and a production form
+is related to them by the elaboration, which unfolds the runtime's operations.
+
+### Differences, stated plainly
+
+1. **Proof data of existing nodes.** `proof_nodes` is derived, and the new
+   statements reach nodes that only proofs reached before, so those nodes are
+   written as ordinary nodes in the notation. No node, declaration, or value
+   changed.
+2. **The Lean source is not committed.** As in the earlier records, the
+   additions' Lean is the scratch input of the round trip.

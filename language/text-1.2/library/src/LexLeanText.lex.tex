@@ -2053,6 +2053,20 @@ theorem LexLeanText.total_nil : @22772 := @22773 {
   tags: [defeq, backward_defeq],
   transparency: semireducible
 }
+theorem LexLeanText.fitWidth_of : @22813 := @23114 {
+  all: [LexLeanText.fitWidth_of],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanText.withIndex_unique : @23135 := @23225 {
+  all: [LexLeanText.withIndex_unique],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  transparency: semireducible
+}
 
 @0 := Sort 1
 @1 := proof(ByteArray)
@@ -2307,7 +2321,7 @@ theorem LexLeanText.total_nil : @22772 := @22773 {
 @378 := proof(@357 proof(@366 proof(@372 @375)))
 @379 := List.cons.{0}
 @380 := @379 @277
-@381 := proof(@380 @307)
+@381 := @380 @307
 @382 := proof(@380 @353)
 @383 := proof(@380 @354)
 @384 := List.nil.{0}
@@ -3915,7 +3929,8 @@ theorem LexLeanText.total_nil : @22772 := @22773 {
 @3199 := @3197 @90 @23
 @3200 := fun (x._@.LexLeanText.#3761760738._hygCtx._hyg.#46 : @2) => @3160
 @3201 := @3199 @3200
-@3204 := @3165 (@3168 @23 @75)
+@3202 := @3168 @23
+@3204 := @3165 (@3202 @75)
 @3205 := LexLeanText.withIndex
 @3206 := @3205 @90
 @3208 := @60 @23 @502
@@ -4552,7 +4567,7 @@ theorem LexLeanText.total_nil : @22772 := @22773 {
                   proof(@3617 @2092))
                 @90)))))
 @4176 := proof(proof(@3363 @2092) @23)
-@4177 := proof(@232 @90)
+@4177 := @232 @90
 @4202 := proof(fun {vocab : @28} =>
     proof(fun {rest : @17} =>
       proof(fun (l : @3217) =>
@@ -4641,7 +4656,8 @@ theorem LexLeanText.total_nil : @22772 := @22773 {
       proof(fun {l : @17} => proof(fun (h : @4325) => proof(@4326 proof(proof(@111 @4327) @90)))))
 @4334 := @3093 @2971
 @4337 := proof(proof(@181 proof(@4334 @23)) @186)
-@4339 := proof(proof(List.casesOn.{0, 0}) @16)
+@4338 := proof(List.casesOn.{0, 0})
+@4339 := proof(@4338 @16)
 @4340 := proof(@109 @75)
 @4341 := proof(@4340 @23)
 @4342 := @2962 @2054
@@ -5609,13 +5625,16 @@ theorem LexLeanText.total_nil : @22772 := @22773 {
 @6166 := @6165 @23
 @6167 := proof(@6126 @6166)
 @6169 := proof(proof(@3168 @99) @75)
+@6170 := proof(@6167 @6169)
+@6180 := proof(@4377
+      proof(proof(@36 proof(@4593 @232))
+          proof(proof(@84 proof(proof(@98 @3106) proof(@4828 @90))) proof(@105 @99))))
+@6181 := proof(@6165 @90)
 @6194 := proof(@6164
       proof(fun {n : @2} =>
-        proof(fun (h : proof(@6167 @6169)) =>
-          proof(proof(@4377
-                proof(proof(@36 proof(@4593 @232))
-                    proof(proof(@84 proof(proof(@98 @3106) proof(@4828 @90))) proof(@105 @99))))
-              proof(proof(proof(proof(@1640 proof(proof(@6126 proof(@6165 @90)) @6150)) @266)
+        proof(fun (h : @6170) =>
+          proof(@6180
+              proof(proof(proof(proof(@1640 proof(proof(@6126 @6181) @6150)) @266)
                     proof(proof(proof(List.not_mem_nil._simp_1.{0}) @3143) @6150))
                   @23)))))
 @6196 := proof(proof(@3168 @1353) @232)
@@ -5624,7 +5643,8 @@ theorem LexLeanText.total_nil : @22772 := @22773 {
       proof(proof(@36 proof(@4593 @2054))
           proof(proof(@84 proof(@6154 proof(@4871 @90))) proof(@105 @1353)))))
 @6209 := proof(proof(@3110 @99) @75)
-@6212 := proof(@6126 proof(proof(@3205 @6209) @23))
+@6211 := proof(proof(@3205 @6209) @23)
+@6212 := proof(@6126 @6211)
 @6214 := proof(proof(@3168 @2054) @1353)
 @6215 := proof(@6212 @6214)
 @6216 := proof(Or.casesOn)
@@ -5650,9 +5670,11 @@ theorem LexLeanText.total_nil : @22772 := @22773 {
 @6243 := proof(@105 @2092)
 @6247 := proof(@6230 proof(fun (x : @6232) => proof(@6235 proof(@6242 @6243))))
 @6249 := @3110 @232 @99
-@6255 := proof(proof(@1640 proof(proof(@6126 proof(proof(@3205 @6249) @90)) @6228)) @6232)
+@6251 := proof(proof(@3205 @6249) @90)
+@6255 := proof(proof(@1640 proof(proof(@6126 @6251) @6228)) @6232)
 @6256 := proof(@3169 @232)
-@6261 := proof(@1127 proof(proof(@6126 proof(proof(@3165 @6256) @6225)) @6228))
+@6257 := proof(@3165 @6256)
+@6261 := proof(@1127 proof(proof(@6126 proof(@6257 @6225)) @6228))
 @6264 := proof(proof(proof(@81 @3143) @6228) @6256)
 @6265 := proof(@6098 @6264)
 @6293 := proof(@6247
@@ -6551,19 +6573,21 @@ theorem LexLeanText.total_nil : @22772 := @22773 {
 @7807 := (motive : @7798) ->
   (x._@.LexLeanText.#2402247020._hygCtx._hyg.#90 : @3226) -> (h_1 : @7801) -> (h_2 : @7803) -> @225
 @7808 := @23 @237
+@7809 := @3292 @7808
+@7810 := @4177 @23
 @7819 := fun (motive : @7798) =>
   fun (x._@.LexLeanText.#2402247020._hygCtx._hyg.#90 : @3226) =>
   fun (h_1 : @7801) =>
   fun (h_2 : @7803) =>
-  @3292
-    @7808
+  @7809
     (fun (val._@.LexLeanText.#2402247020._hygCtx._hyg.#141 : @31) =>
     @3301
       (fun (fst._@.LexLeanText.#2402247020._hygCtx._hyg.#142 : @2) =>
-      fun (snd._@.LexLeanText.#2402247020._hygCtx._hyg.#143 : @2) => @4177 @23))
+      fun (snd._@.LexLeanText.#2402247020._hygCtx._hyg.#143 : @2) => @7810))
 @7821 := (x._@.LexLeanText.#2402247020._hygCtx.#11.LexLeanText.#2402247020._hygCtx._hyg.#30 : @2) ->
   (x._@.LexLeanText.#2402247020._hygCtx.#12.LexLeanText.#2402247020._hygCtx._hyg.#33 : @17) -> @218
-@7824 := (x._@.LexLeanText.#2402247020._hygCtx._hyg.#42 : @17) -> @99 @44 @23
+@7822 := @99 @44
+@7824 := (x._@.LexLeanText.#2402247020._hygCtx._hyg.#42 : @17) -> @7822 @23
 @7826 := (x._@.LexLeanText.#2402247020._hygCtx._hyg.#54 : @2) -> @233 @2958
 @7827 := @6425 @75
 @7832 := (fuel : @2) -> (x : @16) -> (xs : @17) -> @2092 @7827 @2964
@@ -7124,7 +7148,8 @@ theorem LexLeanText.total_nil : @22772 := @22773 {
 @8727 := (x._@.LexLeanText.#2728950292._hygCtx.#7.LexLeanText.#2728950292._hygCtx._hyg.#18 : @8726) ->
   @218
 @8729 := ("_" : @220) -> @75 @385
-@8731 := @380 @90 @23
+@8730 := @380 @90
+@8731 := @8730 @23
 @8734 := (s : @277) -> (rest : @8726) -> @232 @8731
 @8738 := (motive : @8727) ->
   (x._@.LexLeanText.#2728950292._hygCtx.#7.LexLeanText.#2728950292._hygCtx._hyg.#18 : @8726) ->
@@ -7472,8 +7497,9 @@ theorem LexLeanText.total_nil : @22772 := @22773 {
 @9294 := @9291 @23
 @9297 := (p : @17) -> (r : @17) -> @9293 @9294
 @9298 := @1353 @90
+@9299 := @9298 @23
 @9301 := (x._@.LexLeanText.#2792387140._hygCtx._hyg.#85 : @9288) ->
-  (x._@.LexLeanText.#2792387140._hygCtx._hyg.#84 : @9288) -> @9298 @23
+  (x._@.LexLeanText.#2792387140._hygCtx._hyg.#84 : @9288) -> @9299
 @9306 := (motive : @9290) ->
   (x._@.LexLeanText.#2792387140._hygCtx._hyg.#57 : @9288) ->
   (x._@.LexLeanText.#2792387140._hygCtx._hyg.#59 : @9288) -> (h_1 : @9297) -> (h_2 : @9301) -> @3006
@@ -7603,12 +7629,14 @@ theorem LexLeanText.total_nil : @22772 := @22773 {
 @9494 := proof(@9226 proof(@9492 @90))
 @9495 := proof(@9227 @2969)
 @9497 := proof(@1208 proof(@9495 @2054))
+@9499 := proof(@9497 proof(@9495 @75))
+@9500 := proof(@2969 @99)
 @9514 := proof(proof(@9485
         proof(fun (x : @9486) =>
           proof((else._@.LexLeanText.#2792387140._hygCtx._hyg.#91 : @9491) ->
             proof((h : @9494) ->
-              proof((hidx : proof(@9497 proof(@9495 @75))) ->
-                proof(proof(proof(@9468 proof(@2969 @99))
+              proof((hidx : @9499) ->
+                proof(proof(proof(@9468 @9500)
                       proof(proof(proof(proof(proof(@9470 @3420) @2969) @99) @2054) @75))
                     @3131))))))
       @99)
@@ -9017,7 +9045,8 @@ theorem LexLeanText.total_nil : @22772 := @22773 {
 @12031 := (vocab : @28) ->
   (x._@.LexLeanText.#2402247020._hygCtx._hyg.#12 : @17) -> @1623 @12027 @7883
 @12034 := proof(fun (vocab : @28) => proof(fun (x : @17) => proof(@1710 @12027)))
-@12037 := (x._@.LexLeanText.#2402247020._hygCtx._hyg.#42 : @17) -> @75 @44 @23
+@12036 := @75 @44 @23
+@12037 := (x._@.LexLeanText.#2402247020._hygCtx._hyg.#42 : @17) -> @12036
 @12039 := (x._@.LexLeanText.#2402247020._hygCtx._hyg.#54 : @2) -> @4241 @2958
 @12044 := (fuel : @2) -> (x : @16) -> (xs : @17) -> @2054 @7827 @2964
 @12045 := @1208 @99
@@ -9077,18 +9106,20 @@ theorem LexLeanText.total_nil : @22772 := @22773 {
 @12135 := proof(@9468 proof(proof(@2054 @12129) @2958))
 @12138 := proof(@12093 proof(fun (x : @2) => proof(@8784 @2958)))
 @12139 := @232 @2958
+@12140 := proof(@12138 @12139)
+@12141 := proof(@12096 @23)
+@12148 := proof(proof(proof(@2987 proof(fun (x : @17) => proof(proof(@3587 @7844) @23))) @2958)
+      proof(@2054 @7850))
+@12149 := proof(@2092 @75)
 @12161 := proof(@12135
-      proof(proof(proof(@12138 @12139)
+      proof(proof(@12140
             proof(fun (n : @2) =>
-              proof(fun (n_ih : proof(@12096 @23)) =>
+              proof(fun (n_ih : @12141) =>
                 proof(proof(fun (n._@.LexLeanText.#2402247020._hygCtx._hyg.#150 : @2) =>
-                    proof(proof(proof(proof(@2987
-                              proof(fun (x : @17) => proof(proof(@3587 @7844) @23)))
-                            @2958)
-                          proof(@2054 @7850))
+                    proof(@12148
                         proof(fun (head._@.LexLeanText.#2402247020._hygCtx._hyg.#151 : @16) =>
                           proof(fun (tail._@.LexLeanText.#2402247020._hygCtx._hyg.#152 : @17) =>
-                            proof(proof(proof(@2092 @75) @90) @23)))))
+                            proof(proof(@12149 @90) @23)))))
                     @90))))
           @12129))
 @12162 := proof(@99 @12129)
@@ -9514,8 +9545,9 @@ theorem LexLeanText.total_nil : @22772 := @22773 {
   (x._@.LexLeanText.#4245892095._hygCtx.#43.LexLeanText.#4245892095._hygCtx._hyg.#80 : @130) ->
   (x._@.LexLeanText.#4245892095._hygCtx.#44.LexLeanText.#4245892095._hygCtx._hyg.#83 : @130) ->
   (x._@.LexLeanText.#4245892095._hygCtx.#45.LexLeanText.#4245892095._hygCtx._hyg.#86 : @128) -> @218
+@12923 := @2092 @44
 @12929 := (x._@.LexLeanText.#4245892095._hygCtx._hyg.#97 : @130) ->
-  (out : @130) -> (seed : @128) -> @2092 @44 @75 @90 @23
+  (out : @130) -> (seed : @128) -> @12923 @75 @90 @23
 @12937 := (fuel : @2) -> (ctx : @130) -> (out : @130) -> (seed : @128) -> @3420 @12622 @75 @90 @23
 @12944 := (motive : @12922) ->
   (x._@.LexLeanText.#4245892095._hygCtx.#42.LexLeanText.#4245892095._hygCtx._hyg.#77 : @2) ->
@@ -12732,19 +12764,20 @@ theorem LexLeanText.total_nil : @22772 := @22773 {
 @18381 := proof(proj PProd PProd.snd 1 proof(proof(@18279 @23) @3190))
 @18382 := proof(@12526 @99)
 @18383 := proof(@18349 @75)
-@18418 := proof(proof(proof(@18378
-          proof(fun (x._@.LexLeanText.#3761760738._hygCtx._hyg.#15 : @28) =>
-            proof(let r : @3148 := @18381;
-              proof((h : @18382) ->
-                proof(proof(@18248 proof(proof(proof(proof(@18383 @2054) @18353) @18359) @90))
-                    proof(proof(proof(@18287 @2054) @3200) @3213))))))
-        proof(let r : @3159 := proof(proj PProd PProd.snd 1 proof(proof(@18279 @3106) @3190));
-          proof(fun (h : proof(@12333 @75)) =>
-            proof(proof(@367
-                  proof(proof(@18248
-                        proof(proof(proof(proof(proof(@18349 @3106) @1353) @18353) @18359) @90))
-                      proof(proof(proof(proof(@3197 @3106) @1353) @3200) @3213)))
-                proof(@18252 @3160)))))
+@18396 := proof(@18378
+      proof(fun (x._@.LexLeanText.#3761760738._hygCtx._hyg.#15 : @28) =>
+        proof(let r : @3148 := @18381;
+          proof((h : @18382) ->
+            proof(proof(@18248 proof(proof(proof(proof(@18383 @2054) @18353) @18359) @90))
+                proof(proof(proof(@18287 @2054) @3200) @3213))))))
+@18399 := proof(proj PProd PProd.snd 1 proof(proof(@18279 @3106) @3190))
+@18400 := proof(@12333 @75)
+@18412 := proof(@367
+      proof(proof(@18248 proof(proof(proof(proof(proof(@18349 @3106) @1353) @18353) @18359) @90))
+          proof(proof(proof(proof(@3197 @3106) @1353) @3200) @3213)))
+@18413 := proof(@18252 @3160)
+@18418 := proof(proof(@18396
+        proof(let r : @3159 := @18399; proof(fun (h : @18400) => proof(@18412 @18413))))
       @232)
 @18419 := proof(@453 @28)
 @18492 := proof(fun (x._@.LexLeanText.#3761760738._hygCtx._hyg.#15 : @28) =>
@@ -12828,8 +12861,9 @@ theorem LexLeanText.total_nil : @22772 := @22773 {
 @18551 := proof(fun (x : @9288) => proof(@12094 @2054))
 @18552 := proof(@9308 @18551)
 @18553 := proof(@18552 @90)
-@18561 := proof(proof(proof(@9308 proof(fun (x : @9288) => proof(proof(@3420 @9292) @23))) @2054)
-      proof(fun (val._@.LexLeanText.#2792387140._hygCtx._hyg.#94 : @17) => proof(@9490 @23)))
+@18558 := proof(proof(@9308 proof(fun (x : @9288) => proof(proof(@3420 @9292) @23))) @2054)
+@18559 := proof(@9490 @23)
+@18561 := proof(@18558 proof(fun (val._@.LexLeanText.#2792387140._hygCtx._hyg.#94 : @17) => @18559))
 @18563 := proof(@9226 proof(@9319 @2054))
 @18568 := proof(fun (val._@.LexLeanText.#2792387140._hygCtx._hyg.#92 : @17) =>
     proof(@18561
@@ -12873,18 +12907,18 @@ theorem LexLeanText.total_nil : @22772 := @22773 {
           proof(proof(fun (x : @9288) => proof(@12100 @2092)) @9425))) =>
         @9269))
 @18626 := proof(@9226 proof(@9319 @9294))
+@18628 := proof((h : @18626) -> proof(@18611 @9292))
+@18633 := proof(proof(@9308 proof(fun (x : @9288) => proof(proof(@3452 @9292) @23))) @2969)
+@18635 := @2969 @90 @23
 @18652 := proof(@367
       proof(proof(@18604
             proof(proof(proof(@18624
                     proof(fun (val : @17) =>
-                      proof(fun (else._@.LexLeanText.#2792387140._hygCtx._hyg.#91 : proof((h : @18626) ->
-                          proof(@18611 @9292))) =>
+                      proof(fun (else._@.LexLeanText.#2792387140._hygCtx._hyg.#91 : @18628) =>
                         proof(proof(fun (val._@.LexLeanText.#2792387140._hygCtx._hyg.#92 : @17) =>
-                            proof(proof(proof(proof(@9308
-                                      proof(fun (x : @9288) => proof(proof(@3452 @9292) @23)))
-                                    @2969)
+                            proof(proof(@18633
                                   proof(fun (val._@.LexLeanText.#2792387140._hygCtx._hyg.#94 : @17) =>
-                                    proof(proof(@2969 @90) @23)))
+                                    @18635))
                                 proof(fun (h._@.LexLeanText.#2792387140._hygCtx._hyg.#95 : proof(@9226
                                       proof(@9319 @2969))) =>
                                   proof(@18587 @3420))))
@@ -13303,7 +13337,8 @@ theorem LexLeanText.total_nil : @22772 := @22773 {
     proof(fun (x._@.LexLeanText.#3761760738._hygCtx.#46._hyg.#5 : @2) =>
       proof(fun (h_1._@._hyg.#6 : @19391) =>
         proof(fun (h_2._@._hyg.#7 : @19396) => proof(proof(@9529 @19397) @19403)))))
-@19418 := (x._@.LexLeanText.#3761760738._hygCtx._hyg.#46 : @2) -> @232 @3106 @23
+@19417 := @232 @3106 @23
+@19418 := (x._@.LexLeanText.#3761760738._hygCtx._hyg.#46 : @2) -> @19417
 @19423 := (p : @14) -> (ps : @28) -> (i : @2) -> @2092 @3112 @23
 @19425 := @1353 @6249 @75
 @19426 := @9468 @19425
@@ -13502,9 +13537,12 @@ theorem LexLeanText.total_nil : @22772 := @22773 {
 @19780 := (n : @2) -> (xs : @8726) -> @8726
 @19787 := @9409 @8726 @8726 @8726 (@9413 @8726 (@9415 @277))
 @19788 := @110 @277
-@19791 := @19787 (@19788 @90 @23)
+@19790 := @19788 @90 @23
+@19791 := @19787 @19790
 @19793 := List.replicate.{0} @277
-@19798 := @19791 (@19793 (@9032 (@19736 @23)) @307)
+@19795 := @9032 (@19736 @23)
+@19797 := @19793 @19795 @307
+@19798 := @19791 @19797
 @19800 := fun (n : @2) => fun (xs : @8726) => @19798
 @19801 := LexLeanText.fitWidth
 @19802 := @19801 @90
@@ -13534,30 +13572,31 @@ theorem LexLeanText.total_nil : @22772 := @22773 {
 @19841 := proof(@19832 proof(@19835 @19839))
 @19842 := proof(@19787 @19813)
 @19845 := proof(proof(@19841 proof(@19842 @385)) @19813)
-@19851 := proof(proof(proof(proof(proof(proof(@4436 @8726) @8726) @19835) @19842) @19839) @385)
-@19856 := proof(proof(proof(proof(@14691 proof((a._@._internal._hyg.#0 : @8726) -> @8726)) @19834)
-        @19813)
-      @19787)
+@19847 := proof(proof(@4436 @8726) @8726)
+@19851 := proof(proof(proof(proof(@19847 @19835) @19842) @19839) @385)
+@19852 := (a._@._internal._hyg.#0 : @8726) -> @8726
+@19853 := proof(@14691 @19852)
+@19856 := proof(proof(proof(@19853 @19834) @19813) @19787)
 @19860 := proof(proof(proof(proof(List.take_of_length_le.{0}) @277) @75) @19813)
 @19861 := proof(@169 @19836)
 @19862 := proof(@19861 @75)
+@19882 := proof(@19851
+      proof(@19856
+          proof(@19860
+              proof(proof(@2318 @19862)
+                  proof(proof(proof(proof(proof(@1127 @19862) proof(@6233 @75)) @2213)
+                        proof(proof(proof(proof(@1153 @19861) @6233)
+                              proof(proof(proof(proof(@1158 @19836) @75) @169) @23))
+                            @75))
+                      proof(@6388 @75))))))
+@19884 := proof(proof(@19534 @8726) @19838)
+@19885 := proof(@19793 @44)
 @19915 := proof(@19822
       proof(proof(@19826
             proof(@19831
                 proof(proof(@19845
-                      proof(proof(@19851
-                            proof(@19856
-                                proof(@19860
-                                    proof(proof(@2318 @19862)
-                                        proof(proof(proof(proof(proof(@1127 @19862)
-                                                  proof(@6233 @75))
-                                                @2213)
-                                              proof(proof(proof(proof(@1153 @19861) @6233)
-                                                    proof(proof(proof(proof(@1158 @19836) @75) @169)
-                                                        @23))
-                                                  @75))
-                                            proof(@6388 @75))))))
-                          proof(proof(proof(proof(proof(@19534 @8726) @19838) proof(@19793 @44))
+                      proof(@19882
+                          proof(proof(proof(@19884 @19885)
                                 proof(proof(proof(proof(proof(@1156 proof((a : @277) -> @8726))
                                           @19837)
                                         @44)
@@ -14097,7 +14136,8 @@ theorem LexLeanText.total_nil : @22772 := @22773 {
                     proof(proof(Int.zero_add) @20618)))
               proof(@19656 @20618))))
 @20960 := proof(proof(@278 proof(@19942 proof(@20928 @75))) @20621)
-@20962 := proof(proof(@380 @75) @90)
+@20961 := proof(@380 @75)
+@20962 := proof(@20961 @90)
 @20965 := proof(@19942 proof(proof(@19787 @20962) @99))
 @20966 := proof(@278 @20965)
 @20970 := proof(@20966 proof(proof(@696 proof(@19942 @20962)) @20636))
@@ -15061,5 +15101,258 @@ theorem LexLeanText.total_nil : @22772 := @22773 {
 @22770 := proof(fun (x : @277) => proof(fun (xs : @8726) => proof(@22767 @22762)))
 @22772 := @278 @20937 @307
 @22773 := proof(@22767 @20937)
+@22774 := (a._@._internal._hyg.#0 : @2) -> @19852
+@22775 := (a._@._internal._hyg.#0 : @2) -> @8726
+@22778 := (xs : @8726) -> @14495 @12036 @385
+@22783 := (n : @2) -> @14495 (@99 @3208 @385) @385
+@22792 := (n : @2) -> (x : @277) -> (xs : @8726) -> @14495 (@2054 @4721 @8731) (@8730 (@4550 @23))
+@22794 := @14495 @7822 @385
+@22799 := (n : @2) -> @14495 (@1353 @3208) (@381 @3124)
+@22813 := (take : @22774) ->
+  (zeros : @22775) ->
+  (t0 : @22778) ->
+  (t1 : @22783) ->
+  (t2 : @22792) ->
+  (z0 : @22794) ->
+  (z1 : @22799) -> (n : @2) -> (xs : @8726) -> @14495 (@19787 @18635 (@2092 @19795)) @22740
+@22817 := proof((n : @2) -> proof((xs : @8726) -> proof(proof(@14495 @18635) @19790)))
+@22818 := proof(@3420 @90)
+@22822 := proof((xs : @8726) -> proof(proof(@14495 proof(@22818 @23)) @19790))
+@22824 := proof(@8033 proof(fun (n : @2) => @22822))
+@22826 := proof(proof(@2969 @44) @23)
+@22827 := proof(@14495 @22826)
+@22828 := proof(@19788 @44)
+@22829 := proof(@22828 @23)
+@22830 := proof(@22827 @22829)
+@22831 := proof(@1111 @22830)
+@22832 := proof(@14495 @385)
+@22833 := proof(@22832 @22829)
+@22834 := proof(@22831 @22833)
+@22837 := proof(@367 proof(proof(@1123 @22830) @22833))
+@22839 := proof(proof(@21873 @22826) @385)
+@22840 := proof(@14495 @23)
+@22847 := proof(@22834
+      proof(@22837
+          proof(proof(@22839 proof(fun (_a : @8726) => proof(@22840 proof(@22828 @90)))) @2988)))
+@22848 := proof(@14540 @385)
+@22851 := proof(@22824 proof(fun (xs : @8726) => proof(@22847 @22848)))
+@22852 := proof(@4338 @277)
+@22854 := proof(proof(@14495 @90) @23)
+@22855 := proof(@3450 @4846)
+@22857 := proof(@14495 proof(@22855 @75))
+@22858 := proof(@19788 @4846)
+@22864 := proof(proof(@22852
+        proof(fun (t._@.LexLeanText.Ext.#952459378._hygCtx._hyg.#201 : @8726) =>
+          proof((h : @22854) -> proof(@22857 proof(@22858 @75)))))
+      @23)
+@22865 := proof(@22840 @385)
+@22866 := proof(@1880 @8726)
+@22873 := proof(proof(@22866 @385)
+      proof(fun (xs : @8726) => proof(proof(@14495 proof(@22855 @23)) proof(@22858 @23))))
+@22875 := proof(proof(@3452 @5499) @385)
+@22876 := proof(@14495 @22875)
+@22878 := proof(proof(@19788 @5499) @385)
+@22879 := proof(@22876 @22878)
+@22880 := proof(@1111 @22879)
+@22881 := proof(@22832 @22878)
+@22897 := proof(proof(@22873
+        proof(proof(proof(@22880 @22881)
+              proof(proof(@367 proof(proof(@1123 @22879) @22881))
+                  proof(proof(proof(proof(@21873 @22875) @385)
+                        proof(fun (_a : @8726) => proof(@22840 proof(@22858 @385))))
+                      @9500)))
+            @22848))
+      @90)
+@22898 := proof(@453 @8726)
+@22904 := proof(@22864
+      proof(fun (h._@.LexLeanText.Ext.#952459378._hygCtx._hyg.#202 : @22865) =>
+        proof(@22897 proof(proof(proof(@22898 @90) @385) @23))))
+@22906 := proof(proof(@14495 @75) @8731)
+@22907 := proof(@22866 @20962)
+@22910 := proof(@14495 proof(proof(@3469 @8091) @23))
+@22911 := proof(@19788 @8091)
+@22915 := proof(@22907 proof(fun (xs : @8726) => proof(@22910 proof(@22911 @23))))
+@22917 := proof(proof(@3465 @4873) @20962)
+@22918 := proof(@14495 @22917)
+@22920 := proof(proof(@19788 @4873) @20962)
+@22921 := proof(@22918 @22920)
+@22922 := proof(@1111 @22921)
+@22924 := proof(proof(@3465 @1353) @90)
+@22925 := proof(@20961 @22924)
+@22927 := proof(proof(@14495 @22925) @22920)
+@22928 := proof(@22922 @22927)
+@22931 := proof(@367 proof(proof(@1123 @22921) @22927))
+@22933 := proof(proof(@21873 @22917) @22925)
+@22934 := proof(@22911 @8961)
+@22942 := proof(@22928
+      proof(@22931
+          proof(proof(@22933 proof(fun (_a : @8726) => proof(@22840 @22934)))
+              proof(proof(@11768 @75) @90))))
+@22943 := proof(@1111 @22927)
+@22945 := proof(proof(@19788 @1353) @90)
+@22946 := proof(@20961 @22945)
+@22948 := proof(proof(@14495 @22946) @22920)
+@22983 := proof(fun (n : @2) =>
+    proof(proof(@22851
+          proof(fun (n : @2) =>
+            proof(fun (ih : @22822) =>
+              proof(fun (xs : @8726) =>
+                proof(proof(@22904
+                      proof(fun (x : @277) =>
+                        proof(fun (xs : @8726) =>
+                          proof(fun (h._@.LexLeanText.Ext.#952459378._hygCtx._hyg.#241 : @22906) =>
+                            proof(proof(proof(@22915
+                                    proof(@22942
+                                        proof(proof(proof(@22943 @22948)
+                                              proof(proof(@367 proof(proof(@1123 @22927) @22948))
+                                                  proof(proof(proof(proof(@21873 @22924) @22945)
+                                                        proof(fun (_a : @8726) =>
+                                                          proof(proof(@14495 proof(@8960 @23))
+                                                              @22934)))
+                                                      @4177)))
+                                            proof(@14540 @22946))))
+                                  @99)
+                                proof(proof(proof(@22898 @99) @20962) @23))))))
+                    proof(@14540 @23))))))
+        @23))
+@22984 := proof(@14495 @8784)
+@22986 := proof(proof(@19793 @23) @307)
+@22988 := proof((n : @2) -> proof(@22984 @22986))
+@22990 := proof(proof(@14495 @12094) @22986)
+@22992 := proof(@8033 proof(fun (n : @2) => @22990))
+@22993 := proof(@14495 @12923)
+@22994 := proof(@19885 @307)
+@22995 := proof(@22993 @22994)
+@22996 := proof(@1111 @22995)
+@22997 := proof(@22832 @22994)
+@23011 := proof(@22992
+      proof(proof(proof(@22996 @22997)
+            proof(proof(@367 proof(proof(@1123 @22995) @22997))
+                proof(proof(proof(proof(@21873 @12923) @385)
+                      proof(fun (_a : @8726) => proof(@22840 @22994)))
+                    @99)))
+          @22848))
+@23012 := proof(@3420 @3173)
+@23013 := proof(@14495 @23012)
+@23015 := proof(proof(@19793 @3173) @307)
+@23016 := proof(@23013 @23015)
+@23017 := proof(@1111 @23016)
+@23018 := proof(@381 @22818)
+@23020 := proof(proof(@14495 @23018) @23015)
+@23021 := proof(@23017 @23020)
+@23024 := proof(@367 proof(proof(@1123 @23016) @23020))
+@23026 := proof(proof(@21873 @23012) @23018)
+@23028 := proof(proof(@19793 @4721) @307)
+@23034 := proof(@23021
+      proof(@23024 proof(proof(@23026 proof(fun (_a : @8726) => proof(@22840 @23028))) @4177)))
+@23035 := proof(@1111 @23020)
+@23037 := proof(proof(@19793 @90) @307)
+@23038 := proof(@381 @23037)
+@23040 := proof(proof(@14495 @23038) @23015)
+@23062 := proof(fun (n : @2) =>
+    proof(proof(@23011
+          proof(fun (n : @2) =>
+            proof(fun (ih : @22990) =>
+              proof(@23034
+                  proof(proof(proof(@23035 @23040)
+                        proof(proof(@367 proof(proof(@1123 @23020) @23040))
+                            proof(proof(proof(proof(@21873 @22818) @23037)
+                                  proof(fun (_a : @8726) =>
+                                    proof(proof(@14495 proof(@381 @23)) @23028)))
+                                @23)))
+                      proof(@14540 @23038))))))
+        @23))
+@23064 := proof(proof(@3587 @90) @23)
+@23065 := proof(@19787 @23064)
+@23066 := proof(@3420 @19795)
+@23067 := proof(@23065 @23066)
+@23068 := proof(@14495 @23067)
+@23069 := proof(@23068 @19798)
+@23070 := proof(@2318 @23069)
+@23071 := proof(@1127 @23069)
+@23072 := proof(@14495 @19798)
+@23114 := proof(fun (take : @22774) =>
+    proof(fun (zeros : @22775) =>
+      proof(fun (t0 : @22778) =>
+        proof(fun (t1 : @22783) =>
+          proof(fun (t2 : @22792) =>
+            proof(fun (z0 : @22794) =>
+              proof(fun (z1 : @22799) =>
+                proof(have ht : @22817 := @22983;
+                  proof(have hz : @22988 := @23062;
+                    proof(fun (n : @2) =>
+                      proof(fun (xs : @8726) =>
+                        proof(@23070
+                            proof(proof(proof(proof(@23071 proof(@23072 @19798)) @2213)
+                                  proof(proof(proof(proof(@19824 @23068) @23072)
+                                        proof(proof(proof(proof(@19828 @23067) @19798) @14495)
+                                            proof(proof(proof(proof(proof(proof(@19847 @23065)
+                                                        @19791)
+                                                      @23066)
+                                                    @19797)
+                                                  proof(proof(proof(proof(@19853 @23064) @19790)
+                                                        @19787)
+                                                      proof(proof(proof(fun (n : @2) =>
+                                                            proof(fun (xs : @8726) => @9299))
+                                                            @90)
+                                                          @23)))
+                                                proof(proof(fun (n : @2) => @4241) @19795))))
+                                      @19798))
+                                proof(@19916 @19798))))))))))))))
+@23119 := (i : @2) -> @18248 (@90 @3106 @23) @3160
+@23128 := (s : @14) -> (ss : @28) -> (i : @2) -> @18248 (@232 @3112 @23) (@3204 (@4177 @3208))
+@23135 := (f : @3186) ->
+  (h0 : @23119) -> (h1 : @23128) -> (vocab : @28) -> (i : @2) -> @18248 @7810 @6147
+@23140 := proof(@6146
+      proof(fun (vocab : @28) => proof((i : @2) -> proof(proof(@18248 @9299) @6147))))
+@23142 := proof(proof(@18248 @19417) @6166)
+@23143 := proof(@1111 @23142)
+@23145 := proof(proof(@18248 @3160) @6166)
+@23146 := proof(@23143 @23145)
+@23149 := proof(@367 proof(proof(@1123 @23142) @23145))
+@23151 := proof(proof(@1142 @3144) @32)
+@23153 := proof(proof(@23151 @19417) @3160)
+@23154 := proof(@18248 @23)
+@23163 := proof(@23140
+      proof(fun (i : @2) =>
+        proof(proof(@23146
+              proof(@23149
+                  proof(proof(@23153 proof(fun (_a : @3144) => proof(@23154 @6181))) @4241)))
+            @18413)))
+@23166 := proof((i : @2) -> proof(proof(@18248 @18559) @6147))
+@23168 := proof(proof(@2092 @6209) @23)
+@23170 := proof(proof(@18248 @23168) @6211)
+@23171 := proof(@1111 @23170)
+@23173 := proof(@3165 proof(@3202 @99))
+@23174 := proof(@12149 @3208)
+@23175 := proof(@23173 @23174)
+@23177 := proof(proof(@18248 @23175) @6211)
+@23191 := proof(proof(@23171 @23177)
+      proof(proof(@367 proof(proof(@1123 @23170) @23177))
+          proof(proof(proof(proof(@23151 @23168) @23175)
+                proof(fun (_a : @3144) => proof(@23154 @6251)))
+              proof(proof(@20008 @75) @23))))
+@23192 := proof(@1111 @23177)
+@23194 := proof(proof(@3205 @75) @3208)
+@23195 := proof(@23173 @23194)
+@23197 := proof(proof(@18248 @23195) @6211)
+@23225 := proof(fun (f : @3186) =>
+    proof(fun (h0 : @23119) =>
+      proof(fun (h1 : @23128) =>
+        proof(fun (vocab : @28) =>
+          proof(proof(@23163
+                proof(fun (s : @14) =>
+                  proof(fun (ss : @28) =>
+                    proof(fun (ih : @23166) =>
+                      proof(fun (i : @2) =>
+                        proof(@23191
+                            proof(proof(proof(@23192 @23197)
+                                  proof(proof(@367 proof(proof(@1123 @23177) @23197))
+                                      proof(proof(proof(proof(@23151 @23174) @23194)
+                                            proof(fun (_a : @3144) =>
+                                              proof(proof(@18248 proof(@6257 @23)) @6251)))
+                                          proof(@90 @3208))))
+                                proof(@18252 @23195))))))))
+              @23)))))
 \end{coremodule}
 \end{lexlean}
