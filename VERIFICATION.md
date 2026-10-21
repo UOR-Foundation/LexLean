@@ -16539,6 +16539,10 @@ every refusal. Linux x86-64.
 | a block of 130 lines | `spec replace-block … --from <130 lines>` | the module holds the block as one item and two `cont` items (60, 60, 10); the regenerated SPEC.md has all 130 lines |
 | a percent sign | `spec replace-block … --from <a line with 50%>` | `SPEC.md` holds `50%`; the module holds no `%` (it holds U+FF05) |
 | the check itself: the intended text computed off by one (a defect planted in `replace_block`) | `spec replace-block … --from <one line>` | ``R1: the regenerated SPEC.md differs from the intended text at line 18: `a replacement line` against `This document is the complete implementation contract …` (NS-07)``; nothing written, tree unchanged |
+| the comparison's extent: the loop that finds the first differing line stops one short of the longer text (planted in `verify`) | `cargo test -p repo-conformance conformance_ns_07` | the test fails (a difference at the last line, an extra line, a missing line are no longer refused); restored |
+| a paragraph merged in before the §31 table | `spec port --merged …` | ported after the block of Chapter31 that precedes it, not into the derived table |
+| an empty merged file | `spec port --merged <empty>` | ``R1: … differ by more than 2000 lines (10545 against 1…) (NS-07)``, exit 1, memory bounded |
+| an empty `--from` file, a missing option, an unknown operation or chapter | `spec …` | each a rule-numbered refusal, ``R1: … (NS-07)``, never a panic |
 
 Further, in `conformance_ns_07`: a line holding U+FF05 is refused (the chapters
 reserve it); a deleted blank line between two blocks, which touches no block's

@@ -44,7 +44,14 @@ fn option<'a>(arguments: &'a [String], name: &str) -> Result<&'a str, Fail> {
 }
 
 fn lines_of_file(path: &str) -> Result<Vec<String>, Fail> {
-    let text = std::fs::read_to_string(path).map_err(|error| format!("{path}: {error}"))?;
+    let text = std::fs::read_to_string(path)
+        .map_err(|error| refusal(&format!("{path}: {error}"), false))?;
+    if text.is_empty() {
+        return Err(refusal(
+            &format!("{path} holds no lines: a block is at least one line"),
+            false,
+        ));
+    }
     Ok(text
         .strip_suffix('\n')
         .unwrap_or(&text)
