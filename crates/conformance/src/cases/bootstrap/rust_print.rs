@@ -1137,17 +1137,17 @@ const ROOTS: [(&str, &[&str]); 2] = [
 // The counts SPEC.md §17.23, the register statement of BS-06, its scenario,
 // and VERIFICATION.md state, over the tree with the packages of the two roots
 // committed: the case fails when the tree no longer gives them.
-const COMMITTED_MANIFESTS: usize = 252;
+const COMMITTED_MANIFESTS: usize = 255;
 const COMMITTED_FIXTURES: usize = 122;
-const COMMITTED_PROGRAMS: usize = 169;
-const COMMITTED_CRATES: usize = 228;
-const COMMITTED_PACKAGES: usize = 252;
-const VECTORS_CRATE: usize = 598;
-const COMMITTED_DISTINCT: usize = 456;
+const COMMITTED_PROGRAMS: usize = 172;
+const COMMITTED_CRATES: usize = 231;
+const COMMITTED_PACKAGES: usize = 255;
+const VECTORS_CRATE: usize = 604;
+const COMMITTED_DISTINCT: usize = 462;
 const REFUSED_CRATE: usize = 56;
-const VECTORS_EXPR: usize = 1_937;
+const VECTORS_EXPR: usize = 1_955;
 const HAND_EXPR: usize = 1_404;
-const EVALUATOR_CRATE: usize = 539;
+const EVALUATOR_CRATE: usize = 541;
 const SEEDED_CRATE: usize = 400;
 const SEEDED_EXPR: usize = 399;
 const RUSTC_SEEDED_RUNS: usize = 2_984;
@@ -1353,6 +1353,40 @@ pub(super) fn case() {
         ),
         "the vectors of printCrate and printExpr, the committed crates among them, and the refused"
     );
+    // The corpora of the normative host are made here, so that every count
+    // the row states is asserted before the first leg runs.
+    let evaluator_crates: Vec<Run> = crate_runs
+        .iter()
+        .filter(|(arguments, _)| value_nodes_of(arguments) <= EVALUATOR_NODES)
+        .cloned()
+        .collect();
+    let evaluator_exprs: Vec<Run> = expr_runs
+        .iter()
+        .filter(|(arguments, _)| value_nodes_of(arguments) <= EVALUATOR_NODES)
+        .cloned()
+        .collect();
+    let bases = super::rust_validate::small(&all, BASE_CAP);
+    let mut seeded = super::Seeded(0x0B55_0006);
+    let (seeded_crates, seeded_exprs) = mutants(&bases, &mut seeded, EVALUATOR_MUTANTS);
+    let mut large = super::Seeded(0x0B55_0066);
+    let (large_crates, large_exprs) = mutants(&bases, &mut large, RUSTC_MUTANTS);
+    assert_eq!(
+        (
+            evaluator_crates.len(),
+            evaluator_exprs.len(),
+            seeded_crates.len(),
+            seeded_exprs.len(),
+            large_crates.len() + large_exprs.len()
+        ),
+        (
+            EVALUATOR_CRATE,
+            VECTORS_EXPR,
+            SEEDED_CRATE,
+            SEEDED_EXPR,
+            RUSTC_SEEDED_RUNS
+        ),
+        "the vectors and the seeded mutants of the evaluator, and the further mutants of rustc"
+    );
     let checked = support::checked_project(&project);
     let crate_root = super::lower(&checked, &project, MODULE, "printCrate");
     let expr_root = super::lower(&checked, &project, MODULE, "printExpr");
@@ -1370,16 +1404,6 @@ pub(super) fn case() {
         eprintln!("BS-06: platform-bound host: the evaluator, the seeded corpora, and the planted defects run on the normative host");
         return;
     }
-    let within: Vec<&Run> = crate_runs
-        .iter()
-        .filter(|(arguments, _)| value_nodes_of(arguments) <= EVALUATOR_NODES)
-        .collect();
-    let evaluator_crates: Vec<Run> = within.iter().map(|run| (*run).clone()).collect();
-    let evaluator_exprs: Vec<Run> = expr_runs
-        .iter()
-        .filter(|(arguments, _)| value_nodes_of(arguments) <= EVALUATOR_NODES)
-        .cloned()
-        .collect();
     for (root, low, runs) in [
         ("printCrate", &crate_root, &evaluator_crates),
         ("printExpr", &expr_root, &evaluator_exprs),
@@ -1390,20 +1414,12 @@ pub(super) fn case() {
             "{root}: the evaluator and the Rust printer disagree on the vectors: {disagreements:?}"
         );
     }
-    assert_eq!(
-        evaluator_crates.len(),
-        EVALUATOR_CRATE,
-        "the vectors the evaluator is given"
-    );
     eprintln!(
         "BS-06: the evaluator agrees on {} + {} vectors ({:?})",
         evaluator_crates.len(),
         evaluator_exprs.len(),
         started.elapsed()
     );
-    let bases = super::rust_validate::small(&all, BASE_CAP);
-    let mut seeded = super::Seeded(0x0B55_0006);
-    let (seeded_crates, seeded_exprs) = mutants(&bases, &mut seeded, EVALUATOR_MUTANTS);
     for (root, low, runs) in [
         ("printCrate", &crate_root, &seeded_crates),
         ("printExpr", &expr_root, &seeded_exprs),
@@ -1414,19 +1430,12 @@ pub(super) fn case() {
             "{root}: the evaluator and the Rust printer disagree on the seeded mutants: {disagreements:?}"
         );
     }
-    assert_eq!(
-        (seeded_crates.len(), seeded_exprs.len()),
-        (SEEDED_CRATE, SEEDED_EXPR),
-        "the seeded mutants the evaluator is given"
-    );
     eprintln!(
         "BS-06: the evaluator agrees on {} + {} seeded mutants ({:?})",
         seeded_crates.len(),
         seeded_exprs.len(),
         started.elapsed()
     );
-    let mut large = super::Seeded(0x0B55_0066);
-    let (large_crates, large_exprs) = mutants(&bases, &mut large, RUSTC_MUTANTS);
     let large_runs = super::rust_validate::rustc_differential(
         "BS-06",
         &[
@@ -1435,10 +1444,7 @@ pub(super) fn case() {
         ],
         "seeded",
     );
-    assert_eq!(
-        large_runs, RUSTC_SEEDED_RUNS,
-        "the further seeded mutants under rustc"
-    );
+    assert_eq!(large_runs, RUSTC_SEEDED_RUNS);
     // The gate is armed: each defect planted in a copy of the source is a
     // disagreement with the oracle.
     let mut detection: BTreeMap<&str, Vec<Run>> = BTreeMap::new();
