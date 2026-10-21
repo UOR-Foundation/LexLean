@@ -336,5 +336,304 @@ definition{
   axioms: [Quot.sound, propext],
   executable: true
 }
+
+definition{
+  name: natBits,
+  parameters: [value : UInt32, bits : Nat, place : Nat, accumulated : Nat],
+  result: Nat,
+  body: (match bits
+    | Nat.zero => accumulated
+    | Nat.succ previous => (let next : UInt32 := (match (prim shift_right value (1 : UInt32) : (Option UInt32))
+      | Option.some shifted => shifted
+      | Option.none => value); (if (prim equal (prim bit_and value (1 : UInt32) : UInt32) (1 : UInt32) : Bool) then (natBits next previous (prim multiply place 2 : Nat) (accumulated + place)) else (natBits next previous (prim multiply place 2 : Nat) accumulated)))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: bits
+}
+
+definition{
+  name: natOfToken,
+  parameters: [value : UInt32],
+  result: Nat,
+  body: (natBits value 32 1 0),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: bytesFrom,
+  parameters: [source : Bytes, position : Nat, count : Nat],
+  result: (List UInt8),
+  body: (match count
+    | Nat.zero => (nil UInt8)
+    | Nat.succ previous => (match (prim index source position : (Option UInt8))
+      | Option.some byte => (cons byte (bytesFrom source (position + 1) previous))
+      | Option.none => (nil UInt8))),
+  executable: true,
+  recursive_argument: count
+}
+
+definition{
+  name: bytesList,
+  parameters: [source : Bytes],
+  result: (List UInt8),
+  body: (bytesFrom source 0 (prim length source : Nat)),
+  executable: true
+}
+
+definition{
+  name: withIds,
+  parameters: [vocabulary : (List String), identifier : UInt32],
+  result: (List (UInt32 * String)),
+  body: (match vocabulary
+    | List.nil => (nil (UInt32 * String))
+    | List.cons head tail => (match (prim checked_add identifier (1 : UInt32) : (Option UInt32))
+      | Option.some next => (cons (identifier, head) (withIds tail next))
+      | Option.none => (cons (identifier, head) (nil (UInt32 * String))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: vocabulary
+}
+
+definition{
+  name: pieceBytes,
+  parameters: [piece : String],
+  result: (List UInt8),
+  body: (bytesList (prim utf8_encode piece : Bytes)),
+  executable: true
+}
+
+definition{
+  name: byteToken,
+  parameters: [byte : UInt8],
+  result: UInt32,
+  body: (match (prim checked_convert byte : (Option UInt32))
+    | Option.some token => token
+    | Option.none => (0 : UInt32)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: pieceOf,
+  parameters: [vocabulary : (List String), token : UInt32],
+  result: (Option (List UInt8)),
+  body: (if ((natOfToken token) <? (byteVocab)) then (match (prim checked_convert token : (Option UInt8))
+    | Option.some byte => (ctor Option.some [(List UInt8)] (cons byte (nil UInt8)))
+    | Option.none => (ctor Option.none [(List UInt8)])) else (match (prim index vocabulary (prim subtract (natOfToken token) (byteVocab) : Nat) : (Option String))
+    | Option.some piece => (ctor Option.some [(List UInt8)] (pieceBytes piece))
+    | Option.none => (ctor Option.none [(List UInt8)]))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isPrefixOfBytes,
+  parameters: [prefix : (List UInt8), text : (List UInt8)],
+  result: Bool,
+  body: (match prefix
+    | List.nil => true
+    | List.cons head tail => (match text
+      | List.nil => false
+      | List.cons other rest => ((prim equal head other : Bool) && (isPrefixOfBytes tail rest)))),
+  executable: true,
+  recursive_argument: prefix
+}
+
+definition{
+  name: candidatesFrom,
+  parameters: [entries : (List (UInt32 * String)), text : (List UInt8)],
+  result: (List (UInt32 * Nat)),
+  body: (match entries
+    | List.nil => (nil (UInt32 * Nat))
+    | List.cons entry tail => (if ((0 <? (prim length (pieceBytes (second entry)) : Nat)) && (isPrefixOfBytes (pieceBytes (second entry)) text)) then (cons ((first entry), (prim length (pieceBytes (second entry)) : Nat)) (candidatesFrom tail text)) else (candidatesFrom tail text))),
+  executable: true,
+  recursive_argument: entries
+}
+
+definition{
+  name: candidates,
+  parameters: [vocabulary : (List String), text : (List UInt8)],
+  result: (List (UInt32 * Nat)),
+  body: (candidatesFrom (withIds vocabulary (256 : UInt32)) text),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: pick,
+  parameters: [best : (Option (UInt32 * Nat)), next : (UInt32 * Nat)],
+  result: (Option (UInt32 * Nat)),
+  body: (match best
+    | Option.none => (ctor Option.some [(UInt32 * Nat)] next)
+    | Option.some current => (if ((second current) <? (second next)) then (ctor Option.some [(UInt32 * Nat)] next) else (ctor Option.some [(UInt32 * Nat)] current))),
+  executable: true
+}
+
+definition{
+  name: bestFrom,
+  parameters: [best : (Option (UInt32 * Nat)), options : (List (UInt32 * Nat))],
+  result: (Option (UInt32 * Nat)),
+  body: (match options
+    | List.nil => best
+    | List.cons option tail => (bestFrom (pick best option) tail)),
+  executable: true,
+  recursive_argument: options
+}
+
+definition{
+  name: bestPiece,
+  parameters: [vocabulary : (List String), text : (List UInt8)],
+  result: (Option (UInt32 * Nat)),
+  body: (bestFrom (ctor Option.none [(UInt32 * Nat)]) (candidates vocabulary text)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: dropBytes,
+  parameters: [count : Nat, text : (List UInt8)],
+  result: (List UInt8),
+  body: (match count
+    | Nat.zero => text
+    | Nat.succ previous => (match text
+      | List.nil => (nil UInt8)
+      | List.cons head tail => (dropBytes previous tail))),
+  executable: true,
+  recursive_argument: count
+}
+
+definition{
+  name: encodeGo,
+  parameters: [vocabulary : (List String), fuel : Nat, text : (List UInt8)],
+  result: (List UInt32),
+  body: (match fuel
+    | Nat.zero => (nil UInt32)
+    | Nat.succ previous => (match text
+      | List.nil => (nil UInt32)
+      | List.cons head tail => (match (bestPiece vocabulary text)
+        | Option.some piece => (cons (first piece) (encodeGo vocabulary previous (dropBytes (second piece) text)))
+        | Option.none => (cons (byteToken head) (encodeGo vocabulary previous tail))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: fuel
+}
+
+definition{
+  name: encodeWith,
+  parameters: [vocabulary : (List String), source : Bytes],
+  result: (List UInt32),
+  body: (encodeGo vocabulary (prim length source : Nat) (bytesList source)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: bytesTokens,
+  parameters: [text : (List UInt8)],
+  result: (List UInt32),
+  body: (match text
+    | List.nil => (nil UInt32)
+    | List.cons head tail => (cons (byteToken head) (bytesTokens tail))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: text
+}
+
+definition{
+  name: encodeBytes,
+  parameters: [source : Bytes],
+  result: (List UInt32),
+  body: (bytesTokens (bytesList source)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: encodeText,
+  parameters: [vocabulary : (List String), text : String],
+  result: (List UInt32),
+  body: (encodeWith vocabulary (prim utf8_encode text : Bytes)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: encodeTextBytes,
+  parameters: [text : String],
+  result: (List UInt32),
+  body: (encodeBytes (prim utf8_encode text : Bytes)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: byteTable,
+  parameters: [],
+  result: Bytes,
+  body: 0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff,
+  executable: true
+}
+
+definition{
+  name: byteOf,
+  parameters: [byte : UInt8],
+  result: Bytes,
+  body: (match (prim slice (byteTable) (natOfToken (byteToken byte)) 1 : (Option Bytes))
+    | Option.some single => single
+    | Option.none => 0x),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: listBytes,
+  parameters: [text : (List UInt8)],
+  result: Bytes,
+  body: (match text
+    | List.nil => 0x
+    | List.cons head tail => (prim append (byteOf head) (listBytes tail) : Bytes)),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: text
+}
+
+definition{
+  name: decodeGo,
+  parameters: [vocabulary : (List String), tokens : (List UInt32)],
+  result: (Option (List UInt8)),
+  body: (match tokens
+    | List.nil => (ctor Option.some [(List UInt8)] (nil UInt8))
+    | List.cons token rest => (match (pieceOf vocabulary token)
+      | Option.some piece => (match (decodeGo vocabulary rest)
+        | Option.some tail => (ctor Option.some [(List UInt8)] (prim append piece tail : (List UInt8)))
+        | Option.none => (ctor Option.none [(List UInt8)]))
+      | Option.none => (ctor Option.none [(List UInt8)]))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: tokens
+}
+
+definition{
+  name: decodeWith,
+  parameters: [vocabulary : (List String), tokens : (List UInt32)],
+  result: (Option Bytes),
+  body: (match (decodeGo vocabulary tokens)
+    | Option.some text => (ctor Option.some [Bytes] (listBytes text))
+    | Option.none => (ctor Option.none [Bytes])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: decodeText,
+  parameters: [vocabulary : (List String), tokens : (List UInt32)],
+  result: (Option String),
+  body: (match (decodeWith vocabulary tokens)
+    | Option.some raw => (prim utf8_decode raw : (Option String))
+    | Option.none => (ctor Option.none [String])),
+  axioms: [Classical.choice, Quot.sound, propext],
+  executable: true
+}
 \end{semanticmodule}
 \end{lexlean}
