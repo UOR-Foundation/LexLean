@@ -1,0 +1,396 @@
+//! The migration of a language-1.1 project to language 1.2 (SPEC.md §17.12).
+//!
+//! Language 1.2 refuses the data form of a module (`\semanticdata{...}`,
+//! `AU-13`), so the migration is not a change of the `language` row alone: each
+//! module is rewritten into the authoring notation through
+//! [`crate::sdk::to_notation`], the builtin glossary references of every source
+//! and every path lexicon package move from `1.1.0` to `1.2.0`, and the lock is
+//! regenerated as `lexlean/lock/2`.
+//!
+//! Nothing is written until the migrated project has been proven: every new
+//! file is first written into a scratch copy of the project, which is locked
+//! and checked as a language-1.2 project, so a module the notation cannot
+//! express, a source language 1.2 does not link, and a package it does not
+//! resolve are all refused before the first byte of the real project changes.
+
+use std::collections::BTreeMap;
+use std::io::Write;
+
+use camino::{Utf8Path, Utf8PathBuf};
+use serde::Deserialize;
+
+use super::{acquire_lock, host_failure, CheckRequest, Engine, LockRequest};
+use crate::code;
+use crate::config::{toml_string, LexiconSource};
+use crate::diagnostic::{Diagnostic, Span};
+use crate::error::LexLeanError;
+use crate::project::Selection;
+use crate::sdk::{self, ModuleKind};
+
+/// The schema tag of a language-1.1 semantic module and the one language 1.2
+/// reads in its place.
+const MODULE_1_1: &str = "lexlean/semantic-module/1";
+const MODULE_1_2: &str = "lexlean/semantic-module/2";
+
+/// The version of every builtin package of each language.
+const BUILTIN_1_1: &str = "@1.1.0";
+const BUILTIN_1_2: &str = "@1.2.0";
+
+/// A migration request.
+pub struct MigrateRequest {
+    /// Prove the migration and report it without writing anything.
+    pub check_only: bool,
+}
+
+/// What a migration did, or with `check_only` would do.
+pub struct MigrateResult {
+    /// The modules rewritten, by name.
+    pub modules: Vec<String>,
+    /// The path lexicon manifests moved to language 1.2, project-relative.
+    pub manifests: Vec<String>,
+    /// Whether the project's files were rewritten.
+    pub written: bool,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Manifest {
+    spec: String,
+    package: String,
+    version: String,
+    language: String,
+    imports: Vec<String>,
+}
+
+fn unsupported(path: &str, message: impl Into<String>) -> Diagnostic {
+    Diagnostic::new(code!("LLC0103"), message).with_span(Span::whole_file(path))
+}
+
+fn unwritable(path: &str, message: impl Into<String>) -> Diagnostic {
+    Diagnostic::new(code!("LLP2003"), message)
+        .with_span(Span::whole_file(path))
+        .with_help("the module is not migrated; no file of the project was written")
+}
+
+/// `package@1.1.0` of a builtin package as `package@1.2.0`; any other
+/// reference is a path or Git package, whose version does not move with the
+/// language, and is unchanged.
+fn retarget(reference: &str) -> String {
+    match reference.strip_suffix(BUILTIN_1_1) {
+        Some(package) if package.starts_with("lexlean.") => format!("{package}{BUILTIN_1_2}"),
+        _ => reference.to_owned(),
+    }
+}
+
+/// The source of `text` with the builtin glossaries of its header moved to
+/// 1.2.0. Only `\useglossary{...}` lines are read, so a module's data or
+/// prose that happens to spell a version is never touched.
+fn retarget_glossaries(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    for line in text.split_inclusive('\n') {
+        let body = line.trim_end_matches('\n');
+        let moved = body
+            .strip_prefix("\\useglossary{")
+            .and_then(|rest| rest.strip_suffix('}'))
+            .map(|reference| format!("\\useglossary{{{}}}", retarget(reference)));
+        match moved {
+            Some(rewritten) => {
+                out.push_str(&rewritten);
+                out.push_str(&line[body.len()..]);
+            }
+            None => out.push_str(line),
+        }
+    }
+    out
+}
+
+/// One module's source in the notation, or why it has none.
+fn migrated_source(relative: &str, text: &str) -> Result<String, Diagnostic> {
+    match sdk::module_kind(text) {
+        Some(ModuleKind::Semantic) => {}
+        Some(other) => {
+            return Err(unwritable(
+                relative,
+                format!(
+                    "`{relative}` holds a {other:?} module; only semantic modules are migrated"
+                ),
+            ));
+        }
+        None => {
+            return Err(unwritable(
+                relative,
+                format!("`{relative}` states no semantic module"),
+            ));
+        }
+    }
+    if sdk::is_notation(text) {
+        return Err(unsupported(
+            relative,
+            format!(
+                "`{relative}` is written in the authoring notation, which language 1.1 does not read; \
+                 only a data-form (`\\semanticdata`) module is migrated"
+            ),
+        ));
+    }
+    let mut module =
+        sdk::read_module(text).map_err(|failure| unwritable(relative, failure.to_string()))?;
+    if module.get("spec").and_then(serde_json::Value::as_str) != Some(MODULE_1_1) {
+        return Err(unwritable(
+            relative,
+            format!("`{relative}` is not a `{MODULE_1_1}` module, the schema language 1.1 reads"),
+        ));
+    }
+    module["spec"] = serde_json::Value::String(MODULE_1_2.to_owned());
+    // Neither conversion has a position to report: the offset of a printing
+    // failure is the module's, not a place in the source.
+    let data = sdk::write_module(text, &module)
+        .map_err(|failure| unwritable(relative, failure.message))?;
+    let notation =
+        sdk::to_notation(&data).map_err(|failure| unwritable(relative, failure.message))?;
+    // The notation is the module only if it reads back to it: a printing that
+    // loses a member would otherwise migrate to a different module.
+    let reread =
+        sdk::read_module(&notation).map_err(|failure| unwritable(relative, failure.to_string()))?;
+    if reread != module {
+        return Err(unwritable(
+            relative,
+            format!("the notation of `{relative}` does not read back to the module"),
+        ));
+    }
+    Ok(retarget_glossaries(&notation))
+}
+
+/// A path lexicon manifest moved to language 1.2, in the canonical layout.
+fn migrated_manifest(relative: &str, text: &str) -> Result<String, Diagnostic> {
+    let manifest: Manifest = toml::from_str(text)
+        .map_err(|failure| unsupported(relative, format!("invalid lexicon manifest: {failure}")))?;
+    if manifest.spec != "lexlean/lexicon/1" || manifest.language != "1.1" {
+        return Err(unsupported(
+            relative,
+            format!(
+                "`{relative}` is a `{}` manifest of language `{}`; only a language-1.1 manifest is migrated",
+                manifest.spec, manifest.language
+            ),
+        ));
+    }
+    let imports: Vec<String> = manifest
+        .imports
+        .iter()
+        .map(|import| toml_string(&retarget(import)))
+        .collect();
+    Ok(format!(
+        "spec = {}\npackage = {}\nversion = {}\nlanguage = \"1.2\"\nimports = [{}]\n",
+        toml_string(&manifest.spec),
+        toml_string(&manifest.package),
+        toml_string(&manifest.version),
+        imports.join(", ")
+    ))
+}
+
+/// Every file the migration rewrites, project-relative, with its new bytes.
+type Rewrites = BTreeMap<String, Vec<u8>>;
+
+fn read_text(engine: &Engine, relative: &str) -> Result<String, LexLeanError> {
+    let path = engine
+        .project()
+        .confined_file(relative)
+        .map_err(LexLeanError::from_diagnostic)?;
+    let bytes = std::fs::read(path.as_std_path())
+        .map_err(|io_error| host_failure(format!("{relative}: {io_error}")))?;
+    crate::source::normalize::normalize(relative, &bytes, true)
+        .map(|normalized| normalized.text)
+        .map_err(LexLeanError::from_diagnostics)
+}
+
+/// The new bytes of every module source, manifest, and the configuration, with
+/// the names of the modules and the manifests among them.
+fn rewrites(engine: &Engine) -> Result<(Rewrites, Vec<String>, Vec<String>), LexLeanError> {
+    let project = engine.project();
+    if project.config.language != "1.1" {
+        return Err(LexLeanError::from_diagnostic(unsupported(
+            &project.config_name,
+            format!(
+                "language `{}` is not migrated to 1.2; only a language-1.1 project is",
+                project.config.language
+            ),
+        )));
+    }
+    let mut files = Rewrites::new();
+    let mut failures = Vec::new();
+    let mut modules = Vec::new();
+    let sources = project
+        .all_modules()
+        .map_err(LexLeanError::from_diagnostics)?;
+    for (module, relative) in &sources {
+        match migrated_source(relative, &read_text(engine, relative)?) {
+            Ok(text) => {
+                files.insert(relative.clone(), text.into_bytes());
+                modules.push(module.clone());
+            }
+            Err(diagnostic) => failures.push(diagnostic),
+        }
+    }
+    let mut manifests = Vec::new();
+    for source in &project.config.lexicon_sources {
+        if let LexiconSource::Path { path, .. } = source {
+            let relative = format!("{path}/lexicon.toml");
+            match migrated_manifest(&relative, &read_text(engine, &relative)?) {
+                Ok(text) => {
+                    files.insert(relative.clone(), text.into_bytes());
+                    manifests.push(relative);
+                }
+                Err(diagnostic) => failures.push(diagnostic),
+            }
+        }
+    }
+    if !failures.is_empty() {
+        return Err(LexLeanError::from_diagnostics(failures));
+    }
+    let mut config = project.config.clone();
+    config.language = "1.2".to_owned();
+    files.insert(
+        project.config_name.clone(),
+        config.canonical_toml().into_bytes(),
+    );
+    Ok((files, modules, manifests))
+}
+
+/// Write `files` into the scratch copy, lock it, and check it as a
+/// language-1.2 project. Returns the lock the real project is given.
+fn prove(engine: &Engine, files: &Rewrites) -> Result<Vec<u8>, LexLeanError> {
+    let staging = tempfile::Builder::new()
+        .prefix("lexlean-migrate-")
+        .tempdir()
+        .map_err(|io_error| host_failure(format!("migrate staging: {io_error}")))?;
+    let scratch = crate::project::utf8_path(staging.path())
+        .map(|path| path.join("project"))
+        .map_err(LexLeanError::from_diagnostic)?;
+    engine.scratch_project_copy(&scratch)?;
+    for (relative, bytes) in files {
+        std::fs::write(scratch.join(relative).as_std_path(), bytes)
+            .map_err(|io_error| host_failure(format!("migrate staging {relative}: {io_error}")))?;
+    }
+    let migrated = Engine::load(&scratch.join(&engine.project().config_name))?;
+    let lock = migrated.lock(LockRequest {
+        check_only: false,
+        allow_network: false,
+    })?;
+    migrated.check(CheckRequest {
+        selection: Selection::All,
+    })?;
+    Ok(lock.bytes)
+}
+
+/// One staged replacement of a project file: the new bytes already written
+/// beside the target, and the bytes it replaces for a rollback.
+struct Staged {
+    target: Utf8PathBuf,
+    shown: String,
+    temp: tempfile::NamedTempFile,
+    original: Option<Vec<u8>>,
+}
+
+fn stage(engine: &Engine, relative: &str, bytes: &[u8]) -> Result<Staged, LexLeanError> {
+    let project = engine.project();
+    let target = project
+        .confined_creatable(relative)
+        .map_err(LexLeanError::from_diagnostic)?;
+    let parent = target
+        .parent()
+        .map_or_else(|| project.root.clone(), Utf8Path::to_path_buf);
+    let original = match std::fs::read(target.as_std_path()) {
+        Ok(existing) => Some(existing),
+        Err(io_error) if io_error.kind() == std::io::ErrorKind::NotFound => None,
+        Err(io_error) => return Err(host_failure(format!("{relative}: {io_error}"))),
+    };
+    let mut temp = tempfile::NamedTempFile::new_in(parent.as_std_path())
+        .map_err(|io_error| host_failure(format!("{relative}: staging: {io_error}")))?;
+    temp.write_all(bytes)
+        .and_then(|()| temp.as_file().sync_all())
+        .map_err(|io_error| host_failure(format!("{relative}: staging: {io_error}")))?;
+    if let Ok(metadata) = std::fs::metadata(target.as_std_path()) {
+        // The permissions are the file's own; failing to carry them leaves the
+        // temporary's ordinary ones, which the rename then publishes.
+        let _ = std::fs::set_permissions(temp.path(), metadata.permissions());
+    }
+    Ok(Staged {
+        target,
+        shown: relative.to_owned(),
+        temp,
+        original,
+    })
+}
+
+/// Publish every staged file; when one cannot be, restore the ones already
+/// published, so the project is never left half migrated.
+fn publish(staged: Vec<Staged>) -> Result<(), LexLeanError> {
+    let mut published: Vec<(Utf8PathBuf, Option<Vec<u8>>)> = Vec::new();
+    for entry in staged {
+        let Staged {
+            target,
+            shown,
+            temp,
+            original,
+        } = entry;
+        match temp.persist(target.as_std_path()) {
+            Ok(_) => published.push((target, original)),
+            Err(persist_error) => {
+                for (path, before) in published.into_iter().rev() {
+                    let restored = match before {
+                        Some(bytes) => std::fs::write(path.as_std_path(), bytes),
+                        None => std::fs::remove_file(path.as_std_path()),
+                    };
+                    restored.map_err(|io_error| {
+                        host_failure(format!(
+                            "{shown}: publish failed ({}) and restoring {path} failed: {io_error}",
+                            persist_error.error
+                        ))
+                    })?;
+                }
+                return Err(host_failure(format!(
+                    "{shown}: publish: {}",
+                    persist_error.error
+                )));
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Migrate the language-1.1 project of `engine` to language 1.2 (§17.12).
+///
+/// # Errors
+///
+/// A project that is not language 1.1 (`LLC0103`), a module or manifest that
+/// cannot be migrated (`LLP2003`, `LLC0103`), and any failure of the migrated
+/// project to lock and check as language 1.2, each with its own diagnostic.
+/// On every error no file of the project has been written.
+pub fn migrate(engine: &Engine, request: &MigrateRequest) -> Result<MigrateResult, LexLeanError> {
+    engine.bound("migrate", migrate_inner(engine, request))
+}
+
+fn migrate_inner(engine: &Engine, request: &MigrateRequest) -> Result<MigrateResult, LexLeanError> {
+    let (mut files, modules, manifests) = rewrites(engine)?;
+    let lock = prove(engine, &files)?;
+    if request.check_only {
+        return Ok(MigrateResult {
+            modules,
+            manifests,
+            written: false,
+        });
+    }
+    files.insert(engine.project().config.lockfile.clone(), lock);
+    // The staging precedes the project mutation lock's first use of the build
+    // root, so a refused migration leaves no `.lexlean` behind.
+    let _guard = acquire_lock(engine.project())?;
+    let mut staged = Vec::with_capacity(files.len());
+    for (relative, bytes) in &files {
+        staged.push(stage(engine, relative, bytes)?);
+    }
+    publish(staged)?;
+    Ok(MigrateResult {
+        modules,
+        manifests,
+        written: true,
+    })
+}

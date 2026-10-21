@@ -17,6 +17,19 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- `lexlean migrate --to 1.2 [--check]`, #257 (SPEC.md §17.12, §23.4,
+  `CL-24`): the one command that migrates a language-1.1 data-form project to
+  language 1.2. It rewrites every module to the authoring notation through
+  `lexlean::sdk::to_notation`, moves the builtin glossary references of the
+  sources and the imports of every path lexicon package to `1.2.0`, rewrites the
+  `language` row, and regenerates the lock as `lexlean/lock/2`, after proving
+  the result in a scratch copy; a refusal (`LLC0103`, `LLP2003`, or the check's
+  own diagnostic) writes nothing. The `1.1` to `1.2` recipe of §17.12 (change
+  the tag and the glossary versions, relock) is replaced: it produced a project
+  that language 1.2 refuses with `LLP2003` since #149. The negative fixture
+  `migrate-module-without-notation` holds a module the notation cannot express.
+  `Engine` keeps its seven entry points; the function is
+  `lexlean::api::migrate::migrate`. The register is 437 IDs.
 - Two source packages of the standard library and the application that uses
   them, #32 (SPEC.md §17.22, §10.5, `SL-03`, `SL-04`, `EX-09`). `std-models`
   (`LexLeanStdModels.Scores`) holds the score combinators `best`, `margin`, and
