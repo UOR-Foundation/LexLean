@@ -50,6 +50,21 @@ definition{
 }
 
 definition{
+  name: aliasTag,
+  parameters: [kind : TargetSyntax::IntKind],
+  result: Nat,
+  body: (match kind
+    | TargetSyntax::IntKind.u8 => 99
+    | TargetSyntax::IntKind.u16 => 99
+    | TargetSyntax::IntKind.u32 => 99
+    | TargetSyntax::IntKind.u64 => 2
+    | TargetSyntax::IntKind.i8 => 99
+    | TargetSyntax::IntKind.i16 => 99
+    | TargetSyntax::IntKind.i32 => 99
+    | TargetSyntax::IntKind.i64 => 3)
+}
+
+definition{
   name: kindIndex,
   parameters: [kind : TargetSyntax::IntKind],
   result: Nat,
@@ -104,7 +119,7 @@ definition{
       | RuntimeSyntax::RtType.unit => ((tagOf value) =? 0)
       | RuntimeSyntax::RtType.bool => ((tagOf value) =? 1)
       | RuntimeSyntax::RtType.nat => ((tagOf value) =? 2)
-      | RuntimeSyntax::RtType.fixed kind => ((tagOf value) =? (kindIndex kind))
+      | RuntimeSyntax::RtType.fixed kind => (((tagOf value) =? (kindIndex kind)) || ((tagOf value) =? (aliasTag kind)))
       | RuntimeSyntax::RtType.ordering => ((tagOf value) =? 14)
       | RuntimeSyntax::RtType.selfType => true
       | RuntimeSyntax::RtType.param ignoredIndex => true

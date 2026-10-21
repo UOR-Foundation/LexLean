@@ -197,10 +197,12 @@ pub(super) fn project_of(modules: &[(&str, &str)], imported: &[&str]) -> P {
     for (module, text) in modules {
         project.write_raw(&format!("src/{module}.lex.tex"), text);
     }
-    let entrypoints: Vec<String> = modules
+    // The project requires its entrypoints unique and sorted.
+    let mut entrypoints: Vec<String> = modules
         .iter()
         .map(|(module, _)| format!("\"src/{module}.lex.tex\""))
         .collect();
+    entrypoints.sort();
     project.edit(
         "lexlean.toml",
         "entrypoints = [\"src/Main.lex.tex\"]",
