@@ -150,18 +150,59 @@ fn var(name: &str) -> Box<Expr> {
 /// The constructors of `RuntimeSyntax` that the heap runtime added, each
 /// with the enum it belongs to.
 const GROWN: [&str; 53] = [
-    "RtItem.tupleStruct", "RtItem.recordStruct", "RtItem.enumItem",
-    "RtVariant.unitV", "RtVariant.tupleV", "RtVariant.structV",
-    "RtType.wide", "RtType.size", "RtType.char", "RtType.str", "RtType.slice", "RtType.refMut",
-    "RtLit.char", "RtLit.str",
-    "RtPat.bindMut", "RtPat.tuple", "RtPat.tupleStruct", "RtPat.structPat", "RtPat.lit",
-    "RtExpr.letE", "RtExpr.assign", "RtExpr.ifElse", "RtExpr.whileLoop", "RtExpr.whileLet",
-    "RtExpr.loopE", "RtExpr.forIn", "RtExpr.breakE", "RtExpr.returnE", "RtExpr.tuple",
-    "RtExpr.structLit", "RtExpr.binary", "RtExpr.notE", "RtExpr.cast", "RtExpr.index",
-    "RtExpr.rangeSlice", "RtExpr.deref", "RtExpr.borrowMut", "RtExpr.methodOf",
-    "RtExpr.blockE", "RtExpr.fieldNamed", "RtArm.guarded",
-    "RtOp.add", "RtOp.sub", "RtOp.mul", "RtOp.div", "RtOp.rem", "RtOp.andAnd",
-    "RtOp.orOr", "RtOp.ne", "RtOp.lt", "RtOp.le", "RtOp.gt", "RtOp.ge",
+    "RtItem.tupleStruct",
+    "RtItem.recordStruct",
+    "RtItem.enumItem",
+    "RtVariant.unitV",
+    "RtVariant.tupleV",
+    "RtVariant.structV",
+    "RtType.wide",
+    "RtType.size",
+    "RtType.char",
+    "RtType.str",
+    "RtType.slice",
+    "RtType.refMut",
+    "RtLit.char",
+    "RtLit.str",
+    "RtPat.bindMut",
+    "RtPat.tuple",
+    "RtPat.tupleStruct",
+    "RtPat.structPat",
+    "RtPat.lit",
+    "RtExpr.letE",
+    "RtExpr.assign",
+    "RtExpr.ifElse",
+    "RtExpr.whileLoop",
+    "RtExpr.whileLet",
+    "RtExpr.loopE",
+    "RtExpr.forIn",
+    "RtExpr.breakE",
+    "RtExpr.returnE",
+    "RtExpr.tuple",
+    "RtExpr.structLit",
+    "RtExpr.binary",
+    "RtExpr.notE",
+    "RtExpr.cast",
+    "RtExpr.index",
+    "RtExpr.rangeSlice",
+    "RtExpr.deref",
+    "RtExpr.borrowMut",
+    "RtExpr.methodOf",
+    "RtExpr.blockE",
+    "RtExpr.fieldNamed",
+    "RtArm.guarded",
+    "RtOp.add",
+    "RtOp.sub",
+    "RtOp.mul",
+    "RtOp.div",
+    "RtOp.rem",
+    "RtOp.andAnd",
+    "RtOp.orOr",
+    "RtOp.ne",
+    "RtOp.lt",
+    "RtOp.le",
+    "RtOp.gt",
+    "RtOp.ge",
 ];
 
 /// The grown constructors that `module` never applies.
@@ -176,6 +217,179 @@ fn constructors_absent(module: &str) -> Vec<String> {
         })
         .map(|name| (*name).to_owned())
         .collect()
+}
+
+/// The probe with each refusal of the validator planted on its decoded crate:
+/// the description, the crate, and the rule that refuses it.
+pub(super) fn probe_plants(krate: &Crate) -> Vec<(&'static str, Crate, &'static str)> {
+    let unit = Expr::Lit(Lit::Unit);
+    vec![
+        (
+            "a break outside a loop",
+            with_statement(krate, "flip", Expr::Break),
+            "break-position",
+        ),
+        (
+            "a variable not in scope",
+            with_statement(krate, "flip", Expr::Var("nope".to_owned())),
+            "variable-scope",
+        ),
+        (
+            "a call with another number of arguments",
+            with_statement(
+                krate,
+                "flip",
+                Expr::Call(vec!["Vec".to_owned(), "new".to_owned()], vec![unit.clone()]),
+            ),
+            "call-arity",
+        ),
+        (
+            "a call that is neither declared nor in the table",
+            with_statement(krate, "flip", Expr::Call(vec!["frob".to_owned()], vec![])),
+            "call-name",
+        ),
+        (
+            "a method of no impl and not in the table",
+            with_statement(
+                krate,
+                "flip",
+                Expr::Method(var("b"), "frobnicate".to_owned(), vec![]),
+            ),
+            "method-name",
+        ),
+        (
+            "a method with another number of arguments",
+            with_statement(
+                krate,
+                "flip",
+                Expr::Method(var("b"), "len".to_owned(), vec![unit.clone()]),
+            ),
+            "method-arity",
+        ),
+        (
+            "a struct literal that names a field the struct lacks",
+            with_statement(
+                krate,
+                "flip",
+                Expr::StructLit(
+                    vec!["Cell2".to_owned()],
+                    vec!["head".to_owned(), "weight".to_owned()],
+                    vec![unit.clone(), unit.clone()],
+                ),
+            ),
+            "struct-fields",
+        ),
+        (
+            "a tuple of one",
+            with_statement(krate, "flip", Expr::Tuple(vec![unit.clone()])),
+            "tuple-arity",
+        ),
+        (
+            "a pattern that binds a name twice",
+            with_statement(
+                krate,
+                "flip",
+                Expr::Let(
+                    Pat::Tuple(vec![Pat::Bind("a".to_owned()), Pat::Bind("a".to_owned())]),
+                    None,
+                    Box::new(Expr::Tuple(vec![unit.clone(), unit.clone()])),
+                ),
+            ),
+            "pattern-duplicate",
+        ),
+        (
+            "an assignment to a name that is not mutable",
+            with_statement(
+                krate,
+                "sum_to",
+                Expr::Assign(var("n"), Box::new(Expr::Lit(Lit::Nat(0)))),
+            ),
+            "assign-immutable",
+        ),
+        (
+            "a let that is not a statement",
+            with_statement(
+                krate,
+                "flip",
+                Expr::If(
+                    Box::new(Expr::Let(Pat::Wild, None, Box::new(unit.clone()))),
+                    Box::new(Block {
+                        statements: vec![],
+                        tail: unit.clone(),
+                    }),
+                    Box::new(Block {
+                        statements: vec![],
+                        tail: unit.clone(),
+                    }),
+                ),
+            ),
+            "let-position",
+        ),
+        (
+            "an assignment to a value that is no place",
+            with_statement(
+                krate,
+                "flip",
+                Expr::Assign(Box::new(unit.clone()), Box::new(unit.clone())),
+            ),
+            "assign-place",
+        ),
+        (
+            "two parameters of one name",
+            with_param(
+                krate,
+                "flip",
+                rt::Param {
+                    name: "b".to_owned(),
+                    mutable: false,
+                    ty: Type::Bool,
+                },
+            ),
+            "param-duplicate",
+        ),
+        (
+            "a struct pattern that names a field the variant lacks",
+            with_statement(
+                krate,
+                "flip",
+                Expr::Match(
+                    Box::new(unit.clone()),
+                    vec![rt::Arm {
+                        pattern: Pat::Struct(
+                            vec!["Shape".to_owned(), "Box2".to_owned()],
+                            vec!["zzz".to_owned()],
+                            vec![Pat::Wild],
+                        ),
+                        guard: None,
+                        body: unit.clone(),
+                    }],
+                ),
+            ),
+            "pattern-fields",
+        ),
+        (
+            "a variant the enum lacks",
+            with_statement(
+                krate,
+                "flip",
+                Expr::Path(vec!["Shape".to_owned(), "Round".to_owned()]),
+            ),
+            "variant-name",
+        ),
+        (
+            "a type that is neither declared nor in the table",
+            with_statement(
+                krate,
+                "flip",
+                Expr::Let(
+                    Pat::Wild,
+                    Some(Type::Named("Frob".to_owned(), vec![])),
+                    Box::new(unit.clone()),
+                ),
+            ),
+            "type-name",
+        ),
+    ]
 }
 
 /// Run the case of `RB-19`.
@@ -209,8 +423,14 @@ pub fn run(id: &str) {
     assert!(absent.is_empty(), "the probe has no {absent:?}");
     for (constructor, text) in [
         ("RtPat.lit", shipped.replace("RtPat.lit", "RtPat.wild")),
-        ("RtExpr.tuple", shipped.replace("RtExpr.tuple", "RtExpr.lit")),
-        ("RtVariant.tupleV", shipped.replace("RtVariant.tupleV", "RtVariant.unitV")),
+        (
+            "RtExpr.tuple",
+            shipped.replace("RtExpr.tuple", "RtExpr.lit"),
+        ),
+        (
+            "RtVariant.tupleV",
+            shipped.replace("RtVariant.tupleV", "RtVariant.unitV"),
+        ),
         ("RtLit.str", shipped.replace("RtLit.str", "RtLit.nat")),
     ] {
         assert_eq!(
@@ -283,175 +503,8 @@ pub fn run(id: &str) {
 
     // Each refusal of the validator, planted on the decoded crate and
     // asserted by the rule it names.
-    let unit = Expr::Lit(Lit::Unit);
     let mut planted_rules: std::collections::BTreeSet<&str> = std::collections::BTreeSet::new();
-    for (what, planted, rule) in [
-        (
-            "a break outside a loop",
-            with_statement(&krate, "flip", Expr::Break),
-            "break-position",
-        ),
-        (
-            "a variable not in scope",
-            with_statement(&krate, "flip", Expr::Var("nope".to_owned())),
-            "variable-scope",
-        ),
-        (
-            "a call with another number of arguments",
-            with_statement(
-                &krate,
-                "flip",
-                Expr::Call(vec!["Vec".to_owned(), "new".to_owned()], vec![unit.clone()]),
-            ),
-            "call-arity",
-        ),
-        (
-            "a call that is neither declared nor in the table",
-            with_statement(&krate, "flip", Expr::Call(vec!["frob".to_owned()], vec![])),
-            "call-name",
-        ),
-        (
-            "a method of no impl and not in the table",
-            with_statement(
-                &krate,
-                "flip",
-                Expr::Method(var("b"), "frobnicate".to_owned(), vec![]),
-            ),
-            "method-name",
-        ),
-        (
-            "a method with another number of arguments",
-            with_statement(
-                &krate,
-                "flip",
-                Expr::Method(var("b"), "len".to_owned(), vec![unit.clone()]),
-            ),
-            "method-arity",
-        ),
-        (
-            "a struct literal that names a field the struct lacks",
-            with_statement(
-                &krate,
-                "flip",
-                Expr::StructLit(
-                    vec!["Cell2".to_owned()],
-                    vec!["head".to_owned(), "weight".to_owned()],
-                    vec![unit.clone(), unit.clone()],
-                ),
-            ),
-            "struct-fields",
-        ),
-        (
-            "a tuple of one",
-            with_statement(&krate, "flip", Expr::Tuple(vec![unit.clone()])),
-            "tuple-arity",
-        ),
-        (
-            "a pattern that binds a name twice",
-            with_statement(
-                &krate,
-                "flip",
-                Expr::Let(
-                    Pat::Tuple(vec![Pat::Bind("a".to_owned()), Pat::Bind("a".to_owned())]),
-                    None,
-                    Box::new(Expr::Tuple(vec![unit.clone(), unit.clone()])),
-                ),
-            ),
-            "pattern-duplicate",
-        ),
-        (
-            "an assignment to a name that is not mutable",
-            with_statement(
-                &krate,
-                "sum_to",
-                Expr::Assign(var("n"), Box::new(Expr::Lit(Lit::Nat(0)))),
-            ),
-            "assign-immutable",
-        ),
-        (
-            "a let that is not a statement",
-            with_statement(
-                &krate,
-                "flip",
-                Expr::If(
-                    Box::new(Expr::Let(Pat::Wild, None, Box::new(unit.clone()))),
-                    Box::new(Block {
-                        statements: vec![],
-                        tail: unit.clone(),
-                    }),
-                    Box::new(Block {
-                        statements: vec![],
-                        tail: unit.clone(),
-                    }),
-                ),
-            ),
-            "let-position",
-        ),
-        (
-            "an assignment to a value that is no place",
-            with_statement(
-                &krate,
-                "flip",
-                Expr::Assign(Box::new(unit.clone()), Box::new(unit.clone())),
-            ),
-            "assign-place",
-        ),
-        (
-            "two parameters of one name",
-            with_param(
-                &krate,
-                "flip",
-                rt::Param {
-                    name: "b".to_owned(),
-                    mutable: false,
-                    ty: Type::Bool,
-                },
-            ),
-            "param-duplicate",
-        ),
-        (
-            "a struct pattern that names a field the variant lacks",
-            with_statement(
-                &krate,
-                "flip",
-                Expr::Match(
-                    Box::new(unit.clone()),
-                    vec![rt::Arm {
-                        pattern: Pat::Struct(
-                            vec!["Shape".to_owned(), "Box2".to_owned()],
-                            vec!["zzz".to_owned()],
-                            vec![Pat::Wild],
-                        ),
-                        guard: None,
-                        body: unit.clone(),
-                    }],
-                ),
-            ),
-            "pattern-fields",
-        ),
-        (
-            "a variant the enum lacks",
-            with_statement(
-                &krate,
-                "flip",
-                Expr::Path(vec!["Shape".to_owned(), "Round".to_owned()]),
-            ),
-            "variant-name",
-        ),
-        (
-            "a type that is neither declared nor in the table",
-            with_statement(
-                &krate,
-                "flip",
-                Expr::Let(
-                    Pat::Wild,
-                    Some(Type::Named("Frob".to_owned(), vec![])),
-                    Box::new(unit.clone()),
-                ),
-            ),
-            "type-name",
-        ),
-    ] {
+    for (what, planted, rule) in probe_plants(&krate) {
         let error = rt_validate::validate(&planted).expect_err(what);
         assert!(
             error.contains(&format!("runtime support: {rule}")),

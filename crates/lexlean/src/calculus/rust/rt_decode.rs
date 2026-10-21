@@ -56,7 +56,9 @@ impl<'a> Reader<'a> {
                     self.list(&a[1], "type arguments", Self::rt_type)?,
                 )
             }
-            "wide" => Type::Wide(self.boolean(&take(1)?[0], "a flag, true for u128 and false for i128")?),
+            "wide" => {
+                Type::Wide(self.boolean(&take(1)?[0], "a flag, true for u128 and false for i128")?)
+            }
             "size" => {
                 take(0)?;
                 Type::Size
