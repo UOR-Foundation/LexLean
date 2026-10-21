@@ -17,6 +17,24 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- Two source packages of the standard library and the application that uses
+  them, #32 (SPEC.md §17.22, §10.5, `SL-03`, `SL-04`, `EX-09`). `std-models`
+  (`LexLeanStdModels.Scores`) holds the score combinators `best`, `margin`, and
+  `decideOr` over `List Int` and the contract `Gating`, realization `Gate`,
+  evidence `GateEvidence`, and model `GateModel` generic over a type parameter;
+  `std-reasoning` (`LexLeanStdReasoning.Worklist`) holds the generic logic
+  `Countdown`, its rules `Tick` and `Burn`, the verifier `Drained`, and the
+  terminating work-list reasoner `Drain`. Both are workspace members that an
+  importer pins, hold their laws as kernel-checked theorems, and claim no
+  differential: language 1.2 is generic over types and not over predicates or
+  stages, so neither offers a composite that takes the importer's models
+  (SPEC.md §17.22 says so). `examples/helpdesk` imports them and `stdlib`: its
+  roots `classify` (the model alone), `plan` (the reasoner alone), and
+  `dispatch : Bytes -> Bytes` (both) are exported through the production
+  consumer, the packages committed under `tests/production-export/helpdesk/`.
+  The workspace file lists the three new members. No language data or schema
+  moves, so no language-1.2 record other than the new projects' own is
+  regenerated. The register is 436 IDs.
 - The audit of certificate A checks a mutual group of implementation records
   (`f._unsafe_rec`) by the union of the sets it prints for the group, against a
   pin that is the group's union (SPEC.md §17.17, `LLV7013` names the group).

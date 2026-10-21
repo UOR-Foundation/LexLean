@@ -270,7 +270,7 @@ Every user-visible failure has a registered diagnostic code and a sanctioned exi
 
 ## 7. Repository layout
 
-The completed repository MUST have this layout. Additional files are allowed only when they have a defined role and are included by the repository audits; the tracked tree MUST NOT hold any `CACHEDIR.TAG` file or any path component the repository walkers skip (`target`, `.git`, `.lexlean`, `.lake`, `node_modules`, or `expected` outside the sanctioned `expected/` oracle directories under `bootstrap/`, `compiler/`, `stdlib/`, `examples/<example>/`, `tests/negative/<case>/`, `tests/tooling/<suite>/<case>/`, and `tests/fixtures/<suite>/<case>/`).
+The completed repository MUST have this layout. Additional files are allowed only when they have a defined role and are included by the repository audits; the tracked tree MUST NOT hold any `CACHEDIR.TAG` file or any path component the repository walkers skip (`target`, `.git`, `.lexlean`, `.lake`, `node_modules`, or `expected` outside the sanctioned `expected/` oracle directories under `bootstrap/`, `compiler/`, `std-models/`, `std-reasoning/`, `stdlib/`, `examples/<example>/`, `tests/negative/<case>/`, `tests/tooling/<suite>/<case>/`, and `tests/fixtures/<suite>/<case>/`).
 
 ```text
 .
@@ -7283,6 +7283,71 @@ of #126: the compiler's own identities (§8, §21) are still computed by the
 `sha2` crate, and switching them to the module is the second stage, which
 waits on the measured cost of the rendered package against `sha2`.
 
+#### Source packages of the library
+
+Two further members of the library are projects of their own, `std-models`
+(`LexLeanStdModels`) and `std-reasoning` (`LexLeanStdReasoning`), so that an
+importing project pins and imports each without the other and without `Text`
+or `Sha256` (§10.5). Each declares language 1.2, builtin lexicons only, and no
+source package, artifact, or glossary, and each is a member of the repository's
+workspace. They are not production roots: neither is exported, and an importer
+that names a definition of either in a production root certifies it in its own
+closure (§10.5, *Production*).
+
+Language 1.2 is generic over types and not over predicates or stages, and that
+bounds what a library of models and reasoners can offer. It offers generic
+interfaces (a contract, a realization, evidence, and a model over a type
+parameter), combinators written as ordinary generic definitions with theorems,
+and generic logics, rules, verifiers, and reasoners; it does not offer a
+composite that takes the importer's models, because a composite abstracts over
+a stage. The behavior of both packages is held by theorems the kernel checks
+and by nothing else. The differential of `SL-01` compares a root with a
+function of Rust's standard library, and neither package has such a function
+to be compared with, so no differential is claimed for them.
+
+`std-models` has one module, `Scores`, over `List Int`, the scores a model
+produces:
+
+| Member | Meaning |
+| --- | --- |
+| `best (scores) : Nat` | the index of the first maximal score, as the denotation of a `statistical` realization (§17.12) picks its label |
+| `margin (scores) : Int` | the distance of the greatest score from the greatest of the others, where a duplicated maximum is its own runner-up, and 0 for fewer than two scores |
+| `decideOr (threshold) (scores) : Option Nat` | `best scores` when at least two scores are given and the margin is not below the threshold, and an abstention (`none`) otherwise |
+| `Candidate T`, `Gate T`, `Gating T`, `GateEvidence T`, `GateModel T` | a stateless contract, realization, evidence, and model over a type parameter: the model commits to a value exactly when the candidate was marked confident |
+
+Their laws are theorems of the module. The laws of the score combinators are
+stated at closed instances: the first maximal score is kept on a tie, the
+margin of a tie is zero, and `decideOr` commits on a clear margin and abstains
+on a tie, a single score, and no score. No law over every list is claimed. The
+law of the gate is general over the type parameter: it commits exactly when it
+is confident (`gate_faithful`, the evidence of `GateEvidence`) (`SL-03`).
+
+`std-reasoning` has one module, `Worklist`: the logic `Countdown` over a
+state of a type parameter and a work count, ranked by the count; its rules
+`Tick` (a step while more than two remain) and `Burn` (two, then one); the
+verifier `Drained`; and the reasoner `Drain`, which runs the rules forward
+under a fuel of the count plus one until the count is zero. The bound that
+the ranking is below the fuel is the theorem `drain_bound`, which the reasoner
+declaration requires to state exactly the generated obligation (`LLT4010`
+otherwise), and the runs from a count of three are theorems of the module
+(`SL-04`). A reasoner of the importing project instantiates the logic, rules,
+and verifier at its own type, and calls `Drain` itself at that type.
+
+The `helpdesk` example (`examples/helpdesk`, `EX-09`) is the application of
+both packages and of `Text`. Its production root `dispatch : Bytes -> Bytes`
+trims the request with `Text.trim`, applies an integer feed-forward model
+whose two weight tables are content-addressed artifacts through its required
+precondition check (`LLT4008` when the check is left out), derives the topic
+with `best`, abstains with `decideOr` below a margin of two, commits through
+`GateModel` instantiated at the example's own `Topic`, and plans the reply
+with `Drain` at that type. Its roots `classify` (the model alone) and `plan`
+(the reasoner alone) show each component used without the other. The example
+holds no file of Lean or Rust source, its export is committed under
+`tests/production-export/helpdesk/` and compared by
+`cargo xtask check-production-export` (§24.7), and a changed byte or version
+of a package is `LLC0105`, a module of a package the example does not declare
+`LLR3009`, and a tampered artifact `LLR3007`.
+
 ### 17.23 The bootstrap project
 
 The bootstrap project, `bootstrap/` beside `compiler/` and `stdlib/`, holds the
@@ -7529,20 +7594,20 @@ the claim, and a crate whose exported name or origin element holds a non-ASCII
 or non-printable scalar is outside it.
 
 `BS-05` holds both roots to the oracle. The crates are those the renderer
-lowers (`rust::lower`) from the 164 distinct programs among the 247 committed
+lowers (`rust::lower`) from the 167 distinct programs among the 250 committed
 package manifests of `compiler/rust` and `tests/production-export` and the 122
-fixtures of `compiler/fixtures` (223 distinct crates over both profiles, with
+fixtures of `compiler/fixtures` (226 distinct crates over both profiles, with
 the `elements` the renderer realizes), a rule corpus that reaches each of the
 48 refusals a crate of the closed AST can reach three times (132 `validateCrate`
 runs and 12 `correspondCrate` runs, asserted: the corpus fails if its draws run
 out first; the refusal that a construct has no row of the table cannot be
 reached), 17 crates by hand for the merge of moved sets at an `if` and a
-`match`, and 34 by hand for the loop rules; that is 406 runs of `validateCrate`
-(165 refused) and 269 of `correspondCrate` (46 refused), and the case asserts
+`match`, and 34 by hand for the loop rules; that is 409 runs of `validateCrate`
+(165 refused) and 272 of `correspondCrate` (46 refused), and the case asserts
 these counts. On every host, the rendered `rust-std` packages of both
 roots (§17.16), compiled by the pinned rustc, are run on all of them. On the
 normative host, the lowered programs of both roots are run under the calculus
-evaluator (§17.14) on the crates of at most 400 expressions (200 of the 223;
+evaluator (§17.14) on the crates of at most 400 expressions (200 of the 226;
 the larger ones are the compiler's own packages and are held to the oracle by
 the compiled run) with the rule corpus, and on 500 seeded mutants of the
 crates of at most 80 expressions (a node replaced by another of the crate, a
@@ -10252,6 +10317,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `EX-06` | `examples` | Two clean example builds in distinct paths have byte-identical platform-independent artifacts. | §29.6 |
 | `EX-07` | `examples` | The negative fixture suite covers every required rejection class and prescribed diagnostic family. | §28.5 |
 | `EX-08` | `examples` | Every example directory is discovered automatically and must satisfy the full example gate. | §28.6 |
+| `EX-09` | `examples` | The `helpdesk` example is a text application written entirely from language-1.2 source and the three source packages `std`, `std-models`, and `std-reasoning` that its lock pins: its production roots `classify`, `plan`, and `dispatch : Bytes -> Bytes` use the model alone, the reasoner alone, and both together, `dispatch` trimming the request with `LexLeanStd.Text`, scoring it with an integer feed-forward model whose weights are content-addressed artifacts and which is applied through its required precondition check, abstaining with `decideOr`, committing through the generic `GateModel` of `std-models`, and planning the reply with the `Drain` reasoner of `std-reasoning`; the example holds no handwritten Lean or Rust, verifies under the pinned Lean, its roots export through `lexlean production build` with the packages committed under `tests/production-export/helpdesk/`, and a changed byte or version of a package is `LLC0105`, an import of a module of an undeclared package `LLR3009`, a tampered artifact `LLR3007`, and a model applied without its required check `LLT4008`. | §10.5, §17.22, §24.7, §28.6 |
 | `PD-01` | `production` | The closed production registry fixes the language-1.2 targets, effects, and the disposition of every semantic construct kind, and every construct the eligibility analysis can classify has exactly one registry row. | §17.13 |
 | `PD-02` | `production` | Formal-only theorems, propositions, and non-executable definitions coexist with eligible executable production roots, and a module that declares no production root is never analysed for production. | §17.13 |
 | `PD-03` | `production` | A production root's runtime closure contains exactly its transitive computational dependencies across modules at their type instantiations, and its termination evidence is recorded as erased and never realized. | §17.13 |
@@ -10405,11 +10471,13 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RT-04` | `runtime` | No Lean runtime text remains in the language-1.2 compiler: a generated language-1.2 module imports the runtime modules whose constants it names and declares nothing under a runtime namespace, and the only Lean runtime text in the compiler's source outside unit-test items, in one string literal or in several written together, is the decoder of core module 2, which loads native modules and so cannot be one; a runtime text planted in any of its shapes, raw or escaped, with or without a namespace line, split across literals, or after a test module, is found. | §17.12, §18.1 |
 | `SL-01` | `stdlib` | The standard library's `Text` module is language-1.2 source whose seven members over `Bytes` (`startsWith`, `endsWith`, `trim`, `lines`, `splitOn`, `joinWith`, `find`) are production roots eligible for `rust-std` with exactly their declared effects; each member's lowered program under the calculus evaluator and its rendered `rust-std` package under the pinned rustc agree with Rust's `starts_with`, `ends_with`, `trim_ascii`, `lines`, `split`, `join`, and `find` on a seeded corpus; a planted defect in a member is detected; and the certified packages the production export publishes for it are the committed ones. | §17.22 |
 | `SL-02` | `stdlib` | The standard library's `Sha256` module is language-1.2 source stating FIPS 180-4 SHA-256 over `UInt32` bit operations and `iterate` (modular addition by widening to `UInt64`, rotation as two shifts, padding read by position, the message schedule as a sixteen-word window, sixty-four rounds over the round-constant list), whose roots `sha256 : Bytes -> Digest` and `sha256Hex : Bytes -> Bytes` are production roots eligible for `rust-std` with exactly their declared effects; the lowered program under the calculus evaluator and the rendered `rust-std` package under the pinned rustc compute the FIPS 180-4 example digests and every NIST CAVP SHA-256 short- and long-message vector, and agree with the `sha2` crate on a seeded corpus whose lengths cover every padding boundary, a disagreement failing closed and never resolved by adopting the oracle's digest; a planted one-bit error in the round function is detected; and the certified packages the production export publishes for the two roots are the committed ones. | §17.22 |
+| `SL-03` | `stdlib` | The standard library's `std-models` package is the language-1.2 project `std-models` of the workspace under the module prefix `LexLeanStdModels`, whose one module `Scores` states the score combinators `best` (the index of the first maximal score), `margin` (its distance from the runner-up), and `decideOr` (that index, or an abstention when fewer than two scores are given or the margin is below the threshold) over `List Int`, and the contract `Gating`, the realization `Gate`, the evidence `GateEvidence`, and the model `GateModel` generic over a type parameter; its manifest declares no source package, artifact, or glossary, no file of Lean source accompanies it, and its behavior is held by kernel-checked theorems and not by the Rust-std differential of `SL-01`; it verifies by itself under the pinned Lean with exact axiom policies, a planted comparison that picks the last maximal score is refused by the kernel with `LLV7002`, and language 1.2 being generic over types and not over predicates or stages, it offers no composite that takes an importer's models. | §10.5, §17.22 |
+| `SL-04` | `stdlib` | The standard library's `std-reasoning` package is the language-1.2 project `std-reasoning` of the workspace under the module prefix `LexLeanStdReasoning`, whose one module `Worklist` states the logic `Countdown` over a state of a type parameter and a work count ranked by the count, its guarded rules `Tick` and `Burn`, the verifier `Drained`, and the terminating work-list reasoner `Drain`, each generic over the carried type, with the reasoner's termination bound a kernel-checked theorem; its manifest declares no source package, artifact, or glossary, no file of Lean source accompanies it, and its behavior is held by kernel-checked theorems and not by the Rust-std differential of `SL-01`; it verifies by itself under the pinned Lean with exact axiom policies, a planted termination bound that the ranking does not meet is refused at link with `LLT4010`, and a reasoner of an importing project instantiates its logic, rules, and verifier at the importer's own type. | §10.5, §17.22 |
 | `BS-01` | `bootstrap` | The axiom-output parser of SPEC.md §22.5 is language-1.2 source in the `bootstrap/` project: `parseAuditOutput` and the closed Lean-name check `isClosedLeanName` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle on the committed golden vectors and boundary edges; on the normative host, both roots' lowered programs under the calculus evaluator agree with the Rust oracle on every committed golden vector and a seeded corpus, the rendered packages under the pinned rustc agree with the oracle on the large seeded corpus of generated, wrapped, and mutated audit outputs and names with no disagreement, a planted defect in the source is detected, and the certified packages the production export publishes for the project are the committed ones. | §17.23, §22.5 |
 | `BS-02` | `bootstrap` | The preservation lexer and token audit of SPEC.md §17.17 are language-1.2 source in the `bootstrap/` project: `lex` and `auditTokens` of `TokenAudit` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle `production::preserve::{lex, audit_tokens}` on every lexeme, position, and rejection message for the first 1,500 characters of every module of the shipped preservation library and calculus modules, the number-lexing corpus, and every token-audit unit vector; on the normative host, both roots' lowered programs under the calculus evaluator agree with the Rust oracle on those vectors and a seeded corpus, the rendered packages under the pinned rustc agree with the oracle on the large seeded corpus of generated and mutated Lean texts with no disagreement, a planted defect in the source is detected, and the certified packages the production export publishes for the project are the committed ones. | §17.17, §17.23 |
 | `BS-03` | `bootstrap` | The primitive scanner of SPEC.md §12.2 is language-1.2 source in the `bootstrap/` project: `scanSource` and `rejectAtoms` of `PrimitiveScan` are production roots eligible for `rust-std` with exactly their declared effects; on every host of the matrix, both roots' rendered `rust-std` packages under that host's pinned rustc agree with the Rust oracle `source::scan::{scan, reject_forbidden_atoms}` on every atom with its class, text, and byte, line, and column spans and on every rejection with its code, message, span, and help, for the deterministic vectors (the oracle's unit inputs, the atom limit at N and N+1, atom lists with gaps, payload strings, and notation bodies), a 128-byte window and a 2,048-byte prefix of every committed `.lex.tex` source, and the whole of each such source up to 8,192 bytes (up to 1,024 bytes, one source in four, for `rejectAtoms`); on the normative host, both roots' lowered programs under the calculus evaluator agree with the oracle on the vectors and the 128-byte windows and on 80 seeded texts, the packages agree on 2,500 seeded texts, each of ten planted defects in the source is detected, and the certified packages the production export publishes for the project are the committed ones. | §12.2, §17.23 |
 | `BS-04` | `bootstrap` | The target calculus's checker of SPEC.md §17.14 (`lexlean::calculus::check`), for a program given as calculus data, each list of a recursive type carried as a chain of that type's own `Nil` and `Cons` constructors and decoded back to the program on every vector (reading a program from its canonical JSON is not part of this row), is language-1.2 source in the `bootstrap/` project: `checkProgram` and `checkArguments` of `CalculusCheck` are production roots eligible for `rust-std` with exactly their declared effects; on the normative host the lowered programs of both roots under the calculus evaluator agree with the Rust checker on acceptance and on the rejection message to the byte for every committed target program and the refusal edits of `TC-02` and for a seeded corpus of data-level mutations, and each planted defect in the source is detected; on every host the rendered `rust-std` packages of both roots under the pinned rustc agree with the Rust checker on the deterministic vectors, and on the normative host also on a larger seeded corpus with no disagreement; strings whose Rust `Debug` spelling escapes a non-ASCII scalar other than `U+0080`..`U+009F` are outside the claim; and the certified packages the production export publishes for the project are the committed ones. | §17.14, §17.23 |
-| `BS-05` | `bootstrap` | The Rust crate validator of SPEC.md §17.16 is language-1.2 source in the `bootstrap/` project: `validateCrate` and `correspondCrate` of `RustValidate` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle `calculus::rust::validate::{validate, correspond}` on the exact outcome and message for the 223 distinct crates the renderer lowers from the 164 distinct programs among the 247 committed package manifests and 122 fixtures, for 132 `validateCrate` and 12 `correspondCrate` runs that reach each of the 48 reachable refusals three times, for 17 hand-built crates of the merge of moved sets, and for 34 hand-built crates of the loop rules (406 `validateCrate` runs, 165 of them refusals, and 269 `correspondCrate` runs, 46 of them refusals); on the normative host, both roots' lowered programs under the calculus evaluator agree with the oracle on the crates of at most 400 expressions (200) with the rule runs and on 500 seeded mutants of the crates of at most 80 expressions, the rendered packages under the pinned rustc agree on 2,000 further seeded mutants per root, sixteen planted defects in the source are each detected, and the certified packages the production export publishes for the project are the committed ones; lowering, printing, packaging, and crates naming a non-ASCII or non-printable scalar are outside the claim. | §17.16, §17.23 |
+| `BS-05` | `bootstrap` | The Rust crate validator of SPEC.md §17.16 is language-1.2 source in the `bootstrap/` project: `validateCrate` and `correspondCrate` of `RustValidate` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle `calculus::rust::validate::{validate, correspond}` on the exact outcome and message for the 226 distinct crates the renderer lowers from the 167 distinct programs among the 250 committed package manifests and 122 fixtures, for 132 `validateCrate` and 12 `correspondCrate` runs that reach each of the 48 reachable refusals three times, for 17 hand-built crates of the merge of moved sets, and for 34 hand-built crates of the loop rules (409 `validateCrate` runs, 165 of them refusals, and 272 `correspondCrate` runs, 46 of them refusals); on the normative host, both roots' lowered programs under the calculus evaluator agree with the oracle on the crates of at most 400 expressions (200) with the rule runs and on 500 seeded mutants of the crates of at most 80 expressions, the rendered packages under the pinned rustc agree on 2,000 further seeded mutants per root, sixteen planted defects in the source are each detected, and the certified packages the production export publishes for the project are the committed ones; lowering, printing, packaging, and crates naming a non-ASCII or non-printable scalar are outside the claim. | §17.16, §17.23 |
 | `PK-01` | `packages` | A language-1.2 project that declares a source package by its identifier, version, kind `path`, and the member directory a `lexlean-workspace.toml` lists locks it by the tree digest of its manifest and source files, its manifest digest, its version, its module prefix, and its own packages, and the configuration and the lock read back to the bytes written; a project without a source package keeps its bytes, and a package of another kind, a source package in another language, a changed byte or version (LLC0105), an undeclared package (LLC0106), a module prefix claimed twice (LLC0107), a project or a package outside the workspace (LLC0108), a path that escapes it, and a symlink (LLS8001) are each refused with the named code. | §10.5, §11.1, §25.1 |
 | `PK-02` | `packages` | A module of a project imports only modules of its own project and modules of the packages the project declares, and a module of a package only modules of itself and of the packages its own manifest declares: a package module is a module of the importing project under its own module prefix, a module of a package the project does not declare fails with LLR3009, and an import cycle through a package fails with LLR3003. | §10.5, §15.1 |
 | `PK-03` | `packages` | An importing project builds and verifies under the pinned Lean offline, and its package modules are generated, elaborated, replayed with `leanchecker`, and audited for their exact axioms under the package's module prefix with the package as their origin in the records; the source ID of the project changes with the pins, and no file of the package is written by `fmt`, `build`, or `verify`. | §10.5, §21.3, §22 |
@@ -10426,7 +10494,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-09` | `language-models` | No prompt is code: no member of the closed language maps `string` or `bytes` to a function, a term, or source — every operation of the primitive registry that takes a `string` or `bytes` operand is classified by the audit with a data result, the registry's schema enumeration and the production registry's primitive rows equal one another and equal that classified set, and the text declarations of `lexlean/semantic-module/2` state no `string`-typed member, so a prompt reaches a model only as the tokens `encodeText` makes of it; a planted operation or text member of that shape is caught by the audit with its name. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 433.
+**Total required capability IDs:** 436.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

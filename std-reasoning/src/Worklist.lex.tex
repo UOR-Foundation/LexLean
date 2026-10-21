@@ -1,0 +1,167 @@
+\begin{lexlean}{Worklist}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: Spent,
+  type_parameters: [T],
+  parameters: [s : ('T * Nat), t : ('T * Nat)],
+  result: Prop,
+  body: (((first t) = (first s)) /\ ((second t) < (second s)))
+}
+
+definition{
+  name: Remaining,
+  type_parameters: [T],
+  parameters: [s : ('T * Nat)],
+  result: Nat,
+  body: (second s)
+}
+
+logic{
+  name: Countdown,
+  type_parameters: [T],
+  ranking: Remaining,
+  relation: Spent,
+  state: {name: s, type: ('T * Nat), next: t}
+}
+
+theorem{
+  name: tick_sound,
+  type_parameters: [T],
+  parameters: [s : ('T * Nat)],
+  statement: (((2 <? (second s)) = true) -> (Spent ['T] s ((first s), (prim subtract (second s) 1 : Nat)))),
+  proof: linear_arithmetic{definitions: [Spent]},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: tick_progress,
+  type_parameters: [T],
+  parameters: [s : ('T * Nat)],
+  statement: (((2 <? (second s)) = true) -> ((Remaining ['T] ((first s), (prim subtract (second s) 1 : Nat))) < (Remaining ['T] s))),
+  proof: linear_arithmetic{definitions: [Remaining]},
+  axioms: [Quot.sound, propext]
+}
+
+inference_rule{
+  name: Tick,
+  type_parameters: [T],
+  axioms: [Quot.sound, propext],
+  conclusion: ((first s), (prim subtract (second s) 1 : Nat)),
+  executable: true,
+  guard: (2 <? (second s)),
+  logic: {member: Countdown, type_arguments: ['T]},
+  progress: tick_progress,
+  soundness: tick_sound
+}
+
+theorem{
+  name: burn_sound,
+  type_parameters: [T],
+  parameters: [s : ('T * Nat), k : Nat],
+  statement: ((((k <=? (second s)) && (0 <? k)) = true) -> (Spent ['T] s ((first s), (prim subtract (second s) k : Nat)))),
+  proof: linear_arithmetic{definitions: [Spent]},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: burn_progress,
+  type_parameters: [T],
+  parameters: [s : ('T * Nat), k : Nat],
+  statement: ((((k <=? (second s)) && (0 <? k)) = true) -> ((Remaining ['T] ((first s), (prim subtract (second s) k : Nat))) < (Remaining ['T] s))),
+  proof: linear_arithmetic{definitions: [Remaining]},
+  axioms: [Quot.sound, propext]
+}
+
+inference_rule{
+  name: Burn,
+  type_parameters: [T],
+  axioms: [Quot.sound, propext],
+  binding: {name: k, type: Nat, candidates: (cons 2 (cons 1 (nil Nat)))},
+  conclusion: ((first s), (prim subtract (second s) k : Nat)),
+  executable: true,
+  guard: ((k <=? (second s)) && (0 <? k)),
+  logic: {member: Countdown, type_arguments: ['T]},
+  progress: burn_progress,
+  soundness: burn_sound
+}
+
+definition{
+  name: Empty,
+  type_parameters: [T],
+  parameters: [x : 'T, r : Nat],
+  result: Prop,
+  body: (r = 0)
+}
+
+definition{
+  name: emptyCheck,
+  type_parameters: [T],
+  parameters: [x : 'T, r : Nat],
+  result: Bool,
+  body: (r =? 0),
+  executable: true
+}
+
+theorem{
+  name: empty_sound,
+  type_parameters: [T],
+  parameters: [x : 'T, r : Nat],
+  statement: (((emptyCheck ['T] x r) = true) -> (Empty ['T] x r)),
+  proof: linear_arithmetic{definitions: [Empty, emptyCheck]},
+  axioms: [propext]
+}
+
+verifier{
+  name: Drained,
+  type_parameters: [T],
+  axioms: [propext],
+  candidate: {name: r, type: Nat},
+  check: emptyCheck,
+  sound: empty_sound,
+  specification: Empty,
+  subject: {name: x, type: 'T}
+}
+
+theorem{
+  name: drain_bound,
+  type_parameters: [T],
+  parameters: [x : ('T * Nat)],
+  statement: ((Remaining ['T] x) < ((second x) + 1)),
+  proof: linear_arithmetic{definitions: [Remaining]},
+  axioms: [Quot.sound, propext]
+}
+
+reasoner{
+  name: Drain,
+  type_parameters: [T],
+  axioms: [Quot.sound, propext],
+  answer: {name: account, type: Nat, value: (ctor Option.some [Nat] (second account))},
+  claims: [terminates{theorem: drain_bound}],
+  executable: true,
+  logic: {member: Countdown, type_arguments: ['T]},
+  observation: {name: x, type: ('T * Nat)},
+  observe: x,
+  rules: [{member: Tick, type_arguments: ['T]}, {member: Burn, type_arguments: ['T]}],
+  strategy: forward{fuel: ((second x) + 1)},
+  verifier: {member: Drained, type_arguments: [('T * Nat)]}
+}
+
+theorem{
+  name: drain_clears_three,
+  parameters: [],
+  statement: ((Drain.verdict [Nat] (7, 3)) = (ctor Result.ok [Nat, ReasoningFailure] 0)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: drain_steps_three,
+  parameters: [],
+  statement: ((match (Drain [Nat] (7, 3))
+    | Result.ok explained => (prim length (second explained) : Nat)
+    | Result.error failure => 99) = 2),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}
