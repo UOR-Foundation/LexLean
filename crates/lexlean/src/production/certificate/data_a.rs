@@ -437,6 +437,17 @@ impl<'g, 'a> Writer<'g, 'a> {
 
     /// Name the rows of one mutual group (their short names) as each other's
     /// group.
+    ///
+    /// The members of a group of implementation records (`RowKind::Partial`)
+    /// are pinned to the group's union, taken here once the group is complete
+    /// and not row by row as each was pushed. What Lean prints of one member is
+    /// not a property of that member's term alone: Lean stores axiom data for a
+    /// module's constants by one shared traversal, in the order of a hash map
+    /// keyed by names that carry the identity, with a sentinel for a constant in
+    /// progress, so on identical sources the first member of the bootstrap
+    /// project's R6 group printed `[]` on one identity and `[propext]` on
+    /// another (`LLV7013`). The union of the group's printed sets is the same on
+    /// every identity, and the audit compares that union with this pin.
     pub(super) fn group_rows(&mut self, short_names: &[String]) {
         let full: Vec<String> = short_names
             .iter()
@@ -447,12 +458,34 @@ impl<'g, 'a> Writer<'g, 'a> {
                 row.group = Some(full.clone());
             }
         }
+        let members: Vec<usize> = self
+            .rows
+            .iter()
+            .enumerate()
+            .filter(|(_, row)| full.contains(&row.name))
+            .map(|(index, _)| index)
+            .collect();
+        if members.len() < 2
+            || members
+                .iter()
+                .any(|index| self.rows[*index].kind != RowKind::Partial)
+        {
+            return;
+        }
+        let union: BTreeSet<String> = members
+            .iter()
+            .flat_map(|index| self.rows[*index].axioms.iter().cloned())
+            .collect();
+        for index in members {
+            self.rows[index].axioms.clone_from(&union);
+            self.row_axioms
+                .insert(self.rows[index].name.clone(), union.clone());
+        }
     }
 
     /// The module.
     pub(super) fn finish(mut self, imports: Vec<String>) -> Result<CoreModule, String> {
         self.compile_applied_bundles();
-        self.close_forward_references();
         let heights = self.heights();
         let roots: Vec<Term> = self
             .rows
@@ -482,50 +515,6 @@ impl<'g, 'a> Writer<'g, 'a> {
         };
         module.validate(crate::LANGUAGE_1_2)?;
         Ok(module)
-    }
-
-    /// Close every row's pinned axioms over the rows it names. A row pins what
-    /// was known when it was pushed, so one that applies a later row of its
-    /// mutual group (the direct-recursion records call each other) pinned
-    /// that row as axiom-free; Lean's `#print axioms` follows the reference,
-    /// and which rows came first is an accident of the group's order.
-    fn close_forward_references(&mut self) {
-        let references: Vec<Vec<usize>> = {
-            let positions: HashMap<&str, usize> = self
-                .rows
-                .iter()
-                .enumerate()
-                .map(|(position, row)| (row.name.as_str(), position))
-                .collect();
-            self.rows
-                .iter()
-                .map(|row| {
-                    self.constants_in(&[row.ty, row.value])
-                        .iter()
-                        .filter_map(|name| positions.get(name.as_str()).copied())
-                        .collect()
-                })
-                .collect()
-        };
-        loop {
-            let mut changed = false;
-            for (position, named) in references.iter().enumerate() {
-                for &other in named {
-                    let missing: Vec<String> = self.rows[other]
-                        .axioms
-                        .difference(&self.rows[position].axioms)
-                        .cloned()
-                        .collect();
-                    if !missing.is_empty() {
-                        self.rows[position].axioms.extend(missing);
-                        changed = true;
-                    }
-                }
-            }
-            if !changed {
-                break;
-            }
-        }
     }
 
     /// The reducibility height of each row: one above the rows it names, so
