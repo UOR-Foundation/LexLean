@@ -1065,11 +1065,11 @@ impl<'a> Scope<'a> {
                         ),
                     );
                 };
-                let same = names.len() == held.len()
-                    && names.len() == values.len()
-                    && names.iter().all(|name| held.contains(name))
-                    && held.iter().all(|name| names.contains(name));
-                if !same {
+                let mut given = names.clone();
+                given.sort();
+                let mut declared = held.clone();
+                declared.sort();
+                if given != declared || names.len() != values.len() {
                     return rule(
                         "struct-fields",
                         format!(

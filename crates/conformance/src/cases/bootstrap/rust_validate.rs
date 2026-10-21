@@ -2554,10 +2554,14 @@ const HARNESS_NODES: usize = 60_000;
 /// The rendered `rust-std` packages of the roots, compiled by the pinned
 /// rustc, run on `runs` of each root: one outcome per run, each equal to the
 /// oracle's. Returns the number of runs.
-pub(super) fn rustc_differential(roots: &[(&str, &Lowered, &[Run])], label: &str) -> usize {
+pub(super) fn rustc_differential(
+    id: &str,
+    roots: &[(&str, &Lowered, &[Run])],
+    label: &str,
+) -> usize {
     let started = std::time::Instant::now();
     let dir = tempfile::Builder::new()
-        .prefix("lexlean-bootstrap-validate-")
+        .prefix(&format!("lexlean-bootstrap-{}-", id.to_ascii_lowercase()))
         .tempdir()
         .expect("tempdir");
     let mut members = Vec::new();
@@ -2652,7 +2656,7 @@ pub(super) fn rustc_differential(roots: &[(&str, &Lowered, &[Run])], label: &str
         String::from_utf8_lossy(&build.stderr)
     );
     eprintln!(
-        "BS-05: {label}: rustc built the packages and {} harness binaries ({:?})",
+        "{id}: {label}: rustc built the packages and {} harness binaries ({:?})",
         expected.len(),
         started.elapsed()
     );
@@ -2703,7 +2707,7 @@ pub(super) fn rustc_differential(roots: &[(&str, &Lowered, &[Run])], label: &str
         total += outcomes.len();
     }
     eprintln!(
-        "BS-05: {label}: {total} rustc runs agree with the oracle ({:?})",
+        "{id}: {label}: {total} rustc runs agree with the oracle ({:?})",
         started.elapsed()
     );
     // PD-08: the roots recurse with the depth of the crate, so the harness
@@ -3069,6 +3073,7 @@ pub(super) fn case() {
     // On every host: the rendered rust-std packages of both roots, compiled
     // by that host's pinned rustc, agree with the oracle on the vectors.
     rustc_differential(
+        "BS-05",
         &[
             ("validateCrate", &validate_root, &vectors_validate),
             ("correspondCrate", &correspond_root, &vectors_correspond),
@@ -3161,6 +3166,7 @@ pub(super) fn case() {
     let mut large = Seeded(0x0B55_0055);
     let (large_validate, large_correspond) = mutants(&bases, &mut large, RUSTC_MUTANTS);
     rustc_differential(
+        "BS-05",
         &[
             ("validateCrate", &validate_root, &large_validate),
             ("correspondCrate", &correspond_root, &large_correspond),
