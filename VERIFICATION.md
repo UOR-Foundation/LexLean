@@ -2113,6 +2113,85 @@ run on `"nat_sub"` (`refines_nat_add states the run of nat_sub`); the body chang
 product (`LLV7002` with `unsolved goals`); the axiom policy changed to `[propext]` (`LLV7005`,
 `violates its exact axiom policy: observed [Classical.choice, Quot.sound, propext]`).
 
+### the core runtime's support items are the definitions of RuntimeSupport (RB-17)
+
+`rust::rt_decode` reads the shipped `RuntimeSupport` module, `rust::rt_validate` checks the crate it
+defines, and `rust::rt` prints it, where `CORE_BASE` stood (`RB-17`, §17.16, #91 stage 4, PR 5). The
+module's one definition `supportCrate` is a crate of `RuntimeSyntax` of 32 items: three `use`s, the
+unit struct `Overflow` with its derives, the alias `R<T>`, the static `WORK`, `tick` and `work`, the
+traits `Same` and `Key`, nine `impl Same` (the Boolean, the eight widths) and ten `impl Key` (the Boolean, the eight widths, and the pair `(A, B)`
+with `A: Key, B: Key`), an `impl Same` for `Ordering`, and the generic `equal` and `compare`. `CORE_BASE` is gone from
+`runtime.rs`; `runtime::support()` is `support_from` of the embedded module and `runtime::core()` assembles it before the
+`RustRuntime` functions (`core_over`). The `source` reader was made shared (`with_reader`, the module named at the entry point), so the two
+modules read through the same closed tables and a refusal says which module it is.
+
+The printed text differs from the base it replaces in form, not in meaning: the macro `scalar!` is
+nine impls, the two atomic imports are one braced `use` (the library table lists them so), a unit tail after a statement is
+not spelled (`warnings = deny` and Clippy refuse `; ()`), and `tick` and `work` are one-line functions as before. `rb_09`
+(the library table), `rb_06` (the lint gate on every committed package), `rb_16`, `rb_17` pass on this tree (170 s together).
+
+The case (`cases/rust_support.rs`, 6.6 s) requires the shipped copy to be the compiler project's module byte for byte;
+decodes, validates and prints it; requires the embedded support to be that print and to hold no macro, no `alloc`, and no
+`std::`; compiles the handwritten core runtime as module `old` and the printed support with the `RustRuntime` functions as
+module `new` of one crate under the pinned rustc with warnings denied; and runs `equal` and `compare` on every pair of nine boundary values of each
+scalar and 200 seeded pairs, `equal` of every pair of orderings, `compare` of pairs of a scalar with a Boolean in both positions, `tick` on five
+amounts and `work` after each, comparing the debug form of the result and the counted work. Nested keys, which `SP-25` does not prove, are
+validated here: 500 seeded rounds of four comparisons each, two of depth two and two of depth three, with components from a domain of three values so
+that the first components tie and the comparison falls through; the 1,000 depth-three comparisons decided 491 less, 26 equal, 483 greater
+(the case requires every order to occur).
+
+Plants of the module, each refused by the validator by the rule it breaks (`runtime support: <rule>: …`): a `use` of `alloc`
+and a `use` of `std` in the core profile (`profile-root`); a type that is neither declared nor in the table (`type-name`); a type with another
+number of arguments (`type-arity`); a bound on a trait the crate does not declare (`bound-trait`); a method the bound does not provide
+(`method-bound`); an impl that lacks a method of its trait (`impl-complete`), that states another signature (`impl-signature`), of a trait that is not
+declared (`impl-trait`), or whose method is `pub` (`impl-visibility`); a free function that is not public (`function-visibility`); a variable
+not in scope (`variable-scope`); a method of no trait and not in the table (`method-name`); a path no `use` declares (`path-name`); a call outside the
+table (`call-name`); a parameter beyond the generics in scope (`type-parameter`). Five decoder refusals are asserted by message (no
+`supportCrate`; an expression constructor and an item constructor `RuntimeSyntax` lacks; a constructor with another number of arguments; a
+constructor of the other module). Two bodies changed to another result are caught by the differential, not the validator: the counter
+starting at one (`work result`) and the key of a scalar reversed (`compare result`); a third plant, `tick` adding one in place of its argument, was
+refused by rustc (`unused variable`) before it could be caught, and was replaced.
+
+Plants of the gate, each restored: `rt_validate::validate` removed from `support_from` (the case fails at its first refusal plant, `a use outside the
+profile`, the print of which shows `use alloc::cmp::Ordering`); `support_from` returning the empty text (the differential fails to compile,
+`cannot find type R in this scope`). `i128`: `RustType.i128` is accepted by the validator and printed, and is the node of `convert`'s parameter; no
+lowering emits it, and `correspond` refuses `type:i128` in a lowered crate as a construct with no target-semantics correspondence (`row()`), so a
+program lowered from the calculus cannot name it; only the runtime profile does.
+
+### each trait method of the support has its meaning checked (SP-25)
+
+`RuntimeSemantics` (`compiler/src/RuntimeSemantics.lex.tex`, 22 KB, generated by the same pass that writes the module, two inductives `RtOutcome` and
+`RtOutcomes` and twelve definitions) evaluates a `RuntimeSyntax` crate over `TargetSyntax.Value` with fuel: `rtEval`, `rtEvalList`, `rtEvalArms`, `rtApply`, `rtEvalBlock`
+are one mutual group, and a method call finds, among the impls of the crate, the first whose self type the receiver has (`findMethod`, `matchesTy`, which
+tags a value by its constructor, takes a `u64` impl for a `Value.nat` and an `i64` impl for a `Value.int`, as the generated Rust does, and lets a parameter and `Self` match any value). `cmp` and `==` are the
+calculus primitives `Prim.compare` and `Prim.equal`. `tick` and `work`, an effect of a static counter, are `stuck` here and held by the work gate
+(`RB-06`, `TC-07`).
+
+`RuntimeSupport` holds 22 theorems and eleven modules `RuntimeKeys<scalar>` hold 121: for each value of the predicate the calculus types as the arguments of `equal`
+(a Boolean, a natural, a width, an `Ordering`: 11) and of `compare` (a Boolean, a natural, an integer, a width: 11, and a pair of two of those: 121), `rtRun 24 supportCrate "<f>" args =
+fromPrimitive (primitive <f> args)`. The scalar theorems are `term_cases` on the primitive's outcome; a pair theorem is `term_cases` on the order of the first
+components (`orderU8 x1 y1`...), with `compareValue`, `primitive`, and `sameOrder` among the named definitions. All 143 verify with exactly `[Classical.choice, Quot.sound, propext]`, the first guess for each.
+The 121 pair theorems are in eleven modules, one per first scalar, because the Lean process that elaborates a module keeps its theorems' terms: 100
+theorems in one module were OOM-killed twice on this 16 GB host (a `lean` at 13.6 GB anon-RSS, once with a second elaboration running, once alone).
+
+Measured (this host, pinned Lean 4.32.1, `ps -C lean -o rss=` every second): `lexlean verify` of all 16 modules, 12 min 28 s, peak 5.86 GB; each `RuntimeKeys` module verified alone (its closure is six
+modules), 127 to 140 s and 5.82 to 5.92 GB (Bool 135 s 5.89 GB, Nat 139 s 5.82, Int 135 s 5.86, U8 132 s 5.86, U16 140 s 5.84, U32 134 s 5.89, U64 135 s 5.89, I8 127 s 5.92, I16 130 s 5.86, I32 129 s 5.83,
+I64 131 s 5.88); `RuntimeSupport` alone 61 s, 0.74 GB. The case (`cases/runtime_semantics.rs`, in the `preservation-support` part of `bdd` and a row of `.github/vv-rows.json`) is 815 s with its two plants and peaks at 5.90 GB.
+
+The case computes the 143 names from the predicate (the scalars from `IntKind::ALL`, `nat`, `int`, `bool`) and compares them with the theorems of the twelve modules; a theorem for a value outside it (`equal_unit`), a
+value without a theorem (a pair theorem removed), and a theorem that states another primitive (`Prim.compare` replaced by `Prim.equal` in a pair theorem) are each refused by name. In Lean, with one theorem kept: the key of a scalar reversed
+(`compare_bool`) and the impl for `u8` made an impl for `bool` (`compare_u8`) each leave `unsolved goals` (`LLV7002`).
+
+What this does not prove. The calculus admits pairs of pairs for `compare` (`orderable` in `calculus/check.rs`), and the 121 theorems stop at a pair of two scalars: each pair level spends a constant of `rtRun` fuel, so the induction over the depth
+needs arithmetic on the fuel under a symbolic depth that the closed proof language does not have (a Nat-arithmetic rewrite step or a fuel-free evaluator, filed for v0.5 as #249). For nested keys the evidence is the differential of `RB-17`, validation and never a proof. The first
+version of the row proved the 81 pairs of nine scalars and left out the natural and the integer, which the calculus types and the generated Rust dispatches to the `u64` and `i64` impls; it was corrected before review.
+
+`SP-22` now asserts that every authored item is in one of two sets (`held` in `cases/rust_refinement.rs`): the functions of `RustRuntime` each name a runtime item (`Item::all()` paths) and have their refinement theorem, and the items of `RuntimeSupport` are of the closed kinds the decoder admits,
+a function of which is `tick` or `work` (held by the work gate) or `equal` or `compare` (held by `SP-25`'s theorems). Planted: `nat_add` renamed `nat_addd` in `RustRuntime` (`` `nat_addd` is an authored function that is not a runtime item``); `tick` renamed `frobnicate`
+(`` `frobnicate` is an authored item in neither the refined functions nor the closed support kinds``); the `equal_` theorems renamed (`` `equal` is an authored item in neither…``).
+
+Order of the register: the row was `SP-24` until the maintainer renumbered it (`SP-24` is #115's on release/v0.5); it is `SP-25`.
+
 ### a list of any length is a term Lean elaborates without binders
 
 Lean's `[…]` macro writes a literal of more than 32 elements under `let`
