@@ -10427,6 +10427,19 @@ are the first panic message, trimmed.
 | `LM-08` | the same file: `features_width` states a width of `0` for `size` | `the module verifies with real Lean: ... LLV7002 ... Lean rejected `Models.Recognizer` (error): Type mismatch LexLeanText.features_width Digits.size __tokens` |
 | `LM-09` | `language/production-1.2.toml`: a `primitive.eval_string` row | `the audit holds: primitive `eval_string` is in the production registry and not in the schema enumeration` |
 | `LM-09` | `schemas/semantic-module-v2.schema.json`: a `prompt` member of type string on `text_classifier` | `the audit holds: text declaration `text_classifier` member `prompt` is a free string` |
+| `LM-09` | `schemas/production-eligibility.schema.json`: a `prompt` member of type string on `text_row` | `the text row audit holds: text row member `prompt` is a free string` |
+| `LM-01` | `ir/semantic/language_model.rs`: the vocabulary-role test of `check_tokenizer` made `false &&` | `expected "a tokenizer needs role Vocabulary" under LLT4006, got LLT4006: phase link: tokenizer `Digits` vocabulary `hiddenWeights` is a int_tensor artifact; a tokenizer needs the utf8_lines schema` |
+| `LM-02` | `verify/mod.rs`: both tests of a generated declaration's axiom policy made `false &&` | `verify fails` (`support.rs:889`, the expected `LLV7005` did not occur) |
+| `LM-03` | `ir/semantic/model.rs`: `utf8_lines` decoded with `String::from_utf8_lossy` | `check fails` (`support.rs:862`) |
+| `LM-04` | `ir/semantic/language_model.rs`: the capacity-0 test of `check_context_window` made `false &&` | `check fails` (`support.rs:862`) |
+| `LM-05` | the same file: the `max_tokens` 0 test of `check_text_generator` made `false &&` | `check fails` (`support.rs:862`) |
+| `LM-06` | `ir/semantic.rs`: `#[serde(alias = "mt19937")]` on `SamplingGenerator::Xorshift32` | `check fails` (`support.rs:862`) |
+| `LM-10` | `production/eligibility.rs`: `if target.allocation \|\| true` | `check fails` (`support.rs:862`, `rust-core` accepted the tokenizer root) |
+| `LM-10` | the same file: `row.seed_input = None` | `assertion `left == right` failed: the seed is the last input and the second result` |
+| `LM-10` | `production/certificate/data_a.rs`: `union.extend(...)` replaced by `let _ = axioms;` | ``…R7.__fits_1` pins the axioms of the tokenizer the generator applies: ["Quot.sound", "propext"]` |
+| `LM-11` | `examples/text-models/src/Main.lex.tex`: the weight `(cons (6 : Int)` made `(cons (0 : Int)` | `LLV7002 … Tactic `rfl` failed … Greedy.generateTokens [256, 257]` |
+| `LM-12` | `examples/text-models/src/Main.lex.tex`: `Shape` over `Words` in place of `Raw` | `lemma `LexLeanText.features_total_text_bytes_of` is applied by no generated proof and by no library declaration they apply: dead library` |
+| `LM-13` | `language/text-1.2/library/Stray.lean` declaring `namespace LexLeanText` | `language/text-1.2/library/Stray.lean: an independently authored Lean file declares `namespace LexLeanText`` |
 
 Two attempts at planting a new declaration kind (`text_adapter`) in the schema
 were not evidence for `LM-08`: the schema is an input of the compiler-semantics
@@ -10716,5 +10729,5 @@ Planted: `language/text-1.2/library/Stray.lean` declaring `namespace LexLeanText
 
 ```text
 thread 'conformance_lm_13' panicked at crates/conformance/src/support.rs:75:9:
-/home/user/LexLean/language/text-1.2/library/Stray.lean: an independently authored Lean file declares `namespace LexLeanText`
+language/text-1.2/library/Stray.lean: an independently authored Lean file declares `namespace LexLeanText`
 ```
