@@ -455,8 +455,8 @@ fn named() -> Vec<(String, Crate)> {
     out
 }
 
-/// The sources of the seeded mutants: a quoted string, a constructor of one
-/// of the module's own enums, a natural literal, or a Boolean of a shipped
+/// The sources of the seeded mutants: a quoted string, a constructor of the
+/// same enum, a mutable flag, a visibility, or a type parameter of a shipped
 /// module, replaced by another of its kind. A mutant the decoder refuses is
 /// drawn again.
 fn mutants(count: usize, seeded: &mut Seeded) -> Vec<Crate> {
@@ -767,7 +767,7 @@ pub(super) fn case() {
             );
             let checked = support::checked_project(&planted);
             let low = super::lower(&checked, &planted, MODULE, plant.root);
-            let disagreements = super::evaluate(&low, &vectors_for_plants(&vectors, &within), 1);
+            let disagreements = super::evaluate(&low, &within, 1);
             assert!(
                 !disagreements.is_empty(),
                 "{}: the planted defect is detected by the differential",
@@ -782,7 +782,7 @@ pub(super) fn case() {
     }
     // On every host: the rendered rust-std package of the root, compiled by
     // that host's pinned rustc, agrees with the oracle on the vectors.
-    rustc_differential(&[("validateRuntime", &root, &vectors)], "vectors");
+    rustc_differential("BS-09", &[("validateRuntime", &root, &vectors)], "vectors");
     if !normative {
         return;
     }
@@ -834,11 +834,6 @@ pub(super) fn case() {
     }
     assert_eq!(realized, ROOTS.len(), "one certified package per root");
     eprintln!("BS-09: passed in {:?}", started.elapsed());
-}
-
-/// What a plant is shown: the vectors the evaluator was given.
-fn vectors_for_plants(_all: &[Run], within: &[Run]) -> Vec<Run> {
-    within.to_vec()
 }
 
 // The counts the specification states, over the committed tree: SPEC.md
