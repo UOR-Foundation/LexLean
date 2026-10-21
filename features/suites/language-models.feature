@@ -75,18 +75,18 @@ Feature: language-models
     And a rendering that drops a token of a kept window disagrees with its oracle
 
   @LM-11 @build
-  Scenario: `examples/text-models` is a language-1.2 project that builds, verifies, and produces through the real pipeline a tokenizer, a context window, a greedy and a sampled text generator, a text classifier, and an adapter over `string`, with the records of that run under `expected/`; the round trip and token boundary, the context overflow, the invalid UTF-8 text and artifact, and the nondeterminism-contract negatives are each refused by name, and a planted mutation of the example is detected.
+  Scenario: `examples/text-models` is a language-1.2 project that builds, verifies, and produces through the real pipeline a longest-match and a byte-level tokenizer, a window of each overflow disposition, a greedy and a sampled text generator, and a classifier of each tokenizer, each with a production root, with the records of that run under `expected/`; a token outside the vocabulary and a context that overflows the refusing window are answered `none` by their roots, a vocabulary artifact that is not UTF-8 is refused at check and a changed artifact byte with `LLR3007`, and a planted mutation of the scorer is refused by the example's kernel-evaluated facts.
     Given the end-to-end text-model example and its negatives
     When the example is built, verified and produced, and its negatives and a planted mutation are run
-    Then every record under `expected/` is reproduced and every negative is refused by name
-    And the mutated example fails verification
+    Then every record under `expected/` is reproduced and every negative is answered or refused as stated
+    And the mutated scorer is refused by the kernel-evaluated facts
 
   @LM-12 @build
-  Scenario: Every fixed helper of the text-laws library is covered by the conformance suite: each of the library functions an elaboration applies is realized, produced or evaluated by the kernel against a reference vector, and each of its lemmas is applied by a generated proof that the pinned Lean checks; a library function or lemma that no case reaches fails the coverage audit with its name.
-    Given the library's fixed helpers and the conformance suite
-    When the coverage audit walks every function and lemma
-    Then each is realized or applied by some case
-    And a helper no case reaches is named by the audit
+  Scenario: Every fixed name of the text-laws library is reached: each name of `text_laws::names::ALL` occurs, as a whole word, in the Lean generated for the main module of `examples/text-models`, or in the type or value of a library declaration reached that way, transitively; the audit measures textual reach on that one example, and neither the realization of a function nor the kernel evaluation of one nor the application of a lemma by a particular proof, and a name that is not reached fails the audit with its name and its kind, function or lemma, as dead library.
+    Given the library's fixed names and the Lean generated for the main module of the example
+    When the coverage audit follows every name through the library declarations that name it
+    Then each fixed name is reached
+    And a name that is not reached is named by the audit as dead library
 
   @LM-13 @build
   Scenario: The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text.

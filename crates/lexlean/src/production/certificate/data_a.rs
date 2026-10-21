@@ -215,24 +215,21 @@ impl<'g, 'a> Writer<'g, 'a> {
                 );
             }
         }
-        // A text component's definitions apply production forms of the
-        // standard library, so what the audit finds for one is what those
-        // forms depend on, and the construct's declared set is only an upper
-        // bound on it. Each derived definition of a module with text components
-        // (which imports the laws module) takes the union of the sets of the definitions it
-        // calls, to a fixed point (the sets only grow, and are finite).
+        // A definition that a construct elaborates to carries the construct's
+        // declared set as an upper bound, and the audit finds for it what the
+        // definitions it calls depend on. Its pin is therefore the union of the
+        // pins of the definitions its body names, to a fixed point (the sets
+        // only grow and are finite): a text component's definitions apply
+        // production forms of the standard library, and a model's apply the
+        // realizations of a package. The body is followed through `Call` and
+        // `FunctionRef` terms, which `visit_terms` reaches inside lambda bodies
+        // and arguments as well; a primitive names no definition. A name this
+        // walk missed leaves the pin short, and the audit then refuses the
+        // certificate loudly (`LLV7013`, `preserve.rs`), which is how a miss is
+        // caught; `conformance_lm_10` reads the pin of a text root's result row.
         loop {
             let mut changed = false;
             for linked in gen.source.modules.values() {
-                if !linked
-                    .semantic
-                    .elaboration
-                    .imports
-                    .iter()
-                    .any(|import| import == crate::text_laws::LAWS_MODULE)
-                {
-                    continue;
-                }
                 for declaration in linked.semantic.lowered_declarations() {
                     let crate::ir::semantic::SemanticDeclaration::Definition { body, .. } =
                         declaration
@@ -255,7 +252,9 @@ impl<'g, 'a> Writer<'g, 'a> {
                     }
                     let mut union: BTreeSet<String> = BTreeSet::new();
                     crate::ir::semantic::visit_terms(body, &mut |term| {
-                        if let crate::ir::semantic::SemanticTerm::Call { function, .. } = term {
+                        if let crate::ir::semantic::SemanticTerm::Call { function, .. }
+                        | crate::ir::semantic::SemanticTerm::FunctionRef { function, .. } = term
+                        {
                             let module = function
                                 .module
                                 .clone()

@@ -622,34 +622,24 @@ fn lm_10() {
             "{root}: the corpus runs it"
         );
     }
-    // The gate is armed: an answer that keeps the first tokens of a window
-    // disagrees with the lowered `keepRecent`.
-    let observed = std::thread::scope(|scope| {
-        std::thread::Builder::new()
-            .stack_size(EVALUATOR_STACK)
-            .spawn_scoped(scope, || {
-                let lowered = lower_in(&checked, &project, MODULE, "keepRecent");
-                let outcome = interp::run(
-                    &lowered.program,
-                    FUEL,
-                    lowered.entry(),
-                    &[tokens(&[1, 2, 3, 4, 5, 6, 7])],
-                );
-                lexlean::calculus::rust::observable(&outcome).expect("a value")
-            })
-            .expect("the evaluator thread starts")
-            .join()
-            .expect("the evaluator finishes")
-    });
-    assert_ne!(
-        observed,
-        serde_json::to_value(some(tokens(&[1, 2, 3, 4, 5, 6]))).expect("JSON"),
-        "a window that keeps the first tokens is not the example's"
+    // The gate is armed by a planted rendering: the window that keeps the
+    // last tokens declared to refuse overflow lowers to a `keepRecent` that
+    // answers `none` for a context of seven, and the differential names it.
+    let refusing = planted(
+        "examples/text-models/src/Main.lex.tex",
+        "capacity: 6, overflow: keep_last}",
+        "capacity: 6, overflow: refuse}",
     );
-    assert_eq!(
-        observed,
-        serde_json::to_value(some(tokens(&[2, 3, 4, 5, 6, 7]))).expect("JSON"),
-        "the window keeps the last tokens"
+    let refusing_checked = support::checked_project(&refusing);
+    let keep: Vec<_> = runs
+        .iter()
+        .filter(|(name, _)| *name == "keepRecent")
+        .cloned()
+        .collect();
+    let wrong = disagreements(&refusing_checked, &refusing, &keep);
+    assert!(
+        wrong.iter().any(|run| run.starts_with("keepRecent on ")),
+        "a window that refuses where the oracle keeps the last tokens is caught: {wrong:?}"
     );
 
     // Certificate A pins a definition a text component elaborates to by the
