@@ -832,7 +832,10 @@ fn lm_11() {
         &lexlean::artifact::content_id::Sha256Digest::of(&bad).to_hex(),
     );
     let source = artifact.read_raw("src/Main.lex.tex");
-    artifact.write_raw("src/Main.lex.tex", &source.replacen("length: 25", "length: 3", 1));
+    artifact.write_raw(
+        "src/Main.lex.tex",
+        &source.replacen("length: 25", "length: 3", 1),
+    );
     artifact.relock();
     artifact.check_err();
     // A changed byte of the vocabulary is a digest mismatch.

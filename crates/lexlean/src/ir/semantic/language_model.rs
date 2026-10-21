@@ -891,7 +891,7 @@ fn choose_greedy_bridge() -> ProofTerm {
     applied(
         names::CHOOSE_GREEDY_BRIDGE,
         vec![
-            production_value("firstMax", &[ints.clone()]),
+            production_value("firstMax", std::slice::from_ref(&ints)),
             first_max_bridge(),
             production_value("chooseGreedy", &[ints, SemanticType::UInt32]),
             unfolds(2),
@@ -914,7 +914,7 @@ fn choose_sample_bridge() -> ProofTerm {
         vec![
             production_value("weight", &[SemanticType::Int]),
             weight.clone(),
-            production_value("totalWeight", &[ints.clone()]),
+            production_value("totalWeight", std::slice::from_ref(&ints)),
             ProofTerm::Refl,
             unfolds(2),
         ],
@@ -953,9 +953,9 @@ fn choose_sample_bridge() -> ProofTerm {
         vec![
             production_value("seedInt", &[SemanticType::UInt32]),
             seed,
-            production_value("totalWeight", &[ints.clone()]),
+            production_value("totalWeight", std::slice::from_ref(&ints)),
             total,
-            production_value("firstMax", &[ints.clone()]),
+            production_value("firstMax", std::slice::from_ref(&ints)),
             first_max_bridge(),
             production_value(
                 "drawGo",
