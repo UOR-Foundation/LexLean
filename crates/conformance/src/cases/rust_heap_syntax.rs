@@ -16,7 +16,8 @@ use crate::rust_build::{cargo_in, workspace, Built};
 use crate::support::repo_root;
 
 /// The rules of the validator that this case plants and `RB-17`'s does not:
-/// those of the constructs the module grew by. `RB-17` requires the rules in
+/// those of the constructs the module grew by (the eleventh new rule,
+/// `hidden-allocation`, is planted by `RB-17`'s text plants and here on the probe). `RB-17` requires the rules in
 /// the validator's source to be its own planted rules and these.
 pub(super) const RULES: [&str; 10] = [
     "assign-immutable",
@@ -145,6 +146,37 @@ fn var(name: &str) -> Box<Expr> {
     Box::new(Expr::Var(name.to_owned()))
 }
 
+/// The constructors of `RuntimeSyntax` that the heap runtime added, each
+/// with the enum it belongs to.
+const GROWN: [&str; 53] = [
+    "RtItem.tupleStruct", "RtItem.recordStruct", "RtItem.enumItem",
+    "RtVariant.unitV", "RtVariant.tupleV", "RtVariant.structV",
+    "RtType.wide", "RtType.size", "RtType.char", "RtType.str", "RtType.slice", "RtType.refMut",
+    "RtLit.char", "RtLit.str",
+    "RtPat.bindMut", "RtPat.tuple", "RtPat.tupleStruct", "RtPat.structPat", "RtPat.lit",
+    "RtExpr.letE", "RtExpr.assign", "RtExpr.ifElse", "RtExpr.whileLoop", "RtExpr.whileLet",
+    "RtExpr.loopE", "RtExpr.forIn", "RtExpr.breakE", "RtExpr.returnE", "RtExpr.tuple",
+    "RtExpr.structLit", "RtExpr.binary", "RtExpr.notE", "RtExpr.cast", "RtExpr.index",
+    "RtExpr.rangeSlice", "RtExpr.deref", "RtExpr.borrowMut", "RtExpr.methodOf",
+    "RtExpr.blockE", "RtExpr.fieldNamed", "RtArm.guarded",
+    "RtOp.add", "RtOp.sub", "RtOp.mul", "RtOp.div", "RtOp.rem", "RtOp.andAnd",
+    "RtOp.orOr", "RtOp.ne", "RtOp.lt", "RtOp.le", "RtOp.gt", "RtOp.ge",
+];
+
+/// The grown constructors that `module` never applies.
+fn constructors_absent(module: &str) -> Vec<String> {
+    GROWN
+        .iter()
+        .filter(|name| {
+            !module.match_indices(**name).any(|(at, _)| {
+                !module[at + name.len()..]
+                    .starts_with(|c: char| c.is_ascii_alphanumeric() || c == '_')
+            })
+        })
+        .map(|name| (*name).to_owned())
+        .collect()
+}
+
 /// Run the case of `RB-19`.
 pub fn run(id: &str) {
     assert_eq!(id, "RB-19");
@@ -169,83 +201,27 @@ pub fn run(id: &str) {
     assert_eq!(ran, "probe");
 
     // Each construct the module grew by occurs in the probe, so that the
-    // harness's independent computation is evidence for it: the identifiers
-    // of the decoded crate's debug form, each with whether an argument list
-    // follows (`Char(` the literal, `Char` the type).
-    let seen = format!("{krate:?}");
-    let mut tokens: std::collections::BTreeSet<(String, bool)> = std::collections::BTreeSet::new();
-    let bytes = seen.as_bytes();
-    let mut at = 0;
-    while at < bytes.len() {
-        if bytes[at].is_ascii_uppercase() && (at == 0 || !bytes[at - 1].is_ascii_alphanumeric()) {
-            let end = (at..bytes.len())
-                .find(|&to| !bytes[to].is_ascii_alphanumeric())
-                .unwrap_or(bytes.len());
-            tokens.insert((seen[at..end].to_owned(), bytes.get(end) == Some(&b'(')));
-            at = end;
-        } else {
-            at += 1;
-        }
-    }
-    for (name, arguments) in [
-        // items and variants
-        ("TupleStruct", true),
-        ("RecordStruct", true),
-        ("Enum", true),
-        ("Unit", true),
-        ("Record", true),
-        // types
-        ("Wide", true),
-        ("Size", false),
-        ("Char", false),
-        ("Str", false),
-        ("Slice", true),
-        ("RefMut", true),
-        // literals
-        ("Char", true),
-        ("Str", true),
-        // patterns
-        ("BindMut", true),
-        ("Tuple", true),
-        ("TupleStruct", true),
-        ("Struct", true),
-        ("Lit", true),
-        // expressions
-        ("Let", true),
-        ("Assign", true),
-        ("If", true),
-        ("While", true),
-        ("WhileLet", true),
-        ("Loop", true),
-        ("For", true),
-        ("Break", false),
-        ("Return", true),
-        ("StructLit", true),
-        ("Binary", true),
-        ("Not", true),
-        ("Cast", true),
-        ("Index", true),
-        ("RangeSlice", true),
-        ("Deref", true),
-        ("BorrowMut", true),
-        ("MethodOf", true),
-        ("Block", true),
-        ("FieldNamed", true),
+    // harness's independent computation is evidence for it. The constructors
+    // are named with their enum, as the module spells them: the debug form of
+    // the decoded crate does not tell `RtPat.tuple` from `RtExpr.tuple`.
+    let absent = constructors_absent(&shipped);
+    assert!(absent.is_empty(), "the probe has no {absent:?}");
+    for (constructor, text) in [
+        ("RtPat.lit", shipped.replace("RtPat.lit", "RtPat.wild")),
+        ("RtExpr.tuple", shipped.replace("RtExpr.tuple", "RtExpr.lit")),
+        ("RtVariant.tupleV", shipped.replace("RtVariant.tupleV", "RtVariant.unitV")),
+        ("RtLit.str", shipped.replace("RtLit.str", "RtLit.nat")),
     ] {
-        assert!(
-            tokens.contains(&(name.to_owned(), arguments)),
-            "the probe has no `{name}`"
+        assert_eq!(
+            constructors_absent(&text),
+            vec![constructor.to_owned()],
+            "a probe without `{constructor}` is caught"
         );
     }
-    for op in [
-        "Add", "Sub", "Mul", "Div", "Rem", "AndAnd", "OrOr", "Ne", "Lt", "Le", "Gt", "Ge",
-    ] {
-        assert!(
-            tokens.contains(&(op.to_owned(), false)),
-            "the probe has no operator `{op}`"
-        );
-    }
-    assert!(seen.contains("guard: Some"), "the probe has no guarded arm");
+    assert!(
+        format!("{krate:?}").contains("guard: Some"),
+        "the probe has no guarded arm"
+    );
 
     // The closed table of the standard library is the validator's, as SPEC.md
     // §17.16 lists it, and the register states its size.
