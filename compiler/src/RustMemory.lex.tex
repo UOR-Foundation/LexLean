@@ -163,10 +163,20 @@ definition{
 }
 
 definition{
+  name: minusNat,
+  parameters: [left : Nat, right : Nat],
+  result: Nat,
+  body: (match right
+    | Nat.zero => left
+    | Nat.succ less => (match left | Nat.zero => 0 | Nat.succ more => (minusNat more less))),
+  recursive_argument: right
+}
+
+definition{
   name: subWindow,
   parameters: [win : Window, skip : Nat, keep : Nat],
   result: Window,
-  body: (record Window {base := (project win base), offset := (plus (project win offset) skip), count := (minNat keep (project win count))})
+  body: (record Window {base := (project win base), offset := (plus (project win offset) skip), count := (minNat keep (minusNat (project win count) skip))})
 }
 
 theorem{
@@ -485,28 +495,37 @@ theorem{
   axioms: [propext]
 }
 
-definition{
-  name: pushResult,
-  parameters: [flag : Flag, slots : Cells, len : Nat, item : TargetSyntax::Value],
-  result: (Option Buf),
-  body: (match flag
-    | Flag.yes => (ctor Option.some [Buf] (record Buf {slots := (put slots len item), len := (len + 1)}))
-    | Flag.no => (ctor Option.none [Buf]))
-}
-
 theorem{
   name: push_at_capacity,
   parameters: [cells : Cells, gap : Nat, item : TargetSyntax::Value],
-  statement: ((bufPush (record Buf {slots := cells, len := (plus (size cells) gap)}) item) = (pushResult (lessThan (plus (size cells) gap) (size cells)) cells (plus (size cells) gap) item)),
-  proof: simplify{definitions: [bufPush, pushResult]},
+  statement: ((bufPush (record Buf {slots := cells, len := (plus (size cells) gap)}) item) = (ctor Option.none [Buf])),
+  proof: simplify{definitions: [bufPush, no_room_at_capacity]},
+  axioms: [propext]
+}
+
+theorem{
+  name: put_in_slot,
+  parameters: [front : Cells, old : TargetSyntax::Value, back : Cells, item : TargetSyntax::Value],
+  statement: ((put (append front (ctor Cells.CCons old back)) (size front) item) = (append front (ctor Cells.CCons item back))),
+  proof: induction{
+    branches: [
+      {proof: simplify{definitions: [append, put, size]}, binders: [], constructor: CNil},
+      {
+        proof: simplify{definitions: [append, hypothesis, put, size]},
+        binders: [head, tail, hypothesis],
+        constructor: CCons
+      }
+    ],
+    scrutinee: front
+  },
   axioms: [propext]
 }
 
 theorem{
   name: push_with_room,
   parameters: [front : Cells, old : TargetSyntax::Value, back : Cells, item : TargetSyntax::Value],
-  statement: ((bufPush (record Buf {slots := (append front (ctor Cells.CCons old back)), len := (size front)}) item) = (pushResult (lessThan (size front) (size (append front (ctor Cells.CCons old back)))) (append front (ctor Cells.CCons old back)) (size front) item)),
-  proof: simplify{definitions: [bufPush, pushResult]},
+  statement: ((bufPush (record Buf {slots := (append front (ctor Cells.CCons old back)), len := (size front)}) item) = (ctor Option.some [Buf] (record Buf {slots := (append front (ctor Cells.CCons item back)), len := ((size front) + 1)}))),
+  proof: simplify{definitions: [bufPush, put_in_slot, room_before_slot]},
   axioms: [propext]
 }
 

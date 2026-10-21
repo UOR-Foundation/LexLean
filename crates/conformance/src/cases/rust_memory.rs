@@ -18,7 +18,7 @@ const IMPORTED: [&str; 1] = ["TargetSyntax"];
 
 /// Each law with the functions its statement must be about: a theorem of the
 /// right name that states another function is refused.
-const LAWS: [(&str, &[&str]); 15] = [
+const LAWS: [(&str, &[&str]); 16] = [
     ("size_put", &["size", "put"]),
     (
         "get_put_same",
@@ -33,14 +33,9 @@ const LAWS: [(&str, &[&str]); 15] = [
     ("push_lands_in_slot", &["get", "put", "size", "append"]),
     ("below_truncated", &["lessThan", "minNat", "both"]),
     ("plus_assoc", &["plus"]),
-    (
-        "push_at_capacity",
-        &["bufPush", "pushResult", "lessThan", "plus", "size"],
-    ),
-    (
-        "push_with_room",
-        &["bufPush", "pushResult", "lessThan", "size", "append"],
-    ),
+    ("push_at_capacity", &["bufPush", "plus", "size"]),
+    ("put_in_slot", &["put", "size", "append"]),
+    ("push_with_room", &["bufPush", "size", "append"]),
     (
         "get_truncated",
         &[
@@ -174,6 +169,12 @@ fn check(id: &str) {
             "⊢ some item = none",
             "      | Nat.zero => (ctor Flag.yes)\n      | Nat.succ lower => (lessThan lower more)",
             "      | Nat.zero => (ctor Flag.no)\n      | Nat.succ lower => (lessThan lower more)",
+        ),
+        (
+            "a push that adds two to the length",
+            "⊢ some { slots := append front (Cells.CCons item back), len := size front + 1 + 1 } =",
+            "len := ((project buf len) + 1)}))\n    | Flag.no",
+            "len := (((project buf len) + 1) + 1)}))\n    | Flag.no",
         ),
         (
             "a truncation that keeps one too many",
