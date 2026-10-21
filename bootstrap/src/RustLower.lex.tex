@@ -1,0 +1,980 @@
+\begin{lexlean}{RustLower}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{CalculusCheck}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: Clos,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: ClNil, fields: []},
+    {name: ClCons, fields: [CalculusCheck::Ty, Nat, CalculusCheck::Ty, Clos]}
+  ]
+}
+
+inductive{
+  name: Edges,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: EdgeNil, fields: []},
+    {name: EdgeCons, fields: [CalculusCheck::Ty, CalculusCheck::Ty, Edges]}
+  ]
+}
+
+inductive{
+  name: Facts,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: FactsNil, fields: []},
+    {name: FactsCons, fields: [Bool, (List Nat), CalculusCheck::Ty, Facts]}
+  ]
+}
+
+structure{
+  name: Collect,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: known, type: CalculusCheck::Ty}, {name: closures, type: Clos}]
+}
+
+structure{
+  name: Reach,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: own, type: Bool}, {name: calls, type: (List Nat)}, {name: applies, type: CalculusCheck::Ty}]
+}
+
+definition{
+  name: tyMember,
+  parameters: [chain : CalculusCheck::Ty, item : CalculusCheck::Ty],
+  result: Bool,
+  body: (match chain
+    | CalculusCheck::Ty.TUnit => false
+    | CalculusCheck::Ty.TBool => false
+    | CalculusCheck::Ty.TNat => false
+    | CalculusCheck::Ty.TInt => false
+    | CalculusCheck::Ty.TFixed d0 => false
+    | CalculusCheck::Ty.TString => false
+    | CalculusCheck::Ty.TBytes => false
+    | CalculusCheck::Ty.TOrdering => false
+    | CalculusCheck::Ty.TOption d0 => false
+    | CalculusCheck::Ty.TResult d0 d1 => false
+    | CalculusCheck::Ty.TList d0 => false
+    | CalculusCheck::Ty.TPair d0 d1 => false
+    | CalculusCheck::Ty.TAdt d0 => false
+    | CalculusCheck::Ty.TFn d0 d1 => false
+    | CalculusCheck::Ty.TNil => false
+    | CalculusCheck::Ty.TCons head tail => (if (CalculusCheck::tyEq head item) then true else (tyMember tail item))),
+  executable: true,
+  recursive_argument: chain
+}
+
+definition{
+  name: tyAppend,
+  parameters: [left : CalculusCheck::Ty, right : CalculusCheck::Ty],
+  result: CalculusCheck::Ty,
+  body: (match left
+    | CalculusCheck::Ty.TUnit => right
+    | CalculusCheck::Ty.TBool => right
+    | CalculusCheck::Ty.TNat => right
+    | CalculusCheck::Ty.TInt => right
+    | CalculusCheck::Ty.TFixed d0 => right
+    | CalculusCheck::Ty.TString => right
+    | CalculusCheck::Ty.TBytes => right
+    | CalculusCheck::Ty.TOrdering => right
+    | CalculusCheck::Ty.TOption d0 => right
+    | CalculusCheck::Ty.TResult d0 d1 => right
+    | CalculusCheck::Ty.TList d0 => right
+    | CalculusCheck::Ty.TPair d0 d1 => right
+    | CalculusCheck::Ty.TAdt d0 => right
+    | CalculusCheck::Ty.TFn d0 d1 => right
+    | CalculusCheck::Ty.TNil => right
+    | CalculusCheck::Ty.TCons head tail => (ctor CalculusCheck::Ty.TCons head (tyAppend tail right))),
+  executable: true,
+  recursive_argument: left
+}
+
+definition{
+  name: tyAddNew,
+  parameters: [chain : CalculusCheck::Ty, item : CalculusCheck::Ty],
+  result: CalculusCheck::Ty,
+  body: (if (tyMember chain item) then chain else (ctor CalculusCheck::Ty.TCons item chain)),
+  executable: true
+}
+
+definition{
+  name: tyDrop,
+  parameters: [chain : CalculusCheck::Ty, count : Nat],
+  result: CalculusCheck::Ty,
+  body: (match chain
+    | CalculusCheck::Ty.TUnit => chain
+    | CalculusCheck::Ty.TBool => chain
+    | CalculusCheck::Ty.TNat => chain
+    | CalculusCheck::Ty.TInt => chain
+    | CalculusCheck::Ty.TFixed d0 => chain
+    | CalculusCheck::Ty.TString => chain
+    | CalculusCheck::Ty.TBytes => chain
+    | CalculusCheck::Ty.TOrdering => chain
+    | CalculusCheck::Ty.TOption d0 => chain
+    | CalculusCheck::Ty.TResult d0 d1 => chain
+    | CalculusCheck::Ty.TList d0 => chain
+    | CalculusCheck::Ty.TPair d0 d1 => chain
+    | CalculusCheck::Ty.TAdt d0 => chain
+    | CalculusCheck::Ty.TFn d0 d1 => chain
+    | CalculusCheck::Ty.TNil => chain
+    | CalculusCheck::Ty.TCons head tail => (match count
+      | Nat.zero => chain
+      | Nat.succ previous => (tyDrop tail previous))),
+  executable: true,
+  recursive_argument: chain
+}
+
+definition{
+  name: tyTake,
+  parameters: [chain : CalculusCheck::Ty, count : Nat],
+  result: CalculusCheck::Ty,
+  body: (match chain
+    | CalculusCheck::Ty.TUnit => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TBool => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TNat => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TInt => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TFixed d0 => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TString => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TBytes => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TOrdering => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TOption d0 => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TResult d0 d1 => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TList d0 => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TPair d0 d1 => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TAdt d0 => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TFn d0 d1 => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TNil => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TCons head tail => (match count
+      | Nat.zero => (ctor CalculusCheck::Ty.TNil)
+      | Nat.succ previous => (ctor CalculusCheck::Ty.TCons head (tyTake tail previous)))),
+  executable: true,
+  recursive_argument: chain
+}
+
+definition{
+  name: register,
+  parameters: [known : CalculusCheck::Ty, ty : CalculusCheck::Ty],
+  result: CalculusCheck::Ty,
+  body: (match ty
+    | CalculusCheck::Ty.TUnit => known
+    | CalculusCheck::Ty.TBool => known
+    | CalculusCheck::Ty.TNat => known
+    | CalculusCheck::Ty.TInt => known
+    | CalculusCheck::Ty.TFixed d0 => known
+    | CalculusCheck::Ty.TString => known
+    | CalculusCheck::Ty.TBytes => known
+    | CalculusCheck::Ty.TOrdering => known
+    | CalculusCheck::Ty.TOption value => (register known value)
+    | CalculusCheck::Ty.TResult ok error => (register (register known ok) error)
+    | CalculusCheck::Ty.TList element => (register known element)
+    | CalculusCheck::Ty.TPair left right => (register (register known left) right)
+    | CalculusCheck::Ty.TAdt d0 => known
+    | CalculusCheck::Ty.TFn parameters result => (let added : CalculusCheck::Ty := (tyAddNew known ty); (register (register added parameters) result))
+    | CalculusCheck::Ty.TNil => known
+    | CalculusCheck::Ty.TCons head tail => (register (register known head) tail)),
+  executable: true,
+  recursive_argument: ty
+}
+
+definition{
+  name: inferTy,
+  parameters: [program : CalculusCheck::Program, expr : CalculusCheck::Expr, scope : (List (Nat * CalculusCheck::Ty))],
+  result: CalculusCheck::Ty,
+  body: (match (CalculusCheck::walk program expr scope 0 (ctor CalculusCheck::Ty.TNil) (ctor CalculusCheck::Ty.TNil) (prim utf8_encode "" : Bytes) 0 (nil CalculusCheck::Shape))
+    | CalculusCheck::Outcome.OTyped found => found
+    | CalculusCheck::Outcome.OFailed problem => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Outcome.OCovered seen => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Outcome.OFine => (ctor CalculusCheck::Ty.TNil)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: armFields,
+  parameters: [program : CalculusCheck::Program, shape : CalculusCheck::Shape, subject : CalculusCheck::Ty],
+  result: CalculusCheck::Ty,
+  body: (match (CalculusCheck::shapeFields program shape subject)
+    | Result.ok fields => fields
+    | Result.error problem => (ctor CalculusCheck::Ty.TNil)),
+  executable: true
+}
+
+definition{
+  name: primFails,
+  parameters: [operation : CalculusCheck::Prim],
+  result: Bool,
+  body: (match operation
+    | CalculusCheck::Prim.NatAdd => true
+    | CalculusCheck::Prim.NatSub => false
+    | CalculusCheck::Prim.NatMul => true
+    | CalculusCheck::Prim.NatQuot => false
+    | CalculusCheck::Prim.NatRem => false
+    | CalculusCheck::Prim.NatEq => false
+    | CalculusCheck::Prim.NatLe => false
+    | CalculusCheck::Prim.NatLt => false
+    | CalculusCheck::Prim.IntAdd => true
+    | CalculusCheck::Prim.IntSub => true
+    | CalculusCheck::Prim.IntMul => true
+    | CalculusCheck::Prim.IntNeg => true
+    | CalculusCheck::Prim.IntQuot => true
+    | CalculusCheck::Prim.IntRem => false
+    | CalculusCheck::Prim.CheckedAdd => false
+    | CalculusCheck::Prim.CheckedSub => false
+    | CalculusCheck::Prim.CheckedMul => false
+    | CalculusCheck::Prim.CheckedNeg => false
+    | CalculusCheck::Prim.CheckedQuot => false
+    | CalculusCheck::Prim.BitAnd => false
+    | CalculusCheck::Prim.BitOr => false
+    | CalculusCheck::Prim.BitXor => false
+    | CalculusCheck::Prim.BitNot => false
+    | CalculusCheck::Prim.ShiftLeft => false
+    | CalculusCheck::Prim.ShiftRight => false
+    | CalculusCheck::Prim.Equal => false
+    | CalculusCheck::Prim.BoolNot => false
+    | CalculusCheck::Prim.BoolAnd => false
+    | CalculusCheck::Prim.BoolOr => false
+    | CalculusCheck::Prim.Append => false
+    | CalculusCheck::Prim.Length => false
+    | CalculusCheck::Prim.Index => false
+    | CalculusCheck::Prim.Slice => false
+    | CalculusCheck::Prim.Utf8Encode => false
+    | CalculusCheck::Prim.Utf8Decode => false
+    | CalculusCheck::Prim.CompareBytes => false
+    | CalculusCheck::Prim.SplitExact => false
+    | CalculusCheck::Prim.Join => false
+    | CalculusCheck::Prim.FormatDecimal => false
+    | CalculusCheck::Prim.Compare => false
+    | CalculusCheck::Prim.Convert d0 => false
+    | CalculusCheck::Prim.ParseDecimal target => ((CalculusCheck::tyTag target) =? 3)),
+  executable: true
+}
+
+definition{
+  name: closHas,
+  parameters: [closures : Clos, fnTy : CalculusCheck::Ty, function : Nat],
+  result: Bool,
+  body: (match closures
+    | Clos.ClNil => false
+    | Clos.ClCons known member captured rest => (if (member =? function) then (if (CalculusCheck::tyEq known fnTy) then true else (closHas rest fnTy function)) else (closHas rest fnTy function))),
+  executable: true,
+  recursive_argument: closures
+}
+
+definition{
+  name: closAdd,
+  parameters: [closures : Clos, fnTy : CalculusCheck::Ty, function : Nat, captured : CalculusCheck::Ty],
+  result: Clos,
+  body: (if (closHas closures fnTy function) then closures else (ctor Clos.ClCons fnTy function captured closures)),
+  executable: true
+}
+
+definition{
+  name: closVariants,
+  parameters: [closures : Clos, fnTy : CalculusCheck::Ty],
+  result: CalculusCheck::Ty,
+  body: (match closures
+    | Clos.ClNil => (ctor CalculusCheck::Ty.TNil)
+    | Clos.ClCons known member captured rest => (if (CalculusCheck::tyEq known fnTy) then (ctor CalculusCheck::Ty.TCons captured (closVariants rest fnTy)) else (closVariants rest fnTy))),
+  executable: true,
+  recursive_argument: closures
+}
+
+definition{
+  name: collectTerm,
+  parameters: [program : CalculusCheck::Program, state : Collect, expr : CalculusCheck::Expr, scope : (List (Nat * CalculusCheck::Ty)), subject : CalculusCheck::Ty],
+  result: Collect,
+  body: (match expr
+    | CalculusCheck::Expr.EValue ty value => (record Collect [] {known := (register (project state known) ty), closures := (project state closures)})
+    | CalculusCheck::Expr.EVar name => state
+    | CalculusCheck::Expr.ELet name ty bound body => (let registered : Collect := (record Collect [] {known := (register (project state known) ty), closures := (project state closures)}); (let inner : Collect := (collectTerm program registered bound scope (ctor CalculusCheck::Ty.TNil)); (collectTerm program inner body (CalculusCheck::extendScope name ty scope) (ctor CalculusCheck::Ty.TNil))))
+    | CalculusCheck::Expr.ECond condition thenBranch elseBranch => (let one : Collect := (collectTerm program state condition scope (ctor CalculusCheck::Ty.TNil)); (let two : Collect := (collectTerm program one thenBranch scope (ctor CalculusCheck::Ty.TNil)); (collectTerm program two elseBranch scope (ctor CalculusCheck::Ty.TNil))))
+    | CalculusCheck::Expr.EMatch ty scrutinee arms => (let registered : Collect := (record Collect [] {known := (register (project state known) ty), closures := (project state closures)}); (let inner : Collect := (collectTerm program registered scrutinee scope (ctor CalculusCheck::Ty.TNil)); (collectTerm program inner arms scope (inferTy program scrutinee scope))))
+    | CalculusCheck::Expr.EBuild shape ty operands => (let registered : Collect := (record Collect [] {known := (register (project state known) ty), closures := (project state closures)}); (collectTerm program registered operands scope (ctor CalculusCheck::Ty.TNil)))
+    | CalculusCheck::Expr.ECall function operands => (collectTerm program state operands scope (ctor CalculusCheck::Ty.TNil))
+    | CalculusCheck::Expr.EClosure function captures => (let inner : Collect := (collectTerm program state captures scope (ctor CalculusCheck::Ty.TNil)); (let declared : CalculusCheck::Ty := (CalculusCheck::functionTypesOr program function); (let count : Nat := (CalculusCheck::exprChainLength captures); (let closureType : CalculusCheck::Ty := (ctor CalculusCheck::Ty.TFn (tyDrop declared count) (CalculusCheck::functionResult program function)); (let registered : Collect := (record Collect [] {known := (register (project inner known) closureType), closures := (project inner closures)}); (record Collect [] {known := (project registered known), closures := (closAdd (project registered closures) closureType function (tyTake declared count))}))))))
+    | CalculusCheck::Expr.EApply target operands => (let inner : Collect := (collectTerm program state target scope (ctor CalculusCheck::Ty.TNil)); (collectTerm program inner operands scope (ctor CalculusCheck::Ty.TNil)))
+    | CalculusCheck::Expr.EPrim operation operands => (collectTerm program state operands scope (ctor CalculusCheck::Ty.TNil))
+    | CalculusCheck::Expr.EFirst value => (collectTerm program state value scope (ctor CalculusCheck::Ty.TNil))
+    | CalculusCheck::Expr.ESecond value => (collectTerm program state value scope (ctor CalculusCheck::Ty.TNil))
+    | CalculusCheck::Expr.EField value index => (collectTerm program state value scope (ctor CalculusCheck::Ty.TNil))
+    | CalculusCheck::Expr.ENil => state
+    | CalculusCheck::Expr.ECons head tail => (let inner : Collect := (collectTerm program state head scope subject); (collectTerm program inner tail scope subject))
+    | CalculusCheck::Expr.EArm shape binders body => (collectTerm program state body (CalculusCheck::bindAll binders (armFields program shape subject) scope) (ctor CalculusCheck::Ty.TNil))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: expr
+}
+
+definition{
+  name: collectFunctions,
+  parameters: [program : CalculusCheck::Program, state : Collect, bodies : CalculusCheck::Expr, index : Nat, dead : (List Bool)],
+  result: Collect,
+  body: (match bodies
+    | CalculusCheck::Expr.EValue d0 d1 => state
+    | CalculusCheck::Expr.EVar d0 => state
+    | CalculusCheck::Expr.ELet d0 d1 d2 d3 => state
+    | CalculusCheck::Expr.ECond d0 d1 d2 => state
+    | CalculusCheck::Expr.EMatch d0 d1 d2 => state
+    | CalculusCheck::Expr.EBuild d0 d1 d2 => state
+    | CalculusCheck::Expr.ECall d0 d1 => state
+    | CalculusCheck::Expr.EClosure d0 d1 => state
+    | CalculusCheck::Expr.EApply d0 d1 => state
+    | CalculusCheck::Expr.EPrim d0 d1 => state
+    | CalculusCheck::Expr.EFirst d0 => state
+    | CalculusCheck::Expr.ESecond d0 => state
+    | CalculusCheck::Expr.EField d0 d1 => state
+    | CalculusCheck::Expr.ENil => state
+    | CalculusCheck::Expr.ECons body rest => (let live : Bool := (match (CalculusCheck::listAt [Bool] dead index)
+      | Option.some flag => (not flag)
+      | Option.none => true); (let inner : Collect := (if live then (collectTerm program state body (CalculusCheck::bindAll (CalculusCheck::functionNames program index) (CalculusCheck::functionTypesOr program index) (nil (Nat * CalculusCheck::Ty))) (ctor CalculusCheck::Ty.TNil)) else state); (collectFunctions program inner rest (index + 1) dead)))
+    | CalculusCheck::Expr.EArm d0 d1 d2 => state),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: bodies
+}
+
+definition{
+  name: natMember,
+  parameters: [items : (List Nat), item : Nat],
+  result: Bool,
+  body: (match items
+    | List.nil => false
+    | List.cons head tail => (if (head =? item) then true else (natMember tail item))),
+  executable: true,
+  recursive_argument: items
+}
+
+definition{
+  name: reachTerm,
+  parameters: [program : CalculusCheck::Program, found : Reach, expr : CalculusCheck::Expr, scope : (List (Nat * CalculusCheck::Ty)), subject : CalculusCheck::Ty],
+  result: Reach,
+  body: (match expr
+    | CalculusCheck::Expr.EValue ty value => found
+    | CalculusCheck::Expr.EVar name => found
+    | CalculusCheck::Expr.ELet name ty bound body => (let inner : Reach := (reachTerm program found bound scope (ctor CalculusCheck::Ty.TNil)); (reachTerm program inner body (CalculusCheck::extendScope name ty scope) (ctor CalculusCheck::Ty.TNil)))
+    | CalculusCheck::Expr.ECond condition thenBranch elseBranch => (let one : Reach := (reachTerm program found condition scope (ctor CalculusCheck::Ty.TNil)); (let two : Reach := (reachTerm program one thenBranch scope (ctor CalculusCheck::Ty.TNil)); (reachTerm program two elseBranch scope (ctor CalculusCheck::Ty.TNil))))
+    | CalculusCheck::Expr.EMatch ty scrutinee arms => (let inner : Reach := (reachTerm program found scrutinee scope (ctor CalculusCheck::Ty.TNil)); (reachTerm program inner arms scope (inferTy program scrutinee scope)))
+    | CalculusCheck::Expr.EBuild shape ty operands => (let inner : Reach := (reachTerm program found operands scope (ctor CalculusCheck::Ty.TNil)); (match shape
+      | CalculusCheck::Shape.SSucc => (record Reach [] {own := true, calls := (project inner calls), applies := (project inner applies)})
+      | CalculusCheck::Shape.SNone => inner
+      | CalculusCheck::Shape.SSome => inner
+      | CalculusCheck::Shape.SOk => inner
+      | CalculusCheck::Shape.SError => inner
+      | CalculusCheck::Shape.SNil => inner
+      | CalculusCheck::Shape.SCons => inner
+      | CalculusCheck::Shape.SZero => inner
+      | CalculusCheck::Shape.SPair => inner
+      | CalculusCheck::Shape.STrue => inner
+      | CalculusCheck::Shape.SFalse => inner
+      | CalculusCheck::Shape.SUnit => inner
+      | CalculusCheck::Shape.SLt => inner
+      | CalculusCheck::Shape.SEq => inner
+      | CalculusCheck::Shape.SGt => inner
+      | CalculusCheck::Shape.SAdt d0 => inner))
+    | CalculusCheck::Expr.ECall function operands => (let inner : Reach := (reachTerm program found operands scope (ctor CalculusCheck::Ty.TNil)); (record Reach [] {own := (project inner own), calls := (if (natMember (project inner calls) function) then (project inner calls) else (cons function (project inner calls))), applies := (project inner applies)}))
+    | CalculusCheck::Expr.EClosure function captures => (reachTerm program found captures scope (ctor CalculusCheck::Ty.TNil))
+    | CalculusCheck::Expr.EApply target operands => (let one : Reach := (reachTerm program found target scope (ctor CalculusCheck::Ty.TNil)); (let two : Reach := (reachTerm program one operands scope (ctor CalculusCheck::Ty.TNil)); (record Reach [] {own := (project two own), calls := (project two calls), applies := (tyAddNew (project two applies) (inferTy program target scope))})))
+    | CalculusCheck::Expr.EPrim operation operands => (let inner : Reach := (reachTerm program found operands scope (ctor CalculusCheck::Ty.TNil)); (record Reach [] {own := (if (project inner own) then true else (primFails operation)), calls := (project inner calls), applies := (project inner applies)}))
+    | CalculusCheck::Expr.EFirst value => (reachTerm program found value scope (ctor CalculusCheck::Ty.TNil))
+    | CalculusCheck::Expr.ESecond value => (reachTerm program found value scope (ctor CalculusCheck::Ty.TNil))
+    | CalculusCheck::Expr.EField value index => (reachTerm program found value scope (ctor CalculusCheck::Ty.TNil))
+    | CalculusCheck::Expr.ENil => found
+    | CalculusCheck::Expr.ECons head tail => (let inner : Reach := (reachTerm program found head scope subject); (reachTerm program inner tail scope subject))
+    | CalculusCheck::Expr.EArm shape binders body => (reachTerm program found body (CalculusCheck::bindAll binders (armFields program shape subject) scope) (ctor CalculusCheck::Ty.TNil))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: expr
+}
+
+definition{
+  name: reachFunctions,
+  parameters: [program : CalculusCheck::Program, bodies : CalculusCheck::Expr, index : Nat],
+  result: Facts,
+  body: (match bodies
+    | CalculusCheck::Expr.EValue d0 d1 => (ctor Facts.FactsNil)
+    | CalculusCheck::Expr.EVar d0 => (ctor Facts.FactsNil)
+    | CalculusCheck::Expr.ELet d0 d1 d2 d3 => (ctor Facts.FactsNil)
+    | CalculusCheck::Expr.ECond d0 d1 d2 => (ctor Facts.FactsNil)
+    | CalculusCheck::Expr.EMatch d0 d1 d2 => (ctor Facts.FactsNil)
+    | CalculusCheck::Expr.EBuild d0 d1 d2 => (ctor Facts.FactsNil)
+    | CalculusCheck::Expr.ECall d0 d1 => (ctor Facts.FactsNil)
+    | CalculusCheck::Expr.EClosure d0 d1 => (ctor Facts.FactsNil)
+    | CalculusCheck::Expr.EApply d0 d1 => (ctor Facts.FactsNil)
+    | CalculusCheck::Expr.EPrim d0 d1 => (ctor Facts.FactsNil)
+    | CalculusCheck::Expr.EFirst d0 => (ctor Facts.FactsNil)
+    | CalculusCheck::Expr.ESecond d0 => (ctor Facts.FactsNil)
+    | CalculusCheck::Expr.EField d0 d1 => (ctor Facts.FactsNil)
+    | CalculusCheck::Expr.ENil => (ctor Facts.FactsNil)
+    | CalculusCheck::Expr.ECons body rest => (let found : Reach := (reachTerm program (record Reach [] {own := false, calls := (nil Nat), applies := (ctor CalculusCheck::Ty.TNil)}) body (CalculusCheck::bindAll (CalculusCheck::functionNames program index) (CalculusCheck::functionTypesOr program index) (nil (Nat * CalculusCheck::Ty))) (ctor CalculusCheck::Ty.TNil)); (ctor Facts.FactsCons (project found own) (project found calls) (project found applies) (reachFunctions program rest (index + 1))))
+    | CalculusCheck::Expr.EArm d0 d1 d2 => (ctor Facts.FactsNil)),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: bodies
+}
+
+definition{
+  name: adtOwners,
+  parameters: [count : Nat],
+  result: CalculusCheck::Ty,
+  body: (match count
+    | Nat.zero => (ctor CalculusCheck::Ty.TNil)
+    | Nat.succ previous => (ctor CalculusCheck::Ty.TCons (ctor CalculusCheck::Ty.TAdt previous) (adtOwners previous))),
+  executable: true,
+  recursive_argument: count
+}
+
+definition{
+  name: inPlace,
+  parameters: [known : CalculusCheck::Ty, held : CalculusCheck::Ty, ty : CalculusCheck::Ty],
+  result: CalculusCheck::Ty,
+  body: (match ty
+    | CalculusCheck::Ty.TUnit => held
+    | CalculusCheck::Ty.TBool => held
+    | CalculusCheck::Ty.TNat => held
+    | CalculusCheck::Ty.TInt => held
+    | CalculusCheck::Ty.TFixed d0 => held
+    | CalculusCheck::Ty.TString => held
+    | CalculusCheck::Ty.TBytes => held
+    | CalculusCheck::Ty.TOrdering => held
+    | CalculusCheck::Ty.TOption value => (inPlace known held value)
+    | CalculusCheck::Ty.TResult ok error => (inPlace known (inPlace known held ok) error)
+    | CalculusCheck::Ty.TList d0 => held
+    | CalculusCheck::Ty.TPair left right => (inPlace known (inPlace known held left) right)
+    | CalculusCheck::Ty.TAdt index => (tyAddNew held ty)
+    | CalculusCheck::Ty.TFn parameters result => (if (tyMember known ty) then (tyAddNew held ty) else held)
+    | CalculusCheck::Ty.TNil => held
+    | CalculusCheck::Ty.TCons d0 d1 => held),
+  executable: true,
+  recursive_argument: ty
+}
+
+definition{
+  name: edgeHas,
+  parameters: [edges : Edges, from : CalculusCheck::Ty, to : CalculusCheck::Ty],
+  result: Bool,
+  body: (match edges
+    | Edges.EdgeNil => false
+    | Edges.EdgeCons left right rest => (if (CalculusCheck::tyEq left from) then (if (CalculusCheck::tyEq right to) then true else (edgeHas rest from to)) else (edgeHas rest from to))),
+  executable: true,
+  recursive_argument: edges
+}
+
+definition{
+  name: edgeCount,
+  parameters: [edges : Edges],
+  result: Nat,
+  body: (match edges
+    | Edges.EdgeNil => 0
+    | Edges.EdgeCons left right rest => (1 + (edgeCount rest))),
+  executable: true,
+  recursive_argument: edges
+}
+
+definition{
+  name: edgeAdd,
+  parameters: [edges : Edges, from : CalculusCheck::Ty, to : CalculusCheck::Ty],
+  result: Edges,
+  body: (if (edgeHas edges from to) then edges else (ctor Edges.EdgeCons from to edges)),
+  executable: true
+}
+
+definition{
+  name: edgesToHeld,
+  parameters: [owner : CalculusCheck::Ty, held : CalculusCheck::Ty, edges : Edges],
+  result: Edges,
+  body: (match held
+    | CalculusCheck::Ty.TUnit => edges
+    | CalculusCheck::Ty.TBool => edges
+    | CalculusCheck::Ty.TNat => edges
+    | CalculusCheck::Ty.TInt => edges
+    | CalculusCheck::Ty.TFixed d0 => edges
+    | CalculusCheck::Ty.TString => edges
+    | CalculusCheck::Ty.TBytes => edges
+    | CalculusCheck::Ty.TOrdering => edges
+    | CalculusCheck::Ty.TOption d0 => edges
+    | CalculusCheck::Ty.TResult d0 d1 => edges
+    | CalculusCheck::Ty.TList d0 => edges
+    | CalculusCheck::Ty.TPair d0 d1 => edges
+    | CalculusCheck::Ty.TAdt d0 => edges
+    | CalculusCheck::Ty.TFn d0 d1 => edges
+    | CalculusCheck::Ty.TNil => edges
+    | CalculusCheck::Ty.TCons head tail => (edgesToHeld owner tail (edgeAdd edges owner head))),
+  executable: true,
+  recursive_argument: held
+}
+
+definition{
+  name: edgesOfFields,
+  parameters: [known : CalculusCheck::Ty, owner : CalculusCheck::Ty, fields : CalculusCheck::Ty, edges : Edges],
+  result: Edges,
+  body: (match fields
+    | CalculusCheck::Ty.TUnit => edges
+    | CalculusCheck::Ty.TBool => edges
+    | CalculusCheck::Ty.TNat => edges
+    | CalculusCheck::Ty.TInt => edges
+    | CalculusCheck::Ty.TFixed d0 => edges
+    | CalculusCheck::Ty.TString => edges
+    | CalculusCheck::Ty.TBytes => edges
+    | CalculusCheck::Ty.TOrdering => edges
+    | CalculusCheck::Ty.TOption d0 => edges
+    | CalculusCheck::Ty.TResult d0 d1 => edges
+    | CalculusCheck::Ty.TList d0 => edges
+    | CalculusCheck::Ty.TPair d0 d1 => edges
+    | CalculusCheck::Ty.TAdt d0 => edges
+    | CalculusCheck::Ty.TFn d0 d1 => edges
+    | CalculusCheck::Ty.TNil => edges
+    | CalculusCheck::Ty.TCons head tail => (edgesOfFields known owner tail (edgesToHeld owner (inPlace known (ctor CalculusCheck::Ty.TNil) head) edges))),
+  executable: true,
+  recursive_argument: fields
+}
+
+definition{
+  name: edgesOfVariants,
+  parameters: [known : CalculusCheck::Ty, owner : CalculusCheck::Ty, variants : CalculusCheck::Ty, edges : Edges],
+  result: Edges,
+  body: (match variants
+    | CalculusCheck::Ty.TUnit => edges
+    | CalculusCheck::Ty.TBool => edges
+    | CalculusCheck::Ty.TNat => edges
+    | CalculusCheck::Ty.TInt => edges
+    | CalculusCheck::Ty.TFixed d0 => edges
+    | CalculusCheck::Ty.TString => edges
+    | CalculusCheck::Ty.TBytes => edges
+    | CalculusCheck::Ty.TOrdering => edges
+    | CalculusCheck::Ty.TOption d0 => edges
+    | CalculusCheck::Ty.TResult d0 d1 => edges
+    | CalculusCheck::Ty.TList d0 => edges
+    | CalculusCheck::Ty.TPair d0 d1 => edges
+    | CalculusCheck::Ty.TAdt d0 => edges
+    | CalculusCheck::Ty.TFn d0 d1 => edges
+    | CalculusCheck::Ty.TNil => edges
+    | CalculusCheck::Ty.TCons head tail => (edgesOfVariants known owner tail (edgesOfFields known owner head edges))),
+  executable: true,
+  recursive_argument: variants
+}
+
+definition{
+  name: variantsOf,
+  parameters: [program : CalculusCheck::Program, closures : Clos, owner : CalculusCheck::Ty],
+  result: CalculusCheck::Ty,
+  body: (match owner
+    | CalculusCheck::Ty.TUnit => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TBool => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TNat => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TInt => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TFixed d0 => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TString => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TBytes => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TOrdering => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TOption d0 => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TResult d0 d1 => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TList d0 => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TPair d0 d1 => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TAdt index => (match (CalculusCheck::adtAt program index)
+      | Option.some constructors => constructors
+      | Option.none => (ctor CalculusCheck::Ty.TNil))
+    | CalculusCheck::Ty.TFn parameters result => (closVariants closures owner)
+    | CalculusCheck::Ty.TNil => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TCons d0 d1 => (ctor CalculusCheck::Ty.TNil)),
+  executable: true
+}
+
+definition{
+  name: allEdges,
+  parameters: [program : CalculusCheck::Program, known : CalculusCheck::Ty, closures : Clos, owners : CalculusCheck::Ty, edges : Edges],
+  result: Edges,
+  body: (match owners
+    | CalculusCheck::Ty.TUnit => edges
+    | CalculusCheck::Ty.TBool => edges
+    | CalculusCheck::Ty.TNat => edges
+    | CalculusCheck::Ty.TInt => edges
+    | CalculusCheck::Ty.TFixed d0 => edges
+    | CalculusCheck::Ty.TString => edges
+    | CalculusCheck::Ty.TBytes => edges
+    | CalculusCheck::Ty.TOrdering => edges
+    | CalculusCheck::Ty.TOption d0 => edges
+    | CalculusCheck::Ty.TResult d0 d1 => edges
+    | CalculusCheck::Ty.TList d0 => edges
+    | CalculusCheck::Ty.TPair d0 d1 => edges
+    | CalculusCheck::Ty.TAdt d0 => edges
+    | CalculusCheck::Ty.TFn d0 d1 => edges
+    | CalculusCheck::Ty.TNil => edges
+    | CalculusCheck::Ty.TCons head tail => (allEdges program known closures tail (edgesOfVariants known head (variantsOf program closures head) edges))),
+  executable: true,
+  recursive_argument: owners
+}
+
+definition{
+  name: composeFrom,
+  parameters: [right : Edges, middle : CalculusCheck::Ty, from : CalculusCheck::Ty, edges : Edges],
+  result: Edges,
+  body: (match right
+    | Edges.EdgeNil => edges
+    | Edges.EdgeCons start to rest => (composeFrom rest middle from (if (CalculusCheck::tyEq start middle) then (edgeAdd edges from to) else edges))),
+  executable: true,
+  recursive_argument: right
+}
+
+definition{
+  name: compose,
+  parameters: [all : Edges, left : Edges, edges : Edges],
+  result: Edges,
+  body: (match left
+    | Edges.EdgeNil => edges
+    | Edges.EdgeCons from middle rest => (compose all rest (composeFrom all middle from edges))),
+  executable: true,
+  recursive_argument: left
+}
+
+definition{
+  name: closeStep,
+  parameters: [edges : Edges],
+  result: (Option Edges),
+  body: (let wider : Edges := (compose edges edges edges); (if ((edgeCount wider) =? (edgeCount edges)) then (ctor Option.none [Edges]) else (ctor Option.some [Edges] wider))),
+  executable: true
+}
+
+definition{
+  name: closeEdges,
+  parameters: [edges : Edges, bound : Nat],
+  result: Edges,
+  body: (first (prim iterate_until (fun (current : Edges) => (closeStep current)) bound edges : (Edges * Bool))),
+  executable: true
+}
+
+definition{
+  name: visible,
+  parameters: [ty : CalculusCheck::Ty, inhabited : CalculusCheck::Ty],
+  result: Bool,
+  body: (match ty
+    | CalculusCheck::Ty.TUnit => true
+    | CalculusCheck::Ty.TBool => true
+    | CalculusCheck::Ty.TNat => true
+    | CalculusCheck::Ty.TInt => true
+    | CalculusCheck::Ty.TFixed d0 => true
+    | CalculusCheck::Ty.TString => true
+    | CalculusCheck::Ty.TBytes => true
+    | CalculusCheck::Ty.TOrdering => true
+    | CalculusCheck::Ty.TOption d0 => true
+    | CalculusCheck::Ty.TResult ok error => (if (visible ok inhabited) then true else (visible error inhabited))
+    | CalculusCheck::Ty.TList d0 => true
+    | CalculusCheck::Ty.TPair left right => (if (visible left inhabited) then (visible right inhabited) else false)
+    | CalculusCheck::Ty.TAdt index => (tyMember inhabited ty)
+    | CalculusCheck::Ty.TFn parameters result => (tyMember inhabited ty)
+    | CalculusCheck::Ty.TNil => true
+    | CalculusCheck::Ty.TCons d0 d1 => true),
+  executable: true,
+  recursive_argument: ty
+}
+
+definition{
+  name: anyHeld,
+  parameters: [owner : CalculusCheck::Ty, edges : Edges, held : CalculusCheck::Ty],
+  result: Bool,
+  body: (match held
+    | CalculusCheck::Ty.TUnit => false
+    | CalculusCheck::Ty.TBool => false
+    | CalculusCheck::Ty.TNat => false
+    | CalculusCheck::Ty.TInt => false
+    | CalculusCheck::Ty.TFixed d0 => false
+    | CalculusCheck::Ty.TString => false
+    | CalculusCheck::Ty.TBytes => false
+    | CalculusCheck::Ty.TOrdering => false
+    | CalculusCheck::Ty.TOption d0 => false
+    | CalculusCheck::Ty.TResult d0 d1 => false
+    | CalculusCheck::Ty.TList d0 => false
+    | CalculusCheck::Ty.TPair d0 d1 => false
+    | CalculusCheck::Ty.TAdt d0 => false
+    | CalculusCheck::Ty.TFn d0 d1 => false
+    | CalculusCheck::Ty.TNil => false
+    | CalculusCheck::Ty.TCons head tail => (if (CalculusCheck::tyEq head owner) then true else (if (edgeHas edges head owner) then true else (anyHeld owner edges tail)))),
+  executable: true,
+  recursive_argument: held
+}
+
+definition{
+  name: cyclic,
+  parameters: [known : CalculusCheck::Ty, edges : Edges, owner : CalculusCheck::Ty, ty : CalculusCheck::Ty],
+  result: Bool,
+  body: (anyHeld owner edges (inPlace known (ctor CalculusCheck::Ty.TNil) ty)),
+  executable: true
+}
+
+definition{
+  name: fieldsOk,
+  parameters: [known : CalculusCheck::Ty, edges : Edges, inhabited : CalculusCheck::Ty, owner : CalculusCheck::Ty, fields : CalculusCheck::Ty],
+  result: Bool,
+  body: (match fields
+    | CalculusCheck::Ty.TUnit => true
+    | CalculusCheck::Ty.TBool => true
+    | CalculusCheck::Ty.TNat => true
+    | CalculusCheck::Ty.TInt => true
+    | CalculusCheck::Ty.TFixed d0 => true
+    | CalculusCheck::Ty.TString => true
+    | CalculusCheck::Ty.TBytes => true
+    | CalculusCheck::Ty.TOrdering => true
+    | CalculusCheck::Ty.TOption d0 => true
+    | CalculusCheck::Ty.TResult d0 d1 => true
+    | CalculusCheck::Ty.TList d0 => true
+    | CalculusCheck::Ty.TPair d0 d1 => true
+    | CalculusCheck::Ty.TAdt d0 => true
+    | CalculusCheck::Ty.TFn d0 d1 => true
+    | CalculusCheck::Ty.TNil => true
+    | CalculusCheck::Ty.TCons head tail => (if (if (cyclic known edges owner head) then true else (visible head inhabited)) then (fieldsOk known edges inhabited owner tail) else false)),
+  executable: true,
+  recursive_argument: fields
+}
+
+definition{
+  name: someVariantOk,
+  parameters: [known : CalculusCheck::Ty, edges : Edges, inhabited : CalculusCheck::Ty, owner : CalculusCheck::Ty, variants : CalculusCheck::Ty],
+  result: Bool,
+  body: (match variants
+    | CalculusCheck::Ty.TUnit => false
+    | CalculusCheck::Ty.TBool => false
+    | CalculusCheck::Ty.TNat => false
+    | CalculusCheck::Ty.TInt => false
+    | CalculusCheck::Ty.TFixed d0 => false
+    | CalculusCheck::Ty.TString => false
+    | CalculusCheck::Ty.TBytes => false
+    | CalculusCheck::Ty.TOrdering => false
+    | CalculusCheck::Ty.TOption d0 => false
+    | CalculusCheck::Ty.TResult d0 d1 => false
+    | CalculusCheck::Ty.TList d0 => false
+    | CalculusCheck::Ty.TPair d0 d1 => false
+    | CalculusCheck::Ty.TAdt d0 => false
+    | CalculusCheck::Ty.TFn d0 d1 => false
+    | CalculusCheck::Ty.TNil => false
+    | CalculusCheck::Ty.TCons head tail => (if (fieldsOk known edges inhabited owner head) then true else (someVariantOk known edges inhabited owner tail))),
+  executable: true,
+  recursive_argument: variants
+}
+
+definition{
+  name: inhabitRound,
+  parameters: [program : CalculusCheck::Program, known : CalculusCheck::Ty, closures : Clos, edges : Edges, owners : CalculusCheck::Ty, inhabited : CalculusCheck::Ty],
+  result: CalculusCheck::Ty,
+  body: (match owners
+    | CalculusCheck::Ty.TUnit => inhabited
+    | CalculusCheck::Ty.TBool => inhabited
+    | CalculusCheck::Ty.TNat => inhabited
+    | CalculusCheck::Ty.TInt => inhabited
+    | CalculusCheck::Ty.TFixed d0 => inhabited
+    | CalculusCheck::Ty.TString => inhabited
+    | CalculusCheck::Ty.TBytes => inhabited
+    | CalculusCheck::Ty.TOrdering => inhabited
+    | CalculusCheck::Ty.TOption d0 => inhabited
+    | CalculusCheck::Ty.TResult d0 d1 => inhabited
+    | CalculusCheck::Ty.TList d0 => inhabited
+    | CalculusCheck::Ty.TPair d0 d1 => inhabited
+    | CalculusCheck::Ty.TAdt d0 => inhabited
+    | CalculusCheck::Ty.TFn d0 d1 => inhabited
+    | CalculusCheck::Ty.TNil => inhabited
+    | CalculusCheck::Ty.TCons head tail => (inhabitRound program known closures edges tail (if (tyMember inhabited head) then inhabited else (if (someVariantOk known edges inhabited head (variantsOf program closures head)) then (tyAddNew inhabited head) else inhabited)))),
+  executable: true,
+  recursive_argument: owners
+}
+
+definition{
+  name: inhabitStep,
+  parameters: [program : CalculusCheck::Program, known : CalculusCheck::Ty, closures : Clos, edges : Edges, owners : CalculusCheck::Ty, inhabited : CalculusCheck::Ty],
+  result: (Option CalculusCheck::Ty),
+  body: (let next : CalculusCheck::Ty := (inhabitRound program known closures edges owners inhabited); (if ((CalculusCheck::tyChainLength next) =? (CalculusCheck::tyChainLength inhabited)) then (ctor Option.none [CalculusCheck::Ty]) else (ctor Option.some [CalculusCheck::Ty] next))),
+  executable: true
+}
+
+definition{
+  name: inhabitation,
+  parameters: [program : CalculusCheck::Program, known : CalculusCheck::Ty, closures : Clos, edges : Edges, owners : CalculusCheck::Ty],
+  result: CalculusCheck::Ty,
+  body: (first (prim iterate_until (fun [closures, edges, known, owners, program] (inhabited : CalculusCheck::Ty) => (inhabitStep program known closures edges owners inhabited)) (1 + (CalculusCheck::tyChainLength owners)) (ctor CalculusCheck::Ty.TNil) : (CalculusCheck::Ty * Bool))),
+  executable: true
+}
+
+definition{
+  name: anyInvisible,
+  parameters: [params : CalculusCheck::Ty, inhabited : CalculusCheck::Ty],
+  result: Bool,
+  body: (match params
+    | CalculusCheck::Ty.TUnit => false
+    | CalculusCheck::Ty.TBool => false
+    | CalculusCheck::Ty.TNat => false
+    | CalculusCheck::Ty.TInt => false
+    | CalculusCheck::Ty.TFixed d0 => false
+    | CalculusCheck::Ty.TString => false
+    | CalculusCheck::Ty.TBytes => false
+    | CalculusCheck::Ty.TOrdering => false
+    | CalculusCheck::Ty.TOption d0 => false
+    | CalculusCheck::Ty.TResult d0 d1 => false
+    | CalculusCheck::Ty.TList d0 => false
+    | CalculusCheck::Ty.TPair d0 d1 => false
+    | CalculusCheck::Ty.TAdt d0 => false
+    | CalculusCheck::Ty.TFn d0 d1 => false
+    | CalculusCheck::Ty.TNil => false
+    | CalculusCheck::Ty.TCons head tail => (if (visible head inhabited) then (anyInvisible tail inhabited) else true)),
+  executable: true,
+  recursive_argument: params
+}
+
+definition{
+  name: deadFlags,
+  parameters: [types : CalculusCheck::Ty, inhabited : CalculusCheck::Ty],
+  result: (List Bool),
+  body: (match types
+    | CalculusCheck::Ty.TUnit => (nil Bool)
+    | CalculusCheck::Ty.TBool => (nil Bool)
+    | CalculusCheck::Ty.TNat => (nil Bool)
+    | CalculusCheck::Ty.TInt => (nil Bool)
+    | CalculusCheck::Ty.TFixed d0 => (nil Bool)
+    | CalculusCheck::Ty.TString => (nil Bool)
+    | CalculusCheck::Ty.TBytes => (nil Bool)
+    | CalculusCheck::Ty.TOrdering => (nil Bool)
+    | CalculusCheck::Ty.TOption d0 => (nil Bool)
+    | CalculusCheck::Ty.TResult d0 d1 => (nil Bool)
+    | CalculusCheck::Ty.TList d0 => (nil Bool)
+    | CalculusCheck::Ty.TPair d0 d1 => (nil Bool)
+    | CalculusCheck::Ty.TAdt d0 => (nil Bool)
+    | CalculusCheck::Ty.TFn d0 d1 => (nil Bool)
+    | CalculusCheck::Ty.TNil => (nil Bool)
+    | CalculusCheck::Ty.TCons head tail => (cons (anyInvisible head inhabited) (deadFlags tail inhabited))),
+  executable: true,
+  recursive_argument: types
+}
+
+definition{
+  name: boolsEq,
+  parameters: [left : (List Bool), right : (List Bool)],
+  result: Bool,
+  body: (match left
+    | List.nil => (match right
+        | List.nil => true
+        | List.cons rh rt => false)
+    | List.cons lh lt => (match right
+        | List.nil => false
+        | List.cons rh rt => (if (prim equal lh rh : Bool) then (boolsEq lt rt) else false))),
+  executable: true,
+  recursive_argument: left
+}
+
+structure{
+  name: Liveness,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: dead, type: (List Bool)}, {name: closures, type: Clos}]
+}
+
+definition{
+  name: livenessStep,
+  parameters: [program : CalculusCheck::Program, bodies : CalculusCheck::Expr, known : CalculusCheck::Ty, edges : Edges, owners : CalculusCheck::Ty, state : Liveness],
+  result: (Option Liveness),
+  body: (let inhabited : CalculusCheck::Ty := (inhabitation program known (project state closures) edges owners); (let dead : (List Bool) := (deadFlags (project program types) inhabited); (if (boolsEq dead (project state dead)) then (ctor Option.none [Liveness]) else (ctor Option.some [Liveness] (record Liveness [] {dead := dead, closures := (project (collectFunctions program (record Collect [] {known := known, closures := (ctor Clos.ClNil)}) bodies 0 dead) closures)}))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: falses,
+  parameters: [count : Nat],
+  result: (List Bool),
+  body: (match count
+    | Nat.zero => (nil Bool)
+    | Nat.succ previous => (cons false (falses previous))),
+  executable: true,
+  recursive_argument: count
+}
+
+definition{
+  name: flagAt,
+  parameters: [flags : (List Bool), index : Nat],
+  result: Bool,
+  body: (match (CalculusCheck::listAt [Bool] flags index)
+    | Option.some flag => flag
+    | Option.none => false),
+  executable: true
+}
+
+definition{
+  name: callsFail,
+  parameters: [calls : (List Nat), flags : (List Bool)],
+  result: Bool,
+  body: (match calls
+    | List.nil => false
+    | List.cons head tail => (if (flagAt flags head) then true else (callsFail tail flags))),
+  executable: true,
+  recursive_argument: calls
+}
+
+definition{
+  name: closuresFail,
+  parameters: [closures : Clos, fnTy : CalculusCheck::Ty, flags : (List Bool)],
+  result: Bool,
+  body: (match closures
+    | Clos.ClNil => false
+    | Clos.ClCons known member captured rest => (if (CalculusCheck::tyEq known fnTy) then (if (flagAt flags member) then true else (closuresFail rest fnTy flags)) else (closuresFail rest fnTy flags))),
+  executable: true,
+  recursive_argument: closures
+}
+
+definition{
+  name: appliesFail,
+  parameters: [applies : CalculusCheck::Ty, closures : Clos, flags : (List Bool)],
+  result: Bool,
+  body: (match applies
+    | CalculusCheck::Ty.TUnit => false
+    | CalculusCheck::Ty.TBool => false
+    | CalculusCheck::Ty.TNat => false
+    | CalculusCheck::Ty.TInt => false
+    | CalculusCheck::Ty.TFixed d0 => false
+    | CalculusCheck::Ty.TString => false
+    | CalculusCheck::Ty.TBytes => false
+    | CalculusCheck::Ty.TOrdering => false
+    | CalculusCheck::Ty.TOption d0 => false
+    | CalculusCheck::Ty.TResult d0 d1 => false
+    | CalculusCheck::Ty.TList d0 => false
+    | CalculusCheck::Ty.TPair d0 d1 => false
+    | CalculusCheck::Ty.TAdt d0 => false
+    | CalculusCheck::Ty.TFn d0 d1 => false
+    | CalculusCheck::Ty.TNil => false
+    | CalculusCheck::Ty.TCons head tail => (if (closuresFail closures head flags) then true else (appliesFail tail closures flags))),
+  executable: true,
+  recursive_argument: applies
+}
+
+definition{
+  name: failStep,
+  parameters: [facts : Facts, closures : Clos, flags : (List Bool), index : Nat],
+  result: (List Bool),
+  body: (match facts
+    | Facts.FactsNil => (nil Bool)
+    | Facts.FactsCons own calls applies rest => (cons (if (if own then true else (if (flagAt flags index) then true else (callsFail calls flags))) then true else (appliesFail applies closures flags)) (failStep rest closures flags (index + 1)))),
+  executable: true,
+  recursive_argument: facts
+}
+
+definition{
+  name: failNext,
+  parameters: [facts : Facts, closures : Clos, flags : (List Bool)],
+  result: (Option (List Bool)),
+  body: (let next : (List Bool) := (failStep facts closures flags 0); (if (boolsEq next flags) then (ctor Option.none [(List Bool)]) else (ctor Option.some [(List Bool)] next))),
+  executable: true
+}
+
+definition{
+  name: fallibleFunctions,
+  parameters: [spec : Bytes, adts : CalculusCheck::Ty, parameters : (List (List Nat)), types : CalculusCheck::Ty, results : CalculusCheck::Ty, bodies : CalculusCheck::Expr],
+  result: (List Bool),
+  body: (let program : CalculusCheck::Program := (record CalculusCheck::Program {spec := spec, adts := adts, parameters := parameters, types := types, results := results, bodies := bodies}); (let count : Nat := (CalculusCheck::exprChainLength bodies); (let registered : CalculusCheck::Ty := (register (register (register (ctor CalculusCheck::Ty.TNil) types) results) adts); (let initial : Collect := (collectFunctions program (record Collect [] {known := registered, closures := (ctor Clos.ClNil)}) bodies 0 (nil Bool)); (let known : CalculusCheck::Ty := (project initial known); (let owners : CalculusCheck::Ty := (tyAppend (adtOwners (CalculusCheck::tyChainLength adts)) known); (let direct : Edges := (allEdges program known (project initial closures) owners (ctor Edges.EdgeNil)); (let edges : Edges := (closeEdges direct (1 + (prim multiply (CalculusCheck::tyChainLength owners) (CalculusCheck::tyChainLength owners) : Nat))); (let live : Liveness := (first (prim iterate_until (fun [bodies, edges, known, owners, program] (state : Liveness) => (livenessStep program bodies known edges owners state)) (1 + count) (record Liveness [] {dead := (falses count), closures := (project initial closures)}) : (Liveness * Bool))); (let facts : Facts := (reachFunctions program bodies 0); (first (prim iterate_until (fun [facts, live] (flags : (List Bool)) => (failNext facts (project live closures) flags)) (1 + count) (falses count) : ((List Bool) * Bool))))))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}
