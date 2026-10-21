@@ -1046,8 +1046,8 @@ const PLANTS: [super::Plant; 12] = [
     },
     super::Plant {
         label: "the byte string separator has no space",
-        site: "(if ((first state) =? 0) then (second state) else (putS (second state) \", \"))",
-        replacement: "(if ((first state) =? 0) then (second state) else (putS (second state) \",\"))",
+        site: "(putS (if ((first state) =? 0) then (second state) else (putS (second state) \", \")) \"0x\")",
+        replacement: "(putS (if ((first state) =? 0) then (second state) else (putS (second state) \",\")) \"0x\")",
         root: "printExpr",
     },
     super::Plant {
