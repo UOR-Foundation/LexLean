@@ -9748,17 +9748,17 @@ packages (the records are regenerated at landing).
 
 `BS-06` holds the two production roots of `LexLeanBoot.RustPrint`
 (`bootstrap/src/RustPrint.lex.tex`, over `RustAst.lex.tex`) to the oracle,
-`calculus::rust::ast::{print, print_expr}`. The case runs 598 vectors of
-`printCrate` (456 the distinct committed crates: 228 lowered by the renderer
-from 169 programs, and the crates of 252 packages; the hand-built crates; the
+`calculus::rust::ast::{print, print_expr}`. The case runs 604 vectors of
+`printCrate` (462 the distinct committed crates: 231 lowered by the renderer
+from 172 programs, and the crates of 255 packages; the hand-built crates; the
 real header of each profile; 56 refused for a capacity one byte short) and
-1,937 of `printExpr` (1,404 hand-built: every literal at the edge of each
+1,955 of `printExpr` (1,404 hand-built: every literal at the edge of each
 width and sign, the 128 ASCII scalars and the edges of UTF-8 in strings, byte
 strings, every runtime row and machine primitive with its operands and with
 one too many, every constructor, pattern, block, conditional, match with a
 scrutinee that begins with a brace, and loop) under the pinned rustc on
 every host (42 harness binaries, 504 s: the part the host matrix runs), and on
-the normative host the evaluator on 539 + 1,937 of them (the crates of at most
+the normative host the evaluator on 541 + 1,955 of them (the crates of at most
 6,000 nodes of data), 400 + 399 seeded mutants of the crates of at most 80
 expressions, 2,984 more mutants under rustc (67 s), twelve planted defects, and
 the production export of the project (the whole case: 1,658 s on this host,

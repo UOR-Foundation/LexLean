@@ -333,8 +333,8 @@ and Unreleased holds what has landed since.
   because a chain of `append` is quadratic (the work counter quadruples as n
   doubles). `bootstrap/src/RustPrint.lex.tex` over `RustAst.lex.tex` declares
   `printCrate` and `printExpr` as production roots for `rust-std`. `BS-06`
-  runs 2,535 vectors under the pinned `rustc` on every host, and on the
-  normative host the evaluator on 539 + 1,937 of them and 400 + 399 seeded
+  runs 2,559 vectors under the pinned `rustc` on every host, and on the
+  normative host the evaluator on 541 + 1,955 of them and 400 + 399 seeded
   mutants, 2,984 more under `rustc`, twelve planted defects, and the certified
   packages against the committed ones. The register is 445 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):

@@ -20,7 +20,17 @@ definition{
   name: new,
   parameters: [capacity : Nat],
   result: Buffer,
-  body: (record Buffer [] {sealed := (nil Bytes), pending := 0x, size := 0, capacity := capacity, refused := false}),
+  body: record{
+    type: Buffer,
+    fields: [
+      {field: sealed, value: (nil Bytes)},
+      {field: pending, value: 0x},
+      {field: size, value: 0},
+      {field: capacity, value: capacity},
+      {field: refused, value: false}
+    ],
+    type_arguments: []
+  },
   executable: true
 }
 
@@ -44,7 +54,17 @@ definition{
   name: refuse,
   parameters: [buffer : Buffer],
   result: Buffer,
-  body: (record Buffer [] {sealed := (project buffer sealed), pending := (project buffer pending), size := (project buffer size), capacity := (project buffer capacity), refused := true}),
+  body: record{
+    type: Buffer,
+    fields: [
+      {field: sealed, value: (project buffer sealed)},
+      {field: pending, value: (project buffer pending)},
+      {field: size, value: (project buffer size)},
+      {field: capacity, value: (project buffer capacity)},
+      {field: refused, value: true}
+    ],
+    type_arguments: []
+  },
   executable: true
 }
 
@@ -52,7 +72,27 @@ definition{
   name: seal,
   parameters: [buffer : Buffer, joined : Bytes, grown : Nat],
   result: Buffer,
-  body: (if (256 <=? (prim length joined : Nat)) then (record Buffer [] {sealed := (cons joined (project buffer sealed)), pending := 0x, size := grown, capacity := (project buffer capacity), refused := false}) else (record Buffer [] {sealed := (project buffer sealed), pending := joined, size := grown, capacity := (project buffer capacity), refused := false})),
+  body: (if (256 <=? (prim length joined : Nat)) then record{
+    type: Buffer,
+    fields: [
+      {field: sealed, value: (cons joined (project buffer sealed))},
+      {field: pending, value: 0x},
+      {field: size, value: grown},
+      {field: capacity, value: (project buffer capacity)},
+      {field: refused, value: false}
+    ],
+    type_arguments: []
+  } else record{
+    type: Buffer,
+    fields: [
+      {field: sealed, value: (project buffer sealed)},
+      {field: pending, value: joined},
+      {field: size, value: grown},
+      {field: capacity, value: (project buffer capacity)},
+      {field: refused, value: false}
+    ],
+    type_arguments: []
+  }),
   executable: true
 }
 
@@ -114,6 +154,7 @@ definition{
   body: (if (project buffer refused) then (ctor Result.error [Bytes, Bytes] (prim utf8_encode "output exceeds the capacity of the buffer" : Bytes)) else (ctor Result.ok [Bytes, Bytes] (joinAll (Text::reverse (cons (project buffer pending) (project buffer sealed)))))),
   executable: true
 }
+
 definition{
   name: digit,
   parameters: [number : Nat, place : Nat],
