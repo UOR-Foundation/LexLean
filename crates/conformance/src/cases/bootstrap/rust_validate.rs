@@ -2563,7 +2563,6 @@ fn parse_deep(line: &str) -> Result<Json, serde_json::Error> {
     Ok(value)
 }
 
-
 /// The rendered `rust-std` packages of the roots, compiled by the pinned
 /// rustc, run on `runs` of each root: one outcome per run, each equal to the
 /// oracle's. Returns the number of runs.

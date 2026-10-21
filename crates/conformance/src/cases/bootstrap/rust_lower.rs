@@ -19,8 +19,8 @@ use lexlean::calculus::{Arm, Expr, Function, Prim, Program, Shape, Ty, Value};
 use serde_json::Value as Json;
 
 use super::calculus_check::{
-    adt as constructor, committed, enc_ty, literal_corpus, mutants, prim_corpus, program_arguments, program_of,
-    program_size, shape_corpus, targeted, ty_chain, Source,
+    adt as constructor, committed, enc_ty, literal_corpus, mutants, prim_corpus, program_arguments,
+    program_of, program_size, shape_corpus, targeted, ty_chain, Source,
 };
 use super::{bool_val as boolean, list, Run, Seeded};
 use crate::support;
@@ -31,7 +31,10 @@ const MODULE: &str = "LexLeanBoot.RustLower";
 /// declaration admits, which are exactly the effects its closure realizes.
 const ROOTS: [(&str, &[&str]); 2] = [
     ("deadFunctions", &["allocation", "overflow", "recursion"]),
-    ("fallibleFunctions", &["allocation", "overflow", "recursion"]),
+    (
+        "fallibleFunctions",
+        &["allocation", "overflow", "recursion"],
+    ),
 ];
 
 /// The module of the typing root, which is `CalculusCheck`'s own.
@@ -80,10 +83,7 @@ fn run(program: &Program) -> Option<Legs> {
         .chain([flags(dead.clone())])
         .collect();
     Some(Legs {
-        sites: (
-            base,
-            serde_json::to_value(&tree).expect("a value is JSON"),
-        ),
+        sites: (base, serde_json::to_value(&tree).expect("a value is JSON")),
         dead: (
             with_tree,
             serde_json::to_value(flags(dead)).expect("a value is JSON"),
@@ -178,8 +178,11 @@ fn analysis() -> Vec<Program> {
                 Vec::new(),
                 Ty::Nat,
                 Expr::Prim {
+                    operands: match operation {
+                        Prim::NatQuot | Prim::NatRem => vec![nat(1), nat(2), nat(3)],
+                        _ => vec![nat(1), nat(2)],
+                    },
                     operation,
-                    operands: vec![nat(1), nat(2)],
                 },
             )],
         ));
@@ -273,13 +276,17 @@ fn analysis() -> Vec<Program> {
             ),
         ],
     ));
-    // A type with no constructor, a function of an argument of it whose
-    // closure would make an application fail, and a closure that counts.
-    let empty = vec![Vec::<Vec<Ty>>::new()];
+    // A function type no closure inhabits (the checker refuses a type with no
+    // constructor), a function of an argument of it whose closure would make
+    // an application fail, and a closure that counts: the dead function's
+    // closure is the only one of its type, so the application's function
+    // becomes dead in a second round, and nothing fails.
+    let unfilled = function_type(vec![Ty::Bool], Ty::Nat);
+    let empty = Vec::<Vec<Vec<Ty>>>::new();
     out.push(program_of(
         empty.clone(),
         vec![
-            function(vec![adt(0)], fun.clone(), closure(1, Vec::new())),
+            function(vec![unfilled.clone()], fun.clone(), closure(1, Vec::new())),
             function(vec![Ty::Nat], Ty::Nat, add(var(0), var(0))),
             function(
                 vec![fun.clone()],
@@ -295,7 +302,7 @@ fn analysis() -> Vec<Program> {
     out.push(program_of(
         empty,
         vec![
-            function(vec![adt(0)], fun.clone(), closure(1, Vec::new())),
+            function(vec![unfilled.clone()], fun.clone(), closure(1, Vec::new())),
             function(vec![Ty::Nat], Ty::Nat, add(var(0), var(0))),
             function(
                 vec![fun.clone()],
@@ -324,14 +331,14 @@ fn analysis() -> Vec<Program> {
             left: Box::new(Ty::Nat),
             right: Box::new(adt(1)),
         }]],
-        Vec::<Vec<Ty>>::new(),
+        vec![vec![adt(1)]],
     ];
     let through_result = vec![
         vec![vec![Ty::Result {
             ok: Box::new(adt(1)),
             error: Box::new(Ty::Nat),
         }]],
-        Vec::<Vec<Ty>>::new(),
+        vec![vec![adt(1)]],
     ];
     for declared in [list_like, only_self, paired, hollow, through_result] {
         for argument in 0..declared.len() as u64 {
@@ -504,7 +511,10 @@ fn seeded_mutants(
 
 /// One leg of each vector: the runs of a root.
 fn runs(vectors: &[&Vector], leg: fn(&Legs) -> &Run) -> Vec<Run> {
-    vectors.iter().map(|vector| leg(&vector.legs).clone()).collect()
+    vectors
+        .iter()
+        .map(|vector| leg(&vector.legs).clone())
+        .collect()
 }
 
 fn sites_leg(legs: &Legs) -> &Run {
@@ -724,6 +734,21 @@ pub(super) fn case() {
     );
     eligibility(&project);
     let sources = committed();
+    // The programs of the rules are the claim's evidence: a program the
+    // checker refuses is no vector, so none may be refused, and the rule of
+    // the dead functions must have a program with a dead function in it.
+    let rules = analysis();
+    for (at, program) in rules.iter().enumerate() {
+        if let Err(reason) = rust::fallible_functions(program) {
+            panic!("rule program {at} is refused by the checker: {reason}");
+        }
+    }
+    assert!(
+        rules
+            .iter()
+            .any(|program| rust::dead_functions(program).is_ok_and(|dead| dead.contains(&true))),
+        "some rule program has a dead function"
+    );
     let all = vectors(&sources);
     let evaluator: Vec<&Vector> = all
         .iter()
@@ -811,7 +836,10 @@ pub(super) fn case() {
             "{}: the plant site occurs once",
             plant.label
         );
-        planted.write(plant.file, &source.replacen(plant.site, plant.replacement, 1));
+        planted.write(
+            plant.file,
+            &source.replacen(plant.site, plant.replacement, 1),
+        );
         let checked = support::checked_project(&planted);
         let low = super::lower(&checked, &planted, plant.module, plant.root);
         let runs = &detection
@@ -852,13 +880,21 @@ pub(super) fn case() {
     }
     let mut realized = 0usize;
     for exported_root in &exported.output.result.roots {
-        let (low, member) = if let Some(member) = exported_root.root.strip_prefix(&format!("{MODULE}.")) {
-            (if member == "deadFunctions" { &dead } else { &fallible }, member)
-        } else if exported_root.root == format!("{TYPING}.siteTrees") {
-            (&sites, "siteTrees")
-        } else {
-            continue;
-        };
+        let (low, member) =
+            if let Some(member) = exported_root.root.strip_prefix(&format!("{MODULE}.")) {
+                (
+                    if member == "deadFunctions" {
+                        &dead
+                    } else {
+                        &fallible
+                    },
+                    member,
+                )
+            } else if exported_root.root == format!("{TYPING}.siteTrees") {
+                (&sites, "siteTrees")
+            } else {
+                continue;
+            };
         for output in &exported_root.outputs {
             let package: Json = serde_json::from_slice(
                 &std::fs::read(
@@ -878,7 +914,11 @@ pub(super) fn case() {
             realized += 1;
         }
     }
-    assert_eq!(realized, ROOTS.len() + 1, "one certified package per root, and the typing root");
+    assert_eq!(
+        realized,
+        ROOTS.len() + 1,
+        "one certified package per root, and the typing root"
+    );
     eprintln!("BS-07: passed in {:?}", started.elapsed());
 }
 
