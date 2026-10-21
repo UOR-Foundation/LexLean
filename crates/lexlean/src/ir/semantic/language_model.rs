@@ -659,6 +659,17 @@ fn plain_definition(
     model::ordinary_definition(name.to_owned(), &[], parameters, result, body, false)
 }
 
+/// A definition a production root may call: its body applies only
+/// executable definitions (the production forms of the library's functions).
+fn executable_definition(
+    name: &str,
+    parameters: Vec<SemanticParameter>,
+    result: SemanticType,
+    body: SemanticTerm,
+) -> SemanticDeclaration {
+    model::ordinary_definition(name.to_owned(), &[], parameters, result, body, true)
+}
+
 /// A member of the module that declares `owner`: the derived definition
 /// `owner.suffix`, in `owner`'s module when it is imported.
 fn sibling(owner: &MemberRef, suffix: &str) -> MemberRef {
@@ -852,19 +863,19 @@ fn check_context_window(
         )
     };
     let declarations = vec![
-        plain_definition(
+        executable_definition(
             &capacity_name,
             Vec::new(),
             SemanticType::Nat,
             model::nat(*capacity),
         ),
-        plain_definition(
+        executable_definition(
             &admit,
             vec![parameter(TOKENS, tokens())],
             model::option_type(tokens()),
             production_call(admit_with, vec![capacity_term(), model::var(TOKENS)]),
         ),
-        plain_definition(
+        executable_definition(
             &push,
             vec![
                 parameter(TOKENS, tokens()),
