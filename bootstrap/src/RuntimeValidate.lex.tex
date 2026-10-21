@@ -211,7 +211,7 @@ definition{
   parameters: [literal : String],
   result: Bytes,
   body: (prim utf8_encode literal : Bytes),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -1114,26 +1114,26 @@ definition{
   parameters: [t : Ty],
   result: Ty,
   body: (match t
-    | Ty.TyUnit => t
-    | Ty.TyBool => t
-    | Ty.TyNat => t
-    | Ty.TyFixed => t
-    | Ty.TyOrdering => t
-    | Ty.TySelf => t
-    | Ty.TyParam d0 => t
+    | Ty.TyUnit => (ctor Ty.TyUnit)
+    | Ty.TyBool => (ctor Ty.TyBool)
+    | Ty.TyNat => (ctor Ty.TyNat)
+    | Ty.TyFixed => (ctor Ty.TyFixed)
+    | Ty.TyOrdering => (ctor Ty.TyOrdering)
+    | Ty.TySelf => (ctor Ty.TySelf)
+    | Ty.TyParam d0 => (ctor Ty.TyParam d0)
     | Ty.TyRef inner => (stripRefs inner)
     | Ty.TyRefMut inner => (stripRefs inner)
-    | Ty.TyPair d0 d1 => t
-    | Ty.TyNamed d0 d1 => t
-    | Ty.TyWide => t
-    | Ty.TySize => t
-    | Ty.TyChar => t
-    | Ty.TyStr => t
-    | Ty.TySlice d0 => t
-    | Ty.TyUnknown => t
-    | Ty.TyAbsent => t
-    | Ty.TyNil => t
-    | Ty.TyCons d0 d1 => t),
+    | Ty.TyPair d0 d1 => (ctor Ty.TyPair d0 d1)
+    | Ty.TyNamed d0 d1 => (ctor Ty.TyNamed d0 d1)
+    | Ty.TyWide => (ctor Ty.TyWide)
+    | Ty.TySize => (ctor Ty.TySize)
+    | Ty.TyChar => (ctor Ty.TyChar)
+    | Ty.TyStr => (ctor Ty.TyStr)
+    | Ty.TySlice d0 => (ctor Ty.TySlice d0)
+    | Ty.TyUnknown => (ctor Ty.TyUnknown)
+    | Ty.TyAbsent => (ctor Ty.TyAbsent)
+    | Ty.TyNil => (ctor Ty.TyNil)
+    | Ty.TyCons d0 d1 => (ctor Ty.TyCons d0 d1)),
   axioms: [propext],
   executable: true,
   recursive_argument: t
