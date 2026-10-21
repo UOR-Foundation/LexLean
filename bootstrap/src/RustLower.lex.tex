@@ -408,7 +408,7 @@ definition{
     | CalculusCheck::Expr.ENil => state
     | CalculusCheck::Expr.ECons body rest => (let live : Bool := (match (CalculusCheck::listAt [Bool] dead index)
       | Option.some flag => (not flag)
-      | Option.none => true); (let inner : Collect := (if live then (collectTerm program state body (CalculusCheck::tyFirst sites)) else state); (collectFunctions program inner rest (index + 1) dead (CalculusCheck::tySecond sites))))
+      | Option.none => true); (let inner : Collect := (if live then (collectTerm program state body (kidA sites)) else state); (collectFunctions program inner rest (index + 1) dead (kidB sites))))
     | CalculusCheck::Expr.EArm d0 d1 d2 => state),
   executable: true,
   recursive_argument: bodies
@@ -538,7 +538,7 @@ definition{
         {field: applies, value: (ctor CalculusCheck::Ty.TNil)}
       ],
       type_arguments: []
-    } body (CalculusCheck::tyFirst sites)); (ctor Facts.FactsCons (project found own) (project found calls) (project found applies) (reachFunctions program rest (index + 1) (CalculusCheck::tySecond sites))))
+    } body (kidA sites)); (ctor Facts.FactsCons (project found own) (project found calls) (project found applies) (reachFunctions program rest (index + 1) (kidB sites))))
     | CalculusCheck::Expr.EArm d0 d1 d2 => (ctor Facts.FactsNil)),
   executable: true,
   recursive_argument: bodies

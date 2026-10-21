@@ -1889,54 +1889,36 @@ definition{
 
 definition{
   name: siteTree,
-  parameters: [program : Program, expr : Expr, scope : (List (Nat * Ty)), subject : Ty],
+  parameters: [
+    program : Program,
+    expr : Expr,
+    scope : (List (Nat * Ty)),
+    subject : Ty,
+    position : Nat
+  ],
   result: Ty,
   body: (match expr
     | Expr.EValue ty value => (ctor Ty.TNil)
     | Expr.EVar name => (ctor Ty.TNil)
-    | Expr.ELet name ty bound body => (ctor Ty.TPair (ctor Ty.TNil) (ctor Ty.TCons (siteTree program bound scope (ctor Ty.TNil)) (ctor Ty.TCons (siteTree program body (extendScope name ty scope) (ctor Ty.TNil)) (ctor Ty.TNil))))
-    | Expr.ECond condition thenBranch elseBranch => (ctor Ty.TPair (ctor Ty.TNil) (ctor Ty.TCons (siteTree program condition scope (ctor Ty.TNil)) (ctor Ty.TCons (siteTree program thenBranch scope (ctor Ty.TNil)) (ctor Ty.TCons (siteTree program elseBranch scope (ctor Ty.TNil)) (ctor Ty.TNil)))))
-    | Expr.EMatch ty scrutinee arms => (let seen : Ty := (inferTy program scrutinee scope); (ctor Ty.TPair seen (ctor Ty.TCons (siteTree program scrutinee scope (ctor Ty.TNil)) (ctor Ty.TCons (siteTree program arms scope seen) (ctor Ty.TNil)))))
-    | Expr.EBuild shape ty operands => (ctor Ty.TPair (ctor Ty.TNil) (ctor Ty.TCons (siteTree program operands scope (ctor Ty.TNil)) (ctor Ty.TNil)))
-    | Expr.ECall function operands => (ctor Ty.TPair (ctor Ty.TNil) (ctor Ty.TCons (siteTree program operands scope (ctor Ty.TNil)) (ctor Ty.TNil)))
-    | Expr.EClosure function captures => (ctor Ty.TPair (ctor Ty.TNil) (ctor Ty.TCons (siteTree program captures scope (ctor Ty.TNil)) (ctor Ty.TNil)))
-    | Expr.EApply target operands => (ctor Ty.TPair (inferTy program target scope) (ctor Ty.TCons (siteTree program target scope (ctor Ty.TNil)) (ctor Ty.TCons (siteTree program operands scope (ctor Ty.TNil)) (ctor Ty.TNil))))
-    | Expr.EPrim operation operands => (ctor Ty.TPair (ctor Ty.TNil) (ctor Ty.TCons (siteTree program operands scope (ctor Ty.TNil)) (ctor Ty.TNil)))
-    | Expr.EFirst value => (ctor Ty.TPair (ctor Ty.TNil) (ctor Ty.TCons (siteTree program value scope (ctor Ty.TNil)) (ctor Ty.TNil)))
-    | Expr.ESecond value => (ctor Ty.TPair (ctor Ty.TNil) (ctor Ty.TCons (siteTree program value scope (ctor Ty.TNil)) (ctor Ty.TNil)))
-    | Expr.EField value index => (ctor Ty.TPair (ctor Ty.TNil) (ctor Ty.TCons (siteTree program value scope (ctor Ty.TNil)) (ctor Ty.TNil)))
+    | Expr.ELet name ty bound body => (ctor Ty.TPair (ctor Ty.TNil) (ctor Ty.TCons (siteTree program bound scope (ctor Ty.TNil) 0) (ctor Ty.TCons (siteTree program body (extendScope name ty scope) (ctor Ty.TNil) 0) (ctor Ty.TNil))))
+    | Expr.ECond condition thenBranch elseBranch => (ctor Ty.TPair (ctor Ty.TNil) (ctor Ty.TCons (siteTree program condition scope (ctor Ty.TNil) 0) (ctor Ty.TCons (siteTree program thenBranch scope (ctor Ty.TNil) 0) (ctor Ty.TCons (siteTree program elseBranch scope (ctor Ty.TNil) 0) (ctor Ty.TNil)))))
+    | Expr.EMatch ty scrutinee arms => (let seen : Ty := (inferTy program scrutinee scope); (ctor Ty.TPair seen (ctor Ty.TCons (siteTree program scrutinee scope (ctor Ty.TNil) 0) (ctor Ty.TCons (siteTree program arms scope seen 0) (ctor Ty.TNil)))))
+    | Expr.EBuild shape ty operands => (ctor Ty.TPair (ctor Ty.TNil) (ctor Ty.TCons (siteTree program operands scope (ctor Ty.TNil) 0) (ctor Ty.TNil)))
+    | Expr.ECall function operands => (ctor Ty.TPair (ctor Ty.TNil) (ctor Ty.TCons (siteTree program operands scope (ctor Ty.TNil) 0) (ctor Ty.TNil)))
+    | Expr.EClosure function captures => (ctor Ty.TPair (ctor Ty.TNil) (ctor Ty.TCons (siteTree program captures scope (ctor Ty.TNil) 0) (ctor Ty.TNil)))
+    | Expr.EApply target operands => (ctor Ty.TPair (inferTy program target scope) (ctor Ty.TCons (siteTree program target scope (ctor Ty.TNil) 0) (ctor Ty.TCons (siteTree program operands scope (ctor Ty.TNil) 0) (ctor Ty.TNil))))
+    | Expr.EPrim operation operands => (ctor Ty.TPair (ctor Ty.TNil) (ctor Ty.TCons (siteTree program operands scope (ctor Ty.TNil) 0) (ctor Ty.TNil)))
+    | Expr.EFirst value => (ctor Ty.TPair (ctor Ty.TNil) (ctor Ty.TCons (siteTree program value scope (ctor Ty.TNil) 0) (ctor Ty.TNil)))
+    | Expr.ESecond value => (ctor Ty.TPair (ctor Ty.TNil) (ctor Ty.TCons (siteTree program value scope (ctor Ty.TNil) 0) (ctor Ty.TNil)))
+    | Expr.EField value index => (ctor Ty.TPair (ctor Ty.TNil) (ctor Ty.TCons (siteTree program value scope (ctor Ty.TNil) 0) (ctor Ty.TNil)))
     | Expr.ENil => (ctor Ty.TNil)
-    | Expr.ECons head tail => (ctor Ty.TPair (ctor Ty.TNil) (ctor Ty.TCons (siteTree program head scope subject) (ctor Ty.TCons (siteTree program tail scope subject) (ctor Ty.TNil))))
-    | Expr.EArm shape binders body => (ctor Ty.TPair (ctor Ty.TNil) (ctor Ty.TCons (siteTree program body (bindAll binders (armFields program shape subject) scope) (ctor Ty.TNil)) (ctor Ty.TNil)))),
+    | Expr.ECons head tail => (match position
+      | Nat.zero => (ctor Ty.TPair (ctor Ty.TNil) (ctor Ty.TCons (siteTree program head scope subject 0) (ctor Ty.TCons (siteTree program tail scope subject 0) (ctor Ty.TNil))))
+      | Nat.succ previous => (ctor Ty.TPair (ctor Ty.TNil) (ctor Ty.TCons (siteTree program head (bindAll (functionNames program previous) (functionTypesOr program previous) (nil (Nat * Ty))) (ctor Ty.TNil) 0) (ctor Ty.TCons (siteTree program tail scope subject (position + 1)) (ctor Ty.TNil)))))
+    | Expr.EArm shape binders body => (ctor Ty.TPair (ctor Ty.TNil) (ctor Ty.TCons (siteTree program body (bindAll binders (armFields program shape subject) scope) (ctor Ty.TNil) 0) (ctor Ty.TNil)))),
   axioms: [Quot.sound, propext],
   executable: true,
   recursive_argument: expr
-}
-
-definition{
-  name: siteBodies,
-  parameters: [program : Program, bodies : Expr, index : Nat],
-  result: Ty,
-  body: (match bodies
-    | Expr.ECons body rest => (ctor Ty.TCons (siteTree program body (bindAll (functionNames program index) (functionTypesOr program index) (nil (Nat * Ty))) (ctor Ty.TNil)) (siteBodies program rest (index + 1)))
-    | Expr.ENil => (ctor Ty.TNil)
-    | Expr.EValue d0 d1 => (ctor Ty.TNil)
-    | Expr.EVar d0 => (ctor Ty.TNil)
-    | Expr.ELet d0 d1 d2 d3 => (ctor Ty.TNil)
-    | Expr.ECond d0 d1 d2 => (ctor Ty.TNil)
-    | Expr.EMatch d0 d1 d2 => (ctor Ty.TNil)
-    | Expr.EBuild d0 d1 d2 => (ctor Ty.TNil)
-    | Expr.ECall d0 d1 => (ctor Ty.TNil)
-    | Expr.EClosure d0 d1 => (ctor Ty.TNil)
-    | Expr.EApply d0 d1 => (ctor Ty.TNil)
-    | Expr.EPrim d0 d1 => (ctor Ty.TNil)
-    | Expr.EFirst d0 => (ctor Ty.TNil)
-    | Expr.ESecond d0 => (ctor Ty.TNil)
-    | Expr.EField d0 d1 => (ctor Ty.TNil)
-    | Expr.EArm d0 d1 d2 => (ctor Ty.TNil)),
-  axioms: [Quot.sound, propext],
-  executable: true,
-  recursive_argument: bodies
 }
 
 definition{
@@ -1950,7 +1932,7 @@ definition{
     bodies : Expr
   ],
   result: Ty,
-  body: (siteBodies (record Program {spec := spec, adts := adts, parameters := parameters, types := types, results := results, bodies := bodies}) bodies 0),
+  body: (siteTree (record Program {spec := spec, adts := adts, parameters := parameters, types := types, results := results, bodies := bodies}) bodies (nil (Nat * Ty)) (ctor Ty.TNil) 1),
   axioms: [Quot.sound, propext],
   executable: true,
   production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
