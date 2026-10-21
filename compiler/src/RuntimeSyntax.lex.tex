@@ -25,11 +25,7 @@ inductive{
   name: RtLit,
   type_parameters: [],
   parameters: [],
-  constructors: [
-    {name: unit, fields: []},
-    {name: bool, fields: [Bool]},
-    {name: nat, fields: [Nat]}
-  ]
+  constructors: [{name: unit, fields: []}, {name: bool, fields: [Bool]}, {name: nat, fields: [Nat]}]
 }
 
 inductive{
@@ -95,14 +91,24 @@ structure{
   name: RtSig,
   type_parameters: [],
   parameters: [],
-  fields: [{name: name, type: String}, {name: receiver, type: Bool}, {name: parameters, type: (List RtParam)}, {name: result, type: RtType}]
+  fields: [
+    {name: name, type: String},
+    {name: receiver, type: Bool},
+    {name: parameters, type: (List RtParam)},
+    {name: result, type: RtType}
+  ]
 }
 
 structure{
   name: RtFn,
   type_parameters: [],
   parameters: [],
-  fields: [{name: signature, type: RtSig}, {name: generics, type: (List RtGeneric)}, {name: public, type: Bool}, {name: body, type: RtBlock}]
+  fields: [
+    {name: signature, type: RtSig},
+    {name: generics, type: (List RtGeneric)},
+    {name: public, type: Bool},
+    {name: body, type: RtBlock}
+  ]
 }
 
 inductive{

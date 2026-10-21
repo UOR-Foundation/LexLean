@@ -9,14 +9,22 @@ inductive{
   name: RtOutcome,
   type_parameters: [],
   parameters: [],
-  constructors: [{name: value, fields: [TargetSyntax::Value]}, {name: stuck, fields: []}, {name: exhausted, fields: []}]
+  constructors: [
+    {name: value, fields: [TargetSyntax::Value]},
+    {name: stuck, fields: []},
+    {name: exhausted, fields: []}
+  ]
 }
 
 inductive{
   name: RtOutcomes,
   type_parameters: [],
   parameters: [],
-  constructors: [{name: values, fields: [(List TargetSyntax::Value)]}, {name: stuck, fields: []}, {name: exhausted, fields: []}]
+  constructors: [
+    {name: values, fields: [(List TargetSyntax::Value)]},
+    {name: stuck, fields: []},
+    {name: exhausted, fields: []}
+  ]
 }
 
 definition{
@@ -148,32 +156,37 @@ definition{
   body: (match items
     | List.nil => (ctor Option.none [RuntimeSyntax::RtFn])
     | List.cons item rest => (match item
-    | RuntimeSyntax::RtItem.useItem ignoredPath ignoredAlias => (findFree rest wanted)
-    | RuntimeSyntax::RtItem.unitStruct ignoredStruct ignoredDerives => (findFree rest wanted)
-    | RuntimeSyntax::RtItem.alias ignoredAlias2 ignoredParameters ignoredTarget => (findFree rest wanted)
-    | RuntimeSyntax::RtItem.staticItem ignoredStatic ignoredType ignoredInit => (findFree rest wanted)
-    | RuntimeSyntax::RtItem.traitItem ignoredTrait ignoredSigs => (findFree rest wanted)
-    | RuntimeSyntax::RtItem.implItem generics trait selfType functions => (findFree rest wanted)
-    | RuntimeSyntax::RtItem.fnItem function => (if (prim equal (project (project function signature) name) wanted : Bool) then (ctor Option.some [RuntimeSyntax::RtFn] function) else (findFree rest wanted)))),
+      | RuntimeSyntax::RtItem.useItem ignoredPath ignoredAlias => (findFree rest wanted)
+      | RuntimeSyntax::RtItem.unitStruct ignoredStruct ignoredDerives => (findFree rest wanted)
+      | RuntimeSyntax::RtItem.alias ignoredAlias2 ignoredParameters ignoredTarget => (findFree rest wanted)
+      | RuntimeSyntax::RtItem.staticItem ignoredStatic ignoredType ignoredInit => (findFree rest wanted)
+      | RuntimeSyntax::RtItem.traitItem ignoredTrait ignoredSigs => (findFree rest wanted)
+      | RuntimeSyntax::RtItem.implItem generics trait selfType functions => (findFree rest wanted)
+      | RuntimeSyntax::RtItem.fnItem function => (if (prim equal (project (project function signature) name) wanted : Bool) then (ctor Option.some [RuntimeSyntax::RtFn] function) else (findFree rest wanted)))),
   recursive_argument: items
 }
 
 definition{
   name: findMethod,
-  parameters: [fuel : Nat, items : (List RuntimeSyntax::RtItem), wanted : String, value : TargetSyntax::Value],
+  parameters: [
+    fuel : Nat,
+    items : (List RuntimeSyntax::RtItem),
+    wanted : String,
+    value : TargetSyntax::Value
+  ],
   result: (Option RuntimeSyntax::RtFn),
   body: (match items
     | List.nil => (ctor Option.none [RuntimeSyntax::RtFn])
     | List.cons item rest => (match item
-    | RuntimeSyntax::RtItem.useItem ignoredPath ignoredAlias => (findMethod fuel rest wanted value)
-    | RuntimeSyntax::RtItem.unitStruct ignoredStruct ignoredDerives => (findMethod fuel rest wanted value)
-    | RuntimeSyntax::RtItem.alias ignoredAlias2 ignoredParameters ignoredTarget => (findMethod fuel rest wanted value)
-    | RuntimeSyntax::RtItem.staticItem ignoredStatic ignoredType ignoredInit => (findMethod fuel rest wanted value)
-    | RuntimeSyntax::RtItem.traitItem ignoredTrait ignoredSigs => (findMethod fuel rest wanted value)
-    | RuntimeSyntax::RtItem.implItem generics trait selfType functions => (if (matchesTy fuel selfType value) then (match (findIn functions wanted)
+      | RuntimeSyntax::RtItem.useItem ignoredPath ignoredAlias => (findMethod fuel rest wanted value)
+      | RuntimeSyntax::RtItem.unitStruct ignoredStruct ignoredDerives => (findMethod fuel rest wanted value)
+      | RuntimeSyntax::RtItem.alias ignoredAlias2 ignoredParameters ignoredTarget => (findMethod fuel rest wanted value)
+      | RuntimeSyntax::RtItem.staticItem ignoredStatic ignoredType ignoredInit => (findMethod fuel rest wanted value)
+      | RuntimeSyntax::RtItem.traitItem ignoredTrait ignoredSigs => (findMethod fuel rest wanted value)
+      | RuntimeSyntax::RtItem.implItem generics trait selfType functions => (if (matchesTy fuel selfType value) then (match (findIn functions wanted)
         | Option.none => (findMethod fuel rest wanted value)
         | Option.some found => (ctor Option.some [RuntimeSyntax::RtFn] found)) else (findMethod fuel rest wanted value))
-    | RuntimeSyntax::RtItem.fnItem function => (findMethod fuel rest wanted value))),
+      | RuntimeSyntax::RtItem.fnItem function => (findMethod fuel rest wanted value))),
   recursive_argument: items
 }
 
@@ -189,7 +202,11 @@ definition{
 
 definition{
   name: bindParams,
-  parameters: [parameters : (List RuntimeSyntax::RtParam), values : (List TargetSyntax::Value), environment : (List (String * TargetSyntax::Value))],
+  parameters: [
+    parameters : (List RuntimeSyntax::RtParam),
+    values : (List TargetSyntax::Value),
+    environment : (List (String * TargetSyntax::Value))
+  ],
   result: (Option (List (String * TargetSyntax::Value))),
   body: (match parameters
     | List.nil => (match values
@@ -228,7 +245,12 @@ definition{
 
 definition{
   name: rtEval,
-  parameters: [fuel : Nat, crate : RuntimeSyntax::RtCrate, environment : (List (String * TargetSyntax::Value)), expression : RuntimeSyntax::RtExpr],
+  parameters: [
+    fuel : Nat,
+    crate : RuntimeSyntax::RtCrate,
+    environment : (List (String * TargetSyntax::Value)),
+    expression : RuntimeSyntax::RtExpr
+  ],
   result: RtOutcome,
   body: (match fuel
     | Nat.zero => (ctor RtOutcome.exhausted)
@@ -287,7 +309,12 @@ definition{
 
 definition{
   name: rtEvalList,
-  parameters: [fuel : Nat, crate : RuntimeSyntax::RtCrate, environment : (List (String * TargetSyntax::Value)), expressions : (List RuntimeSyntax::RtExpr)],
+  parameters: [
+    fuel : Nat,
+    crate : RuntimeSyntax::RtCrate,
+    environment : (List (String * TargetSyntax::Value)),
+    expressions : (List RuntimeSyntax::RtExpr)
+  ],
   result: RtOutcomes,
   body: (match fuel
     | Nat.zero => (ctor RtOutcomes.exhausted)
@@ -307,7 +334,13 @@ definition{
 
 definition{
   name: rtEvalArms,
-  parameters: [fuel : Nat, crate : RuntimeSyntax::RtCrate, environment : (List (String * TargetSyntax::Value)), scrutinee : TargetSyntax::Value, arms : (List RuntimeSyntax::RtArm)],
+  parameters: [
+    fuel : Nat,
+    crate : RuntimeSyntax::RtCrate,
+    environment : (List (String * TargetSyntax::Value)),
+    scrutinee : TargetSyntax::Value,
+    arms : (List RuntimeSyntax::RtArm)
+  ],
   result: RtOutcome,
   body: (match fuel
     | Nat.zero => (ctor RtOutcome.exhausted)
@@ -350,13 +383,18 @@ definition{
 
 definition{
   name: rtApply,
-  parameters: [fuel : Nat, crate : RuntimeSyntax::RtCrate, function : RuntimeSyntax::RtFn, values : (List TargetSyntax::Value)],
+  parameters: [
+    fuel : Nat,
+    crate : RuntimeSyntax::RtCrate,
+    function : RuntimeSyntax::RtFn,
+    values : (List TargetSyntax::Value)
+  ],
   result: RtOutcome,
   body: (match fuel
     | Nat.zero => (ctor RtOutcome.exhausted)
     | Nat.succ remaining => (match (if (project (project function signature) receiver) then (match values
-      | List.nil => (ctor Option.none [(List (String * TargetSyntax::Value))])
-      | List.cons held others => (bindParams (project (project function signature) parameters) others (cons ("self", held) (nil (String * TargetSyntax::Value))))) else (bindParams (project (project function signature) parameters) values (nil (String * TargetSyntax::Value))))
+        | List.nil => (ctor Option.none [(List (String * TargetSyntax::Value))])
+        | List.cons held others => (bindParams (project (project function signature) parameters) others (cons ("self", held) (nil (String * TargetSyntax::Value))))) else (bindParams (project (project function signature) parameters) values (nil (String * TargetSyntax::Value))))
       | Option.none => (ctor RtOutcome.stuck)
       | Option.some bound => (rtEvalBlock remaining crate bound (project function body)))),
   axioms: [Classical.choice, Quot.sound, propext],
@@ -366,7 +404,12 @@ definition{
 
 definition{
   name: rtEvalBlock,
-  parameters: [fuel : Nat, crate : RuntimeSyntax::RtCrate, environment : (List (String * TargetSyntax::Value)), block : RuntimeSyntax::RtBlock],
+  parameters: [
+    fuel : Nat,
+    crate : RuntimeSyntax::RtCrate,
+    environment : (List (String * TargetSyntax::Value)),
+    block : RuntimeSyntax::RtBlock
+  ],
   result: RtOutcome,
   body: (match fuel
     | Nat.zero => (ctor RtOutcome.exhausted)
@@ -382,7 +425,12 @@ definition{
 
 definition{
   name: rtRun,
-  parameters: [fuel : Nat, crate : RuntimeSyntax::RtCrate, wanted : String, values : (List TargetSyntax::Value)],
+  parameters: [
+    fuel : Nat,
+    crate : RuntimeSyntax::RtCrate,
+    wanted : String,
+    values : (List TargetSyntax::Value)
+  ],
   result: RtOutcome,
   body: (match (findFree (project crate items) wanted)
     | Option.none => (ctor RtOutcome.stuck)
