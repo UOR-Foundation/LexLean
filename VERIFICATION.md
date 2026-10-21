@@ -10544,8 +10544,9 @@ and `LM-13` run to their end without Lean; `LM-04`, `LM-05`, and `LM-06` run
 their negatives first and then, under `lean_backed`, verify with the pinned Lean
 4.32.1 on the normative host (Linux x86-64, where a missing toolchain fails the
 case, §8.3); `LM-02`, `LM-10`, and `LM-11` are Lean-backed throughout their
-second half. Measured on this host with the toolchain installed: `LM-02` 577 s,
-`LM-06` 500 s, `LM-10` 532 s (nine roots, certificates A, B, and E), `LM-11` 490 s
+second half. Measured on this host with the toolchain installed: `LM-01` 12 s,
+`LM-03` 7 s, `LM-09` 0.6 s, `LM-12` 3.6 s, `LM-13` 6 s (no Lean), `LM-04` 709 s,
+`LM-05` 561 s, `LM-02` 577 s, `LM-06` 500 s, `LM-10` 532 s (nine roots, certificates A, B, and E), `LM-11` 490 s
 (a verification of the example of about 90 s before its certificates, and the
 planted mutation). Each plant below was applied, the case run, the signature
 recorded, and the plant restored with `git checkout`; the case then passes.
