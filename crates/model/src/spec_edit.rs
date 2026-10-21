@@ -905,7 +905,7 @@ mod tests {
     /// and last line; a change is inside when its lines are the region's.
     #[test]
     fn an_insertion_at_the_edge_of_a_region_is_not_inside_it() {
-        let region = [10..20];
+        let region = [Range { start: 10, end: 20 }];
         let hunk = |a: Range<usize>| Hunk { a, b: 0..1 };
         assert!(!within(&region, &hunk(10..10)), "at the first line");
         assert!(within(&region, &hunk(11..11)));
