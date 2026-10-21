@@ -60,10 +60,46 @@ fn tokenizer(name: &str, scheme: &str, vocabulary: &str) -> serde_json::Value {
     })
 }
 
+/// The directory of the example, below the workspace.
+const EXAMPLE_DIR: &str = "examples/models";
+
+/// A copy of the example beside the standard library, the workspace a text
+/// declaration needs (§17.12): the project lists the `std` source package and
+/// the module that declares the text components imports the module that
+/// holds their production forms, as `\importmodule{LexLeanStd.TextModels}`.
+/// Neither is in the committed example, which declares no text component.
+fn text_workspace() -> P {
+    let project = P::workspace_project(EXAMPLE_DIR, &[EXAMPLE_DIR, "stdlib"]);
+    let workspace = project.workspace_dir();
+    std::fs::write(
+        workspace.join("lexlean-workspace.toml").as_std_path(),
+        "spec = \"lexlean/workspace/1\"\nmembers = [\"examples/models\", \"stdlib\"]\n",
+    )
+    .expect("the workspace file");
+    let manifest = project.root.join("lexlean.toml");
+    let mut text = std::fs::read_to_string(manifest.as_std_path()).expect("manifest");
+    text.push_str("\n[[source_package]]\npackage = \"std\"\nversion = \"1.0.0\"\nkind = \"path\"\npath = \"stdlib\"\n");
+    std::fs::write(manifest.as_std_path(), text).expect("manifest");
+    let module = project.root.join(format!("src/{MODULE}.lex.tex"));
+    let source = std::fs::read_to_string(module.as_std_path()).expect("module");
+    let imported = source.replacen(
+        "\\importmodule{Glyphs}",
+        &format!(
+            "\\importmodule{{Glyphs}}\n\\importmodule{{{}}}",
+            text_laws::PRODUCTION_MODULE
+        ),
+        1,
+    );
+    assert_ne!(source, imported, "the module imports Glyphs");
+    std::fs::write(module.as_std_path(), imported).expect("module");
+    project.relock();
+    project
+}
+
 /// A copy of the example with two tokenizers over the vocabulary: `Digits`
 /// under `longest_match` and `Raw` under `byte_level`.
 fn tokenized() -> P {
-    let project = P::copy_example(EXAMPLE);
+    let project = text_workspace();
     let mut data = module_data(&project, MODULE);
     let declarations = data["declarations"].as_array_mut().expect("declarations");
     declarations.push(tokenizer("Digits", "longest_match", VOCABULARY));
@@ -1449,8 +1485,9 @@ fn lm_07() {
         );
         assert_eq!(
             names(row.theorems()),
-            ["features_width", "features_total", "features_fit"].map(|law| format!("{name}.{law}")),
-            "{name} generates its three laws"
+            ["features_width", "features_total", "fitWidth_bridge", "features_fit"]
+                .map(|law| format!("{name}.{law}")),
+            "{name} generates its three laws and the bridge of the production fitWidth"
         );
         let results: Vec<String> = row
             .declarations()

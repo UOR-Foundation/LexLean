@@ -498,6 +498,93 @@ fn law_over(
     }
 }
 
+/// A generated theorem over several binders proved by one library lemma
+/// applied to proof-term `arguments`, with nothing unfolded: the lemma is of
+/// the form that takes a production form and its bridge as arguments
+/// (SPEC.md §17.12, *Text components*).
+fn law_of(
+    name: String,
+    binders: Vec<SemanticParameter>,
+    statement: SemanticTerm,
+    lemma: &str,
+    arguments: Vec<ProofTerm>,
+) -> GeneratedTheorem {
+    GeneratedTheorem {
+        name,
+        type_parameters: Vec::new(),
+        parameters: binders,
+        statement: Formula::Term { term: statement },
+        proof: Proof::Term {
+            term: ProofTerm::Theorem {
+                theorem: library_member(lemma),
+                type_arguments: Vec::new(),
+                arguments,
+            },
+        },
+    }
+}
+
+fn proof_term(term: SemanticTerm) -> ProofTerm {
+    ProofTerm::Term { term }
+}
+
+/// `fun binders => rfl`, the proof of an equation that holds by unfolding.
+fn by_unfolding(binders: &[&str]) -> ProofTerm {
+    if binders.is_empty() {
+        return ProofTerm::Refl;
+    }
+    ProofTerm::Assume {
+        binders: binders.iter().map(|name| (*name).to_owned()).collect(),
+        body: Box::new(ProofTerm::Refl),
+    }
+}
+
+/// The generated bridge of `fitWidth`: its production form equals the
+/// library's, by the library's `fitWidth_of` applied to the production forms
+/// of `take` and `replicate n 0` with each of their equations proved by
+/// unfolding.
+fn fit_width_bridge(name: &str) -> GeneratedTheorem {
+    let ints = || list_of(SemanticType::Int);
+    let eta = |function: &str, arity: usize| {
+        let parameters: Vec<(&str, SemanticType)> = if arity == 2 {
+            vec![("count", SemanticType::Nat), ("values", ints())]
+        } else {
+            vec![("count", SemanticType::Nat)]
+        };
+        let arguments = parameters
+            .iter()
+            .map(|(parameter, _)| model::var(parameter))
+            .collect();
+        model::lambda(parameters, production_call(function, arguments))
+    };
+    law_of(
+        format!("{name}.fitWidth_bridge"),
+        vec![parameter("width", SemanticType::Nat), parameter("values", ints())],
+        model::eq(
+            production_call(
+                names::FIT_WIDTH,
+                vec![model::var("width"), model::var("values")],
+            ),
+            library_call(
+                names::FIT_WIDTH,
+                vec![model::var("width"), model::var("values")],
+            ),
+        ),
+        names::FIT_WIDTH_OF,
+        vec![
+            proof_term(eta("takeInts", 2)),
+            proof_term(eta("zerosInts", 1)),
+            by_unfolding(&["_values"]),
+            by_unfolding(&["_count"]),
+            by_unfolding(&["_count", "_head", "_tail"]),
+            by_unfolding(&[]),
+            by_unfolding(&["_count"]),
+            proof_term(model::var("width")),
+            proof_term(model::var("values")),
+        ],
+    )
+}
+
 /// A text declaration's axiom policy is sorted, unique, and qualified: it is
 /// the exact policy of every Lean declaration it elaborates to.
 fn check_policy(kind: &str, name: &str, axioms: &[String]) -> Result<(), SemanticFailure> {
@@ -513,6 +600,38 @@ fn check_policy(kind: &str, name: &str, axioms: &[String]) -> Result<(), Semanti
 
 fn library_call(function: &str, arguments: Vec<SemanticTerm>) -> SemanticTerm {
     model::call(&library_member(function), &[], arguments)
+}
+
+/// A member of the standard library's production forms
+/// ([`text_laws::PRODUCTION_MODULE`]), as an elaboration names it. The module
+/// that declares the text component imports it, so the ordinary member rules
+/// resolve it; [`require_production`] says what to write when it does not.
+fn production_member(name: &str) -> MemberRef {
+    MemberRef {
+        module: Some(text_laws::PRODUCTION_MODULE.to_owned()),
+        name: name.to_owned(),
+    }
+}
+
+fn production_call(function: &str, arguments: Vec<SemanticTerm>) -> SemanticTerm {
+    model::call(&production_member(function), &[], arguments)
+}
+
+/// A text declaration applies the production forms of the library's
+/// functions, so it is refused, with the import to write, when its module
+/// does not import the module that holds them.
+fn require_production(
+    kind: &str,
+    name: &str,
+    env: &Environment<'_>,
+) -> Result<(), SemanticFailure> {
+    if env.imports.iter().any(|import| import == text_laws::PRODUCTION_MODULE) {
+        return Ok(());
+    }
+    Err(interface(format!(
+        "{kind} `{name}` applies the production forms of the text-laws library, which its module does not import; write `\\importmodule{{{module}}}` and list the `std` source package in the project",
+        module = text_laws::PRODUCTION_MODULE
+    )))
 }
 
 fn local_call(function: &str, arguments: Vec<SemanticTerm>) -> SemanticTerm {
@@ -1353,6 +1472,7 @@ fn check_text_classifier(
         )));
     }
     let label = scoring.output;
+    require_production("text classifier", name, env)?;
     register_library(env);
 
     let features = format!("{name}.features");
@@ -1427,17 +1547,34 @@ fn check_text_classifier(
             total_lemma,
             vec![pieces(), model::var(TEXT)],
         ),
-        // The fixed-width map leaves the features unchanged.
-        law_over(
+        // The fixed-width map leaves the features unchanged. It is the
+        // production form of the map that is applied, so the library's law is
+        // reached through the bridge.
+        fit_width_bridge(name),
+        law_of(
             format!("{name}.features_fit"),
             over_tokens(),
             model::eq(
-                library_call(names::FIT_WIDTH, vec![size(), featured(model::var(TOKENS))]),
+                production_call(names::FIT_WIDTH, vec![size(), featured(model::var(TOKENS))]),
                 featured(model::var(TOKENS)),
             ),
-            &[&features],
-            names::FEATURES_FIT,
-            vec![size(), model::var(TOKENS)],
+            names::FEATURES_FIT_OF,
+            vec![
+                proof_term(model::lambda(
+                    vec![("width", SemanticType::Nat), ("values", list_of(SemanticType::Int))],
+                    production_call(
+                        names::FIT_WIDTH,
+                        vec![model::var("width"), model::var("values")],
+                    ),
+                )),
+                ProofTerm::Theorem {
+                    theorem: model::local(&format!("{name}.fitWidth_bridge")),
+                    type_arguments: Vec::new(),
+                    arguments: Vec::new(),
+                },
+                proof_term(size()),
+                proof_term(model::var(TOKENS)),
+            ],
         ),
     ];
     Ok(Lowering {
