@@ -95,27 +95,6 @@ impl Drop for Timed {
 /// case — an unimplemented registered capability must not pass silently.
 pub fn run(id: &str) {
     let _timed = Timed::start(id);
-    // A case reads committed modules whose data nests as deeply as their
-    // lists (the runtime module reads to 1.14 MB nested 119 levels), and a
-    // debug build overflows the two megabytes of a test thread doing so.
-    // Every case therefore runs on a thread with the compiler's own reader
-    // stack, named after the case so a failure still names it, and a panic
-    // inside it is re-raised with its payload so the message is the case's.
-    let outcome = std::thread::scope(|scope| {
-        std::thread::Builder::new()
-            .name(id.to_owned())
-            .stack_size(lexlean::READER_STACK)
-            .spawn_scoped(scope, || dispatch(id))
-            .expect("a case thread")
-            .join()
-    });
-    if let Err(payload) = outcome {
-        std::panic::resume_unwind(payload);
-    }
-}
-
-/// The case for one conformance ID, by the family prefix of the ID.
-fn dispatch(id: &str) {
     let prefix = id.split('-').next().unwrap_or_default();
     match prefix {
         "RP" => repository::run(id),
