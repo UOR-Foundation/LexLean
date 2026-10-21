@@ -47,18 +47,10 @@ definition{
 }
 
 definition{
-  name: lengthItems,
-  parameters: [items : (List TargetSyntax::Value)],
-  result: Nat,
-  body: (match items | List.nil => 0 | List.cons head tail => ((lengthItems tail) + 1)),
-  recursive_argument: items
-}
-
-definition{
   name: erasedPush,
   parameters: [items : (List TargetSyntax::Value), item : TargetSyntax::Value],
   result: (List TargetSyntax::Value),
-  body: (RustLists::listAppend items (cons item (nil TargetSyntax::Value)))
+  body: (prim append items (cons item (nil TargetSyntax::Value)) : (List TargetSyntax::Value))
 }
 
 definition{
@@ -72,7 +64,7 @@ definition{
   name: erasedLength,
   parameters: [items : (List TargetSyntax::Value)],
   result: Nat,
-  body: (lengthItems items)
+  body: (prim length items : Nat)
 }
 
 definition{
@@ -92,7 +84,14 @@ definition{
 }
 
 definition{
-  name: shareCopy,
+  name: bufNew,
+  parameters: [capacity : Nat, fill : TargetSyntax::Value],
+  result: RustMemory::Buf,
+  body: (record RustMemory::Buf {slots := (RustMemory::blank capacity fill), len := 0})
+}
+
+definition{
+  name: cloneHandle,
   parameters: [handle : RustLists::Handle],
   result: RustLists::Handle,
   body: handle
@@ -103,6 +102,42 @@ definition{
   parameters: [place : RustLists::Handle, value : RustLists::Handle],
   result: Replaced,
   body: (record Replaced {old := place, now := value})
+}
+
+theorem{
+  name: prim_append_nil,
+  parameters: [back : (List TargetSyntax::Value)],
+  statement: ((prim append (nil TargetSyntax::Value) back : (List TargetSyntax::Value)) = back),
+  proof: reflexivity{},
+  axioms: []
+}
+
+theorem{
+  name: prim_append_cons,
+  parameters: [
+    head : TargetSyntax::Value,
+    tail : (List TargetSyntax::Value),
+    back : (List TargetSyntax::Value)
+  ],
+  statement: ((prim append (cons head tail) back : (List TargetSyntax::Value)) = (cons head (prim append tail back : (List TargetSyntax::Value)))),
+  proof: reflexivity{},
+  axioms: []
+}
+
+theorem{
+  name: prim_length_nil,
+  parameters: [],
+  statement: ((prim length (nil TargetSyntax::Value) : Nat) = 0),
+  proof: reflexivity{},
+  axioms: []
+}
+
+theorem{
+  name: prim_length_cons,
+  parameters: [head : TargetSyntax::Value, tail : (List TargetSyntax::Value)],
+  statement: ((prim length (cons head tail) : Nat) = ((prim length tail : Nat) + 1)),
+  proof: reflexivity{},
+  axioms: []
 }
 
 theorem{
@@ -132,18 +167,12 @@ theorem{
 theorem{
   name: first_of_snoc,
   parameters: [front : RustMemory::Cells, item : TargetSyntax::Value, back : RustMemory::Cells],
-  statement: ((firstOf (RustMemory::append front (ctor RustMemory::Cells.CCons item back)) ((RustMemory::size front) + 1)) = (RustLists::listAppend (itemsOf front) (cons item (nil TargetSyntax::Value)))),
+  statement: ((firstOf (RustMemory::append front (ctor RustMemory::Cells.CCons item back)) ((RustMemory::size front) + 1)) = (prim append (itemsOf front) (cons item (nil TargetSyntax::Value)) : (List TargetSyntax::Value))),
   proof: induction{
     branches: [
       {
         proof: simplify{
-          definitions: [
-            firstOf,
-            itemsOf,
-            RustLists::listAppend,
-            RustMemory::append,
-            RustMemory::size
-          ]
+          definitions: [firstOf, itemsOf, prim_append_nil, RustMemory::append, RustMemory::size]
         },
         binders: [],
         constructor: CNil
@@ -154,7 +183,7 @@ theorem{
             firstOf,
             hypothesis,
             itemsOf,
-            RustLists::listAppend,
+            prim_append_cons,
             RustMemory::append,
             RustMemory::size
           ]
@@ -227,16 +256,16 @@ theorem{
 theorem{
   name: length_of_items,
   parameters: [front : RustMemory::Cells],
-  statement: ((lengthItems (itemsOf front)) = (RustMemory::size front)),
+  statement: ((prim length (itemsOf front) : Nat) = (RustMemory::size front)),
   proof: induction{
     branches: [
       {
-        proof: simplify{definitions: [itemsOf, lengthItems, RustMemory::size]},
+        proof: simplify{definitions: [itemsOf, prim_length_nil, RustMemory::size]},
         binders: [],
         constructor: CNil
       },
       {
-        proof: simplify{definitions: [hypothesis, itemsOf, lengthItems, RustMemory::size]},
+        proof: simplify{definitions: [hypothesis, itemsOf, prim_length_cons, RustMemory::size]},
         binders: [head, tail, hypothesis],
         constructor: CCons
       }
@@ -354,8 +383,8 @@ theorem{
 theorem{
   name: new_reads,
   parameters: [capacity : Nat, fill : TargetSyntax::Value],
-  statement: ((readBuf (record RustMemory::Buf {slots := (RustMemory::blank capacity fill), len := 0})) = (nil TargetSyntax::Value)),
-  proof: simplify{definitions: [firstOf, readBuf]},
+  statement: ((readBuf (bufNew capacity fill)) = (nil TargetSyntax::Value)),
+  proof: simplify{definitions: [bufNew, firstOf, readBuf]},
   axioms: [propext]
 }
 
@@ -376,31 +405,31 @@ theorem{
 }
 
 theorem{
-  name: copy_reads,
+  name: clone_reads,
   parameters: [store : RustLists::Store, handle : RustLists::Handle],
-  statement: ((RustLists::absHandle store (shareCopy handle)) = (RustLists::absHandle store handle)),
+  statement: ((RustLists::absHandle store (cloneHandle handle)) = (RustLists::absHandle store handle)),
   proof: reflexivity{},
   axioms: []
 }
 
 theorem{
-  name: copy_holds,
+  name: clone_holds,
   parameters: [address : Nat, spine : (List TargetSyntax::Value), more : Nat],
-  statement: ((RustLists::holds address (shareCopy (record RustLists::Handle {spine := spine, base := (ctor RustLists::Terminal.TRun address more)}))) = (ctor RustMemory::Flag.yes)),
-  proof: simplify{definitions: [shareCopy, RustLists::holder_on_own_buffer]},
+  statement: ((RustLists::holds address (cloneHandle (record RustLists::Handle {spine := spine, base := (ctor RustLists::Terminal.TRun address more)}))) = (ctor RustMemory::Flag.yes)),
+  proof: simplify{definitions: [cloneHandle, RustLists::holder_on_own_buffer]},
   axioms: [propext]
 }
 
 theorem{
-  name: copy_blocks,
+  name: clone_blocks,
   parameters: [
     address : Nat,
     spine : (List TargetSyntax::Value),
     more : Nat,
     rest : (List RustLists::Handle)
   ],
-  statement: ((RustLists::aloneOn address (cons (shareCopy (record RustLists::Handle {spine := spine, base := (ctor RustLists::Terminal.TRun address more)})) rest)) = (ctor RustMemory::Flag.no)),
-  proof: simplify{definitions: [shareCopy, RustLists::holder_blocks]},
+  statement: ((RustLists::aloneOn address (cons (cloneHandle (record RustLists::Handle {spine := spine, base := (ctor RustLists::Terminal.TRun address more)})) rest)) = (ctor RustMemory::Flag.no)),
+  proof: simplify{definitions: [cloneHandle, RustLists::holder_blocks]},
   axioms: [propext]
 }
 

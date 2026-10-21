@@ -20,12 +20,13 @@ const IMPORTED: [&str; 3] = ["RustLists", "RustMemory", "TargetSyntax"];
 
 /// Each law with the functions its statement must be about: a theorem of the
 /// right name that states another function is refused.
-const LAWS: [(&str, &[&str]); 17] = [
+const LAWS: [(&str, &[&str]); 21] = [
+    ("prim_append_nil", &[]),
+    ("prim_append_cons", &[]),
+    ("prim_length_nil", &[]),
+    ("prim_length_cons", &[]),
     ("first_of_front", &["firstOf", "append", "size", "itemsOf"]),
-    (
-        "first_of_snoc",
-        &["firstOf", "append", "size", "itemsOf", "listAppend"],
-    ),
+    ("first_of_snoc", &["firstOf", "append", "size", "itemsOf"]),
     (
         "first_of_take",
         &[
@@ -37,11 +38,11 @@ const LAWS: [(&str, &[&str]); 17] = [
             "itemsOf",
         ],
     ),
-    ("length_of_items", &["lengthItems", "itemsOf", "size"]),
+    ("length_of_items", &["itemsOf", "size"]),
     ("less_than_itself", &["lessThan"]),
     ("append_nothing", &["append"]),
     ("put_into_blank", &["put", "append", "blank", "size"]),
-    ("new_reads", &["readBuf", "blank"]),
+    ("new_reads", &["readBuf", "bufNew"]),
     (
         "push_reads",
         &[
@@ -58,9 +59,9 @@ const LAWS: [(&str, &[&str]); 17] = [
         &["readBuf", "bufTruncate", "erasedTruncate", "itemsOf"],
     ),
     ("length_reads", &["erasedLength", "readBuf"]),
-    ("copy_reads", &["absHandle", "shareCopy"]),
-    ("copy_holds", &["holds", "shareCopy"]),
-    ("copy_blocks", &["aloneOn", "shareCopy"]),
+    ("clone_reads", &["absHandle", "cloneHandle"]),
+    ("clone_holds", &["holds", "cloneHandle"]),
+    ("clone_blocks", &["aloneOn", "cloneHandle"]),
     ("alone_without_others", &["aloneOn"]),
     ("replace_old_reads", &["absHandle", "replaceHandle"]),
     ("replace_now_reads", &["absHandle", "replaceHandle"]),
@@ -148,7 +149,7 @@ fn check(id: &str) {
     let error = complete(&without).expect_err("a law without a theorem");
     assert!(error.contains("missing [\"replace_now_reads\"]"), "{error}");
     let block = &text[start..end];
-    let other = text.replacen(block, &block.replace("replaceHandle", "shareCopy"), 1);
+    let other = text.replacen(block, &block.replace("replaceHandle", "cloneHandle"), 1);
     assert_ne!(other, text, "the plant site exists");
     let error = complete(&other).expect_err("a theorem that states another function");
     assert!(
@@ -191,20 +192,20 @@ fn check(id: &str) {
 /// The defects of the module: what is planted, the theorems Lean refuses, the
 /// kind of its diagnostic, a fragment of the goal it leaves open, and the
 /// text replaced.
-const PLANTS: [(&str, &[&str], &str, &str, &str, &str); 6] = [
+const PLANTS: [(&str, &[&str], &str, &str, &str, &str); 7] = [
     (
         "a push that puts the item in front",
         &["push_reads"],
         "unsolved goals",
-        "⊢ RustLists.listAppend (itemsOf front) [item] = item :: itemsOf front",
-        "(RustLists::listAppend items (cons item (nil TargetSyntax::Value)))",
-        "(cons item items)",
+        "⊢ LexLeanRuntime.append (itemsOf front) [item] = item :: itemsOf front",
+        "body: (prim append items (cons item (nil TargetSyntax::Value)) : (List TargetSyntax::Value))",
+        "body: (cons item items)",
     ),
     (
         "a full buffer that is not grown",
         &["push_reads"],
         "unsolved goals",
-        "⊢ firstOf front (RustMemory.size front) = RustLists.listAppend (itemsOf front) [item]",
+        "⊢ firstOf front (RustMemory.size front) = LexLeanRuntime.append (itemsOf front) [item]",
         "    | Option.none => (RustLists::keepOr (RustMemory::bufPush (RustLists::growBuf buf ((project buf len) + 1) item) item) buf))",
         "    | Option.none => buf)",
     ),
@@ -218,7 +219,7 @@ const PLANTS: [(&str, &[&str], &str, &str, &str, &str); 6] = [
     ),
     (
         "a clone that does not hold",
-        &["copy_reads", "copy_holds", "copy_blocks"],
+        &["clone_reads", "clone_holds", "clone_blocks"],
         "unsolved goals",
         "RustLists.holds address { spine := spine, base := RustLists.Terminal.TNil }",
         "  body: handle\n}",
@@ -234,11 +235,19 @@ const PLANTS: [(&str, &[&str], &str, &str, &str, &str); 6] = [
     ),
     (
         "a length that counts one more",
-        &["length_of_items"],
+        &["length_reads"],
         "unsolved goals",
-        "⊢ RustMemory.size tail + 2 = RustMemory.size tail + 1",
-        "((lengthItems tail) + 1)",
-        "((lengthItems tail) + 2)",
+        "⊢ RustMemory.size front + 1 = RustMemory.size front",
+        "body: (prim length items : Nat)",
+        "body: ((prim length items : Nat) + 1)",
+    ),
+    (
+        "a new buffer that is not empty",
+        &["new_reads"],
+        "unsolved goals",
+        "⊢ firstOf (RustMemory.blank capacity fill) capacity = []",
+        "(RustMemory::blank capacity fill), len := 0})",
+        "(RustMemory::blank capacity fill), len := capacity})",
     ),
 ];
 
