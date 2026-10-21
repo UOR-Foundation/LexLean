@@ -807,8 +807,15 @@ fn lm_04() {
         );
         assert_eq!(
             names(row.theorems()),
-            ["admit_bridge", "push_bridge", "bounded", "push_bounded", "exact", last]
-                .map(|law| format!("{name}.{law}")),
+            [
+                "admit_bridge",
+                "push_bridge",
+                "bounded",
+                "push_bounded",
+                "exact",
+                last
+            ]
+            .map(|law| format!("{name}.{law}")),
             "{name} generates the bridges of its production forms and its laws"
         );
     }
@@ -1514,8 +1521,13 @@ fn lm_07() {
         );
         assert_eq!(
             names(row.theorems()),
-            ["features_width", "features_total", "fitWidth_bridge", "features_fit"]
-                .map(|law| format!("{name}.{law}")),
+            [
+                "features_width",
+                "features_total",
+                "fitWidth_bridge",
+                "features_fit"
+            ]
+            .map(|law| format!("{name}.{law}")),
             "{name} generates its three laws and the bridge of the production fitWidth"
         );
         let results: Vec<String> = row

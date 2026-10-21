@@ -514,7 +514,10 @@ fn fit_width_bridge(name: &str) -> GeneratedTheorem {
     };
     law_of(
         format!("{name}.fitWidth_bridge"),
-        vec![parameter("width", SemanticType::Nat), parameter("values", ints())],
+        vec![
+            parameter("width", SemanticType::Nat),
+            parameter("values", ints()),
+        ],
         model::eq(
             production_call(
                 names::FIT_WIDTH,
@@ -581,7 +584,11 @@ fn require_production(
     name: &str,
     env: &Environment<'_>,
 ) -> Result<(), SemanticFailure> {
-    if env.imports.iter().any(|import| import == text_laws::PRODUCTION_MODULE) {
+    if env
+        .imports
+        .iter()
+        .any(|import| import == text_laws::PRODUCTION_MODULE)
+    {
         return Ok(());
     }
     Err(interface(format!(
@@ -623,10 +630,8 @@ fn sibling(owner: &MemberRef, suffix: &str) -> MemberRef {
 
 /// The production function `function` of two or three arguments, as a value.
 fn window_function(function: &str, arity: usize) -> SemanticTerm {
-    let mut parameters: Vec<(&str, SemanticType)> = vec![
-        ("capacity", SemanticType::Nat),
-        ("context", tokens()),
-    ];
+    let mut parameters: Vec<(&str, SemanticType)> =
+        vec![("capacity", SemanticType::Nat), ("context", tokens())];
     if arity == 3 {
         parameters.push(("token", SemanticType::UInt32));
     }
@@ -647,7 +652,10 @@ fn production_value(function: &str, types: &[SemanticType]) -> ProofTerm {
         .zip(types.iter().cloned())
         .collect();
     let arguments = names.iter().map(|name| model::var(name)).collect();
-    proof_term(model::lambda(parameters, production_call(function, arguments)))
+    proof_term(model::lambda(
+        parameters,
+        production_call(function, arguments),
+    ))
 }
 
 /// `fun _ .. _ => rfl` over `count` binders: a defining equation of a
@@ -964,7 +972,10 @@ fn choose_sample_bridge() -> ProofTerm {
             production_value("xorshift32", &[SemanticType::UInt32]),
             applied(
                 names::XORSHIFT32_BRIDGE,
-                vec![production_value("xorshift32", &[SemanticType::UInt32]), unfolds(1)],
+                vec![
+                    production_value("xorshift32", &[SemanticType::UInt32]),
+                    unfolds(1),
+                ],
             ),
             production_value("proportional", &[ints.clone(), SemanticType::UInt32]),
             proportional,
@@ -995,7 +1006,10 @@ fn greedy_loop_bridge() -> ProofTerm {
                 ],
             ),
             generate_with_bridge(),
-            production_value("chooseGreedy", &[list_of(SemanticType::Int), SemanticType::UInt32]),
+            production_value(
+                "chooseGreedy",
+                &[list_of(SemanticType::Int), SemanticType::UInt32],
+            ),
             choose_greedy_bridge(),
             production_value(
                 "generateGreedy",
@@ -1190,7 +1204,10 @@ fn best_piece_bridge() -> ProofTerm {
     applied(
         names::BEST_PIECE_BRIDGE,
         vec![
-            production_value("pick", &[model::option_type(choice.clone()), choice.clone()]),
+            production_value(
+                "pick",
+                &[model::option_type(choice.clone()), choice.clone()],
+            ),
             unfolds(2),
             production_value(
                 "bestFrom",
@@ -2078,7 +2095,9 @@ fn check_text_generator(
     );
     // The production loop equals the library's, and the library's laws are
     // reached through that bridge.
-    let mut loop_names = vec!["score", "size", "capacity", "keep", "stop", "fuel", "prompt"];
+    let mut loop_names = vec![
+        "score", "size", "capacity", "keep", "stop", "fuel", "prompt",
+    ];
     let mut loop_binders = vec![
         parameter("score", scorer_type()),
         parameter("size", SemanticType::Nat),
@@ -2562,7 +2581,11 @@ fn check_tokenizer(
             text_roundtrip,
             law_arguments(
                 encoder(
-                    if longest { "encodeText" } else { "encodeTextBytes" },
+                    if longest {
+                        "encodeText"
+                    } else {
+                        "encodeTextBytes"
+                    },
                     SemanticType::String,
                 ),
                 "encodeText_bridge",
@@ -2702,8 +2725,7 @@ fn check_text_classifier(
             production_value("encodeTextBytes", &[SemanticType::String]),
         )
     };
-    let features_value =
-        || production_value(names::FEATURES, &[SemanticType::Nat, tokens()]);
+    let features_value = || production_value(names::FEATURES, &[SemanticType::Nat, tokens()]);
     let over_tokens = || vec![parameter(TOKENS, tokens())];
     let theorems = vec![
         // The features have exactly `size` entries.
@@ -2763,7 +2785,10 @@ fn check_text_classifier(
             &[&features],
             names::FEATURES_FIT_BRIDGE_OF,
             vec![
-                production_value(names::FIT_WIDTH, &[SemanticType::Nat, list_of(SemanticType::Int)]),
+                production_value(
+                    names::FIT_WIDTH,
+                    &[SemanticType::Nat, list_of(SemanticType::Int)],
+                ),
                 ProofTerm::Theorem {
                     theorem: model::local(&format!("{name}.fitWidth_bridge")),
                     type_arguments: Vec::new(),
