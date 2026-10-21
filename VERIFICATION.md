@@ -9684,6 +9684,137 @@ Removed: the source was restored; `conformance_sl_02` passes, in 305 s with
 the production export of both roots under the pinned Lean (`conformance_sl_01`
 in 206 s on the same tree).
 
+`SL-05` holds `LexLeanStd.Buffer` (#92) to Rust's concatenation: the three roots
+`writeAll`, `writeEach`, and `writeNumbers` under the evaluator and under the
+pinned rustc agree with the concatenation of the pieces, the bytes, and the
+decimals on a seeded corpus whose sizes cross the chunk boundary, and with the
+refusal at one byte beyond the capacity. Why the member is chunked: a chain of
+`append_bytes` of one byte copies both operands at each call, so the work the
+rendered runtime counts quadruples as n doubles. Measured with the generated
+runtime of `is_closed_lean_name`, release build, n one-byte appends:
+
+| n | work | time |
+| --- | --- | --- |
+| 10,000 | 50,005,000 | 2 ms |
+| 20,000 | 200,010,000 | 6 ms |
+| 40,000 | 800,020,000 | 37 ms |
+| 80,000 | 3,200,040,000 | 184 ms |
+| 160,000 | 12,800,080,000 | 963 ms |
+
+At the size of the largest committed library (256,713 bytes) the chain costs
+about 3.3e10 units (n squared over two). The chunk size is the measurement of
+the same bytes written as pieces of twelve bytes (`writeAll`, what a printer
+writes) and one by one (`writeEach`), in work units, the time being flat at
+about 50 ms and 350 ms at every size:
+
+| chunk | `writeAll`, 12-byte pieces | `writeEach`, 1-byte writes |
+| --- | --- | --- |
+| 128 | 4,359,112 | 19,634,868 |
+| 256 | 5,512,876 | 35,803,264 |
+| 512 | 7,953,561 | 68,379,787 |
+| 1,024 | 13,210,575 | 133,761,735 |
+| 2,048 | 23,855,901 | 264,577,610 |
+| 4,096 | 45,391,365 | 525,826,906 |
+
+A write copies at most the pending chunk, so its work is proportional to the
+chunk; the join at the end (pairwise merging) adds n log k. The module seals
+at 256 bytes. A chunk of 128 would save 21 percent of 256's work on writes of a
+dozen bytes and 45 percent on one-byte writes, and costs twice the chunks to
+join; the time is flat across the sizes, and the work at 256 is a thousandth
+of the chain's at this size, so the choice between 128 and 256 is not
+material. One-byte writes then cost 551,000 units for 4,096
+bytes, 2,236,000 for 16,384 and 9,077,000 for 65,536 (about 135 units a
+byte at the larger sizes, linear). The contiguous realization the next rendering work can give
+the interface (a registry primitive that writes in place) replaces the chunks
+without touching a root. The case holds the proportion of those three work
+counts within a factor of two of linear.
+
+- **a boundary that refuses at the capacity itself.** `(grown <=? (project
+  buffer capacity))` becomes `(grown <? (project buffer capacity))`: a buffer
+  of exactly its capacity is refused. Run 5 of `writeEach`: the program gives
+  the refusal, the oracle the byte `00`.
+- **a buffer that never seals.** `(256 <=? (prim length joined : Nat))`
+  becomes `(256 <=? 0)`: the bytes are the same, the pending chunk grows by
+  one append per write, which is the chain this member replaces. Under rustc
+  the work of 4,096 and 16,384 one-byte writes is 8,394,753 and 134,242,305, a
+  ratio of 16 for a ratio of 4 in size, and the case fails its proportion.
+
+Certification: `LexLeanStd.Buffer` verifies under the pinned Lean with exact
+axiom policies; only `writeByte`, `byteStep`, and `writeEach`, which reach
+`to_nat`, state `[Quot.sound, propext]`, and no other definition states an
+axiom. The three roots are eligible for `rust-std` with `allocation` and
+`overflow`. `conformance_sl_05` passes up to the comparison with the committed
+packages (the records are regenerated at landing).
+
+`BS-06` holds the two production roots of `LexLeanBoot.RustPrint`
+(`bootstrap/src/RustPrint.lex.tex`, over `RustAst.lex.tex`) to the oracle,
+`calculus::rust::ast::{print, print_expr}`. The case runs 598 vectors of
+`printCrate` (456 the distinct committed crates: 228 lowered by the renderer
+from 169 programs, and the crates of 252 packages; the hand-built crates; the
+real header of each profile; 56 refused for a capacity one byte short) and
+1,937 of `printExpr` (1,404 hand-built: every literal at the edge of each
+width and sign, the 128 ASCII scalars and the edges of UTF-8 in strings, byte
+strings, every runtime row and machine primitive with its operands and with
+one too many, every constructor, pattern, block, conditional, match with a
+scrutinee that begins with a brace, and loop) under the pinned rustc on
+every host (42 harness binaries, 504 s: the part the host matrix runs), and on
+the normative host the evaluator on 539 + 1,937 of them (the crates of at most
+6,000 nodes of data), 400 + 399 seeded mutants of the crates of at most 80
+expressions, 2,984 more mutants under rustc (67 s), twelve planted defects, and
+the production export of the project (the whole case: 1,658 s on this host,
+4 cores). The two roots certify in 15 min 57 s (`production build` of the
+two roots), and the packages the export publishes are the files the
+regeneration commits. Each root's rendered package recurses with the depth of
+its input; the stack the harness needs, measured by bisecting the stack of the
+built binary on the case's own corpus in a debug build, is 7,077,888 bytes for
+`print_crate` and 4,259,840 for `print_expr` (the rows of `tests/stack-bounds.json`
+that the landing regeneration records). The committed libraries pin the printed
+items; the header before them is the runtime of the committed export, which
+moves with the runtime (#248), so the case holds the header to the vectors that
+give the roots the oracle's own header and holds the committed libraries to the
+items after it.
+
+Each of these twelve plants is made on a copy of
+`bootstrap/src/RustPrint.lex.tex` on every run (the first disagreement, from
+the case; run numbers index the vectors of the root, the hand-built ones
+before the committed):
+
+- **the quote is not escaped**, `printExpr`, run 80: the program gives
+  `Str::lit("""`, the oracle `Str::lit("\"")`.
+- **the hexadecimal of a scalar is in upper case**, `printExpr`, run 20: the
+  program gives `Bytes::lit(&[0xFF, 0x00, 0x10])`, the oracle the lower case.
+- **the delete character is printed as it is**, `printExpr`, run 83, the
+  string of the 128 ASCII scalars.
+- **the least i64 is spelled as a negative literal**, `printExpr`, run 12: the
+  program gives the refusal of the buffer (the text is one byte longer), the
+  oracle `i64::MIN`.
+- **a width's least value is spelled as a literal**, `printExpr`, run 54:
+  `-128i8` for `i8::MIN`.
+- **the byte string separator has no space**, `printExpr`, run 20:
+  `[0xff,0x00,0x10]`.
+- **a unit result is printed as an arrow**, `printCrate`, run 58.
+- **the indentation is three spaces**, `printExpr`, run 1336.
+- **a comparison under a negation is not parenthesized**, `printExpr`, run
+  232: `!v0 - 1` for `!(v0 - 1)`.
+- **an empty else is written out**, `printExpr`, run 1339.
+- **the blank line between items is dropped**, `printCrate`, run 0.
+- **the empty dispatch is matched with arms**, `printCrate`, run 16.
+
+The case's first failure, before the module existed (R3), was `no bootstrap
+case is wired for BS-06`, and `no stdlib case is wired for SL-05` for the
+member. Removed: the source was not changed (the plants are made on copies).
+
+Findings while writing the module, for the next components. Certificate A
+cannot name the variable a `match` is on inside one of its branches (`local
+`node` is unbound`): the module passes the fields of a pattern instead. A
+`bit_and` on a `Nat` is refused (it needs fixed-width operands): the
+module takes a remainder. The names `id` and `first` are reserved by the
+language and by Lean, and the captures of a function are sorted. The
+exact axiom policy of a definition is read from the construct it reaches
+(`to_nat` states both axioms; the other constructs of this module state
+none), and the verifier reports one definition per run, so the first
+declaration of an axiom set is found by reading the construct, not by running.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the

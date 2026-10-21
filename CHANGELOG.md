@@ -325,6 +325,18 @@ and Unreleased holds what has landed since.
   ones. The register is 430 IDs. A finding about the certificate generator,
   #222, is worked around by building the correspondence table in a definition
   of its own.
+- The Rust printer as language-1.2 source and the standard library's output
+  buffer (SPEC.md §17.23, §17.22, §17.16, `BS-06` and `SL-05`, #92; no new
+  diagnostic code, no change to the language-1.2 identity). `LexLeanStd.Buffer`
+  writes in order into a buffer of a given capacity, with the capacity
+  exceeded a refusal of `finish`; it is chunked over today's primitives
+  because a chain of `append` is quadratic (the work counter quadruples as n
+  doubles). `bootstrap/src/RustPrint.lex.tex` over `RustAst.lex.tex` declares
+  `printCrate` and `printExpr` as production roots for `rust-std`. `BS-06`
+  runs 2,535 vectors under the pinned `rustc` on every host, and on the
+  normative host the evaluator on 539 + 1,937 of them and 400 + 399 seeded
+  mutants, 2,984 more under `rustc`, twelve planted defects, and the certified
+  packages against the committed ones. The register is 445 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or

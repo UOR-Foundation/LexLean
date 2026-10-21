@@ -17,10 +17,10 @@ use lexlean::calculus::{OrderingValue, Value};
 use serde_json::Value as Json;
 
 use super::rust_validate::{
-    adt, boolean, chain, enc_capture, enc_ctor, enc_dispatch, enc_ident, enc_item, enc_kind,
-    enc_origin, enc_row, enc_type, enc_types, nat,
+    adt, boolean, chain, enc_ctor, enc_dispatch, enc_ident, enc_item, enc_kind, enc_origin,
+    enc_row, enc_type, enc_types, nat,
 };
-use super::{bytes, list, text, Run};
+use super::{bytes, text, Run};
 
 /// The text a write past the capacity is refused with, as `Buffer.finish`
 /// spells it.
@@ -464,7 +464,15 @@ fn literals() -> Vec<Lit> {
     ];
     for kind in lexlean::calculus::IntKind::ALL {
         let (low, high) = kind.range();
-        for value in [0, 1, high, high - 1, low, low + 1, if kind.signed() { -1 } else { 2 }] {
+        for value in [
+            0,
+            1,
+            high,
+            high - 1,
+            low,
+            low + 1,
+            if kind.signed() { -1 } else { 2 },
+        ] {
             out.push(Lit::Fixed(kind, value));
         }
     }
@@ -513,7 +521,10 @@ fn types() -> Vec<ast::Type> {
         T::Fallible(Box::new(T::Unit)),
         T::Ref(Box::new(T::Bytes)),
         T::Result(nat(), Box::new(T::Str)),
-        T::Pair(nat(), Box::new(T::Pair(Box::new(T::Bool), Box::new(T::Unit)))),
+        T::Pair(
+            nat(),
+            Box::new(T::Pair(Box::new(T::Bool), Box::new(T::Unit))),
+        ),
     ];
     out.extend(lexlean::calculus::IntKind::ALL.map(T::Fixed));
     out
@@ -528,7 +539,11 @@ fn patterns() -> Vec<Pat> {
         bind(4),
         Pat::Tuple(Vec::new()),
         Pat::Tuple(vec![bind(1)]),
-        Pat::Tuple(vec![bind(1), Pat::Wild, Pat::Tuple(vec![bind(2), Pat::Unit])]),
+        Pat::Tuple(vec![
+            bind(1),
+            Pat::Wild,
+            Pat::Tuple(vec![bind(2), Pat::Unit]),
+        ]),
         Pat::Some(Box::new(bind(1))),
         Pat::Ok(Box::new(Pat::Wild)),
         Pat::Err(Box::new(Pat::Some(Box::new(bind(3))))),
@@ -553,7 +568,10 @@ fn patterns() -> Vec<Pat> {
 /// scrutinee that is a block, a loop, a machine call with extra operands.
 #[allow(clippy::too_many_lines)]
 fn expressions() -> Vec<Expr> {
-    let mut out: Vec<Expr> = literals().into_iter().map(|lit| Expr::Lit(lit, at())).collect();
+    let mut out: Vec<Expr> = literals()
+        .into_iter()
+        .map(|lit| Expr::Lit(lit, at()))
+        .collect();
     for ident in idents() {
         out.extend([
             Expr::Move(ident.clone(), at()),
@@ -588,7 +606,11 @@ fn expressions() -> Vec<Expr> {
         Expr::Box(Box::new(read(1)), at()),
         Expr::Widen(Box::new(read(1)), at()),
         Expr::Succeed(Box::new(unit()), at()),
-        Expr::Pair(Box::new(read(1)), Box::new(Expr::Pair(Box::new(read(2)), Box::new(unit()), at())), at()),
+        Expr::Pair(
+            Box::new(read(1)),
+            Box::new(Expr::Pair(Box::new(read(2)), Box::new(unit()), at())),
+            at(),
+        ),
     ]);
     // Constructors, with and without operands.
     for ty in types().into_iter().take(12) {
@@ -673,7 +695,10 @@ fn expressions() -> Vec<Expr> {
     out.extend([
         Expr::Block(Box::new(unit_block())),
         Expr::Block(Box::new(value_block())),
-        Expr::Block(Box::new(block(vec![typed.clone(), bind(2, unit())], unit()))),
+        Expr::Block(Box::new(block(
+            vec![typed.clone(), bind(2, unit())],
+            unit(),
+        ))),
         Expr::Block(Box::new(block(vec![typed], read(1)))),
         Expr::If {
             condition: Box::new(read(0)),
@@ -787,12 +812,19 @@ fn crates() -> Vec<Crate> {
     let mut items = Vec::new();
     items.push(ItemDef::Enum {
         name: T::Adt(0),
-        variants: vec![(0, Vec::new()), (1, vec![T::Nat]), (2, vec![T::Str, T::List(Box::new(T::Bool))])],
+        variants: vec![
+            (0, Vec::new()),
+            (1, vec![T::Nat]),
+            (2, vec![T::Str, T::List(Box::new(T::Bool))]),
+        ],
         at: at(),
     });
     items.push(ItemDef::Enum {
         name: T::Fn(0),
-        variants: vec![(3, Vec::new()), (4, vec![T::Rc(Box::new(T::Fn(0))), T::Unit])],
+        variants: vec![
+            (3, Vec::new()),
+            (4, vec![T::Rc(Box::new(T::Fn(0))), T::Unit]),
+        ],
         at: at(),
     });
     items.push(ItemDef::Enum {
@@ -855,8 +887,14 @@ fn crates() -> Vec<Crate> {
         for parameters in [
             Vec::new(),
             vec![(Pat::Bind(Ident::Param(0)), T::Nat)],
-            vec![(Pat::Wild, T::Unit), (Pat::Bind(Ident::Param(1)), T::Ref(Box::new(T::Bytes)))],
-            vec![(Pat::Tuple(vec![Pat::Wild, Pat::Bind(local(2))]), T::Pair(Box::new(T::Nat), Box::new(T::Nat)))],
+            vec![
+                (Pat::Wild, T::Unit),
+                (Pat::Bind(Ident::Param(1)), T::Ref(Box::new(T::Bytes))),
+            ],
+            vec![(
+                Pat::Tuple(vec![Pat::Wild, Pat::Bind(local(2))]),
+                T::Pair(Box::new(T::Nat), Box::new(T::Nat)),
+            )],
         ] {
             for body in [
                 block(Vec::new(), unit()),
@@ -1096,6 +1134,24 @@ const ROOTS: [(&str, &[&str]); 2] = [
     ("printExpr", &["allocation", "overflow", "recursion"]),
 ];
 
+// The counts SPEC.md §17.23, the register statement of BS-06, its scenario,
+// and VERIFICATION.md state, over the tree with the packages of the two roots
+// committed: the case fails when the tree no longer gives them.
+const COMMITTED_MANIFESTS: usize = 252;
+const COMMITTED_FIXTURES: usize = 122;
+const COMMITTED_PROGRAMS: usize = 169;
+const COMMITTED_CRATES: usize = 228;
+const COMMITTED_PACKAGES: usize = 252;
+const VECTORS_CRATE: usize = 598;
+const COMMITTED_DISTINCT: usize = 456;
+const REFUSED_CRATE: usize = 56;
+const VECTORS_EXPR: usize = 1_937;
+const HAND_EXPR: usize = 1_404;
+const EVALUATOR_CRATE: usize = 539;
+const SEEDED_CRATE: usize = 400;
+const SEEDED_EXPR: usize = 399;
+const RUSTC_SEEDED_RUNS: usize = 2_984;
+
 /// The crates the evaluator is given in full: those of at most this many
 /// expressions.
 const EVALUATOR_CAP: usize = 400;
@@ -1210,6 +1266,17 @@ pub(super) fn case() {
             "the committed library ends with the printed items"
         );
     }
+    assert_eq!(
+        (manifests, fixtures, distinct, all.len(), packages.len()),
+        (
+            COMMITTED_MANIFESTS,
+            COMMITTED_FIXTURES,
+            COMMITTED_PROGRAMS,
+            COMMITTED_CRATES,
+            COMMITTED_PACKAGES
+        ),
+        "the committed manifests, fixtures, distinct programs, distinct crates, and packages"
+    );
     eprintln!(
         "BS-06: {manifests} manifests, {fixtures} fixtures, {distinct} programs, {} crates, {} packages ({:?})",
         all.len(),
@@ -1267,6 +1334,25 @@ pub(super) fn case() {
         started.elapsed()
     );
 
+    assert_eq!(
+        (
+            crate_runs.len(),
+            committed_count,
+            refused(&crate_runs),
+            expr_runs.len(),
+            hand_exprs,
+            refused(&expr_runs)
+        ),
+        (
+            VECTORS_CRATE,
+            COMMITTED_DISTINCT,
+            REFUSED_CRATE,
+            VECTORS_EXPR,
+            HAND_EXPR,
+            0
+        ),
+        "the vectors of printCrate and printExpr, the committed crates among them, and the refused"
+    );
     let checked = support::checked_project(&project);
     let crate_root = super::lower(&checked, &project, MODULE, "printCrate");
     let expr_root = super::lower(&checked, &project, MODULE, "printExpr");
@@ -1304,6 +1390,11 @@ pub(super) fn case() {
             "{root}: the evaluator and the Rust printer disagree on the vectors: {disagreements:?}"
         );
     }
+    assert_eq!(
+        evaluator_crates.len(),
+        EVALUATOR_CRATE,
+        "the vectors the evaluator is given"
+    );
     eprintln!(
         "BS-06: the evaluator agrees on {} + {} vectors ({:?})",
         evaluator_crates.len(),
@@ -1323,6 +1414,11 @@ pub(super) fn case() {
             "{root}: the evaluator and the Rust printer disagree on the seeded mutants: {disagreements:?}"
         );
     }
+    assert_eq!(
+        (seeded_crates.len(), seeded_exprs.len()),
+        (SEEDED_CRATE, SEEDED_EXPR),
+        "the seeded mutants the evaluator is given"
+    );
     eprintln!(
         "BS-06: the evaluator agrees on {} + {} seeded mutants ({:?})",
         seeded_crates.len(),
@@ -1331,13 +1427,17 @@ pub(super) fn case() {
     );
     let mut large = super::Seeded(0x0B55_0066);
     let (large_crates, large_exprs) = mutants(&bases, &mut large, RUSTC_MUTANTS);
-    super::rust_validate::rustc_differential(
+    let large_runs = super::rust_validate::rustc_differential(
         "BS-06",
         &[
             ("printCrate", &crate_root, &large_crates),
             ("printExpr", &expr_root, &large_exprs),
         ],
         "seeded",
+    );
+    assert_eq!(
+        large_runs, RUSTC_SEEDED_RUNS,
+        "the further seeded mutants under rustc"
     );
     // The gate is armed: each defect planted in a copy of the source is a
     // disagreement with the oracle.
@@ -1352,7 +1452,11 @@ pub(super) fn case() {
     );
     detection.insert(
         "printExpr",
-        evaluator_exprs.iter().chain(&seeded_exprs).cloned().collect(),
+        evaluator_exprs
+            .iter()
+            .chain(&seeded_exprs)
+            .cloned()
+            .collect(),
     );
     for plant in &PLANTS {
         let planted = support::P::bootstrap();
@@ -1439,7 +1543,10 @@ pub(super) fn case() {
 const EVALUATOR_NODES: usize = 6_000;
 
 fn value_nodes_of(arguments: &[Value]) -> usize {
-    arguments.iter().map(super::rust_validate::value_nodes).sum()
+    arguments
+        .iter()
+        .map(super::rust_validate::value_nodes)
+        .sum()
 }
 
 fn small_crates(
