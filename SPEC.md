@@ -10497,7 +10497,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-12` | `language-models` | Every fixed helper of the text-laws library is covered by the conformance suite: each of the library functions an elaboration applies is realized, produced or evaluated by the kernel against a reference vector, and each of its lemmas is applied by a generated proof that the pinned Lean checks; a library function or lemma that no case reaches fails the coverage audit with its name. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 436.
+**Total required capability IDs:** 439.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 
