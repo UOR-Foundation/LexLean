@@ -4,7 +4,10 @@
 //! evaluated; the reader accepts exactly the constructors of `RuntimeSyntax`,
 //! each with its own arity, and refuses every other shape by name.
 
-use super::rt::{Block, Crate, Expr, Function, Generic, Item, Lit, Param, Pat, Profile, Sig, Type};
+use super::rt::{
+    Arm, Block, Crate, Expr, Function, Generic, Item, Lit, Op, Param, Pat, Profile, Sig, Type,
+    Variant,
+};
 use super::source::{embedded_file, fail, with_reader, Reader};
 use crate::artifact::canonical_json::Json;
 
@@ -81,7 +84,9 @@ impl<'a> Reader<'a> {
             }
             "bool" => Lit::Bool(self.boolean(&Self::arity(a, 1, "RtLit", short)?[0], "a literal")?),
             "nat" => Lit::Nat(self.nat(&Self::arity(a, 1, "RtLit", short)?[0], "a literal")?),
-            "char" => Lit::Char(self.string(&Self::arity(a, 1, "RtLit", short)?[0], "a character")?),
+            "char" => {
+                Lit::Char(self.string(&Self::arity(a, 1, "RtLit", short)?[0], "a character")?)
+            }
             "str" => Lit::Str(self.string(&Self::arity(a, 1, "RtLit", short)?[0], "a string")?),
             other => return fail(format!("`RtLit.{other}` is not a literal")),
         })
@@ -170,7 +175,9 @@ impl<'a> Reader<'a> {
         let boxed = |this: &Self, at: &'a Json| this.rt_expr(at).map(Box::new);
         let exprs = |this: &Self, at: &'a Json| this.list(at, "arguments", Self::rt_expr);
         let optional = |this: &Self, at: &'a Json| {
-            this.optional(at, "an optional expression", |t, x| t.rt_expr(x).map(Box::new))
+            this.optional(at, "an optional expression", |t, x| {
+                t.rt_expr(x).map(Box::new)
+            })
         };
         Ok(match short {
             "var" => Expr::Var(self.string(&take(1)?[0], "a variable")?),
@@ -203,10 +210,7 @@ impl<'a> Reader<'a> {
             }
             "matchOn" => {
                 let a = take(2)?;
-                Expr::Match(
-                    boxed(self, &a[0])?,
-                    self.list(&a[1], "arms", Self::rt_arm)?,
-                )
+                Expr::Match(boxed(self, &a[0])?, self.list(&a[1], "arms", Self::rt_arm)?)
             }
             "letE" => {
                 let a = take(3)?;
@@ -222,20 +226,32 @@ impl<'a> Reader<'a> {
             }
             "ifElse" => {
                 let a = take(3)?;
-                Expr::If(boxed(self, &a[0])?, self.rt_block(&a[1])?, self.rt_block(&a[2])?)
+                Expr::If(
+                    boxed(self, &a[0])?,
+                    Box::new(self.rt_block(&a[1])?),
+                    Box::new(self.rt_block(&a[2])?),
+                )
             }
             "whileLoop" => {
                 let a = take(2)?;
-                Expr::While(boxed(self, &a[0])?, self.rt_block(&a[1])?)
+                Expr::While(boxed(self, &a[0])?, Box::new(self.rt_block(&a[1])?))
             }
             "whileLet" => {
                 let a = take(3)?;
-                Expr::WhileLet(self.rt_pat(&a[0])?, boxed(self, &a[1])?, self.rt_block(&a[2])?)
+                Expr::WhileLet(
+                    self.rt_pat(&a[0])?,
+                    boxed(self, &a[1])?,
+                    Box::new(self.rt_block(&a[2])?),
+                )
             }
-            "loopE" => Expr::Loop(self.rt_block(&take(1)?[0])?),
+            "loopE" => Expr::Loop(Box::new(self.rt_block(&take(1)?[0])?)),
             "forIn" => {
                 let a = take(3)?;
-                Expr::For(self.rt_pat(&a[0])?, boxed(self, &a[1])?, self.rt_block(&a[2])?)
+                Expr::For(
+                    self.rt_pat(&a[0])?,
+                    boxed(self, &a[1])?,
+                    Box::new(self.rt_block(&a[2])?),
+                )
             }
             "breakE" => {
                 take(0)?;
@@ -262,7 +278,11 @@ impl<'a> Reader<'a> {
             }
             "rangeSlice" => {
                 let a = take(3)?;
-                Expr::RangeSlice(boxed(self, &a[0])?, optional(self, &a[1])?, optional(self, &a[2])?)
+                Expr::RangeSlice(
+                    boxed(self, &a[0])?,
+                    optional(self, &a[1])?,
+                    optional(self, &a[2])?,
+                )
             }
             "deref" => Expr::Deref(boxed(self, &take(1)?[0])?),
             "borrowMut" => Expr::BorrowMut(boxed(self, &take(1)?[0])?),
@@ -275,7 +295,7 @@ impl<'a> Reader<'a> {
                     exprs(self, &a[3])?,
                 )
             }
-            "blockE" => Expr::Block(self.rt_block(&take(1)?[0])?),
+            "blockE" => Expr::Block(Box::new(self.rt_block(&take(1)?[0])?)),
             other => return fail(format!("`RtExpr.{other}` is not an expression")),
         })
     }
@@ -308,7 +328,8 @@ impl<'a> Reader<'a> {
             receiver: self.boolean(receiver, "a receiver")?,
             exclusive: self.boolean(exclusive, "an exclusive receiver")?,
             params: self.list(params, "parameters", |this, at| {
-                let [name, mutable, ty] = this.record(at, "RtParam", ["name", "mutable", "type"])?;
+                let [name, mutable, ty] =
+                    this.record(at, "RtParam", ["name", "mutable", "type"])?;
                 Ok(Param {
                     name: this.string(name, "a parameter")?,
                     mutable: this.boolean(mutable, "a mutable parameter")?,

@@ -9,13 +9,27 @@
 
 use std::collections::BTreeMap;
 
-use lexlean::calculus::rust::rt::{
-    self, Block, Crate, Expr, Item, Lit, Pat, Profile, Type,
-};
+use lexlean::calculus::rust::rt::{self, Block, Crate, Expr, Item, Lit, Pat, Profile, Type};
 use lexlean::calculus::rust::{rt_decode, rt_validate};
 
 use crate::rust_build::{cargo_in, workspace, Built};
 use crate::support::repo_root;
+
+/// The rules of the validator that this case plants and `RB-17`'s does not:
+/// those of the constructs the module grew by. `RB-17` requires the rules in
+/// the validator's source to be its own planted rules and these.
+pub(super) const RULES: [&str; 10] = [
+    "assign-immutable",
+    "assign-place",
+    "break-position",
+    "let-position",
+    "param-duplicate",
+    "pattern-duplicate",
+    "pattern-fields",
+    "struct-fields",
+    "tuple-arity",
+    "variant-name",
+];
 
 const MODULE: &str = "compiler/src/RuntimeProbe.lex.tex";
 const SHIPPED: &str = "language/rust-runtime-1.2/RuntimeProbe.lex.tex";
@@ -114,6 +128,19 @@ fn with_statement(krate: &Crate, name: &str, statement: Expr) -> Crate {
     out
 }
 
+/// `krate` with the function `name` given one more parameter.
+fn with_param(krate: &Crate, name: &str, param: rt::Param) -> Crate {
+    let mut out = krate.clone();
+    for item in &mut out.items {
+        if let Item::Fn(function) = item {
+            if function.sig.name == name {
+                function.sig.params.push(param.clone());
+            }
+        }
+    }
+    out
+}
+
 fn var(name: &str) -> Box<Expr> {
     Box::new(Expr::Var(name.to_owned()))
 }
@@ -132,36 +159,107 @@ pub fn run(id: &str) {
 
     let krate = rt_decode::decode_named(&shipped, "probeCrate").expect("the probe decodes");
     assert_eq!(krate.profile, Profile::Std);
-    assert!(krate.items.len() >= 30, "the probe holds an item of each construct");
+    assert!(
+        krate.items.len() >= 30,
+        "the probe holds an item of each construct"
+    );
     rt_validate::validate(&krate).expect("the probe is valid");
     let text = rt::print(&krate);
     let ran = compile_and_run(&text).expect("the printed probe computes what the harness states");
     assert_eq!(ran, "probe");
 
-    // Each construct the module grew by occurs in the probe: the case lists
-    // the debug names of the variants the decoded crate holds and requires
-    // every constructor to be among them.
+    // Each construct the module grew by occurs in the probe, so that the
+    // harness's independent computation is evidence for it: the identifiers
+    // of the decoded crate's debug form, each with whether an argument list
+    // follows (`Char(` the literal, `Char` the type).
     let seen = format!("{krate:?}");
-    for construct in [
-        "TupleStruct(", "RecordStruct(", "Enum(", "Wide(", "Size", "Char", "Str", "Slice(",
-        "RefMut(", "BindMut(", "Tuple(", "TupleStruct(", "Struct(", "Lit(Char", "Lit(Str",
-        "Let(", "Assign(", "If(", "While(", "WhileLet(", "Loop(", "For(", "Break",
-        "Return(", "StructLit(", "Binary(", "Not(", "Cast(", "Index(", "RangeSlice(",
-        "Deref(", "BorrowMut(", "MethodOf(", "Block(", "FieldNamed(", "guard: Some",
-    ] {
-        assert!(seen.contains(construct), "the probe has no `{construct}`");
+    let mut tokens: std::collections::BTreeSet<(String, bool)> = std::collections::BTreeSet::new();
+    let bytes = seen.as_bytes();
+    let mut at = 0;
+    while at < bytes.len() {
+        if bytes[at].is_ascii_uppercase() && (at == 0 || !bytes[at - 1].is_ascii_alphanumeric()) {
+            let end = (at..bytes.len())
+                .find(|&to| !bytes[to].is_ascii_alphanumeric())
+                .unwrap_or(bytes.len());
+            tokens.insert((seen[at..end].to_owned(), bytes.get(end) == Some(&b'(')));
+            at = end;
+        } else {
+            at += 1;
+        }
     }
+    for (name, arguments) in [
+        // items and variants
+        ("TupleStruct", true),
+        ("RecordStruct", true),
+        ("Enum", true),
+        ("Unit", true),
+        ("Record", true),
+        // types
+        ("Wide", true),
+        ("Size", false),
+        ("Char", false),
+        ("Str", false),
+        ("Slice", true),
+        ("RefMut", true),
+        // literals
+        ("Char", true),
+        ("Str", true),
+        // patterns
+        ("BindMut", true),
+        ("Tuple", true),
+        ("TupleStruct", true),
+        ("Struct", true),
+        ("Lit", true),
+        // expressions
+        ("Let", true),
+        ("Assign", true),
+        ("If", true),
+        ("While", true),
+        ("WhileLet", true),
+        ("Loop", true),
+        ("For", true),
+        ("Break", false),
+        ("Return", true),
+        ("StructLit", true),
+        ("Binary", true),
+        ("Not", true),
+        ("Cast", true),
+        ("Index", true),
+        ("RangeSlice", true),
+        ("Deref", true),
+        ("BorrowMut", true),
+        ("MethodOf", true),
+        ("Block", true),
+        ("FieldNamed", true),
+    ] {
+        assert!(
+            tokens.contains(&(name.to_owned(), arguments)),
+            "the probe has no `{name}`"
+        );
+    }
+    for op in [
+        "Add", "Sub", "Mul", "Div", "Rem", "AndAnd", "OrOr", "Ne", "Lt", "Le", "Gt", "Ge",
+    ] {
+        assert!(
+            tokens.contains(&(op.to_owned(), false)),
+            "the probe has no operator `{op}`"
+        );
+    }
+    assert!(seen.contains("guard: Some"), "the probe has no guarded arm");
 
     // The core profile refuses every allocating name of the table as the
     // hidden allocation the validator refuses in every `rust-core` crate.
     let mut core = krate.clone();
     core.profile = Profile::Core;
+    core.items
+        .retain(|item| !matches!(item, Item::Use(path, _) if path[0] == "std"));
     let error = rt_validate::validate(&core).expect_err("the probe allocates");
     assert!(error.contains("hidden-allocation"), "{error}");
 
     // Each refusal of the validator, planted on the decoded crate and
     // asserted by the rule it names.
     let unit = Expr::Lit(Lit::Unit);
+    let mut planted_rules: std::collections::BTreeSet<&str> = std::collections::BTreeSet::new();
     for (what, planted, rule) in [
         (
             "a break outside a loop",
@@ -252,17 +350,59 @@ pub fn run(id: &str) {
                 "flip",
                 Expr::If(
                     Box::new(Expr::Let(Pat::Wild, None, Box::new(unit.clone()))),
-                    Block {
+                    Box::new(Block {
                         statements: vec![],
                         tail: unit.clone(),
-                    },
-                    Block {
+                    }),
+                    Box::new(Block {
                         statements: vec![],
                         tail: unit.clone(),
-                    },
+                    }),
                 ),
             ),
             "let-position",
+        ),
+        (
+            "an assignment to a value that is no place",
+            with_statement(
+                &krate,
+                "flip",
+                Expr::Assign(Box::new(unit.clone()), Box::new(unit.clone())),
+            ),
+            "assign-place",
+        ),
+        (
+            "two parameters of one name",
+            with_param(
+                &krate,
+                "flip",
+                rt::Param {
+                    name: "b".to_owned(),
+                    mutable: false,
+                    ty: Type::Bool,
+                },
+            ),
+            "param-duplicate",
+        ),
+        (
+            "a struct pattern that names a field the variant lacks",
+            with_statement(
+                &krate,
+                "flip",
+                Expr::Match(
+                    Box::new(unit.clone()),
+                    vec![rt::Arm {
+                        pattern: Pat::Struct(
+                            vec!["Shape".to_owned(), "Box2".to_owned()],
+                            vec!["zzz".to_owned()],
+                            vec![Pat::Wild],
+                        ),
+                        guard: None,
+                        body: unit.clone(),
+                    }],
+                ),
+            ),
+            "pattern-fields",
         ),
         (
             "a variant the enum lacks",
@@ -291,6 +431,13 @@ pub fn run(id: &str) {
         assert!(
             error.contains(&format!("runtime support: {rule}")),
             "{what}: {error}"
+        );
+        planted_rules.insert(rule);
+    }
+    for rule in RULES {
+        assert!(
+            planted_rules.contains(rule),
+            "the rule `{rule}` has no plant"
         );
     }
 
@@ -325,5 +472,15 @@ pub fn run(id: &str) {
         assert_ne!(edited, shipped, "{what}: the plant site exists");
         let error = rt_decode::decode_named(&edited, "probeCrate").expect_err(what);
         assert!(error.contains(message), "{what}: {error}");
+    }
+
+    // The module is accepted by the pinned Lean: its term is well typed
+    // against `RuntimeSyntax`.
+    if crate::support::lean_backed("RB-19") {
+        let project = super::rust_refinement::project_of(
+            &[("RuntimeProbe", module.as_str())],
+            &["TargetSyntax", "RuntimeSyntax", "RuntimeProbe"],
+        );
+        let _ = crate::support::verify_ok(&project);
     }
 }

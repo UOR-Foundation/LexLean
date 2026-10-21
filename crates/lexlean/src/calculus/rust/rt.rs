@@ -118,11 +118,11 @@ pub enum Expr {
     /// statements after it.
     Let(Pat, Option<Type>, Box<Expr>),
     Assign(Box<Expr>, Box<Expr>),
-    If(Box<Expr>, Block, Block),
-    While(Box<Expr>, Block),
-    WhileLet(Pat, Box<Expr>, Block),
-    Loop(Block),
-    For(Pat, Box<Expr>, Block),
+    If(Box<Expr>, Box<Block>, Box<Block>),
+    While(Box<Expr>, Box<Block>),
+    WhileLet(Pat, Box<Expr>, Box<Block>),
+    Loop(Box<Block>),
+    For(Pat, Box<Expr>, Box<Block>),
     Break,
     Return(Option<Box<Expr>>),
     Tuple(Vec<Expr>),
@@ -137,7 +137,7 @@ pub enum Expr {
     BorrowMut(Box<Expr>),
     /// A method call with type arguments: `recv.name::<T>(args)`.
     MethodOf(Box<Expr>, String, Vec<Type>, Vec<Expr>),
-    Block(Block),
+    Block(Box<Block>),
 }
 
 /// A function body: statements whose values are dropped, then the value.
@@ -244,7 +244,10 @@ impl Type {
             Type::Pair(a, b) => format!("({}, {})", a.print(scope), b.print(scope)),
             Type::Named(name, arguments) if arguments.is_empty() => name.clone(),
             Type::Named(name, arguments) => {
-                format!("{name}<{}>", list(arguments, |argument| argument.print(scope)))
+                format!(
+                    "{name}<{}>",
+                    list(arguments, |argument| argument.print(scope))
+                )
             }
             Type::Wide(true) => "u128".to_owned(),
             Type::Wide(false) => "i128".to_owned(),
@@ -410,7 +413,8 @@ impl Expr {
             Expr::RangeSlice(inner, from, to) => format!(
                 "{}[{}..{}]",
                 inner.at(POSTFIX),
-                from.as_ref().map_or_else(String::new, |from| from.at(RANGE + 1)),
+                from.as_ref()
+                    .map_or_else(String::new, |from| from.at(RANGE + 1)),
                 to.as_ref().map_or_else(String::new, |to| to.at(RANGE + 1))
             ),
             Expr::Match(scrutinee, arms) => format!(
@@ -428,7 +432,9 @@ impl Expr {
                     .join(" ")
             ),
             Expr::Let(pattern, ty, value) => {
-                let ty = ty.as_ref().map_or_else(String::new, |ty| format!(": {}", ty.print(&[])));
+                let ty = ty
+                    .as_ref()
+                    .map_or_else(String::new, |ty| format!(": {}", ty.print(&[])));
                 format!("let {}{ty} = {}", pattern.print(), value.print())
             }
             Expr::Assign(place, value) => format!("{} = {}", place.print(), value.print()),
@@ -442,11 +448,21 @@ impl Expr {
             }
             Expr::While(condition, body) => format!("while {} {}", condition.print(), body.print()),
             Expr::WhileLet(pattern, value, body) => {
-                format!("while let {} = {} {}", pattern.print(), value.print(), body.print())
+                format!(
+                    "while let {} = {} {}",
+                    pattern.print(),
+                    value.print(),
+                    body.print()
+                )
             }
             Expr::Loop(body) => format!("loop {}", body.print()),
             Expr::For(pattern, iterator, body) => {
-                format!("for {} in {} {}", pattern.print(), iterator.print(), body.print())
+                format!(
+                    "for {} in {} {}",
+                    pattern.print(),
+                    iterator.print(),
+                    body.print()
+                )
             }
             Expr::Break => "break".to_owned(),
             Expr::Return(None) => "return".to_owned(),
@@ -620,7 +636,9 @@ impl Item {
             }
             Item::Impl(generics, tr, ty, functions) => {
                 let scope: Vec<&str> = generics.iter().map(|g| g.name.as_str()).collect();
-                let of = tr.as_ref().map_or_else(String::new, |tr| format!("{tr} for "));
+                let of = tr
+                    .as_ref()
+                    .map_or_else(String::new, |tr| format!("{tr} for "));
                 let mut text = format!("impl{} {of}{} {{\n", bounded(generics), ty.print(&scope));
                 for function in functions {
                     text.push_str(&format!("    {}\n", function.print(generics)));

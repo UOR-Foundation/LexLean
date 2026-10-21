@@ -55,7 +55,7 @@ const WRAPPERS: [(&str, usize); 3] = [("Some", 1), ("Ok", 1), ("Err", 1)];
 
 /// The methods a crate may call on a value without declaring them, with the
 /// number of arguments after the receiver and whether the call allocates.
-const METHODS: [(&str, usize, bool); 26] = [
+const METHODS: [(&str, usize, bool); 27] = [
     ("fetch_add", 2, false),
     ("load", 1, false),
     ("cmp", 1, false),
@@ -74,6 +74,7 @@ const METHODS: [(&str, usize, bool); 26] = [
     ("rev", 0, false),
     ("get", 1, false),
     ("copied", 0, false),
+    ("ok", 0, false),
     ("clone", 0, false),
     ("to_string", 0, true),
     ("as_bytes", 0, false),
@@ -183,7 +184,11 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
                 if fields.len() != types.len() {
                     return rule(
                         "struct-fields",
-                        format!("`{name}` has {} field names and {} types", fields.len(), types.len()),
+                        format!(
+                            "`{name}` has {} field names and {} types",
+                            fields.len(),
+                            types.len()
+                        ),
                     );
                 }
                 scope.structs.insert(name, (fields.clone(), generics.len()));
@@ -212,7 +217,11 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
                 once(&mut declared, name)?;
                 scope.traits.insert(name, sigs);
                 for sig in sigs {
-                    scope.methods.entry(&sig.name).or_default().push(sig.params.len());
+                    scope
+                        .methods
+                        .entry(&sig.name)
+                        .or_default()
+                        .push(sig.params.len());
                 }
             }
             Item::Fn(function) => {
@@ -246,7 +255,10 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
                 let mut seen = Vec::new();
                 for sig in sigs {
                     if seen.contains(&sig.name.as_str()) {
-                        return rule("trait-method", format!("`{name}` declares `{}` twice", sig.name));
+                        return rule(
+                            "trait-method",
+                            format!("`{name}` declares `{}` twice", sig.name),
+                        );
                     }
                     seen.push(&sig.name);
                     scope.sig(sig, 0, true)?;
@@ -273,7 +285,10 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
                 if !function.public {
                     return rule(
                         "function-visibility",
-                        format!("`{}` is a free function that is not public", function.sig.name),
+                        format!(
+                            "`{}` is a free function that is not public",
+                            function.sig.name
+                        ),
                     );
                 }
                 if function.sig.receiver {
@@ -346,7 +361,11 @@ impl<'a> Frame<'a> {
 
     fn with(&self, bound: Vec<(String, bool)>, in_loop: bool) -> Frame<'a> {
         let mut variables = self.variables.clone();
-        variables.extend(bound.into_iter().map(|(name, mutable)| (name, mutable, None)));
+        variables.extend(
+            bound
+                .into_iter()
+                .map(|(name, mutable)| (name, mutable, None)),
+        );
         Frame {
             generics: self.generics.clone(),
             variables,
@@ -359,9 +378,12 @@ impl<'a> Frame<'a> {
 /// The names a pattern binds, each with whether it is `mut`; a name bound
 /// twice is refused.
 fn binds(pattern: &Pat, out: &mut Vec<(String, bool)>) -> Result<(), String> {
-    let mut one = |name: &String, mutable: bool, out: &mut Vec<(String, bool)>| {
+    let one = |name: &String, mutable: bool, out: &mut Vec<(String, bool)>| {
         if out.iter().any(|(held, _)| held == name) {
-            return rule("pattern-duplicate", format!("`{name}` is bound twice in one pattern"));
+            return rule(
+                "pattern-duplicate",
+                format!("`{name}` is bound twice in one pattern"),
+            );
         }
         out.push((name.clone(), mutable));
         Ok(())
@@ -408,9 +430,10 @@ impl<'a> Scope<'a> {
             Type::SelfType if has_self => Ok(()),
             Type::SelfType => rule("self-type", "`Self` outside a trait or an impl"),
             Type::Param(at) if usize::try_from(*at).is_ok_and(|at| at < params) => Ok(()),
-            Type::Param(at) => {
-                rule("type-parameter", format!("parameter {at} of {params} in scope"))
-            }
+            Type::Param(at) => rule(
+                "type-parameter",
+                format!("parameter {at} of {params} in scope"),
+            ),
             Type::Ref(inner) | Type::RefMut(inner) | Type::Slice(inner) => {
                 self.ty(inner, params, has_self)
             }
@@ -446,7 +469,10 @@ impl<'a> Scope<'a> {
                 if expected != arguments.len() {
                     return rule(
                         "type-arity",
-                        format!("`{name}` takes {expected} arguments, given {}", arguments.len()),
+                        format!(
+                            "`{name}` takes {expected} arguments, given {}",
+                            arguments.len()
+                        ),
                     );
                 }
                 arguments
@@ -509,7 +535,10 @@ impl<'a> Scope<'a> {
             if variables.iter().any(|(held, ..)| held == &param.name) {
                 return rule(
                     "param-duplicate",
-                    format!("`{}` names two parameters of `{}`", param.name, function.sig.name),
+                    format!(
+                        "`{}` names two parameters of `{}`",
+                        param.name, function.sig.name
+                    ),
                 );
             }
             variables.push((param.name.clone(), param.mutable, Some(param.ty.clone())));
@@ -544,20 +573,29 @@ impl<'a> Scope<'a> {
                 receiver: true,
                 exclusive: *exclusive,
                 params: Vec::new(),
-                result: if *exclusive { Type::Unit } else { Type::SelfType },
+                result: if *exclusive {
+                    Type::Unit
+                } else {
+                    Type::SelfType
+                },
             }];
             &std_sig
         } else {
             return rule("impl-trait", format!("`impl {tr}` names no declared trait"));
         };
         for sig in sigs {
-            let mut found = functions.iter().filter(|function| function.sig.name == sig.name);
+            let mut found = functions
+                .iter()
+                .filter(|function| function.sig.name == sig.name);
             match (found.next(), found.next()) {
                 (Some(function), None) if function.sig == *sig => {}
                 (Some(_), None) => {
                     return rule(
                         "impl-signature",
-                        format!("`impl {tr}` states `{}` with a signature other than the trait's", sig.name),
+                        format!(
+                            "`impl {tr}` states `{}` with a signature other than the trait's",
+                            sig.name
+                        ),
                     );
                 }
                 (None, _) => {
@@ -578,7 +616,10 @@ impl<'a> Scope<'a> {
             if !sigs.iter().any(|sig| sig.name == function.sig.name) {
                 return rule(
                     "impl-extra",
-                    format!("`impl {tr}` states `{}`, which the trait does not", function.sig.name),
+                    format!(
+                        "`impl {tr}` states `{}`, which the trait does not",
+                        function.sig.name
+                    ),
                 );
             }
             if function.public {
@@ -729,7 +770,11 @@ impl<'a> Scope<'a> {
                         if arity != Some(items.len()) {
                             return rule(
                                 "pattern-fields",
-                                format!("`{}` is matched with {} patterns", path.join("::"), items.len()),
+                                format!(
+                                    "`{}` is matched with {} patterns",
+                                    path.join("::"),
+                                    items.len()
+                                ),
                             );
                         }
                     }
@@ -739,7 +784,10 @@ impl<'a> Scope<'a> {
             Pat::Struct(path, names, items) => {
                 self.path(path)?;
                 if names.len() != items.len() {
-                    return rule("pattern-fields", "a struct pattern with unequal names and patterns");
+                    return rule(
+                        "pattern-fields",
+                        "a struct pattern with unequal names and patterns",
+                    );
                 }
                 if let Some(held) = self.record_fields(path) {
                     if let Some(extra) = names.iter().find(|name| !held.contains(name)) {
@@ -757,7 +805,10 @@ impl<'a> Scope<'a> {
     /// The field names of the struct or record variant a path names.
     fn record_fields(&self, path: &[String]) -> Option<Vec<String>> {
         match path {
-            [name] => self.structs.get(name.as_str()).map(|(fields, _)| fields.clone()),
+            [name] => self
+                .structs
+                .get(name.as_str())
+                .map(|(fields, _)| fields.clone()),
             [owner, variant] => self.enums.get(owner.as_str()).and_then(|(variants, _)| {
                 variants.iter().find_map(|held| match held {
                     Variant::Record(name, fields, _) if name == variant => Some(fields.clone()),
@@ -825,21 +876,32 @@ impl<'a> Scope<'a> {
                 let Some(expected) = expected else {
                     return rule(
                         "call-name",
-                        format!("`{}` is neither declared nor in the closed table", path.join("::")),
+                        format!(
+                            "`{}` is neither declared nor in the closed table",
+                            path.join("::")
+                        ),
                     );
                 };
                 if expected != arguments.len() {
                     return rule(
                         "call-arity",
-                        format!("`{}` takes {expected} arguments, given {}", path.join("::"), arguments.len()),
+                        format!(
+                            "`{}` takes {expected} arguments, given {}",
+                            path.join("::"),
+                            arguments.len()
+                        ),
                     );
                 }
-                arguments.iter().try_for_each(|argument| self.expr(argument, frame))
+                arguments
+                    .iter()
+                    .try_for_each(|argument| self.expr(argument, frame))
             }
             Expr::Method(receiver, name, arguments) => {
                 self.expr(receiver, frame)?;
                 self.method(receiver, name, arguments.len(), frame)?;
-                arguments.iter().try_for_each(|argument| self.expr(argument, frame))
+                arguments
+                    .iter()
+                    .try_for_each(|argument| self.expr(argument, frame))
             }
             Expr::MethodOf(receiver, name, types, arguments) => {
                 self.expr(receiver, frame)?;
@@ -862,7 +924,9 @@ impl<'a> Scope<'a> {
                 for ty in types {
                     self.ty(ty, frame.generics.len(), frame.selfs.is_some())?;
                 }
-                arguments.iter().try_for_each(|argument| self.expr(argument, frame))
+                arguments
+                    .iter()
+                    .try_for_each(|argument| self.expr(argument, frame))
             }
             Expr::Field(inner, _) | Expr::FieldNamed(inner, _) | Expr::Borrow(inner) => {
                 self.expr(inner, frame)
@@ -922,7 +986,10 @@ impl<'a> Scope<'a> {
                 let Some(held) = self.record_fields(path) else {
                     return rule(
                         "struct-fields",
-                        format!("`{}` is no record struct or record variant", path.join("::")),
+                        format!(
+                            "`{}` is no record struct or record variant",
+                            path.join("::")
+                        ),
                     );
                 };
                 let mut given = names.clone();
@@ -942,7 +1009,12 @@ impl<'a> Scope<'a> {
                 if arms.is_empty() {
                     return rule("match-arms", "a match with no arm");
                 }
-                for Arm { pattern, guard, body } in arms {
+                for Arm {
+                    pattern,
+                    guard,
+                    body,
+                } in arms
+                {
                     self.pattern(pattern)?;
                     let mut bound = Vec::new();
                     binds(pattern, &mut bound)?;
@@ -996,7 +1068,9 @@ impl<'a> Scope<'a> {
         let Some(counts) = self.methods.get(name) else {
             return rule(
                 "method-name",
-                format!("`{name}` is a method of no declared trait or impl and not in the closed table"),
+                format!(
+                    "`{name}` is a method of no declared trait or impl and not in the closed table"
+                ),
             );
         };
         if !counts.contains(&given) {

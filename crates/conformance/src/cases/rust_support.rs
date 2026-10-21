@@ -197,8 +197,8 @@ pub fn run(id: &str) {
         ),
         (
             "an impl that states another signature",
-            "{name := \"other\", type := (ctor RuntimeSyntax::RtType.ref (ctor RuntimeSyntax::RtType.selfType))}) (nil RuntimeSyntax::RtParam)), result := (ctor RuntimeSyntax::RtType.bool)}), generics := (nil RuntimeSyntax::RtGeneric), public := false",
-            "{name := \"other\", type := (ctor RuntimeSyntax::RtType.ref (ctor RuntimeSyntax::RtType.selfType))}) (nil RuntimeSyntax::RtParam)), result := (ctor RuntimeSyntax::RtType.ordering)}), generics := (nil RuntimeSyntax::RtGeneric), public := false",
+            "{name := \"other\", mutable := false, type := (ctor RuntimeSyntax::RtType.ref (ctor RuntimeSyntax::RtType.selfType))}) (nil RuntimeSyntax::RtParam)), result := (ctor RuntimeSyntax::RtType.bool)}), generics := (nil RuntimeSyntax::RtGeneric), public := false",
+            "{name := \"other\", mutable := false, type := (ctor RuntimeSyntax::RtType.ref (ctor RuntimeSyntax::RtType.selfType))}) (nil RuntimeSyntax::RtParam)), result := (ctor RuntimeSyntax::RtType.ordering)}), generics := (nil RuntimeSyntax::RtGeneric), public := false",
             0,
             "impl-signature",
         ),
@@ -282,6 +282,8 @@ pub fn run(id: &str) {
     // its source, so a rule added there is a failure here until it is planted.
     let source = read("crates/lexlean/src/calculus/rust/rt_validate.rs");
     let named = rules_named(&source);
+    // The rules of the constructs `RB-19` grew the set by are planted there.
+    planted.extend(super::rust_heap_syntax::RULES);
     let missing: Vec<&String> = named
         .iter()
         .filter(|name| !planted.contains(name.as_str()))
