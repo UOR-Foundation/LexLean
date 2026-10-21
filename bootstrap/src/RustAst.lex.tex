@@ -1,0 +1,116 @@
+\begin{lexlean}{RustAst}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{RustValidate}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: OrderingKind,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: OkLess, fields: []}, {name: OkEqual, fields: []}, {name: OkGreater, fields: []}]
+}
+
+inductive{
+  name: Lit,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: LitUnit, fields: []},
+    {name: LitBool, fields: [Bool]},
+    {name: LitNat, fields: [Nat]},
+    {name: LitInt, fields: [Bool, Nat]},
+    {name: LitFixed, fields: [RustValidate::IntKind, Bool, Nat]},
+    {name: LitStr, fields: [Bytes]},
+    {name: LitBytes, fields: [Bytes]},
+    {name: LitOrdering, fields: [OrderingKind]},
+    {name: LitOverflow, fields: []}
+  ]
+}
+
+inductive{
+  name: PatLeaf,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: PlWild, fields: []}, {name: PlUnit, fields: []}, {name: PlNone, fields: []}]
+}
+
+inductive{
+  name: Pat,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: PLeaf, fields: [PatLeaf]},
+    {name: PBind, fields: [RustValidate::Id]},
+    {name: PTuple, fields: [Pat]},
+    {name: PWrap, fields: [RustValidate::PatWrap, Pat]},
+    {name: PAdt, fields: [Nat, Nat, Pat]},
+    {name: PNil, fields: []},
+    {name: PCons, fields: [Pat, Pat]},
+    {name: POrdering, fields: [OrderingKind]}
+  ]
+}
+
+inductive{
+  name: Callee,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: CalFn, fields: [Nat]},
+    {name: CalRt, fields: [RustValidate::Rt]},
+    {name: CalMachine, fields: [Nat, (Option RustValidate::IntKind)]}
+  ]
+}
+
+inductive{
+  name: Expr,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: ELit, fields: [Lit, RustValidate::Origin]},
+    {name: ERead, fields: [RustValidate::ReadKind, RustValidate::Id, RustValidate::Origin]},
+    {name: EWrap, fields: [RustValidate::WrapKind, Expr, RustValidate::Origin]},
+    {name: ECall, fields: [Callee, Expr, Bool, RustValidate::Origin]},
+    {name: EApply, fields: [RustValidate::Id, Expr, Bool, RustValidate::Origin]},
+    {name: EConstruct, fields: [RustValidate::Con, Expr, RustValidate::Origin]},
+    {name: EPair, fields: [Expr, Expr, RustValidate::Origin]},
+    {name: EIf, fields: [Expr, Expr, Expr, RustValidate::Origin]},
+    {name: EMatch, fields: [Expr, Expr, RustValidate::Origin]},
+    {name: EBlockE, fields: [Expr]},
+    {name: EProbe, fields: [RustValidate::ProbeKind, RustValidate::Id, RustValidate::Origin]},
+    {name: EBlock, fields: [Expr, Expr]},
+    {name: ENil, fields: []},
+    {name: ECons, fields: [Expr, Expr]},
+    {name: ELet, fields: [Pat, Bool, RustValidate::Ty, Expr, RustValidate::Origin, Expr]},
+    {name: EArm, fields: [Pat, Expr, Expr]},
+    {name: ELoop, fields: [RustValidate::Id, Expr]}
+  ]
+}
+
+inductive{
+  name: Par,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: ParNil, fields: []}, {name: ParCons, fields: [Pat, RustValidate::Ty, Par]}]
+}
+
+inductive{
+  name: Def,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: DEnum, fields: [RustValidate::Ty, RustValidate::Row, RustValidate::Origin]},
+    {name: DApply, fields: [Nat, RustValidate::Ty, RustValidate::Ty, Bool, RustValidate::Dis, RustValidate::Origin]},
+    {name: DFunction, fields: [RustValidate::Id, Par, RustValidate::Ty, Expr, RustValidate::Origin]},
+    {name: DNil, fields: []},
+    {name: DCons, fields: [Def, Def]}
+  ]
+}
+
+structure{
+  name: Crate,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: core, type: Bool}, {name: items, type: Def}]
+}
+\end{semanticmodule}
+\end{lexlean}
