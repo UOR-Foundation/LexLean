@@ -18,7 +18,7 @@ const IMPORTED: [&str; 1] = ["TargetSyntax"];
 
 /// Each law with the functions its statement must be about: a theorem of the
 /// right name that states another function is refused.
-const LAWS: [(&str, &[&str]); 11] = [
+const LAWS: [(&str, &[&str]); 15] = [
     ("size_put", &["size", "put"]),
     (
         "get_put_same",
@@ -33,6 +33,26 @@ const LAWS: [(&str, &[&str]); 11] = [
     ("push_lands_in_slot", &["get", "put", "size", "append"]),
     ("below_truncated", &["lessThan", "minNat", "both"]),
     ("plus_assoc", &["plus"]),
+    (
+        "push_at_capacity",
+        &["bufPush", "pushResult", "lessThan", "plus", "size"],
+    ),
+    (
+        "push_with_room",
+        &["bufPush", "pushResult", "lessThan", "size", "append"],
+    ),
+    (
+        "get_truncated",
+        &[
+            "bufGet",
+            "bufTruncate",
+            "guardGet",
+            "lessThan",
+            "minNat",
+            "get",
+        ],
+    ),
+    ("window_of_window", &["subWindow", "plus"]),
 ];
 
 /// Each theorem of the module with the text of its statement.
@@ -117,11 +137,12 @@ fn check(id: &str) {
     let error = complete(&without).expect_err("a law without a theorem");
     assert!(error.contains("missing [\"plus_assoc\"]"), "{error}");
     let block = &text[start..end];
-    let other = text.replacen(block, &block.replace("plus", "minNat"), 1);
+    let other = text.replacen(block, &block.replace("(plus ", "(minNat "), 1);
     assert_ne!(other, text, "the plant site exists");
+    let error = complete(&other).expect_err("a theorem that states another function");
     assert!(
-        complete(&other).is_err(),
-        "a theorem that states another function is refused"
+        error.contains("`plus_assoc` does not state `plus`"),
+        "{error}"
     );
 
     if !support::lean_backed("SP-26") {
@@ -135,24 +156,28 @@ fn check(id: &str) {
     // A write that lands elsewhere, a write that drops a slot, an order of
     // indices that is reversed, and a truncation that keeps one too many are
     // each left unproved by Lean.
-    for (what, from, to) in [
+    for (what, goal, from, to) in [
         (
             "a write that lands elsewhere",
+            "⊢ some head = some item",
             "      | Nat.zero => (ctor Cells.CCons item tail)\n",
             "      | Nat.zero => (ctor Cells.CCons head tail)\n",
         ),
         (
             "a write that drops a slot",
+            "⊢ size tail = size tail + 1",
             "(ctor Cells.CCons head (put tail lower item))",
             "(put tail lower item)",
         ),
         (
             "an order of indices that is reversed",
+            "⊢ some item = none",
             "      | Nat.zero => (ctor Flag.yes)\n      | Nat.succ lower => (lessThan lower more)",
             "      | Nat.zero => (ctor Flag.no)\n      | Nat.succ lower => (lessThan lower more)",
         ),
         (
             "a truncation that keeps one too many",
+            "⊢ lessThan lower (minNat less oldLess + 1)",
             "((minNat more less) + 1)",
             "(((minNat more less) + 1) + 1)",
         ),
@@ -165,9 +190,10 @@ fn check(id: &str) {
         let planted = text.replacen(from, to, 1);
         let refused = project_of(&[("RustMemory", planted.as_str())], &IMPORTED);
         let error = refused.verify_fails_with("LLV7002");
+        let shown = format!("{error:?}");
         assert!(
-            error.to_string().contains("unsolved goals"),
-            "{what}: Lean leaves a theorem unproved: {error}"
+            shown.contains("unsolved goals") && shown.contains(goal),
+            "{what}: Lean leaves the goal `{goal}` unproved: {shown}"
         );
     }
 }
