@@ -17,6 +17,65 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- Two source packages of the standard library and the application that uses
+  them, #32 (SPEC.md §17.22, §10.5, `SL-03`, `SL-04`, `EX-09`). `std-models`
+  (`LexLeanStdModels.Scores`) holds the score combinators `best`, `margin`, and
+  `decideOr` over `List Int` and the contract `Gating`, realization `Gate`,
+  evidence `GateEvidence`, and model `GateModel` generic over a type parameter;
+  `std-reasoning` (`LexLeanStdReasoning.Worklist`) holds the generic logic
+  `Countdown`, its rules `Tick` and `Burn`, the verifier `Drained`, and the
+  terminating work-list reasoner `Drain`. Both are workspace members that an
+  importer pins, hold their laws as kernel-checked theorems, and claim no
+  differential: language 1.2 is generic over types and not over predicates or
+  stages, so neither offers a composite that takes the importer's models
+  (SPEC.md §17.22 says so). `examples/helpdesk` imports them and `stdlib`: its
+  roots `classify` (the model alone), `plan` (the reasoner alone), and
+  `dispatch : Bytes -> Bytes` (both) are exported through the production
+  consumer, the packages committed under `tests/production-export/helpdesk/`.
+  The workspace file lists the three new members. No language data or schema
+  moves, so no language-1.2 record other than the new projects' own is
+  regenerated. The register is 436 IDs.
+- The audit of certificate A checks a mutual group of implementation records
+  (`f._unsafe_rec`) by the union of the sets it prints for the group, against a
+  pin that is the group's union (SPEC.md §17.17, `LLV7013` names the group).
+  What Lean prints of one member is not a property of its term alone: it
+  stores axiom data by one shared traversal in the order of a hash map keyed by
+  names that carry the identity, so the first member of the bootstrap project's
+  R6 group, `__fits_76`, pinned `[]` row by row and printing `[]` on main's
+  identity only by that order, printed `[propext]` on others with identical
+  sources.
+  The pin and the check now state the same order-independent set. Found by the
+  slice 3 identity (#221).
+- Text classifiers, composition, and adapters, and the audit that no prompt is
+  code (SPEC.md §17.12, *Text components* rules 8 to 10, `LM-07`..`LM-09`,
+  slice 3 of #30; no new code). A `text_classifier` over a prior tokenizer and
+  a prior stateless `list int` model whose evidence discharges every runtime
+  check elaborates to `features` (the count of each token id below the
+  tokenizer's `size`), `classifyTokens` (the model applied to the features), and
+  `classify` over `string` through `encodeText`, and generates
+  `features_width` (exactly `size` entries), `features_total` (the features of
+  an encoded text sum to its token count, so no token is dropped), and
+  `features_fit` (`fitWidth`, the fixed-width map a linear or neural stage
+  needs to apply to an arbitrary `list int`, leaves them unchanged); the
+  declaration gains an `axioms` policy. A stateful model that steps by a
+  window's `push` composes under `scan`, its `satisfies_contract` evidence
+  proved by the window's generated `push_bounded`, and an adapter is a model
+  over `string` whose realization applies `classify` or `generate` and whose
+  evidence the generated laws prove, so the declaration kinds are those of
+  before. The audit walks the primitive registry, the production registry, and
+  the text declarations of the closed schema and refuses an operation that
+  takes a `string` or `bytes` operand and returns anything but data, a registry
+  that names an operation the other does not, and a free string member of a
+  text declaration. The classifier's functions and laws are new declarations
+  of the native `LexLeanText` module, authored once outside the release tree
+  and exported by the same round trip as the earlier slices
+  (`tests/text-laws/MIGRATION.md`, third record). The language-1.2 `semantic_ir`
+  and `latex_backend` versions move to 15 and 14, and the schema
+  `semantic-module-v2` gives `text_classifier` an `axioms` member, so every
+  language-1.2 lock, golden, fixture, and verification record is regenerated
+  with the maintainer's wave. Production (`text_rows`), `rust-std` and
+  `rust-core`, and the end-to-end example are not part of this change. The
+  register holds 433 IDs.
 - Context windows and text generators (SPEC.md §17.12, *Text components*,
   `LM-04`..`LM-06`, slice 2 of #30; new code `LLT4016`). A `context_window`
   of capacity at least 1 and overflow `refuse` or `keep_last` elaborates to

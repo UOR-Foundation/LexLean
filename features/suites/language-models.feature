@@ -46,6 +46,27 @@ Feature: language-models
     Then the same prompt and seed give the same tokens and the next seed is returned
     And a generator or distribution outside the closed members is a schema violation
 
+  @LM-07 @build
+  Scenario: A `text_classifier` is a closed language-1.2 declaration that names a prior tokenizer and a prior stateless model from `list int` to a label type whose every runtime check its evidence discharges, and elaborates to `features`, the count of each token id below the tokenizer's `size`, to `classifyTokens`, the model applied to the features, and to `classify` over `string` through `encodeText`, with its laws generated and kernel-checked: `features_width` states that the features have exactly `size` entries, `features_total` that the features of an encoded text sum to its token count so that no token is dropped, and `features_fit` that the fixed-width map `fitWidth` leaves the features unchanged; a classifier whose tokenizer is not a prior tokenizer, or whose model is not a stateless model from `list int` with every runtime check discharged, is refused (`LLT4006`), a member outside the closed schema is a schema violation (`LLT4001`), and a classifier whose laws observe an axiom its policy omits fails the audit.
+    Given classifiers over a tokenizer and a stateless model from `list int` to a label
+    When they are linked, their laws are checked by Lean, and their classifications are evaluated by the kernel
+    Then the features have exactly the tokenizer's size entries and sum to the token count of the text
+    And a classifier over a non-tokenizer or a stateful model is refused
+
+  @LM-08 @build
+  Scenario: Text components compose and adapt through the model constructs alone, and no new declaration kind exists for it: a stateful model whose state is a context window's `list uint32`, whose step is the window's `push`, and whose contract's postcondition states that the pushed context fits composes under `scan` with its `satisfies_contract` evidence proved by the window's generated `push_bounded`, and an adapter is a model over `string` whose realization applies the elaborated `classify` of a classifier or `generate` of a generator, with `satisfies_contract` evidence proved from the generated laws of that classifier or generator; the closed list of language-1.2 declaration kinds is unchanged by it, an adapter whose realization does not meet its contract fails verification, and an adapter that applies a declaration of another kind is refused (`LLT4006`).
+    Given a stateful window model stepping by `push`, and adapters over a classifier and a generator
+    When they are composed under `scan` and verified by Lean, and again with a false contract
+    Then the window model's evidence is proved by `push_bounded` and the adapters' evidence by the generated laws
+    And the declaration kinds are unchanged and a false contract fails verification
+
+  @LM-09 @build
+  Scenario: No prompt is code: no member of the closed language maps `string` or `bytes` to a function, a term, or source — every operation of the primitive registry that takes a `string` or `bytes` operand is classified by the audit with a data result, the registry's schema enumeration and the production registry's primitive rows equal one another and equal that classified set, and the text declarations of `lexlean/semantic-module/2` state no `string`-typed member, so a prompt reaches a model only as the tokens `encodeText` makes of it; a planted operation or text member of that shape is caught by the audit with its name.
+    Given the primitive registry, the production registry, and the text declarations of the closed schema
+    When the audit classifies every operation that takes a `string` or `bytes` operand
+    Then every one has a data result and the two registries agree
+    And a planted operation or text member that maps a string to code is caught by name
+
   @LM-13 @build
   Scenario: The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text.
     Given the embedded text library that states a tokenizer's laws, and the register
