@@ -1198,19 +1198,16 @@ pub(super) fn case() {
     let (sources, manifests, fixtures, distinct) = super::rust_validate::committed();
     let all = super::rust_validate::rendered(&sources);
     let packages = packaged();
-    // The committed library of every package is the header of its profile and
-    // the items as the oracle prints them: the claim of the row about the
-    // committed libraries rests on this equality and on the differential.
+    // The committed library of every package ends with the items as the oracle
+    // prints them. The header before them is the runtime of the committed
+    // export, which the regeneration of the records moves with the runtime, so
+    // the items are what the committed libraries pin; the header is held by
+    // the vectors that give the roots the oracle's own header.
     let (core_header, std_header) = (header(Profile::Core), header(Profile::Std));
     for package in &packages {
-        let header = if package.krate.profile == Profile::Core {
-            &core_header
-        } else {
-            &std_header
-        };
         assert!(
-            package.library == format!("{header}{}", print_body(&package.krate)),
-            "the committed library is the header and the printed items"
+            package.library.ends_with(&print_body(&package.krate)),
+            "the committed library ends with the printed items"
         );
     }
     eprintln!(
