@@ -5875,8 +5875,8 @@ of `from` or `try_from` is also admitted for every integer type. The names of th
 `to_string`, `collect`) are refused in the core profile as `hidden-allocation`. Eleven rules join the
 24 of `RB-17`, 35 in all: `assign-immutable`, `assign-place`, `break-position`, `hidden-allocation`, `let-position`,
 `param-duplicate`, `pattern-duplicate`, `pattern-fields`, `struct-fields`, `tuple-arity`, and
-`variant-name`; each is planted. `RtType.wide` takes a Boolean that is true for `u128` and false for `i128`. `RuntimeSemantics` evaluates each of the expression and pattern constructs the module grew by as `stuck`, except a block expression, which evaluates its block; the types and literals it grew by (`RtLit.str`, `RtLit.char`, `RtType.refMut`, and the others) are data of a signature or a pattern and are evaluated only inside a construct that is itself `stuck`: this row
-declares no meaning for them, and a theorem about a function that uses one is a claim it does not make.
+`variant-name`; each is planted. `RtType.wide` takes a Boolean that is true for `u128` and false for `i128`. `RuntimeSemantics` evaluates each of the expression and pattern constructs the module grew by as `stuck`, except a block expression, which evaluates its block, and a string literal, which is a string value; a character literal is `stuck`. As the type of a value, `RtType.refMut` is its inner type and the other types it grew by (`RtType.wide`, `size`, `char`, `str`, `slice`) match no value.
+This row declares no meaning for the constructs it leaves `stuck`, and a theorem about a function that uses one is a claim it does not make.
 A *loop*
 (`Expr.loop`, `SP-19`) is the one construct of the machine that repeats: it names
 a state, a local the enclosing block has bound, and a body block. The body is
