@@ -4802,7 +4802,7 @@ pub fn run(id: &str) {
         // §17.16: the refinement of each core runtime function.
         "SP-22" => super::rust_refinement::run(id),
         // §17.16: the meaning of the runtime's trait methods.
-        "SP-24" => super::runtime_semantics::run(id),
+        "SP-25" => super::runtime_semantics::run(id),
         "SP-23" => {
             let syntax = support::module_json(
                 &std::fs::read_to_string(

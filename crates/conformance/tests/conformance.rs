@@ -1721,8 +1721,8 @@ fn conformance_sp_22() {
 }
 
 #[test]
-fn conformance_sp_24() {
-    repo_conformance::cases::run("SP-24");
+fn conformance_sp_25() {
+    repo_conformance::cases::run("SP-25");
 }
 
 #[test]

@@ -23,7 +23,7 @@ const SUPPORT: &str = "compiler/src/RuntimeSupport.lex.tex";
 /// does not model.
 const WORK_GATE: [&str; 2] = ["tick", "work"];
 
-/// The functions of the support crate whose meaning `SP-24` states as a
+/// The functions of the support crate whose meaning `SP-25` states as a
 /// theorem per type of the core profile's predicate.
 const TRAIT_GATE: [&str; 2] = ["equal", "compare"];
 
@@ -81,7 +81,7 @@ fn theorems(text: &str) -> Vec<(String, String)> {
 /// Whether each authored item of the runtime is held: a function of
 /// `RustRuntime` is held by its refinement theorem and must name a runtime
 /// item; an item of `RuntimeSupport` is of a closed kind (the decoder admits
-/// no other), and a function of it is held by the work gate or by `SP-24`'s
+/// no other), and a function of it is held by the work gate or by `SP-25`'s
 /// theorems. An authored item in neither set is refused by name.
 fn held(runtime: &str, support: &str, keys: &[String]) -> Result<(), String> {
     let paths: BTreeSet<String> = Item::all().iter().map(|item| item.path()).collect();

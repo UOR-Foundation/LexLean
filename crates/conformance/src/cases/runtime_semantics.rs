@@ -1,4 +1,4 @@
-//! The meaning of the runtime's trait methods (SPEC.md §17.16): `SP-24`.
+//! The meaning of the runtime's trait methods (SPEC.md §17.16): `SP-25`.
 //!
 //! `RuntimeSemantics` evaluates a `RuntimeSyntax` crate over the values of the
 //! calculus, finding a trait method by the shape of its receiver. For each
@@ -27,11 +27,27 @@ const IMPORTED: [&str; 5] = [
     "RuntimeSupport",
 ];
 
+/// The scalars the calculus types as the arguments of `compare`: the
+/// Boolean, the natural, the integer, and every width. (`Prim::Equal` takes
+/// no integer, and `Ordering` is not orderable.)
+fn keyed() -> Vec<String> {
+    ["bool", "nat", "int"]
+        .into_iter()
+        .map(str::to_owned)
+        .chain(IntKind::ALL.iter().map(|kind| kind.name().to_owned()))
+        .collect()
+}
+
+/// The scalars the calculus types as the arguments of `equal`.
+fn same() -> Vec<String> {
+    keyed().into_iter().filter(|t| t != "int").collect()
+}
+
 /// The modules that hold the theorems about pairs, one per first scalar: the
-/// nine of a first scalar elaborate in about a gigabyte, the eighty-one
+/// eleven of a first scalar elaborate in about a gigabyte, all of them
 /// together past the host's memory.
 fn key_names() -> Vec<String> {
-    scalars()
+    keyed()
         .iter()
         .map(|t| {
             let mut chars = t.chars();
@@ -52,23 +68,17 @@ pub(super) fn key_modules() -> Vec<String> {
         .collect()
 }
 
-/// The scalars of the predicate: the Boolean and every width.
-fn scalars() -> Vec<String> {
-    std::iter::once("bool".to_owned())
-        .chain(IntKind::ALL.iter().map(|kind| kind.name().to_owned()))
-        .collect()
-}
-
-/// The theorems the predicate calls for: `equal` of every scalar and of
-/// `Ordering`, `compare` of every scalar, and `compare` of every pair of two
-/// scalars, each named for the function and the types it states.
+/// The theorems the predicate calls for: `equal` of every scalar of its
+/// arguments and of `Ordering`, `compare` of every scalar of its arguments,
+/// and `compare` of every pair of two of those, each named for the function
+/// and the types it states.
 fn expected() -> BTreeSet<String> {
-    let scalars = scalars();
-    let mut out: BTreeSet<String> = scalars.iter().map(|t| format!("equal_{t}")).collect();
+    let mut out: BTreeSet<String> = same().iter().map(|t| format!("equal_{t}")).collect();
     out.insert("equal_ordering".to_owned());
-    out.extend(scalars.iter().map(|t| format!("compare_{t}")));
-    for a in &scalars {
-        for b in &scalars {
+    let keyed = keyed();
+    out.extend(keyed.iter().map(|t| format!("compare_{t}")));
+    for a in &keyed {
+        for b in &keyed {
             out.insert(format!("compare_pair_{a}_{b}"));
         }
     }
@@ -128,7 +138,7 @@ fn complete(texts: &[&str]) -> Result<(), String> {
     Ok(())
 }
 
-/// Run the case of `SP-24`. The module nests as deeply as its crate does, so
+/// Run the case of `SP-25`. The module nests as deeply as its crate does, so
 /// the case runs on a stack of its own.
 pub fn run(id: &str) {
     let id = id.to_owned();
@@ -143,7 +153,7 @@ pub fn run(id: &str) {
 }
 
 fn check(id: &str) {
-    assert_eq!(id, "SP-24");
+    assert_eq!(id, "SP-25");
     let root = repo_root();
     let text = std::fs::read_to_string(root.join(SUPPORT).as_std_path()).expect(SUPPORT);
     assert!(
@@ -188,7 +198,7 @@ fn check(id: &str) {
     let error = all(&text, &other).expect_err("a theorem that states another primitive");
     assert!(error.contains(&format!("`{dropped}` does not state")), "{error}");
 
-    if !support::lean_backed("SP-24") {
+    if !support::lean_backed("SP-25") {
         return;
     }
     // The pinned Lean elaborates every theorem with the axioms its policy
