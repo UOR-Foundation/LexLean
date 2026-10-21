@@ -92,6 +92,44 @@ const TURBOFISH: [(&str, usize, usize); 2] = [("parse", 1, 0), ("collect", 1, 0)
 /// each states and whether it takes `&mut self`.
 const STD_TRAITS: [(&str, &str, bool); 2] = [("Clone", "clone", false), ("Drop", "drop", true)];
 
+/// The names of the closed table of the standard library, each once, in the
+/// order the tables above give them: the types, the calls (`Owner::name`),
+/// the constructors, the methods, the methods that take type arguments, and
+/// the traits an impl may name. `SPEC.md` §17.16 lists them and `RB-19`
+/// requires the two to be equal.
+#[must_use]
+pub fn table() -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    out.extend(TYPES.iter().map(|(name, ..)| (*name).to_owned()));
+    out.push(STRING.to_owned());
+    out.extend(CALLS.iter().map(|(owner, name, ..)| format!("{owner}::{name}")));
+    out.extend(WRAPPERS.iter().map(|(name, _)| (*name).to_owned()));
+    out.extend(METHODS.iter().map(|(name, ..)| (*name).to_owned()));
+    for (name, ..) in TURBOFISH {
+        if !out.iter().any(|held| held == name) {
+            out.push(name.to_owned());
+        }
+    }
+    out.extend(STD_TRAITS.iter().map(|(name, ..)| (*name).to_owned()));
+    out
+}
+
+/// The names of the table whose use allocates, which the core profile refuses.
+#[must_use]
+pub fn allocating() -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    out.extend(TYPES.iter().filter(|(.., heap)| *heap).map(|(name, ..)| (*name).to_owned()));
+    out.push(STRING.to_owned());
+    out.extend(
+        CALLS
+            .iter()
+            .filter(|(.., heap)| *heap)
+            .map(|(owner, name, ..)| format!("{owner}::{name}")),
+    );
+    out.extend(METHODS.iter().filter(|(.., heap)| *heap).map(|(name, ..)| (*name).to_owned()));
+    out
+}
+
 /// The roots a `use` path may start at, by profile. `alloc` is in neither: a
 /// crate that names it allocates through a path the table does not list.
 fn roots(profile: Profile) -> &'static [&'static str] {
