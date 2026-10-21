@@ -33,15 +33,9 @@ const LAWS: [(&str, &[&str]); 16] = [
     ("push_lands_in_slot", &["get", "put", "size", "append"]),
     ("below_truncated", &["lessThan", "minNat", "both"]),
     ("plus_assoc", &["plus"]),
-    (
-        "push_at_capacity",
-        &["bufPush", "none", "lessThan", "plus", "size"],
-    ),
+    ("push_at_capacity", &["bufPush", "plus", "size"]),
     ("put_in_slot", &["put", "size", "append"]),
-    (
-        "push_with_room",
-        &["bufPush", "some", "put", "size", "append"],
-    ),
+    ("push_with_room", &["bufPush", "size", "append"]),
     (
         "get_truncated",
         &[
