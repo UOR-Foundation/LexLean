@@ -538,6 +538,14 @@ theorem{
 }
 
 theorem{
+  name: window_count,
+  parameters: [cells : Cells, off : Nat, count : Nat, skip : Nat, keep : Nat],
+  statement: ((project (subWindow (record Window {base := cells, offset := off, count := count}) skip keep) count) = (minNat keep (minusNat count skip))),
+  proof: simplify{definitions: [subWindow]},
+  axioms: [propext]
+}
+
+theorem{
   name: window_of_window,
   parameters: [
     cells : Cells,
