@@ -19,7 +19,7 @@ const IMPORTED: [&str; 2] = ["RustMemory", "TargetSyntax"];
 
 /// Each law with the functions its statement must be about: a theorem of the
 /// right name that states another function is refused.
-const LAWS: [(&str, &[&str]); 45] = [
+const LAWS: [(&str, &[&str]); 53] = [
     (
         "push_run_abs",
         &["flagPick", "absRun", "put", "lessThan", "size"],
@@ -34,7 +34,8 @@ const LAWS: [(&str, &[&str]); 45] = [
         &["lessThan", "size", "append", "blank"],
     ),
     ("grown_has_room", &["lessThan", "growBuf", "size"]),
-    ("truncate_keeps_run", &["minNat", "plus"]),
+    ("min_keeps_run", &["minNat", "plus"]),
+    ("truncate_keeps_run", &["bufTruncate", "plus"]),
     (
         "walk_cons",
         &[
@@ -49,6 +50,8 @@ const LAWS: [(&str, &[&str]); 45] = [
         "full_is_capacity",
         &["isFull", "flipFlag", "lessThan", "minNat", "size"],
     ),
+    ("alloc_capacity", &["allocBuf", "size"]),
+    ("alloc_length", &["allocBuf"]),
     (
         "walk_alloc",
         &["runWalk", "storeSnoc", "storeLen", "allocBuf"],
@@ -76,6 +79,7 @@ const LAWS: [(&str, &[&str]); 45] = [
     ),
     ("cons_shared_view", &["view", "sharedCons", "absHandle"]),
     ("cons_shared_store", &["storeOf", "sharedCons"]),
+    ("cons_held_store", &["storeOf", "consWorld"]),
     (
         "inplace_view",
         &[
@@ -103,6 +107,10 @@ const LAWS: [(&str, &[&str]); 45] = [
     ("same_with_itself", &["sameNat"]),
     ("holder_on_own_buffer", &["holds"]),
     ("holder_without_run", &["holds"]),
+    ("apart_above", &["sameNat", "plus"]),
+    ("apart_below", &["sameNat", "plus"]),
+    ("holds_apart_above", &["holds", "plus"]),
+    ("holds_apart_below", &["holds", "plus"]),
     ("own_blocks", &["notAlone", "sameNat"]),
     ("others_allow_above", &["notAlone", "sameNat", "plus"]),
     ("others_allow_below", &["notAlone", "sameNat", "plus"]),
@@ -240,7 +248,7 @@ fn check(id: &str) {
 /// The defects of the module: what is planted, the theorems Lean refuses, the
 /// kind of its diagnostic, a fragment of the goal it leaves open, and the
 /// text replaced.
-const PLANTS: [(&str, &[&str], &str, &str, &str, &str); 9] = [
+const PLANTS: [(&str, &[&str], &str, &str, &str, &str); 10] = [
     (
         "a cons that writes the wrong slot, the buffer not truncated to the run",
         &["walk_cons", "cons_in_place"],
@@ -259,7 +267,7 @@ const PLANTS: [(&str, &[&str], &str, &str, &str, &str); 9] = [
     ),
     (
         "a shared run written in place",
-        &["cons_view"],
+        &["cons_view", "cons_held_store"],
         "unsolved goals",
         "match inPlace store address (more + 1) item with",
         "        | RustMemory::Flag.no => (sharedCons store address more item)))",
@@ -288,6 +296,14 @@ const PLANTS: [(&str, &[&str], &str, &str, &str, &str); 9] = [
         "growBuf",
         "(RustMemory::append (project buf slots) (RustMemory::blank extra fill))",
         "(RustMemory::blank extra fill)",
+    ),
+    (
+        "a fresh buffer one slot short of the capacity of sixteen",
+        &["alloc_capacity"],
+        "Tactic `rfl` failed",
+        "⊢ RustMemory.size (allocBuf item).slots = 16",
+        "(RustMemory::blank 15 item)",
+        "(RustMemory::blank 14 item)",
     ),
     (
         "a fresh buffer that is not at the length of the store",

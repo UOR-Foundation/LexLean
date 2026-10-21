@@ -313,7 +313,7 @@ theorem{
 }
 
 theorem{
-  name: truncate_keeps_run,
+  name: min_keeps_run,
   parameters: [length : Nat, gap : Nat],
   statement: ((RustMemory::minNat length (RustMemory::plus length gap)) = length),
   proof: induction{
@@ -327,6 +327,14 @@ theorem{
     ],
     scrutinee: length
   },
+  axioms: [propext]
+}
+
+theorem{
+  name: truncate_keeps_run,
+  parameters: [cells : RustMemory::Cells, length : Nat, gap : Nat],
+  statement: ((project (RustMemory::bufTruncate (record RustMemory::Buf {slots := cells, len := (RustMemory::plus length gap)}) length) len) = length),
+  proof: simplify{definitions: [min_keeps_run, RustMemory::bufTruncate]},
   axioms: [propext]
 }
 
@@ -414,7 +422,23 @@ definition{
   name: allocBuf,
   parameters: [item : TargetSyntax::Value],
   result: RustMemory::Buf,
-  body: (record RustMemory::Buf {slots := (ctor RustMemory::Cells.CCons item (ctor RustMemory::Cells.CNil)), len := 1})
+  body: (record RustMemory::Buf {slots := (ctor RustMemory::Cells.CCons item (RustMemory::blank 15 item)), len := 1})
+}
+
+theorem{
+  name: alloc_capacity,
+  parameters: [item : TargetSyntax::Value],
+  statement: ((RustMemory::size (project (allocBuf item) slots)) = 16),
+  proof: reflexivity{},
+  axioms: []
+}
+
+theorem{
+  name: alloc_length,
+  parameters: [item : TargetSyntax::Value],
+  statement: ((project (allocBuf item) len) = 1),
+  proof: reflexivity{},
+  axioms: []
 }
 
 theorem{
@@ -638,7 +662,9 @@ theorem{
   proof: induction{
     branches: [
       {
-        proof: simplify{definitions: [absRun, allocBuf, runWalk, storeLen, storeSnoc]},
+        proof: simplify{
+          definitions: [absRun, allocBuf, runWalk, storeLen, storeSnoc, RustMemory::blank]
+        },
         binders: [],
         constructor: SEmpty
       },
@@ -1068,9 +1094,9 @@ theorem{
       isFull,
       keepOr,
       listAppend,
+      min_keeps_run,
       put_run_abs,
       runWalk,
-      truncate_keeps_run,
       view,
       RustMemory::bufPush,
       RustMemory::bufTruncate,
@@ -1282,6 +1308,76 @@ theorem{
     arguments: [address, gap, (aloneOn ((RustMemory::plus address gap) + 1) rest)],
     theorem: others_allow_below
   },
+  axioms: [propext]
+}
+
+theorem{
+  name: cons_held_store,
+  parameters: [
+    store : Store,
+    address : Nat,
+    spine : (List TargetSyntax::Value),
+    more : Nat,
+    held : Nat,
+    rest : (List Handle),
+    item : TargetSyntax::Value
+  ],
+  statement: ((storeOf (consWorld store (cons (record Handle {spine := spine, base := (ctor Terminal.TRun address held)}) rest) item (record Handle {spine := (nil TargetSyntax::Value), base := (ctor Terminal.TRun address more)})) store) = store),
+  proof: simplify{definitions: [consWorld, holder_blocks, sharedCons, storeOf]},
+  axioms: [propext]
+}
+
+theorem{
+  name: apart_above,
+  parameters: [address : Nat, gap : Nat],
+  statement: ((RustMemory::sameNat address ((RustMemory::plus address gap) + 1)) = (ctor RustMemory::Flag.no)),
+  proof: induction{
+    branches: [
+      {proof: simplify{definitions: [RustMemory::sameNat]}, binders: [], constructor: zero},
+      {
+        proof: simplify{definitions: [hypothesis, RustMemory::plus, RustMemory::sameNat]},
+        binders: [less, hypothesis],
+        constructor: succ
+      }
+    ],
+    generalizing: [gap],
+    scrutinee: address
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: apart_below,
+  parameters: [address : Nat, gap : Nat],
+  statement: ((RustMemory::sameNat ((RustMemory::plus address gap) + 1) address) = (ctor RustMemory::Flag.no)),
+  proof: induction{
+    branches: [
+      {proof: simplify{definitions: [RustMemory::sameNat]}, binders: [], constructor: zero},
+      {
+        proof: simplify{definitions: [hypothesis, RustMemory::plus, RustMemory::sameNat]},
+        binders: [less, hypothesis],
+        constructor: succ
+      }
+    ],
+    generalizing: [gap],
+    scrutinee: address
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: holds_apart_above,
+  parameters: [address : Nat, gap : Nat, spine : (List TargetSyntax::Value), more : Nat],
+  statement: ((holds address (record Handle {spine := spine, base := (ctor Terminal.TRun ((RustMemory::plus address gap) + 1) more)})) = (ctor RustMemory::Flag.no)),
+  proof: simplify{definitions: [apart_above, holds]},
+  axioms: [propext]
+}
+
+theorem{
+  name: holds_apart_below,
+  parameters: [address : Nat, gap : Nat, spine : (List TargetSyntax::Value), more : Nat],
+  statement: ((holds ((RustMemory::plus address gap) + 1) (record Handle {spine := spine, base := (ctor Terminal.TRun address more)})) = (ctor RustMemory::Flag.no)),
+  proof: simplify{definitions: [apart_below, holds]},
   axioms: [propext]
 }
 
