@@ -114,23 +114,23 @@ definition{
   parameters: [chain : CalculusCheck::Ty, count : Nat],
   result: CalculusCheck::Ty,
   body: (match chain
-    | CalculusCheck::Ty.TUnit => chain
-    | CalculusCheck::Ty.TBool => chain
-    | CalculusCheck::Ty.TNat => chain
-    | CalculusCheck::Ty.TInt => chain
-    | CalculusCheck::Ty.TFixed d0 => chain
-    | CalculusCheck::Ty.TString => chain
-    | CalculusCheck::Ty.TBytes => chain
-    | CalculusCheck::Ty.TOrdering => chain
-    | CalculusCheck::Ty.TOption d0 => chain
-    | CalculusCheck::Ty.TResult d0 d1 => chain
-    | CalculusCheck::Ty.TList d0 => chain
-    | CalculusCheck::Ty.TPair d0 d1 => chain
-    | CalculusCheck::Ty.TAdt d0 => chain
-    | CalculusCheck::Ty.TFn d0 d1 => chain
-    | CalculusCheck::Ty.TNil => chain
+    | CalculusCheck::Ty.TUnit => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TBool => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TNat => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TInt => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TFixed d0 => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TString => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TBytes => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TOrdering => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TOption d0 => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TResult d0 d1 => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TList d0 => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TPair d0 d1 => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TAdt d0 => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TFn d0 d1 => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Ty.TNil => (ctor CalculusCheck::Ty.TNil)
     | CalculusCheck::Ty.TCons head tail => (match count
-      | Nat.zero => chain
+      | Nat.zero => (ctor CalculusCheck::Ty.TCons head tail)
       | Nat.succ previous => (tyDrop tail previous))),
   executable: true,
   recursive_argument: chain
@@ -714,7 +714,7 @@ definition{
     | CalculusCheck::Ty.TAdt index => (match (CalculusCheck::adtAt program index)
       | Option.some constructors => constructors
       | Option.none => (ctor CalculusCheck::Ty.TNil))
-    | CalculusCheck::Ty.TFn parameters result => (closVariants closures owner)
+    | CalculusCheck::Ty.TFn parameters result => (closVariants closures (ctor CalculusCheck::Ty.TFn parameters result))
     | CalculusCheck::Ty.TNil => (ctor CalculusCheck::Ty.TNil)
     | CalculusCheck::Ty.TCons d0 d1 => (ctor CalculusCheck::Ty.TNil)),
   executable: true
