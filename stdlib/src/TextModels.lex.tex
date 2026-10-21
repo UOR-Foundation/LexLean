@@ -10,8 +10,7 @@ definition{
     | List.nil => (nil (Nat * String))
     | List.cons head tail => (cons (start, head) (withIndex tail (start + 1)))),
   executable: true,
-  recursive_argument: vocabulary,
-  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+  recursive_argument: vocabulary
 }
 
 definition{
@@ -24,8 +23,7 @@ definition{
       | List.nil => (nil Int)
       | List.cons head tail => (cons head (takeInts previous tail)))),
   executable: true,
-  recursive_argument: count,
-  production: {effects: [allocation, recursion], targets: [rust-std]}
+  recursive_argument: count
 }
 
 definition{
@@ -36,8 +34,7 @@ definition{
     | Nat.zero => (nil Int)
     | Nat.succ previous => (cons (0 : Int) (zerosInts previous))),
   executable: true,
-  recursive_argument: count,
-  production: {effects: [allocation, recursion], targets: [rust-std]}
+  recursive_argument: count
 }
 
 definition{
@@ -45,8 +42,7 @@ definition{
   parameters: [width : Nat, values : (List Int)],
   result: (List Int),
   body: (prim append (takeInts width values) (zerosInts (prim subtract width (prim length values : Nat) : Nat)) : (List Int)),
-  executable: true,
-  production: {effects: [allocation, recursion], targets: [rust-std]}
+  executable: true
 }
 \end{semanticmodule}
 \end{lexlean}
