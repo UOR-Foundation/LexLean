@@ -27,6 +27,7 @@ pub mod moves;
 pub mod package;
 pub mod runtime;
 pub mod scaffold;
+pub mod sites;
 pub mod source;
 mod tail;
 pub use tail::loops;
@@ -134,6 +135,26 @@ pub fn lower(program: &Program, profile: Profile) -> Result<ast::Crate, String> 
 /// Returns the reason the program is invalid.
 pub fn fallible_functions(program: &Program) -> Result<Vec<bool>, String> {
     Ok(Lowering::new(program, Profile::Std)?.fallible)
+}
+
+/// Which functions of a valid program have a parameter no value inhabits,
+/// so that no call of one is ever reached.
+///
+/// # Errors
+///
+/// Returns the reason the program is invalid.
+pub fn dead_functions(program: &Program) -> Result<Vec<bool>, String> {
+    Ok(Lowering::new(program, Profile::Std)?.dead)
+}
+
+/// The typing sites of a valid program: what the failure analysis reads of
+/// the checker's types, chained as the program's function bodies are.
+///
+/// # Errors
+///
+/// Returns the reason the program is invalid.
+pub fn site_trees(program: &Program) -> Result<sites::Site, String> {
+    sites::trees(program)
 }
 
 /// Render a valid program to the canonical bytes of a library crate of

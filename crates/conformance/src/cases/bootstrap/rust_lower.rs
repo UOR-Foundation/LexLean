@@ -1,20 +1,26 @@
 //! `BS-07` (SPEC.md §17.16, §17.23): the lowering of target programs to the
 //! closed Rust AST as language-1.2 source (`LexLeanBoot.RustLower`), held to
 //! the Rust lowering. This slice is its failure typing,
-//! `calculus::rust::fallible_functions`.
+//! `calculus::rust::fallible_functions`, as three roots composed by the host:
+//! `siteTrees` of `CalculusCheck` (the type of each scrutinee and each applied
+//! target, from the module's own `walk`), `deadFunctions`, and
+//! `fallibleFunctions`.
 //!
-//! The root takes a program as calculus data, the six chains of `BS-04`, and
+//! The roots take a program as calculus data, the six chains of `BS-04`, and
 //! a program that `checkProgram` accepts: `Lowering::new` begins with
-//! `check::check`, and the host composes the two roots, so a program the
-//! oracle refuses is not a vector of this root.
+//! `check::check`, and the host composes the roots, so a program the oracle
+//! refuses is not a vector of these roots. The consumers take the tree the
+//! typing root returns, never a type the host computed: each leg is held to
+//! the oracle on the same vectors, so the chain equals `fallible_functions`
+//! end to end.
 
-use lexlean::calculus::rust::{self};
+use lexlean::calculus::rust::{self, sites::Site};
 use lexlean::calculus::{Arm, Expr, Function, Prim, Program, Shape, Ty, Value};
 use serde_json::Value as Json;
 
 use super::calculus_check::{
-    committed, literal_corpus, mutants, prim_corpus, program_arguments, program_of, program_size,
-    shape_corpus, targeted, Source,
+    adt as constructor, committed, enc_ty, literal_corpus, mutants, prim_corpus, program_arguments, program_of,
+    program_size, shape_corpus, targeted, ty_chain, Source,
 };
 use super::{bool_val as boolean, list, Run, Seeded};
 use crate::support;
@@ -23,20 +29,70 @@ const MODULE: &str = "LexLeanBoot.RustLower";
 
 /// The roots in the order the module declares them, each with the effects its
 /// declaration admits, which are exactly the effects its closure realizes.
-const ROOTS: [(&str, &[&str]); 1] = [(
-    "fallibleFunctions",
-    &["allocation", "overflow", "recursion"],
-)];
+const ROOTS: [(&str, &[&str]); 2] = [
+    ("deadFunctions", &["allocation", "overflow", "recursion"]),
+    ("fallibleFunctions", &["allocation", "overflow", "recursion"]),
+];
 
-/// What the oracle makes of a program, as the root returns it: the Boolean
-/// of each function. A program the checker refuses is no vector.
-fn run(program: &Program) -> Option<Run> {
-    let flags = rust::fallible_functions(program).ok()?;
-    Some((
-        program_arguments(program),
-        serde_json::to_value(list(flags.into_iter().map(boolean).collect()))
-            .expect("a value is JSON"),
-    ))
+/// The module of the typing root, which is `CalculusCheck`'s own.
+const TYPING: &str = "LexLeanBoot.CalculusCheck";
+
+/// A tree of typing sites as the `Ty` the typing root returns: a node is a
+/// pair of its own type (nil when it reads none) and the chain of its
+/// children, a leaf is nil.
+fn enc_site(site: &Site) -> Value {
+    match site {
+        Site::Leaf => constructor(14, Vec::new()),
+        Site::Node { own, kids } => constructor(
+            11,
+            vec![
+                own.as_ref()
+                    .map_or_else(|| constructor(14, Vec::new()), enc_ty),
+                ty_chain(kids.iter().map(enc_site).collect()),
+            ],
+        ),
+    }
+}
+
+/// What the oracle makes of a program, leg by leg, as each root returns it:
+/// the tree of typing sites; the dead functions, given the tree; the Boolean
+/// of each function, given the tree and the dead functions. A program the
+/// checker refuses is no vector.
+struct Legs {
+    sites: Run,
+    dead: Run,
+    fallible: Run,
+}
+
+fn flags(flags: Vec<bool>) -> Value {
+    list(flags.into_iter().map(boolean).collect())
+}
+
+fn run(program: &Program) -> Option<Legs> {
+    let base = program_arguments(program);
+    let tree = enc_site(&rust::site_trees(program).ok()?);
+    let dead = rust::dead_functions(program).ok()?;
+    let fallible = rust::fallible_functions(program).ok()?;
+    let with_tree: Vec<Value> = base.iter().cloned().chain([tree.clone()]).collect();
+    let with_dead: Vec<Value> = with_tree
+        .iter()
+        .cloned()
+        .chain([flags(dead.clone())])
+        .collect();
+    Some(Legs {
+        sites: (
+            base,
+            serde_json::to_value(&tree).expect("a value is JSON"),
+        ),
+        dead: (
+            with_tree,
+            serde_json::to_value(flags(dead)).expect("a value is JSON"),
+        ),
+        fallible: (
+            with_dead,
+            serde_json::to_value(flags(fallible)).expect("a value is JSON"),
+        ),
+    })
 }
 
 fn var(name: u64) -> Expr {
@@ -406,13 +462,13 @@ fn analysis() -> Vec<Program> {
 /// A program with its run: the oracle's Booleans, the arguments of the root.
 struct Vector {
     nodes: usize,
-    run: Run,
+    legs: Legs,
 }
 
 fn vector(program: &Program) -> Option<Vector> {
-    run(program).map(|run| Vector {
+    run(program).map(|legs| Vector {
         nodes: program_size(program),
-        run,
+        legs,
     })
 }
 
@@ -446,8 +502,21 @@ fn seeded_mutants(
     out
 }
 
-fn runs(vectors: &[&Vector]) -> Vec<Run> {
-    vectors.iter().map(|vector| vector.run.clone()).collect()
+/// One leg of each vector: the runs of a root.
+fn runs(vectors: &[&Vector], leg: fn(&Legs) -> &Run) -> Vec<Run> {
+    vectors.iter().map(|vector| leg(&vector.legs).clone()).collect()
+}
+
+fn sites_leg(legs: &Legs) -> &Run {
+    &legs.sites
+}
+
+fn dead_leg(legs: &Legs) -> &Run {
+    &legs.dead
+}
+
+fn fallible_leg(legs: &Legs) -> &Run {
+    &legs.fallible
 }
 
 // The counts SPEC.md §17.23, the register statement of BS-07, its scenario,
@@ -461,67 +530,135 @@ const BASE_NODES: usize = 150;
 const EVALUATOR_MUTANTS: usize = 150;
 const RUSTC_MUTANTS: usize = 1_500;
 
-/// A defect planted in the source and the corpus it is caught on.
-const PLANTS: [super::Plant; 10] = [
-    super::Plant {
+/// A defect planted in a module's source, the root whose differential must
+/// catch it, and the leg of the vectors it is caught on.
+struct Planted {
+    label: &'static str,
+    file: &'static str,
+    site: &'static str,
+    replacement: &'static str,
+    module: &'static str,
+    root: &'static str,
+    leg: fn(&Legs) -> &Run,
+}
+
+const PLANTS: [Planted; 13] = [
+    Planted {
         label: "an addition of naturals does not fail",
+        file: "src/RustLower.lex.tex",
         site: "| CalculusCheck::Prim.NatAdd => true",
         replacement: "| CalculusCheck::Prim.NatAdd => false",
+        module: MODULE,
         root: "fallibleFunctions",
+        leg: fallible_leg,
     },
-    super::Plant {
+    Planted {
         label: "a successor does not fail",
+        file: "src/RustLower.lex.tex",
         site: "{field: own, value: true},",
         replacement: "{field: own, value: false},",
+        module: MODULE,
         root: "fallibleFunctions",
+        leg: fallible_leg,
     },
-    super::Plant {
+    Planted {
         label: "a parse of an integer does not fail",
+        file: "src/RustLower.lex.tex",
         site: "((CalculusCheck::tyTag target) =? 3)",
         replacement: "false",
+        module: MODULE,
         root: "fallibleFunctions",
+        leg: fallible_leg,
     },
-    super::Plant {
+    Planted {
         label: "a call is not an edge",
+        file: "src/RustLower.lex.tex",
         site: "(if (natMember (project inner calls) function) then (project inner calls) else (cons function (project inner calls)))",
         replacement: "(project inner calls)",
+        module: MODULE,
         root: "fallibleFunctions",
+        leg: fallible_leg,
     },
-    super::Plant {
+    Planted {
         label: "an application is not an edge",
-        site: "(tyAddNew (project two applies) (inferTy program target scope))",
+        file: "src/RustLower.lex.tex",
+        site: "(tyAddNew (project two applies) (siteOwn sites))",
         replacement: "(project two applies)",
+        module: MODULE,
         root: "fallibleFunctions",
+        leg: fallible_leg,
     },
-    super::Plant {
+    Planted {
         label: "the closures of a dead function count",
-        site: "} bodies 0 dead) closures)",
-        replacement: "} bodies 0 (nil Bool)) closures)",
-        root: "fallibleFunctions",
+        file: "src/RustLower.lex.tex",
+        site: "} bodies 0 dead sites) closures)",
+        replacement: "} bodies 0 (nil Bool) sites) closures)",
+        module: MODULE,
+        root: "deadFunctions",
+        leg: dead_leg,
     },
-    super::Plant {
+    Planted {
         label: "the failures are followed one round",
+        file: "src/RustLower.lex.tex",
         site: "(1 + count) (falses count) : ((List Bool) * Bool)",
         replacement: "1 (falses count) : ((List Bool) * Bool)",
+        module: MODULE,
         root: "fallibleFunctions",
+        leg: fallible_leg,
     },
-    super::Plant {
+    Planted {
         label: "a closure of any function type makes an application fail",
+        file: "src/RustLower.lex.tex",
         site: "(if (CalculusCheck::tyEq known fnTy) then (if (flagAt flags member)",
         replacement: "(if true then (if (flagAt flags member)",
+        module: MODULE,
         root: "fallibleFunctions",
+        leg: fallible_leg,
     },
-    super::Plant {
+    Planted {
         label: "no type holds itself",
+        file: "src/RustLower.lex.tex",
         site: "(anyHeld owner edges (inPlace known (ctor CalculusCheck::Ty.TNil) ty))",
         replacement: "false",
-        root: "fallibleFunctions",
+        module: MODULE,
+        root: "deadFunctions",
+        leg: dead_leg,
     },
-    super::Plant {
+    Planted {
         label: "every function type is inhabited",
-        site: "| CalculusCheck::Ty.TFn parameters result => (tyMember inhabited ty)",
+        file: "src/RustLower.lex.tex",
+        site: "| CalculusCheck::Ty.TFn parameters result => (tyMember inhabited (ctor CalculusCheck::Ty.TFn parameters result))",
         replacement: "| CalculusCheck::Ty.TFn parameters result => true",
-        root: "fallibleFunctions",
+        module: MODULE,
+        root: "deadFunctions",
+        leg: dead_leg,
+    },
+    Planted {
+        label: "an applied target reads as no type",
+        file: "src/CalculusCheck.lex.tex",
+        site: "(ctor Ty.TPair (inferTy program target scope) ",
+        replacement: "(ctor Ty.TPair (ctor Ty.TNil) ",
+        module: TYPING,
+        root: "siteTrees",
+        leg: sites_leg,
+    },
+    Planted {
+        label: "the body of an arm is typed without its binders",
+        file: "src/CalculusCheck.lex.tex",
+        site: "(siteTree program body (bindAll binders (armFields program shape subject) scope) (ctor Ty.TNil) 0)",
+        replacement: "(siteTree program body scope (ctor Ty.TNil) 0)",
+        module: TYPING,
+        root: "siteTrees",
+        leg: sites_leg,
+    },
+    Planted {
+        label: "the body of a let is typed without its binding",
+        file: "src/CalculusCheck.lex.tex",
+        site: "(siteTree program body (extendScope name ty scope) (ctor Ty.TNil) 0)",
+        replacement: "(siteTree program body scope (ctor Ty.TNil) 0)",
+        module: TYPING,
+        root: "siteTrees",
+        leg: sites_leg,
     },
 ];
 
@@ -605,67 +742,84 @@ pub(super) fn case() {
         started.elapsed()
     );
     let checked = support::checked_project(&project);
-    let root = super::lower(&checked, &project, MODULE, "fallibleFunctions");
+    let sites = super::lower(&checked, &project, TYPING, "siteTrees");
+    let dead = super::lower(&checked, &project, MODULE, "deadFunctions");
+    let fallible = super::lower(&checked, &project, MODULE, "fallibleFunctions");
     let every: Vec<&Vector> = all.iter().collect();
-    // On every host: the rendered rust-std package, compiled by that host's
-    // pinned rustc, agrees with the oracle on the vectors.
+    // On every host: the rendered rust-std packages, compiled by that host's
+    // pinned rustc, agree with the oracle on the vectors, leg by leg.
     super::rust_validate::rustc_differential(
         "BS-07",
-        &[("fallibleFunctions", &root, &runs(&every))],
+        &[
+            ("siteTrees", &sites, &runs(&every, sites_leg)),
+            ("deadFunctions", &dead, &runs(&every, dead_leg)),
+            ("fallibleFunctions", &fallible, &runs(&every, fallible_leg)),
+        ],
         "vectors",
     );
     if !support::normative_host() {
         eprintln!("BS-07: platform-bound host: the evaluator, the seeded corpora, and the planted defects run on the normative host");
         return;
     }
-    let evaluated = runs(&evaluator);
-    let disagreements = super::evaluate(&root, &evaluated, 5);
-    assert!(
-        disagreements.is_empty(),
-        "the evaluator and the Rust analysis disagree on the vectors: {disagreements:?}"
-    );
-    eprintln!(
-        "BS-07: the evaluator agrees on {} vectors ({:?})",
-        evaluated.len(),
-        started.elapsed()
-    );
     let mutated: Vec<&Vector> = evaluator_mutants.iter().collect();
-    let mutated_runs = runs(&mutated);
-    let disagreements = super::evaluate(&root, &mutated_runs, 5);
-    assert!(
-        disagreements.is_empty(),
-        "the evaluator and the Rust analysis disagree on the seeded mutants: {disagreements:?}"
-    );
-    eprintln!(
-        "BS-07: the evaluator agrees on {} seeded mutants ({:?})",
-        mutated_runs.len(),
-        started.elapsed()
-    );
+    // The evaluator on the vectors and on the seeded mutants, for each root:
+    // `detection` is what the planted defects are caught on.
+    let mut detection: Vec<(fn(&Legs) -> &Run, Vec<Run>)> = Vec::new();
+    for (name, low, leg) in [
+        ("siteTrees", &sites, sites_leg as fn(&Legs) -> &Run),
+        ("deadFunctions", &dead, dead_leg),
+        ("fallibleFunctions", &fallible, fallible_leg),
+    ] {
+        let evaluated = runs(&evaluator, leg);
+        let disagreements = super::evaluate(low, &evaluated, 5);
+        assert!(
+            disagreements.is_empty(),
+            "{name}: the evaluator and the oracle disagree on the vectors: {disagreements:?}"
+        );
+        let mutated_runs = runs(&mutated, leg);
+        let disagreements = super::evaluate(low, &mutated_runs, 5);
+        assert!(
+            disagreements.is_empty(),
+            "{name}: the evaluator and the oracle disagree on the seeded mutants: {disagreements:?}"
+        );
+        eprintln!(
+            "BS-07: {name}: the evaluator agrees on {} vectors and {} seeded mutants ({:?})",
+            evaluated.len(),
+            mutated_runs.len(),
+            started.elapsed()
+        );
+        detection.push((leg, evaluated.into_iter().chain(mutated_runs).collect()));
+    }
     let large: Vec<&Vector> = rustc_mutants.iter().collect();
     super::rust_validate::rustc_differential(
         "BS-07",
-        &[("fallibleFunctions", &root, &runs(&large))],
+        &[
+            ("siteTrees", &sites, &runs(&large, sites_leg)),
+            ("deadFunctions", &dead, &runs(&large, dead_leg)),
+            ("fallibleFunctions", &fallible, &runs(&large, fallible_leg)),
+        ],
         "seeded",
     );
     // The gate is armed: each defect planted in a copy of the source is a
-    // disagreement with the oracle.
-    let detection: Vec<Run> = evaluated.iter().chain(&mutated_runs).cloned().collect();
+    // disagreement with the oracle on its root.
     for plant in &PLANTS {
         let planted = support::P::bootstrap();
-        let source = planted.read_raw("src/RustLower.lex.tex");
+        let source = planted.read_raw(plant.file);
         assert_eq!(
             source.matches(plant.site).count(),
             1,
             "{}: the plant site occurs once",
             plant.label
         );
-        planted.write(
-            "src/RustLower.lex.tex",
-            &source.replacen(plant.site, plant.replacement, 1),
-        );
+        planted.write(plant.file, &source.replacen(plant.site, plant.replacement, 1));
         let checked = support::checked_project(&planted);
-        let low = super::lower(&checked, &planted, MODULE, plant.root);
-        let disagreements = super::evaluate(&low, &detection, 1);
+        let low = super::lower(&checked, &planted, plant.module, plant.root);
+        let runs = &detection
+            .iter()
+            .find(|(leg, _)| std::ptr::fn_addr_eq(*leg, plant.leg))
+            .expect("the leg of the plant")
+            .1;
+        let disagreements = super::evaluate(&low, runs, 1);
         assert!(
             !disagreements.is_empty(),
             "{}: the planted defect is detected by the differential",
@@ -698,10 +852,13 @@ pub(super) fn case() {
     }
     let mut realized = 0usize;
     for exported_root in &exported.output.result.roots {
-        let Some(member) = exported_root.root.strip_prefix(&format!("{MODULE}.")) else {
+        let (low, member) = if let Some(member) = exported_root.root.strip_prefix(&format!("{MODULE}.")) {
+            (if member == "deadFunctions" { &dead } else { &fallible }, member)
+        } else if exported_root.root == format!("{TYPING}.siteTrees") {
+            (&sites, "siteTrees")
+        } else {
             continue;
         };
-        assert_eq!(member, "fallibleFunctions");
         for output in &exported_root.outputs {
             let package: Json = serde_json::from_slice(
                 &std::fs::read(
@@ -715,13 +872,13 @@ pub(super) fn case() {
             .expect("package JSON");
             assert_eq!(
                 package["program"],
-                serde_json::to_value(&root.program).expect("a program is JSON"),
+                serde_json::to_value(&low.program).expect("a program is JSON"),
                 "{member}: the exported package realizes the program the differential ran"
             );
             realized += 1;
         }
     }
-    assert_eq!(realized, ROOTS.len(), "one certified package per root");
+    assert_eq!(realized, ROOTS.len() + 1, "one certified package per root, and the typing root");
     eprintln!("BS-07: passed in {:?}", started.elapsed());
 }
 

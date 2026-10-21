@@ -49,7 +49,7 @@ fn nat(number: u64) -> Value {
     }
 }
 
-fn adt(constructor: u64, fields: Vec<Value>) -> Value {
+pub(super) fn adt(constructor: u64, fields: Vec<Value>) -> Value {
     Value::Adt {
         constructor,
         fields,
@@ -72,7 +72,7 @@ fn chain(nil: u64, cons: u64, items: Vec<Value>) -> Value {
         })
 }
 
-fn ty_chain(items: Vec<Value>) -> Value {
+pub(super) fn ty_chain(items: Vec<Value>) -> Value {
     chain(14, 15, items)
 }
 
@@ -82,7 +82,7 @@ fn enc_tys(tys: &[Ty]) -> Value {
 
 /// `Ty`: unit, bool, nat, int, fixed, string, bytes, ordering, option,
 /// result, list, pair, adt, fn, nil, cons.
-fn enc_ty(ty: &Ty) -> Value {
+pub(super) fn enc_ty(ty: &Ty) -> Value {
     match ty {
         Ty::Unit => adt(0, Vec::new()),
         Ty::Bool => adt(1, Vec::new()),
@@ -2270,9 +2270,14 @@ pub(super) fn mutants(
 
 /// The roots in the order the module declares them, each with the effects
 /// its declaration admits, which are exactly the effects its closure realizes.
-const ROOTS: [(&str, &[&str]); 2] = [
+///
+/// `siteTrees` is the typing root `BS-07` composes with the lowering: it is
+/// the module's `walk`, so its eligibility and its certified package are
+/// checked here, and its differential is the first leg of `BS-07`.
+const ROOTS: [(&str, &[&str]); 3] = [
     ("checkProgram", &["allocation", "overflow", "recursion"]),
     ("checkArguments", &["allocation", "overflow", "recursion"]),
+    ("siteTrees", &["allocation", "overflow", "recursion"]),
 ];
 
 /// Seeded mutants of the committed programs, and the other corpora, per root,
