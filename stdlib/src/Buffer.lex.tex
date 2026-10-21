@@ -1,0 +1,190 @@
+\begin{lexlean}{Buffer}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{Text}
+\title{Natural number addition}
+\begin{semanticmodule}
+structure{
+  name: Buffer,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: sealed, type: (List Bytes)},
+    {name: pending, type: Bytes},
+    {name: size, type: Nat},
+    {name: capacity, type: Nat},
+    {name: refused, type: Bool}
+  ]
+}
+
+definition{
+  name: new,
+  parameters: [capacity : Nat],
+  result: Buffer,
+  body: (record Buffer [] {sealed := (nil Bytes), pending := 0x, size := 0, capacity := capacity, refused := false}),
+  executable: true
+}
+
+definition{
+  name: length,
+  parameters: [buffer : Buffer],
+  result: Nat,
+  body: (project buffer size),
+  executable: true
+}
+
+definition{
+  name: exceeded,
+  parameters: [buffer : Buffer],
+  result: Bool,
+  body: (project buffer refused),
+  executable: true
+}
+
+definition{
+  name: refuse,
+  parameters: [buffer : Buffer],
+  result: Buffer,
+  body: (record Buffer [] {sealed := (project buffer sealed), pending := (project buffer pending), size := (project buffer size), capacity := (project buffer capacity), refused := true}),
+  executable: true
+}
+
+definition{
+  name: seal,
+  parameters: [buffer : Buffer, joined : Bytes, grown : Nat],
+  result: Buffer,
+  body: (if (256 <=? (prim length joined : Nat)) then (record Buffer [] {sealed := (cons joined (project buffer sealed)), pending := 0x, size := grown, capacity := (project buffer capacity), refused := false}) else (record Buffer [] {sealed := (project buffer sealed), pending := joined, size := grown, capacity := (project buffer capacity), refused := false})),
+  executable: true
+}
+
+definition{
+  name: writeBytes,
+  parameters: [buffer : Buffer, piece : Bytes],
+  result: Buffer,
+  body: (if (project buffer refused) then buffer else (let grown : Nat := ((project buffer size) + (prim length piece : Nat)); (if (grown <=? (project buffer capacity)) then (seal buffer (prim append (project buffer pending) piece : Bytes) grown) else (refuse buffer)))),
+  executable: true
+}
+
+definition{
+  name: writeByte,
+  parameters: [buffer : Buffer, byte : UInt8],
+  result: Buffer,
+  body: (writeBytes buffer (Text::sliceOr 0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff (prim to_nat byte : Nat) 1)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: pairStep,
+  parameters: [state : ((Option Bytes) * (List Bytes)), piece : Bytes],
+  result: ((Option Bytes) * (List Bytes)),
+  body: (match (first state)
+    | Option.none => ((ctor Option.some [Bytes] piece), (second state))
+    | Option.some held => ((ctor Option.none [Bytes]), (cons (prim append held piece : Bytes) (second state)))),
+  executable: true
+}
+
+definition{
+  name: pairUp,
+  parameters: [pieces : (List Bytes)],
+  result: (Option (List Bytes)),
+  body: (match pieces
+    | List.nil => (ctor Option.none [(List Bytes)])
+    | List.cons head rest => (match rest
+      | List.nil => (ctor Option.none [(List Bytes)])
+      | List.cons next later => (let folded : ((Option Bytes) * (List Bytes)) := (prim list_fold (fun (state : ((Option Bytes) * (List Bytes))) (piece : Bytes) => (pairStep state piece)) ((ctor Option.none [Bytes]), (nil Bytes)) pieces : ((Option Bytes) * (List Bytes))); (match (first folded)
+        | Option.some held => (ctor Option.some [(List Bytes)] (Text::reverse (cons held (second folded))))
+        | Option.none => (ctor Option.some [(List Bytes)] (Text::reverse (second folded))))))),
+  executable: true
+}
+
+definition{
+  name: joinAll,
+  parameters: [pieces : (List Bytes)],
+  result: Bytes,
+  body: (match (first (prim iterate_until (fun (current : (List Bytes)) => (pairUp current)) (prim length pieces : Nat) pieces : ((List Bytes) * Bool)))
+    | List.nil => 0x
+    | List.cons only rest => only),
+  executable: true
+}
+
+definition{
+  name: finish,
+  parameters: [buffer : Buffer],
+  result: (Result Bytes Bytes),
+  body: (if (project buffer refused) then (ctor Result.error [Bytes, Bytes] (prim utf8_encode "output exceeds the capacity of the buffer" : Bytes)) else (ctor Result.ok [Bytes, Bytes] (joinAll (Text::reverse (cons (project buffer pending) (project buffer sealed)))))),
+  executable: true
+}
+definition{
+  name: digit,
+  parameters: [number : Nat, place : Nat],
+  result: Bytes,
+  body: (Text::sliceOr 0x30313233343536373839 (prim remainder (prim quotient number place 0 : Nat) 10 0 : Nat) 1),
+  executable: true
+}
+
+definition{
+  name: zeroStep,
+  parameters: [digits : Bytes, position : Nat],
+  result: (Option Nat),
+  body: (match (Text::byteAt digits position)
+    | Option.some byte => (if (prim equal byte (48 : UInt8) : Bool) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat]))
+    | Option.none => (ctor Option.none [Nat])),
+  executable: true
+}
+
+definition{
+  name: decimal,
+  parameters: [number : Nat],
+  result: Bytes,
+  body: (let digits : Bytes := (prim append (digit number 10000000000000000000) (prim append (digit number 1000000000000000000) (prim append (digit number 100000000000000000) (prim append (digit number 10000000000000000) (prim append (digit number 1000000000000000) (prim append (digit number 100000000000000) (prim append (digit number 10000000000000) (prim append (digit number 1000000000000) (prim append (digit number 100000000000) (prim append (digit number 10000000000) (prim append (digit number 1000000000) (prim append (digit number 100000000) (prim append (digit number 10000000) (prim append (digit number 1000000) (prim append (digit number 100000) (prim append (digit number 10000) (prim append (digit number 1000) (prim append (digit number 100) (prim append (digit number 10) (digit number 1) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes); (let zeros : Nat := (first (prim iterate_until (fun [digits] (position : Nat) => (zeroStep digits position)) (prim length digits : Nat) 0 : (Nat * Bool))); (if (number =? 0) then (prim utf8_encode "0" : Bytes) else (Text::sliceOr digits zeros (prim subtract (prim length digits : Nat) zeros : Nat))))),
+  executable: true
+}
+
+definition{
+  name: writeDecimal,
+  parameters: [buffer : Buffer, number : Nat],
+  result: Buffer,
+  body: (writeBytes buffer (decimal number)),
+  executable: true
+}
+
+definition{
+  name: writeAll,
+  parameters: [capacity : Nat, pieces : (List Bytes)],
+  result: (Result Bytes Bytes),
+  body: (finish (prim list_fold (fun (buffer : Buffer) (piece : Bytes) => (writeBytes buffer piece)) (new capacity) pieces : Buffer)),
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: byteStep,
+  parameters: [data : Bytes, state : (Nat * Buffer)],
+  result: (Option (Nat * Buffer)),
+  body: (match (Text::byteAt data (first state))
+    | Option.some byte => (ctor Option.some [(Nat * Buffer)] (((first state) + 1), (writeByte (second state) byte)))
+    | Option.none => (ctor Option.none [(Nat * Buffer)])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: writeEach,
+  parameters: [capacity : Nat, data : Bytes],
+  result: (Result Bytes Bytes),
+  body: (finish (second (first (prim iterate_until (fun [data] (state : (Nat * Buffer)) => (byteStep data state)) (prim length data : Nat) (0, (new capacity)) : ((Nat * Buffer) * Bool))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: writeNumbers,
+  parameters: [capacity : Nat, numbers : (List Nat)],
+  result: (Result Bytes Bytes),
+  body: (finish (prim list_fold (fun (buffer : Buffer) (number : Nat) => (writeBytes (writeDecimal buffer number) (prim utf8_encode "," : Bytes))) (new capacity) numbers : Buffer)),
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}
