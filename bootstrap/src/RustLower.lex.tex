@@ -1163,7 +1163,7 @@ definition{
 }
 
 definition{
-  name: fallibleFunctions,
+  name: deadFunctions,
   parameters: [
     spec : Bytes,
     adts : CalculusCheck::Ty,
@@ -1184,7 +1184,29 @@ definition{
       {field: closures, value: (project initial closures)}
     ],
     type_arguments: []
-  } : (Liveness * Bool))); (let facts : Facts := (reachFunctions program bodies 0); (first (prim iterate_until (fun [facts, live] (flags : (List Bool)) => (failNext facts (project live closures) flags)) (1 + count) (falses count) : ((List Bool) * Bool))))))))))))),
+  } : (Liveness * Bool))); (project live dead)))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: fallibleFunctions,
+  parameters: [
+    spec : Bytes,
+    adts : CalculusCheck::Ty,
+    parameters : (List (List Nat)),
+    types : CalculusCheck::Ty,
+    results : CalculusCheck::Ty,
+    bodies : CalculusCheck::Expr,
+    dead : (List Bool)
+  ],
+  result: (List Bool),
+  body: (let program : CalculusCheck::Program := (record CalculusCheck::Program {spec := spec, adts := adts, parameters := parameters, types := types, results := results, bodies := bodies}); (let count : Nat := (CalculusCheck::exprChainLength bodies); (let registered : CalculusCheck::Ty := (register (register (register (ctor CalculusCheck::Ty.TNil) types) results) adts); (let initial : Collect := (collectFunctions program record{
+    type: Collect,
+    fields: [{field: known, value: registered}, {field: closures, value: (ctor Clos.ClNil)}],
+    type_arguments: []
+  } bodies 0 dead); (let facts : Facts := (reachFunctions program bodies 0); (first (prim iterate_until (fun [facts, initial] (flags : (List Bool)) => (failNext facts (project initial closures) flags)) (1 + count) (falses count) : ((List Bool) * Bool)))))))),
   axioms: [Quot.sound, propext],
   executable: true,
   production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
