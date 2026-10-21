@@ -40,6 +40,12 @@ pub const PREFIX: &str = "LexLeanText";
 /// declaration's elaboration adds to a generated module.
 pub const LAWS_MODULE: &str = "LexLeanText.LexLeanText";
 
+/// The module of the standard library that holds the production form of
+/// every library function an elaboration applies (SPEC.md §17.12). A module
+/// that declares a text component imports it by writing the import itself,
+/// and its project lists the `std` source package.
+pub const PRODUCTION_MODULE: &str = "LexLeanStd.TextModels";
+
 /// The import line a generated module carries for the laws module.
 pub const IMPORT_LINE: &str = "public import LexLeanText.LexLeanText";
 
@@ -151,13 +157,20 @@ pub mod names {
     pub const FEATURES_WIDTH: &str = "features_width";
     /// The classifier's `features_fit` law.
     pub const FEATURES_FIT: &str = "features_fit";
+    /// `features_fit` for any function equal to `fitWidth`, the form a
+    /// production form's bridge proves it through.
+    pub const FEATURES_FIT_OF: &str = "features_fit_of";
+    /// A `take` and a `zeros` that satisfy the equations of `List.take` and
+    /// `List.replicate n 0` make `take n xs ++ zeros (n - xs.length)`
+    /// `fitWidth n xs`, the bridge of `fitWidth`'s production form.
+    pub const FIT_WIDTH_OF: &str = "fitWidth_of";
     /// The classifier's `features_total` law under `longest_match`.
     pub const FEATURES_TOTAL_TEXT: &str = "features_total_text";
     /// The classifier's `features_total` law under `byte_level`.
     pub const FEATURES_TOTAL_TEXT_BYTES: &str = "features_total_text_bytes";
 
     /// Every name above, each of which the native module must declare.
-    pub const ALL: [&str; 47] = [
+    pub const ALL: [&str; 49] = [
         VOCAB_SIZE,
         ENCODE_WITH,
         ENCODE_BYTES,
@@ -203,6 +216,8 @@ pub mod names {
         TOKEN_COUNT,
         FEATURES_WIDTH,
         FEATURES_FIT,
+        FEATURES_FIT_OF,
+        FIT_WIDTH_OF,
         FEATURES_TOTAL_TEXT,
         FEATURES_TOTAL_TEXT_BYTES,
     ];

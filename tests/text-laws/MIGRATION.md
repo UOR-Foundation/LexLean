@@ -375,14 +375,25 @@ record's `export.lean` and `flags.lean`, and joined to the committed data.
 'LexLeanText.fitWidth_of' depends on axioms: [propext]
 ```
 
+- `features_fit_of`: for any `fw` equal to `fitWidth`, `fw n (features n ts)`
+  is `features n ts`; the form of the classifier's `features_fit` through the
+  bridge of the production `fitWidth`, proved once by substitution. Each
+  generated law that names a function with a production form has such an
+  of-equality form, so that the generated proof is one application and the
+  proof language gains no rewrite.
+
+```
+'LexLeanText.features_fit_of' depends on axioms: [propext, Quot.sound]
+```
+
 ### Equivalence
 
 The Lean the compiler generates from the committed data was compiled by the
 pinned Lean as `LexLeanText.LexLeanText`, and `#print axioms` printed the lines
-above. The export of the additions has 2 declarations and 656 nodes; joined by
+above. The exports of the additions (two, 656 and 69 nodes, for 2 and 1 declarations); joined by
 the third record's method (nodes renumbered into the committed table, an
 existing node reused wherever structurally equal, `proof_nodes` recomputed over
-the whole table), the committed module holds 23,226 nodes and 231
+the whole table), the committed module holds 23,259 nodes and 232
 declarations, of which the first 229 are equal to the declarations of the third
 record. The same `imports`, `["Init"]`, are kept: the lemma statements name
 only `Init` constants, so the library imports no runtime and a production form

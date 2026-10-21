@@ -2067,6 +2067,13 @@ theorem LexLeanText.withIndex_unique : @23135 := @23225 {
   policy: exact{axioms: []},
   transparency: semireducible
 }
+theorem LexLeanText.features_fit_of : @23236 := @23258 {
+  all: [LexLeanText.features_fit_of],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [Quot.sound, propext]},
+  transparency: semireducible
+}
 
 @0 := Sort 1
 @1 := proof(ByteArray)
@@ -13546,7 +13553,9 @@ theorem LexLeanText.withIndex_unique : @23135 := @23225 {
 @19800 := fun (n : @2) => fun (xs : @8726) => @19798
 @19801 := LexLeanText.fitWidth
 @19802 := @19801 @90
-@19807 := (size : @2) -> (ts : @130) -> @14495 (@19802 @19728) @19728
+@19803 := @19802 @19728
+@19805 := @14495 @19803 @19728
+@19807 := (size : @2) -> (ts : @130) -> @19805
 @19810 := proof(proof(proof(LexLeanText.features_width) @90) @23)
 @19811 := proof(@19801 @75)
 @19813 := @19726 @75 @90
@@ -15354,5 +15363,19 @@ theorem LexLeanText.withIndex_unique : @23135 := @23225 {
                                           proof(@90 @3208))))
                                 proof(@18252 @23195))))))))
               @23)))))
+@23229 := (n : @2) -> (xs : @8726) -> @14495 @3132 @22740
+@23230 := @3002 @19728
+@23232 := @14495 @23230 @19728
+@23236 := (fw : @22774) -> (h : @23229) -> (n : @2) -> (ts : @130) -> @23232
+@23258 := proof(fun (fw : @22774) =>
+    proof(fun (h : @23229) =>
+      proof(fun (n : @2) =>
+        proof(fun (ts : @130) =>
+          proof(proof(proof(proof(@1111 @23232) @19805)
+                proof(proof(@367 proof(proof(@1123 @23232) @19805))
+                    proof(proof(proof(proof(@21873 @23230) @19803)
+                          proof(fun (_a : @8726) => proof(@22840 @19813)))
+                        proof(@3131 @19728))))
+              proof(proof(proof(LexLeanText.features_fit) @90) @23))))))
 \end{coremodule}
 \end{lexlean}
