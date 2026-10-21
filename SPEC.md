@@ -5875,9 +5875,8 @@ of `from` or `try_from` is also admitted for every integer type. The names of th
 `to_string`, `collect`) are refused in the core profile as `hidden-allocation`. Ten rules join the
 24 of `RB-17`: `assign-immutable`, `assign-place`, `break-position`, `let-position`,
 `param-duplicate`, `pattern-duplicate`, `pattern-fields`, `struct-fields`, `tuple-arity`, and
-`variant-name`; each is planted. The meaning of these constructs is not yet declared by
-`RuntimeSemantics`, which evaluates them as `stuck`; the heap model that gives them one is a later step
-of the heap half.
+`variant-name`; each is planted. `RuntimeSemantics` evaluates these constructs as `stuck`: this row
+declares no meaning for them, and a theorem about a function that uses one is a claim it does not make.
 A *loop*
 (`Expr.loop`, `SP-19`) is the one construct of the machine that repeats: it names
 a state, a local the enclosing block has bound, and a body block. The body is
