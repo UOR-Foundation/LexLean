@@ -790,8 +790,9 @@ fn lm_04() {
         );
         assert_eq!(
             names(row.theorems()),
-            ["bounded", "push_bounded", "exact", last].map(|law| format!("{name}.{law}")),
-            "{name} generates its laws"
+            ["admit_bridge", "push_bridge", "bounded", "push_bounded", "exact", last]
+                .map(|law| format!("{name}.{law}")),
+            "{name} generates the bridges of its production forms and its laws"
         );
     }
     let build = support::rendered(&project);
@@ -849,7 +850,14 @@ fn lm_04() {
     let _guard = support::env_shared();
     let rows = attested(&support::verify_ok(&project));
     for (name, last) in [("Last2", "suffix"), ("Strict2", "refuses")] {
-        for law in ["bounded", "push_bounded", "exact", last] {
+        for law in [
+            "admit_bridge",
+            "push_bridge",
+            "bounded",
+            "push_bounded",
+            "exact",
+            last,
+        ] {
             assert_ok(&rows, &format!("{LEAN_MODULE}.{name}.{law}"));
         }
     }

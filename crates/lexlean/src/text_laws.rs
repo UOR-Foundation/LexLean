@@ -144,6 +144,31 @@ pub mod names {
     /// The generator's `context_bounded` law under `sample`.
     pub const GENERATE_SAMPLE_GUARDED_LAW: &str = "generateSample_guarded";
 
+    /// The production `admitRefuse` equals the library's, given `fits` and its defining equation.
+    pub const ADMIT_REFUSE_BRIDGE: &str = "admitRefuse_bridge";
+    /// The production `admitKeepLast` equals the library's, given a `drop` with the equations of `List.drop`.
+    pub const ADMIT_KEEP_LAST_BRIDGE: &str = "admitKeepLast_bridge";
+    /// The production `pushRefuse` equals the library's, given the bridge of `admitRefuse`.
+    pub const PUSH_REFUSE_BRIDGE: &str = "pushRefuse_bridge";
+    /// The production `pushKeepLast` equals the library's, given the bridge of `admitKeepLast`.
+    pub const PUSH_KEEP_LAST_BRIDGE: &str = "pushKeepLast_bridge";
+    /// The window's `bounded` law of an admission under `refuse`, for any function equal to `admitRefuse`.
+    pub const ADMIT_REFUSE_BOUNDED_OF: &str = "admitRefuse_bounded_of";
+    /// The window's `bounded` law of an admission under `keep_last`, for any function equal to `admitKeepLast`.
+    pub const ADMIT_KEEP_LAST_BOUNDED_OF: &str = "admitKeepLast_bounded_of";
+    /// The window's `push_bounded` law under `refuse`, for any function equal to `pushRefuse`.
+    pub const PUSH_REFUSE_BOUNDED_OF: &str = "pushRefuse_bounded_of";
+    /// The window's `push_bounded` law under `keep_last`, for any function equal to `pushKeepLast`.
+    pub const PUSH_KEEP_LAST_BOUNDED_OF: &str = "pushKeepLast_bounded_of";
+    /// The window's `exact` law under `refuse`, for any function equal to `admitRefuse`.
+    pub const ADMIT_REFUSE_EXACT_OF: &str = "admitRefuse_exact_of";
+    /// The window's `exact` law under `keep_last`, for any function equal to `admitKeepLast`.
+    pub const ADMIT_KEEP_LAST_EXACT_OF: &str = "admitKeepLast_exact_of";
+    /// The window's `suffix` law under `keep_last`, for any function equal to `admitKeepLast`.
+    pub const ADMIT_KEEP_LAST_SUFFIX_OF: &str = "admitKeepLast_suffix_of";
+    /// The window's `refuses` law under `refuse`, for any function equal to `admitRefuse`.
+    pub const ADMIT_REFUSE_REFUSES_OF: &str = "admitRefuse_refuses_of";
+
     /// `features : Nat -> List UInt32 -> List Int`, the count of each id
     /// below a size.
     pub const FEATURES: &str = "features";
@@ -170,7 +195,7 @@ pub mod names {
     pub const FEATURES_TOTAL_TEXT_BYTES: &str = "features_total_text_bytes";
 
     /// Every name above, each of which the native module must declare.
-    pub const ALL: [&str; 49] = [
+    pub const ALL: [&str; 61] = [
         VOCAB_SIZE,
         ENCODE_WITH,
         ENCODE_BYTES,
@@ -210,6 +235,18 @@ pub mod names {
         GENERATE_SAMPLE_BOUNDED,
         GENERATE_GREEDY_GUARDED_LAW,
         GENERATE_SAMPLE_GUARDED_LAW,
+        ADMIT_REFUSE_BRIDGE,
+        ADMIT_KEEP_LAST_BRIDGE,
+        PUSH_REFUSE_BRIDGE,
+        PUSH_KEEP_LAST_BRIDGE,
+        ADMIT_REFUSE_BOUNDED_OF,
+        ADMIT_KEEP_LAST_BOUNDED_OF,
+        PUSH_REFUSE_BOUNDED_OF,
+        PUSH_KEEP_LAST_BOUNDED_OF,
+        ADMIT_REFUSE_EXACT_OF,
+        ADMIT_KEEP_LAST_EXACT_OF,
+        ADMIT_KEEP_LAST_SUFFIX_OF,
+        ADMIT_REFUSE_REFUSES_OF,
         FEATURES,
         FIT_WIDTH,
         TOTAL,

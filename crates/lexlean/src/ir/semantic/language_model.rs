@@ -506,20 +506,27 @@ fn law_of(
     name: String,
     binders: Vec<SemanticParameter>,
     statement: SemanticTerm,
+    unfold: &[&str],
     lemma: &str,
     arguments: Vec<ProofTerm>,
 ) -> GeneratedTheorem {
+    let term = ProofTerm::Theorem {
+        theorem: library_member(lemma),
+        type_arguments: Vec::new(),
+        arguments,
+    };
     GeneratedTheorem {
         name,
         type_parameters: Vec::new(),
         parameters: binders,
         statement: Formula::Term { term: statement },
-        proof: Proof::Term {
-            term: ProofTerm::Theorem {
-                theorem: library_member(lemma),
-                type_arguments: Vec::new(),
-                arguments,
-            },
+        proof: if unfold.is_empty() {
+            Proof::Term { term }
+        } else {
+            Proof::Unfold {
+                definitions: unfold.iter().map(|name| model::local(name)).collect(),
+                term,
+            }
         },
     }
 }
@@ -570,6 +577,7 @@ fn fit_width_bridge(name: &str) -> GeneratedTheorem {
                 vec![model::var("width"), model::var("values")],
             ),
         ),
+        &[],
         names::FIT_WIDTH_OF,
         vec![
             proof_term(eta("takeInts", 2)),
@@ -663,6 +671,138 @@ fn sibling(owner: &MemberRef, suffix: &str) -> MemberRef {
 // ---------------------------------------------------------------------------
 // The elaboration of a context window.
 
+/// The production function `function` of two or three arguments, as a value.
+fn window_function(function: &str, arity: usize) -> SemanticTerm {
+    let mut parameters: Vec<(&str, SemanticType)> = vec![
+        ("capacity", SemanticType::Nat),
+        ("context", tokens()),
+    ];
+    if arity == 3 {
+        parameters.push(("token", SemanticType::UInt32));
+    }
+    let arguments = parameters
+        .iter()
+        .map(|(parameter, _)| model::var(parameter))
+        .collect();
+    model::lambda(parameters, production_call(function, arguments))
+}
+
+/// The generated bridges of a window: its production admission and push
+/// equal the library's, by the library's bridge lemmas applied to the
+/// production forms with their defining equations proved by unfolding.
+fn window_bridges(name: &str, keep: bool) -> Vec<GeneratedTheorem> {
+    let (admit, push) = if keep {
+        (names::ADMIT_KEEP_LAST, names::PUSH_KEEP_LAST)
+    } else {
+        (names::ADMIT_REFUSE, names::PUSH_REFUSE)
+    };
+    let admit_name = format!("{name}.admit_bridge");
+    let binders = |with_token: bool| {
+        let mut binders = vec![
+            parameter("capacity", SemanticType::Nat),
+            parameter("context", tokens()),
+        ];
+        if with_token {
+            binders.push(parameter("token", SemanticType::UInt32));
+        }
+        binders
+    };
+    let equation = |function: &str, with_token: bool| {
+        let arguments = || {
+            let mut arguments = vec![model::var("capacity"), model::var("context")];
+            if with_token {
+                arguments.push(model::var("token"));
+            }
+            arguments
+        };
+        model::eq(
+            production_call(function, arguments()),
+            library_call(function, arguments()),
+        )
+    };
+    let applied = |with_token: bool| {
+        let mut arguments = vec![
+            proof_term(model::var("capacity")),
+            proof_term(model::var("context")),
+        ];
+        if with_token {
+            arguments.push(proof_term(model::var("token")));
+        }
+        arguments
+    };
+    let admission = if keep {
+        let mut arguments = vec![
+            proof_term(model::lambda(
+                vec![("count", SemanticType::Nat), ("context", tokens())],
+                production_call(
+                    "dropTokens",
+                    vec![model::var("count"), model::var("context")],
+                ),
+            )),
+            proof_term(window_function(admit, 2)),
+            by_unfolding(&["_context"]),
+            by_unfolding(&["_count"]),
+            by_unfolding(&["_count", "_head", "_tail"]),
+            by_unfolding(&["_capacity", "_context"]),
+        ];
+        arguments.extend(applied(false));
+        law_of(
+            admit_name.clone(),
+            binders(false),
+            equation(admit, false),
+            &[],
+            names::ADMIT_KEEP_LAST_BRIDGE,
+            arguments,
+        )
+    } else {
+        let mut arguments = vec![
+            proof_term(model::lambda(
+                vec![("capacity", SemanticType::Nat), ("context", tokens())],
+                production_call(
+                    names::FITS,
+                    vec![model::var("capacity"), model::var("context")],
+                ),
+            )),
+            proof_term(window_function(admit, 2)),
+            by_unfolding(&["_capacity", "_context"]),
+            by_unfolding(&["_capacity", "_context"]),
+        ];
+        arguments.extend(applied(false));
+        law_of(
+            admit_name.clone(),
+            binders(false),
+            equation(admit, false),
+            &[],
+            names::ADMIT_REFUSE_BRIDGE,
+            arguments,
+        )
+    };
+    let mut arguments = vec![
+        proof_term(window_function(admit, 2)),
+        proof_term(window_function(push, 3)),
+        ProofTerm::Theorem {
+            theorem: model::local(&admit_name),
+            type_arguments: Vec::new(),
+            arguments: Vec::new(),
+        },
+        by_unfolding(&["_capacity", "_context", "_token"]),
+    ];
+    arguments.extend(applied(true));
+    let pushing = law_of(
+        format!("{name}.push_bridge"),
+        binders(true),
+        equation(push, true),
+        &[],
+        if keep {
+            names::PUSH_KEEP_LAST_BRIDGE
+        } else {
+            names::PUSH_REFUSE_BRIDGE
+        },
+        arguments,
+    );
+    vec![admission, pushing]
+}
+
 /// Check a context window and elaborate it (§17.12, *Text components*): a
 /// capacity of at least one token (`LLT4016`), elaborated to `capacity`,
 /// `fit`, and `push` over the library's functions under the overflow
@@ -687,26 +827,29 @@ fn check_context_window(
             "context window `{name}` has capacity 0; a window holds at least one token"
         )));
     }
+    require_production("context window", name, env)?;
     register_library(env);
     let capacity_name = format!("{name}.capacity");
     let admit = format!("{name}.fit");
     let push = format!("{name}.push");
     let capacity_term = || local_call(&capacity_name, Vec::new());
-    let (admit_with, push_with, bounded, push_bounded, exact) = match overflow {
-        OverflowDisposition::Refuse => (
-            names::ADMIT_REFUSE,
-            names::PUSH_REFUSE,
-            names::ADMIT_REFUSE_BOUNDED,
-            names::PUSH_REFUSE_BOUNDED,
-            names::ADMIT_REFUSE_EXACT,
-        ),
-        OverflowDisposition::KeepLast => (
+    let keep = matches!(overflow, OverflowDisposition::KeepLast);
+    let (admit_with, push_with, bounded, push_bounded, exact) = if keep {
+        (
             names::ADMIT_KEEP_LAST,
             names::PUSH_KEEP_LAST,
-            names::ADMIT_KEEP_LAST_BOUNDED,
-            names::PUSH_KEEP_LAST_BOUNDED,
-            names::ADMIT_KEEP_LAST_EXACT,
-        ),
+            names::ADMIT_KEEP_LAST_BOUNDED_OF,
+            names::PUSH_KEEP_LAST_BOUNDED_OF,
+            names::ADMIT_KEEP_LAST_EXACT_OF,
+        )
+    } else {
+        (
+            names::ADMIT_REFUSE,
+            names::PUSH_REFUSE,
+            names::ADMIT_REFUSE_BOUNDED_OF,
+            names::PUSH_REFUSE_BOUNDED_OF,
+            names::ADMIT_REFUSE_EXACT_OF,
+        )
     };
     let declarations = vec![
         plain_definition(
@@ -719,7 +862,7 @@ fn check_context_window(
             &admit,
             vec![parameter(TOKENS, tokens())],
             model::option_type(tokens()),
-            library_call(admit_with, vec![capacity_term(), model::var(TOKENS)]),
+            production_call(admit_with, vec![capacity_term(), model::var(TOKENS)]),
         ),
         plain_definition(
             &push,
@@ -728,7 +871,7 @@ fn check_context_window(
                 parameter(TOKEN, SemanticType::UInt32),
             ],
             model::option_type(tokens()),
-            library_call(
+            production_call(
                 push_with,
                 vec![capacity_term(), model::var(TOKENS), model::var(TOKEN)],
             ),
@@ -742,9 +885,19 @@ fn check_context_window(
         )
     };
     let over_tokens = || vec![parameter(TOKENS, tokens())];
-    let mut theorems = vec![
+    let admit_bridge = format!("{name}.admit_bridge");
+    let push_bridge = format!("{name}.push_bridge");
+    let by = |bridge: &str| ProofTerm::Theorem {
+        theorem: model::local(bridge),
+        type_arguments: Vec::new(),
+        arguments: Vec::new(),
+    };
+    let admit_function = || proof_term(window_function(admit_with, 2));
+    let push_function = || proof_term(window_function(push_with, 3));
+    let mut theorems = window_bridges(name, keep);
+    theorems.extend([
         // Every admitted context fits the window.
-        law_over(
+        law_of(
             format!("{name}.bounded"),
             over_tokens(),
             is_true(library_call(
@@ -753,10 +906,15 @@ fn check_context_window(
             )),
             &[&admit],
             bounded,
-            vec![capacity_term(), model::var(TOKENS)],
+            vec![
+                admit_function(),
+                by(&admit_bridge),
+                proof_term(capacity_term()),
+                proof_term(model::var(TOKENS)),
+            ],
         ),
         // Every pushed context fits the window.
-        law_over(
+        law_of(
             format!("{name}.push_bounded"),
             vec![
                 parameter(TOKENS, tokens()),
@@ -771,10 +929,16 @@ fn check_context_window(
             )),
             &[&push],
             push_bounded,
-            vec![capacity_term(), model::var(TOKENS), model::var(TOKEN)],
+            vec![
+                push_function(),
+                by(&push_bridge),
+                proof_term(capacity_term()),
+                proof_term(model::var(TOKENS)),
+                proof_term(model::var(TOKEN)),
+            ],
         ),
         // A context that fits is admitted unchanged.
-        law_over(
+        law_of(
             format!("{name}.exact"),
             over_tokens(),
             model::implies(
@@ -786,12 +950,17 @@ fn check_context_window(
             ),
             &[&admit],
             exact,
-            vec![capacity_term(), model::var(TOKENS)],
+            vec![
+                admit_function(),
+                by(&admit_bridge),
+                proof_term(capacity_term()),
+                proof_term(model::var(TOKENS)),
+            ],
         ),
-    ];
+    ]);
     theorems.push(match overflow {
         // What `keep_last` keeps is the end of the context.
-        OverflowDisposition::KeepLast => law_over(
+        OverflowDisposition::KeepLast => law_of(
             format!("{name}.suffix"),
             over_tokens(),
             is_true(library_call(
@@ -799,11 +968,16 @@ fn check_context_window(
                 vec![model::var(TOKENS), admitted()],
             )),
             &[&admit],
-            names::ADMIT_KEEP_LAST_SUFFIX,
-            vec![capacity_term(), model::var(TOKENS)],
+            names::ADMIT_KEEP_LAST_SUFFIX_OF,
+            vec![
+                admit_function(),
+                by(&admit_bridge),
+                proof_term(capacity_term()),
+                proof_term(model::var(TOKENS)),
+            ],
         ),
         // `refuse` admits nothing that does not fit.
-        OverflowDisposition::Refuse => law_over(
+        OverflowDisposition::Refuse => law_of(
             format!("{name}.refuses"),
             over_tokens(),
             model::implies(
@@ -814,8 +988,13 @@ fn check_context_window(
                 ),
             ),
             &[&admit],
-            names::ADMIT_REFUSE_REFUSES,
-            vec![capacity_term(), model::var(TOKENS)],
+            names::ADMIT_REFUSE_REFUSES_OF,
+            vec![
+                admit_function(),
+                by(&admit_bridge),
+                proof_term(capacity_term()),
+                proof_term(model::var(TOKENS)),
+            ],
         ),
     });
     env.texts.windows.insert(
@@ -1558,6 +1737,7 @@ fn check_text_classifier(
                 production_call(names::FIT_WIDTH, vec![size(), featured(model::var(TOKENS))]),
                 featured(model::var(TOKENS)),
             ),
+            &[],
             names::FEATURES_FIT_OF,
             vec![
                 proof_term(model::lambda(
