@@ -298,7 +298,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "`model-write` is the only normal path that rewrites the model files, SPEC.md and" (cons "the generated documentation." (nil String)))
+      (cons "`model-write` is the only normal path that rewrites the model files, SPEC.md and" (cons "the generated documentation. The chapter modules are edited by item with" (cons "`cargo xtask spec` (`replace-block`, `insert-after`, `port`; `NS-07`), which" (cons "writes a module only when the regenerated SPEC.md is the intended text outside" (cons "the derived regions." (nil String))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []

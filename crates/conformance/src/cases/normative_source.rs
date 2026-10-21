@@ -1,6 +1,7 @@
 //! Normative text as LexLean source (`NS-01`..`NS-04`): the `spec/` project
 //! and the projection of its register modules to `model/*.toml`.
 
+use std::ops::Range;
 use std::path::Path;
 
 use repo_model::project::{project, SOURCE_DIR};
@@ -16,6 +17,7 @@ pub fn run(id: &str) {
         "NS-04" => projector_fails_closed(),
         "NS-05" => specification_text(),
         "NS-06" => source_authority(),
+        "NS-07" => chapter_editing(),
         other => panic!("no conformance case is wired for {other}"),
     }
 }
@@ -717,5 +719,547 @@ fn source_authority() {
             std::fs::write(root.join("README.md"), text).expect("write");
         },
         &["README.md", "restates a registered statement"],
+    );
+}
+
+/// Every file of the scratch source directory, to prove that a refusal leaves
+/// the tree as it was.
+fn snapshot(root: &Path) -> std::collections::BTreeMap<String, Vec<u8>> {
+    source_files(&root.join(SOURCE_DIR))
+        .into_iter()
+        .map(|file| {
+            let bytes = std::fs::read(root.join(SOURCE_DIR).join(&file)).expect("read");
+            (file, bytes)
+        })
+        .collect()
+}
+
+fn lines(text: &str) -> Vec<String> {
+    text.strip_suffix('\n')
+        .unwrap_or(text)
+        .split('\n')
+        .map(str::to_owned)
+        .collect()
+}
+
+/// The names of a module's items, in order.
+fn item_names(text: &str) -> Vec<String> {
+    lexlean::sdk::read_module(text).expect("a module")["declarations"]
+        .as_array()
+        .expect("declarations")
+        .iter()
+        .map(|d| d["name"].as_str().expect("name").to_owned())
+        .collect()
+}
+
+// §27.5, `NS-07`: the chapter edit tool, on a scratch copy of the sources.
+fn chapter_editing() {
+    use repo_model::project::BlockKind;
+    use repo_model::spec_edit::{
+        apply, insert_after, port, replace_block, verify, Change, InsertKind, Intended,
+    };
+
+    let scratch = Scratch::new();
+    let root = scratch.root();
+    let current = || project(root).expect("the scratch sources project");
+    let expect_untouched = |attempt: &dyn Fn() -> Result<(), String>, needles: &[&str]| {
+        let before = snapshot(root);
+        let error = attempt().expect_err("the refusal plant is refused");
+        for needle in needles {
+            assert!(error.contains(needle), "`{needle}` is not in: {error}");
+        }
+        assert!(error.contains("NS-07"), "{error}");
+        assert_eq!(
+            before,
+            snapshot(root),
+            "a refusal leaves the tree unchanged: {error}"
+        );
+    };
+
+    // A prose block replaced: backslash, quote and percent sign survive; the
+    // percent sign is U+FF05 in the module and `%` in SPEC.md.
+    let first = "This document is the complete implementation contract for `github.com/UOR-Foundation/LexLean`.";
+    let replacement: Vec<String> = vec![
+        "A rule of 50% with a \\ backslash and a \"quote\".".to_owned(),
+        "A second line.".to_owned(),
+    ];
+    let before = current();
+    let outcome = replace_block(root, "Chapter01", first, &replacement).expect("replace-block");
+    apply(root, &outcome).expect("apply");
+    let mut wanted = lines(&before.spec);
+    let block = before
+        .layout
+        .blocks
+        .iter()
+        .find(|b| b.chapter == "Chapter01" && b.lines.first().map(String::as_str) == Some(first))
+        .expect("the block");
+    wanted.splice(block.body.clone(), replacement.iter().cloned());
+    assert_eq!(
+        lines(&current().spec),
+        wanted,
+        "the regenerated SPEC.md is the intended text"
+    );
+    let module =
+        std::fs::read_to_string(root.join(SOURCE_DIR).join("Chapter01.lex.tex")).expect("module");
+    assert!(
+        !module.contains('%') && module.contains('\u{ff05}'),
+        "a percent sign is spelled U+FF05 in the module"
+    );
+    assert_eq!(
+        lexlean::sdk::to_notation(&module).expect("notation"),
+        module,
+        "the module is canonical as written"
+    );
+    assert!(
+        module.lines().take(5).any(|l| l.starts_with("\\title{"))
+            && module.contains("\\useglossary{spec.titles@1.0.0}"),
+        "the module keeps its own header"
+    );
+
+    // A block inserted after it: the items are renumbered in order.
+    let names_before = item_names(&module).len();
+    let outcome = insert_after(
+        root,
+        "Chapter01",
+        &replacement[0],
+        InsertKind::Paragraph,
+        &["An inserted line.".to_owned()],
+    )
+    .expect("insert-after");
+    apply(root, &outcome).expect("apply");
+    let module =
+        std::fs::read_to_string(root.join(SOURCE_DIR).join("Chapter01.lex.tex")).expect("module");
+    let names = item_names(&module);
+    assert_eq!(names.len(), names_before + 1);
+    assert!(
+        names
+            .iter()
+            .enumerate()
+            .all(|(index, name)| *name == format!("i{:04}", index + 1)),
+        "the items are numbered in order"
+    );
+    assert!(
+        current()
+            .spec
+            .contains("A second line.\n\nAn inserted line.\n"),
+        "the block follows"
+    );
+
+    // A block of more than sixty lines continues in `cont` items.
+    let long: Vec<String> = (0..130).map(|n| format!("long line {n}")).collect();
+    let outcome =
+        replace_block(root, "Chapter01", "An inserted line.", &long).expect("a long block");
+    apply(root, &outcome).expect("apply");
+    let module =
+        std::fs::read_to_string(root.join(SOURCE_DIR).join("Chapter01.lex.tex")).expect("module");
+    assert_eq!(
+        item_names(&module).len(),
+        names_before + 3,
+        "130 lines are three items"
+    );
+    assert!(
+        module.matches("DocRows::Item.cont").count() >= 2,
+        "the block continues"
+    );
+    assert!(
+        current().spec.contains("long line 129\n"),
+        "the last line is in SPEC.md"
+    );
+
+    // The merged text of a line that still edits SPEC.md as text: a prose
+    // hunk (ported) and a hunk inside a derived region (reported, not ported).
+    let state = current();
+    let mut merged = lines(&state.spec);
+    let prose = state
+        .layout
+        .blocks
+        .iter()
+        .find(|b| b.chapter == "Chapter03" && b.kind == BlockKind::Paragraph && b.lines.len() >= 2)
+        .expect("a paragraph of two lines");
+    let last = prose.body.end - 1;
+    merged[last].push_str(" (merged)");
+    let row = merged
+        .iter()
+        .position(|l| l.starts_with("| `RP-01` | `repository` | "))
+        .expect("the RP-01 row of the derived table");
+    merged[row].push_str(" tampered");
+    let merged = merged.join("\n") + "\n";
+    let outcome = port(root, &merged).expect("port");
+    assert!(
+        outcome.report.iter().any(|r| r.contains("derived region")),
+        "the derived hunk is reported: {:?}",
+        outcome.report
+    );
+    apply(root, &outcome).expect("apply");
+    let after = current();
+    assert!(
+        lines(&after.spec)[last].ends_with(" (merged)"),
+        "the prose hunk is ported"
+    );
+    assert!(
+        !after.spec.contains(" tampered"),
+        "the derived hunk is regenerated, not ported"
+    );
+
+    // Refusals leave the tree as it was.
+    expect_untouched(
+        &|| {
+            replace_block(root, "Chapter01", "no block begins with this", &replacement)
+                .map(|_| ())
+                .map_err(|e| e.to_string())
+        },
+        &["no block begins"],
+    );
+    let doubled = insert_after(
+        root,
+        "Chapter01",
+        &replacement[0],
+        InsertKind::Paragraph,
+        &[replacement[0].clone()],
+    )
+    .expect("a block that repeats a first line");
+    apply(root, &doubled).expect("apply");
+    expect_untouched(
+        &|| {
+            replace_block(root, "Chapter01", &replacement[0], &replacement)
+                .map(|_| ())
+                .map_err(|e| e.to_string())
+        },
+        &["2 blocks begin", "name another first line"],
+    );
+    expect_untouched(
+        &|| {
+            replace_block(
+                root,
+                "Chapter01",
+                "long line 0",
+                &["has \u{ff05} in it".to_owned()],
+            )
+            .map(|_| ())
+            .map_err(|e| e.to_string())
+        },
+        &["U+FF05"],
+    );
+    // A hunk that spans two blocks: two adjacent paragraphs merged into one.
+    let state = current();
+    let pair = state
+        .layout
+        .blocks
+        .windows(2)
+        .find(|w| {
+            w[0].chapter == w[1].chapter
+                && w[0].kind == BlockKind::Paragraph
+                && w[1].kind == BlockKind::Paragraph
+                && w[0].body.end + 1 == w[1].body.start
+        })
+        .expect("two adjacent paragraphs");
+    let mut spanning = lines(&state.spec);
+    let (tail, head) = (pair[0].body.end - 1, pair[1].body.start);
+    spanning[tail].push_str(" (joined)");
+    spanning[head].push_str(" (joined)");
+    spanning.remove(pair[0].body.end);
+    let spanning = spanning.join("\n") + "\n";
+    expect_untouched(
+        &|| port(root, &spanning).map(|_| ()).map_err(|e| e.to_string()),
+        &["spans", pair[0].chapter.as_str(), " and "],
+    );
+    // A blank line deleted between two blocks touches no block's lines, and
+    // is named by its neighbours.
+    let mut blank = lines(&state.spec);
+    blank.remove(pair[0].body.end);
+    let blank = blank.join("\n") + "\n";
+    expect_untouched(
+        &|| port(root, &blank).map(|_| ()).map_err(|e| e.to_string()),
+        &[
+            "a line outside every paragraph, table and fence",
+            pair[0].chapter.as_str(),
+        ],
+    );
+    // Lines a block cannot hold are refused on every path, even though SPEC.md
+    // would be the same text: the structure of the module is what differs.
+    let refuse_lines = |lines: Vec<String>, needle: &str| {
+        expect_untouched(
+            &|| {
+                replace_block(root, "Chapter01", "long line 0", &lines)
+                    .map(|_| ())
+                    .map_err(|e| e.to_string())
+            },
+            &[needle],
+        );
+    };
+    refuse_lines(
+        vec!["First.".to_owned(), String::new(), "Second.".to_owned()],
+        "empty line",
+    );
+    refuse_lines(vec!["First.".to_owned(), String::new()], "empty line");
+    refuse_lines(Vec::new(), "at least one line");
+    refuse_lines(vec!["### 1.9 A planted heading".to_owned()], "heading");
+    refuse_lines(vec!["```".to_owned()], "fence");
+    expect_untouched(
+        &|| {
+            insert_after(
+                root,
+                "Chapter01",
+                "long line 0",
+                InsertKind::Table,
+                &["not a row".to_owned()],
+            )
+            .map(|_| ())
+            .map_err(|e| e.to_string())
+        },
+        &["each begin with `|`"],
+    );
+    // The same through `port`: an inserted heading and paragraph, a changed
+    // line made a heading, and a changed line split in two.
+    let state = current();
+    let target = state
+        .layout
+        .blocks
+        .iter()
+        .find(|b| b.chapter == "Chapter03" && b.kind == BlockKind::Paragraph && b.lines.len() >= 2)
+        .expect("a paragraph of two lines");
+    let mut planted = lines(&state.spec);
+    let after_block = target.body.end;
+    planted.splice(
+        after_block..after_block,
+        [
+            "".to_owned(),
+            "### 1.9 A planted heading".to_owned(),
+            "".to_owned(),
+            "A paragraph under it.".to_owned(),
+        ],
+    );
+    let planted = planted.join("\n") + "\n";
+    expect_untouched(
+        &|| port(root, &planted).map(|_| ()).map_err(|e| e.to_string()),
+        &["heading"],
+    );
+    let mut as_heading = lines(&state.spec);
+    as_heading[target.body.start] = "# turned into a heading".to_owned();
+    let as_heading = as_heading.join("\n") + "\n";
+    expect_untouched(
+        &|| {
+            port(root, &as_heading)
+                .map(|_| ())
+                .map_err(|e| e.to_string())
+        },
+        &["heading"],
+    );
+    let mut split = lines(&state.spec);
+    split.splice(
+        target.body.start..=target.body.start,
+        ["one".to_owned(), String::new(), "two".to_owned()],
+    );
+    let split = split.join("\n") + "\n";
+    expect_untouched(
+        &|| port(root, &split).map(|_| ()).map_err(|e| e.to_string()),
+        &["empty line"],
+    );
+
+    // A paragraph inserted at the edge of a derived table is ported, not
+    // excused as regenerated; one strictly inside the table is regenerated.
+    let region = state.layout.derived[0].clone();
+    for blank_first in [false, true] {
+        let mut edge = lines(&state.spec);
+        let block: Vec<String> = if blank_first {
+            vec![String::new(), "A paragraph before the table.".to_owned()]
+        } else {
+            vec!["A paragraph before the table.".to_owned(), String::new()]
+        };
+        let at = if blank_first {
+            region.start - 1
+        } else {
+            region.start
+        };
+        edge.splice(at..at, block);
+        let edge = edge.join("\n") + "\n";
+        let outcome = port(root, &edge).expect("a block before a derived table is ported");
+        assert!(
+            outcome.spec.contains("A paragraph before the table.\n\n"),
+            "the paragraph reaches SPEC.md (blank line first: {blank_first})"
+        );
+        assert!(
+            !outcome.report.iter().any(|r| r.contains("derived region")),
+            "it is not reported as regenerated: {:?}",
+            outcome.report
+        );
+    }
+    let mut inside = lines(&state.spec);
+    inside.insert(
+        region.start + 3,
+        "| `ZZ-99` | `none` | a row that is not the register's | §1 |".to_owned(),
+    );
+    let inside = inside.join("\n") + "\n";
+    let outcome = port(root, &inside).expect("a row inside a derived table is regenerated");
+    assert!(
+        outcome.changes.is_empty() && !outcome.spec.contains("ZZ-99"),
+        "the row is not ported"
+    );
+
+    // A row appended at the end of a derived table is regenerated, as a
+    // forward merge appends register rows; the same row in front of a block
+    // inserted beside the table is not. Every derived table is tried.
+    let tables: Vec<Range<usize>> = state
+        .layout
+        .derived
+        .iter()
+        .filter(|region| lines(&state.spec)[region.start].starts_with('|'))
+        .cloned()
+        .collect();
+    assert!(!tables.is_empty(), "the projection has derived tables");
+    for region in &tables {
+        let mut appended = lines(&state.spec);
+        appended.insert(
+            region.end,
+            "| `ZZ-99` | `none` | a row appended by a merge | §1 |".to_owned(),
+        );
+        let appended = appended.join("\n") + "\n";
+        let outcome = port(root, &appended).expect("a row appended to a derived table");
+        assert!(
+            outcome.changes.is_empty() && !outcome.spec.contains("ZZ-99"),
+            "the appended row is regenerated, not ported (table at line {})",
+            region.start + 1
+        );
+        assert!(
+            outcome.report.iter().any(|r| r.contains("derived region")),
+            "it is reported as regenerated: {:?}",
+            outcome.report
+        );
+    }
+
+    // A paragraph inserted before a table whose first row changes in the same
+    // merge is one hunk whose new lines hold a block boundary: it is judged on
+    // those lines too, and refused rather than dropped.
+    for region in &tables {
+        let mut both = lines(&state.spec);
+        let header = both[region.start].clone();
+        both.splice(
+            region.start..=region.start,
+            [
+                "A paragraph before a changed table.".to_owned(),
+                String::new(),
+                format!("{header} "),
+            ],
+        );
+        let both = both.join("\n") + "\n";
+        expect_untouched(
+            &|| port(root, &both).map(|_| ()).map_err(|e| e.to_string()),
+            &[],
+        );
+    }
+
+    // A merged text that shares little with SPEC.md is refused before the
+    // search for its difference, not by running out of memory.
+    let same_count: String = (0..lines(&state.spec).len())
+        .map(|n| format!("unrelated {n}\n"))
+        .collect();
+    for text in ["", "one line\n", &"unrelated\n".repeat(5000), &same_count] {
+        expect_untouched(
+            &|| port(root, text).map(|_| ()).map_err(|e| e.to_string()),
+            &["differ by more than"],
+        );
+    }
+
+    // An unknown chapter is named as such, and a name that is not a chapter
+    // is refused before a path is made of it.
+    expect_untouched(
+        &|| {
+            replace_block(root, "Chapter99", "x", &["y".to_owned()])
+                .map(|_| ())
+                .map_err(|e| e.to_string())
+        },
+        &["not a chapter module of the specification project"],
+    );
+    expect_untouched(
+        &|| {
+            replace_block(root, "../Rows", "x", &["y".to_owned()])
+                .map(|_| ())
+                .map_err(|e| e.to_string())
+        },
+        &["is not a chapter module (`Chapter` and two digits)"],
+    );
+
+    // The comparison covers the whole text: a difference at the last line, a
+    // line more and a line less are each refused naming where.
+    let change = Change {
+        chapter: "Chapter01".to_owned(),
+        text: std::fs::read_to_string(root.join(SOURCE_DIR).join("Chapter01.lex.tex"))
+            .expect("module"),
+    };
+    let regenerated = lines(&current().spec);
+    let last = regenerated.len() - 1;
+    for (name, mutate, needle) in [
+        (
+            "last line differs",
+            Box::new(|l: &mut Vec<String>| l[last].push_str(" wrong"))
+                as Box<dyn Fn(&mut Vec<String>)>,
+            format!("at line {}", last + 1),
+        ),
+        (
+            "a line more",
+            Box::new(|l: &mut Vec<String>| l.push("extra".to_owned())),
+            format!("at line {}", last + 2),
+        ),
+        (
+            "a line less",
+            Box::new(|l: &mut Vec<String>| {
+                l.pop();
+            }),
+            format!("at line {}", last + 1),
+        ),
+    ] {
+        let mut wanted = regenerated.clone();
+        mutate(&mut wanted);
+        let wanted = wanted.join("\n") + "\n";
+        expect_untouched(
+            &|| {
+                verify(
+                    root,
+                    std::slice::from_ref(&change),
+                    &Intended::Exact(wanted.clone()),
+                )
+                .map(|_| ())
+                .map_err(|e| e.to_string())
+            },
+            &[needle.as_str()],
+        );
+        let _ = name;
+    }
+    let mut merged_tail = regenerated.clone();
+    merged_tail[last].push_str(" wrong");
+    let merged_tail = merged_tail.join("\n") + "\n";
+    expect_untouched(
+        &|| {
+            verify(
+                root,
+                std::slice::from_ref(&change),
+                &Intended::Merged(merged_tail.clone()),
+            )
+            .map(|_| ())
+            .map_err(|e| e.to_string())
+        },
+        &["outside the derived regions"],
+    );
+    // The check is not vacuous: edits whose regenerated text is not the
+    // intended text are refused before anything is written.
+    let change = Change {
+        chapter: "Chapter01".to_owned(),
+        text: std::fs::read_to_string(root.join(SOURCE_DIR).join("Chapter01.lex.tex"))
+            .expect("module"),
+    };
+    let mut wrong = lines(&current().spec);
+    wrong[0].push_str(" wrong");
+    let wrong = wrong.join("\n") + "\n";
+    expect_untouched(
+        &|| {
+            verify(
+                root,
+                std::slice::from_ref(&change),
+                &Intended::Exact(wrong.clone()),
+            )
+            .map(|_| ())
+            .map_err(|e| e.to_string())
+        },
+        &["differs from the intended text at line 1"],
     );
 }

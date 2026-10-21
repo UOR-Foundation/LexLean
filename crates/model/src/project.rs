@@ -141,6 +141,10 @@ pub struct Projection {
     pub authorities: String,
     /// The bytes of `SPEC.md`.
     pub spec: String,
+    /// Where the blocks and derived regions of SPEC.md come from.
+    pub layout: Layout,
+    /// The chapter modules, in the order `DocOrder` lists them.
+    pub chapters: Vec<String>,
     /// Each register row's §31 "Primary specification" column, in register
     /// order.
     pub sections: Vec<(String, String)>,
@@ -635,16 +639,49 @@ fn families(module: &Module) -> Result<Vec<String>, ModelError> {
 /// One item of the document, read from a definition of a chapter module.
 enum Item {
     Heading(u64, u64, String),
-    Block(Block, Vec<String>),
+    Block(BlockKind, Vec<String>),
     Derived(String),
     Continue(Vec<String>),
 }
 
-#[derive(Clone)]
-enum Block {
+/// What a block of the document is, as its chapter module says.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum BlockKind {
+    /// A paragraph (or list, or any run of lines that is not a table).
     Paragraph,
+    /// A table: every line begins with `|`.
     Table,
+    /// A fenced block, with its info string.
     Fence(String),
+}
+
+/// A paragraph, table or fence of the document and where it is: its items in
+/// its chapter module and its body lines in SPEC.md (`NS-07`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BlockLayout {
+    /// The chapter module (`Chapter05`).
+    pub chapter: String,
+    /// What the block is.
+    pub kind: BlockKind,
+    /// The index of the block's first item in its module, counting every
+    /// declaration of the module from 0.
+    pub first: usize,
+    /// The index of the block's last item (a `cont` item when it continues).
+    pub last: usize,
+    /// The block's body lines (the fence markers are not among them).
+    pub lines: Vec<String>,
+    /// The range of those lines in the lines of SPEC.md, from 0.
+    pub body: std::ops::Range<usize>,
+}
+
+/// Where the blocks and the derived regions of SPEC.md come from.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Layout {
+    /// Every paragraph, table and fence, in order.
+    pub blocks: Vec<BlockLayout>,
+    /// The lines of SPEC.md that a `derived` item expands to, as ranges of its
+    /// lines from 0 (the blank line before each is not among them).
+    pub derived: Vec<std::ops::Range<usize>>,
 }
 
 /// The constructors of `DocRows.Item` with the kind of each argument.
@@ -760,10 +797,10 @@ fn read_item(module: &Module, index: usize) -> Result<Item, ModelError> {
             }
             Item::Heading(*level, *gap, text.clone())
         }
-        ("para", [lit]) => Item::Block(Block::Paragraph, lines(lit).ok_or_else(refuse_lines)?),
-        ("table", [lit]) => Item::Block(Block::Table, lines(lit).ok_or_else(refuse_lines)?),
+        ("para", [lit]) => Item::Block(BlockKind::Paragraph, lines(lit).ok_or_else(refuse_lines)?),
+        ("table", [lit]) => Item::Block(BlockKind::Table, lines(lit).ok_or_else(refuse_lines)?),
         ("fence", [Lit::Text(info), lit]) => Item::Block(
-            Block::Fence(info.clone()),
+            BlockKind::Fence(info.clone()),
             lines(lit).ok_or_else(refuse_lines)?,
         ),
         ("derived", [Lit::Text(name)]) => Item::Derived(name.clone()),
@@ -855,67 +892,86 @@ fn chapter_list(module: &Module) -> Result<Vec<String>, ModelError> {
     Ok(chapters)
 }
 
-/// SPEC.md, rendered from the chapter modules and the registers.
+/// SPEC.md, rendered from the chapter modules and the registers, with where
+/// each block and each derived region of it came from.
 fn document(
     root: &Path,
     chapters: &[String],
     register: &[Vec<Lit>],
     errors: &[Vec<Lit>],
     authorities: &[Vec<Lit>],
-) -> Result<String, ModelError> {
+) -> Result<(String, Layout), ModelError> {
     check_item_type(&Module::load(root, "DocRows")?)?;
     let mut lines: Vec<String> = Vec::new();
+    let mut layout = Layout::default();
     for chapter in chapters {
         let module = Module::load(root, chapter)?;
         // The block a `cont` item continues, and whether a fence is still open.
-        let mut open: Option<(Block, usize)> = None;
-        let close = |lines: &mut Vec<String>, open: &mut Option<(Block, usize)>| {
-            if let Some((Block::Fence(_), _)) = open.take() {
-                lines.push("```".to_owned());
-            }
-        };
+        let mut open: Option<BlockLayout> = None;
+        let close =
+            |lines: &mut Vec<String>, layout: &mut Layout, open: &mut Option<BlockLayout>| {
+                if let Some(mut block) = open.take() {
+                    block.body.end = lines.len();
+                    if matches!(block.kind, BlockKind::Fence(_)) {
+                        lines.push("```".to_owned());
+                    }
+                    layout.blocks.push(block);
+                }
+            };
         for index in 0..module.declarations.len() {
             match read_item(&module, index)? {
                 Item::Heading(level, gap, text) => {
-                    close(&mut lines, &mut open);
+                    close(&mut lines, &mut layout, &mut open);
                     lines.extend((0..gap).map(|_| String::new()));
                     lines.push(format!(
                         "{} {text}",
                         "#".repeat(usize::try_from(level).unwrap_or(0))
                     ));
                 }
-                Item::Block(block, body) => {
-                    close(&mut lines, &mut open);
+                Item::Block(kind, body) => {
+                    close(&mut lines, &mut layout, &mut open);
                     lines.push(String::new());
-                    if let Block::Fence(info) = &block {
+                    if let BlockKind::Fence(info) = &kind {
                         lines.push(format!("```{info}"));
                     }
-                    lines.extend(body);
-                    open = Some((block, index));
+                    let start = lines.len();
+                    lines.extend(body.iter().cloned());
+                    open = Some(BlockLayout {
+                        chapter: chapter.clone(),
+                        kind,
+                        first: index,
+                        last: index,
+                        lines: body,
+                        body: start..lines.len(),
+                    });
                 }
                 Item::Derived(name) => {
-                    close(&mut lines, &mut open);
+                    close(&mut lines, &mut layout, &mut open);
                     let expanded =
                         derived(&name, register, errors, authorities).ok_or_else(|| {
                             module.refuse(index, &format!("`{name}` is not a derived block"))
                         })?;
                     lines.push(String::new());
+                    let start = lines.len();
                     lines.extend(expanded);
+                    layout.derived.push(start..lines.len());
                 }
                 Item::Continue(body) => {
-                    if open.is_none() {
+                    let Some(block) = open.as_mut() else {
                         return Err(module
                             .refuse(index, "a `cont` item follows a paragraph, table or fence"));
-                    }
+                    };
+                    block.last = index;
+                    block.lines.extend(body.iter().cloned());
                     lines.extend(body);
                 }
             }
         }
-        close(&mut lines, &mut open);
+        close(&mut lines, &mut layout, &mut open);
     }
     let mut text = lines.join("\n");
     text.push('\n');
-    Ok(text)
+    Ok((text, layout))
 }
 
 /// Project the specification project's register modules to the model files.
@@ -996,9 +1052,11 @@ pub fn project(root: &Path) -> Result<Projection, ModelError> {
         <[_; 4]>::try_from(headers).map_err(|_| {
             ModelError::Inconsistent("R1: Headers does not hold four headers (NS-04)".to_owned())
         })?;
-    let spec = document(root, &chapter_names, &register, &errors, &authorities)?;
+    let (spec, layout) = document(root, &chapter_names, &register, &errors, &authorities)?;
     let projection = Projection {
         spec,
+        layout,
+        chapters: chapter_names.clone(),
         ids: emit(&ids_header, &ids_spec, &IDS, &register),
         errors: emit(&errors_header, &errors_spec, &ERRORS, &errors),
         ledger: emit(&ledger_header, &ledger_spec, &LEDGER, &ledger),
