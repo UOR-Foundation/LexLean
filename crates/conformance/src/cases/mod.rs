@@ -43,6 +43,7 @@ mod rust_machine;
 mod rust_refinement;
 mod rust_runtime;
 mod rust_scaffold;
+mod rust_heap_syntax;
 mod rust_support;
 mod security;
 mod semantic_ir;

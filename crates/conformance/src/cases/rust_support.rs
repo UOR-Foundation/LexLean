@@ -148,9 +148,16 @@ pub fn run(id: &str) {
         (
             "a type that is neither declared nor in the table",
             "RtType.named \"AtomicU64\"",
-            "RtType.named \"Vec\"",
+            "RtType.named \"Vecc\"",
             0,
             "type-name",
+        ),
+        (
+            "a heap type in the core profile",
+            "RtType.named \"AtomicU64\"",
+            "RtType.named \"Vec\"",
+            0,
+            "hidden-allocation",
         ),
         (
             "a type with another number of arguments",

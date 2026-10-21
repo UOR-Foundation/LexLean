@@ -1509,6 +1509,8 @@ pub fn run(id: &str) {
         "RB-16" => super::rust_runtime::run(id),
         // §17.16: the core runtime's support items are the definitions of `RuntimeSupport`.
         "RB-17" => super::rust_support::run(id),
+        // §17.16: the constructs of the heap runtime.
+        "RB-19" => super::rust_heap_syntax::run(id),
         "RB-09" => {
             use lexlean::calculus::rust::runtime::{core, STD};
             use lexlean::calculus::rust_library::{
