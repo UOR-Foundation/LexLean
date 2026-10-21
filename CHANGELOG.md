@@ -18,7 +18,7 @@ and Unreleased holds what has landed since.
 ## Unreleased
 
 - The Rust runtime as source, #91 stage 4 (SPEC.md §17.16, §17.17, `SP-21`,
-  `RB-15`, `SP-23`, `SM-35`, `SM-36`, `RB-16`, `SP-22`, `RB-17`, `SP-25`, `RB-19`, `BS-09`).
+  `RB-15`, `SP-23`, `SM-35`, `SM-36`, `RB-16`, `SP-22`, `RB-17`, `SP-25`, `RB-19`, `BS-09`, `SP-26`).
   The declared Rust machine grows by the primitives the runtime is written in
   (the bit operations, the natural and integer comparisons and remainders, the
   checked natural and integer arithmetic that is `Some` or `None` on overflow)
@@ -36,7 +36,7 @@ and Unreleased holds what has landed since.
   two scalars (nested keys are validated, not proved: #249). The handwritten
   base text is gone; the handwritten runtime is kept as the oracle. The
   compiler-semantics ID moves; records bound to it regenerate once, at the
-  landing. `RB-19` adds the constructs of the heap runtime (35 validator rules, eleven new). `BS-09` holds the runtime validator's Lean twin (`RuntimeValidate`, a bootstrap root) to the Rust oracle. The register is 447 IDs.
+  landing. `RB-19` adds the constructs of the heap runtime (35 validator rules, eleven new). `BS-09` holds the runtime validator's Lean twin (`RuntimeValidate`, a bootstrap root) to the Rust oracle. `SP-26` kernel-checks the laws of the memory a runtime buffer lives in (`RustMemory`). The register is 448 IDs.
 - Two source packages of the standard library and the application that uses
   them, #32 (SPEC.md §17.22, §10.5, `SL-03`, `SL-04`, `EX-09`). `std-models`
   (`LexLeanStdModels.Scores`) holds the score combinators `best`, `margin`, and

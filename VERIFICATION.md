@@ -2235,6 +2235,14 @@ Command and host: `cargo test -p repo-conformance --test conformance -- conforma
 
 The stack bound is now taken after every outcome of the differential is compared, so a package without a recorded bound cannot hide a disagreement. The plants of `RB-17` and `RB-19` are functions (`text_plants`, `ast_plants`, `probe_plants`) that both cases and this one use.
 
+### the memory of a buffer has its laws kernel-checked (SP-26)
+
+`RustMemory` (`compiler/src/RustMemory.lex.tex`, 14 KB, generated and written in the compiler's canonical form; three inductives `Flag`, `Cells`, and the structure `Buf`, and fifteen definitions) holds eleven theorems: `size_put`, `get_put_same`, `get_put_below`, `get_put_above`, `size_blank`, `get_blank`, `no_room_at_capacity`, `room_before_slot`, `push_lands_in_slot`, `below_truncated`, and `plus_assoc`. Every statement is total, because the proof language has no premise: a fact about an index below a length is stated for a sum with a gap, or as the result of a guard (`guardGet`, `lessThan`, `both`). Each proof is an induction (generalizing the indices it moves) with a `cases` on the index it consumes and a `simplify` over exactly the definitions it unfolds, except `below_truncated`, whose one branch is a `term_cases` on a guard; the lists of definitions were pruned to those the pinned Lean uses, because an unused argument is a verification error. Every definition observes no axiom and every theorem exactly `[propext]`.
+
+Command and host: `cargo test -p repo-conformance --test conformance -- conformance_sp_26`, in the `rest` part of `bdd`, on the 4-core 15 GB Linux x86-64 container with the pinned Lean 4.32.1: 31.5 s wall with the elaboration of the accepted module and of the four planted modules; `lexlean verify src/RustMemory.lex.tex` alone is 12.0 s (user 11.3 s) on the debug binary, the module and `TargetSyntax`. The proofs were the first of the heap half, and the cost of a theorem was seconds, not the 15 to 40 minutes the plan estimated for a module family.
+
+Plants of the gate, each applied alone to the finished module and restored: a write that lands elsewhere (`put` replaces the slot with the old one), a write that drops a slot (`put` returns the tail), an order of indices that is reversed (`lessThan` says no for index zero), and a truncation that keeps one too many (`minNat` adds one) are each refused by Lean as `unsolved goals`; a theorem renamed for another function, a law without a theorem, and a theorem that states another function are each refused by the listing before Lean runs.
+
 ### a list of any length is a term Lean elaborates without binders
 
 Lean's `[…]` macro writes a literal of more than 32 elements under `let`

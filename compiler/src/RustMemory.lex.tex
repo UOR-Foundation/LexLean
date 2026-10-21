@@ -1,0 +1,498 @@
+\begin{lexlean}{RustMemory}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{TargetSyntax}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: Flag,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: yes, fields: []}, {name: no, fields: []}]
+}
+
+inductive{
+  name: Cells,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: CNil, fields: []}, {name: CCons, fields: [TargetSyntax::Value, Cells]}]
+}
+
+structure{
+  name: Buf,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: slots, type: Cells}, {name: len, type: Nat}]
+}
+
+definition{
+  name: plus,
+  parameters: [left : Nat, right : Nat],
+  result: Nat,
+  body: (match left | Nat.zero => right | Nat.succ more => ((plus more right) + 1)),
+  recursive_argument: left
+}
+
+definition{
+  name: lessThan,
+  parameters: [index : Nat, bound : Nat],
+  result: Flag,
+  body: (match bound
+    | Nat.zero => (ctor Flag.no)
+    | Nat.succ more => (match index
+      | Nat.zero => (ctor Flag.yes)
+      | Nat.succ lower => (lessThan lower more))),
+  recursive_argument: bound
+}
+
+definition{
+  name: sameNat,
+  parameters: [left : Nat, right : Nat],
+  result: Flag,
+  body: (match right
+    | Nat.zero => (match left | Nat.zero => (ctor Flag.yes) | Nat.succ leftLess => (ctor Flag.no))
+    | Nat.succ rightLess => (match left
+      | Nat.zero => (ctor Flag.no)
+      | Nat.succ leftLess => (sameNat leftLess rightLess))),
+  recursive_argument: right
+}
+
+definition{
+  name: minNat,
+  parameters: [left : Nat, right : Nat],
+  result: Nat,
+  body: (match left
+    | Nat.zero => 0
+    | Nat.succ more => (match right | Nat.zero => 0 | Nat.succ less => ((minNat more less) + 1))),
+  recursive_argument: left
+}
+
+definition{
+  name: guardGet,
+  parameters: [flag : Flag, found : (Option TargetSyntax::Value)],
+  result: (Option TargetSyntax::Value),
+  body: (match flag | Flag.yes => found | Flag.no => (ctor Option.none [TargetSyntax::Value]))
+}
+
+definition{
+  name: pick,
+  parameters: [
+    flag : Flag,
+    whenYes : (Option TargetSyntax::Value),
+    whenNo : (Option TargetSyntax::Value)
+  ],
+  result: (Option TargetSyntax::Value),
+  body: (match flag | Flag.yes => whenYes | Flag.no => whenNo)
+}
+
+definition{
+  name: size,
+  parameters: [cells : Cells],
+  result: Nat,
+  body: (match cells | Cells.CNil => 0 | Cells.CCons head tail => ((size tail) + 1)),
+  recursive_argument: cells
+}
+
+definition{
+  name: get,
+  parameters: [cells : Cells, index : Nat],
+  result: (Option TargetSyntax::Value),
+  body: (match cells
+    | Cells.CNil => (ctor Option.none [TargetSyntax::Value])
+    | Cells.CCons head tail => (match index
+      | Nat.zero => (ctor Option.some [TargetSyntax::Value] head)
+      | Nat.succ lower => (get tail lower))),
+  recursive_argument: cells
+}
+
+definition{
+  name: put,
+  parameters: [cells : Cells, index : Nat, item : TargetSyntax::Value],
+  result: Cells,
+  body: (match cells
+    | Cells.CNil => (ctor Cells.CNil)
+    | Cells.CCons head tail => (match index
+      | Nat.zero => (ctor Cells.CCons item tail)
+      | Nat.succ lower => (ctor Cells.CCons head (put tail lower item)))),
+  recursive_argument: cells
+}
+
+definition{
+  name: blank,
+  parameters: [count : Nat, fill : TargetSyntax::Value],
+  result: Cells,
+  body: (match count
+    | Nat.zero => (ctor Cells.CNil)
+    | Nat.succ less => (ctor Cells.CCons fill (blank less fill))),
+  recursive_argument: count
+}
+
+definition{
+  name: append,
+  parameters: [front : Cells, back : Cells],
+  result: Cells,
+  body: (match front
+    | Cells.CNil => back
+    | Cells.CCons head tail => (ctor Cells.CCons head (append tail back))),
+  recursive_argument: front
+}
+
+definition{
+  name: both,
+  parameters: [left : Flag, right : Flag],
+  result: Flag,
+  body: (match left | Flag.yes => right | Flag.no => (ctor Flag.no))
+}
+
+definition{
+  name: bufGet,
+  parameters: [buf : Buf, index : Nat],
+  result: (Option TargetSyntax::Value),
+  body: (guardGet (lessThan index (project buf len)) (get (project buf slots) index))
+}
+
+definition{
+  name: bufPush,
+  parameters: [buf : Buf, item : TargetSyntax::Value],
+  result: (Option Buf),
+  body: (match (lessThan (project buf len) (size (project buf slots)))
+    | Flag.yes => (ctor Option.some [Buf] (record Buf {slots := (put (project buf slots) (project buf len) item), len := ((project buf len) + 1)}))
+    | Flag.no => (ctor Option.none [Buf]))
+}
+
+definition{
+  name: bufTruncate,
+  parameters: [buf : Buf, keep : Nat],
+  result: Buf,
+  body: (record Buf {slots := (project buf slots), len := (minNat keep (project buf len))})
+}
+
+theorem{
+  name: size_put,
+  parameters: [cells : Cells, index : Nat, item : TargetSyntax::Value],
+  statement: ((size (put cells index item)) = (size cells)),
+  proof: induction{
+    branches: [
+      {proof: simplify{definitions: [put, size]}, binders: [], constructor: CNil},
+      {
+        proof: cases{
+          branches: [
+            {proof: simplify{definitions: [put, size]}, binders: [], constructor: zero},
+            {
+              proof: simplify{definitions: [hypothesis, put, size]},
+              binders: [lower],
+              constructor: succ
+            }
+          ],
+          scrutinee: index
+        },
+        binders: [head, tail, hypothesis],
+        constructor: CCons
+      }
+    ],
+    generalizing: [index],
+    scrutinee: cells
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: get_put_same,
+  parameters: [cells : Cells, index : Nat, item : TargetSyntax::Value],
+  statement: ((get (put cells index item) index) = (guardGet (lessThan index (size cells)) (ctor Option.some [TargetSyntax::Value] item))),
+  proof: induction{
+    branches: [
+      {
+        proof: cases{
+          branches: [
+            {
+              proof: simplify{definitions: [get, guardGet, lessThan, put, size]},
+              binders: [],
+              constructor: zero
+            },
+            {
+              proof: simplify{definitions: [get, guardGet, lessThan, put, size]},
+              binders: [lower],
+              constructor: succ
+            }
+          ],
+          scrutinee: index
+        },
+        binders: [],
+        constructor: CNil
+      },
+      {
+        proof: cases{
+          branches: [
+            {
+              proof: simplify{definitions: [get, guardGet, lessThan, put, size]},
+              binders: [],
+              constructor: zero
+            },
+            {
+              proof: simplify{definitions: [get, guardGet, hypothesis, lessThan, put, size]},
+              binders: [lower],
+              constructor: succ
+            }
+          ],
+          scrutinee: index
+        },
+        binders: [head, tail, hypothesis],
+        constructor: CCons
+      }
+    ],
+    generalizing: [index],
+    scrutinee: cells
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: get_put_below,
+  parameters: [cells : Cells, item : TargetSyntax::Value, at : Nat, gap : Nat],
+  statement: ((get (put cells ((plus at gap) + 1) item) at) = (get cells at)),
+  proof: induction{
+    branches: [
+      {proof: simplify{definitions: [get, put]}, binders: [], constructor: CNil},
+      {
+        proof: cases{
+          branches: [
+            {proof: simplify{definitions: [get, plus, put]}, binders: [], constructor: zero},
+            {
+              proof: simplify{definitions: [get, hypothesis, plus, put]},
+              binders: [lower],
+              constructor: succ
+            }
+          ],
+          scrutinee: at
+        },
+        binders: [head, tail, hypothesis],
+        constructor: CCons
+      }
+    ],
+    generalizing: [at, gap],
+    scrutinee: cells
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: get_put_above,
+  parameters: [cells : Cells, index : Nat, item : TargetSyntax::Value, gap : Nat],
+  statement: ((get (put cells index item) ((plus index gap) + 1)) = (get cells ((plus index gap) + 1))),
+  proof: induction{
+    branches: [
+      {proof: simplify{definitions: [get, put]}, binders: [], constructor: CNil},
+      {
+        proof: cases{
+          branches: [
+            {proof: simplify{definitions: [get, plus, put]}, binders: [], constructor: zero},
+            {
+              proof: simplify{definitions: [get, hypothesis, plus, put]},
+              binders: [lower],
+              constructor: succ
+            }
+          ],
+          scrutinee: index
+        },
+        binders: [head, tail, hypothesis],
+        constructor: CCons
+      }
+    ],
+    generalizing: [gap, index],
+    scrutinee: cells
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: size_blank,
+  parameters: [count : Nat, fill : TargetSyntax::Value],
+  statement: ((size (blank count fill)) = count),
+  proof: induction{
+    branches: [
+      {proof: simplify{definitions: [blank, size]}, binders: [], constructor: zero},
+      {
+        proof: simplify{definitions: [blank, hypothesis, size]},
+        binders: [less, hypothesis],
+        constructor: succ
+      }
+    ],
+    scrutinee: count
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: get_blank,
+  parameters: [count : Nat, fill : TargetSyntax::Value, at : Nat],
+  statement: ((get (blank count fill) at) = (guardGet (lessThan at count) (ctor Option.some [TargetSyntax::Value] fill))),
+  proof: induction{
+    branches: [
+      {
+        proof: simplify{definitions: [blank, get, guardGet, lessThan]},
+        binders: [],
+        constructor: zero
+      },
+      {
+        proof: cases{
+          branches: [
+            {
+              proof: simplify{definitions: [blank, get, guardGet, lessThan]},
+              binders: [],
+              constructor: zero
+            },
+            {
+              proof: simplify{definitions: [blank, get, guardGet, hypothesis, lessThan]},
+              binders: [lower],
+              constructor: succ
+            }
+          ],
+          scrutinee: at
+        },
+        binders: [less, hypothesis],
+        constructor: succ
+      }
+    ],
+    generalizing: [at],
+    scrutinee: count
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: no_room_at_capacity,
+  parameters: [cells : Cells, gap : Nat],
+  statement: ((lessThan (plus (size cells) gap) (size cells)) = (ctor Flag.no)),
+  proof: induction{
+    branches: [
+      {proof: simplify{definitions: [lessThan, plus, size]}, binders: [], constructor: CNil},
+      {
+        proof: simplify{definitions: [hypothesis, lessThan, plus, size]},
+        binders: [head, tail, hypothesis],
+        constructor: CCons
+      }
+    ],
+    generalizing: [gap],
+    scrutinee: cells
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: room_before_slot,
+  parameters: [front : Cells, item : TargetSyntax::Value, back : Cells],
+  statement: ((lessThan (size front) (size (append front (ctor Cells.CCons item back)))) = (ctor Flag.yes)),
+  proof: induction{
+    branches: [
+      {proof: simplify{definitions: [append, lessThan, size]}, binders: [], constructor: CNil},
+      {
+        proof: simplify{definitions: [append, hypothesis, lessThan, size]},
+        binders: [head, tail, hypothesis],
+        constructor: CCons
+      }
+    ],
+    scrutinee: front
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: push_lands_in_slot,
+  parameters: [front : Cells, old : TargetSyntax::Value, back : Cells, item : TargetSyntax::Value],
+  statement: ((get (put (append front (ctor Cells.CCons old back)) (size front) item) (size front)) = (ctor Option.some [TargetSyntax::Value] item)),
+  proof: induction{
+    branches: [
+      {proof: simplify{definitions: [append, get, put, size]}, binders: [], constructor: CNil},
+      {
+        proof: simplify{definitions: [append, get, hypothesis, put, size]},
+        binders: [head, tail, hypothesis],
+        constructor: CCons
+      }
+    ],
+    scrutinee: front
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: below_truncated,
+  parameters: [keep : Nat, old : Nat, at : Nat],
+  statement: ((lessThan at (minNat keep old)) = (both (lessThan at keep) (lessThan at old))),
+  proof: induction{
+    branches: [
+      {proof: simplify{definitions: [both, lessThan, minNat]}, binders: [], constructor: zero},
+      {
+        proof: cases{
+          branches: [
+            {
+              proof: term_cases{
+                definitions: [
+                  append,
+                  blank,
+                  both,
+                  get,
+                  guardGet,
+                  lessThan,
+                  minNat,
+                  pick,
+                  plus,
+                  put,
+                  sameNat,
+                  size
+                ],
+                scrutinee: (lessThan at (less + 1))
+              },
+              binders: [],
+              constructor: zero
+            },
+            {
+              proof: cases{
+                branches: [
+                  {
+                    proof: simplify{definitions: [both, lessThan, minNat]},
+                    binders: [],
+                    constructor: zero
+                  },
+                  {
+                    proof: simplify{definitions: [both, hypothesis, lessThan, minNat]},
+                    binders: [lower],
+                    constructor: succ
+                  }
+                ],
+                scrutinee: at
+              },
+              binders: [oldLess],
+              constructor: succ
+            }
+          ],
+          scrutinee: old
+        },
+        binders: [less, hypothesis],
+        constructor: succ
+      }
+    ],
+    generalizing: [at, old],
+    scrutinee: keep
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: plus_assoc,
+  parameters: [a : Nat, b : Nat, c : Nat],
+  statement: ((plus (plus a b) c) = (plus a (plus b c))),
+  proof: induction{
+    branches: [
+      {proof: simplify{definitions: [plus]}, binders: [], constructor: zero},
+      {
+        proof: simplify{definitions: [hypothesis, plus]},
+        binders: [less, hypothesis],
+        constructor: succ
+      }
+    ],
+    scrutinee: a
+  },
+  axioms: [propext]
+}
+\end{semanticmodule}
+\end{lexlean}

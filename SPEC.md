@@ -5876,6 +5876,23 @@ of `from` or `try_from` is also admitted for every integer type. The names of th
 `param-duplicate`, `pattern-duplicate`, `pattern-fields`, `struct-fields`, `tuple-arity`, and
 `variant-name`; each is planted. `RtType.wide` takes a Boolean that is true for `u128` and false for `i128`. `RuntimeSemantics` evaluates each of the expression and pattern constructs the module grew by as `stuck`, except a block expression, which evaluates its block, and a string literal, which is a string value; a character literal is `stuck`. As the type of a value, `RtType.refMut` is its inner type and the other types it grew by (`RtType.wide`, `size`, `char`, `str`, `slice`) match no value.
 This row declares no meaning for the constructs it leaves `stuck`, and a theorem about a function that uses one is a claim it does not make.
+The memory of a buffer (`SP-26`). `RustMemory`, a module of the compiler project over the calculus's
+values, models what a runtime `Vec` and the slices of it stand on: a buffer is its slots, indexed from
+zero, whose number is its capacity, and a length. A write is `put`, which replaces the slot at an index
+and leaves the number of slots as it was (`size_put`). A slot is read back at the index it was written
+(`get_put_same`, which reads `none` for an index that is no slot), and the slots below (`get_put_below`)
+and above (`get_put_above`) a written index are as they were; the index of a neighbour is given as a
+sum with a gap, because the proof language has no premises, so that the three laws cover every index.
+A new buffer of a capacity has that number of slots, each the fill (`size_blank`, `get_blank`). A push
+is guarded by `lessThan len (size slots)`: a buffer whose length is its capacity has no room
+(`no_room_at_capacity`), so that its push is refused with the result `none` and writes nothing, and
+one with a slot at its length has room and the write lands in that slot (`room_before_slot`,
+`push_lands_in_slot`). Truncation lowers the length to the least of the new and the old and so admits
+the indices below both (`below_truncated`), and a window of a window adds its offsets (`plus_assoc`).
+The claim is the model's. That the runtime's `Vec` has this behaviour, that a slice is the view the
+model reads, and that a push beyond the capacity reallocates (the declared effect `allocation`) are the
+evidence of the differential and of rustc, and the growth of a capacity is not part of this row.
+
 A *loop*
 (`Expr.loop`, `SP-19`) is the one construct of the machine that repeats: it names
 a state, a local the enclosing block has bound, and a body block. The body is
