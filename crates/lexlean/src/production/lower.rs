@@ -2388,6 +2388,7 @@ impl Lowerer<'_> {
                             name: _,
                             tokenizer: _,
                             model: _,
+                            axioms: _,
                         },
                     )
                     | None => return Err(format!("`{module}.{name}` is not a definition")),
@@ -2592,6 +2593,7 @@ impl Lowerer<'_> {
                             name: _,
                             tokenizer: _,
                             model: _,
+                            axioms: _,
                         },
                     )
                     | None => return Err(format!("`{module}.{name}` is not an instance")),
