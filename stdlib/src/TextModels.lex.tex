@@ -238,5 +238,103 @@ definition{
   body: ((byteVocab) + (prim length vocabulary : Nat)),
   executable: true
 }
+
+definition{
+  name: xorshift32,
+  parameters: [value : UInt32],
+  result: UInt32,
+  body: (let stepOne : UInt32 := (match (prim shift_left value (13 : UInt32) : (Option UInt32))
+    | Option.some shifted => (prim bit_xor value shifted : UInt32)
+    | Option.none => value); (let stepTwo : UInt32 := (match (prim shift_right stepOne (17 : UInt32) : (Option UInt32))
+    | Option.some shifted => (prim bit_xor stepOne shifted : UInt32)
+    | Option.none => stepOne); (match (prim shift_left stepTwo (5 : UInt32) : (Option UInt32))
+    | Option.some shifted => (prim bit_xor stepTwo shifted : UInt32)
+    | Option.none => stepTwo))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: seedBits,
+  parameters: [value : UInt32, bits : Nat, place : Int, accumulated : Int],
+  result: Int,
+  body: (match bits
+    | Nat.zero => accumulated
+    | Nat.succ previous => (let next : UInt32 := (match (prim shift_right value (1 : UInt32) : (Option UInt32))
+      | Option.some shifted => shifted
+      | Option.none => value); (if (prim equal (prim bit_and value (1 : UInt32) : UInt32) (1 : UInt32) : Bool) then (seedBits next previous (prim multiply place (2 : Int) : Int) (prim subtract accumulated (prim negate place : Int) : Int)) else (seedBits next previous (prim multiply place (2 : Int) : Int) accumulated)))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: bits
+}
+
+definition{
+  name: seedInt,
+  parameters: [value : UInt32],
+  result: Int,
+  body: (seedBits value 32 (1 : Int) (0 : Int)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: weight,
+  parameters: [score : Int],
+  result: Int,
+  body: (if (prim less_than score (0 : Int) : Bool) then (0 : Int) else score),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: totalWeight,
+  parameters: [scores : (List Int)],
+  result: Int,
+  body: (match scores
+    | List.nil => (0 : Int)
+    | List.cons score rest => (prim subtract (weight score) (prim negate (totalWeight rest) : Int) : Int)),
+  axioms: [propext],
+  executable: true,
+  recursive_argument: scores
+}
+
+definition{
+  name: drawGo,
+  parameters: [scores : (List Int), index : Nat, remaining : Int],
+  result: (Option Nat),
+  body: (match scores
+    | List.nil => (ctor Option.none [Nat])
+    | List.cons score rest => (if (prim less_than remaining (weight score) : Bool) then (ctor Option.some [Nat] index) else (drawGo rest (index + 1) (prim subtract remaining (weight score) : Int)))),
+  axioms: [propext],
+  executable: true,
+  recursive_argument: scores
+}
+
+definition{
+  name: proportional,
+  parameters: [scores : (List Int), seed : UInt32],
+  result: (Option Nat),
+  body: (if (prim less_than (totalWeight scores) (1 : Int) : Bool) then (firstMax scores) else (drawGo scores 0 (prim remainder (seedInt seed) (totalWeight scores) (0 : Int) : Int))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: chooseSample,
+  parameters: [scores : (List Int), seed : UInt32],
+  result: ((Option Nat) * UInt32),
+  body: (let next : UInt32 := (xorshift32 seed); ((proportional scores next), next)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: generateSample,
+  parameters: [score : (Fn ((List UInt32)) (List Int)), size : Nat, capacity : Nat, keep : Bool, stop : UInt32, fuel : Nat, prompt : (List UInt32), seed : UInt32],
+  result: (((List UInt32) * Nat) * UInt32),
+  body: (generateWith score (ref chooseSample) size capacity keep stop fuel prompt seed),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
 \end{semanticmodule}
 \end{lexlean}
