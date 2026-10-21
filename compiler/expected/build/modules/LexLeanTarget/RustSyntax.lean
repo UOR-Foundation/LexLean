@@ -40,6 +40,8 @@ public inductive RustType where
   | rc (_ : RustType)
   | fallible (_ : RustType)
   | ref (_ : RustType)
+  | overflow
+  | i128
 
 public inductive Lit where
   | unit
@@ -135,6 +137,24 @@ public inductive Machine where
   | checkedShl (_ : LexLeanTarget.TargetSyntax.IntKind)
   | checkedShr (_ : LexLeanTarget.TargetSyntax.IntKind)
   | tryFrom (_ : LexLeanTarget.TargetSyntax.IntKind)
+  | bitAnd (_ : LexLeanTarget.TargetSyntax.IntKind)
+  | bitOr (_ : LexLeanTarget.TargetSyntax.IntKind)
+  | bitXor (_ : LexLeanTarget.TargetSyntax.IntKind)
+  | bitNot (_ : LexLeanTarget.TargetSyntax.IntKind)
+  | natEq
+  | natLe
+  | natLt
+  | natRem
+  | intRem
+  | checkedNatAdd
+  | natSub
+  | checkedNatMul
+  | natQuot
+  | checkedIntAdd
+  | checkedIntSub
+  | checkedIntMul
+  | checkedIntNeg
+  | checkedIntQuot
 
 public inductive Callee where
   | function (_ : Nat)
