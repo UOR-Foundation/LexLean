@@ -18,7 +18,7 @@ const IMPORTED: [&str; 1] = ["TargetSyntax"];
 
 /// Each law with the functions its statement must be about: a theorem of the
 /// right name that states another function is refused.
-const LAWS: [(&str, &[&str]); 16] = [
+const LAWS: [(&str, &[&str]); 17] = [
     ("size_put", &["size", "put"]),
     (
         "get_put_same",
@@ -48,6 +48,7 @@ const LAWS: [(&str, &[&str]); 16] = [
         ],
     ),
     ("window_of_window", &["subWindow", "plus"]),
+    ("window_count", &["subWindow", "minNat", "minusNat"]),
 ];
 
 /// Each theorem of the module with the text of its statement.
