@@ -376,7 +376,6 @@ definition{
     | CalculusCheck::Expr.ENil => state
     | CalculusCheck::Expr.ECons head tail => (let inner : Collect := (collectTerm program state head (kidA sites)); (collectTerm program inner tail (kidB sites)))
     | CalculusCheck::Expr.EArm shape binders body => (collectTerm program state body (kidA sites))),
-  axioms: [Quot.sound, propext],
   executable: true,
   recursive_argument: expr
 }
@@ -411,7 +410,6 @@ definition{
       | Option.some flag => (not flag)
       | Option.none => true); (let inner : Collect := (if live then (collectTerm program state body (CalculusCheck::tyFirst sites)) else state); (collectFunctions program inner rest (index + 1) dead (CalculusCheck::tySecond sites))))
     | CalculusCheck::Expr.EArm d0 d1 d2 => state),
-  axioms: [Quot.sound, propext],
   executable: true,
   recursive_argument: bodies
 }
@@ -504,7 +502,6 @@ definition{
     | CalculusCheck::Expr.ENil => found
     | CalculusCheck::Expr.ECons head tail => (let inner : Reach := (reachTerm program found head (kidA sites)); (reachTerm program inner tail (kidB sites)))
     | CalculusCheck::Expr.EArm shape binders body => (reachTerm program found body (kidA sites))),
-  axioms: [Quot.sound, propext],
   executable: true,
   recursive_argument: expr
 }
@@ -543,7 +540,6 @@ definition{
       type_arguments: []
     } body (CalculusCheck::tyFirst sites)); (ctor Facts.FactsCons (project found own) (project found calls) (project found applies) (reachFunctions program rest (index + 1) (CalculusCheck::tySecond sites))))
     | CalculusCheck::Expr.EArm d0 d1 d2 => (ctor Facts.FactsNil)),
-  axioms: [Quot.sound, propext],
   executable: true,
   recursive_argument: bodies
 }
@@ -1077,7 +1073,6 @@ definition{
     ],
     type_arguments: []
   })))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -1192,7 +1187,6 @@ definition{
     ],
     type_arguments: []
   } : (Liveness * Bool))); (project live dead)))))))))),
-  axioms: [Quot.sound, propext],
   executable: true,
   production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
 }
@@ -1215,7 +1209,6 @@ definition{
     fields: [{field: known, value: registered}, {field: closures, value: (ctor Clos.ClNil)}],
     type_arguments: []
   } bodies 0 dead sites); (let facts : Facts := (reachFunctions program bodies 0 sites); (first (prim iterate_until (fun [facts, initial] (flags : (List Bool)) => (failNext facts (project initial closures) flags)) (1 + count) (falses count) : ((List Bool) * Bool)))))))),
-  axioms: [Quot.sound, propext],
   executable: true,
   production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
 }
