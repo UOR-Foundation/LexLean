@@ -2130,7 +2130,7 @@ nine impls, the two atomic imports are one braced `use` (the library table lists
 not spelled (`warnings = deny` and Clippy refuse `; ()`), and `tick` and `work` are one-line functions as before. `rb_09`
 (the library table), `rb_06` (the lint gate on every committed package), `rb_16`, `rb_17` pass on this tree (170 s together).
 
-The case (`cases/rust_support.rs`, 6.6 s) requires the shipped copy to be the compiler project's module byte for byte;
+Command and host: `cargo test -p repo-conformance --test conformance -- conformance_rb_17 --nocapture` (`RB-17`), in the `rest` part of `bdd`, on a 4-core 15 GB Linux x86-64 container with rustc 1.97.1: 9.6 s for the case once built (the rustc run of the harness is most of it). The case (`cases/rust_support.rs`) requires the shipped copy to be the compiler project's module byte for byte;
 decodes, validates and prints it; requires the embedded support to be that print and to hold no macro, no `alloc`, and no
 `std::`; compiles the handwritten core runtime as module `old` and the printed support with the `RustRuntime` functions as
 module `new` of one crate under the pinned rustc with warnings denied; and runs `equal` and `compare` on every pair of nine boundary values of each
@@ -2151,6 +2151,10 @@ table (`call-name`); a parameter beyond the generics in scope (`type-parameter`)
 constructor of the other module). Two bodies changed to another result are caught by the differential, not the validator: the counter
 starting at one (`work result`) and the key of a scalar reversed (`compare result`); a third plant, `tick` adding one in place of its argument, was
 refused by rustc (`unused variable`) before it could be caught, and was replaced.
+
+All 24 rules of the validator are planted, and none can be deleted without the case failing: fifteen by a change of the module's text (above) and nine on the decoded crate: a call of `AtomicU64::new` with no argument (`call-arity`), `work` declared twice (`duplicate-name`), `work` taking `&self` (`function-receiver`), an `impl Same` stating a method `extra` (`impl-extra`), the `match` of the pair's `key` with no arm (`match-arms`), `units.cmp()` with no argument (`method-arity`), a parameter of type `Self` in a free function (`self-type`), the trait `Same` declaring its method twice (`trait-method`), and a `use` with no path (`use-path`). The case reads the rule names from the validator's source (the first string literal after each `rule(`) and requires the set of planted rules to equal it, so a rule added to the validator without a plant is a failure of the case. Gate plant: the `match-arms` check removed from `rt_validate.rs` (the case fails at `a match with no arm: ()`, the nine-rule plant having found the crate accepted), restored. The nested-key tally is checked slot by slot (each of the three orders occurs and the three sum to the 1,000 comparisons).
+
+`i128` plant: a `Crate` of `RustSyntax` holding a function with a parameter of `Type::I128` is passed to `correspond`, which refuses it as `type:i128` with `no target-semantics correspondence`; a row added to `CORRESPONDENCE` for it makes this case fail.
 
 Plants of the gate, each restored: `rt_validate::validate` removed from `support_from` (the case fails at its first refusal plant, `a use outside the
 profile`, the print of which shows `use alloc::cmp::Ordering`); `support_from` returning the empty text (the differential fails to compile,
@@ -2176,7 +2180,7 @@ theorems in one module were OOM-killed twice on this 16 GB host (a `lean` at 13.
 
 Measured (this host, pinned Lean 4.32.1, `ps -C lean -o rss=` every second): `lexlean verify` of all 16 modules, 12 min 28 s, peak 5.86 GB; each `RuntimeKeys` module verified alone (its closure is six
 modules), 127 to 140 s and 5.82 to 5.92 GB (Bool 135 s 5.89 GB, Nat 139 s 5.82, Int 135 s 5.86, U8 132 s 5.86, U16 140 s 5.84, U32 134 s 5.89, U64 135 s 5.89, I8 127 s 5.92, I16 130 s 5.86, I32 129 s 5.83,
-I64 131 s 5.88); `RuntimeSupport` alone 61 s, 0.74 GB. The case (`cases/runtime_semantics.rs`, in the `preservation-support` part of `bdd` and a row of `.github/vv-rows.json`) is 815 s with its two plants and peaks at 5.90 GB.
+I64 131 s 5.88); `RuntimeSupport` alone 61 s, 0.74 GB. Command and host: `cargo test -p repo-conformance --test conformance -- conformance_sp_25` (`SP-25`, in the `preservation-support` part of `bdd`, a row of `.github/vv-rows.json`), on a 4-core 15 GB Linux x86-64 container with the pinned Lean 4.32.1 and rustc 1.97.1, `lean` sampled every three seconds. Measured on the head `59b93d3cc` (the merge of #248's `ea1026785`, the Runtime modules canonical): 1,440 s (24 min 0 s wall, 39 min of user CPU, 16 min of system CPU) with its two plants, peak `lean` 5.90 GB on the earlier, pre-canonical run of the same tree; the same case measured 815 s (13 min 35 s wall, 22 min 45 s CPU, 8 min system) on the tree before the merge, and 1,442 s on the merged tree before canonicalization. The spread is the host's, not the case's: the system CPU doubles with the wall time, and the module and its theorems are the same. The figure for the head is the 1,440 s.
 
 The case computes the 143 names from the predicate (the scalars from `IntKind::ALL`, `nat`, `int`, `bool`) and compares them with the theorems of the twelve modules; a theorem for a value outside it (`equal_unit`), a
 value without a theorem (a pair theorem removed), and a theorem that states another primitive (`Prim.compare` replaced by `Prim.equal` in a pair theorem) are each refused by name. In Lean, with one theorem kept: the key of a scalar reversed

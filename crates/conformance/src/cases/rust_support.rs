@@ -7,7 +7,7 @@
 //! at `tests/rust-runtime-oracle/` is the oracle the printed items are
 //! compared with, in result and in counted work.
 
-use lexlean::calculus::rust::{rt_decode, rt_validate, runtime, source};
+use lexlean::calculus::rust::{rt, rt_decode, rt_validate, runtime, source};
 
 use super::rust_runtime::{differ_with, PRELUDE};
 use crate::support::repo_root;
@@ -102,9 +102,16 @@ pub fn run(id: &str) {
         "RB-17: {nested} over {} depth-three comparisons",
         2 * NESTED
     );
+    let slots: Vec<usize> = nested
+        .trim_start_matches("nested [")
+        .trim_end_matches(']')
+        .split(", ")
+        .map(|slot| slot.parse().expect("a count"))
+        .collect();
+    assert_eq!(slots.len(), 3, "less, equal, greater: {nested}");
     assert!(
-        !nested.contains(" 0,") && !nested.contains(" 0]"),
-        "the corpus decides every order: {nested}"
+        slots.iter().all(|&slot| slot > 0) && slots.iter().sum::<usize>() == 2 * NESTED,
+        "the corpus decides every order and every comparison: {nested}"
     );
 
     // A changed body is caught by the differential, not by the validator.
@@ -140,6 +147,7 @@ pub fn run(id: &str) {
 
     // A crate outside the closed set or its tables is refused by the rule it
     // breaks, named.
+    let mut planted: std::collections::BTreeSet<&str> = std::collections::BTreeSet::new();
     let sig_same = "{name := \"same\", receiver := true";
     let first_use = "(cons \"core\" (cons \"cmp\"";
     for (what, from, to, nth, rule) in [
@@ -254,7 +262,36 @@ pub fn run(id: &str) {
         let changed = replace_nth(&shipped, from, to, nth);
         let error = runtime::support_from(&changed).expect_err(what);
         assert!(error.contains(&format!("runtime support: {rule}")), "{what}: {error}");
+        planted.insert(rule);
     }
+
+    // The nine rules the text of the module cannot reach without a second
+    // change are planted on the decoded crate.
+    let decoded = rt_decode::decode(&shipped).expect("the module decodes");
+    for (what, mutate, rule) in ast_plants() {
+        let mut crate_ = decoded.clone();
+        mutate(&mut crate_);
+        let error = rt_validate::validate(&crate_).expect_err(what);
+        assert!(
+            error.contains(&format!("runtime support: {rule}")),
+            "{what}: {error}"
+        );
+        planted.insert(rule);
+    }
+    // No rule of the validator is without a plant: the rules are read from
+    // its source, so a rule added there is a failure here until it is planted.
+    let source = read("crates/lexlean/src/calculus/rust/rt_validate.rs");
+    let named = rules_named(&source);
+    let missing: Vec<&String> = named
+        .iter()
+        .filter(|name| !planted.contains(name.as_str()))
+        .collect();
+    assert!(missing.is_empty(), "rules without a plant: {missing:?}");
+    assert_eq!(
+        named.len(),
+        planted.len(),
+        "a plant names a rule the validator lacks"
+    );
 
     // A module the decoder refuses, each for the rule it breaks.
     for (what, from, to, message) in [
@@ -289,6 +326,170 @@ pub fn run(id: &str) {
         let error = rt_decode::decode(&edited).expect_err(what);
         assert!(error.contains(message), "{what}: {error}");
     }
+    // `i128` is runtime-only: a crate that names it in a parameter, as
+    // `convert` does, is accepted by the validator and refused by the
+    // correspondence between a rendering and its program, which has no row for
+    // `type:i128`. A row added for it fails here.
+    {
+        use lexlean::calculus::rust::ast::{
+            Block as RustBlock, Crate as RustCrate, Expr as RustExpr, Ident, ItemDef,
+            Lit as RustLit, Origin, Pat as RustPat, Type as RustType,
+        };
+        let wide = RustCrate {
+            profile: lexlean::calculus::rust::Profile::Std,
+            items: vec![ItemDef::Function {
+                name: Ident::Function(0),
+                parameters: vec![(RustPat::Bind(Ident::Local(0)), RustType::I128)],
+                result: RustType::Overflow,
+                body: RustBlock::of(RustExpr::Lit(RustLit::Overflow, Origin::of("function"))),
+                at: Origin::of("function"),
+            }],
+        };
+        let elements: std::collections::BTreeSet<String> = ["function".to_owned()].into();
+        let error = lexlean::calculus::rust::validate::correspond(&wide, &elements)
+            .expect_err("a lowered crate cannot name i128");
+        assert!(
+            error.contains("type:i128") && error.contains("no target-semantics correspondence"),
+            "{error}"
+        );
+    }
     // The first module's reader still reads its own.
     source::decode(&runtime_module).expect("RustRuntime still decodes");
+}
+
+type Mutation = fn(&mut rt::Crate);
+
+/// The rules planted on the decoded crate: the construct that breaks each,
+/// added to or changed in the crate the module defines.
+fn ast_plants() -> Vec<(&'static str, Mutation, &'static str)> {
+    use rt::{Expr, Item, Type};
+    fn function<'a>(krate: &'a mut rt::Crate, name: &str) -> &'a mut rt::Function {
+        krate
+            .items
+            .iter_mut()
+            .find_map(|item| match item {
+                Item::Fn(function) if function.sig.name == name => Some(function),
+                _ => None,
+            })
+            .expect("the function")
+    }
+    vec![
+        (
+            "a call with another number of arguments",
+            |krate| {
+                function(krate, "tick").body.statements.insert(
+                    0,
+                    Expr::Call(vec!["AtomicU64".to_owned(), "new".to_owned()], vec![]),
+                );
+            },
+            "call-arity",
+        ),
+        (
+            "a name declared twice",
+            |krate| {
+                let again = krate
+                    .items
+                    .iter()
+                    .find(|item| matches!(item, Item::Fn(function) if function.sig.name == "work"))
+                    .cloned()
+                    .expect("work");
+                krate.items.push(again);
+            },
+            "duplicate-name",
+        ),
+        (
+            "a free function that takes `&self`",
+            |krate| function(krate, "work").sig.receiver = true,
+            "function-receiver",
+        ),
+        (
+            "an impl that states a method its trait does not",
+            |krate| {
+                for item in &mut krate.items {
+                    if let Item::Impl(_, Some(tr), _, functions) = item {
+                        if tr == "Same" {
+                            let mut extra = functions[0].clone();
+                            extra.sig.name = "extra".to_owned();
+                            functions.push(extra);
+                            return;
+                        }
+                    }
+                }
+            },
+            "impl-extra",
+        ),
+        (
+            "a match with no arm",
+            |krate| {
+                for item in &mut krate.items {
+                    if let Item::Impl(_, Some(tr), _, functions) = item {
+                        if tr == "Key" {
+                            if let Expr::Match(_, arms) =
+                                &mut functions.last_mut().expect("a method").body.tail
+                            {
+                                arms.clear();
+                                return;
+                            }
+                        }
+                    }
+                }
+            },
+            "match-arms",
+        ),
+        (
+            "a method with another number of arguments",
+            |krate| {
+                function(krate, "tick").body.statements.insert(
+                    0,
+                    Expr::Method(
+                        Box::new(Expr::Var("units".to_owned())),
+                        "cmp".to_owned(),
+                        vec![],
+                    ),
+                );
+            },
+            "method-arity",
+        ),
+        (
+            "`Self` outside a trait or an impl",
+            |krate| function(krate, "tick").sig.params[0].ty = Type::SelfType,
+            "self-type",
+        ),
+        (
+            "a trait that declares a method twice",
+            |krate| {
+                for item in &mut krate.items {
+                    if let Item::Trait(_, sigs) = item {
+                        let again = sigs[0].clone();
+                        sigs.push(again);
+                        return;
+                    }
+                }
+            },
+            "trait-method",
+        ),
+        (
+            "a use with no path",
+            |krate| krate.items.insert(0, Item::Use(vec![], None)),
+            "use-path",
+        ),
+    ]
+}
+
+/// The names of the rules a validator source refuses by: the first string
+/// literal after each `rule(`.
+fn rules_named(source: &str) -> std::collections::BTreeSet<String> {
+    let mut out = std::collections::BTreeSet::new();
+    let mut rest = source;
+    while let Some(at) = rest.find("rule(") {
+        let after = rest[at + 5..].trim_start();
+        if let Some(quoted) = after.strip_prefix('"') {
+            if let Some(end) = quoted.find('"') {
+                out.insert(quoted[..end].to_owned());
+            }
+        }
+        rest = &rest[at + 5..];
+    }
+    out.remove("");
+    out
 }
