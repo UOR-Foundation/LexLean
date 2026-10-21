@@ -2947,9 +2947,9 @@ const VECTORS_VALIDATE: usize = 451;
 const REFUSED_VALIDATE: usize = 195;
 const VECTORS_CORRESPOND: usize = 314;
 const REFUSED_CORRESPOND: usize = 82;
-const EVALUATOR_CRATES: usize = 200;
-const EVALUATOR_VALIDATE: usize = 420;
-const EVALUATOR_CORRESPOND: usize = 283;
+const EVALUATOR_CRATES: usize = 201;
+const EVALUATOR_VALIDATE: usize = 421;
+const EVALUATOR_CORRESPOND: usize = 284;
 const SEEDED_REFUSED_VALIDATE: usize = 271;
 const SEEDED_REFUSED_CORRESPOND: usize = 244;
 
