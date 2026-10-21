@@ -413,7 +413,11 @@ definition{
 
 definition{
   name: machineOpen,
-  parameters: [out : LexLeanStd.Buffer::Buffer, family : Nat, width : (Option RustValidate::IntKind)],
+  parameters: [
+    out : LexLeanStd.Buffer::Buffer,
+    family : Nat,
+    width : (Option RustValidate::IntKind)
+  ],
   result: LexLeanStd.Buffer::Buffer,
   body: (if (family <? 8) then (match width
     | Option.some kind => (putS (putS (putS (putKind out kind) "::") (if (family =? 7) then "try_from" else (joinedMethod family))) "(")
@@ -629,7 +633,13 @@ definition{
 
 definition{
   name: printNode,
-  parameters: [out : LexLeanStd.Buffer::Buffer, node : RustAst::Expr, depth : Nat, family : Nat, slot : Nat],
+  parameters: [
+    out : LexLeanStd.Buffer::Buffer,
+    node : RustAst::Expr,
+    depth : Nat,
+    family : Nat,
+    slot : Nat
+  ],
   result: LexLeanStd.Buffer::Buffer,
   body: (match node
     | RustAst::Expr.ELit literal at => (putLit out literal)
@@ -809,7 +819,14 @@ definition{
 
 definition{
   name: putDis,
-  parameters: [out : LexLeanStd.Buffer::Buffer, dis : RustValidate::Dis, fnType : Nat, count : Nat, unitResult : Bool, fallible : Bool],
+  parameters: [
+    out : LexLeanStd.Buffer::Buffer,
+    dis : RustValidate::Dis,
+    fnType : Nat,
+    count : Nat,
+    unitResult : Bool,
+    fallible : Bool
+  ],
   result: LexLeanStd.Buffer::Buffer,
   body: (match dis
     | RustValidate::Dis.DisNil => out

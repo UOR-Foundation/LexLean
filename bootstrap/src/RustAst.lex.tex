@@ -7,7 +7,11 @@ inductive{
   name: OrderingKind,
   type_parameters: [],
   parameters: [],
-  constructors: [{name: OkLess, fields: []}, {name: OkEqual, fields: []}, {name: OkGreater, fields: []}]
+  constructors: [
+    {name: OkLess, fields: []},
+    {name: OkEqual, fields: []},
+    {name: OkGreater, fields: []}
+  ]
 }
 
 inductive{
@@ -99,8 +103,21 @@ inductive{
   parameters: [],
   constructors: [
     {name: DEnum, fields: [RustValidate::Ty, RustValidate::Row, RustValidate::Origin]},
-    {name: DApply, fields: [Nat, RustValidate::Ty, RustValidate::Ty, Bool, RustValidate::Dis, RustValidate::Origin]},
-    {name: DFunction, fields: [RustValidate::Id, Par, RustValidate::Ty, Expr, RustValidate::Origin]},
+    {
+      name: DApply,
+      fields: [
+        Nat,
+        RustValidate::Ty,
+        RustValidate::Ty,
+        Bool,
+        RustValidate::Dis,
+        RustValidate::Origin
+      ]
+    },
+    {
+      name: DFunction,
+      fields: [RustValidate::Id, Par, RustValidate::Ty, Expr, RustValidate::Origin]
+    },
     {name: DNil, fields: []},
     {name: DCons, fields: [Def, Def]}
   ]
