@@ -23,12 +23,28 @@ use lexlean::{FormatRequest, Selection};
 
 use crate::support::{self, repo_root, P};
 
-/// Run the case for one authoring ID.
+/// Run the case for one authoring ID. The committed corpus includes the
+/// runtime module (`language/rust-runtime-1.2/RustRuntime.lex.tex`), whose
+/// lists nest over a hundred levels and overflow a default test thread's two
+/// megabytes in a debug build, so every authoring case runs on a thread sized
+/// by [`lexlean::READER_STACK`].
 ///
 /// # Panics
 ///
 /// When the case's assertion fails, or for an unwired ID.
 pub fn run(id: &str) {
+    let id = id.to_owned();
+    std::thread::scope(|scope| {
+        std::thread::Builder::new()
+            .stack_size(lexlean::READER_STACK)
+            .spawn_scoped(scope, || check(&id))
+            .expect("a thread for the authoring case")
+            .join()
+            .unwrap_or_else(|panic| std::panic::resume_unwind(panic));
+    });
+}
+
+fn check(id: &str) {
     match id {
         "AU-01" => round_trip(),
         "AU-02" => equivalence(),
@@ -153,43 +169,28 @@ fn round_trip() {
         assert!(text.contains('{'), "{text} is written generically");
     }
 
-    // Every committed semantic module of language 1.2. The runtime module
-    // reads to data nested over a hundred levels, and a debug build
-    // overflows a test thread's two megabytes reading it, so the corpus is
-    // read on a thread with the compiler's own reader stack, as the compiler
-    // reads it (`lexlean::READER_STACK`).
-    let (modules, declarations) = std::thread::scope(|scope| {
-        std::thread::Builder::new()
-            .stack_size(lexlean::READER_STACK)
-            .spawn_scoped(scope, || {
-                let mut modules = 0usize;
-                let mut declarations = 0usize;
-                for (path, json) in corpus() {
-                    let Json::Obj(members) = &json else { continue };
-                    if members.get("spec") != Some(&Json::Str(SPEC.to_owned())) {
-                        continue;
-                    }
-                    let text =
-                        print_module(&json).unwrap_or_else(|error| panic!("{path}: {error}"));
-                    let back = parse_module(&text, SPEC)
-                        .unwrap_or_else(|error| panic!("{path}: {error}\n{text}"));
-                    assert_eq!(back, json, "{path}: read back differently");
-                    assert_eq!(
-                        print_module(&back).expect("prints"),
-                        text,
-                        "{path}: the notation is not its own canonical form"
-                    );
-                    modules += 1;
-                    if let Some(Json::Arr(items)) = members.get("declarations") {
-                        declarations += items.len();
-                    }
-                }
-                (modules, declarations)
-            })
-            .expect("a reader thread")
-            .join()
-            .expect("the round trip over the committed modules does not panic")
-    });
+    // Every committed semantic module of language 1.2.
+    let mut modules = 0usize;
+    let mut declarations = 0usize;
+    for (path, json) in corpus() {
+        let Json::Obj(members) = &json else { continue };
+        if members.get("spec") != Some(&Json::Str(SPEC.to_owned())) {
+            continue;
+        }
+        let text = print_module(&json).unwrap_or_else(|error| panic!("{path}: {error}"));
+        let back =
+            parse_module(&text, SPEC).unwrap_or_else(|error| panic!("{path}: {error}\n{text}"));
+        assert_eq!(back, json, "{path}: read back differently");
+        assert_eq!(
+            print_module(&back).expect("prints"),
+            text,
+            "{path}: the notation is not its own canonical form"
+        );
+        modules += 1;
+        if let Some(Json::Arr(items)) = members.get("declarations") {
+            declarations += items.len();
+        }
+    }
     // Anti-vacuity: the committed corpus is large, and says so.
     assert!(
         modules >= 250 && declarations >= 4_000,
