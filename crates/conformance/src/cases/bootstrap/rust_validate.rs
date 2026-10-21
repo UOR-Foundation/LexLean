@@ -1597,6 +1597,16 @@ fn mutant(krate: &Crate, seeded: &mut Seeded, pool: &Pool) -> Crate {
 /// reach; `no-row` cannot be reached, because every construct the AST emits
 /// has a row of the table, and the row-less path is the one the module
 /// transcribes without a vector to reach it.
+/// Refusals the mutation search reaches too rarely to rest a count on: it hit
+/// `heap-list-match` twice in its 400,000 draws once the committed corpus held
+/// the `cached-literal` crate, where before it hit three times, so the
+/// reachability of the refusal depended on the seed and not on the rule. These
+/// are reached by crates built by hand (`list_match_crates`) and held to be
+/// covered like the others. (`constant-shape` took its place among the
+/// searched refusals: the committed corpus now holds a crate with a constant,
+/// which the search mutates into one that breaks the rule.)
+const BY_HAND_ONLY: &[&str] = &["heap-list-match"];
+
 const REACHABLE: &[&str] = &[
     "enum-not-declared",
     "enum-declared-twice",
@@ -1607,7 +1617,6 @@ const REACHABLE: &[&str] = &[
     "type-fn-undeclared",
     "heap-string-literal",
     "heap-byte-literal",
-    "heap-list-match",
     "heap-boxed-read",
     "heap-box",
     "heap-runtime",
@@ -1642,6 +1651,7 @@ const REACHABLE: &[&str] = &[
     "dispatch-undeclared",
     "dispatch-misstated",
     "propagates-undeclared",
+    "constant-shape",
     "wrong-origin",
     "unused-element",
     "unused-type",
@@ -1786,6 +1796,7 @@ fn coverage(runs: &[Run]) -> BTreeMap<&'static str, usize> {
 fn uncovered(counts: &BTreeMap<&'static str, usize>) -> Vec<&'static str> {
     REACHABLE
         .iter()
+        .chain(BY_HAND_ONLY)
         .copied()
         .filter(|template| !counts.contains_key(template))
         .collect()
@@ -1897,6 +1908,59 @@ fn rule_vectors(bases: &[&Rendered], each: usize) -> (Vec<Run>, Vec<Run>) {
         "the rule corpus gave up before it reached {each} runs of: {missing:?}"
     );
     (validated, corresponded)
+}
+
+/// Crates by hand for the refusal of a list match under `rust-core`: a
+/// function with no heap type in its signature whose body matches the
+/// `uncons` of a name, as the tail, as a binding, and on one branch of an `if`.
+/// The heap check of the match comes before the read of its scrutinee, so the
+/// name need not be bound. They are vectors of both validators, whose messages
+/// must agree to the byte.
+fn list_match_crates() -> Vec<Crate> {
+    let at = Origin::of;
+    let nat = |n: u64| Expr::Lit(Lit::Nat(n), at("value:nat"));
+    let matched = |value: u64| Expr::Match {
+        scrutinee: Box::new(Expr::Uncons(Ident::Local(0))),
+        arms: vec![
+            (Pat::None, Block::of(nat(value))),
+            (Pat::Some(Box::new(Pat::Wild)), Block::of(nat(value + 1))),
+        ],
+        at: at("match:list"),
+    };
+    let function = |parameters: Vec<(Pat, Type)>, body: Block| Crate {
+        profile: Profile::Core,
+        items: vec![ItemDef::Function {
+            name: Ident::Function(0),
+            parameters,
+            result: Type::Nat,
+            body,
+            at: at("function"),
+        }],
+    };
+    vec![
+        function(Vec::new(), Block::of(matched(0))),
+        function(
+            Vec::new(),
+            Block {
+                lets: vec![Let {
+                    pat: Pat::Bind(Ident::Local(1)),
+                    ty: None,
+                    value: matched(2),
+                    at: at("let"),
+                }],
+                tail: Expr::Move(Ident::Local(1), at("read")),
+            },
+        ),
+        function(
+            vec![(Pat::Bind(Ident::Local(2)), Type::Bool)],
+            Block::of(Expr::If {
+                condition: Box::new(Expr::Copy(Ident::Local(2), at("read"))),
+                then_branch: Box::new(Block::of(matched(4))),
+                else_branch: Box::new(Block::of(nat(6))),
+                at: at("expr:cond"),
+            }),
+        ),
+    ]
 }
 
 /// Crates by hand for the rule of a constant (SPEC.md §17.16 *Constants*): a
@@ -2904,15 +2968,16 @@ const RULE_CORRESPOND_RUNS: usize = 12;
 const BRANCH_CRATES: usize = 17;
 const LOOP_CRATES: usize = 34;
 const CONSTANT_CRATES: usize = 5;
-const VECTORS_VALIDATE: usize = 411;
-const REFUSED_VALIDATE: usize = 169;
-const VECTORS_CORRESPOND: usize = 269;
+const LIST_MATCH_CRATES: usize = 3;
+const VECTORS_VALIDATE: usize = 415;
+const REFUSED_VALIDATE: usize = 172;
+const VECTORS_CORRESPOND: usize = 270;
 const REFUSED_CORRESPOND: usize = 46;
-const EVALUATOR_CRATES: usize = 200;
-const EVALUATOR_VALIDATE: usize = 388;
-const EVALUATOR_CORRESPOND: usize = 246;
-const SEEDED_REFUSED_VALIDATE: usize = 271;
-const SEEDED_REFUSED_CORRESPOND: usize = 244;
+const EVALUATOR_CRATES: usize = 201;
+const EVALUATOR_VALIDATE: usize = 392;
+const EVALUATOR_CORRESPOND: usize = 247;
+const SEEDED_REFUSED_VALIDATE: usize = 270;
+const SEEDED_REFUSED_CORRESPOND: usize = 260;
 
 pub(super) fn case() {
     let started = std::time::Instant::now();
@@ -2946,6 +3011,7 @@ pub(super) fn case() {
         .into_iter()
         .chain(loop_crates())
         .chain(constant_crates())
+        .chain(list_match_crates())
         .collect();
     assert_eq!(
         (rule_validate.len(), rule_correspond.len()),
@@ -2957,8 +3023,14 @@ pub(super) fn case() {
             branch_crates().len(),
             loop_crates().len(),
             constant_crates().len(),
+            list_match_crates().len(),
         ),
-        (BRANCH_CRATES, LOOP_CRATES, CONSTANT_CRATES),
+        (
+            BRANCH_CRATES,
+            LOOP_CRATES,
+            CONSTANT_CRATES,
+            LIST_MATCH_CRATES
+        ),
         "the hand-built crates"
     );
     rule_validate.extend(by_hand.iter().map(validate_run));
@@ -2977,6 +3049,12 @@ pub(super) fn case() {
         "refusals no rule vector reaches: {:?}",
         uncovered(&counts)
     );
+    for template in BY_HAND_ONLY {
+        assert!(
+            counts.get(template).copied().unwrap_or(0) >= RULES_EACH,
+            "the crates by hand reach `{template}` {RULES_EACH} times"
+        );
+    }
     let accepted_validate: Vec<Run> = all
         .iter()
         .map(|rendered| validate_run(&rendered.krate))
