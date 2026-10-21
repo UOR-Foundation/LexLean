@@ -164,3 +164,10 @@ Feature: preservation
     When the pinned Lean elaborates the module and its theorems are listed by name
     Then each function the module defines has its theorem, and each is accepted with exactly the axioms its policy states
     And a theorem for another function, a function without a theorem, and a function whose body is changed are each refused
+
+  @SP-24 @build
+  Scenario: The dispatch of the runtime's trait methods and the meaning of `equal` and `compare` are stated and checked: the declared semantics of `RuntimeSyntax` (`RuntimeSemantics`) evaluates a method call by finding, among the impls a crate declares, the one whose self type the receiver value has, and for every value of the core profile's predicate (the scalars of every width, the Boolean, `Ordering`, and pairs of those) the evaluation of `equal` and of `compare` in `supportCrate` equals the calculus primitive of the same name on the same values, the pinned Lean accepts each theorem with exactly the axioms its policy states, and an impl that returns another result, an impl that is missing for a value of the predicate, and a theorem that states another primitive are each refused.
+    Given the committed modules RuntimeSyntax, RuntimeSemantics, and RuntimeSupport of the compiler project
+    When the pinned Lean elaborates the modules and their theorems are listed by name
+    Then a theorem states each of equal and compare on the core profile's values, and each is accepted with exactly the axioms its policy states
+    And a changed impl, a missing impl, and a theorem for another primitive are each refused
