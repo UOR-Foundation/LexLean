@@ -58,6 +58,7 @@ fn functions(text: &str) -> BTreeSet<String> {
 /// function its statement runs.
 fn theorems(text: &str) -> Vec<(String, String)> {
     let data = support::module_json(text);
+    let defined = functions(text);
     data["declarations"]
         .as_array()
         .expect("declarations")
@@ -68,8 +69,8 @@ fn theorems(text: &str) -> Vec<(String, String)> {
             let statement = declaration["statement"].to_string();
             // The function the statement runs: the one whose exported name is
             // a string literal of the statement.
-            let run = functions(text)
-                .into_iter()
+            let run = defined
+                .iter()
                 .find(|function| statement.contains(&format!("\"value\":\"{function}\"")))
                 .map(|function| function.replace("::", "_"))
                 .unwrap_or_default();

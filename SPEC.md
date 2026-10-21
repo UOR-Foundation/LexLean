@@ -5752,7 +5752,7 @@ because Clippy's default lints refuse a block as a scrutinee. The handwritten te
 the generated runtime as module `new`, and a harness calls both on the boundary and seeded
 values of each defined function and compares the result and the counted work. A function
 the module defines that the differential does not cover is refused by the case. Each
-function has a theorem `refines_<function>` in the module (`SP-22`): for all arguments of
+function has a theorem `refines_<function>` in the module (`SP-22`), where `<function>` is the function's exported path with `::` written `_` (`refines_fixed_u8_checked_add` for `fixed_u8::checked_add`): for all arguments of
 its parameter types, the declared semantics' run of the function in `coreCrate` equals the
 run of the runtime item of the same name, proved by `term_cases` (`SM-35`) and accepted with the
 axioms its policy states; the fuel is fixed in each theorem (12) and only the run of the

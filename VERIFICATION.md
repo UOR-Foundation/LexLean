@@ -2089,10 +2089,10 @@ conditional of `itemFallible` only through `ite_true` and `ite_false`, which the
 `term_cases` therefore names (see `SM-35`).
 
 Command and host: `cargo test -p repo-conformance --test conformance -- conformance_sp_22`, in the
-`preservation` part of `bdd` (`.github/bdd-parts.json`). The theorem-list assertions and their
+`preservation-runtime` part of `bdd` (`.github/bdd-parts.json`, `bdd-preservation-runtime` in `.github/vv-rows.json`). The theorem-list assertions and their
 plants run on every host; the elaboration of the module and its plants run where
 `leanprover/lean4:v4.32.1` is installed (`lean_backed("SP-22")`), and on the normative host
-(Linux x86-64, §8.3) the case panics rather than skip. Cost on a 4-core container: 142 s for the
+(Linux x86-64, §8.3) the case panics rather than skip. Cost of the 18-function record (before the width families) on a 4-core container: 142 s for the
 case, of which about 60 s is the project of the five modules and about 70 s the planted one; the
 18 theorems add under ten seconds to the module (71 s with them, 80 s with none, on the same
 machine, so the difference is inside the noise): under half a second a theorem. The width
