@@ -22,13 +22,14 @@ const FUEL: u64 = 500_000_000;
 const EVALUATOR_STACK: usize = 1 << 29;
 
 /// The roots of the example, in the order the report lists them.
-const ROOTS: [&str; 8] = [
+const ROOTS: [&str; 9] = [
     "admitStrict",
     "continueDrawn",
     "continueGreedy",
     "detokenize",
     "keepRecent",
     "letters",
+    "shapeOf",
     "tokenize",
     "topicOf",
 ];
@@ -133,6 +134,15 @@ mod oracle {
     /// The label of text: how many distinct tokens it holds.
     pub fn topic(text: &str) -> usize {
         let mut seen = words(text);
+        seen.sort_unstable();
+        seen.dedup();
+        seen.len()
+    }
+
+    /// The label of text under the byte-level tokenizer: how many distinct
+    /// bytes it holds.
+    pub fn shape(text: &str) -> usize {
+        let mut seen = letters(text);
         seen.sort_unstable();
         seen.dedup();
         seen.len()
@@ -252,6 +262,7 @@ fn expected(root: &str, arguments: &Arguments) -> Value {
         ("tokenize", Arguments::Text(text)) => tokens(&oracle::words(text)),
         ("letters", Arguments::Text(text)) => tokens(&oracle::letters(text)),
         ("topicOf", Arguments::Text(text)) => nat(oracle::topic(text)),
+        ("shapeOf", Arguments::Text(text)) => nat(oracle::shape(text)),
         ("detokenize", Arguments::Tokens(ids)) => option(oracle::text(ids).map(|t| string(&t))),
         ("keepRecent", Arguments::Tokens(ids)) => some(tokens(&oracle::keep_recent(ids))),
         ("admitStrict", Arguments::Tokens(ids)) => {
@@ -355,7 +366,13 @@ fn corpus() -> Vec<(&'static str, Arguments)> {
     .chain((0..40).map(|_| token_list(&mut seeded)))
     .collect();
     for text in &texts {
-        for root in ["tokenize", "letters", "topicOf", "continueGreedy"] {
+        for root in [
+            "tokenize",
+            "letters",
+            "topicOf",
+            "shapeOf",
+            "continueGreedy",
+        ] {
             runs.push((root, Arguments::Text(text.clone())));
         }
         for seed in [0, 1, 5, 0xffff_ffff] {

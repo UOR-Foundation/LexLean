@@ -215,6 +215,69 @@ impl<'g, 'a> Writer<'g, 'a> {
                 );
             }
         }
+        // A text component's definitions apply production forms of the
+        // standard library, so what the audit finds for one is what those
+        // forms depend on, and the construct's declared set is only an upper
+        // bound on it. Each derived definition of a module that imports the
+        // production module takes the union of the sets of the definitions it
+        // calls, to a fixed point (the sets only grow, and are finite).
+        loop {
+            let mut changed = false;
+            for linked in gen.source.modules.values() {
+                if !linked
+                    .semantic
+                    .elaboration
+                    .imports
+                    .iter()
+                    .any(|import| import == crate::text_laws::PRODUCTION_MODULE)
+                {
+                    continue;
+                }
+                for declaration in linked.semantic.lowered_declarations() {
+                    let crate::ir::semantic::SemanticDeclaration::Definition { body, .. } =
+                        declaration
+                    else {
+                        continue;
+                    };
+                    let own = format!("{}.{}", linked.lean_module, declaration.name());
+                    if !declared.contains_key(&own) {
+                        continue;
+                    }
+                    let source = linked.semantic.declarations.iter().any(|source| {
+                        source.name() == declaration.name()
+                            && matches!(
+                                source,
+                                crate::ir::semantic::SemanticDeclaration::Definition { .. }
+                            )
+                    });
+                    if source {
+                        continue;
+                    }
+                    let mut union: BTreeSet<String> = BTreeSet::new();
+                    crate::ir::semantic::visit_terms(body, &mut |term| {
+                        if let crate::ir::semantic::SemanticTerm::Call { function, .. } = term {
+                            let module = function
+                                .module
+                                .clone()
+                                .unwrap_or_else(|| linked.lean_module.to_string());
+                            if let Some(axioms) =
+                                declared.get(&format!("{module}.{}", function.name))
+                            {
+                                union.extend(axioms.iter().cloned());
+                            }
+                        }
+                    });
+                    let union: Vec<String> = union.into_iter().collect();
+                    if declared.get(&own) != Some(&union) {
+                        declared.insert(own, union);
+                        changed = true;
+                    }
+                }
+            }
+            if !changed {
+                break;
+            }
+        }
         Self {
             gen,
             b,
