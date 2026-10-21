@@ -181,7 +181,7 @@ definition{
     | CalculusCheck::Ty.TList element => (register known element)
     | CalculusCheck::Ty.TPair left right => (register (register known left) right)
     | CalculusCheck::Ty.TAdt d0 => known
-    | CalculusCheck::Ty.TFn parameters result => (let added : CalculusCheck::Ty := (tyAddNew known ty); (register (register added parameters) result))
+    | CalculusCheck::Ty.TFn parameters result => (let added : CalculusCheck::Ty := (tyAddNew known (ctor CalculusCheck::Ty.TFn parameters result)); (register (register added parameters) result))
     | CalculusCheck::Ty.TNil => known
     | CalculusCheck::Ty.TCons head tail => (register (register known head) tail)),
   executable: true,
@@ -571,8 +571,8 @@ definition{
     | CalculusCheck::Ty.TResult ok error => (inPlace known (inPlace known held ok) error)
     | CalculusCheck::Ty.TList d0 => held
     | CalculusCheck::Ty.TPair left right => (inPlace known (inPlace known held left) right)
-    | CalculusCheck::Ty.TAdt index => (tyAddNew held ty)
-    | CalculusCheck::Ty.TFn parameters result => (if (tyMember known ty) then (tyAddNew held ty) else held)
+    | CalculusCheck::Ty.TAdt index => (tyAddNew held (ctor CalculusCheck::Ty.TAdt index))
+    | CalculusCheck::Ty.TFn parameters result => (if (tyMember known (ctor CalculusCheck::Ty.TFn parameters result)) then (tyAddNew held (ctor CalculusCheck::Ty.TFn parameters result)) else held)
     | CalculusCheck::Ty.TNil => held
     | CalculusCheck::Ty.TCons d0 d1 => held),
   executable: true,
@@ -806,8 +806,8 @@ definition{
     | CalculusCheck::Ty.TResult ok error => (if (visible ok inhabited) then true else (visible error inhabited))
     | CalculusCheck::Ty.TList d0 => true
     | CalculusCheck::Ty.TPair left right => (if (visible left inhabited) then (visible right inhabited) else false)
-    | CalculusCheck::Ty.TAdt index => (tyMember inhabited ty)
-    | CalculusCheck::Ty.TFn parameters result => (tyMember inhabited ty)
+    | CalculusCheck::Ty.TAdt index => (tyMember inhabited (ctor CalculusCheck::Ty.TAdt index))
+    | CalculusCheck::Ty.TFn parameters result => (tyMember inhabited (ctor CalculusCheck::Ty.TFn parameters result))
     | CalculusCheck::Ty.TNil => true
     | CalculusCheck::Ty.TCons d0 d1 => true),
   executable: true,
