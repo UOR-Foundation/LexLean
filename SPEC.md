@@ -5833,16 +5833,21 @@ does not declare), `impl-trait`, `impl-complete`, `impl-signature`, `impl-extra`
 (an impl states each method of its trait once with the trait's signature, and no more, and none is
 `pub`), `function-visibility`, `function-receiver`, `call-name`, `call-arity`, `method-name`,
 `method-arity`, `method-bound` (a method of a trait called on a parameter whose bounds do not provide
-it), `variable-scope`, `path-name`, `match-arms`, and `use-path`. The handwritten core runtime kept at
+it), `variable-scope`, `path-name`, `match-arms`, `trait-method` (a trait that declares a method twice), and `use-path`: 24 rules, each planted by `RB-17`, and the case reads the rules from the validator's source, so a rule added there fails until it is planted. The handwritten core runtime kept at
 `tests/rust-runtime-oracle/core.rs.txt` is the oracle: `equal`, `compare`, `tick`, and `work` agree
 with it in result and in counted work on the boundary and seeded values of the core profile. The
-normative validator of this module is a Lean twin of `rust::rt_validate`, `RuntimeValidate`, a
-bootstrap root with its own row beside `BS-05` (R8: whoever moves the machine moves the validator);
-no function of the heap profile is source before it exists. The meaning of a trait method is
+validator of this module is the Rust rule set above and its plants: the evidence for the closed set is
+the differential and the plants, and nothing in the repository yet reads the module through a second
+implementation. The condition on the heap profile (R8: whoever moves the machine moves the normative
+validator) is that a Lean twin of `rust::rt_validate`, a bootstrap root with its own row beside `BS-05`,
+exists before any function that allocates is source, and it is the condition of the heap half's second
+step. The meaning of a trait method is
 declared by `RuntimeSemantics`, which evaluates a `RuntimeSyntax` crate over the values of the
 calculus and finds a method by the shape of its receiver among the impls the crate declares;
-`RuntimeSupport` holds, for each scalar of the core profile's predicate (`bool` and every width) and
-for `Ordering` in the case of `equal`, and for each pair of two scalars in the case of `compare`, a
+`RuntimeSupport` holds, for each value of the core profile's predicate that the calculus types as the
+arguments of `equal` (a Boolean, a natural, a fixed width, an `Ordering`) and of `compare` (a Boolean, a
+natural, an integer, a fixed width, and a pair of two of those), where a natural is a `u64` and an
+integer an `i64` in the generated Rust and so is dispatched to the impl of that width, a
 theorem that the evaluation of `equal` or of `compare` in `supportCrate` equals the calculus
 primitive of the same name on the same values (`SP-25`). `tick` and `work` are effects of a static
 counter that the erased-value semantics does not model; the counted-work gate (`RB-06`, `TC-07`)
