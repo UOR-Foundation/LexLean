@@ -831,7 +831,8 @@ fn lm_11() {
         "c2a671b13cf191d6570a3a59b6b8b016ecf2ae5d5d80f247756f5887f67eb8bd",
         &lexlean::artifact::content_id::Sha256Digest::of(&bad).to_hex(),
     );
-    artifact.edit("src/Main.lex.tex", "length: 25", "length: 3");
+    let source = artifact.read_raw("src/Main.lex.tex");
+    artifact.write_raw("src/Main.lex.tex", &source.replacen("length: 25", "length: 3", 1));
     artifact.relock();
     artifact.check_err();
     // A changed byte of the vocabulary is a digest mismatch.
@@ -870,7 +871,8 @@ fn lm_11() {
         "Strict.push_bounded",
         "Greedy.run_bridge",
         "Drawn.run_bridge",
-        "Topic.classify_bridge",
+        "Topic.fitWidth_bridge",
+        "Shape.features_total",
         "window_keeps_last",
         "window_refuses",
         "greedy_continues",
