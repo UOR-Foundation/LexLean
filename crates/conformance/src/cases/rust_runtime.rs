@@ -343,7 +343,7 @@ pub fn run(id: &str) {
             "is not a fallible value",
         ),
         (
-            "a bare Ok of an arithmetic result",
+            "a bare Ok of an arithmetic result in the Some arm every checked function shares",
             ok,
             bare_ok,
             "construct:ok, is not a fallible value",
