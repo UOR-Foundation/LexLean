@@ -105,5 +105,138 @@ definition{
   body: (admitKeepLast capacity (prim append context (cons token (nil UInt32)) : (List UInt32))),
   executable: true
 }
+
+definition{
+  name: admitWith,
+  parameters: [keep : Bool, capacity : Nat, context : (List UInt32)],
+  result: (Option (List UInt32)),
+  body: (if keep then (admitKeepLast capacity context) else (admitRefuse capacity context)),
+  executable: true
+}
+
+definition{
+  name: pushWith,
+  parameters: [keep : Bool, capacity : Nat, context : (List UInt32), token : UInt32],
+  result: (Option (List UInt32)),
+  body: (if keep then (pushKeepLast capacity context token) else (pushRefuse capacity context token)),
+  executable: true
+}
+
+definition{
+  name: tokenIdFrom,
+  parameters: [count : Nat, reached : UInt32],
+  result: (Option UInt32),
+  body: (match count
+    | Nat.zero => (ctor Option.some [UInt32] reached)
+    | Nat.succ previous => (match (prim checked_add reached (1 : UInt32) : (Option UInt32))
+      | Option.some next => (tokenIdFrom previous next)
+      | Option.none => (ctor Option.none [UInt32]))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: count
+}
+
+definition{
+  name: tokenId,
+  parameters: [index : Nat],
+  result: (Option UInt32),
+  body: (tokenIdFrom index (0 : UInt32)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: guard,
+  parameters: [capacity : Nat, score : (Fn ((List UInt32)) (List Int)), context : (List UInt32)],
+  result: (List Int),
+  body: (if (fits capacity context) then (apply score context) else (nil Int)),
+  executable: true
+}
+
+definition{
+  name: firstMaxGo,
+  parameters: [scores : (List Int), index : Nat, best : Nat, top : Int],
+  result: Nat,
+  body: (match scores
+    | List.nil => best
+    | List.cons score rest => (if (prim less_than top score : Bool) then (firstMaxGo rest (index + 1) index score) else (firstMaxGo rest (index + 1) best top))),
+  axioms: [propext],
+  executable: true,
+  recursive_argument: scores
+}
+
+definition{
+  name: firstMax,
+  parameters: [scores : (List Int)],
+  result: (Option Nat),
+  body: (match scores
+    | List.nil => (ctor Option.none [Nat])
+    | List.cons score rest => (ctor Option.some [Nat] (firstMaxGo rest 1 0 score))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: chooseGreedy,
+  parameters: [scores : (List Int), seed : UInt32],
+  result: ((Option Nat) * UInt32),
+  body: ((firstMax scores), seed),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: genGo,
+  parameters: [score : (Fn ((List UInt32)) (List Int)), choose : (Fn ((List Int) UInt32) ((Option Nat) * UInt32)), size : Nat, capacity : Nat, keep : Bool, stop : UInt32, fuel : Nat, context : (List UInt32), output : (List UInt32), seed : UInt32],
+  result: (((List UInt32) * Nat) * UInt32),
+  body: (match fuel
+    | Nat.zero => ((output, 1), seed)
+    | Nat.succ previous => (let step : ((Option Nat) * UInt32) := (apply choose (apply score context) seed); (match (first step)
+      | Option.none => ((output, 2), (second step))
+      | Option.some index => (if (index <? size) then (match (tokenId index)
+        | Option.none => ((output, 2), (second step))
+        | Option.some token => (if (prim equal token stop : Bool) then ((output, 0), (second step)) else (match (pushWith keep capacity context token)
+          | Option.none => ((output, 3), (second step))
+          | Option.some grown => (genGo score choose size capacity keep stop previous grown (prim append output (cons token (nil UInt32)) : (List UInt32)) (second step))))) else ((output, 2), (second step)))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: fuel
+}
+
+definition{
+  name: generateWith,
+  parameters: [score : (Fn ((List UInt32)) (List Int)), choose : (Fn ((List Int) UInt32) ((Option Nat) * UInt32)), size : Nat, capacity : Nat, keep : Bool, stop : UInt32, fuel : Nat, prompt : (List UInt32), seed : UInt32],
+  result: (((List UInt32) * Nat) * UInt32),
+  body: (match (admitWith keep capacity prompt)
+    | Option.none => (((nil UInt32), 3), seed)
+    | Option.some context => (genGo score choose size capacity keep stop fuel context (nil UInt32) seed)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: generateGreedy,
+  parameters: [score : (Fn ((List UInt32)) (List Int)), size : Nat, capacity : Nat, keep : Bool, stop : UInt32, fuel : Nat, prompt : (List UInt32)],
+  result: ((List UInt32) * Nat),
+  body: (first (generateWith score (ref chooseGreedy) size capacity keep stop fuel prompt (0 : UInt32))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: byteVocab,
+  parameters: [],
+  result: Nat,
+  body: 256,
+  executable: true
+}
+
+definition{
+  name: vocabSize,
+  parameters: [vocabulary : (List String)],
+  result: Nat,
+  body: ((byteVocab) + (prim length vocabulary : Nat)),
+  executable: true
+}
 \end{semanticmodule}
 \end{lexlean}
