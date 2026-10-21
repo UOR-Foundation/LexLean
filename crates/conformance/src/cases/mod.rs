@@ -42,6 +42,7 @@ mod rust_refinement;
 mod rust_runtime;
 mod rust_scaffold;
 mod rust_support;
+mod runtime_semantics;
 mod security;
 mod semantic_ir;
 mod stdlib;
