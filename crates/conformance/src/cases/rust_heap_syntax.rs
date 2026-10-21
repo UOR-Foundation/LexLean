@@ -54,6 +54,7 @@ fn main() {
     assert_eq!(p::swap_pair((1, 2)), (2, 1));
     assert_eq!(p::cell_clone_count(5), 2);
     assert_eq!(p::widen_mul(u64::MAX, u64::MAX), (u64::MAX as u128) * (u64::MAX as u128));
+    assert_eq!(p::widen_signed(u64::MAX), u64::MAX as i128);
     assert_eq!(p::to_index(7), 7usize);
     assert!(p::digit('7') && !p::digit('x'));
     assert!(p::is_a('a') && !p::is_a('b'));

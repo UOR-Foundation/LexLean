@@ -2174,7 +2174,7 @@ index, a range slice, a dereference, `&mut`, a method call with type arguments, 
 Command and host: `cargo test -p repo-conformance --test conformance -- conformance_rb_19` (`RB-19`, in the `rest` part of `bdd`), on the 4-core 15 GB Linux x86-64 container with
 rustc 1.97.1 and the pinned Lean 4.32.1: 22.8 s with `conformance_rb_17`, of which the rustc run of the probe and the Lean check of the module are most.
 
-The probe `RuntimeProbe` (`compiler/src/RuntimeProbe.lex.tex`, shipped byte for byte; 40 items, `std` profile) holds one use of each construct. The case
+The probe `RuntimeProbe` (`compiler/src/RuntimeProbe.lex.tex`, shipped byte for byte; 41 items, `std` profile) holds one use of each construct. The case
 requires the shipped copy to be the compiler project's module; decodes, validates, and prints it; requires every constructor (by the identifiers of the decoded crate's debug form,
 each with whether an argument list follows, so that the type `Char` and the literal `Char(` are two) and every operator to occur in it; compiles the printed crate under
 the pinned rustc with warnings denied and runs a harness of 31 assertions (several in loops over seeded or gridded values) against independent computations (`sum_to` against `n(n+1)/2`, `ops` against a
@@ -2190,7 +2190,7 @@ source and requires its planted rules and these ten to be exactly them, with `hi
 Plants of the gate, each restored: the printer writing `-` for `Op::Add` (the harness fails, `attempt to subtract with overflow` in `sum_to`); the `break-position` check of the validator disabled
 (the case fails at `a break outside a loop: ()`). `RuntimeSemantics` gains an arm for each new constructor that is `stuck` (a `blockE` evaluates its block), so the meaning of the constructs is declared only when the heap model gives it one.
 
-Re-verification of `SP-25` after the module grew and its records were regenerated: Command and host: `cargo test -p repo-conformance --test conformance -- conformance_sp_25`, on the 4-core 15 GB Linux x86-64 container with the pinned Lean 4.32.1 and rustc 1.97.1, `lean` sampled every three seconds: 1,450.8 s (24 min 13 s wall, 38 min 32 s user CPU, 19 min 16 s system CPU), peak `lean` 5.98 GB. This figure of the head replaces the 1,440 s and 5.90 GB above.
+Re-verification of `SP-25` after the module grew and its records were regenerated: Command and host: `cargo test -p repo-conformance --test conformance -- conformance_sp_25`, on the 4-core 15 GB Linux x86-64 container with the pinned Lean 4.32.1 and rustc 1.97.1, `lean` sampled every three seconds: 1,450.8 s (24 min 13 s wall, 38 min 32 s user CPU, 19 min 16 s system CPU), peak `lean` 5.98 GB. This figure of the head replaces the 1,440 s and 5.90 GB measured on `59b93d3cc` in the record of `SP-25` that precedes this paragraph.
 The 143 theorems verify with the same axioms and no proof changed.
 
 ### each trait method of the support has its meaning checked (SP-25)
