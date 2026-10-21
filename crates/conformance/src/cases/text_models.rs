@@ -653,9 +653,10 @@ fn lm_10() {
     );
 
     // Certificate A pins a definition a text component elaborates to by the
-    // forms it applies: the rows that mention `decodeText` of the generator's
-    // tokenizer carry the axiom `Classical.choice` that Lean finds for it, and
-    // a pin without it is refused by the audit only after minutes of Lean.
+    // forms it applies: the row that states the root's result type mentions
+    // the generator, whose tokenizer decodes through a form Lean finds
+    // `Classical.choice` for, so its pin names it. A pin of `[]` for the
+    // derived definitions is refused by the audit only after minutes of Lean.
     let certified = crate::preservation::certificates(&project);
     let greedy = certified
         .iter()
@@ -667,13 +668,18 @@ fn lm_10() {
         .as_ref()
         .expect("certificate A is held as data")
         .declarations;
+    let fits = rows
+        .iter()
+        .find(|row| row.name.ends_with(".__fits_1"))
+        .expect("the root's result row");
     assert!(
-        rows.iter().any(|row| row
-            .policy
+        fits.policy
             .axioms()
             .iter()
-            .any(|axiom| axiom == "Classical.choice")),
-        "a row of continueGreedy's certificate A pins the axioms of the tokenizer it applies"
+            .any(|axiom| axiom == "Classical.choice"),
+        "`{}` pins the axioms of the tokenizer the generator applies: {:?}",
+        fits.name,
+        fits.policy.axioms()
     );
     if !support::lean_backed("LM-10") {
         return;
