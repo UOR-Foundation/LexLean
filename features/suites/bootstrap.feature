@@ -37,7 +37,7 @@ Feature: bootstrap
     Then both roots are eligible for rust-std with exactly their declared effects and no run disagrees with the oracle
     And every planted defect is detected, and every exported package is byte-identical to its committed package and realizes the lowered program
 
-  @BS-06 @build
+  @BS-09 @build
   Scenario: The runtime syntax validator of SPEC.md §17.16 is language-1.2 source in the `bootstrap/` project: `validateRuntime` of `RuntimeValidate` is a production root eligible for `rust-std` with exactly its declared effects, and its rendered `rust-std` package under the pinned rustc agrees with the Rust oracle `calculus::rust::rt_validate::validate` on the exact outcome and message for every crate of a corpus that holds the committed `supportCrate` and `probeCrate` in both profiles and, for each rule the oracle names, crates that break it, built by changing the committed crates, so that the refusals reach every rule the oracle names; every planted defect in the source is detected, and the certified package the production export publishes for the project is the committed one; lowering, printing, packaging, and crates naming a non-ASCII or non-printable scalar are outside the claim.
     Given the committed `bootstrap` project, the committed `supportCrate` and `probeCrate`, and the crates that break each rule the oracle names
     When the project is checked and built, and the rendered rust-std package is run by the pinned rustc on those crates
