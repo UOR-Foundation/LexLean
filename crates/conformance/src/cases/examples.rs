@@ -1,4 +1,4 @@
-//! The `examples` suite: EX-01..EX-08.
+//! The `examples` suite: EX-01..EX-09.
 
 use crate::support::{self, P};
 
@@ -673,6 +673,8 @@ pub(crate) fn run(id: &str) {
             );
         }
         // §28.6: every example directory is discovered and gate-complete.
+        // §10.5, §17.22: the helpdesk text application.
+        "EX-09" => super::helpdesk::run(id),
         "EX-08" => {
             let examples = support::repo_root().join("examples");
             let mut found = 0usize;
