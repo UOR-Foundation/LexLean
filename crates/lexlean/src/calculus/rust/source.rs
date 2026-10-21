@@ -57,14 +57,21 @@ pub(super) struct Reader<'a> {
 }
 
 impl<'a> Reader<'a> {
-    pub(super) fn members(json: &'a Json, what: &str) -> Result<&'a BTreeMap<String, Json>, String> {
+    pub(super) fn members(
+        json: &'a Json,
+        what: &str,
+    ) -> Result<&'a BTreeMap<String, Json>, String> {
         match json {
             Json::Obj(members) => Ok(members),
             _ => fail(format!("{what} is not an object")),
         }
     }
 
-    pub(super) fn member(map: &'a BTreeMap<String, Json>, name: &str, what: &str) -> Result<&'a Json, String> {
+    pub(super) fn member(
+        map: &'a BTreeMap<String, Json>,
+        name: &str,
+        what: &str,
+    ) -> Result<&'a Json, String> {
         map.get(name)
             .map_or_else(|| fail(format!("{what} has no `{name}`")), Ok)
     }
@@ -157,7 +164,12 @@ impl<'a> Reader<'a> {
         }
     }
 
-    pub(super) fn literal(&self, term: &'a Json, expected: &str, what: &str) -> Result<&'a Json, String> {
+    pub(super) fn literal(
+        &self,
+        term: &'a Json,
+        expected: &str,
+        what: &str,
+    ) -> Result<&'a Json, String> {
         let term = self.resolve(term, what)?;
         let map = Self::members(term, what)?;
         if Self::text(Self::member(map, "kind", what)?, what)? != expected {

@@ -11,51 +11,16 @@
 use std::sync::OnceLock;
 
 use super::super::IntKind;
-use super::{ast, source, validate};
+use super::{ast, rt, rt_decode, rt_validate, source, validate};
 
-/// The text of the runtime both profiles carry that the `RustRuntime` module
-/// does not define: [`core`] is this text and the functions the module
-/// defines, printed.
-pub const CORE_BASE: &str = r#"use core::cmp::Ordering;
-use core::sync::atomic::{AtomicU64, Ordering as Memory};
-
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct Overflow;
-pub type R<T> = Result<T, Overflow>;
-
-static WORK: AtomicU64 = AtomicU64::new(0);
-pub fn tick(units: u64) { WORK.fetch_add(units, Memory::Relaxed); }
-pub fn work() -> u64 { WORK.load(Memory::Relaxed) }
-
-
-pub trait Same { fn same(&self, other: &Self) -> bool; }
-pub trait Key { fn key(&self, other: &Self) -> Ordering; }
-macro_rules! scalar {
-    ($($t:ty),*) => { $(
-        impl Same for $t { fn same(&self, other: &Self) -> bool { self == other } }
-        impl Key for $t { fn key(&self, other: &Self) -> Ordering { self.cmp(other) } }
-    )* };
-}
-scalar!(bool, u8, u16, u32, u64, i8, i16, i32, i64);
-impl Same for Ordering { fn same(&self, other: &Self) -> bool { self == other } }
-impl<A: Key, B: Key> Key for (A, B) {
-    fn key(&self, other: &Self) -> Ordering {
-        match self.0.key(&other.0) { Ordering::Equal => self.1.key(&other.1), decided => decided }
-    }
-}
-pub fn equal<T: Same>(a: T, b: T) -> bool { a.same(&b) }
-pub fn compare<T: Key>(a: T, b: T) -> Ordering { a.key(&b) }
-
-"#;
-
-/// The core runtime text of `items`: [`CORE_BASE`], then each item printed.
+/// The core runtime text of `items`: `support`, then each item printed.
 /// An item whose exported name is a path `module::name` is printed inside
 /// `pub mod module { … }` under its last segment, with the consecutive items
 /// of one module in one block, so the module's path in the exported name is
 /// the runtime item's path (`fixed_u8::checked_add`).
 #[must_use]
-pub fn assemble(items: &[ast::ItemDef]) -> String {
-    let mut text = CORE_BASE.to_owned();
+pub fn assemble(support: &str, items: &[ast::ItemDef]) -> String {
+    let mut text = support.to_owned();
     let mut open: Option<String> = None;
     for item in items {
         let (module, shown) = match item {
@@ -99,9 +64,21 @@ pub fn assemble(items: &[ast::ItemDef]) -> String {
     text
 }
 
-/// The core runtime text of a `RustRuntime` module: its functions decoded,
-/// the crate they make checked by the validator that checks every rendering,
-/// and each printed after [`CORE_BASE`].
+/// The text of a `RuntimeSupport` module: its crate decoded, checked by the
+/// validator of `RuntimeSyntax`, and printed.
+///
+/// # Errors
+///
+/// Returns the reason the module cannot be decoded, or its crate is not valid.
+pub fn support_from(module: &str) -> Result<String, String> {
+    let krate = rt_decode::decode(module)?;
+    rt_validate::validate(&krate)?;
+    Ok(rt::print(&krate))
+}
+
+/// The core runtime text of a `RustRuntime` module over the support text
+/// `support`: its functions decoded, the crate they make checked by the
+/// validator that checks every rendering, and each printed after `support`.
 ///
 /// The runtime crate is the one crate no lowering produces, so the validator
 /// runs on it here: its functions fail only with `Err(Overflow)`, own what
@@ -110,11 +87,34 @@ pub fn assemble(items: &[ast::ItemDef]) -> String {
 /// # Errors
 ///
 /// Returns the reason the module cannot be decoded, or its crate is not valid.
-pub fn core_from(module: &str) -> Result<String, String> {
+pub fn core_over(support: &str, module: &str) -> Result<String, String> {
     let source = source::decode(module)?;
     validate::validate(&source.core)
         .map_err(|error| format!("the core runtime is not a valid crate: {error}"))?;
-    Ok(assemble(&source.core.items))
+    Ok(assemble(support, &source.core.items))
+}
+
+/// The core runtime text of a `RustRuntime` module over the embedded support.
+///
+/// # Errors
+///
+/// Returns the reason either module cannot be read, or its crate is not valid.
+pub fn core_from(module: &str) -> Result<String, String> {
+    core_over(support()?, module)
+}
+
+/// The support items both profiles carry: [`support_from`] the embedded module.
+///
+/// # Errors
+///
+/// Returns the reason the module cannot be read, or its crate is not valid.
+pub fn support() -> Result<&'static str, String> {
+    static SUPPORT: OnceLock<Result<String, String>> = OnceLock::new();
+    SUPPORT
+        .get_or_init(|| support_from(rt_decode::embedded()?))
+        .as_ref()
+        .map(String::as_str)
+        .map_err(Clone::clone)
 }
 
 /// The runtime both profiles carry: [`core_from`] the embedded module.
