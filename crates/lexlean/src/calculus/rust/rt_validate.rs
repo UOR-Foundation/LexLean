@@ -1065,14 +1065,19 @@ impl<'a> Scope<'a> {
                         ),
                     );
                 };
-                let mut given = names.clone();
-                given.sort();
-                let mut declared = held;
-                declared.sort();
-                if given != declared || names.len() != values.len() {
+                let same = names.len() == held.len()
+                    && names.len() == values.len()
+                    && names.iter().all(|name| held.contains(name))
+                    && held.iter().all(|name| names.contains(name));
+                if !same {
                     return rule(
                         "struct-fields",
-                        format!("`{}` is given {names:?}, not {declared:?}", path.join("::")),
+                        format!(
+                            "`{}` is given {}, not {}",
+                            path.join("::"),
+                            names.join(", "),
+                            held.join(", ")
+                        ),
                     );
                 }
                 values.iter().try_for_each(|value| self.expr(value, frame))
@@ -1149,7 +1154,14 @@ impl<'a> Scope<'a> {
         if !counts.contains(&given) {
             return rule(
                 "method-arity",
-                format!("`{name}` takes {counts:?} arguments, given {given}"),
+                format!(
+                    "`{name}` takes {} arguments, given {given}",
+                    counts
+                        .iter()
+                        .map(usize::to_string)
+                        .collect::<Vec<_>>()
+                        .join("/")
+                ),
             );
         }
         let mut ty = self.type_of(receiver, frame);
