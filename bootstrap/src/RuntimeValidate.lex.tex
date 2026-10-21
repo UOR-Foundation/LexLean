@@ -220,7 +220,7 @@ definition{
   parameters: [left : Bytes, right : Bytes],
   result: Bytes,
   body: (prim append left right : Bytes),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -229,7 +229,7 @@ definition{
   parameters: [name : Bytes],
   result: Bytes,
   body: (rcat (rtext "`") (rcat name (rtext "`"))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -238,7 +238,7 @@ definition{
   parameters: [number : Nat],
   result: Bytes,
   body: (RustValidate::decimal number),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -247,7 +247,7 @@ definition{
   parameters: [left : Bytes, right : Bytes],
   result: Bool,
   body: (prim equal left right : Bool),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -256,7 +256,7 @@ definition{
   parameters: [names : (List Bytes), wanted : Bytes],
   result: Bool,
   body: (prim list_fold (fun [wanted] (found : Bool) (name : Bytes) => (if found then true else (bEq name wanted))) false names : Bool),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -265,7 +265,7 @@ definition{
   parameters: [names : (List Bytes), glue : String],
   result: Bytes,
   body: (LexLeanStd.Text::joinWith names (rtext glue)),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -274,7 +274,7 @@ definition{
   parameters: [names : (List Bytes)],
   result: Bytes,
   body: (prim list_fold (fun [] (last : Bytes) (name : Bytes) => name) (rtext "") names : Bytes),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -285,7 +285,7 @@ definition{
   body: (match names
     | List.nil => (rtext "")
     | List.cons head rest => head),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -298,7 +298,7 @@ definition{
     | List.cons head rest => (match at
       | Nat.zero => (ctor Option.some [Bytes] head)
       | Nat.succ below => (nthName rest below))),
-  axioms: [propext],
+  axioms: [],
   executable: true,
   recursive_argument: names
 }
@@ -328,7 +328,7 @@ definition{
     | Ty.TyAbsent => 0
     | Ty.TyNil => 0
     | Ty.TyCons head tail => ((tyLen tail) + 1)),
-  axioms: [propext],
+  axioms: [],
   executable: true,
   recursive_argument: chain
 }
@@ -348,7 +348,7 @@ definition{
     | Pat.PLit => 0
     | Pat.PNil => 0
     | Pat.PCons head tail => ((patLen tail) + 1)),
-  axioms: [propext],
+  axioms: [],
   executable: true,
   recursive_argument: chain
 }
@@ -393,7 +393,7 @@ definition{
     | Expr.ECons head tail => ((exprLen tail) + 1)
     | Expr.ELetS x0 x1 x2 x3 => 0
     | Expr.EArm x0 x1 x2 x3 => 0),
-  axioms: [propext],
+  axioms: [],
   executable: true,
   recursive_argument: chain
 }
@@ -403,7 +403,7 @@ definition{
   parameters: [name : Bytes],
   result: (Option Nat),
   body: (if (prim equal name (rtext "Result") : Bool) then (ctor Option.some [Nat] 2) else (if (prim equal name (rtext "Option") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "AtomicU64") : Bool) then (ctor Option.some [Nat] 0) else (if (prim equal name (rtext "Rc") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "Vec") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "String") : Bool) then (ctor Option.some [Nat] 0) else (ctor Option.none [Nat]))))))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -412,7 +412,7 @@ definition{
   parameters: [name : Bytes],
   result: Bool,
   body: (if (prim equal name (rtext "Rc") : Bool) then true else (if (prim equal name (rtext "Vec") : Bool) then true else (if (prim equal name (rtext "String") : Bool) then true else false))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -421,7 +421,7 @@ definition{
   parameters: [name : Bytes],
   result: Bool,
   body: (if (prim equal name (rtext "u8") : Bool) then true else (if (prim equal name (rtext "u16") : Bool) then true else (if (prim equal name (rtext "u32") : Bool) then true else (if (prim equal name (rtext "u64") : Bool) then true else (if (prim equal name (rtext "u128") : Bool) then true else (if (prim equal name (rtext "i8") : Bool) then true else (if (prim equal name (rtext "i16") : Bool) then true else (if (prim equal name (rtext "i32") : Bool) then true else (if (prim equal name (rtext "i64") : Bool) then true else (if (prim equal name (rtext "i128") : Bool) then true else false)))))))))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -430,7 +430,7 @@ definition{
   parameters: [owner : Bytes, name : Bytes],
   result: (Option Nat),
   body: (if (if (prim equal owner (rtext "AtomicU64") : Bool) then (prim equal name (rtext "new") : Bool) else false) then (ctor Option.some [Nat] 1) else (if (if (prim equal owner (rtext "Rc") : Bool) then (prim equal name (rtext "new") : Bool) else false) then (ctor Option.some [Nat] 1) else (if (if (prim equal owner (rtext "Rc") : Bool) then (prim equal name (rtext "from") : Bool) else false) then (ctor Option.some [Nat] 1) else (if (if (prim equal owner (rtext "Rc") : Bool) then (prim equal name (rtext "try_unwrap") : Bool) else false) then (ctor Option.some [Nat] 1) else (if (if (prim equal owner (rtext "Rc") : Bool) then (prim equal name (rtext "get_mut") : Bool) else false) then (ctor Option.some [Nat] 1) else (if (if (prim equal owner (rtext "Vec") : Bool) then (prim equal name (rtext "new") : Bool) else false) then (ctor Option.some [Nat] 0) else (if (if (prim equal owner (rtext "Vec") : Bool) then (prim equal name (rtext "with_capacity") : Bool) else false) then (ctor Option.some [Nat] 1) else (if (if (prim equal owner (rtext "String") : Bool) then (prim equal name (rtext "new") : Bool) else false) then (ctor Option.some [Nat] 0) else (if (if (prim equal owner (rtext "mem") : Bool) then (prim equal name (rtext "replace") : Bool) else false) then (ctor Option.some [Nat] 2) else (if (if (prim equal owner (rtext "str") : Bool) then (prim equal name (rtext "from_utf8") : Bool) else false) then (ctor Option.some [Nat] 1) else (if (if (prim equal owner (rtext "usize") : Bool) then (prim equal name (rtext "from") : Bool) else false) then (ctor Option.some [Nat] 1) else (if (if (prim equal owner (rtext "usize") : Bool) then (prim equal name (rtext "try_from") : Bool) else false) then (ctor Option.some [Nat] 1) else (ctor Option.none [Nat]))))))))))))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -439,7 +439,7 @@ definition{
   parameters: [owner : Bytes, name : Bytes],
   result: Bool,
   body: (if (if (prim equal owner (rtext "AtomicU64") : Bool) then (prim equal name (rtext "new") : Bool) else false) then false else (if (if (prim equal owner (rtext "Rc") : Bool) then (prim equal name (rtext "new") : Bool) else false) then true else (if (if (prim equal owner (rtext "Rc") : Bool) then (prim equal name (rtext "from") : Bool) else false) then true else (if (if (prim equal owner (rtext "Rc") : Bool) then (prim equal name (rtext "try_unwrap") : Bool) else false) then true else (if (if (prim equal owner (rtext "Rc") : Bool) then (prim equal name (rtext "get_mut") : Bool) else false) then true else (if (if (prim equal owner (rtext "Vec") : Bool) then (prim equal name (rtext "new") : Bool) else false) then true else (if (if (prim equal owner (rtext "Vec") : Bool) then (prim equal name (rtext "with_capacity") : Bool) else false) then true else (if (if (prim equal owner (rtext "String") : Bool) then (prim equal name (rtext "new") : Bool) else false) then true else (if (if (prim equal owner (rtext "mem") : Bool) then (prim equal name (rtext "replace") : Bool) else false) then false else (if (if (prim equal owner (rtext "str") : Bool) then (prim equal name (rtext "from_utf8") : Bool) else false) then false else (if (if (prim equal owner (rtext "usize") : Bool) then (prim equal name (rtext "from") : Bool) else false) then false else (if (if (prim equal owner (rtext "usize") : Bool) then (prim equal name (rtext "try_from") : Bool) else false) then false else false)))))))))))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -450,7 +450,7 @@ definition{
   body: (match (callDirectArity owner name)
     | Option.some count => (ctor Option.some [Nat] count)
     | Option.none => (if (isInteger owner) then (callDirectArity (rtext "usize") name) else (ctor Option.none [Nat]))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -461,7 +461,7 @@ definition{
   body: (match (callDirectArity owner name)
     | Option.some count => (callDirectHeap owner name)
     | Option.none => (if (isInteger owner) then (callDirectHeap (rtext "usize") name) else false)),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -470,7 +470,7 @@ definition{
   parameters: [name : Bytes],
   result: (Option Nat),
   body: (if (prim equal name (rtext "Some") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "Ok") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "Err") : Bool) then (ctor Option.some [Nat] 1) else (ctor Option.none [Nat])))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -479,7 +479,7 @@ definition{
   parameters: [name : Bytes],
   result: (Option Nat),
   body: (if (prim equal name (rtext "fetch_add") : Bool) then (ctor Option.some [Nat] 2) else (if (prim equal name (rtext "load") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "cmp") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "len") : Bool) then (ctor Option.some [Nat] 0) else (if (prim equal name (rtext "is_empty") : Bool) then (ctor Option.some [Nat] 0) else (if (prim equal name (rtext "chars") : Bool) then (ctor Option.some [Nat] 0) else (if (prim equal name (rtext "next") : Bool) then (ctor Option.some [Nat] 0) else (if (prim equal name (rtext "min") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "max") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "push") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "pop") : Bool) then (ctor Option.some [Nat] 0) else (if (prim equal name (rtext "truncate") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "push_str") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "extend_from_slice") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "iter") : Bool) then (ctor Option.some [Nat] 0) else (if (prim equal name (rtext "rev") : Bool) then (ctor Option.some [Nat] 0) else (if (prim equal name (rtext "get") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "copied") : Bool) then (ctor Option.some [Nat] 0) else (if (prim equal name (rtext "ok") : Bool) then (ctor Option.some [Nat] 0) else (if (prim equal name (rtext "clone") : Bool) then (ctor Option.some [Nat] 0) else (if (prim equal name (rtext "to_string") : Bool) then (ctor Option.some [Nat] 0) else (if (prim equal name (rtext "as_bytes") : Bool) then (ctor Option.some [Nat] 0) else (if (prim equal name (rtext "strip_prefix") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "starts_with") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "split") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "collect") : Bool) then (ctor Option.some [Nat] 0) else (if (prim equal name (rtext "is_ascii_digit") : Bool) then (ctor Option.some [Nat] 0) else (ctor Option.none [Nat])))))))))))))))))))))))))))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -488,7 +488,7 @@ definition{
   parameters: [name : Bytes],
   result: Bool,
   body: (if (prim equal name (rtext "push") : Bool) then true else (if (prim equal name (rtext "pop") : Bool) then true else (if (prim equal name (rtext "truncate") : Bool) then true else (if (prim equal name (rtext "push_str") : Bool) then true else (if (prim equal name (rtext "extend_from_slice") : Bool) then true else (if (prim equal name (rtext "to_string") : Bool) then true else (if (prim equal name (rtext "collect") : Bool) then true else false))))))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -497,7 +497,7 @@ definition{
   parameters: [name : Bytes],
   result: (Option Nat),
   body: (if (prim equal name (rtext "parse") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "collect") : Bool) then (ctor Option.some [Nat] 1) else (ctor Option.none [Nat]))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -506,7 +506,7 @@ definition{
   parameters: [name : Bytes],
   result: Nat,
   body: (if (prim equal name (rtext "parse") : Bool) then 0 else (if (prim equal name (rtext "collect") : Bool) then 0 else 0)),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -515,7 +515,7 @@ definition{
   parameters: [name : Bytes],
   result: (Option Bytes),
   body: (if (prim equal name (rtext "Clone") : Bool) then (ctor Option.some [Bytes] (rtext "clone")) else (if (prim equal name (rtext "Drop") : Bool) then (ctor Option.some [Bytes] (rtext "drop")) else (ctor Option.none [Bytes]))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -524,7 +524,7 @@ definition{
   parameters: [name : Bytes],
   result: Bool,
   body: (if (prim equal name (rtext "Clone") : Bool) then false else (if (prim equal name (rtext "Drop") : Bool) then true else false)),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -533,7 +533,7 @@ definition{
   parameters: [name : Bytes],
   result: Bool,
   body: (if (prim equal name (rtext "Some") : Bool) then true else (if (prim equal name (rtext "Ok") : Bool) then true else (if (prim equal name (rtext "Err") : Bool) then true else false))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -544,7 +544,7 @@ definition{
   body: (prim list_fold (fun [wanted] (found : (Option TraitE)) (entry : TraitE) => (match found
     | Option.some held => (ctor Option.some [TraitE] held)
     | Option.none => (if (bEq (project entry name) wanted) then (ctor Option.some [TraitE] entry) else (ctor Option.none [TraitE])))) (ctor Option.none [TraitE]) (project sc traits) : (Option TraitE)),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -555,7 +555,7 @@ definition{
   body: (prim list_fold (fun [wanted] (found : (Option StructE)) (entry : StructE) => (match found
     | Option.some held => (ctor Option.some [StructE] held)
     | Option.none => (if (bEq (project entry name) wanted) then (ctor Option.some [StructE] entry) else (ctor Option.none [StructE])))) (ctor Option.none [StructE]) (project sc structs) : (Option StructE)),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -566,7 +566,7 @@ definition{
   body: (prim list_fold (fun [wanted] (found : (Option EnumE)) (entry : EnumE) => (match found
     | Option.some held => (ctor Option.some [EnumE] held)
     | Option.none => (if (bEq (project entry name) wanted) then (ctor Option.some [EnumE] entry) else (ctor Option.none [EnumE])))) (ctor Option.none [EnumE]) (project sc enums) : (Option EnumE)),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -577,7 +577,7 @@ definition{
   body: (prim list_fold (fun [wanted] (found : (Option Entry)) (entry : Entry) => (match found
     | Option.some held => (ctor Option.some [Entry] held)
     | Option.none => (if (bEq (project entry name) wanted) then (ctor Option.some [Entry] entry) else (ctor Option.none [Entry])))) (ctor Option.none [Entry]) (project sc aliases) : (Option Entry)),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -588,7 +588,7 @@ definition{
   body: (prim list_fold (fun [wanted] (found : (Option Entry)) (entry : Entry) => (match found
     | Option.some held => (ctor Option.some [Entry] held)
     | Option.none => (if (bEq (project entry name) wanted) then (ctor Option.some [Entry] entry) else (ctor Option.none [Entry])))) (ctor Option.none [Entry]) (project sc functions) : (Option Entry)),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -597,7 +597,7 @@ definition{
   parameters: [sc : Sc, wanted : Bytes],
   result: (List Nat),
   body: (prim list_fold (fun [wanted] (counts : (List Nat)) (entry : Entry) => (if (bEq (project entry name) wanted) then (prim append counts (cons (project entry n) (nil Nat)) : (List Nat)) else counts)) (nil Nat) (project sc methods) : (List Nat)),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -606,7 +606,7 @@ definition{
   parameters: [counts : (List Nat), given : Nat],
   result: Bool,
   body: (prim list_fold (fun [given] (found : Bool) (count : Nat) => (if found then true else (count =? given))) false counts : Bool),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -615,7 +615,7 @@ definition{
   parameters: [counts : (List Nat)],
   result: Bytes,
   body: (prim list_fold (fun [] (text : Bytes) (count : Nat) => (if (prim equal text (rtext "") : Bool) then (rdec count) else (rcat text (rcat (rtext "/") (rdec count))))) (rtext "") counts : Bytes),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -627,7 +627,7 @@ definition{
     | Variant.VUnit n => n
     | Variant.VTuple n ts => n
     | Variant.VRecord n fs ts => n),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -639,7 +639,7 @@ definition{
     | Variant.VUnit n => 0
     | Variant.VTuple n ts => (tyLen ts)
     | Variant.VRecord n fs ts => (tyLen ts)),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -650,7 +650,7 @@ definition{
   body: (prim list_fold (fun [wanted] (found : (Option Variant)) (entry : Variant) => (match found
     | Option.some held => (ctor Option.some [Variant] held)
     | Option.none => (if (bEq (variantName entry) wanted) then (ctor Option.some [Variant] entry) else (ctor Option.none [Variant])))) (ctor Option.none [Variant]) variants : (Option Variant)),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -664,7 +664,7 @@ definition{
     | Variant.VUnit n => (ctor Option.none [Nat])
     | Variant.VTuple n ts => (ctor Option.some [Nat] (tyLen ts))
     | Variant.VRecord n fs ts => (ctor Option.none [Nat]))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -678,7 +678,7 @@ definition{
     | Variant.VUnit n => (ctor Option.none [(List Bytes)])
     | Variant.VTuple n ts => (ctor Option.none [(List Bytes)])
     | Variant.VRecord n fs ts => (ctor Option.some [(List Bytes)] fs))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -697,7 +697,7 @@ definition{
           | Option.some held => (variantRecord (project held variants) middle)
           | Option.none => (ctor Option.none [(List Bytes)]))
         | List.cons last others => (ctor Option.none [(List Bytes)])))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -708,7 +708,7 @@ definition{
   body: (match (findStruct sc name)
     | Option.some held => (ctor Option.some [Nat] (prim length (project held fields) : Nat))
     | Option.none => (ctor Option.none [Nat])),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -719,7 +719,7 @@ definition{
   body: (match (findEnum sc owner)
     | Option.some held => (variantTuple (project held variants) name)
     | Option.none => (ctor Option.none [Nat])),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -748,7 +748,7 @@ definition{
     | Ty.TyAbsent => (nil Bytes)
     | Ty.TyNil => (nil Bytes)
     | Ty.TyCons head tail => (cons (rdec at) (indexNames tail (at + 1)))),
-  axioms: [propext],
+  axioms: [],
   executable: true,
   recursive_argument: tys
 }
@@ -760,7 +760,7 @@ definition{
   body: (prim list_fold (fun [wanted] (found : (Option Var)) (entry : Var) => (match found
     | Option.some held => (ctor Option.some [Var] held)
     | Option.none => (if (bEq (project entry name) wanted) then (ctor Option.some [Var] entry) else (ctor Option.none [Var])))) (ctor Option.none [Var]) vars : (Option Var)),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -773,7 +773,7 @@ definition{
     | List.cons head rest => (match at
       | Nat.zero => (project head bounds)
       | Nat.succ below => (nthBounds rest below))),
-  axioms: [propext],
+  axioms: [],
   executable: true,
   recursive_argument: gs
 }
@@ -803,7 +803,7 @@ definition{
     | Ty.TyAbsent => (rtext "-")
     | Ty.TyNil => (rtext "")
     | Ty.TyCons head tail => (rcat (tyShow head) (rcat (rtext ";") (tyShow tail)))),
-  axioms: [propext],
+  axioms: [],
   executable: true,
   recursive_argument: subject
 }
@@ -813,7 +813,7 @@ definition{
   parameters: [sig : Sig],
   result: Bytes,
   body: (rcat (project sig name) (rcat (rtext "|") (rcat (if (project sig receiver) then (rtext "r") else (rtext "-")) (rcat (if (project sig exclusive) then (rtext "x") else (rtext "-")) (rcat (rtext "|") (rcat (prim list_fold (fun [] (text : Bytes) (param : Param) => (rcat text (rcat (project param name) (rcat (if (project param mutable) then (rtext ":m:") else (rtext ":-:")) (rcat (tyShow (project param ty)) (rtext ",")))))) (rtext "") (project sig params) : Bytes) (rcat (rtext "|") (tyShow (project sig result))))))))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -838,7 +838,7 @@ definition{
     | Pat.PCons head tail => (match (bindsOf acc head)
     | Result.ok next => (bindsOf next tail)
     | Result.error problem => (ctor Result.error [(List Var), Bytes] problem))),
-  axioms: [propext],
+  axioms: [],
   executable: true,
   recursive_argument: p
 }
@@ -854,7 +854,7 @@ definition{
       | Option.none => (match (findAlias sc name)
         | Option.some held3 => (ctor Option.some [Nat] (project held3 n))
         | Option.none => (typeArity name)))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -869,7 +869,7 @@ definition{
       | Option.none => (match (findAlias sc name)
         | Option.some held3 => false
         | Option.none => (typeHeap name)))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -904,7 +904,7 @@ definition{
     | Ty.TyCons head tail => (match (tyOk sc head params hasSelf)
     | Option.some stop => (ctor Option.some [Bytes] stop)
     | Option.none => (tyOk sc tail params hasSelf))),
-  axioms: [propext],
+  axioms: [],
   executable: true,
   recursive_argument: subject
 }
@@ -922,7 +922,7 @@ definition{
     | Option.none => (match (stdTraitMethod bound)
       | Option.some m => true
       | Option.none => false)) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: bound-trait: ") (rcat (rtick (rcat (project g name) (rcat (rtext ": ") bound))) (rtext " names no declared trait"))))))) (ctor Option.none [Bytes]) (project g bounds) : (Option Bytes)))) (ctor Option.none [Bytes]) gs : (Option Bytes)),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -933,7 +933,7 @@ definition{
   body: (prim list_fold (fun [hasSelf, params, sc] (found : (Option Bytes)) (p : Param) => (match found
     | Option.some stop => (ctor Option.some [Bytes] stop)
     | Option.none => (tyOk sc (project p ty) params hasSelf))) (ctor Option.none [Bytes]) ps : (Option Bytes)),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -944,7 +944,7 @@ definition{
   body: (if (if (project sig exclusive) then (not (project sig receiver)) else false) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: function-receiver: ") (rcat (rtick (project sig name)) (rtext " is exclusive without a receiver")))) else (match (paramsOk sc (project sig params) params hasSelf)
     | Option.some stop => (ctor Option.some [Bytes] stop)
     | Option.none => (tyOk sc (project sig result) params hasSelf))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -957,7 +957,7 @@ definition{
     | Option.none => (match (stdTraitMethod bound)
       | Option.some m => (bEq m method)
       | Option.none => false)))) false bounds : Bool),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -974,7 +974,7 @@ definition{
     | Option.none => (if (if (inList (project sc imported) head) then true else (if (match (findStruct sc head)
     | Option.some held2 => true
     | Option.none => false) then true else (if (inList (project sc statics) head) then true else (if (isInteger head) then true else (if (bEq head (rtext "None")) then true else (if (bEq head (rtext "Self")) then true else (bEq head (rtext "usize")))))))) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: path-name: ") (rcat (rtick (joinWith path "::")) (rcat (rtext " starts at ") (rcat (rtick head) (rtext ", which no `use` or item declares"))))))))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -989,7 +989,7 @@ definition{
         | Option.some count => true
         | Option.none => false)
       | List.cons middle more => false)),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -1004,7 +1004,7 @@ definition{
       | Option.some held => (match (findVariant (project held variants) variant)
         | Option.some found => (if ((variantTypes found) =? (patLen items)) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: pattern-fields: ") (rcat (rtick (joinWith path "::")) (rcat (rtext " is matched with ") (rcat (rdec (patLen items)) (rtext " patterns")))))))
         | Option.none => (ctor Option.some [Bytes] (rcat (rtext "runtime support: pattern-fields: ") (rcat (rtick (joinWith path "::")) (rcat (rtext " is matched with ") (rcat (rdec (patLen items)) (rtext " patterns"))))))))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -1017,7 +1017,7 @@ definition{
     | Option.some held => (prim list_fold (fun [held, path] (found : (Option Bytes)) (name : Bytes) => (match found
     | Option.some stop => (ctor Option.some [Bytes] stop)
     | Option.none => (if (inList held name) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: pattern-fields: ") (rcat (rtick (joinWith path "::")) (rcat (rtext " has no field ") (rtick name)))))))) (ctor Option.none [Bytes]) names : (Option Bytes))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -1046,7 +1046,7 @@ definition{
     | Pat.PCons head tail => (match (patOk sc head)
     | Option.some stop => (ctor Option.some [Bytes] stop)
     | Option.none => (patOk sc tail))),
-  axioms: [propext],
+  axioms: [],
   executable: true,
   recursive_argument: p
 }
@@ -1076,7 +1076,7 @@ definition{
     | Ty.TyAbsent => true
     | Ty.TyNil => false
     | Ty.TyCons d0 d1 => false),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -1105,7 +1105,7 @@ definition{
     | Ty.TyAbsent => false
     | Ty.TyNil => false
     | Ty.TyCons d0 d1 => false),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -1134,7 +1134,7 @@ definition{
     | Ty.TyAbsent => (ctor Ty.TyAbsent)
     | Ty.TyNil => (ctor Ty.TyNil)
     | Ty.TyCons d0 d1 => (ctor Ty.TyCons d0 d1)),
-  axioms: [propext],
+  axioms: [],
   executable: true,
   recursive_argument: t
 }
@@ -1144,7 +1144,7 @@ definition{
   parameters: [fr : Fr, bound : (List Var), loop : Bool],
   result: Fr,
   body: (record Fr {generics := (project fr generics), vars := (prim append bound (project fr vars) : (List Var)), selfTy := (project fr selfTy), inLoop := (if (project fr inLoop) then true else loop)}),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -1153,7 +1153,7 @@ definition{
   parameters: [unit : Unit],
   result: Fr,
   body: (record Fr {generics := (nil Generic), vars := (nil Var), selfTy := (ctor Ty.TyAbsent), inLoop := false}),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -1182,7 +1182,7 @@ definition{
     | Ty.TyAbsent => false
     | Ty.TyNil => false
     | Ty.TyCons d0 d1 => false),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -1211,7 +1211,7 @@ definition{
     | Ty.TyAbsent => t
     | Ty.TyNil => t
     | Ty.TyCons d0 d1 => t),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -1240,7 +1240,7 @@ definition{
     | Ty.TyAbsent => (ctor Ty.TyUnknown)
     | Ty.TyNil => (ctor Ty.TyUnknown)
     | Ty.TyCons d0 d1 => (ctor Ty.TyUnknown)),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -1286,7 +1286,7 @@ definition{
     | Expr.ECons d0 d1 => (ctor Ty.TyUnknown)
     | Expr.ELetS d0 d1 d2 d3 => (ctor Ty.TyUnknown)
     | Expr.EArm d0 d1 d2 d3 => (ctor Ty.TyUnknown)),
-  axioms: [propext],
+  axioms: [],
   executable: true,
   recursive_argument: e
 }
@@ -1333,7 +1333,7 @@ definition{
     | Expr.ECons d0 d1 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
     | Expr.ELetS d0 d1 d2 d3 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
     | Expr.EArm d0 d1 d2 d3 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))),
-  axioms: [propext],
+  axioms: [],
   executable: true,
   recursive_argument: place
 }
@@ -1349,7 +1349,7 @@ definition{
       | List.cons name more => (match more
         | List.nil => (callHeap owner name)
         | List.cons extra others => false))) else false),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -1370,7 +1370,7 @@ definition{
           | Option.some count => (ctor Option.some [Nat] count)
           | Option.none => (variantArity sc owner name))
         | List.cons extra others => (ctor Option.none [Nat])))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -1381,7 +1381,7 @@ definition{
   body: (if (callAllocates sc path) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: hidden-allocation: ") (rcat (rtext "rust-core renders ") (rcat (rtick (joinWith path "::")) (rtext ", which requires heap allocation"))))) else (match (callExpected sc path)
     | Option.none => (ctor Option.some [Bytes] (rcat (rtext "runtime support: call-name: ") (rcat (rtick (joinWith path "::")) (rtext " is neither declared nor in the closed table"))))
     | Option.some expected => (if (expected =? given) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: call-arity: ") (rcat (rtick (joinWith path "::")) (rcat (rtext " takes ") (rcat (rdec expected) (rcat (rtext " arguments, given ") (rdec given)))))))))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -1410,7 +1410,7 @@ definition{
     | Ty.TyAbsent => (ctor Option.none [Bytes])
     | Ty.TyNil => (ctor Option.none [Bytes])
     | Ty.TyCons d0 d1 => (ctor Option.none [Bytes])),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -1423,7 +1423,7 @@ definition{
     | Option.none => (let counts : (List Nat) := (methodCounts sc name); (match counts
       | List.nil => (ctor Option.some [Bytes] (rcat (rtext "runtime support: method-name: ") (rcat (rtick name) (rtext " is a method of no declared trait or impl and not in the closed table"))))
       | List.cons head rest => (if (hasCount counts given) then (boundCheck sc fr recv name) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: method-arity: ") (rcat (rtick name) (rcat (rtext " takes ") (rcat (joinCounts counts) (rcat (rtext " arguments, given ") (rdec given))))))))))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -1467,7 +1467,7 @@ definition{
     | Expr.ECons d0 d1 => false
     | Expr.ELetS d0 d1 d2 d3 => false
     | Expr.EArm d0 d1 d2 d3 => false),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -1511,7 +1511,7 @@ definition{
     | Expr.ECons d0 d1 => false
     | Expr.ELetS d0 d1 d2 d3 => false
     | Expr.EArm d0 d1 d2 d3 => false),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -1520,7 +1520,7 @@ definition{
   parameters: [names : (List Bytes), held : (List Bytes), values : Nat],
   result: Bool,
   body: (if ((prim length names : Nat) =? (prim length held : Nat)) then (if ((prim length names : Nat) =? values) then (if (prim list_fold (fun [held] (all : Bool) (name : Bytes) => (if all then (inList held name) else false)) true names : Bool) then (prim list_fold (fun [names] (all : Bool) (name : Bytes) => (if all then (inList names name) else false)) true held : Bool) else false) else false) else false),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -1620,7 +1620,7 @@ definition{
     | Expr.ECons d0 d1 => (ctor Option.none [Bytes])
     | Expr.ELetS d0 d1 d2 d3 => (ctor Option.none [Bytes])
     | Expr.EArm d0 d1 d2 d3 => (ctor Option.none [Bytes])),
-  axioms: [propext],
+  axioms: [],
   executable: true,
   mutual: CheckRt,
   recursive_argument: e
@@ -1668,7 +1668,7 @@ definition{
     | Option.none => (exprsOk sc fr tail))
     | Expr.ELetS d0 d1 d2 d3 => (ctor Option.none [Bytes])
     | Expr.EArm d0 d1 d2 d3 => (ctor Option.none [Bytes])),
-  axioms: [propext],
+  axioms: [],
   executable: true,
   mutual: CheckRt,
   recursive_argument: es
@@ -1716,7 +1716,7 @@ definition{
     | Expr.ECons d0 d1 => (ctor Option.none [Bytes])
     | Expr.ELetS d0 d1 d2 d3 => (ctor Option.none [Bytes])
     | Expr.EArm d0 d1 d2 d3 => (ctor Option.none [Bytes])),
-  axioms: [propext],
+  axioms: [],
   executable: true,
   mutual: CheckRt,
   recursive_argument: b
@@ -1772,7 +1772,7 @@ definition{
           | Option.some problem4 => (ctor Result.error [Fr, Bytes] problem4)
           | Option.none => (stmtsOk sc (withBound fr bound false) rest)))))
     | Expr.EArm d0 d1 d2 d3 => (ctor Result.ok [Fr, Bytes] fr)),
-  axioms: [propext],
+  axioms: [],
   executable: true,
   mutual: CheckRt,
   recursive_argument: stmts
@@ -1826,7 +1826,7 @@ definition{
     | Option.none => (match (exprOk sc inner body)
     | Option.some stop => (ctor Option.some [Bytes] stop)
     | Option.none => (armsOk sc fr rest))))))),
-  axioms: [propext],
+  axioms: [],
   executable: true,
   mutual: CheckRt,
   recursive_argument: arms
@@ -1841,7 +1841,7 @@ definition{
     | Result.ok vars => (match (findVar vars (project param name))
       | Option.some held => (ctor Result.error [(List Var), Bytes] (rcat (rtext "runtime support: param-duplicate: ") (rcat (rtick (project param name)) (rcat (rtext " names two parameters of ") (rtick fname)))))
       | Option.none => (ctor Result.ok [(List Var), Bytes] (cons (record Var {name := (project param name), mutable := (project param mutable), ty := (project param ty)}) vars))))) acc ps : (Result (List Var) Bytes)),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -1858,7 +1858,7 @@ definition{
     | Result.ok start => (match (paramVars (ctor Result.ok [(List Var), Bytes] start) (project sg params) (project sg name))
       | Result.error problem2 => (ctor Option.some [Bytes] problem2)
       | Result.ok vars => (blockOk sc (record Fr {generics := gens, vars := vars, selfTy := selfTy, inLoop := false}) (project f body))))))))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -1871,7 +1871,7 @@ definition{
     | Option.none => (match (stdTraitMethod tr)
       | Option.some method => (ctor Option.some [(List Sig)] (cons (record Sig {name := method, receiver := true, exclusive := (stdTraitExclusive tr), params := (nil Param), result := (if (stdTraitExclusive tr) then (ctor Ty.TyUnit) else (ctor Ty.TySelf))}) (nil Sig)))
       | Option.none => (ctor Option.none [(List Sig)]))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -1880,7 +1880,7 @@ definition{
   parameters: [fns : (List FnDef), wanted : Bytes],
   result: Nat,
   body: (prim list_fold (fun [wanted] (count : Nat) (f : FnDef) => (if (bEq (project (project f sig) name) wanted) then (count + 1) else count)) 0 fns : Nat),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -1891,7 +1891,7 @@ definition{
   body: (prim list_fold (fun [wanted] (found : (Option FnDef)) (f : FnDef) => (match found
     | Option.some held => (ctor Option.some [FnDef] held)
     | Option.none => (if (bEq (project (project f sig) name) wanted) then (ctor Option.some [FnDef] f) else (ctor Option.none [FnDef])))) (ctor Option.none [FnDef]) fns : (Option FnDef)),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -1900,7 +1900,7 @@ definition{
   parameters: [sigs : (List Sig), wanted : Bytes],
   result: Bool,
   body: (prim list_fold (fun [wanted] (found : Bool) (sig : Sig) => (if found then true else (bEq (project sig name) wanted))) false sigs : Bool),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -1921,7 +1921,7 @@ definition{
     | Option.none => (prim list_fold (fun [generics, sc, sigs, tr, ty] (foundFn : (Option Bytes)) (f : FnDef) => (match foundFn
     | Option.some stop => (ctor Option.some [Bytes] stop)
     | Option.none => (if (not (hasSigNamed sigs (project (project f sig) name))) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: impl-extra: ") (rcat (rtext "`impl ") (rcat tr (rcat (rtext "` states ") (rcat (rtick (project (project f sig) name)) (rtext ", which the trait does not"))))))) else (if (project f public) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: impl-visibility: ") (rcat (rtick (project (project f sig) name)) (rcat (rtext " of `impl ") (rcat tr (rtext "` is public; a trait method has the trait's visibility")))))) else (fnOk sc generics ty f))))) (ctor Option.none [Bytes]) fns : (Option Bytes))))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -1930,7 +1930,7 @@ definition{
   parameters: [sc : Sc, name : Bytes],
   result: (Result Sc Bytes),
   body: (if (inList (project sc declared) name) then (ctor Result.error [Sc, Bytes] (rcat (rtext "runtime support: duplicate-name: ") (rcat (rtick name) (rtext " is declared twice")))) else (ctor Result.ok [Sc, Bytes] (record Sc {core := (project sc core), declared := (prim append (project sc declared) (cons name (nil Bytes)) : (List Bytes)), traits := (project sc traits), structs := (project sc structs), enums := (project sc enums), aliases := (project sc aliases), statics := (project sc statics), functions := (project sc functions), methods := (project sc methods), imported := (project sc imported)}))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -1939,7 +1939,7 @@ definition{
   parameters: [sc : Sc, sigs : (List Sig)],
   result: Sc,
   body: (prim list_fold (fun [] (scope : Sc) (sig : Sig) => (record Sc {core := (project scope core), declared := (project scope declared), traits := (project scope traits), structs := (project scope structs), enums := (project scope enums), aliases := (project scope aliases), statics := (project scope statics), functions := (project scope functions), methods := (prim append (project scope methods) (cons (record Entry {name := (project sig name), n := (prim length (project sig params) : Nat)}) (nil Entry)) : (List Entry)), imported := (project scope imported)})) sc sigs : Sc),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -1948,7 +1948,7 @@ definition{
   parameters: [sc : Sc, fns : (List FnDef)],
   result: Sc,
   body: (prim list_fold (fun [] (scope : Sc) (f : FnDef) => (record Sc {core := (project scope core), declared := (project scope declared), traits := (project scope traits), structs := (project scope structs), enums := (project scope enums), aliases := (project scope aliases), statics := (project scope statics), functions := (project scope functions), methods := (prim append (project scope methods) (cons (record Entry {name := (project (project f sig) name), n := (prim length (project (project f sig) params) : Nat)}) (nil Entry)) : (List Entry)), imported := (project scope imported)})) sc fns : Sc),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -1966,7 +1966,7 @@ definition{
   body: (project (prim list_fold (fun [] (seen : Seen) (variant : Variant) => (match (project seen dup)
     | Option.some held => seen
     | Option.none => (if (inList (project seen names) (variantName variant)) then (record Seen {names := (project seen names), dup := (ctor Option.some [Bytes] (variantName variant))}) else (record Seen {names := (cons (variantName variant) (project seen names)), dup := (ctor Option.none [Bytes])})))) (record Seen {names := (nil Bytes), dup := (ctor Option.none [Bytes])}) variants : Seen) dup),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -1977,7 +1977,7 @@ definition{
   body: (project (prim list_fold (fun [] (seen : Seen) (sig : Sig) => (match (project seen dup)
     | Option.some held => seen
     | Option.none => (if (inList (project seen names) (project sig name)) then (record Seen {names := (project seen names), dup := (ctor Option.some [Bytes] (project sig name))}) else (record Seen {names := (cons (project sig name) (project seen names)), dup := (ctor Option.none [Bytes])})))) (record Seen {names := (nil Bytes), dup := (ctor Option.none [Bytes])}) sigs : Seen) dup),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -2018,7 +2018,7 @@ definition{
     | Result.ok s2 => (match (firstDuplicate variants)
       | Option.some twice => (ctor Result.error [Sc, Bytes] (rcat (rtext "runtime support: variant-name: ") (rcat (rtick name) (rcat (rtext " declares ") (rcat (rtick twice) (rtext " twice"))))))
       | Option.none => (ctor Result.ok [Sc, Bytes] (record Sc {core := (project s2 core), declared := (project s2 declared), traits := (project s2 traits), structs := (project s2 structs), enums := (prim append (project s2 enums) (cons (record EnumE {name := name, variants := variants, gcount := (prim length generics : Nat)}) (nil EnumE)) : (List EnumE)), aliases := (project s2 aliases), statics := (project s2 statics), functions := (project s2 functions), methods := (project s2 methods), imported := (project s2 imported)}))))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -2029,7 +2029,7 @@ definition{
   body: (prim list_fold (fun [] (state : (Result Sc Bytes)) (item : Item) => (match state
     | Result.error problem => (ctor Result.error [Sc, Bytes] problem)
     | Result.ok held => (pass1Item held item))) (ctor Result.ok [Sc, Bytes] sc) items : (Result Sc Bytes)),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -2069,7 +2069,7 @@ definition{
     | Variant.VUnit n => (ctor Option.none [Bytes])
     | Variant.VTuple n tys => (tyOk sc tys (prim length generics : Nat) false)
     | Variant.VRecord n fs tys => (tyOk sc tys (prim length generics : Nat) false)))) (ctor Option.none [Bytes]) variants : (Option Bytes))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 
@@ -2084,7 +2084,7 @@ definition{
     | Option.none => (pass2Item sc item))) (ctor Option.none [Bytes]) (project krate items) : (Option Bytes))
       | Option.some problem2 => (ctor Result.error [Unit, Bytes] problem2)
       | Option.none => (ctor Result.ok [Unit, Bytes] ()))),
-  axioms: [propext],
+  axioms: [],
   executable: true
 }
 \end{semanticmodule}
