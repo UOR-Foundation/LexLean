@@ -8,6 +8,8 @@ The complete normative contract is [SPEC.md](SPEC.md) (`LEXLEAN-SPEC-1`). Every 
 
 LexLean compiles `.lex.tex` modules written in a closed controlled language: every word, symbol, and control must be declared by a versioned lexicon package, every sentence parses under a fixed grammar, and one typed intermediate representation generates both the canonical LaTeX document and the prose-free Lean 4 program. Verification compiles the generated Lean under the pinned `leanprover/lean4:v4.32.1` toolchain, replays every module with `leanchecker`, audits axioms with exact `#print axioms` parsing, and publishes a content-addressed attestation.
 
+A language-1.2 project can also declare production roots, which LexLean compiles to Rust packages with a kernel-checked certificate per root that the packaged program means what the root means (`PD-01`..`PD-08`, `TC-01`..`TC-07`, `RB-01`..`RB-14`, `SP-01`..`SP-20`, `PX-01`..`PX-13`). Production compilation exists so that every production root is certified optimal over its declared universe (SPEC.md §3): a GNAF certificate covers every system of a universe fixed before any optimizer runs (`GN-03`, `GC-03`, `GC-04`), and export binds it to the root (`PX-06`). The claim is never over an unrestricted universe (`GN-05`), representation minimality is not execution optimality without a proved bridge (`GC-07`), and wall time on hardware is a measurement, never proof (SPEC.md §4.2).
+
 ```text
 lexlean init --name my-doc --module-prefix MyDoc
 lexlean lock

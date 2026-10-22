@@ -98,14 +98,19 @@ LexLean compiles a closed, glossary-defined mathematical document language with 
 2. canonical human-readable LaTeX;
 3. prose-free Lean 4 source;
 4. source maps and complete lexical-coverage records;
-5. deterministic build manifests; and
-6. verification attestations produced only after Lean elaboration, kernel replay, and axiom-policy checking succeed.
+5. deterministic build manifests;
+6. verification attestations produced only after Lean elaboration, kernel replay, and axiom-policy checking succeed; and
+7. for each production root of a language-1.2 project, a Rust package for each of its targets with the certificates that bind it to the root (§17.13–§17.19, §24.7).
 
 The central property is:
 
 > No accepted LexLean document contains an uninterpreted word, symbol, punctuation mark, control sequence, reference, or semantically relevant structural token.
 
 The document is a program. Human-visible mathematical text and kernel-visible Lean declarations are two renderings of one linked semantic object.
+
+Production compilation is the path from a verified project to executable code. Each production root (§17.13) is lowered to a program of the production realization calculus (§17.14) and rendered to Rust (§17.16); kernel-checked certificates relate the root's meaning to the lowered program and to each rendering (§17.17), and export publishes the packages with that evidence (§24.7).
+
+Production compilation exists so that every production root is certified optimal over its declared universe: a universe, a machine, and an objective fixed before any optimizer runs (§17.15), and a certificate whose premises cover every system of that universe (§17.18). A root is claimed optimal by its certificate and by nothing else; a root exported without one is certified to preserve its meaning and carries no optimality claim. §4.2 states what the guarantee never claims.
 
 ---
 
@@ -134,6 +139,8 @@ LexLean 1.0 MUST support:
 - a Rust library API and command-line interface;
 - deterministic, content-addressed build artifacts.
 
+Language 1.2 additionally MUST support production compilation as §3 states it: production eligibility (§17.13), the production realization calculus (§17.14), GNAF requests and certification (§17.15, §17.18), the Rust backend (§17.16), semantic preservation (§17.17), the differential validation oracle (§17.19), and production export (§24.7).
+
 ### 4.2 LexLean 1.0 deliberately does not support
 
 The following are outside the LexLean 1.0 language and MUST be rejected rather than approximated:
@@ -153,7 +160,10 @@ The following are outside the LexLean 1.0 language and MUST be rejected rather t
 - probabilistic or model-based translation;
 - a claim that `leanchecker` is an independent proof checker;
 - a claim that successful Rust generation alone establishes a theorem;
-- a claim that imported libraries are proved by LexLean.
+- a claim that imported libraries are proved by LexLean;
+- a claim of optimality over an unrestricted program universe, every calculus program and every Rust program included, rather than over the universe a GNAF request declares (§17.15);
+- a claim that representation minimality is execution optimality without a proved bridge (§17.18);
+- a claim that a certificate establishes wall time on hardware, which is only measured and recorded as an `open` ledger row (§27.3).
 
 Complex Lean objects that LexLean 1.0 cannot define MAY be imported as closed external glossary entries. Their guarantees belong to their upstream repositories. LexLean verifies only that the generated declarations elaborate and check in the pinned environment and that their observed axiom dependencies satisfy their explicit policies.
 
