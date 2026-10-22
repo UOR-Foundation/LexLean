@@ -1,6 +1,14 @@
 {
   "roots": [
     {
+      "name": "apply_moves",
+      "root": "LexLeanBoot.RustMoves.applyMoves",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "audit_tokens",
       "root": "LexLeanBoot.TokenAudit.auditTokens",
       "targets": [
