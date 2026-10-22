@@ -9748,7 +9748,7 @@ packages (the records are regenerated at landing).
 
 `BS-06` holds the two production roots of `LexLeanBoot.RustPrint`
 (`bootstrap/src/RustPrint.lex.tex`, over `RustAst.lex.tex`) to the oracle,
-`calculus::rust::ast::{print, print_expr}`. The case runs 611 vectors of
+`calculus::rust::ast::{print, print_expr}`. The case runs 613 vectors of
 `printCrate` (470 the distinct committed crates: 235 lowered by the renderer
 from 176 programs, and the crates of 259 packages; the hand-built crates; the
 real header of each profile; 57 refused for a capacity one byte short) and
@@ -9932,7 +9932,14 @@ more), and on the normative host the evaluator on the 272 of them of at most
 `deadFunctions`, 24 s for `fallibleFunctions`, 26 s for `lowerTypes`), 6,000
 seeded runs under rustc (35 binaries, 278 s), twenty planted defects, and the
 production export. The case up to the comparison with the committed packages
-takes 2,589 s on this host (4 cores).
+takes 2,589 s on this host (4 cores), and stops there on this tree with the
+packages and the records left to the maintainer's regeneration: the packages
+`lower_types`, `dead_functions` and `fallible_functions`, `bootstrap/expected/`,
+the locks, and the PD-08 rows. The rows measured in a debug build with the four
+packages of `BS-07` are 4,063,232 bytes for `lower_types`, 4,063,232 for
+`dead_functions` (as in the first slice), and 4,063,232 for `fallible_functions`
+(4,128,768 in the first slice: one step of the bisection less, with the corpus of
+the second slice).
 
 Measured certificates after the slice (the largest part of each root, in
 bytes; the budget is 3,145,728, three quarters of `max_file_bytes`):
