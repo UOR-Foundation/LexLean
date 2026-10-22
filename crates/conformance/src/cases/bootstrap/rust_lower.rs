@@ -58,8 +58,8 @@ const MOVES: &str = "LexLeanBoot.RustMoves";
 /// The crates of at most this many expressions are the evaluator's share.
 const MOVES_EVALUATOR_NODES: usize = 400;
 /// The crates the moves are run on, and those within the evaluator's bound.
-const MOVES_CRATES: usize = 0;
-const MOVES_WITHIN: usize = 0;
+const MOVES_CRATES: usize = 347;
+const MOVES_WITHIN: usize = 312;
 const MOVES_EVALUATOR_MUTANTS: usize = 150;
 const MOVES_RUSTC_MUTANTS: usize = 1_500;
 
@@ -610,7 +610,7 @@ fn types_leg(legs: &Legs) -> &Run {
 /// of them and of the committed programs, as the statement of the register row
 /// and SPEC.md §17.23 count them.
 const RULE_PROGRAMS: usize = 22;
-const VECTORS: usize = 310;
+const VECTORS: usize = 311;
 const VECTORS_WITHIN: usize = 272;
 const LITERALS: usize = 200;
 const PRIM_ROUNDS: usize = 3;
