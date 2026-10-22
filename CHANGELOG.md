@@ -29,7 +29,9 @@ and Unreleased holds what has landed since.
   that language 1.2 refuses with `LLP2003` since #149. The negative fixture
   `migrate-module-without-notation` holds a module that is not a language-1.1
   module (a top-level member the schema forbids), which the notation cannot
-  spell.
+  spell. A file that changes between the proof and the replacement refuses the
+  migration (`LLV7010`), and a replacement that fails restores every file
+  already replaced and reports every restore that failed.
   `Engine` keeps its seven entry points; the function is
   `lexlean::api::migrate::migrate`. The register is 444 IDs. The notation
   reader no longer takes a keyword followed by `{` inside a parenthesised term

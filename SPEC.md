@@ -8959,7 +8959,10 @@ references of the sources and the path lexicon packages to `1.2.0`, rewrites
 the `language` row, and regenerates the lock as `lexlean/lock/2`. `--to` takes
 `1.2` and nothing else. The result is proven in a scratch copy (locked and
 checked as language 1.2) before any file is written, the files are then
-replaced together, and a refusal writes nothing and creates no build root:
+replaced together (a file that changed between the proof and the replacement
+refuses the migration with `LLV7010` and nothing is written, and a replacement
+that fails restores every file already replaced, reporting every restore that
+failed), and a refusal writes nothing and creates no build root:
 `LLC0103` for a project that is not language 1.1, `LLP2003` for a module that is
 not a language-1.1 data-form semantic module or whose notation does not
 read back to it, and the diagnostics of the scratch check for a project that does not

@@ -12,12 +12,19 @@
 //! and checked as a language-1.2 project, so a module the notation cannot
 //! express, a source language 1.2 does not link, and a package it does not
 //! resolve are all refused before the first byte of the real project changes.
+//!
+//! The proof reads the project without the project mutation lock, so the files
+//! it read are fingerprinted; under the lock each one is read again and the
+//! migration is refused, writing nothing, if any has changed since, so an
+//! editor save or a `fmt` landing in between is never overwritten by text
+//! derived from the file it replaced.
 
 use std::collections::BTreeMap;
 use std::io::Write;
 
 use camino::{Utf8Path, Utf8PathBuf};
 use serde::Deserialize;
+use sha2::{Digest, Sha256};
 
 use super::{acquire_lock, host_failure, CheckRequest, Engine, LockRequest};
 use crate::code;
@@ -190,21 +197,40 @@ fn migrated_manifest(relative: &str, text: &str) -> Result<String, Diagnostic> {
 /// Every file the migration rewrites, project-relative, with its new bytes.
 type Rewrites = BTreeMap<String, Vec<u8>>;
 
-fn read_text(engine: &Engine, relative: &str) -> Result<String, LexLeanError> {
+/// The SHA-256 of every file the rewrites were derived from, by
+/// project-relative path: exactly the bytes the proof read.
+type Inputs = BTreeMap<String, [u8; 32]>;
+
+/// What the proof is of: the new files, the bytes they were derived from, and
+/// the names of the modules and manifests among them.
+struct Plan {
+    files: Rewrites,
+    inputs: Inputs,
+    modules: Vec<String>,
+    manifests: Vec<String>,
+}
+
+fn fingerprint(bytes: &[u8]) -> [u8; 32] {
+    Sha256::digest(bytes).into()
+}
+
+/// The raw bytes of a project file and the text the migration reads from them.
+fn read_input(engine: &Engine, relative: &str) -> Result<(String, [u8; 32]), LexLeanError> {
     let path = engine
         .project()
         .confined_file(relative)
         .map_err(LexLeanError::from_diagnostic)?;
     let bytes = std::fs::read(path.as_std_path())
         .map_err(|io_error| host_failure(format!("{relative}: {io_error}")))?;
-    crate::source::normalize::normalize(relative, &bytes, true)
+    let text = crate::source::normalize::normalize(relative, &bytes, true)
         .map(|normalized| normalized.text)
-        .map_err(LexLeanError::from_diagnostics)
+        .map_err(LexLeanError::from_diagnostics)?;
+    Ok((text, fingerprint(&bytes)))
 }
 
 /// The new bytes of every module source, manifest, and the configuration, with
-/// the names of the modules and the manifests among them.
-fn rewrites(engine: &Engine) -> Result<(Rewrites, Vec<String>, Vec<String>), LexLeanError> {
+/// the fingerprints of what they were derived from.
+fn rewrites(engine: &Engine) -> Result<Plan, LexLeanError> {
     let project = engine.project();
     if project.config.language != "1.1" {
         return Err(LexLeanError::from_diagnostic(unsupported(
@@ -216,13 +242,16 @@ fn rewrites(engine: &Engine) -> Result<(Rewrites, Vec<String>, Vec<String>), Lex
         )));
     }
     let mut files = Rewrites::new();
+    let mut inputs = Inputs::new();
     let mut failures = Vec::new();
     let mut modules = Vec::new();
     let sources = project
         .all_modules()
         .map_err(LexLeanError::from_diagnostics)?;
     for (module, relative) in &sources {
-        match migrated_source(relative, &read_text(engine, relative)?) {
+        let (text, digest) = read_input(engine, relative)?;
+        inputs.insert(relative.clone(), digest);
+        match migrated_source(relative, &text) {
             Ok(text) => {
                 files.insert(relative.clone(), text.into_bytes());
                 modules.push(module.clone());
@@ -234,7 +263,9 @@ fn rewrites(engine: &Engine) -> Result<(Rewrites, Vec<String>, Vec<String>), Lex
     for source in &project.config.lexicon_sources {
         if let LexiconSource::Path { path, .. } = source {
             let relative = format!("{path}/lexicon.toml");
-            match migrated_manifest(&relative, &read_text(engine, &relative)?) {
+            let (text, digest) = read_input(engine, &relative)?;
+            inputs.insert(relative.clone(), digest);
+            match migrated_manifest(&relative, &text) {
                 Ok(text) => {
                     files.insert(relative.clone(), text.into_bytes());
                     manifests.push(relative);
@@ -248,11 +279,18 @@ fn rewrites(engine: &Engine) -> Result<(Rewrites, Vec<String>, Vec<String>), Lex
     }
     let mut config = project.config.clone();
     config.language = "1.2".to_owned();
+    let (_, digest) = read_input(engine, &project.config_name)?;
+    inputs.insert(project.config_name.clone(), digest);
     files.insert(
         project.config_name.clone(),
         config.canonical_toml().into_bytes(),
     );
-    Ok((files, modules, manifests))
+    Ok(Plan {
+        files,
+        inputs,
+        modules,
+        manifests,
+    })
 }
 
 /// Write `files` into the scratch copy, lock it, and check it as a
@@ -290,7 +328,15 @@ struct Staged {
     original: Option<Vec<u8>>,
 }
 
-fn stage(engine: &Engine, relative: &str, bytes: &[u8]) -> Result<Staged, LexLeanError> {
+/// Stage `bytes` beside `relative`. Under the project mutation lock, the file
+/// as it is now must be the one the proof read (`proven`, when the migration
+/// derived the new bytes from it), or the migration is refused.
+fn stage(
+    engine: &Engine,
+    relative: &str,
+    bytes: &[u8],
+    proven: Option<&[u8; 32]>,
+) -> Result<Staged, LexLeanError> {
     let project = engine.project();
     let target = project
         .confined_creatable(relative)
@@ -303,6 +349,13 @@ fn stage(engine: &Engine, relative: &str, bytes: &[u8]) -> Result<Staged, LexLea
         Err(io_error) if io_error.kind() == std::io::ErrorKind::NotFound => None,
         Err(io_error) => return Err(host_failure(format!("{relative}: {io_error}"))),
     };
+    if let Some(proven) = proven {
+        if original.as_deref().map(fingerprint).as_ref() != Some(proven) {
+            return Err(host_failure(format!(
+                "{relative}: changed since the migration was proven; nothing was written, run the migration again"
+            )));
+        }
+    }
     let mut temp = tempfile::NamedTempFile::new_in(parent.as_std_path())
         .map_err(|io_error| host_failure(format!("{relative}: staging: {io_error}")))?;
     temp.write_all(bytes)
@@ -321,8 +374,27 @@ fn stage(engine: &Engine, relative: &str, bytes: &[u8]) -> Result<Staged, LexLea
     })
 }
 
+/// Restore every file of `published`, last published first, and return the
+/// failures: a restore that fails does not stop the others, so every file that
+/// can be returned to what it was is, and every one that cannot is named.
+fn rollback(published: Vec<(Utf8PathBuf, Option<Vec<u8>>)>) -> Vec<String> {
+    published
+        .into_iter()
+        .rev()
+        .filter_map(|(path, before)| {
+            let restored = match before {
+                Some(bytes) => std::fs::write(path.as_std_path(), bytes),
+                None => std::fs::remove_file(path.as_std_path()),
+            };
+            restored.err().map(|io_error| format!("{path}: {io_error}"))
+        })
+        .collect()
+}
+
 /// Publish every staged file; when one cannot be, restore the ones already
-/// published, so the project is never left half migrated.
+/// published, so the project is not left half migrated. Every restore is
+/// attempted, and the files that could not be restored are reported together
+/// with the failure that made the restore necessary.
 fn publish(staged: Vec<Staged>) -> Result<(), LexLeanError> {
     let mut published: Vec<(Utf8PathBuf, Option<Vec<u8>>)> = Vec::new();
     for entry in staged {
@@ -335,21 +407,19 @@ fn publish(staged: Vec<Staged>) -> Result<(), LexLeanError> {
         match temp.persist(target.as_std_path()) {
             Ok(_) => published.push((target, original)),
             Err(persist_error) => {
-                for (path, before) in published.into_iter().rev() {
-                    let restored = match before {
-                        Some(bytes) => std::fs::write(path.as_std_path(), bytes),
-                        None => std::fs::remove_file(path.as_std_path()),
-                    };
-                    restored.map_err(|io_error| {
-                        host_failure(format!(
-                            "{shown}: publish failed ({}) and restoring {path} failed: {io_error}",
-                            persist_error.error
-                        ))
-                    })?;
+                let stranded = rollback(published);
+                if stranded.is_empty() {
+                    return Err(host_failure(format!(
+                        "{shown}: publish: {}",
+                        persist_error.error
+                    )));
                 }
                 return Err(host_failure(format!(
-                    "{shown}: publish: {}",
-                    persist_error.error
+                    "{shown}: publish failed ({}) and {} published file(s) could not be restored, \
+                     so the project is partly migrated: {}",
+                    persist_error.error,
+                    stranded.len(),
+                    stranded.join("; ")
                 )));
             }
         }
@@ -370,27 +440,37 @@ pub fn migrate(engine: &Engine, request: &MigrateRequest) -> Result<MigrateResul
 }
 
 fn migrate_inner(engine: &Engine, request: &MigrateRequest) -> Result<MigrateResult, LexLeanError> {
-    let (mut files, modules, manifests) = rewrites(engine)?;
-    let lock = prove(engine, &files)?;
+    let mut plan = rewrites(engine)?;
+    let lock = prove(engine, &plan.files)?;
     if request.check_only {
         return Ok(MigrateResult {
-            modules,
-            manifests,
+            modules: plan.modules,
+            manifests: plan.manifests,
             written: false,
         });
     }
-    files.insert(engine.project().config.lockfile.clone(), lock);
+    plan.files
+        .insert(engine.project().config.lockfile.clone(), lock);
+    write(engine, &plan.files, &plan.inputs)?;
+    Ok(MigrateResult {
+        modules: plan.modules,
+        manifests: plan.manifests,
+        written: true,
+    })
+}
+
+/// Take the project mutation lock, check that every file the proof read is
+/// unchanged, and publish the new files together.
+fn write(engine: &Engine, files: &Rewrites, inputs: &Inputs) -> Result<(), LexLeanError> {
     // The staging precedes the project mutation lock's first use of the build
     // root, so a refused migration leaves no `.lexlean` behind.
     let _guard = acquire_lock(engine.project())?;
     let mut staged = Vec::with_capacity(files.len());
-    for (relative, bytes) in &files {
-        staged.push(stage(engine, relative, bytes)?);
+    for (relative, bytes) in files {
+        staged.push(stage(engine, relative, bytes, inputs.get(relative))?);
     }
-    publish(staged)?;
-    Ok(MigrateResult {
-        modules,
-        manifests,
-        written: true,
-    })
+    publish(staged)
 }
+
+#[cfg(test)]
+mod tests;
