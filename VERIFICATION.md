@@ -9748,7 +9748,7 @@ packages (the records are regenerated at landing).
 
 `BS-06` holds the two production roots of `LexLeanBoot.RustPrint`
 (`bootstrap/src/RustPrint.lex.tex`, over `RustAst.lex.tex`) to the oracle,
-`calculus::rust::ast::{print, print_expr}`. The case runs 613 vectors of
+`calculus::rust::ast::{print, print_expr}`. The case runs 615 vectors of
 `printCrate` (472 the distinct committed crates: 236 lowered by the renderer
 from 177 programs, and the crates of 260 packages; the hand-built crates; the
 real header of each profile; 57 refused for a capacity one byte short) and
@@ -9758,7 +9758,7 @@ strings, every runtime row and machine primitive with its operands and with
 one too many, every constructor, pattern, block, conditional, match with a
 scrutinee that begins with a brace, and loop) under the pinned rustc on
 every host (42 harness binaries, 504 s: the part the host matrix runs), and on
-the normative host the evaluator on 545 + 1,955 of them (the crates of at most
+the normative host the evaluator on 544 + 1,955 of them (the crates of at most
 6,000 nodes of data), 400 + 399 seeded mutants of the crates of at most 80
 expressions, 2,984 more mutants under rustc (67 s), twelve planted defects, and
 the production export of the project (the whole case: 1,658 s on this host,
@@ -9925,7 +9925,9 @@ chain, held to the items of the crate that `rust::lower` builds before its
 first function. Its input is the program, the tree of `siteTrees`, the dead
 functions, and the failing functions, so the case feeds it the legs of the
 vector before it. The case runs 310 vectors per root (one more than the first
-slice: the package of `lowerTypes` is a committed program) under the pinned
+slice: the package of `lowerTypes` is a committed program; the measurement is on
+the tree of that slice, and with the package of `applyMoves` of `BS-08` the
+vectors are 311 per root and the runs 1,244) under the pinned
 rustc on every host (58 harness binaries built in 875 s, 1,240 runs in 23 s
 more), and on the normative host the evaluator on the 272 of them of at most
 300 nodes with 150 seeded mutants (53 s for `siteTrees`, 14 s for
