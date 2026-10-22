@@ -2667,7 +2667,7 @@ pub(crate) fn run(id: &str) {
             };
             // The fixed rules after the named definitions (§17.10): the
             // hypothesis, the conditional, and the constructor rules.
-            let rules = "llCase, ite_true, ite_false, reduceCtorEq, imp_self, and_true, true_and, Option.some.injEq, Except.error.injEq, Except.ok.injEq, List.cons.injEq";
+            let rules = "llCase, ite_true, ite_false, reduceCtorEq, false_implies, imp_self, and_true, true_and, Option.some.injEq, Except.error.injEq, Except.ok.injEq, List.cons.injEq";
             let lean = generated_lean(&accepted);
             // `Flag` has no constructor with a field, so the list ends at
             // the fixed rules.
