@@ -1,0 +1,104 @@
+\begin{lexlean}{Guards}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{folds.titles@1.0.0}
+\title{Request guards}
+\begin{semanticmodule}
+definition{
+  name: requestLines,
+  parameters: [text : String],
+  result: (List String),
+  body: (match (prim split_exact text "\n" (4097 : UInt32) : (Option (List String)))
+    | Option.none => (cons "status error" (cons "request too-many-lines" (nil String)))
+    | Option.some pieces => pieces),
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+definition{
+  name: nextLine,
+  parameters: [line : UInt32],
+  result: (List String),
+  body: (match (prim checked_add line (1 : UInt32) : (Option UInt32))
+    | Option.none => (cons "status error" (cons "request line-overflow" (nil String)))
+    | Option.some next => (nil String)),
+  axioms: []
+}
+
+definition{
+  name: respond,
+  parameters: [request : Bytes],
+  result: Bytes,
+  body: (match (prim utf8_decode request : (Option String))
+    | Option.none => (prim utf8_encode "status error\nrequest invalid-utf8" : Bytes)
+    | Option.some text => (if (16384 <? (prim length (prim utf8_encode text : Bytes) : Nat)) then (prim utf8_encode "status error\nresponse too-large" : Bytes) else (prim utf8_encode text : Bytes))),
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: newline_separates,
+  parameters: [],
+  statement: ((prim equal "\n" "" : Bool) = false),
+  proof: decide{},
+  axioms: []
+}
+
+theorem{
+  name: lines_fit,
+  parameters: [],
+  statement: (4096 < (prim to_nat (4097 : UInt32) : Nat)),
+  proof: decide{},
+  axioms: []
+}
+
+theorem{
+  name: too_many_lines_unreachable,
+  parameters: [text : String],
+  statement: (((prim length (prim utf8_encode text : Bytes) : Nat) <= 4096) -> ((match (prim split_exact text "\n" (4097 : UInt32) : (Option (List String)))
+    | Option.none => false
+    | Option.some pieces => true) = true)),
+  proof: law{
+    name: split_exact_fits,
+    arguments: [text, "\n", (4097 : UInt32), 4096],
+    premises: [newline_separates, lines_fit]
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: counter_fits,
+  parameters: [],
+  statement: ((4097 + (prim to_nat (1 : UInt32) : Nat)) < 4294967296),
+  proof: decide{},
+  axioms: []
+}
+
+theorem{
+  name: line_overflow_unreachable,
+  parameters: [line : UInt32],
+  statement: (((prim to_nat line : Nat) <= 4097) -> ((match (prim checked_add line (1 : UInt32) : (Option UInt32))
+    | Option.none => false
+    | Option.some next => true) = true)),
+  proof: law{
+    name: checked_add_fits,
+    arguments: [line, (1 : UInt32), 4097],
+    premises: [counter_fits]
+  },
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: request_text_fits,
+  parameters: [request : Bytes, text : String],
+  statement: (((prim utf8_decode request : (Option String)) = (ctor Option.some [String] text)) -> (((prim length request : Nat) <= 4096) -> ((prim length (prim utf8_encode text : Bytes) : Nat) <= 4096))),
+  proof: law{name: utf8_decode_length, arguments: [request, text, 4096]},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: response_too_large_unreachable,
+  parameters: [request : Bytes, text : String],
+  statement: (((prim utf8_decode request : (Option String)) = (ctor Option.some [String] text)) -> (((prim length request : Nat) <= 16384) -> ((prim length (prim utf8_encode text : Bytes) : Nat) <= 16384))),
+  proof: law{name: utf8_decode_length, arguments: [request, text, 16384]},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+\end{semanticmodule}
+\end{lexlean}

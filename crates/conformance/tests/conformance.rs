@@ -791,6 +791,11 @@ fn conformance_pf_23() {
 }
 
 #[test]
+fn conformance_pf_24() {
+    repo_conformance::cases::run("PF-24");
+}
+
+#[test]
 fn conformance_ln_01() {
     repo_conformance::cases::run("LN-01");
 }
