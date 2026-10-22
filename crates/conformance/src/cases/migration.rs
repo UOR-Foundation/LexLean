@@ -156,14 +156,15 @@ pub(crate) fn cli() {
         "the language-1.2 example",
     );
 
-    // A module the notation cannot express is refused with a named
-    // diagnostic, and nothing is written.
+    // A module that is not a language-1.1 module (the fixture has a top-level
+    // member the schema forbids, which the notation cannot spell) is refused
+    // with a named diagnostic, and nothing is written.
     assert_refused(
         &P::negative("migrate-module-without-notation"),
         &["migrate", "--to", "1.2"],
         1,
         "LLP2003",
-        "a module the notation cannot express",
+        "a module that is not a language-1.1 module",
     );
     assert_refused(
         &P::semantic_example(),

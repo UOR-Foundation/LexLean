@@ -4126,8 +4126,9 @@ The migrated project is written into a scratch copy first, locked, and checked
 as a language-1.2 project; a project that does not check there is refused, and
 on every refusal no file of the project is written. A project whose language
 is not `1.1` is refused with `LLC0103`, and a module that is not a
-language-1.1 semantic module in the data form, or whose module the notation
-cannot express, with `LLP2003`. Every language-1.1 value is a valid
+language-1.1 semantic module in the data form, or whose notation does not read
+back to the module (the conversion is checked; no schema-valid module is known
+to fail it), with `LLP2003`. Every language-1.1 value is a valid
 language-1.2 value with the same meaning, so the migration changes identities
 (the compiler-semantics ID, the lock, and every source and semantic ID) but not
 generated Lean declarations; the generated text differs only in the portable
@@ -8960,8 +8961,8 @@ the `language` row, and regenerates the lock as `lexlean/lock/2`. `--to` takes
 checked as language 1.2) before any file is written, the files are then
 replaced together, and a refusal writes nothing and creates no build root:
 `LLC0103` for a project that is not language 1.1, `LLP2003` for a module that is
-not a language-1.1 data-form semantic module or that the notation cannot
-express, and the diagnostics of the scratch check for a project that does not
+not a language-1.1 data-form semantic module or whose notation does not
+read back to it, and the diagnostics of the scratch check for a project that does not
 check as language 1.2. With `--check` the same proof runs and nothing is
 written. The command result names the migrated modules.
 
@@ -10436,7 +10437,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `CL-21` | `cli-api` | Native diagnostics distinguish package-import cycles and unqualified cross-package term ambiguities without changing diagnostic wire bytes. | §24.5 |
 | `CL-22` | `cli-api` | A host that embeds the library ends every child process group the library started and has not seen exit through the public function `lexlean::verify::end_live_children`, which installs no signal handler, alters no signal disposition, never signals the host's own process or group, reports each group as ended, already gone, or failing with the OS error, and refuses a later child start with LLV7018 until the host re-enables it, and the `lexlean` executable ends its interrupted children through the same function. | §17.17, §24.6 |
 | `CL-23` | `cli-api` | lexlean production targets prints the canonical target-descriptor document in either output mode, production build --request publishes the bundle its request names and reports the bundle and the project's source, semantic, build, and attestation IDs in its command result, production verify-artifact replays a bundle with no project, and each maps a malformed request, a refused request, and a rejected replay to the exact exit code of its registered class. | §24.7 |
-| `CL-24` | `cli-api` | lexlean migrate --to 1.2 migrates a language-1.1 data-form project to language 1.2 in one command: it rewrites every module to the authoring notation through lexlean::sdk::to_notation with the same declarations, names, statements, and axiom policies, moves the builtin glossary references of every source and the imports of every path lexicon package to 1.2.0, rewrites the language row, and regenerates the lock as lexlean/lock/2, so the result checks, has a current lock, and is canonical; --check proves the migration and writes nothing; and a project that is not language 1.1 is refused with LLC0103 and a module the notation cannot express with LLP2003, each leaving every file of the project unchanged. | §17.12, §23.4 |
+| `CL-24` | `cli-api` | lexlean migrate --to 1.2 migrates a language-1.1 data-form project to language 1.2 in one command: it rewrites every module to the authoring notation through lexlean::sdk::to_notation with the same declarations, names, statements, and axiom policies, moves the builtin glossary references of every source and the imports of every path lexicon package to 1.2.0, rewrites the language row, and regenerates the lock as lexlean/lock/2, so the result checks, has a current lock, and is canonical; --check proves the migration and writes nothing; and a project that is not language 1.1 is refused with LLC0103 and a module that is not a language-1.1 data-form semantic module with LLP2003, each leaving every file of the project unchanged. | §17.12, §23.4 |
 | `SE-01` | `security` | Source, package, workspace, resource, and output paths are confined and symlinks are rejected. | §25.1 |
 | `SE-02` | `security` | Special files, duplicate filesystem identities, and case-fold collisions are rejected before processing. | §25.1 |
 | `SE-03` | `security` | All child processes use direct executable and argv invocation with no shell. | §25.2 |

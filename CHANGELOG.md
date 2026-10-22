@@ -27,7 +27,9 @@ and Unreleased holds what has landed since.
   own diagnostic) writes nothing. The `1.1` to `1.2` recipe of §17.12 (change
   the tag and the glossary versions, relock) is replaced: it produced a project
   that language 1.2 refuses with `LLP2003` since #149. The negative fixture
-  `migrate-module-without-notation` holds a module the notation cannot express.
+  `migrate-module-without-notation` holds a module that is not a language-1.1
+  module (a top-level member the schema forbids), which the notation cannot
+  spell.
   `Engine` keeps its seven entry points; the function is
   `lexlean::api::migrate::migrate`. The register is 444 IDs. The notation
   reader no longer takes a keyword followed by `{` inside a parenthesised term
