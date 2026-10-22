@@ -855,6 +855,94 @@ Planted: `mentions_family_group` ignored the arguments again (the comparison
 test ir::semantic::family_order_tests::a_group_instantiated_at_its_own_type_has_two_motives ... FAILED
 ```
 
+### a nested induction can be refused or mis-ordered (SM-37)
+
+A theorem over a nested inductive type is proved by `nested_induction`
+(`SM-37`, §16.9, §17.10, #278). `examples/nested-induction` proves
+`leaves_le_size` over `Json` (`null`, `string`, `array (List Json)`,
+`object (List (String * Json))`), whose recursor has four motives and nine
+minor premises, with mutual `size` and `leaves` groups over the four members of
+its family (`DF-19`). The backend lowers the proof to `induction value using
+Json.rec (motive_2 := ...) (motive_3 := ...) (motive_4 := ...)` and nine
+positional `next` goals in the recursor's order, whatever order the branches are
+written in.
+
+Command and host: `lexlean fmt`, `lock`, `check`, `build` and `verify` in the
+example, then `cargo test -p repo-conformance --test conformance --
+conformance_sm_37 conformance_df_13 conformance_df_19 conformance_ex_07` and
+`cargo test -p lexlean --lib`, on the 2-core Linux x86-64 machine the series is
+prepared on, Lean 4.32.1, rustc stable 1.97.0, under the shared heavy-job lock.
+
+```text
+verified 1 module; attestation c7af737dad4c8d13d8835083917ceeaadf066a1b5a1fb623e544c374ec2ac573   (19.3 s)
+error[LLV7005]: `NestedInduction.Main.leaves_le_size` violates its none axiom policy: observed [Quot.sound, propext]
+```
+
+The second line is the first verification, with the placeholder policy `[]`: the
+axiom set the real build observes for the theorem is `Quot.sound` and `propext`,
+which the example's policy and the `SM-37` row now state. `conformance_sm_37`
+verifies the example and a `Rose` of naturals (a type with a parameter) under
+the pinned Lean, shows the nine goals and the three motives in the Lean text,
+shows the reversed branch order of every level lowers to the same Lean, and
+refuses 49 plants as `LLT4001` before any backend output:
+
+- the family: each of the three members omitted; each pair of members swapped
+  (the reordered member); the first member repeated; a member outside the
+  family; two members with one binder; a proposition that is not a `Prop`;
+- a member of another instantiation, `List (Rose Nat)` for the family of `Rose (Rose Nat)`;
+- on each of the four levels (`Json`, `List Json`, `List (String * Json)`,
+  `String * Json`): every branch omitted ("are not exhaustive", 9), every branch
+  with one binder too many (9) and one too few (6, those with binders) ("expects
+  n binder(s), received m"), a branch repeated (4), a branch for no constructor
+  (4);
+- `induction` on the same nested type (the message names `nested_induction`),
+  a language-1.1 module, and a scrutinee that is a natural number, a type with no
+  nested field, a type in a mutual group, or a local that is not a theorem
+  parameter.
+
+`conformance_df_13` still asserts the `induction` refusal, `conformance_ex_07`
+refuses the `induction-nested-type` fixture with the new message, and
+`cargo test -p lexlean --lib` passes (212 tests). Run on a tree whose locks were
+regenerated locally and not committed (the identity moved, see the landing list
+of the pull request), `conformance_ex_07` fails only on the fixtures whose
+goldens bind the identity (`certificate-*-rejected`,
+`production-expectation-stale`) and on the two `lock-schema-language-mismatch`
+fixtures, which the local regeneration overwrote.
+
+A type used at one of its own types (the maintainer's review of DF-19):
+`Rose Item | node : Item -> List (Rose Item)` at `Rose (Rose Nat)` has the two
+motives `Rose.rec` has at any instantiation, so the family is `Rose (Rose Nat)`
+and `List (Rose (Rose Nat))`, and `Rose Nat`, which the field `label` becomes,
+joins nothing. `conformance_sm_37` proves `rose = rose` for a `Rose (Rose Nat)`
+by `nested_induction` with the one member `List (Rose (Rose Nat))`, shows
+`induction rose using Rose.rec (motive_2 := ...)` with no `motive_3`, and
+verifies it under the pinned Lean. With `mentions_family_group` ignoring the
+type arguments again (`(true || observed.as_slice() == arguments)`), the same
+case fails:
+
+```text
+thread 'conformance_sm_37' panicked at crates/conformance/src/support.rs:864:14:
+check succeeds: ... "phase link: nested_induction is missing the member `Rose (Nat)` of the recursive family of `Rose (Rose (Nat))`" ...
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 446 filtered out
+```
+
+The plant was restored with `git checkout`; the case passes (41.0 s).
+
+Planted: the member-order test of `check_nested_induction` compared the members
+as sets (`observed.len() != auxiliary.len() || auxiliary.iter().any(|ty|
+!observed.contains(&ty))` in place of the sequence comparison). Command:
+`cargo test -p repo-conformance --test conformance -- conformance_sm_37`.
+
+```text
+thread 'conformance_sm_37' panicked at crates/conformance/src/support.rs:874:14:
+check fails
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 446 filtered out
+```
+
+Removed: the plant was restored from a copy; `conformance_sm_37` passes (40.0 s)
+and the swapped-members plants are refused with `nested_induction members are out
+of order`.
+
 ### recursion call graph check can fail
 
 Planted: `check_group_call_graph` returned `Ok(())` at once, so a mutual

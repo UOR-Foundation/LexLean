@@ -267,6 +267,17 @@ fn prove(value: &SnapshotProof) -> usize {
         SnapshotProof::Simplify { definitions } => definitions.len(),
         SnapshotProof::Constructor { branches } => branches.iter().map(prove).sum(),
         SnapshotProof::Cases { branches, .. } | SnapshotProof::Induction { branches, .. } => branches.iter().map(|v| prove(&v.proof)).sum(),
+        SnapshotProof::NestedInduction { branches, members, .. } => {
+            branches.iter().map(|v| prove(&v.proof)).sum::<usize>()
+                + members
+                    .iter()
+                    .map(|m| {
+                        ty(&m.r#type)
+                            + term(&m.statement)
+                            + m.branches.iter().map(|v| prove(&v.proof)).sum::<usize>()
+                    })
+                    .sum::<usize>()
+        }
         SnapshotProof::BooleanReflection { reflection } => match reflection {
             lexlean::SnapshotReflection::List { .. } => 1,
             lexlean::SnapshotReflection::Record { fields, .. } => fields.len(),

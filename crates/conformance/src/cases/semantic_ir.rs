@@ -10,6 +10,7 @@ use crate::support::{self, P};
 mod boolean;
 mod bytes;
 mod names;
+mod nested;
 mod strings;
 mod widen;
 
@@ -2580,6 +2581,8 @@ pub(crate) fn run(id: &str) {
         "SM-32" => widen::run(),
         // §17.10: a theorem proved by a split on a Boolean local.
         "SM-36" => boolean::run(),
+        // §17.10: a theorem proved by induction over a nested inductive type.
+        "SM-37" => nested::run(),
         // §17.10: a theorem proved by a split on the value of a document
         // term.
         "SM-35" => {

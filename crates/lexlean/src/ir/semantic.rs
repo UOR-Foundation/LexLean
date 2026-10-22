@@ -642,6 +642,20 @@ pub struct SemanticProofBranch {
     pub proof: Box<SemanticProof>,
 }
 
+/// One auxiliary member of the recursive family of a nested inductive type in
+/// a `nested_induction` proof (§16.9, `SM-37`): the member's type, the binder
+/// its proposition ranges over, the proposition (the member's motive in the
+/// recursor the pinned Lean generates for the type), and a branch for each
+/// constructor of the member.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct SemanticNestedMember {
+    pub r#type: SemanticType,
+    pub binder: String,
+    pub statement: SemanticTerm,
+    pub branches: Vec<SemanticProofBranch>,
+}
+
 /// A fixed Boolean comparison reflected into a proposition without using
 /// propositional extensionality.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
@@ -726,6 +740,18 @@ pub enum SemanticProof {
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         generalizing: Vec<String>,
         branches: Vec<SemanticProofBranch>,
+    },
+    /// Language 1.2: induction over a nested inductive type of the document,
+    /// one that holds a member of itself under `List`, `Option`, `Result`, or a
+    /// product and is in no mutual group. The proof states one proposition for
+    /// each auxiliary member of the type's recursive family, in the order the
+    /// pinned Lean's recursor takes them, and a branch for every constructor of
+    /// the type and of each member; it lowers to `induction` over the recursor
+    /// the pinned Lean generates for the type (§16.9, `SM-37`).
+    NestedInduction {
+        scrutinee: String,
+        branches: Vec<SemanticProofBranch>,
+        members: Vec<SemanticNestedMember>,
     },
     Congruence,
     /// A fixed natural-deduction bridge from executable Boolean validation to
@@ -2284,6 +2310,25 @@ fn proof_node_count(proof: &SemanticProof) -> u64 {
             arguments.iter().map(term_node_count).sum()
         }
         SemanticProof::TermCases { scrutinee, .. } => term_node_count(scrutinee),
+        SemanticProof::NestedInduction {
+            branches, members, ..
+        } => {
+            branches
+                .iter()
+                .map(|branch| proof_node_count(&branch.proof))
+                .sum::<u64>()
+                + members
+                    .iter()
+                    .map(|member| {
+                        term_node_count(&member.statement)
+                            + member
+                                .branches
+                                .iter()
+                                .map(|branch| proof_node_count(&branch.proof))
+                                .sum::<u64>()
+                    })
+                    .sum::<u64>()
+        }
     }
 }
 
@@ -3051,6 +3096,19 @@ fn proof_terms(proof: &SemanticProof, visit: &mut impl FnMut(&SemanticTerm)) {
             }
         }
         SemanticProof::TermCases { scrutinee, .. } => visit_terms(scrutinee, visit),
+        SemanticProof::NestedInduction {
+            branches, members, ..
+        } => {
+            for branch in branches {
+                proof_terms(&branch.proof, visit);
+            }
+            for member in members {
+                visit_terms(&member.statement, visit);
+                for branch in &member.branches {
+                    proof_terms(&branch.proof, visit);
+                }
+            }
+        }
     }
 }
 
@@ -3078,6 +3136,19 @@ fn proof_terms_mut(proof: &mut SemanticProof, visit: &mut impl FnMut(&mut Semant
             }
         }
         SemanticProof::TermCases { scrutinee, .. } => visit_terms_mut(scrutinee, visit),
+        SemanticProof::NestedInduction {
+            branches, members, ..
+        } => {
+            for branch in branches {
+                proof_terms_mut(&mut branch.proof, visit);
+            }
+            for member in members {
+                visit_terms_mut(&mut member.statement, visit);
+                for branch in &mut member.branches {
+                    proof_terms_mut(&mut branch.proof, visit);
+                }
+            }
+        }
     }
 }
 
@@ -3218,6 +3289,20 @@ fn proof_binders(proof: &SemanticProof, visit: &mut impl FnMut(&str)) {
             for branch in branches {
                 branch.binders.iter().for_each(|binder| visit(binder));
                 proof_binders(&branch.proof, visit);
+            }
+        }
+        SemanticProof::NestedInduction {
+            branches, members, ..
+        } => {
+            for branch in branches
+                .iter()
+                .chain(members.iter().flat_map(|member| &member.branches))
+            {
+                branch.binders.iter().for_each(|binder| visit(binder));
+                proof_binders(&branch.proof, visit);
+            }
+            for member in members {
+                visit(&member.binder);
             }
         }
     }
@@ -3506,6 +3591,19 @@ fn proof_type_arguments(proof: &SemanticProof, visit: &mut impl FnMut(&SemanticT
                 proof_type_arguments(&branch.proof, visit);
             }
         }
+        SemanticProof::NestedInduction {
+            branches, members, ..
+        } => {
+            for member in members {
+                visit(&member.r#type);
+            }
+            for branch in branches
+                .iter()
+                .chain(members.iter().flat_map(|member| &member.branches))
+            {
+                proof_type_arguments(&branch.proof, visit);
+            }
+        }
         SemanticProof::Apply { type_arguments, .. } | SemanticProof::Law { type_arguments, .. } => {
             type_arguments.iter().for_each(visit);
         }
@@ -3683,6 +3781,8 @@ struct Environment<'a> {
     /// Language 1.2 (models): the declaration being checked was elaborated
     /// from a model declaration, so generated binders are admitted.
     derived: bool,
+    /// The parameters of the theorem whose proof is being checked.
+    proof_parameters: BTreeSet<String>,
 }
 
 #[derive(Clone, Default)]
@@ -5310,41 +5410,93 @@ fn mentions_family_group(ty: &SemanticType, keys: &[String], arguments: &[Semant
         .any(|child| mentions_family_group(child, keys, arguments))
 }
 
-/// The constructor field types of one member of a recursive family, at the
-/// member's own type arguments and in the order the pinned Lean takes the
-/// constructors: the declaration order for a document inductive, `nil` and
-/// `cons` for a list, `none` and `some` for an option, `error` and `ok` for a
-/// result, and `mk` for a product.
+/// The constructors of one member of a recursive family, each with the name
+/// the proof forms write it by and the types of its fields, at the member's
+/// own type arguments and in the order the pinned Lean takes the constructors
+/// as the minor premises of a recursor: the declaration order for a document
+/// inductive, `nil` and `cons` for a list, `none` and `some` for an option,
+/// `error` and `ok` for a result, and `mk` for a product.
+fn family_constructors(
+    ty: &SemanticType,
+    env: &Environment<'_>,
+) -> Vec<(String, Vec<SemanticType>)> {
+    let named = |name: &str, fields: Vec<SemanticType>| (name.to_owned(), fields);
+    match ty {
+        SemanticType::Named { member, arguments } => {
+            let Some(info) = type_info(member, env) else {
+                return Vec::new();
+            };
+            let map = substitutions(info, arguments);
+            // Every member of a recursive family is a document inductive, and
+            // those keep their declaration order; a structure, the only type
+            // without one, is in no group (`group_key_of`) and is never a
+            // member.
+            info.constructor_order
+                .iter()
+                .filter_map(|name| {
+                    info.constructor_types.get(name).map(|fields| {
+                        (
+                            name.rsplit('.').next().unwrap_or(name).to_owned(),
+                            fields
+                                .iter()
+                                .map(|field| substitute_type(field, &map))
+                                .collect(),
+                        )
+                    })
+                })
+                .collect()
+        }
+        SemanticType::List { element } => vec![
+            named("nil", Vec::new()),
+            named("cons", vec![element.as_ref().clone(), ty.clone()]),
+        ],
+        SemanticType::Option { value } => vec![
+            named("none", Vec::new()),
+            named("some", vec![value.as_ref().clone()]),
+        ],
+        SemanticType::Result { ok, error } => vec![
+            named("error", vec![error.as_ref().clone()]),
+            named("ok", vec![ok.as_ref().clone()]),
+        ],
+        SemanticType::Product { left, right } => {
+            vec![named(
+                "mk",
+                vec![left.as_ref().clone(), right.as_ref().clone()],
+            )]
+        }
+        SemanticType::Type
+        | SemanticType::Parameter { .. }
+        | SemanticType::Nat
+        | SemanticType::Bool
+        | SemanticType::Prop
+        | SemanticType::Unit
+        | SemanticType::Int
+        | SemanticType::Int8
+        | SemanticType::Int16
+        | SemanticType::Int32
+        | SemanticType::Int64
+        | SemanticType::UInt8
+        | SemanticType::UInt16
+        | SemanticType::UInt32
+        | SemanticType::UInt64
+        | SemanticType::String
+        | SemanticType::Bytes
+        | SemanticType::Ordering
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure
+        | SemanticType::Function { .. }
+        | SemanticType::Map { .. }
+        | SemanticType::Set { .. } => Vec::new(),
+    }
+}
+
+/// The constructor field types of one member of a recursive family, in the
+/// order of `family_constructors`.
 fn family_constructor_fields(ty: &SemanticType, env: &Environment<'_>) -> Vec<SemanticType> {
-    if let SemanticType::Named { member, arguments } = ty {
-        let Some(info) = type_info(member, env) else {
-            return Vec::new();
-        };
-        let map = substitutions(info, arguments);
-        // Every member of a recursive family is a document inductive, and
-        // those keep their declaration order; a structure, the only type
-        // without one, is in no group (`group_key_of`) and is never a member.
-        return info
-            .constructor_order
-            .iter()
-            .filter_map(|name| info.constructor_types.get(name))
-            .flatten()
-            .map(|field| substitute_type(field, &map))
-            .collect();
-    }
-    if let SemanticType::List { element } = ty {
-        return vec![element.as_ref().clone(), ty.clone()];
-    }
-    if let SemanticType::Option { value } = ty {
-        return vec![value.as_ref().clone()];
-    }
-    if let SemanticType::Result { ok, error } = ty {
-        return vec![error.as_ref().clone(), ok.as_ref().clone()];
-    }
-    if let SemanticType::Product { left, right } = ty {
-        return vec![left.as_ref().clone(), right.as_ref().clone()];
-    }
-    Vec::new()
+    family_constructors(ty, env)
+        .into_iter()
+        .flat_map(|(_, fields)| fields)
+        .collect()
 }
 
 /// §17.12: the recursive family of the inductive group `keys` at `arguments`
@@ -8638,6 +8790,11 @@ fn check_proof(
             }
             check_elimination_proof(scrutinee, branches, true, locals, env)
         }
+        SemanticProof::NestedInduction {
+            scrutinee,
+            branches,
+            members,
+        } => check_nested_induction(scrutinee, branches, members, locals, env),
     }
 }
 
@@ -8801,6 +8958,229 @@ fn check_boolean_reflection(
     }
 }
 
+/// The recursive family of the nested inductive type of the local `scrutinee`
+/// (§16.9, `SM-37`): the type itself, then its auxiliary members in the order
+/// the pinned Lean's recursor takes its motives. A type with no nested
+/// occurrence has no auxiliary member, a type in a mutual group has a
+/// recursor this form does not name, and neither is a nested inductive here.
+fn nested_family(
+    scrutinee: &str,
+    locals: &BTreeMap<String, SemanticType>,
+    env: &Environment<'_>,
+) -> Result<Vec<SemanticType>, String> {
+    let ty = locals
+        .get(scrutinee)
+        .ok_or_else(|| format!("proof scrutinee `{scrutinee}` is absent"))?;
+    let SemanticType::Named { member, arguments } = ty else {
+        return Err(format!(
+            "nested_induction scrutinee `{scrutinee}` is not of a nested inductive type of the document"
+        ));
+    };
+    let info = type_info(member, env)
+        .filter(|info| !info.constructors.is_empty() && info.fields.is_empty())
+        .ok_or_else(|| {
+            format!(
+                "nested_induction scrutinee `{scrutinee}` is not of a nested inductive type of the document"
+            )
+        })?;
+    if info.group.len() != 1 {
+        return Err(format!(
+            "nested_induction scrutinee `{scrutinee}` is of `{ty}`, which is in a mutual group; the form ranges over a nested type in no mutual group"
+        ));
+    }
+    let family = family_members(&info.group, arguments, env);
+    if family.len() < 2 {
+        return Err(format!(
+            "nested_induction scrutinee `{scrutinee}` is of `{ty}`, which holds no member of itself under List, Option, Result, or a product; use induction"
+        ));
+    }
+    Ok(family)
+}
+
+/// The binder types of each constructor's branch of one member of a nested
+/// inductive's recursive family, in the order of the member's minor
+/// premises in the recursor the pinned Lean generates: the constructor's
+/// fields, then one hypothesis for each field whose type is a member of the
+/// family, in field order.
+fn nested_branch_types(
+    ty: &SemanticType,
+    family: &[SemanticType],
+    env: &Environment<'_>,
+) -> Vec<(String, Vec<SemanticType>)> {
+    let family = Family::Group(family.to_vec());
+    family_constructors(ty, env)
+        .into_iter()
+        .map(|(name, fields)| {
+            let hypotheses = fields
+                .iter()
+                .filter(|field| in_family(field, &family))
+                .count();
+            let mut binders = fields;
+            binders.extend(std::iter::repeat_n(SemanticType::Prop, hypotheses));
+            (name, binders)
+        })
+        .collect()
+}
+
+/// Check the branches of one member against its constructors: every
+/// constructor exactly once, each with exactly the binders of the minor
+/// premise, each proof closed over its binders (and the theorem's other
+/// parameters).
+fn check_nested_branches(
+    owner: &SemanticType,
+    branches: &[SemanticProofBranch],
+    expected: &[(String, Vec<SemanticType>)],
+    scope: &BTreeMap<String, SemanticType>,
+    env: &Environment<'_>,
+) -> Result<(), String> {
+    let mut observed = BTreeSet::new();
+    for branch in branches {
+        check_name(&branch.constructor, "proof constructor")?;
+        if !observed.insert(branch.constructor.clone()) {
+            return Err(format!(
+                "duplicate proof branch `{}` of `{owner}`",
+                branch.constructor
+            ));
+        }
+        let (_, binder_types) = expected
+            .iter()
+            .find(|(name, _)| *name == branch.constructor)
+            .ok_or_else(|| {
+                format!(
+                    "proof branch `{}` is not a constructor of `{owner}`",
+                    branch.constructor
+                )
+            })?;
+        if branch.binders.len() != binder_types.len() {
+            return Err(format!(
+                "proof branch `{}` of `{owner}` expects {} binder(s), received {}",
+                branch.constructor,
+                binder_types.len(),
+                branch.binders.len()
+            ));
+        }
+        let mut nested = scope.clone();
+        for (binder, binder_type) in branch.binders.iter().zip(binder_types) {
+            check_name(binder, "proof binder")?;
+            if nested.insert(binder.clone(), binder_type.clone()).is_some() {
+                return Err(format!("shadowed proof binder `{binder}`"));
+            }
+        }
+        check_proof(&branch.proof, &nested, env)?;
+    }
+    if let Some((missing, _)) = expected.iter().find(|(name, _)| !observed.contains(name)) {
+        return Err(format!(
+            "proof branches of `{owner}` are not exhaustive: the branch for `{missing}` is missing"
+        ));
+    }
+    Ok(())
+}
+
+/// A `nested_induction` proof (§16.9, `SM-37`). The members must be exactly
+/// the auxiliary members of the recursive family, in the order of the family;
+/// each proposition is a well-typed `Prop` over the theorem's other parameters
+/// and its member's binder; every constructor of the type and of each member
+/// has a branch with the binders of its minor premise.
+fn check_nested_induction(
+    scrutinee: &str,
+    branches: &[SemanticProofBranch],
+    members: &[SemanticNestedMember],
+    locals: &BTreeMap<String, SemanticType>,
+    env: &Environment<'_>,
+) -> Result<(), String> {
+    require_language_1_2(env, "nested_induction proof")?;
+    // The Lean the proof lowers to names the recursor of the scrutinee's type,
+    // which the backend reads from the theorem's parameter of that name.
+    if !env.proof_parameters.contains(scrutinee) {
+        return Err(format!(
+            "nested_induction scrutinee `{scrutinee}` is not a parameter of the theorem"
+        ));
+    }
+    let family = nested_family(scrutinee, locals, env)?;
+    let auxiliary = &family[1..];
+    let observed: Vec<&SemanticType> = members.iter().map(|member| &member.r#type).collect();
+    if observed.iter().copied().ne(auxiliary.iter()) {
+        if let Some(duplicate) = observed
+            .iter()
+            .enumerate()
+            .find(|(index, ty)| observed[..*index].contains(ty))
+            .map(|(_, ty)| ty)
+        {
+            return Err(format!(
+                "nested_induction names the member `{duplicate}` more than once"
+            ));
+        }
+        if let Some(missing) = auxiliary.iter().find(|ty| !observed.contains(ty)) {
+            return Err(format!(
+                "nested_induction is missing the member `{missing}` of the recursive family of `{}`",
+                family[0]
+            ));
+        }
+        if let Some(extra) = observed.iter().find(|ty| !auxiliary.contains(**ty)) {
+            return Err(format!(
+                "nested_induction names `{extra}`, which is not a member of the recursive family of `{}`",
+                family[0]
+            ));
+        }
+        return Err(format!(
+            "nested_induction members are out of order: the pinned Lean's recursor takes them as {}",
+            auxiliary
+                .iter()
+                .map(|ty| format!("`{ty}`"))
+                .collect::<Vec<_>>()
+                .join(", ")
+        ));
+    }
+    // The induction eliminates the scrutinee, so no proposition and no branch
+    // can name it.
+    let mut scope = locals.clone();
+    scope.remove(scrutinee);
+    let mut binders = BTreeSet::new();
+    for member in members {
+        check_name(&member.binder, "nested_induction member binder")?;
+        if !binders.insert(member.binder.as_str()) {
+            return Err(format!(
+                "nested_induction member binder `{}` is used by two members",
+                member.binder
+            ));
+        }
+        let mut motive_scope = scope.clone();
+        if motive_scope
+            .insert(member.binder.clone(), member.r#type.clone())
+            .is_some()
+        {
+            return Err(format!(
+                "nested_induction member binder `{}` shadows a theorem parameter",
+                member.binder
+            ));
+        }
+        let names: BTreeSet<String> = motive_scope.keys().cloned().collect();
+        check_term(&member.statement, &names, env, None, &BTreeSet::new())?;
+        require_type(
+            infer_term(&member.statement, &motive_scope, env)?,
+            &SemanticType::Prop,
+            &format!("nested_induction proposition for `{}`", member.r#type),
+        )?;
+    }
+    check_nested_branches(
+        &family[0],
+        branches,
+        &nested_branch_types(&family[0], &family, env),
+        &scope,
+        env,
+    )?;
+    for member in members {
+        check_nested_branches(
+            &member.r#type,
+            &member.branches,
+            &nested_branch_types(&member.r#type, &family, env),
+            &scope,
+            env,
+        )?;
+    }
+    Ok(())
+}
+
 fn check_elimination_proof(
     scrutinee: &str,
     branches: &[SemanticProofBranch],
@@ -8910,9 +9290,18 @@ fn elimination_binder_types(
                 ));
             }
             if induction && env.language_1_2 && info.nested_or_mutual {
-                return Err(format!(
-                    "induction on `{scrutinee}` requires a self-recursive inductive without nested or mutual occurrences; use cases"
-                ));
+                // A nested type in no mutual group has a recursor of its own
+                // to induct over; a mutual group has none that a proof form
+                // names (§16.9, `SM-37`).
+                return Err(if info.group.len() == 1 {
+                    format!(
+                        "induction on `{scrutinee}` requires a self-recursive inductive without nested or mutual occurrences; its type holds itself under a container, so use nested_induction (or cases)"
+                    )
+                } else {
+                    format!(
+                        "induction on `{scrutinee}` requires a self-recursive inductive without nested or mutual occurrences; use cases"
+                    )
+                });
             }
             let substitutions = substitutions(info, arguments);
             info.constructor_types
@@ -9820,6 +10209,10 @@ fn check_theorem(
         &SemanticType::Prop,
         &format!("theorem `{name}` statement"),
     )?;
+    env.proof_parameters = parameters
+        .iter()
+        .map(|parameter| parameter.name.clone())
+        .collect();
     check_proof(proof, &typed_locals(parameters), env)?;
     env.theorems.insert(
         name.to_owned(),

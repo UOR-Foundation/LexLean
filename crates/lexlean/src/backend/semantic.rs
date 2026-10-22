@@ -19,6 +19,20 @@ use crate::source::coverage::Origin;
 
 mod reasoning;
 
+/// The document inductive type of each theorem parameter that has one, by the
+/// parameter's name.
+type ScrutineeTypes = std::collections::BTreeMap<String, MemberRef>;
+
+fn scrutinee_types(parameters: &[SemanticParameter]) -> ScrutineeTypes {
+    parameters
+        .iter()
+        .filter_map(|parameter| match &parameter.r#type {
+            SemanticType::Named { member, .. } => Some((parameter.name.clone(), member.clone())),
+            _ => None,
+        })
+        .collect()
+}
+
 struct Render<'a> {
     prefix: &'a str,
     /// The Lean module each imported module's key names; a module not in it
@@ -145,6 +159,18 @@ fn proof_uses(proof: &SemanticProof, local: &str) -> bool {
                 || definitions
                     .iter()
                     .any(|member| member.module.is_none() && member.name == local)
+        }
+        SemanticProof::NestedInduction {
+            scrutinee,
+            branches,
+            members,
+        } => {
+            scrutinee == local
+                || branch_uses(branches)
+                || members.iter().any(|member| {
+                    member.binder != local
+                        && (term_uses(&member.statement, local) || branch_uses(&member.branches))
+                })
         }
     }
 }
@@ -1190,7 +1216,12 @@ impl Render<'_> {
         }
     }
 
-    fn proof_branch(&self, branch: &SemanticProofBranch, indent: usize) -> String {
+    fn proof_branch(
+        &self,
+        branch: &SemanticProofBranch,
+        indent: usize,
+        owners: &ScrutineeTypes,
+    ) -> String {
         let binders = if branch.binders.is_empty() {
             String::new()
         } else {
@@ -1209,11 +1240,14 @@ impl Render<'_> {
             "  ".repeat(indent),
             identifier(&branch.constructor),
             binders,
-            self.proof(&branch.proof, indent + 1)
+            self.proof(&branch.proof, indent + 1, owners)
         )
     }
 
-    fn proof(&self, proof: &SemanticProof, indent: usize) -> String {
+    /// `owners` names, for each theorem parameter of a document inductive
+    /// type, that type: `nested_induction` names the recursor Lean generated
+    /// for the scrutinee's type (§16.9, `SM-37`).
+    fn proof(&self, proof: &SemanticProof, indent: usize, owners: &ScrutineeTypes) -> String {
         let pad = "  ".repeat(indent);
         match proof {
             SemanticProof::Reflexivity => format!("{pad}rfl\n"),
@@ -1237,7 +1271,7 @@ impl Render<'_> {
                 let mut out = format!("{pad}constructor\n");
                 for branch in branches {
                     out.push_str(&format!("{pad}·\n"));
-                    out.push_str(&self.proof(branch, indent + 1));
+                    out.push_str(&self.proof(branch, indent + 1, owners));
                 }
                 out
             }
@@ -1247,7 +1281,7 @@ impl Render<'_> {
             } => {
                 let mut out = format!("{pad}cases {} with\n", identifier(scrutinee));
                 for branch in branches {
-                    out.push_str(&self.proof_branch(branch, indent));
+                    out.push_str(&self.proof_branch(branch, indent, owners));
                 }
                 out
             }
@@ -1273,7 +1307,49 @@ impl Render<'_> {
                     identifier(scrutinee)
                 );
                 for branch in branches {
-                    out.push_str(&self.proof_branch(branch, indent));
+                    out.push_str(&self.proof_branch(branch, indent, owners));
+                }
+                out
+            }
+            SemanticProof::NestedInduction {
+                scrutinee,
+                branches,
+                members,
+            } => {
+                // The recursor Lean generates for a nested inductive takes
+                // one motive for each member of the type's recursive family,
+                // `motive_1` (the goal) first. The proof states the others,
+                // and the goals that remain are the minor premises, in the
+                // order the checker put the branches in: the constructors of
+                // the type, then those of each member. Two members can share
+                // a constructor name, which `induction ... with` refuses, so
+                // the goals are named by position.
+                let recursor = owners.get(scrutinee).map_or_else(
+                    || format!("{}.rec", identifier(scrutinee)),
+                    |owner| format!("{}.rec", self.member(owner)),
+                );
+                let mut out = format!("{pad}induction {} using {recursor}\n", identifier(scrutinee));
+                for (index, member) in members.iter().enumerate() {
+                    out.push_str(&format!(
+                        "{pad}  (motive_{} := fun {} => {})\n",
+                        index + 2,
+                        identifier(&member.binder),
+                        self.term(&member.statement)
+                    ));
+                }
+                for branch in branches
+                    .iter()
+                    .chain(members.iter().flat_map(|member| &member.branches))
+                {
+                    let binders: String = branch
+                        .binders
+                        .iter()
+                        .map(|name| format!(" {}", identifier(name)))
+                        .collect();
+                    out.push_str(&format!(
+                        "{pad}next{binders} =>\n{}",
+                        self.proof(&branch.proof, indent + 1, owners)
+                    ));
                 }
                 out
             }
@@ -2229,7 +2305,7 @@ pub fn render_lean(
                         "public theorem {name}{}{binders} : {} := by\n{}",
                         render.scoped_type_parameters(type_parameters, declaration),
                         render.term(statement),
-                        render.proof(proof, 1)
+                        render.proof(proof, 1, &scrutinee_types(parameters))
                     ));
                 }
                 SemanticDeclaration::Artifact { .. }

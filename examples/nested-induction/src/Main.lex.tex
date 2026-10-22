@@ -1,0 +1,177 @@
+\begin{lexlean}{Main}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: Json,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: null, fields: []},
+    {name: text, fields: [String]},
+    {name: array, fields: [(List Json)]},
+    {name: object, fields: [(List (String * Json))]}
+  ]
+}
+
+definition{
+  name: size,
+  parameters: [value : Json],
+  result: Nat,
+  body: (match value
+    | Json.null => 1
+    | Json.text content => 1
+    | Json.array items => (1 + (sizeList items))
+    | Json.object entries => (1 + (sizeEntries entries))),
+  mutual: Size,
+  recursive_argument: value
+}
+
+definition{
+  name: sizeList,
+  parameters: [items : (List Json)],
+  result: Nat,
+  body: (match items | List.nil => 0 | List.cons head tail => ((size head) + (sizeList tail))),
+  mutual: Size,
+  recursive_argument: items
+}
+
+definition{
+  name: sizeEntries,
+  parameters: [entries : (List (String * Json))],
+  result: Nat,
+  body: (match entries
+    | List.nil => 0
+    | List.cons head tail => ((sizeEntry head) + (sizeEntries tail))),
+  mutual: Size,
+  recursive_argument: entries
+}
+
+definition{
+  name: sizeEntry,
+  parameters: [entry : (String * Json)],
+  result: Nat,
+  body: (match entry | Prod.mk key value => (size value)),
+  mutual: Size,
+  recursive_argument: entry
+}
+
+definition{
+  name: leaves,
+  parameters: [value : Json],
+  result: Nat,
+  body: (match value
+    | Json.null => 1
+    | Json.text content => 1
+    | Json.array items => (leavesList items)
+    | Json.object entries => (leavesEntries entries)),
+  mutual: Leaves,
+  recursive_argument: value
+}
+
+definition{
+  name: leavesList,
+  parameters: [items : (List Json)],
+  result: Nat,
+  body: (match items | List.nil => 0 | List.cons head tail => ((leaves head) + (leavesList tail))),
+  mutual: Leaves,
+  recursive_argument: items
+}
+
+definition{
+  name: leavesEntries,
+  parameters: [entries : (List (String * Json))],
+  result: Nat,
+  body: (match entries
+    | List.nil => 0
+    | List.cons head tail => ((leavesEntry head) + (leavesEntries tail))),
+  mutual: Leaves,
+  recursive_argument: entries
+}
+
+definition{
+  name: leavesEntry,
+  parameters: [entry : (String * Json)],
+  result: Nat,
+  body: (match entry | Prod.mk key value => (leaves value)),
+  mutual: Leaves,
+  recursive_argument: entry
+}
+
+theorem{
+  name: leaves_le_size,
+  parameters: [value : Json],
+  statement: ((leaves value) <= (size value)),
+  proof: nested_induction{
+    branches: [
+      {proof: linear_arithmetic{definitions: [leaves, size]}, binders: [], constructor: null},
+      {
+        proof: linear_arithmetic{definitions: [leaves, size]},
+        binders: [content],
+        constructor: text
+      },
+      {
+        proof: linear_arithmetic{definitions: [leaves, size]},
+        binders: [items, itemsHypothesis],
+        constructor: array
+      },
+      {
+        proof: linear_arithmetic{definitions: [leaves, size]},
+        binders: [entries, entriesHypothesis],
+        constructor: object
+      }
+    ],
+    members: [
+      {
+        type: (List Json),
+        statement: ((leavesList items) <= (sizeList items)),
+        binder: items,
+        branches: [
+          {
+            proof: linear_arithmetic{definitions: [leavesList, sizeList]},
+            binders: [],
+            constructor: nil
+          },
+          {
+            proof: linear_arithmetic{definitions: [leavesList, sizeList]},
+            binders: [head, tail, headHypothesis, tailHypothesis],
+            constructor: cons
+          }
+        ]
+      },
+      {
+        type: (List (String * Json)),
+        statement: ((leavesEntries entries) <= (sizeEntries entries)),
+        binder: entries,
+        branches: [
+          {
+            proof: linear_arithmetic{definitions: [leavesEntries, sizeEntries]},
+            binders: [],
+            constructor: nil
+          },
+          {
+            proof: linear_arithmetic{definitions: [leavesEntries, sizeEntries]},
+            binders: [head, tail, headHypothesis, tailHypothesis],
+            constructor: cons
+          }
+        ]
+      },
+      {
+        type: (String * Json),
+        statement: ((leavesEntry entry) <= (sizeEntry entry)),
+        binder: entry,
+        branches: [
+          {
+            proof: linear_arithmetic{definitions: [leavesEntry, sizeEntry]},
+            binders: [key, content, contentHypothesis],
+            constructor: mk
+          }
+        ]
+      }
+    ],
+    scrutinee: value
+  },
+  axioms: [Quot.sound, propext]
+}
+\end{semanticmodule}
+\end{lexlean}
