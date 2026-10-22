@@ -1,13 +1,16 @@
 # The release: a tag becomes evidence, a package, and a set of binaries.
 #
 # SPEC.md §30.3 fixes what a release publishes and §30.4 when the project is
-# complete; §2.3 fixes `1.0.0` as the first version satisfying the complete
-# specification. This workflow produces the whole §30.3 artifact set at
-# whatever version is tagged and then runs `cargo xtask release-check` over it,
-# so the release either meets every criterion or says exactly which it does
-# not. Before `1.0.0` the two version-bound criteria cannot hold, and the job
-# below allows those two and no others — at `1.0.0` the allowance is vacuous
-# because `release-check` exits zero.
+# complete; §2.3 names the completion release, the first version satisfying
+# the complete specification (`0.5.0` when it satisfies §30.4, `1.0.0`
+# otherwise). This workflow produces the whole §30.3 artifact set at whatever
+# version is tagged and then runs `cargo xtask release-check` over it, so the
+# release either meets every criterion or says exactly which it does not.
+# Before the completion release the version criterion `source-tag` cannot
+# hold, and the job below allows it and no other — at the completion release
+# the allowance is vacuous because `release-check` exits zero. The version
+# report (`version-output`) is checked at every version: it is the §30.3
+# report with the tagged version, whatever that version is.
 #
 # GitHub Packages has no Cargo registry, so the package this publishes there is
 # the container image: `ghcr.io/<owner>/lexlean`, carrying the compiler and the
@@ -310,10 +313,11 @@ jobs:
         run: |
           set -euo pipefail
           # `release-check` refuses until every §30.3 artifact and §30.4
-          # criterion holds. §2.3 fixes `1.0.0` as the first version that can
-          # satisfy the version criteria, so before then `source-tag` and
-          # `version-output` are expected to be unmet and nothing else is. At
-          # `1.0.0` the command exits zero and this allowance is vacuous.
+          # criterion holds. §2.3 names the completion release as the first
+          # version that can satisfy the version criterion, so before then
+          # `source-tag` is expected to be unmet and nothing else is. At the
+          # completion release the command exits zero and this allowance is
+          # vacuous.
           # The report is written outside `release/`. A shell creates a
           # redirect target before the process it redirects ever runs, so
           # writing it inside would put an unlisted file in the directory
@@ -339,12 +343,12 @@ jobs:
               echo "::error::release-check refused but named no criterion"
               exit 1
             fi
-            unexpected="$(printf '%s\n' "$unmet" | grep -vxE 'source-tag|version-output' || true)"
+            unexpected="$(printf '%s\n' "$unmet" | grep -vxE 'source-tag' || true)"
             if [ -n "$unexpected" ]; then
               echo "::error::criteria unmet for reasons §2.3 does not explain: $unexpected"
               exit 1
             fi
-            echo "the only unmet criteria are the version-bound ones §2.3 defers to 1.0.0"
+            echo "the only unmet criterion is the version-bound one §2.3 defers to the completion release"
           else
             echo "release-check: the complete §30 criterion holds"
           fi
@@ -396,7 +400,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          semantics="$(cat release/compiler-semantics-id.txt)"
+          semantics="$(paste -sd ',' release/compiler-semantics-id.txt)"
           {
             echo "## lexlean ${VERSION}"
             echo
@@ -430,9 +434,9 @@ jobs:
             echo '```'
             echo
             echo "\`release-check.txt\` records what SPEC.md §30 refuses at this version."
-            echo "§2.3 fixes \`1.0.0\` as the first release satisfying the complete"
-            echo "specification, so this tag does not claim that criterion; the report names"
-            echo "each part of it that does not hold. See CHANGELOG.md."
+            echo "§2.3 names the completion release, the first release satisfying the"
+            echo "complete specification; a tag before it does not claim that criterion,"
+            echo "and the report names each part of it that does not hold. See CHANGELOG.md."
           } > notes.md
           gh release create "${GITHUB_REF_NAME}" \
             --title "lexlean ${VERSION}" \

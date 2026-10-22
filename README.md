@@ -49,10 +49,13 @@ cargo install --locked --path crates/lexlean
 ```
 
 Versions follow SPEC.md §30.1 and are recorded in [CHANGELOG.md](CHANGELOG.md).
-§2.3 fixes `0.1.0` as the initial implementation version and `1.0.0` as the
-first release satisfying the complete specification, so a `0.1.0` tag does not
-claim the §30 release criterion — `cargo xtask release-check` reads that
-criterion and says exactly which parts of it do not hold.
+§2.3 fixes `0.1.0` as the initial implementation version and names the
+completion release, the first release satisfying the complete specification:
+`0.5.0` when it satisfies the §30.4 criterion, and `1.0.0` otherwise. A tag
+before it does not claim the §30 release criterion — `cargo xtask release-check`
+reads that criterion from the specification and says exactly which parts of it
+do not hold. `lexlean --version` reports each supported language, `1.0`, `1.1`
+and `1.2`, with its own compiler-semantics ID.
 
 ## The literal example
 
@@ -143,7 +146,7 @@ Prerequisites: Rust 1.97.1 (`rust-toolchain.toml` pins it), [just](https://githu
 
 ```text
 just vv        # the complete normative acceptance gate (SPEC.md §9.2)
-just release   # vv, then the §30 release criterion; refused until 1.0.0
+just release   # vv, then the §30 release criterion; refused until the completion release
 ```
 
 All 444 registered conformance IDs are implemented and pass; `just vv` runs clean from a checkout with the pinned toolchain installed.
@@ -160,7 +163,7 @@ Every row is validated by `just vv`; the IDs link the claim to its register row,
 
 | Capability | IDs | Level |
 | --- | --- | --- |
-| Exact repository identity, layout, generated documents, release gate, total classification of every closed enum by every consumer, and the devcontainer pinned to the toolchains | `RP-01`..`RP-17` | `build` |
+| Exact repository identity, layout, generated documents, release gate reading its criterion from the specification, total classification of every closed enum by every consumer, and the devcontainer pinned to the toolchains | `RP-01`..`RP-17` | `build` |
 | Closed project configuration, canonical lock file, and offline dependency policy | `CF-01`..`CF-18` | `build` |
 | Total lexical closure: every accepted atom is covered by exactly one declared origin | `LX-01`..`LX-14` | `build` |
 | Versioned lexicon packages with closed schemas, denotations, and renderer tokens | `GL-01`..`GL-18` | `build` |

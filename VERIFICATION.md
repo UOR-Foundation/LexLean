@@ -16562,3 +16562,35 @@ vacuous. A hunk the tool cannot place (it spans two blocks, adds a heading or a
 fence, or touches no block) is refused rather than split; that edit is made
 with `replace-block` and `insert-after` one block at a time, or by hand.
 `Ids*` rows stay hand-edited, as decided on #244.
+
+## Planted defects for the release criterion read from the specification (`RP-17`, `CL-18`, #113)
+
+Each case below was run on Linux x86-64 and the tree restored with `git
+checkout` (§27.9). The chapter plants were run with the real command, `cargo
+xtask release-check`, on the committed tree at `0.3.0`; `conformance_rp_17`
+asserts the same plants, and the staged-artifact ones, on a scratch tree at
+`0.5.0` that holds its own copy of `spec/src`, so the committed tree is never
+written.
+
+| Case | Command | Observed |
+| --- | --- | --- |
+| the committed tree | `cargo xtask release-check` | ``source-tag: the workspace version is `0.3.0`, and §2.3 names the completion release `0.5.0` or `1.0.0` `` |
+| §2.3 names another completion release (`0.5.0` as `0.6.0` in `Chapter02`) | same | ``source-tag: … §2.3 names the completion release `0.6.0` or `1.0.0` ``: the criterion moved with the module |
+| §30.3 reports another language (`language 1.2` as `language 1.3` in `Chapter30`) | same | `version-output: the §30.3 version report names languages 1.0, 1.1, 1.3, and the compiler supports 1.0, 1.1, 1.2` |
+| §2.3 without the sentence the reader looks for (`The completion release` as `The final release`) | `conformance_rp_17` | ``source-tag: SPEC.md §2.3 (Chapter02) has no sentence beginning `The completion release` that names a version``, and the same refusal of `version-output`: no criterion is assumed |
+| a four-line version report, as before this change, at `0.5.0` | same | `version-output: release/version-output.txt must be exactly: …` |
+| a semantics-ID list without language `1.2` | same | `semantics-id: release/compiler-semantics-id.txt lists languages 1.0, 1.1, and §30.3 reports 1.0, 1.1, 1.2` |
+| the reader without its comparison with the supported languages (planted in `release::check`) | `cargo test -p repo-conformance conformance_rp_17` | the test fails at the `language 1.3` plant; restored |
+| the reader with the completion versions written in rather than read from §2.3 (planted in `release::criterion`) | same | the test fails at the `0.6.0` plant; restored |
+| the binary printing only language `1.0` (the version report before this change) | `cargo test -p repo-conformance conformance_cl_18` | the test fails: the four-line report against the eight-line one; it was run so at the skeleton commit |
+
+At `0.5.0`, with the version report the binary prints and the semantics-ID list
+`cargo xtask release-artifacts` writes, `source-tag`, `semantics-id` and
+`version-output` all hold (`conformance_rp_17`).
+
+*What the evidence is.* `release-check` reads two items of the chapter modules
+through the projector, which is Rust and can falsify a reading, never establish
+one (C9). The plants show the reading is not vacuous: a change to either item
+changes what is refused, and a reader that ignores either item fails the case.
+CL-18 compares the binary's report both with the compiled-in identities and with
+the §30.3 fence as SPEC.md states it, read without `release-check`.
