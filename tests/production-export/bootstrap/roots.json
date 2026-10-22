@@ -65,6 +65,14 @@
       "version": "1.0.0"
     },
     {
+      "name": "lower_types",
+      "root": "LexLeanBoot.RustLower.lowerTypes",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "parse_audit_output",
       "root": "LexLeanBoot.AxiomOutput.parseAuditOutput",
       "targets": [
