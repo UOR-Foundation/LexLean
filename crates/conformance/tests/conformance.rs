@@ -686,6 +686,11 @@ fn conformance_df_18() {
 }
 
 #[test]
+fn conformance_df_19() {
+    repo_conformance::cases::run("DF-19");
+}
+
+#[test]
 fn conformance_pf_01() {
     repo_conformance::cases::run("PF-01");
 }

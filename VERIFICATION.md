@@ -792,6 +792,53 @@ test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 238 filtered out
 Removed: the test was restored; `conformance_df_16` passes and the
 `recursion-wrong-argument` negative fixture fails with `LLT4001`.
 
+### a mutual group over the family of a nested inductive can fail (DF-19)
+
+A mutual definition group may decrease on any member of the recursive family
+of a nested inductive (`DF-19`, §17.12, #278): `Json` with `array (List Json)`
+and `object (List (String * Json))` has the four members `Json`, `List Json`,
+`List (String * Json)`, and `String * Json`, and `tests/nested-family` holds
+two groups of four members over it, `size` and `leaves`. The family is one
+computation (`family_members`) shared by the group's family test and by the
+rule that a pattern binder is smaller exactly when its type is a member; the
+unit tests `the_family_is_discovered_in_the_order_of_the_pinned_recursors_motives`
+and `a_member_found_inside_a_product_joins_the_family` pin the order against
+the motives `#check @A.rec` reports under Lean 4.32.1 for a type with seven.
+
+Command and host: `cargo test -p repo-conformance --test conformance --
+conformance_df_19 conformance_df_13 conformance_df_14 conformance_df_16
+conformance_df_17` and `cargo test -p lexlean --lib family_` on the 2-core
+Linux x86-64 machine the series is prepared on, Lean 4.32.1, rustc stable
+1.97.0. `conformance_df_19` verifies `tests/nested-family` under the pinned
+Lean (two theorems evaluate both groups on a value nesting all four members),
+and refuses four plants with `LLT4001`: a call on a `Json` built from the
+pair's string, a call on the matched list itself, a list of pairs whose first
+component is `Nat`, and a pair whose first component is `Nat`.
+
+Planted: a pattern binder whose type is a product never smaller
+(`in_family(field, family) && !matches!(field, SemanticType::Product { .. })`),
+so `sizeEntry` could not call `size` on the pair's `Json`. Command:
+`cargo test -p repo-conformance --test conformance -- conformance_df_19`.
+
+```text
+check succeeds: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLT4001"), message: "phase link: recursive call `sizeEntry` is not on a structurally smaller value", ...
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 444 filtered out
+```
+
+Planted: the arm of `family_constructor_fields` that gives a product its two
+fields removed. Command: `cargo test -p lexlean --lib family_`. Expected: a
+family whose fourth member is found only inside a product loses it.
+
+```text
+test ir::semantic::family_order_tests::a_member_found_inside_a_product_joins_the_family ... FAILED
+test result: FAILED. 2 passed; 1 failed; 0 ignored; 0 measured; 209 filtered out
+```
+
+Removed: both plants were restored; the cases pass. Before the change the
+same project is refused at its first group: `mutual group `Size` members
+decrease on different recursive families` (the old `family_of` saw a list of
+pairs as a list of one element type).
+
 ### recursion call graph check can fail
 
 Planted: `check_group_call_graph` returned `Ok(())` at once, so a mutual

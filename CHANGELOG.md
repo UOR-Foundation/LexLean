@@ -17,6 +17,14 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- Structural recursion over the recursive family of a nested inductive type,
+  #278 (SPEC.md §17.12, `DF-19`). A mutual definition group may decrease on any
+  member of the family the pinned Lean takes as the motives of the type's
+  recursor (the type, then each `List`, `Option`, `Result`, or product that
+  holds it, in the order of discovery), so a function over a type with a
+  constructor that holds `List (String * Json)` recurses through the list and
+  through the pair. One checker change; no file of the compiler-semantics
+  digest moves, so no identity moves. The register is 446 IDs.
 - The Rust runtime as source, #91 stage 4 (SPEC.md §17.16, §17.17, `SP-21`,
   `RB-15`, `SP-23`, `SM-35`, `SM-36`, `RB-16`, `SP-22`, `RB-17`, `SP-25`).
   The declared Rust machine grows by the primitives the runtime is written in

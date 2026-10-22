@@ -824,6 +824,12 @@ suite = "declarations"
 statement = "Language 1.2 state threading is explicit: ordered folds and bounded iteration pass the state through a direct closure, executable definitions may use them, and every iteration carries a natural-number bound."
 
 [[id]]
+id = "DF-19"
+level = "build"
+suite = "declarations"
+statement = "Language 1.2 mutual definition groups recurse structurally over the whole recursive family of a nested inductive, the types the pinned Lean takes as the motives of its recursor: the type itself, then each distinct application of `List`, `Option`, `Result`, or a product that holds the type in a constructor field of an earlier member, in the order of discovery, so that a group may decrease on the type, on a list of its values, on a list of pairs whose second component is one, and on such a pair, and in a member's top-level match every pattern binder whose type is a member of the family is structurally smaller; a group that decreases on a type outside the family and a call that passes anything but a smaller binder of the family are each refused as LLT4001, and each group lowers to one Lean mutual block of structural definitions that the pinned Lean accepts."
+
+[[id]]
 id = "PF-01"
 level = "build"
 suite = "proofs"
