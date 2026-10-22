@@ -1,0 +1,143 @@
+\begin{lexlean}{RuntimeSyntax}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{TargetSyntax}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: RtType,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: unit, fields: []},
+    {name: bool, fields: []},
+    {name: nat, fields: []},
+    {name: fixed, fields: [TargetSyntax::IntKind]},
+    {name: ordering, fields: []},
+    {name: selfType, fields: []},
+    {name: param, fields: [Nat]},
+    {name: ref, fields: [RtType]},
+    {name: pair, fields: [RtType, RtType]},
+    {name: named, fields: [String, (List RtType)]}
+  ]
+}
+
+inductive{
+  name: RtLit,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: unit, fields: []}, {name: bool, fields: [Bool]}, {name: nat, fields: [Nat]}]
+}
+
+inductive{
+  name: RtPat,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: wild, fields: []},
+    {name: bind, fields: [String]},
+    {name: path, fields: [(List String)]}
+  ]
+}
+
+inductive{
+  name: RtExpr,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: var, fields: [String]},
+    {name: lit, fields: [RtLit]},
+    {name: path, fields: [(List String)]},
+    {name: call, fields: [(List String), (List RtExpr)]},
+    {name: method, fields: [RtExpr, String, (List RtExpr)]},
+    {name: field, fields: [RtExpr, Nat]},
+    {name: borrow, fields: [RtExpr]},
+    {name: equals, fields: [RtExpr, RtExpr]},
+    {name: matchOn, fields: [RtExpr, (List RtArm)]}
+  ],
+  mutual: RtCode
+}
+
+inductive{
+  name: RtArm,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: mk, fields: [RtPat, RtExpr]}],
+  mutual: RtCode
+}
+
+inductive{
+  name: RtBlock,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: mk, fields: [(List RtExpr), RtExpr]}],
+  mutual: RtCode
+}
+
+structure{
+  name: RtGeneric,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: name, type: String}, {name: bounds, type: (List String)}]
+}
+
+structure{
+  name: RtParam,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: name, type: String}, {name: type, type: RtType}]
+}
+
+structure{
+  name: RtSig,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: name, type: String},
+    {name: receiver, type: Bool},
+    {name: parameters, type: (List RtParam)},
+    {name: result, type: RtType}
+  ]
+}
+
+structure{
+  name: RtFn,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: signature, type: RtSig},
+    {name: generics, type: (List RtGeneric)},
+    {name: public, type: Bool},
+    {name: body, type: RtBlock}
+  ]
+}
+
+inductive{
+  name: RtItem,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: useItem, fields: [(List String), (Option String)]},
+    {name: unitStruct, fields: [String, (List String)]},
+    {name: alias, fields: [String, (List String), RtType]},
+    {name: staticItem, fields: [String, RtType, RtExpr]},
+    {name: traitItem, fields: [String, (List RtSig)]},
+    {name: implItem, fields: [(List RtGeneric), (Option String), RtType, (List RtFn)]},
+    {name: fnItem, fields: [RtFn]}
+  ]
+}
+
+inductive{
+  name: RtProfile,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: core, fields: []}, {name: std, fields: []}]
+}
+
+structure{
+  name: RtCrate,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: profile, type: RtProfile}, {name: items, type: (List RtItem)}]
+}
+\end{semanticmodule}
+\end{lexlean}

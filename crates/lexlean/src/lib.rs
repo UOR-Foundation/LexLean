@@ -211,13 +211,19 @@ pub fn identity_bytes<'a>(path: &str, bytes: &'a [u8]) -> std::borrow::Cow<'a, [
     // it to its data form recurses with it, so the reading has a stack of its
     // own rather than the two megabytes of the thread that asks (a test's, or
     // a debug build's worker).
+    // A thread that cannot be had reads on the caller's stack, which is slower
+    // to fail on a deep module but never a panic; a panic of the reader itself
+    // is the reader's, and is passed on as it was raised.
     let data = std::thread::scope(|scope| {
-        std::thread::Builder::new()
+        match std::thread::Builder::new()
             .stack_size(READER_STACK)
             .spawn_scoped(scope, || surface::identity::data_form(path, bytes))
-            .expect("a reader thread")
-            .join()
-            .expect("the reader does not panic")
+        {
+            Ok(reader) => reader
+                .join()
+                .unwrap_or_else(|panic| std::panic::resume_unwind(panic)),
+            Err(_) => surface::identity::data_form(path, bytes),
+        }
     });
     data.map_or(std::borrow::Cow::Borrowed(bytes), std::borrow::Cow::Owned)
 }

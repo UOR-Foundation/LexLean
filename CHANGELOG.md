@@ -31,13 +31,36 @@ and Unreleased holds what has landed since.
   module (a top-level member the schema forbids), which the notation cannot
   spell. A file that changes between the proof and the replacement refuses the
   migration (`LLV7010`), and a replacement that fails restores every file
-  already replaced and reports every restore that failed.
+  already replaced and reports every restore that failed. A refusal creates no
+  build root, and a data form that is not canonical JSON (which language 1.1
+  `check` refuses with `LLT4001`) is refused with `LLP2003` and not
+  canonicalized.
   `Engine` keeps its seven entry points; the function is
-  `lexlean::api::migrate::migrate`. The register is 444 IDs. The notation
+  `lexlean::api::migrate::migrate`. The register is 446 IDs. The notation
   reader no longer takes a keyword followed by `{` inside a parenthesised term
   for the keyword's own form: a `match` (or `not`, `first`, `second`, `cons`,
   `nil`, ...) that a readable form cannot carry, such as one holding a variable
   named `first`, is printed generically (SPEC.md §17.21.1) and now reads back.
+- The Rust runtime as source, #91 stage 4 (SPEC.md §17.16, §17.17, `SP-21`,
+  `RB-15`, `SP-23`, `SM-35`, `SM-36`, `RB-16`, `SP-22`, `RB-17`, `SP-25`).
+  The declared Rust machine grows by the primitives the runtime is written in
+  (the bit operations, the natural and integer comparisons and remainders, the
+  checked natural and integer arithmetic that is `Some` or `None` on overflow)
+  and the Rust AST by the machine callee and the overflow value. Language 1.2
+  gains `term_cases` and `cases` on a Boolean as proof forms. The core
+  runtime's 110 numeric functions are the definitions of the module
+  `RustRuntime` (`coreCrate`), decoded and printed in place of the handwritten
+  text and held to it by a differential and to `RustSemantics` by a
+  `refines_<path>` theorem each; its support items (`use`, `Overflow`, the
+  work counter, the traits `Same` and `Key` and their impls, `equal`,
+  `compare`) are the definitions of `RuntimeSupport`, a crate of the second
+  closed module `RuntimeSyntax`, checked by a validator of 24 named rules, with
+  the meaning of `equal` and `compare` stated by `RuntimeSemantics` and proved
+  against the calculus primitives for the core profile's scalars and pairs of
+  two scalars (nested keys are validated, not proved: #249). The handwritten
+  base text is gone; the handwritten runtime is kept as the oracle. The
+  compiler-semantics ID moves; records bound to it regenerate once, at the
+  landing. The register is 445 IDs.
 - Two source packages of the standard library and the application that uses
   them, #32 (SPEC.md §17.22, §10.5, `SL-03`, `SL-04`, `EX-09`). `std-models`
   (`LexLeanStdModels.Scores`) holds the score combinators `best`, `margin`, and
