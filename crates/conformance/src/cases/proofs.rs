@@ -16,6 +16,15 @@ const M: &str = "LexLeanExample.Main";
 /// axioms their runtime definitions pin, checked addition only Lean's two.
 const RUNTIME_BOUNDS: &[(&str, &[&str])] = &[
     (
+        "LexLeanLaws.splitOnAux_length_le",
+        &["Classical.choice", "Quot.sound", "propext"],
+    ),
+    (
+        "LexLeanLaws.splitOn_length_le",
+        &["Classical.choice", "Quot.sound", "propext"],
+    ),
+    ("LexLeanLaws.length_utf8Encode", &[]),
+    (
         "LexLeanLaws.splitExact_fits",
         &["Classical.choice", "Quot.sound", "propext"],
     ),
@@ -25,6 +34,26 @@ const RUNTIME_BOUNDS: &[(&str, &[&str])] = &[
     ),
     ("LexLeanLaws.checkedAdd_fits", &["Quot.sound", "propext"]),
 ];
+
+/// A row of `LexLeanRuntime.Laws` that belongs to the runtime bounds: one of
+/// [`RUNTIME_BOUNDS`], or a row Lean realized while proving them (an equation
+/// lemma of the split, the position step, or the decoder, a matcher, or a
+/// private proof term of one of them).
+fn is_runtime_bound_row(name: &str) -> bool {
+    [
+        "splitOnAux",
+        "splitOn_length_le",
+        "length_utf8Encode",
+        "splitExact",
+        "utf8Decode_length",
+        "checkedAdd_fits",
+        "String.Pos.Raw.next.",
+        "String.fromUTF8.",
+        "String.isEmpty.",
+    ]
+    .iter()
+    .any(|part| name.contains(part))
+}
 
 /// A one-theorem module with the given statement and proof body.
 fn theorem_module(statement: &str, proof: &str) -> String {
@@ -1022,8 +1051,13 @@ pub(crate) fn run(id: &str) {
                 );
             }
             // Laws an application or the rewrite set relies on carry no
-            // axiom beyond the three Lean's standard library uses.
+            // axiom beyond the three Lean's standard library uses. The runtime
+            // bounds (PF-24) state facts of the split and the decoder, whose
+            // runtime definitions pin Classical.choice, and are held there.
             for (name, axioms) in &laws.declarations {
+                if is_runtime_bound_row(name) {
+                    continue;
+                }
                 assert!(
                     axioms
                         .iter()
@@ -1248,7 +1282,7 @@ pub(crate) fn run(id: &str) {
             let guards = support::lean_text(&build, "Guards");
             for application in [
                 "  exact @LexLeanLaws.splitExact_fits (text) (\"\\n\") ((4097 : UInt32)) (4096) newline_separates lines_fit\n",
-                "  exact @LexLeanLaws.checkedAdd_fits (line) ((1 : UInt32)) (4097) counter_fits\n",
+                "  exact @LexLeanLaws.checkedAdd_fits (line) ((1 : UInt32)) ((4097 : UInt32)) counter_fits\n",
                 "  exact @LexLeanLaws.utf8Decode_length (request) (text) (4096)\n",
                 "  exact @LexLeanLaws.utf8Decode_length (request) (text) (16384)\n",
             ] {
@@ -1273,8 +1307,8 @@ pub(crate) fn run(id: &str) {
                             "  statement: (((prim length (prim utf8_encode text : Bytes) : Nat) <= 4097) -> ((match (prim split_exact",
                         ),
                         (
-                            "  statement: (((prim to_nat line : Nat) <= 4097) ->",
-                            "  statement: (((prim to_nat line : Nat) <= 4098) ->",
+                            "  statement: ((line <= (4097 : UInt32)) ->",
+                            "  statement: ((line <= (4098 : UInt32)) ->",
                         ),
                         (
                             "(((prim length request : Nat) <= 16384) -> ((prim length (prim utf8_encode text : Bytes) : Nat) <= 16384))),",

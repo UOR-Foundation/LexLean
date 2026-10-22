@@ -2134,6 +2134,15 @@ The proof parser MUST reject:
 - a proof step after the current branch has closed;
 - a branch that does not close.
 
+A language-1.2 proof cites a lemma of the runtime library only through the
+`law` form (§17.12, *Fold laws* and *Runtime bounds*), which applies a
+registered theorem of `LexLeanRuntime.Laws` by name; no raw Lean names it. The
+runtime bounds `split_exact_fits`, `utf8_decode_length`, and
+`checked_add_fits` bound the piece count of `split_exact` by the UTF-8 byte
+length plus one, the UTF-8 byte length of a decoded string by the length of
+its bytes, and the result of `UInt32` `checked_add`, so that a model proves its
+defensive error branches unreachable.
+
 ---
 
 ## 17. Semantic elaboration and IR
@@ -2390,7 +2399,9 @@ name, module, or feature. Generated Lean may import only the foundational
 modules listed in the core data and other modules in the generated graph. The
 generic environment-reconstruction runtime may privately import `Lean`, and
 the runtime of a version 2 module also `Lean.Meta.Constructions.SparseCasesOn`
-in full (below); no
+in full (below) and `Init.Data.String.Legacy` in full, whose bodies of
+`String.splitOn` and its loop Lean does not expose and the runtime bound of
+`split_exact` unfolds (§17.12, *Runtime bounds*); no
 generated module may import an independently authored implementation of the
 declarations being generated.
 
@@ -3235,6 +3246,34 @@ rules are LexLean's own; the diagnostic each linking failure raises is
 6. **Closed instances.** `decide` evaluates a closed statement and does not
    decide one with a free variable, so a statement over all inputs is proved
    by the laws and `omega`, never by enumerating inputs.
+
+**Runtime bounds.** `LexLeanRuntime.Laws` also states three bounds of the
+runtime, registered in `language/runtime-1.2/laws.toml` as laws a `law` proof
+applies by name like a fold law, so that a model proves a defensive error
+branch of the split, the decoder, or checked addition unreachable without raw
+Lean (§16.12). Each conclusion is an implication from a bound on the input, and
+each closed side condition is a premise a prior theorem discharges:
+
+- `split_exact_fits` (`LexLeanLaws.splitExact_fits`, parameters `s d : String`,
+  `m : UInt32`, `n : Nat`, premises `equal d "" = false` and `n < toNat m`):
+  `length (utf8_encode s) <= n` implies that `split_exact s d m` is `some`,
+  written `(match split_exact s d m | none => false | some _ => true) = true`.
+  A split on a separator that is not empty has at most the UTF-8 byte length
+  of the string plus one pieces, so a maximum above any bound on that length
+  admits it.
+- `utf8_decode_length` (`LexLeanLaws.utf8Decode_length`, parameters
+  `b : Bytes`, `s : String`, `n : Nat`, no premise): `utf8_decode b = some s`
+  implies that `length b <= n` implies `length (utf8_encode s) <= n`; a
+  decoded string's UTF-8 byte length is bounded by the length of the bytes it
+  was decoded from.
+- `checked_add_fits` (`LexLeanLaws.checkedAdd_fits`, parameters
+  `a b n : UInt32`, premise `toNat n + toNat b < 4294967296`): `a <= n`
+  implies that `checked_add a b` is `some`, written as for the split.
+
+The split and the decoder pin `Classical.choice`, so the first two laws and a
+theorem proved by them observe `Classical.choice`, `Quot.sound`, and
+`propext`; `checked_add_fits` observes `Quot.sound` and `propext`. The fold
+laws and the rewrite set of `linear_arithmetic` do not use them.
 
 #### Models, contracts, realizations, and evidence (language 1.2)
 

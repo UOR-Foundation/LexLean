@@ -841,6 +841,20 @@ definition{
   parameters: [],
   result: DocRows::Item,
   body: constructor{
+    arguments: [
+      (cons "A language-1.2 proof cites a lemma of the runtime library only through the" (cons "`law` form (§17.12, *Fold laws* and *Runtime bounds*), which applies a" (cons "registered theorem of `LexLeanRuntime.Laws` by name; no raw Lean names it. The" (cons "runtime bounds `split_exact_fits`, `utf8_decode_length`, and" (cons "`checked_add_fits` bound the piece count of `split_exact` by the UTF-8 byte" (cons "length plus one, the UTF-8 byte length of a decoded string by the length of" (cons "its bytes, and the result of `UInt32` `checked_add`, so that a model proves its" (cons "defensive error branches unreachable." (nil String)))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0065,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
     arguments: [(cons "---" (nil String))],
     constructor: DocRows::Item.para,
     type_arguments: []

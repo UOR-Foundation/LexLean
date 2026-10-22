@@ -20,7 +20,7 @@ definition{
   body: (match (prim checked_add line (1 : UInt32) : (Option UInt32))
     | Option.none => (cons "status error" (cons "request line-overflow" (nil String)))
     | Option.some next => (nil String)),
-  axioms: []
+  axioms: [Quot.sound, propext]
 }
 
 definition{
@@ -46,7 +46,7 @@ theorem{
   parameters: [],
   statement: (4096 < (prim to_nat (4097 : UInt32) : Nat)),
   proof: decide{},
-  axioms: []
+  axioms: [Quot.sound, propext]
 }
 
 theorem{
@@ -66,20 +66,20 @@ theorem{
 theorem{
   name: counter_fits,
   parameters: [],
-  statement: ((4097 + (prim to_nat (1 : UInt32) : Nat)) < 4294967296),
+  statement: (((prim to_nat (4097 : UInt32) : Nat) + (prim to_nat (1 : UInt32) : Nat)) < 4294967296),
   proof: decide{},
-  axioms: []
+  axioms: [Quot.sound, propext]
 }
 
 theorem{
   name: line_overflow_unreachable,
   parameters: [line : UInt32],
-  statement: (((prim to_nat line : Nat) <= 4097) -> ((match (prim checked_add line (1 : UInt32) : (Option UInt32))
+  statement: ((line <= (4097 : UInt32)) -> ((match (prim checked_add line (1 : UInt32) : (Option UInt32))
     | Option.none => false
     | Option.some next => true) = true)),
   proof: law{
     name: checked_add_fits,
-    arguments: [line, (1 : UInt32), 4097],
+    arguments: [line, (1 : UInt32), (4097 : UInt32)],
     premises: [counter_fits]
   },
   axioms: [Quot.sound, propext]
