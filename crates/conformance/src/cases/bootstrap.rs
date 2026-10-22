@@ -21,6 +21,7 @@ use crate::rust_packages;
 use crate::support::{self, P};
 
 mod rust_lower;
+mod rust_moves;
 mod rust_print;
 mod rust_validate;
 mod scan;

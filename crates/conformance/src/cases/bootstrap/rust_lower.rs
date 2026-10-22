@@ -24,6 +24,7 @@ use super::calculus_check::{
     adt as constructor, committed, enc_ty, literal_corpus, mutants, prim_corpus, program_arguments,
     program_of, program_size, shape_corpus, targeted, ty_chain, Source,
 };
+use super::rust_moves;
 use super::rust_print::enc_items;
 use super::{bool_val as boolean, list, Run, Seeded};
 use crate::support;
@@ -47,6 +48,19 @@ const CERTIFICATE_BUDGET: u64 = 3_145_728;
 
 /// The module of the typing root, which is `CalculusCheck`'s own.
 const TYPING: &str = "LexLeanBoot.CalculusCheck";
+
+/// The module of the pass that moves last reads.
+const MOVES: &str = "LexLeanBoot.RustMoves";
+
+/// The mutants of the crates the moves are run on: under the evaluator and
+/// under rustc.
+/// The crates of at most this many expressions are the evaluator's share.
+const MOVES_EVALUATOR_NODES: usize = 400;
+/// The crates the moves are run on, and those within the evaluator's bound.
+const MOVES_CRATES: usize = 0;
+const MOVES_WITHIN: usize = 0;
+const MOVES_EVALUATOR_MUTANTS: usize = 150;
+const MOVES_RUSTC_MUTANTS: usize = 1_500;
 
 /// A tree of typing sites as the `Ty` the typing root returns: a node is a
 /// pair of its own type (nil when it reads none) and the chain of its
@@ -831,6 +845,57 @@ fn assert_eligible(row: &Json, root: &str, effects: &[&str]) {
     );
 }
 
+/// A defect planted in the source of `RustMoves`, caught on the runs of the
+/// moves.
+struct MovePlant {
+    label: &'static str,
+    site: &'static str,
+    replacement: &'static str,
+}
+
+const MOVE_PLANTS: [MovePlant; 8] = [
+    MovePlant {
+        label: "a last read never moves",
+        site: "(((project found whole) =? 0) && ((prim length (project found parts) : Nat) =? 0))",
+        replacement: "false",
+    },
+    MovePlant {
+        label: "a component moves though another is read twice",
+        site: "(atMostOne (project found parts))",
+        replacement: "true",
+    },
+    MovePlant {
+        label: "the reads of two alternatives are added",
+        site: "(natMax (project current whole) (project (second head) whole))",
+        replacement: "((project current whole) + (project (second head) whole))",
+    },
+    MovePlant {
+        label: "the holder of an application is read after its operands",
+        site: "(let held : (List (RustValidate::Id * Later)) := (readWhole live holder); (readsE args held 0))",
+        replacement: "(let held : (List (RustValidate::Id * Later)) := (readsE args live 0); (readWhole held holder))",
+    },
+    MovePlant {
+        label: "the left of a pair is read before its right",
+        site: "(let after : (List (RustValidate::Id * Later)) := (readsE right live 0); (readsE left after 0))",
+        replacement: "(let after : (List (RustValidate::Id * Later)) := (readsE left live 0); (readsE right after 0))",
+    },
+    MovePlant {
+        label: "a pattern does not unbind its names",
+        site: "| RustAst::Pat.PBind ident => (liveRemove live ident)",
+        replacement: "| RustAst::Pat.PBind ident => live",
+    },
+    MovePlant {
+        label: "a pattern that binds both components is a projection",
+        site: "(((boundCount parts) =? 1) && (1 <? (partsLength parts)))",
+        replacement: "(1 <? (partsLength parts))",
+    },
+    MovePlant {
+        label: "the state of a loop is not read",
+        site: "(readWhole ran state)",
+        replacement: "ran",
+    },
+];
+
 fn eligibility_report(
     project: &support::P,
     build_id: &lexlean::Sha256Digest,
@@ -878,6 +943,16 @@ fn eligibility(project: &support::P) {
         .find(|row| row["root"] == format!("{TYPING}.siteTrees"))
         .expect("siteTrees is a production root of CalculusCheck");
     assert_eligible(row, "siteTrees", &["allocation", "overflow", "recursion"]);
+    // The pass that moves last reads is a module of its own.
+    let moving = eligibility_report(project, &build_id, MOVES);
+    let rows = moving["roots"].as_array().expect("roots");
+    assert_eq!(rows.len(), 1, "applyMoves is the one root of RustMoves");
+    assert_eq!(rows[0]["root"], format!("{MOVES}.applyMoves"));
+    assert_eligible(
+        &rows[0],
+        "applyMoves",
+        &["allocation", "overflow", "recursion"],
+    );
 }
 
 pub(super) fn case() {
@@ -945,6 +1020,39 @@ pub(super) fn case() {
     let dead = super::lower(&checked, &project, MODULE, "deadFunctions");
     let fallible = super::lower(&checked, &project, MODULE, "fallibleFunctions");
     let types = super::lower(&checked, &project, MODULE, "lowerTypes");
+    let moving = super::lower(&checked, &project, MOVES, "applyMoves");
+    let move_base = rust_moves::base();
+    let move_runs: Vec<Run> = move_base.iter().map(rust_moves::run).collect();
+    let move_small: Vec<Run> = move_base
+        .iter()
+        .zip(&move_runs)
+        .filter(|(krate, _)| super::rust_validate::weight(krate) <= MOVES_EVALUATOR_NODES)
+        .map(|(_, run)| run.clone())
+        .collect();
+    let move_evaluator_mutants: Vec<Run> =
+        rust_moves::mutants(MOVES_EVALUATOR_MUTANTS, 0x0B57_0103)
+            .iter()
+            .map(rust_moves::run)
+            .collect();
+    let move_rustc_mutants: Vec<Run> = rust_moves::mutants(MOVES_RUSTC_MUTANTS, 0x0B57_0203)
+        .iter()
+        .map(rust_moves::run)
+        .collect();
+    assert_eq!(
+        (
+            move_base.len(),
+            move_small.len(),
+            move_evaluator_mutants.len(),
+            move_rustc_mutants.len()
+        ),
+        (
+            MOVES_CRATES,
+            MOVES_WITHIN,
+            MOVES_EVALUATOR_MUTANTS,
+            MOVES_RUSTC_MUTANTS
+        ),
+        "the crates the moves are run on, those within the evaluator's bound, and the mutants"
+    );
     let every: Vec<&Vector> = all.iter().collect();
     // On every host: the rendered rust-std packages, compiled by that host's
     // pinned rustc, agree with the oracle on the vectors, leg by leg.
@@ -955,6 +1063,7 @@ pub(super) fn case() {
             ("deadFunctions", &dead, &runs(&every, dead_leg)),
             ("fallibleFunctions", &fallible, &runs(&every, fallible_leg)),
             ("lowerTypes", &types, &runs(&every, types_leg)),
+            ("applyMoves", &moving, &move_runs),
         ],
         "vectors",
     );
@@ -992,6 +1101,26 @@ pub(super) fn case() {
         );
         detection.push((leg, evaluated.into_iter().chain(mutated_runs).collect()));
     }
+    let moves_agree = |label: &str, runs: &[Run]| {
+        let disagreements = super::evaluate(&moving, runs, 5);
+        assert!(
+            disagreements.is_empty(),
+            "applyMoves: the evaluator and the oracle disagree on the {label}: {disagreements:?}"
+        );
+    };
+    moves_agree("crates", &move_small);
+    moves_agree("seeded mutants", &move_evaluator_mutants);
+    eprintln!(
+        "BS-07: applyMoves: the evaluator agrees on {} crates and {} seeded mutants ({:?})",
+        move_small.len(),
+        move_evaluator_mutants.len(),
+        started.elapsed()
+    );
+    let move_detection: Vec<Run> = move_small
+        .iter()
+        .chain(&move_evaluator_mutants)
+        .cloned()
+        .collect();
     let large: Vec<&Vector> = rustc_mutants.iter().collect();
     super::rust_validate::rustc_differential(
         "BS-07",
@@ -1000,6 +1129,7 @@ pub(super) fn case() {
             ("deadFunctions", &dead, &runs(&large, dead_leg)),
             ("fallibleFunctions", &fallible, &runs(&large, fallible_leg)),
             ("lowerTypes", &types, &runs(&large, types_leg)),
+            ("applyMoves", &moving, &move_rustc_mutants),
         ],
         "seeded",
     );
@@ -1036,6 +1166,32 @@ pub(super) fn case() {
             plant.label, disagreements[0]
         );
     }
+    for plant in &MOVE_PLANTS {
+        let planted = support::P::bootstrap();
+        let source = planted.read_raw("src/RustMoves.lex.tex");
+        assert_eq!(
+            source.matches(plant.site).count(),
+            1,
+            "{}: the plant site occurs once",
+            plant.label
+        );
+        planted.write(
+            "src/RustMoves.lex.tex",
+            &source.replacen(plant.site, plant.replacement, 1),
+        );
+        let checked = support::checked_project(&planted);
+        let low = super::lower(&checked, &planted, MOVES, "applyMoves");
+        let disagreements = super::evaluate(&low, &move_detection, 1);
+        assert!(
+            !disagreements.is_empty(),
+            "{}: the planted defect is detected by the differential",
+            plant.label
+        );
+        eprintln!(
+            "BS-07: plant detected: {}: {}",
+            plant.label, disagreements[0]
+        );
+    }
     // Under the pinned Lean, the production export certifies the root; its
     // package is the committed one and realizes the program the differential ran.
     if !support::lean_backed("BS-07") {
@@ -1048,6 +1204,7 @@ pub(super) fn case() {
     // quarters of `max_file_bytes` leaves the next slice no room.
     for exported_root in &exported.output.result.roots {
         if !exported_root.root.starts_with(&format!("{MODULE}."))
+            && !exported_root.root.starts_with(&format!("{MOVES}."))
             && exported_root.root != format!("{TYPING}.siteTrees")
         {
             continue;
@@ -1087,15 +1244,18 @@ pub(super) fn case() {
         let (low, member) =
             if let Some(member) = exported_root.root.strip_prefix(&format!("{MODULE}.")) {
                 (
-                    if member == "deadFunctions" {
-                        &dead
-                    } else {
-                        &fallible
+                    match member {
+                        "deadFunctions" => &dead,
+                        "fallibleFunctions" => &fallible,
+                        "lowerTypes" => &types,
+                        other => panic!("{other} is not a root of {MODULE}"),
                     },
                     member,
                 )
             } else if exported_root.root == format!("{TYPING}.siteTrees") {
                 (&sites, "siteTrees")
+            } else if exported_root.root == format!("{MOVES}.applyMoves") {
+                (&moving, "applyMoves")
             } else {
                 continue;
             };
@@ -1120,8 +1280,8 @@ pub(super) fn case() {
     }
     assert_eq!(
         realized,
-        ROOTS.len() + 1,
-        "one certified package per root, and the typing root"
+        ROOTS.len() + 2,
+        "one certified package per root, the typing root, and the moves"
     );
     eprintln!("BS-07: passed in {:?}", started.elapsed());
 }
