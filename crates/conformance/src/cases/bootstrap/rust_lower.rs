@@ -1085,16 +1085,6 @@ pub(super) fn case() {
         ),
         "the crates the moves are run on, those within the evaluator's bound, and the mutants"
     );
-    if std::env::var("LEXLEAN_MOVES_ONLY").is_ok() {
-        // TEMPORARY-ONLY
-        let detection: Vec<Run> = move_small
-            .iter()
-            .chain(&move_evaluator_mutants)
-            .cloned()
-            .collect();
-        move_plants(&detection);
-        return;
-    } // TEMPORARY-ONLY
     let every: Vec<&Vector> = all.iter().collect();
     // On every host: the rendered rust-std packages, compiled by that host's
     // pinned rustc, agree with the oracle on the vectors, leg by leg.
