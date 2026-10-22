@@ -1017,18 +1017,56 @@ pub(crate) fn run(id: &str) {
                 "{caught:?}"
             );
         }
-        // §30.3: the exact version report.
+        // §30.3: the exact version report, every supported language with its
+        // own compiler-semantics ID (§30.1, §21.2).
         "CL-18" => {
+            use std::fmt::Write as _;
             let (exit, stdout, _) = support::cli_in(&support::repo_root(), &["--version"]);
             assert_eq!(exit, 0);
-            let expected = format!(
-                "lexlean {}\nlanguage {}\ncompiler-semantics {}\nlean-toolchain {}\n",
-                lexlean::COMPILER_VERSION,
-                lexlean::LANGUAGE_VERSION,
-                lexlean::compiler_semantics_id().to_hex(),
-                lexlean::LEAN_TOOLCHAIN
+            let mut expected = format!("lexlean {}\n", lexlean::COMPILER_VERSION);
+            for language in lexlean::LANGUAGE_VERSIONS {
+                let _ = write!(
+                    expected,
+                    "language {language}\ncompiler-semantics {}\n",
+                    lexlean::compiler_semantics_id_for(language).to_hex()
+                );
+            }
+            let _ = writeln!(expected, "lean-toolchain {}", lexlean::LEAN_TOOLCHAIN);
+            assert_eq!(
+                stdout, expected,
+                "§30.3: the compiler version, each supported language followed by its ID, the toolchain"
             );
-            assert_eq!(stdout, expected, "§30.3: the exact four-line report");
+            for language in ["1.0", "1.1", "1.2"] {
+                assert!(
+                    stdout.contains(&format!(
+                        "\nlanguage {language}\ncompiler-semantics {}\n",
+                        lexlean::compiler_semantics_id_for(language).to_hex()
+                    )),
+                    "§30.3: language {language} is reported with its own semantics ID: {stdout:?}"
+                );
+            }
+            // The report is the §30.3 fence of SPEC.md with its placeholders
+            // filled, read here from the document and not from release-check.
+            let (_, after) = support::spec_text()
+                .split_once("```text\nlexlean <version>\n")
+                .expect("§30.3 has the version report fence");
+            let (body, _) = after.split_once("\n```\n").expect("the fence closes");
+            let mut filled = format!("lexlean {}\n", lexlean::COMPILER_VERSION);
+            let mut language = None;
+            for line in body.lines() {
+                if line == "compiler-semantics <digest>" {
+                    let named: &str = language.take().expect("a digest follows a language");
+                    let _ = writeln!(
+                        filled,
+                        "compiler-semantics {}",
+                        lexlean::compiler_semantics_id_for(named).to_hex()
+                    );
+                } else {
+                    language = line.strip_prefix("language ");
+                    let _ = writeln!(filled, "{line}");
+                }
+            }
+            assert_eq!(stdout, filled, "§30.3: the binary prints the specified report");
         }
         // §24.1: snapshot is a read-only, backend-free stable operation.
         "CL-19" => {
