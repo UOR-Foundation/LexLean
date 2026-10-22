@@ -1812,6 +1812,7 @@
 'LexLeanTarget.RustSemantics.literal' depends on axioms: [propext, Quot.sound]
 'LexLeanTarget.RustSemantics.lookup' does not depend on any axioms
 'LexLeanTarget.RustSemantics.machineAccepts' does not depend on any axioms
+'LexLeanTarget.RustSemantics.machineOptional' does not depend on any axioms
 'LexLeanTarget.RustSemantics.machinePrimitive' does not depend on any axioms
 'LexLeanTarget.RustSemantics.machineShifts' does not depend on any axioms
 'LexLeanTarget.RustSemantics.machineWidth' does not depend on any axioms
