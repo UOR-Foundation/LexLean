@@ -17,6 +17,14 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- The SIMD probe of decision #109 on the pinned Rust (first step of #119): the
+  `honesty` workflow builds `.github/simd-probe/probe.rs` with `rustc` 1.97.1 for
+  the four targets #109 lists, with and without `-C target-feature`, and holds
+  every outcome to the record in VERIFICATION.md. x86-64 agrees with the 1.97.0
+  record; aarch64 behaves the same; wasm32 accepts the call without the
+  attribute; thumbv7em refuses the `dsp` feature and its intrinsics as
+  unstable. Register unchanged (443).
+
 - `cargo xtask spec` (`NS-07`, #244): edit the chapter modules of `spec/` by
   item. `replace-block` and `insert-after` act on the paragraph, table or fence
   found by its first line; `port` applies the hunks of a merged SPEC.md that lie
