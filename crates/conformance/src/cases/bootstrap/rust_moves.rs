@@ -143,6 +143,27 @@ fn rule_crates() -> Vec<Crate> {
             vec![project(0, 1, cloned(0)), project(0, 2, cloned(0))],
             pair(cloned(1), cloned(2)),
         )),
+        // A component projected while another is read twice after it: the
+        // pair cannot lose a component that the later reads of the other
+        // would need whole.
+        krate(block(
+            vec![
+                project(0, 1, cloned(0)),
+                project(1, 2, cloned(0)),
+                project(1, 3, cloned(0)),
+            ],
+            pair(pair(cloned(1), cloned(2)), cloned(3)),
+        )),
+        // A component read once on each of two alternatives is read once, so
+        // the other component may be projected before them.
+        krate(block(
+            vec![project(1, 1, cloned(0))],
+            conditional(
+                cloned(5),
+                block(vec![project(0, 2, cloned(0))], cloned(2)),
+                block(vec![project(0, 3, cloned(0))], cloned(3)),
+            ),
+        )),
         // A projection of a pattern that binds both, which is not one.
         krate(block(
             vec![Let {
@@ -152,6 +173,20 @@ fn rule_crates() -> Vec<Crate> {
                 at: at(),
             }],
             pair(cloned(1), cloned(2)),
+        )),
+        // A projection followed by a pattern that binds both components: the
+        // second reads the pair whole, so the first cannot move it.
+        krate(block(
+            vec![
+                project(1, 1, cloned(0)),
+                Let {
+                    pat: Pat::Tuple(vec![Pat::Bind(local(2)), Pat::Bind(local(3))]),
+                    ty: None,
+                    value: cloned(0),
+                    at: at(),
+                },
+            ],
+            pair(pair(cloned(1), cloned(2)), cloned(3)),
         )),
         // Alternatives: a read in one branch only, in both, and after.
         krate(block(
@@ -239,6 +274,17 @@ fn rule_crates() -> Vec<Crate> {
                 at: at(),
             },
         )),
+        // The closure applied is also an operand: it is borrowed for the
+        // whole application, so the operand cannot move it.
+        krate(block(
+            Vec::new(),
+            Expr::Apply {
+                holder: local(0),
+                args: vec![cloned(0)],
+                propagate: false,
+                at: at(),
+            },
+        )),
         // Loops: a read of the state, of another binding, and of both.
         krate(block(
             Vec::new(),
@@ -256,6 +302,15 @@ fn rule_crates() -> Vec<Crate> {
                 },
                 cloned(2),
             ),
+        )),
+        // A read of the state before the loop that rebinds it: the loop reads
+        // it whole, so the earlier read cannot move it.
+        krate(block(
+            vec![bind(1, cloned(0))],
+            Expr::Loop {
+                state: local(0),
+                body: Box::new(block(Vec::new(), cloned(1))),
+            },
         )),
         // Blocks as expressions, and wrappers.
         krate(block(

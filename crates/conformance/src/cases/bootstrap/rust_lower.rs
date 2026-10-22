@@ -58,8 +58,8 @@ const MOVES: &str = "LexLeanBoot.RustMoves";
 /// The crates of at most this many expressions are the evaluator's share.
 const MOVES_EVALUATOR_NODES: usize = 400;
 /// The crates the moves are run on, and those within the evaluator's bound.
-const MOVES_CRATES: usize = 347;
-const MOVES_WITHIN: usize = 312;
+const MOVES_CRATES: usize = 352;
+const MOVES_WITHIN: usize = 317;
 const MOVES_EVALUATOR_MUTANTS: usize = 150;
 const MOVES_RUSTC_MUTANTS: usize = 1_500;
 
@@ -857,8 +857,8 @@ struct MovePlant {
 const MOVE_PLANTS: [MovePlant; 8] = [
     MovePlant {
         label: "a last read never moves",
-        site: "(((project found whole) =? 0) && ((prim length (project found parts) : Nat) =? 0))",
-        replacement: "false",
+        site: "    | Option.some found => (((project found whole) =? 0) && ((prim length (project found parts) : Nat) =? 0))\n    | Option.none => true)",
+        replacement: "    | Option.some found => false\n    | Option.none => false)",
     },
     MovePlant {
         label: "a component moves though another is read twice",
@@ -866,19 +866,19 @@ const MOVE_PLANTS: [MovePlant; 8] = [
         replacement: "true",
     },
     MovePlant {
-        label: "the reads of two alternatives are added",
-        site: "(natMax (project current whole) (project (second head) whole))",
-        replacement: "((project current whole) + (project (second head) whole))",
+        label: "the reads of a component on two alternatives are added",
+        site: "(natMax (second head) (partCount left (first head)))",
+        replacement: "((second head) + (partCount left (first head)))",
     },
     MovePlant {
-        label: "the holder of an application is read after its operands",
-        site: "(let held : (List (RustValidate::Id * Later)) := (readWhole live holder); (readsE args held 0))",
-        replacement: "(let held : (List (RustValidate::Id * Later)) := (readsE args live 0); (readWhole held holder))",
+        label: "the holder of an application is not read before its operands",
+        site: "(let held : (List (RustValidate::Id * Later)) := (readWhole live holder); (ctor RustAst::Expr.EApply holder (moveE args held) propagate o))",
+        replacement: "(ctor RustAst::Expr.EApply holder (moveE args live) propagate o)",
     },
     MovePlant {
         label: "the left of a pair is read before its right",
-        site: "(let after : (List (RustValidate::Id * Later)) := (readsE right live 0); (readsE left after 0))",
-        replacement: "(let after : (List (RustValidate::Id * Later)) := (readsE left live 0); (readsE right after 0))",
+        site: "(let after : (List (RustValidate::Id * Later)) := (readsE right live 0); (ctor RustAst::Expr.EPair (moveE left after) (moveE right live) o))",
+        replacement: "(let after : (List (RustValidate::Id * Later)) := (readsE left live 0); (ctor RustAst::Expr.EPair (moveE left live) (moveE right after) o))",
     },
     MovePlant {
         label: "a pattern does not unbind its names",
@@ -954,6 +954,37 @@ fn eligibility(project: &support::P) {
         "applyMoves",
         &["allocation", "overflow", "recursion"],
     );
+}
+
+/// Each defect planted in a copy of `RustMoves` is a disagreement with the
+/// oracle on the runs of the moves.
+fn move_plants(detection: &[Run]) {
+    for plant in &MOVE_PLANTS {
+        let planted = support::P::bootstrap();
+        let source = planted.read_raw("src/RustMoves.lex.tex");
+        assert_eq!(
+            source.matches(plant.site).count(),
+            1,
+            "{}: the plant site occurs once",
+            plant.label
+        );
+        planted.write(
+            "src/RustMoves.lex.tex",
+            &source.replacen(plant.site, plant.replacement, 1),
+        );
+        let checked = support::checked_project(&planted);
+        let low = super::lower(&checked, &planted, MOVES, "applyMoves");
+        let disagreements = super::evaluate(&low, detection, 1);
+        assert!(
+            !disagreements.is_empty(),
+            "{}: the planted defect is detected by the differential",
+            plant.label
+        );
+        eprintln!(
+            "BS-07: plant detected: {}: {}",
+            plant.label, disagreements[0]
+        );
+    }
 }
 
 pub(super) fn case() {
@@ -1054,6 +1085,16 @@ pub(super) fn case() {
         ),
         "the crates the moves are run on, those within the evaluator's bound, and the mutants"
     );
+    if std::env::var("LEXLEAN_MOVES_ONLY").is_ok() {
+        // TEMPORARY-ONLY
+        let detection: Vec<Run> = move_small
+            .iter()
+            .chain(&move_evaluator_mutants)
+            .cloned()
+            .collect();
+        move_plants(&detection);
+        return;
+    } // TEMPORARY-ONLY
     let every: Vec<&Vector> = all.iter().collect();
     // On every host: the rendered rust-std packages, compiled by that host's
     // pinned rustc, agree with the oracle on the vectors, leg by leg.
@@ -1167,32 +1208,7 @@ pub(super) fn case() {
             plant.label, disagreements[0]
         );
     }
-    for plant in &MOVE_PLANTS {
-        let planted = support::P::bootstrap();
-        let source = planted.read_raw("src/RustMoves.lex.tex");
-        assert_eq!(
-            source.matches(plant.site).count(),
-            1,
-            "{}: the plant site occurs once",
-            plant.label
-        );
-        planted.write(
-            "src/RustMoves.lex.tex",
-            &source.replacen(plant.site, plant.replacement, 1),
-        );
-        let checked = support::checked_project(&planted);
-        let low = super::lower(&checked, &planted, MOVES, "applyMoves");
-        let disagreements = super::evaluate(&low, &move_detection, 1);
-        assert!(
-            !disagreements.is_empty(),
-            "{}: the planted defect is detected by the differential",
-            plant.label
-        );
-        eprintln!(
-            "BS-07: plant detected: {}: {}",
-            plant.label, disagreements[0]
-        );
-    }
+    move_plants(&move_detection);
     // Under the pinned Lean, the production export certifies the root; its
     // package is the committed one and realizes the program the differential ran.
     if !support::lean_backed("BS-07") {
