@@ -263,6 +263,7 @@ fn prove(value: &SnapshotProof) -> usize {
     match value {
         SnapshotProof::Reflexivity | SnapshotProof::Decide | SnapshotProof::Congruence => 1,
         SnapshotProof::LinearArithmetic { definitions } => 1 + definitions.len(),
+        SnapshotProof::TermCases { definitions, .. } => 2 + definitions.len(),
         SnapshotProof::Simplify { definitions } => definitions.len(),
         SnapshotProof::Constructor { branches } => branches.iter().map(prove).sum(),
         SnapshotProof::Cases { branches, .. } | SnapshotProof::Induction { branches, .. } => branches.iter().map(|v| prove(&v.proof)).sum(),

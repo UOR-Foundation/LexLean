@@ -8,10 +8,15 @@
 //! only through [`Item`], so no rendering can name a runtime function that
 //! does not exist or call one with the wrong failure mode.
 
-use super::super::IntKind;
+use std::sync::OnceLock;
 
-/// The runtime both profiles carry.
-pub const CORE: &str = r#"use core::cmp::Ordering;
+use super::super::IntKind;
+use super::{ast, source, validate};
+
+/// The text of the runtime both profiles carry that the `RustRuntime` module
+/// does not define: [`core`] is this text and the functions the module
+/// defines, printed.
+pub const CORE_BASE: &str = r#"use core::cmp::Ordering;
 use core::sync::atomic::{AtomicU64, Ordering as Memory};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -22,24 +27,6 @@ static WORK: AtomicU64 = AtomicU64::new(0);
 pub fn tick(units: u64) { WORK.fetch_add(units, Memory::Relaxed); }
 pub fn work() -> u64 { WORK.load(Memory::Relaxed) }
 
-pub fn nat_add(a: u64, b: u64) -> R<u64> { a.checked_add(b).ok_or(Overflow) }
-pub fn nat_sub(a: u64, b: u64) -> u64 { a.saturating_sub(b) }
-pub fn nat_mul(a: u64, b: u64) -> R<u64> { a.checked_mul(b).ok_or(Overflow) }
-pub fn nat_quot(a: u64, b: u64, z: u64) -> u64 { a.checked_div(b).unwrap_or(z) }
-pub fn nat_rem(a: u64, b: u64, z: u64) -> u64 { a.checked_rem(b).unwrap_or(z) }
-pub fn nat_eq(a: u64, b: u64) -> bool { a == b }
-pub fn nat_le(a: u64, b: u64) -> bool { a <= b }
-pub fn nat_lt(a: u64, b: u64) -> bool { a < b }
-pub fn nat_succ(a: u64) -> R<u64> { a.checked_add(1).ok_or(Overflow) }
-pub fn int_add(a: i64, b: i64) -> R<i64> { a.checked_add(b).ok_or(Overflow) }
-pub fn int_sub(a: i64, b: i64) -> R<i64> { a.checked_sub(b).ok_or(Overflow) }
-pub fn int_mul(a: i64, b: i64) -> R<i64> { a.checked_mul(b).ok_or(Overflow) }
-pub fn int_neg(a: i64) -> R<i64> { a.checked_neg().ok_or(Overflow) }
-pub fn int_quot(a: i64, b: i64, z: i64) -> R<i64> { if b == 0 { Ok(z) } else { a.checked_div(b).ok_or(Overflow) } }
-pub fn int_rem(a: i64, b: i64, z: i64) -> i64 { if b == 0 { z } else { a.wrapping_rem(b) } }
-pub fn bool_not(a: bool) -> bool { !a }
-pub fn bool_and(a: bool, b: bool) -> bool { a && b }
-pub fn bool_or(a: bool, b: bool) -> bool { a || b }
 
 pub trait Same { fn same(&self, other: &Self) -> bool; }
 pub trait Key { fn key(&self, other: &Self) -> Ordering; }
@@ -59,30 +46,89 @@ impl<A: Key, B: Key> Key for (A, B) {
 pub fn equal<T: Same>(a: T, b: T) -> bool { a.same(&b) }
 pub fn compare<T: Key>(a: T, b: T) -> Ordering { a.key(&b) }
 
-macro_rules! fixed {
-    ($m:ident, $t:ident) => {
-        pub mod $m {
-            pub fn checked_add(a: $t, b: $t) -> Option<$t> { a.checked_add(b) }
-            pub fn checked_sub(a: $t, b: $t) -> Option<$t> { a.checked_sub(b) }
-            pub fn checked_mul(a: $t, b: $t) -> Option<$t> { a.checked_mul(b) }
-            pub fn checked_quot(a: $t, b: $t) -> Option<$t> { a.checked_div(b) }
-            pub fn bit_and(a: $t, b: $t) -> $t { a & b }
-            pub fn bit_or(a: $t, b: $t) -> $t { a | b }
-            pub fn bit_xor(a: $t, b: $t) -> $t { a ^ b }
-            pub fn bit_not(a: $t) -> $t { !a }
-            pub fn shift_left(a: $t, amount: u32) -> Option<$t> { if amount < $t::BITS { Some(a.wrapping_shl(amount)) } else { None } }
-            pub fn shift_right(a: $t, amount: u32) -> Option<$t> { if amount < $t::BITS { Some(a.wrapping_shr(amount)) } else { None } }
-            pub fn convert(a: i128) -> Option<$t> { $t::try_from(a).ok() }
-        }
-    };
-}
-fixed!(fixed_u8, u8); fixed!(fixed_u16, u16); fixed!(fixed_u32, u32); fixed!(fixed_u64, u64);
-fixed!(fixed_i8, i8); fixed!(fixed_i16, i16); fixed!(fixed_i32, i32); fixed!(fixed_i64, i64);
-pub fn checked_neg_i8(a: i8) -> Option<i8> { a.checked_neg() }
-pub fn checked_neg_i16(a: i16) -> Option<i16> { a.checked_neg() }
-pub fn checked_neg_i32(a: i32) -> Option<i32> { a.checked_neg() }
-pub fn checked_neg_i64(a: i64) -> Option<i64> { a.checked_neg() }
 "#;
+
+/// The core runtime text of `items`: [`CORE_BASE`], then each item printed.
+/// An item whose exported name is a path `module::name` is printed inside
+/// `pub mod module { … }` under its last segment, with the consecutive items
+/// of one module in one block, so the module's path in the exported name is
+/// the runtime item's path (`fixed_u8::checked_add`).
+#[must_use]
+pub fn assemble(items: &[ast::ItemDef]) -> String {
+    let mut text = CORE_BASE.to_owned();
+    let mut open: Option<String> = None;
+    for item in items {
+        let (module, shown) = match item {
+            ast::ItemDef::Function {
+                name: ast::Ident::Export(name),
+                ..
+            } if name.contains("::") => {
+                let (module, last) = name.rsplit_once("::").expect("a path");
+                let mut shown = item.clone();
+                if let ast::ItemDef::Function { name, .. } = &mut shown {
+                    *name = ast::Ident::Export(last.to_owned());
+                }
+                (Some(module.to_owned()), shown)
+            }
+            _ => (None, item.clone()),
+        };
+        if module != open {
+            if open.is_some() {
+                text.push_str("}\n");
+            }
+            if let Some(module) = &module {
+                text.push_str(&format!("\npub mod {module} {{"));
+            }
+            open = module;
+        }
+        text.push('\n');
+        let printed = ast::print_item(&shown);
+        if open.is_some() {
+            for line in printed.lines() {
+                text.push_str("    ");
+                text.push_str(line);
+                text.push('\n');
+            }
+        } else {
+            text.push_str(&printed);
+        }
+    }
+    if open.is_some() {
+        text.push_str("}\n");
+    }
+    text
+}
+
+/// The core runtime text of a `RustRuntime` module: its functions decoded,
+/// the crate they make checked by the validator that checks every rendering,
+/// and each printed after [`CORE_BASE`].
+///
+/// The runtime crate is the one crate no lowering produces, so the validator
+/// runs on it here: its functions fail only with `Err(Overflow)`, own what
+/// they return, and allocate nothing.
+///
+/// # Errors
+///
+/// Returns the reason the module cannot be decoded, or its crate is not valid.
+pub fn core_from(module: &str) -> Result<String, String> {
+    let source = source::decode(module)?;
+    validate::validate(&source.core)
+        .map_err(|error| format!("the core runtime is not a valid crate: {error}"))?;
+    Ok(assemble(&source.core.items))
+}
+
+/// The runtime both profiles carry: [`core_from`] the embedded module.
+///
+/// # Errors
+///
+/// Returns the reason the module cannot be read, or its crate is not valid.
+pub fn core() -> Result<&'static str, String> {
+    static CORE: OnceLock<Result<String, String>> = OnceLock::new();
+    CORE.get_or_init(|| core_from(source::embedded()?))
+        .as_ref()
+        .map(String::as_str)
+        .map_err(Clone::clone)
+}
 
 /// The runtime only `rust-std` carries. Every loop ticks the work counter
 /// once per iteration and a bulk copy ticks its length, except the release
@@ -581,19 +627,23 @@ pub const ROOT_NAMES: &[&str] = &[
 
 #[cfg(test)]
 mod tests {
-    use super::{Item, CORE, STD};
+    use super::{core, Item, STD};
 
     /// Every item exists in the runtime of every profile that can call it,
     /// with exactly the failure mode the item declares.
     #[test]
     fn every_item_exists_with_its_failure_mode() {
-        let fixed_body = &CORE[CORE.find("macro_rules! fixed").expect("fixed")..];
+        let core = core().expect("the core runtime");
         for item in Item::all() {
             let path = item.path();
-            let text = if item.heap() { STD } else { CORE };
+            let text = if item.heap() { STD } else { core };
             if let Some((module, name)) = path.split_once("::") {
-                assert!(CORE.contains(&format!("fixed!({module}, ")), "{path}");
-                let declaration = fixed_body
+                let at = core
+                    .find(&format!("pub mod {module} {{"))
+                    .unwrap_or_else(|| panic!("{path}: the module is not declared"));
+                let body = &core[at..];
+                let body = &body[..body.find("\n}\n").expect("the module ends")];
+                let declaration = body
                     .lines()
                     .find(|line| line.contains(&format!("pub fn {name}(")))
                     .unwrap_or_else(|| panic!("{path} is not declared"));
@@ -638,8 +688,14 @@ mod tests {
             .parse()
             .expect("TOML");
         for (key, text) in [
-            ("rust_runtime_core", CORE.to_owned()),
-            ("rust_runtime_std", format!("{CORE}{STD}")),
+            (
+                "rust_runtime_core",
+                core().expect("the core runtime").to_owned(),
+            ),
+            (
+                "rust_runtime_std",
+                format!("{}{STD}", core().expect("the core runtime")),
+            ),
         ] {
             let digest = crate::artifact::content_id::Sha256Digest::of(text.as_bytes()).to_hex();
             assert_eq!(
@@ -653,7 +709,7 @@ mod tests {
     #[test]
     fn the_core_runtime_names_no_heap_type() {
         for heap in ["Vec", "String", "Box", "Rc", "std::", "alloc::", "format!"] {
-            assert!(!CORE.contains(heap), "{heap}");
+            assert!(!core().expect("the core runtime").contains(heap), "{heap}");
         }
     }
 
@@ -661,7 +717,7 @@ mod tests {
     /// of a list, whose cells were counted when built.
     #[test]
     fn every_runtime_loop_ticks() {
-        for runtime in [CORE, STD] {
+        for runtime in [core().expect("the core runtime"), STD] {
             let lines: Vec<&str> = runtime.lines().collect();
             for (number, line) in lines.iter().enumerate() {
                 let trimmed = line.trim_start();

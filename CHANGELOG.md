@@ -29,7 +29,7 @@ and Unreleased holds what has landed since.
   that language 1.2 refuses with `LLP2003` since #149. The negative fixture
   `migrate-module-without-notation` holds a module the notation cannot express.
   `Engine` keeps its seven entry points; the function is
-  `lexlean::api::migrate::migrate`. The register is 437 IDs. The notation
+  `lexlean::api::migrate::migrate`. The register is 444 IDs. The notation
   reader no longer takes a keyword followed by `{` inside a parenthesised term
   for the keyword's own form: a `match` (or `not`, `first`, `second`, `cons`,
   `nil`, ...) that a readable form cannot carry, such as one holding a variable

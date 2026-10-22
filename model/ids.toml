@@ -704,6 +704,18 @@ suite = "semantic-ir"
 statement = "A version 2 core-module row may be derived, stating its name, kind, and extension state, and for a sparse casesOn its recipe, and no universe parameters, type, or value: the decoder makes the constant with the pinned Lean's own construction at the row's place in the order, and refuses the module when the name is not one the pinned Lean reserves and the row states no sparse casesOn recipe, when the construction does not make the name, or when the constant it makes is not a theorem, definition, or abbreviation as the row says; the notation writes a derived row without a type, the schema and the linker refuse a derived row that states what the construction decides, a stored row is still checked against the construction, the decoder checks that the constructors a recipe names are constructors of the type and are named once, that the module states every sparse casesOn its construction makes, and that every derived sparse casesOn is referred to by the type or value of a row, and the content of a derived row is checked by its uses alone, so that a recipe naming other valid constructors of the type is not distinguished where the use accepts it; and the shipped preservation library states every row that carries a sparse casesOn record or is named like an equation, an unfolding equation, a splitter, or an else equation as a derived row."
 
 [[id]]
+id = "SM-35"
+level = "build"
+suite = "semantic-ir"
+statement = "A language-1.2 theorem may be proved by `term_cases`, a split on the value of a document term: the proof names a term and a nonempty, strictly sorted, duplicate-free list of prior document definitions, the term's type is an inductive type of the document, and the backend lowers the proof to a split of the goal on every constructor of that type with the hypothesis that equates the term to the constructor, then `simp only` over the named definitions, that hypothesis, and the reduction of a conditional on a decided condition, with closed propositions decided, which uses exactly the axioms the theorem's policy states; the schema, the linker, the notation, the Lean backend, the canonical LaTeX, and the formatter accept it, and a use in language 1.1, a term whose type is not an inductive type of the document, an empty list, an unsorted or repeated name, a name that is not a prior definition, and a theorem parameter that takes the hypothesis's name are each refused."
+
+[[id]]
+id = "SM-36"
+level = "build"
+suite = "semantic-ir"
+statement = "A language-1.2 `cases` proof may split a local of type `Bool` into its two constructors: the proof names the local and gives a branch for `false` and one for `true`, each with no binders, the backend lowers it to `cases` on the local with those two alternatives, the theorem verifies with exactly the axioms its policy states, and the schema, the linker, the notation, the formatter, and the canonical LaTeX accept it; a use in language 1.1, a missing branch, a repeated branch, a branch with a binder, and an `induction` on a Boolean are each refused."
+
+[[id]]
 id = "DF-01"
 level = "build"
 suite = "declarations"
@@ -1796,6 +1808,18 @@ suite = "rust-backend"
 statement = "A library template whose self calls are all tail calls is rendered as a loop over its accumulator that breaks with its result, so that the production rows of the primitives it realizes carry no `recursion`, while a template with a call that is not a tail call is rendered as a call and keeps the effect; a rendering that states a self call where a loop is possible, and a row whose `recursion` differs from its rendering, are refused."
 
 [[id]]
+id = "RB-15"
+level = "build"
+suite = "rust-backend"
+statement = "The Rust AST mirrors the machine callee and the overflow literal of RustSyntax: a crate whose functions call each machine primitive at each width is checked, printed, and compiled by the pinned rustc with warnings denied, each call prints as the Rust operation its primitive names, and each function computes on the boundary values of its width exactly what an independent computation over a wider integer states; a machine call with another number of operands than its primitive takes, and an overflow value outside the payload of an `Err`, are refused as LLB6005, and a lowered crate that holds a machine call is refused by the correspondence between a rendering and its program as a construct with no row, because machine calls appear only in the runtime profile."
+
+[[id]]
+id = "RB-16"
+level = "build"
+suite = "rust-backend"
+statement = "The core runtime every Rust package carries is the text of a base and of the functions the language-1.2 module `RustRuntime` defines: the compiler project's module, shipped byte for byte at `language/rust-runtime-1.2/RustRuntime.lex.tex`, defines `coreCrate`, a crate of `RustSyntax` that the Rust crate decodes, never evaluates, and prints in place of the handwritten function of the same name, and each printed function agrees with that handwritten function in result and in counted work on the boundary and seeded values of its parameters when both are compiled by the pinned rustc with warnings denied, and the decoded crate is checked by the validator that checks every rendering (`validate` and the normative `validateCrate`), with the runtime's reading of its arithmetic rule, so that a function of the core runtime fails only with an `Err` of the overflow value whose error type is the node `RustType.overflow` and allocates nothing; a module that names a constructor `RustSyntax` does not declare, gives a constructor a wrong number of arguments, refers to a definition it lacks, defines a datum with parameters, or lacks `coreCrate`, a function that returns an `Err` of another value or another error type, a heap type in the core runtime, a shipped copy that differs from the compiler project's module, a defined function that no differential covers, and a function whose body is changed to compute another result are each refused."
+
+[[id]]
 id = "GN-01"
 level = "build"
 suite = "gnaf"
@@ -2015,7 +2039,7 @@ statement = "No Lean source text template remains in the production compiler: a 
 id = "SP-18"
 level = "build"
 suite = "preservation"
-statement = "The declared Rust machine states a machine primitive as a callee and the overflow value as a literal: RustSyntax declares eight machine primitives (checked add, subtract, multiply, quotient, negation, shift left, and shift right of a width, and try-from to a width), the callee that names one, and the literal Overflow, and RustSemantics evaluates a call of a machine callee as the calculus primitive of the same name, with the Option value the calculus states, stuck on an operand of another width (the amount of a shift excepted), and the literal Overflow as the unit value that an Err(Overflow) carries, which the pinned Lean evaluates on the boundary values of the widths and refuses to evaluate to a wrong value."
+statement = "The declared Rust machine states a machine primitive as a callee and the overflow value as a literal: RustSyntax declares machine primitives (checked add, subtract, multiply, quotient, negation, shift left, and shift right of a width, and try-from to a width), the callee that names one, and the literal Overflow, and RustSemantics evaluates a call of a machine callee as the calculus primitive of the same name, with the Option value the calculus states, stuck on an operand of another width (the amount of a shift excepted), and the literal Overflow as the unit value that an Err(Overflow) carries, which the pinned Lean evaluates on the boundary values of the widths and refuses to evaluate to a wrong value."
 
 [[id]]
 id = "SP-19"
@@ -2028,6 +2052,24 @@ id = "SP-20"
 level = "build"
 suite = "preservation"
 statement = "Certificate B certifies a function the renderer writes as a loop: the library's FunOK states a function either by the correspondence for the body the crate holds or by FunLoop, that the crate's body is the loop form of an ordinary recursive body (the library's loopOf, with its Boolean checks of the renamed parameters, the kept parameters, and the freshness of the renamed names decided by evaluation) together with the correspondence for that recursive body, which funSem_of turns into the simulation through funSem_loop with the correspondence, its recursor, and the soundness theorem unchanged, and the aligner recovers the recursive body by inverting the rendering of loops (the renamed parameters, the destructuring of the state, and the Ok and Err wraps), so that for every loop of every renderer fixture in each profile and of every production root of the committed examples in each of its targets the loop form of the recovered body, computed by the library's form transliterated, is the crate's function, certificate B of the fixtures rendered as loops compiles under the pinned Lean with exactly the axioms Classical.choice, Quot.sound, and propext, and a loop that is not the loop form of any recursive body is refused, whether its state has another type, its body does not take the state apart, an end is not an Err, a renamed parameter is read by the body, a pattern rebinds a kept parameter, or the state holds a parameter the function does not have."
+
+[[id]]
+id = "SP-21"
+level = "build"
+suite = "preservation"
+statement = "The declared Rust machine states the integer operations the runtime's scalar functions use as machine primitives beyond the first eight: RustSyntax declares machine primitives for the bitwise and, or, exclusive or, and not of a width, for the equality, less-or-equal, and less-than of two naturals, and for the remainder of two naturals and of two integers, and RustSemantics evaluates a call of each as the calculus primitive of the same name with the value the calculus states, stuck on an operand of another width, which the pinned Lean evaluates on the boundary values of the widths and refuses to evaluate to a wrong value."
+
+[[id]]
+id = "SP-22"
+level = "build"
+suite = "preservation"
+statement = "Each function the `RustRuntime` module defines has its refinement statement: for every such function the module holds a theorem `refines_<function>` stating, for all arguments of the function's parameter types, that the declared Rust semantics' run of the function in the module's core crate equals the run of the runtime item of the same name, the pinned Lean accepts each with exactly the axioms its policy states, the set of theorems equals the set of functions the module defines, and a theorem for a function the module does not define, a function without a theorem, and a function whose body is changed to another result are each refused."
+
+[[id]]
+id = "SP-23"
+level = "build"
+suite = "preservation"
+statement = "The declared Rust machine states the natural and integer arithmetic of the runtime's scalar functions with an overflow a body can observe: RustSyntax declares machine primitives for the checked sum and product of two naturals and the checked sum, difference, product, negation, and quotient of integers, each evaluated by RustSemantics as the calculus primitive of the same name, as `Some` of its value or as `None` when that primitive overflows, and for the difference and quotient of two naturals, which cannot overflow and are the primitive's value, which the pinned Lean evaluates on the boundary values of the widths and refuses to evaluate to a wrong value."
 
 [[id]]
 id = "MD-01"
@@ -2537,7 +2579,7 @@ statement = "The target calculus's checker of SPEC.md §17.14 (`lexlean::calculu
 id = "BS-05"
 level = "build"
 suite = "bootstrap"
-statement = "The Rust crate validator of SPEC.md §17.16 is language-1.2 source in the `bootstrap/` project: `validateCrate` and `correspondCrate` of `RustValidate` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle `calculus::rust::validate::{validate, correspond}` on the exact outcome and message for the 226 distinct crates the renderer lowers from the 167 distinct programs among the 250 committed package manifests and 122 fixtures, for 132 `validateCrate` and 12 `correspondCrate` runs that reach each of the 48 reachable refusals three times, for 17 hand-built crates of the merge of moved sets, and for 34 hand-built crates of the loop rules (409 `validateCrate` runs, 165 of them refusals, and 272 `correspondCrate` runs, 46 of them refusals); on the normative host, both roots' lowered programs under the calculus evaluator agree with the oracle on the crates of at most 400 expressions (200) with the rule runs and on 500 seeded mutants of the crates of at most 80 expressions, the rendered packages under the pinned rustc agree on 2,000 further seeded mutants per root, sixteen planted defects in the source are each detected, and the certified packages the production export publishes for the project are the committed ones; lowering, printing, packaging, and crates naming a non-ASCII or non-printable scalar are outside the claim."
+statement = "The Rust crate validator of SPEC.md §17.16 is language-1.2 source in the `bootstrap/` project: `validateCrate` and `correspondCrate` of `RustValidate` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle `calculus::rust::validate::{validate, correspond}` on the exact outcome and message for the 226 distinct crates the renderer lowers from the 167 distinct programs among the 250 committed package manifests and 122 fixtures, for 132 `validateCrate` and 12 `correspondCrate` runs that reach each of the 48 reachable refusals three times, for 17 hand-built crates of the merge of moved sets, for 34 hand-built crates of the loop rules, and for 37 hand-built crates of the machine callee and the overflow value, whose three refusals no mutant reaches (446 `validateCrate` runs, 195 of them refusals, and 309 `correspondCrate` runs, 82 of them refusals); on the normative host, both roots' lowered programs under the calculus evaluator agree with the oracle on the crates of at most 400 expressions (200) with the rule runs and on 500 seeded mutants of the crates of at most 80 expressions, the rendered packages under the pinned rustc agree on 2,000 further seeded mutants per root, twenty planted defects in the source are each detected, and the certified packages the production export publishes for the project are the committed ones; lowering, printing, packaging, and crates naming a non-ASCII or non-printable scalar are outside the claim."
 
 [[id]]
 id = "PK-01"

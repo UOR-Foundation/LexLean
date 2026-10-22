@@ -137,6 +137,15 @@ fn proof_uses(proof: &SemanticProof, local: &str) -> bool {
         SemanticProof::Apply { arguments, .. } | SemanticProof::Law { arguments, .. } => {
             arguments.iter().any(|argument| term_uses(argument, local))
         }
+        SemanticProof::TermCases {
+            scrutinee,
+            definitions,
+        } => {
+            term_uses(scrutinee, local)
+                || definitions
+                    .iter()
+                    .any(|member| member.module.is_none() && member.name == local)
+        }
     }
 }
 
@@ -1268,6 +1277,18 @@ impl Render<'_> {
                 }
                 out
             }
+            SemanticProof::TermCases {
+                scrutinee,
+                definitions,
+            } => format!(
+                "{pad}set_option linter.unusedSimpArgs false in\n{pad}cases llCase : {} <;>\n{pad}  simp (config := {{decide := true}}) only [{}, llCase, ite_true, ite_false]\n",
+                self.term(scrutinee),
+                definitions
+                    .iter()
+                    .map(|member| self.member(member))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
             SemanticProof::Congruence => format!("{pad}congr 1\n"),
             SemanticProof::BooleanReflection { reflection } => match reflection {
                 SemanticReflection::List {

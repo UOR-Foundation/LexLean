@@ -27,6 +27,7 @@ pub mod moves;
 pub mod package;
 pub mod runtime;
 pub mod scaffold;
+pub mod source;
 mod tail;
 pub use tail::loops;
 pub mod validate;
