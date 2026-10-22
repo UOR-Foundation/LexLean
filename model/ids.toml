@@ -716,6 +716,12 @@ suite = "semantic-ir"
 statement = "A language-1.2 `cases` proof may split a local of type `Bool` into its two constructors: the proof names the local and gives a branch for `false` and one for `true`, each with no binders, the backend lowers it to `cases` on the local with those two alternatives, the theorem verifies with exactly the axioms its policy states, and the schema, the linker, the notation, the formatter, and the canonical LaTeX accept it; a use in language 1.1, a missing branch, a repeated branch, a branch with a binder, and an `induction` on a Boolean are each refused."
 
 [[id]]
+id = "SM-37"
+level = "build"
+suite = "semantic-ir"
+statement = "A language-1.2 theorem may be proved by `nested_induction`, an induction over a nested inductive type of the document, one that holds a member of itself under `List`, `Option`, `Result`, or a product and is in no mutual group: the proof names the local, states one proposition for each auxiliary member of the type's recursive family in the order the pinned Lean's recursor takes them, and gives a branch for every constructor of the type and of each auxiliary member, each binding the constructor's fields followed by one hypothesis for each field that is a member of the family, in field order; the backend lowers it to `induction` over the recursor the pinned Lean generates for the type, with the propositions as its auxiliary motives and the goals taken in the order of its minor premises, so that a theorem over every value of a type with a constructor that holds a `List` of the type verifies under the pinned Lean with exactly the axioms its policy states; the schema, the linker, the notation, the formatter, and the canonical LaTeX accept it, and a use in language 1.1, a local whose type is not a nested inductive of the document or lies in a mutual group, an auxiliary member that is missing, repeated, or out of order, a missing or repeated branch, a branch with the wrong number of binders, a proposition that is not well typed, and an `induction` proof on a nested type are each refused as LLT4001."
+
+[[id]]
 id = "DF-01"
 level = "build"
 suite = "declarations"
@@ -822,6 +828,12 @@ id = "DF-18"
 level = "build"
 suite = "declarations"
 statement = "Language 1.2 state threading is explicit: ordered folds and bounded iteration pass the state through a direct closure, executable definitions may use them, and every iteration carries a natural-number bound."
+
+[[id]]
+id = "DF-19"
+level = "build"
+suite = "declarations"
+statement = "Language 1.2 mutual definition groups recurse structurally over the whole recursive family of a nested inductive, the types the pinned Lean takes as the motives of its recursor: the type itself, then each distinct application of `List`, `Option`, `Result`, or a product that holds the type in a constructor field of an earlier member, in the order of discovery, so that a group may decrease on the type, on a list of its values, on a list of pairs whose second component is one, and on such a pair, and in a member's top-level match every pattern binder whose type is a member of the family is structurally smaller; a group that decreases on a type outside the family and a call that passes anything but a smaller binder of the family are each refused as LLT4001, and each group lowers to one Lean mutual block of structural definitions that the pinned Lean accepts."
 
 [[id]]
 id = "PF-01"

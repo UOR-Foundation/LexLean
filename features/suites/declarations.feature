@@ -127,3 +127,10 @@ Feature: declarations
     When it is rendered and verified, and copies drop the bound or mistype a fold step
     Then the generated Lean passes the step as a lambda to the fixed iteration runtime and the kernel computes the closure and its convergence flag
     And the unbounded iteration and the mistyped step fail with LLT4001 before any build output
+
+  @DF-19 @build
+  Scenario: Language 1.2 mutual definition groups recurse structurally over the whole recursive family of a nested inductive, the types the pinned Lean takes as the motives of its recursor: the type itself, then each distinct application of `List`, `Option`, `Result`, or a product that holds the type in a constructor field of an earlier member, in the order of discovery, so that a group may decrease on the type, on a list of its values, on a list of pairs whose second component is one, and on such a pair, and in a member's top-level match every pattern binder whose type is a member of the family is structurally smaller; a group that decreases on a type outside the family and a call that passes anything but a smaller binder of the family are each refused as LLT4001, and each group lowers to one Lean mutual block of structural definitions that the pinned Lean accepts.
+    Given the committed nested-induction example with mutual definition groups over a type that holds a `List` of itself and a `List` of pairs that end in itself
+    When it is rendered and verified, and copies change a decreasing type, a call, or a pattern binder
+    Then each group lowers to one Lean mutual block whose members declare structural termination and verify with real Lean
+    And a group that decreases on a type outside the family and a call that passes a binder outside it fail with LLT4001 before any build output
