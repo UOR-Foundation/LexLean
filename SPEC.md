@@ -3009,10 +3009,21 @@ Termination evidence is semantic data, never tactic or backend text; no
    or references; every member calls into the group and the graph is
    strongly connected, so no member is outside the mutual recursion. For a
    structural group: Every member's decreasing type belongs to one *recursive
-   family*: the naturals; the lists of one element type; or one inductive
-   group at one instantiation of its type parameters, together with `List`
-   or `Option` of its members exactly when the group's constructors nest a
-   member under that container. In a member's
+   family*: the naturals; the lists of one element type; or the family of one
+   inductive group at one instantiation of its type parameters (`DF-19`).
+   That family is the members of the group, then every other type that
+   holds a member: scanning the members in order, and the constructor fields
+   of each in the order the pinned Lean takes the constructors (declaration
+   order for a document inductive; `nil`, `cons`; `none`, `some`; `error`,
+   `ok`; `mk`), each field that mentions the group without being a member is
+   a maximal application of `List`, `Option`, `Result`, or a product (by
+   strict positivity, §17.12 recursive-data rule 3) and joins the family
+   once, at its first occurrence. These are the motives of the recursor the
+   pinned Lean 4.32.1 generates for the group (`#check @T.rec`), in its
+   order: for `Json` with `array (List Json)` and `object (List (String *
+   Json))`, `Json`, `List Json`, `List (String * Json)`, and `String *
+   Json`, so a group may decrease on any of the four, and a list of pairs
+   whose first component is another type is not one of them. In a member's
    top-level match, every pattern binder whose type belongs to the family is
    structurally smaller, and every call to a group member passes a smaller
    binder in that member's decreasing position. Members see each other; the

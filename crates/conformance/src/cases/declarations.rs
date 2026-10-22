@@ -1540,6 +1540,76 @@ pub(crate) fn run(id: &str) {
                 "primitive ListFold argument 0 has type ((Nat) -> (List (Nat)) -> (List (Nat))), expected ((List (Nat)) -> (Nat) -> (List (Nat)))",
             );
         }
+        // §17.12: a mutual definition group recurses over the whole recursive
+        // family of a nested inductive.
+        "DF-19" => {
+            // `Json` holds a `List` of itself and a `List` of pairs that end in
+            // itself, so its family is `Json`, `List Json`,
+            // `List (String * Json)` and `String * Json`; two groups of four
+            // members range over it.
+            let project = P::copy_tests_project("nested-family");
+            project.check_ok();
+            let rendered = support::rendered(&project);
+            let main = support::lean_text(&rendered, "Main");
+            for expected in [
+                "mutual\n@[expose] public def size : (value : Json) -> Nat\n",
+                "  | Json.object entries => (1 + sizeEntries (entries))\ntermination_by structural value => value\n",
+                "termination_by structural items => items\n",
+                "@[expose] public def sizeEntries : (entries : List ((Prod (String) (Json)))) -> Nat\n",
+                "  | List.cons head tail => (sizeEntry (head) + sizeEntries (tail))\ntermination_by structural entries => entries\n",
+                "@[expose] public def sizeEntry : (entry : (Prod (String) (Json))) -> Nat\n  | Prod.mk _ value => size (value)\ntermination_by structural entry => entry\nend\n",
+                "  | Prod.mk _ value => leaves (value)\ntermination_by structural entry => entry\nend\n",
+            ] {
+                assert!(main.contains(expected), "missing {expected:?} in:\n{main}");
+            }
+            assert_eq!(
+                main.matches("termination_by structural").count(),
+                8,
+                "one structural termination clause per member:\n{main}"
+            );
+            assert_eq!(main.matches("\nmutual\n").count(), 2, "{main}");
+            // The pinned Lean accepts every group and evaluates both on a
+            // value that nests all four members (the two theorems).
+            let _ = support::verify_ok_backed("DF-19", &project);
+            let reject = |from: &str, to: &str, message: &str| {
+                let copy = P::copy_tests_project("nested-family");
+                let source = copy.read("src/Main.lex.tex");
+                assert_eq!(source.matches(from).count(), 1, "{from}");
+                copy.write("src/Main.lex.tex", &source.replacen(from, to, 1));
+                let error = copy.check_fails_with("LLT4001");
+                assert!(
+                    error.to_string().contains(message),
+                    "expected {message:?}, got {error}"
+                );
+                copy.assert_no_backend_output();
+            };
+            // A pair's string is not a member of the family, so a `Json` made
+            // from it is not a smaller value of the pair.
+            reject(
+                r#""binders":["key","value"],"body":{"arguments":[{"kind":"var","name":"value"}],"function":{"name":"size"},"kind":"call"}"#,
+                r#""binders":["key","value"],"body":{"arguments":[{"arguments":[{"kind":"var","name":"key"}],"constructor":{"name":"Json.text"},"kind":"constructor"}],"function":{"name":"size"},"kind":"call"}"#,
+                "recursive call `size` is not on a structurally smaller value",
+            );
+            // The matched list itself is not smaller.
+            reject(
+                r#"{"arguments":[{"kind":"var","name":"tail"}],"function":{"name":"sizeEntries"},"kind":"call"}"#,
+                r#"{"arguments":[{"kind":"var","name":"entries"}],"function":{"name":"sizeEntries"},"kind":"call"}"#,
+                "recursive call `sizeEntries` is not on a structurally smaller value",
+            );
+            // A list of pairs whose first component is another type is a list
+            // of one element type, not a member of the family of `Json`.
+            reject(
+                r#""name":"sizeEntries","parameters":[{"name":"entries","type":{"element":{"kind":"product","left":{"kind":"string"}"#,
+                r#""name":"sizeEntries","parameters":[{"name":"entries","type":{"element":{"kind":"product","left":{"kind":"nat"}"#,
+                "mutual group `Size` members decrease on different recursive families",
+            );
+            // Such a pair is outside every family.
+            reject(
+                r#""name":"sizeEntry","parameters":[{"name":"entry","type":{"kind":"product","left":{"kind":"string"}"#,
+                r#""name":"sizeEntry","parameters":[{"name":"entry","type":{"kind":"product","left":{"kind":"nat"}"#,
+                "member `sizeEntry` decreases on a type outside every recursive family",
+            );
+        }
         other => panic!("no declarations case is wired for {other}"),
     }
 }
