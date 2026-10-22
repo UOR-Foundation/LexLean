@@ -166,19 +166,51 @@ jobs:
           fi
       - run: cargo build --locked --release -p lexlean
       # A release binary that cannot report its own identity is not one
-      # (§30.3): the four lines are checked here, on the host that built it.
-      - name: The binary reports its four-line identity
+      # (§30.3): the report is checked here, on the host that built it,
+      # against the §30.3 fence of SPEC.md, the text CL-18 reads. The line
+      # count is the fence's — the `lexlean` line, a `language` line and a
+      # `compiler-semantics` line per supported language, the `lean-toolchain`
+      # line — never a number written here, so a language the fence gains is
+      # expected without this file changing, and a report that drops one or
+      # keeps the shape of an earlier release is refused. Each ID is a
+      # 64-hex-digit digest here; `release-check` in `publish` compares the
+      # exact IDs.
+      - name: The binary reports the §30.3 identity
         shell: bash
+        env:
+          VERSION: ${{ needs.identity.outputs.version }}
         run: |
           set -euo pipefail
           binary="target/release/lexlean"
           [ -f "$binary" ] || binary="target/release/lexlean.exe"
           "$binary" --version | tee identity.txt
-          lines="$(wc -l < identity.txt)"
-          if [ "$lines" -ne 4 ]; then
-            echo "::error::--version printed $lines lines, not the four of §30.3"
+          # The §30.3 fence, from its `lexlean <version>` line to its close.
+          awk 'f == 2 { if ($0 == "```") exit; print; next }
+               f == 1 { f = ($0 == "lexlean <version>") ? 2 : 0; if (f == 2) print; next }
+               $0 == "```text" { f = 1 }' SPEC.md > expected.txt
+          if ! [ -s expected.txt ]; then
+            echo "::error::SPEC.md §30.3 has no version report fence beginning \`lexlean <version>\`"
             exit 1
           fi
+          expected="$(wc -l < expected.txt | tr -d ' ')"
+          lines="$(wc -l < identity.txt | tr -d ' ')"
+          if [ "$lines" -ne "$expected" ]; then
+            echo "::error::--version printed $lines lines, not the $expected of the §30.3 report"
+            exit 1
+          fi
+          n=0
+          while IFS= read -r want; do
+            n=$((n + 1))
+            got="$(sed -n "${n}p" identity.txt)"
+            case "$want" in
+              'lexlean <version>') want="lexlean ${VERSION}"; [ "$got" = "$want" ] ;;
+              'compiler-semantics <digest>') printf '%s\n' "$got" | grep -Eq '^compiler-semantics [0-9a-f]{64}$' ;;
+              *) [ "$got" = "$want" ] ;;
+            esac || {
+              echo "::error::--version line $n is \`$got\`, not the \`$want\` of the §30.3 report"
+              exit 1
+            }
+          done < expected.txt
           mkdir -p "staged/bin/${{ matrix.target }}"
           cp "$binary" "staged/bin/${{ matrix.target }}/"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

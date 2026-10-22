@@ -27,7 +27,9 @@ and Unreleased holds what has landed since.
   `<language> <ID>` line per language, and `release-identity.json` gains
   `compiler_semantics_ids` beside `compiler_semantics_id` (language 1.0's, as
   before). `cargo xtask release-check` reads the completion release and the
-  version report from the chapter modules instead of restating `1.0.0`.
+  version report from the chapter modules instead of restating `1.0.0`, and
+  `release.yml` checks each host binary's report against the §30.3 fence,
+  its line count included, instead of a count written in the workflow.
   Register 444.
 
 - `cargo xtask spec` (`NS-07`, #244): edit the chapter modules of `spec/` by

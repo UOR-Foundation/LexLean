@@ -16588,9 +16588,45 @@ At `0.5.0`, with the version report the binary prints and the semantics-ID list
 `cargo xtask release-artifacts` writes, `source-tag`, `semantics-id` and
 `version-output` all hold (`conformance_rp_17`).
 
+The `release.yml` step that checks each host binary's report, "The binary
+reports the §30.3 identity" in the `binaries` job, reads the same fence: it
+expects the fence's line count and compares line by line, the first line with
+the tagged version and each `<digest>` with a 64-hex-digit ID. Before this
+change the step required exactly four lines, the report of the releases before
+#113, and would have refused every binary printing the eight-line report (found
+by the #128 audit). The step's shell was run as written, extracted from
+`release.yml` by the step's name with `${{ matrix.target }}` filled in, on
+Linux x86-64 in a scratch directory holding `SPEC.md` and the binary under
+`target/release/`, with `VERSION` set to `0.3.0`, the workspace version
+`identity` outputs; each plant is a script printing the planted report in the
+binary's place. The binary `cargo build --locked --release -p lexlean` built
+printed:
+
+```text
+lexlean 0.3.0
+language 1.0
+compiler-semantics 8554008034f6e9284382619a7aa71e0f0071ad404ea9d821068294d2d8804851
+language 1.1
+compiler-semantics 176453256c64bbd14b1449f5979610054c72ea83213ecd13795cc883af8b2cd8
+language 1.2
+compiler-semantics 5262e5b4c8b5668ae7066ad686757a6bb7f80c941d515fb9d586894fbc7de69a
+lean-toolchain leanprover/lean4:v4.32.1
+```
+
+| Case | Command | Observed |
+| --- | --- | --- |
+| the release binary's report above | the step's shell | `expected.txt` holds the fence's 8 lines, every line matches; exit 0 |
+| the report without `language 1.2` and its ID (six lines) | same | `::error::--version printed 6 lines, not the 8 of the §30.3 report`; exit 1 |
+| the four-line report of the releases before this change | same | `::error::--version printed 4 lines, not the 8 of the §30.3 report`; exit 1 |
+| language 1.1's ID shortened to 63 digits (eight lines) | same | ``::error::--version line 5 is `compiler-semantics 1764…8b2cd`, not the `compiler-semantics <digest>` of the §30.3 report``; exit 1 |
+| languages 1.1 and 1.0 swapped (eight lines) | same | ``::error::--version line 2 is `language 1.1`, not the `language 1.0` of the §30.3 report``; exit 1 |
+| the real report with `VERSION` set to `0.5.0` | same | ``::error::--version line 1 is `lexlean 0.3.0`, not the `lexlean 0.5.0` of the §30.3 report``; exit 1 |
+
 *What the evidence is.* `release-check` reads two items of the chapter modules
 through the projector, which is Rust and can falsify a reading, never establish
 one (C9). The plants show the reading is not vacuous: a change to either item
 changes what is refused, and a reader that ignores either item fails the case.
 CL-18 compares the binary's report both with the compiled-in identities and with
-the §30.3 fence as SPEC.md states it, read without `release-check`.
+the §30.3 fence as SPEC.md states it, read without `release-check`; the
+`release.yml` step reads that fence too, so the line count it expects moves
+with §30.3 and never with the workflow.
