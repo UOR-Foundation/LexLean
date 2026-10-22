@@ -7846,7 +7846,7 @@ host the evaluator agrees on the 272 of them of at most 300 nodes and on 150
 seeded mutants, the rendered packages agree on 4,500 further runs (1,500
 seeded mutants per root), thirteen planted defects in the source are each
 detected, and the production export (§24.7) certifies the three roots. The
-bound of 300 nodes is a measurement: the evaluator takes 67 seconds for the
+bound of 300 nodes is a measurement: the evaluator takes 72 seconds for the
 three roots within it (with the 150 mutants), and 874 seconds for `siteTrees`
 alone with all 309 vectors, against 39 within the bound: the 37 programs it
 leaves out are the largest, on the root that carries `walk`.

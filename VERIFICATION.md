@@ -9894,7 +9894,7 @@ case is wired for BS-07`. Removed: the source was not changed (the plants are
 made on copies).
 
 Findings while building the roots. (1) A gate that reads its own vectors can
-be vacuous without failing: six of the programs of the rules were refused by
+be vacuous without failing: eight of the programs of the rules were refused by
 the checker (a quotient and a remainder with two operands, and types with no
 constructor), and `vectors` drops a program the checker refuses, so the plant
 of "the closures of a dead function count" was undetected until the case found
