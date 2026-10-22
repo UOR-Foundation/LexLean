@@ -141,6 +141,18 @@ fn migrated_source(relative: &str, text: &str) -> Result<String, Diagnostic> {
     }
     let mut module =
         sdk::read_module(text).map_err(|failure| unwritable(relative, failure.to_string()))?;
+    // Language 1.1 `check` refuses a data form that is not its own canonical
+    // JSON (`LLT4001`); the migration refuses it too, rather than canonicalizing
+    // a module the source language does not accept.
+    if sdk::data_is_canonical(text) != Some(true) {
+        return Err(unwritable(
+            relative,
+            format!(
+                "`{relative}` is not a language-1.1 data-form module: its data is not canonical JSON, \
+                 which language 1.1 refuses as well (`LLT4001`); run `lexlean fmt` on the 1.1 project first"
+            ),
+        ));
+    }
     if module.get("spec").and_then(serde_json::Value::as_str) != Some(MODULE_1_1) {
         return Err(unwritable(
             relative,
@@ -461,15 +473,54 @@ fn migrate_inner(engine: &Engine, request: &MigrateRequest) -> Result<MigrateRes
 
 /// Take the project mutation lock, check that every file the proof read is
 /// unchanged, and publish the new files together.
+///
+/// The lock lives in the build root, which taking it creates when it is
+/// absent. A refusal or failure after that point removes the build root again
+/// when this call created it, so a refused migration leaves nothing behind
+/// (SPEC.md §23.4).
 fn write(engine: &Engine, files: &Rewrites, inputs: &Inputs) -> Result<(), LexLeanError> {
-    // The staging precedes the project mutation lock's first use of the build
-    // root, so a refused migration leaves no `.lexlean` behind.
-    let _guard = acquire_lock(engine.project())?;
+    let project = engine.project();
+    let build_root = project
+        .confined_creatable(&project.config.build_root)
+        .map_err(LexLeanError::from_diagnostic)?;
+    let created_build_root = !build_root.as_std_path().exists();
+    let guard = acquire_lock(project)?;
+    let outcome = stage_all(engine, files, inputs).and_then(publish);
+    drop(guard);
+    match outcome {
+        Ok(()) => Ok(()),
+        Err(failure) if created_build_root => match remove_build_root(&build_root) {
+            Ok(()) => Err(failure),
+            Err(io_error) => Err(host_failure(format!(
+                "{failure}; the build root `{build_root}` this migration created could not be removed: {io_error}"
+            ))),
+        },
+        Err(failure) => Err(failure),
+    }
+}
+
+/// Stage every file, refusing the migration when one is not the file the
+/// proof read.
+fn stage_all(
+    engine: &Engine,
+    files: &Rewrites,
+    inputs: &Inputs,
+) -> Result<Vec<Staged>, LexLeanError> {
     let mut staged = Vec::with_capacity(files.len());
     for (relative, bytes) in files {
         staged.push(stage(engine, relative, bytes, inputs.get(relative))?);
     }
-    publish(staged)
+    Ok(staged)
+}
+
+/// Remove the build root a migration created: the lock file it took, then the
+/// directory, which stays when anything else has since been put in it.
+fn remove_build_root(build_root: &Utf8Path) -> std::io::Result<()> {
+    match std::fs::remove_file(build_root.join(".lock").as_std_path()) {
+        Err(io_error) if io_error.kind() != std::io::ErrorKind::NotFound => return Err(io_error),
+        _ => {}
+    }
+    std::fs::remove_dir(build_root.as_std_path())
 }
 
 #[cfg(test)]

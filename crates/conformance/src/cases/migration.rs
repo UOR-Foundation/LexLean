@@ -238,6 +238,44 @@ pub(crate) fn cli() {
         "LLP2003",
         "a module that is not semantic",
     );
+    // A data form that language 1.1 `check` refuses as not canonical (the same
+    // module, pretty-printed, which 1.1 reads past, with one member name
+    // written as a `\u` escape, which it does not) is refused too, and nothing
+    // is written.
+    let pretty = P::semantic_example();
+    let source = "src/KernelReductionDefinitions.lex.tex";
+    let text = pretty.read_raw(source);
+    let opening = "\\semanticdata{";
+    let closing = "}\n\\end{semanticmodule}";
+    let start = text.find(opening).expect("the data form") + opening.len();
+    let end = text.find(closing).expect("the end of the data form");
+    let module = lexlean::sdk::read_module(&text).expect("a language-1.1 module reads");
+    pretty.write_raw(
+        source,
+        &format!(
+            "{}{}{}",
+            &text[..start],
+            serde_json::to_string_pretty(&module)
+                .expect("the module prints")
+                .replacen("\"name\"", "\"\\u006eame\"", 1),
+            &text[end..]
+        ),
+    );
+    let (status, _, stderr) = pretty.cli(&["check", "--all"]);
+    assert_eq!(status, 1, "1.1 check refuses it: {stderr}");
+    assert!(stderr.contains("[LLT4001]"), "{stderr}");
+    for arguments in [
+        &["migrate", "--to", "1.2"][..],
+        &["migrate", "--to", "1.2", "--check"][..],
+    ] {
+        assert_refused(
+            &pretty,
+            arguments,
+            1,
+            "LLP2003",
+            "a data form that is not canonical JSON",
+        );
+    }
     // A path lexicon manifest that is not language 1.1 is refused with
     // LLC0103, in the migration and in its `--check`.
     let manifest = P::semantic_example();

@@ -139,10 +139,19 @@ fn a_file_changed_after_the_proof_is_refused_and_nothing_is_written() {
         .keys()
         .map(|file| (file.clone(), std::fs::read(root.join(file)).expect("read")))
         .collect();
+    let build_root = root.join(&engine.project().config.build_root);
+    assert!(
+        !build_root.exists(),
+        "the example starts without a build root"
+    );
     let failure = write(&engine, &plan.files, &plan.inputs)
         .expect_err("the stale proof is refused")
         .to_string();
     assert!(failure.contains("LLV7010"), "{failure}");
+    assert!(
+        !build_root.exists(),
+        "a refusal leaves no build root it created"
+    );
     assert!(
         failure.contains(&format!(
             "{relative}: changed since the migration was proven"
@@ -192,5 +201,23 @@ fn a_staged_file_whose_original_vanished_is_refused() {
     assert!(
         failure.contains("changed since the migration was proven"),
         "{failure}"
+    );
+}
+
+#[test]
+fn a_refusal_keeps_a_build_root_that_was_already_there() {
+    let (temp, engine) = example();
+    let root = utf8(temp.path());
+    let build_root = root.join(&engine.project().config.build_root);
+    std::fs::create_dir_all(&build_root).expect("a build root");
+    std::fs::write(build_root.join("kept"), b"kept").expect("written");
+    let plan = rewrites(&engine).expect("the example's migration is derived");
+    let relative = plan.inputs.keys().next().expect("a proven file").clone();
+    std::fs::write(root.join(&relative), b"changed after the proof").expect("written");
+    write(&engine, &plan.files, &plan.inputs).expect_err("the stale proof is refused");
+    assert_eq!(
+        std::fs::read(build_root.join("kept")).expect("read"),
+        b"kept",
+        "a build root the migration did not create is left alone"
     );
 }
