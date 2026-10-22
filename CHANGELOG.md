@@ -334,7 +334,7 @@ and Unreleased holds what has landed since.
   doubles). `bootstrap/src/RustPrint.lex.tex` over `RustAst.lex.tex` declares
   `printCrate` and `printExpr` as production roots for `rust-std`. `BS-06`
   runs 2,566 vectors under the pinned `rustc` on every host, and on the
-  normative host the evaluator on 541 + 1,955 of them and 400 + 399 seeded
+  normative host the evaluator on 545 + 1,955 of them and 400 + 399 seeded
   mutants, 2,984 more under `rustc`, twelve planted defects, and the certified
   packages against the committed ones. The register is 445 IDs.
 - The failure typing of the Rust lowering as language-1.2 source, first slice of

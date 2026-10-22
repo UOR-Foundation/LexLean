@@ -7723,12 +7723,12 @@ the overflow value (a call of each of the 26 families of machine primitives with
 one operand too many, three with the right count, a propagating call, the overflow
 value alone, one in an `Err`, one function that takes the error type of the runtime, one that takes `i128`, and the failure of a runtime function: a fallible function whose tail is `Err::<T, Overflow>(Overflow)`, which both validators accept, and the same `Err` with another payload and with another error type, which both refuse), which reach the three refusals no mutant of a
 committed crate reaches (an operand count, a stray overflow value, and the
-construct `call:machine`, which no row of the table has); that is 451 runs of
-`validateCrate` (195 refused) and 314 of `correspondCrate` (82 refused), and the case asserts
+construct `call:machine`, which no row of the table has); that is 454 runs of
+`validateCrate` (195 refused) and 317 of `correspondCrate` (82 refused), and the case asserts
 these counts. On every host, the rendered `rust-std` packages of both
 roots (§17.16), compiled by the pinned rustc, are run on all of them. On the
 normative host, the lowered programs of both roots are run under the calculus
-evaluator (§17.14) on the crates of at most 400 expressions (201 of the 231;
+evaluator (§17.14) on the crates of at most 400 expressions (201 of the 234;
 the larger ones are the compiler's own packages and are held to the oracle by
 the compiled run) with the rule corpus, and on 500 seeded mutants of the
 crates of at most 80 expressions (a node replaced by another of the crate, a

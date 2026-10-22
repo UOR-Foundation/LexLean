@@ -14,7 +14,7 @@
 //! the oracle on the same vectors, so the host's composition of the three
 //! gives `fallible_functions` on every vector, leg by leg.
 
-use lexlean::calculus::rust::ast::{Expr as RustExpr, Ident, ItemDef};
+use lexlean::calculus::rust::ast::{Expr as RustExpr, Ident, ItemDef, Pat};
 use lexlean::calculus::rust::{self, Profile};
 use lexlean::calculus::sites::{self, Site};
 use lexlean::calculus::{Arm, Expr, Function, Prim, Program, Shape, Ty, Value};
@@ -86,12 +86,26 @@ fn dead_flags(program: &Program) -> Option<Vec<bool>> {
     for item in &krate.items {
         if let ItemDef::Function {
             name: Ident::Function(at),
+            parameters,
             body,
             ..
         } = item
         {
-            *dead.get_mut(usize::try_from(*at).ok()?)? = body.lets.is_empty()
-                && matches!(&body.tail, RustExpr::Match { arms, .. } if arms.is_empty());
+            // The renderer's rule: the match on a parameter that is bound
+            // and moved, with no arm.
+            let empty = match &body.tail {
+                RustExpr::Match {
+                    scrutinee, arms, ..
+                } if arms.is_empty() => matches!(
+                    scrutinee.as_ref(),
+                    RustExpr::Move(Ident::Local(moved), _)
+                        if parameters.iter().any(|(pattern, _)| {
+                            matches!(pattern, Pat::Bind(Ident::Local(bound)) if bound == moved)
+                        })
+                ),
+                _ => false,
+            };
+            *dead.get_mut(usize::try_from(*at).ok()?)? = body.lets.is_empty() && empty;
         }
     }
     Some(dead)
