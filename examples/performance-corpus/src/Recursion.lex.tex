@@ -1,0 +1,76 @@
+\begin{lexlean}{Recursion}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{corpus.titles@1.0.0}
+\title{Recursion}
+\begin{semanticmodule}
+inductive{
+  name: Tree,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: leaf, fields: []}, {name: node, fields: [Tree, Nat, Tree]}]
+}
+
+definition{
+  name: treeSum,
+  parameters: [tree : Tree],
+  result: Nat,
+  body: (match tree | Tree.leaf => 0 | Tree.node l v r => (((treeSum l) + v) + (treeSum r))),
+  executable: true,
+  recursive_argument: tree
+}
+
+definition{
+  name: treeDepth,
+  parameters: [tree : Tree],
+  result: Nat,
+  body: (match tree
+    | Tree.leaf => 0
+    | Tree.node l v r => (let dl : Nat := (treeDepth l); (let dr : Nat := (treeDepth r); (if (dl <? dr) then (dr + 1) else (dl + 1))))),
+  executable: true,
+  recursive_argument: tree
+}
+
+definition{
+  name: treeStats,
+  parameters: [tree : Tree],
+  result: (Nat * Nat),
+  body: ((treeSum tree), (treeDepth tree)),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+theorem{
+  name: bisect_decreases,
+  parameters: [target : Nat, low : Nat, high : Nat],
+  statement: (((low <? high) = true) -> (((target <=? (low + low)) = false) -> ((prim subtract high (low + 1) : Nat) < (prim subtract high low : Nat)))),
+  proof: linear_arithmetic{},
+  axioms: [Quot.sound, propext]
+}
+
+definition{
+  name: bisect,
+  parameters: [target : Nat, low : Nat, high : Nat],
+  result: Nat,
+  body: (if (low <? high) then (if (target <=? (low + low)) then low else (bisect target (low + 1) high)) else high),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core, rust-std]},
+  termination: {evidence: [bisect_decreases], measure: (prim subtract high low : Nat)}
+}
+
+theorem{
+  name: tree_stats_example,
+  parameters: [],
+  statement: ((treeStats (ctor Tree.node (ctor Tree.node (ctor Tree.leaf) 1 (ctor Tree.leaf)) 2 (ctor Tree.leaf))) = (3, 2)),
+  proof: decide{}
+}
+
+theorem{
+  name: bisect_first,
+  parameters: [],
+  statement: ((bisect 7 0 10) = 4),
+  proof: decide{},
+  axioms: [Quot.sound, propext]
+}
+\end{semanticmodule}
+\end{lexlean}

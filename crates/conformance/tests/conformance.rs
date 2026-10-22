@@ -1311,6 +1311,16 @@ fn conformance_ex_08() {
 }
 
 #[test]
+fn conformance_pc_01() {
+    repo_conformance::cases::run("PC-01");
+}
+
+#[test]
+fn conformance_pc_02() {
+    repo_conformance::cases::run("PC-02");
+}
+
+#[test]
 fn conformance_pd_01() {
     repo_conformance::cases::run("PD-01");
 }

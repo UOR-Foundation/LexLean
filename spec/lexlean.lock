@@ -52,6 +52,6 @@ version = "1.0.0"
 kind = "path"
 source = "glossary/spec.titles"
 revision = "none"
-tree_sha256 = "968a197f1f5322da2b85804fcd4f4741dc8d23f498d12cf9f0cd0a582ecb0ff7"
+tree_sha256 = "f18276dfbf1c6e8a72cbda6be44ac4f67b73abf7ec5ebf1c53db3046b30c1af0"
 manifest_sha256 = "a3155ce5a2094c771ae48ec32c8b8a037ece3c2f0105a7b860dd36159c73213d"
 imports = ["lexlean.core@1.2.0", "lexlean.std.nat@1.2.0"]

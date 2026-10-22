@@ -1,0 +1,44 @@
+\begin{lexlean}{MapsSets}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{corpus.titles@1.0.0}
+\title{Maps and sets}
+\begin{semanticmodule}
+definition{
+  name: count,
+  parameters: [counts : (Map Nat Nat), v : Nat],
+  result: Nat,
+  body: (match (prim map_lookup counts v : (Option Nat)) | Option.none => 0 | Option.some n => n),
+  executable: true
+}
+
+definition{
+  name: tally,
+  parameters: [xs : (List Nat), key : Nat],
+  result: (Nat * Nat),
+  body: (let counts : (Map Nat Nat) := (prim list_fold (fun (m : (Map Nat Nat)) (v : Nat) => (prim map_insert m v ((count m v) + 1) : (Map Nat Nat))) map_literal{
+    entries: [],
+    key: Nat,
+    value: Nat
+  } xs : (Map Nat Nat)); (let seen : (Set Nat) := (prim list_fold (fun (s : (Set Nat)) (v : Nat) => (prim set_insert s v : (Set Nat))) set_literal{
+    element: Nat,
+    elements: []
+  } xs : (Set Nat)); ((count counts key), (prim set_size seen : Nat)))),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+theorem{
+  name: tally_repeats,
+  parameters: [],
+  statement: ((tally (cons 2 (cons 1 (cons 2 (cons 3 (nil Nat))))) 2) = (2, 3)),
+  proof: decide{}
+}
+
+theorem{
+  name: tally_absent,
+  parameters: [],
+  statement: ((tally (cons 1 (nil Nat)) 2) = (0, 1)),
+  proof: decide{}
+}
+\end{semanticmodule}
+\end{lexlean}

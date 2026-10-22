@@ -16562,3 +16562,53 @@ vacuous. A hunk the tool cannot place (it spans two blocks, adds a heading or a
 fence, or touches no block) is refused rather than split; that edit is made
 with `replace-block` and `insert-after` one block at a time, or by hand.
 `Ids*` rows stay hand-edited, as decided on #244.
+
+## The performance corpus (`PC-01`, `PC-02`, #124)
+
+The corpus of SPEC.md §28.7 is the object every acceptance criterion about
+the performance of compiled programs quantifies over. What it is cannot rest
+on a reading of its sources: `conformance_pc_01` reads
+`examples/performance-corpus/corpus.toml` against the production roots the
+project declares (§17.13), and `conformance_pc_02` keeps the corpus general
+by a structural rule (no source package, no lexicon source outside the
+project, no address or repository name in any file) rather than by a list of
+consumer names, which would itself name one, and then exports every member
+through `lexlean::api::production`.
+
+### the corpus membership check can fail
+
+Each rule below was planted in the committed corpus, the case run, and the
+plant removed. The other registered defects are planted on the manifest and
+file texts in memory on every run of the cases (an unknown field, an
+unregistered kind, a member whose root is not a production root, a member
+declared with other targets, a lexicon source outside the project, a network
+address in a source, a repository name in the manifest), each refused naming
+itself, and a plant that leaves the text unchanged fails the case.
+
+- **a kind without a member.** The `long-folds/moments` row removed from
+  `corpus.toml`. `cargo test -p repo-conformance --all-features --test conformance -- conformance_pc_01 --exact`:
+
+  ```text
+  thread 'conformance_pc_01' panicked at crates/conformance/src/cases/performance_corpus.rs:309:69:
+  PC-01: kind `long-folds` has no member and states no precondition
+  ```
+
+- **a member of the `compiler` kind while its precondition is stated.** A
+  row `compiler/self` naming `Corpus.Recursion.bisect` appended.
+  `-- conformance_pc_01`:
+
+  ```text
+  PC-01: kind `compiler` states a precondition and has a member
+  ```
+
+- **a source package.** `[[source_package]]` appended to the project's
+  `lexlean.toml`. `-- conformance_pc_02`, refused before any Lean process:
+
+  ```text
+  thread 'conformance_pc_02' panicked at crates/conformance/src/cases/performance_corpus.rs:404:56:
+  PC-02: lexlean.toml declares a source package
+  ```
+
+Removed: the three edits were restored; `conformance_pc_01` passes, and
+`conformance_pc_02` passes with the export of every member under the pinned
+Lean 4.32.1 (8 outputs over the 6 members, each `kernel-checked`, the bundle replayed `bindings-verified`; `cargo xtask verify-examples --write` wrote 138 normalized verification records for `performance-corpus`, attestation f92c50059ffb4f27a91ee7d43d5ca29d4ecd7c7d0e7cff63c1984b54ac344441; `check-golden --write` changed no other example; `check-test-inventory`, `cargo fmt --check` and `validate-model` pass).

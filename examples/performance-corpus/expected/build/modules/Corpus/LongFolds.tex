@@ -1,0 +1,23 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{moments}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(xs : List (Nat))}.\par
+\noindent Closure 1: binds \texttt{(acc, v)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{(Prod (Nat) ((Prod (Nat) (Nat))))}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (acc : (Prod (Nat) ((Prod (Nat) (Nat))))) (v : Nat) => (((acc).1 + 1), ((((acc).2).1 + v), (((acc).2).2 + (LexLeanRuntime.multiply (v) (v) : Nat)))))) ((0, (0, 0))) (xs) : (Prod (Nat) ((Prod (Nat) (Nat)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{moments\_three}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(moments ((1 :: (2 :: (3 :: ([] : List (Nat)))))) = (3, (6, 14)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{moments\_empty}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(moments (([] : List (Nat))) = (0, (0, 0)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\end{document}
