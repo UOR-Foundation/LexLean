@@ -10,8 +10,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use lexlean::calculus::rust::ast::{
-    Block, Callee, CaptureRead, Crate, Ctor, Dispatch, Expr, Ident, ItemDef, Let, Lit, Origin, Pat,
-    Type,
+    Block, Callee, CaptureRead, Crate, Ctor, Dispatch, Expr, Ident, ItemDef, Let, Lit, Machine,
+    Origin, Pat, Type,
 };
 use lexlean::calculus::rust::runtime::Item;
 use lexlean::calculus::{IntKind, Value};
@@ -99,7 +99,7 @@ fn enc_types(types: &[Type]) -> Value {
     chain(5, 6, types.iter().map(enc_type).collect())
 }
 
-/// `Ty`: a leaf (unit, bool, nat, int, ordering, str, bytes), fixed, a unary
+/// `Ty`: a leaf (unit, bool, nat, int, ordering, str, bytes, overflow, i128), fixed, a unary
 /// (option, list, rc, fallible, ref), a binary (result, pair), a name (adt,
 /// fn), then the chain's nil and cons.
 fn enc_type(ty: &Type) -> Value {
@@ -120,6 +120,8 @@ fn enc_type(ty: &Type) -> Value {
         Type::Ordering => leaf(4),
         Type::Str => leaf(5),
         Type::Bytes => leaf(6),
+        Type::Overflow => leaf(7),
+        Type::I128 => leaf(8),
         Type::Fixed(kind) => adt(1, vec![enc_kind(*kind)]),
         Type::Option(inner) => unary(0, inner),
         Type::List(element) => unary(1, element),
@@ -133,7 +135,7 @@ fn enc_type(ty: &Type) -> Value {
     }
 }
 
-/// `Lit`: unit, bool, nat, int, fixed, str, bytes, ordering. The checker
+/// `Lit`: unit, bool, nat, int, fixed, str, bytes, ordering, overflow. The checker
 /// reads a literal's kind and, for a fixed one, its width; no payload.
 fn enc_lit(literal: &Lit) -> Value {
     match literal {
@@ -145,6 +147,7 @@ fn enc_lit(literal: &Lit) -> Value {
         Lit::Str(_) => adt(5, Vec::new()),
         Lit::Bytes(_) => adt(6, Vec::new()),
         Lit::Ordering(_) => adt(7, Vec::new()),
+        Lit::Overflow => adt(8, Vec::new()),
     }
 }
 
@@ -251,11 +254,12 @@ fn enc_item(item: Item) -> Value {
     }
 }
 
-/// `Callee`: function, runtime.
+/// `Callee`: function, runtime, machine (by family).
 fn enc_callee(callee: &Callee) -> Value {
     match callee {
         Callee::Function(n) => adt(0, vec![nat(*n)]),
         Callee::Runtime(item) => adt(1, vec![enc_item(*item)]),
+        Callee::Machine(machine) => adt(2, vec![nat(machine.family())]),
     }
 }
 
@@ -1619,9 +1623,19 @@ const REACHABLE: &[&str] = &[
     "width",
 ];
 
+/// The refusals only the hand-built crates reach: the committed crates hold no
+/// machine call and no overflow value, so their mutants do not either (the
+/// rule vectors are drawn until [`REACHABLE`] is, and these are counted
+/// beside them).
+const HAND_BUILT: &[&str] = &["machine-arity", "overflow-stray", "no-row"];
+
 fn classify(message: &str) -> &'static str {
     let has = |needle: &str| message.contains(needle);
-    if has("is not a declared type") {
+    if message.starts_with("machine: ") {
+        "machine-arity"
+    } else if message.starts_with("overflow: ") {
+        "overflow-stray"
+    } else if has("is not a declared type") {
         "enum-not-declared"
     } else if has("::apply is declared twice") {
         "apply-declared-twice"
@@ -1755,6 +1769,7 @@ fn coverage(runs: &[Run]) -> BTreeMap<&'static str, usize> {
 fn uncovered(counts: &BTreeMap<&'static str, usize>) -> Vec<&'static str> {
     REACHABLE
         .iter()
+        .chain(HAND_BUILT)
         .copied()
         .filter(|template| !counts.contains_key(template))
         .collect()
@@ -1987,6 +2002,92 @@ fn branch_crates() -> Vec<Crate> {
 /// The elements a hand-built crate realizes: the origins of its constructs
 /// and the rows its types name, so a correspondence run of it asks the oracle
 /// about the loop and not only about an element the crate never used.
+/// Crates by hand for the machine callee and the overflow value (`RB-15`,
+/// `SP-18`): a call of each primitive family with one operand more than it
+/// takes (the arity and the name of every row of the module's table),
+/// a call of each arity with the right count and with a propagation it cannot
+/// have, the overflow value outside an `Err` (refused) and in one (accepted).
+/// No lowering emits any of them, so correspondence refuses each of the calls
+/// as a construct with no row.
+fn machine_crates() -> Vec<Crate> {
+    let at = Origin::of;
+    let function = |body: Expr| Crate {
+        profile: lexlean::calculus::rust::Profile::Core,
+        items: vec![ItemDef::Function {
+            name: Ident::Function(0),
+            parameters: Vec::new(),
+            result: Type::Unit,
+            body: Block::of(body),
+            at: at("function"),
+        }],
+    };
+    let call = |machine: Machine, operands: usize, propagate: bool| Expr::Call {
+        callee: Callee::Machine(machine),
+        args: (0..operands)
+            .map(|n| Expr::Lit(Lit::Nat(n as u64), at("value:nat")))
+            .collect(),
+        propagate,
+        at: at("prim:machine"),
+    };
+    let mut crates = Vec::new();
+    for machine in Machine::families() {
+        crates.push(function(call(machine, machine.arity() + 1, false)));
+    }
+    for machine in [
+        Machine::CheckedNeg(IntKind::U8),
+        Machine::CheckedAdd(IntKind::U8),
+        Machine::NatRem,
+    ] {
+        crates.push(function(call(machine, machine.arity(), false)));
+    }
+    crates.push(function(call(Machine::CheckedAdd(IntKind::U8), 2, true)));
+    crates.push(function(Expr::Lit(Lit::Overflow, at("overflow"))));
+    crates.push(function(Expr::Construct {
+        ctor: Ctor::Err(Type::Unit, Type::Unit),
+        args: vec![Expr::Lit(Lit::Overflow, at("overflow"))],
+        at: at("construct:err"),
+    }));
+    // The types `Overflow` and `i128` have no row of the correspondence: a
+    // function that takes one is valid and is refused by `correspond`.
+    for ty in [Type::Overflow, Type::I128] {
+        crates.push(Crate {
+            profile: lexlean::calculus::rust::Profile::Core,
+            items: vec![ItemDef::Function {
+                name: Ident::Function(0),
+                parameters: vec![(Pat::Bind(Ident::Param(0)), ty.clone())],
+                result: ty,
+                body: Block::of(Expr::Copy(Ident::Param(0), at("read:param"))),
+                at: at("function"),
+            }],
+        });
+    }
+    // The runtime fails with `Err::<T, Overflow>(Overflow)` at the tail of a
+    // fallible function: the one `Err` the arithmetic rule reads as a
+    // fallible value. The same `Err` with another payload, and the overflow
+    // value under another error type, are not.
+    for (error, payload) in [
+        (Type::Overflow, Lit::Overflow),
+        (Type::Overflow, Lit::Nat(0)),
+        (Type::Nat, Lit::Overflow),
+    ] {
+        crates.push(Crate {
+            profile: lexlean::calculus::rust::Profile::Core,
+            items: vec![ItemDef::Function {
+                name: Ident::Function(0),
+                parameters: vec![(Pat::Bind(Ident::Param(0)), Type::Nat)],
+                result: Type::Fallible(Box::new(Type::Nat)),
+                body: Block::of(Expr::Construct {
+                    ctor: Ctor::Err(Type::Nat, error),
+                    args: vec![Expr::Lit(payload, at("overflow"))],
+                    at: at("construct:err"),
+                }),
+                at: at("function"),
+            }],
+        });
+    }
+    crates
+}
+
 fn elements_of(krate: &Crate) -> BTreeSet<String> {
     let (instances, types) = validate::instances(krate);
     let mut out: BTreeSet<String> = instances
@@ -2612,7 +2713,37 @@ fn rustc_differential(roots: &[(&str, &Lowered, &[Run])], label: &str) -> usize 
 
 /// A defect planted in the source: the check it removes, the text of the
 /// source it is made at, and the root whose differential must catch it.
-const PLANTS: [super::Plant; 16] = [
+const PLANTS: [super::Plant; 20] = [
+    // The number of operands of a machine call is not compared with the
+    // primitive's.
+    super::Plant {
+        label: "machine arity not checked",
+        site: "(match ((exprLen args) =? (machineArity m))",
+        replacement: "(match true",
+        root: "validateCrate",
+    },
+    // The overflow value outside the payload of an `Err` is accepted.
+    super::Plant {
+        label: "stray overflow value accepted",
+        site: "| Lit.LitOverflow => (ctor Result.error [St, Bytes] (text \"overflow: the overflow value stands outside the payload of an `Err`\"))",
+        replacement: "| Lit.LitOverflow => (ctor Result.ok [St, Bytes] st)",
+        root: "validateCrate",
+    },
+    // The overflow value in the payload of an `Err` is refused too.
+    super::Plant {
+        label: "overflow value in an Err refused",
+        site: "(let skip : Bool := (if err then (isOverflowExpr head) else false);",
+        replacement: "(let skip : Bool := false;",
+        root: "validateCrate",
+    },
+    // A machine call is not an instance of correspondence, so no row is
+    // asked for it.
+    super::Plant {
+        label: "machine call not an instance of correspondence",
+        site: "| Callee.CalMachine m => (foundAt found (text \"call:machine\") org)",
+        replacement: "| Callee.CalMachine m => found",
+        root: "correspondCrate",
+    },
     // The profile check of a type is skipped: a heap type passes under
     // `rust-core`.
     super::Plant {
@@ -2807,13 +2938,14 @@ const RULE_VALIDATE_RUNS: usize = 132;
 const RULE_CORRESPOND_RUNS: usize = 12;
 const BRANCH_CRATES: usize = 17;
 const LOOP_CRATES: usize = 34;
-const VECTORS_VALIDATE: usize = 409;
-const REFUSED_VALIDATE: usize = 165;
-const VECTORS_CORRESPOND: usize = 272;
-const REFUSED_CORRESPOND: usize = 46;
+const MACHINE_CRATES: usize = 26 + 3 + 1 + 2 + 2 + 3;
+const VECTORS_VALIDATE: usize = 446;
+const REFUSED_VALIDATE: usize = 195;
+const VECTORS_CORRESPOND: usize = 309;
+const REFUSED_CORRESPOND: usize = 82;
 const EVALUATOR_CRATES: usize = 200;
-const EVALUATOR_VALIDATE: usize = 383;
-const EVALUATOR_CORRESPOND: usize = 246;
+const EVALUATOR_VALIDATE: usize = 420;
+const EVALUATOR_CORRESPOND: usize = 283;
 const SEEDED_REFUSED_VALIDATE: usize = 271;
 const SEEDED_REFUSED_CORRESPOND: usize = 244;
 
@@ -2845,15 +2977,23 @@ pub(super) fn case() {
     );
     let bases = small(&all, BASE_CAP);
     let (mut rule_validate, rule_correspond) = rule_vectors(&bases, RULES_EACH);
-    let by_hand: Vec<Crate> = branch_crates().into_iter().chain(loop_crates()).collect();
+    let by_hand: Vec<Crate> = branch_crates()
+        .into_iter()
+        .chain(loop_crates())
+        .chain(machine_crates())
+        .collect();
     assert_eq!(
         (rule_validate.len(), rule_correspond.len()),
         (RULE_VALIDATE_RUNS, RULE_CORRESPOND_RUNS),
         "the rule runs: each reachable refusal {RULES_EACH} times"
     );
     assert_eq!(
-        (branch_crates().len(), loop_crates().len()),
-        (BRANCH_CRATES, LOOP_CRATES),
+        (
+            branch_crates().len(),
+            loop_crates().len(),
+            machine_crates().len()
+        ),
+        (BRANCH_CRATES, LOOP_CRATES, MACHINE_CRATES),
         "the hand-built crates"
     );
     rule_validate.extend(by_hand.iter().map(validate_run));
@@ -2861,6 +3001,7 @@ pub(super) fn case() {
     rule_correspond.extend(
         loop_crates()
             .iter()
+            .chain(machine_crates().iter())
             .map(|krate| correspond_run(krate, &elements_of(krate))),
     );
     let mut counts = coverage(&rule_validate);

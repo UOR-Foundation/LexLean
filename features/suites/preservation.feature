@@ -124,10 +124,10 @@ Feature: preservation
     And a planted template in a production source and in the auxiliary module part of the backend is each reported, and a literal in test code is not
 
   @SP-18 @build
-  Scenario: The declared Rust machine states a machine primitive as a callee and the overflow value as a literal: RustSyntax declares eight machine primitives (checked add, subtract, multiply, quotient, negation, shift left, and shift right of a width, and try-from to a width), the callee that names one, and the literal Overflow, and RustSemantics evaluates a call of a machine callee as the calculus primitive of the same name, with the Option value the calculus states, stuck on an operand of another width (the amount of a shift excepted), and the literal Overflow as the unit value that an Err(Overflow) carries, which the pinned Lean evaluates on the boundary values of the widths and refuses to evaluate to a wrong value.
+  Scenario: The declared Rust machine states a machine primitive as a callee and the overflow value as a literal: RustSyntax declares machine primitives (checked add, subtract, multiply, quotient, negation, shift left, and shift right of a width, and try-from to a width), the callee that names one, and the literal Overflow, and RustSemantics evaluates a call of a machine callee as the calculus primitive of the same name, with the Option value the calculus states, stuck on an operand of another width (the amount of a shift excepted), and the literal Overflow as the unit value that an Err(Overflow) carries, which the pinned Lean evaluates on the boundary values of the widths and refuses to evaluate to a wrong value.
     Given the committed modules RustSyntax and RustSemantics of the compiler project, shipped as the calculus modules the certificates import
     When RustSyntax is read for its machine primitives, its callees, and its literals, and the pinned Lean evaluates calls of every machine primitive and of the overflow literal on the boundary values of the widths
-    Then RustSyntax declares exactly the eight machine primitives, the callee that names one, and the literal Overflow, and each evaluation is the value the calculus primitive states
+    Then RustSyntax declares the eight machine primitives, the callee that names one, and the literal Overflow, and each evaluation is the value the calculus primitive states
     And a statement of a wrong value for the same call is refused by the pinned Lean
 
   @SP-19 @build
@@ -143,3 +143,24 @@ Feature: preservation
     When every loop of every rendering is read back into the recursive body it is the loop form of, the loop form of that body is computed by the library's form transliterated, and certificate B of the fixtures rendered as loops is compiled by the pinned Lean over the shipped library
     Then the loop form of each recovered body is the crate's function, and each certificate B compiles with exactly the axioms the audit states
     And a loop that is not the loop form of any recursive body is refused for each way it may differ
+
+  @SP-21 @build
+  Scenario: The declared Rust machine states the integer operations the runtime's scalar functions use as machine primitives beyond the first eight: RustSyntax declares machine primitives for the bitwise and, or, exclusive or, and not of a width, for the equality, less-or-equal, and less-than of two naturals, and for the remainder of two naturals and of two integers, and RustSemantics evaluates a call of each as the calculus primitive of the same name with the value the calculus states, stuck on an operand of another width, which the pinned Lean evaluates on the boundary values of the widths and refuses to evaluate to a wrong value.
+    Given the committed modules RustSyntax and RustSemantics of the compiler project, shipped as the calculus modules the certificates import
+    When RustSyntax is read for its machine primitives and the pinned Lean evaluates a call of each new primitive on the boundary values of the widths and on an operand of another width
+    Then RustSyntax declares the bitwise, order, and remainder primitives, and each evaluation is the value the calculus primitive of the same name states
+    And a statement of a wrong value for the same call is refused by the pinned Lean
+
+  @SP-23 @build
+  Scenario: The declared Rust machine states the natural and integer arithmetic of the runtime's scalar functions with an overflow a body can observe: RustSyntax declares machine primitives for the checked sum and product of two naturals and the checked sum, difference, product, negation, and quotient of integers, each evaluated by RustSemantics as the calculus primitive of the same name, as `Some` of its value or as `None` when that primitive overflows, and for the difference and quotient of two naturals, which cannot overflow and are the primitive's value, which the pinned Lean evaluates on the boundary values of the widths and refuses to evaluate to a wrong value.
+    Given the committed modules RustSyntax and RustSemantics of the compiler project, shipped as the calculus modules the certificates import
+    When RustSyntax is read for its machine primitives and the pinned Lean evaluates a call of each natural and integer primitive on the boundary values of the widths and on operands that overflow
+    Then RustSyntax declares the nine primitives, and each evaluation is Some of the primitive's value, None on overflow, or the value for the two that cannot overflow
+    And a statement of a wrong value for the same call is refused by the pinned Lean
+
+  @SP-22 @build
+  Scenario: Each function the `RustRuntime` module defines has its refinement statement: for every such function the module holds a theorem `refines_<function>` stating, for all arguments of the function's parameter types, that the declared Rust semantics' run of the function in the module's core crate equals the run of the runtime item of the same name, the pinned Lean accepts each with exactly the axioms its policy states, the set of theorems equals the set of functions the module defines, and a theorem for a function the module does not define, a function without a theorem, and a function whose body is changed to another result are each refused.
+    Given the committed module RustRuntime of the compiler project and the committed modules RustSyntax and RustSemantics it imports
+    When the pinned Lean elaborates the module and its theorems are listed by name
+    Then each function the module defines has its theorem, and each is accepted with exactly the axioms its policy states
+    And a theorem for another function, a function without a theorem, and a function whose body is changed are each refused
