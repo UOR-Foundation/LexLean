@@ -303,7 +303,7 @@ and Unreleased holds what has landed since.
   of a recursive type carried as a chain of the type's own constructors
   because certificate A cannot certify a `List` of a recursive type (#208).
   `BS-04` runs the committed target programs and the vectors derived from them
-  (175 programs and 1,756 + 303 vectors at the change's head on its base) under
+  (176 programs and 1,756 + 303 vectors at the change's head on its base) under
   the pinned `rustc` on every host, and on the normative host the evaluator on
   the same vectors and on 4,722 + 403 seeded runs, 9,296 more under `rustc`,
   twelve planted defects, and the certified packages against the committed
@@ -333,7 +333,7 @@ and Unreleased holds what has landed since.
   because a chain of `append` is quadratic (the work counter quadruples as n
   doubles). `bootstrap/src/RustPrint.lex.tex` over `RustAst.lex.tex` declares
   `printCrate` and `printExpr` as production roots for `rust-std`. `BS-06`
-  runs 2,566 vectors under the pinned `rustc` on every host, and on the
+  runs 2,568 vectors under the pinned `rustc` on every host, and on the
   normative host the evaluator on 545 + 1,955 of them and 400 + 399 seeded
   mutants, 2,984 more under `rustc`, twelve planted defects, and the certified
   packages against the committed ones. The register is 445 IDs.
@@ -354,6 +354,16 @@ and Unreleased holds what has landed since.
   `calculus::sites::trees`; the dead functions are read from the crate
   `rust::lower` renders (an empty match on the uninhabited parameter). The register
   is 446 IDs.
+- The types of the Rust lowering as language-1.2 source, second slice of the
+  lowering (SPEC.md §17.23, §17.16, `BS-07`, #92; no new diagnostic code, no
+  change to the language-1.2 identity). `lowerTypes` of `RustLower` returns the
+  enum of each ADT and of each function type and the dispatch of each function
+  type as a `RustAst.Def` chain, given the typing tree and the dead and failing
+  functions of the first slice, and numbers the function types as the oracle
+  does. Its largest certificate part is 1,535,849 bytes (the budget is
+  3,145,728; the typing root is unchanged). `BS-07` runs 1,240 vectors under
+  `rustc` on every host and 6,000 seeded runs, the evaluator on 272 vectors
+  and 150 mutants per root, twenty planted defects.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or
