@@ -6,16 +6,23 @@
 //! criterion holds; `cargo xtask release-check` runs this (plus the crate
 //! packaging round trip, which needs cargo) and fails while any criterion
 //! is unmet.
+//!
+//! The version-bound criteria are read from the specification, not restated
+//! here (RP-17): the completion release from the §2.3 paragraph of the
+//! chapter modules and the version report from the §30.3 fence, each as
+//! [`criterion`] projects it.
 
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
+
+use crate::project::BlockKind;
 
 /// Every §30.3 release artifact and §30.4 completion criterion, by stable
 /// name. The conformance suite compares this list against the specification.
 pub const CRITERIA: &[(&str, &str)] = &[
     (
         "source-tag",
-        "the workspace version is 1.0.0 and CHANGELOG.md has a `## 1.0.0` entry for the tagged commit",
+        "the workspace version is a completion release §2.3 names and CHANGELOG.md has its `## <version>` entry for the tagged commit",
     ),
     (
         "checksums",
@@ -31,11 +38,11 @@ pub const CRITERIA: &[(&str, &str)] = &[
     ),
     (
         "semantics-id",
-        "release/compiler-semantics-id.txt is one 64-hex-digit line",
+        "release/compiler-semantics-id.txt is one `<language> <64-hex-digit ID>` line for every language of the §30.3 report, in its order",
     ),
     (
         "version-output",
-        "release/version-output.txt is the exact four-line `lexlean --version` output of §30.3 with the release version and the semantics ID",
+        "release/version-output.txt is the exact `lexlean --version` report of §30.3 with the release version and each language's semantics ID, and the report's languages are the supported languages",
     ),
     (
         "conformance-doc",
@@ -69,9 +76,142 @@ pub const CRITERIA: &[(&str, &str)] = &[
     ),
 ];
 
-/// The version §2.3 fixes as the first release satisfying the complete
-/// specification.
-pub const RELEASE_VERSION: &str = "1.0.0";
+/// What §2.3 and §30.3 require of a release's version, as the chapter modules
+/// of the specification project state it (RP-17).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Criterion {
+    /// The versions the §2.3 sentence that begins `The completion release`
+    /// names, in its order.
+    pub completion: Vec<String>,
+    /// The lines of the §30.3 version report, with its `<version>` and
+    /// `<digest>` placeholders.
+    pub report: Vec<String>,
+}
+
+impl Criterion {
+    /// The languages the report names, in its order.
+    #[must_use]
+    pub fn languages(&self) -> Vec<String> {
+        self.report
+            .iter()
+            .filter_map(|line| line.strip_prefix("language "))
+            .map(str::to_owned)
+            .collect()
+    }
+
+    /// The report a release binary prints at `version`, each `<digest>` being
+    /// the ID `semantics` gives the language on the line before it.
+    ///
+    /// # Errors
+    ///
+    /// A `<digest>` line that does not follow a `language` line, or a
+    /// language `semantics` has no ID for.
+    pub fn render(
+        &self,
+        version: &str,
+        semantics: &dyn Fn(&str) -> Option<String>,
+    ) -> Result<String, String> {
+        let mut out = String::new();
+        let mut language: Option<&str> = None;
+        for line in &self.report {
+            let rendered = if line == "compiler-semantics <digest>" {
+                let named = language.take().ok_or(
+                    "a `compiler-semantics <digest>` line of §30.3 follows no `language` line",
+                )?;
+                let id = semantics(named).ok_or(format!("no semantics ID for language {named}"))?;
+                format!("compiler-semantics {id}")
+            } else {
+                language = line.strip_prefix("language ");
+                line.replace("<version>", version)
+            };
+            out.push_str(&rendered);
+            out.push('\n');
+        }
+        Ok(out)
+    }
+}
+
+/// Read the completion release from §2.3 and the version report from §30.3
+/// out of the projection of the chapter modules under `root` (RP-17): the
+/// specification is the one source of both, and a change to either item
+/// changes what [`check`] requires.
+///
+/// # Errors
+///
+/// The chapters do not project, §2.3 has no sentence beginning `The
+/// completion release` that names a version, or §30.3 has no `text` fence
+/// beginning `lexlean <version>` that names a language.
+pub fn criterion(root: &Path) -> Result<Criterion, String> {
+    let projection = crate::project::project(root).map_err(|error| error.to_string())?;
+    let blocks = &projection.layout.blocks;
+    let completion: Vec<String> = blocks
+        .iter()
+        .filter(|block| block.chapter == "Chapter02" && block.kind == BlockKind::Paragraph)
+        .flat_map(|block| {
+            block
+                .lines
+                .join(" ")
+                .split(". ")
+                .map(str::to_owned)
+                .collect::<Vec<_>>()
+        })
+        .find(|sentence| sentence.starts_with("The completion release"))
+        .map(|sentence| {
+            sentence
+                .split('`')
+                .skip(1)
+                .step_by(2)
+                .filter(|quoted| is_version(quoted))
+                .map(str::to_owned)
+                .collect()
+        })
+        .unwrap_or_default();
+    if completion.is_empty() {
+        return Err(
+            "SPEC.md §2.3 (Chapter02) has no sentence beginning `The completion release` that names a version"
+                .to_owned(),
+        );
+    }
+    let report = blocks
+        .iter()
+        .find(|block| {
+            block.chapter == "Chapter30"
+                && block.kind == BlockKind::Fence("text".to_owned())
+                && block.lines.first().map(String::as_str) == Some("lexlean <version>")
+        })
+        .map(|block| block.lines.clone())
+        .ok_or("SPEC.md §30.3 (Chapter30) has no `text` fence beginning `lexlean <version>`")?;
+    let criterion = Criterion { completion, report };
+    if criterion.languages().is_empty() {
+        return Err("the SPEC.md §30.3 version report names no language".to_owned());
+    }
+    Ok(criterion)
+}
+
+fn is_version(text: &str) -> bool {
+    let parts: Vec<&str> = text.split('.').collect();
+    parts.len() == 3
+        && parts
+            .iter()
+            .all(|part| !part.is_empty() && part.bytes().all(|byte| byte.is_ascii_digit()))
+}
+
+/// The `version` of the root manifest's `[workspace.package]` table.
+#[must_use]
+pub fn workspace_version(manifest: &str) -> Option<String> {
+    let mut in_package = false;
+    for line in manifest.lines() {
+        let line = line.trim();
+        if line.starts_with('[') {
+            in_package = line == "[workspace.package]";
+        } else if in_package {
+            if let Some(value) = line.strip_prefix("version = \"") {
+                return value.strip_suffix('"').map(str::to_owned);
+            }
+        }
+    }
+    None
+}
 
 /// The five supported hosts of §8.3 as Rust target triples.
 pub const HOST_TARGETS: [&str; 5] = [
@@ -295,25 +435,37 @@ pub fn check(root: &Path, hidden_tests: &BTreeSet<String>) -> Result<(), Vec<Str
     let mut fail = |name: &str, detail: String| unmet.push(format!("{name}: {detail}"));
     let read = |relative: &str| std::fs::read_to_string(root.join(relative));
 
-    // §2.3/§30: the workspace version must be the release version, and the
-    // changelog must carry the release entry.
-    let workspace = read("Cargo.toml").unwrap_or_default();
-    if !workspace.contains(&format!("version = \"{RELEASE_VERSION}\"")) {
-        fail(
-            "source-tag",
-            format!(
-                "the workspace version is not {RELEASE_VERSION}; §2.3 fixes the first complete release at {RELEASE_VERSION}"
-            ),
-        );
+    // §2.3/§30, RP-17: what the version must be and what the binary must
+    // report are read from the chapter modules, never restated here. A
+    // specification that does not say is a refusal of both criteria.
+    let criterion = match criterion(root) {
+        Ok(criterion) => Some(criterion),
+        Err(error) => {
+            fail("source-tag", error.clone());
+            fail("version-output", error);
+            None
+        }
+    };
+    let version = workspace_version(&read("Cargo.toml").unwrap_or_default()).unwrap_or_default();
+    if let Some(criterion) = &criterion {
+        if !criterion.completion.contains(&version) {
+            fail(
+                "source-tag",
+                format!(
+                    "the workspace version is `{version}`, and §2.3 names the completion release `{}`",
+                    criterion.completion.join("` or `")
+                ),
+            );
+        }
     }
     match read("CHANGELOG.md") {
         Ok(changelog)
             if changelog
                 .lines()
-                .any(|line| line.trim() == format!("## {RELEASE_VERSION}")) => {}
+                .any(|line| line.trim() == format!("## {version}")) => {}
         Ok(_) => fail(
             "source-tag",
-            format!("CHANGELOG.md has no `## {RELEASE_VERSION}` entry"),
+            format!("CHANGELOG.md has no `## {version}` entry"),
         ),
         Err(error) => fail("source-tag", format!("CHANGELOG.md: {error}")),
     }
@@ -386,34 +538,97 @@ pub fn check(root: &Path, hidden_tests: &BTreeSet<String>) -> Result<(), Vec<Str
         Err(error) => fail("crate-package", format!("release/lexlean.crate: {error}")),
     }
 
-    // The semantics ID and the four-line version output.
-    let semantics = read("release/compiler-semantics-id.txt")
-        .map(|text| text.trim().to_owned())
-        .unwrap_or_default();
-    if !is_hex(&semantics, 64) {
-        fail(
-            "semantics-id",
-            "release/compiler-semantics-id.txt is not one 64-hex-digit line".to_owned(),
-        );
-    }
-    match read("release/version-output.txt") {
+    // The semantics ID of every language and the §30.3 version report. The
+    // report's languages are the languages this compiler accepts (§30.1), so
+    // a report that leaves one out, or names one it does not, is refused.
+    let supported: Vec<String> = lexlean::LANGUAGE_VERSIONS
+        .iter()
+        .map(|language| (*language).to_owned())
+        .collect();
+    // `None` when the list cannot be read, which is refused once, here.
+    let semantics: Option<Vec<(String, String)>> = match read("release/compiler-semantics-id.txt") {
         Ok(text) => {
-            let expected = format!(
-                "lexlean {RELEASE_VERSION}\nlanguage 1.0\ncompiler-semantics {semantics}\nlean-toolchain leanprover/lean4:v4.32.1\n"
+            let mut listed = Vec::new();
+            for (index, line) in text.lines().enumerate() {
+                match line.split_once(' ') {
+                    Some((language, id)) if is_hex(id, 64) => {
+                        listed.push((language.to_owned(), id.to_owned()));
+                    }
+                    _ => fail(
+                        "semantics-id",
+                        format!(
+                            "release/compiler-semantics-id.txt line {}: not `<language> <64-hex-digit ID>`",
+                            index + 1
+                        ),
+                    ),
+                }
+            }
+            Some(listed)
+        }
+        Err(error) => {
+            fail(
+                "semantics-id",
+                format!("release/compiler-semantics-id.txt: {error}"),
             );
-            if text != expected {
+            None
+        }
+    };
+    if let Some(criterion) = &criterion {
+        let reported = criterion.languages();
+        if reported != supported {
+            fail(
+                "version-output",
+                format!(
+                    "the §30.3 version report names languages {}, and the compiler supports {}",
+                    reported.join(", "),
+                    supported.join(", ")
+                ),
+            );
+        }
+        if let Some(semantics) = &semantics {
+            let listed: Vec<String> = semantics
+                .iter()
+                .map(|(language, _)| language.clone())
+                .collect();
+            if listed != reported {
                 fail(
-                    "version-output",
+                    "semantics-id",
                     format!(
-                        "release/version-output.txt must be exactly:\n{expected}found:\n{text}"
+                        "release/compiler-semantics-id.txt lists languages {}, and §30.3 reports {}",
+                        listed.join(", "),
+                        reported.join(", ")
                     ),
                 );
             }
         }
-        Err(error) => fail(
-            "version-output",
-            format!("release/version-output.txt: {error}"),
-        ),
+        match (read("release/version-output.txt"), &semantics) {
+            (Err(error), _) => fail(
+                "version-output",
+                format!("release/version-output.txt: {error}"),
+            ),
+            (Ok(_), None) => fail(
+                "version-output",
+                "release/version-output.txt cannot be compared without the semantics IDs of release/compiler-semantics-id.txt".to_owned(),
+            ),
+            (Ok(text), Some(semantics)) => {
+                let lookup = |language: &str| {
+                    semantics
+                        .iter()
+                        .find(|(listed, _)| listed == language)
+                        .map(|(_, id)| id.clone())
+                };
+                match criterion.render(&version, &lookup) {
+                    Ok(expected) if text == expected => {}
+                    Ok(expected) => fail(
+                        "version-output",
+                        format!(
+                            "release/version-output.txt must be exactly:\n{expected}found:\n{text}"
+                        ),
+                    ),
+                    Err(error) => fail("version-output", error),
+                }
+            }
+        }
     }
 
     for (name, relative) in [

@@ -1066,7 +1066,10 @@ pub(crate) fn run(id: &str) {
                     let _ = writeln!(filled, "{line}");
                 }
             }
-            assert_eq!(stdout, filled, "§30.3: the binary prints the specified report");
+            assert_eq!(
+                stdout, filled,
+                "§30.3: the binary prints the specified report"
+            );
         }
         // §24.1: snapshot is a read-only, backend-free stable operation.
         "CL-19" => {
