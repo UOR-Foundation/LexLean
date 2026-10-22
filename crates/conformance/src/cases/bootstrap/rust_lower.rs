@@ -1,18 +1,19 @@
 //! `BS-07` (SPEC.md §17.16, §17.23): the lowering of target programs to the
 //! closed Rust AST as language-1.2 source (`LexLeanBoot.RustLower`), held to
-//! the Rust lowering. This slice is its failure typing,
+//! the Rust lowering. The first slice is its failure typing,
 //! `calculus::rust::fallible_functions`, as three roots composed by the host:
 //! `siteTrees` of `CalculusCheck` (the type of each scrutinee and each applied
 //! target, from the module's own `walk`), `deadFunctions`, and
-//! `fallibleFunctions`.
+//! `fallibleFunctions`; the second is `lowerTypes`, the enums and dispatch of
+//! the types of the crate, given what the first returns.
 //!
 //! The roots take a program as calculus data, the six chains of `BS-04`, and
 //! a program that `checkProgram` accepts: `Lowering::new` begins with
 //! `check::check`, and the host composes the roots, so a program the oracle
 //! refuses is not a vector of these roots. The consumers take the tree the
 //! typing root returns, never a type the host computed: each leg is held to
-//! the oracle on the same vectors, so the host's composition of the three
-//! gives `fallible_functions` on every vector, leg by leg.
+//! the oracle on the same vectors, so the host's composition of the roots
+//! gives the oracle's result on every vector, leg by leg.
 
 use lexlean::calculus::rust::ast::{Expr as RustExpr, Ident, ItemDef, Pat};
 use lexlean::calculus::rust::{self, Profile};
