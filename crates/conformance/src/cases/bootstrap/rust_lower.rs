@@ -596,7 +596,7 @@ fn types_leg(legs: &Legs) -> &Run {
 /// of them and of the committed programs, as the statement of the register row
 /// and SPEC.md §17.23 count them.
 const RULE_PROGRAMS: usize = 22;
-const VECTORS: usize = 310;
+const VECTORS: usize = 311;
 const VECTORS_WITHIN: usize = 272;
 const LITERALS: usize = 200;
 const PRIM_ROUNDS: usize = 3;
@@ -807,7 +807,7 @@ const PLANTS: [Planted; 20] = [
 
 /// The row of a root in the eligibility report of its module: eligible for
 /// `rust-std`, with its declared effects exactly the effects it realizes.
-fn assert_eligible(row: &Json, root: &str, effects: &[&str]) {
+pub(super) fn assert_eligible(row: &Json, root: &str, effects: &[&str]) {
     let declared: Vec<&str> = row["declared_effects"]
         .as_array()
         .expect("declared effects")
@@ -832,7 +832,7 @@ fn assert_eligible(row: &Json, root: &str, effects: &[&str]) {
     );
 }
 
-fn eligibility_report(
+pub(super) fn eligibility_report(
     project: &support::P,
     build_id: &lexlean::Sha256Digest,
     module: &str,

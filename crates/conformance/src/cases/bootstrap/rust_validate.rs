@@ -2945,18 +2945,18 @@ const RULES_EACH: usize = 3;
 // The counts the specification states, over the committed tree: SPEC.md
 // §17.23, the register statement of BS-05, its scenario, and VERIFICATION.md
 // restate them, and the case fails when the tree no longer gives them.
-const COMMITTED_MANIFESTS: usize = 259;
+const COMMITTED_MANIFESTS: usize = 260;
 const COMMITTED_FIXTURES: usize = 122;
-const COMMITTED_PROGRAMS: usize = 176;
-const COMMITTED_CRATES: usize = 235;
+const COMMITTED_PROGRAMS: usize = 177;
+const COMMITTED_CRATES: usize = 236;
 const RULE_VALIDATE_RUNS: usize = 132;
 const RULE_CORRESPOND_RUNS: usize = 12;
 const BRANCH_CRATES: usize = 17;
 const LOOP_CRATES: usize = 34;
 const MACHINE_CRATES: usize = 26 + 3 + 1 + 2 + 2 + 3;
-const VECTORS_VALIDATE: usize = 455;
+const VECTORS_VALIDATE: usize = 456;
 const REFUSED_VALIDATE: usize = 195;
-const VECTORS_CORRESPOND: usize = 318;
+const VECTORS_CORRESPOND: usize = 319;
 const REFUSED_CORRESPOND: usize = 82;
 const EVALUATOR_CRATES: usize = 201;
 const EVALUATOR_VALIDATE: usize = 421;

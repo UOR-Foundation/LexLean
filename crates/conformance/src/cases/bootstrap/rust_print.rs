@@ -1144,17 +1144,17 @@ const ROOTS: [(&str, &[&str]); 2] = [
 // and VERIFICATION.md state, over the tree with the packages of the roots of
 // BS-05 to BS-07 and of the buffer committed: the case fails when the tree no
 // longer gives them.
-const COMMITTED_MANIFESTS: usize = 259;
+const COMMITTED_MANIFESTS: usize = 260;
 const COMMITTED_FIXTURES: usize = 122;
-const COMMITTED_PROGRAMS: usize = 176;
-const COMMITTED_CRATES: usize = 235;
-const COMMITTED_PACKAGES: usize = 259;
-const VECTORS_CRATE: usize = 613;
-const COMMITTED_DISTINCT: usize = 470;
+const COMMITTED_PROGRAMS: usize = 177;
+const COMMITTED_CRATES: usize = 236;
+const COMMITTED_PACKAGES: usize = 260;
+const VECTORS_CRATE: usize = 615;
+const COMMITTED_DISTINCT: usize = 472;
 const REFUSED_CRATE: usize = 57;
 const VECTORS_EXPR: usize = 1_955;
 const HAND_EXPR: usize = 1_404;
-const EVALUATOR_CRATE: usize = 545;
+const EVALUATOR_CRATE: usize = 544;
 const SEEDED_CRATE: usize = 400;
 const SEEDED_EXPR: usize = 399;
 const RUSTC_SEEDED_RUNS: usize = 2_984;
