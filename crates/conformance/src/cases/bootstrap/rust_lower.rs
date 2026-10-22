@@ -1088,10 +1088,11 @@ pub(super) fn case() {
         let (low, member) =
             if let Some(member) = exported_root.root.strip_prefix(&format!("{MODULE}.")) {
                 (
-                    if member == "deadFunctions" {
-                        &dead
-                    } else {
-                        &fallible
+                    match member {
+                        "deadFunctions" => &dead,
+                        "fallibleFunctions" => &fallible,
+                        "lowerTypes" => &types,
+                        other => panic!("{other} is not a root of {MODULE}"),
                     },
                     member,
                 )
