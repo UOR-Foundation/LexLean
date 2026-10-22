@@ -337,6 +337,22 @@ and Unreleased holds what has landed since.
   normative host the evaluator on 541 + 1,955 of them and 400 + 399 seeded
   mutants, 2,984 more under `rustc`, twelve planted defects, and the certified
   packages against the committed ones. The register is 445 IDs.
+- The failure typing of the Rust lowering as language-1.2 source, first slice of
+  the lowering (SPEC.md §17.23, §17.16, `BS-07`, #92; no new diagnostic code,
+  no change to the language-1.2 identity). `calculus::rust::fallible_functions`
+  is three production roots for `rust-std` composed by the host: `siteTrees`
+  of `CalculusCheck` (the type of each scrutinee and applied target, computed
+  by the module's own `walk` and `inferTy`), and `deadFunctions` and
+  `fallibleFunctions` of `RustLower`, which read that tree and never call
+  `walk`. One root holding the analysis measured a certificate part of
+  4,465,840 bytes against `max_file_bytes` of 4,194,304; the three measure
+  3,144,673, 1,250,877, and 1,003,841 (three quarters of the limit is
+  3,145,728). `BS-07` runs 927 vectors under the pinned `rustc` on every host,
+  and on the normative host the evaluator on 272 of them and 150 seeded
+  mutants, 4,500 more runs under `rustc`, thirteen planted defects, and the
+  certified packages against the committed ones. The oracle exposes
+  `dead_functions` and `site_trees` beside `fallible_functions`. The register
+  is 446 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or
