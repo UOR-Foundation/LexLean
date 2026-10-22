@@ -1787,6 +1787,12 @@ suite = "rust-backend"
 statement = "A library template whose self calls are all tail calls is rendered as a loop over its accumulator that breaks with its result, so that the production rows of the primitives it realizes carry no `recursion`, while a template with a call that is not a tail call is rendered as a call and keeps the effect; a rendering that states a self call where a loop is possible, and a row whose `recursion` differs from its rendering, are refused."
 
 [[id]]
+id = "RB-21"
+level = "build"
+suite = "rust-backend"
+statement = "A fallible function rendered as a loop that is its value returns the operand of each `Err` that ends the loop, so a call of another fallible function there, looped or not, is in tail position and returns the callee's result without `?`: the module of issue 279 and a variant whose callee is itself a loop render in `rust-std`, export, and replay, their packages realize the programs the case lowers and agree with the calculus evaluator on every input of the case, an overflow included, and the same call bound before the loop's end without propagating, or left as the loop body's value with the end dropped, is refused because the fallible call does not propagate its overflow."
+
+[[id]]
 id = "GN-01"
 level = "build"
 suite = "gnaf"
