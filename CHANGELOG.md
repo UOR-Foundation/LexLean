@@ -354,6 +354,16 @@ and Unreleased holds what has landed since.
   `calculus::sites::trees`; the dead functions are read from the crate
   `rust::lower` renders (an empty match on the uninhabited parameter). The register
   is 446 IDs.
+- The types of the Rust lowering as language-1.2 source, second slice of the
+  lowering (SPEC.md §17.23, §17.16, `BS-07`, #92; no new diagnostic code, no
+  change to the language-1.2 identity). `lowerTypes` of `RustLower` returns the
+  enum of each ADT and of each function type and the dispatch of each function
+  type as a `RustAst.Def` chain, given the typing tree and the dead and failing
+  functions of the first slice, and numbers the function types as the oracle
+  does. Its largest certificate part is 1,535,849 bytes (the budget is
+  3,145,728; the typing root is unchanged). `BS-07` runs 1,240 vectors under
+  `rustc` on every host and 6,000 seeded runs, the evaluator on 272 vectors
+  and 150 mutants per root, twenty planted defects. The register is 446 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or

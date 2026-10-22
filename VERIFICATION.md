@@ -9748,9 +9748,9 @@ packages (the records are regenerated at landing).
 
 `BS-06` holds the two production roots of `LexLeanBoot.RustPrint`
 (`bootstrap/src/RustPrint.lex.tex`, over `RustAst.lex.tex`) to the oracle,
-`calculus::rust::ast::{print, print_expr}`. The case runs 611 vectors of
-`printCrate` (468 the distinct committed crates: 234 lowered by the renderer
-from 175 programs, and the crates of 258 packages; the hand-built crates; the
+`calculus::rust::ast::{print, print_expr}`. The case runs 613 vectors of
+`printCrate` (470 the distinct committed crates: 235 lowered by the renderer
+from 176 programs, and the crates of 259 packages; the hand-built crates; the
 real header of each profile; 57 refused for a capacity one byte short) and
 1,955 of `printExpr` (1,404 hand-built: every literal at the edge of each
 width and sign, the 128 ASCII scalars and the edges of UTF-8 in strings, byte
@@ -9917,6 +9917,75 @@ on a clean checkout at the assertion that the exported package files are the
 committed ones (the three package directories are absent), and on a tree with
 the three packages copied in at `audit_tokens/package.json`, which differs
 because every package carries the identity of the project, as for `BS-06`.
+
+`BS-07`, second slice: `lowerTypes` of `LexLeanBoot.RustLower` returns the
+items of the crate that declare its types (the `Enum` of each ADT and of each
+function type, and the `Apply` of each function type) as a `RustAst.Def`
+chain, held to the items of the crate that `rust::lower` builds before its
+first function. Its input is the program, the tree of `siteTrees`, the dead
+functions, and the failing functions, so the case feeds it the legs of the
+vector before it. The case runs 310 vectors per root (one more than the first
+slice: the package of `lowerTypes` is a committed program) under the pinned
+rustc on every host (58 harness binaries built in 875 s, 1,240 runs in 23 s
+more), and on the normative host the evaluator on the 272 of them of at most
+300 nodes with 150 seeded mutants (53 s for `siteTrees`, 14 s for
+`deadFunctions`, 24 s for `fallibleFunctions`, 26 s for `lowerTypes`), 6,000
+seeded runs under rustc (35 binaries, 278 s), twenty planted defects, and the
+production export. The case up to the comparison with the committed packages
+takes 2,589 s on this host (4 cores), and stops there on this tree with the
+packages and the records left to the maintainer's regeneration: the packages
+`lower_types`, `dead_functions` and `fallible_functions`, `bootstrap/expected/`,
+the locks, and the PD-08 rows. The rows measured in a debug build with the four
+packages of `BS-07` are 4,063,232 bytes for `lower_types`, 4,063,232 for
+`dead_functions` (as in the first slice), and 4,063,232 for `fallible_functions`
+(4,128,768 in the first slice: one step of the bisection less, with the corpus of
+the second slice).
+
+Measured certificates after the slice (the largest part of each root, in
+bytes; the budget is 3,145,728, three quarters of `max_file_bytes`):
+
+| Root | Largest part | Share of the limit |
+| --- | --- | --- |
+| `siteTrees` | 3,144,673 | 75.0% (1,055 under the budget; unchanged) |
+| `deadFunctions` | 1,273,118 | 30.4% (was 1,250,877) |
+| `fallibleFunctions` | 1,058,398 | 25.2% (was 1,003,841) |
+| `lowerTypes` | 1,535,849 | 36.6% |
+
+Nothing was added to the closure of `siteTrees`, as the rule for the slices
+requires: the typing root is unchanged, and the two consumers grew by 22,000
+and 55,000 bytes because the collector they share now numbers the function
+types as the oracle does. Before the slice was built, a probe root returning a
+`Def` chain of `n` empty enums certified under the pinned Lean with parts of
+48,495 and 40,258 bytes, so certificate B takes a value of a recursive sort as
+an output and no chain encoding is needed; the `Def` of the output is the one
+`RustPrint` prints.
+
+The numbering of the function types is part of the output, and it is the
+oracle's: the types of each function and its result before its body, the type
+of a closure and its record before the closures in its captures, and the
+fields of the ADTs after all the functions. Two differences between the first
+slice's collector and the oracle did not matter for the flags and matter for
+the numbers: the closure was recorded after its captures, and the chain of
+known types was built newest first. Both are fixed in the collector, and the
+plant "function types are numbered newest first" (run 7) is the second.
+
+Each of these seven plants is made on a copy of `bootstrap/src/RustLower.lex.tex`
+on every run and is caught on the leg of `lowerTypes`; the run is the index
+among the vectors of the root:
+
+- **a field that holds its owner is not boxed**, run 11.
+- **a boxed capture is cloned**, run 130.
+- **an application of a function type is never fallible**, run 7.
+- **the closures of a function type are listed newest first**, run 7.
+- **a function type with closures is written as the stated type**, run 7.
+- **function types are numbered newest first**, run 7.
+- **a string capture is copied**, run 128.
+
+The counts of `BS-05` and `BS-06` are restated on the tree with the four
+packages of `BS-07` (259 manifests and packages, 176 programs, 235 crates; 455
+and 318 vectors of `BS-05`; 613 vectors of `printCrate` and 470 committed
+distinct crates of `BS-06`, 545 of the evaluator's), computed by running their
+cases on that tree.
 
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
@@ -10296,7 +10365,7 @@ Authoring found four shapes certificate A and certificate B do not accept, each 
 
 ### the bootstrap Rust crate validator can fail its oracle (SPEC.md §17.23, §17.16)
 
-`BS-05` holds the two production roots of `LexLeanBoot.RustValidate` (`bootstrap/src/RustValidate.lex.tex`) to the stage-0 oracle they replace, `calculus::rust::validate::{validate, correspond}`. The 175 distinct programs among the 258 committed package manifests and 122 fixtures lower to 234 distinct crates over both profiles; with 132 `validateCrate` and 12 `correspondCrate` rule runs (each of the 48 reachable refusals three times, found by a seeded mutation search at a fixed seed, which asserts that it reached the target and does not stop short of it), 17 hand-built crates of the merge of moved sets, 34 hand-built crates of the loop rules, and 37 hand-built crates of the machine callee and the overflow value (#91 stage 4, `SP-18`, `RB-15`), that is 454 `validateCrate` vectors (195 refused) and 317 `correspondCrate` vectors (82 refused), 771 in all. On every host both roots' rendered `rust-std` packages, compiled by the pinned rustc, agree with the oracle on all 771. On the normative host the evaluator agrees on the 201 crates of at most 400 expressions, the rule runs, and the hand-built crates (421 + 284 vectors), and on 500 seeded mutants (271 and 244 refused), and the rendered packages agree on 2,000 further seeded mutants per root. The case passed on the branch merged with `main` after wave 6 (#220), with the production export under the pinned Lean 4.32.1. Every one of these counts is an assertion of the case (`COMMITTED_*`, `RULE_*`, `VECTORS_*`, `EVALUATOR_*`, `SEEDED_*`), so a tree that no longer gives them fails the case instead of leaving this paragraph stale. The figures of this paragraph were measured on the head with `bootstrap/lexlean.lock` relocked locally, because every committed lock is stale under the head's compiler (the compiler-semantics ID has moved); the lock is not committed on a branch, and the regeneration at landing commits the relock.
+`BS-05` holds the two production roots of `LexLeanBoot.RustValidate` (`bootstrap/src/RustValidate.lex.tex`) to the stage-0 oracle they replace, `calculus::rust::validate::{validate, correspond}`. The 176 distinct programs among the 259 committed package manifests and 122 fixtures lower to 235 distinct crates over both profiles; with 132 `validateCrate` and 12 `correspondCrate` rule runs (each of the 48 reachable refusals three times, found by a seeded mutation search at a fixed seed, which asserts that it reached the target and does not stop short of it), 17 hand-built crates of the merge of moved sets, 34 hand-built crates of the loop rules, and 37 hand-built crates of the machine callee and the overflow value (#91 stage 4, `SP-18`, `RB-15`), that is 455 `validateCrate` vectors (195 refused) and 318 `correspondCrate` vectors (82 refused), 773 in all. On every host both roots' rendered `rust-std` packages, compiled by the pinned rustc, agree with the oracle on all 773. On the normative host the evaluator agrees on the 201 crates of at most 400 expressions, the rule runs, and the hand-built crates (421 + 284 vectors), and on 500 seeded mutants (271 and 244 refused), and the rendered packages agree on 2,000 further seeded mutants per root. The case passed on the branch merged with `main` after wave 6 (#220), with the production export under the pinned Lean 4.32.1. Every one of these counts is an assertion of the case (`COMMITTED_*`, `RULE_*`, `VECTORS_*`, `EVALUATOR_*`, `SEEDED_*`), so a tree that no longer gives them fails the case instead of leaving this paragraph stale. The figures of this paragraph were measured on the head with `bootstrap/lexlean.lock` relocked locally, because every committed lock is stale under the head's compiler (the compiler-semantics ID has moved); the lock is not committed on a branch, and the regeneration at landing commits the relock.
 
 Measured on the merge of `release/v0.4` (b8ff7bef6) into the stage 4 stack, #248's head `63bd949a3` (this host, `bootstrap/lexlean.lock` and `compiler/lexlean.lock` relocked locally with a freshly built `lexlean` and restored): the counts the case asserts held without a second edit (226 distinct crates from 167 programs among 250 committed manifests; 446 `validateCrate` vectors, 195 refused; 309 `correspondCrate` vectors, 82 refused), every plant was detected, the production export of the module certified under certificate A with `close_forward_references` removed (release/v0.4's union pin, #221, replaces it), and the case failed only at the comparison with the committed packages (`packages/rust-std/audit_tokens/package.json differs from the committed package`), the record bound to the compiler-semantics ID. 1,995 s for the case, 33 min 16 s wall.
 

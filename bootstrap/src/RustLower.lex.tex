@@ -1,6 +1,8 @@
 \begin{lexlean}{RustLower}
 \useglossary{lexlean.std.nat@1.2.0}
 \importmodule{CalculusCheck}
+\importmodule{RustAst}
+\importmodule{RustValidate}
 \title{Natural number addition}
 \begin{semanticmodule}
 inductive{
@@ -105,7 +107,7 @@ definition{
   name: tyAddNew,
   parameters: [chain : CalculusCheck::Ty, item : CalculusCheck::Ty],
   result: CalculusCheck::Ty,
-  body: (if (tyMember chain item) then chain else (ctor CalculusCheck::Ty.TCons item chain)),
+  body: (if (tyMember chain item) then chain else (tyAppend chain (ctor CalculusCheck::Ty.TCons item (ctor CalculusCheck::Ty.TNil)))),
   executable: true
 }
 
@@ -274,6 +276,39 @@ definition{
 }
 
 definition{
+  name: registerChain,
+  parameters: [known : CalculusCheck::Ty, tys : CalculusCheck::Ty],
+  result: CalculusCheck::Ty,
+  body: (match tys
+    | CalculusCheck::Ty.TCons head tail => (registerChain (register known head) tail)
+    | CalculusCheck::Ty.TUnit => known
+    | CalculusCheck::Ty.TBool => known
+    | CalculusCheck::Ty.TNat => known
+    | CalculusCheck::Ty.TInt => known
+    | CalculusCheck::Ty.TFixed d0 => known
+    | CalculusCheck::Ty.TString => known
+    | CalculusCheck::Ty.TBytes => known
+    | CalculusCheck::Ty.TOrdering => known
+    | CalculusCheck::Ty.TOption d0 => known
+    | CalculusCheck::Ty.TResult d0 d1 => known
+    | CalculusCheck::Ty.TList d0 => known
+    | CalculusCheck::Ty.TPair d0 d1 => known
+    | CalculusCheck::Ty.TAdt d0 => known
+    | CalculusCheck::Ty.TFn d0 d1 => known
+    | CalculusCheck::Ty.TNil => known),
+  executable: true,
+  recursive_argument: tys
+}
+
+definition{
+  name: registerSignature,
+  parameters: [program : CalculusCheck::Program, known : CalculusCheck::Ty, index : Nat],
+  result: CalculusCheck::Ty,
+  body: (register (registerChain known (CalculusCheck::functionTypesOr program index)) (CalculusCheck::functionResult program index)),
+  executable: true
+}
+
+definition{
   name: siteOwn,
   parameters: [sites : CalculusCheck::Ty],
   result: CalculusCheck::Ty,
@@ -350,24 +385,17 @@ definition{
       type_arguments: []
     }; (collectTerm program registered operands (kidA sites)))
     | CalculusCheck::Expr.ECall function operands => (collectTerm program state operands (kidA sites))
-    | CalculusCheck::Expr.EClosure function captures => (let inner : Collect := (collectTerm program state captures (kidA sites)); (let declared : CalculusCheck::Ty := (CalculusCheck::functionTypesOr program function); (let count : Nat := (CalculusCheck::exprChainLength captures); (let closureType : CalculusCheck::Ty := (ctor CalculusCheck::Ty.TFn (tyDrop declared count) (CalculusCheck::functionResult program function)); (let registered : Collect := record{
+    | CalculusCheck::Expr.EClosure function captures => (let declared : CalculusCheck::Ty := (CalculusCheck::functionTypesOr program function); (let count : Nat := (CalculusCheck::exprChainLength captures); (let closureType : CalculusCheck::Ty := (ctor CalculusCheck::Ty.TFn (tyDrop declared count) (CalculusCheck::functionResult program function)); (let registered : Collect := record{
       type: Collect,
       fields: [
-        {field: known, value: (register (project inner known) closureType)},
-        {field: closures, value: (project inner closures)}
-      ],
-      type_arguments: []
-    }; record{
-      type: Collect,
-      fields: [
-        {field: known, value: (project registered known)},
+        {field: known, value: (register (project state known) closureType)},
         {
           field: closures,
-          value: (closAdd (project registered closures) closureType function (tyTake declared count))
+          value: (closAdd (project state closures) closureType function (tyTake declared count))
         }
       ],
       type_arguments: []
-    })))))
+    }; (collectTerm program registered captures (kidA sites))))))
     | CalculusCheck::Expr.EApply target operands => (let inner : Collect := (collectTerm program state target (kidA sites)); (collectTerm program inner operands (kidB sites)))
     | CalculusCheck::Expr.EPrim operation operands => (collectTerm program state operands (kidA sites))
     | CalculusCheck::Expr.EFirst value => (collectTerm program state value (kidA sites))
@@ -408,7 +436,14 @@ definition{
     | CalculusCheck::Expr.ENil => state
     | CalculusCheck::Expr.ECons body rest => (let live : Bool := (match (CalculusCheck::listAt [Bool] dead index)
       | Option.some flag => (not flag)
-      | Option.none => true); (let inner : Collect := (if live then (collectTerm program state body (kidA sites)) else state); (collectFunctions program inner rest (index + 1) dead (kidB sites))))
+      | Option.none => true); (let signed : Collect := record{
+      type: Collect,
+      fields: [
+        {field: known, value: (registerSignature program (project state known) index)},
+        {field: closures, value: (project state closures)}
+      ],
+      type_arguments: []
+    }; (let inner : Collect := (if live then (collectTerm program signed body (kidA sites)) else signed); (collectFunctions program inner rest (index + 1) dead (kidB sites)))))
     | CalculusCheck::Expr.EArm d0 d1 d2 => state),
   executable: true,
   recursive_argument: bodies
@@ -1209,6 +1244,451 @@ definition{
     fields: [{field: known, value: registered}, {field: closures, value: (ctor Clos.ClNil)}],
     type_arguments: []
   } bodies 0 dead sites); (let facts : Facts := (reachFunctions program bodies 0 sites); (first (prim iterate_until (fun [facts, initial] (flags : (List Bool)) => (failNext facts (project initial closures) flags)) (1 + count) (falses count) : ((List Bool) * Bool)))))))),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: kindOf,
+  parameters: [kind : CalculusCheck::IntKind],
+  result: RustValidate::IntKind,
+  body: (match kind
+    | CalculusCheck::IntKind.U8 => (ctor RustValidate::IntKind.U8)
+    | CalculusCheck::IntKind.U16 => (ctor RustValidate::IntKind.U16)
+    | CalculusCheck::IntKind.U32 => (ctor RustValidate::IntKind.U32)
+    | CalculusCheck::IntKind.U64 => (ctor RustValidate::IntKind.U64)
+    | CalculusCheck::IntKind.I8 => (ctor RustValidate::IntKind.I8)
+    | CalculusCheck::IntKind.I16 => (ctor RustValidate::IntKind.I16)
+    | CalculusCheck::IntKind.I32 => (ctor RustValidate::IntKind.I32)
+    | CalculusCheck::IntKind.I64 => (ctor RustValidate::IntKind.I64)),
+  executable: true
+}
+
+definition{
+  name: fnPosition,
+  parameters: [known : CalculusCheck::Ty, ty : CalculusCheck::Ty, at : Nat],
+  result: Nat,
+  body: (match known
+    | CalculusCheck::Ty.TUnit => at
+    | CalculusCheck::Ty.TBool => at
+    | CalculusCheck::Ty.TNat => at
+    | CalculusCheck::Ty.TInt => at
+    | CalculusCheck::Ty.TFixed d0 => at
+    | CalculusCheck::Ty.TString => at
+    | CalculusCheck::Ty.TBytes => at
+    | CalculusCheck::Ty.TOrdering => at
+    | CalculusCheck::Ty.TOption d0 => at
+    | CalculusCheck::Ty.TResult d0 d1 => at
+    | CalculusCheck::Ty.TList d0 => at
+    | CalculusCheck::Ty.TPair d0 d1 => at
+    | CalculusCheck::Ty.TAdt d0 => at
+    | CalculusCheck::Ty.TFn d0 d1 => at
+    | CalculusCheck::Ty.TNil => at
+    | CalculusCheck::Ty.TCons head tail => (if (CalculusCheck::tyEq head ty) then at else (fnPosition tail ty (at + 1)))),
+  executable: true,
+  recursive_argument: known
+}
+
+definition{
+  name: vty,
+  parameters: [known : CalculusCheck::Ty, ty : CalculusCheck::Ty],
+  result: RustValidate::Ty,
+  body: (match ty
+    | CalculusCheck::Ty.TUnit => (ctor RustValidate::Ty.TyLeaf (ctor RustValidate::LeafKind.LkUnit))
+    | CalculusCheck::Ty.TBool => (ctor RustValidate::Ty.TyLeaf (ctor RustValidate::LeafKind.LkBool))
+    | CalculusCheck::Ty.TNat => (ctor RustValidate::Ty.TyLeaf (ctor RustValidate::LeafKind.LkNat))
+    | CalculusCheck::Ty.TInt => (ctor RustValidate::Ty.TyLeaf (ctor RustValidate::LeafKind.LkInt))
+    | CalculusCheck::Ty.TFixed width => (ctor RustValidate::Ty.TyFixed (kindOf width))
+    | CalculusCheck::Ty.TString => (ctor RustValidate::Ty.TyLeaf (ctor RustValidate::LeafKind.LkStr))
+    | CalculusCheck::Ty.TBytes => (ctor RustValidate::Ty.TyLeaf (ctor RustValidate::LeafKind.LkBytes))
+    | CalculusCheck::Ty.TOrdering => (ctor RustValidate::Ty.TyLeaf (ctor RustValidate::LeafKind.LkOrdering))
+    | CalculusCheck::Ty.TOption value => (ctor RustValidate::Ty.TyUnary (ctor RustValidate::UnaryKind.UkOption) (vty known value))
+    | CalculusCheck::Ty.TResult ok error => (ctor RustValidate::Ty.TyBinary (ctor RustValidate::BinaryKind.BkResult) (vty known ok) (vty known error))
+    | CalculusCheck::Ty.TList element => (ctor RustValidate::Ty.TyUnary (ctor RustValidate::UnaryKind.UkList) (vty known element))
+    | CalculusCheck::Ty.TPair left right => (ctor RustValidate::Ty.TyBinary (ctor RustValidate::BinaryKind.BkPair) (vty known left) (vty known right))
+    | CalculusCheck::Ty.TAdt index => (ctor RustValidate::Ty.TyNamed (ctor RustValidate::NameKind.NkAdt) index)
+    | CalculusCheck::Ty.TFn parameters result => (ctor RustValidate::Ty.TyNamed (ctor RustValidate::NameKind.NkFn) (fnPosition known (ctor CalculusCheck::Ty.TFn parameters result) 0))
+    | CalculusCheck::Ty.TNil => (ctor RustValidate::Ty.TyNil)
+    | CalculusCheck::Ty.TCons head tail => (ctor RustValidate::Ty.TyCons (vty known head) (vty known tail))),
+  executable: true,
+  recursive_argument: ty
+}
+
+definition{
+  name: fieldTy,
+  parameters: [
+    known : CalculusCheck::Ty,
+    edges : Edges,
+    owner : CalculusCheck::Ty,
+    ty : CalculusCheck::Ty
+  ],
+  result: RustValidate::Ty,
+  body: (if (cyclic known edges owner ty) then (ctor RustValidate::Ty.TyUnary (ctor RustValidate::UnaryKind.UkRc) (vty known ty)) else (vty known ty)),
+  executable: true
+}
+
+definition{
+  name: fieldChain,
+  parameters: [
+    known : CalculusCheck::Ty,
+    edges : Edges,
+    owner : CalculusCheck::Ty,
+    tys : CalculusCheck::Ty
+  ],
+  result: RustValidate::Ty,
+  body: (match tys
+    | CalculusCheck::Ty.TUnit => (ctor RustValidate::Ty.TyNil)
+    | CalculusCheck::Ty.TBool => (ctor RustValidate::Ty.TyNil)
+    | CalculusCheck::Ty.TNat => (ctor RustValidate::Ty.TyNil)
+    | CalculusCheck::Ty.TInt => (ctor RustValidate::Ty.TyNil)
+    | CalculusCheck::Ty.TFixed d0 => (ctor RustValidate::Ty.TyNil)
+    | CalculusCheck::Ty.TString => (ctor RustValidate::Ty.TyNil)
+    | CalculusCheck::Ty.TBytes => (ctor RustValidate::Ty.TyNil)
+    | CalculusCheck::Ty.TOrdering => (ctor RustValidate::Ty.TyNil)
+    | CalculusCheck::Ty.TOption d0 => (ctor RustValidate::Ty.TyNil)
+    | CalculusCheck::Ty.TResult d0 d1 => (ctor RustValidate::Ty.TyNil)
+    | CalculusCheck::Ty.TList d0 => (ctor RustValidate::Ty.TyNil)
+    | CalculusCheck::Ty.TPair d0 d1 => (ctor RustValidate::Ty.TyNil)
+    | CalculusCheck::Ty.TAdt d0 => (ctor RustValidate::Ty.TyNil)
+    | CalculusCheck::Ty.TFn d0 d1 => (ctor RustValidate::Ty.TyNil)
+    | CalculusCheck::Ty.TNil => (ctor RustValidate::Ty.TyNil)
+    | CalculusCheck::Ty.TCons head tail => (ctor RustValidate::Ty.TyCons (fieldTy known edges owner head) (fieldChain known edges owner tail))),
+  executable: true,
+  recursive_argument: tys
+}
+
+definition{
+  name: copyTy,
+  parameters: [ty : CalculusCheck::Ty],
+  result: Bool,
+  body: (match ty
+    | CalculusCheck::Ty.TUnit => true
+    | CalculusCheck::Ty.TBool => true
+    | CalculusCheck::Ty.TNat => true
+    | CalculusCheck::Ty.TInt => true
+    | CalculusCheck::Ty.TFixed w => true
+    | CalculusCheck::Ty.TString => false
+    | CalculusCheck::Ty.TBytes => false
+    | CalculusCheck::Ty.TOrdering => true
+    | CalculusCheck::Ty.TOption value => (copyTy value)
+    | CalculusCheck::Ty.TResult ok error => (if (copyTy ok) then (copyTy error) else false)
+    | CalculusCheck::Ty.TList d0 => false
+    | CalculusCheck::Ty.TPair left right => (if (copyTy left) then (copyTy right) else false)
+    | CalculusCheck::Ty.TAdt d0 => false
+    | CalculusCheck::Ty.TFn d0 d1 => false
+    | CalculusCheck::Ty.TNil => false
+    | CalculusCheck::Ty.TCons d0 d1 => false),
+  executable: true,
+  recursive_argument: ty
+}
+
+definition{
+  name: capOf,
+  parameters: [
+    known : CalculusCheck::Ty,
+    edges : Edges,
+    owner : CalculusCheck::Ty,
+    ty : CalculusCheck::Ty
+  ],
+  result: RustValidate::Cap,
+  body: (if (CalculusCheck::tyEq ty (ctor CalculusCheck::Ty.TUnit)) then (ctor RustValidate::Cap.CapUnit) else (if (cyclic known edges owner ty) then (ctor RustValidate::Cap.CapUnbox) else (if (copyTy ty) then (ctor RustValidate::Cap.CapCopy) else (ctor RustValidate::Cap.CapClone)))),
+  executable: true
+}
+
+definition{
+  name: capList,
+  parameters: [
+    known : CalculusCheck::Ty,
+    edges : Edges,
+    owner : CalculusCheck::Ty,
+    tys : CalculusCheck::Ty
+  ],
+  result: (List RustValidate::Cap),
+  body: (match tys
+    | CalculusCheck::Ty.TUnit => (nil RustValidate::Cap)
+    | CalculusCheck::Ty.TBool => (nil RustValidate::Cap)
+    | CalculusCheck::Ty.TNat => (nil RustValidate::Cap)
+    | CalculusCheck::Ty.TInt => (nil RustValidate::Cap)
+    | CalculusCheck::Ty.TFixed d0 => (nil RustValidate::Cap)
+    | CalculusCheck::Ty.TString => (nil RustValidate::Cap)
+    | CalculusCheck::Ty.TBytes => (nil RustValidate::Cap)
+    | CalculusCheck::Ty.TOrdering => (nil RustValidate::Cap)
+    | CalculusCheck::Ty.TOption d0 => (nil RustValidate::Cap)
+    | CalculusCheck::Ty.TResult d0 d1 => (nil RustValidate::Cap)
+    | CalculusCheck::Ty.TList d0 => (nil RustValidate::Cap)
+    | CalculusCheck::Ty.TPair d0 d1 => (nil RustValidate::Cap)
+    | CalculusCheck::Ty.TAdt d0 => (nil RustValidate::Cap)
+    | CalculusCheck::Ty.TFn d0 d1 => (nil RustValidate::Cap)
+    | CalculusCheck::Ty.TNil => (nil RustValidate::Cap)
+    | CalculusCheck::Ty.TCons head tail => (cons (capOf known edges owner head) (capList known edges owner tail))),
+  executable: true,
+  recursive_argument: tys
+}
+
+definition{
+  name: revClos,
+  parameters: [closures : Clos, acc : Clos],
+  result: Clos,
+  body: (match closures
+    | Clos.ClNil => acc
+    | Clos.ClCons fnTy member captured rest => (revClos rest (ctor Clos.ClCons fnTy member captured acc))),
+  executable: true,
+  recursive_argument: closures
+}
+
+definition{
+  name: rowsFor,
+  parameters: [
+    known : CalculusCheck::Ty,
+    edges : Edges,
+    owner : CalculusCheck::Ty,
+    target : CalculusCheck::Ty,
+    closures : Clos
+  ],
+  result: RustValidate::Row,
+  body: (match closures
+    | Clos.ClNil => (ctor RustValidate::Row.RowNil)
+    | Clos.ClCons fnTy member captured rest => (if (CalculusCheck::tyEq fnTy target) then (ctor RustValidate::Row.RowCons member (fieldChain known edges owner captured) (rowsFor known edges owner target rest)) else (rowsFor known edges owner target rest))),
+  executable: true,
+  recursive_argument: closures
+}
+
+definition{
+  name: dispatchFor,
+  parameters: [
+    known : CalculusCheck::Ty,
+    edges : Edges,
+    owner : CalculusCheck::Ty,
+    target : CalculusCheck::Ty,
+    fallible : (List Bool),
+    closures : Clos
+  ],
+  result: RustValidate::Dis,
+  body: (match closures
+    | Clos.ClNil => (ctor RustValidate::Dis.DisNil)
+    | Clos.ClCons fnTy member captured rest => (if (CalculusCheck::tyEq fnTy target) then (ctor RustValidate::Dis.DisCons member (capList known edges owner captured) (flagAt fallible member) (dispatchFor known edges owner target fallible rest)) else (dispatchFor known edges owner target fallible rest))),
+  executable: true,
+  recursive_argument: closures
+}
+
+definition{
+  name: applyFails,
+  parameters: [target : CalculusCheck::Ty, fallible : (List Bool), closures : Clos],
+  result: Bool,
+  body: (match closures
+    | Clos.ClNil => false
+    | Clos.ClCons fnTy member captured rest => (if (CalculusCheck::tyEq fnTy target) then (if (flagAt fallible member) then true else (applyFails target fallible rest)) else (applyFails target fallible rest))),
+  executable: true,
+  recursive_argument: closures
+}
+
+definition{
+  name: closureOf,
+  parameters: [target : CalculusCheck::Ty, closures : Clos],
+  result: Bool,
+  body: (match closures
+    | Clos.ClNil => false
+    | Clos.ClCons fnTy member captured rest => (if (CalculusCheck::tyEq fnTy target) then true else (closureOf target rest))),
+  executable: true,
+  recursive_argument: closures
+}
+
+definition{
+  name: fnOrigin,
+  parameters: [closed : Bool],
+  result: RustValidate::Origin,
+  body: (if closed then (record RustValidate::Origin {element := (prim utf8_encode "expr:closure" : Bytes), width := (ctor Option.none [RustValidate::IntKind])}) else (record RustValidate::Origin {element := (prim utf8_encode "type:fn" : Bytes), width := (ctor Option.none [RustValidate::IntKind])})),
+  executable: true
+}
+
+definition{
+  name: adtRows,
+  parameters: [
+    known : CalculusCheck::Ty,
+    edges : Edges,
+    owner : CalculusCheck::Ty,
+    constructors : CalculusCheck::Ty,
+    number : Nat
+  ],
+  result: RustValidate::Row,
+  body: (match constructors
+    | CalculusCheck::Ty.TUnit => (ctor RustValidate::Row.RowNil)
+    | CalculusCheck::Ty.TBool => (ctor RustValidate::Row.RowNil)
+    | CalculusCheck::Ty.TNat => (ctor RustValidate::Row.RowNil)
+    | CalculusCheck::Ty.TInt => (ctor RustValidate::Row.RowNil)
+    | CalculusCheck::Ty.TFixed d0 => (ctor RustValidate::Row.RowNil)
+    | CalculusCheck::Ty.TString => (ctor RustValidate::Row.RowNil)
+    | CalculusCheck::Ty.TBytes => (ctor RustValidate::Row.RowNil)
+    | CalculusCheck::Ty.TOrdering => (ctor RustValidate::Row.RowNil)
+    | CalculusCheck::Ty.TOption d0 => (ctor RustValidate::Row.RowNil)
+    | CalculusCheck::Ty.TResult d0 d1 => (ctor RustValidate::Row.RowNil)
+    | CalculusCheck::Ty.TList d0 => (ctor RustValidate::Row.RowNil)
+    | CalculusCheck::Ty.TPair d0 d1 => (ctor RustValidate::Row.RowNil)
+    | CalculusCheck::Ty.TAdt d0 => (ctor RustValidate::Row.RowNil)
+    | CalculusCheck::Ty.TFn d0 d1 => (ctor RustValidate::Row.RowNil)
+    | CalculusCheck::Ty.TNil => (ctor RustValidate::Row.RowNil)
+    | CalculusCheck::Ty.TCons fields rest => (ctor RustValidate::Row.RowCons number (fieldChain known edges owner fields) (adtRows known edges owner rest (number + 1)))),
+  executable: true,
+  recursive_argument: constructors
+}
+
+definition{
+  name: adtDefs,
+  parameters: [
+    known : CalculusCheck::Ty,
+    edges : Edges,
+    adts : CalculusCheck::Ty,
+    position : Nat,
+    tail : RustAst::Def
+  ],
+  result: RustAst::Def,
+  body: (match adts
+    | CalculusCheck::Ty.TUnit => tail
+    | CalculusCheck::Ty.TBool => tail
+    | CalculusCheck::Ty.TNat => tail
+    | CalculusCheck::Ty.TInt => tail
+    | CalculusCheck::Ty.TFixed d0 => tail
+    | CalculusCheck::Ty.TString => tail
+    | CalculusCheck::Ty.TBytes => tail
+    | CalculusCheck::Ty.TOrdering => tail
+    | CalculusCheck::Ty.TOption d0 => tail
+    | CalculusCheck::Ty.TResult d0 d1 => tail
+    | CalculusCheck::Ty.TList d0 => tail
+    | CalculusCheck::Ty.TPair d0 d1 => tail
+    | CalculusCheck::Ty.TAdt d0 => tail
+    | CalculusCheck::Ty.TFn d0 d1 => tail
+    | CalculusCheck::Ty.TNil => tail
+    | CalculusCheck::Ty.TCons constructors rest => (ctor RustAst::Def.DCons (ctor RustAst::Def.DEnum (ctor RustValidate::Ty.TyNamed (ctor RustValidate::NameKind.NkAdt) position) (adtRows known edges (ctor CalculusCheck::Ty.TAdt position) constructors 0) (record RustValidate::Origin {element := (prim utf8_encode "type:adt" : Bytes), width := (ctor Option.none [RustValidate::IntKind])})) (adtDefs known edges rest (position + 1) tail))),
+  executable: true,
+  recursive_argument: adts
+}
+
+definition{
+  name: fnDefs,
+  parameters: [
+    known : CalculusCheck::Ty,
+    edges : Edges,
+    ordered : Clos,
+    every : Clos,
+    fallible : (List Bool),
+    types : CalculusCheck::Ty,
+    position : Nat,
+    tail : RustAst::Def
+  ],
+  result: RustAst::Def,
+  body: (match types
+    | CalculusCheck::Ty.TUnit => tail
+    | CalculusCheck::Ty.TBool => tail
+    | CalculusCheck::Ty.TNat => tail
+    | CalculusCheck::Ty.TInt => tail
+    | CalculusCheck::Ty.TFixed d0 => tail
+    | CalculusCheck::Ty.TString => tail
+    | CalculusCheck::Ty.TBytes => tail
+    | CalculusCheck::Ty.TOrdering => tail
+    | CalculusCheck::Ty.TOption d0 => tail
+    | CalculusCheck::Ty.TResult d0 d1 => tail
+    | CalculusCheck::Ty.TList d0 => tail
+    | CalculusCheck::Ty.TPair d0 d1 => tail
+    | CalculusCheck::Ty.TAdt d0 => tail
+    | CalculusCheck::Ty.TFn d0 d1 => tail
+    | CalculusCheck::Ty.TNil => tail
+    | CalculusCheck::Ty.TCons head rest => (match head
+      | CalculusCheck::Ty.TUnit => (fnDefs known edges ordered every fallible rest (position + 1) tail)
+      | CalculusCheck::Ty.TBool => (fnDefs known edges ordered every fallible rest (position + 1) tail)
+      | CalculusCheck::Ty.TNat => (fnDefs known edges ordered every fallible rest (position + 1) tail)
+      | CalculusCheck::Ty.TInt => (fnDefs known edges ordered every fallible rest (position + 1) tail)
+      | CalculusCheck::Ty.TFixed d0 => (fnDefs known edges ordered every fallible rest (position + 1) tail)
+      | CalculusCheck::Ty.TString => (fnDefs known edges ordered every fallible rest (position + 1) tail)
+      | CalculusCheck::Ty.TBytes => (fnDefs known edges ordered every fallible rest (position + 1) tail)
+      | CalculusCheck::Ty.TOrdering => (fnDefs known edges ordered every fallible rest (position + 1) tail)
+      | CalculusCheck::Ty.TOption d0 => (fnDefs known edges ordered every fallible rest (position + 1) tail)
+      | CalculusCheck::Ty.TResult d0 d1 => (fnDefs known edges ordered every fallible rest (position + 1) tail)
+      | CalculusCheck::Ty.TList d0 => (fnDefs known edges ordered every fallible rest (position + 1) tail)
+      | CalculusCheck::Ty.TPair d0 d1 => (fnDefs known edges ordered every fallible rest (position + 1) tail)
+      | CalculusCheck::Ty.TAdt d0 => (fnDefs known edges ordered every fallible rest (position + 1) tail)
+      | CalculusCheck::Ty.TFn parameters result => (let target : CalculusCheck::Ty := (ctor CalculusCheck::Ty.TFn parameters result); (ctor RustAst::Def.DCons (ctor RustAst::Def.DEnum (ctor RustValidate::Ty.TyNamed (ctor RustValidate::NameKind.NkFn) position) (rowsFor known edges target target ordered) (fnOrigin (closureOf target every))) (ctor RustAst::Def.DCons (ctor RustAst::Def.DApply position (vty known parameters) (vty known result) (applyFails target fallible ordered) (dispatchFor known edges target target fallible ordered) (fnOrigin (closureOf target every))) (fnDefs known edges ordered every fallible rest (position + 1) tail))))
+      | CalculusCheck::Ty.TNil => (fnDefs known edges ordered every fallible rest (position + 1) tail)
+      | CalculusCheck::Ty.TCons d0 d1 => (fnDefs known edges ordered every fallible rest (position + 1) tail))),
+  executable: true,
+  recursive_argument: types
+}
+
+definition{
+  name: registerCtors,
+  parameters: [known : CalculusCheck::Ty, constructors : CalculusCheck::Ty],
+  result: CalculusCheck::Ty,
+  body: (match constructors
+    | CalculusCheck::Ty.TUnit => known
+    | CalculusCheck::Ty.TBool => known
+    | CalculusCheck::Ty.TNat => known
+    | CalculusCheck::Ty.TInt => known
+    | CalculusCheck::Ty.TFixed d0 => known
+    | CalculusCheck::Ty.TString => known
+    | CalculusCheck::Ty.TBytes => known
+    | CalculusCheck::Ty.TOrdering => known
+    | CalculusCheck::Ty.TOption d0 => known
+    | CalculusCheck::Ty.TResult d0 d1 => known
+    | CalculusCheck::Ty.TList d0 => known
+    | CalculusCheck::Ty.TPair d0 d1 => known
+    | CalculusCheck::Ty.TAdt d0 => known
+    | CalculusCheck::Ty.TFn d0 d1 => known
+    | CalculusCheck::Ty.TNil => known
+    | CalculusCheck::Ty.TCons fields rest => (registerCtors (registerChain known fields) rest)),
+  executable: true,
+  recursive_argument: constructors
+}
+
+definition{
+  name: registerAdts,
+  parameters: [known : CalculusCheck::Ty, adts : CalculusCheck::Ty],
+  result: CalculusCheck::Ty,
+  body: (match adts
+    | CalculusCheck::Ty.TUnit => known
+    | CalculusCheck::Ty.TBool => known
+    | CalculusCheck::Ty.TNat => known
+    | CalculusCheck::Ty.TInt => known
+    | CalculusCheck::Ty.TFixed d0 => known
+    | CalculusCheck::Ty.TString => known
+    | CalculusCheck::Ty.TBytes => known
+    | CalculusCheck::Ty.TOrdering => known
+    | CalculusCheck::Ty.TOption d0 => known
+    | CalculusCheck::Ty.TResult d0 d1 => known
+    | CalculusCheck::Ty.TList d0 => known
+    | CalculusCheck::Ty.TPair d0 d1 => known
+    | CalculusCheck::Ty.TAdt d0 => known
+    | CalculusCheck::Ty.TFn d0 d1 => known
+    | CalculusCheck::Ty.TNil => known
+    | CalculusCheck::Ty.TCons constructors rest => (registerAdts (registerCtors known constructors) rest)),
+  executable: true,
+  recursive_argument: adts
+}
+
+definition{
+  name: lowerTypes,
+  parameters: [
+    spec : Bytes,
+    adts : CalculusCheck::Ty,
+    parameters : (List (List Nat)),
+    types : CalculusCheck::Ty,
+    results : CalculusCheck::Ty,
+    bodies : CalculusCheck::Expr,
+    sites : CalculusCheck::Ty,
+    dead : (List Bool),
+    fallible : (List Bool)
+  ],
+  result: RustAst::Def,
+  body: (let program : CalculusCheck::Program := (record CalculusCheck::Program {spec := spec, adts := adts, parameters := parameters, types := types, results := results, bodies := bodies}); (let numbered : Collect := (collectFunctions program record{
+    type: Collect,
+    fields: [
+      {field: known, value: (ctor CalculusCheck::Ty.TNil)},
+      {field: closures, value: (ctor Clos.ClNil)}
+    ],
+    type_arguments: []
+  } bodies 0 (nil Bool) sites); (let known : CalculusCheck::Ty := (registerAdts (project numbered known) adts); (let live : Collect := (collectFunctions program record{
+    type: Collect,
+    fields: [{field: known, value: known}, {field: closures, value: (ctor Clos.ClNil)}],
+    type_arguments: []
+  } bodies 0 dead sites); (let owners : CalculusCheck::Ty := (tyAppend (adtOwners (CalculusCheck::tyChainLength adts)) known); (let direct : Edges := (allEdges program known (project numbered closures) owners (ctor Edges.EdgeNil)); (let edges : Edges := (closeEdges direct (1 + (prim multiply (CalculusCheck::tyChainLength owners) (CalculusCheck::tyChainLength owners) : Nat))); (adtDefs known edges adts 0 (fnDefs known edges (revClos (project live closures) (ctor Clos.ClNil)) (project numbered closures) fallible known 0 (ctor RustAst::Def.DNil)))))))))),
   executable: true,
   production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
 }

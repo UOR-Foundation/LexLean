@@ -1,18 +1,19 @@
 //! `BS-07` (SPEC.md §17.16, §17.23): the lowering of target programs to the
 //! closed Rust AST as language-1.2 source (`LexLeanBoot.RustLower`), held to
-//! the Rust lowering. This slice is its failure typing,
+//! the Rust lowering. The first slice is its failure typing,
 //! `calculus::rust::fallible_functions`, as three roots composed by the host:
 //! `siteTrees` of `CalculusCheck` (the type of each scrutinee and each applied
 //! target, from the module's own `walk`), `deadFunctions`, and
-//! `fallibleFunctions`.
+//! `fallibleFunctions`; the second is `lowerTypes`, the enums and dispatch of
+//! the types of the crate, given what the first returns.
 //!
 //! The roots take a program as calculus data, the six chains of `BS-04`, and
 //! a program that `checkProgram` accepts: `Lowering::new` begins with
 //! `check::check`, and the host composes the roots, so a program the oracle
 //! refuses is not a vector of these roots. The consumers take the tree the
 //! typing root returns, never a type the host computed: each leg is held to
-//! the oracle on the same vectors, so the host's composition of the three
-//! gives `fallible_functions` on every vector, leg by leg.
+//! the oracle on the same vectors, so the host's composition of the roots
+//! gives the oracle's result on every vector, leg by leg.
 
 use lexlean::calculus::rust::ast::{Expr as RustExpr, Ident, ItemDef, Pat};
 use lexlean::calculus::rust::{self, Profile};
@@ -24,6 +25,7 @@ use super::calculus_check::{
     adt as constructor, committed, enc_ty, literal_corpus, mutants, prim_corpus, program_arguments,
     program_of, program_size, shape_corpus, targeted, ty_chain, Source,
 };
+use super::rust_print::enc_items;
 use super::{bool_val as boolean, list, Run, Seeded};
 use crate::support;
 
@@ -31,12 +33,13 @@ const MODULE: &str = "LexLeanBoot.RustLower";
 
 /// The roots in the order the module declares them, each with the effects its
 /// declaration admits, which are exactly the effects its closure realizes.
-const ROOTS: [(&str, &[&str]); 2] = [
+const ROOTS: [(&str, &[&str]); 3] = [
     ("deadFunctions", &["allocation", "overflow", "recursion"]),
     (
         "fallibleFunctions",
         &["allocation", "overflow", "recursion"],
     ),
+    ("lowerTypes", &["allocation", "overflow", "recursion"]),
 ];
 
 /// Three quarters of `max_file_bytes` (4,194,304), the most a part of a
@@ -65,12 +68,15 @@ fn enc_site(site: &Site) -> Value {
 
 /// What the oracle makes of a program, leg by leg, as each root returns it:
 /// the tree of typing sites; the dead functions, given the tree; the Boolean
-/// of each function, given the tree and the dead functions. A program the
-/// checker refuses is no vector.
+/// of each function, given the tree and the dead functions; the items of the
+/// crate that declare its types (the enum of each ADT and of each function
+/// type, and the dispatch of each function type), given all three. A program
+/// the checker refuses is no vector.
 struct Legs {
     sites: Run,
     dead: Run,
     fallible: Run,
+    types: Run,
 }
 
 fn flags(flags: Vec<bool>) -> Value {
@@ -80,7 +86,7 @@ fn flags(flags: Vec<bool>) -> Value {
 /// The dead functions as the lowering shows them: a function with an argument
 /// no value inhabits renders as the empty match on that argument, and no live
 /// body is one. The oracle needs no entry of its own for them.
-fn dead_flags(program: &Program) -> Option<Vec<bool>> {
+fn lowered(program: &Program) -> Option<(Vec<bool>, Value)> {
     let krate = rust::lower(program, Profile::Std).ok()?;
     let mut dead = vec![false; program.functions.len()];
     for item in &krate.items {
@@ -108,19 +114,29 @@ fn dead_flags(program: &Program) -> Option<Vec<bool>> {
             *dead.get_mut(usize::try_from(*at).ok()?)? = body.lets.is_empty() && empty;
         }
     }
-    Some(dead)
+    let declared = krate
+        .items
+        .iter()
+        .position(|item| matches!(item, ItemDef::Function { .. }))
+        .unwrap_or(krate.items.len());
+    Some((dead, enc_items(&krate.items[..declared])))
 }
 
 fn run(program: &Program) -> Option<Legs> {
     let base = program_arguments(program);
     let tree = enc_site(&sites::trees(program).ok()?);
-    let dead = dead_flags(program)?;
+    let (dead, types) = lowered(program)?;
     let fallible = rust::fallible_functions(program).ok()?;
     let with_tree: Vec<Value> = base.iter().cloned().chain([tree.clone()]).collect();
     let with_dead: Vec<Value> = with_tree
         .iter()
         .cloned()
         .chain([flags(dead.clone())])
+        .collect();
+    let with_fallible: Vec<Value> = with_dead
+        .iter()
+        .cloned()
+        .chain([flags(fallible.clone())])
         .collect();
     Some(Legs {
         sites: (base, serde_json::to_value(&tree).expect("a value is JSON")),
@@ -131,6 +147,10 @@ fn run(program: &Program) -> Option<Legs> {
         fallible: (
             with_dead,
             serde_json::to_value(flags(fallible)).expect("a value is JSON"),
+        ),
+        types: (
+            with_fallible,
+            serde_json::to_value(types).expect("a value is JSON"),
         ),
     })
 }
@@ -566,13 +586,17 @@ fn fallible_leg(legs: &Legs) -> &Run {
     &legs.fallible
 }
 
+fn types_leg(legs: &Legs) -> &Run {
+    &legs.types
+}
+
 // The counts SPEC.md §17.23, the register statement of BS-07, its scenario,
 // and VERIFICATION.md state: the case fails when the tree no longer gives them.
 /// The programs of the rules of the analysis, and the vectors the corpora make
 /// of them and of the committed programs, as the statement of the register row
 /// and SPEC.md §17.23 count them.
 const RULE_PROGRAMS: usize = 22;
-const VECTORS: usize = 309;
+const VECTORS: usize = 310;
 const VECTORS_WITHIN: usize = 272;
 const LITERALS: usize = 200;
 const PRIM_ROUNDS: usize = 3;
@@ -598,7 +622,7 @@ struct Planted {
     leg: Leg,
 }
 
-const PLANTS: [Planted; 13] = [
+const PLANTS: [Planted; 20] = [
     Planted {
         label: "an addition of naturals does not fail",
         file: "src/RustLower.lex.tex",
@@ -716,6 +740,69 @@ const PLANTS: [Planted; 13] = [
         root: "siteTrees",
         leg: sites_leg,
     },
+    Planted {
+        label: "a field that holds its owner is not boxed",
+        file: "src/RustLower.lex.tex",
+        site: "body: (if (cyclic known edges owner ty) then (ctor RustValidate::Ty.TyUnary (ctor RustValidate::UnaryKind.UkRc) (vty known ty)) else (vty known ty)),",
+        replacement: "body: (vty known ty),",
+        module: MODULE,
+        root: "lowerTypes",
+        leg: types_leg,
+    },
+    Planted {
+        label: "a boxed capture is cloned",
+        file: "src/RustLower.lex.tex",
+        site: "(if (cyclic known edges owner ty) then (ctor RustValidate::Cap.CapUnbox) else",
+        replacement: "(if false then (ctor RustValidate::Cap.CapUnbox) else",
+        module: MODULE,
+        root: "lowerTypes",
+        leg: types_leg,
+    },
+    Planted {
+        label: "an application of a function type is never fallible",
+        file: "src/RustLower.lex.tex",
+        site: "(if (flagAt fallible member) then true else (applyFails target fallible rest))",
+        replacement: "(applyFails target fallible rest)",
+        module: MODULE,
+        root: "lowerTypes",
+        leg: types_leg,
+    },
+    Planted {
+        label: "the closures of a function type are listed newest first",
+        file: "src/RustLower.lex.tex",
+        site: "(revClos (project live closures) (ctor Clos.ClNil))",
+        replacement: "(project live closures)",
+        module: MODULE,
+        root: "lowerTypes",
+        leg: types_leg,
+    },
+    Planted {
+        label: "a function type with closures is written as the stated type",
+        file: "src/RustLower.lex.tex",
+        site: "body: (if closed then",
+        replacement: "body: (if false then",
+        module: MODULE,
+        root: "lowerTypes",
+        leg: types_leg,
+    },
+    Planted {
+        label: "function types are numbered newest first",
+        file: "src/RustLower.lex.tex",
+        site: "(tyAppend chain (ctor CalculusCheck::Ty.TCons item (ctor CalculusCheck::Ty.TNil)))",
+        replacement: "(ctor CalculusCheck::Ty.TCons item chain)",
+        module: MODULE,
+        root: "lowerTypes",
+        leg: types_leg,
+    },
+    Planted {
+        label: "a string capture is copied",
+        file: "src/RustLower.lex.tex",
+        site: "| CalculusCheck::Ty.TFixed w => true\n    | CalculusCheck::Ty.TString => false",
+        replacement: "| CalculusCheck::Ty.TFixed w => true\n    | CalculusCheck::Ty.TString => true",
+        module: MODULE,
+        root: "lowerTypes",
+        leg: types_leg,
+    },
 ];
 
 /// The row of a root in the eligibility report of its module: eligible for
@@ -817,7 +904,7 @@ pub(super) fn case() {
     assert!(
         rules
             .iter()
-            .any(|program| dead_flags(program).is_some_and(|dead| dead.contains(&true))),
+            .any(|program| lowered(program).is_some_and(|(dead, _)| dead.contains(&true))),
         "some rule program has a dead function"
     );
     let all = vectors(&sources);
@@ -858,6 +945,7 @@ pub(super) fn case() {
     let sites = super::lower(&checked, &project, TYPING, "siteTrees");
     let dead = super::lower(&checked, &project, MODULE, "deadFunctions");
     let fallible = super::lower(&checked, &project, MODULE, "fallibleFunctions");
+    let types = super::lower(&checked, &project, MODULE, "lowerTypes");
     let every: Vec<&Vector> = all.iter().collect();
     // On every host: the rendered rust-std packages, compiled by that host's
     // pinned rustc, agree with the oracle on the vectors, leg by leg.
@@ -867,6 +955,7 @@ pub(super) fn case() {
             ("siteTrees", &sites, &runs(&every, sites_leg)),
             ("deadFunctions", &dead, &runs(&every, dead_leg)),
             ("fallibleFunctions", &fallible, &runs(&every, fallible_leg)),
+            ("lowerTypes", &types, &runs(&every, types_leg)),
         ],
         "vectors",
     );
@@ -882,6 +971,7 @@ pub(super) fn case() {
         ("siteTrees", &sites, sites_leg as Leg),
         ("deadFunctions", &dead, dead_leg),
         ("fallibleFunctions", &fallible, fallible_leg),
+        ("lowerTypes", &types, types_leg),
     ] {
         let evaluated = runs(&evaluator, leg);
         let disagreements = super::evaluate(low, &evaluated, 5);
@@ -910,6 +1000,7 @@ pub(super) fn case() {
             ("siteTrees", &sites, &runs(&large, sites_leg)),
             ("deadFunctions", &dead, &runs(&large, dead_leg)),
             ("fallibleFunctions", &fallible, &runs(&large, fallible_leg)),
+            ("lowerTypes", &types, &runs(&large, types_leg)),
         ],
         "seeded",
     );
@@ -997,10 +1088,11 @@ pub(super) fn case() {
         let (low, member) =
             if let Some(member) = exported_root.root.strip_prefix(&format!("{MODULE}.")) {
                 (
-                    if member == "deadFunctions" {
-                        &dead
-                    } else {
-                        &fallible
+                    match member {
+                        "deadFunctions" => &dead,
+                        "fallibleFunctions" => &fallible,
+                        "lowerTypes" => &types,
+                        other => panic!("{other} is not a root of {MODULE}"),
                     },
                     member,
                 )

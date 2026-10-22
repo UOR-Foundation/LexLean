@@ -297,14 +297,20 @@ fn enc_item_def(item: &ItemDef) -> Value {
 /// `Crate`, a structure: whether the profile is `rust-core`, and the items
 /// as a `Def` chain.
 pub(super) fn enc_crate(krate: &Crate) -> Value {
-    let items = krate
-        .items
-        .iter()
-        .rev()
-        .fold(adt(3, Vec::new()), |tail, item| {
-            adt(4, vec![enc_item_def(item), tail])
-        });
-    adt(0, vec![boolean(krate.profile == Profile::Core), items])
+    adt(
+        0,
+        vec![
+            boolean(krate.profile == Profile::Core),
+            enc_items(&krate.items),
+        ],
+    )
+}
+
+/// The items as a `Def` chain.
+pub(super) fn enc_items(items: &[ItemDef]) -> Value {
+    items.iter().rev().fold(adt(3, Vec::new()), |tail, item| {
+        adt(4, vec![enc_item_def(item), tail])
+    })
 }
 
 // ------------------------------------------------------------------ oracle
@@ -1138,13 +1144,13 @@ const ROOTS: [(&str, &[&str]); 2] = [
 // and VERIFICATION.md state, over the tree with the packages of the roots of
 // BS-05 to BS-07 and of the buffer committed: the case fails when the tree no
 // longer gives them.
-const COMMITTED_MANIFESTS: usize = 258;
+const COMMITTED_MANIFESTS: usize = 259;
 const COMMITTED_FIXTURES: usize = 122;
-const COMMITTED_PROGRAMS: usize = 175;
-const COMMITTED_CRATES: usize = 234;
-const COMMITTED_PACKAGES: usize = 258;
-const VECTORS_CRATE: usize = 611;
-const COMMITTED_DISTINCT: usize = 468;
+const COMMITTED_PROGRAMS: usize = 176;
+const COMMITTED_CRATES: usize = 235;
+const COMMITTED_PACKAGES: usize = 259;
+const VECTORS_CRATE: usize = 613;
+const COMMITTED_DISTINCT: usize = 470;
 const REFUSED_CRATE: usize = 57;
 const VECTORS_EXPR: usize = 1_955;
 const HAND_EXPR: usize = 1_404;
