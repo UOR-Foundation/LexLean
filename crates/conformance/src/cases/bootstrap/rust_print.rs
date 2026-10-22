@@ -297,14 +297,20 @@ fn enc_item_def(item: &ItemDef) -> Value {
 /// `Crate`, a structure: whether the profile is `rust-core`, and the items
 /// as a `Def` chain.
 pub(super) fn enc_crate(krate: &Crate) -> Value {
-    let items = krate
-        .items
-        .iter()
-        .rev()
-        .fold(adt(3, Vec::new()), |tail, item| {
-            adt(4, vec![enc_item_def(item), tail])
-        });
-    adt(0, vec![boolean(krate.profile == Profile::Core), items])
+    adt(
+        0,
+        vec![
+            boolean(krate.profile == Profile::Core),
+            enc_items(&krate.items),
+        ],
+    )
+}
+
+/// The items as a `Def` chain.
+pub(super) fn enc_items(items: &[ItemDef]) -> Value {
+    items.iter().rev().fold(adt(3, Vec::new()), |tail, item| {
+        adt(4, vec![enc_item_def(item), tail])
+    })
 }
 
 // ------------------------------------------------------------------ oracle
