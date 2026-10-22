@@ -7911,10 +7911,10 @@ renderer. An exported name in an expression (`Ident::Export`) is outside the
 claim: the pass identifies the names of a lowered body, which are never
 exported names.
 
-The measured largest part of the certificate of `applyMoves` is 551,083
-bytes, 13.1% of `max_file_bytes`; the oracle source is 218 lines, so the pass
-costs about 2,500 bytes of certificate per line, the calibration for the
-passes after it. `BS-08` holds the root to the oracle on 352 crates (the
+The measured largest part of the certificate of `applyMoves` is 565,927
+bytes (part B; part A is 551,083), 13.5% of `max_file_bytes`; the oracle source
+is 218 lines, so the pass costs about 2,600 bytes of certificate per line, the
+calibration for the passes after it. `BS-08` holds the root to the oracle on 352 crates (the
 hand-built crates of every rule of the pass, the hand-built crates of
 `BS-05`, and the crates the renderer lowers from the 260 committed manifests),
 on the normative host the evaluator on the 317 of them of at most 400

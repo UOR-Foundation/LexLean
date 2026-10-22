@@ -370,7 +370,7 @@ and Unreleased holds what has landed since.
   rewrites the function bodies of a `RustAst` crate as
   `calculus::rust::moves::apply` does, held to the public oracle to the byte
   on 352 crates and on seeded mutants of the smaller ones. Its certificate
-  part is 551,083 bytes, 13.1% of `max_file_bytes`. The register is 447 IDs.
+  part is 565,927 bytes, 13.5% of `max_file_bytes`. The register is 447 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or

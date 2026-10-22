@@ -9987,6 +9987,69 @@ and 318 vectors of `BS-05`; 613 vectors of `printCrate` and 470 committed
 distinct crates of `BS-06`, 545 of the evaluator's), computed by running their
 cases on that tree.
 
+`BS-08` holds the production root of `LexLeanBoot.RustMoves`
+(`bootstrap/src/RustMoves.lex.tex`), the last-use moves of the lowering, to the
+public oracle `calculus::rust::moves::apply`, the first pass of the function
+bodies and a case of its own (the first draft of it was a leg of the case of
+`BS-07`, whose run, with the mutants drawn from the
+compiler's own crates, reached 14 GB of memory and was killed after 44 minutes; the case is split by pass
+and the mutation bases are the crates of at most 80 expressions, as `BS-05`
+draws them: 4.7 GB resident). The case runs 352 crates (the hand-built
+rule crates, the hand-built crates of `BS-05`, and the crates the renderer
+lowers from the 260 committed manifests) under the pinned rustc on every host
+(21 harness binaries built in 263 s, 352 runs in 24 s more), and on the
+normative host the evaluator on the 317 of them of at most 400 expressions with
+150 seeded mutants (47 s), 1,500 seeded mutants under rustc (9 binaries, 54
+s), eight planted defects, and the production export. The case up to the
+comparison with the committed packages takes 1,734 s on this host (4 cores),
+and stops there on this tree with the packages and the records left to the
+maintainer's regeneration: the package `apply_moves`, `bootstrap/expected/`,
+the locks, and the PD-08 row `bootstrap/apply_moves`, which the case measured in
+a debug build as 6,029,312 bytes.
+
+Measured certificate of `applyMoves` (bytes; the limit `max_file_bytes` is
+4,194,304 and the budget the case asserts is 3,145,728): part A 551,083, part B
+565,927 (the largest, 13.5% of the limit), part E 164,725; the export took 19
+min 46 s. The exact axiom policy observed is `Classical.choice`, `Quot.sound`,
+and `propext`. The pass is 218 lines of oracle source, about 2,600 bytes of
+certificate per line. The typing root `siteTrees` is untouched, as the rule for
+the slices requires.
+
+The pass is a backwards liveness pass over the 17 constructors of `Expr` with
+the live set an association list of counts. It is written as two recursions
+beside each other, the reads of an expression given what is read after it, and
+its rewrite given the same, because the structure that holds a recursive sort
+beside the set was not needed: the rewrite never returns the set. Each of
+these eight plants is made on a copy of `bootstrap/src/RustMoves.lex.tex` on
+every run and is caught by the oracle; the run is the index among the crates
+(the rule crates first):
+
+- **a last read never moves**, run 0.
+- **a component moves though another is read twice**, run 8.
+- **the reads of a component on two alternatives are added**, run 9.
+- **the holder of an application is not read before its operands**, run 21.
+- **the left of a pair is read before its right**, run 23.
+- **a pattern does not unbind its names**, run 3.
+- **a pattern that binds both components is a projection**, run 11.
+- **the state of a loop is not read**, run 24.
+
+Findings. (1) A plant is only as strong as the crates that reach it: five of
+the first drafts of these were not detected, and each turned out to be
+equivalent or too weak on the crates then in the corpus: replacing one arm of
+`mayMove` left the other answering `true`; the order of two reads in the
+function that only counts them does not change the counts, so the plant went to
+the function that rewrites; the sum of the reads of two alternatives is
+non-zero where their maximum is, so it went to the counts of the components. A
+rule crate was added for each that needs one (a component projected while
+another is read twice after it, a component read once on each of two
+alternatives, an application whose holder is also an operand, a pattern that
+binds both components after a projection, a read of the state before a loop).
+(2) The whole case takes 29 minutes (1,734 s) on this host, and `BS-07` keeps its own. (3) The counts of `BS-05`,
+`BS-06`, and `BS-07` move with the package of this root (260 manifests and
+packages, 177 programs, 236 crates; `BS-05` 456 and 319 vectors; `BS-06` 615
+vectors of `printCrate` and 472 committed distinct crates; `BS-07` 311
+vectors) and are recounted by running their cases on this tree.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the
