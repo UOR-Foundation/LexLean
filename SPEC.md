@@ -77,7 +77,7 @@ keywords = ["lean", "latex", "formal-methods", "compiler", "proof"]
 categories = ["compilers", "development-tools"]
 ```
 
-The initial implementation version is `0.1.0`. The first release satisfying this complete specification is `1.0.0`.
+The initial implementation version is `0.1.0`. The completion release, the first release satisfying this complete specification and the release §30 names, is `0.5.0` when that release satisfies the completion criterion of §30.4, and `1.0.0` otherwise.
 
 ### 2.4 License
 
@@ -9996,13 +9996,15 @@ The example suite MUST mechanically demonstrate:
 LexLean has separate versions for:
 
 - compiler crate/binary SemVer;
-- language identifier `1.0`;
+- language identifier, one of `1.0`, `1.1`, and `1.2`, each of which a release supports;
 - project schema;
 - lock schema;
 - lexicon schema;
 - entry schema;
 - artifact schemas;
-- compiler-semantics ID.
+- compiler-semantics ID, one for each language identifier (§21.2).
+
+A release is identified by its compiler version together with, for every language it supports, the language identifier and that language's compiler-semantics ID; §30.3 states how its binaries report them.
 
 A compiler patch release may retain the semantics ID only when canonical accepted language, IR, diagnostics required for success/failure, and generated artifacts are unchanged.
 
@@ -10014,13 +10016,13 @@ No automatic in-place migration command is part of 1.0. Unsupported input fails 
 
 ### 30.3 Release artifacts
 
-A `1.0.0` release MUST publish:
+The completion release (§2.3) MUST publish:
 
 - source tag;
 - checksums;
 - supported-host binaries;
 - crate package;
-- compiler-semantics ID;
+- the compiler-semantics ID of every supported language;
 - generated `CONFORMANCE.md`;
 - generated `ERRORS.md`;
 - `SPEC.md`;
@@ -10028,18 +10030,22 @@ A `1.0.0` release MUST publish:
 - a software-bill-of-materials artifact;
 - CI evidence that `just vv` passed on the tagged commit.
 
-Release binaries MUST report:
+Release binaries MUST report, where `<version>` is the release version and each `<digest>` is the compiler-semantics ID of the language on the line before it:
 
 ```text
-lexlean 1.0.0
+lexlean <version>
 language 1.0
+compiler-semantics <digest>
+language 1.1
+compiler-semantics <digest>
+language 1.2
 compiler-semantics <digest>
 lean-toolchain leanprover/lean4:v4.32.1
 ```
 
 ### 30.4 Completion criterion
 
-The project is complete for LexLean 1.0 only when:
+The project is complete, and a release is the completion release of §2.3, only when:
 
 - every §31 ID is implemented at level `build`;
 - no ID is represented by a stub or ignored test;
