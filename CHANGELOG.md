@@ -356,7 +356,7 @@ and Unreleased holds what has landed since.
   runs 2,559 vectors under the pinned `rustc` on every host, and on the
   normative host the evaluator on 541 + 1,955 of them and 400 + 399 seeded
   mutants, 2,984 more under `rustc`, twelve planted defects, and the certified
-  packages against the committed ones. The register is 445 IDs.
+  packages against the committed ones. The register is 447 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or
