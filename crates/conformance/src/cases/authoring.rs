@@ -1521,7 +1521,9 @@ fn assert_located_as_opened(what: &str, text: &str, parsed: Opened) {
 fn as_data_at(text: &str, body: (usize, usize), control: &str, data: &str) -> String {
     format!(
         "{}\n{control}{{{data}}}\n{}",
-        &text[..body.0],
+        // The parser's body begins after the line feed that ends the opening
+        // marker; the data form is written right after the marker.
+        text[..body.0].trim_end(),
         &text[body.1..]
     )
 }
@@ -1697,7 +1699,7 @@ fn module_is_the_opened_environment() {
     ] {
         let planted = core_source(value);
         assert!(
-            planted.contains(&format!("\\\\{}", &value[1..])),
+            planted.contains(&value.replace('\\', "\\\\")),
             "{what}: the notation does not quote the marker"
         );
         let parsed = opened("src/Main.lex.tex", &planted)
