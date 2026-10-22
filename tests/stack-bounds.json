@@ -42,6 +42,12 @@
     "bootstrap/parse_audit_output": {
       "debug": 6291456
     },
+    "bootstrap/print_crate": {
+      "debug": 7077888
+    },
+    "bootstrap/print_expr": {
+      "debug": 4259840
+    },
     "bootstrap/validate_crate": {
       "debug": 5046272
     }
