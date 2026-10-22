@@ -46,6 +46,7 @@ mod security;
 mod semantic_ir;
 mod std_packages;
 mod stdlib;
+mod stdlib_numeral;
 mod stdlib_sha256;
 mod tooling;
 mod typed_diagnostics;

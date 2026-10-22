@@ -669,6 +669,8 @@ pub fn run(id: &str) {
         "SL-02" => super::stdlib_sha256::run(id),
         // §17.22, §10.5: the standard library's source packages.
         "SL-03" | "SL-04" => super::std_packages::run(id),
+        // §17.22: hexadecimal and decimal (#276).
+        "SL-08" => super::stdlib_numeral::run(id),
         other => panic!("no stdlib case is wired for {other}"),
     }
 }

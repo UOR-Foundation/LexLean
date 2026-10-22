@@ -9684,6 +9684,37 @@ Removed: the source was restored; `conformance_sl_02` passes, in 305 s with
 the production export of both roots under the pinned Lean (`conformance_sl_01`
 in 206 s on the same tree).
 
+`SL-08` holds `LexLeanStd.Numeral` (#276) to the compiler's own readings:
+`u64` formatting for `decimal` and `hexNat`, the two lowercase digits per byte
+of `Sha256Digest::to_hex` for `hex`, and for the readers `canonical_digits`
+and `canonical_hex` of `surface::semantic` followed by `u64` parsing or the
+digit pairs, a canonical decimal past the target width being an overflow on
+both sides. Each member's lowered program under the calculus evaluator (600
+runs) and its rendered `rust-std` package under the pinned rustc (3,000 runs)
+are run on fixed edge cases and then on seeded numbers across the width and on
+canonical, mutated, and arbitrary text; each reader also reads back its
+printer's output on the printer's corpus. The first run found one defect in
+the source: `parseDecimal` was declared without `allocation`, which its closure
+realizes, and the build refused it (`LLT4005`).
+
+- **a letter digit off by one.** `hexValue` reads a letter as its byte minus
+  `86` in place of `87`, so `a` is 11 and `f` is 16, and a pair with `f` in it
+  names a byte past the table. `-- conformance_sl_08`:
+
+  ```text
+  panicked at crates/conformance/src/cases/stdlib_numeral.rs:441:9:
+  parseHex: the evaluator and the compiler disagree on 250 of 600 runs: ["run 3 on [Bytes { hex: \"6666\" }]: {\"kind\":\"some\",\"value\":{\"hex\":\"\",\"kind\":\"bytes\"}} != {\"kind\":\"some\",\"value\":{\"hex\":\"ff\",\"kind\":\"bytes\"}}", …]
+  ```
+
+  The same plant is made by the case itself on a copy of the project on every
+  run, so the gate stays armed.
+
+Removed: the source was restored; `conformance_sl_08` passes, in 296 s with
+the production export of the fourteen roots of `stdlib` under the pinned Lean
+(`conformance_sl_01` and `conformance_sl_02` in 423 s together on the same
+tree, whose `Text` and `Sha256` packages differ from the committed ones only
+in the project's source identity).
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the

@@ -2546,6 +2546,12 @@ suite = "stdlib"
 statement = "The standard library's `std-reasoning` package is the language-1.2 project `std-reasoning` of the workspace under the module prefix `LexLeanStdReasoning`, whose one module `Worklist` states the logic `Countdown` over a state of a type parameter and a work count ranked by the count, its guarded rules `Tick` and `Burn`, the verifier `Drained`, and the terminating work-list reasoner `Drain`, each generic over the carried type, with the reasoner's termination bound a kernel-checked theorem; its manifest declares no source package, artifact, or glossary, no file of Lean source accompanies it, and its behavior is held by kernel-checked theorems and not by the Rust-std differential of `SL-01`; it verifies by itself under the pinned Lean with exact axiom policies, a planted termination bound that the ranking does not meet is refused at link with `LLT4010`, and a reasoner of an importing project instantiates its logic, rules, and verifier at the importer's own type."
 
 [[id]]
+id = "SL-08"
+level = "build"
+suite = "stdlib"
+statement = "The standard library's `Numeral` module is language-1.2 source whose five members over `Nat` and `Bytes` (`decimal`, `hexNat`, `parseDecimal`, `hex`, `parseHex`) are production roots eligible for `rust-std` with exactly their declared effects; each member's lowered program under the calculus evaluator and its rendered `rust-std` package under the pinned rustc agree with the compiler's own reading on a seeded corpus: the shortest decimal and lowercase hexadecimal of a `u64`, the lowercase hexadecimal of bytes, and the canonical decimal and hexadecimal readers, which take exactly the text `canonical_digits` and `canonical_hex` accept, a decimal past the target width being an overflow as it is for `u64` parsing, and refuse every other text; each reader reads back what its printer prints; a planted defect in a member is detected; and the certified packages the production export publishes for it are the committed ones."
+
+[[id]]
 id = "BS-01"
 level = "build"
 suite = "bootstrap"

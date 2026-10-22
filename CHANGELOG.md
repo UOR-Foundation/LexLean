@@ -17,6 +17,19 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- Hexadecimal and decimal in the standard library, the first member the
+  self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-08`). The module
+  `LexLeanStd.Numeral` holds `decimal` and `hexNat` (the digits of a natural
+  number), `hex` (the lowercase digits of bytes), and the canonical readers
+  `parseDecimal` and `parseHex`, each a production root for `rust-std`. Their
+  oracles are the compiler's own readings (`u64` formatting and parsing,
+  `canonical_digits`, `canonical_hex`, `Sha256Digest::to_hex`), so a reader
+  refuses exactly the text the front end refuses, and a canonical decimal past
+  the target width is an overflow as it is for `u64`. The case also checks that
+  each reader reads back its printer's output. `stdlib/lexlean.toml` gains the
+  entrypoint, so the locks of `stdlib`, `bootstrap`, and `examples/helpdesk`
+  move, and the `stdlib` records and production export are regenerated. The
+  register is 444 IDs.
 - Two source packages of the standard library and the application that uses
   them, #32 (SPEC.md §17.22, §10.5, `SL-03`, `SL-04`, `EX-09`). `std-models`
   (`LexLeanStdModels.Scores`) holds the score combinators `best`, `margin`, and

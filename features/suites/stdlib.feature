@@ -31,3 +31,10 @@ Feature: stdlib
     Then it declares no source package, artifact, or glossary and holds no file of Lean source, and its module states the generic logic, rules, verifier, and reasoner
     And every declaration verifies with its exact axiom policy and the kernel checks the termination bound and the closed runs
     And the planted bound is refused at link with LLT4010
+
+  @SL-08 @build
+  Scenario: The standard library's `Numeral` module is language-1.2 source whose five members over `Nat` and `Bytes` (`decimal`, `hexNat`, `parseDecimal`, `hex`, `parseHex`) are production roots eligible for `rust-std` with exactly their declared effects; each member's lowered program under the calculus evaluator and its rendered `rust-std` package under the pinned rustc agree with the compiler's own reading on a seeded corpus: the shortest decimal and lowercase hexadecimal of a `u64`, the lowercase hexadecimal of bytes, and the canonical decimal and hexadecimal readers, which take exactly the text `canonical_digits` and `canonical_hex` accept, a decimal past the target width being an overflow as it is for `u64` parsing, and refuse every other text; each reader reads back what its printer prints; a planted defect in a member is detected; and the certified packages the production export publishes for it are the committed ones.
+    Given the committed `stdlib` project and the compiler's own decimal and hexadecimal readings as the oracle
+    When the project is checked and built, each member is lowered and run by the evaluator and by its rendered rust-std package on a seeded corpus of canonical, mutated, and arbitrary text and of numbers across the target width, each reader is run on its printer's output, a letter value in `hexValue` is planted, and the project is exported under the pinned Lean
+    Then the five roots are eligible for rust-std with exactly their declared effects, no run disagrees with the oracle, and every printed value reads back
+    And the planted `hexValue` disagrees, and every exported package is byte-identical to its committed package and realizes the member's lowered program
