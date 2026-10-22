@@ -15,9 +15,12 @@ use lexlean::calculus::rust::Profile;
 
 use super::rust_print::enc_items;
 use super::rust_validate::{
-    branch_crates, committed, loop_crates, machine_crates, mutant, pool_of, rendered,
+    branch_crates, committed, loop_crates, machine_crates, mutant, pool_of, rendered, small,
 };
 use super::{Run, Seeded};
+
+/// The crates a mutation draws on have at most this many expressions.
+const BASE_NODES: usize = 80;
 
 fn at() -> Origin {
     Origin::of("hand")
@@ -307,8 +310,12 @@ pub(super) fn base() -> Vec<Crate> {
 pub(super) fn mutants(count: usize, seed: u64) -> Vec<Crate> {
     let (sources, ..) = committed();
     let lowered = rendered(&sources);
+    // The mutants of the compiler's own crates are too large to hold by the
+    // thousand: the bases are the crates of at most `BASE_NODES` expressions,
+    // as `BS-05` draws its mutants.
+    let bases = small(&lowered, BASE_NODES);
     let mut seeded = Seeded(seed);
-    lowered
+    bases
         .iter()
         .cycle()
         .take(count)
