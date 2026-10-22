@@ -1296,8 +1296,13 @@ mod terms {
                 }
                 // A keyword followed by `{` is the generic spelling of a node of
                 // that kind (a `match` holding a variable named like a keyword is
-                // written so), not the keyword's own form.
-                let keyword = if reader.peek_at(1) == Some(&Token::LBrace) {
+                // written so), not the keyword's own form. The one keyword whose
+                // own form continues with a `{` is `let`, whose binder may be
+                // written `{name: x, type: T}`; that binder's first member is
+                // `name`, which no `let` node has, so it stays a `let`.
+                let generic_binder = word == "let"
+                    && matches!(reader.peek_at(2), Some(Token::Word(first)) if first == "name");
+                let keyword = if reader.peek_at(1) == Some(&Token::LBrace) && !generic_binder {
                     ""
                 } else {
                     word.as_str()
@@ -1949,6 +1954,39 @@ mod tests {
             let text = round_trip(&json(generic), Position::Term);
             assert!(text.contains('{'), "{text} is written generically");
         }
+    }
+
+    /// The generic node that reaches the keyword guard is the one first after
+    /// a `(`: a left operand, which `paren` reads before any other form. A
+    /// right operand is read by `terms::read`, which always took `kw{`, so
+    /// only these cases fail without the guard.
+    #[test]
+    fn a_generic_keyword_node_first_after_a_parenthesis_reads_back() {
+        let cases = [
+            r#"and{left: not{value: var{name: first}, extra: true}, right: bool{value: true}}"#,
+            r#"and{left: first{value: var{name: x}, extra: true}, right: bool{value: true}}"#,
+        ];
+        for generic in cases {
+            let text = round_trip(&json(generic), Position::Term);
+            assert!(
+                text.starts_with("(not{") || text.starts_with("(first{"),
+                "{text} opens with the generic node"
+            );
+        }
+    }
+
+    /// A hand-written `let` whose binder is the generic `{name: x, type: T}`
+    /// is a `let`, not a generic node: the guard leaves it alone.
+    #[test]
+    fn a_let_with_a_generic_binder_still_reads() {
+        let value = parse_at("(let {name: x, type: nat{}} := 1; x)", Position::Term)
+            .expect("a let with a generic binder reads");
+        assert_eq!(
+            value,
+            json(
+                r#"let{binder: {name: x, type: nat{}}, value: nat{value: "1"}, body: var{name: x}}"#
+            )
+        );
     }
 
     /// Malformed notation is an error with an offset, never a panic.
