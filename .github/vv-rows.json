@@ -81,6 +81,15 @@
     "hints": ""
   },
   {
+    "part": "bdd-preservation-support",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "preservation-support",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
     "part": "bdd-production",
     "recipes": "bdd",
     "examples_part": "",

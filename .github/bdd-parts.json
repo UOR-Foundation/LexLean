@@ -191,6 +191,9 @@
     ],
     "preservation-runtime": [
       "SP-22"
+    ],
+    "preservation-support": [
+      "SP-25"
     ]
   }
 }

@@ -17,6 +17,26 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- The Rust runtime as source, #91 stage 4 (SPEC.md §17.16, §17.17, `SP-21`,
+  `RB-15`, `SP-23`, `SM-35`, `SM-36`, `RB-16`, `SP-22`, `RB-17`, `SP-25`).
+  The declared Rust machine grows by the primitives the runtime is written in
+  (the bit operations, the natural and integer comparisons and remainders, the
+  checked natural and integer arithmetic that is `Some` or `None` on overflow)
+  and the Rust AST by the machine callee and the overflow value. Language 1.2
+  gains `term_cases` and `cases` on a Boolean as proof forms. The core
+  runtime's 110 numeric functions are the definitions of the module
+  `RustRuntime` (`coreCrate`), decoded and printed in place of the handwritten
+  text and held to it by a differential and to `RustSemantics` by a
+  `refines_<path>` theorem each; its support items (`use`, `Overflow`, the
+  work counter, the traits `Same` and `Key` and their impls, `equal`,
+  `compare`) are the definitions of `RuntimeSupport`, a crate of the second
+  closed module `RuntimeSyntax`, checked by a validator of 24 named rules, with
+  the meaning of `equal` and `compare` stated by `RuntimeSemantics` and proved
+  against the calculus primitives for the core profile's scalars and pairs of
+  two scalars (nested keys are validated, not proved: #249). The handwritten
+  base text is gone; the handwritten runtime is kept as the oracle. The
+  compiler-semantics ID moves; records bound to it regenerate once, at the
+  landing. The register is 445 IDs.
 - Two source packages of the standard library and the application that uses
   them, #32 (SPEC.md §17.22, §10.5, `SL-03`, `SL-04`, `EX-09`). `std-models`
   (`LexLeanStdModels.Scores`) holds the score combinators `best`, `margin`, and

@@ -40,8 +40,9 @@ fn origin() -> Origin {
     Origin::of("runtime")
 }
 
-fn fail<T>(reason: impl Into<String>) -> Result<T, String> {
-    Err(format!("runtime source {MODULE_PATH}: {}", reason.into()))
+/// A reason, which the entry point of each module names the module of.
+pub(super) fn fail<T>(reason: impl Into<String>) -> Result<T, String> {
+    Err(reason.into())
 }
 
 /// The two profile crates the module defines.
@@ -51,24 +52,31 @@ pub struct Source {
     pub core: Crate,
 }
 
-struct Reader<'a> {
-    definitions: BTreeMap<&'a str, &'a Json>,
+pub(super) struct Reader<'a> {
+    pub(super) definitions: BTreeMap<&'a str, &'a Json>,
 }
 
 impl<'a> Reader<'a> {
-    fn members(json: &'a Json, what: &str) -> Result<&'a BTreeMap<String, Json>, String> {
+    pub(super) fn members(
+        json: &'a Json,
+        what: &str,
+    ) -> Result<&'a BTreeMap<String, Json>, String> {
         match json {
             Json::Obj(members) => Ok(members),
             _ => fail(format!("{what} is not an object")),
         }
     }
 
-    fn member(map: &'a BTreeMap<String, Json>, name: &str, what: &str) -> Result<&'a Json, String> {
+    pub(super) fn member(
+        map: &'a BTreeMap<String, Json>,
+        name: &str,
+        what: &str,
+    ) -> Result<&'a Json, String> {
         map.get(name)
             .map_or_else(|| fail(format!("{what} has no `{name}`")), Ok)
     }
 
-    fn text(json: &'a Json, what: &str) -> Result<&'a str, String> {
+    pub(super) fn text(json: &'a Json, what: &str) -> Result<&'a str, String> {
         match json {
             Json::Str(text) => Ok(text),
             _ => fail(format!("{what} is not a string")),
@@ -77,7 +85,7 @@ impl<'a> Reader<'a> {
 
     /// The term, with a reference to a definition of the module replaced by
     /// the datum it names.
-    fn resolve(&self, term: &'a Json, what: &str) -> Result<&'a Json, String> {
+    pub(super) fn resolve(&self, term: &'a Json, what: &str) -> Result<&'a Json, String> {
         let mut term = term;
         for _ in 0..=self.definitions.len() {
             let map = Self::members(term, what)?;
@@ -110,7 +118,7 @@ impl<'a> Reader<'a> {
     }
 
     /// The constructor of `of` that `term` is, with its arguments.
-    fn constructor(
+    pub(super) fn constructor(
         &self,
         term: &'a Json,
         module: &str,
@@ -140,7 +148,7 @@ impl<'a> Reader<'a> {
         }
     }
 
-    fn arity<'t>(
+    pub(super) fn arity<'t>(
         arguments: &'t [Json],
         count: usize,
         of: &str,
@@ -156,7 +164,12 @@ impl<'a> Reader<'a> {
         }
     }
 
-    fn literal(&self, term: &'a Json, expected: &str, what: &str) -> Result<&'a Json, String> {
+    pub(super) fn literal(
+        &self,
+        term: &'a Json,
+        expected: &str,
+        what: &str,
+    ) -> Result<&'a Json, String> {
         let term = self.resolve(term, what)?;
         let map = Self::members(term, what)?;
         if Self::text(Self::member(map, "kind", what)?, what)? != expected {
@@ -165,13 +178,13 @@ impl<'a> Reader<'a> {
         Self::member(map, "value", what)
     }
 
-    fn nat(&self, term: &'a Json, what: &str) -> Result<u64, String> {
+    pub(super) fn nat(&self, term: &'a Json, what: &str) -> Result<u64, String> {
         Self::text(self.literal(term, "nat", what)?, what)?
             .parse()
             .map_or_else(|_| fail(format!("{what} is not a natural number")), Ok)
     }
 
-    fn int(&self, term: &'a Json, what: &str) -> Result<i128, String> {
+    pub(super) fn int(&self, term: &'a Json, what: &str) -> Result<i128, String> {
         let term = self.resolve(term, what)?;
         let map = Self::members(term, what)?;
         if Self::text(Self::member(map, "kind", what)?, what)? != "integer" {
@@ -182,18 +195,18 @@ impl<'a> Reader<'a> {
             .map_or_else(|_| fail(format!("{what} is not an integer")), Ok)
     }
 
-    fn boolean(&self, term: &'a Json, what: &str) -> Result<bool, String> {
+    pub(super) fn boolean(&self, term: &'a Json, what: &str) -> Result<bool, String> {
         match self.literal(term, "bool", what)? {
             Json::Bool(value) => Ok(*value),
             _ => fail(format!("{what} is not a Boolean")),
         }
     }
 
-    fn string(&self, term: &'a Json, what: &str) -> Result<String, String> {
+    pub(super) fn string(&self, term: &'a Json, what: &str) -> Result<String, String> {
         Ok(Self::text(self.literal(term, "string", what)?, what)?.to_owned())
     }
 
-    fn bytes(&self, term: &'a Json, what: &str) -> Result<Vec<u8>, String> {
+    pub(super) fn bytes(&self, term: &'a Json, what: &str) -> Result<Vec<u8>, String> {
         let term = self.resolve(term, what)?;
         let map = Self::members(term, what)?;
         if Self::text(Self::member(map, "kind", what)?, what)? != "bytes" {
@@ -214,7 +227,7 @@ impl<'a> Reader<'a> {
     }
 
     /// The elements of a list term.
-    fn list<T>(
+    pub(super) fn list<T>(
         &self,
         term: &'a Json,
         what: &str,
@@ -237,7 +250,7 @@ impl<'a> Reader<'a> {
     }
 
     /// The fields of a record of `RustSyntax::of`, each by name, once.
-    fn record<const N: usize>(
+    pub(super) fn record<const N: usize>(
         &self,
         term: &'a Json,
         of: &str,
@@ -283,7 +296,7 @@ impl<'a> Reader<'a> {
     }
 
     /// An `Option` term: its payload, if present.
-    fn optional<T>(
+    pub(super) fn optional<T>(
         &self,
         term: &'a Json,
         what: &str,
@@ -309,7 +322,7 @@ impl<'a> Reader<'a> {
         }
     }
 
-    fn kind(&self, term: &'a Json) -> Result<IntKind, String> {
+    pub(super) fn kind(&self, term: &'a Json) -> Result<IntKind, String> {
         let (short, arguments) = self.constructor(term, "TargetSyntax", "IntKind")?;
         Self::arity(arguments, 0, "IntKind", short)?;
         IntKind::ALL
@@ -318,7 +331,7 @@ impl<'a> Reader<'a> {
             .map_or_else(|| fail(format!("`IntKind.{short}` is not a width")), Ok)
     }
 
-    fn order(&self, term: &'a Json) -> Result<OrderingValue, String> {
+    pub(super) fn order(&self, term: &'a Json) -> Result<OrderingValue, String> {
         let (short, arguments) = self.constructor(term, "TargetSyntax", "Order")?;
         Self::arity(arguments, 0, "Order", short)?;
         match short {
@@ -329,7 +342,7 @@ impl<'a> Reader<'a> {
         }
     }
 
-    fn ident(&self, term: &'a Json) -> Result<Ident, String> {
+    pub(super) fn ident(&self, term: &'a Json) -> Result<Ident, String> {
         let (short, arguments) = self.constructor(term, "RustSyntax", "Ident")?;
         match short {
             "generated" => {
@@ -359,7 +372,7 @@ impl<'a> Reader<'a> {
         }
     }
 
-    fn ty(&self, term: &'a Json) -> Result<Type, String> {
+    pub(super) fn ty(&self, term: &'a Json) -> Result<Type, String> {
         let (short, a) = self.constructor(term, "RustSyntax", "RustType")?;
         let take = |count| Self::arity(a, count, "RustType", short);
         let boxed = |this: &Self, at: &'a Json| this.ty(at).map(Box::new);
@@ -420,7 +433,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    fn literal_value(&self, term: &'a Json) -> Result<Lit, String> {
+    pub(super) fn literal_value(&self, term: &'a Json) -> Result<Lit, String> {
         let (short, a) = self.constructor(term, "RustSyntax", "Lit")?;
         let take = |count| Self::arity(a, count, "Lit", short);
         Ok(match short {
@@ -452,7 +465,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    fn ctor(&self, term: &'a Json) -> Result<Ctor, String> {
+    pub(super) fn ctor(&self, term: &'a Json) -> Result<Ctor, String> {
         let (short, a) = self.constructor(term, "RustSyntax", "Ctor")?;
         let take = |count| Self::arity(a, count, "Ctor", short);
         Ok(match short {
@@ -492,7 +505,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    fn pat(&self, term: &'a Json) -> Result<Pat, String> {
+    pub(super) fn pat(&self, term: &'a Json) -> Result<Pat, String> {
         let (short, a) = self.constructor(term, "RustSyntax", "Pat")?;
         let take = |count| Self::arity(a, count, "Pat", short);
         Ok(match short {
@@ -529,7 +542,7 @@ impl<'a> Reader<'a> {
     /// Whether the Lean constructor `short` with `width` is the Rust variant
     /// whose `Debug` form is `variant`: the variant's name with a lower-case
     /// first letter, and its width, if it has one, in lower case.
-    fn is_variant(variant: &str, short: &str, width: Option<IntKind>) -> bool {
+    pub(super) fn is_variant(variant: &str, short: &str, width: Option<IntKind>) -> bool {
         let (head, rest) = match variant.split_once('(') {
             Some((head, rest)) => (head, Some(rest.trim_end_matches(')').to_lowercase())),
             None => (variant, None),
@@ -542,7 +555,7 @@ impl<'a> Reader<'a> {
         name == short && rest == width.map(|kind| kind.name().to_owned())
     }
 
-    fn item(&self, term: &'a Json) -> Result<Item, String> {
+    pub(super) fn item(&self, term: &'a Json) -> Result<Item, String> {
         let (short, a) = self.constructor(term, "RustSyntax", "Item")?;
         let width = match a {
             [] => None,
@@ -558,7 +571,7 @@ impl<'a> Reader<'a> {
             )
     }
 
-    fn machine(&self, term: &'a Json) -> Result<Machine, String> {
+    pub(super) fn machine(&self, term: &'a Json) -> Result<Machine, String> {
         let (short, a) = self.constructor(term, "RustSyntax", "Machine")?;
         let width = match a {
             [] => None,
@@ -574,7 +587,7 @@ impl<'a> Reader<'a> {
             )
     }
 
-    fn callee(&self, term: &'a Json) -> Result<Callee, String> {
+    pub(super) fn callee(&self, term: &'a Json) -> Result<Callee, String> {
         let (short, a) = self.constructor(term, "RustSyntax", "Callee")?;
         let take = |count| Self::arity(a, count, "Callee", short);
         Ok(match short {
@@ -585,7 +598,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    fn block(&self, term: &'a Json) -> Result<Block, String> {
+    pub(super) fn block(&self, term: &'a Json) -> Result<Block, String> {
         let (short, a) = self.constructor(term, "RustSyntax", "Block")?;
         if short != "mk" {
             return fail(format!("`Block.{short}` is not a block"));
@@ -597,7 +610,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    fn binding(&self, term: &'a Json) -> Result<Let, String> {
+    pub(super) fn binding(&self, term: &'a Json) -> Result<Let, String> {
         let (short, a) = self.constructor(term, "RustSyntax", "Let")?;
         if short != "mk" {
             return fail(format!("`Let.{short}` is not a binding"));
@@ -611,7 +624,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    fn arm(&self, term: &'a Json) -> Result<(Pat, Block), String> {
+    pub(super) fn arm(&self, term: &'a Json) -> Result<(Pat, Block), String> {
         let (short, a) = self.constructor(term, "RustSyntax", "Arm")?;
         if short != "mk" {
             return fail(format!("`Arm.{short}` is not an arm"));
@@ -620,7 +633,7 @@ impl<'a> Reader<'a> {
         Ok((self.pat(&a[0])?, self.block(&a[1])?))
     }
 
-    fn expr(&self, term: &'a Json) -> Result<Expr, String> {
+    pub(super) fn expr(&self, term: &'a Json) -> Result<Expr, String> {
         let (short, a) = self.constructor(term, "RustSyntax", "Expr")?;
         let take = |count| Self::arity(a, count, "Expr", short);
         let boxed = |this: &Self, at: &'a Json| this.expr(at).map(Box::new);
@@ -699,7 +712,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    fn capture(&self, term: &'a Json) -> Result<CaptureRead, String> {
+    pub(super) fn capture(&self, term: &'a Json) -> Result<CaptureRead, String> {
         let (short, a) = self.constructor(term, "RustSyntax", "CaptureRead")?;
         Self::arity(a, 0, "CaptureRead", short)?;
         match short {
@@ -711,7 +724,7 @@ impl<'a> Reader<'a> {
         }
     }
 
-    fn dispatch(&self, term: &'a Json) -> Result<Dispatch, String> {
+    pub(super) fn dispatch(&self, term: &'a Json) -> Result<Dispatch, String> {
         let [function, captures, fallible] = self.record(
             term,
             "Dispatch",
@@ -724,7 +737,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    fn variant(&self, term: &'a Json) -> Result<(u64, Vec<Type>), String> {
+    pub(super) fn variant(&self, term: &'a Json) -> Result<(u64, Vec<Type>), String> {
         let [number, fields] = self.record(term, "Variant", ["number", "fields"])?;
         Ok((
             self.nat(number, "a variant number")?,
@@ -732,12 +745,12 @@ impl<'a> Reader<'a> {
         ))
     }
 
-    fn parameter(&self, term: &'a Json) -> Result<(Pat, Type), String> {
+    pub(super) fn parameter(&self, term: &'a Json) -> Result<(Pat, Type), String> {
         let [pattern, ty] = self.record(term, "Parameter", ["pattern", "type"])?;
         Ok((self.pat(pattern)?, self.ty(ty)?))
     }
 
-    fn item_def(&self, term: &'a Json) -> Result<ItemDef, String> {
+    pub(super) fn item_def(&self, term: &'a Json) -> Result<ItemDef, String> {
         let (short, a) = self.constructor(term, "RustSyntax", "ItemDef")?;
         let take = |count| Self::arity(a, count, "ItemDef", short);
         Ok(match short {
@@ -778,7 +791,7 @@ impl<'a> Reader<'a> {
         })
     }
 
-    fn profile(&self, term: &'a Json) -> Result<Profile, String> {
+    pub(super) fn profile(&self, term: &'a Json) -> Result<Profile, String> {
         let (short, a) = self.constructor(term, "RustSyntax", "Profile")?;
         Self::arity(a, 0, "Profile", short)?;
         match short {
@@ -788,7 +801,7 @@ impl<'a> Reader<'a> {
         }
     }
 
-    fn krate(&self, term: &'a Json) -> Result<Crate, String> {
+    pub(super) fn krate(&self, term: &'a Json) -> Result<Crate, String> {
         let [profile, items] = self.record(term, "Crate", ["profile", "items"])?;
         Ok(Crate {
             profile: self.profile(profile)?,
@@ -806,21 +819,51 @@ impl<'a> Reader<'a> {
 /// core crate, or a term is not a constructor of `RustSyntax` with its
 /// arity.
 pub fn decode(source: &str) -> Result<Source, String> {
-    // The module is a list of a hundred functions and the notation, the data,
-    // and the terms nest with it, so the decoder runs on a stack of its own
-    // rather than on the caller's, which a test thread or a debug build gives
-    // two megabytes.
-    std::thread::scope(|scope| {
-        std::thread::Builder::new()
-            .stack_size(DECODER_STACK)
-            .spawn_scoped(scope, || decode_here(source))
-            .map_err(|error| format!("runtime source {MODULE_PATH}: {error}"))?
-            .join()
-            .map_err(|_| format!("runtime source {MODULE_PATH}: the decoder panicked"))?
+    with_reader(MODULE_PATH, source, |reader| {
+        let Some(core) = reader.definitions.get("coreCrate") else {
+            return fail("does not define `coreCrate`");
+        };
+        let core = reader.krate(core)?;
+        if core.profile != Profile::Core {
+            return fail("`coreCrate` is not a core crate");
+        }
+        Ok(Source { core })
     })
 }
 
-fn decode_here(source: &str) -> Result<Source, String> {
+/// Read the data module `source` held at `path` with `read`, every refusal
+/// naming the module.
+///
+/// The module is a list of a hundred functions and the notation, the data,
+/// and the terms nest with it, so the reader runs on a stack of its own
+/// rather than on the caller's, which a test thread or a debug build gives
+/// two megabytes.
+///
+/// # Errors
+///
+/// The first rule the module breaks: it is not a semantic module, it defines
+/// a name twice or one with parameters, or `read` refuses a term.
+pub(super) fn with_reader<T: Send>(
+    path: &str,
+    source: &str,
+    read: impl FnOnce(&Reader<'_>) -> Result<T, String> + Send,
+) -> Result<T, String> {
+    let named = |reason: String| format!("runtime source {path}: {reason}");
+    std::thread::scope(|scope| {
+        std::thread::Builder::new()
+            .stack_size(DECODER_STACK)
+            .spawn_scoped(scope, || read_module(source, read))
+            .map_err(|error| named(error.to_string()))?
+            .join()
+            .map_err(|_| named("the decoder panicked".to_owned()))?
+    })
+    .map_err(named)
+}
+
+fn read_module<T>(
+    source: &str,
+    read: impl FnOnce(&Reader<'_>) -> Result<T, String>,
+) -> Result<T, String> {
     let Some(found) = module::locate(source) else {
         return fail("holds no module");
     };
@@ -834,11 +877,10 @@ fn decode_here(source: &str) -> Result<Source, String> {
             found
                 .kind
                 .data_text(&source[found.body.0..found.body.1], spec)
-                .map_err(|error| format!("runtime source {MODULE_PATH}: {}", error.message))?
+                .map_err(|error| error.message)?
         }
     };
-    let json = Json::parse(data.as_bytes())
-        .map_err(|error| format!("runtime source {MODULE_PATH}: {error}"))?;
+    let json = Json::parse(data.as_bytes()).map_err(|error| error.to_string())?;
     let root = Reader::members(&json, "the module")?;
     let Json::Arr(declarations) = Reader::member(root, "declarations", "the module")? else {
         return fail("`declarations` is not a list");
@@ -870,15 +912,7 @@ fn decode_here(source: &str) -> Result<Source, String> {
             }
         }
     }
-    let reader = Reader { definitions };
-    let Some(core) = reader.definitions.get("coreCrate") else {
-        return fail("does not define `coreCrate`");
-    };
-    let core = reader.krate(core)?;
-    if core.profile != Profile::Core {
-        return fail("`coreCrate` is not a core crate");
-    }
-    Ok(Source { core })
+    read(&Reader { definitions })
 }
 
 /// The text of the embedded module.
@@ -887,9 +921,19 @@ fn decode_here(source: &str) -> Result<Source, String> {
 ///
 /// The module is not in the embedded tree, or is not UTF-8.
 pub fn embedded() -> Result<&'static str, String> {
+    embedded_file(MODULE_PATH)
+}
+
+/// The text of the module held at `path` in the embedded tree.
+///
+/// # Errors
+///
+/// The module is not in the embedded tree, or is not UTF-8.
+pub(super) fn embedded_file(path: &str) -> Result<&'static str, String> {
+    let named = |reason: &str| format!("runtime source {path}: {reason}");
     let (_, bytes) = crate::embedded::FILES
         .iter()
-        .find(|(path, _)| *path == MODULE_PATH)
-        .map_or_else(|| fail("is not in the embedded tree"), Ok)?;
-    std::str::from_utf8(bytes).map_err(|_| format!("runtime source {MODULE_PATH}: is not UTF-8"))
+        .find(|(held, _)| *held == path)
+        .ok_or_else(|| named("is not in the embedded tree"))?;
+    std::str::from_utf8(bytes).map_err(|_| named("is not UTF-8"))
 }
