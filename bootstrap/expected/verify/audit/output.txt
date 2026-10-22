@@ -317,6 +317,11 @@
 'LexLeanBoot.RustValidate.instHas' does not depend on any axioms
 'LexLeanBoot.RustValidate.instSame' does not depend on any axioms
 'LexLeanBoot.RustValidate.isNilExpr' does not depend on any axioms
+'LexLeanBoot.RustValidate.isOverflowArgs' does not depend on any axioms
+'LexLeanBoot.RustValidate.isOverflowErr' does not depend on any axioms
+'LexLeanBoot.RustValidate.isOverflowExpr' does not depend on any axioms
+'LexLeanBoot.RustValidate.isOverflowLit' does not depend on any axioms
+'LexLeanBoot.RustValidate.isOverflowTy' does not depend on any axioms
 'LexLeanBoot.RustValidate.isSome' does not depend on any axioms
 'LexLeanBoot.RustValidate.isUncons' does not depend on any axioms
 'LexLeanBoot.RustValidate.itemFallible' does not depend on any axioms
@@ -337,6 +342,9 @@
 'LexLeanBoot.RustValidate.lookupFlag' does not depend on any axioms
 'LexLeanBoot.RustValidate.lookupNat' does not depend on any axioms
 'LexLeanBoot.RustValidate.lookupVariants' does not depend on any axioms
+'LexLeanBoot.RustValidate.machineArity' does not depend on any axioms
+'LexLeanBoot.RustValidate.machineCallC' does not depend on any axioms
+'LexLeanBoot.RustValidate.machineName' does not depend on any axioms
 'LexLeanBoot.RustValidate.minConstruct' depends on axioms: [propext]
 'LexLeanBoot.RustValidate.movedInLoop' depends on axioms: [propext]
 'LexLeanBoot.RustValidate.nameIsFn' does not depend on any axioms
