@@ -7830,6 +7830,20 @@ type is computed by the host: each leg is held to the oracle on the same
 vectors, so the host's composition of the three gives `fallible_functions` on every
 vector, leg by leg.
 
+The four fixpoints of `RustLower` are `iterate_until` calls with a fuel, which
+returns the state it has when the fuel runs out, so each fuel is stated here
+because the source has no place for a comment (the notation has no comments,
+`LLL1002`). Each step of a fixpoint that does not return `none` adds at least
+one member to a set that only grows, and the set is finite, so the number of
+members, plus one for the step that returns `none`, is enough: the dead
+functions of `livenessStep` and the failing functions of `fallibleFunctions`
+are flags over the functions, so `1 + count` of them; the inhabited owners of
+`inhabitation` are over the owners (the ADTs and the function types), so
+`1 + |owners|`; and the closed edges of `closeEdges` are pairs of owners, so
+`1 + |owners|^2`. A fuel too small would stop with a partial state, which the
+differential on the vectors sees as a disagreement with the oracle, and the
+plant "the failures are followed one round" is that defect.
+
 The measured largest part of a certificate is, in bytes: 3,144,673 for
 `siteTrees` (1,055 below three quarters of `max_file_bytes`, 3,145,728; the
 fold of the chain of function bodies into the site recursion bought the
