@@ -364,6 +364,13 @@ and Unreleased holds what has landed since.
   3,145,728; the typing root is unchanged). `BS-07` runs 1,240 vectors under
   `rustc` on every host and 6,000 seeded runs, the evaluator on 272 vectors
   and 150 mutants per root, twenty planted defects. The register is 446 IDs.
+- The last-use moves of the Rust lowering as language-1.2 source, first pass of
+  the function bodies (SPEC.md §17.23, §17.16, `BS-08`, #92; no new diagnostic
+  code, no change to the language-1.2 identity). `applyMoves` of `RustMoves`
+  rewrites the function bodies of a `RustAst` crate as
+  `calculus::rust::moves::apply` does, held to the public oracle to the byte
+  on 352 crates and on seeded mutants of the smaller ones. Its certificate
+  part is 551,083 bytes, 13.1% of `max_file_bytes`. The register is 447 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or

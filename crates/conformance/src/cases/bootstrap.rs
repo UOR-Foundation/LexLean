@@ -2428,6 +2428,7 @@ fn case(id: &str) {
         "BS-05" => rust_validate::case(),
         "BS-06" => rust_print::case(),
         "BS-07" => rust_lower::case(),
+        "BS-08" => rust_moves::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }
