@@ -1937,5 +1937,57 @@ definition{
   executable: true,
   production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
 }
+
+definition{
+  name: typeTree,
+  parameters: [
+    program : Program,
+    expr : Expr,
+    scope : (List (Nat * Ty)),
+    subject : Ty,
+    position : Nat,
+    own : Ty
+  ],
+  result: Ty,
+  body: (match expr
+    | Expr.EValue ty value => (ctor Ty.TPair own (ctor Ty.TNil))
+    | Expr.EVar name => (ctor Ty.TPair own (ctor Ty.TNil))
+    | Expr.ELet name ty bound body => (ctor Ty.TPair own (ctor Ty.TCons (typeTree program bound scope (ctor Ty.TNil) 0 (inferTy program bound scope)) (ctor Ty.TCons (typeTree program body (extendScope name ty scope) (ctor Ty.TNil) 0 (inferTy program body (extendScope name ty scope))) (ctor Ty.TNil))))
+    | Expr.ECond condition thenBranch elseBranch => (ctor Ty.TPair own (ctor Ty.TCons (typeTree program condition scope (ctor Ty.TNil) 0 (inferTy program condition scope)) (ctor Ty.TCons (typeTree program thenBranch scope (ctor Ty.TNil) 0 (inferTy program thenBranch scope)) (ctor Ty.TCons (typeTree program elseBranch scope (ctor Ty.TNil) 0 (inferTy program elseBranch scope)) (ctor Ty.TNil)))))
+    | Expr.EMatch ty scrutinee arms => (let child : Ty := (typeTree program scrutinee scope (ctor Ty.TNil) 0 (inferTy program scrutinee scope)); (ctor Ty.TPair own (ctor Ty.TCons child (ctor Ty.TCons (typeTree program arms scope (tyFirst child) 0 (ctor Ty.TNil)) (ctor Ty.TNil)))))
+    | Expr.EBuild shape ty operands => (ctor Ty.TPair own (ctor Ty.TCons (typeTree program operands scope (ctor Ty.TNil) 0 (inferTy program operands scope)) (ctor Ty.TNil)))
+    | Expr.ECall function operands => (ctor Ty.TPair own (ctor Ty.TCons (typeTree program operands scope (ctor Ty.TNil) 0 (inferTy program operands scope)) (ctor Ty.TNil)))
+    | Expr.EClosure function captures => (ctor Ty.TPair own (ctor Ty.TCons (typeTree program captures scope (ctor Ty.TNil) 0 (inferTy program captures scope)) (ctor Ty.TNil)))
+    | Expr.EApply target operands => (ctor Ty.TPair own (ctor Ty.TCons (typeTree program target scope (ctor Ty.TNil) 0 (inferTy program target scope)) (ctor Ty.TCons (typeTree program operands scope (ctor Ty.TNil) 0 (inferTy program operands scope)) (ctor Ty.TNil))))
+    | Expr.EPrim operation operands => (ctor Ty.TPair own (ctor Ty.TCons (typeTree program operands scope (ctor Ty.TNil) 0 (inferTy program operands scope)) (ctor Ty.TNil)))
+    | Expr.EFirst value => (ctor Ty.TPair own (ctor Ty.TCons (typeTree program value scope (ctor Ty.TNil) 0 (inferTy program value scope)) (ctor Ty.TNil)))
+    | Expr.ESecond value => (ctor Ty.TPair own (ctor Ty.TCons (typeTree program value scope (ctor Ty.TNil) 0 (inferTy program value scope)) (ctor Ty.TNil)))
+    | Expr.EField value index => (ctor Ty.TPair own (ctor Ty.TCons (typeTree program value scope (ctor Ty.TNil) 0 (inferTy program value scope)) (ctor Ty.TNil)))
+    | Expr.ENil => (ctor Ty.TNil)
+    | Expr.ECons head tail => (match position
+      | Nat.zero => (ctor Ty.TPair (ctor Ty.TNil) (ctor Ty.TCons (typeTree program head scope subject 0 (inferTy program head scope)) (ctor Ty.TCons (typeTree program tail scope subject 0 (inferTy program tail scope)) (ctor Ty.TNil))))
+      | Nat.succ previous => (ctor Ty.TPair (ctor Ty.TNil) (ctor Ty.TCons (typeTree program head (bindAll (functionNames program previous) (functionTypesOr program previous) (nil (Nat * Ty))) (ctor Ty.TNil) 0 (inferTy program head (bindAll (functionNames program previous) (functionTypesOr program previous) (nil (Nat * Ty))))) (ctor Ty.TCons (typeTree program tail scope subject (position + 1) (inferTy program tail scope)) (ctor Ty.TNil)))))
+    | Expr.EArm shape binders body => (ctor Ty.TPair (ctor Ty.TNil) (ctor Ty.TCons (typeTree program body (bindAll binders (armFields program shape subject) scope) (ctor Ty.TNil) 0 (inferTy program body (bindAll binders (armFields program shape subject) scope))) (ctor Ty.TNil)))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: expr
+}
+
+definition{
+  name: typeTrees,
+  parameters: [
+    spec : Bytes,
+    adts : Ty,
+    parameters : (List (List Nat)),
+    types : Ty,
+    results : Ty,
+    bodies : Expr
+  ],
+  result: Ty,
+  body: (typeTree (record Program {spec := spec, adts := adts, parameters := parameters, types := types, results := results, bodies := bodies}) bodies (nil (Nat * Ty)) (ctor Ty.TNil) 1 (ctor Ty.TNil)),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
 \end{semanticmodule}
 \end{lexlean}
