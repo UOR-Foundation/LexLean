@@ -1,4 +1,4 @@
-//! The `authoring` suite: AU-01..AU-13, the language-1.2 authoring notation
+//! The `authoring` suite: AU-01..AU-14, the language-1.2 authoring notation
 //! (SPEC.md §17.21).
 //!
 //! The notation is in bijection with the canonical JSON of the closed schema,
@@ -8,8 +8,9 @@
 //! holds for tooling modules (AU-05), that no identity depends on which
 //! form a module is written in (AU-06), that no writer of the repository owns
 //! a product source (AU-07), and that the authoring API is how a program reads
-//! and writes one (AU-08). Every committed module is a case's input, not a
-//! sample of them.
+//! and writes one (AU-08), and that a source's module is the environment the
+//! parser opens, whatever its strings quote (AU-14). Every committed module is
+//! a case's input, not a sample of them.
 
 use std::collections::BTreeSet;
 
@@ -39,6 +40,7 @@ pub fn run(id: &str) {
         "AU-07" => no_other_authoring_path(),
         "AU-08" => authoring_api(),
         "AU-13" => data_form_refused(),
+        "AU-14" => module_is_the_opened_environment(),
         "AU-09" | "AU-10" | "AU-11" | "AU-12" => super::authoring_core::run(id),
         other => panic!("no authoring case is wired for {other}"),
     }
@@ -1435,6 +1437,353 @@ fn authoring_api() {
         &serde_json::json!(3)
     )
     .is_err());
+}
+
+// ---------------------------------------------------------------------------
+// AU-14.
+// ---------------------------------------------------------------------------
+
+/// The module the structural parser opens in `text` (SPEC.md §15.1), read
+/// from the parser and not from [`lexlean::surface::module::locate`]: the
+/// environment, the byte range of its body (its notation, or the JSON between
+/// the braces of its data argument), and whether it is the notation. `Ok(None)`
+/// for a module of none of the three kinds; `Err` for a source the scanner or
+/// the parser refuses, with the code it refuses it with.
+type Opened = Option<(&'static str, (usize, usize), bool)>;
+
+fn opened(path: &str, text: &str) -> Result<Opened, String> {
+    let name = text
+        .strip_prefix("\\begin{lexlean}{")
+        .and_then(|rest| rest.split_once('}'))
+        .map_or("", |(name, _)| name);
+    let atoms = lexlean::source::scan::scan(path, text, u64::MAX)
+        .map_err(|diagnostic| diagnostic.code.as_str().to_owned())?;
+    let module = lexlean::grammar::structural::parse_module(path, &atoms, name, u64::MAX)
+        .map_err(|diagnostic| diagnostic.code.as_str().to_owned())?;
+    let byte = |index: usize| atoms.get(index).map_or(text.len(), |atom| atom.byte_start);
+    let range =
+        |data: &lexlean::grammar::structural::BraceArg| (byte(data.range.0), byte(data.range.1));
+    Ok(if let Some(found) = &module.semantic {
+        Some(("semanticmodule", range(&found.data), found.surface))
+    } else if let Some(found) = &module.tooling {
+        Some(("toolingmodule", range(&found.data), found.surface))
+    } else {
+        module
+            .core
+            .as_ref()
+            .map(|found| ("coremodule", range(&found.data), found.surface))
+    })
+}
+
+/// `locate` finds in `text` exactly the module the parser opens, or no module
+/// where the parser opens none.
+fn assert_located_as_opened(what: &str, text: &str, parsed: Opened) {
+    let found = lexlean::surface::module::locate(text);
+    match (parsed, found) {
+        (None, None) => {}
+        (Some((environment, range, notation)), Some(found)) => {
+            assert_eq!(
+                found.kind.environment, environment,
+                "{what}: located as another kind than the parser opens"
+            );
+            if notation {
+                assert!(found.data.is_none(), "{what}: the notation located as data");
+                // The parser's body begins at its first atom that is not
+                // whitespace; the located one, right after the opening marker.
+                assert!(
+                    found.body.0 <= range.0
+                        && text[found.body.0..range.0].trim().is_empty()
+                        && found.body.1 == range.1,
+                    "{what}: another body than the parser's: {:?} located, {range:?} parsed",
+                    found.body
+                );
+            } else {
+                assert_eq!(
+                    found.data,
+                    Some(range),
+                    "{what}: another data argument than the parser's"
+                );
+            }
+        }
+        (Some((environment, ..)), None) => {
+            panic!("{what}: the parser opens a {environment}, and no module is located")
+        }
+        (None, Some(found)) => panic!(
+            "{what}: located as a {}, and the parser opens no module of the three kinds",
+            found.kind.environment
+        ),
+    }
+}
+
+/// `text` with the body of its module (the notation in `body`) replaced by the
+/// module written as data: what the identity of the embedded tree reads a
+/// source in the notation as (SPEC.md §21.2), built from the parser's range.
+fn as_data_at(text: &str, body: (usize, usize), control: &str, data: &str) -> String {
+    format!(
+        "{}\n{control}{{{data}}}\n{}",
+        &text[..body.0],
+        &text[body.1..]
+    )
+}
+
+/// The source bytes of a notation string that quotes `marker`: an escaped
+/// backslash and the marker's word, the only way the notation writes one.
+fn quoting(markers: &[&str]) -> String {
+    markers
+        .iter()
+        .map(|marker| format!("\\\\{marker}"))
+        .collect()
+}
+
+fn module_is_the_opened_environment() {
+    // Every committed source the parser reads: the module found is the one it
+    // opens. The chapters of `spec/` are semantic modules that quote the other
+    // kinds' markers, so the sweep holds sources that a text search misreads
+    // unless its order happens to save it.
+    let root = repo_root();
+    let (mut read, mut by_kind, mut quoting_another) = (0usize, [0usize; 3], 0usize);
+    for entry in walkdir::WalkDir::new(root.as_std_path())
+        .into_iter()
+        .filter_entry(|entry| {
+            let name = entry.file_name().to_string_lossy();
+            name != "target"
+                && name != ".git"
+                && name != ".lexlean"
+                && !support::holds_cache_tag(entry)
+        })
+        .flatten()
+    {
+        let path = entry.path().to_string_lossy().replace('\\', "/");
+        if !path.ends_with(".lex.tex") {
+            continue;
+        }
+        let bytes = std::fs::read(entry.path()).expect("read");
+        let Ok(normalized) = lexlean::source::normalize::normalize(&path, &bytes, false) else {
+            continue;
+        };
+        let text = normalized.text;
+        let Ok(parsed) = opened(&path, &text) else {
+            continue;
+        };
+        assert_located_as_opened(&path, &text, parsed);
+        read += 1;
+        if let Some((environment, ..)) = parsed {
+            let index = ["semanticmodule", "toolingmodule", "coremodule"]
+                .iter()
+                .position(|kind| *kind == environment)
+                .expect("one of the three");
+            by_kind[index] += 1;
+            if ["semanticmodule", "toolingmodule", "coremodule"]
+                .iter()
+                .filter(|kind| **kind != environment)
+                .any(|kind| text.contains(&format!("\\\\begin{{{kind}}}")))
+            {
+                quoting_another += 1;
+            }
+        }
+    }
+    assert!(
+        read > 500 && by_kind.iter().all(|count| *count > 0) && quoting_another > 0,
+        "{read} sources read, {by_kind:?} semantic, tooling, and core modules, \
+         {quoting_another} quoting another kind's marker: the sweep has shrunk"
+    );
+
+    // A tooling module whose string quotes the semantic markers, with and
+    // without the end marker: it reads, links, formats, and contributes to an
+    // identity as the tooling module it is.
+    let semantic_begin = quoting(&["begin{semanticmodule}"]);
+    let semantic_both = quoting(&["begin{semanticmodule}", "end{semanticmodule}"]);
+    for (what, literal) in [
+        (
+            "a tooling module quoting the semantic begin marker",
+            &semantic_begin,
+        ),
+        (
+            "a tooling module quoting both semantic markers",
+            &semantic_both,
+        ),
+    ] {
+        let project = P::tooling("core");
+        let committed = project.read_raw("src/Main.lex.tex");
+        let planted = committed.replacen(
+            "string{value: \"!\"}",
+            &format!("string{{value: \"{literal}\"}}"),
+            1,
+        );
+        assert_ne!(planted, committed, "{what}: the plant did not apply");
+        let parsed = opened("src/Main.lex.tex", &planted)
+            .unwrap_or_else(|code| panic!("{what}: the parser refuses it with {code}"));
+        assert_located_as_opened(what, &planted, parsed);
+        let (_, body, _) = parsed.expect("a module");
+        let data = lexlean::surface::tooling::parse_module(&planted[body.0..body.1], TOOLING_SPEC)
+            .unwrap_or_else(|error| panic!("{what}: {error}"))
+            .to_canonical_string();
+        let value = lexlean::sdk::read_module(&planted)
+            .unwrap_or_else(|error| panic!("{what}: the SDK does not read it: {error}"));
+        assert_eq!(
+            Json::parse(value.to_string().as_bytes()).expect("canonical JSON"),
+            Json::parse(data.as_bytes()).expect("canonical JSON"),
+            "{what}: the SDK reads another module"
+        );
+        assert!(
+            matches!(
+                lexlean::sdk::module_kind(&planted),
+                Some(lexlean::sdk::ModuleKind::Tooling)
+            ),
+            "{what}: the SDK names another kind"
+        );
+        assert_eq!(
+            lexlean::identity_bytes(
+                "language/lcnf-1.2/tooling/src/Extract.lex.tex",
+                planted.as_bytes()
+            )
+            .as_ref(),
+            as_data_at(&planted, body, "\\toolingdata", &data).as_bytes(),
+            "{what}: the identity of the embedded tree does not read its data form"
+        );
+        let loose = planted.replacen("\n  declarations: [", "\n  declarations:  [", 1);
+        assert_ne!(loose, planted, "{what}: the layout did not change");
+        project.write_raw("src/Main.lex.tex", &loose);
+        let checked = tooling_checked(&project);
+        assert_eq!(
+            lexlean::fmt::canonical_source(&checked.modules["Main"], &checked.closure)
+                .unwrap_or_else(|error| panic!("{what}: fmt: {error:?}")),
+            planted,
+            "{what}: fmt does not restore the canonical notation"
+        );
+    }
+
+    // A core module whose string node quotes the semantic markers, or the
+    // tooling markers: it reads, decodes, links, formats, and contributes to an
+    // identity as the core module it is. The string is the node's value; its
+    // notation writes each backslash escaped.
+    let header = lexlean::sdk::SourceHeader {
+        name: "Main",
+        glossaries: &["lexlean.std.nat@1.2.0"],
+        imports: &[],
+        title: "Natural number addition",
+    };
+    let core_source = |value: &str| {
+        let mut module = super::authoring_core::small();
+        let scalars: Vec<u32> = value.chars().map(u32::from).collect();
+        let nodes = module["nodes"].as_array_mut().expect("nodes");
+        let string_type = nodes.len();
+        nodes.push(serde_json::json!({"k": "c", "n": "String", "u": []}));
+        nodes.push(serde_json::json!({"k": "t", "v": scalars}));
+        let mut declaration = module["declarations"][0].clone();
+        declaration["name"] = serde_json::json!("Lib.quote");
+        declaration["type"] = serde_json::json!(string_type);
+        declaration["value"] = serde_json::json!(string_type + 1);
+        module["declarations"]
+            .as_array_mut()
+            .expect("declarations")
+            .push(declaration);
+        lexlean::sdk::assemble(&header, lexlean::sdk::ModuleKind::Core, &module)
+            .expect("a core source")
+    };
+    for (what, value) in [
+        (
+            "a core module quoting the semantic begin marker",
+            "\\begin{semanticmodule}",
+        ),
+        (
+            "a core module quoting both semantic markers",
+            "\\begin{semanticmodule}\\end{semanticmodule}",
+        ),
+        (
+            "a core module quoting both tooling markers",
+            "\\begin{toolingmodule}\\end{toolingmodule}",
+        ),
+    ] {
+        let planted = core_source(value);
+        assert!(
+            planted.contains(&format!("\\\\{}", &value[1..])),
+            "{what}: the notation does not quote the marker"
+        );
+        let parsed = opened("src/Main.lex.tex", &planted)
+            .unwrap_or_else(|code| panic!("{what}: the parser refuses it with {code}"));
+        assert_located_as_opened(what, &planted, parsed);
+        let (_, body, _) = parsed.expect("a module");
+        let data = lexlean::surface::module::CORE
+            .data_text(&planted[body.0..body.1], CORE_SPEC)
+            .unwrap_or_else(|error| panic!("{what}: {error}"));
+        let value = lexlean::sdk::read_module(&planted)
+            .unwrap_or_else(|error| panic!("{what}: the SDK does not read it: {error}"));
+        assert_eq!(
+            Json::parse(value.to_string().as_bytes()).expect("canonical JSON"),
+            Json::parse(data.as_bytes()).expect("canonical JSON"),
+            "{what}: the SDK reads another module"
+        );
+        assert!(
+            matches!(
+                lexlean::sdk::module_kind(&planted),
+                Some(lexlean::sdk::ModuleKind::Core)
+            ),
+            "{what}: the SDK names another kind"
+        );
+        assert_eq!(
+            lexlean::identity_bytes("compiler/src/Quoted.lex.tex", planted.as_bytes()).as_ref(),
+            as_data_at(&planted, body, "\\coredata", &data).as_bytes(),
+            "{what}: the identity of the embedded tree does not read its data form"
+        );
+        assert_eq!(
+            lexlean::ir::core::CoreModule::from_source(&planted, lexlean::LANGUAGE_1_2)
+                .unwrap_or_else(|error| panic!("{what}: the core decoder refuses it: {error}")),
+            lexlean::ir::core::CoreModule::from_notation(
+                &planted[body.0..body.1],
+                lexlean::LANGUAGE_1_2
+            )
+            .expect("the notation decodes"),
+            "{what}: the core decoder reads another module"
+        );
+        let project = P::language_1_2_example();
+        project.write_raw("src/Main.lex.tex", &planted);
+        project.check_ok();
+        let loose = planted.replace("\n\n", "\n\n\n");
+        assert_ne!(loose, planted, "{what}: the layout did not change");
+        project.write_raw("src/Main.lex.tex", &loose);
+        let format = |check_only: bool| {
+            project.engine().format(FormatRequest {
+                selection: Selection::All,
+                check_only,
+            })
+        };
+        support::expect_code(
+            &format(true)
+                .err()
+                .unwrap_or_else(|| panic!("{what}: fmt --check accepts another layout")),
+            "LLL1003",
+        );
+        format(false).unwrap_or_else(|error| panic!("{what}: fmt: {error}"));
+        assert_eq!(
+            project.read_raw("src/Main.lex.tex"),
+            planted,
+            "{what}: fmt does not restore the canonical notation"
+        );
+    }
+
+    // An end marker the body does not escape closes the environment there,
+    // for the parser and for `locate` alike: the source is refused with a
+    // registered code, no module is found, and nothing panics.
+    let escaped = core_source("\\end{semanticmodule}");
+    let unescaped = escaped.replacen("\\\\end{semanticmodule}", "\\end{semanticmodule}", 1);
+    assert_ne!(unescaped, escaped, "the plant did not apply");
+    assert_eq!(
+        opened("src/Main.lex.tex", &unescaped),
+        Err("LLP2003".to_owned()),
+        "the parser does not refuse an unescaped end marker with LLP2003"
+    );
+    assert!(
+        lexlean::surface::module::locate(&unescaped).is_none(),
+        "a module is located whose environment an unescaped end marker closes"
+    );
+    assert!(
+        lexlean::sdk::read_module(&unescaped).is_err(),
+        "the SDK reads a module whose environment an unescaped end marker closes"
+    );
+    let project = P::language_1_2_example();
+    project.write_raw("src/Main.lex.tex", &unescaped);
+    project.check_fails_with("LLP2003");
 }
 
 /// Whether every `\useglossary` line of a source precedes its first
