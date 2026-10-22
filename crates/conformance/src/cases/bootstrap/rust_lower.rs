@@ -37,6 +37,10 @@ const ROOTS: [(&str, &[&str]); 2] = [
     ),
 ];
 
+/// Three quarters of `max_file_bytes` (4,194,304), the most a part of a
+/// certificate of these roots may be.
+const CERTIFICATE_BUDGET: u64 = 3_145_728;
+
 /// The module of the typing root, which is `CalculusCheck`'s own.
 const TYPING: &str = "LexLeanBoot.CalculusCheck";
 
@@ -865,6 +869,32 @@ pub(super) fn case() {
     }
     let exported = harness::exported("bootstrap");
     let bundle = exported.bundle();
+    // The shape of the roots is decided by the measured size of their
+    // certificates, not by the cap: a part of a certificate beyond three
+    // quarters of `max_file_bytes` leaves the next slice no room.
+    for exported_root in &exported.output.result.roots {
+        if !exported_root.root.starts_with(&format!("{MODULE}."))
+            && exported_root.root != format!("{TYPING}.siteTrees")
+        {
+            continue;
+        }
+        let largest = exported_root
+            .outputs
+            .iter()
+            .flat_map(|output| &output.certification.certificates)
+            .map(|certificate| certificate.file.byte_length)
+            .max()
+            .expect("a certificate");
+        eprintln!(
+            "BS-07: {}: largest certificate part {largest} bytes",
+            exported_root.root
+        );
+        assert!(
+            largest <= CERTIFICATE_BUDGET,
+            "{}: a certificate part of {largest} bytes is beyond {CERTIFICATE_BUDGET}, three quarters of max_file_bytes",
+            exported_root.root
+        );
+    }
     let packages = harness::tree(&bundle.join("packages"));
     let committed_packages = harness::tree(&harness::fixture_dir("bootstrap").join("packages"));
     assert_eq!(
