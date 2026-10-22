@@ -1,34 +1,110 @@
 #![forbid(unsafe_code)]
 use core::cmp::Ordering;
+
 use core::sync::atomic::{AtomicU64, Ordering as Memory};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Overflow;
+
 pub type R<T> = Result<T, Overflow>;
 
 static WORK: AtomicU64 = AtomicU64::new(0);
+
 pub fn tick(units: u64) { WORK.fetch_add(units, Memory::Relaxed); }
+
 pub fn work() -> u64 { WORK.load(Memory::Relaxed) }
 
-
-pub trait Same { fn same(&self, other: &Self) -> bool; }
-pub trait Key { fn key(&self, other: &Self) -> Ordering; }
-macro_rules! scalar {
-    ($($t:ty),*) => { $(
-        impl Same for $t { fn same(&self, other: &Self) -> bool { self == other } }
-        impl Key for $t { fn key(&self, other: &Self) -> Ordering { self.cmp(other) } }
-    )* };
+pub trait Same {
+    fn same(&self, other: &Self) -> bool;
 }
-scalar!(bool, u8, u16, u32, u64, i8, i16, i32, i64);
-impl Same for Ordering { fn same(&self, other: &Self) -> bool { self == other } }
+
+pub trait Key {
+    fn key(&self, other: &Self) -> Ordering;
+}
+
+impl Same for bool {
+    fn same(&self, other: &Self) -> bool { self == other }
+}
+
+impl Key for bool {
+    fn key(&self, other: &Self) -> Ordering { self.cmp(other) }
+}
+
+impl Same for u8 {
+    fn same(&self, other: &Self) -> bool { self == other }
+}
+
+impl Key for u8 {
+    fn key(&self, other: &Self) -> Ordering { self.cmp(other) }
+}
+
+impl Same for u16 {
+    fn same(&self, other: &Self) -> bool { self == other }
+}
+
+impl Key for u16 {
+    fn key(&self, other: &Self) -> Ordering { self.cmp(other) }
+}
+
+impl Same for u32 {
+    fn same(&self, other: &Self) -> bool { self == other }
+}
+
+impl Key for u32 {
+    fn key(&self, other: &Self) -> Ordering { self.cmp(other) }
+}
+
+impl Same for u64 {
+    fn same(&self, other: &Self) -> bool { self == other }
+}
+
+impl Key for u64 {
+    fn key(&self, other: &Self) -> Ordering { self.cmp(other) }
+}
+
+impl Same for i8 {
+    fn same(&self, other: &Self) -> bool { self == other }
+}
+
+impl Key for i8 {
+    fn key(&self, other: &Self) -> Ordering { self.cmp(other) }
+}
+
+impl Same for i16 {
+    fn same(&self, other: &Self) -> bool { self == other }
+}
+
+impl Key for i16 {
+    fn key(&self, other: &Self) -> Ordering { self.cmp(other) }
+}
+
+impl Same for i32 {
+    fn same(&self, other: &Self) -> bool { self == other }
+}
+
+impl Key for i32 {
+    fn key(&self, other: &Self) -> Ordering { self.cmp(other) }
+}
+
+impl Same for i64 {
+    fn same(&self, other: &Self) -> bool { self == other }
+}
+
+impl Key for i64 {
+    fn key(&self, other: &Self) -> Ordering { self.cmp(other) }
+}
+
+impl Same for Ordering {
+    fn same(&self, other: &Self) -> bool { self == other }
+}
+
 impl<A: Key, B: Key> Key for (A, B) {
-    fn key(&self, other: &Self) -> Ordering {
-        match self.0.key(&other.0) { Ordering::Equal => self.1.key(&other.1), decided => decided }
-    }
+    fn key(&self, other: &Self) -> Ordering { match self.0.key(&other.0) { Ordering::Equal => self.1.key(&other.1), decided => decided, } }
 }
-pub fn equal<T: Same>(a: T, b: T) -> bool { a.same(&b) }
-pub fn compare<T: Key>(a: T, b: T) -> Ordering { a.key(&b) }
 
+pub fn equal<T: Same>(a: T, b: T) -> bool { a.same(&b) }
+
+pub fn compare<T: Key>(a: T, b: T) -> Ordering { a.key(&b) }
 
 pub fn nat_add(p0: u64, p1: u64) -> R<u64> {
     match u64::checked_add(p0, p1) {
