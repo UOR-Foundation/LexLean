@@ -351,7 +351,8 @@ and Unreleased holds what has landed since.
   and on the normative host the evaluator on 272 of them and 150 seeded
   mutants, 4,500 more runs under `rustc`, thirteen planted defects, and the
   certified packages against the committed ones. The oracle exposes
-  `dead_functions` and `site_trees` beside `fallible_functions`. The register
+  `calculus::sites::trees`; the dead functions are read from the crate
+  `rust::lower` renders (an empty match on the uninhabited parameter). The register
   is 446 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every

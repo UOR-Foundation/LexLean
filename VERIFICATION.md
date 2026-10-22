@@ -9817,9 +9817,11 @@ declaration of an axiom set is found by reading the construct, not by running.
 
 `BS-07` holds the three roots of the failure typing of the lowering to the
 oracle: `siteTrees` of `LexLeanBoot.CalculusCheck` (the tree of typing sites,
-`calculus::rust::site_trees`), and `deadFunctions` and `fallibleFunctions` of
-`LexLeanBoot.RustLower` (`bootstrap/src/RustLower.lex.tex`,
-`calculus::rust::{dead_functions, fallible_functions}`). The case runs 309
+`calculus::sites::trees`), and `deadFunctions` and `fallibleFunctions` of
+`LexLeanBoot.RustLower` (`bootstrap/src/RustLower.lex.tex`; the dead functions
+are the functions the crate of `rust::lower` renders as an empty match, and the
+failures are `calculus::rust::fallible_functions`). No file of the renderer
+(`RENDERER_FILES`) is changed, so the renderer's digest does not move. The case runs 309
 vectors per root (the 22 programs of the rules of the analysis, the programs of
 the corpora of `BS-04` that the checker accepts, and the committed target
 programs) under the pinned rustc on every host (38 harness binaries built in

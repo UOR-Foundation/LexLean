@@ -11,10 +11,12 @@
 //! `check::check`, and the host composes the roots, so a program the oracle
 //! refuses is not a vector of these roots. The consumers take the tree the
 //! typing root returns, never a type the host computed: each leg is held to
-//! the oracle on the same vectors, so the chain equals `fallible_functions`
-//! end to end.
+//! the oracle on the same vectors, so the host's composition of the three
+//! gives `fallible_functions` on every vector, leg by leg.
 
-use lexlean::calculus::rust::{self, sites::Site};
+use lexlean::calculus::rust::ast::{Expr as RustExpr, Ident, ItemDef};
+use lexlean::calculus::rust::{self, Profile};
+use lexlean::calculus::sites::{self, Site};
 use lexlean::calculus::{Arm, Expr, Function, Prim, Program, Shape, Ty, Value};
 use serde_json::Value as Json;
 
@@ -75,10 +77,30 @@ fn flags(flags: Vec<bool>) -> Value {
     list(flags.into_iter().map(boolean).collect())
 }
 
+/// The dead functions as the lowering shows them: a function with an argument
+/// no value inhabits renders as the empty match on that argument, and no live
+/// body is one. The oracle needs no entry of its own for them.
+fn dead_flags(program: &Program) -> Option<Vec<bool>> {
+    let krate = rust::lower(program, Profile::Std).ok()?;
+    let mut dead = vec![false; program.functions.len()];
+    for item in &krate.items {
+        if let ItemDef::Function {
+            name: Ident::Function(at),
+            body,
+            ..
+        } = item
+        {
+            *dead.get_mut(usize::try_from(*at).ok()?)? = body.lets.is_empty()
+                && matches!(&body.tail, RustExpr::Match { arms, .. } if arms.is_empty());
+        }
+    }
+    Some(dead)
+}
+
 fn run(program: &Program) -> Option<Legs> {
     let base = program_arguments(program);
-    let tree = enc_site(&rust::site_trees(program).ok()?);
-    let dead = rust::dead_functions(program).ok()?;
+    let tree = enc_site(&sites::trees(program).ok()?);
+    let dead = dead_flags(program)?;
     let fallible = rust::fallible_functions(program).ok()?;
     let with_tree: Vec<Value> = base.iter().cloned().chain([tree.clone()]).collect();
     let with_dead: Vec<Value> = with_tree
@@ -347,10 +369,7 @@ fn analysis() -> Vec<Program> {
     for declared in [list_like, only_self, paired, hollow, through_result] {
         for argument in 0..declared.len() as u64 {
             out.push(program_of(
-                declared
-                    .iter()
-                    .map(|constructors| constructors.clone())
-                    .collect::<Vec<_>>(),
+                declared.clone(),
                 vec![
                     function(vec![adt(argument)], fun.clone(), closure(1, Vec::new())),
                     function(vec![Ty::Nat], Ty::Nat, add(var(0), var(0))),
@@ -514,7 +533,7 @@ fn seeded_mutants(
 }
 
 /// One leg of each vector: the runs of a root.
-fn runs(vectors: &[&Vector], leg: fn(&Legs) -> &Run) -> Vec<Run> {
+fn runs(vectors: &[&Vector], leg: Leg) -> Vec<Run> {
     vectors
         .iter()
         .map(|vector| leg(&vector.legs).clone())
@@ -535,6 +554,12 @@ fn fallible_leg(legs: &Legs) -> &Run {
 
 // The counts SPEC.md §17.23, the register statement of BS-07, its scenario,
 // and VERIFICATION.md state: the case fails when the tree no longer gives them.
+/// The programs of the rules of the analysis, and the vectors the corpora make
+/// of them and of the committed programs, as the statement of the register row
+/// and SPEC.md §17.23 count them.
+const RULE_PROGRAMS: usize = 22;
+const VECTORS: usize = 309;
+const VECTORS_WITHIN: usize = 272;
 const LITERALS: usize = 200;
 const PRIM_ROUNDS: usize = 3;
 /// The programs the evaluator is given in full: those of at most this many nodes.
@@ -543,6 +568,9 @@ const EVALUATOR_NODES: usize = 300;
 const BASE_NODES: usize = 150;
 const EVALUATOR_MUTANTS: usize = 150;
 const RUSTC_MUTANTS: usize = 1_500;
+
+/// The part of a vector a root is run on.
+type Leg = fn(&Legs) -> &Run;
 
 /// A defect planted in a module's source, the root whose differential must
 /// catch it, and the leg of the vectors it is caught on.
@@ -553,7 +581,7 @@ struct Planted {
     replacement: &'static str,
     module: &'static str,
     root: &'static str,
-    leg: fn(&Legs) -> &Run,
+    leg: Leg,
 }
 
 const PLANTS: [Planted; 13] = [
@@ -676,19 +704,55 @@ const PLANTS: [Planted; 13] = [
     },
 ];
 
-fn eligibility(project: &support::P) {
-    let built = project.build_ok();
-    let build_id = built.build_id.expect("built");
-    let report: Json = serde_json::from_slice(
+/// The row of a root in the eligibility report of its module: eligible for
+/// `rust-std`, with its declared effects exactly the effects it realizes.
+fn assert_eligible(row: &Json, root: &str, effects: &[&str]) {
+    let declared: Vec<&str> = row["declared_effects"]
+        .as_array()
+        .expect("declared effects")
+        .iter()
+        .map(|effect| effect.as_str().expect("an effect"))
+        .collect();
+    assert_eq!(declared, effects, "{root}: the declared effects");
+    let targets = row["targets"].as_array().expect("targets");
+    assert_eq!(targets.len(), 1, "{root}: one target");
+    let target = &targets[0];
+    assert_eq!(target["target"], "rust-std", "{root}: the target");
+    assert_eq!(target["status"], "eligible", "{root}: eligible");
+    let realized: Vec<&str> = target["effects"]
+        .as_array()
+        .expect("effects")
+        .iter()
+        .map(|effect| effect["effect"].as_str().expect("an effect"))
+        .collect();
+    assert_eq!(
+        realized, effects,
+        "{root}: the declaration admits exactly the realized effects"
+    );
+}
+
+fn eligibility_report(
+    project: &support::P,
+    build_id: &lexlean::Sha256Digest,
+    module: &str,
+) -> Json {
+    let file = module.replace('.', "/");
+    serde_json::from_slice(
         &std::fs::read(
             project
-                .build_dir(&build_id)
-                .join("production/LexLeanBoot/RustLower.eligibility.json")
+                .build_dir(build_id)
+                .join(format!("production/{file}.eligibility.json"))
                 .as_std_path(),
         )
         .expect("the eligibility report"),
     )
-    .expect("the report is JSON");
+    .expect("the report is JSON")
+}
+
+fn eligibility(project: &support::P) {
+    let built = project.build_ok();
+    let build_id = built.build_id.expect("built");
+    let report = eligibility_report(project, &build_id, MODULE);
     let reported = report["roots"].as_array().expect("roots");
     assert_eq!(
         reported
@@ -702,29 +766,18 @@ fn eligibility(project: &support::P) {
         "the roots are the module's production roots, in order"
     );
     for (row, (root, effects)) in reported.iter().zip(ROOTS) {
-        let declared: Vec<&str> = row["declared_effects"]
-            .as_array()
-            .expect("declared effects")
-            .iter()
-            .map(|effect| effect.as_str().expect("an effect"))
-            .collect();
-        assert_eq!(declared, effects, "{root}: the declared effects");
-        let targets = row["targets"].as_array().expect("targets");
-        assert_eq!(targets.len(), 1, "{root}: one target");
-        let target = &targets[0];
-        assert_eq!(target["target"], "rust-std", "{root}: the target");
-        assert_eq!(target["status"], "eligible", "{root}: eligible");
-        let realized: Vec<&str> = target["effects"]
-            .as_array()
-            .expect("effects")
-            .iter()
-            .map(|effect| effect["effect"].as_str().expect("an effect"))
-            .collect();
-        assert_eq!(
-            realized, effects,
-            "{root}: the declaration admits exactly the realized effects"
-        );
+        assert_eligible(row, root, effects);
     }
+    // The typing root is a root of `CalculusCheck`, whose report `BS-04`
+    // checks for the others: this row is the one this case composes.
+    let typing = eligibility_report(project, &build_id, TYPING);
+    let row = typing["roots"]
+        .as_array()
+        .expect("roots")
+        .iter()
+        .find(|row| row["root"] == format!("{TYPING}.siteTrees"))
+        .expect("siteTrees is a production root of CalculusCheck");
+    assert_eligible(row, "siteTrees", &["allocation", "overflow", "recursion"]);
 }
 
 pub(super) fn case() {
@@ -750,7 +803,7 @@ pub(super) fn case() {
     assert!(
         rules
             .iter()
-            .any(|program| rust::dead_functions(program).is_ok_and(|dead| dead.contains(&true))),
+            .any(|program| dead_flags(program).is_some_and(|dead| dead.contains(&true))),
         "some rule program has a dead function"
     );
     let all = vectors(&sources);
@@ -762,6 +815,23 @@ pub(super) fn case() {
     let evaluator_mutants = seeded_mutants(&sources, &mut seeded, EVALUATOR_MUTANTS, BASE_NODES);
     let mut large = Seeded(0x00B5_0207);
     let rustc_mutants = seeded_mutants(&sources, &mut large, RUSTC_MUTANTS, BASE_NODES);
+    assert_eq!(
+        (
+            rules.len(),
+            all.len(),
+            evaluator.len(),
+            evaluator_mutants.len(),
+            rustc_mutants.len()
+        ),
+        (
+            RULE_PROGRAMS,
+            VECTORS,
+            VECTORS_WITHIN,
+            EVALUATOR_MUTANTS,
+            RUSTC_MUTANTS
+        ),
+        "the programs of the rules, the vectors, those the evaluator is given, and the mutants"
+    );
     eprintln!(
         "BS-07: {} vectors ({} within {EVALUATOR_NODES} nodes), {} + {} mutants ({:?})",
         all.len(),
@@ -793,9 +863,9 @@ pub(super) fn case() {
     let mutated: Vec<&Vector> = evaluator_mutants.iter().collect();
     // The evaluator on the vectors and on the seeded mutants, for each root:
     // `detection` is what the planted defects are caught on.
-    let mut detection: Vec<(fn(&Legs) -> &Run, Vec<Run>)> = Vec::new();
+    let mut detection: Vec<(Leg, Vec<Run>)> = Vec::new();
     for (name, low, leg) in [
-        ("siteTrees", &sites, sites_leg as fn(&Legs) -> &Run),
+        ("siteTrees", &sites, sites_leg as Leg),
         ("deadFunctions", &dead, dead_leg),
         ("fallibleFunctions", &fallible, fallible_leg),
     ] {

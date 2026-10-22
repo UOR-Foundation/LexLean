@@ -3,8 +3,8 @@
 //! The tree has the shape of the program's own chains, so a consumer that
 //! walks the program walks the tree beside it (`LexLeanBoot.RustLower`).
 
-use super::super::check::Checker;
-use super::super::{Expr, Function, Program, Ty};
+use super::check::Checker;
+use super::{Expr, Function, Program, Ty};
 
 /// One node of the tree. A node without children is a leaf; `own` is the
 /// type a match or an application reads at that node.
@@ -122,8 +122,12 @@ fn scope_of(function: &Function) -> Vec<(u64, Ty)> {
 
 /// The tree of every function body of a valid program, chained as the bodies
 /// are.
-pub(super) fn trees(program: &Program) -> Result<Site, String> {
-    super::super::check::check(program)?;
+///
+/// # Errors
+///
+/// Returns the reason the program is invalid.
+pub fn trees(program: &Program) -> Result<Site, String> {
+    super::check::check(program)?;
     let checker = Checker { program };
     let mut items = Vec::new();
     for function in &program.functions {
