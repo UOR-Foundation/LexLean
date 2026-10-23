@@ -16952,3 +16952,61 @@ source it is built from (the maintainer's round on #288): before, it compared
 the two staged files with each other, and `release-artifacts` writes both from
 one `--version` run, so a compiler with a wrong ID staged an agreeing pair that
 nothing refused. The two ID plants above show the comparison is not vacuous.
+
+## `simplify` discharges a conditional rule from a named hypothesis (`PF-25`, #291)
+
+A language-1.2 `simplify` may name the leading premises of its goal
+(`hypotheses`). It introduces them and puts them first in its `simp only` set,
+so that a prior theorem whose rewrite holds under a condition rewrites where a
+named hypothesis discharges the condition. The evidence is a module in the
+shape of UOR-Foundation/MCP#24's UTF-8 lead-byte classes (Table 3-7, the
+three-byte row of E1..EC), held by `conformance_pf_25` as `LEAD_BYTE_MODULE`:
+
+- `scanThree b1 b2 b3`, the scan of a three-byte sequence (0, or the position
+  of the first byte refused);
+- `lead_e1_ec_step`: `leadE1ToEC b1 = true → scanThree b1 b2 b3 = <the row's
+  nested conditional>`, by `linear_arithmetic`, axioms `[Quot.sound, propext]`;
+- `three_byte_zero_iff`: for all bounds, the conditional is 0 exactly when
+  both range flags hold, by `linear_arithmetic`, axioms
+  `[Classical.choice, Quot.sound, propext]`;
+- `three_byte_complete_zero_iff`: `leadE1ToEC b1 = true → (scanThree b1 b2 b3
+  = 0 ↔ both flags hold)`, by
+  `simplify{definitions: [lead_e1_ec_step, three_byte_zero_iff], hypotheses: [lead]}`,
+  which lowers to `intro lead` and `simp only [lead, lead_e1_ec_step,
+  three_byte_zero_iff]`, axioms `[Classical.choice, Quot.sound, propext]`.
+
+The records below are `lexlean lock` and `lexlean verify` of that module in a
+copy of `examples/language-1.2`, with the compiler of this branch at
+186f0284f, Lean 4.32.1, WSL Ubuntu on x86-64. Each plant was one edit in a
+separate worktree, run, and restored with `git checkout`; the worktree was
+clean after each.
+
+| Case | Edit | Observed |
+| --- | --- | --- |
+| the module as committed | none | `verified 1 module; attestation c288eec4e2dee2af837a728e6a91c57cf7bb9610edee6c0903b067927efe206b`; each theorem at its exact policy |
+| a hypothesis that does not imply the lemma's condition | the composed theorem's premise `leadE1ToEC b1 = true` made `leadED b1 = true` (the ED class) | ``error[LLV7002]: Lean rejected `LanguageTwelve.Main` (error): `simp` made no progress`` at `src/Main.lex.tex:49:1`; Lean neither leaves an open goal nor accepts the statement |
+| a forged policy | the composed theorem's axioms `[Classical.choice, Quot.sound, propext]` made `[Quot.sound, propext]` | ``error[LLV7005]: `LanguageTwelve.Main.three_byte_complete_zero_iff` violates its exact axiom policy: observed [Classical.choice, Quot.sound, propext]`` |
+| plant 1: the hypotheses dropped from the simp set (the `intro` kept), in `backend/semantic.rs` | `let rules = definitions.iter().map(...)` | `lexlean verify`: ``error[LLV7002]: Lean rejected `LanguageTwelve.Main` (error): `simp` made no progress`` at `src/Main.lex.tex:49:1`, so no other rule discharges the step lemma's condition. `conformance_pf_25` fails at its rendering check (`proofs.rs:1299`), printing `simp only [lead_e1_ec_step, three_byte_zero_iff]` |
+| plant 2: the case's ED copy made true (its premise is the step lemma's own class) | in `conformance_pf_25`, `leadED` made `leadE1ToEC` | the case fails: `verify fails` (`support.rs:818`), the copy now verifies |
+| plant 3: the case's forged policy made the observed one | in `conformance_pf_25`, `[Quot.sound, propext]` made `[Classical.choice, Quot.sound, propext]` | the case fails: `verify fails` (`support.rs:818`), the copy now verifies |
+| the skeleton, before the implementation (78a732a95) | none | `conformance_pf_25` fails: ``phase link: invalid semantic-module JSON: unknown field `hypotheses`, expected `definitions` `` (`LLT4001`) |
+
+Further, in `conformance_pf_25`, each of these is refused at linking with
+`LLT4001` before any build output: a hypothesis inside a `constructor` branch
+(`simplify names hypotheses only where its goal is the theorem's statement`),
+two names for a statement with one premise (`simplify names 2 hypothesis(es),
+but its goal has 1 leading premise(s)`), a parameter's name (``simplify
+hypothesis `b2` is already in scope or repeated``), the hypothesis named again
+among the definitions (``simplify names a forward or missing definition
+`lead` ``), and the form in the language-1.1 example (`` `simplify hypotheses`
+is a language-1.2 construct``).
+
+*What the evidence is.* The step lemma's condition is discharged by `simp`
+itself, which simplifies the condition with the same closed set: the named
+hypothesis rewrites `leadE1ToEC b1` to `true`. Plant 1 shows nothing else in
+the set discharges it, and the ED case shows a hypothesis that does not imply
+the condition leaves every rule unused, which Lean reports as an error rather
+than an open goal. The axioms are what Lean observed, not chosen: the step
+lemma's `linear_arithmetic` over the Boolean conditional observes no
+`Classical.choice`, and the zero test's does.
+

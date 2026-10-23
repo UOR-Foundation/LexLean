@@ -1,4 +1,4 @@
-//! The `proofs` suite: PF-01..PF-23.
+//! The `proofs` suite: PF-01..PF-25.
 //!
 //! Positive forms are asserted against the shared Lean-verified proof
 //! corpus (`support::verified_corpus`): every case first asserts the
@@ -35,6 +35,89 @@ fn conditional_lemma_pair(
     format!(
         "\\begin{{lexlean}}{{Main}}\n\\useglossary{{lexlean.std.nat@1.0.0}}\n\\title{{Natural number addition}}\n\n\\begin{{theorem}}{{helper}}\n\\noaxioms\n{first_statement}\n\\begin{{proof}}\nAssume \\(h\\).\nClose the goal by reflexivity.\n\\end{{proof}}\n\\end{{theorem}}\n\n\\begin{{theorem}}{{second}}\n\\noaxioms\n{second_statement}\n\\begin{{proof}}\n{second_proof}\n\\end{{proof}}\n\\end{{theorem}}\n\\end{{lexlean}}\n"
     )
+}
+
+/// A language-1.2 module in the shape of the UTF-8 lead-byte classes of
+/// Table 3-7 that UOR-Foundation/MCP#24 proves: the scan of a three-byte
+/// sequence, a step lemma that holds when the lead byte is in E1..EC, the
+/// zero test of the row's conditional for all bounds, and the composed
+/// statement for a lead byte of that class, whose hypothesis `simplify`
+/// names so that it discharges the step lemma's condition (#291).
+const LEAD_BYTE_MODULE: &str = r"\begin{lexlean}{Main}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: inRange,
+  parameters: [low : Nat, value : Nat, high : Nat],
+  result: Bool,
+  body: ((low <=? value) && (value <=? high))
+}
+
+definition{
+  name: leadE1ToEC,
+  parameters: [lead : Nat],
+  result: Bool,
+  body: (inRange 225 lead 236)
+}
+
+definition{
+  name: leadED,
+  parameters: [lead : Nat],
+  result: Bool,
+  body: (lead =? 237)
+}
+
+definition{
+  name: scanThree,
+  parameters: [b1 : Nat, b2 : Nat, b3 : Nat],
+  result: Nat,
+  body: (if (leadE1ToEC b1) then (if (inRange 128 b2 191) then (if (inRange 128 b3 191) then 0 else 3) else 2) else 1)
+}
+
+theorem{
+  name: lead_e1_ec_step,
+  parameters: [b1 : Nat, b2 : Nat, b3 : Nat],
+  statement: (((leadE1ToEC b1) = true) -> ((scanThree b1 b2 b3) = (if (inRange 128 b2 191) then (if (inRange 128 b3 191) then 0 else 3) else 2))),
+  proof: linear_arithmetic{definitions: [inRange, leadE1ToEC, scanThree]},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: three_byte_zero_iff,
+  parameters: [b2 : Nat, b3 : Nat],
+  statement: (((if (inRange 128 b2 191) then (if (inRange 128 b3 191) then 0 else 3) else 2) = 0) <-> (((inRange 128 b2 191) = true) /\ ((inRange 128 b3 191) = true))),
+  proof: linear_arithmetic{definitions: [inRange]},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: three_byte_complete_zero_iff,
+  parameters: [b1 : Nat, b2 : Nat, b3 : Nat],
+  statement: (((leadE1ToEC b1) = true) -> (((scanThree b1 b2 b3) = 0) <-> (((inRange 128 b2 191) = true) /\ ((inRange 128 b3 191) = true)))),
+  proof: simplify{definitions: [lead_e1_ec_step, three_byte_zero_iff], hypotheses: [lead]},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+\end{semanticmodule}
+\end{lexlean}
+";
+
+/// The composed theorem's proof in [`LEAD_BYTE_MODULE`].
+const COMPOSED_PROOF: &str =
+    "proof: simplify{definitions: [lead_e1_ec_step, three_byte_zero_iff], hypotheses: [lead]},";
+
+/// A copy of the language-1.2 example whose `Main` is [`LEAD_BYTE_MODULE`]
+/// with each `(from, to)` replacement made, each `from` asserted present.
+fn lead_byte_project(edits: &[(&str, &str)]) -> P {
+    let mut module = LEAD_BYTE_MODULE.to_owned();
+    for (from, to) in edits {
+        assert!(module.contains(from), "the lead-byte module lacks {from:?}");
+        module = module.replacen(from, to, 1);
+    }
+    let project = P::language_1_2_example();
+    project.write("src/Main.lex.tex", &module);
+    project.relock();
+    project
 }
 
 /// The rewrite set the committed fold-law registry gives
@@ -1190,6 +1273,106 @@ pub(crate) fn run(id: &str) {
                 assert_eq!(
                     refused_theorems(&wrong, file, &error),
                     ["statistics_one_pass"],
+                    "{error}"
+                );
+            }
+        }
+        "PF-25" => {
+            let accepted = lead_byte_project(&[]);
+            accepted.check_ok();
+            let build = support::rendered(&accepted);
+            let main = support::lean_text(&build, "Main");
+            // The hypothesis is introduced, then named first in the closed
+            // `simp only` set, before the theorems the source names.
+            let script = main
+                .split_once("theorem three_byte_complete_zero_iff")
+                .map(|(_, rest)| rest)
+                .expect("the composed theorem is rendered");
+            let intro = script
+                .find("  intro lead\n")
+                .expect("the hypothesis is introduced");
+            let simp = script[intro..]
+                .lines()
+                .nth(1)
+                .expect("a simp only line after the intro")
+                .trim_start();
+            assert!(
+                simp.starts_with("simp only [lead, ")
+                    && simp.contains("lead_e1_ec_step")
+                    && simp.contains("three_byte_zero_iff")
+                    && simp.ends_with(']'),
+                "{simp}\n{main}"
+            );
+            for (what, edits, message) in [
+                (
+                    "a hypothesis inside a constructor branch",
+                    vec![(
+                        COMPOSED_PROOF,
+                        "proof: constructor{branches: [simplify{definitions: [lead_e1_ec_step], hypotheses: [lead]}]},",
+                    )],
+                    "simplify names hypotheses only where its goal is the theorem's statement",
+                ),
+                (
+                    "more hypotheses than premises",
+                    vec![(
+                        "hypotheses: [lead]},",
+                        "hypotheses: [lead, other]},",
+                    )],
+                    "simplify names 2 hypothesis(es), but its goal has 1 leading premise(s)",
+                ),
+                (
+                    "a parameter as the hypothesis",
+                    vec![("hypotheses: [lead]},", "hypotheses: [b2]},")],
+                    "simplify hypothesis `b2` is already in scope or repeated",
+                ),
+                (
+                    "the hypothesis named among the definitions",
+                    vec![(
+                        COMPOSED_PROOF,
+                        "proof: simplify{definitions: [lead, lead_e1_ec_step, three_byte_zero_iff], hypotheses: [lead]},",
+                    )],
+                    "simplify names a forward or missing definition `lead`",
+                ),
+            ] {
+                let copy = lead_byte_project(&edits);
+                let error = copy.check_fails_with("LLT4001");
+                assert!(
+                    error.to_string().contains(message),
+                    "{what}: expected {message:?}, got {error}"
+                );
+            }
+            semantic_1_1_rejects(
+                r#"{"axioms":[],"kind":"theorem","name":"hypothesis_use","parameters":[],"proof":{"definitions":[{"name":"hypothesis_use"}],"hypotheses":["h"],"kind":"simplify"},"statement":{"conclusion":{"kind":"eq","left":{"kind":"nat","value":"0"},"right":{"kind":"nat","value":"0"}},"kind":"implies","premise":{"kind":"eq","left":{"kind":"nat","value":"0"},"right":{"kind":"nat","value":"0"}}}}"#,
+                "`simplify hypotheses` is a language-1.2 construct",
+            );
+            if support::lean_backed("PF-25") {
+                // The composed statement verifies with the exact policy it
+                // states.
+                let _ = support::verify_ok(&accepted);
+                let _guard = support::env_shared();
+                // A lead byte of the ED class does not imply the step lemma's
+                // condition: no rule rewrites, and Lean rejects the theorem.
+                let other_class = lead_byte_project(&[(
+                    "statement: (((leadE1ToEC b1) = true) -> (((scanThree",
+                    "statement: (((leadED b1) = true) -> (((scanThree",
+                )]);
+                other_class.check_ok();
+                let error = other_class.verify_fails_with("LLV7002");
+                assert_eq!(
+                    refused_theorems(&other_class, "src/Main.lex.tex", &error),
+                    ["three_byte_complete_zero_iff"],
+                    "{error}"
+                );
+                // A policy that leaves out an axiom the proof observes is
+                // refused.
+                let forged = lead_byte_project(&[(
+                    "hypotheses: [lead]},\n  axioms: [Classical.choice, Quot.sound, propext]",
+                    "hypotheses: [lead]},\n  axioms: [Quot.sound, propext]",
+                )]);
+                forged.check_ok();
+                let error = forged.verify_fails_with("LLV7005");
+                assert!(
+                    error.to_string().contains("three_byte_complete_zero_iff"),
                     "{error}"
                 );
             }

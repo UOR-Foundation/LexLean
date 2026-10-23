@@ -702,6 +702,12 @@ pub enum SemanticProof {
     },
     Simplify {
         definitions: Vec<MemberRef>,
+        /// Language 1.2 (§17.12): names for the leading premises of the
+        /// goal, in order. They are introduced and added to the `simp only`
+        /// set before the definitions, so a prior theorem whose rewrite holds
+        /// under a condition rewrites where a named hypothesis discharges it.
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        hypotheses: Vec<String>,
     },
     Constructor {
         branches: Vec<Self>,
@@ -3189,12 +3195,14 @@ fn proof_binders(proof: &SemanticProof, visit: &mut impl FnMut(&str)) {
     match proof {
         SemanticProof::Reflexivity
         | SemanticProof::Decide
-        | SemanticProof::Simplify { .. }
         | SemanticProof::Congruence
         | SemanticProof::BooleanReflection { .. }
         | SemanticProof::LinearArithmetic { .. }
         | SemanticProof::Law { .. }
         | SemanticProof::Apply { .. } => {}
+        SemanticProof::Simplify { hypotheses, .. } => {
+            hypotheses.iter().for_each(|name| visit(name));
+        }
         SemanticProof::Constructor { branches } => {
             for branch in branches {
                 proof_binders(branch, visit);
@@ -8267,6 +8275,7 @@ fn check_proof(
     proof: &SemanticProof,
     locals: &BTreeMap<String, SemanticType>,
     env: &Environment<'_>,
+    goal: Option<&SemanticTerm>,
 ) -> Result<(), String> {
     match proof {
         SemanticProof::Reflexivity | SemanticProof::Decide | SemanticProof::Congruence => Ok(()),
@@ -8412,7 +8421,13 @@ fn check_proof(
             }
             Ok(())
         }
-        SemanticProof::Simplify { definitions } => {
+        SemanticProof::Simplify {
+            definitions,
+            hypotheses,
+        } => {
+            if !hypotheses.is_empty() {
+                check_simplify_hypotheses(hypotheses, goal, locals, env)?;
+            }
             if definitions.is_empty() {
                 return Err("simplify requires at least one named definition".to_owned());
             }
@@ -8448,14 +8463,14 @@ fn check_proof(
                 return Err("constructor proof requires branches".to_owned());
             }
             for branch in branches {
-                check_proof(branch, locals, env)?;
+                check_proof(branch, locals, env, None)?;
             }
             Ok(())
         }
         SemanticProof::Cases {
             scrutinee,
             branches,
-        } => check_elimination_proof(scrutinee, branches, false, locals, env),
+        } => check_elimination_proof(scrutinee, branches, false, locals, env, goal),
         SemanticProof::Induction {
             scrutinee,
             generalizing,
@@ -8476,9 +8491,47 @@ fn check_proof(
                 }
                 previous = Some(name);
             }
-            check_elimination_proof(scrutinee, branches, true, locals, env)
+            check_elimination_proof(scrutinee, branches, true, locals, env, goal)
         }
     }
+}
+
+/// Language 1.2 (§17.12): the hypotheses a `simplify` names are leading
+/// premises of its goal, which is the theorem's statement (the proof itself or
+/// a branch of `cases` or `induction`), at most as many as the goal has leading
+/// implications, each a fresh name used once.
+fn check_simplify_hypotheses(
+    hypotheses: &[String],
+    goal: Option<&SemanticTerm>,
+    locals: &BTreeMap<String, SemanticType>,
+    env: &Environment<'_>,
+) -> Result<(), String> {
+    require_language_1_2(env, "simplify hypotheses")?;
+    let mut goal = goal.ok_or_else(|| {
+        "simplify names hypotheses only where its goal is the theorem's statement: the proof itself or a branch of cases or induction"
+            .to_owned()
+    })?;
+    let mut premises = 0usize;
+    while let SemanticTerm::Implies { conclusion, .. } = goal {
+        premises += 1;
+        goal = conclusion;
+    }
+    if hypotheses.len() > premises {
+        return Err(format!(
+            "simplify names {} hypothesis(es), but its goal has {premises} leading premise(s)",
+            hypotheses.len()
+        ));
+    }
+    let mut seen = BTreeSet::new();
+    for name in hypotheses {
+        check_name(name, "simplify hypothesis")?;
+        if locals.contains_key(name) || !seen.insert(name.as_str()) {
+            return Err(format!(
+                "simplify hypothesis `{name}` is already in scope or repeated"
+            ));
+        }
+    }
+    Ok(())
 }
 
 fn check_reflection_definition(
@@ -8598,6 +8651,7 @@ fn check_elimination_proof(
     induction: bool,
     locals: &BTreeMap<String, SemanticType>,
     env: &Environment<'_>,
+    goal: Option<&SemanticTerm>,
 ) -> Result<(), String> {
     let expected = elimination_binder_types(scrutinee, induction, locals, env)?;
     let mut observed = BTreeMap::new();
@@ -8630,7 +8684,7 @@ fn check_elimination_proof(
                 return Err(format!("shadowed proof binder `{binder}`"));
             }
         }
-        check_proof(&branch.proof, &nested, env)?;
+        check_proof(&branch.proof, &nested, env, goal)?;
     }
     if observed.keys().collect::<Vec<_>>() != expected.keys().collect::<Vec<_>>() {
         return Err(format!(
@@ -9590,7 +9644,7 @@ fn check_theorem(
         &SemanticType::Prop,
         &format!("theorem `{name}` statement"),
     )?;
-    check_proof(proof, &typed_locals(parameters), env)?;
+    check_proof(proof, &typed_locals(parameters), env, Some(statement))?;
     env.theorems.insert(
         name.to_owned(),
         (

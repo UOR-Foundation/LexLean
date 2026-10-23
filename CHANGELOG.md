@@ -18,6 +18,17 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- `simplify` names the hypotheses of its statement (`PF-25`, #291): under
+  language 1.2 a `simplify` proof may carry `hypotheses`, names for the
+  leading premises of its goal. It introduces them and puts them first in its
+  `simp only` set, so a prior theorem whose rewrite holds under a condition
+  rewrites where a named hypothesis discharges that condition, and a theorem
+  whose hypotheses do not discharge it is rejected by Lean (`LLV7002`). The
+  rule set is still exactly what the source names. The semantic-module and
+  snapshot schemas gain the optional member, and `semantic_ir` and
+  `proof_lowering` move to 16 and 4, so the language-1.2 compiler-semantics
+  ID moves and every language-1.2 record is regenerated. Register 446.
+
 - Release identity (`RP-17`, `CL-18` amended, #113). SPEC.md §2.3 names the
   completion release: `0.5.0` when it satisfies the §30.4 criterion, `1.0.0`
   otherwise; §30.1 and §30.3 identify a release by its compiler version and,
@@ -34,6 +45,7 @@ and Unreleased holds what has landed since.
   two staged files with each other. `release.yml` checks each host binary's
   report against the §30.3 fence, its line count included, instead of a count
   written in the workflow. Register 445.
+
 
 - SPEC.md §3 and §4 state production compilation and its guarantee (#112,
   L1.1 of #106). §3 lists the Rust package per production root and target as

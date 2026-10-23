@@ -187,5 +187,13 @@ definition{
   body: (record Rows::IdRow {id := "PF-23", level := "build", suite := "proofs", statement := "The language-1.2 law proof form applies one registered fold law (fusion, the fold of a pair, or the fold of an append) to checked type arguments, arguments, and prior theorems discharging its premises, and is refused in linking for an unregistered law, a wrong argument count or type, or a missing premise, and by Lean for a statement the law does not prove.", sections := "§17.12, §16"}),
   executable: true
 }
+
+definition{
+  name: pf25,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PF-25", level := "build", suite := "proofs", statement := "The language-1.2 simplify proof form may name hypotheses: in order, the leading premises of its goal, which it introduces and adds to its simp only set before the definitions and theorems it names, so that a prior theorem whose rewrite holds under a condition rewrites where a named hypothesis discharges that condition; linking refuses a name where the goal is not the theorem's statement, more names than the goal's leading implications, a name already in scope or repeated, and the form under language 1.1, and Lean rejects a theorem whose hypotheses do not discharge the condition.", sections := "§17.12"}),
+  executable: true
+}
 \end{semanticmodule}
 \end{lexlean}
