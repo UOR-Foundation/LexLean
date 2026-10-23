@@ -2237,6 +2237,39 @@ profile`, the print of which shows `use alloc::cmp::Ordering`); `support_from` r
 lowering emits it, and `correspond` refuses `type:i128` in a lowered crate as a construct with no target-semantics correspondence (`row()`), so a
 program lowered from the calculus cannot name it; only the runtime profile does.
 
+### the constructs of the heap runtime decode, validate, print, and compute (RB-19)
+
+`RuntimeSyntax` grows by the constructs the `rust-std` runtime's functions are written in (`RB-19`, §17.16, #91 stage 4, H1): three item
+kinds (a tuple struct, a record struct, an enum with unit, tuple, and record variants), six types (`u128`/`i128`, `usize`, `char`, `str`, a slice, `&mut`),
+two literals (a character, a string), five patterns (a `mut` binding, a tuple, a tuple struct, a struct, a literal) and a guard on an arm, and twenty-one expressions (`let` with an optional
+type, an assignment, `if`/`else`, `while`, `while let`, `loop`, `for`, `break`, `return`, a tuple, a struct literal, a binary operation over twelve operators, `!`, a cast, an
+index, a range slice, a dereference, `&mut`, a method call with type arguments, a field by name, a block), with the twelve operators and the three kinds of enum variant: 53 constructors in all beside the 36 of `RB-17`. `RtParam` gains `mutable`, `RtSig` gains
+`exclusive` (`&mut self`), and every record of `RuntimeSupport` is regenerated with the two fields.
+
+Command and host: `cargo test -p repo-conformance --test conformance -- conformance_rb_19` (`RB-19`, in the `rest` part of `bdd`), on the 4-core 15 GB Linux x86-64 container with
+rustc 1.97.1 and the pinned Lean 4.32.1: 22.8 s with `conformance_rb_17`, of which the rustc run of the probe and the Lean check of the module are most.
+
+The probe `RuntimeProbe` (`compiler/src/RuntimeProbe.lex.tex`, shipped byte for byte; 41 items, `std` profile) holds one use of each construct. The case
+requires the shipped copy to be the compiler project's module; decodes, validates, and prints it; requires every constructor (by the identifiers of the decoded crate's debug form,
+each with whether an argument list follows, so that the type `Char` and the literal `Char(` are two) and every operator to occur in it; compiles the printed crate under
+the pinned rustc with warnings denied and runs a harness of 31 assertions (several in loops over seeded or gridded values) against independent computations (`sum_to` against `n(n+1)/2`, `ops` against a
+twelve-by-twelve grid computed in the harness, `collatz_steps` on 1, 6, and 27, a `Drop` impl counted through a static, and so on); has the pinned Lean accept the module as a project of `TargetSyntax`, `RuntimeSyntax`, and itself; and compares SPEC.md §17.16's closed
+table of the standard library (51 names: 6 types, 12 qualified calls, `Some`/`Ok`/`Err`, 27 methods, `parse`, and the traits `Clone` and `Drop`) and its list of the names that allocate with the validator's own (`rt_validate::table`,
+`rt_validate::allocating`), and requires the register to state the 51.
+
+Refusals: the validator has 40 rules (the identifier fix below adds five to the 35 of the heap constructs, eleven of which were new): ten are planted on the decoded crate (`break-position`, `assign-immutable`, `assign-place`, `let-position`, `tuple-arity`, `struct-fields`,
+`pattern-duplicate`, `pattern-fields`, `param-duplicate`, `variant-name`), with `variable-scope`, `call-arity`, `call-name`, `method-name`, `method-arity`, and `type-name` on the new constructs. `RB-17` reads the rule names from the validator's
+source and requires its planted rules and these fifteen (the ten and `char-literal`, `derive`, `identifier`, `struct-head` and `type-scope`) to be exactly them, with `hidden-allocation` planted by its own text plant and by the core profile's refusal of the probe, so a rule added without a plant fails whichever case should have planted it. The core profile refuses the probe as `hidden-allocation` (the eleventh new rule) (the `std` uses removed first, which are
+`profile-root` otherwise). The decoder refuses a constructor `RuntimeSyntax` lacks (`RtExpr.whileLoops`, `RtPat.bindMutt`, `RtOp.remm`) and a constructor with another number of arguments (`breakE` with one).
+
+Names, derives, literals and heads (the read of `021879e4d` on #255, items 1 to 6). `RB-19` plants each site of a refusal and not only its rule name, on the decoded crate, and asserts the rule and the site in the message: the name of a unit struct, a tuple struct, a record struct, an enum, an alias, a static, a trait and a function; the generics of a tuple struct, a record struct, an enum, an alias and a function; a record field, a variant, a record variant's field, a trait method, a parameter, a `use` segment and a `use` alias; a binding and a mutable binding; a field by name; a path tail after a struct, an integer, an enum variant and an imported head; the field name of a struct pattern (as identifiers); the derives of a unit struct, a tuple struct, a record struct and an enum; a character literal of two characters, of none, and in a pattern; a struct literal as the condition of an `if`, the condition of a `while`, the value of a `while let`, the iterator of a `for`, the scrutinee of a `match`, at the left of a comparison, and behind a field; a generic parameter in a `let` type, a cast and a type argument; a variant declared twice; a record struct of unequal names and types; a struct literal of a path that is no record; a tuple variant matched with the wrong number of patterns; a struct pattern of unequal names and patterns; and the five sites of `hidden-allocation` in the core profile (a heap type, `String`, a call, a method, a method with type arguments). The printer's parenthesis on `x + y as u8 < z` is planted by compiling the printed comparison and then the same text without the parenthesis, which `rustc` refuses (`generic arguments`). Each of seven sites was also disabled alone in the validator (the cast-type scope, the field-access name, the pattern-field names, the enum derives, the match head, the character-literal length, the tuple-variant arity) and each failed the case; a control edit that changes nothing left it green. `rt_validate.rs`, `rt_decode.rs` and `rt.rs` are not files of the renderer digest, so no record and no identity moves. Command and host: `cargo test -p repo-conformance --test conformance -- conformance_rb_19 conformance_rb_17`, on the 4-core 15 GB container: 11 s after the build.
+
+Plants of the gate, each restored: the printer writing `-` for `Op::Add` (the harness fails, `attempt to subtract with overflow` in `sum_to`); the `break-position` check of the validator disabled
+(the case fails at `a break outside a loop: ()`). `RuntimeSemantics` gains an arm for each new constructor that is `stuck` (a `blockE` evaluates its block), so the meaning of the constructs is declared only when the heap model gives it one.
+
+Re-verification of `SP-25` after the module grew and its records were regenerated: Command and host: `cargo test -p repo-conformance --test conformance -- conformance_sp_25`, on the 4-core 15 GB Linux x86-64 container with the pinned Lean 4.32.1 and rustc 1.97.1, `lean` sampled every three seconds: 1,450.8 s (24 min 13 s wall, 38 min 32 s user CPU, 19 min 16 s system CPU), peak `lean` 5.98 GB. This figure of the head replaces the 1,440 s and 5.90 GB measured on `59b93d3cc` in the record of `SP-25` that precedes this paragraph.
+The 143 theorems verify with the same axioms and no proof changed.
+
 ### each trait method of the support has its meaning checked (SP-25)
 
 `RuntimeSemantics` (`compiler/src/RuntimeSemantics.lex.tex`, 22 KB, generated by the same pass that writes the module, two inductives `RtOutcome` and

@@ -135,7 +135,13 @@ definition{
       | RuntimeSyntax::RtType.pair leftShape rightShape => (match (pairParts value)
         | Option.none => false
         | Option.some parts => ((matchesTy remaining leftShape (first parts)) && (matchesTy remaining rightShape (second parts))))
-      | RuntimeSyntax::RtType.named ignoredName ignoredArguments => false)),
+      | RuntimeSyntax::RtType.named ignoredName ignoredArguments => false
+      | RuntimeSyntax::RtType.wide ignoredSigned => false
+      | RuntimeSyntax::RtType.size => false
+      | RuntimeSyntax::RtType.char => false
+      | RuntimeSyntax::RtType.str => false
+      | RuntimeSyntax::RtType.slice ignoredElement => false
+      | RuntimeSyntax::RtType.refMut innerMut => (matchesTy remaining innerMut value))),
   recursive_argument: fuel
 }
 
@@ -162,7 +168,10 @@ definition{
       | RuntimeSyntax::RtItem.staticItem ignoredStatic ignoredType ignoredInit => (findFree rest wanted)
       | RuntimeSyntax::RtItem.traitItem ignoredTrait ignoredSigs => (findFree rest wanted)
       | RuntimeSyntax::RtItem.implItem generics trait selfType functions => (findFree rest wanted)
-      | RuntimeSyntax::RtItem.fnItem function => (if (prim equal (project (project function signature) name) wanted : Bool) then (ctor Option.some [RuntimeSyntax::RtFn] function) else (findFree rest wanted)))),
+      | RuntimeSyntax::RtItem.fnItem function => (if (prim equal (project (project function signature) name) wanted : Bool) then (ctor Option.some [RuntimeSyntax::RtFn] function) else (findFree rest wanted))
+      | RuntimeSyntax::RtItem.tupleStruct ignoredTupleName ignoredTupleGenerics ignoredTupleDerives ignoredTupleTypes => (findFree rest wanted)
+      | RuntimeSyntax::RtItem.recordStruct ignoredRecordName ignoredRecordGenerics ignoredRecordDerives ignoredRecordFields ignoredRecordTypes => (findFree rest wanted)
+      | RuntimeSyntax::RtItem.enumItem ignoredEnumName ignoredEnumGenerics ignoredEnumDerives ignoredEnumVariants => (findFree rest wanted))),
   recursive_argument: items
 }
 
@@ -186,7 +195,10 @@ definition{
       | RuntimeSyntax::RtItem.implItem generics trait selfType functions => (if (matchesTy fuel selfType value) then (match (findIn functions wanted)
         | Option.none => (findMethod fuel rest wanted value)
         | Option.some found => (ctor Option.some [RuntimeSyntax::RtFn] found)) else (findMethod fuel rest wanted value))
-      | RuntimeSyntax::RtItem.fnItem function => (findMethod fuel rest wanted value))),
+      | RuntimeSyntax::RtItem.fnItem function => (findMethod fuel rest wanted value)
+      | RuntimeSyntax::RtItem.tupleStruct ignoredTupleName ignoredTupleGenerics ignoredTupleDerives ignoredTupleTypes => (findMethod fuel rest wanted value)
+      | RuntimeSyntax::RtItem.recordStruct ignoredRecordName ignoredRecordGenerics ignoredRecordDerives ignoredRecordFields ignoredRecordTypes => (findMethod fuel rest wanted value)
+      | RuntimeSyntax::RtItem.enumItem ignoredEnumName ignoredEnumGenerics ignoredEnumDerives ignoredEnumVariants => (findMethod fuel rest wanted value))),
   recursive_argument: items
 }
 
@@ -261,7 +273,9 @@ definition{
       | RuntimeSyntax::RtExpr.lit written => (match written
         | RuntimeSyntax::RtLit.unit => (ctor RtOutcome.value (ctor TargetSyntax::Value.unit))
         | RuntimeSyntax::RtLit.bool flag => (ctor RtOutcome.value (ctor TargetSyntax::Value.bool flag))
-        | RuntimeSyntax::RtLit.nat number => (ctor RtOutcome.value (ctor TargetSyntax::Value.nat number)))
+        | RuntimeSyntax::RtLit.nat number => (ctor RtOutcome.value (ctor TargetSyntax::Value.nat number))
+        | RuntimeSyntax::RtLit.char ignoredChar => (ctor RtOutcome.stuck)
+        | RuntimeSyntax::RtLit.str text => (ctor RtOutcome.value (ctor TargetSyntax::Value.string text)))
       | RuntimeSyntax::RtExpr.path segments => (match (orderOfPath segments)
         | Option.none => (ctor RtOutcome.stuck)
         | Option.some order => (ctor RtOutcome.value (ctor TargetSyntax::Value.ordering order)))
@@ -301,7 +315,28 @@ definition{
       | RuntimeSyntax::RtExpr.matchOn scrutinee arms => (match (rtEval remaining crate environment scrutinee)
         | RtOutcome.value held => (rtEvalArms remaining crate environment held arms)
         | RtOutcome.stuck => (ctor RtOutcome.stuck)
-        | RtOutcome.exhausted => (ctor RtOutcome.exhausted)))),
+        | RtOutcome.exhausted => (ctor RtOutcome.exhausted))
+      | RuntimeSyntax::RtExpr.letE ignoredLetPattern ignoredLetType ignoredLetValue => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.assign ignoredPlace ignoredAssigned => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.ifElse ignoredCondition ignoredThen ignoredElse => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.whileLoop ignoredWhileCondition ignoredWhileBody => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.whileLet ignoredWhileLetPattern ignoredWhileLetValue ignoredWhileLetBody => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.loopE ignoredLoopBody => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.forIn ignoredForPattern ignoredForIterator ignoredForBody => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.breakE => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.returnE ignoredReturned => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.tuple ignoredElements => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.structLit ignoredStructPath ignoredStructNames ignoredStructValues => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.binary ignoredOperator ignoredLeftOperand ignoredRightOperand => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.notE ignoredNegated => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.cast ignoredCasted ignoredCastType => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.index ignoredIndexed ignoredPosition => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.rangeSlice ignoredSliced ignoredFrom ignoredTo => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.deref ignoredDereferenced => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.borrowMut ignoredMutBorrowed => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.methodOf ignoredTurbofishReceiver ignoredTurbofishName ignoredTurbofishTypes ignoredTurbofishArguments => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.fieldNamed ignoredNamedInner ignoredFieldName => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.blockE inside => (rtEvalBlock remaining crate environment inside))),
   axioms: [Classical.choice, Quot.sound, propext],
   mutual: RtMachine,
   recursive_argument: fuel
@@ -347,9 +382,15 @@ definition{
     | Nat.succ remaining => (match arms
       | List.nil => (ctor RtOutcome.stuck)
       | List.cons arm rest => (match arm
+        | RuntimeSyntax::RtArm.guarded ignoredGuardedPattern ignoredGuard ignoredGuardedBody => (ctor RtOutcome.stuck)
         | RuntimeSyntax::RtArm.mk pattern body => (match pattern
           | RuntimeSyntax::RtPat.wild => (rtEval remaining crate environment body)
           | RuntimeSyntax::RtPat.bind name => (rtEval remaining crate (cons (name, scrutinee) environment) body)
+          | RuntimeSyntax::RtPat.bindMut mutName => (rtEval remaining crate (cons (mutName, scrutinee) environment) body)
+          | RuntimeSyntax::RtPat.tuple ignoredTuplePatterns => (ctor RtOutcome.stuck)
+          | RuntimeSyntax::RtPat.tupleStruct ignoredTupleStructPath ignoredTupleStructPatterns => (ctor RtOutcome.stuck)
+          | RuntimeSyntax::RtPat.structPat ignoredStructPatPath ignoredStructPatNames ignoredStructPatPatterns => (ctor RtOutcome.stuck)
+          | RuntimeSyntax::RtPat.lit ignoredLiteralPattern => (ctor RtOutcome.stuck)
           | RuntimeSyntax::RtPat.path segments => (match (orderOfPath segments)
             | Option.none => (rtEvalArms remaining crate environment scrutinee rest)
             | Option.some wanted => (match scrutinee
