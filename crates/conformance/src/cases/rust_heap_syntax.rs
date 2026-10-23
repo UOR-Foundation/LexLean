@@ -448,131 +448,13 @@ pub(super) fn probe_plants(krate: &Crate) -> Vec<(&'static str, Crate, &'static 
     ]
 }
 
-/// Run the case of `RB-19`.
-pub fn run(id: &str) {
-    assert_eq!(id, "RB-19");
-    let root = repo_root();
-    let read = |path: &str| {
-        std::fs::read_to_string(root.join(path).as_std_path())
-            .unwrap_or_else(|error| panic!("{path}: {error}"))
-    };
-    let module = read(MODULE);
-    let shipped = read(SHIPPED);
-    assert_eq!(module, shipped, "{SHIPPED} differs from {MODULE}");
-
-    let krate = rt_decode::decode_named(&shipped, "probeCrate").expect("the probe decodes");
-    assert_eq!(krate.profile, Profile::Std);
-    assert!(
-        krate.items.len() >= 30,
-        "the probe holds an item of each construct"
-    );
-    rt_validate::validate(&krate).expect("the probe is valid");
-    let text = rt::print(&krate);
-    let ran = compile_and_run(&text).expect("the printed probe computes what the harness states");
-    assert_eq!(ran, "probe");
-
-    // Each construct the module grew by occurs in the probe, so that the
-    // harness's independent computation is evidence for it. The constructors
-    // are named with their enum, as the module spells them: the debug form of
-    // the decoded crate does not tell `RtPat.tuple` from `RtExpr.tuple`.
-    let absent = constructors_absent(&shipped);
-    assert!(absent.is_empty(), "the probe has no {absent:?}");
-    for (constructor, text) in [
-        ("RtPat.lit", shipped.replace("RtPat.lit", "RtPat.wild")),
-        (
-            "RtExpr.tuple",
-            shipped.replace("RtExpr.tuple", "RtExpr.lit"),
-        ),
-        (
-            "RtVariant.tupleV",
-            shipped.replace("RtVariant.tupleV", "RtVariant.unitV"),
-        ),
-        ("RtLit.str", shipped.replace("RtLit.str", "RtLit.nat")),
-    ] {
-        assert_eq!(
-            constructors_absent(&text),
-            vec![constructor.to_owned()],
-            "a probe without `{constructor}` is caught"
-        );
-    }
-    assert!(
-        format!("{krate:?}").contains("guard: Some"),
-        "the probe has no guarded arm"
-    );
-
-    // The closed table of the standard library is the validator's, as SPEC.md
-    // §17.16 lists it, and the register states its size.
-    let spec = read("SPEC.md").replace('\n', " ");
-    let names = |from: &str, to: &str| -> Vec<String> {
-        let start = spec
-            .find(from)
-            .unwrap_or_else(|| panic!("SPEC.md lacks `{from}`"))
-            + from.len();
-        let end = start
-            + spec[start..]
-                .find(to)
-                .unwrap_or_else(|| panic!("SPEC.md lacks `{to}`"));
-        let mut out: Vec<String> = spec[start..end]
-            .split('`')
-            .enumerate()
-            .filter(|(at, _)| at % 2 == 1)
-            .map(|(_, name)| name.to_owned())
-            .collect();
-        out.sort();
-        out
-    };
-    let mut table = rt_validate::table();
-    table.sort();
-    assert_eq!(
-        names(
-            "The closed table of the standard library (51 names): ",
-            ". A call"
-        ),
-        table,
-        "SPEC.md §17.16 lists the validator's table"
-    );
-    assert_eq!(table.len(), 51, "the register states 51 names");
-    let mut allocating = rt_validate::allocating();
-    allocating.sort();
-    assert_eq!(
-        names(
-            "The names of the table that allocate (",
-            ") are refused in the core profile"
-        ),
-        allocating,
-        "SPEC.md §17.16 lists the names that allocate"
-    );
-    let register = read("model/ids.toml");
-    assert!(
-        register.contains("(51 names, which SPEC.md §17.16 lists"),
-        "the register states the size"
-    );
-
-    // The core profile refuses every allocating name of the table as the
-    // hidden allocation the validator refuses in every `rust-core` crate.
-    let mut core = krate.clone();
-    core.profile = Profile::Core;
-    core.items
-        .retain(|item| !matches!(item, Item::Use(path, _) if path[0] == "std"));
-    let error = rt_validate::validate(&core).expect_err("the probe allocates");
-    assert!(error.contains("hidden-allocation"), "{error}");
-
-    // Each refusal of the validator, planted on the decoded crate and
-    // asserted by the rule it names.
-    let mut planted_rules: std::collections::BTreeSet<&str> = std::collections::BTreeSet::new();
-    for (what, planted, rule) in probe_plants(&krate) {
-        let error = rt_validate::validate(&planted).expect_err(what);
-        assert!(
-            error.contains(&format!("runtime support: {rule}")),
-            "{what}: {error}"
-        );
-        planted_rules.insert(rule);
-    }
-
-    // The sites of the rules, each planted alone: a rule is refused where the
-    // construct is, not only by name. A name the printer writes is an
-    // identifier, a derive is in the closed table, a character literal is one
-    // scalar value, and the head of a condition holds no struct literal.
+/// The probe, and small crates, with each site of a refusal planted alone: the
+/// description, the crate, the rule that refuses it, and the text of the
+/// refusal that names the site. The names a crate holds are identifiers, its
+/// derives come from the closed table, a character literal is one scalar
+/// value, and the head of a condition holds no struct literal.
+pub(super) fn site_plants(krate: &Crate) -> Vec<(&'static str, Crate, &'static str, &'static str)> {
+    let unit = Expr::Lit(Lit::Unit);
     let unit_item = |item: Item| tiny(vec![item]);
     let generic = |name: &str| Generic {
         name: name.to_owned(),
@@ -605,7 +487,7 @@ pub fn run(id: &str) {
             vec![statement],
         )])
     };
-    let sites: Vec<(&str, Crate, &str, &str)> = vec![
+    let mut sites: Vec<(&'static str, Crate, &'static str, &'static str)> = vec![
         // identifiers, one site each
         (
             "a unit struct name",
@@ -1134,14 +1016,138 @@ pub fn run(id: &str) {
             "`collect`",
         ),
     ];
-    for (what, item, name) in heap_sites {
-        let error = rt_validate::validate(&core(item)).expect_err(what);
-        assert!(
-            error.contains("runtime support: hidden-allocation") && error.contains(name),
-            "{what}: {error}"
+    sites.extend(
+        heap_sites
+            .into_iter()
+            .map(|(what, item, name)| (what, core(item), "hidden-allocation", name)),
+    );
+    sites
+}
+
+/// Run the case of `RB-19`.
+pub fn run(id: &str) {
+    assert_eq!(id, "RB-19");
+    let root = repo_root();
+    let read = |path: &str| {
+        std::fs::read_to_string(root.join(path).as_std_path())
+            .unwrap_or_else(|error| panic!("{path}: {error}"))
+    };
+    let module = read(MODULE);
+    let shipped = read(SHIPPED);
+    assert_eq!(module, shipped, "{SHIPPED} differs from {MODULE}");
+
+    let krate = rt_decode::decode_named(&shipped, "probeCrate").expect("the probe decodes");
+    assert_eq!(krate.profile, Profile::Std);
+    assert!(
+        krate.items.len() >= 30,
+        "the probe holds an item of each construct"
+    );
+    rt_validate::validate(&krate).expect("the probe is valid");
+    let text = rt::print(&krate);
+    let ran = compile_and_run(&text).expect("the printed probe computes what the harness states");
+    assert_eq!(ran, "probe");
+
+    // Each construct the module grew by occurs in the probe, so that the
+    // harness's independent computation is evidence for it. The constructors
+    // are named with their enum, as the module spells them: the debug form of
+    // the decoded crate does not tell `RtPat.tuple` from `RtExpr.tuple`.
+    let absent = constructors_absent(&shipped);
+    assert!(absent.is_empty(), "the probe has no {absent:?}");
+    for (constructor, text) in [
+        ("RtPat.lit", shipped.replace("RtPat.lit", "RtPat.wild")),
+        (
+            "RtExpr.tuple",
+            shipped.replace("RtExpr.tuple", "RtExpr.lit"),
+        ),
+        (
+            "RtVariant.tupleV",
+            shipped.replace("RtVariant.tupleV", "RtVariant.unitV"),
+        ),
+        ("RtLit.str", shipped.replace("RtLit.str", "RtLit.nat")),
+    ] {
+        assert_eq!(
+            constructors_absent(&text),
+            vec![constructor.to_owned()],
+            "a probe without `{constructor}` is caught"
         );
     }
-    for (what, planted, rule, site) in sites {
+    assert!(
+        format!("{krate:?}").contains("guard: Some"),
+        "the probe has no guarded arm"
+    );
+
+    // The closed table of the standard library is the validator's, as SPEC.md
+    // §17.16 lists it, and the register states its size.
+    let spec = read("SPEC.md").replace('\n', " ");
+    let names = |from: &str, to: &str| -> Vec<String> {
+        let start = spec
+            .find(from)
+            .unwrap_or_else(|| panic!("SPEC.md lacks `{from}`"))
+            + from.len();
+        let end = start
+            + spec[start..]
+                .find(to)
+                .unwrap_or_else(|| panic!("SPEC.md lacks `{to}`"));
+        let mut out: Vec<String> = spec[start..end]
+            .split('`')
+            .enumerate()
+            .filter(|(at, _)| at % 2 == 1)
+            .map(|(_, name)| name.to_owned())
+            .collect();
+        out.sort();
+        out
+    };
+    let mut table = rt_validate::table();
+    table.sort();
+    assert_eq!(
+        names(
+            "The closed table of the standard library (51 names): ",
+            ". A call"
+        ),
+        table,
+        "SPEC.md §17.16 lists the validator's table"
+    );
+    assert_eq!(table.len(), 51, "the register states 51 names");
+    let mut allocating = rt_validate::allocating();
+    allocating.sort();
+    assert_eq!(
+        names(
+            "The names of the table that allocate (",
+            ") are refused in the core profile"
+        ),
+        allocating,
+        "SPEC.md §17.16 lists the names that allocate"
+    );
+    let register = read("model/ids.toml");
+    assert!(
+        register.contains("(51 names, which SPEC.md §17.16 lists"),
+        "the register states the size"
+    );
+
+    // The core profile refuses every allocating name of the table as the
+    // hidden allocation the validator refuses in every `rust-core` crate.
+    let mut core = krate.clone();
+    core.profile = Profile::Core;
+    core.items
+        .retain(|item| !matches!(item, Item::Use(path, _) if path[0] == "std"));
+    let error = rt_validate::validate(&core).expect_err("the probe allocates");
+    assert!(error.contains("hidden-allocation"), "{error}");
+
+    // Each refusal of the validator, planted on the decoded crate and
+    // asserted by the rule it names.
+    let mut planted_rules: std::collections::BTreeSet<&str> = std::collections::BTreeSet::new();
+    for (what, planted, rule) in probe_plants(&krate) {
+        let error = rt_validate::validate(&planted).expect_err(what);
+        assert!(
+            error.contains(&format!("runtime support: {rule}")),
+            "{what}: {error}"
+        );
+        planted_rules.insert(rule);
+    }
+
+    // The sites of the rules, each planted alone: a rule is refused where the
+    // construct is, not only by name.
+    for (what, planted, rule, site) in site_plants(&krate) {
         let error = rt_validate::validate(&planted).expect_err(what);
         assert!(
             error.contains(&format!("runtime support: {rule}")) && error.contains(site),

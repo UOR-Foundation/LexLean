@@ -20,8 +20,8 @@ use crate::rust_harness::{self, Calls};
 use crate::rust_packages;
 use crate::support::{self, P};
 
-mod rust_print;
 mod runtime_validate;
+mod rust_print;
 mod rust_validate;
 mod scan;
 
