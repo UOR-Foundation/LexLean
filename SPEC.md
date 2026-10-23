@@ -7978,7 +7978,7 @@ and `Cons`, and a `let` statement a `LetS` that binds for the rest), a record is
 its structure, and the tables of types, calls, methods, type-argument methods, standard traits, and
 integers are read from the oracle's source by the generator of the module, so the two cannot drift. The
 constructors an encoder names are read by the case from the module's own text. The corpus is 648
-crates: the committed `supportCrate` and `probeCrate` and each in the other profile, the 42 crates
+crates: the committed `supportCrate` and `probeCrate` and each in the other profile, the 44 crates
 that break one rule each (the text plants of `RB-17` on the module, its nine plants on the decoded
 crate, and the eighteen of `RB-19` on the probe), and 600 seeded mutants of the two committed modules
 (a string, a constructor of the same enum, a mutable flag, a visibility, or a type parameter replaced by another of the module's), 495 of the 648 refused, so that the

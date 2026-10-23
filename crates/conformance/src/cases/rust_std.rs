@@ -362,6 +362,10 @@ fn differential() {
         let planted = generated_std.replacen(from, to, 1);
         let error = observe(&format!("{core}{planted}"), harness(), GOLDEN)
             .expect_err(&format!("{what}: a changed runtime has another transcript"));
+        eprintln!(
+            "RB-20: {what}: {}",
+            error.lines().find(|line| !line.trim().is_empty()).unwrap_or_default()
+        );
         assert!(error.contains(caught), "{what}: {error}");
     }
 

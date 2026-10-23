@@ -3,10 +3,12 @@
 //! `rust-std`, shared strings, byte strings, persistent lists, and the
 //! primitives over them.
 //!
-//! The runtime is not generated: it is a closed, reviewed text whose
-//! SHA-256 every package's provenance records, and generated code reaches it
-//! only through [`Item`], so no rendering can name a runtime function that
-//! does not exist or call one with the wrong failure mode.
+//! The runtime is printed from four language-1.2 modules (`RuntimeSupport`,
+//! `RustRuntime`, `RuntimeStd`, and `RustStd`) and held nowhere as a string;
+//! the SHA-256 of the printed text is what every package's provenance records,
+//! and generated code reaches it only through [`Item`], so no rendering can
+//! name a runtime function that does not exist or call one with the wrong
+//! failure mode.
 
 use std::sync::OnceLock;
 
@@ -499,15 +501,6 @@ mod tests {
                     .find(|line| line.contains(&format!("pub fn {name}(")))
                     .unwrap_or_else(|| panic!("{path} is not declared"));
                 assert!(!declaration.contains("-> R<") && !item.fallible(), "{path}");
-            } else if let Some(line) = text.lines().find(|line| {
-                line.starts_with("decimal!(")
-                    && (line.contains(&format!(", {path},"))
-                        || line.contains(&format!(", {path})")))
-            }) {
-                assert!(!item.fallible(), "{path}: {line}");
-                let macro_body = &std[std.find("macro_rules! decimal").expect("decimal")..];
-                let macro_body = &macro_body[..macro_body.find("\n}\n").expect("end")];
-                assert!(!macro_body.contains("-> R<"), "{path}");
             } else {
                 let declaration = text
                     .lines()
