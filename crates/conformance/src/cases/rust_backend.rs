@@ -1511,7 +1511,7 @@ pub fn run(id: &str) {
         "RB-17" => super::rust_support::run(id),
         // §17.16: the constructs of the heap runtime.
         "RB-19" => super::rust_heap_syntax::run(id),
-        // §17.16: the std runtime is the base and the definitions of `RustStd`.
+        // §17.17: the std runtime is the base and the definitions of `RustStd`.
         "RB-20" => super::rust_std::run(id),
         "RB-09" => {
             use lexlean::calculus::rust::runtime::{core, std};

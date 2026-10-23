@@ -1,4 +1,4 @@
-//! The std runtime as source (SPEC.md §17.16, §17.17): `RB-20` and `SP-29`.
+//! The std runtime as source (SPEC.md §17.17): `RB-20` and `SP-29`.
 //!
 //! The functions of `RustStd` are decoded and printed in place of the
 //! handwritten functions of the same name, which are kept as the oracle at
@@ -117,6 +117,43 @@ fn covered(items: &[ItemDef]) -> Result<(), String> {
     Ok(())
 }
 
+/// The first function of the oracle that `generated` does not define.
+fn lost(oracle: &str, generated: &str) -> Option<String> {
+    oracle
+        .lines()
+        .filter(|line| line.starts_with("pub fn "))
+        .map(|line| {
+            line["pub fn ".len()..]
+                .split(['<', '('])
+                .next()
+                .expect("a name")
+                .to_owned()
+        })
+        .find(|name| {
+            !generated.contains(&format!("pub fn {name}<"))
+                && !generated.contains(&format!("pub fn {name}("))
+        })
+}
+
+/// The theorem a Lean diagnostic points at: the diagnostic carries the span
+/// of the declaration, whose first line is `theorem{` and whose next line
+/// names it.
+fn refused_theorem(source: &str, shown: &str) -> String {
+    let line: usize = shown
+        .split("line_start: ")
+        .nth(1)
+        .and_then(|rest| rest.split(',').next())
+        .and_then(|number| number.trim().parse().ok())
+        .expect("the diagnostic has a line");
+    let lines: Vec<&str> = source.lines().collect();
+    assert_eq!(lines[line - 1], "theorem{", "the span opens a theorem");
+    lines[line]
+        .trim()
+        .trim_start_matches("name: ")
+        .trim_end_matches(',')
+        .to_owned()
+}
+
 /// Run the case of `RB-20` or `SP-29`. The module is read by the reader of
 /// the compiler, so the case runs on a stack of its own.
 pub fn run(id: &str) {
@@ -176,21 +213,16 @@ fn differential() {
         );
     }
     // And none of the oracle's functions is lost: each is in the generated
-    // text, whether the base keeps it or the module defines it.
-    for line in std_oracle
-        .lines()
-        .filter(|line| line.starts_with("pub fn "))
-    {
-        let name = line["pub fn ".len()..]
-            .split(['<', '('])
-            .next()
-            .expect("a name");
-        assert!(
-            generated_std.contains(&format!("pub fn {name}<"))
-                || generated_std.contains(&format!("pub fn {name}(")),
-            "the generated runtime lost `{name}`"
-        );
-    }
+    // text, whether the base keeps it or the module defines it. One function
+    // taken out of the generated text is the plant.
+    assert_eq!(lost(&std_oracle, generated_std), None);
+    let without = generated_std.replacen("pub fn length_bytes(", "pub fn length_byte(", 1);
+    assert_ne!(without, generated_std, "the plant site exists");
+    assert_eq!(
+        lost(&std_oracle, &without),
+        Some("length_bytes".to_owned()),
+        "a function of the oracle that the generated runtime lacks is refused"
+    );
     let ran = differ_with(&oracle, &format!("{core}{generated_std}"), harness())
         .expect("the generated runtime agrees with the oracle");
     assert_eq!(ran, "runtime");
@@ -413,16 +445,18 @@ fn refinement() {
 
     // A machine call whose primitive is another, and a theorem that states
     // another runtime item, are each left unproved by Lean.
-    for (what, from, to) in [
+    for (what, from, to, goal) in [
         (
             "a machine call whose primitive is another",
             "(ctor RustSyntax::Machine.listLength)",
             "(ctor RustSyntax::Machine.natEq)",
+            "TargetSyntax.Prim.natEq",
         ),
         (
             "a theorem that states another runtime item",
             "(ctor RustSyntax::Item.lengthList)",
             "(ctor RustSyntax::Item.lengthBytes)",
+            "RustSemantics.isBytes",
         ),
     ] {
         assert_eq!(
@@ -434,8 +468,13 @@ fn refinement() {
         let refused = project_of(&[("RustStd", planted.as_str())], &IMPORTED);
         let shown = format!("{:?}", refused.verify_fails_with("LLV7002"));
         assert!(
-            shown.contains("refines_length_list") || shown.contains("RustStd.lex.tex"),
-            "{what}: Lean refuses the module: {shown}"
+            shown.contains("unsolved goals") && shown.contains(goal),
+            "{what}: Lean leaves the goal `{goal}` open: {shown}"
+        );
+        assert_eq!(
+            refused_theorem(&planted, &shown),
+            "refines_length_list",
+            "{what}: the theorem Lean refuses"
         );
     }
 }

@@ -6010,7 +6010,9 @@ not exercised. The shipped crate changes in this row, each with its plant in the
 generic list it prints (a signature printed without it does not compile), `Machine.listAppend`, `Machine.listLength`,
 `Machine.listIndex`, and `Machine.listSlice` (families 26 to 29, arity two, one, two, and three, refused with the
 wrong number of operands by the validator), and the decoder of the std crate (a module without `stdCrate` or of
-another profile is refused). The bootstrap validator twin of `RustValidate` names a machine call by its family and so
+another profile is refused). The module name `RustStd` is also the suffix of the certificate-B module of a `rust-std` crate
+(`production/rust_cert.rs`); the two are different Lean modules (`LexLeanTarget.RustStd` here, `<certificate A>.RustStd` there)
+and nothing imports one as the other. The bootstrap validator twin of `RustValidate` names a machine call by its family and so
 learns the twenty-seventh to the thirtieth; its measurement is repeated with this row.
 
 A *loop*
