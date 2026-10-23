@@ -107,5 +107,13 @@ definition{
   body: (record Rows::IdRow {id := "AU-13", level := "build", suite := "authoring", statement := "Under language 1.2 a module written with a data argument (`\\semanticdata{…}`, `\\toolingdata{…}`, or `\\coredata{…}`) is refused with LLP2003 at the position of the data argument and naming the authoring notation, whichever of the three environments holds it; fmt does not rewrite it and reports the same refusal; lexlean::sdk::to_data_form is the one conversion into the data form and to_notation the one out of it; and the data form is still accepted under language 1.1, where the semantic example links, and is still the form of the Atlas under language 1.0.", sections := "§17.11, §17.21, §24.8"}),
   executable: true
 }
+
+definition{
+  name: au14,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "AU-14", level := "build", suite := "authoring", statement := "A source's module is the environment the structural parser opens: lexlean::surface::module::locate takes the first environment after the header and ends its body at the first end control atom, so a tooling or core module whose strings quote the begin and end markers of another kind is read by the authoring API, formatted, and decoded as its own kind and contributes its data form to the compiler-semantics ID, a module whose body holds an unescaped end marker is refused with LLP2003 and is found as no module, and on every committed source the parser reads the module found is the one it opens.", sections := "§17.21, §21.2, §24.8"}),
+  executable: true
+}
 \end{semanticmodule}
 \end{lexlean}

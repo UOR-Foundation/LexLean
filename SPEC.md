@@ -7089,6 +7089,17 @@ survive `fmt`.
   are exact inverses over every module; and language 1.1 still links the
   semantic example in the data form while the Atlas (language 1.0) is still
   written as `\coredata`.
+- **The module a source holds (`AU-14`).** A source's module is the
+  environment the structural parser opens (§15.1): the first environment after
+  the header, whose body ends at the first `\end` control atom, found over
+  the scanner's atoms (§12.2) and not by a search of the text. A marker a
+  string quotes is written `\\begin{…}`, an escaped backslash and a word, and
+  is never a marker, so a tooling or core module whose strings quote another
+  kind's markers is read by the authoring API (§24.8), formatted, and decoded
+  as its own kind, and contributes its data form to the compiler-semantics ID
+  (§21.2). An unescaped `\end` control in the body closes the environment
+  there for both: the parser refuses the source with `LLP2003`, and no module
+  is found.
 
 #### 17.21.7 Tooling modules
 
@@ -10490,6 +10501,7 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `AU-11` | `authoring` | Malformed core notation fails closed and never panics: an unclosed delimiter, a keyword used as a name, a label that is not the number of its node, a forward reference to a node, a numeral with a redundant leading zero, a statement that defines no node, a nesting beyond the bound, and every single-token deletion and duplication of a committed module fail with a registered code at a position in the notation or link to a module that decodes. | §17.21.8 |
 | `AU-12` | `authoring` | A core module written with names for its statements and its variables reads to exactly the module its canonical notation reads to, and the canonical notation keeps the names of the binders and writes the numbers of the statements: a variable is written by the name of its binder exactly when no nearer binder has the name, a constant a binder in scope is named like is written as a string, a theorem added to the certification library by name reads to the committed module and is written as the committed bytes, and an unknown or repeated statement name and a variable given universe levels are refused with a position. | §17.21.8 |
 | `AU-13` | `authoring` | Under language 1.2 a module written with a data argument (`\semanticdata{…}`, `\toolingdata{…}`, or `\coredata{…}`) is refused with LLP2003 at the position of the data argument and naming the authoring notation, whichever of the three environments holds it; fmt does not rewrite it and reports the same refusal; lexlean::sdk::to_data_form is the one conversion into the data form and to_notation the one out of it; and the data form is still accepted under language 1.1, where the semantic example links, and is still the form of the Atlas under language 1.0. | §17.11, §17.21, §24.8 |
+| `AU-14` | `authoring` | A source's module is the environment the structural parser opens: lexlean::surface::module::locate takes the first environment after the header and ends its body at the first end control atom, so a tooling or core module whose strings quote the begin and end markers of another kind is read by the authoring API, formatted, and decoded as its own kind and contributes its data form to the compiler-semantics ID, a module whose body holds an unescaped end marker is refused with LLP2003 and is found as no module, and on every committed source the parser reads the module found is the one it opens. | §17.21, §21.2, §24.8 |
 | `RT-01` | `runtime` | The runtime of language 1.2 is LexLean source: every module of its registry is one native core module of the runtime's own project, which holds no file of Lean source, the registry lists only the modules in dependency order, every declaration pins its exact axioms, and a source that is missing, weakened to an inexact policy, or imports anything but `Init` and an earlier runtime module is refused; the one-time migration input is absent, no native source names a runtime copy inside a module, and no Lean file declares a runtime namespace but the released output of a language-1.0 or 1.1 project. | §17.12 |
 | `RT-02` | `runtime` | The runtime text of languages 1.0 and 1.1 is the one declared exception: the portable runtime and the decoder of core module 1 are the released bytes, held as data under `language/runtime-1.2/frozen/`, read by the language-1.0 and 1.1 backends alone, excluded from the language-1.0 and 1.1 identities, and reproduced byte for byte by the released language-1.1 and 1.0 output; a one-byte change of either is not the released output. | §17.12, §21.2 |
 | `RT-03` | `runtime` | A verification compiles every runtime module that a project's generated modules, or the calculus modules its certificates are checked against, import before the project's modules, replays it with `leanchecker`, and audits each of its declarations against the axioms its row pins; the committed verification of a project that uses the collections prints them, the runtime's own project verifies under the pinned Lean, and a row that pins another axiom set than its declaration observes fails with LLV7005. | §17.12, §22.3, §22.5, §22.6 |
@@ -10527,7 +10539,7 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `NS-06` | `normative-source` | The hand-edited normative inputs of the repository are the `.lex.tex` modules of the specification project: `model/` holds only the projected files and the copies an authority row vendors, every Markdown file at the root is a projection or is on the closed list of hand-written documents, the projections carry the notice that names their source, and no hand-written document restates a registered statement, a plant of each being refused naming R1. | §27.2, §27.5, §27.10 |
 | `NS-07` | `normative-source` | `cargo xtask spec` changes the chapter modules of the specification project by item: it replaces a block, inserts one after a block, and ports the hunks of a merged SPEC.md that lie outside derived regions, each through the authoring SDK, and it writes nothing unless the regenerated SPEC.md equals the intended text outside derived regions, refusing a first line that matches no block or two and a hunk that spans two blocks. | §24.8, §27.5 |
 
-**Total required capability IDs:** 444.
+**Total required capability IDs:** 445.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 
