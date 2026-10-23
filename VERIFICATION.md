@@ -16709,6 +16709,10 @@ written.
 | §2.3 without the sentence the reader looks for (`The completion release` as `The final release`) | `conformance_rp_17` | ``source-tag: SPEC.md §2.3 (Chapter02) has no sentence beginning `The completion release` that names a version``, and the same refusal of `version-output`: no criterion is assumed |
 | a four-line version report, as before this change, at `0.5.0` | same | `version-output: release/version-output.txt must be exactly: …` |
 | a semantics-ID list without language `1.2` | same | `semantics-id: release/compiler-semantics-id.txt lists languages 1.0, 1.1, and §30.3 reports 1.0, 1.1, 1.2` |
+| a semantics-ID list giving language `1.1` an ID that is not the compiler's (its first hex digit changed) | `cargo xtask release-check`, the list and the binary's report staged under `release/` of the committed tree | ``semantics-id: release/compiler-semantics-id.txt line 2: language 1.1 is listed with the ID `076453256c64bbd14b1449f5979610054c72ea83213ecd13795cc883af8b2cd8`, and the compiler-semantics ID of language 1.1 is `176453256c64bbd14b1449f5979610054c72ea83213ecd13795cc883af8b2cd8` ``, and no `version-output` refusal (the report is the binary's) |
+| the list and the version report agreeing on that ID, as one `--version` run of a compiler with that ID would stage them | same | the same `semantics-id` refusal, and `version-output: release/version-output.txt must be exactly:` the report with language 1.1's compiled-in ID `1764…2cd8`, `found:` the report with `0764…2cd8`: each file is held to the ID compiled into the source, not to the other file |
+| both files as the binary prints and `release-artifacts` writes them (the control) | same | neither `semantics-id` nor `version-output` is refused; what is refused is `source-tag` at `0.3.0` and the artifacts a build fleet stages (`checksums`, `host-binaries`, `crate-package`, `sbom`, `ci-evidence`) |
+| `release::check` before the maintainer's round, which rendered the expected report from the staged list (the case's two ID plants committed first, at `f76d22e1d`, R3) | `cargo test -p repo-conformance conformance_rp_17` | the test fails at the first ID plant, `repository.rs:2283`: `release/compiler-semantics-id.txt` with language 1.1's ID changed is not refused as `semantics-id`, and `version-output` is refused instead, its expected report carrying the planted ID |
 | the reader without its comparison with the supported languages (planted in `release::check`) | `cargo test -p repo-conformance conformance_rp_17` | the test fails at the `language 1.3` plant; restored |
 | the reader with the completion versions written in rather than read from §2.3 (planted in `release::criterion`) | same | the test fails at the `0.6.0` plant; restored |
 | the binary printing only language `1.0` (the version report before this change) | `cargo test -p repo-conformance conformance_cl_18` | the test fails: the four-line report against the eight-line one; it was run so at the skeleton commit |
@@ -16758,4 +16762,10 @@ changes what is refused, and a reader that ignores either item fails the case.
 CL-18 compares the binary's report both with the compiled-in identities and with
 the §30.3 fence as SPEC.md states it, read without `release-check`; the
 `release.yml` step reads that fence too, so the line count it expects moves
-with §30.3 and never with the workflow.
+with §30.3 and never with the workflow. `release-check` holds each ID of
+`release/compiler-semantics-id.txt` and of `release/version-output.txt` to
+`lexlean::compiler_semantics_id_for` of its language, the ID compiled into the
+source it is built from (the maintainer's round on #288): before, it compared
+the two staged files with each other, and `release-artifacts` writes both from
+one `--version` run, so a compiler with a wrong ID staged an agreeing pair that
+nothing refused. The two ID plants above show the comparison is not vacuous.
