@@ -2089,10 +2089,10 @@ conditional of `itemFallible` only through `ite_true` and `ite_false`, which the
 `term_cases` therefore names (see `SM-35`).
 
 Command and host: `cargo test -p repo-conformance --test conformance -- conformance_sp_22`, in the
-`preservation` part of `bdd` (`.github/bdd-parts.json`). The theorem-list assertions and their
+`preservation-runtime` part of `bdd` (`.github/bdd-parts.json`, `bdd-preservation-runtime` in `.github/vv-rows.json`). The theorem-list assertions and their
 plants run on every host; the elaboration of the module and its plants run where
 `leanprover/lean4:v4.32.1` is installed (`lean_backed("SP-22")`), and on the normative host
-(Linux x86-64, §8.3) the case panics rather than skip. Cost on a 4-core container: 142 s for the
+(Linux x86-64, §8.3) the case panics rather than skip. Cost of the 18-function record (before the width families) on a 4-core container: 142 s for the
 case, of which about 60 s is the project of the five modules and about 70 s the planted one; the
 18 theorems add under ten seconds to the module (71 s with them, 80 s with none, on the same
 machine, so the difference is inside the noise): under half a second a theorem. The width
@@ -2112,6 +2112,122 @@ Plants, each restored: a theorem renamed to `refines_nat_other` (`the module def
 run on `"nat_sub"` (`refines_nat_add states the run of nat_sub`); the body changed to the checked
 product (`LLV7002` with `unsolved goals`); the axiom policy changed to `[propext]` (`LLV7005`,
 `violates its exact axiom policy: observed [Classical.choice, Quot.sound, propext]`).
+
+### the core runtime's support items are the definitions of RuntimeSupport (RB-17)
+
+`rust::rt_decode` reads the shipped `RuntimeSupport` module, `rust::rt_validate` checks the crate it
+defines, and `rust::rt` prints it, where `CORE_BASE` stood (`RB-17`, §17.16, #91 stage 4, PR 5). The
+module's one definition `supportCrate` is a crate of `RuntimeSyntax` of 32 items: three `use`s, the
+unit struct `Overflow` with its derives, the alias `R<T>`, the static `WORK`, `tick` and `work`, the
+traits `Same` and `Key`, nine `impl Same` (the Boolean, the eight widths) and ten `impl Key` (the Boolean, the eight widths, and the pair `(A, B)`
+with `A: Key, B: Key`), an `impl Same` for `Ordering`, and the generic `equal` and `compare`. `CORE_BASE` is gone from
+`runtime.rs`; `runtime::support()` is `support_from` of the embedded module and `runtime::core()` assembles it before the
+`RustRuntime` functions (`core_over`). The `source` reader was made shared (`with_reader`, the module named at the entry point), so the two
+modules read through the same closed tables and a refusal says which module it is.
+
+The printed text differs from the base it replaces in form, not in meaning: the macro `scalar!` is
+nine impls, the two atomic imports are one braced `use` (the library table lists them so), a unit tail after a statement is
+not spelled (`warnings = deny` and Clippy refuse `; ()`), and `tick` and `work` are one-line functions as before. `rb_09`
+(the library table), `rb_06` (the lint gate on every committed package), `rb_16`, `rb_17` pass on this tree (170 s together).
+
+Command and host: `cargo test -p repo-conformance --test conformance -- conformance_rb_17 --nocapture` (`RB-17`), in the `rest` part of `bdd`, on a 4-core 15 GB Linux x86-64 container with rustc 1.97.1: 9.6 s for the case once built (the rustc run of the harness is most of it). The case (`cases/rust_support.rs`) requires the shipped copy to be the compiler project's module byte for byte;
+decodes, validates and prints it; requires the embedded support to be that print and to hold no macro, no `alloc`, and no
+`std::`; compiles the handwritten core runtime as module `old` and the printed support with the `RustRuntime` functions as
+module `new` of one crate under the pinned rustc with warnings denied; and runs `equal` and `compare` on every pair of nine boundary values of each
+scalar and 200 seeded pairs, `equal` of every pair of orderings, `compare` of pairs of a scalar with a Boolean in both positions, `tick` on five
+amounts and `work` after each, comparing the debug form of the result and the counted work. Nested keys, which `SP-25` does not prove, are
+validated here: 500 seeded rounds of four comparisons each, two of depth two and two of depth three, with components from a domain of three values so
+that the first components tie and the comparison falls through; the 1,000 depth-three comparisons decided 491 less, 26 equal, 483 greater
+(the case requires every order to occur).
+
+Plants of the module, each refused by the validator by the rule it breaks (`runtime support: <rule>: …`): a `use` of `alloc`
+and a `use` of `std` in the core profile (`profile-root`); a type that is neither declared nor in the table (`type-name`); a type with another
+number of arguments (`type-arity`); a bound on a trait the crate does not declare (`bound-trait`); a method the bound does not provide
+(`method-bound`); an impl that lacks a method of its trait (`impl-complete`), that states another signature (`impl-signature`), of a trait that is not
+declared (`impl-trait`), or whose method is `pub` (`impl-visibility`); a free function that is not public (`function-visibility`); a variable
+not in scope (`variable-scope`); a method of no trait and not in the table (`method-name`); a path no `use` declares (`path-name`); a call outside the
+table (`call-name`); a parameter beyond the generics in scope (`type-parameter`). Five decoder refusals are asserted by message (no
+`supportCrate`; an expression constructor and an item constructor `RuntimeSyntax` lacks; a constructor with another number of arguments; a
+constructor of the other module). Two bodies changed to another result are caught by the differential, not the validator: the counter
+starting at one (`work result`) and the key of a scalar reversed (`compare result`); a third plant, `tick` adding one in place of its argument, was
+refused by rustc (`unused variable`) before it could be caught, and was replaced.
+
+All 24 rules of the validator are planted, and none can be deleted without the case failing: fifteen by a change of the module's text (above) and nine on the decoded crate: a call of `AtomicU64::new` with no argument (`call-arity`), `work` declared twice (`duplicate-name`), `work` taking `&self` (`function-receiver`), an `impl Same` stating a method `extra` (`impl-extra`), the `match` of the pair's `key` with no arm (`match-arms`), `units.cmp()` with no argument (`method-arity`), a parameter of type `Self` in a free function (`self-type`), the trait `Same` declaring its method twice (`trait-method`), and a `use` with no path (`use-path`). The case reads the rule names from the validator's source (the first string literal after each `rule(`) and requires the set of planted rules to equal it, so a rule added to the validator without a plant is a failure of the case. Gate plant: the `match-arms` check removed from `rt_validate.rs` (the case fails at `a match with no arm: ()`, the nine-rule plant having found the crate accepted), restored. The nested-key tally is checked slot by slot (each of the three orders occurs and the three sum to the 1,000 comparisons).
+
+`i128` plant: a `Crate` of `RustSyntax` holding a function with a parameter of `Type::I128` is passed to `correspond`, which refuses it as `type:i128` with `no target-semantics correspondence`; a row added to `CORRESPONDENCE` for it makes this case fail.
+
+Plants of the gate, each restored: `rt_validate::validate` removed from `support_from` (the case fails at its first refusal plant, `a use outside the
+profile`, the print of which shows `use alloc::cmp::Ordering`); `support_from` returning the empty text (the differential fails to compile,
+`cannot find type R in this scope`). `i128`: `RustType.i128` is accepted by the validator and printed, and is the node of `convert`'s parameter; no
+lowering emits it, and `correspond` refuses `type:i128` in a lowered crate as a construct with no target-semantics correspondence (`row()`), so a
+program lowered from the calculus cannot name it; only the runtime profile does.
+
+### the constructs of the heap runtime decode, validate, print, and compute (RB-19)
+
+`RuntimeSyntax` grows by the constructs the `rust-std` runtime's functions are written in (`RB-19`, §17.16, #91 stage 4, H1): three item
+kinds (a tuple struct, a record struct, an enum with unit, tuple, and record variants), six types (`u128`/`i128`, `usize`, `char`, `str`, a slice, `&mut`),
+two literals (a character, a string), five patterns (a `mut` binding, a tuple, a tuple struct, a struct, a literal) and a guard on an arm, and twenty-one expressions (`let` with an optional
+type, an assignment, `if`/`else`, `while`, `while let`, `loop`, `for`, `break`, `return`, a tuple, a struct literal, a binary operation over twelve operators, `!`, a cast, an
+index, a range slice, a dereference, `&mut`, a method call with type arguments, a field by name, a block), with the twelve operators and the three kinds of enum variant: 53 constructors in all beside the 36 of `RB-17`. `RtParam` gains `mutable`, `RtSig` gains
+`exclusive` (`&mut self`), and every record of `RuntimeSupport` is regenerated with the two fields.
+
+Command and host: `cargo test -p repo-conformance --test conformance -- conformance_rb_19` (`RB-19`, in the `rest` part of `bdd`), on the 4-core 15 GB Linux x86-64 container with
+rustc 1.97.1 and the pinned Lean 4.32.1: 22.8 s with `conformance_rb_17`, of which the rustc run of the probe and the Lean check of the module are most.
+
+The probe `RuntimeProbe` (`compiler/src/RuntimeProbe.lex.tex`, shipped byte for byte; 41 items, `std` profile) holds one use of each construct. The case
+requires the shipped copy to be the compiler project's module; decodes, validates, and prints it; requires every constructor (by the identifiers of the decoded crate's debug form,
+each with whether an argument list follows, so that the type `Char` and the literal `Char(` are two) and every operator to occur in it; compiles the printed crate under
+the pinned rustc with warnings denied and runs a harness of 31 assertions (several in loops over seeded or gridded values) against independent computations (`sum_to` against `n(n+1)/2`, `ops` against a
+twelve-by-twelve grid computed in the harness, `collatz_steps` on 1, 6, and 27, a `Drop` impl counted through a static, and so on); has the pinned Lean accept the module as a project of `TargetSyntax`, `RuntimeSyntax`, and itself; and compares SPEC.md §17.16's closed
+table of the standard library (51 names: 6 types, 12 qualified calls, `Some`/`Ok`/`Err`, 27 methods, `parse`, and the traits `Clone` and `Drop`) and its list of the names that allocate with the validator's own (`rt_validate::table`,
+`rt_validate::allocating`), and requires the register to state the 51.
+
+Refusals: the validator has 40 rules (the identifier fix below adds five to the 35 of the heap constructs, eleven of which were new): ten are planted on the decoded crate (`break-position`, `assign-immutable`, `assign-place`, `let-position`, `tuple-arity`, `struct-fields`,
+`pattern-duplicate`, `pattern-fields`, `param-duplicate`, `variant-name`), with `variable-scope`, `call-arity`, `call-name`, `method-name`, `method-arity`, and `type-name` on the new constructs. `RB-17` reads the rule names from the validator's
+source and requires its planted rules and these fifteen (the ten and `char-literal`, `derive`, `identifier`, `struct-head` and `type-scope`) to be exactly them, with `hidden-allocation` planted by its own text plant and by the core profile's refusal of the probe, so a rule added without a plant fails whichever case should have planted it. The core profile refuses the probe as `hidden-allocation` (the eleventh new rule) (the `std` uses removed first, which are
+`profile-root` otherwise). The decoder refuses a constructor `RuntimeSyntax` lacks (`RtExpr.whileLoops`, `RtPat.bindMutt`, `RtOp.remm`) and a constructor with another number of arguments (`breakE` with one).
+
+Names, derives, literals and heads (the read of `021879e4d` on #255, items 1 to 6). `RB-19` plants each site of a refusal and not only its rule name, on the decoded crate, and asserts the rule and the site in the message: the name of a unit struct, a tuple struct, a record struct, an enum, an alias, a static, a trait and a function; the generics of a tuple struct, a record struct, an enum, an alias and a function; a record field, a variant, a record variant's field, a trait method, a parameter, a `use` segment and a `use` alias; a binding and a mutable binding; a field by name; a path tail after a struct, an integer, an enum variant and an imported head; the field name of a struct pattern (as identifiers); the derives of a unit struct, a tuple struct, a record struct and an enum; a character literal of two characters, of none, and in a pattern; a struct literal as the condition of an `if`, the condition of a `while`, the value of a `while let`, the iterator of a `for`, the scrutinee of a `match`, at the left of a comparison, and behind a field; a generic parameter in a `let` type, a cast and a type argument; a variant declared twice; a record struct of unequal names and types; a struct literal of a path that is no record; a tuple variant matched with the wrong number of patterns; a struct pattern of unequal names and patterns; and the five sites of `hidden-allocation` in the core profile (a heap type, `String`, a call, a method, a method with type arguments). The printer's parenthesis on `x + y as u8 < z` is planted by compiling the printed comparison and then the same text without the parenthesis, which `rustc` refuses (`generic arguments`). Each of seven sites was also disabled alone in the validator (the cast-type scope, the field-access name, the pattern-field names, the enum derives, the match head, the character-literal length, the tuple-variant arity) and each failed the case; a control edit that changes nothing left it green. `rt_validate.rs`, `rt_decode.rs` and `rt.rs` are not files of the renderer digest, so no record and no identity moves. Command and host: `cargo test -p repo-conformance --test conformance -- conformance_rb_19 conformance_rb_17`, on the 4-core 15 GB container: 11 s after the build.
+
+Plants of the gate, each restored: the printer writing `-` for `Op::Add` (the harness fails, `attempt to subtract with overflow` in `sum_to`); the `break-position` check of the validator disabled
+(the case fails at `a break outside a loop: ()`). `RuntimeSemantics` gains an arm for each new constructor that is `stuck` (a `blockE` evaluates its block), so the meaning of the constructs is declared only when the heap model gives it one.
+
+Re-verification of `SP-25` after the module grew and its records were regenerated: Command and host: `cargo test -p repo-conformance --test conformance -- conformance_sp_25`, on the 4-core 15 GB Linux x86-64 container with the pinned Lean 4.32.1 and rustc 1.97.1, `lean` sampled every three seconds: 1,450.8 s (24 min 13 s wall, 38 min 32 s user CPU, 19 min 16 s system CPU), peak `lean` 5.98 GB. This figure of the head replaces the 1,440 s and 5.90 GB measured on `59b93d3cc` in the record of `SP-25` that precedes this paragraph.
+The 143 theorems verify with the same axioms and no proof changed.
+
+### each trait method of the support has its meaning checked (SP-25)
+
+`RuntimeSemantics` (`compiler/src/RuntimeSemantics.lex.tex`, 22 KB, generated by the same pass that writes the module, two inductives `RtOutcome` and
+`RtOutcomes` and twelve definitions) evaluates a `RuntimeSyntax` crate over `TargetSyntax.Value` with fuel: `rtEval`, `rtEvalList`, `rtEvalArms`, `rtApply`, `rtEvalBlock`
+are one mutual group, and a method call finds, among the impls of the crate, the first whose self type the receiver has (`findMethod`, `matchesTy`, which
+tags a value by its constructor, takes a `u64` impl for a `Value.nat` and an `i64` impl for a `Value.int`, as the generated Rust does, and lets a parameter and `Self` match any value). `cmp` and `==` are the
+calculus primitives `Prim.compare` and `Prim.equal`. `tick` and `work`, an effect of a static counter, are `stuck` here and held by the work gate
+(`RB-06`, `TC-07`).
+
+`RuntimeSupport` holds 22 theorems and eleven modules `RuntimeKeys<scalar>` hold 121: for each value of the predicate the calculus types as the arguments of `equal`
+(a Boolean, a natural, a width, an `Ordering`: 11) and of `compare` (a Boolean, a natural, an integer, a width: 11, and a pair of two of those: 121), `rtRun 24 supportCrate "<f>" args =
+fromPrimitive (primitive <f> args)`. The scalar theorems are `term_cases` on the primitive's outcome; a pair theorem is `term_cases` on the order of the first
+components (`orderU8 x1 y1`...), with `compareValue`, `primitive`, and `sameOrder` among the named definitions. All 143 verify with exactly `[Classical.choice, Quot.sound, propext]`, the first guess for each.
+The 121 pair theorems are in eleven modules, one per first scalar, because the Lean process that elaborates a module keeps its theorems' terms: 100
+theorems in one module were OOM-killed twice on this 16 GB host (a `lean` at 13.6 GB anon-RSS, once with a second elaboration running, once alone).
+
+Measured (this host, pinned Lean 4.32.1, `ps -C lean -o rss=` every second): `lexlean verify` of all 16 modules, 12 min 28 s, peak 5.86 GB; each `RuntimeKeys` module verified alone (its closure is six
+modules), 127 to 140 s and 5.82 to 5.92 GB (Bool 135 s 5.89 GB, Nat 139 s 5.82, Int 135 s 5.86, U8 132 s 5.86, U16 140 s 5.84, U32 134 s 5.89, U64 135 s 5.89, I8 127 s 5.92, I16 130 s 5.86, I32 129 s 5.83,
+I64 131 s 5.88); `RuntimeSupport` alone 61 s, 0.74 GB. Command and host: `cargo test -p repo-conformance --test conformance -- conformance_sp_25` (`SP-25`, in the `preservation-support` part of `bdd`, a row of `.github/vv-rows.json`), on a 4-core 15 GB Linux x86-64 container with the pinned Lean 4.32.1 and rustc 1.97.1, `lean` sampled every three seconds. Measured on the head `59b93d3cc` (the merge of #248's `ea1026785`, the Runtime modules canonical): 1,440 s (24 min 0 s wall, 39 min of user CPU, 16 min of system CPU) with its two plants, peak `lean` 5.90 GB on the earlier, pre-canonical run of the same tree; the same case measured 815 s (13 min 35 s wall, 22 min 45 s CPU, 8 min system) on the tree before the merge, and 1,442 s on the merged tree before canonicalization. The spread is the host's, not the case's: the system CPU doubles with the wall time, and the module and its theorems are the same. The figure for the head is the 1,440 s.
+
+The case computes the 143 names from the predicate (the scalars from `IntKind::ALL`, `nat`, `int`, `bool`) and compares them with the theorems of the twelve modules; a theorem for a value outside it (`equal_unit`), a
+value without a theorem (a pair theorem removed), and a theorem that states another primitive (`Prim.compare` replaced by `Prim.equal` in a pair theorem) are each refused by name. In Lean, with one theorem kept: the key of a scalar reversed
+(`compare_bool`) and the impl for `u8` made an impl for `bool` (`compare_u8`) each leave `unsolved goals` (`LLV7002`).
+
+What this does not prove. The calculus admits pairs of pairs for `compare` (`orderable` in `calculus/check.rs`), and the 121 theorems stop at a pair of two scalars: each pair level spends a constant of `rtRun` fuel, so the induction over the depth
+needs arithmetic on the fuel under a symbolic depth that the closed proof language does not have (a Nat-arithmetic rewrite step or a fuel-free evaluator, filed for v0.5 as #249). For nested keys the evidence is the differential of `RB-17`, validation and never a proof. The first
+version of the row proved the 81 pairs of nine scalars and left out the natural and the integer, which the calculus types and the generated Rust dispatches to the `u64` and `i64` impls; it was corrected before review.
+
+`SP-22` now asserts that every authored item is in one of two sets (`held` in `cases/rust_refinement.rs`): the functions of `RustRuntime` each name a runtime item (`Item::all()` paths) and have their refinement theorem, and the items of `RuntimeSupport` are of the closed kinds the decoder admits,
+a function of which is `tick` or `work` (held by the work gate) or `equal` or `compare` (held by `SP-25`'s theorems). Planted: `nat_add` renamed `nat_addd` in `RustRuntime` (`` `nat_addd` is an authored function that is not a runtime item``); `tick` renamed `frobnicate`
+(`` `frobnicate` is an authored item in neither the refined functions nor the closed support kinds``); the `equal_` theorems renamed (`` `equal` is an authored item in neither…``).
+
+Order of the register: the row was `SP-24` until the maintainer renumbered it (`SP-24` is #115's on release/v0.5); it is `SP-25`.
 
 ### a list of any length is a term Lean elaborates without binders
 
@@ -11136,3 +11252,50 @@ pins []
 
 The plant was restored with `git checkout`. The same verification with the fix in
 place is the regeneration of the bootstrap records in this change.
+
+## Planted defects for the crate that goes to crates.io (`RP-18`, #260)
+
+`conformance_rp_18` reads `.github/workflows/release.yml` and
+`.github/workflows/crate.yml`, requires the order of their steps (package twice
+and compare, dry-run, archive metadata, identity, then credential, then the one
+upload), and runs `.github/crate-publication.sh` against planted archives,
+checksum lists, refs and environments. It plants nine changes in `release.yml`
+and eight in `crate.yml` in memory, and each must be refused. Each case below was
+also planted in the committed tree, one at a time, with the real test, on Linux
+x86-64 (WSL, Rust 1.97.1), and the file restored with `git checkout`
+(§27.9). The skeleton commit, with the workflows and script set aside, fails:
+`.github/workflows/crate.yml: No such file or directory`.
+
+| Case | Command | Observed |
+| --- | --- | --- |
+| the committed tree | `cargo test -p repo-conformance --test conformance conformance_rp_18 -- --exact` | ok |
+| the upload step loses its `if: steps.upload.outputs.mode != 'none'` | same | ``release.yml job `publish` has no `if: steps.upload.outputs.mode != 'none'` `` |
+| the tag does not run `cargo publish --dry-run` | same | ``release.yml job `publish` has no `cargo publish --dry-run --locked --package lexlean` `` |
+| the readiness job does not compare its two packagings | same | ``crate.yml job `readiness` has no `cmp "$a/package/$crate" "$b/package/$crate"` `` |
+| `identity` ignores the digest `checksums.txt` lists | same | `a checksum line of another digest is refused` failed |
+| `mode` answers `token` when no credential exists | same | `mode for [("HAS_CARGO_REGISTRY_TOKEN", "false"), ("TRUSTED_PUBLISHING", "false")]` failed |
+| a pre-release named `X.Y.0-rc.N` | same | `left: "0.4.0-rc.242"` |
+| the 10 MiB limit lifted | same | `more than 10 MiB is refused` failed |
+
+The script, run by hand on the crate of PrismPM's vendored copy: a package one
+byte from the released one gives `identity: cargo would upload a05cb178…, and
+the release attaches lexlean.crate 6d235250…` (exit 1); a checksum list naming
+another digest gives `identity: … checksums.txt lists 0d235250… for
+lexlean.crate` (exit 1); `prerelease main 242` gives `prerelease: main is not a
+release line (release/vX.Y)`; `stamp 0.4` gives `stamp: 0.4 is not a SemVer
+version`.
+
+The pre-release path was rehearsed on a throwaway worktree of this branch:
+`crate-publication.sh prepare true` on `release/v0.4` printed `0.4.0-dev.243`
+and rewrote the four versions of the root `Cargo.toml` and the matching lock
+entries; two `cargo package --locked --allow-dirty` runs gave byte-identical
+5.0 MiB archives, `cargo publish --dry-run` ended with "aborting upload due to
+dry run", the metadata check passed, and `.cargo_vcs_info.json` named the commit
+with `"dirty": true`.
+
+*What the evidence is.* The case reads text and runs a script; it cannot show
+that GitHub runs the workflows as written. Neither workflow has run on GitHub,
+so the call of `crate.yml` from `release.yml`, `cargo xtask release-artifacts`
+in a clean checkout of the called workflow, and the `--allow-dirty` pre-release
+packaging are first exercised by the first rehearsal or dispatch. No upload was
+attempted and no token was requested or stored.
