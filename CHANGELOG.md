@@ -6,9 +6,10 @@ binary carry the SemVer below, each project selects the supported language
 identifier (`1.0`, `1.1`, or `1.2`), and each language's compiler-semantics ID is a
 digest over its normative language data, schemas, and pinned golden fixtures.
 
-SPEC.md §2.3 fixes `0.1.0` as the initial implementation version and `1.0.0` as
-the first release satisfying the complete specification. No tag before `1.0.0`
-is therefore a §30 release: `cargo xtask release-check` reads the complete
+SPEC.md §2.3 fixes `0.1.0` as the initial implementation version and names the
+completion release, the first release satisfying the complete specification:
+`0.5.0` when it satisfies the §30.4 criterion, and `1.0.0` otherwise. No tag
+before it is a §30 release: `cargo xtask release-check` reads the complete
 §30.3 artifact set and §30.4 completion criterion and refuses, naming every
 criterion that does not hold. That refusal is the accurate answer at these
 versions. Only `v0.1.0` has been tagged: the sections for `0.1.1`, `0.2.0`,
@@ -16,6 +17,23 @@ and `0.3.0` record what the workspace carried at those versions without a tag,
 and Unreleased holds what has landed since.
 
 ## Unreleased
+
+- Release identity (`RP-17`, `CL-18` amended, #113). SPEC.md §2.3 names the
+  completion release: `0.5.0` when it satisfies the §30.4 criterion, `1.0.0`
+  otherwise; §30.1 and §30.3 identify a release by its compiler version and,
+  for every supported language, the language and its compiler-semantics ID.
+  `lexlean --version` reports the languages `1.0`, `1.1` and `1.2`, each
+  followed by its own ID. `cargo xtask release-artifacts` writes
+  `release/compiler-semantics-id.txt` as one `<language> <ID>` line per
+  language, and writes `release-identity.json` with `compiler_semantics_ids`
+  beside `compiler_semantics_id` (language 1.0's, as before). `cargo xtask
+  release-check` reads the completion release and the version report from the
+  chapter modules instead of restating `1.0.0`, and compares every ID the
+  staged list and report carry with the ID compiled into the compiler for that
+  language (`lexlean::compiler_semantics_id_for`), where before it compared the
+  two staged files with each other. `release.yml` checks each host binary's
+  report against the §30.3 fence, its line count included, instead of a count
+  written in the workflow. Register 445.
 
 - SPEC.md §3 and §4 state production compilation and its guarantee (#112,
   L1.1 of #106). §3 lists the Rust package per production root and target as
@@ -37,6 +55,18 @@ and Unreleased holds what has landed since.
   record; aarch64 behaves the same; wasm32 accepts the call without the
   attribute; thumbv7em refuses the `dsp` feature and its intrinsics as
   unstable. Register unchanged (444).
+
+- A source's module is the environment the parser opens (`AU-14`, #241).
+  `lexlean::surface::module::locate` takes the first environment after the
+  `\begin{lexlean}` header and ends its body at the first `\end` control atom,
+  read over the scanner's control atoms with the escape `\\` as one atom.
+  Before, it took the first `\begin{<kind>}` and the last `\end{<kind>}` in the
+  text, kind by kind, so a tooling or core module whose strings quote another
+  kind's markers was read, formatted, decoded, and hashed as that kind or as no
+  module. Such a module is now its own kind in `lexlean::sdk`, `fmt`, the core
+  decoder, and the compiler-semantics ID; a body holding an unescaped end
+  marker is `LLP2003` and no module; every committed source classifies as
+  before. Register 444.
 
 - CI toolchain fetches (#242): every step of `ci.yml`, `honesty.yml` and
   `reproducibility.yml` that fetches elan, the pinned Lean toolchain, or the

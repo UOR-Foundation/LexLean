@@ -130,11 +130,12 @@ Feature: cli-api
     And its build ID equals the baseline
 
   @CL-18 @build
-  Scenario: Version output reports compiler, language, semantics ID, and Lean toolchain exactly.
-    Given the repository root as the working directory
+  Scenario: Version output reports the compiler version, every supported language in ascending order each followed by its compiler-semantics ID, and the Lean toolchain exactly.
+    Given the repository root as the working directory, the compiler's supported languages, and the version report of SPEC.md §30.3
     When `lexlean --version` runs
     Then the exit code is 0
-    And stdout is exactly four lines `lexlean`, `language`, `compiler-semantics`, and `lean-toolchain` each followed by the compiled-in value
+    And stdout is exactly the `lexlean` line with the compiled-in version, then for each of the languages 1.0, 1.1 and 1.2 a `language` line and a `compiler-semantics` line with that language's ID, then the `lean-toolchain` line
+    And stdout is the §30.3 report with the compiled-in version and each language's ID in place of its placeholders
 
   @CL-19 @build
   Scenario: Snapshot returns a stable owned canonical semantic envelope without writing artifacts or invoking a backend.

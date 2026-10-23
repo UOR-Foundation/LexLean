@@ -998,14 +998,15 @@ fn workspace_version(root: &Path) -> Result<String, Fail> {
 /// `release/sbom.json`, and the evidence that `just vv` passed on the tagged
 /// commit as `release/vv-evidence.txt` — and this task derives everything
 /// else from the repository itself: the packaged crate, the
-/// compiler-semantics ID, the exact four-line `--version` output, the
-/// documents §30.3 names, and the checksum manifest over all of them.
+/// compiler-semantics ID of every supported language, the exact `--version`
+/// report, the documents §30.3 names, and the checksum manifest over all of
+/// them.
 ///
 /// Assembling is not releasing. `release-check` reads what this produced and
 /// refuses while any §30.3 artifact or §30.4 criterion is unmet, naming each
-/// one; §2.3 fixes the first release satisfying the complete specification at
-/// `1.0.0`, so before then the version criteria cannot hold and the refusal
-/// is the honest answer rather than a failure to be worked around.
+/// one; §2.3 names the completion release, the first release satisfying the
+/// complete specification, so before it the version criterion cannot hold and
+/// the refusal is the honest answer rather than a failure to be worked around.
 fn release_artifacts(root: &Path) -> Result<(), Fail> {
     let canonical_root = release_manifest::directory_root(root)?;
     let root = canonical_root.as_path();
@@ -1015,7 +1016,7 @@ fn release_artifacts(root: &Path) -> Result<(), Fail> {
     // Refuse aliases before overwriting any previously staged release asset.
     release_manifest::tree_files(&release)?;
 
-    // The four-line identity, from the binary this repository builds (§30.3).
+    // The version report, from the binary this repository builds (§30.3).
     let utf8_root = utf8(root)?;
     let mut stdout = Vec::new();
     let mut stderr = Vec::new();
@@ -1034,14 +1035,32 @@ fn release_artifacts(root: &Path) -> Result<(), Fail> {
     }
     let version_output = String::from_utf8(stdout)?;
     release_manifest::write_asset(&release, "version-output.txt", version_output.as_bytes())?;
-    let semantics = version_output
-        .lines()
-        .find_map(|line| line.strip_prefix("compiler-semantics "))
-        .ok_or("`lexlean --version` prints no compiler-semantics line (§30.3)")?;
+    // Each `language` line is followed by that language's semantics ID; the
+    // artifact lists them as `<language> <ID>`, one line each, in that order.
+    let mut languages: Vec<(String, String)> = Vec::new();
+    let mut lines = version_output.lines();
+    while let Some(line) = lines.next() {
+        if let Some(language) = line.strip_prefix("language ") {
+            let id = lines
+                .next()
+                .and_then(|next| next.strip_prefix("compiler-semantics "))
+                .ok_or(format!(
+                    "`lexlean --version` prints no compiler-semantics line after language {language} (§30.3)"
+                ))?;
+            languages.push((language.to_owned(), id.to_owned()));
+        }
+    }
+    let Some((_, semantics)) = languages.first().cloned() else {
+        return Err("`lexlean --version` reports no language (§30.3)".into());
+    };
+    let semantics_ids: String = languages
+        .iter()
+        .map(|(language, id)| format!("{language} {id}\n"))
+        .collect();
     release_manifest::write_asset(
         &release,
         "compiler-semantics-id.txt",
-        format!("{semantics}\n").as_bytes(),
+        semantics_ids.as_bytes(),
     )?;
 
     // The packaged crate, built by cargo from a clean tree: a release
@@ -1091,6 +1110,10 @@ fn release_artifacts(root: &Path) -> Result<(), Fail> {
         "package": "lexlean",
         "version": version,
         "compiler_semantics_id": semantics,
+        "compiler_semantics_ids": languages
+            .iter()
+            .map(|(language, id)| (language.clone(), serde_json::Value::from(id.as_str())))
+            .collect::<serde_json::Map<String, serde_json::Value>>(),
         "lean_toolchain": "leanprover/lean4:v4.32.1",
         "crate_sha256": crate_sha256,
         "manifest_sha256": manifest_sha256,
@@ -1141,7 +1164,7 @@ fn release_artifacts(root: &Path) -> Result<(), Fail> {
 
 /// RP-12: the release gate, plus the crate packaging round trip that needs
 /// cargo: the packaged crate builds standalone offline and reports the same
-/// four-line identity as the in-repository binary (§30.3).
+/// version report as the in-repository binary (§30.3).
 fn release_check(root: &Path) -> Result<(), Fail> {
     let (_, hidden_tests) = repo_conformance::workspace_test_names_with_flags(root);
     let mut unmet: Vec<String> = match repo_model::release::check(root, &hidden_tests) {
@@ -1183,7 +1206,7 @@ fn release_check(root: &Path) -> Result<(), Fail> {
 }
 
 /// §30.3, RP-12: verify the packaged crate builds standalone offline
-/// and reports byte-identical four-line identity matching in-repository binary.
+/// and reports the version report of the in-repository binary byte for byte.
 fn check_package(root: &Path) -> Result<(), Fail> {
     let utf8_root = utf8(root)?;
     let version = workspace_version(root)?;
