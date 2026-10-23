@@ -199,3 +199,10 @@ Feature: preservation
     When the pinned Lean elaborates the module and its theorems are listed by name
     Then a theorem states each function the module defines, and each is accepted with exactly the axioms its policy states
     And a machine call of another primitive, a theorem for another function, a function without a theorem, and a theorem that states another runtime item are each refused
+
+  @SP-30 @build
+  Scenario: Every runtime item the generated code calls has its refinement statement: each item of the compiler's table of runtime items, every fixed width included, is stated by exactly one theorem `refines_<function>` of the language-1.2 module `RustRuntime` of the compiler project if the item is of the core profile, or of the module `RustStd` if it is of `rust-std`, whose statement runs, in that module's crate, the function the generated code calls for the item and equates it with the run of the item itself at the item's profile, or is `equal` or `compare`, whose meaning `SP-25` states per type; the items are listed from the compiler's table and the statements from the modules' theorems, neither from the other, and a runtime item with no refinement statement, a statement of another item than the one its function is called for, a statement at the other profile, an item the generated code calls another function for than the one its statement runs, and a trait item without the theorems of `SP-25` are each refused naming the item.
+    Given the compiler's table of runtime items and the committed modules RustRuntime, RustStd and RuntimeSupport of the compiler project
+    When each theorem `refines_<function>` of RustRuntime and RustStd is read for the function it runs and the runtime item it states
+    Then every runtime item is stated by exactly one theorem, at its profile, on the function the generated code calls for it, or is a trait item with the theorems of SP-25
+    And a theorem left out, a statement of another item, a statement at the other profile, an item called as another function, and a trait item without its theorems are each refused naming the item

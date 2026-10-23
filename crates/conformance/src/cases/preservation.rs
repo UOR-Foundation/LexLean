@@ -4809,6 +4809,8 @@ pub fn run(id: &str) {
         "SP-27" => super::rust_lists::run(id),
         "SP-28" => super::rust_prims::run(id),
         "SP-29" => super::rust_std::run(id),
+        // §17.16, §17.17: every runtime item has its refinement statement.
+        "SP-30" => super::rust_items::run(id),
         "SP-23" => {
             let syntax = support::module_json(
                 &std::fs::read_to_string(
