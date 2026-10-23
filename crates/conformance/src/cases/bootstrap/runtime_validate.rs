@@ -11,14 +11,14 @@ use std::collections::BTreeMap;
 use std::sync::OnceLock;
 
 use lexlean::calculus::rust::rt::{
-    Arm, Block, Crate, Expr, Function, Generic, Item, Param, Pat, Profile, Sig, Type, Variant,
+    Arm, Block, Crate, Expr, Function, Generic, Item, Lit, Param, Pat, Profile, Sig, Type, Variant,
 };
 use lexlean::calculus::rust::{rt_decode, rt_validate};
 use lexlean::calculus::Value;
 
 use super::rust_validate::{eligibility_of, rustc_differential, value_nodes, verdict};
 use super::{list, text, Run, Seeded};
-use crate::cases::rust_heap_syntax::probe_plants;
+use crate::cases::rust_heap_syntax::{probe_plants, site_plants};
 use crate::cases::rust_support::{ast_plants, replace_nth, rules_named, text_plants};
 use crate::production_export as harness;
 use crate::support::{self, repo_root};
@@ -155,6 +155,15 @@ fn enc_optional_type(ty: &Option<Type>) -> Value {
     }
 }
 
+/// The number of scalar values of a character literal, and one for every other
+/// literal, which the validator does not count.
+fn scalars(lit: &Lit) -> u64 {
+    match lit {
+        Lit::Char(text) => text.chars().count() as u64,
+        Lit::Unit | Lit::Bool(_) | Lit::Nat(_) | Lit::Str(_) => 1,
+    }
+}
+
 fn enc_pats(pats: &[Pat]) -> Value {
     chain("Pat", "PNil", "PCons", pats.iter().map(enc_pat).collect())
 }
@@ -174,7 +183,7 @@ fn enc_pat(pat: &Pat) -> Value {
             "PStruct",
             vec![texts(path), texts(names), enc_pats(items)],
         ),
-        Pat::Lit(_) => adt("Pat", "PLit", Vec::new()),
+        Pat::Lit(lit) => adt("Pat", "PLit", vec![nat(scalars(lit))]),
     }
 }
 
@@ -239,7 +248,7 @@ fn enc_expr(expr: &Expr) -> Value {
     let e = |name: &str, fields: Vec<Value>| adt("Expr", name, fields);
     match expr {
         Expr::Var(name) => e("EVar", vec![text(name)]),
-        Expr::Lit(_) => e("ELit", Vec::new()),
+        Expr::Lit(lit) => e("ELit", vec![nat(scalars(lit))]),
         Expr::Path(path) => e("EPath", vec![texts(path)]),
         Expr::Call(path, arguments) => e("ECall", vec![texts(path), exprs(arguments)]),
         Expr::Method(receiver, name, arguments) => e(
@@ -275,7 +284,7 @@ fn enc_expr(expr: &Expr) -> Value {
         Expr::StructLit(path, names, values) => {
             e("EStructLit", vec![texts(path), texts(names), exprs(values)])
         }
-        Expr::Binary(_, a, b) => e("EBinary", vec![enc_expr(a), enc_expr(b)]),
+        Expr::Binary(op, a, b) => e("EBinary", vec![nat(*op as u64), enc_expr(a), enc_expr(b)]),
         Expr::Not(inner) => e("ENot", vec![enc_expr(inner)]),
         Expr::Cast(inner, ty) => e("ECast", vec![enc_expr(inner), enc_type(ty)]),
         Expr::Index(a, b) => e("EIndex", vec![enc_expr(a), enc_expr(b)]),
@@ -356,7 +365,7 @@ fn enc_item(item: &Item) -> Value {
                 texts(&alias.iter().cloned().collect::<Vec<_>>()),
             ],
         ),
-        Item::UnitStruct(name, _) => i("IUnit", vec![text(name)]),
+        Item::UnitStruct(name, derives) => i("IUnit", vec![text(name), texts(derives)]),
         Item::Alias(name, parameters, ty) => {
             i("IAlias", vec![text(name), texts(parameters), enc_type(ty)])
         }
@@ -377,19 +386,31 @@ fn enc_item(item: &Item) -> Value {
             ],
         ),
         Item::Fn(function) => i("IFn", vec![enc_function(function)]),
-        Item::TupleStruct(name, generics, _, types) => i(
+        Item::TupleStruct(name, generics, derives, types) => i(
             "ITuple",
-            vec![text(name), texts(generics), enc_types(types)],
+            vec![
+                text(name),
+                texts(generics),
+                texts(derives),
+                enc_types(types),
+            ],
         ),
-        Item::RecordStruct(name, generics, _, fields, types) => i(
+        Item::RecordStruct(name, generics, derives, fields, types) => i(
             "IRecord",
-            vec![text(name), texts(generics), texts(fields), enc_types(types)],
+            vec![
+                text(name),
+                texts(generics),
+                texts(derives),
+                texts(fields),
+                enc_types(types),
+            ],
         ),
-        Item::Enum(name, generics, _, variants) => i(
+        Item::Enum(name, generics, derives, variants) => i(
             "IEnum",
             vec![
                 text(name),
                 texts(generics),
+                texts(derives),
                 list(variants.iter().map(enc_variant).collect()),
             ],
         ),
@@ -451,6 +472,9 @@ fn named() -> Vec<(String, Crate)> {
     }
     for (what, planted, _) in probe_plants(&probed) {
         out.push((format!("probe: {what}"), planted));
+    }
+    for (what, planted, _, _) in site_plants(&probed) {
+        out.push((format!("site: {what}"), planted));
     }
     out
 }
