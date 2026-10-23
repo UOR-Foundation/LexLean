@@ -1,0 +1,36 @@
+append_bytes d72eae7771a06dbb
+append_list 2ebe21ef9d0cf0ca
+compare_bytes e2adb30a01f3d585
+format_i16 54ff485e33e362e1
+format_i32 4fa21dd5db5fba07
+format_i64 c1ac730519edaf76
+format_i8 61b0b2a3954c0093
+format_u16 aeb436bae7dc7df0
+format_u32 ec5cca379878c877
+format_u64 08dbaf19e0f8b720
+format_u8 20f26950639fcb5e
+index_bytes 39c38cf3a9682d1a
+index_list 7abdf7805c3a67b2
+join 1ee073ca1bbad4e1
+length_bytes a352f8c62ee5abd6
+length_list 94ad45d1047e36cf
+length_string a80a9f2efd28b5f7
+parse_i16 2403f52c539d1005
+parse_i32 6d3fecb34dd0eb60
+parse_i64 ee42b1ddf6225ae3
+parse_i8 53fec5549f774c2e
+parse_int 23309c140ed4ec3c
+parse_u16 d5d1b6a32b371839
+parse_u32 6d09e1d0c30c1b30
+parse_u64 253f4a28846a7e08
+parse_u8 739d63c96827a38f
+slice_bytes 83531e3a3bcc4f6f
+slice_list 01c2096a512aae01
+split_exact 62bdae5839cd331f
+support building 01b4814c09154f91
+support compare text 9d66104510eb1361
+support equal bytes 7df6fd0ce861efdd
+support equal text f1b9370915272f95
+support uncons dc2f5f0f94cf2a23
+utf8_decode f8f79f9c4ca5bc64
+utf8_encode 9ba9df00bb96d6ae

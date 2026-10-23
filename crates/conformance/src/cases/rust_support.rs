@@ -9,11 +9,13 @@
 
 use lexlean::calculus::rust::{rt, rt_decode, rt_validate, runtime, source};
 
-use super::rust_runtime::{differ_with, PRELUDE};
+use super::rust_runtime::{differ_with, disagreement, golden_of, prelude, transcript_of};
 use crate::support::repo_root;
 
 const MODULE: &str = "compiler/src/RuntimeSupport.lex.tex";
 const SHIPPED: &str = "language/rust-runtime-1.2/RuntimeSupport.lex.tex";
+/// The golden transcript of the harness on the core runtime with the printed support.
+const GOLDEN: &str = "tests/rust-runtime-golden/support.txt";
 /// The seeded rounds of nested keys, four comparisons each: two of depth two
 /// and two of depth three.
 pub const NESTED: usize = 500;
@@ -22,7 +24,7 @@ const WIDTHS: [&str; 8] = ["u8", "u16", "u32", "u64", "i8", "i16", "i32", "i64"]
 /// The calls the differential makes: `equal` and `compare` at every scalar
 /// type, `equal` of orderings, `compare` of pairs of scalars, `tick`, `work`.
 fn harness() -> String {
-    let mut out = String::from(PRELUDE);
+    let mut out = prelude();
     out.push_str("    use std::cmp::Ordering;\n    let orders = [Ordering::Less, Ordering::Equal, Ordering::Greater];\n");
     out.push_str("    for &a in &[false, true] { for &b in &[false, true] { same!(equal(a, b)); same!(compare(a, b)); } }\n");
     out.push_str("    for &a in &orders { for &b in &orders { same!(equal(a, b)); } }\n");
@@ -37,10 +39,10 @@ fn harness() -> String {
     // values, so that the first components tie and the comparison falls
     // through to the next level.
     out.push_str(&format!(
-        "    let mut tally = [0usize; 3];\n    for _ in 0..{NESTED} {{\n      let t = |n: u64| n % 3;\n      let (a, b, c, d) = (t(next()), t(next()), t(next()), t(next()));\n      let (e, f, g, h) = (t(next()), t(next()), t(next()), t(next()));\n      same!(compare(((a as u8, b as i64), c % 2 == 0), ((e as u8, f as i64), g % 2 == 0)));\n      same!(compare((a as u32, (b as i8, c as u64)), (e as u32, (f as i8, g as u64))));\n      same!(compare((((a as u8, b == 0), (c as i32, d as u64)), (h as i8, a as i16)), (((e as u8, f == 0), (g as i32, h as u64)), (h as i8, a as i16))));\n      same!(compare((((a as u8, b == 0), (c as i32, d as u64)), (h as i8, a as i16)), (((a as u8, b == 0), (c as i32, h as u64)), (e as i8, f as i16))));\n      for o in [new::compare((((a as u8, b == 0), (c as i32, d as u64)), (h as i8, a as i16)), (((e as u8, f == 0), (g as i32, h as u64)), (h as i8, a as i16))), new::compare((((a as u8, b == 0), (c as i32, d as u64)), (h as i8, a as i16)), (((a as u8, b == 0), (c as i32, h as u64)), (e as i8, f as i16)))] {{ tally[(o as i8 + 1) as usize] += 1; }}\n    }}\n    println!(\"nested {{tally:?}}\");\n"
+        "    let mut tally = [0usize; 3];\n    for _ in 0..{NESTED} {{\n      let t = |n: u64| n % 3;\n      let (a, b, c, d) = (t(next()), t(next()), t(next()), t(next()));\n      let (e, f, g, h) = (t(next()), t(next()), t(next()), t(next()));\n      same!(compare(((a as u8, b as i64), c % 2 == 0), ((e as u8, f as i64), g % 2 == 0)));\n      same!(compare((a as u32, (b as i8, c as u64)), (e as u32, (f as i8, g as u64))));\n      same!(compare((((a as u8, b == 0), (c as i32, d as u64)), (h as i8, a as i16)), (((e as u8, f == 0), (g as i32, h as u64)), (h as i8, a as i16))));\n      same!(compare((((a as u8, b == 0), (c as i32, d as u64)), (h as i8, a as i16)), (((a as u8, b == 0), (c as i32, h as u64)), (e as i8, f as i16))));\n      for o in [m::compare((((a as u8, b == 0), (c as i32, d as u64)), (h as i8, a as i16)), (((e as u8, f == 0), (g as i32, h as u64)), (h as i8, a as i16))), m::compare((((a as u8, b == 0), (c as i32, d as u64)), (h as i8, a as i16)), (((a as u8, b == 0), (c as i32, h as u64)), (e as i8, f as i16)))] {{ tally[(o as i8 + 1) as usize] += 1; }}\n    }}\n    println!(\"nested {{tally:?}}\");\n"
     ));
     out.push_str("    same!(compare((1u8, -1i64), (1u8, 5i64)));\n    same!(compare((1u64, 2u8), (1u64, 2u8)));\n");
-    out.push_str("    for &u in &[0u64, 1, 7, 1 << 40, u64::MAX / 2] { same!(tick(u)); same!(work()); }\n    println!(\"runtime\");\n}\n");
+    out.push_str("    for &u in &[0u64, 1, 7, 1 << 40, u64::MAX / 2] { same!(tick(u)); same!(work()); }\n    report();\n    println!(\"runtime\");\n}\n");
     out
 }
 
@@ -92,6 +94,14 @@ pub fn run(id: &str) {
     let ran = differ_with(&oracle, &generated, harness())
         .expect("the printed support agrees with the oracle");
     assert_eq!(ran.lines().last(), Some("runtime"));
+    assert_eq!(
+        disagreement(
+            &transcript_of(&ran),
+            &golden_of(GOLDEN, &transcript_of(&ran))
+        ),
+        None,
+        "the transcript is the golden one"
+    );
     // The nested-key corpus is measured: how many of its comparisons the
     // depth-three keys decide as less, equal, and greater.
     let nested = ran
@@ -121,21 +131,21 @@ pub fn run(id: &str) {
             "(ctor RuntimeSyntax::RtExpr.lit (ctor RuntimeSyntax::RtLit.nat 0))",
             "(ctor RuntimeSyntax::RtExpr.lit (ctor RuntimeSyntax::RtLit.nat 1))",
             0,
-            "work result",
+            "work",
         ),
         (
             "compare keys the right value against the left",
             "(ctor RuntimeSyntax::RtExpr.method (ctor RuntimeSyntax::RtExpr.var \"a\") \"key\" (cons (ctor RuntimeSyntax::RtExpr.borrow (ctor RuntimeSyntax::RtExpr.var \"b\"))",
             "(ctor RuntimeSyntax::RtExpr.method (ctor RuntimeSyntax::RtExpr.var \"b\") \"key\" (cons (ctor RuntimeSyntax::RtExpr.borrow (ctor RuntimeSyntax::RtExpr.var \"a\"))",
             0,
-            "compare result",
+            "compare",
         ),
         (
             "the key of a scalar is reversed",
             "(ctor RuntimeSyntax::RtExpr.method (ctor RuntimeSyntax::RtExpr.var \"self\") \"cmp\" (cons (ctor RuntimeSyntax::RtExpr.var \"other\")",
             "(ctor RuntimeSyntax::RtExpr.method (ctor RuntimeSyntax::RtExpr.var \"other\") \"cmp\" (cons (ctor RuntimeSyntax::RtExpr.var \"self\")",
             0,
-            "compare result",
+            "compare",
         ),
     ] {
         let changed = replace_nth(&shipped, from, to, nth);

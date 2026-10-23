@@ -130,39 +130,7 @@ pub fn core() -> Result<&'static str, String> {
         .map_err(Clone::clone)
 }
 
-/// The decimal text of the std runtime, which the module `RuntimeStd` does
-/// not yet hold: the canonical-decimal check, `parse_int`, and the sixteen
-/// `format_`/`parse_` functions, each of which ticks once per character.
-pub const STD_DECIMAL: &str = r#"
-fn canonical_decimal(text: &str) -> Option<Option<i128>> {
-    let digits = text.strip_prefix('-').unwrap_or(text);
-    let mut canonical = !digits.is_empty() && (digits == "0" || !digits.starts_with('0')) && text != "-0";
-    for c in digits.chars() { tick(1); canonical = canonical && c.is_ascii_digit(); }
-    if !canonical { return None; }
-    Some(text.parse::<i128>().ok())
-}
-pub fn parse_int(text: Str) -> R<Option<i64>> {
-    match canonical_decimal(&text.0) {
-        None => Ok(None),
-        Some(Some(n)) => i64::try_from(n).map(Some).map_err(|_| Overflow),
-        Some(None) => Err(Overflow),
-    }
-}
-macro_rules! decimal {
-    ($t:ident, $format:ident, $parse:ident) => {
-        pub fn $format(a: $t) -> Str { let text = a.to_string(); tick(text.len() as u64); Str::lit(&text) }
-        pub fn $parse(text: Str) -> Option<$t> {
-            match canonical_decimal(&text.0) { Some(Some(n)) => $t::try_from(n).ok(), _ => None }
-        }
-    };
-}
-decimal!(u8, format_u8, parse_u8); decimal!(u16, format_u16, parse_u16);
-decimal!(u32, format_u32, parse_u32); decimal!(u64, format_u64, parse_u64);
-decimal!(i8, format_i8, parse_i8); decimal!(i16, format_i16, parse_i16);
-decimal!(i32, format_i32, parse_i32); decimal!(i64, format_i64, parse_i64);
-"#;
-
-/// The types, impls, and helpers of the std runtime: the crate of a
+/// The types, impls, helpers, and number text of the std runtime: the crate of a
 /// `RuntimeStd` module decoded, checked by the validator of `RuntimeSyntax`
 /// together with the support items it stands on, and printed. The support
 /// items are checked with it and not printed: the core runtime already
@@ -185,22 +153,17 @@ pub fn std_types_from(module: &str) -> Result<String, String> {
 }
 
 /// The base the functions of `RustStd` are printed after: [`std_types_from`]
-/// the embedded module, then [`STD_DECIMAL`].
+/// the embedded module.
 ///
 /// # Errors
 ///
 /// Returns the reason the module cannot be read, or its crate is not valid.
 pub fn std_base() -> Result<&'static str, String> {
     static BASE: OnceLock<Result<String, String>> = OnceLock::new();
-    BASE.get_or_init(|| {
-        Ok(format!(
-            "{}{STD_DECIMAL}",
-            std_types_from(rt_decode::embedded_std()?)?
-        ))
-    })
-    .as_ref()
-    .map(String::as_str)
-    .map_err(Clone::clone)
+    BASE.get_or_init(|| std_types_from(rt_decode::embedded_std()?))
+        .as_ref()
+        .map(String::as_str)
+        .map_err(Clone::clone)
 }
 
 /// The std runtime text of a `RustStd` module over `base`: its functions

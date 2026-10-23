@@ -18,6 +18,8 @@ use crate::support::repo_root;
 
 const MODULE: &str = "compiler/src/RustRuntime.lex.tex";
 const SHIPPED: &str = "language/rust-runtime-1.2/RustRuntime.lex.tex";
+/// The golden transcript of the harness on the core runtime.
+const GOLDEN: &str = "tests/rust-runtime-golden/core.txt";
 
 /// The calls the differential makes of each defined function: the `same!`
 /// of the harness runs the oracle's and the generated function on the same
@@ -156,36 +158,40 @@ fn covered(items: &[ItemDef]) -> Result<(), String> {
     Ok(())
 }
 
-/// The prelude of every harness: both runtimes and the `same!` that runs a
-/// call of each and compares what it returns and the work it counts.
-pub(super) const PRELUDE: &str = "use runtime_diff::{new, old};\nmacro_rules! same {\n    ($($f:ident)::+($($a:expr),*)) => {{\n        let (w0, w1) = (old::work(), new::work());\n        let x = old::$($f)::+($($a),*);\n        let y = new::$($f)::+($($a),*);\n        assert_eq!(format!(\"{x:?}\"), format!(\"{y:?}\"), \"{} result\", stringify!($($f)::+));\n        assert_eq!(old::work() - w0, new::work() - w1, \"{} work\", stringify!($($f)::+));\n    }};\n}\nfn main() {\n    let nats = [0u64, 1, 2, 3, 7, u32::MAX as u64, u32::MAX as u64 + 1, u64::MAX / 2, u64::MAX - 2, u64::MAX - 1, u64::MAX];\n    let ints = [i64::MIN, i64::MIN + 1, -3037000500, -2, -1, 0, 1, 2, 3037000500, i64::MAX - 1, i64::MAX];\n    let mut seed = 0x9e37_79b9_7f4a_7c15_u64;\n    let mut next = move || { seed ^= seed << 13; seed ^= seed >> 7; seed ^= seed << 17; seed };\n";
+/// The recorder every harness reports through: each observation (a label, the
+/// debug form of what a call returned, and the work it counted) is folded, in
+/// order, into a 64-bit FNV-1a digest kept per label, and the digests are
+/// printed at the end. The digest of a label is what the golden transcripts of
+/// `tests/rust-runtime-golden/` record.
+pub(super) const RECORDER: &str = "use std::cell::RefCell;\nuse std::collections::BTreeMap;\nthread_local! { static SEEN: RefCell<BTreeMap<String, u64>> = const { RefCell::new(BTreeMap::new()) }; }\nfn seen(label: &str, value: &str, work: u64) {\n    SEEN.with(|seen| {\n        let mut seen = seen.borrow_mut();\n        let digest = seen.entry(label.to_owned()).or_insert(0xcbf2_9ce4_8422_2325);\n        for byte in value.bytes().chain(*b\"/\").chain(work.to_string().into_bytes()).chain(*b\";\") {\n            *digest ^= u64::from(byte);\n            *digest = digest.wrapping_mul(0x0100_0000_01b3);\n        }\n    });\n}\nfn report() {\n    SEEN.with(|seen| {\n        for (label, digest) in seen.borrow().iter() { println!(\"transcript {label} {digest:016x}\"); }\n    });\n}\n";
+
+/// The prelude of every harness of the scalar runtime: the recorder and the
+/// `same!` that runs a call of the runtime and records what it returns and
+/// the work it counts.
+pub(super) fn prelude() -> String {
+    format!(
+        "use runtime_diff::rt as m;\n{RECORDER}macro_rules! same {{\n    ($($f:ident)::+($($a:expr),*)) => {{{{\n        let w0 = m::work();\n        let x = m::$($f)::+($($a),*);\n        seen(&stringify!($($f)::+).replace(' ', \"\"), &format!(\"{{x:?}}\"), m::work() - w0);\n    }}}};\n}}\nfn main() {{\n    let nats = [0u64, 1, 2, 3, 7, u32::MAX as u64, u32::MAX as u64 + 1, u64::MAX / 2, u64::MAX - 2, u64::MAX - 1, u64::MAX];\n    let ints = [i64::MIN, i64::MIN + 1, -3037000500, -2, -1, 0, 1, 2, 3037000500, i64::MAX - 1, i64::MAX];\n    let mut seed = 0x9e37_79b9_7f4a_7c15_u64;\n    let mut next = move || {{ seed ^= seed << 13; seed ^= seed >> 7; seed ^= seed << 17; seed }};\n"
+    )
+}
 
 /// The harness: both runtimes, every function of the differential.
 fn harness() -> String {
-    let mut out = String::from(PRELUDE);
+    let mut out = prelude();
     for (_, calls) in differential() {
         out.push_str("    {\n    ");
         out.push_str(&calls);
         out.push_str("\n    }\n");
     }
-    out.push_str("    println!(\"runtime\");\n}\n");
+    out.push_str("    report();\n    println!(\"runtime\");\n}\n");
     out
 }
 
-/// Compile the oracle and `generated` as modules of one crate and run the
-/// differential: the output of the harness, or the reason it failed.
-fn differ(oracle: &str, generated: &str) -> Result<String, String> {
-    differ_with(oracle, generated, harness())
-}
-
-/// [`differ`] with the harness `harness`.
-pub(super) fn differ_with(
-    oracle: &str,
-    generated: &str,
-    harness: String,
-) -> Result<String, String> {
+/// Compile `runtime` as the module `rt` of a crate under the pinned rustc with
+/// warnings denied and run `harness` on it: the standard output of the
+/// harness, or the reason it failed.
+pub(super) fn run_harness(runtime: &str, harness: String) -> Result<String, String> {
     let directory = tempfile::tempdir().expect("a directory");
-    let lib = format!("pub mod old {{\n{oracle}\n}}\npub mod new {{\n{generated}\n}}\n");
+    let lib = format!("pub mod rt {{\n{runtime}\n}}\n");
     let files: BTreeMap<String, Vec<u8>> = BTreeMap::from([
         (
             "Cargo.toml".to_owned(),
@@ -214,6 +220,88 @@ pub(super) fn differ_with(
             String::from_utf8_lossy(&output.stderr)
         ))
     }
+}
+
+/// The transcript a harness printed: each label with the digest of what the
+/// calls under it returned and counted.
+pub(super) fn transcript_of(output: &str) -> Vec<(String, String)> {
+    output
+        .lines()
+        .filter_map(|line| line.strip_prefix("transcript "))
+        .filter_map(|line| line.rsplit_once(' '))
+        .map(|(label, digest)| (label.to_owned(), digest.to_owned()))
+        .collect()
+}
+
+/// The golden transcript at `path`, one `label digest` per line.
+pub(super) fn golden(path: &str) -> Vec<(String, String)> {
+    let text = std::fs::read_to_string(repo_root().join(path).as_std_path())
+        .unwrap_or_else(|error| panic!("{path}: {error}"));
+    text.lines()
+        .map(|line| {
+            let (label, digest) = line.rsplit_once(' ').expect("a label and a digest");
+            (label.to_owned(), digest.to_owned())
+        })
+        .collect()
+}
+
+/// Record `observed` at `path` when `LEXLEAN_WRITE_GOLDEN` is set (the run that
+/// wrote the golden files compared the handwritten runtime with the generated
+/// one first), and read the golden transcript at `path`.
+pub(super) fn golden_of(path: &str, observed: &[(String, String)]) -> Vec<(String, String)> {
+    if std::env::var_os("LEXLEAN_WRITE_GOLDEN").is_some() {
+        let text: String = observed
+            .iter()
+            .map(|(label, digest)| format!("{label} {digest}\n"))
+            .collect();
+        std::fs::write(repo_root().join(path).as_std_path(), text).expect("the golden file");
+    }
+    golden(path)
+}
+
+/// The labels in which two transcripts differ, or `None` when they agree.
+pub(super) fn disagreement(
+    observed: &[(String, String)],
+    expected: &[(String, String)],
+) -> Option<String> {
+    let mut labels: BTreeSet<&str> = BTreeSet::new();
+    for (label, digest) in observed {
+        if !expected.iter().any(|(l, d)| l == label && d == digest) {
+            labels.insert(label);
+        }
+    }
+    for (label, _) in expected {
+        if !observed.iter().any(|(l, _)| l == label) {
+            labels.insert(label);
+        }
+    }
+    (!labels.is_empty()).then(|| {
+        format!(
+            "the transcript differs in: {}",
+            labels.into_iter().collect::<Vec<_>>().join(", ")
+        )
+    })
+}
+
+/// Run `harness` on the handwritten runtime `oracle` and on `generated` and
+/// require the two transcripts to agree: the output of the generated run, or
+/// the reason it failed or differs.
+pub(super) fn differ_with(
+    oracle: &str,
+    generated: &str,
+    harness: String,
+) -> Result<String, String> {
+    let recorded = run_harness(oracle, harness.clone())?;
+    let ran = run_harness(generated, harness)?;
+    match disagreement(&transcript_of(&ran), &transcript_of(&recorded)) {
+        Some(reason) => Err(reason),
+        None => Ok(ran),
+    }
+}
+
+/// [`differ_with`] with the harness of the scalar runtime.
+fn differ(oracle: &str, generated: &str) -> Result<String, String> {
+    differ_with(oracle, generated, harness())
 }
 
 /// Run the case of `RB-16`.
@@ -270,39 +358,39 @@ pub fn run(id: &str) {
     }
     let generated = runtime::assemble(support, &decoded.core.items);
     let ran = differ(&oracle, &generated).expect("the generated runtime agrees with the oracle");
-    assert_eq!(ran, "runtime");
+    assert_eq!(ran.lines().last(), Some("runtime"));
+    assert_eq!(
+        disagreement(
+            &transcript_of(&ran),
+            &golden_of(GOLDEN, &transcript_of(&ran))
+        ),
+        None,
+        "the transcript is the golden one"
+    );
 
     // A function whose body computes another result is caught by the
     // differential, not by the decoder: the checked product for the checked
     // sum, the checked difference for the checked sum of integers, the strict
     // order for the loose one, the remainder for the quotient.
     for (from, to, caught) in [
-        (
-            "Machine.checkedNatAdd",
-            "Machine.checkedNatMul",
-            "nat_add result",
-        ),
-        (
-            "Machine.checkedIntAdd",
-            "Machine.checkedIntSub",
-            "int_add result",
-        ),
-        ("Machine.natLe", "Machine.natLt", "nat_le result"),
-        ("Machine.natQuot", "Machine.natRem", "nat_quot result"),
+        ("Machine.checkedNatAdd", "Machine.checkedNatMul", "nat_add"),
+        ("Machine.checkedIntAdd", "Machine.checkedIntSub", "int_add"),
+        ("Machine.natLe", "Machine.natLt", "nat_le"),
+        ("Machine.natQuot", "Machine.natRem", "nat_quot"),
         (
             "Machine.checkedAdd (ctor TargetSyntax::IntKind.u8)",
             "Machine.checkedSub (ctor TargetSyntax::IntKind.u8)",
-            "fixed_u8::checked_addresult",
+            "fixed_u8::checked_add",
         ),
         (
             "Machine.checkedShl (ctor TargetSyntax::IntKind.i32)",
             "Machine.checkedShr (ctor TargetSyntax::IntKind.i32)",
-            "fixed_i32::shift_leftresult",
+            "fixed_i32::shift_left",
         ),
         (
             "Machine.bitXor (ctor TargetSyntax::IntKind.u16)",
             "Machine.bitOr (ctor TargetSyntax::IntKind.u16)",
-            "fixed_u16::bit_xorresult",
+            "fixed_u16::bit_xor",
         ),
     ] {
         let changed = shipped.replacen(from, to, 1);

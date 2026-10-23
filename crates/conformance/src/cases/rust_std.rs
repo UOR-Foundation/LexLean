@@ -14,7 +14,7 @@ use lexlean::calculus::rust::ast::{Ident, ItemDef};
 use lexlean::calculus::rust::{rt_decode, runtime, source};
 
 use super::rust_refinement::project_of;
-use super::rust_runtime::differ_with;
+use super::rust_runtime::{differ_with, disagreement, golden_of, transcript_of, RECORDER};
 use crate::support::{self, repo_root};
 
 const MODULE: &str = "compiler/src/RustStd.lex.tex";
@@ -102,84 +102,46 @@ const LAWS: [(&str, &str, &[&str]); 14] = [
     ("join", "refines_join", &["runExport", "runItem"]),
 ];
 
-/// The prelude of the harness: both runtimes, and a builder of a list of `n`
-/// cells of one of four shapes, which returns the list and the handles that
-/// keep the buffer it shares alive for the call.
-const PRELUDE: &str = "use runtime_diff::{new, old};\nmacro_rules! build {\n    ($m:ident, $n:expr, $shape:expr) => {{\n        let mut list = $m::List::nil();\n        for i in 0..$n { list = $m::List::cons(i as u64, list); }\n        match $shape {\n            1 => match list.uncons() {\n                Some((head, tail)) => { drop(list); ($m::List::cons(head, tail), None) }\n                None => (list, None),\n            },\n            2 => { let shared = list.clone(); ($m::List::cons(7u64, shared), Some(list)) }\n            3 => { let shared = list.clone(); ($m::List::cons(1u64, $m::List::cons(2u64, shared)), Some(list)) }\n            _ => (list, None),\n        }\n    }};\n}\nmacro_rules! items {\n    ($l:expr) => {{\n        let mut out = Vec::new();\n        let mut cur = $l;\n        while let Some((head, tail)) = cur.uncons() { out.push(head); cur = tail; }\n        out\n    }};\n}\nfn main() {\n    let lengths: Vec<usize> = (0..=70).chain([1000, 4096, 200_000]).collect();\n    let byte_cases: Vec<Vec<u8>> = vec![vec![], vec![0], vec![1, 2, 3], (0..70u8).collect(), vec![255; 1000], (0..4096u32).map(|i| i as u8).collect(), \"h\u{e9}llo\".as_bytes().to_vec(), vec![0xff, 0xfe], vec![0xe2, 0x82]];\n    let text_cases: Vec<String> = vec![String::new(), \"a\".into(), \"h\u{e9}llo\".into(), \"a,b,,c\".into(), \",\".into(), \"\u{e9},\".repeat(2000), \"abc\".repeat(1500), \"\u{1f600}x\".into()];\n    macro_rules! texts {\n        ($m:ident, $v:expr) => {{\n            let mut list = $m::List::nil();\n            for t in $v.iter().rev() { list = $m::List::cons($m::Str::lit(t), list); }\n            list\n        }};\n    }\n    macro_rules! shaped_texts {\n        ($m:ident, $v:expr, $shape:expr) => {{\n            let list = texts!($m, $v);\n            match $shape {\n                1 => match list.uncons() {\n                    Some((head, tail)) => { drop(list); ($m::List::cons(head, tail), None) }\n                    None => (list, None),\n                },\n                2 => { let shared = list.clone(); ($m::List::cons($m::Str::lit(\"x\"), shared), Some(list)) }\n                3 => { let shared = list.clone(); ($m::List::cons($m::Str::lit(\"y\"), $m::List::cons($m::Str::lit(\"\\u{e9}\"), shared)), Some(list)) }\n                _ => (list, None),\n            }\n        }};\n    }\n    macro_rules! strings {\n        ($l:expr) => {{ items!($l).iter().map(|t| t.text().to_owned()).collect::<Vec<String>>() }};\n    }\n";
+/// The harness: a prelude that builds lists of four shapes, then one section per
+/// function of the module and per group of the support and the number text.
+/// Every call goes through the recorder of the harnesses, so the digest under
+/// a label is what the calls under it returned and counted.
+const HARNESS: &str = include_str!("rust_std_harness.txt");
 
-/// The calls the differential makes of each function the module defines.
-const CALLS: [(&str, &str); 14] = [
-    (
-        "append_list",
-        "    for &n in &lengths {\n        for m in [0usize, 1, 5, 70, 1000] {\n            for shape in 0..4 {\n                let (a, _keep_a) = build!(old, n, shape);\n                let (b, _keep_b) = build!(new, n, shape);\n                let (c, _keep_c) = build!(old, m, 0);\n                let (d, _keep_d) = build!(new, m, 0);\n                let (w0, w1) = (old::work(), new::work());\n                let x = old::append_list(a, c);\n                let y = new::append_list(b, d);\n                assert_eq!(old::work() - w0, new::work() - w1, \"append_list work\");\n                assert_eq!(items!(x), items!(y), \"append_list result\");\n            }\n        }\n    }\n",
-    ),
-    (
-        "length_list",
-        "    for &n in &lengths {\n        for shape in 0..4 {\n            let (a, _keep_a) = build!(old, n, shape);\n            let (b, _keep_b) = build!(new, n, shape);\n            let (w0, w1) = (old::work(), new::work());\n            let x = old::length_list(a);\n            let y = new::length_list(b);\n            assert_eq!(x, y, \"length_list result\");\n            assert_eq!(old::work() - w0, new::work() - w1, \"length_list work\");\n        }\n    }\n",
-    ),
-    (
-        "index_list",
-        "    for &n in &lengths {\n        let n = n as u64;\n        for at in [0, 1, n / 2, n.saturating_sub(1), n, n + 1, u64::MAX] {\n            for shape in 0..4 {\n                let (a, _keep_a) = build!(old, n as usize, shape);\n                let (b, _keep_b) = build!(new, n as usize, shape);\n                let (w0, w1) = (old::work(), new::work());\n                let x = old::index_list(a, at);\n                let y = new::index_list(b, at);\n                assert_eq!(x, y, \"index_list result\");\n                assert_eq!(old::work() - w0, new::work() - w1, \"index_list work\");\n            }\n        }\n    }\n",
-    ),
-    (
-        "slice_list",
-        "    for &n in &lengths {\n        let n = n as u64;\n        for (start, count) in [(0, 0), (0, n), (1, n), (n / 2, n / 4), (n, 0), (n, 1), (n.saturating_sub(1), 1), (u64::MAX, u64::MAX), (1, u64::MAX)] {\n            for shape in 0..4 {\n                let (a, _keep_a) = build!(old, n as usize, shape);\n                let (b, _keep_b) = build!(new, n as usize, shape);\n                let (w0, w1) = (old::work(), new::work());\n                let x = old::slice_list(a, start, count);\n                let y = new::slice_list(b, start, count);\n                assert_eq!(old::work() - w0, new::work() - w1, \"slice_list work\");\n                assert_eq!(x.map(|l| items!(l)), y.map(|l| items!(l)), \"slice_list result\");\n            }\n        }\n    }\n",
-    ),
-    (
-        "append_bytes",
-        "    for a in &byte_cases {\n        for b in &byte_cases {\n            let (w0, w1) = (old::work(), new::work());\n            let x = old::append_bytes(old::Bytes::lit(a), old::Bytes::lit(b));\n            let y = new::Bytes::append(new::Bytes::lit(a), new::Bytes::lit(b));\n            assert_eq!(old::work() - w0, new::work() - w1, \"append_bytes work\");\n            assert_eq!(x.octets(), y.octets(), \"append_bytes result\");\n        }\n    }\n",
-    ),
-    (
-        "length_bytes",
-        "    for a in &byte_cases {\n        let (w0, w1) = (old::work(), new::work());\n        let x = old::length_bytes(old::Bytes::lit(a));\n        let y = new::Bytes::length(&new::Bytes::lit(a));\n        assert_eq!(x, y, \"length_bytes result\");\n        assert_eq!(old::work() - w0, new::work() - w1, \"length_bytes work\");\n    }\n",
-    ),
-    (
-        "length_string",
-        "    for a in &text_cases {\n        let (w0, w1) = (old::work(), new::work());\n        let x = old::length_string(old::Str::lit(a));\n        let y = new::Str::length(&new::Str::lit(a));\n        assert_eq!(x, y, \"length_string result\");\n        assert_eq!(old::work() - w0, new::work() - w1, \"length_string work\");\n    }\n",
-    ),
-    (
-        "index_bytes",
-        "    for a in &byte_cases {\n        let n = a.len() as u64;\n        for at in [0, 1, n / 2, n.saturating_sub(1), n, n + 1, u64::MAX] {\n            let (w0, w1) = (old::work(), new::work());\n            let x = old::index_bytes(old::Bytes::lit(a), at);\n            let y = new::Bytes::index(&new::Bytes::lit(a), at);\n            assert_eq!(x, y, \"index_bytes result\");\n            assert_eq!(old::work() - w0, new::work() - w1, \"index_bytes work\");\n        }\n    }\n",
-    ),
-    (
-        "slice_bytes",
-        "    for a in &byte_cases {\n        let n = a.len() as u64;\n        for (start, count) in [(0, 0), (0, n), (1, n), (n / 2, n / 4), (n, 0), (n, 1), (n.saturating_sub(1), 1), (u64::MAX, u64::MAX), (1, u64::MAX)] {\n            let (w0, w1) = (old::work(), new::work());\n            let x = old::slice_bytes(old::Bytes::lit(a), start, count);\n            let y = new::Bytes::slice(&new::Bytes::lit(a), start, count);\n            assert_eq!(old::work() - w0, new::work() - w1, \"slice_bytes work\");\n            assert_eq!(x.map(|b| b.octets().to_vec()), y.map(|b| b.octets().to_vec()), \"slice_bytes result\");\n        }\n    }\n",
-    ),
-    (
-        "utf8_encode",
-        "    for a in &text_cases {\n        let (w0, w1) = (old::work(), new::work());\n        let x = old::utf8_encode(old::Str::lit(a));\n        let y = new::Str::utf8_encode(&new::Str::lit(a));\n        assert_eq!(old::work() - w0, new::work() - w1, \"utf8_encode work\");\n        assert_eq!(x.octets(), y.octets(), \"utf8_encode result\");\n    }\n",
-    ),
-    (
-        "utf8_decode",
-        "    for a in &byte_cases {\n        let (w0, w1) = (old::work(), new::work());\n        let x = old::utf8_decode(old::Bytes::lit(a));\n        let y = new::Bytes::utf8_decode(&new::Bytes::lit(a));\n        assert_eq!(old::work() - w0, new::work() - w1, \"utf8_decode work\");\n        assert_eq!(x.map(|t| t.text().to_owned()), y.map(|t| t.text().to_owned()), \"utf8_decode result\");\n    }\n",
-    ),
-    (
-        "compare_bytes",
-        "    for a in &byte_cases {\n        for b in &byte_cases {\n            let (w0, w1) = (old::work(), new::work());\n            let x = old::compare_bytes(old::Bytes::lit(a), old::Bytes::lit(b));\n            let y = new::Bytes::compare(&new::Bytes::lit(a), &new::Bytes::lit(b));\n            assert_eq!(x, y, \"compare_bytes result\");\n            assert_eq!(old::work() - w0, new::work() - w1, \"compare_bytes work\");\n        }\n    }\n",
-    ),
-    (
-        "split_exact",
-        "    for text in &text_cases {\n        for delimiter in [\",\", \"\", \"\\u{e9}\", \"ab\", \", \", \"a\"] {\n            for maximum in [0u32, 1, 3, 4001, u32::MAX] {\n                let (w0, w1) = (old::work(), new::work());\n                let x = old::split_exact(old::Str::lit(text), old::Str::lit(delimiter), maximum);\n                let y = new::Str::split_exact(&new::Str::lit(text), &new::Str::lit(delimiter), maximum);\n                assert_eq!(old::work() - w0, new::work() - w1, \"split_exact work\");\n                assert_eq!(x.map(|l| strings!(l)), y.map(|l| strings!(l)), \"split_exact result\");\n            }\n        }\n    }\n",
-    ),
-    (
-        "join",
-        "    for count in [0usize, 1, 2, 3, 8] {\n        let parts: Vec<String> = text_cases.iter().cycle().take(count).cloned().collect();\n        for shape in 0..4 {\n            for delimiter in [\"\", \",\", \"\\u{e9}\", \" and \"] {\n                let (a, _keep_a) = shaped_texts!(old, parts, shape);\n                let (b, _keep_b) = shaped_texts!(new, parts, shape);\n                let (w0, w1) = (old::work(), new::work());\n                let x = old::join(a, old::Str::lit(delimiter));\n                let y = new::Str::join(b, &new::Str::lit(delimiter));\n                assert_eq!(old::work() - w0, new::work() - w1, \"join work\");\n                assert_eq!(x.text(), y.text(), \"join result\");\n            }\n        }\n    }\n",
-    ),
-];
+/// The golden transcript of the harness on the std runtime.
+const GOLDEN: &str = "tests/rust-runtime-golden/std.txt";
 
-/// The support the functions stand on, compared the same way: the cost of
-/// building a list, the order of taking it apart, the equality and order of
-/// texts and byte strings.
-const SUPPORT_CALLS: &str = "    for &n in &lengths {\n        for shape in 0..4 {\n            let (w0, w1) = (old::work(), new::work());\n            let (a, _keep_a) = build!(old, n, shape);\n            let (b, _keep_b) = build!(new, n, shape);\n            assert_eq!(old::work() - w0, new::work() - w1, \"building work\");\n            let (w0, w1) = (old::work(), new::work());\n            let (x, y) = (items!(a.clone()), items!(b.clone()));\n            assert_eq!(x, y, \"uncons order\");\n            assert_eq!(old::work() - w0, new::work() - w1, \"uncons work\");\n        }\n    }\n    for a in &text_cases {\n        for b in &text_cases {\n            let (w0, w1) = (old::work(), new::work());\n            let x = old::equal(old::Str::lit(a), old::Str::lit(b));\n            let y = new::equal(new::Str::lit(a), new::Str::lit(b));\n            assert_eq!(x, y, \"equal text result\");\n            assert_eq!(old::work() - w0, new::work() - w1, \"equal text work\");\n            let (w0, w1) = (old::work(), new::work());\n            let x = old::compare(old::Str::lit(a), old::Str::lit(b));\n            let y = new::compare(new::Str::lit(a), new::Str::lit(b));\n            assert_eq!(x, y, \"compare text result\");\n            assert_eq!(old::work() - w0, new::work() - w1, \"compare text work\");\n        }\n    }\n    for a in &byte_cases {\n        for b in &byte_cases {\n            let (w0, w1) = (old::work(), new::work());\n            let x = old::equal(old::Bytes::lit(a), old::Bytes::lit(b));\n            let y = new::equal(new::Bytes::lit(a), new::Bytes::lit(b));\n            assert_eq!(x, y, \"equal bytes result\");\n            assert_eq!(old::work() - w0, new::work() - w1, \"equal bytes work\");\n        }\n    }\n";
-
-/// The harness: both runtimes, every function of the differential.
-fn harness() -> String {
-    let mut out = String::from(PRELUDE);
-    for (_, calls) in CALLS {
-        out.push_str(calls);
+/// The sections of the harness, each with its name.
+fn sections() -> Vec<(&'static str, &'static str)> {
+    let mut out = Vec::new();
+    let mut rest = HARNESS;
+    while let Some(at) = rest.find("//@ ") {
+        let after = &rest[at + 4..];
+        let (name, body) = after.split_once('\n').expect("a section name line");
+        let end = body.find("//@ ").unwrap_or(body.len());
+        out.push((name, &body[..end]));
+        rest = &body[end..];
     }
-    out.push_str(SUPPORT_CALLS);
-    out.push_str("    println!(\"runtime\");\n}\n");
+    out
+}
+
+/// The names of the sections that call one function of the module each.
+fn called() -> BTreeSet<String> {
+    sections()
+        .into_iter()
+        .map(|(name, _)| name)
+        .filter(|name| !matches!(*name, "prelude" | "support" | "decimal"))
+        .map(str::to_owned)
+        .collect()
+}
+
+/// The harness: every function of the module, then the support and the number text.
+fn harness() -> String {
+    let mut out = String::from(RECORDER);
+    for (_, body) in sections() {
+        out.push_str(body);
+    }
+    out.push_str("    report();\n    println!(\"runtime\");\n}\n");
     out
 }
 
@@ -202,7 +164,7 @@ fn defined(items: &[ItemDef]) -> Result<BTreeSet<String>, String> {
 /// Whether the differential covers exactly the functions the module defines.
 fn covered(items: &[ItemDef]) -> Result<(), String> {
     let defined = defined(items)?;
-    let differential: BTreeSet<String> = CALLS.iter().map(|(name, _)| (*name).to_owned()).collect();
+    let differential = called();
     if defined != differential {
         return Err(format!(
             "the module defines {defined:?}, the differential covers {differential:?}"
@@ -355,7 +317,17 @@ fn differential() {
     );
     let ran = differ_with(&oracle, &format!("{core}{generated_std}"), harness())
         .expect("the generated runtime agrees with the oracle");
-    assert_eq!(ran, "runtime");
+    assert_eq!(ran.lines().last(), Some("runtime"));
+    // The transcript is the golden one: what the handwritten runtime returned
+    // and counted, recorded at the last pass of the differential.
+    assert_eq!(
+        disagreement(
+            &transcript_of(&ran),
+            &golden_of(GOLDEN, &transcript_of(&ran))
+        ),
+        None,
+        "the transcript is the golden one"
+    );
 
     // A miscounting walk, an extra tick of the work counter, and a signature
     // without its type parameter are each found: the first two by the
@@ -365,13 +337,13 @@ fn differential() {
             "a walk that counts two for a cell",
             "tick(1); count += 1; cursor = &cell.tail;",
             "tick(1); count += 2; cursor = &cell.tail;",
-            "length_list result",
+            "length_list",
         ),
         (
             "a walk that ticks an extra time for the whole list",
             "pub fn length(&self) -> u64 { let mut count = 0;",
             "pub fn length(&self) -> u64 { tick(1); let mut count = 0;",
-            "length_list work",
+            "length_list",
         ),
         (
             "an append that puts the lists the other way",
@@ -395,13 +367,13 @@ fn differential() {
             "a comparison that does not count the first unit of work",
             "tick(1 + self.0.len().min(other.0.len()) as u64); self.0.cmp(&other.0)",
             "tick(self.0.len().min(other.0.len()) as u64); self.0.cmp(&other.0)",
-            "compare_bytes work",
+            "compare_bytes",
         ),
         (
             "a join that does not count its delimiters",
             "tick(1); if !first { chars(&delimiter.0); out.push_str(&delimiter.0); }; first = false; chars(&cell.head.0);",
             "tick(1); if !first { out.push_str(&delimiter.0); }; first = false; chars(&cell.head.0);",
-            "join work",
+            "join",
         ),
         (
             "a split that refuses the maximum itself",
@@ -413,13 +385,13 @@ fn differential() {
             "a decoding that does not count its bytes",
             "pub fn utf8_decode(&self) -> Option<Str> { tick(self.0.len() as u64);",
             "pub fn utf8_decode(&self) -> Option<Str> { ",
-            "utf8_decode work",
+            "utf8_decode",
         ),
         (
             "a slice that counts one more",
             "tick(count); Some(Bytes::lit(",
             "tick(count + 1); Some(Bytes::lit(",
-            "slice_bytes work",
+            "slice_bytes",
         ),
         (
             "a signature without its type parameter",
