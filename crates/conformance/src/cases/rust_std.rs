@@ -19,6 +19,8 @@ use crate::support::{self, repo_root};
 
 const MODULE: &str = "compiler/src/RustStd.lex.tex";
 const SHIPPED: &str = "language/rust-runtime-1.2/RustStd.lex.tex";
+const TYPES: &str = "compiler/src/RuntimeStd.lex.tex";
+const TYPES_SHIPPED: &str = "language/rust-runtime-1.2/RuntimeStd.lex.tex";
 
 /// The modules the std module imports.
 const IMPORTED: [&str; 4] = [
@@ -270,6 +272,11 @@ fn differential() {
     // The shipped copy is the compiler project's module byte for byte: the
     // proofs are about one, the Rust crate reads the other.
     assert_eq!(module, shipped, "{SHIPPED} differs from {MODULE}");
+    // The types, impls, and helpers of the std runtime are a module of their
+    // own, shipped byte for byte.
+    let types = read(TYPES);
+    let types_shipped = read(TYPES_SHIPPED);
+    assert_eq!(types, types_shipped, "{TYPES_SHIPPED} differs from {TYPES}");
     let core_oracle = read("tests/rust-runtime-oracle/core.rs.txt");
     let std_oracle = read("tests/rust-runtime-oracle/std.rs.txt");
     let oracle = format!("{core_oracle}{std_oracle}");

@@ -143,6 +143,40 @@ fn with_param(krate: &Crate, name: &str, param: rt::Param) -> Crate {
     out
 }
 
+/// `krate` with a unit struct `Gauge` and an inherent impl whose one
+/// function `fresh` takes one parameter and no receiver, which a statement of
+/// `flip` can then call by the path `Gauge::fresh`.
+fn with_associated(krate: &Crate) -> Crate {
+    let mut out = krate.clone();
+    let unit = Expr::Lit(Lit::Unit);
+    out.items.push(Item::UnitStruct("Gauge".to_owned(), vec![]));
+    out.items.push(Item::Impl(
+        vec![],
+        None,
+        Type::Named("Gauge".to_owned(), vec![]),
+        vec![rt::Function {
+            sig: rt::Sig {
+                name: "fresh".to_owned(),
+                receiver: false,
+                exclusive: false,
+                params: vec![rt::Param {
+                    name: "n".to_owned(),
+                    mutable: false,
+                    ty: Type::Nat,
+                }],
+                result: Type::Unit,
+            },
+            generics: vec![],
+            public: true,
+            body: Block {
+                statements: vec![],
+                tail: unit,
+            },
+        }],
+    ));
+    out
+}
+
 fn var(name: &str) -> Box<Expr> {
     Box::new(Expr::Var(name.to_owned()))
 }
@@ -246,6 +280,27 @@ pub(super) fn probe_plants(krate: &Crate) -> Vec<(&'static str, Crate, &'static 
         (
             "a call that is neither declared nor in the table",
             with_statement(krate, "flip", Expr::Call(vec!["frob".to_owned()], vec![])),
+            "call-name",
+        ),
+        (
+            "an associated function called with another number of arguments",
+            with_statement(
+                &with_associated(krate),
+                "flip",
+                Expr::Call(vec!["Gauge".to_owned(), "fresh".to_owned()], vec![]),
+            ),
+            "call-arity",
+        ),
+        (
+            "an associated function the impl does not state",
+            with_statement(
+                &with_associated(krate),
+                "flip",
+                Expr::Call(
+                    vec!["Gauge".to_owned(), "absent".to_owned()],
+                    vec![unit.clone()],
+                ),
+            ),
             "call-name",
         ),
         (
