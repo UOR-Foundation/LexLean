@@ -266,7 +266,8 @@ pub fn run(id: &str) {
     );
 
     // The handwritten runtime that was kept as an oracle is gone; what holds
-    // the behavior of the printed runtime is the golden transcripts.
+    // the behavior of the printed runtime is the golden transcript, one file
+    // that names the digest of its lines.
     assert!(
         !root
             .join("tests/rust-runtime-oracle")
@@ -274,21 +275,49 @@ pub fn run(id: &str) {
             .exists(),
         "tests/rust-runtime-oracle is gone"
     );
-    for (file, least) in [("core", 100), ("support", 4), ("std", 30)] {
-        let path = format!("tests/rust-runtime-golden/{file}.txt");
-        let text = std::fs::read_to_string(root.join(&path).as_std_path())
-            .unwrap_or_else(|error| panic!("{path}: {error}"));
-        let lines: Vec<&str> = text.lines().collect();
-        assert!(lines.len() >= least, "{path} has {} lines", lines.len());
-        for line in lines {
-            let (label, digest) = line.rsplit_once(' ').expect("a label and a digest");
-            assert!(
-                !label.is_empty()
-                    && digest.len() == 16
-                    && digest.chars().all(|c| c.is_ascii_hexdigit()),
-                "{path}: `{line}` is a label and a 64-bit digest"
-            );
-        }
+    assert!(
+        !root
+            .join("tests/rust-runtime-golden/core.txt")
+            .as_std_path()
+            .exists(),
+        "the golden transcript is the one file"
+    );
+    let golden_text =
+        std::fs::read_to_string(root.join(super::rust_runtime::GOLDEN_FILE).as_std_path())
+            .expect("the golden transcript");
+    let lines = super::rust_runtime::parse_golden(&golden_text).expect("the golden file is intact");
+    for (section, least) in [("core", 100), ("support", 4), ("std", 30)] {
+        let held = lines.iter().filter(|(held, _, _)| held == section).count();
+        assert!(
+            held >= least,
+            "the `{section}` transcript has {held} labels"
+        );
+    }
+    // The golden file is planted: a digest changed, a label dropped, a label
+    // added, and a line edited without the header each break the header's
+    // digest of the lines, and the file is never edited.
+    let (header, body) = golden_text.split_once('\n').expect("a header");
+    let first = body.lines().next().expect("a line");
+    let flipped = if first.ends_with('0') { '1' } else { '0' };
+    for (what, edited) in [
+        (
+            "a changed digest",
+            format!(
+                "{header}\n{}",
+                body.replacen(first, &format!("{}{flipped}", &first[..first.len() - 1]), 1)
+            ),
+        ),
+        (
+            "a dropped label",
+            format!("{header}\n{}", body.replacen(&format!("{first}\n"), "", 1)),
+        ),
+        ("an added label", format!("{header}\n{first}\n{body}")),
+        ("a rewritten header", format!("{header}0\n{body}")),
+    ] {
+        assert!(
+            super::rust_runtime::parse_golden(&edited).is_err(),
+            "{what} is refused"
+        );
     }
 
     // The scan is planted: each way a handwritten runtime could come back as

@@ -4,7 +4,7 @@
 //! decoded and printed where the handwritten std runtime stood. A harness
 //! calls the printed runtime on lists of every shape, on byte strings, texts,
 //! and numerals, and records what each call returned and the work it counted;
-//! the digests are the golden transcript at `tests/rust-runtime-golden/std.txt`,
+//! the digests are the golden transcript at `tests/rust-runtime-golden/transcript.txt`,
 //! recorded from the handwritten runtime at the last pass of the differential
 //! (`RB-20`). The module's theorems are listed here, from the laws, never from the module, and
 //! accepted by the pinned Lean (`SP-29`).
@@ -110,7 +110,7 @@ const LAWS: [(&str, &str, &[&str]); 14] = [
 const HARNESS: &str = include_str!("rust_std_harness.txt");
 
 /// The golden transcript of the harness on the std runtime.
-const GOLDEN: &str = "tests/rust-runtime-golden/std.txt";
+const GOLDEN: &str = "std";
 
 /// The sections of the harness, each with its name.
 fn sections() -> Vec<(&'static str, &'static str)> {
@@ -137,7 +137,7 @@ fn called() -> BTreeSet<String> {
 }
 
 /// The harness: every function of the module, then the support and the number text.
-fn harness() -> String {
+pub(super) fn harness() -> String {
     let mut out = String::from(RECORDER);
     for (_, body) in sections() {
         out.push_str(body);
@@ -340,6 +340,12 @@ fn differential() {
             "tick(count); Some(Bytes::lit(",
             "tick(count + 1); Some(Bytes::lit(",
             "slice_bytes",
+        ),
+        (
+            "a changed byte in the number text",
+            "strip_prefix('-')",
+            "strip_prefix('+')",
+            "parse_",
         ),
         (
             "a signature without its type parameter",

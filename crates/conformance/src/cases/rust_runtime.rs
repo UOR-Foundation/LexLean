@@ -4,7 +4,7 @@
 //! handwritten functions stood. A harness calls the generated runtime on the
 //! boundary and seeded values of each defined function and records what each
 //! call returned and the work it counted; the digests are the golden
-//! transcript at `tests/rust-runtime-golden/core.txt`, which was recorded from
+//! transcript in `tests/rust-runtime-golden/transcript.txt`, which was recorded from
 //! the handwritten runtime at the last pass of the differential (see
 //! VERIFICATION.md).
 
@@ -20,7 +20,7 @@ use crate::support::repo_root;
 const MODULE: &str = "compiler/src/RustRuntime.lex.tex";
 const SHIPPED: &str = "language/rust-runtime-1.2/RustRuntime.lex.tex";
 /// The golden transcript of the harness on the core runtime.
-const GOLDEN: &str = "tests/rust-runtime-golden/core.txt";
+const GOLDEN: &str = "core";
 
 /// The calls the harness makes of each defined function: the `same!` of the
 /// harness runs the function and records what it returns and the work it counts.
@@ -175,7 +175,7 @@ pub(super) fn prelude() -> String {
 }
 
 /// The harness: both runtimes, every function of the differential.
-fn harness() -> String {
+pub(super) fn harness() -> String {
     let mut out = prelude();
     for (_, calls) in differential() {
         out.push_str("    {\n    ");
@@ -233,16 +233,106 @@ pub(super) fn transcript_of(output: &str) -> Vec<(String, String)> {
         .collect()
 }
 
-/// The golden transcript at `path`, one `label digest` per line.
-pub(super) fn golden(path: &str) -> Vec<(String, String)> {
-    let text = std::fs::read_to_string(repo_root().join(path).as_std_path())
-        .unwrap_or_else(|error| panic!("{path}: {error}"));
-    text.lines()
+/// The committed golden transcript: one file, whose first line names its
+/// format and the SHA-256 of the lines after it, and whose other lines are a
+/// section (`core`, `support`, or `std`), a label, and a 64-bit digest.
+pub const GOLDEN_FILE: &str = "tests/rust-runtime-golden/transcript.txt";
+
+const GOLDEN_FORMAT: &str = "lexlean/runtime-transcript/1";
+
+/// The text of a golden file over `lines` (section, label, digest).
+pub fn golden_text(lines: &[(String, String, String)]) -> String {
+    use sha2::{Digest, Sha256};
+    let body: String = lines
+        .iter()
+        .map(|(section, label, digest)| format!("{section} {label} {digest}\n"))
+        .collect();
+    format!(
+        "{GOLDEN_FORMAT} sha256:{:x}\n{body}",
+        Sha256::digest(body.as_bytes())
+    )
+}
+
+/// The lines of a golden file, once its header names the SHA-256 of the rest.
+///
+/// # Errors
+///
+/// The header is not the format, its digest is not that of the lines, or a
+/// line is not a section, a label, and a 16-digit hexadecimal digest.
+pub fn parse_golden(text: &str) -> Result<Vec<(String, String, String)>, String> {
+    let (header, body) = text.split_once('\n').ok_or("the golden file is empty")?;
+    let lines = body
+        .lines()
         .map(|line| {
-            let (label, digest) = line.rsplit_once(' ').expect("a label and a digest");
-            (label.to_owned(), digest.to_owned())
+            let (rest, digest) = line.rsplit_once(' ').ok_or("a line has no digest")?;
+            let (section, label) = rest.split_once(' ').ok_or("a line has no label")?;
+            if digest.len() != 16 || !digest.chars().all(|c| c.is_ascii_hexdigit()) {
+                return Err(format!("`{line}` does not end in a 64-bit digest"));
+            }
+            Ok((section.to_owned(), label.to_owned(), digest.to_owned()))
         })
+        .collect::<Result<Vec<_>, String>>()?;
+    if golden_text(&lines) != format!("{header}\n{body}") || !header.starts_with(GOLDEN_FORMAT) {
+        return Err(
+            "the golden file is not its header's digest of its lines; it is written by `cargo xtask check-golden --write` and never edited"
+                .to_owned(),
+        );
+    }
+    Ok(lines)
+}
+
+/// The golden transcript of `section`, one `label digest` per line.
+pub(super) fn golden(section: &str) -> Vec<(String, String)> {
+    let text = std::fs::read_to_string(repo_root().join(GOLDEN_FILE).as_std_path())
+        .unwrap_or_else(|error| panic!("{GOLDEN_FILE}: {error}"));
+    parse_golden(&text)
+        .unwrap_or_else(|reason| panic!("{GOLDEN_FILE}: {reason}"))
+        .into_iter()
+        .filter(|(held, _, _)| held == section)
+        .map(|(_, label, digest)| (label, digest))
         .collect()
+}
+
+/// The three transcripts of the printed runtime, as the lines of a golden file.
+///
+/// # Errors
+///
+/// A harness does not compile or run.
+pub fn observed_lines() -> Result<Vec<(String, String, String)>, String> {
+    let core = runtime::core()?;
+    let std = runtime::std()?;
+    let mut out = Vec::new();
+    for (section, text, harness) in [
+        ("core", core.to_owned(), harness()),
+        ("support", core.to_owned(), super::rust_support::harness()),
+        ("std", format!("{core}{std}"), super::rust_std::harness()),
+    ] {
+        let ran = run_harness(&text, harness)?;
+        for (label, digest) in transcript_of(&ran) {
+            out.push((section.to_owned(), label, digest));
+        }
+    }
+    Ok(out)
+}
+
+/// `cargo xtask check-golden`: the committed runtime transcript is the one the
+/// printed runtime gives, or (with `write`) is rewritten from it.
+///
+/// # Errors
+///
+/// A harness fails, or the file differs from the printed runtime's transcript.
+pub fn check_golden(root: &std::path::Path, write: bool) -> Result<usize, String> {
+    let lines = observed_lines()?;
+    let text = golden_text(&lines);
+    let path = root.join(GOLDEN_FILE);
+    if write {
+        std::fs::write(&path, &text).map_err(|error| error.to_string())?;
+    } else if std::fs::read_to_string(&path).map_err(|error| error.to_string())? != text {
+        return Err(format!(
+            "R10: {GOLDEN_FILE} differs from the transcript of the printed runtime; run `cargo xtask check-golden --write` and review the diff"
+        ));
+    }
+    Ok(lines.len())
 }
 
 /// The labels in which two transcripts differ, or `None` when they agree.

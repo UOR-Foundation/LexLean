@@ -15,7 +15,7 @@ use crate::support::repo_root;
 const MODULE: &str = "compiler/src/RuntimeSupport.lex.tex";
 const SHIPPED: &str = "language/rust-runtime-1.2/RuntimeSupport.lex.tex";
 /// The golden transcript of the harness on the core runtime with the printed support.
-const GOLDEN: &str = "tests/rust-runtime-golden/support.txt";
+const GOLDEN: &str = "support";
 /// The seeded rounds of nested keys, four comparisons each: two of depth two
 /// and two of depth three.
 pub const NESTED: usize = 500;
@@ -23,7 +23,7 @@ const WIDTHS: [&str; 8] = ["u8", "u16", "u32", "u64", "i8", "i16", "i32", "i64"]
 
 /// The calls the differential makes: `equal` and `compare` at every scalar
 /// type, `equal` of orderings, `compare` of pairs of scalars, `tick`, `work`.
-fn harness() -> String {
+pub(super) fn harness() -> String {
     let mut out = prelude();
     out.push_str("    use std::cmp::Ordering;\n    let orders = [Ordering::Less, Ordering::Equal, Ordering::Greater];\n");
     out.push_str("    for &a in &[false, true] { for &b in &[false, true] { same!(equal(a, b)); same!(compare(a, b)); } }\n");
