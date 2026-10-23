@@ -29,10 +29,19 @@ fn branches(proof: &mut Value, level: usize) -> &mut Vec<Value> {
 /// `List (String * Json)`, and `String * Json`.
 const LEVELS: usize = 4;
 
+/// A copy of the committed example, locked for this compiler: the example
+/// carries no lock, because every lock is regenerated on the identity current
+/// at landing.
+fn example_copy() -> P {
+    let copy = P::copy_example("nested-induction");
+    copy.relock();
+    copy
+}
+
 /// A copy of the example whose theorem's proof the edit changed, and the
 /// error of checking it.
 fn planted(edit: &dyn Fn(&mut Value)) -> P {
-    let copy = P::copy_example("nested-induction");
+    let copy = example_copy();
     let text = copy.read("src/Main.lex.tex");
     let mut module = support::module_json(&text);
     edit(&mut theorem(&mut module)["proof"]);
@@ -46,13 +55,18 @@ fn planted(edit: &dyn Fn(&mut Value)) -> P {
 /// The plant is refused by the linker (LLT4001) with a message that names the
 /// misuse, and no backend output is written.
 fn refuse(what: &str, edit: &dyn Fn(&mut Value), message: &str) {
-    let copy = planted(edit);
-    let error = copy.check_fails_with("LLT4001");
+    refuse_project(what, &planted(edit), message);
+}
+
+/// The project is refused by the linker (LLT4001) with a message that names
+/// the misuse, and no backend output is written.
+fn refuse_project(what: &str, project: &P, message: &str) {
+    let error = project.check_fails_with("LLT4001");
     assert!(
         error.to_string().contains(message),
         "{what}: expected {message:?}, got {error}"
     );
-    copy.assert_no_backend_output();
+    project.assert_no_backend_output();
 }
 
 /// A whole module, in the authoring notation, for the misuses that need a
@@ -187,9 +201,82 @@ theorem{
   axioms: []
 }";
 
+/// A `Chain` of one optional `Chain`: the family holds `Option Chain`.
+const OPTION_CHAIN: &str = r"inductive{
+  name: Chain,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: link, fields: [(Option Chain)]}]
+}
+
+theorem{
+  name: chain_refl,
+  parameters: [chain : Chain],
+  statement: (chain = chain),
+  proof: nested_induction{
+    scrutinee: chain,
+    branches: [
+      {constructor: link, binders: [rest, restHypothesis], proof: reflexivity{}}
+    ],
+    members: [
+      {
+        type: (Option Chain),
+        binder: choice,
+        statement: (choice = choice),
+        branches: [
+          {constructor: some, binders: [value, valueHypothesis], proof: reflexivity{}},
+          {constructor: none, binders: [], proof: reflexivity{}}
+        ]
+      }
+    ]
+  },
+  axioms: []
+}";
+
+/// An `Attempt` that wraps a `Result` of itself or a natural number: the
+/// family holds `Result Attempt Nat`, whose `ok` is the member.
+const RESULT_ATTEMPT: &str = r"inductive{
+  name: Attempt,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: wrap, fields: [(Result Attempt Nat)]}]
+}
+
+theorem{
+  name: attempt_refl,
+  parameters: [attempt : Attempt],
+  statement: (attempt = attempt),
+  proof: nested_induction{
+    scrutinee: attempt,
+    branches: [
+      {constructor: wrap, binders: [outcome, outcomeHypothesis], proof: reflexivity{}}
+    ],
+    members: [
+      {
+        type: (Result Attempt Nat),
+        binder: settled,
+        statement: (settled = settled),
+        branches: [
+          {constructor: ok, binders: [value, valueHypothesis], proof: reflexivity{}},
+          {constructor: error, binders: [code], proof: reflexivity{}}
+        ]
+      }
+    ]
+  },
+  axioms: []
+}";
+
+/// The positional goals of the generated Lean, in order.
+fn goal_lines(lean: &str) -> Vec<&str> {
+    lean.lines()
+        .filter(|line| line.trim_start().starts_with("next"))
+        .map(str::trim)
+        .collect()
+}
+
 /// Run the case of `SM-37`.
 pub fn run() {
-    let accepted = P::copy_example("nested-induction");
+    let accepted = example_copy();
     let checked = support::checked_project(&accepted);
     let core = serde_json::to_value(
         checked.modules["Main"]
@@ -218,13 +305,8 @@ pub fn run() {
     // `Json`, then `nil` and `cons` of `List Json`, `nil` and `cons` of
     // `List (String * Json)`, and `mk` of the pair).
     let lean = built_lean(&accepted);
-    let goals: Vec<&str> = lean
-        .lines()
-        .filter(|line| line.trim_start().starts_with("next"))
-        .map(str::trim)
-        .collect();
     assert_eq!(
-        goals,
+        goal_lines(&lean),
         [
             "next =>",
             "next content =>",
@@ -287,11 +369,49 @@ pub fn run() {
         "members: [\n      {\n        type: (List (Rose (Rose Nat))),",
         "members: [\n      {\n        type: (List (Rose Nat)),",
     )));
-    let shown = format!("{:?}", extra.check_err());
-    assert!(
-        shown.contains("nested_induction is missing the member"),
-        "{shown}"
+    refuse_project(
+        "a member of another instantiation",
+        &extra,
+        "nested_induction is missing the member",
     );
+    // A member under `Option` and one under `Result`: the minor premises of
+    // `Option` are `none` then `some`, and those of `Result` (`Except`) are
+    // `error` then `ok`. The goals have different binder counts, so a
+    // recursor whose order the table has wrong would not elaborate.
+    for (what, source, goals_expected, motive) in [
+        (
+            "an Option member",
+            OPTION_CHAIN,
+            [
+                "next rest restHypothesis =>",
+                "next =>",
+                "next value valueHypothesis =>",
+            ],
+            "induction chain using Chain.rec\n",
+        ),
+        (
+            "a Result member",
+            RESULT_ATTEMPT,
+            [
+                "next outcome outcomeHypothesis =>",
+                "next code =>",
+                "next value valueHypothesis =>",
+            ],
+            "induction attempt using Attempt.rec\n",
+        ),
+    ] {
+        let project = project_of(&module(source));
+        project.check_ok();
+        let text = built_lean(&project);
+        assert_eq!(goal_lines(&text), goals_expected, "{what}: {text}");
+        assert!(
+            text.contains(motive)
+                && text.contains("(motive_2 := fun")
+                && !text.contains("(motive_3 :="),
+            "{what}: {text}"
+        );
+        support::verify_ok_backed("SM-37", &project);
+    }
 
     // The misuses are refused by the linker, each as LLT4001 before any
     // backend output.
@@ -442,10 +562,10 @@ pub fn run() {
                 .replace("lexlean/semantic-module/2", "lexlean/semantic-module/1"),
         );
         old.relock();
-        let shown = format!("{:?}", old.check_err());
-        assert!(
-            shown.contains("`nested_induction proof` is a language-1.2 construct"),
-            "language 1.1: {shown}"
+        refuse_project(
+            "language 1.1",
+            &old,
+            "`nested_induction proof` is a language-1.2 construct",
         );
     }
     // The scrutinee must be a nested inductive of the document that is in no
@@ -474,8 +594,6 @@ pub fn run() {
             "is not a parameter of the theorem",
         ),
     ] {
-        let project = project_of(&module(&declarations));
-        let shown = format!("{:?}", project.check_err());
-        assert!(shown.contains(message), "{what}: {shown}");
+        refuse_project(what, &project_of(&module(&declarations)), message);
     }
 }

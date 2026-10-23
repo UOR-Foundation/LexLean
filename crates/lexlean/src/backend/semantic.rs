@@ -1221,7 +1221,7 @@ impl Render<'_> {
         branch: &SemanticProofBranch,
         indent: usize,
         owners: &ScrutineeTypes,
-    ) -> String {
+    ) -> Result<String, Diagnostic> {
         let binders = if branch.binders.is_empty() {
             String::new()
         } else {
@@ -1235,21 +1235,26 @@ impl Render<'_> {
                     .join(" ")
             )
         };
-        format!(
+        Ok(format!(
             "{}| {}{} =>\n{}",
             "  ".repeat(indent),
             identifier(&branch.constructor),
             binders,
-            self.proof(&branch.proof, indent + 1, owners)
-        )
+            self.proof(&branch.proof, indent + 1, owners)?
+        ))
     }
 
     /// `owners` names, for each theorem parameter of a document inductive
     /// type, that type: `nested_induction` names the recursor Lean generated
     /// for the scrutinee's type (§16.9, `SM-37`).
-    fn proof(&self, proof: &SemanticProof, indent: usize, owners: &ScrutineeTypes) -> String {
+    fn proof(
+        &self,
+        proof: &SemanticProof,
+        indent: usize,
+        owners: &ScrutineeTypes,
+    ) -> Result<String, Diagnostic> {
         let pad = "  ".repeat(indent);
-        match proof {
+        Ok(match proof {
             SemanticProof::Reflexivity => format!("{pad}rfl\n"),
             SemanticProof::Decide => format!("{pad}decide\n"),
             SemanticProof::LinearArithmetic { definitions } => {
@@ -1271,7 +1276,7 @@ impl Render<'_> {
                 let mut out = format!("{pad}constructor\n");
                 for branch in branches {
                     out.push_str(&format!("{pad}·\n"));
-                    out.push_str(&self.proof(branch, indent + 1, owners));
+                    out.push_str(&self.proof(branch, indent + 1, owners)?);
                 }
                 out
             }
@@ -1281,7 +1286,7 @@ impl Render<'_> {
             } => {
                 let mut out = format!("{pad}cases {} with\n", identifier(scrutinee));
                 for branch in branches {
-                    out.push_str(&self.proof_branch(branch, indent, owners));
+                    out.push_str(&self.proof_branch(branch, indent, owners)?);
                 }
                 out
             }
@@ -1307,7 +1312,7 @@ impl Render<'_> {
                     identifier(scrutinee)
                 );
                 for branch in branches {
-                    out.push_str(&self.proof_branch(branch, indent, owners));
+                    out.push_str(&self.proof_branch(branch, indent, owners)?);
                 }
                 out
             }
@@ -1324,10 +1329,17 @@ impl Render<'_> {
                 // the type, then those of each member. Two members can share
                 // a constructor name, which `induction ... with` refuses, so
                 // the goals are named by position.
-                let recursor = owners.get(scrutinee).map_or_else(
-                    || format!("{}.rec", identifier(scrutinee)),
-                    |owner| format!("{}.rec", self.member(owner)),
-                );
+                // The linker admits only a theorem parameter of a document
+                // inductive type, so a scrutinee with no owner is a defect.
+                let owner = owners.get(scrutinee).ok_or_else(|| {
+                    Diagnostic::new(
+                        code!("LLI9001"),
+                        format!(
+                            "phase lean-backend: nested_induction scrutinee `{scrutinee}` is not a theorem parameter of a document inductive type"
+                        ),
+                    )
+                })?;
+                let recursor = format!("{}.rec", self.member(owner));
                 let mut out = format!("{pad}induction {} using {recursor}\n", identifier(scrutinee));
                 for (index, member) in members.iter().enumerate() {
                     out.push_str(&format!(
@@ -1348,7 +1360,7 @@ impl Render<'_> {
                         .collect();
                     out.push_str(&format!(
                         "{pad}next{binders} =>\n{}",
-                        self.proof(&branch.proof, indent + 1, owners)
+                        self.proof(&branch.proof, indent + 1, owners)?
                     ));
                 }
                 out
@@ -1460,7 +1472,7 @@ impl Render<'_> {
                     .collect::<String>();
                 format!("{pad}exact {}{arguments}\n", self.member(theorem))
             }
-        }
+        })
     }
 }
 
@@ -2305,7 +2317,7 @@ pub fn render_lean(
                         "public theorem {name}{}{binders} : {} := by\n{}",
                         render.scoped_type_parameters(type_parameters, declaration),
                         render.term(statement),
-                        render.proof(proof, 1, &scrutinee_types(parameters))
+                        render.proof(proof, 1, &scrutinee_types(parameters))?
                     ));
                 }
                 SemanticDeclaration::Artifact { .. }

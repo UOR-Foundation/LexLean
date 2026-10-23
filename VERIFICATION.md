@@ -898,11 +898,33 @@ refuses 49 plants as `LLT4001` before any backend output:
 - `induction` on the same nested type (the message names `nested_induction`),
   a language-1.1 module, and a scrutinee that is a natural number, a type with no
   nested field, a type in a mutual group, or a local that is not a theorem
-  parameter.
+  parameter. Each of these goes through `refuse_project`, which asserts the
+  code `LLT4001`, the message, and that `build` writes no output.
+
+`conformance_sm_37` also proves, and verifies under the pinned Lean, a theorem
+with one member under `Option` (`Chain | link : Option Chain -> Chain`) and one
+under `Result` (`Attempt | wrap : Result Attempt Nat -> Attempt`), so the
+`none, some` and `error, ok` rows of `family_constructors` are exercised. Their
+goals have different binder counts (`next =>` then `next value valueHypothesis
+=>`; `next code =>` then `next value valueHypothesis =>`), and the case asserts
+the goals in the recursor's order. With the `Option` rows swapped in
+`family_constructors` (`some` before `none`) the case fails:
+
+```text
+thread 'conformance_sm_37' panicked at crates/conformance/src/cases/semantic_ir/nested.rs:406:9:
+assertion `left == right` failed: an Option member: module
+```
+
+The plant was restored with `git checkout`; the case passes (77.1 s).
+
+The example carries no `lexlean.lock` (every lock is regenerated at landing on
+the identity then current); the case locks its own copy of the example. A
+scrutinee with no named parameter is a backend `LLI9001` and no longer a guessed
+`<local>.rec`.
 
 `conformance_df_13` still asserts the `induction` refusal, `conformance_ex_07`
 refuses the `induction-nested-type` fixture with the new message, and
-`cargo test -p lexlean --lib` passes (212 tests). Run on a tree whose locks were
+`cargo test -p lexlean --lib` passes (213 tests). Run on a tree whose locks were
 regenerated locally and not committed (the identity moved, see the landing list
 of the pull request), `conformance_ex_07` fails only on the fixtures whose
 goldens bind the identity (`certificate-*-rejected`,
