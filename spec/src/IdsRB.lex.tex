@@ -115,6 +115,7 @@ definition{
   body: (record Rows::IdRow {id := "RB-14", level := "build", suite := "rust-backend", statement := "A library template whose self calls are all tail calls is rendered as a loop over its accumulator that breaks with its result, so that the production rows of the primitives it realizes carry no `recursion`, while a template with a call that is not a tail call is rendered as a call and keeps the effect; a rendering that states a self call where a loop is possible, and a row whose `recursion` differs from its rendering, are refused.", sections := "§17.13, §17.14, §17.16"}),
   executable: true
 }
+
 definition{
   name: rb21,
   parameters: [],
