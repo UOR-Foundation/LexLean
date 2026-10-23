@@ -120,3 +120,11 @@ Feature: repository
     Then the Rust toolchain it installs is the channel rust-toolchain.toml pins and the Lean toolchain it installs is the one lean-toolchain pins
     And it installs no other toolchain and selects no unpinned default
     And a Dockerfile that names another version of either, a second toolchain, or an unpinned default is refused
+
+  @RP-17 @build
+  Scenario: `cargo xtask release-check` reads the completion release from §2.3 and the version report from §30.3 as the chapter modules of the specification project state them, and refuses a workspace version §2.3 does not name, a version report or semantics-ID list that is not the §30.3 report for the release version and each language's ID, and a §30.3 report whose languages are not the languages the compiler supports, a plant in either chapter item changing what it refuses.
+    Given the committed chapter modules, and a scratch tree with the workspace at version 0.5.0, a changelog entry for it, the chapter modules, and the version report and semantics-ID list the release binary produces
+    When the release criterion is read from the chapter modules and the release check runs on the committed tree and on the scratch tree
+    Then the criterion names the completion releases 0.5.0 and 1.0.0 and a report of the languages 1.0, 1.1 and 1.2, which are the languages the compiler supports, and the committed tree at 0.3.0 is refused naming source-tag and the completion releases
+    And the scratch tree is refused for none of source-tag, semantics-id, and version-output
+    And a §2.3 plant that names another completion release refuses source-tag, a §30.3 plant that reports another language refuses version-output naming the supported languages, a four-line version report refuses version-output, a semantics-ID list without a language refuses semantics-id, a list giving a language an ID that is not the compiler's refuses semantics-id naming the compiler's ID, and a list and report that agree on such an ID are refused as semantics-id and version-output, each on the scratch tree
