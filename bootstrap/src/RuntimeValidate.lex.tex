@@ -336,9 +336,7 @@ definition{
   name: orElse,
   parameters: [lead : (Option Bytes), other : (Option Bytes)],
   result: (Option Bytes),
-  body: (match lead
-    | Option.some stop => (ctor Option.some [Bytes] stop)
-    | Option.none => other),
+  body: (match lead | Option.some stop => (ctor Option.some [Bytes] stop) | Option.none => other),
   axioms: [],
   executable: true
 }
@@ -1247,12 +1245,12 @@ definition{
     | Option.none => (match (identErr "a generic parameter" (project g name))
       | Option.some bad => (ctor Option.some [Bytes] bad)
       | Option.none => (prim list_fold (fun [g, sc] (foundBound : (Option Bytes)) (bound : Bytes) => (match foundBound
-      | Option.some stop => (ctor Option.some [Bytes] stop)
-      | Option.none => (if (match (findTrait sc bound)
-        | Option.some held => true
-        | Option.none => (match (stdTraitMethod bound)
-          | Option.some m => true
-          | Option.none => false)) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: bound-trait: ") (rcat (rtick (rcat (project g name) (rcat (rtext ": ") bound))) (rtext " names no declared trait"))))))) (ctor Option.none [Bytes]) (project g bounds) : (Option Bytes))))) (ctor Option.none [Bytes]) gs : (Option Bytes)),
+        | Option.some stop => (ctor Option.some [Bytes] stop)
+        | Option.none => (if (match (findTrait sc bound)
+          | Option.some held => true
+          | Option.none => (match (stdTraitMethod bound)
+            | Option.some m => true
+            | Option.none => false)) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: bound-trait: ") (rcat (rtick (rcat (project g name) (rcat (rtext ": ") bound))) (rtext " names no declared trait"))))))) (ctor Option.none [Bytes]) (project g bounds) : (Option Bytes))))) (ctor Option.none [Bytes]) gs : (Option Bytes)),
   axioms: [Quot.sound, propext],
   executable: true
 }
@@ -2419,8 +2417,8 @@ definition{
       | Result.ok s2 => (match (orElse (identsErr "an enum generic" generics) (orElse (derivesErr "an enum" derived) (variantProblem name variants)))
         | Option.some stop => (ctor Result.error [Sc, Bytes] stop)
         | Option.none => (match (firstDuplicate variants)
-        | Option.some twice => (ctor Result.error [Sc, Bytes] (rcat (rtext "runtime support: variant-name: ") (rcat (rtick name) (rcat (rtext " declares ") (rcat (rtick twice) (rtext " twice"))))))
-        | Option.none => (ctor Result.ok [Sc, Bytes] (record Sc {core := (project s2 core), declared := (project s2 declared), traits := (project s2 traits), structs := (project s2 structs), enums := (prim append (project s2 enums) (cons (record EnumE {name := name, variants := variants, gcount := (prim length generics : Nat)}) (nil EnumE)) : (List EnumE)), aliases := (project s2 aliases), statics := (project s2 statics), functions := (project s2 functions), methods := (project s2 methods), imported := (project s2 imported)}))))))),
+          | Option.some twice => (ctor Result.error [Sc, Bytes] (rcat (rtext "runtime support: variant-name: ") (rcat (rtick name) (rcat (rtext " declares ") (rcat (rtick twice) (rtext " twice"))))))
+          | Option.none => (ctor Result.ok [Sc, Bytes] (record Sc {core := (project s2 core), declared := (project s2 declared), traits := (project s2 traits), structs := (project s2 structs), enums := (prim append (project s2 enums) (cons (record EnumE {name := name, variants := variants, gcount := (prim length generics : Nat)}) (nil EnumE)) : (List EnumE)), aliases := (project s2 aliases), statics := (project s2 statics), functions := (project s2 functions), methods := (project s2 methods), imported := (project s2 imported)}))))))),
   axioms: [Quot.sound, propext],
   executable: true
 }
