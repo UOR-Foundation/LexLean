@@ -30,6 +30,14 @@ and Unreleased holds what has landed since.
   `PX` IDs. Edited in `spec/src/Chapter03` and `Chapter04` with `cargo xtask
   spec`; no register row (no capability changes). Register 444.
 
+- The SIMD probe of decision #109 on the pinned Rust (first step of #119): the
+  `honesty` workflow builds `.github/simd-probe/probe.rs` with `rustc` 1.97.1 for
+  the four targets #109 lists, with and without `-C target-feature`, and holds
+  every outcome to the record in VERIFICATION.md. x86-64 agrees with the 1.97.0
+  record; aarch64 behaves the same; wasm32 accepts the call without the
+  attribute; thumbv7em refuses the `dsp` feature and its intrinsics as
+  unstable. Register unchanged (444).
+
 - CI toolchain fetches (#242): every step of `ci.yml`, `honesty.yml` and
   `reproducibility.yml` that fetches elan, the pinned Lean toolchain, or the
   pinned Rust toolchain runs the fetch through `.github/retry.sh`, at most three
