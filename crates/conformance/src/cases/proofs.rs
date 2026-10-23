@@ -80,7 +80,7 @@ theorem{
   parameters: [b1 : Nat, b2 : Nat, b3 : Nat],
   statement: (((leadE1ToEC b1) = true) -> ((scanThree b1 b2 b3) = (if (inRange 128 b2 191) then (if (inRange 128 b3 191) then 0 else 3) else 2))),
   proof: linear_arithmetic{definitions: [inRange, leadE1ToEC, scanThree]},
-  axioms: [Classical.choice, Quot.sound, propext]
+  axioms: [Quot.sound, propext]
 }
 
 theorem{
