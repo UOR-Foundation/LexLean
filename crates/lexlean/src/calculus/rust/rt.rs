@@ -451,9 +451,11 @@ impl Expr {
             // `x = x + e` is printed as `x += e`: the same value, and the form the
             // package's lint gate (`clippy::assign_op_pattern`) requires.
             Expr::Assign(place, value) => match &**value {
-                Expr::Binary(op @ (Op::Add | Op::Sub | Op::Mul | Op::Div | Op::Rem), left, right)
-                    if left == place =>
-                {
+                Expr::Binary(
+                    op @ (Op::Add | Op::Sub | Op::Mul | Op::Div | Op::Rem),
+                    left,
+                    right,
+                ) if left == place => {
                     format!("{} {}= {}", place.print(), op.text(), right.print())
                 }
                 _ => format!("{} = {}", place.print(), value.print()),
