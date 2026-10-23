@@ -2421,6 +2421,40 @@ fn loop_crates() -> Vec<Crate> {
             ],
         });
     }
+    // The ends of a loop that is the value of a fallible function are in that
+    // function's tail (issue 279): a call of another fallible function there
+    // returns its result, while the same call bound before the end, or left
+    // as the body's value with the end dropped, does not propagate.
+    let called = || Expr::Call {
+        callee: Callee::Function(1),
+        args: vec![copy(local(0))],
+        propagate: false,
+        at: at("expr:call"),
+    };
+    let with_callee = |lets: Vec<Let>, tail: Expr| {
+        let mut krate = plain(fallible(), lets, tail);
+        krate.items.push(ItemDef::Function {
+            name: Ident::Function(1),
+            parameters: vec![(Pat::Bind(local(0)), Type::Nat)],
+            result: fallible(),
+            body: Block::of(succeed(copy(local(0)))),
+            at: at("function"),
+        });
+        krate
+    };
+    out.push(with_callee(
+        vec![],
+        counting(local(0), vec![], err(called())),
+    ));
+    out.push(with_callee(
+        vec![],
+        counting(
+            local(0),
+            vec![bind(local(8), called())],
+            err(succeed(read(local(8)))),
+        ),
+    ));
+    out.push(with_callee(vec![], body_of(vec![], called())));
     out
 }
 
@@ -2612,7 +2646,7 @@ fn rustc_differential(roots: &[(&str, &Lowered, &[Run])], label: &str) -> usize 
 
 /// A defect planted in the source: the check it removes, the text of the
 /// source it is made at, and the root whose differential must catch it.
-const PLANTS: [super::Plant; 16] = [
+const PLANTS: [super::Plant; 17] = [
     // The profile check of a type is skipped: a heap type passes under
     // `rust-core`.
     super::Plant {
@@ -2732,6 +2766,14 @@ const PLANTS: [super::Plant; 16] = [
         replacement: "| Expr.ELoop state body => (applyBlock types decl body tail)",
         root: "validateCrate",
     },
+    // The operand of an `Err` that ends a loop that is the value of a
+    // fallible function is checked as a value that is not a tail.
+    super::Plant {
+        label: "end of a fallible loop not in the function's tail",
+        site: "ends := gated}) body gated)",
+        replacement: "ends := false}) body false)",
+        root: "validateCrate",
+    },
 ];
 
 /// The roots' eligibility reports and declared effects.
@@ -2806,14 +2848,14 @@ const COMMITTED_CRATES: usize = 223;
 const RULE_VALIDATE_RUNS: usize = 132;
 const RULE_CORRESPOND_RUNS: usize = 12;
 const BRANCH_CRATES: usize = 17;
-const LOOP_CRATES: usize = 34;
-const VECTORS_VALIDATE: usize = 406;
-const REFUSED_VALIDATE: usize = 165;
-const VECTORS_CORRESPOND: usize = 269;
-const REFUSED_CORRESPOND: usize = 46;
+const LOOP_CRATES: usize = 37;
+const VECTORS_VALIDATE: usize = 409;
+const REFUSED_VALIDATE: usize = 168;
+const VECTORS_CORRESPOND: usize = 272;
+const REFUSED_CORRESPOND: usize = 49;
 const EVALUATOR_CRATES: usize = 200;
-const EVALUATOR_VALIDATE: usize = 383;
-const EVALUATOR_CORRESPOND: usize = 246;
+const EVALUATOR_VALIDATE: usize = 386;
+const EVALUATOR_CORRESPOND: usize = 249;
 const SEEDED_REFUSED_VALIDATE: usize = 271;
 const SEEDED_REFUSED_CORRESPOND: usize = 244;
 

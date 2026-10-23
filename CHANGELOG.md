@@ -17,6 +17,17 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- `RB-21` (#279): a fallible function rendered as a loop that is its value
+  returns the operand of each `Err` that ends the loop, so a call of another
+  fallible function there is in tail position and returns the callee's result
+  without `?`. `rust::validate` refused that call, so the module of #279 had no
+  `rust-std` rendering; it now checks those operands as the function's tail,
+  and `LexLeanBoot.RustValidate` mirrors it (`BS-05`: 37 loop crates, 17
+  plants). A loop of a fallible function that ends with a branch whose tails
+  are not fallible values, which the old end check let through, is refused.
+  The renderer digest and the language-1.2 compiler-semantics ID move.
+  Register 444.
+
 - `cargo xtask spec` (`NS-07`, #244): edit the chapter modules of `spec/` by
   item. `replace-block` and `insert-after` act on the paragraph, table or fence
   found by its first line; `port` applies the hunks of a merged SPEC.md that lie

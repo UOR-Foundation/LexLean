@@ -4821,8 +4821,11 @@ closures can: the least fixed point of these rules, computed by a worklist
 over the reverse call and application edges. A function that can overflow
 returns `R<T>` and every call to it ends in `?`, except in tail position,
 where its result is returned as it is; any other function returns its value
-and no call to it propagates. The length of a sequence cannot exceed
-`2^64 - 1` on any machine that holds it, so `length` cannot overflow.
+and no call to it propagates. The operand of an `Err` that ends a loop which
+is the value of a function that can overflow is in tail position: the loop
+breaks with it, so it is the value the function returns. The length of a
+sequence cannot exceed `2^64 - 1` on any machine that holds it, so `length`
+cannot overflow.
 
 **Checks.** Before printing, `rust::validate` refuses, as `LLB6005`:
 
@@ -7548,7 +7551,9 @@ body that moves a name outside it, or a component of one, is refused with the
 least such name in the oracle's order of names, and the value a fallible loop
 ends with, at each `Err` of its body, must be a fallible value; the body is
 checked as a block that is not a tail, for its applications as for its moves,
-and the correspondence traversal treats it as a block.
+except that the operand of each `Err` that ends a loop which is the value of a
+fallible function is that function's tail, and the correspondence traversal
+treats it as a block.
 `correspondCrate` lists the constructs a crate emits instance by instance and
 checks each against the 97 rows of the correspondence table, the element it was
 lowered from, its width, and the elements the program uses; a repeated
@@ -7566,8 +7571,8 @@ the `elements` the renderer realizes), a rule corpus that reaches each of the
 runs and 12 `correspondCrate` runs, asserted: the corpus fails if its draws run
 out first; the refusal that a construct has no row of the table cannot be
 reached), 17 crates by hand for the merge of moved sets at an `if` and a
-`match`, and 34 by hand for the loop rules; that is 406 runs of `validateCrate`
-(165 refused) and 269 of `correspondCrate` (46 refused), and the case asserts
+`match`, and 37 by hand for the loop rules; that is 409 runs of `validateCrate`
+(168 refused) and 272 of `correspondCrate` (49 refused), and the case asserts
 these counts. On every host, the rendered `rust-std` packages of both
 roots (§17.16), compiled by the pinned rustc, are run on all of them. On the
 normative host, the lowered programs of both roots are run under the calculus
@@ -7580,7 +7585,7 @@ binding or arm dropped, doubled, or swapped, a call's propagation flipped, a
 dispatch arm restated, a block run in a loop, the profile exchanged, and the
 elements of the program changed); the rendered packages are also run on 2,000 further seeded mutants
 per root. The outcome of a run is the result and, for a refusal, the message,
-and one difference fails the case. Sixteen planted defects in the source (a heap
+and one difference fails the case. Seventeen planted defects in the source (a heap
 type admitted under `rust-core`, a name bound twice accepted, the moves of
 earlier match arms forgotten, a component moved after its whole accepted, an
 undeclared ADT type accepted, a `?` in an infallible function accepted, a
@@ -7588,8 +7593,8 @@ fallible call without propagation accepted, an `apply` arm's failure not
 compared with its function's, a correspondence row narrowed, the width of a
 runtime call not compared, a name or a component moved in a loop body accepted,
 the end of a fallible loop not checked, a loop's state not moved into the loop,
-the name a loop's refusal reports not the least, and a loop body checked as a
-tail) are each detected by the same differential, and
+the name a loop's refusal reports not the least, a loop body checked as a
+tail, and the end of a fallible loop not checked as its function's tail) are each detected by the same differential, and
 under the pinned Lean the production export (§24.7) certifies both roots beside
 the others, whose packages are the committed ones under
 `tests/production-export/bootstrap/`.
