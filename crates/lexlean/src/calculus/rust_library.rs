@@ -158,6 +158,7 @@ pub const PRIMITIVES: &[Primitive] = &[
 /// Every name the runtime text uses, with its role.
 pub const LIBRARY: &[(Kind, &str, Role)] = &[
     (Kind::Import, "core::cmp::Ordering", Role::Construct),
+    (Kind::Import, "core::str", Role::Primitive("utf8_check")),
     (
         Kind::Import,
         "core::sync::atomic::AtomicU64",
@@ -168,6 +169,8 @@ pub const LIBRARY: &[(Kind, &str, Role)] = &[
         "core::sync::atomic::Ordering as Memory",
         Role::Primitive("work"),
     ),
+    (Kind::Import, "std::mem", Role::Primitive("replace")),
+    (Kind::Import, "std::rc::Rc", Role::Construct),
     (
         Kind::Path,
         "<int>::checked_add",
@@ -235,30 +238,16 @@ pub const LIBRARY: &[(Kind, &str, Role)] = &[
         "Vec::with_capacity",
         Role::Primitive("buffer_new"),
     ),
+    (Kind::Path, "Rc::from", Role::Primitive("share_copy")),
+    (Kind::Path, "Rc::get_mut", Role::Primitive("share_unique")),
+    (Kind::Path, "Rc::new", Role::Construct),
     (
         Kind::Path,
-        "core::str::from_utf8",
-        Role::Primitive("utf8_check"),
-    ),
-    (Kind::Path, "std::mem::replace", Role::Primitive("replace")),
-    (Kind::Path, "std::rc::Rc", Role::Construct),
-    (
-        Kind::Path,
-        "std::rc::Rc::from",
-        Role::Primitive("share_copy"),
-    ),
-    (
-        Kind::Path,
-        "std::rc::Rc::get_mut",
-        Role::Primitive("share_unique"),
-    ),
-    (Kind::Path, "std::rc::Rc::new", Role::Construct),
-    (
-        Kind::Path,
-        "std::rc::Rc::try_unwrap",
+        "Rc::try_unwrap",
         Role::Primitive("share_release"),
     ),
-    (Kind::Method, "and_then", Role::Stated(&[])),
+    (Kind::Path, "mem::replace", Role::Primitive("replace")),
+    (Kind::Path, "str::from_utf8", Role::Primitive("utf8_check")),
     (Kind::Method, "as_bytes", Role::Primitive("utf8_view")),
     (
         Kind::Method,
@@ -268,11 +257,6 @@ pub const LIBRARY: &[(Kind, &str, Role)] = &[
     (Kind::Method, "checked_div", Role::Primitive("checked_div")),
     (Kind::Method, "clone", Role::Construct),
     (Kind::Method, "cmp", Role::Stated(&["order", "buffer_len"])),
-    (
-        Kind::Method,
-        "collect",
-        Role::Stated(&["buffer_new", "buffer_push"]),
-    ),
     (Kind::Method, "copied", Role::Stated(&[])),
     (
         Kind::Method,
@@ -281,7 +265,6 @@ pub const LIBRARY: &[(Kind, &str, Role)] = &[
     ),
     (Kind::Method, "fetch_add", Role::Primitive("work")),
     (Kind::Method, "get", Role::Stated(&["buffer_len"])),
-    (Kind::Method, "into_iter", Role::Stated(&["buffer_len"])),
     (Kind::Method, "is_ascii_digit", Role::Stated(&[])),
     (Kind::Method, "is_empty", Role::Stated(&["buffer_len"])),
     (Kind::Method, "iter", Role::Stated(&["buffer_len"])),
@@ -296,6 +279,11 @@ pub const LIBRARY: &[(Kind, &str, Role)] = &[
         Kind::Method,
         "parse",
         Role::Stated(&["checked_mul", "checked_add", "checked_neg"]),
+    ),
+    (
+        Kind::Method,
+        "pop",
+        Role::Stated(&["buffer_len", "buffer_truncate"]),
     ),
     (Kind::Method, "push", Role::Primitive("buffer_push")),
     (
@@ -334,7 +322,6 @@ pub const LIBRARY: &[(Kind, &str, Role)] = &[
     (Kind::Name, "Drop", Role::Construct),
     (Kind::Name, "Eq", Role::Construct),
     (Kind::Name, "Err", Role::Construct),
-    (Kind::Name, "FnMut", Role::Stated(&[])),
     (Kind::Name, "None", Role::Construct),
     (Kind::Name, "Ok", Role::Construct),
     (Kind::Name, "Option", Role::Construct),

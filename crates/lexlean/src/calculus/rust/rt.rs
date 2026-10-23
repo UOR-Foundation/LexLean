@@ -448,7 +448,16 @@ impl Expr {
                     .map_or_else(String::new, |ty| format!(": {}", ty.print(&[])));
                 format!("let {}{ty} = {}", pattern.print(), value.print())
             }
-            Expr::Assign(place, value) => format!("{} = {}", place.print(), value.print()),
+            // `x = x + e` is printed as `x += e`: the same value, and the form the
+            // package's lint gate (`clippy::assign_op_pattern`) requires.
+            Expr::Assign(place, value) => match &**value {
+                Expr::Binary(op @ (Op::Add | Op::Sub | Op::Mul | Op::Div | Op::Rem), left, right)
+                    if left == place =>
+                {
+                    format!("{} {}= {}", place.print(), op.text(), right.print())
+                }
+                _ => format!("{} = {}", place.print(), value.print()),
+            },
             Expr::If(condition, then, otherwise) => {
                 let tail = if otherwise.is_empty() {
                     String::new()
