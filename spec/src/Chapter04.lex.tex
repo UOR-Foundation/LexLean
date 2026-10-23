@@ -59,6 +59,20 @@ definition{
   parameters: [],
   result: DocRows::Item,
   body: constructor{
+    arguments: [
+      (cons "Language 1.2 additionally MUST support production compilation as §3 states it: production eligibility (§17.13), the production realization calculus (§17.14), GNAF requests and certification (§17.15, §17.18), the Rust backend (§17.16), semantic preservation (§17.17), the differential validation oracle (§17.19), and production export (§24.7)." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0006,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
     arguments: [3, 1, "4.2 LexLean 1.0 deliberately does not support"],
     constructor: DocRows::Item.heading,
     type_arguments: []
@@ -67,7 +81,7 @@ definition{
 }
 
 definition{
-  name: i0006,
+  name: i0007,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -81,12 +95,12 @@ definition{
 }
 
 definition{
-  name: i0007,
+  name: i0008,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "- arbitrary natural language;" (cons "- unrestricted LaTeX;" (cons "- TeX macro definition or macro expansion;" (cons "- raw Lean declarations, terms, tactics, commands, or code blocks;" (cons "- source comments of any kind;" (cons "- free expository paragraphs;" (cons "- author-defined axioms;" (cons "- `sorry`, `admit`, synthetic proof placeholders, or deferred proof nodes;" (cons "- recursive or mutually recursive document definitions;" (cons "- document-defined inductive types, structures, classes, or instances;" (cons "- string literals, file inclusion, shell escape, network access, or foreign code;" (cons "- heuristic ambiguity resolution;" (cons "- probabilistic or model-based translation;" (cons "- a claim that `leanchecker` is an independent proof checker;" (cons "- a claim that successful Rust generation alone establishes a theorem;" (cons "- a claim that imported libraries are proved by LexLean." (nil String)))))))))))))))))
+      (cons "- arbitrary natural language;" (cons "- unrestricted LaTeX;" (cons "- TeX macro definition or macro expansion;" (cons "- raw Lean declarations, terms, tactics, commands, or code blocks;" (cons "- source comments of any kind;" (cons "- free expository paragraphs;" (cons "- author-defined axioms;" (cons "- `sorry`, `admit`, synthetic proof placeholders, or deferred proof nodes;" (cons "- recursive or mutually recursive document definitions;" (cons "- document-defined inductive types, structures, classes, or instances;" (cons "- string literals, file inclusion, shell escape, network access, or foreign code;" (cons "- heuristic ambiguity resolution;" (cons "- probabilistic or model-based translation;" (cons "- a claim that `leanchecker` is an independent proof checker;" (cons "- a claim that successful Rust generation alone establishes a theorem;" (cons "- a claim that imported libraries are proved by LexLean;" (cons "- a claim of optimality over an unrestricted program universe, every calculus program and every Rust program included, rather than over the universe a GNAF request declares (§17.15);" (cons "- a claim that representation minimality is execution optimality without a proved bridge (§17.18);" (cons "- a claim that a certificate establishes wall time on hardware, which is only measured and recorded as an `open` ledger row (§27.3)." (nil String))))))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -95,7 +109,7 @@ definition{
 }
 
 definition{
-  name: i0008,
+  name: i0009,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -109,7 +123,7 @@ definition{
 }
 
 definition{
-  name: i0009,
+  name: i0010,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
