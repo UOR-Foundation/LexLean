@@ -315,14 +315,21 @@ fn print_human_diagnostics(stderr: &mut dyn Write, error: &LexLeanError, colors:
     }
 }
 
+/// The §30.3 version report: the compiler version, then every supported
+/// language in ascending order, each followed by its own compiler-semantics
+/// ID (§21.2), then the Lean toolchain.
 fn version_text() -> String {
-    format!(
-        "lexlean {}\nlanguage {}\ncompiler-semantics {}\nlean-toolchain {}\n",
-        crate::COMPILER_VERSION,
-        crate::LANGUAGE_VERSION,
-        crate::compiler_semantics_id().to_hex(),
-        crate::LEAN_TOOLCHAIN
-    )
+    use std::fmt::Write as _;
+    let mut text = format!("lexlean {}\n", crate::COMPILER_VERSION);
+    for language in crate::LANGUAGE_VERSIONS {
+        let _ = write!(
+            text,
+            "language {language}\ncompiler-semantics {}\n",
+            crate::compiler_semantics_id_for(language).to_hex()
+        );
+    }
+    let _ = writeln!(text, "lean-toolchain {}", crate::LEAN_TOOLCHAIN);
+    text
 }
 
 /// The generated `ERRORS.md` entry for one registered code (§23.4).

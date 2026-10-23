@@ -77,7 +77,7 @@ keywords = ["lean", "latex", "formal-methods", "compiler", "proof"]
 categories = ["compilers", "development-tools"]
 ```
 
-The initial implementation version is `0.1.0`. The first release satisfying this complete specification is `1.0.0`.
+The initial implementation version is `0.1.0`. The completion release, the first release satisfying this complete specification and the release §30 names, is `0.5.0` when that release satisfies the completion criterion of §30.4, and `1.0.0` otherwise.
 
 ### 2.4 License
 
@@ -98,14 +98,19 @@ LexLean compiles a closed, glossary-defined mathematical document language with 
 2. canonical human-readable LaTeX;
 3. prose-free Lean 4 source;
 4. source maps and complete lexical-coverage records;
-5. deterministic build manifests; and
-6. verification attestations produced only after Lean elaboration, kernel replay, and axiom-policy checking succeed.
+5. deterministic build manifests;
+6. verification attestations produced only after Lean elaboration, kernel replay, and axiom-policy checking succeed; and
+7. for each production root of a language-1.2 project, a Rust package for each of its targets with the certificates that bind it to the root (§17.13–§17.19, §24.7).
 
 The central property is:
 
 > No accepted LexLean document contains an uninterpreted word, symbol, punctuation mark, control sequence, reference, or semantically relevant structural token.
 
 The document is a program. Human-visible mathematical text and kernel-visible Lean declarations are two renderings of one linked semantic object.
+
+Production compilation is the path from a verified project to executable code. Each production root (§17.13) is lowered to a program of the production realization calculus (§17.14) and rendered to Rust (§17.16); kernel-checked certificates relate the root's meaning to the lowered program and to each rendering (§17.17), and export publishes the packages with that evidence (§24.7).
+
+Production compilation exists so that every production root is certified optimal over its declared universe: a universe, a machine, and an objective fixed before any optimizer runs (§17.15), and a certificate whose premises cover every system of that universe (§17.18). A root is claimed optimal by its certificate and by nothing else; a root exported without one is certified to preserve its meaning and carries no optimality claim. §4.2 states what the guarantee never claims.
 
 ---
 
@@ -134,6 +139,8 @@ LexLean 1.0 MUST support:
 - a Rust library API and command-line interface;
 - deterministic, content-addressed build artifacts.
 
+Language 1.2 additionally MUST support production compilation as §3 states it: production eligibility (§17.13), the production realization calculus (§17.14), GNAF requests and certification (§17.15, §17.18), the Rust backend (§17.16), semantic preservation (§17.17), the differential validation oracle (§17.19), and production export (§24.7).
+
 ### 4.2 LexLean 1.0 deliberately does not support
 
 The following are outside the LexLean 1.0 language and MUST be rejected rather than approximated:
@@ -153,7 +160,10 @@ The following are outside the LexLean 1.0 language and MUST be rejected rather t
 - probabilistic or model-based translation;
 - a claim that `leanchecker` is an independent proof checker;
 - a claim that successful Rust generation alone establishes a theorem;
-- a claim that imported libraries are proved by LexLean.
+- a claim that imported libraries are proved by LexLean;
+- a claim of optimality over an unrestricted program universe, every calculus program and every Rust program included, rather than over the universe a GNAF request declares (§17.15);
+- a claim that representation minimality is execution optimality without a proved bridge (§17.18);
+- a claim that a certificate establishes wall time on hardware, which is only measured and recorded as an `open` ledger row (§27.3).
 
 Complex Lean objects that LexLean 1.0 cannot define MAY be imported as closed external glossary entries. Their guarantees belong to their upstream repositories. LexLean verifies only that the generated declarations elaborate and check in the pinned environment and that their observed axiom dependencies satisfy their explicit policies.
 
@@ -7086,6 +7096,17 @@ survive `fmt`.
   are exact inverses over every module; and language 1.1 still links the
   semantic example in the data form while the Atlas (language 1.0) is still
   written as `\coredata`.
+- **The module a source holds (`AU-14`).** A source's module is the
+  environment the structural parser opens (§15.1): the first environment after
+  the header, whose body ends at the first `\end` control atom, found over
+  the scanner's atoms (§12.2) and not by a search of the text. A marker a
+  string quotes is written `\\begin{…}`, an escaped backslash and a word, and
+  is never a marker, so a tooling or core module whose strings quote another
+  kind's markers is read by the authoring API (§24.8), formatted, and decoded
+  as its own kind, and contributes its data form to the compiler-semantics ID
+  (§21.2). An unescaped `\end` control in the body closes the environment
+  there for both: the parser refuses the source with `LLP2003`, and no module
+  is found.
 
 #### 17.21.7 Tooling modules
 
@@ -10004,13 +10025,15 @@ The example suite MUST mechanically demonstrate:
 LexLean has separate versions for:
 
 - compiler crate/binary SemVer;
-- language identifier `1.0`;
+- language identifier, one of `1.0`, `1.1`, and `1.2`, each of which a release supports;
 - project schema;
 - lock schema;
 - lexicon schema;
 - entry schema;
 - artifact schemas;
-- compiler-semantics ID.
+- compiler-semantics ID, one for each language identifier (§21.2).
+
+A release is identified by its compiler version together with, for every language it supports, the language identifier and that language's compiler-semantics ID; §30.3 states how its binaries report them.
 
 A compiler patch release may retain the semantics ID only when canonical accepted language, IR, diagnostics required for success/failure, and generated artifacts are unchanged.
 
@@ -10022,13 +10045,13 @@ No automatic in-place migration command is part of 1.0. Unsupported input fails 
 
 ### 30.3 Release artifacts
 
-A `1.0.0` release MUST publish:
+The completion release (§2.3) MUST publish:
 
 - source tag;
 - checksums;
 - supported-host binaries;
 - crate package;
-- compiler-semantics ID;
+- the compiler-semantics ID of every supported language;
 - generated `CONFORMANCE.md`;
 - generated `ERRORS.md`;
 - `SPEC.md`;
@@ -10036,18 +10059,22 @@ A `1.0.0` release MUST publish:
 - a software-bill-of-materials artifact;
 - CI evidence that `just vv` passed on the tagged commit.
 
-Release binaries MUST report:
+Release binaries MUST report, where `<version>` is the release version and each `<digest>` is the compiler-semantics ID of the language on the line before it:
 
 ```text
-lexlean 1.0.0
+lexlean <version>
 language 1.0
+compiler-semantics <digest>
+language 1.1
+compiler-semantics <digest>
+language 1.2
 compiler-semantics <digest>
 lean-toolchain leanprover/lean4:v4.32.1
 ```
 
 ### 30.4 Completion criterion
 
-The project is complete for LexLean 1.0 only when:
+The project is complete, and a release is the completion release of §2.3, only when:
 
 - every §31 ID is implemented at level `build`;
 - no ID is represented by a stub or ignored test;
@@ -10101,6 +10128,7 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `RP-14` | `repository` | The normative CI job runs every recipe of just vv in parallel legs that each start from a clean checkout on the standard ubuntu-24.04 runner, each recipe exactly once but bdd, which runs once per part of its committed plan on the row that names the part, the examples leg at the verification resource profile its matrix row names and without UOR Atlas, which the Atlas jobs of the same run verify as the shards of the committed plan and a join at that profile, every process once and nothing across runs, and the other legs at the default, with no cache, path filter, or skipped recipe, and each job uploads its CI evidence; a plan job decides what a run is from the event alone: a draft pull request runs the rest leg and no other job, a ready pull request, a request, and a push to main or to a release line run every job, and a push to main or to a release line that merges a head whose tree it equals runs none when the whole gate passed on that head, and runs the whole gate when any job of that run did not pass, was skipped, or is missing. | §9.4 |
 | `RP-15` | `repository` | Every match over a closed semantic enum (the IR, the production realization calculus, and its Rust AST) that names at least five of the enum's variants names all of them, with no wildcard or binding catch-all arm, so that a variant added to the enum is a compile error in each Lean, LaTeX, validation, charge, and calculus consumer and never a silent fallback; the audit rejects a catch-all planted in each consumer group and fails when a consumer it must read has no such match left. | §27.2 |
 | `RP-16` | `repository` | The development container installs, at image build, exactly the Rust toolchain that rust-toolchain.toml pins and exactly the Lean toolchain that lean-toolchain pins and selects no other default, so that nothing is fetched when a session starts, and a Dockerfile that names another version of either, installs a second toolchain, or selects an unpinned default is refused. | §9.3 |
+| `RP-17` | `repository` | `cargo xtask release-check` reads the completion release from §2.3 and the version report from §30.3 as the chapter modules of the specification project state them, and refuses a workspace version §2.3 does not name, a version report or semantics-ID list that is not the §30.3 report for the release version and each language's ID, and a §30.3 report whose languages are not the languages the compiler supports, a plant in either chapter item changing what it refuses. | §2.3, §30.3 |
 | `CF-01` | `configuration-lock` | Project configuration accepts exactly the project/1 schema and rejects unknown or missing fields. | §10.1 |
 | `CF-02` | `configuration-lock` | Every operational limit is explicit, positive, parsed with checked arithmetic, and has no hidden default. | §10.2 |
 | `CF-03` | `configuration-lock` | Configured paths resolve within the project under the specified UTF-8 and nonsymlink rules. | §10.1, §25.1 |
@@ -10320,7 +10348,7 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `CL-15` | `cli-api` | Public requests cannot override backends, toolchain, verification stages, limits, policies, or fixed artifact sets. | §24.3 |
 | `CL-16` | `cli-api` | Every public failure is a LexLeanError and malformed user input cannot panic. | §24.5 |
 | `CL-17` | `cli-api` | Environment variables cannot alter semantic project configuration. | §23.1, §25.4 |
-| `CL-18` | `cli-api` | Version output reports compiler, language, semantics ID, and Lean toolchain exactly. | §30.3 |
+| `CL-18` | `cli-api` | Version output reports the compiler version, every supported language in ascending order each followed by its compiler-semantics ID, and the Lean toolchain exactly. | §30.3 |
 | `CL-19` | `cli-api` | Snapshot returns a stable owned canonical semantic envelope without writing artifacts or invoking a backend. | §24.1 |
 | `CL-20` | `cli-api` | Language-1.1 init creates and verifies a declarative Lake workspace containing no source Lean module. | §23.4 |
 | `CL-21` | `cli-api` | Native diagnostics distinguish package-import cycles and unqualified cross-package term ambiguities without changing diagnostic wire bytes. | §24.5 |
@@ -10494,6 +10522,7 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `AU-11` | `authoring` | Malformed core notation fails closed and never panics: an unclosed delimiter, a keyword used as a name, a label that is not the number of its node, a forward reference to a node, a numeral with a redundant leading zero, a statement that defines no node, a nesting beyond the bound, and every single-token deletion and duplication of a committed module fail with a registered code at a position in the notation or link to a module that decodes. | §17.21.8 |
 | `AU-12` | `authoring` | A core module written with names for its statements and its variables reads to exactly the module its canonical notation reads to, and the canonical notation keeps the names of the binders and writes the numbers of the statements: a variable is written by the name of its binder exactly when no nearer binder has the name, a constant a binder in scope is named like is written as a string, a theorem added to the certification library by name reads to the committed module and is written as the committed bytes, and an unknown or repeated statement name and a variable given universe levels are refused with a position. | §17.21.8 |
 | `AU-13` | `authoring` | Under language 1.2 a module written with a data argument (`\semanticdata{…}`, `\toolingdata{…}`, or `\coredata{…}`) is refused with LLP2003 at the position of the data argument and naming the authoring notation, whichever of the three environments holds it; fmt does not rewrite it and reports the same refusal; lexlean::sdk::to_data_form is the one conversion into the data form and to_notation the one out of it; and the data form is still accepted under language 1.1, where the semantic example links, and is still the form of the Atlas under language 1.0. | §17.11, §17.21, §24.8 |
+| `AU-14` | `authoring` | A source's module is the environment the structural parser opens: lexlean::surface::module::locate takes the first environment after the header and ends its body at the first end control atom, so a tooling or core module whose strings quote the begin and end markers of another kind is read by the authoring API, formatted, and decoded as its own kind and contributes its data form to the compiler-semantics ID, a module whose body holds an unescaped end marker is refused with LLP2003 and is found as no module, and on every committed source the parser reads the module found is the one it opens. | §17.21, §21.2, §24.8 |
 | `RT-01` | `runtime` | The runtime of language 1.2 is LexLean source: every module of its registry is one native core module of the runtime's own project, which holds no file of Lean source, the registry lists only the modules in dependency order, every declaration pins its exact axioms, and a source that is missing, weakened to an inexact policy, or imports anything but `Init` and an earlier runtime module is refused; the one-time migration input is absent, no native source names a runtime copy inside a module, and no Lean file declares a runtime namespace but the released output of a language-1.0 or 1.1 project. | §17.12 |
 | `RT-02` | `runtime` | The runtime text of languages 1.0 and 1.1 is the one declared exception: the portable runtime and the decoder of core module 1 are the released bytes, held as data under `language/runtime-1.2/frozen/`, read by the language-1.0 and 1.1 backends alone, excluded from the language-1.0 and 1.1 identities, and reproduced byte for byte by the released language-1.1 and 1.0 output; a one-byte change of either is not the released output. | §17.12, §21.2 |
 | `RT-03` | `runtime` | A verification compiles every runtime module that a project's generated modules, or the calculus modules its certificates are checked against, import before the project's modules, replays it with `leanchecker`, and audits each of its declarations against the axioms its row pins; the committed verification of a project that uses the collections prints them, the runtime's own project verifies under the pinned Lean, and a row that pins another axiom set than its declaration observes fails with LLV7005. | §17.12, §22.3, §22.5, §22.6 |

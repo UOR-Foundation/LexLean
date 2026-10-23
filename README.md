@@ -8,6 +8,8 @@ The complete normative contract is [SPEC.md](SPEC.md) (`LEXLEAN-SPEC-1`). Every 
 
 LexLean compiles `.lex.tex` modules written in a closed controlled language: every word, symbol, and control must be declared by a versioned lexicon package, every sentence parses under a fixed grammar, and one typed intermediate representation generates both the canonical LaTeX document and the prose-free Lean 4 program. Verification compiles the generated Lean under the pinned `leanprover/lean4:v4.32.1` toolchain, replays every module with `leanchecker`, audits axioms with exact `#print axioms` parsing, and publishes a content-addressed attestation.
 
+A language-1.2 project can also declare production roots, which LexLean compiles to Rust packages with a kernel-checked certificate per root that the packaged program means what the root means (`PD-01`..`PD-08`, `TC-01`..`TC-07`, `RB-01`..`RB-14`, `SP-01`..`SP-20`, `PX-01`..`PX-13`). Production compilation exists so that every production root is certified optimal over its declared universe (SPEC.md §3): a GNAF certificate covers every system of a universe fixed before any optimizer runs (`GN-03`, `GC-03`, `GC-04`), and export binds it to the root (`PX-06`). The claim is never over an unrestricted universe (`GN-05`), representation minimality is not execution optimality without a proved bridge (`GC-07`), and wall time on hardware is a measurement, never proof (SPEC.md §4.2).
+
 ```text
 lexlean init --name my-doc --module-prefix MyDoc
 lexlean lock
@@ -49,10 +51,13 @@ cargo install --locked --path crates/lexlean
 ```
 
 Versions follow SPEC.md §30.1 and are recorded in [CHANGELOG.md](CHANGELOG.md).
-§2.3 fixes `0.1.0` as the initial implementation version and `1.0.0` as the
-first release satisfying the complete specification, so a `0.1.0` tag does not
-claim the §30 release criterion — `cargo xtask release-check` reads that
-criterion and says exactly which parts of it do not hold.
+§2.3 fixes `0.1.0` as the initial implementation version and names the
+completion release, the first release satisfying the complete specification:
+`0.5.0` when it satisfies the §30.4 criterion, and `1.0.0` otherwise. A tag
+before it does not claim the §30 release criterion — `cargo xtask release-check`
+reads that criterion from the specification and says exactly which parts of it
+do not hold. `lexlean --version` reports each supported language, `1.0`, `1.1`
+and `1.2`, with its own compiler-semantics ID.
 
 ## The literal example
 
@@ -143,7 +148,7 @@ Prerequisites: Rust 1.97.1 (`rust-toolchain.toml` pins it), [just](https://githu
 
 ```text
 just vv        # the complete normative acceptance gate (SPEC.md §9.2)
-just release   # vv, then the §30 release criterion; refused until 1.0.0
+just release   # vv, then the §30 release criterion; refused until the completion release
 ```
 
 All 445 registered conformance IDs are implemented and pass; `just vv` runs clean from a checkout with the pinned toolchain installed.
@@ -160,7 +165,7 @@ Every row is validated by `just vv`; the IDs link the claim to its register row,
 
 | Capability | IDs | Level |
 | --- | --- | --- |
-| Exact repository identity, layout, generated documents, release gate, total classification of every closed enum by every consumer, and the devcontainer pinned to the toolchains | `RP-01`..`RP-16` | `build` |
+| Exact repository identity, layout, generated documents, release gate reading its criterion from the specification, total classification of every closed enum by every consumer, and the devcontainer pinned to the toolchains | `RP-01`..`RP-17` | `build` |
 | Closed project configuration, canonical lock file, and offline dependency policy | `CF-01`..`CF-18` | `build` |
 | Total lexical closure: every accepted atom is covered by exactly one declared origin | `LX-01`..`LX-14` | `build` |
 | Versioned lexicon packages with closed schemas, denotations, and renderer tokens | `GL-01`..`GL-18` | `build` |
@@ -186,7 +191,7 @@ Every row is validated by `just vv`; the IDs link the claim to its register row,
 | The production export contract: a stable, versioned `lexlean::api::production` façade and its CLI through which a consumer compiles production roots to certified Rust packages; closed requests refused before Lean on every root, target, pin, evidence, path, and package defect; results binding every output to the source, semantic, compiler-semantics, target, compiler-input, preservation, and certificate identities with unforgeable certification; deterministic, confined, offline bundles; source-free replay; versioned schemas; each output's effects and what `recursion` asks of the host | `PX-01`..`PX-13` | `build` |
 | Language-1.2 reasoning machines: logics, guarded inference rules, verifiers, and forward, search, and generate-and-verify reasoners elaborated to ordinary declarations, with exact obligations, fixed-template theorems over the axiom-free reasoning runtime, a closed runtime boundary, resource ledgers, and their production, calculus, and GNAF realization | `RS-01`..`RS-14` | `build` |
 | Language-1.2 compiler-tooling modules: a closed, typed program over a registry of the external Lean interface (types with exact constructors and index requirements, calls with exact signatures), with flat index-exhaustive matching, licensed partial and mutual recursion, complete recursive traversal, command registration, invocation and evaluation as semantic data, both backends from one linked value, and no member that holds Lean text | `TL-01`..`TL-11` | `build` |
-| The language-1.2 authoring notation: a readable `.lex.tex` text for a semantic module, in bijection with its canonical JSON, whose every position and variant is read from the schema, with readable forms for types and terms and a generic form for every other value, formatted canonically by `fmt` failing closed, the only form in which a language-1.2 source of the product is written (the data form is refused under language 1.2, and `lexlean::sdk` is the explicit conversion), the same for the compiler-tooling modules in the generic notation, with no compiler-semantics ID that depends on which form an embedded module is written in, with no product source owned by a generator but five named records, read and written by programs only through the authoring API (`lexlean::sdk`), and, for a native core module, a readable program over the shared table of kernel terms whose numbering is the order of its text | `AU-01`..`AU-13` | `build` |
+| The language-1.2 authoring notation: a readable `.lex.tex` text for a semantic module, in bijection with its canonical JSON, whose every position and variant is read from the schema, with readable forms for types and terms and a generic form for every other value, formatted canonically by `fmt` failing closed, the only form in which a language-1.2 source of the product is written (the data form is refused under language 1.2, and `lexlean::sdk` is the explicit conversion), the same for the compiler-tooling modules in the generic notation, with no compiler-semantics ID that depends on which form an embedded module is written in, with no product source owned by a generator but five named records, read and written by programs only through the authoring API (`lexlean::sdk`), and, for a native core module, a readable program over the shared table of kernel terms whose numbering is the order of its text | `AU-01`..`AU-14` | `build` |
 | The runtime of generated Lean as native modules: the portable, collection, model, and reasoning runtimes of language 1.2 are LexLean source that every generated module imports, migrated losslessly and audited against their exact axioms, the released runtime text of languages 1.0 and 1.1 is frozen data equal to their released output, and no other Lean runtime text remains in the compiler but the decoder of core module 2 | `RT-01`..`RT-04` | `build` |
 | The standard library: language-1.2 source beside the compiler whose members are certified production roots, each validated against its oracle by a seeded differential of its evaluator and rustc realizations; bytes and text over `Bytes`; SHA-256 against FIPS 180-4, the NIST CAVP vectors, and the `sha2` crate, and that SHA-256 as the compiler's own digest, linked from the committed export with no `sha2` in the shipped crate | `SL-01`..`SL-07` | `build` |
 | The bootstrap project: the compiler's own components as language-1.2 source compiled by LexLean's production pipeline to certified Rust packages, the exact axiom-output parser and its closed Lean-name check, the primitive scanner of §12.2, the preservation lexer and token audit, the target calculus's checker, and the Rust crate validator, each held to the Rust it replaces (the stage-0 oracle) by the committed vectors and a seeded differential of its evaluator and rustc realizations, with planted defects detected and the production export committed | `BS-01`..`BS-05` | `build` |
