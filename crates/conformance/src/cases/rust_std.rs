@@ -325,7 +325,7 @@ fn differential() {
         (
             "an index that finds the next position",
             "if position == i { return Some(cell.head.clone()); }",
-            "if position == i + 1 { return Some(cell.head.clone()); }",
+            "if position == i.wrapping_add(1) { return Some(cell.head.clone()); }",
             "index_list",
         ),
         (
