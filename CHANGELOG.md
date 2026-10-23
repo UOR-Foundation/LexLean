@@ -36,7 +36,7 @@ and Unreleased holds what has landed since.
   two scalars (nested keys are validated, not proved: #249). The handwritten
   base text is gone; the handwritten runtime is kept as the oracle. The
   compiler-semantics ID moves; records bound to it regenerate once, at the
-  landing. `RB-19` adds the constructs of the heap runtime (40 validator rules, sixteen new): every name the printer writes is an identifier and not a keyword, a derive is in a closed table of five, a character literal is one scalar value, the head of a condition holds no struct literal outside parentheses, and a `let`, cast or type argument names no generic parameter; each site is planted, and a comparison whose left operand ends in a cast is printed with parentheses. The register is 446 IDs.
+  landing. `RB-19` adds the constructs of the heap runtime (40 validator rules, sixteen new): every name the printer writes is an identifier and not a keyword, a derive is in a closed table of five, a character literal is one scalar value, the head of a condition holds no struct literal outside parentheses, and a `let`, cast or type argument names no generic parameter; each site is planted, and a comparison whose left operand ends in a cast is printed with parentheses. The register is 446 IDs. The register is 448 IDs.
 - Two source packages of the standard library and the application that uses
   them, #32 (SPEC.md §17.22, §10.5, `SL-03`, `SL-04`, `EX-09`). `std-models`
   (`LexLeanStdModels.Scores`) holds the score combinators `best`, `margin`, and
@@ -345,6 +345,18 @@ and Unreleased holds what has landed since.
   ones. The register is 430 IDs. A finding about the certificate generator,
   #222, is worked around by building the correspondence table in a definition
   of its own.
+- The Rust printer as language-1.2 source and the standard library's output
+  buffer (SPEC.md §17.23, §17.22, §17.16, `BS-06` and `SL-05`, #92; no new
+  diagnostic code, no change to the language-1.2 identity). `LexLeanStd.Buffer`
+  writes in order into a buffer of a given capacity, with the capacity
+  exceeded a refusal of `finish`; it is chunked over today's primitives
+  because a chain of `append` is quadratic (the work counter quadruples as n
+  doubles). `bootstrap/src/RustPrint.lex.tex` over `RustAst.lex.tex` declares
+  `printCrate` and `printExpr` as production roots for `rust-std`. `BS-06`
+  runs 2,559 vectors under the pinned `rustc` on every host, and on the
+  normative host the evaluator on 541 + 1,955 of them and 400 + 399 seeded
+  mutants, 2,984 more under `rustc`, twelve planted defects, and the certified
+  packages against the committed ones. The register is 447 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or
