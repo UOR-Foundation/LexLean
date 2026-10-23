@@ -124,6 +124,8 @@ pub enum Type {
     Overflow,
     /// `i128`, the operand type of the runtime's conversions to a width.
     I128,
+    /// A type parameter of the runtime function, bounded by `Clone`.
+    Param(u64),
 }
 
 impl Type {
@@ -148,6 +150,7 @@ impl Type {
             Self::Ref(inner) => format!("&{}", inner.text()),
             Self::Overflow => "Overflow".to_owned(),
             Self::I128 => "i128".to_owned(),
+            Self::Param(n) => param_name(*n),
         }
     }
 
@@ -155,7 +158,7 @@ impl Type {
     #[must_use]
     pub fn heap(&self) -> bool {
         match self {
-            Self::Str | Self::Bytes | Self::List(_) | Self::Rc(_) => true,
+            Self::Str | Self::Bytes | Self::List(_) | Self::Rc(_) | Self::Param(_) => true,
             Self::Option(inner) | Self::Fallible(inner) | Self::Ref(inner) => inner.heap(),
             Self::Result(left, right) | Self::Pair(left, right) => left.heap() || right.heap(),
             Self::Unit
@@ -193,7 +196,8 @@ impl Type {
             | Self::Fn(_)
             | Self::Rc(_)
             | Self::Fallible(_)
-            | Self::Ref(_) => false,
+            | Self::Ref(_)
+            | Self::Param(_) => false,
         }
     }
 }
@@ -294,6 +298,10 @@ pub enum Machine {
     CheckedIntMul,
     CheckedIntNeg,
     CheckedIntQuot,
+    ListLength,
+    ListAppend,
+    ListIndex,
+    ListSlice,
 }
 
 impl Machine {
@@ -315,6 +323,10 @@ impl Machine {
             Self::CheckedIntMul,
             Self::CheckedIntNeg,
             Self::CheckedIntQuot,
+            Self::ListLength,
+            Self::ListAppend,
+            Self::ListIndex,
+            Self::ListSlice,
         ];
         for kind in IntKind::ALL {
             out.extend([
@@ -369,13 +381,17 @@ impl Machine {
             Self::CheckedIntMul => 23,
             Self::CheckedIntNeg => 24,
             Self::CheckedIntQuot => 25,
+            Self::ListLength => 26,
+            Self::ListAppend => 27,
+            Self::ListIndex => 28,
+            Self::ListSlice => 29,
         }
     }
 
     /// One primitive of each family, at `u8` where it has a width, in the
     /// order of [`Machine::family`].
     #[must_use]
-    pub const fn families() -> [Self; 26] {
+    pub const fn families() -> [Self; 30] {
         let kind = IntKind::U8;
         [
             Self::CheckedAdd(kind),
@@ -404,6 +420,10 @@ impl Machine {
             Self::CheckedIntMul,
             Self::CheckedIntNeg,
             Self::CheckedIntQuot,
+            Self::ListLength,
+            Self::ListAppend,
+            Self::ListIndex,
+            Self::ListSlice,
         ]
     }
 
@@ -436,7 +456,11 @@ impl Machine {
             | Self::CheckedIntSub
             | Self::CheckedIntMul
             | Self::CheckedIntNeg
-            | Self::CheckedIntQuot => None,
+            | Self::CheckedIntQuot
+            | Self::ListLength
+            | Self::ListAppend
+            | Self::ListIndex
+            | Self::ListSlice => None,
         }
     }
 
@@ -471,6 +495,10 @@ impl Machine {
             Self::CheckedIntMul => "int_mul",
             Self::CheckedIntNeg => "int_neg",
             Self::CheckedIntQuot => "int_quot",
+            Self::ListLength => "list_length",
+            Self::ListAppend => "list_append",
+            Self::ListIndex => "list_index",
+            Self::ListSlice => "list_slice",
         }
     }
 
@@ -478,8 +506,16 @@ impl Machine {
     #[must_use]
     pub const fn arity(self) -> usize {
         match self {
-            Self::CheckedNeg(_) | Self::TryFrom(_) | Self::BitNot(_) | Self::CheckedIntNeg => 1,
-            Self::NatRem | Self::IntRem | Self::NatQuot | Self::CheckedIntQuot => 3,
+            Self::CheckedNeg(_)
+            | Self::TryFrom(_)
+            | Self::BitNot(_)
+            | Self::CheckedIntNeg
+            | Self::ListLength => 1,
+            Self::NatRem
+            | Self::IntRem
+            | Self::NatQuot
+            | Self::CheckedIntQuot
+            | Self::ListSlice => 3,
             _ => 2,
         }
     }
@@ -525,6 +561,10 @@ impl Machine {
                 "{{ let (a, b, z): (i64, i64, i64) = ({}, {}, {}); if b == 0 {{ Some(z) }} else {{ a.checked_div(b) }} }}",
                 args[0], args[1], args[2]
             ),
+            Self::ListLength => format!("List::length(&{})", args[0]),
+            Self::ListAppend => format!("List::append({}, {})", args[0], args[1]),
+            Self::ListIndex => format!("List::index(&{}, {})", args[0], args[1]),
+            Self::ListSlice => format!("List::slice(&{}, {}, {})", args[0], args[1], args[2]),
         }
     }
 }
@@ -1129,14 +1169,73 @@ impl Printer {
                 self.line(
                     0,
                     &format!(
-                        "pub fn {}({}){} {body}",
+                        "pub fn {}{}({}){} {body}",
                         name.text(),
+                        generics(parameters, result),
                         params.join(", "),
                         returns(&result.text())
                     ),
                 );
             }
         }
+    }
+}
+
+/// The name a type parameter of the runtime is written with: `T`, `U`, `V`,
+/// then `T3`, `T4`, and on.
+fn param_name(n: u64) -> String {
+    match n {
+        0 => "T".to_owned(),
+        1 => "U".to_owned(),
+        2 => "V".to_owned(),
+        n => format!("T{n}"),
+    }
+}
+
+/// The type parameters a signature uses, in order, written as the generic
+/// list of its function: each is bounded by `Clone`, as the runtime's are.
+fn generics(parameters: &[(Pat, Type)], result: &Type) -> String {
+    fn visit(ty: &Type, seen: &mut std::collections::BTreeSet<u64>) {
+        match ty {
+            Type::Param(n) => {
+                seen.insert(*n);
+            }
+            Type::Option(inner)
+            | Type::List(inner)
+            | Type::Rc(inner)
+            | Type::Fallible(inner)
+            | Type::Ref(inner) => visit(inner, seen),
+            Type::Result(left, right) | Type::Pair(left, right) => {
+                visit(left, seen);
+                visit(right, seen);
+            }
+            Type::Unit
+            | Type::Bool
+            | Type::Nat
+            | Type::Int
+            | Type::Fixed(_)
+            | Type::Ordering
+            | Type::Str
+            | Type::Bytes
+            | Type::Adt(_)
+            | Type::Fn(_)
+            | Type::Overflow
+            | Type::I128 => {}
+        }
+    }
+    let mut seen = std::collections::BTreeSet::new();
+    for (_, ty) in parameters {
+        visit(ty, &mut seen);
+    }
+    visit(result, &mut seen);
+    if seen.is_empty() {
+        String::new()
+    } else {
+        let names: Vec<String> = seen
+            .iter()
+            .map(|n| format!("{}: Clone", param_name(*n)))
+            .collect();
+        format!("<{}>", names.join(", "))
     }
 }
 
@@ -1171,7 +1270,7 @@ pub fn print(krate: &Crate) -> Result<String, String> {
     let mut out = super::scaffold::get()?.attributes(krate.profile)?;
     out.push_str(super::runtime::core()?);
     if krate.profile == Profile::Std {
-        out.push_str(super::runtime::STD);
+        out.push_str(super::runtime::std()?);
     }
     let mut printer = Printer { out };
     for item in &krate.items {

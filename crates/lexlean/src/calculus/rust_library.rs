@@ -355,7 +355,7 @@ pub fn audit_runtime() -> Result<(), String> {
         &format!(
             "{}{}",
             super::rust::runtime::core()?,
-            super::rust::runtime::STD
+            super::rust::runtime::std()?
         ),
         LIBRARY,
         PRIMITIVES,

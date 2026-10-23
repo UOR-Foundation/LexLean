@@ -18,7 +18,7 @@ and Unreleased holds what has landed since.
 ## Unreleased
 
 - The Rust runtime as source, #91 stage 4 (SPEC.md §17.16, §17.17, `SP-21`,
-  `RB-15`, `SP-23`, `SM-35`, `SM-36`, `RB-16`, `SP-22`, `RB-17`, `SP-25`, `RB-19`, `BS-09`, `SP-26`, `SP-27`, `SP-28`).
+  `RB-15`, `SP-23`, `SM-35`, `SM-36`, `RB-16`, `SP-22`, `RB-17`, `SP-25`, `RB-19`, `BS-09`, `SP-26`, `SP-27`, `SP-28`, `SP-29`, `RB-20`).
   The declared Rust machine grows by the primitives the runtime is written in
   (the bit operations, the natural and integer comparisons and remainders, the
   checked natural and integer arithmetic that is `Some` or `None` on overflow)
@@ -36,7 +36,7 @@ and Unreleased holds what has landed since.
   two scalars (nested keys are validated, not proved: #249). The handwritten
   base text is gone; the handwritten runtime is kept as the oracle. The
   compiler-semantics ID moves; records bound to it regenerate once, at the
-  landing. `RB-19` adds the constructs of the heap runtime (35 validator rules, eleven new). `BS-09` holds the runtime validator's Lean twin (`RuntimeValidate`, a bootstrap root) to the Rust oracle. `SP-26` kernel-checks the laws of the memory a runtime buffer lives in (`RustMemory`). `SP-27` kernel-checks the abstraction theorems of the list representation (`RustLists`). `SP-28` states the meaning of the buffer, share, and replace primitives over that model (`RustPrims`). The register is 450 IDs.
+  landing. `RB-19` adds the constructs of the heap runtime (35 validator rules, eleven new). `BS-09` holds the runtime validator's Lean twin (`RuntimeValidate`, a bootstrap root) to the Rust oracle. `SP-26` kernel-checks the laws of the memory a runtime buffer lives in (`RustMemory`). `SP-27` kernel-checks the abstraction theorems of the list representation (`RustLists`). `SP-28` states the meaning of the buffer, share, and replace primitives over that model (`RustPrims`). `SP-29` and `RB-20` carry the first four functions of the `rust-std` runtime, `append_list`, `length_list`, `index_list` and `slice_list`, as source: the module `RustStd` defines each as one machine call (`Machine.listAppend`, `listLength`, `listIndex`, `listSlice`, whose meaning `RustSemantics` states as the calculus primitive `append`, `length`, `index`, `slice`), `refines_<function>` is kernel-checked against the run of the runtime item, the std text is the handwritten base with the generated functions in place of their oracle functions, and a differential with counted work holds them to the oracle. The shipped crate gains `Type::Param`, the four machine families, and the decoder of the std module; the library audit reads the std text as generated. The register is 452 IDs.
 - Two source packages of the standard library and the application that uses
   them, #32 (SPEC.md §17.22, §10.5, `SL-03`, `SL-04`, `EX-09`). `std-models`
   (`LexLeanStdModels.Scores`) holds the score combinators `best`, `margin`, and

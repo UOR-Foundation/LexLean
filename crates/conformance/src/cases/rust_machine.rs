@@ -51,6 +51,22 @@ fn signature(machine: Machine) -> (Vec<Type>, Type) {
             vec![Type::Int, Type::Int],
             Type::Option(Box::new(Type::Int)),
         ),
+        Machine::ListLength => (vec![Type::List(Box::new(Type::Param(0)))], Type::Nat),
+        Machine::ListAppend => (
+            vec![
+                Type::List(Box::new(Type::Param(0))),
+                Type::List(Box::new(Type::Param(0))),
+            ],
+            Type::List(Box::new(Type::Param(0))),
+        ),
+        Machine::ListIndex => (
+            vec![Type::List(Box::new(Type::Param(0))), Type::Nat],
+            Type::Option(Box::new(Type::Param(0))),
+        ),
+        Machine::ListSlice => (
+            vec![Type::List(Box::new(Type::Param(0))), Type::Nat, Type::Nat],
+            Type::Option(Box::new(Type::List(Box::new(Type::Param(0))))),
+        ),
         Machine::CheckedIntNeg => (vec![Type::Int], Type::Option(Box::new(Type::Int))),
         Machine::CheckedIntQuot => (
             vec![Type::Int, Type::Int, Type::Int],
@@ -178,7 +194,16 @@ fn refused(krate: &Crate, message: &str) {
 /// Run the case of `RB-15`.
 pub fn run(id: &str) {
     assert_eq!(id, "RB-15");
-    let machines = Machine::all();
+    // The list machine calls are std ones: the Core harness takes the others.
+    let machines: Vec<Machine> = Machine::all()
+        .into_iter()
+        .filter(|machine| {
+            !matches!(
+                machine,
+                Machine::ListLength | Machine::ListAppend | Machine::ListIndex | Machine::ListSlice
+            )
+        })
+        .collect();
     // Seventeen constructors, eleven of them at each of eight widths and one
     // at the four signed ones: the list is the Lean `Machine` type's.
     assert_eq!(machines.len(), 5 + 9 + 8 * 11 + 4);
