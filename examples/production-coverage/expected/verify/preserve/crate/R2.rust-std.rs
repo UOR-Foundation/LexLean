@@ -291,106 +291,242 @@ decimal!(u32, format_u32, parse_u32); decimal!(u64, format_u64, parse_u64);
 decimal!(i8, format_i8, parse_i8); decimal!(i16, format_i16, parse_i16);
 decimal!(i32, format_i32, parse_i32); decimal!(i64, format_i64, parse_i64);
 
-#[derive(Clone)]
-pub enum Fn0 {
-    F2(u64),
+pub fn f0(v0: List<(Str, u64)>, v1: Str, v2: u64) -> (List<(Str, u64)>, (List<(Str, u64)>, (Option<u64>, (bool, (List<Str>, (List<u64>, (u64, List<(Str, u64)>))))))) {
+    (f1(v0.clone(), v1.clone(), v2), (f2(v0.clone(), v1.clone()), (f3(v0.clone(), v1.clone()), (f4(v0.clone(), v1), (f6(v0.clone()), (f7(v0.clone()), ({
+        let a1 = v0.clone();
+        length_list(a1)
+    }, v0)))))))
 }
 
-impl Fn0 {
-    pub fn apply(&self, p0: u64, p1: u64, p2: u64) -> R<u64> {
-        match self {
-            Fn0::F2(k0) => f2(*k0, p0, p1, p2),
+pub fn f1(v0: List<(Str, u64)>, v1: Str, v2: u64) -> List<(Str, u64)> {
+    let m2 = v0.clone();
+    match m2.uncons() {
+        None => {
+            List::cons((v1, v2), List::<(Str, u64)>::nil())
+        }
+        Some((v3, v4)) => {
+            let m6 = {
+                let a4 = v1.clone();
+                let a5 = {
+                    let (h3, _) = v3.clone();
+                    h3
+                };
+                compare(a4, a5)
+            };
+            match m6 {
+                Ordering::Less => {
+                    List::cons((v1, v2), v0)
+                }
+                Ordering::Equal => {
+                    List::cons((v1, v2), v4)
+                }
+                Ordering::Greater => {
+                    List::cons(v3, f1(v4, v1, v2))
+                }
+            }
         }
     }
 }
 
-pub fn f0(v0: List<(u64, u64)>, v1: u64) -> R<u64> {
-    f1(Fn0::F2(v1), 0u64, v0)
+pub fn f2(v0: List<(Str, u64)>, v1: Str) -> List<(Str, u64)> {
+    let m7 = v0.clone();
+    match m7.uncons() {
+        None => {
+            List::<(Str, u64)>::nil()
+        }
+        Some((v2, v3)) => {
+            let m11 = {
+                let a9 = v1.clone();
+                let a10 = {
+                    let (h8, _) = v2.clone();
+                    h8
+                };
+                compare(a9, a10)
+            };
+            match m11 {
+                Ordering::Less => {
+                    v0
+                }
+                Ordering::Equal => {
+                    v3
+                }
+                Ordering::Greater => {
+                    List::cons(v2, f2(v3, v1))
+                }
+            }
+        }
+    }
 }
 
-pub fn f1(v0: Fn0, p6: u64, p7: List<(u64, u64)>) -> R<u64> {
-    let m5 = (p6, p7);
+pub fn f3(p19: List<(Str, u64)>, v1: Str) -> Option<u64> {
+    let m18 = p19;
     {
-        let mut m5 = m5;
+        let mut m18 = m18;
         loop {
             let step = {
-                let (v1, v2) = m5;
-                let m1 = v2;
-                match m1.uncons() {
+                let v0 = m18;
+                let m12 = v0;
+                match m12.uncons() {
                     None => {
-                        Err::<(u64, List<(u64, u64)>), R<u64>>(Ok(v1))
+                        Err::<List<(Str, u64)>, Option<u64>>(None::<u64>)
                     }
-                    Some((v3, v4)) => {
-                        Ok::<(u64, List<(u64, u64)>), R<u64>>(({
-                            let c2: Fn0 = v0.clone();
-                            c2.apply(v1, {
-                                let (h3, _) = v3;
-                                h3
-                            }, {
-                                let (_, h4) = v3;
-                                h4
-                            })?
-                        }, v4))
+                    Some((v2, v3)) => {
+                        let m16 = {
+                            let a14 = v1.clone();
+                            let a15 = {
+                                let (h13, _) = v2;
+                                h13
+                            };
+                            compare(a14, a15)
+                        };
+                        match m16 {
+                            Ordering::Less => {
+                                Err::<List<(Str, u64)>, Option<u64>>(None::<u64>)
+                            }
+                            Ordering::Equal => {
+                                Err::<List<(Str, u64)>, Option<u64>>(Some({
+                                    let (_, h17) = v2;
+                                    h17
+                                }))
+                            }
+                            Ordering::Greater => {
+                                Ok::<List<(Str, u64)>, Option<u64>>(v3)
+                            }
+                        }
                     }
                 }
             };
             match step {
-                Ok(next) => { m5 = next; }
+                Ok(next) => { m18 = next; }
                 Err(done) => break done,
             }
         }
     }
 }
 
-pub fn f2(v0: u64, v1: u64, v2: u64, v3: u64) -> R<u64> {
-    let a12 = {
-        let a8 = v1;
-        let a9 = v2;
-        nat_add(a8, a9)?
-    };
-    let a13 = {
-        let a10 = v3;
-        let a11 = v0;
-        nat_add(a10, a11)?
-    };
-    nat_add(a12, a13)
+pub fn f4(v0: List<(Str, u64)>, v1: Str) -> bool {
+    let m20 = f5(v0, v1);
+    match m20 {
+        None => {
+            false
+        }
+        Some(_) => {
+            true
+        }
+    }
 }
 
-pub fn f3(p23: List<(u64, u64)>) -> bool {
-    let m22 = p23;
+pub fn f5(p28: List<(Str, u64)>, v1: Str) -> Option<u64> {
+    let m27 = p28;
     {
-        let mut m22 = m22;
+        let mut m27 = m27;
         loop {
             let step = {
-                let v0 = m22;
-                let m14 = v0;
-                match m14.uncons() {
+                let v0 = m27;
+                let m21 = v0;
+                match m21.uncons() {
                     None => {
-                        Err::<List<(u64, u64)>, bool>(true)
+                        Err::<List<(Str, u64)>, Option<u64>>(None::<u64>)
+                    }
+                    Some((v2, v3)) => {
+                        let m25 = {
+                            let a23 = v1.clone();
+                            let a24 = {
+                                let (h22, _) = v2;
+                                h22
+                            };
+                            compare(a23, a24)
+                        };
+                        match m25 {
+                            Ordering::Less => {
+                                Err::<List<(Str, u64)>, Option<u64>>(None::<u64>)
+                            }
+                            Ordering::Equal => {
+                                Err::<List<(Str, u64)>, Option<u64>>(Some({
+                                    let (_, h26) = v2;
+                                    h26
+                                }))
+                            }
+                            Ordering::Greater => {
+                                Ok::<List<(Str, u64)>, Option<u64>>(v3)
+                            }
+                        }
+                    }
+                }
+            };
+            match step {
+                Ok(next) => { m27 = next; }
+                Err(done) => break done,
+            }
+        }
+    }
+}
+
+pub fn f6(v0: List<(Str, u64)>) -> List<Str> {
+    let m29 = v0;
+    match m29.uncons() {
+        None => {
+            List::<Str>::nil()
+        }
+        Some((v1, v2)) => {
+            List::cons({
+                let (h30, _) = v1;
+                h30
+            }, f6(v2))
+        }
+    }
+}
+
+pub fn f7(v0: List<(Str, u64)>) -> List<u64> {
+    let m31 = v0;
+    match m31.uncons() {
+        None => {
+            List::<u64>::nil()
+        }
+        Some((v1, v2)) => {
+            List::cons({
+                let (_, h32) = v1;
+                h32
+            }, f7(v2))
+        }
+    }
+}
+
+pub fn f8(p42: List<(Str, u64)>) -> bool {
+    let m41 = p42;
+    {
+        let mut m41 = m41;
+        loop {
+            let step = {
+                let v0 = m41;
+                let m33 = v0;
+                match m33.uncons() {
+                    None => {
+                        Err::<List<(Str, u64)>, bool>(true)
                     }
                     Some((v1, v2)) => {
-                        if f4({
-                            let (_, h15) = v1;
-                            h15
+                        if f9({
+                            let (_, h34) = v1;
+                            h34
                         }) {
-                            let m16 = v2.clone();
-                            match m16.uncons() {
+                            let m35 = v2.clone();
+                            match m35.uncons() {
                                 None => {
-                                    Err::<List<(u64, u64)>, bool>(true)
+                                    Err::<List<(Str, u64)>, bool>(true)
                                 }
                                 Some((v3, _)) => {
-                                    let m21 = {
-                                        let a19 = {
-                                            let (h17, _) = v1;
-                                            h17
+                                    let m40 = {
+                                        let a38 = {
+                                            let (h36, _) = v1;
+                                            h36
                                         };
-                                        let a20 = {
-                                            let (h18, _) = v3;
-                                            h18
+                                        let a39 = {
+                                            let (h37, _) = v3;
+                                            h37
                                         };
-                                        compare(a19, a20)
+                                        compare(a38, a39)
                                     };
-                                    if match m21 {
+                                    if match m40 {
                                         Ordering::Less => {
                                             true
                                         }
@@ -401,34 +537,34 @@ pub fn f3(p23: List<(u64, u64)>) -> bool {
                                             false
                                         }
                                     } {
-                                        Ok::<List<(u64, u64)>, bool>(v2)
+                                        Ok::<List<(Str, u64)>, bool>(v2)
                                     } else {
-                                        Err::<List<(u64, u64)>, bool>(false)
+                                        Err::<List<(Str, u64)>, bool>(false)
                                     }
                                 }
                             }
                         } else {
-                            Err::<List<(u64, u64)>, bool>(false)
+                            Err::<List<(Str, u64)>, bool>(false)
                         }
                     }
                 }
             };
             match step {
-                Ok(next) => { m22 = next; }
+                Ok(next) => { m41 = next; }
                 Err(done) => break done,
             }
         }
     }
 }
 
-pub fn f4(_: u64) -> bool {
+pub fn f9(_: u64) -> bool {
     true
 }
 
-pub fn f5(v0: List<(u64, u64)>, v1: u64) -> R<Option<u64>> {
-    if f3(v0.clone()) {
-        Ok(Some(f0(v0, v1)?))
+pub fn f10(v0: List<(Str, u64)>, v1: Str, v2: u64) -> Option<(List<(Str, u64)>, (List<(Str, u64)>, (Option<u64>, (bool, (List<Str>, (List<u64>, (u64, List<(Str, u64)>)))))))> {
+    if f8(v0.clone()) {
+        Some(f0(v0, v1, v2))
     } else {
-        Ok(None::<u64>)
+        None::<(List<(Str, u64)>, (List<(Str, u64)>, (Option<u64>, (bool, (List<Str>, (List<u64>, (u64, List<(Str, u64)>)))))))>
     }
 }

@@ -143,3 +143,9 @@ Feature: preservation
     When every loop of every rendering is read back into the recursive body it is the loop form of, the loop form of that body is computed by the library's form transliterated, and certificate B of the fixtures rendered as loops is compiled by the pinned Lean over the shipped library
     Then the loop form of each recovered body is the crate's function, and each certificate B compiles with exactly the axioms the audit states
     And a loop that is not the loop form of any recursive body is refused for each way it may differ
+
+  @SP-29 @build
+  Scenario: Certificate A of a production root with a bound states, and the kernel checks from the bound's theorem, that the root's width predicate holds on every argument in the target width (`bounded`) and that the lowered program converges to the encoded value of the root on every such argument (`root_value`), each with its axioms pinned exactly within the certificate axioms; a bound theorem whose conclusions do not match the width predicate's checks in evaluation order, a forged bound without a kernel proof, and a bound narrowed to miss an operation fail verification or linking rather than certify the root.
+    Given the committed bounded root of the production-coverage corpus and copies whose bound theorem is forged, narrowed, or stated out of order
+    When certificate A is generated and checked by the pinned Lean
+    Then the certificate states `bounded` and `root_value` with exactly the certificate axioms, and each copy fails verification or linking

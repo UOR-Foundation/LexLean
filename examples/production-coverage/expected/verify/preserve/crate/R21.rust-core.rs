@@ -72,25 +72,26 @@ pub fn checked_neg_i16(a: i16) -> Option<i16> { a.checked_neg() }
 pub fn checked_neg_i32(a: i32) -> Option<i32> { a.checked_neg() }
 pub fn checked_neg_i64(a: i64) -> Option<i64> { a.checked_neg() }
 
-pub fn f0(v0: i8, v1: i8) -> (Option<i8>, (Option<i8>, (Option<i8>, (Option<i8>, Option<i8>)))) {
-    ({
-        let a1 = v0;
-        let a2 = v1;
-        fixed_i8::checked_add(a1, a2)
-    }, ({
-        let a3 = v0;
-        let a4 = v1;
-        fixed_i8::checked_sub(a3, a4)
-    }, ({
-        let a5 = v0;
-        let a6 = v1;
-        fixed_i8::checked_mul(a5, a6)
-    }, ({
-        let a7 = v0;
-        let a8 = v1;
-        fixed_i8::checked_quot(a7, a8)
-    }, {
-        let a9 = v0;
-        checked_neg_i8(a9)
-    }))))
+pub fn f0(v0: u64) -> bool {
+    f1(v0)
+}
+
+pub fn f1(v0: u64) -> bool {
+    let m1 = v0;
+    if m1 == 0 {
+        false
+    } else {
+        let v1 = m1 - 1;
+        f2(v1)
+    }
+}
+
+pub fn f2(v0: u64) -> bool {
+    let m2 = v0;
+    if m2 == 0 {
+        true
+    } else {
+        let v1 = m2 - 1;
+        f1(v1)
+    }
 }

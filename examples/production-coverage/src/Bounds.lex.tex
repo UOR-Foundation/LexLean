@@ -1,0 +1,22 @@
+\begin{lexlean}{Bounds}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+theorem{
+  name: maxOfThree_bound,
+  parameters: [a : Nat, b : Nat, c : Nat],
+  statement: ((a < 18446744073709551616) -> ((b < 18446744073709551616) -> ((c < 18446744073709551616) -> (((a + (prim subtract b a : Nat)) < 18446744073709551616) /\ (((a + (prim subtract b a : Nat)) + (prim subtract c (a + (prim subtract b a : Nat)) : Nat)) < 18446744073709551616))))),
+  proof: linear_arithmetic{},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+definition{
+  name: maxOfThree,
+  parameters: [a : Nat, b : Nat, c : Nat],
+  result: Nat,
+  body: (let larger : Nat := (a + (prim subtract b a : Nat)); (larger + (prim subtract c larger : Nat))),
+  executable: true,
+  production: {bound: maxOfThree_bound, effects: [], targets: [rust-core, rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

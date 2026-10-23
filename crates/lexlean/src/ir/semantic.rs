@@ -9,6 +9,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
 
+pub mod bound;
 pub mod laws;
 pub mod model;
 pub mod reasoning;
@@ -764,6 +765,13 @@ pub struct SemanticTermination {
 pub struct SemanticProduction {
     pub targets: Vec<String>,
     pub effects: Vec<String>,
+    /// §17.13: the prior theorem of the module that bounds every operation
+    /// of the root's own body that can overflow, so that eligibility
+    /// discharges `overflow` and certificate A proves the width predicate
+    /// from it; absent, the registry's answer stands. Left out of the
+    /// canonical form when absent, so every earlier module keeps its bytes.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bound: Option<MemberRef>,
 }
 
 /// Language 1.2 (§17.12, models): the closed role an artifact plays. The
@@ -9356,6 +9364,9 @@ impl SemanticModule {
                     );
                     env.derived = false;
                     checked?;
+                    for row in &lowered {
+                        bound::check_production_bound(row, &env)?;
+                    }
                     for (position, row) in self.declarations.iter().enumerate() {
                         if let Some(at) = rows
                             .iter()
@@ -9371,6 +9382,7 @@ impl SemanticModule {
                     let checked = check_definition(&lowered, &mut env);
                     env.derived = false;
                     checked?;
+                    bound::check_production_bound(&lowered, &env)?;
                     elaboration.lower(index, vec![lowered]);
                 }
                 SemanticDeclaration::Theorem { .. } => {

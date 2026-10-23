@@ -171,7 +171,7 @@ pub(crate) fn run(id: &str) {
         // exactly the one prescribed diagnostic code.
         "EX-07" => {
             let root = support::repo_root();
-            let prescribed: [(&str, &str); 285] = [
+            let prescribed: [(&str, &str); 287] = [
                 ("unknown-word", "LLL1004"),
                 ("unknown-symbol", "LLL1004"),
                 ("unknown-control", "LLL1004"),
@@ -316,6 +316,8 @@ pub(crate) fn run(id: &str) {
                 ("production-universe-boundary", "LLT4005"),
                 ("production-named-type-boundary", "LLT4005"),
                 ("production-unknown-target", "LLT4001"),
+                ("production-bound-inexact", "LLT4017"),
+                ("production-bound-uncovered", "LLT4017"),
                 // §17.12: models fail closed (artifacts, interfaces, composition,
                 // boundaries, evidence) before any backend, or at verification.
                 ("model-under-1.1", "LLT4001"),

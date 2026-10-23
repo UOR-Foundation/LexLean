@@ -583,6 +583,7 @@ impl<'a> Writer<'_, 'a> {
         let root_value = self.lambdas(&sig.rel_binders, root.proof);
         let root_pi = self.pis(&sig.rel_binders, root_ty);
         self.push_row("root", RowKind::Theorem, root_pi, root_value)?;
+        self.bounded_rows(report, &sig, &locals)?;
         let parameter_types: Vec<SemanticType> = locals.iter().map(|(_, ty)| ty.clone()).collect();
         self.boundary(&sig, &parameter_types)
     }

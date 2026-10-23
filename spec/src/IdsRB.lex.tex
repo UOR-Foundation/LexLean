@@ -115,5 +115,13 @@ definition{
   body: (record Rows::IdRow {id := "RB-14", level := "build", suite := "rust-backend", statement := "A library template whose self calls are all tail calls is rendered as a loop over its accumulator that breaks with its result, so that the production rows of the primitives it realizes carry no `recursion`, while a template with a call that is not a tail call is rendered as a call and keeps the effect; a rendering that states a self call where a loop is possible, and a row whose `recursion` differs from its rendering, are refused.", sections := "§17.13, §17.14, §17.16"}),
   executable: true
 }
+
+definition{
+  name: rb20,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "RB-20", level := "build", suite := "rust-backend", statement := "The rendering of a production root whose bound discharges `overflow` carries no overflow check: every operation the bound covers is rendered as the plain operation of its width, the root's function returns its value and no call to it propagates, so that a package exporting it declares no failure and the differential against the pinned rustc agrees with the denotation on the seeded and boundary inputs; a rendering that keeps a checked operation or a fallible signature for a covered operation is detected.", sections := "§17.16"}),
+  executable: true
+}
 \end{semanticmodule}
 \end{lexlean}

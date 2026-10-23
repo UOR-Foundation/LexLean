@@ -291,12 +291,54 @@ decimal!(u32, format_u32, parse_u32); decimal!(u64, format_u64, parse_u64);
 decimal!(i8, format_i8, parse_i8); decimal!(i16, format_i16, parse_i16);
 decimal!(i32, format_i32, parse_i32); decimal!(i64, format_i64, parse_i64);
 
-pub fn f0(v0: Str) -> R<(Option<i64>, Option<u32>)> {
+pub fn f0(v0: List<u64>, v1: Bytes, v2: u64) -> R<(List<u64>, (Bytes, (u64, (Option<u64>, (Option<u8>, (Option<List<u64>>, (Option<Bytes>, (bool, bool))))))))> {
     Ok(({
         let a1 = v0.clone();
-        parse_int(a1)?
+        let a2 = List::cons(1u64, List::<u64>::nil());
+        append_list(a1, a2)
+    }, ({
+        let a3 = v1.clone();
+        let a4 = Bytes::lit(&[0x0a]);
+        append_bytes(a3, a4)
+    }, ({
+        let a7 = {
+            let a5 = v0.clone();
+            length_list(a5)
+        };
+        let a8 = {
+            let a6 = v1.clone();
+            length_bytes(a6)
+        };
+        nat_add(a7, a8)?
+    }, ({
+        let a9 = v0.clone();
+        let a10 = v2;
+        index_list(a9, a10)
+    }, ({
+        let a11 = v1.clone();
+        let a12 = v2;
+        index_bytes(a11, a12)
+    }, ({
+        let a13 = v0;
+        let a14 = v2;
+        let a15 = 2u64;
+        slice_list(a13, a14, a15)
+    }, ({
+        let a16 = v1.clone();
+        let a17 = 0u64;
+        let a18 = v2;
+        slice_bytes(a16, a17, a18)
+    }, ({
+        let a19 = v1;
+        let a20 = Bytes::lit(&[]);
+        equal(a19, a20)
     }, {
-        let a2 = v0;
-        parse_u32(a2)
-    }))
+        let a23 = {
+            let a21 = v2;
+            let a22 = 3u64;
+            equal(a21, a22)
+        };
+        let a24 = true;
+        equal(a23, a24)
+    })))))))))
 }

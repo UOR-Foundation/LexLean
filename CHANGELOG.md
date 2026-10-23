@@ -68,6 +68,17 @@ and Unreleased holds what has landed since.
   marker is `LLP2003` and no module; every committed source classifies as
   before. Register 444.
 
+- The bound of a production root (`PD-09`, `SP-29`, #116): `production:
+  {…, bound: T}` names a prior theorem whose statement linking generates, that
+  under `x < 2^64` for each natural parameter every addition and
+  multiplication of naturals of the root's own body is below 2^64, in
+  evaluation order; eligibility discharges `overflow` with it, the report
+  records it, a bound that does not cover an operation is `LLT4017`, and
+  certificate A proves `bounded` and `root_value` from the theorem. The
+  rendering of a bounded root is unchanged (`RB-20` is registered and open).
+  The semantic-module schema gains the member, which moves the language-1.2
+  compiler-semantics ID.
+
 - CI toolchain fetches (#242): every step of `ci.yml`, `honesty.yml` and
   `reproducibility.yml` that fetches elan, the pinned Lean toolchain, or the
   pinned Rust toolchain runs the fetch through `.github/retry.sh`, at most three

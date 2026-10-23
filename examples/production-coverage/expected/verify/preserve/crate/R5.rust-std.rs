@@ -297,9 +297,9 @@ pub enum Fn0 {
 }
 
 impl Fn0 {
-    pub fn apply(&self, p0: u64) -> R<u64> {
+    pub fn apply(&self, p0: u64, p1: u64) -> R<u64> {
         match self {
-            Fn0::F2 => f2(p0),
+            Fn0::F2 => f2(p0, p1),
         }
     }
 }
@@ -310,33 +310,35 @@ pub enum Fn1 {
 }
 
 impl Fn1 {
-    pub fn apply(&self, p0: u64) -> R<Option<u64>> {
+    pub fn apply(&self, p0: i64, p1: i64) -> R<i64> {
         match self {
-            Fn1::F4 => f4(p0),
+            Fn1::F4 => f4(p0, p1),
         }
     }
 }
 
-pub fn f0(v0: u64, v1: u64) -> R<(u64, (u64, bool))> {
-    Ok((f1(Fn0::F2, v0, v1)?, f3(Fn1::F4, v0, v1)?))
+pub fn f0(v0: List<u64>, v1: List<i64>) -> R<(u64, i64)> {
+    Ok((f1(Fn0::F2, 0u64, v0)?, f3(Fn1::F4, 5i64, v1)?))
 }
 
-pub fn f1(v0: Fn0, p4: u64, p5: u64) -> R<u64> {
+pub fn f1(v0: Fn0, p4: u64, p5: List<u64>) -> R<u64> {
     let m3 = (p4, p5);
     {
         let mut m3 = m3;
         loop {
             let step = {
                 let (v1, v2) = m3;
-                let m1 = v1;
-                if m1 == 0 {
-                    Err::<(u64, u64), R<u64>>(Ok(v2))
-                } else {
-                    let v3 = m1 - 1;
-                    Ok::<(u64, u64), R<u64>>((v3, {
-                        let c2: Fn0 = v0.clone();
-                        c2.apply(v2)?
-                    }))
+                let m1 = v2;
+                match m1.uncons() {
+                    None => {
+                        Err::<(u64, List<u64>), R<u64>>(Ok(v1))
+                    }
+                    Some((v3, v4)) => {
+                        Ok::<(u64, List<u64>), R<u64>>(({
+                            let c2: Fn0 = v0.clone();
+                            c2.apply(v1, v3)?
+                        }, v4))
+                    }
                 }
             };
             match step {
@@ -347,56 +349,102 @@ pub fn f1(v0: Fn0, p4: u64, p5: u64) -> R<u64> {
     }
 }
 
-pub fn f2(v0: u64) -> R<u64> {
+pub fn f2(v0: u64, v1: u64) -> R<u64> {
     let a6 = v0;
-    let a7 = 1u64;
+    let a7 = v1;
     nat_add(a6, a7)
 }
 
-pub fn f3(v0: Fn1, p12: u64, p13: u64) -> R<(u64, bool)> {
-    let m11 = (p12, p13);
+pub fn f3(v0: Fn1, p11: i64, p12: List<i64>) -> R<i64> {
+    let m10 = (p11, p12);
     {
-        let mut m11 = m11;
+        let mut m10 = m10;
         loop {
             let step = {
-                let (v1, v2) = m11;
-                let m8 = v1;
-                if m8 == 0 {
-                    Err::<(u64, u64), R<(u64, bool)>>(Ok((v2, false)))
-                } else {
-                    let v3 = m8 - 1;
-                    let m10 = {
-                        let c9: Fn1 = v0.clone();
-                        c9.apply(v2)?
-                    };
-                    match m10 {
-                        None => {
-                            Err::<(u64, u64), R<(u64, bool)>>(Ok((v2, true)))
-                        }
-                        Some(v4) => {
-                            Ok::<(u64, u64), R<(u64, bool)>>((v3, v4))
-                        }
+                let (v1, v2) = m10;
+                let m8 = v2;
+                match m8.uncons() {
+                    None => {
+                        Err::<(i64, List<i64>), R<i64>>(Ok(v1))
+                    }
+                    Some((v3, v4)) => {
+                        Ok::<(i64, List<i64>), R<i64>>(({
+                            let c9: Fn1 = v0.clone();
+                            c9.apply(v1, v3)?
+                        }, v4))
                     }
                 }
             };
             match step {
-                Ok(next) => { m11 = next; }
+                Ok(next) => { m10 = next; }
                 Err(done) => break done,
             }
         }
     }
 }
 
-pub fn f4(v0: u64) -> R<Option<u64>> {
-    let a14 = v0;
-    let a15 = 10u64;
-    if nat_lt(a14, a15) {
-        Ok(Some({
-            let a16 = v0;
-            let a17 = 2u64;
-            nat_add(a16, a17)?
-        }))
+pub fn f4(v0: i64, v1: i64) -> R<i64> {
+    let a13 = v0;
+    let a14 = v1;
+    int_sub(a13, a14)
+}
+
+pub fn f5(p21: List<i64>) -> bool {
+    let m20 = p21;
+    {
+        let mut m20 = m20;
+        loop {
+            let step = {
+                let v0 = m20;
+                let m15 = v0;
+                match m15.uncons() {
+                    None => {
+                        Err::<List<i64>, bool>(true)
+                    }
+                    Some((v1, v2)) => {
+                        let m16 = v2.clone();
+                        match m16.uncons() {
+                            None => {
+                                Err::<List<i64>, bool>(true)
+                            }
+                            Some((v3, _)) => {
+                                let m19 = {
+                                    let a17 = v1;
+                                    let a18 = v3;
+                                    compare(a17, a18)
+                                };
+                                if match m19 {
+                                    Ordering::Less => {
+                                        true
+                                    }
+                                    Ordering::Equal => {
+                                        false
+                                    }
+                                    Ordering::Greater => {
+                                        false
+                                    }
+                                } {
+                                    Ok::<List<i64>, bool>(v2)
+                                } else {
+                                    Err::<List<i64>, bool>(false)
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+            match step {
+                Ok(next) => { m20 = next; }
+                Err(done) => break done,
+            }
+        }
+    }
+}
+
+pub fn f6(v0: List<u64>, v1: List<i64>) -> R<Option<(u64, i64)>> {
+    if f5(v1.clone()) {
+        Ok(Some(f0(v0, v1)?))
     } else {
-        Ok(None::<u64>)
+        Ok(None::<(u64, i64)>)
     }
 }

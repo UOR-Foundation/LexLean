@@ -293,30 +293,40 @@ decimal!(i32, format_i32, parse_i32); decimal!(i64, format_i64, parse_i64);
 
 #[derive(Clone)]
 pub enum Adt0 {
-    C0,
-    C1(std::rc::Rc<Adt0>, u64, std::rc::Rc<Adt0>),
+    C0(u64),
+    C1(u64, u64),
+    C2,
 }
 
-pub fn f0(v0: u64) -> R<u64> {
-    f1(Adt0::C1(std::rc::Rc::new(Adt0::C0), v0, std::rc::Rc::new(Adt0::C1(std::rc::Rc::new(Adt0::C0), 5u64, std::rc::Rc::new(Adt0::C0)))))
+pub fn f0(v0: u64, v1: u64) -> R<u64> {
+    let a3 = f1(Adt0::C1(v0, v1))?;
+    let a4 = {
+        let a1 = f1(Adt0::C0(v0))?;
+        let a2 = f1(Adt0::C2)?;
+        nat_add(a1, a2)?
+    };
+    nat_add(a3, a4)
 }
 
 pub fn f1(v0: Adt0) -> R<u64> {
-    let m1 = v0;
-    match m1 {
-        Adt0::C0 => {
-            Ok(0u64)
-        }
-        Adt0::C1(r6, v2, r7) => {
-            let v1 = (*r6).clone();
-            let v3 = (*r7).clone();
-            let a4 = {
-                let a2 = f1(v1)?;
-                let a3 = v2;
-                nat_add(a2, a3)?
+    let m5 = v0;
+    match m5 {
+        Adt0::C0(v1) => {
+            let a8 = {
+                let a6 = v1;
+                let a7 = v1;
+                nat_mul(a6, a7)?
             };
-            let a5 = f1(v3)?;
-            nat_add(a4, a5)
+            let a9 = 3u64;
+            nat_mul(a8, a9)
+        }
+        Adt0::C1(v2, v3) => {
+            let a10 = v2;
+            let a11 = v3;
+            nat_mul(a10, a11)
+        }
+        Adt0::C2 => {
+            Ok(0u64)
         }
     }
 }

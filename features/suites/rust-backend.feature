@@ -93,3 +93,9 @@ Feature: rust-backend
     When each is rendered in both profiles and its self calls are classified as tail calls or not
     Then every template whose self calls are all tail calls renders as a loop that breaks with its result, and its primitives' registry rows say `recursion = false`
     And every other template renders as a call and keeps `recursion = true`, and a template rendered with a self call it could have as a loop, or a row that disagrees with its rendering, is refused
+
+  @RB-20 @build
+  Scenario: The rendering of a production root whose bound discharges `overflow` carries no overflow check: every operation the bound covers is rendered as the plain operation of its width, the root's function returns its value and no call to it propagates, so that a package exporting it declares no failure and the differential against the pinned rustc agrees with the denotation on the seeded and boundary inputs; a rendering that keeps a checked operation or a fallible signature for a covered operation is detected.
+    Given the committed bounded root of the production-coverage corpus and a copy of its rendering that keeps a checked operation
+    When it is rendered in each of its targets, built under the pinned rustc, and run on the seeded and boundary inputs of the differential
+    Then the rendering has no checked operation, no `R<T>` result, and no `?`, its package declares no failure, every run agrees with the denotation, and the copy is detected

@@ -72,12 +72,33 @@ pub fn checked_neg_i16(a: i16) -> Option<i16> { a.checked_neg() }
 pub fn checked_neg_i32(a: i32) -> Option<i32> { a.checked_neg() }
 pub fn checked_neg_i64(a: i64) -> Option<i64> { a.checked_neg() }
 
-pub fn f0(v0: i64, v1: i8) -> (Option<u16>, Option<i64>) {
+pub fn f0(v0: u16, v1: u16, v2: u32) -> (u16, (u16, (u16, (u16, (Option<u16>, (Option<u16>, bool)))))) {
     ({
         let a1 = v0;
-        fixed_u16::convert(i128::from(a1))
-    }, {
         let a2 = v1;
-        fixed_i64::convert(i128::from(a2))
-    })
+        fixed_u16::bit_and(a1, a2)
+    }, ({
+        let a3 = v0;
+        let a4 = v1;
+        fixed_u16::bit_or(a3, a4)
+    }, ({
+        let a5 = v0;
+        let a6 = v1;
+        fixed_u16::bit_xor(a5, a6)
+    }, ({
+        let a7 = v0;
+        fixed_u16::bit_not(a7)
+    }, ({
+        let a8 = v0;
+        let a9 = v2;
+        fixed_u16::shift_left(a8, a9)
+    }, ({
+        let a10 = v0;
+        let a11 = 3u32;
+        fixed_u16::shift_right(a10, a11)
+    }, {
+        let a12 = v0;
+        let a13 = v1;
+        equal(a12, a13)
+    }))))))
 }

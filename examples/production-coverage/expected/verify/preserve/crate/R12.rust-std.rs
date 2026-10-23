@@ -291,42 +291,25 @@ decimal!(u32, format_u32, parse_u32); decimal!(u64, format_u64, parse_u64);
 decimal!(i8, format_i8, parse_i8); decimal!(i16, format_i16, parse_i16);
 decimal!(i32, format_i32, parse_i32); decimal!(i64, format_i64, parse_i64);
 
-#[derive(Clone)]
-pub enum Adt0 {
-    C0(u64),
-    C1(u64, u64),
-    C2,
-}
-
-pub fn f0(v0: u64, v1: u64) -> R<u64> {
-    let a3 = f1(Adt0::C1(v0, v1))?;
-    let a4 = {
-        let a1 = f1(Adt0::C0(v0))?;
-        let a2 = f1(Adt0::C2)?;
-        nat_add(a1, a2)?
+pub fn f0(v0: i64, v1: i64) -> R<i64> {
+    let a10 = {
+        let a1 = v0;
+        let a2 = -3i64;
+        int_mul(a1, a2)?
     };
-    nat_add(a3, a4)
-}
-
-pub fn f1(v0: Adt0) -> R<u64> {
-    let m5 = v0;
-    match m5 {
-        Adt0::C0(v1) => {
-            let a8 = {
-                let a6 = v1;
-                let a7 = v1;
-                nat_mul(a6, a7)?
+    let a11 = {
+        let a9 = {
+            let a6 = {
+                let a3 = v0;
+                let a4 = v1;
+                let a5 = 1i64;
+                int_quot(a3, a4, a5)?
             };
-            let a9 = 3u64;
-            nat_mul(a8, a9)
-        }
-        Adt0::C1(v2, v3) => {
-            let a10 = v2;
-            let a11 = v3;
-            nat_mul(a10, a11)
-        }
-        Adt0::C2 => {
-            Ok(0u64)
-        }
-    }
+            let a7 = v1;
+            let a8 = 0i64;
+            int_rem(a6, a7, a8)
+        };
+        int_neg(a9)?
+    };
+    int_sub(a10, a11)
 }

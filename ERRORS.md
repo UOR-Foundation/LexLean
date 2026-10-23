@@ -406,6 +406,12 @@ A text declaration does not state the bound it must: a context window with capac
 
 Class: `language`. Exit code: 1.
 
+## `LLT4017` --- Overflow bound does not cover an operation
+
+A production root's bound is not a prior theorem of its module stating exactly the generated obligation, or an operation of the root's closure that can overflow lies outside what the bound covers: under a match, a conditional, or a lambda, in a callee, or a primitive the rule does not cover.
+
+Class: `language`. Exit code: 1.
+
 ## `LLV7001` --- Lean/Lake/leanchecker version or executable mismatch
 
 Lean/Lake/leanchecker version or executable mismatch.

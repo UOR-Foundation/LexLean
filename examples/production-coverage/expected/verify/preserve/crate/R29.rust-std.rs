@@ -291,47 +291,12 @@ decimal!(u32, format_u32, parse_u32); decimal!(u64, format_u64, parse_u64);
 decimal!(i8, format_i8, parse_i8); decimal!(i16, format_i16, parse_i16);
 decimal!(i32, format_i32, parse_i32); decimal!(i64, format_i64, parse_i64);
 
-pub fn f0(v0: Str, v1: Str) -> (Bytes, (Option<Str>, (Ordering, (Option<List<Str>>, (Str, (u64, bool)))))) {
-    let v2: Bytes = {
-        let a1 = v0.clone();
-        utf8_encode(a1)
-    };
-    (v2.clone(), ({
-        let a2 = v2.clone();
-        utf8_decode(a2)
-    }, ({
-        let a3 = v2.clone();
-        let a4 = Bytes::lit(&[0x00, 0xff]);
-        compare_bytes(a3, a4)
-    }, ({
-        let a5 = v0.clone();
-        let a6 = v1.clone();
-        let a7 = 4u32;
-        split_exact(a5, a6, a7)
-    }, ({
-        let a8 = List::cons(v0.clone(), List::cons(Str::lit("x\"y"), List::<Str>::nil()));
-        let a9 = v1.clone();
-        join(a8, a9)
-    }, ({
-        let a10 = v0.clone();
-        length_string(a10)
+pub fn f0(v0: i64, v1: i8) -> (Str, Str) {
+    ({
+        let a1 = v0;
+        format_i64(a1)
     }, {
-        let a11 = v0;
-        let a12 = v1;
-        if equal(a11, a12) {
-            let a17 = {
-                let a13 = v2.clone();
-                let a14 = v2;
-                compare_bytes(a13, a14)
-            };
-            let a18 = {
-                let a15 = Bytes::lit(&[]);
-                let a16 = Bytes::lit(&[0x01]);
-                compare_bytes(a15, a16)
-            };
-            equal(a17, a18)
-        } else {
-            false
-        }
-    }))))))
+        let a2 = v1;
+        format_i8(a2)
+    })
 }
