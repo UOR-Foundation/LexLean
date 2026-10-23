@@ -2397,7 +2397,7 @@ fn composing() -> P {
         "contract": {"member": member("ClassifyTextContract")},
         "realization": {"member": member("ClassifyText")},
         "evidence": [{"member": member("ClassifyTextEvidence")}],
-        "axioms": ["Classical.choice", "Quot.sound", "propext"],
+        "axioms": ["Quot.sound", "propext"],
     }));
     let generated = json!({
         "kind": "result",
@@ -2495,11 +2495,15 @@ fn composing() -> P {
         json!({"kind": "nil", "element": option_type(token_list())}),
         |tail, tokens| json!({"kind": "cons", "head": some_context(tokens), "tail": tail}),
     );
-    declarations.push(evaluates(
+    let mut stream_run = evaluates(
         "recent_stream_run",
         call("RecentStream", vec![token_literal(&[1, 2, 3])]),
         pushes,
-    ));
+    );
+    // The window the scan runs applies production forms, which the kernel
+    // evaluates without an axiom: the policy is exact, so it is empty.
+    stream_run["axioms"] = json!([]);
+    declarations.push(stream_run);
     write_module_data(&project, MODULE, &data);
     project
 }
