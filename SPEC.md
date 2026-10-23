@@ -5871,10 +5871,17 @@ rewrite to the original. The closed table of the standard library (51 names): `R
 of `from` or `try_from` is also admitted for every integer type. The names of the table that allocate
 (`Rc`, `Vec`, `String`, `Rc::new`, `Rc::from`, `Rc::try_unwrap`, `Rc::get_mut`, `Vec::new`,
 `Vec::with_capacity`, `String::new`, `push`, `pop`, `truncate`, `push_str`, `extend_from_slice`,
-`to_string`, `collect`) are refused in the core profile as `hidden-allocation`. Eleven rules join the
-24 of `RB-17`, 35 in all: `assign-immutable`, `assign-place`, `break-position`, `hidden-allocation`, `let-position`,
-`param-duplicate`, `pattern-duplicate`, `pattern-fields`, `struct-fields`, `tuple-arity`, and
-`variant-name`; each is planted. `RtType.wide` takes a Boolean that is true for `u128` and false for `i128`. `RuntimeSemantics` evaluates each of the expression and pattern constructs the module grew by as `stuck`, except a block expression, which evaluates its block, and a string literal, which is a string value; a character literal is `stuck`. As the type of a value, `RtType.refMut` is its inner type and the other types it grew by (`RtType.wide`, `size`, `char`, `str`, `slice`) match no value.
+`to_string`, `collect`) are refused in the core profile as `hidden-allocation`. Sixteen rules join the
+24 of `RB-17`, 40 in all: `assign-immutable`, `assign-place`, `break-position`, `char-literal`, `derive`,
+`hidden-allocation`, `identifier`, `let-position`, `param-duplicate`, `pattern-duplicate`, `pattern-fields`,
+`struct-fields`, `struct-head`, `tuple-arity`, `type-scope`, and `variant-name`; each is planted, and each site of a
+rule is: the printer writes every name as it is, so every name it writes is an identifier that is not a keyword (an
+item, a generic, a field, a variant, a parameter, a binding, a field by name, a segment of a path or of a `use`, and
+the alias of a `use`), a derive is one of `Clone`, `Copy`, `Debug`, `Eq` and `PartialEq`, a character literal is one
+scalar value, the head of an `if`, a `while`, a `while let`, a `for` or a `match` holds no struct literal outside
+parentheses, and a `let`, a cast and a type argument name no generic parameter, because the printer writes them
+without the generics in scope. A comparison whose left operand ends in a cast is printed with that operand in
+parentheses, so that `rustc` does not read `<` as the arguments of the cast's type. `RtType.wide` takes a Boolean that is true for `u128` and false for `i128`. `RuntimeSemantics` evaluates each of the expression constructs the module grew by as `stuck`, except a block expression, which evaluates its block, and a string literal, which is a string value; a character literal is `stuck`. Of the pattern constructs it grew by, a mutable binding binds as a binding does, and the tuple, tuple-struct, struct, and literal patterns are `stuck`. As the type of a value, `RtType.refMut` is its inner type and the other types it grew by (`RtType.wide`, `size`, `char`, `str`, `slice`) match no value.
 This row declares no meaning for the constructs it leaves `stuck`, and a theorem about a function that uses one is a claim it does not make.
 A *loop*
 (`Expr.loop`, `SP-19`) is the one construct of the machine that repeats: it names
