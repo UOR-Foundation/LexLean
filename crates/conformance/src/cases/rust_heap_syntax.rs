@@ -460,7 +460,7 @@ pub(super) fn site_plants(krate: &Crate) -> Vec<(&'static str, Crate, &'static s
         name: name.to_owned(),
         bounds: vec![],
     };
-    let flip = |statement: Expr| with_statement(&krate, "flip", statement);
+    let flip = |statement: Expr| with_statement(krate, "flip", statement);
     let match_arm = |pattern: Pat| {
         Expr::Match(
             Box::new(unit.clone()),
