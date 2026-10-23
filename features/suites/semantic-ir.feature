@@ -243,3 +243,17 @@ Feature: semantic-ir
     Then the pinned Lean verifies the module whose theorem is the one its own action makes, and the notation of the derived row has no type
     And a copy that states what the construction decides fails with LLI9001, or with LLP2001 where the notation does not read it, before any build output, and each other copy fails with LLV7002, naming the row the construction does not make as stated
     And every row of the shipped preservation library that carries a sparse casesOn record or is named like an equation, an unfolding equation, a splitter, or an else equation is a derived row, and no derived row is anything else
+
+  @SM-35 @build
+  Scenario: A language-1.2 theorem may be proved by `term_cases`, a split on the value of a document term: the proof names a term and a nonempty, strictly sorted, duplicate-free list of prior document definitions, the term's type is an inductive type of the document, and the backend lowers the proof to a split of the goal on every constructor of that type with the hypothesis that equates the term to the constructor, then `simp only` over the named definitions, that hypothesis, and the reduction of a conditional on a decided condition, with closed propositions decided, which uses exactly the axioms the theorem's policy states; the schema, the linker, the notation, the Lean backend, the canonical LaTeX, and the formatter accept it, and a use in language 1.1, a term whose type is not an inductive type of the document, an empty list, an unsorted or repeated name, a name that is not a prior definition, and a theorem parameter that takes the hypothesis's name are each refused.
+    Given a language-1.2 project whose theorem is stated as an equation between two evaluations that both match on one document term, and the planted projects that misuse the proof form
+    When the project is linked, built, and verified by the pinned Lean, its formatted source and its LaTeX are read back, and each planted project is linked
+    Then the theorem verifies with exactly the axioms its policy states, the formatter writes the proof unchanged, and the LaTeX states the term and the definitions
+    And each planted project is refused naming the misuse
+
+  @SM-36 @build
+  Scenario: A language-1.2 `cases` proof may split a local of type `Bool` into its two constructors: the proof names the local and gives a branch for `false` and one for `true`, each with no binders, the backend lowers it to `cases` on the local with those two alternatives, the theorem verifies with exactly the axioms its policy states, and the schema, the linker, the notation, the formatter, and the canonical LaTeX accept it; a use in language 1.1, a missing branch, a repeated branch, a branch with a binder, and an `induction` on a Boolean are each refused.
+    Given a language-1.2 project whose theorem is proved by a split on a Boolean local, and the planted projects that misuse the form
+    When the project is linked, built, and verified by the pinned Lean, its formatted source and its LaTeX are read back, and each planted project is linked
+    Then the theorem verifies with exactly the axioms its policy states and the formatter writes the proof unchanged
+    And each planted project is refused naming the misuse

@@ -48,7 +48,9 @@ inductive{
     {name: fn, fields: [Nat]},
     {name: rc, fields: [RustType]},
     {name: fallible, fields: [RustType]},
-    {name: ref, fields: [RustType]}
+    {name: ref, fields: [RustType]},
+    {name: overflow, fields: []},
+    {name: i128, fields: []}
   ]
 }
 
@@ -173,7 +175,25 @@ inductive{
     {name: checkedNeg, fields: [TargetSyntax::IntKind]},
     {name: checkedShl, fields: [TargetSyntax::IntKind]},
     {name: checkedShr, fields: [TargetSyntax::IntKind]},
-    {name: tryFrom, fields: [TargetSyntax::IntKind]}
+    {name: tryFrom, fields: [TargetSyntax::IntKind]},
+    {name: bitAnd, fields: [TargetSyntax::IntKind]},
+    {name: bitOr, fields: [TargetSyntax::IntKind]},
+    {name: bitXor, fields: [TargetSyntax::IntKind]},
+    {name: bitNot, fields: [TargetSyntax::IntKind]},
+    {name: natEq, fields: []},
+    {name: natLe, fields: []},
+    {name: natLt, fields: []},
+    {name: natRem, fields: []},
+    {name: intRem, fields: []},
+    {name: checkedNatAdd, fields: []},
+    {name: natSub, fields: []},
+    {name: checkedNatMul, fields: []},
+    {name: natQuot, fields: []},
+    {name: checkedIntAdd, fields: []},
+    {name: checkedIntSub, fields: []},
+    {name: checkedIntMul, fields: []},
+    {name: checkedIntNeg, fields: []},
+    {name: checkedIntQuot, fields: []}
   ]
 }
 

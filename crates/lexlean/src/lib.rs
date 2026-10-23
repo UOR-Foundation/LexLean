@@ -207,10 +207,35 @@ fn is_v1_2_file(path: &str) -> bool {
 #[doc(hidden)]
 #[must_use]
 pub fn identity_bytes<'a>(path: &str, bytes: &'a [u8]) -> std::borrow::Cow<'a, [u8]> {
-    surface::identity::data_form(path, bytes).map_or(std::borrow::Cow::Borrowed(bytes), |data| {
-        std::borrow::Cow::Owned(data)
-    })
+    // A module of a hundred functions nests as deeply as its list, and reading
+    // it to its data form recurses with it, so the reading has a stack of its
+    // own rather than the two megabytes of the thread that asks (a test's, or
+    // a debug build's worker).
+    // A thread that cannot be had reads on the caller's stack, which is slower
+    // to fail on a deep module but never a panic; a panic of the reader itself
+    // is the reader's, and is passed on as it was raised.
+    let data = std::thread::scope(|scope| {
+        match std::thread::Builder::new()
+            .stack_size(READER_STACK)
+            .spawn_scoped(scope, || surface::identity::data_form(path, bytes))
+        {
+            Ok(reader) => reader
+                .join()
+                .unwrap_or_else(|panic| std::panic::resume_unwind(panic)),
+            Err(_) => surface::identity::data_form(path, bytes),
+        }
+    });
+    data.map_or(std::borrow::Cow::Borrowed(bytes), std::borrow::Cow::Owned)
 }
+
+/// The stack of a thread that reads a module of kernel terms or semantic data
+/// whose lists are long: the reader recurses once per level of the data's
+/// nesting, and a list of n elements nests n levels. The runtime module
+/// (110 functions, `language/rust-runtime-1.2/RustRuntime.lex.tex`) reads to
+/// 1.14 MB of data nested 119 levels, and a debug build overflows the two
+/// megabytes of a default thread reading it (about 17 KB a level) and reads it
+/// in four; this is sixteen times that, for modules that grow with the runtime.
+pub const READER_STACK: usize = 64 * 1024 * 1024;
 
 /// The §11.5 tree digest of the files of the embedded tree selected by `keep`.
 fn embedded_digest(keep: impl Fn(&str) -> bool) -> Sha256Digest {

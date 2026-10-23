@@ -20,6 +20,7 @@ use crate::rust_harness::{self, Calls};
 use crate::rust_packages;
 use crate::support::{self, P};
 
+mod rust_print;
 mod rust_validate;
 mod scan;
 
@@ -2423,6 +2424,7 @@ fn case(id: &str) {
         // §17.23, §17.14: the target calculus's checker.
         "BS-04" => calculus_check::case(),
         "BS-05" => rust_validate::case(),
+        "BS-06" => rust_print::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }

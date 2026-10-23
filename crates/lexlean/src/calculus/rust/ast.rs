@@ -120,6 +120,10 @@ pub enum Type {
     Fallible(Box<Type>),
     /// A borrowed parameter of an exported function.
     Ref(Box<Type>),
+    /// `Overflow`, the error type of `R<T>`: the runtime's own unit struct.
+    Overflow,
+    /// `i128`, the operand type of the runtime's conversions to a width.
+    I128,
 }
 
 impl Type {
@@ -142,6 +146,8 @@ impl Type {
             Self::Rc(inner) => format!("std::rc::Rc<{}>", inner.text()),
             Self::Fallible(inner) => format!("R<{}>", inner.text()),
             Self::Ref(inner) => format!("&{}", inner.text()),
+            Self::Overflow => "Overflow".to_owned(),
+            Self::I128 => "i128".to_owned(),
         }
     }
 
@@ -157,6 +163,8 @@ impl Type {
             | Self::Nat
             | Self::Int
             | Self::Fixed(_)
+            | Self::Overflow
+            | Self::I128
             | Self::Ordering
             | Self::Adt(_)
             | Self::Fn(_) => false,
@@ -168,9 +176,14 @@ impl Type {
     #[must_use]
     pub fn copy(&self) -> bool {
         match self {
-            Self::Unit | Self::Bool | Self::Nat | Self::Int | Self::Fixed(_) | Self::Ordering => {
-                true
-            }
+            Self::Unit
+            | Self::Bool
+            | Self::Nat
+            | Self::Int
+            | Self::Fixed(_)
+            | Self::Overflow
+            | Self::I128
+            | Self::Ordering => true,
             Self::Option(inner) => inner.copy(),
             Self::Result(left, right) | Self::Pair(left, right) => left.copy() && right.copy(),
             Self::Str
@@ -196,6 +209,9 @@ pub enum Lit {
     Str(String),
     Bytes(Vec<u8>),
     Ordering(OrderingValue),
+    /// The overflow value `Overflow`, the payload an `Err` carries when an
+    /// operation leaves its width (`RustSyntax.Lit.overflow`).
+    Overflow,
 }
 
 /// A constructor of a value.
@@ -243,6 +259,274 @@ pub enum Pat {
 pub enum Callee {
     Function(u64),
     Runtime(Item),
+    /// A machine primitive (`RustSyntax.Callee.machine`).
+    Machine(Machine),
+}
+
+/// A machine primitive: an integer operation whose meaning `RustSemantics`
+/// states as the calculus primitive of the same name (SPEC.md §17.16). The
+/// constructors mirror `RustSyntax.Machine` one for one.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Machine {
+    CheckedAdd(IntKind),
+    CheckedSub(IntKind),
+    CheckedMul(IntKind),
+    CheckedQuot(IntKind),
+    CheckedNeg(IntKind),
+    CheckedShl(IntKind),
+    CheckedShr(IntKind),
+    TryFrom(IntKind),
+    BitAnd(IntKind),
+    BitOr(IntKind),
+    BitXor(IntKind),
+    BitNot(IntKind),
+    NatEq,
+    NatLe,
+    NatLt,
+    NatRem,
+    IntRem,
+    CheckedNatAdd,
+    NatSub,
+    CheckedNatMul,
+    NatQuot,
+    CheckedIntAdd,
+    CheckedIntSub,
+    CheckedIntMul,
+    CheckedIntNeg,
+    CheckedIntQuot,
+}
+
+impl Machine {
+    /// Every machine primitive, each width included.
+    #[must_use]
+    pub fn all() -> Vec<Self> {
+        let mut out = vec![
+            Self::NatEq,
+            Self::NatLe,
+            Self::NatLt,
+            Self::NatRem,
+            Self::IntRem,
+            Self::CheckedNatAdd,
+            Self::NatSub,
+            Self::CheckedNatMul,
+            Self::NatQuot,
+            Self::CheckedIntAdd,
+            Self::CheckedIntSub,
+            Self::CheckedIntMul,
+            Self::CheckedIntNeg,
+            Self::CheckedIntQuot,
+        ];
+        for kind in IntKind::ALL {
+            out.extend([
+                Self::CheckedAdd(kind),
+                Self::CheckedSub(kind),
+                Self::CheckedMul(kind),
+                Self::CheckedQuot(kind),
+                Self::CheckedShl(kind),
+                Self::CheckedShr(kind),
+                Self::TryFrom(kind),
+                Self::BitAnd(kind),
+                Self::BitOr(kind),
+                Self::BitXor(kind),
+                Self::BitNot(kind),
+            ]);
+            if kind.signed() {
+                out.push(Self::CheckedNeg(kind));
+            }
+        }
+        out
+    }
+
+    /// The index of the primitive's family: the position of its constructor
+    /// in `RustSyntax.Machine`, which the width, if it has one, does not
+    /// change. The bootstrap validator names a machine call by it.
+    #[must_use]
+    pub const fn family(self) -> u64 {
+        match self {
+            Self::CheckedAdd(_) => 0,
+            Self::CheckedSub(_) => 1,
+            Self::CheckedMul(_) => 2,
+            Self::CheckedQuot(_) => 3,
+            Self::CheckedNeg(_) => 4,
+            Self::CheckedShl(_) => 5,
+            Self::CheckedShr(_) => 6,
+            Self::TryFrom(_) => 7,
+            Self::BitAnd(_) => 8,
+            Self::BitOr(_) => 9,
+            Self::BitXor(_) => 10,
+            Self::BitNot(_) => 11,
+            Self::NatEq => 12,
+            Self::NatLe => 13,
+            Self::NatLt => 14,
+            Self::NatRem => 15,
+            Self::IntRem => 16,
+            Self::CheckedNatAdd => 17,
+            Self::NatSub => 18,
+            Self::CheckedNatMul => 19,
+            Self::NatQuot => 20,
+            Self::CheckedIntAdd => 21,
+            Self::CheckedIntSub => 22,
+            Self::CheckedIntMul => 23,
+            Self::CheckedIntNeg => 24,
+            Self::CheckedIntQuot => 25,
+        }
+    }
+
+    /// One primitive of each family, at `u8` where it has a width, in the
+    /// order of [`Machine::family`].
+    #[must_use]
+    pub const fn families() -> [Self; 26] {
+        let kind = IntKind::U8;
+        [
+            Self::CheckedAdd(kind),
+            Self::CheckedSub(kind),
+            Self::CheckedMul(kind),
+            Self::CheckedQuot(kind),
+            Self::CheckedNeg(kind),
+            Self::CheckedShl(kind),
+            Self::CheckedShr(kind),
+            Self::TryFrom(kind),
+            Self::BitAnd(kind),
+            Self::BitOr(kind),
+            Self::BitXor(kind),
+            Self::BitNot(kind),
+            Self::NatEq,
+            Self::NatLe,
+            Self::NatLt,
+            Self::NatRem,
+            Self::IntRem,
+            Self::CheckedNatAdd,
+            Self::NatSub,
+            Self::CheckedNatMul,
+            Self::NatQuot,
+            Self::CheckedIntAdd,
+            Self::CheckedIntSub,
+            Self::CheckedIntMul,
+            Self::CheckedIntNeg,
+            Self::CheckedIntQuot,
+        ]
+    }
+
+    /// The width the primitive works at (the target of `TryFrom`).
+    #[must_use]
+    pub const fn width(self) -> Option<IntKind> {
+        match self {
+            Self::CheckedAdd(kind)
+            | Self::CheckedSub(kind)
+            | Self::CheckedMul(kind)
+            | Self::CheckedQuot(kind)
+            | Self::CheckedNeg(kind)
+            | Self::CheckedShl(kind)
+            | Self::CheckedShr(kind)
+            | Self::TryFrom(kind)
+            | Self::BitAnd(kind)
+            | Self::BitOr(kind)
+            | Self::BitXor(kind)
+            | Self::BitNot(kind) => Some(kind),
+            Self::NatEq
+            | Self::NatLe
+            | Self::NatLt
+            | Self::NatRem
+            | Self::IntRem
+            | Self::CheckedNatAdd
+            | Self::NatSub
+            | Self::CheckedNatMul
+            | Self::NatQuot
+            | Self::CheckedIntAdd
+            | Self::CheckedIntSub
+            | Self::CheckedIntMul
+            | Self::CheckedIntNeg
+            | Self::CheckedIntQuot => None,
+        }
+    }
+
+    /// The name of the calculus primitive it realizes, as the library table
+    /// of `calculus::rust_library` names machine primitives.
+    #[must_use]
+    pub const fn primitive(self) -> &'static str {
+        match self {
+            Self::CheckedAdd(_) => "checked_add",
+            Self::CheckedSub(_) => "checked_sub",
+            Self::CheckedMul(_) => "checked_mul",
+            Self::CheckedQuot(_) => "checked_div",
+            Self::CheckedNeg(_) => "checked_neg",
+            Self::CheckedShl(_) => "checked_shl",
+            Self::CheckedShr(_) => "checked_shr",
+            Self::TryFrom(_) => "convert",
+            Self::BitAnd(_) => "bit_and",
+            Self::BitOr(_) => "bit_or",
+            Self::BitXor(_) => "bit_xor",
+            Self::BitNot(_) => "bit_not",
+            Self::NatEq => "nat_eq",
+            Self::NatLe => "nat_le",
+            Self::NatLt => "nat_lt",
+            Self::NatRem => "nat_rem",
+            Self::IntRem => "int_rem",
+            Self::CheckedNatAdd => "nat_add",
+            Self::NatSub => "nat_sub",
+            Self::CheckedNatMul => "nat_mul",
+            Self::NatQuot => "nat_quot",
+            Self::CheckedIntAdd => "int_add",
+            Self::CheckedIntSub => "int_sub",
+            Self::CheckedIntMul => "int_mul",
+            Self::CheckedIntNeg => "int_neg",
+            Self::CheckedIntQuot => "int_quot",
+        }
+    }
+
+    /// The number of operands.
+    #[must_use]
+    pub const fn arity(self) -> usize {
+        match self {
+            Self::CheckedNeg(_) | Self::TryFrom(_) | Self::BitNot(_) | Self::CheckedIntNeg => 1,
+            Self::NatRem | Self::IntRem | Self::NatQuot | Self::CheckedIntQuot => 3,
+            _ => 2,
+        }
+    }
+
+    /// The Rust the call of the primitive on `args` prints as. Operands are
+    /// written once, so a call prints with no more work than its operation;
+    /// `IntRem` binds its operands, because its zero test and its remainder
+    /// both read the divisor.
+    #[must_use]
+    pub fn print(self, args: &[String]) -> String {
+        let at =
+            |kind: IntKind, method: &str| format!("{}::{method}({})", kind.name(), args.join(", "));
+        match self {
+            Self::CheckedAdd(kind) => at(kind, "checked_add"),
+            Self::CheckedSub(kind) => at(kind, "checked_sub"),
+            Self::CheckedMul(kind) => at(kind, "checked_mul"),
+            Self::CheckedQuot(kind) => at(kind, "checked_div"),
+            Self::CheckedNeg(kind) => at(kind, "checked_neg"),
+            Self::CheckedShl(kind) => at(kind, "checked_shl"),
+            Self::CheckedShr(kind) => at(kind, "checked_shr"),
+            Self::TryFrom(kind) => format!("{}::try_from({}).ok()", kind.name(), args.join(", ")),
+            Self::BitAnd(_) => format!("core::ops::BitAnd::bitand({}, {})", args[0], args[1]),
+            Self::BitOr(_) => format!("core::ops::BitOr::bitor({}, {})", args[0], args[1]),
+            Self::BitXor(_) => format!("core::ops::BitXor::bitxor({}, {})", args[0], args[1]),
+            Self::BitNot(_) => format!("core::ops::Not::not({})", args[0]),
+            Self::NatEq => format!("core::cmp::PartialEq::eq(&{}, &{})", args[0], args[1]),
+            Self::NatLe => format!("core::cmp::PartialOrd::le(&{}, &{})", args[0], args[1]),
+            Self::NatLt => format!("core::cmp::PartialOrd::lt(&{}, &{})", args[0], args[1]),
+            Self::NatRem => format!("u64::checked_rem({}, {}).unwrap_or({})", args[0], args[1], args[2]),
+            Self::IntRem => format!(
+                "{{ let (a, b, z): (i64, i64, i64) = ({}, {}, {}); if b == 0 {{ z }} else {{ a.wrapping_rem(b) }} }}",
+                args[0], args[1], args[2]
+            ),
+            Self::CheckedNatAdd => format!("u64::checked_add({}, {})", args[0], args[1]),
+            Self::NatSub => format!("u64::saturating_sub({}, {})", args[0], args[1]),
+            Self::CheckedNatMul => format!("u64::checked_mul({}, {})", args[0], args[1]),
+            Self::NatQuot => format!("u64::checked_div({}, {}).unwrap_or({})", args[0], args[1], args[2]),
+            Self::CheckedIntAdd => format!("i64::checked_add({}, {})", args[0], args[1]),
+            Self::CheckedIntSub => format!("i64::checked_sub({}, {})", args[0], args[1]),
+            Self::CheckedIntMul => format!("i64::checked_mul({}, {})", args[0], args[1]),
+            Self::CheckedIntNeg => format!("i64::checked_neg({})", args[0]),
+            Self::CheckedIntQuot => format!(
+                "{{ let (a, b, z): (i64, i64, i64) = ({}, {}, {}); if b == 0 {{ Some(z) }} else {{ a.checked_div(b) }} }}",
+                args[0], args[1], args[2]
+            ),
+        }
+    }
 }
 
 /// An expression. Every construct carries the [`Origin`] it realizes; the
@@ -483,6 +767,7 @@ fn lit(literal: &Lit) -> String {
             format!("Bytes::lit(&[{}])", bytes.join(", "))
         }
         Lit::Ordering(value) => ordering(*value).to_owned(),
+        Lit::Overflow => "Overflow".to_owned(),
     }
 }
 
@@ -573,6 +858,15 @@ impl Printer {
                 let name = match callee {
                     Callee::Function(n) => format!("f{n}"),
                     Callee::Runtime(item) => item.path(),
+                    Callee::Machine(machine) => {
+                        let args: Vec<String> =
+                            args.iter().map(|arg| self.expr(arg, depth)).collect();
+                        return format!(
+                            "{}{}",
+                            machine.print(&args),
+                            if *propagate { "?" } else { "" }
+                        );
+                    }
                 };
                 let args: Vec<String> = args.iter().map(|arg| self.expr(arg, depth)).collect();
                 format!(
@@ -651,7 +945,18 @@ impl Printer {
                 if arms.is_empty() {
                     return format!("match {scrutinee} {{}}");
                 }
-                let mut out = format!("match {scrutinee} {{\n");
+                // A scrutinee that is a block is bound first, as a loop's step
+                // is: Rust's lint gate refuses a block as a scrutinee.
+                let (open, close, scrutinee) = if scrutinee.starts_with('{') {
+                    (
+                        format!("{{ let value = {scrutinee}; "),
+                        " }",
+                        "value".to_owned(),
+                    )
+                } else {
+                    (String::new(), "", scrutinee)
+                };
+                let mut out = format!("{open}match {scrutinee} {{\n");
                 for (pattern, body) in arms {
                     let body = self.block_inline(body, depth + 1);
                     let _ = writeln!(
@@ -661,7 +966,7 @@ impl Printer {
                         pat(pattern)
                     );
                 }
-                let _ = write!(out, "{}}}", "    ".repeat(depth));
+                let _ = write!(out, "{}}}{close}", "    ".repeat(depth));
                 out
             }
             Expr::Block(block) => self.block_inline(block, depth),
@@ -864,7 +1169,7 @@ fn enum_lines(name: &Type, variants: &[(u64, Vec<Type>)]) -> Vec<String> {
 /// attributes are derived from, cannot be read.
 pub fn print(krate: &Crate) -> Result<String, String> {
     let mut out = super::scaffold::get()?.attributes(krate.profile)?;
-    out.push_str(super::runtime::CORE);
+    out.push_str(super::runtime::core()?);
     if krate.profile == Profile::Std {
         out.push_str(super::runtime::STD);
     }
@@ -874,6 +1179,14 @@ pub fn print(krate: &Crate) -> Result<String, String> {
         printer.item(item);
     }
     Ok(printer.out)
+}
+
+/// The canonical text of one item.
+#[must_use]
+pub fn print_item(item: &ItemDef) -> String {
+    let mut printer = Printer { out: String::new() };
+    printer.item(item);
+    printer.out
 }
 
 /// The canonical text of one expression.
