@@ -173,8 +173,11 @@ jobs:
       # line — never a number written here, so a language the fence gains is
       # expected without this file changing, and a report that drops one or
       # keeps the shape of an earlier release is refused. Each ID is a
-      # 64-hex-digit digest here; `release-check` in `publish` compares the
-      # exact IDs.
+      # 64-hex-digit digest here, and no more: the exact IDs are compared in
+      # `publish`, where `release-check` holds each ID that `release-artifacts`
+      # lists and reports from its own build of the tagged source to the ID
+      # compiled into that source (`lexlean::compiler_semantics_id_for`), and
+      # refuses `semantics-id` and `version-output` on a difference.
       - name: The binary reports the §30.3 identity
         shell: bash
         env:

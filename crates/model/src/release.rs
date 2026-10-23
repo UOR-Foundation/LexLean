@@ -38,11 +38,11 @@ pub const CRITERIA: &[(&str, &str)] = &[
     ),
     (
         "semantics-id",
-        "release/compiler-semantics-id.txt is one `<language> <64-hex-digit ID>` line for every language of the §30.3 report, in its order",
+        "release/compiler-semantics-id.txt is one `<language> <64-hex-digit ID>` line for every language of the §30.3 report, in its order, each ID the compiler-semantics ID compiled into the compiler for that language",
     ),
     (
         "version-output",
-        "release/version-output.txt is the exact `lexlean --version` report of §30.3 with the release version and each language's semantics ID, and the report's languages are the supported languages",
+        "release/version-output.txt is the exact `lexlean --version` report of §30.3 with the release version and, for each language, the compiler-semantics ID compiled into the compiler, and the report's languages are the supported languages",
     ),
     (
         "conformance-doc",
@@ -538,13 +538,33 @@ pub fn check(root: &Path, hidden_tests: &BTreeSet<String>) -> Result<(), Vec<Str
         Err(error) => fail("crate-package", format!("release/lexlean.crate: {error}")),
     }
 
-    // The semantics ID of every language and the §30.3 version report. The
-    // report's languages are the languages this compiler accepts (§30.1), so
-    // a report that leaves one out, or names one it does not, is refused.
-    let supported: Vec<String> = lexlean::LANGUAGE_VERSIONS
+    // The semantics ID of every language and the §30.3 version report. Each
+    // ID the release lists or reports is compared with the ID compiled into
+    // this source for that language (`lexlean::compiler_semantics_id_for`),
+    // never with the other staged file alone: `release-artifacts` writes both
+    // files from one `--version` run of its own build, so their agreement
+    // establishes nothing. The report's languages are the languages this
+    // compiler accepts (§30.1), so a report that leaves one out, or names one
+    // it does not, is refused.
+    let compiled: Vec<(String, String)> = lexlean::LANGUAGE_VERSIONS
         .iter()
-        .map(|language| (*language).to_owned())
+        .map(|language| {
+            (
+                (*language).to_owned(),
+                lexlean::compiler_semantics_id_for(language).to_hex(),
+            )
+        })
         .collect();
+    let supported: Vec<String> = compiled
+        .iter()
+        .map(|(language, _)| language.clone())
+        .collect();
+    let compiled_id = |language: &str| {
+        compiled
+            .iter()
+            .find(|(listed, _)| listed == language)
+            .map(|(_, id)| id.clone())
+    };
     // `None` when the list cannot be read, which is refused once, here.
     let semantics: Option<Vec<(String, String)>> = match read("release/compiler-semantics-id.txt") {
         Ok(text) => {
@@ -552,6 +572,24 @@ pub fn check(root: &Path, hidden_tests: &BTreeSet<String>) -> Result<(), Vec<Str
             for (index, line) in text.lines().enumerate() {
                 match line.split_once(' ') {
                     Some((language, id)) if is_hex(id, 64) => {
+                        match compiled_id(language) {
+                            Some(expected) if expected == id => {}
+                            Some(expected) => fail(
+                                "semantics-id",
+                                format!(
+                                    "release/compiler-semantics-id.txt line {}: language {language} is listed with the ID `{id}`, and the compiler-semantics ID of language {language} is `{expected}`",
+                                    index + 1
+                                ),
+                            ),
+                            None => fail(
+                                "semantics-id",
+                                format!(
+                                    "release/compiler-semantics-id.txt line {}: language {language} is not one the compiler supports ({})",
+                                    index + 1,
+                                    supported.join(", ")
+                                ),
+                            ),
+                        }
                         listed.push((language.to_owned(), id.to_owned()));
                     }
                     _ => fail(
@@ -601,33 +639,23 @@ pub fn check(root: &Path, hidden_tests: &BTreeSet<String>) -> Result<(), Vec<Str
                 );
             }
         }
-        match (read("release/version-output.txt"), &semantics) {
-            (Err(error), _) => fail(
+        // The report is the §30.3 fence with the workspace version and, after
+        // each language, the ID compiled into this source for it.
+        match read("release/version-output.txt") {
+            Err(error) => fail(
                 "version-output",
                 format!("release/version-output.txt: {error}"),
             ),
-            (Ok(_), None) => fail(
-                "version-output",
-                "release/version-output.txt cannot be compared without the semantics IDs of release/compiler-semantics-id.txt".to_owned(),
-            ),
-            (Ok(text), Some(semantics)) => {
-                let lookup = |language: &str| {
-                    semantics
-                        .iter()
-                        .find(|(listed, _)| listed == language)
-                        .map(|(_, id)| id.clone())
-                };
-                match criterion.render(&version, &lookup) {
-                    Ok(expected) if text == expected => {}
-                    Ok(expected) => fail(
-                        "version-output",
-                        format!(
-                            "release/version-output.txt must be exactly:\n{expected}found:\n{text}"
-                        ),
+            Ok(text) => match criterion.render(&version, &compiled_id) {
+                Ok(expected) if text == expected => {}
+                Ok(expected) => fail(
+                    "version-output",
+                    format!(
+                        "release/version-output.txt must be exactly:\n{expected}found:\n{text}"
                     ),
-                    Err(error) => fail("version-output", error),
-                }
-            }
+                ),
+                Err(error) => fail("version-output", error),
+            },
         }
     }
 
