@@ -77,3 +77,9 @@ Feature: authoring
     Given language-1.2 projects whose module is written with a data argument in each of the three module environments, the language-1.1 example, the Atlas source, and the module in the notation
     When each is checked and formatted, and the module is converted into the data form and back with the SDK
     Then the language-1.2 data form is refused with LLP2003 at its data argument naming the notation, fmt does not rewrite it, the conversions are exact inverses, the notation under language 1.2 and the data form under language 1.1 are accepted, and the Atlas is still written as data
+
+  @AU-14 @build
+  Scenario: A source's module is the environment the structural parser opens: lexlean::surface::module::locate takes the first environment after the header and ends its body at the first end control atom, so a tooling or core module whose strings quote the begin and end markers of another kind is read by the authoring API, formatted, and decoded as its own kind and contributes its data form to the compiler-semantics ID, a module whose body holds an unescaped end marker is refused with LLP2003 and is found as no module, and on every committed source the parser reads the module found is the one it opens.
+    Given every committed source, and a tooling and a core module whose strings quote the semantic and tooling markers with and without their end markers, and one whose body holds an unescaped end marker
+    When each is located, read with the SDK, linked, formatted from another layout, decoded, and given to the identity of the embedded tree
+    Then the module found is the one the structural parser opens, each plant reads, formats, and decodes as its own kind and contributes its data form, and the unescaped end marker is LLP2003 and no module

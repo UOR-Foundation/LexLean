@@ -23,7 +23,14 @@ and Unreleased holds what has landed since.
   every outcome to the record in VERIFICATION.md. x86-64 agrees with the 1.97.0
   record; aarch64 behaves the same; wasm32 accepts the call without the
   attribute; thumbv7em refuses the `dsp` feature and its intrinsics as
-  unstable. Register unchanged (443).
+  unstable. Register unchanged (444).
+
+- CI toolchain fetches (#242): every step of `ci.yml`, `honesty.yml` and
+  `reproducibility.yml` that fetches elan, the pinned Lean toolchain, or the
+  pinned Rust toolchain runs the fetch through `.github/retry.sh`, at most three
+  attempts of the same command. An HTTP 5xx or a resolver failure from a
+  release host no longer fails a leg before its first test unless it lasts
+  through all three. What is pinned and checked is unchanged. Register 443.
 
 - `cargo xtask spec` (`NS-07`, #244): edit the chapter modules of `spec/` by
   item. `replace-block` and `insert-after` act on the paragraph, table or fence

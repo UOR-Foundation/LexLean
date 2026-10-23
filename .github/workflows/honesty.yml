@@ -38,7 +38,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install the pinned Rust toolchain
-        run: rustup toolchain install
+        run: bash .github/retry.sh rustup toolchain install
       - uses: taiki-e/install-action@b6b84cf49ebfe0176417bdce007c624f0db37f20 # v2.86.2
         with:
           tool: just
@@ -51,6 +51,6 @@ jobs:
       # pinned Rust"), held by `.github/simd-probe/run.sh`. It builds for the
       # four targets #109 lists, so their standard libraries come first.
       - name: Add the SIMD probe's targets to the pinned Rust toolchain
-        run: rustup target add aarch64-unknown-linux-gnu wasm32-unknown-unknown thumbv7em-none-eabihf
+        run: bash .github/retry.sh rustup target add aarch64-unknown-linux-gnu wasm32-unknown-unknown thumbv7em-none-eabihf
       - name: The SIMD probe of #109 on the pinned Rust
         run: .github/simd-probe/run.sh
