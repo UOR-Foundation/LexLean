@@ -1,0 +1,78 @@
+# examples/performance-corpus/corpus.toml --- the general performance corpus
+# (SPEC.md §28.7, PC-01, PC-02).
+#
+# One object, named `performance-corpus`, over which every acceptance
+# criterion about the performance of compiled programs quantifies. A
+# criterion names the corpus, a kind, or a member by the identifiers below.
+# Every member is exactly one production root of this project; the kinds are
+# closed; nothing here names or depends on a consumer of LexLean.
+
+spec = "lexlean/performance-corpus/1"
+id = "performance-corpus"
+
+[[kind]]
+id = "integer-kernels"
+
+[[kind]]
+id = "byte-parsing"
+
+[[kind]]
+id = "long-folds"
+
+[[kind]]
+id = "maps-and-sets"
+
+[[kind]]
+id = "recursion"
+
+[[kind]]
+id = "compiler"
+precondition = "the compiler is itself a production root of the bootstrap project (SPEC.md §17.23), so that its member is that root"
+
+[[member]]
+id = "integer-kernels/requantize"
+kind = "integer-kernels"
+root = "Corpus.IntKernels.requantize"
+targets = ["rust-core", "rust-std"]
+effects = ["overflow"]
+contract = "Over every integer x, offset, multiplier, divisor, low, and high: the quotient of (x + offset) times multiplier plus half the divisor by the divisor, clamped to [low, high], with the quotient by zero read as zero."
+
+[[member]]
+id = "byte-parsing/word"
+kind = "byte-parsing"
+root = "Corpus.ByteParse.word"
+targets = ["rust-std"]
+effects = ["allocation", "overflow"]
+contract = "Over every byte string raw and offset: the big-endian value of the four bytes at offset, or none when fewer than four bytes follow the offset."
+
+[[member]]
+id = "long-folds/moments"
+kind = "long-folds"
+root = "Corpus.LongFolds.moments"
+targets = ["rust-std"]
+effects = ["allocation", "overflow"]
+contract = "Over every list of naturals: its length, its sum, and the sum of its squares, computed in one fold."
+
+[[member]]
+id = "maps-and-sets/tally"
+kind = "maps-and-sets"
+root = "Corpus.MapsSets.tally"
+targets = ["rust-std"]
+effects = ["allocation", "overflow", "recursion"]
+contract = "Over every list of naturals and key: how many entries equal the key, read from a map of counts built by one fold, and how many distinct values the list holds, read from a set built by one fold."
+
+[[member]]
+id = "recursion/tree_stats"
+kind = "recursion"
+root = "Corpus.Recursion.treeStats"
+targets = ["rust-std"]
+effects = ["allocation", "overflow", "recursion"]
+contract = "Over every binary tree of naturals: the sum of its labels and its depth, each by structural recursion that is not a tail call."
+
+[[member]]
+id = "recursion/bisect"
+kind = "recursion"
+root = "Corpus.Recursion.bisect"
+targets = ["rust-core", "rust-std"]
+effects = ["overflow"]
+contract = "Over every target, low, and high: the least index i with low <= i < high such that target <= 2i, or high when there is none, by well-founded recursion on high - low whose every self call is a tail call."
