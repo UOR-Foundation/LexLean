@@ -15979,6 +15979,99 @@ refusal and expects `LLP2003`.
 Not run for this record: the records the change regenerates (the maintainer's
 wave) and every Lean-backed case, which needs the pinned toolchain.
 
+### a module is the environment the parser opens (`AU-14`, #241)
+
+`AU-14` states that `lexlean::surface::module::locate` finds the module the
+structural parser opens: the first environment after `\begin{lexlean}`, whose
+body ends at the first `\end` control atom, read over the scanner's control
+atoms, where the escape `\\` is one atom. Before it, `locate` took, for each
+kind in the order semantic, tooling, core, the first `\begin{<kind>}` in the
+text and the last `\end{<kind>}`, so a tooling or core module whose strings
+quote an earlier kind's marker (`\\begin{semanticmodule}` in the notation) was
+found as that kind, or as no module. The finding is the one recorded under the
+#232 scanner gate above.
+
+What each caller of `locate` did with the plants, on `release/v0.5` 2959a4db2
+and after the fix. The tooling plant is the string `"!"` of
+`tests/tooling/core` rewritten to quote the semantic begin marker, or both
+semantic markers; the core plant is the small module of `AU-10` with a string
+node quoting the semantic begin marker, both semantic markers, or both tooling
+markers. The output is a probe run once, not committed:
+
+| Caller | Before | After |
+| --- | --- | --- |
+| `sdk::read_module`, tooling or core, begin marker only | `the source states no semantic, tooling, or core module` | reads `lexlean/tooling-module/1` or `lexlean/core-module/2` |
+| `sdk::read_module`, tooling or core, both markers | ``the notation is not well formed: `\` is not a name; quote it to write a string (at byte 8011)`` in the tooling plant, the same at the core plant's quote (read as the quoted kind) | reads its own kind |
+| `surface/identity.rs:35`, all five plants | contributes the file's own bytes, the notation, with no diagnostic | contributes its data form |
+| `fmt.rs:1050`, tooling (`canonical_source` of the `with_tooling` link) | leaves another layout as it is | restores the canonical notation |
+| `fmt.rs:1050`, core, through the public engine | `fmt --check` of another layout passes, and `fmt` leaves it | `fmt --check` is `LLL1003`, and `fmt` restores the canonical notation |
+| `ir/core.rs:747` (`CoreModule::from_source`), all three core plants | `a native core source holds exactly one core payload` | decodes the module its notation is |
+| `calculus/rust/scaffold.rs:481`, the scaffold with a reason quoting both tooling markers and the semantic end marker | decodes | decodes |
+| `lexlean check` and `fmt --check` in a copy of `language/lcnf-1.2/tooling` with the adapter's `"\\u"` rewritten to quote the semantic markers | `LLT4013` | `LLT4013` |
+
+The engine's `check` of the core plants passed before and after: linking
+classifies by the parser. The scaffold reads one semantic module, which the
+text search never misread (semantic is searched first, and a module's own
+marker precedes any quote of it). The CLI rows are `LLT4013` because a tooling
+module is accepted only in the projects the compiler embeds; the CLI reaches
+neither the SDK nor `fmt` for one, which is why the case links the tooling
+plant through `Project::with_tooling`.
+
+Every committed source classifies as before: the text search and the fixed
+`locate`, run over the 881 committed `.lex.tex` sources (819 with a module),
+agree on the kind, the body, and the data range of every one. The case checks
+the stronger property, that `locate` agrees with the parser on every committed
+source the parser reads; the chapters of `spec/` are among them, semantic
+modules that quote the tooling and core markers.
+
+The case was written and committed before the fix (R3). On the unfixed
+`locate` it failed at its first plant:
+
+```text
+panicked at crates/conformance/src/cases/authoring.rs:1509:13:
+a tooling module quoting the semantic begin marker: the parser opens a toolingmodule, and no module is located
+```
+
+Two of its own assertions were wrong and were corrected with the fix: the
+expected data form was built from the parser's body, which begins after the
+line feed that ends the opening marker, and the check that the core notation
+quotes a two-marker string escaped only its first backslash. Neither is
+reached before the line above.
+
+Three defects were planted in the fixed `locate`, one at a time, each undone
+before the next; each turns `conformance_au_14` red:
+
+- **the text search restored** (`module.rs` as on `release/v0.5`):
+
+  ```text
+  panicked at crates/conformance/src/cases/authoring.rs:1509:13:
+  a tooling module quoting the semantic begin marker: the parser opens a toolingmodule, and no module is located
+  ```
+
+- **the body ended at the last end marker of the kind** (`text.rfind(&kind.end())`
+  in place of the first `\end` control):
+
+  ```text
+  panicked at crates/conformance/src/cases/authoring.rs:1778:5:
+  a module is located whose environment an unescaped end marker closes
+  ```
+
+- **the escape read as a lone backslash** (a `\` after a `\` makes no atom, so
+  the second backslash of `\\begin` starts a control). The sweep of committed
+  sources catches it before any plant:
+
+  ```text
+  panicked at crates/conformance/src/cases/authoring.rs:1509:13:
+  /home/humuhumu33/lexlean-241/spec/src/Chapter16.lex.tex: the parser opens a semanticmodule, and no module is located
+  ```
+
+Run for this record, in WSL on Linux x86-64: `cargo xtask validate-model` and
+`cargo xtask validate-spec-links` (444 rows), `cargo clippy -p lexlean -p
+repo-conformance --all-targets --all-features -- -D warnings`, `cargo test -p
+lexlean --lib` (211 passed), `conformance_au_01`..`conformance_au_14` (14
+passed; `AU-02` and `AU-10` build with the pinned Lean), and the `bdd`
+meta-gate (5 passed). The rest of `just vv` is CI's.
+
 ## Classification matches are total (RP-15, Issue #33)
 
 `cargo xtask validate-model` runs `audit-classifications` (R8). It reads every
