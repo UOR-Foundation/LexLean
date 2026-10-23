@@ -4874,14 +4874,17 @@ pub fn run(id: &str) {
                     "utf8Decode",
                     "bytesCompare",
                     "stringSplit",
-                    "stringJoin"
+                    "stringJoin",
+                    "formatDecimal",
+                    "parseDecimal",
+                    "parseDecimalInt"
                 ],
-                "the list, byte, and text primitives of the std runtime (SP-29)"
+                "the list, byte, text, and number primitives of the std runtime (SP-29)"
             );
             assert_eq!(
                 machine.len(),
-                40,
-                "the first seventeen, the nine, and the fourteen std primitives"
+                43,
+                "the first seventeen, the nine, and the seventeen std primitives"
             );
             if !support::lean_backed("SP-23") {
                 return;

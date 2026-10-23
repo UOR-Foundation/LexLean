@@ -34,7 +34,7 @@ const IMPORTED: [&str; 4] = [
 /// Each function the module defines with the theorem that refines it and the
 /// names its statement must be about: a theorem of the right name that runs
 /// another function or another item is refused.
-const LAWS: [(&str, &str, &[&str]); 14] = [
+const LAWS: [(&str, &str, &[&str]); 31] = [
     (
         "append_list",
         "refines_append_list",
@@ -101,6 +101,23 @@ const LAWS: [(&str, &str, &[&str]); 14] = [
         &["runExport", "runItem"],
     ),
     ("join", "refines_join", &["runExport", "runItem"]),
+    ("format_u8", "refines_format_u8", &["runExport", "runItem"]),
+    ("parse_u8", "refines_parse_u8", &["runExport", "runItem"]),
+    ("format_u16", "refines_format_u16", &["runExport", "runItem"]),
+    ("parse_u16", "refines_parse_u16", &["runExport", "runItem"]),
+    ("format_u32", "refines_format_u32", &["runExport", "runItem"]),
+    ("parse_u32", "refines_parse_u32", &["runExport", "runItem"]),
+    ("format_u64", "refines_format_u64", &["runExport", "runItem"]),
+    ("parse_u64", "refines_parse_u64", &["runExport", "runItem"]),
+    ("format_i8", "refines_format_i8", &["runExport", "runItem"]),
+    ("parse_i8", "refines_parse_i8", &["runExport", "runItem"]),
+    ("format_i16", "refines_format_i16", &["runExport", "runItem"]),
+    ("parse_i16", "refines_parse_i16", &["runExport", "runItem"]),
+    ("format_i32", "refines_format_i32", &["runExport", "runItem"]),
+    ("parse_i32", "refines_parse_i32", &["runExport", "runItem"]),
+    ("format_i64", "refines_format_i64", &["runExport", "runItem"]),
+    ("parse_i64", "refines_parse_i64", &["runExport", "runItem"]),
+    ("parse_int", "refines_parse_int", &["runExport", "runItem"]),
 ];
 
 /// The harness: a prelude that builds lists of four shapes, then one section per
@@ -131,7 +148,7 @@ fn called() -> BTreeSet<String> {
     sections()
         .into_iter()
         .map(|(name, _)| name)
-        .filter(|name| !matches!(*name, "prelude" | "support" | "decimal"))
+        .filter(|name| !matches!(*name, "prelude" | "support"))
         .map(str::to_owned)
         .collect()
 }
