@@ -599,7 +599,7 @@ pub fn run(id: &str) {
             vec![statement],
         )])
     };
-    let mut sites: Vec<(&str, Crate, &str, &str)> = vec![
+    let sites: Vec<(&str, Crate, &str, &str)> = vec![
         // identifiers, one site each
         (
             "a unit struct name",
@@ -1135,7 +1135,6 @@ pub fn run(id: &str) {
             "{what}: {error}"
         );
     }
-    sites.retain(|_| true);
     for (what, planted, rule, site) in sites {
         let error = rt_validate::validate(&planted).expect_err(what);
         assert!(

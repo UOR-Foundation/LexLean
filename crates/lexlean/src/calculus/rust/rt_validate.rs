@@ -151,12 +151,12 @@ const DERIVES: [&str; 5] = ["Clone", "Copy", "Debug", "Eq", "PartialEq"];
 
 /// The words of the language that a name may not be: `rustc` reads them as
 /// syntax, so a name spelled as one prints a crate that is not the module.
-const KEYWORDS: [&str; 51] = [
+const KEYWORDS: [&str; 52] = [
     "abstract", "as", "async", "await", "become", "box", "break", "const", "continue", "crate",
     "do", "dyn", "else", "enum", "extern", "false", "final", "fn", "for", "if", "impl", "in",
     "let", "loop", "macro", "match", "mod", "move", "mut", "override", "priv", "pub", "ref",
-    "return", "self", "static", "struct", "super", "trait", "true", "try", "type", "typeof",
-    "unsafe", "unsized", "use", "virtual", "where", "while", "yield", "_",
+    "return", "self", "Self", "static", "struct", "super", "trait", "true", "try", "type",
+    "typeof", "unsafe", "unsized", "use", "virtual", "where", "while", "yield", "_",
 ];
 
 /// The roots a `use` path may start at, by profile. `alloc` is in neither: a
