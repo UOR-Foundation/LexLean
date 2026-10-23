@@ -1,11 +1,13 @@
 //! `RuntimeSyntax` (SPEC.md §17.16): the closed set of constructs the runtime's
-//! support items are written in, and the printer that gives each its Rust text.
+//! support items and heap functions are written in, and the printer that gives
+//! each its Rust text.
 //!
 //! The set is a second module beside `RustSyntax`, not a widening of it: a
-//! generated program never contains a trait, an impl, or a generic, and the
-//! calculus that proves a generated program correct is not asked about one.
-//! What the runtime needs beyond that is exactly what is listed here, so an
-//! item outside the set cannot be written, decoded, or printed.
+//! generated program never contains a trait, an impl, a generic, a loop over a
+//! buffer, or a mutable borrow, and the calculus that proves a generated
+//! program correct is not asked about one. What the runtime needs beyond that
+//! is exactly what is listed here, so an item outside the set cannot be
+//! written, decoded, or printed.
 
 use super::super::IntKind;
 
@@ -14,7 +16,7 @@ use super::super::IntKind;
 pub enum Profile {
     /// `core` only: nothing the crate holds allocates.
     Core,
-    /// `core` and `std`.
+    /// `core`, `alloc`, and `std`.
     Std,
 }
 
@@ -33,16 +35,46 @@ pub enum Type {
     Param(u64),
     Ref(Box<Type>),
     Pair(Box<Type>, Box<Type>),
-    /// A declared struct or alias, or a type of the closed table.
+    /// A declared struct, enum, or alias, or a type of the closed table.
     Named(String, Vec<Type>),
+    /// `u128` (unsigned) or `i128` (signed).
+    Wide(bool),
+    /// `usize`.
+    Size,
+    Char,
+    /// `str`.
+    Str,
+    /// `[T]`.
+    Slice(Box<Type>),
+    /// `&mut T`.
+    RefMut(Box<Type>),
 }
 
 /// A literal.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Lit {
     Unit,
     Bool(bool),
     Nat(u64),
+    Char(String),
+    Str(String),
+}
+
+/// A binary operator.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Op {
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Rem,
+    AndAnd,
+    OrOr,
+    Ne,
+    Lt,
+    Le,
+    Gt,
+    Ge,
 }
 
 /// A pattern.
@@ -51,6 +83,21 @@ pub enum Pat {
     Wild,
     Bind(String),
     Path(Vec<String>),
+    BindMut(String),
+    Tuple(Vec<Pat>),
+    TupleStruct(Vec<String>, Vec<Pat>),
+    /// A struct or an enum's record variant: the path, then each field name
+    /// with its pattern.
+    Struct(Vec<String>, Vec<String>, Vec<Pat>),
+    Lit(Lit),
+}
+
+/// A `match` arm.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Arm {
+    pub pattern: Pat,
+    pub guard: Option<Expr>,
+    pub body: Expr,
 }
 
 /// An expression.
@@ -62,9 +109,35 @@ pub enum Expr {
     Call(Vec<String>, Vec<Expr>),
     Method(Box<Expr>, String, Vec<Expr>),
     Field(Box<Expr>, u64),
+    /// A field of a struct by name: `value.name`.
+    FieldNamed(Box<Expr>, String),
     Borrow(Box<Expr>),
     Equals(Box<Expr>, Box<Expr>),
-    Match(Box<Expr>, Vec<(Pat, Expr)>),
+    Match(Box<Expr>, Vec<Arm>),
+    /// `let [mut] pattern[: type] = value`, a statement that binds for the
+    /// statements after it.
+    Let(Pat, Option<Type>, Box<Expr>),
+    Assign(Box<Expr>, Box<Expr>),
+    If(Box<Expr>, Box<Block>, Box<Block>),
+    While(Box<Expr>, Box<Block>),
+    WhileLet(Pat, Box<Expr>, Box<Block>),
+    Loop(Box<Block>),
+    For(Pat, Box<Expr>, Box<Block>),
+    Break,
+    Return(Option<Box<Expr>>),
+    Tuple(Vec<Expr>),
+    /// A struct literal: the path, then each field name with its value.
+    StructLit(Vec<String>, Vec<String>, Vec<Expr>),
+    Binary(Op, Box<Expr>, Box<Expr>),
+    Not(Box<Expr>),
+    Cast(Box<Expr>, Type),
+    Index(Box<Expr>, Box<Expr>),
+    RangeSlice(Box<Expr>, Option<Box<Expr>>, Option<Box<Expr>>),
+    Deref(Box<Expr>),
+    BorrowMut(Box<Expr>),
+    /// A method call with type arguments: `recv.name::<T>(args)`.
+    MethodOf(Box<Expr>, String, Vec<Type>, Vec<Expr>),
+    Block(Box<Block>),
 }
 
 /// A function body: statements whose values are dropped, then the value.
@@ -85,6 +158,7 @@ pub struct Generic {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Param {
     pub name: String,
+    pub mutable: bool,
     pub ty: Type,
 }
 
@@ -92,8 +166,9 @@ pub struct Param {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Sig {
     pub name: String,
-    /// Takes `&self`.
+    /// Takes `&self`, or `&mut self` when `exclusive`.
     pub receiver: bool,
+    pub exclusive: bool,
     pub params: Vec<Param>,
     pub result: Type,
 }
@@ -105,6 +180,14 @@ pub struct Function {
     pub generics: Vec<Generic>,
     pub public: bool,
     pub body: Block,
+}
+
+/// A variant of an enum.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Variant {
+    Unit(String),
+    Tuple(String, Vec<Type>),
+    Record(String, Vec<String>, Vec<Type>),
 }
 
 /// An item of the closed set.
@@ -123,6 +206,13 @@ pub enum Item {
     /// `impl<..> Trait for ty { fns }`, or inherent without the trait.
     Impl(Vec<Generic>, Option<String>, Type, Vec<Function>),
     Fn(Function),
+    /// `#[derive(..)] pub struct Name<..>(types);`: name, generics, derives,
+    /// fields.
+    TupleStruct(String, Vec<String>, Vec<String>, Vec<Type>),
+    /// `#[derive(..)] pub struct Name<..> { names: types }`.
+    RecordStruct(String, Vec<String>, Vec<String>, Vec<String>, Vec<Type>),
+    /// `#[derive(..)] pub enum Name<..> { variants }`.
+    Enum(String, Vec<String>, Vec<String>, Vec<Variant>),
 }
 
 /// The crate: a profile and its items in order.
@@ -130,6 +220,10 @@ pub enum Item {
 pub struct Crate {
     pub profile: Profile,
     pub items: Vec<Item>,
+}
+
+fn list<T>(items: &[T], each: impl Fn(&T) -> String) -> String {
+    items.iter().map(each).collect::<Vec<_>>().join(", ")
 }
 
 impl Type {
@@ -146,16 +240,64 @@ impl Type {
                 .and_then(|at| scope.get(at))
                 .map_or_else(|| format!("P{at}"), |name| (*name).to_owned()),
             Type::Ref(inner) => format!("&{}", inner.print(scope)),
+            Type::RefMut(inner) => format!("&mut {}", inner.print(scope)),
             Type::Pair(a, b) => format!("({}, {})", a.print(scope), b.print(scope)),
             Type::Named(name, arguments) if arguments.is_empty() => name.clone(),
-            Type::Named(name, arguments) => format!(
-                "{name}<{}>",
-                arguments
-                    .iter()
-                    .map(|argument| argument.print(scope))
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            ),
+            Type::Named(name, arguments) => {
+                format!(
+                    "{name}<{}>",
+                    list(arguments, |argument| argument.print(scope))
+                )
+            }
+            Type::Wide(true) => "u128".to_owned(),
+            Type::Wide(false) => "i128".to_owned(),
+            Type::Size => "usize".to_owned(),
+            Type::Char => "char".to_owned(),
+            Type::Str => "str".to_owned(),
+            Type::Slice(inner) => format!("[{}]", inner.print(scope)),
+        }
+    }
+}
+
+impl Lit {
+    fn print(&self) -> String {
+        match self {
+            Lit::Unit => "()".to_owned(),
+            Lit::Bool(value) => value.to_string(),
+            Lit::Nat(value) => value.to_string(),
+            // Rust's `Debug` of a character or a string is its literal.
+            Lit::Char(text) => format!("{:?}", text.chars().next().unwrap_or('\0')),
+            Lit::Str(text) => format!("{text:?}"),
+        }
+    }
+}
+
+impl Op {
+    fn text(self) -> &'static str {
+        match self {
+            Op::Add => "+",
+            Op::Sub => "-",
+            Op::Mul => "*",
+            Op::Div => "/",
+            Op::Rem => "%",
+            Op::AndAnd => "&&",
+            Op::OrOr => "||",
+            Op::Ne => "!=",
+            Op::Lt => "<",
+            Op::Le => "<=",
+            Op::Gt => ">",
+            Op::Ge => ">=",
+        }
+    }
+
+    /// The binding strength of the operator, as Rust's.
+    fn precedence(self) -> u8 {
+        match self {
+            Op::OrOr => 3,
+            Op::AndAnd => 4,
+            Op::Ne | Op::Lt | Op::Le | Op::Gt | Op::Ge => 5,
+            Op::Add | Op::Sub => 9,
+            Op::Mul | Op::Div | Op::Rem => 10,
         }
     }
 }
@@ -166,35 +308,218 @@ impl Pat {
             Pat::Wild => "_".to_owned(),
             Pat::Bind(name) => name.clone(),
             Pat::Path(path) => path.join("::"),
+            Pat::BindMut(name) => format!("mut {name}"),
+            Pat::Tuple(items) => format!("({})", list(items, Pat::print)),
+            Pat::TupleStruct(path, items) => {
+                format!("{}({})", path.join("::"), list(items, Pat::print))
+            }
+            Pat::Struct(path, names, items) => {
+                let fields = names
+                    .iter()
+                    .zip(items)
+                    .map(|(name, item)| match item {
+                        Pat::Bind(bound) if bound == name => name.clone(),
+                        Pat::BindMut(bound) if bound == name => format!("mut {name}"),
+                        other => format!("{name}: {}", other.print()),
+                    })
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("{} {{ {fields} }}", path.join("::"))
+            }
+            Pat::Lit(literal) => literal.print(),
         }
     }
 }
 
+const ASSIGN: u8 = 1;
+const RANGE: u8 = 2;
+const CAST: u8 = 11;
+const UNARY: u8 = 12;
+const POSTFIX: u8 = 13;
+const ATOM: u8 = 14;
+
 impl Expr {
+    /// The binding strength of the expression's outermost construct.
+    fn precedence(&self) -> u8 {
+        match self {
+            Expr::Assign(..) => ASSIGN,
+            Expr::RangeSlice(..) => ATOM,
+            Expr::Binary(op, ..) => op.precedence(),
+            Expr::Equals(..) => 5,
+            Expr::Cast(..) => CAST,
+            Expr::Not(_) | Expr::Deref(_) | Expr::Borrow(_) | Expr::BorrowMut(_) => UNARY,
+            Expr::Return(_) | Expr::Break | Expr::Let(..) => ASSIGN,
+            Expr::Method(..)
+            | Expr::MethodOf(..)
+            | Expr::Field(..)
+            | Expr::FieldNamed(..)
+            | Expr::Index(..)
+            | Expr::Call(..) => POSTFIX,
+            Expr::Var(_)
+            | Expr::Lit(_)
+            | Expr::Path(_)
+            | Expr::Match(..)
+            | Expr::If(..)
+            | Expr::While(..)
+            | Expr::WhileLet(..)
+            | Expr::Loop(_)
+            | Expr::For(..)
+            | Expr::Tuple(_)
+            | Expr::StructLit(..)
+            | Expr::Block(_) => ATOM,
+        }
+    }
+
+    /// The text, parenthesised when the construct binds more loosely than
+    /// `needed`: `rustc` under `warnings = deny` refuses a parenthesis that
+    /// the grammar does not need.
+    fn at(&self, needed: u8) -> String {
+        let text = self.print();
+        if self.precedence() < needed {
+            format!("({text})")
+        } else {
+            text
+        }
+    }
+
     fn print(&self) -> String {
-        let list = |items: &[Expr]| items.iter().map(Expr::print).collect::<Vec<_>>().join(", ");
+        let args = |items: &[Expr]| list(items, Expr::print);
         match self {
             Expr::Var(name) => name.clone(),
-            Expr::Lit(Lit::Unit) => "()".to_owned(),
-            Expr::Lit(Lit::Bool(value)) => value.to_string(),
-            Expr::Lit(Lit::Nat(value)) => value.to_string(),
+            Expr::Lit(literal) => literal.print(),
             Expr::Path(path) => path.join("::"),
-            Expr::Call(path, arguments) => format!("{}({})", path.join("::"), list(arguments)),
+            Expr::Call(path, arguments) => format!("{}({})", path.join("::"), args(arguments)),
             Expr::Method(receiver, name, arguments) => {
-                format!("{}.{name}({})", receiver.print(), list(arguments))
+                format!("{}.{name}({})", receiver.at(POSTFIX), args(arguments))
             }
-            Expr::Field(inner, at) => format!("{}.{at}", inner.print()),
-            Expr::Borrow(inner) => format!("&{}", inner.print()),
-            Expr::Equals(a, b) => format!("{} == {}", a.print(), b.print()),
+            Expr::MethodOf(receiver, name, types, arguments) => format!(
+                "{}.{name}::<{}>({})",
+                receiver.at(POSTFIX),
+                list(types, |ty| ty.print(&[])),
+                args(arguments)
+            ),
+            Expr::Field(inner, at) => format!("{}.{at}", inner.at(POSTFIX)),
+            Expr::FieldNamed(inner, name) => format!("{}.{name}", inner.at(POSTFIX)),
+            Expr::Borrow(inner) => format!("&{}", inner.at(UNARY)),
+            Expr::BorrowMut(inner) => format!("&mut {}", inner.at(UNARY)),
+            Expr::Deref(inner) => format!("*{}", inner.at(UNARY)),
+            Expr::Not(inner) => format!("!{}", inner.at(UNARY)),
+            Expr::Equals(a, b) => format!("{} == {}", a.at(6), b.at(6)),
+            Expr::Binary(op, a, b) => {
+                let own = op.precedence();
+                // A comparison does not chain, and `a as T < b` reads `<` as
+                // the opening of a type's arguments, so a cast on its left
+                // is parenthesised.
+                let left = if *op == Op::Lt && matches!(**a, Expr::Cast(..)) {
+                    format!("({})", a.print())
+                } else if own == 5 {
+                    a.at(own + 1)
+                } else {
+                    a.at(own)
+                };
+                format!("{left} {} {}", op.text(), b.at(own + 1))
+            }
+            Expr::Cast(inner, ty) => format!("{} as {}", inner.at(CAST), ty.print(&[])),
+            Expr::Index(inner, at) => format!("{}[{}]", inner.at(POSTFIX), at.print()),
+            Expr::RangeSlice(inner, from, to) => format!(
+                "{}[{}..{}]",
+                inner.at(POSTFIX),
+                from.as_ref()
+                    .map_or_else(String::new, |from| from.at(RANGE + 1)),
+                to.as_ref().map_or_else(String::new, |to| to.at(RANGE + 1))
+            ),
             Expr::Match(scrutinee, arms) => format!(
                 "match {} {{ {} }}",
                 scrutinee.print(),
                 arms.iter()
-                    .map(|(pattern, value)| format!("{} => {},", pattern.print(), value.print()))
+                    .map(|arm| {
+                        let guard = arm
+                            .guard
+                            .as_ref()
+                            .map_or_else(String::new, |guard| format!(" if {}", guard.print()));
+                        format!("{}{guard} => {},", arm.pattern.print(), arm.body.print())
+                    })
                     .collect::<Vec<_>>()
                     .join(" ")
             ),
+            Expr::Let(pattern, ty, value) => {
+                let ty = ty
+                    .as_ref()
+                    .map_or_else(String::new, |ty| format!(": {}", ty.print(&[])));
+                format!("let {}{ty} = {}", pattern.print(), value.print())
+            }
+            Expr::Assign(place, value) => format!("{} = {}", place.print(), value.print()),
+            Expr::If(condition, then, otherwise) => {
+                let tail = if otherwise.is_empty() {
+                    String::new()
+                } else {
+                    format!(" else {}", otherwise.print())
+                };
+                format!("if {} {}{tail}", condition.print(), then.print())
+            }
+            Expr::While(condition, body) => format!("while {} {}", condition.print(), body.print()),
+            Expr::WhileLet(pattern, value, body) => {
+                format!(
+                    "while let {} = {} {}",
+                    pattern.print(),
+                    value.print(),
+                    body.print()
+                )
+            }
+            Expr::Loop(body) => format!("loop {}", body.print()),
+            Expr::For(pattern, iterator, body) => {
+                format!(
+                    "for {} in {} {}",
+                    pattern.print(),
+                    iterator.print(),
+                    body.print()
+                )
+            }
+            Expr::Break => "break".to_owned(),
+            Expr::Return(None) => "return".to_owned(),
+            Expr::Return(Some(value)) => format!("return {}", value.print()),
+            Expr::Tuple(items) => format!("({})", args(items)),
+            Expr::StructLit(path, names, values) => {
+                let fields = names
+                    .iter()
+                    .zip(values)
+                    .map(|(name, value)| match value {
+                        Expr::Var(bound) if bound == name => name.clone(),
+                        other => format!("{name}: {}", other.print()),
+                    })
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("{} {{ {fields} }}", path.join("::"))
+            }
+            Expr::Block(block) => block.print(),
         }
+    }
+}
+
+impl Block {
+    /// Whether the block is `{}`: no statement and a unit tail.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.statements.is_empty() && self.tail == Expr::Lit(Lit::Unit)
+    }
+
+    /// `{ statement; …; tail }`. A unit tail after a statement is the
+    /// statement's own end, and `rustc` under `warnings = deny` refuses the
+    /// spelled-out `()`.
+    fn print(&self) -> String {
+        let mut text = String::from("{");
+        for statement in &self.statements {
+            text.push_str(&format!(" {};", statement.print()));
+        }
+        if self.tail == Expr::Lit(Lit::Unit) {
+            if self.statements.is_empty() {
+                return "{ }".to_owned();
+            }
+            text.push_str(" }");
+        } else {
+            text.push_str(&format!(" {} }}", self.tail.print()));
+        }
+        text
     }
 }
 
@@ -204,31 +529,42 @@ fn bounded(generics: &[Generic]) -> String {
     }
     format!(
         "<{}>",
-        generics
-            .iter()
-            .map(|generic| {
-                if generic.bounds.is_empty() {
-                    generic.name.clone()
-                } else {
-                    format!("{}: {}", generic.name, generic.bounds.join(" + "))
-                }
-            })
-            .collect::<Vec<_>>()
-            .join(", ")
+        list(generics, |generic| {
+            if generic.bounds.is_empty() {
+                generic.name.clone()
+            } else {
+                format!("{}: {}", generic.name, generic.bounds.join(" + "))
+            }
+        })
     )
+}
+
+fn named_generics(names: &[String]) -> String {
+    if names.is_empty() {
+        String::new()
+    } else {
+        format!("<{}>", names.join(", "))
+    }
+}
+
+fn derive(derives: &[String]) -> String {
+    if derives.is_empty() {
+        String::new()
+    } else {
+        format!("#[derive({})]\n", derives.join(", "))
+    }
 }
 
 impl Sig {
     fn print(&self, scope: &[&str]) -> String {
         let mut parameters: Vec<String> = Vec::new();
         if self.receiver {
-            parameters.push("&self".to_owned());
+            parameters.push(if self.exclusive { "&mut self" } else { "&self" }.to_owned());
         }
-        parameters.extend(
-            self.params
-                .iter()
-                .map(|param| format!("{}: {}", param.name, param.ty.print(scope))),
-        );
+        parameters.extend(self.params.iter().map(|param| {
+            let shown = if param.mutable { "mut " } else { "" };
+            format!("{shown}{}: {}", param.name, param.ty.print(scope))
+        }));
         let result = match self.result {
             Type::Unit => String::new(),
             _ => format!(" -> {}", self.result.print(scope)),
@@ -251,18 +587,32 @@ impl Function {
         if self.public {
             text.push_str("pub ");
         }
-        text.push_str(&format!("fn {name}{}({tail} {{", bounded(&self.generics)));
-        for statement in &self.body.statements {
-            text.push_str(&format!(" {};", statement.print()));
-        }
-        // A unit tail after a statement is the statement's own end, and rustc
-        // under `warnings = deny` refuses the spelled-out `()`.
-        if self.body.tail == Expr::Lit(Lit::Unit) && !self.body.statements.is_empty() {
-            text.push_str(" }");
-        } else {
-            text.push_str(&format!(" {} }}", self.body.tail.print()));
-        }
+        text.push_str(&format!(
+            "fn {name}{}({tail} {}",
+            bounded(&self.generics),
+            self.body.print()
+        ));
         text
+    }
+}
+
+impl Variant {
+    fn print(&self, scope: &[&str]) -> String {
+        match self {
+            Variant::Unit(name) => name.clone(),
+            Variant::Tuple(name, types) => {
+                format!("{name}({})", list(types, |ty| ty.print(scope)))
+            }
+            Variant::Record(name, fields, types) => format!(
+                "{name} {{ {} }}",
+                fields
+                    .iter()
+                    .zip(types)
+                    .map(|(field, ty)| format!("{field}: {}", ty.print(scope)))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
+        }
     }
 }
 
@@ -274,21 +624,15 @@ impl Item {
             Item::Use(path, None) => format!("use {};\n", path.join("::")),
             Item::Use(path, Some(alias)) => format!("use {} as {alias};\n", path.join("::")),
             Item::UnitStruct(name, derives) => {
-                let derive = if derives.is_empty() {
-                    String::new()
-                } else {
-                    format!("#[derive({})]\n", derives.join(", "))
-                };
-                format!("{derive}pub struct {name};\n")
+                format!("{}pub struct {name};\n", derive(derives))
             }
             Item::Alias(name, parameters, ty) => {
                 let scope: Vec<&str> = parameters.iter().map(String::as_str).collect();
-                let shown = if parameters.is_empty() {
-                    String::new()
-                } else {
-                    format!("<{}>", parameters.join(", "))
-                };
-                format!("pub type {name}{shown} = {};\n", ty.print(&scope))
+                format!(
+                    "pub type {name}{} = {};\n",
+                    named_generics(parameters),
+                    ty.print(&scope)
+                )
             }
             Item::Static(name, ty, init) => {
                 format!("static {name}: {} = {};\n", ty.print(&[]), init.print())
@@ -314,6 +658,38 @@ impl Item {
                 text
             }
             Item::Fn(function) => format!("{}\n", function.print(&[])),
+            Item::TupleStruct(name, generics, derives, types) => {
+                let scope: Vec<&str> = generics.iter().map(String::as_str).collect();
+                format!(
+                    "{}pub struct {name}{}({});\n",
+                    derive(derives),
+                    named_generics(generics),
+                    list(types, |ty| ty.print(&scope))
+                )
+            }
+            Item::RecordStruct(name, generics, derives, fields, types) => {
+                let scope: Vec<&str> = generics.iter().map(String::as_str).collect();
+                format!(
+                    "{}pub struct {name}{} {{ {} }}\n",
+                    derive(derives),
+                    named_generics(generics),
+                    fields
+                        .iter()
+                        .zip(types)
+                        .map(|(field, ty)| format!("{field}: {}", ty.print(&scope)))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            }
+            Item::Enum(name, generics, derives, variants) => {
+                let scope: Vec<&str> = generics.iter().map(String::as_str).collect();
+                format!(
+                    "{}pub enum {name}{} {{ {} }}\n",
+                    derive(derives),
+                    named_generics(generics),
+                    list(variants, |variant| variant.print(&scope))
+                )
+            }
         }
     }
 }
