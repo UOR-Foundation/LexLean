@@ -1167,7 +1167,7 @@ definition{
     | Pat.PCons head tail => (match (bindsOf acc head)
       | Result.ok next => (bindsOf next tail)
       | Result.error problem => (ctor Result.error [(List Var), Bytes] problem))),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true,
   recursive_argument: p
 }
@@ -1253,7 +1253,7 @@ definition{
         | Option.none => (match (stdTraitMethod bound)
           | Option.some m => true
           | Option.none => false)) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: bound-trait: ") (rcat (rtick (rcat (project g name) (rcat (rtext ": ") bound))) (rtext " names no declared trait"))))))) (ctor Option.none [Bytes]) (project g bounds) : (Option Bytes))))) (ctor Option.none [Bytes]) gs : (Option Bytes)),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -1266,7 +1266,7 @@ definition{
     | Option.none => (match (identErr "a parameter name" (project p name))
       | Option.some bad => (ctor Option.some [Bytes] bad)
       | Option.none => (tyOk sc (project p ty) params hasSelf)))) (ctor Option.none [Bytes]) ps : (Option Bytes)),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -1279,7 +1279,7 @@ definition{
     | Option.none => (if (if (project sig exclusive) then (not (project sig receiver)) else false) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: function-receiver: ") (rcat (rtick (project sig name)) (rtext " is exclusive without a receiver")))) else (match (paramsOk sc (project sig params) params hasSelf)
       | Option.some stop => (ctor Option.some [Bytes] stop)
       | Option.none => (tyOk sc (project sig result) params hasSelf)))),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -1392,7 +1392,7 @@ definition{
     | Pat.PCons head tail => (match (patOk sc head)
       | Option.some stop => (ctor Option.some [Bytes] stop)
       | Option.none => (patOk sc tail))),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true,
   recursive_argument: p
 }
@@ -1977,7 +1977,7 @@ definition{
     | Expr.ECons d0 d1 => (ctor Option.none [Bytes])
     | Expr.ELetS d0 d1 d2 d3 => (ctor Option.none [Bytes])
     | Expr.EArm d0 d1 d2 d3 => (ctor Option.none [Bytes])),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true,
   mutual: CheckRt,
   recursive_argument: e
@@ -2025,7 +2025,7 @@ definition{
       | Option.none => (exprsOk sc fr tail))
     | Expr.ELetS d0 d1 d2 d3 => (ctor Option.none [Bytes])
     | Expr.EArm d0 d1 d2 d3 => (ctor Option.none [Bytes])),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true,
   mutual: CheckRt,
   recursive_argument: es
@@ -2073,7 +2073,7 @@ definition{
     | Expr.ECons d0 d1 => (ctor Option.none [Bytes])
     | Expr.ELetS d0 d1 d2 d3 => (ctor Option.none [Bytes])
     | Expr.EArm d0 d1 d2 d3 => (ctor Option.none [Bytes])),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true,
   mutual: CheckRt,
   recursive_argument: b
@@ -2129,7 +2129,7 @@ definition{
             | Option.some problem4 => (ctor Result.error [Fr, Bytes] problem4)
             | Option.none => (stmtsOk sc (withBound fr bound false) rest)))))
     | Expr.EArm d0 d1 d2 d3 => (ctor Result.ok [Fr, Bytes] fr)),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true,
   mutual: CheckRt,
   recursive_argument: stmts
@@ -2183,7 +2183,7 @@ definition{
           | Option.none => (match (exprOk sc inner body)
             | Option.some stop => (ctor Option.some [Bytes] stop)
             | Option.none => (armsOk sc fr rest))))))),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true,
   mutual: CheckRt,
   recursive_argument: arms
@@ -2215,7 +2215,7 @@ definition{
         | Result.ok start => (match (paramVars (ctor Result.ok [(List Var), Bytes] start) (project sg params) (project sg name))
           | Result.error problem2 => (ctor Option.some [Bytes] problem2)
           | Result.ok vars => (blockOk sc (record Fr {generics := gens, vars := vars, selfTy := selfTy, inLoop := false}) (project f body))))))))),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -2278,7 +2278,7 @@ definition{
         | Option.none => (prim list_fold (fun [generics, sc, sigs, tr, ty] (foundFn : (Option Bytes)) (f : FnDef) => (match foundFn
           | Option.some stop => (ctor Option.some [Bytes] stop)
           | Option.none => (if (not (hasSigNamed sigs (project (project f sig) name))) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: impl-extra: ") (rcat (rtext "`impl ") (rcat tr (rcat (rtext "` states ") (rcat (rtick (project (project f sig) name)) (rtext ", which the trait does not"))))))) else (if (project f public) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: impl-visibility: ") (rcat (rtick (project (project f sig) name)) (rcat (rtext " of `impl ") (rcat tr (rtext "` is public; a trait method has the trait's visibility")))))) else (fnOk sc generics ty f))))) (ctor Option.none [Bytes]) fns : (Option Bytes))))),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -2421,7 +2421,7 @@ definition{
         | Option.none => (match (firstDuplicate variants)
         | Option.some twice => (ctor Result.error [Sc, Bytes] (rcat (rtext "runtime support: variant-name: ") (rcat (rtick name) (rcat (rtext " declares ") (rcat (rtick twice) (rtext " twice"))))))
         | Option.none => (ctor Result.ok [Sc, Bytes] (record Sc {core := (project s2 core), declared := (project s2 declared), traits := (project s2 traits), structs := (project s2 structs), enums := (prim append (project s2 enums) (cons (record EnumE {name := name, variants := variants, gcount := (prim length generics : Nat)}) (nil EnumE)) : (List EnumE)), aliases := (project s2 aliases), statics := (project s2 statics), functions := (project s2 functions), methods := (project s2 methods), imported := (project s2 imported)}))))))),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -2432,7 +2432,7 @@ definition{
   body: (prim list_fold (fun (state : (Result Sc Bytes)) (item : Item) => (match state
     | Result.error problem => (ctor Result.error [Sc, Bytes] problem)
     | Result.ok held => (pass1Item held item))) (ctor Result.ok [Sc, Bytes] sc) items : (Result Sc Bytes)),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -2472,7 +2472,7 @@ definition{
         | Variant.VUnit n => (ctor Option.none [Bytes])
         | Variant.VTuple n tys => (tyOk sc tys (prim length generics : Nat) false)
         | Variant.VRecord n fs tys => (tyOk sc tys (prim length generics : Nat) false)))) (ctor Option.none [Bytes]) variants : (Option Bytes))),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -2487,7 +2487,7 @@ definition{
         | Option.none => (pass2Item sc item))) (ctor Option.none [Bytes]) (project krate items) : (Option Bytes))
       | Option.some problem2 => (ctor Result.error [Unit, Bytes] problem2)
       | Option.none => (ctor Result.ok [Unit, Bytes] ()))),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true,
   production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
 }
