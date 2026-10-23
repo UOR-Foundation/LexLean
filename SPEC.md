@@ -10560,7 +10560,7 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `NS-06` | `normative-source` | The hand-edited normative inputs of the repository are the `.lex.tex` modules of the specification project: `model/` holds only the projected files and the copies an authority row vendors, every Markdown file at the root is a projection or is on the closed list of hand-written documents, the projections carry the notice that names their source, and no hand-written document restates a registered statement, a plant of each being refused naming R1. | §27.2, §27.5, §27.10 |
 | `NS-07` | `normative-source` | `cargo xtask spec` changes the chapter modules of the specification project by item: it replaces a block, inserts one after a block, and ports the hunks of a merged SPEC.md that lie outside derived regions, each through the authoring SDK, and it writes nothing unless the regenerated SPEC.md equals the intended text outside derived regions, refusing a first line that matches no block or two and a hunk that spans two blocks. | §24.8, §27.5 |
 
-**Total required capability IDs:** 445.
+**Total required capability IDs:** 447.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

@@ -88,7 +88,7 @@ and Unreleased holds what has landed since.
   consumer, C1) and exports every member through `lexlean::api::production`.
   The `compiler` kind states its precondition (the compiler as a production
   root, §17.23) and has no member while it does not hold. SPEC.md gains
-  §28.7. Register 445.
+  §28.7. Register 447.
 
 - `cargo xtask spec` (`NS-07`, #244): edit the chapter modules of `spec/` by
   item. `replace-block` and `insert-after` act on the paragraph, table or fence
