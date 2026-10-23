@@ -25,24 +25,24 @@ use crate::support;
 use lexlean::calculus::rust::package::Passing;
 use lexlean::calculus::{self as target};
 
-fn nat(number: u64) -> Value {
+pub(super) fn nat(number: u64) -> Value {
     Value::Nat {
         value: number.to_string(),
     }
 }
 
-fn adt(constructor: u64, fields: Vec<Value>) -> Value {
+pub(super) fn adt(constructor: u64, fields: Vec<Value>) -> Value {
     Value::Adt {
         constructor,
         fields,
     }
 }
 
-fn boolean(value: bool) -> Value {
+pub(super) fn boolean(value: bool) -> Value {
     Value::Bool { value }
 }
 
-fn kind_index(kind: IntKind) -> u64 {
+pub(super) fn kind_index(kind: IntKind) -> u64 {
     match kind {
         IntKind::U8 => 0,
         IntKind::U16 => 1,
@@ -55,13 +55,13 @@ fn kind_index(kind: IntKind) -> u64 {
     }
 }
 
-fn enc_kind(kind: IntKind) -> Value {
+pub(super) fn enc_kind(kind: IntKind) -> Value {
     adt(kind_index(kind), Vec::new())
 }
 
 /// A list as a chain of its sort's own `Nil` and `Cons` constructors: the
 /// module authors no list of a recursive sort (`#208`).
-fn chain(nil: u64, cons: u64, items: Vec<Value>) -> Value {
+pub(super) fn chain(nil: u64, cons: u64, items: Vec<Value>) -> Value {
     items
         .into_iter()
         .rev()
@@ -72,7 +72,7 @@ fn chain(nil: u64, cons: u64, items: Vec<Value>) -> Value {
 
 /// `Id`: local, holder, operand, callee, boxed, part, capture, param,
 /// function, export.
-fn enc_ident(ident: &Ident) -> Value {
+pub(super) fn enc_ident(ident: &Ident) -> Value {
     match ident {
         Ident::Local(n) => adt(0, vec![nat(*n)]),
         Ident::Holder(n) => adt(1, vec![nat(*n)]),
@@ -88,21 +88,21 @@ fn enc_ident(ident: &Ident) -> Value {
 }
 
 /// `Origin`, a structure: the element and the width.
-fn enc_origin(origin: &Origin) -> Value {
+pub(super) fn enc_origin(origin: &Origin) -> Value {
     adt(
         0,
         vec![text(&origin.element), option(origin.width.map(enc_kind))],
     )
 }
 
-fn enc_types(types: &[Type]) -> Value {
+pub(super) fn enc_types(types: &[Type]) -> Value {
     chain(5, 6, types.iter().map(enc_type).collect())
 }
 
 /// `Ty`: a leaf (unit, bool, nat, int, ordering, str, bytes, overflow, i128), fixed, a unary
 /// (option, list, rc, fallible, ref), a binary (result, pair), a name (adt,
 /// fn), then the chain's nil and cons.
-fn enc_type(ty: &Type) -> Value {
+pub(super) fn enc_type(ty: &Type) -> Value {
     let leaf = |kind: u64| adt(0, vec![adt(kind, Vec::new())]);
     let unary = |kind: u64, inner: &Type| adt(2, vec![adt(kind, Vec::new()), enc_type(inner)]);
     let binary = |kind: u64, left: &Type, right: &Type| {
@@ -152,7 +152,7 @@ fn enc_lit(literal: &Lit) -> Value {
 }
 
 /// `Con`: none, some, ok, err, adt, closure, cons, nil.
-fn enc_ctor(ctor: &Ctor) -> Value {
+pub(super) fn enc_ctor(ctor: &Ctor) -> Value {
     match ctor {
         Ctor::None(ty) => adt(0, vec![enc_type(ty)]),
         Ctor::Some => adt(1, Vec::new()),
@@ -197,7 +197,7 @@ fn enc_pat(pat: &Pat) -> Value {
 
 /// `Rt`, a structure: the variant of `runtime::Item` in its declaration
 /// order, and the width of a fixed-width one.
-fn enc_item(item: Item) -> Value {
+pub(super) fn enc_item(item: Item) -> Value {
     let family =
         |index: u64, kind: Option<IntKind>| adt(0, vec![nat(index), option(kind.map(enc_kind))]);
     match item {
@@ -264,7 +264,7 @@ fn enc_callee(callee: &Callee) -> Value {
 }
 
 /// `Cap`: copy, clone, unbox, unit.
-fn enc_capture(read: CaptureRead) -> Value {
+pub(super) fn enc_capture(read: CaptureRead) -> Value {
     adt(
         match read {
             CaptureRead::Copy => 0,
@@ -416,7 +416,7 @@ fn enc_expr(expr: &Expr) -> Value {
 }
 
 /// `Row`: nil, cons (the variant number, its field types as a `Ty` chain).
-fn enc_row(variants: &[(u64, Vec<Type>)]) -> Value {
+pub(super) fn enc_row(variants: &[(u64, Vec<Type>)]) -> Value {
     variants
         .iter()
         .rev()
@@ -426,7 +426,7 @@ fn enc_row(variants: &[(u64, Vec<Type>)]) -> Value {
 }
 
 /// `Dis`: nil, cons (function, captures, the function's failure, the rest).
-fn enc_dispatch(arms: &[Dispatch]) -> Value {
+pub(super) fn enc_dispatch(arms: &[Dispatch]) -> Value {
     arms.iter().rev().fold(adt(0, Vec::new()), |rest, arm| {
         adt(
             1,
@@ -554,11 +554,11 @@ fn correspond_run(krate: &Crate, elements: &BTreeSet<String>) -> Run {
 // ----------------------------------------------------------------- vectors
 
 /// A committed target program and where it was read from.
-struct Source {
-    program: Program,
+pub(super) struct Source {
+    pub(super) program: Program,
 }
 
-fn walk(dir: &std::path::Path, found: &mut Vec<std::path::PathBuf>) {
+pub(super) fn walk(dir: &std::path::Path, found: &mut Vec<std::path::PathBuf>) {
     let Ok(entries) = std::fs::read_dir(dir) else {
         return;
     };
@@ -583,7 +583,7 @@ fn walk(dir: &std::path::Path, found: &mut Vec<std::path::PathBuf>) {
 /// Every committed target program the Rust renderer is shown: the program of
 /// each package manifest under `compiler/rust` and `tests/production-export`
 /// and each fixture of `compiler/fixtures`, deduplicated by canonical bytes.
-fn committed() -> (Vec<Source>, usize, usize, usize) {
+pub(super) fn committed() -> (Vec<Source>, usize, usize, usize) {
     let root = support::repo_root();
     let root = root.as_std_path();
     let mut files = Vec::new();
@@ -635,12 +635,12 @@ fn committed() -> (Vec<Source>, usize, usize, usize) {
 
 /// A crate the oracle lowers from a committed program, with the elements the
 /// program uses, and the program it came from.
-struct Rendered {
-    krate: Crate,
-    elements: BTreeSet<String>,
+pub(super) struct Rendered {
+    pub(super) krate: Crate,
+    pub(super) elements: BTreeSet<String>,
 }
 
-fn rendered(sources: &[Source]) -> Vec<Rendered> {
+pub(super) fn rendered(sources: &[Source]) -> Vec<Rendered> {
     let mut out = Vec::new();
     let mut seen = BTreeSet::new();
     for source in sources {
@@ -908,7 +908,7 @@ fn edit_at(krate: &mut Crate, class: Class, index: usize, edit: &mut dyn FnMut(N
 
 /// What a mutation draws on: the identifiers, expressions, and numbers of the
 /// crate it mutates, and the elements of the correspondence table.
-struct Pool {
+pub(super) struct Pool {
     idents: Vec<Ident>,
     exprs: Vec<Expr>,
     types: Vec<Type>,
@@ -916,7 +916,7 @@ struct Pool {
     elements: Vec<String>,
 }
 
-fn pool_of(krate: &Crate) -> Pool {
+pub(super) fn pool_of(krate: &Crate) -> Pool {
     let mut copy = krate.clone();
     let mut idents = Vec::new();
     let mut exprs = Vec::new();
@@ -1553,7 +1553,7 @@ fn mutate_once(krate: &mut Crate, seeded: &mut Seeded, pool: &Pool) -> bool {
 }
 
 /// A mutant of `krate`: one to three mutations.
-fn mutant(krate: &Crate, seeded: &mut Seeded, pool: &Pool) -> Crate {
+pub(super) fn mutant(krate: &Crate, seeded: &mut Seeded, pool: &Pool) -> Crate {
     let mut out = krate.clone();
     let rounds = 1 + usize::from(seeded.chance(30)) + usize::from(seeded.chance(10));
     for _ in 0..rounds {
@@ -1778,13 +1778,13 @@ fn uncovered(counts: &BTreeMap<&'static str, usize>) -> Vec<&'static str> {
 // ----------------------------------------------------------------- corpora
 
 /// The expression count of a crate: its size for the evaluator's budget.
-fn weight(krate: &Crate) -> usize {
+pub(super) fn weight(krate: &Crate) -> usize {
     let mut copy = krate.clone();
     sites(&mut copy, Class::Expr)
 }
 
 /// The crates with at most `limit` expressions: the evaluator's share.
-fn small(all: &[Rendered], limit: usize) -> Vec<&Rendered> {
+pub(super) fn small(all: &[Rendered], limit: usize) -> Vec<&Rendered> {
     all.iter()
         .filter(|rendered| weight(&rendered.krate) <= limit)
         .collect()
@@ -1886,7 +1886,7 @@ fn rule_vectors(bases: &[&Rendered], each: usize) -> (Vec<Run>, Vec<Run>) {
 /// Crates by hand for the merge of moved sets at a branch: a name moved on
 /// one arm of a match, or one branch of an `if`, and used after it. The
 /// mutants reach this rarely, so these make it a vector.
-fn branch_crates() -> Vec<Crate> {
+pub(super) fn branch_crates() -> Vec<Crate> {
     let at = || Origin::of("expr:match");
     let local = |n: u64| Ident::Local(n);
     let unit = || Expr::Lit(Lit::Unit, Origin::of("value:unit"));
@@ -2009,7 +2009,7 @@ fn branch_crates() -> Vec<Crate> {
 /// have, the overflow value outside an `Err` (refused) and in one (accepted).
 /// No lowering emits any of them, so correspondence refuses each of the calls
 /// as a construct with no row.
-fn machine_crates() -> Vec<Crate> {
+pub(super) fn machine_crates() -> Vec<Crate> {
     let at = Origin::of;
     let function = |body: Expr| Crate {
         profile: lexlean::calculus::rust::Profile::Core,
@@ -2088,7 +2088,7 @@ fn machine_crates() -> Vec<Crate> {
     crates
 }
 
-fn elements_of(krate: &Crate) -> BTreeSet<String> {
+pub(super) fn elements_of(krate: &Crate) -> BTreeSet<String> {
     let (instances, types) = validate::instances(krate);
     let mut out: BTreeSet<String> = instances
         .iter()
@@ -2113,7 +2113,7 @@ fn elements_of(krate: &Crate) -> BTreeSet<String> {
 // The crates are listed in the order the rules are described, each one pushed beside
 // the reason it is there.
 #[allow(clippy::too_many_lines, clippy::vec_init_then_push)]
-fn loop_crates() -> Vec<Crate> {
+pub(super) fn loop_crates() -> Vec<Crate> {
     let at = Origin::of;
     let local = Ident::Local;
     let read = |ident: Ident| Expr::Move(ident, at("read"));
@@ -2549,7 +2549,7 @@ pub(super) fn value_nodes(value: &Value) -> usize {
 /// The nodes of the arguments one harness binary may hold. A crate is data
 /// of thousands of nodes, which rustc compiles as one literal each, so the
 /// runs are spread over several harness binaries of one compiled package.
-const HARNESS_NODES: usize = 60_000;
+pub(super) const HARNESS_NODES: usize = 60_000;
 
 /// The rendered `rust-std` packages of the roots, compiled by the pinned
 /// rustc, run on `runs` of each root: one outcome per run, each equal to the
@@ -2951,22 +2951,22 @@ const RULES_EACH: usize = 3;
 // The counts the specification states, over the committed tree: SPEC.md
 // §17.23, the register statement of BS-05, its scenario, and VERIFICATION.md
 // restate them, and the case fails when the tree no longer gives them.
-const COMMITTED_MANIFESTS: usize = 250;
+const COMMITTED_MANIFESTS: usize = 255;
 const COMMITTED_FIXTURES: usize = 122;
-const COMMITTED_PROGRAMS: usize = 167;
-const COMMITTED_CRATES: usize = 226;
+const COMMITTED_PROGRAMS: usize = 172;
+const COMMITTED_CRATES: usize = 231;
 const RULE_VALIDATE_RUNS: usize = 132;
 const RULE_CORRESPOND_RUNS: usize = 12;
 const BRANCH_CRATES: usize = 17;
 const LOOP_CRATES: usize = 34;
 const MACHINE_CRATES: usize = 26 + 3 + 1 + 2 + 2 + 3;
-const VECTORS_VALIDATE: usize = 446;
+const VECTORS_VALIDATE: usize = 451;
 const REFUSED_VALIDATE: usize = 195;
-const VECTORS_CORRESPOND: usize = 309;
+const VECTORS_CORRESPOND: usize = 314;
 const REFUSED_CORRESPOND: usize = 82;
-const EVALUATOR_CRATES: usize = 200;
-const EVALUATOR_VALIDATE: usize = 420;
-const EVALUATOR_CORRESPOND: usize = 283;
+const EVALUATOR_CRATES: usize = 201;
+const EVALUATOR_VALIDATE: usize = 421;
+const EVALUATOR_CORRESPOND: usize = 284;
 const SEEDED_REFUSED_VALIDATE: usize = 271;
 const SEEDED_REFUSED_CORRESPOND: usize = 244;
 
