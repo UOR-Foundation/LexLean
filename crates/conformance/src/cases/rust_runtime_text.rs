@@ -67,8 +67,7 @@ fn literals(text: &str) -> Vec<(usize, String)> {
                 cursor += 1;
                 let start_line = line;
                 let mut body = String::new();
-                loop {
-                    let Some(&d) = chars.get(cursor) else { break };
+                while let Some(&d) = chars.get(cursor) {
                     if d == '"' && (0..hashes).all(|i| chars.get(cursor + 1 + i) == Some(&'#')) {
                         cursor += 1 + hashes;
                         break;
