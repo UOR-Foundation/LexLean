@@ -17,6 +17,8 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- The `lexlean` crate that goes to crates.io is the crate the release attaches (`RP-18`, #260). `.github/workflows/crate.yml`, which `release.yml` calls on every run, packages the crate twice to the same bytes, runs `cargo publish --dry-run`, checks the archive for what crates.io needs (description, license, repository, the readme it names, at most 10 MiB), and compares its SHA-256 with `release/lexlean.crate` and the line `checksums.txt` lists for it; the tag's `publish` job repeats the comparison against the dry-run package and uploads to crates.io only when a `CARGO_REGISTRY_TOKEN` secret or trusted publishing (the repository variable `CRATES_IO_TRUSTED_PUBLISHING`) authorises it, and otherwise creates the release and says the crate was not uploaded, where before the first run failed after the tag was pushed because no `lexlean` crate and no trusted publisher existed. Dispatched on a `release/vX.Y` line, `crate.yml` does the same for the pre-release `X.Y.0-dev.N`, `N` being the commit's number of first-parent commits, and uploads it under the same authority. The decisions are in `.github/crate-publication.sh`, which the case runs against planted archives, checksums, refs and environments. SPEC.md §30.3 states the rule. Register 449.
+
 - The Rust runtime as source, #91 stage 4 (SPEC.md §17.16, §17.17, `SP-21`,
   `RB-15`, `SP-23`, `SM-35`, `SM-36`, `RB-16`, `SP-22`, `RB-17`, `SP-25`, `RB-19`, `BS-09`).
   The declared Rust machine grows by the primitives the runtime is written in
