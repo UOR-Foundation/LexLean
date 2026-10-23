@@ -2061,7 +2061,7 @@ PROOF-STEPS
 
 Requirements mirror cases. The eliminator descriptor distinguishes constructor fields from induction hypotheses and fixes their binding order. Every case occurs exactly once.
 
-The backend emits pinned Lean `induction` syntax. LexLean does not synthesize an induction principle or infer missing cases.
+The backend emits pinned Lean `induction` syntax. LexLean does not synthesize an induction principle or infer missing cases. A nested inductive type has a recursor of several motives that `induction` does not use; language 1.2 names it in `nested_induction` (§17.10, `SM-37`).
 
 ### 16.10 Calculation chains
 
@@ -2699,6 +2699,41 @@ take it. The canonical LaTeX of a semantic module is a catalog of its
 declarations that states a theorem's statement and axiom policy and no proof, for
 every proof form, so the form adds nothing to it.
 
+A `nested_induction` proof (language 1.2, `SM-37`) is induction over a nested inductive type
+of the document: one that holds a member of itself under `List`, `Option`, `Result`, or a
+product, and is in no mutual group. The pinned Lean's `induction` tactic refuses such a type
+(`The induction tactic does not support the type … because it is a nested inductive type`),
+and the recursor Lean generates for it, `T.rec`, has one motive for each member of the type's
+recursive family (§17.12 *Recursion* rule 2: the type itself, then each such application, in
+the order of discovery) and one minor premise for each constructor of each member, the type's
+first, then the members' in the family's order. The proof names the scrutinee, a parameter of
+the theorem of that type; one proposition for each auxiliary member, in the family's order,
+over a fresh binder of the member's type and the theorem's other parameters (the motive of
+the type itself is the theorem's statement); and a branch for every constructor of the type
+and of each member, in any order. A branch binds the constructor's fields followed by one
+hypothesis for each field whose type is a member of the family, in field order: the binders
+of the constructor's minor premise. The proof lowers to
+`induction <scrutinee> using T.rec (motive_2 := fun <binder> => <proposition>) …`
+and then one `next <binders> =>` for each minor premise, taken in the order of the recursor
+whatever order the branches are written in. The goals are named by position, because the
+constructors of two members can share a name (`nil` of `List Json` and of
+`List (String * Json)`), which `induction … with` refuses. LexLean synthesizes no induction
+principle: it names the one Lean generated, as §16.9 says for `induction`, and the proof
+carries no tactic, option, or lemma. It adds no axiom of its own: the theorem's policy states
+the exact set the pinned Lean observes, which for the example's theorem under Lean 4.32.1 is
+`propext` and `Quot.sound`. The linker refuses, as `LLT4001`, a use in language
+1.1; a scrutinee that is not a theorem parameter whose type is a document inductive that
+holds itself under a container and lies in no mutual group (a type with no nested field is
+inducted over by `induction`, and a mutual group has no recursor this form names); a member
+that is missing, repeated, not of the family, or out of order; a binder used by two members;
+a proposition that is not well typed or not a proposition; a missing or repeated branch; a
+branch for no constructor; and a branch with the wrong number of binders. There is no
+`generalizing` list: a proposition states the parameters it quantifies. `induction` on a
+nested type is refused (§17.12 rule 7). The canonical LaTeX states no proof for any proof
+form, so the form adds nothing to it. The example `examples/nested-induction` proves
+`leaves_le_size` over a `Json` value, with mutual `size` and `leaves` groups over the four
+members of its family (`DF-19`).
+
 A `cases` proof (§17.10) may name a local of type `Bool` (language 1.2, `SM-36`): the
 branches are exactly `false` and `true`, each without binders, and the proof lowers to
 `cases` on the local with those two alternatives, as it does for a natural number, a
@@ -2830,7 +2865,11 @@ either backend runs; they do not defer to what Lean would accept.
 7. **Induction.** `induction` applies to a self-recursive inductive with no
    nested occurrence and no mutual group, and binds the constructor fields
    followed by one hypothesis per direct recursive field, in field order.
-   `cases` applies to every inductive.
+   `cases` applies to every inductive. A nested inductive in no mutual group is
+   inducted over by `nested_induction` (§17.10, `SM-37`), which binds one
+   hypothesis per constructor field whose type is a member of the type's
+   recursive family (rule 2), in field order; `induction` on such a type is
+   refused, and its message names `nested_induction`.
 8. **Lowering.** Each inductive lowers to one `public inductive` with
    positional `(_ : T)` fields; each mutual group lowers to one
    `mutual ... end` block. A constructor's identity is its owner and name,
@@ -10334,6 +10373,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SM-34` | `semantic-ir` | A version 2 core-module row may be derived, stating its name, kind, and extension state, and for a sparse casesOn its recipe, and no universe parameters, type, or value: the decoder makes the constant with the pinned Lean's own construction at the row's place in the order, and refuses the module when the name is not one the pinned Lean reserves and the row states no sparse casesOn recipe, when the construction does not make the name, or when the constant it makes is not a theorem, definition, or abbreviation as the row says; the notation writes a derived row without a type, the schema and the linker refuse a derived row that states what the construction decides, a stored row is still checked against the construction, the decoder checks that the constructors a recipe names are constructors of the type and are named once, that the module states every sparse casesOn its construction makes, and that every derived sparse casesOn is referred to by the type or value of a row, and the content of a derived row is checked by its uses alone, so that a recipe naming other valid constructors of the type is not distinguished where the use accepts it; and the shipped preservation library states every row that carries a sparse casesOn record or is named like an equation, an unfolding equation, a splitter, or an else equation as a derived row. | §17.10 |
 | `SM-35` | `semantic-ir` | A language-1.2 theorem may be proved by `term_cases`, a split on the value of a document term: the proof names a term and a nonempty, strictly sorted, duplicate-free list of prior document definitions, the term's type is an inductive type of the document, and the backend lowers the proof to a split of the goal on every constructor of that type with the hypothesis that equates the term to the constructor, then `simp only` over the named definitions, that hypothesis, and the reduction of a conditional on a decided condition, with closed propositions decided, which uses exactly the axioms the theorem's policy states; the schema, the linker, the notation, the Lean backend, the canonical LaTeX, and the formatter accept it, and a use in language 1.1, a term whose type is not an inductive type of the document, an empty list, an unsorted or repeated name, a name that is not a prior definition, and a theorem parameter that takes the hypothesis's name are each refused. | §17.10 |
 | `SM-36` | `semantic-ir` | A language-1.2 `cases` proof may split a local of type `Bool` into its two constructors: the proof names the local and gives a branch for `false` and one for `true`, each with no binders, the backend lowers it to `cases` on the local with those two alternatives, the theorem verifies with exactly the axioms its policy states, and the schema, the linker, the notation, the formatter, and the canonical LaTeX accept it; a use in language 1.1, a missing branch, a repeated branch, a branch with a binder, and an `induction` on a Boolean are each refused. | §17.10 |
+| `SM-37` | `semantic-ir` | A language-1.2 theorem may be proved by `nested_induction`, an induction over a nested inductive type of the document, one that holds a member of itself under `List`, `Option`, `Result`, or a product and is in no mutual group: the proof names a parameter of the theorem, states one proposition for each auxiliary member of the type's recursive family in the order the pinned Lean's recursor takes them, and gives a branch for every constructor of the type and of each auxiliary member, each binding the constructor's fields followed by one hypothesis for each field that is a member of the family, in field order; the backend lowers it to `induction` over the recursor the pinned Lean generates for the type, with the propositions as its auxiliary motives and the goals taken in the order of its minor premises, so that a theorem over every value of a type with a constructor that holds a `List` of the type verifies under the pinned Lean 4.32.1 with exactly the axioms `propext` and `Quot.sound`, the set its build observes; the schema, the linker, the notation, the formatter, and the canonical LaTeX accept it, and a use in language 1.1, a local whose type is not a nested inductive of the document or lies in a mutual group, an auxiliary member that is missing, repeated, or out of order, a missing or repeated branch, a branch with the wrong number of binders, a proposition that is not well typed, and an `induction` proof on a nested type are each refused as LLT4001. | §16.9, §17.10, §17.12 |
 | `DF-01` | `declarations` | A valid type-definition sentence emits one nonrecursive sort-valued Lean def linked to its document entry. | §15.7, §18.6 |
 | `DF-02` | `declarations` | A valid term-definition sentence emits one nonrecursive explicitly typed Lean def. | §15.7, §18.6 |
 | `DF-03` | `declarations` | A valid predicate-definition sentence emits one nonrecursive Prop-valued Lean def. | §15.7, §18.6 |
@@ -10664,7 +10704,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-09` | `language-models` | No prompt is code: no member of the closed language maps `string` or `bytes` to a function, a term, or source — every operation of the primitive registry that takes a `string` or `bytes` operand is classified by the audit with a data result, the registry's schema enumeration and the production registry's primitive rows equal one another and equal that classified set, and the text declarations of `lexlean/semantic-module/2` state no `string`-typed member, so a prompt reaches a model only as the tokens `encodeText` makes of it; a planted operation or text member of that shape is caught by the audit with its name. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 446.
+**Total required capability IDs:** 447.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

@@ -17,6 +17,20 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- Induction over a nested inductive type, #278 (SPEC.md §16.9, §17.10, §17.12,
+  `SM-37`). A new proof step, `nested_induction`, proves a statement about a
+  value of a nested inductive type (a type with a constructor that holds
+  itself under `List`, `Option`, `Result`, or a product) by the type's own
+  recursor: one branch for each constructor of the recursive family, in the
+  recursor's order, each binding its fields and one hypothesis for every field
+  that is a member of the family. The compiler checks the branch set, the
+  binder counts and the members before any backend and lowers the step to
+  `induction x using T.rec (motive_n := ...)` with positional `next` goals.
+  `induction` keeps refusing such a type, and its message now names
+  `nested_induction`. Moves the compiler-semantics identity: `semantic_ir` 15
+  to 16 and `proof_lowering` 3 to 4 in `language/semantics-1.2.toml`, and both
+  schemas gain the step; the locks, records, goldens, fixtures and packages the
+  digest binds are regenerated at landing. The register is 447 IDs.
 - Structural recursion over the recursive family of a nested inductive type,
   #278 (SPEC.md §17.12, `DF-19`). A mutual definition group may decrease on any
   member of the family the pinned Lean takes as the motives of the type's

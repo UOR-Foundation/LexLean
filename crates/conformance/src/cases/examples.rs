@@ -171,7 +171,7 @@ pub(crate) fn run(id: &str) {
         // exactly the one prescribed diagnostic code.
         "EX-07" => {
             let root = support::repo_root();
-            let prescribed: [(&str, &str); 297] = [
+            let prescribed: [(&str, &str); 298] = [
                 ("unknown-word", "LLL1004"),
                 ("unknown-symbol", "LLL1004"),
                 ("unknown-control", "LLL1004"),
@@ -296,6 +296,9 @@ pub(crate) fn run(id: &str) {
                 ("cases-bool-branch-repeated", "LLT4001"),
                 ("cases-bool-branch-binder", "LLT4001"),
                 ("cases-bool-induction", "LLT4001"),
+                // SM-37: `induction` still refuses a type that holds a list of itself,
+                // and its message names the form for it, `nested_induction`.
+                ("induction-nested-type", "LLT4001"),
                 ("mutual-label-shared", "LLT4001"),
                 ("recursion-member-under-lambda", "LLT4001"),
                 ("recursion-well-founded-reference", "LLT4001"),
