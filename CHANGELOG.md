@@ -17,6 +17,19 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- SPEC.md §3 and §4 state production compilation and its guarantee (#112,
+  L1.1 of #106). §3 lists the Rust package per production root and target as
+  an output and states that production compilation exists so that every
+  production root is certified optimal over its declared universe, a root
+  being claimed optimal by its certificate and by nothing else (§17.15,
+  §17.18, §24.7). §4.1 adds production compilation to what language 1.2
+  supports; §4.2 adds three non-claims: optimality over an unrestricted
+  universe, representation minimality as execution optimality without a
+  proved bridge, and wall time established by a certificate. README's "What
+  it does" ties the statement to the `PD`, `TC`, `RB`, `SP`, `GN`, `GC` and
+  `PX` IDs. Edited in `spec/src/Chapter03` and `Chapter04` with `cargo xtask
+  spec`; no register row (no capability changes). Register 444.
+
 - The SIMD probe of decision #109 on the pinned Rust (first step of #119): the
   `honesty` workflow builds `.github/simd-probe/probe.rs` with `rustc` 1.97.1 for
   the four targets #109 lists, with and without `-C target-feature`, and holds
