@@ -131,5 +131,13 @@ definition{
   body: (record Rows::IdRow {id := "RP-16", level := "build", suite := "repository", statement := "The development container installs, at image build, exactly the Rust toolchain that rust-toolchain.toml pins and exactly the Lean toolchain that lean-toolchain pins and selects no other default, so that nothing is fetched when a session starts, and a Dockerfile that names another version of either, installs a second toolchain, or selects an unpinned default is refused.", sections := "§9.3"}),
   executable: true
 }
+
+definition{
+  name: rp17,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "RP-17", level := "build", suite := "repository", statement := "`cargo xtask release-check` reads the completion release from §2.3 and the version report from §30.3 as the chapter modules of the specification project state them, and refuses a workspace version §2.3 does not name, a version report or semantics-ID list that is not the §30.3 report for the release version and each language's ID, and a §30.3 report whose languages are not the languages the compiler supports, a plant in either chapter item changing what it refuses.", sections := "§2.3, §30.3"}),
+  executable: true
+}
 \end{semanticmodule}
 \end{lexlean}

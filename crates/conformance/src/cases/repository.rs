@@ -1138,7 +1138,7 @@ pub(crate) fn run(id: &str) {
             }
 
             // The packaged crate builds standalone and reports the same
-            // four-line identity as the in-repository binary (§30.3).
+            // version report as the in-repository binary (§30.3).
             let (exit, in_repo, _) = support::cli_in(&root, &["--version"]);
             assert_eq!(exit, 0);
             let packaged = support::packaged_crate_version(&root)
@@ -2026,6 +2026,10 @@ pub(crate) fn run(id: &str) {
                 );
             }
         }
+        // §2.3, §30.3: release-check reads the completion release and the
+        // version report from the chapter modules, and a plant in either
+        // changes what it refuses.
+        "RP-17" => rp_17(),
         other => panic!("no repository case is wired for {other}"),
     }
 }
@@ -2161,5 +2165,213 @@ fn rp_15() {
         assert!(audit::audit(&absent)
             .expect_err("an unread consumer fails")
             .contains(path));
+    }
+}
+
+/// RP-17: the completion release and the version report are read from the
+/// chapter modules. The check runs on a scratch tree that holds its own copy
+/// of the chapters, so a plant in a chapter item is a plant in what the check
+/// reads, and the committed tree is never written.
+fn rp_17() {
+    use std::path::Path;
+
+    let root = support::repo_root();
+    let criterion = repo_model::release::criterion(root.as_std_path())
+        .expect("§2.3 and §30.3 state the release criterion");
+    assert_eq!(
+        criterion.completion,
+        ["0.5.0", "1.0.0"],
+        "§2.3 names 0.5.0 as the completion release, and 1.0.0 otherwise"
+    );
+    let supported: Vec<String> = lexlean::LANGUAGE_VERSIONS
+        .iter()
+        .map(|language| (*language).to_owned())
+        .collect();
+    assert_eq!(
+        criterion.languages(),
+        supported,
+        "§30.3 reports every language the compiler supports"
+    );
+    assert_eq!(criterion.languages(), ["1.0", "1.1", "1.2"]);
+
+    // The committed tree is not at a completion release, and the refusal
+    // names the versions §2.3 does.
+    let committed = repo_model::release::check(root.as_std_path(), &BTreeSet::new())
+        .expect_err("the committed version is no completion release");
+    assert!(
+        committed.iter().any(
+            |reason| reason.starts_with("source-tag:") && reason.contains("`0.5.0` or `1.0.0`")
+        ),
+        "the refusal names the completion releases §2.3 names: {committed:?}"
+    );
+
+    // A scratch tree at 0.5.0: the manifest, a changelog entry, the chapter
+    // modules, and what the release binary reports, as `release-artifacts`
+    // stages it.
+    let scratch = tempfile::tempdir().expect("tempdir");
+    let stage = scratch.path();
+    let source = root.join(repo_model::project::SOURCE_DIR);
+    let chapters = stage.join(repo_model::project::SOURCE_DIR);
+    std::fs::create_dir_all(&chapters).expect("mkdir");
+    for entry in std::fs::read_dir(source.as_std_path())
+        .expect("spec/src")
+        .flatten()
+    {
+        if entry.path().is_file() {
+            std::fs::copy(entry.path(), chapters.join(entry.file_name())).expect("copy");
+        }
+    }
+    let manifest = root_file("Cargo.toml");
+    let version = repo_model::release::workspace_version(&manifest).expect("workspace version");
+    let manifest = manifest.replacen(
+        &format!("\nversion = \"{version}\"\n"),
+        "\nversion = \"0.5.0\"\n",
+        1,
+    );
+    assert_eq!(
+        repo_model::release::workspace_version(&manifest).as_deref(),
+        Some("0.5.0")
+    );
+    std::fs::write(stage.join("Cargo.toml"), manifest).expect("write");
+    std::fs::write(stage.join("CHANGELOG.md"), "# Changelog\n\n## 0.5.0\n").expect("write");
+    let release = stage.join("release");
+    std::fs::create_dir_all(&release).expect("mkdir");
+    let (exit, report, _) = support::cli_in(&root, &["--version"]);
+    assert_eq!(exit, 0);
+    let first = format!("lexlean {}\n", lexlean::COMPILER_VERSION);
+    let report = report.replacen(&first, "lexlean 0.5.0\n", 1);
+    let semantics: String = lexlean::LANGUAGE_VERSIONS
+        .iter()
+        .map(|language| {
+            format!(
+                "{language} {}\n",
+                lexlean::compiler_semantics_id_for(language).to_hex()
+            )
+        })
+        .collect();
+    std::fs::write(release.join("version-output.txt"), &report).expect("write");
+    std::fs::write(release.join("compiler-semantics-id.txt"), &semantics).expect("write");
+
+    let refusals = |stage: &Path| match repo_model::release::check(stage, &BTreeSet::new()) {
+        Ok(()) => Vec::new(),
+        Err(reasons) => reasons,
+    };
+    let names = |reasons: &[String], name: &str| {
+        reasons
+            .iter()
+            .filter(|reason| reason.starts_with(&format!("{name}:")))
+            .cloned()
+            .collect::<Vec<_>>()
+    };
+    let staged = refusals(stage);
+    for name in ["source-tag", "semantics-id", "version-output"] {
+        assert!(
+            names(&staged, name).is_empty(),
+            "a 0.5.0 tree with the binary's report meets `{name}`: {staged:?}"
+        );
+    }
+
+    // Each plant is written into the scratch tree, checked, and undone.
+    let plant = |relative: &str, from: &str, to: &str, name: &str, says: &str| {
+        let path = stage.join(relative);
+        let original = std::fs::read_to_string(&path).expect("read");
+        assert!(original.contains(from), "{relative} holds `{from}`");
+        std::fs::write(&path, original.replacen(from, to, 1)).expect("write");
+        let refused = refusals(stage);
+        std::fs::write(&path, &original).expect("restore");
+        let named = names(&refused, name);
+        assert!(
+            named.iter().any(|reason| reason.contains(says)),
+            "{relative}: `{from}` as `{to}` is refused as `{name}` saying `{says}`: {refused:?}"
+        );
+    };
+    plant(
+        "spec/src/Chapter02.lex.tex",
+        "is `0.5.0` when that release",
+        "is `0.6.0` when that release",
+        "source-tag",
+        "`0.6.0` or `1.0.0`",
+    );
+    plant(
+        "spec/src/Chapter02.lex.tex",
+        "The completion release, the first release",
+        "The final release, the first release",
+        "source-tag",
+        "no sentence beginning `The completion release`",
+    );
+    plant(
+        "spec/src/Chapter30.lex.tex",
+        "\"language 1.2\"",
+        "\"language 1.3\"",
+        "version-output",
+        "the compiler supports 1.0, 1.1, 1.2",
+    );
+    let four_lines = format!(
+        "lexlean 0.5.0\nlanguage 1.0\ncompiler-semantics {}\nlean-toolchain {}\n",
+        lexlean::compiler_semantics_id_for("1.0").to_hex(),
+        lexlean::LEAN_TOOLCHAIN
+    );
+    plant(
+        "release/version-output.txt",
+        &report,
+        &four_lines,
+        "version-output",
+        "must be exactly",
+    );
+    let without_1_2 = format!(
+        "1.2 {}\n",
+        lexlean::compiler_semantics_id_for("1.2").to_hex()
+    );
+    plant(
+        "release/compiler-semantics-id.txt",
+        &without_1_2,
+        "",
+        "semantics-id",
+        "lists languages 1.0, 1.1",
+    );
+
+    // A listed ID that is not the compiler's: the list is compared with the
+    // IDs compiled into this source, not with the report alone.
+    let id_1_1 = lexlean::compiler_semantics_id_for("1.1").to_hex();
+    let other = {
+        let first = if id_1_1.starts_with('0') { "1" } else { "0" };
+        format!("{first}{}", &id_1_1[1..])
+    };
+    assert_ne!(other, id_1_1);
+    plant(
+        "release/compiler-semantics-id.txt",
+        &format!("1.1 {id_1_1}\n"),
+        &format!("1.1 {other}\n"),
+        "semantics-id",
+        &format!("the compiler-semantics ID of language 1.1 is `{id_1_1}`"),
+    );
+    // The list and the report agreeing on that ID: `release-artifacts` writes
+    // both from one `--version` run, so their agreement is no evidence, and
+    // each is refused against the compiled-in ID.
+    let list_path = stage.join("release/compiler-semantics-id.txt");
+    let report_path = stage.join("release/version-output.txt");
+    std::fs::write(&list_path, semantics.replacen(&id_1_1, &other, 1)).expect("write");
+    std::fs::write(&report_path, report.replacen(&id_1_1, &other, 1)).expect("write");
+    let agreeing = refusals(stage);
+    std::fs::write(&list_path, &semantics).expect("restore");
+    std::fs::write(&report_path, &report).expect("restore");
+    assert!(
+        names(&agreeing, "semantics-id")
+            .iter()
+            .any(|reason| reason.contains("the compiler-semantics ID of language 1.1 is")),
+        "a list whose ID for language 1.1 the report agrees with is refused as `semantics-id`: {agreeing:?}"
+    );
+    assert!(
+        names(&agreeing, "version-output")
+            .iter()
+            .any(|reason| reason.contains("must be exactly")),
+        "a report whose ID for language 1.1 the list agrees with is refused as `version-output`: {agreeing:?}"
+    );
+    let restored = refusals(stage);
+    for name in ["source-tag", "semantics-id", "version-output"] {
+        assert!(
+            names(&restored, name).is_empty(),
+            "the restored tree meets `{name}` again: {restored:?}"
+        );
     }
 }

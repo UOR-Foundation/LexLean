@@ -1,0 +1,31 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{count}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(counts : Map (Nat) (Nat)) (v : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match (LexLeanCollections.mapLookup (counts) (v) : Option (Nat)) with | Option.none => 0 | Option.some n => n)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tally}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(xs : List (Nat)) (key : Nat)}.\par
+\noindent Closure 1: binds \texttt{(m, v)}, captures \texttt{()}.\par
+\noindent Closure 2: binds \texttt{(s, v)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{(Prod (Nat) (Nat))}.\par
+\noindent Definition: \texttt{(let counts : Map (Nat) (Nat) := (LexLeanCollections.listFold ((fun (m : Map (Nat) (Nat)) (v : Nat) => (LexLeanCollections.mapInsert (m) (v) ((count (m) (v) + 1)) : Map (Nat) (Nat)))) (([] : List (Prod (Nat) (Nat)))) (xs) : Map (Nat) (Nat)); (let seen : Set (Nat) := (LexLeanCollections.listFold ((fun (s : Set (Nat)) (v : Nat) => (LexLeanCollections.setInsert (s) (v) : Set (Nat)))) (([] : List (Nat))) (xs) : Set (Nat)); (count (counts) (key), (LexLeanCollections.setSize (seen) : Nat))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tally\_repeats}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(tally ((2 :: (1 :: (2 :: (3 :: ([] : List (Nat))))))) (2) = (2, 3))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tally\_absent}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(tally ((1 :: ([] : List (Nat)))) (2) = (0, 1))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\end{document}

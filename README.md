@@ -51,10 +51,13 @@ cargo install --locked --path crates/lexlean
 ```
 
 Versions follow SPEC.md §30.1 and are recorded in [CHANGELOG.md](CHANGELOG.md).
-§2.3 fixes `0.1.0` as the initial implementation version and `1.0.0` as the
-first release satisfying the complete specification, so a `0.1.0` tag does not
-claim the §30 release criterion — `cargo xtask release-check` reads that
-criterion and says exactly which parts of it do not hold.
+§2.3 fixes `0.1.0` as the initial implementation version and names the
+completion release, the first release satisfying the complete specification:
+`0.5.0` when it satisfies the §30.4 criterion, and `1.0.0` otherwise. A tag
+before it does not claim the §30 release criterion — `cargo xtask release-check`
+reads that criterion from the specification and says exactly which parts of it
+do not hold. `lexlean --version` reports each supported language, `1.0`, `1.1`
+and `1.2`, with its own compiler-semantics ID.
 
 ## The literal example
 
@@ -145,10 +148,10 @@ Prerequisites: Rust 1.97.1 (`rust-toolchain.toml` pins it), [just](https://githu
 
 ```text
 just vv        # the complete normative acceptance gate (SPEC.md §9.2)
-just release   # vv, then the §30 release criterion; refused until 1.0.0
+just release   # vv, then the §30 release criterion; refused until the completion release
 ```
 
-All 445 registered conformance IDs are implemented and pass; `just vv` runs clean from a checkout with the pinned toolchain installed.
+All 448 registered conformance IDs are implemented and pass; `just vv` runs clean from a checkout with the pinned toolchain installed.
 
 The differential against the independent generator `lean4-prod` (SPEC.md §17.19, `OR-01`..`OR-08`) acquires it at its pinned commit: from the checkout `LEXLEAN_ORACLE_DIR` names, or by fetching the commit with `git` into the Cargo target directory (`LEXLEAN_ORACLE_CACHE` overrides), and builds it with the pinned Lean and Rust toolchains. It is validation evidence only and no input to any identity. An oracle that cannot be acquired, is not the pinned files, or fails is unavailable: that fails the gate on Linux x86-64 and is printed as `NOT VALIDATED` elsewhere, and is never reported as agreement.
 
@@ -162,14 +165,14 @@ Every row is validated by `just vv`; the IDs link the claim to its register row,
 
 | Capability | IDs | Level |
 | --- | --- | --- |
-| Exact repository identity, layout, generated documents, release gate, total classification of every closed enum by every consumer, and the devcontainer pinned to the toolchains | `RP-01`..`RP-16` | `build` |
+| Exact repository identity, layout, generated documents, release gate reading its criterion from the specification, total classification of every closed enum by every consumer, and the devcontainer pinned to the toolchains | `RP-01`..`RP-17` | `build` |
 | Closed project configuration, canonical lock file, and offline dependency policy | `CF-01`..`CF-18` | `build` |
 | Total lexical closure: every accepted atom is covered by exactly one declared origin | `LX-01`..`LX-14` | `build` |
 | Versioned lexicon packages with closed schemas, denotations, and renderer tokens | `GL-01`..`GL-18` | `build` |
 | Fixed structural, mathematical, and proposition grammar with closed ambiguity handling | `GR-01`..`GR-16` | `build` |
 | Typed closed IR with canonical serialization, native core modules (and the second schema of them that lossless migration of the proof library needs), portable language-1.1 application data and operations, versioned language-1.2 semantic modules, products, first-class functions, and widening conversions, ordered collections and graphs, semantic snapshots, alpha identities, recursion evidence, and content identities | `SM-01`..`SM-34` | `build` |
 | Document and generic semantic declarations with exact self-application, type checking, structural recursion, recursive and mutual language-1.2 data, generic and executable higher-order definitions, mutual and well-founded recursion with semantic evidence, explicit state threading, and acyclicity rules | `DF-01`..`DF-18` | `build` |
-| The structured proof language with pinned Lean lowerings, including closed linear arithmetic, integer order, the fold laws, and the runtime bounds a law proof cites | `PF-01`..`PF-24` | `build` |
+| The structured proof language with pinned Lean lowerings, including closed linear arithmetic, integer order, and the fold laws | `PF-01`..`PF-24` | `build` |
 | Prose-free deterministic generated Lean with complete token traceability | `LN-01`..`LN-12` | `build` |
 | Canonical LaTeX regeneration and the optional hash-checked PDF provider | `TX-01`..`TX-12` | `build` |
 | Canonical diagnostics, source maps, coverage, manifests, and reproducible builds | `AR-01`..`AR-14` | `build` |
@@ -194,6 +197,7 @@ Every row is validated by `just vv`; the IDs link the claim to its register row,
 | The bootstrap project: the compiler's own components as language-1.2 source compiled by LexLean's production pipeline to certified Rust packages, the exact axiom-output parser and its closed Lean-name check, the primitive scanner of §12.2, the preservation lexer and token audit, the target calculus's checker, and the Rust crate validator, each held to the Rust it replaces (the stage-0 oracle) by the committed vectors and a seeded differential of its evaluator and rustc realizations, with planted defects detected and the production export committed | `BS-01`..`BS-05` | `build` |
 | Source packages: a language-1.2 project imports the modules of a locked, content-addressed package of its workspace: `[[source_package]]` and `lexlean-workspace.toml`, the pins in `lexlean.lock` recomputed by every command, imports closed at link, no re-export of a package's production roots, and the package's modules replayed by the importer's `verify` with their origin in the records | `PK-01`..`PK-05` | `build` |
 | The literal `nat-add-zero` example, the Lean-verified feature examples, and the complete negative fixture suite | `EX-01`..`EX-08` | `build` |
+| The general performance corpus: one registered language-1.2 project, `examples/performance-corpus`, whose manifest fixes closed kinds (integer kernels, byte parsing, long folds, maps and sets, recursion, and the compiler itself under its stated precondition) and one production root per member with its contract, over which every acceptance criterion about the performance of compiled programs quantifies; membership checked by machine, no member specific to a consumer, every member exported through the production façade kernel-checked | `PC-01`..`PC-02` | `build` |
 | Language-1.2 text components, first slice: tokenizers and their round-trip laws, with the laws carried as one native core module the generated modules import rather than authored Lean text | `LM-01`, `LM-02`, `LM-03`, `LM-13` | `build` |
 | Language-1.2 text components, second slice: context windows with their bound, exactness, and suffix laws, and greedy and seeded text generators bounded by `max_tokens` whose scorer sees only contexts that fit, over the same native laws module | `LM-04`, `LM-05`, `LM-06` | `build` |
 | Language-1.2 text components, third slice: text classifiers over token-count features with their width, total, and fit laws, composition of a window model under `scan` and adapters over `string` through the model constructs alone with no new declaration kind, and the audit that no prompt is code | `LM-07`, `LM-08`, `LM-09` | `build` |

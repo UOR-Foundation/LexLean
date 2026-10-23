@@ -77,7 +77,7 @@ keywords = ["lean", "latex", "formal-methods", "compiler", "proof"]
 categories = ["compilers", "development-tools"]
 ```
 
-The initial implementation version is `0.1.0`. The first release satisfying this complete specification is `1.0.0`.
+The initial implementation version is `0.1.0`. The completion release, the first release satisfying this complete specification and the release §30 names, is `0.5.0` when that release satisfies the completion criterion of §30.4, and `1.0.0` otherwise.
 
 ### 2.4 License
 
@@ -2144,15 +2144,6 @@ The proof parser MUST reject:
 - a proof step after the current branch has closed;
 - a branch that does not close.
 
-A language-1.2 proof cites a lemma of the runtime library only through the
-`law` form (§17.12, *Fold laws* and *Runtime bounds*), which applies a
-registered theorem of `LexLeanRuntime.Laws` by name; no raw Lean names it. The
-runtime bounds `split_exact_fits`, `utf8_decode_length`, and
-`checked_add_fits` bound the piece count of `split_exact` by the UTF-8 byte
-length plus one, the UTF-8 byte length of a decoded string by the length of
-its bytes, and the result of `UInt32` `checked_add`, so that a model proves its
-defensive error branches unreachable.
-
 ---
 
 ## 17. Semantic elaboration and IR
@@ -2409,9 +2400,7 @@ name, module, or feature. Generated Lean may import only the foundational
 modules listed in the core data and other modules in the generated graph. The
 generic environment-reconstruction runtime may privately import `Lean`, and
 the runtime of a version 2 module also `Lean.Meta.Constructions.SparseCasesOn`
-in full (below) and `Init.Data.String.Legacy` in full, whose bodies of
-`String.splitOn` and its loop Lean does not expose and the runtime bound of
-`split_exact` unfolds (§17.12, *Runtime bounds*); no
+in full (below); no
 generated module may import an independently authored implementation of the
 declarations being generated.
 
@@ -3256,34 +3245,6 @@ rules are LexLean's own; the diagnostic each linking failure raises is
 6. **Closed instances.** `decide` evaluates a closed statement and does not
    decide one with a free variable, so a statement over all inputs is proved
    by the laws and `omega`, never by enumerating inputs.
-
-**Runtime bounds.** `LexLeanRuntime.Laws` also states three bounds of the
-runtime, registered in `language/runtime-1.2/laws.toml` as laws a `law` proof
-applies by name like a fold law, so that a model proves a defensive error
-branch of the split, the decoder, or checked addition unreachable without raw
-Lean (§16.12). Each conclusion is an implication from a bound on the input, and
-each closed side condition is a premise a prior theorem discharges:
-
-- `split_exact_fits` (`LexLeanLaws.splitExact_fits`, parameters `s d : String`,
-  `m : UInt32`, `n : Nat`, premises `equal d "" = false` and `n < toNat m`):
-  `length (utf8_encode s) <= n` implies that `split_exact s d m` is `some`,
-  written `(match split_exact s d m | none => false | some _ => true) = true`.
-  A split on a separator that is not empty has at most the UTF-8 byte length
-  of the string plus one pieces, so a maximum above any bound on that length
-  admits it.
-- `utf8_decode_length` (`LexLeanLaws.utf8Decode_length`, parameters
-  `b : Bytes`, `s : String`, `n : Nat`, no premise): `utf8_decode b = some s`
-  implies that `length b <= n` implies `length (utf8_encode s) <= n`; a
-  decoded string's UTF-8 byte length is bounded by the length of the bytes it
-  was decoded from.
-- `checked_add_fits` (`LexLeanLaws.checkedAdd_fits`, parameters
-  `a b n : UInt32`, premise `toNat n + toNat b < 4294967296`): `a <= n`
-  implies that `checked_add a b` is `some`, written as for the split.
-
-The split and the decoder pin `Classical.choice`, so the first two laws and a
-theorem proved by them observe `Classical.choice`, `Quot.sound`, and
-`propext`; `checked_add_fits` observes `Quot.sound` and `propext`. The fold
-laws and the rewrite set of `linear_arithmetic` do not use them.
 
 #### Models, contracts, realizations, and evidence (language 1.2)
 
@@ -9882,6 +9843,14 @@ Tests MUST establish that LexLean rejects, at minimum:
 
 Every directory under `examples/` is discovered rather than listed. Each example MUST include its lock and expected platform-independent build outputs. `cargo xtask verify-examples` runs `fmt --check`, `lock --check`, `check`, `build`, and `verify`. The `compiler/` project (§17.14, §17.15) and the `stdlib/` project (§17.22) pass the same gates as an example.
 
+### 28.7 The performance corpus
+
+The performance corpus is the language-1.2 project `examples/performance-corpus` with its manifest `corpus.toml` (`lexlean/performance-corpus/1`). It is the one object over which every acceptance criterion about the performance of compiled programs quantifies: a criterion names the corpus as `performance-corpus`, a kind, or a member by its identifier, and never a program outside it. The corpus is general: no member names or depends on a consumer of LexLean, and a consumer is cited as evidence, never admitted as a member.
+
+The manifest fixes the closed kinds `integer-kernels`, `byte-parsing`, `long-folds`, `maps-and-sets`, `recursion`, and `compiler`, and one `[[member]]` row per member: its identifier `<kind>/<name>`, its kind, its production root (§17.13), the targets and effects the root declares, and its contract, one sentence stating the function the root computes over the inputs it admits. Every member is exactly one production root of the project, and every root is the root of at most one member. The kind `compiler` states its precondition, that the compiler is itself a production root (§17.23), and has no member while that precondition does not hold; every other kind has at least one member.
+
+Membership is checked by machine (`PC-01`, `PC-02`): a manifest with an unknown field, an unregistered kind, a member whose root is not a production root of the project or is declared with other targets or effects than its row states, a kind without a precondition and without a member, or a kind with both, fails the check naming the defect. A member is specific to a consumer, and refused, when the project declares a source package or a lexicon source that is neither builtin nor a path inside the project, or when any file of the corpus holds a network address or names a repository. Every member exports through `lexlean::api::production` (§24.7) in every target it declares with status `kernel-checked`, one output per member and target, and the published bundle replays with status `bindings-verified`.
+
 ---
 
 ## 29. Literal minimal example
@@ -10056,13 +10025,15 @@ The example suite MUST mechanically demonstrate:
 LexLean has separate versions for:
 
 - compiler crate/binary SemVer;
-- language identifier `1.0`;
+- language identifier, one of `1.0`, `1.1`, and `1.2`, each of which a release supports;
 - project schema;
 - lock schema;
 - lexicon schema;
 - entry schema;
 - artifact schemas;
-- compiler-semantics ID.
+- compiler-semantics ID, one for each language identifier (§21.2).
+
+A release is identified by its compiler version together with, for every language it supports, the language identifier and that language's compiler-semantics ID; §30.3 states how its binaries report them.
 
 A compiler patch release may retain the semantics ID only when canonical accepted language, IR, diagnostics required for success/failure, and generated artifacts are unchanged.
 
@@ -10074,13 +10045,13 @@ No automatic in-place migration command is part of 1.0. Unsupported input fails 
 
 ### 30.3 Release artifacts
 
-A `1.0.0` release MUST publish:
+The completion release (§2.3) MUST publish:
 
 - source tag;
 - checksums;
 - supported-host binaries;
 - crate package;
-- compiler-semantics ID;
+- the compiler-semantics ID of every supported language;
 - generated `CONFORMANCE.md`;
 - generated `ERRORS.md`;
 - `SPEC.md`;
@@ -10088,18 +10059,22 @@ A `1.0.0` release MUST publish:
 - a software-bill-of-materials artifact;
 - CI evidence that `just vv` passed on the tagged commit.
 
-Release binaries MUST report:
+Release binaries MUST report, where `<version>` is the release version and each `<digest>` is the compiler-semantics ID of the language on the line before it:
 
 ```text
-lexlean 1.0.0
+lexlean <version>
 language 1.0
+compiler-semantics <digest>
+language 1.1
+compiler-semantics <digest>
+language 1.2
 compiler-semantics <digest>
 lean-toolchain leanprover/lean4:v4.32.1
 ```
 
 ### 30.4 Completion criterion
 
-The project is complete for LexLean 1.0 only when:
+The project is complete, and a release is the completion release of §2.3, only when:
 
 - every §31 ID is implemented at level `build`;
 - no ID is represented by a stub or ignored test;
@@ -10153,6 +10128,7 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `RP-14` | `repository` | The normative CI job runs every recipe of just vv in parallel legs that each start from a clean checkout on the standard ubuntu-24.04 runner, each recipe exactly once but bdd, which runs once per part of its committed plan on the row that names the part, the examples leg at the verification resource profile its matrix row names and without UOR Atlas, which the Atlas jobs of the same run verify as the shards of the committed plan and a join at that profile, every process once and nothing across runs, and the other legs at the default, with no cache, path filter, or skipped recipe, and each job uploads its CI evidence; a plan job decides what a run is from the event alone: a draft pull request runs the rest leg and no other job, a ready pull request, a request, and a push to main or to a release line run every job, and a push to main or to a release line that merges a head whose tree it equals runs none when the whole gate passed on that head, and runs the whole gate when any job of that run did not pass, was skipped, or is missing. | §9.4 |
 | `RP-15` | `repository` | Every match over a closed semantic enum (the IR, the production realization calculus, and its Rust AST) that names at least five of the enum's variants names all of them, with no wildcard or binding catch-all arm, so that a variant added to the enum is a compile error in each Lean, LaTeX, validation, charge, and calculus consumer and never a silent fallback; the audit rejects a catch-all planted in each consumer group and fails when a consumer it must read has no such match left. | §27.2 |
 | `RP-16` | `repository` | The development container installs, at image build, exactly the Rust toolchain that rust-toolchain.toml pins and exactly the Lean toolchain that lean-toolchain pins and selects no other default, so that nothing is fetched when a session starts, and a Dockerfile that names another version of either, installs a second toolchain, or selects an unpinned default is refused. | §9.3 |
+| `RP-17` | `repository` | `cargo xtask release-check` reads the completion release from §2.3 and the version report from §30.3 as the chapter modules of the specification project state them, and refuses a workspace version §2.3 does not name, a version report or semantics-ID list that is not the §30.3 report for the release version and each language's ID, and a §30.3 report whose languages are not the languages the compiler supports, a plant in either chapter item changing what it refuses. | §2.3, §30.3 |
 | `CF-01` | `configuration-lock` | Project configuration accepts exactly the project/1 schema and rejects unknown or missing fields. | §10.1 |
 | `CF-02` | `configuration-lock` | Every operational limit is explicit, positive, parsed with checked arithmetic, and has no hidden default. | §10.2 |
 | `CF-03` | `configuration-lock` | Configured paths resolve within the project under the specified UTF-8 and nonsymlink rules. | §10.1, §25.1 |
@@ -10294,7 +10270,6 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `PF-21` | `proofs` | The language-1.2 linear_arithmetic proof form reads the runtime: it rewrites less_than, equal, negate, quotient, remainder, and fixed-width order and equality into linear arithmetic over mathematical values, splits every if and match left in the goal, proves integer kernels for all inputs, and is refused by Lean on a false one. | §17.12, §16 |
 | `PF-22` | `proofs` | The runtime module LexLeanRuntime.Laws states the fold laws as LexLean source with every row's axioms pinned, and linear_arithmetic rewrites additive list, set, and map folds into sums that are linear and invariant under append and reverse, so fold equalities verify for all inputs with decide only on closed instances. | §17.12, §22.6 |
 | `PF-23` | `proofs` | The language-1.2 law proof form applies one registered fold law (fusion, the fold of a pair, or the fold of an append) to checked type arguments, arguments, and prior theorems discharging its premises, and is refused in linking for an unregistered law, a wrong argument count or type, or a missing premise, and by Lean for a statement the law does not prove. | §17.12, §16 |
-| `PF-24` | `proofs` | The runtime module LexLeanRuntime.Laws states three bounds of the runtime as registered laws a language-1.2 law proof cites: split_exact_fits (split_exact of a string whose UTF-8 byte length is at most n, on a separator that is not empty, under a maximum above n, is some, since a split has at most its byte length plus one pieces), utf8_decode_length (a string utf8_decode reads from bytes of length at most n has a UTF-8 byte length of at most n), and checked_add_fits (UInt32 checked_add of a value at most n and b is some when n plus b is below 2^32); each row pins its exact axioms, the request guards of the fold-laws example prove their too-many-lines, line-overflow, and response too-large branches unreachable by citing them, a guard that claims one more than its law gives fails verification with LLV7002, and a law the registry does not name is refused with LLT4001. | §16, §17.12 |
 | `LN-01` | `lean-backend` | Each generated Lean file has the exact module, import, option, namespace, declaration, and end structure. | §18.1 |
 | `LN-02` | `lean-backend` | Imports are explicit, deduplicated, sorted, and every external global is fully qualified. | §18.3 |
 | `LN-03` | `lean-backend` | Generated Lean contains no comments, documentation, prose-bearing strings, or copied source prose. | §18.2 |
@@ -10373,7 +10348,7 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `CL-15` | `cli-api` | Public requests cannot override backends, toolchain, verification stages, limits, policies, or fixed artifact sets. | §24.3 |
 | `CL-16` | `cli-api` | Every public failure is a LexLeanError and malformed user input cannot panic. | §24.5 |
 | `CL-17` | `cli-api` | Environment variables cannot alter semantic project configuration. | §23.1, §25.4 |
-| `CL-18` | `cli-api` | Version output reports compiler, language, semantics ID, and Lean toolchain exactly. | §30.3 |
+| `CL-18` | `cli-api` | Version output reports the compiler version, every supported language in ascending order each followed by its compiler-semantics ID, and the Lean toolchain exactly. | §30.3 |
 | `CL-19` | `cli-api` | Snapshot returns a stable owned canonical semantic envelope without writing artifacts or invoking a backend. | §24.1 |
 | `CL-20` | `cli-api` | Language-1.1 init creates and verifies a declarative Lake workspace containing no source Lean module. | §23.4 |
 | `CL-21` | `cli-api` | Native diagnostics distinguish package-import cycles and unqualified cross-package term ambiguities without changing diagnostic wire bytes. | §24.5 |
@@ -10399,6 +10374,8 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `EX-06` | `examples` | Two clean example builds in distinct paths have byte-identical platform-independent artifacts. | §29.6 |
 | `EX-07` | `examples` | The negative fixture suite covers every required rejection class and prescribed diagnostic family. | §28.5 |
 | `EX-08` | `examples` | Every example directory is discovered automatically and must satisfy the full example gate. | §28.6 |
+| `PC-01` | `performance-corpus` | The performance corpus is the language-1.2 project examples/performance-corpus whose manifest corpus.toml (lexlean/performance-corpus/1) fixes the closed kinds integer-kernels, byte-parsing, long-folds, maps-and-sets, recursion, and compiler and one row per member with its identifier <kind>/<name>, its production root, the targets and effects the root declares, and its contract; every member is exactly one production root of the project declared as its row states, every kind but compiler has a member, and compiler states its precondition, that the compiler is itself a production root, and has no member while it does not hold; a manifest with an unknown field, an unregistered kind, a member that is not such a root or is declared otherwise, a kind without a precondition and without a member, or a kind with both fails the check naming the defect. | §28.7 |
+| `PC-02` | `performance-corpus` | No member of the performance corpus is specific to a consumer: the project declares no source package and no lexicon source that is not builtin or a path inside the project, no file of the corpus holds a network address or names a repository, and a planted package, lexicon source, address, or repository name fails the check; and every member exports through lexlean::api::production in every target it declares with status kernel-checked, one output per member and target, and the published bundle replays with status bindings-verified. | §28.7 |
 | `PD-01` | `production` | The closed production registry fixes the language-1.2 targets, effects, and the disposition of every semantic construct kind, and every construct the eligibility analysis can classify has exactly one registry row. | §17.13 |
 | `PD-02` | `production` | Formal-only theorems, propositions, and non-executable definitions coexist with eligible executable production roots, and a module that declares no production root is never analysed for production. | §17.13 |
 | `PD-03` | `production` | A production root's runtime closure contains exactly its transitive computational dependencies across modules at their type instantiations, and its termination evidence is recorded as erased and never realized. | §17.13 |
@@ -10583,7 +10560,7 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `NS-06` | `normative-source` | The hand-edited normative inputs of the repository are the `.lex.tex` modules of the specification project: `model/` holds only the projected files and the copies an authority row vendors, every Markdown file at the root is a projection or is on the closed list of hand-written documents, the projections carry the notice that names their source, and no hand-written document restates a registered statement, a plant of each being refused naming R1. | §27.2, §27.5, §27.10 |
 | `NS-07` | `normative-source` | `cargo xtask spec` changes the chapter modules of the specification project by item: it replaces a block, inserts one after a block, and ports the hunks of a merged SPEC.md that lie outside derived regions, each through the authoring SDK, and it writes nothing unless the regenerated SPEC.md equals the intended text outside derived regions, refusing a first line that matches no block or two and a hunk that spans two blocks. | §24.8, §27.5 |
 
-**Total required capability IDs:** 445.
+**Total required capability IDs:** 447.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

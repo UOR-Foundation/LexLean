@@ -16875,6 +16875,134 @@ with the one feature named above, thumbv7em with the DSP extension only. Which
 targets and feature sets are modeled first stays the decision of #109, and the
 rest of #119 waits on it.
 
+## Planted defects for the release criterion read from the specification (`RP-17`, `CL-18`, #113)
+
+Each case below was run on Linux x86-64 and the tree restored with `git
+checkout` (§27.9). The chapter plants were run with the real command, `cargo
+xtask release-check`, on the committed tree at `0.3.0`; `conformance_rp_17`
+asserts the same plants, and the staged-artifact ones, on a scratch tree at
+`0.5.0` that holds its own copy of `spec/src`, so the committed tree is never
+written.
+
+| Case | Command | Observed |
+| --- | --- | --- |
+| the committed tree | `cargo xtask release-check` | ``source-tag: the workspace version is `0.3.0`, and §2.3 names the completion release `0.5.0` or `1.0.0` `` |
+| §2.3 names another completion release (`0.5.0` as `0.6.0` in `Chapter02`) | same | ``source-tag: … §2.3 names the completion release `0.6.0` or `1.0.0` ``: the criterion moved with the module |
+| §30.3 reports another language (`language 1.2` as `language 1.3` in `Chapter30`) | same | `version-output: the §30.3 version report names languages 1.0, 1.1, 1.3, and the compiler supports 1.0, 1.1, 1.2` |
+| §2.3 without the sentence the reader looks for (`The completion release` as `The final release`) | `conformance_rp_17` | ``source-tag: SPEC.md §2.3 (Chapter02) has no sentence beginning `The completion release` that names a version``, and the same refusal of `version-output`: no criterion is assumed |
+| a four-line version report, as before this change, at `0.5.0` | same | `version-output: release/version-output.txt must be exactly: …` |
+| a semantics-ID list without language `1.2` | same | `semantics-id: release/compiler-semantics-id.txt lists languages 1.0, 1.1, and §30.3 reports 1.0, 1.1, 1.2` |
+| a semantics-ID list giving language `1.1` an ID that is not the compiler's (its first hex digit changed) | `cargo xtask release-check`, the list and the binary's report staged under `release/` of the committed tree | ``semantics-id: release/compiler-semantics-id.txt line 2: language 1.1 is listed with the ID `076453256c64bbd14b1449f5979610054c72ea83213ecd13795cc883af8b2cd8`, and the compiler-semantics ID of language 1.1 is `176453256c64bbd14b1449f5979610054c72ea83213ecd13795cc883af8b2cd8` ``, and no `version-output` refusal (the report is the binary's) |
+| the list and the version report agreeing on that ID, as one `--version` run of a compiler with that ID would stage them | same | the same `semantics-id` refusal, and `version-output: release/version-output.txt must be exactly:` the report with language 1.1's compiled-in ID `1764…2cd8`, `found:` the report with `0764…2cd8`: each file is held to the ID compiled into the source, not to the other file |
+| both files as the binary prints and `release-artifacts` writes them (the control) | same | neither `semantics-id` nor `version-output` is refused; what is refused is `source-tag` at `0.3.0` and the artifacts a build fleet stages (`checksums`, `host-binaries`, `crate-package`, `sbom`, `ci-evidence`) |
+| `release::check` before the maintainer's round, which rendered the expected report from the staged list (the case's two ID plants committed first, at `f76d22e1d`, R3) | `cargo test -p repo-conformance conformance_rp_17` | the test fails at the first ID plant, `repository.rs:2283`: `release/compiler-semantics-id.txt` with language 1.1's ID changed is not refused as `semantics-id`, and `version-output` is refused instead, its expected report carrying the planted ID |
+| the reader without its comparison with the supported languages (planted in `release::check`) | `cargo test -p repo-conformance conformance_rp_17` | the test fails at the `language 1.3` plant; restored |
+| the reader with the completion versions written in rather than read from §2.3 (planted in `release::criterion`) | same | the test fails at the `0.6.0` plant; restored |
+| the binary printing only language `1.0` (the version report before this change) | `cargo test -p repo-conformance conformance_cl_18` | the test fails: the four-line report against the eight-line one; it was run so at the skeleton commit |
+
+At `0.5.0`, with the version report the binary prints and the semantics-ID list
+`cargo xtask release-artifacts` writes, `source-tag`, `semantics-id` and
+`version-output` all hold (`conformance_rp_17`).
+
+The `release.yml` step that checks each host binary's report, "The binary
+reports the §30.3 identity" in the `binaries` job, reads the same fence: it
+expects the fence's line count and compares line by line, the first line with
+the tagged version and each `<digest>` with a 64-hex-digit ID. Before this
+change the step required exactly four lines, the report of the releases before
+#113, and would have refused every binary printing the eight-line report (found
+by the #128 audit). The step's shell was run as written, extracted from
+`release.yml` by the step's name with `${{ matrix.target }}` filled in, on
+Linux x86-64 in a scratch directory holding `SPEC.md` and the binary under
+`target/release/`, with `VERSION` set to `0.3.0`, the workspace version
+`identity` outputs; each plant is a script printing the planted report in the
+binary's place. The binary `cargo build --locked --release -p lexlean` built
+printed:
+
+```text
+lexlean 0.3.0
+language 1.0
+compiler-semantics 8554008034f6e9284382619a7aa71e0f0071ad404ea9d821068294d2d8804851
+language 1.1
+compiler-semantics 176453256c64bbd14b1449f5979610054c72ea83213ecd13795cc883af8b2cd8
+language 1.2
+compiler-semantics 5262e5b4c8b5668ae7066ad686757a6bb7f80c941d515fb9d586894fbc7de69a
+lean-toolchain leanprover/lean4:v4.32.1
+```
+
+| Case | Command | Observed |
+| --- | --- | --- |
+| the release binary's report above | the step's shell | `expected.txt` holds the fence's 8 lines, every line matches; exit 0 |
+| the report without `language 1.2` and its ID (six lines) | same | `::error::--version printed 6 lines, not the 8 of the §30.3 report`; exit 1 |
+| the four-line report of the releases before this change | same | `::error::--version printed 4 lines, not the 8 of the §30.3 report`; exit 1 |
+| language 1.1's ID shortened to 63 digits (eight lines) | same | ``::error::--version line 5 is `compiler-semantics 1764…8b2cd`, not the `compiler-semantics <digest>` of the §30.3 report``; exit 1 |
+| languages 1.1 and 1.0 swapped (eight lines) | same | ``::error::--version line 2 is `language 1.1`, not the `language 1.0` of the §30.3 report``; exit 1 |
+| the real report with `VERSION` set to `0.5.0` | same | ``::error::--version line 1 is `lexlean 0.3.0`, not the `lexlean 0.5.0` of the §30.3 report``; exit 1 |
+
+*What the evidence is.* `release-check` reads two items of the chapter modules
+through the projector, which is Rust and can falsify a reading, never establish
+one (C9). The plants show the reading is not vacuous: a change to either item
+changes what is refused, and a reader that ignores either item fails the case.
+CL-18 compares the binary's report both with the compiled-in identities and with
+the §30.3 fence as SPEC.md states it, read without `release-check`; the
+`release.yml` step reads that fence too, so the line count it expects moves
+with §30.3 and never with the workflow. `release-check` holds each ID of
+`release/compiler-semantics-id.txt` and of `release/version-output.txt` to
+`lexlean::compiler_semantics_id_for` of its language, the ID compiled into the
+source it is built from (the maintainer's round on #288): before, it compared
+the two staged files with each other, and `release-artifacts` writes both from
+one `--version` run, so a compiler with a wrong ID staged an agreeing pair that
+nothing refused. The two ID plants above show the comparison is not vacuous.
+
+## The performance corpus (`PC-01`, `PC-02`, #124)
+
+The corpus of SPEC.md §28.7 is the object every acceptance criterion about
+the performance of compiled programs quantifies over. What it is cannot rest
+on a reading of its sources: `conformance_pc_01` reads
+`examples/performance-corpus/corpus.toml` against the production roots the
+project declares (§17.13), and `conformance_pc_02` keeps the corpus general
+by a structural rule (no source package, no lexicon source outside the
+project, no address or repository name in any file) rather than by a list of
+consumer names, which would itself name one, and then exports every member
+through `lexlean::api::production`.
+
+### the corpus membership check can fail
+
+Each rule below was planted in the committed corpus, the case run, and the
+plant removed. The other registered defects are planted on the manifest and
+file texts in memory on every run of the cases (an unknown field, an
+unregistered kind, a member whose root is not a production root, a member
+declared with other targets, a lexicon source outside the project, a network
+address in a source, a repository name in the manifest), each refused naming
+itself, and a plant that leaves the text unchanged fails the case.
+
+- **a kind without a member.** The `long-folds/moments` row removed from
+  `corpus.toml`. `cargo test -p repo-conformance --all-features --test conformance -- conformance_pc_01 --exact`:
+
+  ```text
+  thread 'conformance_pc_01' panicked at crates/conformance/src/cases/performance_corpus.rs:309:69:
+  PC-01: kind `long-folds` has no member and states no precondition
+  ```
+
+- **a member of the `compiler` kind while its precondition is stated.** A
+  row `compiler/self` naming `Corpus.Recursion.bisect` appended.
+  `-- conformance_pc_01`:
+
+  ```text
+  PC-01: kind `compiler` states a precondition and has a member
+  ```
+
+- **a source package.** `[[source_package]]` appended to the project's
+  `lexlean.toml`. `-- conformance_pc_02`, refused before any Lean process:
+
+  ```text
+  thread 'conformance_pc_02' panicked at crates/conformance/src/cases/performance_corpus.rs:404:56:
+  PC-02: lexlean.toml declares a source package
+  ```
+
+Removed: the three edits were restored; `conformance_pc_01` passes, and
+`conformance_pc_02` passes with the export of every member under the pinned
+Lean 4.32.1 (8 outputs over the 6 members, each `kernel-checked`, the bundle replayed `bindings-verified`; `cargo xtask verify-examples --write` wrote 138 normalized verification records for `performance-corpus`, attestation f92c50059ffb4f27a91ee7d43d5ca29d4ecd7c7d0e7cff63c1984b54ac344441; `check-golden --write` changed no other example; `check-test-inventory`, `cargo fmt --check` and `validate-model` pass).
+
 ## Planted defects for the runtime bounds (`PF-24`, #263)
 
 Each defect below was planted in the working tree or in a scratch copy, the
