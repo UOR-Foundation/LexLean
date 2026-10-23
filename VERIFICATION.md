@@ -16691,3 +16691,186 @@ edit adds none of those. On this branch `cargo xtask validate-model` (443 ids,
 every audit clean, `audit-deferral` reading `.github/retry.sh` among the
 workflow scripts), `cargo xtask validate-spec-links`, and
 `conformance_rp_13`, `conformance_rp_14` and `conformance_rp_16` pass.
+
+## The SIMD probe of #109 on the pinned Rust (#119)
+
+Decision #109 (D4) records a probe run on Rust 1.97.0, because 1.97.1 could not
+be downloaded in the session that ran it: in a crate that forbids unsafe code,
+AVX2 integer intrinsics compile inside `#[target_feature(enable = "avx2")]`
+functions, and a call to such a function from one without the attribute fails
+with E0133, with or without `-C target-feature=+avx2`. This record is the first
+step of #119: the same probe on the toolchain `rust-toolchain.toml` pins, for
+each of the four targets #109 lists. It is evidence for that decision about
+what the pinned `rustc` accepts, not a capability of LexLean, so it has no
+register row, scenario, or conformance test; the `honesty` workflow holds it.
+
+*The probe.* `.github/simd-probe/probe.rs` is a `no_std` library with
+`#![forbid(unsafe_code)]` and one module per target architecture. In each,
+`inside` carries `#[target_feature(enable = "<feature>")]` and uses that
+target's integer SIMD intrinsics, and `outside`, compiled only under
+`--cfg probe_outside`, calls `inside` from a function without the attribute.
+
+| Target | Feature | Intrinsics in `inside` |
+| --- | --- | --- |
+| `x86_64-unknown-linux-gnu` | `avx2` | `_mm256_setr_epi8`, `_mm256_maddubs_epi16`, `_mm256_madd_epi16`, `_mm256_set1_epi8`, `_mm256_set1_epi16`, `_mm256_extract_epi32` |
+| `aarch64-unknown-linux-gnu` | `neon` | `vdup_n_s8`, `vmull_s8`, `vpaddlq_s16`, `vaddvq_s32` |
+| `wasm32-unknown-unknown` | `simd128` | `i8x16_splat`, `i16x8_extmul_low_i8x16`, `i32x4_dot_i16x8`, `i32x4_extract_lane` |
+| `thumbv7em-none-eabihf` | `dsp` | `__qadd8` |
+
+*The command.* `.github/simd-probe/run.sh`, from the repository root, after
+`rustup target add aarch64-unknown-linux-gnu wasm32-unknown-unknown thumbv7em-none-eabihf`.
+It refuses to run on any `rustc` but the pinned one, then builds each case as a
+full library (code generation included, not only the safety check):
+
+```
+rustc --crate-type=lib --crate-name=simd_probe --edition=2021 --emit=link --diagnostic-width=100 --target <target> [--cfg probe_outside] [-C target-feature=+<feature>] -o <scratch>/libsimd_probe.rlib .github/simd-probe/probe.rs
+```
+
+and holds every outcome to the table below: the exit status, the first error
+code, and the error lines quoted for each failing case. The toolchain, from
+`rustc --version --verbose` in WSL Ubuntu on x86-64:
+
+```
+rustc 1.97.1 (8bab26f4f 2026-07-14)
+binary: rustc
+commit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452
+commit-date: 2026-07-14
+host: x86_64-unknown-linux-gnu
+release: 1.97.1
+LLVM version: 22.1.6
+```
+
+*The result.* Each cell is the outcome without and with
+`-C target-feature=+<feature>`; the two agree on every target.
+
+| Target | `inside` (intrinsics under the attribute) | `outside` (call from a function without it) |
+| --- | --- | --- |
+| `x86_64-unknown-linux-gnu`, `avx2` | compiles, compiles | E0133, E0133 |
+| `aarch64-unknown-linux-gnu`, `neon` | compiles, compiles | E0133, E0133 |
+| `wasm32-unknown-unknown`, `simd128` | compiles, compiles | compiles, compiles |
+| `thumbv7em-none-eabihf`, `dsp` | E0658, E0658 | E0658, E0658 |
+
+On x86-64 the result agrees with #109's 1.97.0 record on both points. The
+outputs, as the script printed them:
+
+x86-64, `outside`, without the flag:
+
+```
+error[E0133]: call to function `inside` with `#[target_feature]` is unsafe and requires unsafe function or block
+  --> .github/simd-probe/probe.rs:38:9
+   |
+38 |         inside(x)
+   |         ^^^^^^^^^ call to function with `#[target_feature]`
+   |
+   = help: in order for the call to be safe, the context requires the following additional target feature: avx2
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0133`.
+exit 1
+```
+
+x86-64, `outside`, with `-C target-feature=+avx2` (one `note` line more):
+
+```
+error[E0133]: call to function `inside` with `#[target_feature]` is unsafe and requires unsafe function or block
+  --> .github/simd-probe/probe.rs:38:9
+   |
+38 |         inside(x)
+   |         ^^^^^^^^^ call to function with `#[target_feature]`
+   |
+   = help: in order for the call to be safe, the context requires the following additional target feature: avx2
+   = note: the avx2 target feature being enabled in the build configuration does not remove the requirement to list it in `#[target_feature]`
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0133`.
+exit 1
+```
+
+aarch64, `outside`, the same output without and with `-C target-feature=+neon`.
+NEON is in the target's default configuration, so the `note` line appears even
+without the flag:
+
+```
+error[E0133]: call to function `inside` with `#[target_feature]` is unsafe and requires unsafe function or block
+  --> .github/simd-probe/probe.rs:53:9
+   |
+53 |         inside(x)
+   |         ^^^^^^^^^ call to function with `#[target_feature]`
+   |
+   = help: in order for the call to be safe, the context requires the following additional target feature: neon
+   = note: the neon target feature being enabled in the build configuration does not remove the requirement to list it in `#[target_feature]`
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0133`.
+exit 1
+```
+
+wasm32, all four cases: no output, `exit 0`. `rustc` accepts the call to a
+`#[target_feature(enable = "simd128")]` function from a function without the
+attribute.
+
+thumbv7em, `inside`, without the flag. `outside` prints the same four errors,
+all of which lie in `inside`. With `-C target-feature=+dsp` both cases print
+first the warning ``unstable feature specified for `-Ctarget-feature`: `dsp` ``
+and end with `error: aborting due to 4 previous errors; 1 warning emitted`.
+
+```
+error[E0658]: use of unstable library feature `stdarch_arm_dsp`
+  --> .github/simd-probe/probe.rs:80:9
+   |
+80 |     use core::arch::arm::__qadd8;
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: see issue #117237 <https://github.com/rust-lang/rust/issues/117237> for more information
+
+error[E0658]: use of unstable library feature `stdarch_arm_dsp`
+  --> .github/simd-probe/probe.rs:84:9
+   |
+84 |         __qadd8(x, x)
+   |         ^^^^^^^
+   |
+   = note: see issue #117237 <https://github.com/rust-lang/rust/issues/117237> for more information
+
+error[E0658]: the target feature `dsp` is currently unstable
+  --> .github/simd-probe/probe.rs:82:22
+   |
+82 |     #[target_feature(enable = "dsp")]
+   |                      ^^^^^^^^^^^^^^
+   |
+   = note: see issue #150246 <https://github.com/rust-lang/rust/issues/150246> for more information
+
+error[E0133]: call to unsafe function `__qadd8` is unsafe and requires unsafe function or block
+  --> .github/simd-probe/probe.rs:84:9
+   |
+84 |         __qadd8(x, x)
+   |         ^^^^^^^^^^^^^ call to unsafe function
+   |
+   = note: consult the function's documentation for information on how to avoid undefined behavior
+
+error: aborting due to 4 previous errors
+
+Some errors have detailed explanations: E0133, E0658.
+For more information about an error, try `rustc --explain E0133`.
+exit 1
+```
+
+So on stable 1.97.1 both the `dsp` target feature and the DSP intrinsics of
+`core::arch::arm` are refused as unstable, and `__qadd8` is in addition an
+`unsafe fn`, which `#![forbid(unsafe_code)]` excludes even inside the
+attribute.
+
+### the SIMD probe can fail
+
+| Planted defect | Observed |
+| --- | --- |
+| `#[target_feature(enable = "avx2")]` added above the x86-64 `outside`, so the call is made from an attributed function | `run.sh` exits 1 with ``::error::x86_64-unknown-linux-gnu outside (+avx2: no): the output lacks: error[E0133]: call to function `inside` with `#[target_feature]` is unsafe`` and `::error::x86_64-unknown-linux-gnu outside (+avx2: no): expected E0133, observed compiles`, and the same two lines for `+avx2: yes`; restored |
+| the probe run on another toolchain: `RUSTUP_TOOLCHAIN=1.98.0 .github/simd-probe/run.sh` | `run.sh` exits 1 before any case with `::error::the probe ran on 'rustc 1.98.0 (88d9e12ae 2026-08-18)', not the pinned 1.97.1` |
+
+*What the record does not cover.* It shows what `rustc` 1.97.1 accepts and
+compiles; nothing built here was executed, on any target. Each target is probed
+with the one feature named above, thumbv7em with the DSP extension only. Which
+targets and feature sets are modeled first stays the decision of #109, and the
+rest of #119 waits on it.
