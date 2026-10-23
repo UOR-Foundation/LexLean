@@ -269,7 +269,10 @@ pub fn run(id: &str) {
     // The handwritten runtime that was kept as an oracle is gone; what holds
     // the behavior of the printed runtime is the golden transcripts.
     assert!(
-        !root.join("tests/rust-runtime-oracle").as_std_path().exists(),
+        !root
+            .join("tests/rust-runtime-oracle")
+            .as_std_path()
+            .exists(),
         "tests/rust-runtime-oracle is gone"
     );
     for (file, least) in [("core", 100), ("support", 4), ("std", 30)] {
