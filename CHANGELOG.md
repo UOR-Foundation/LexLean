@@ -36,7 +36,7 @@ and Unreleased holds what has landed since.
   two scalars (nested keys are validated, not proved: #249). The handwritten
   base text is gone; the handwritten runtime is kept as the oracle. The
   compiler-semantics ID moves; records bound to it regenerate once, at the
-  landing. `RB-19` adds the constructs of the heap runtime (40 validator rules, sixteen new): every name the printer writes is an identifier and not a keyword, a derive is in a closed table of five, a character literal is one scalar value, the head of a condition holds no struct literal outside parentheses, and a `let`, cast or type argument names no generic parameter; each site is planted, and a comparison whose left operand ends in a cast is printed with parentheses. The register is 446 IDs. The register is 448 IDs.
+  landing. `RB-19` adds the constructs of the heap runtime (40 validator rules, sixteen new): every name the printer writes is an identifier and not a keyword, a derive is in a closed table of five, a character literal is one scalar value, the head of a condition holds no struct literal outside parentheses, and a `let`, cast or type argument names no generic parameter; each site is planted, and a comparison whose left operand ends in a cast is printed with parentheses. The register is 448 IDs.
 - Two source packages of the standard library and the application that uses
   them, #32 (SPEC.md §17.22, §10.5, `SL-03`, `SL-04`, `EX-09`). `std-models`
   (`LexLeanStdModels.Scores`) holds the score combinators `best`, `margin`, and
