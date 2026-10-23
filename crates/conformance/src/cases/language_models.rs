@@ -2381,7 +2381,7 @@ fn composing() -> P {
                 {"kind": "reflexivity"},
             ],
         },
-        "axioms": ["Quot.sound", "propext"],
+        "axioms": ["Classical.choice", "Quot.sound", "propext"],
     }));
     declarations.push(json!({
         "kind": "evidence",
@@ -2389,7 +2389,7 @@ fn composing() -> P {
         "claims": [{"kind": "satisfies_contract", "theorem": member("classify_text_adapted")}],
         "contract": {"member": member("ClassifyTextContract")},
         "realization": {"member": member("ClassifyText")},
-        "axioms": ["Quot.sound", "propext"],
+        "axioms": ["Classical.choice", "Quot.sound", "propext"],
     }));
     declarations.push(json!({
         "kind": "model",
@@ -2397,7 +2397,7 @@ fn composing() -> P {
         "contract": {"member": member("ClassifyTextContract")},
         "realization": {"member": member("ClassifyText")},
         "evidence": [{"member": member("ClassifyTextEvidence")}],
-        "axioms": ["Quot.sound", "propext"],
+        "axioms": ["Classical.choice", "Quot.sound", "propext"],
     }));
     let generated = json!({
         "kind": "result",
