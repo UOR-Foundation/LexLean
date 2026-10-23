@@ -1,11 +1,12 @@
 //! The core runtime as source (SPEC.md §17.16): `RB-16`.
 //!
-//! The functions of `RustRuntime` are decoded and printed in place of the
-//! handwritten functions of the same name, which are kept as the oracle at
-//! `tests/rust-runtime-oracle/`. One crate holds the oracle as module `old`
-//! and the generated runtime as module `new`; a harness calls both on the
-//! boundary and seeded values of each defined function and compares the
-//! result and the counted work.
+//! The functions of `RustRuntime` are decoded and printed where the
+//! handwritten functions stood. A harness calls the generated runtime on the
+//! boundary and seeded values of each defined function and records what each
+//! call returned and the work it counted; the digests are the golden
+//! transcript at `tests/rust-runtime-golden/core.txt`, which was recorded from
+//! the handwritten runtime at the last pass of the differential (see
+//! VERIFICATION.md).
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -21,9 +22,8 @@ const SHIPPED: &str = "language/rust-runtime-1.2/RustRuntime.lex.tex";
 /// The golden transcript of the harness on the core runtime.
 const GOLDEN: &str = "tests/rust-runtime-golden/core.txt";
 
-/// The calls the differential makes of each defined function: the `same!`
-/// of the harness runs the oracle's and the generated function on the same
-/// arguments and compares what they return and the work they count.
+/// The calls the harness makes of each defined function: the `same!` of the
+/// harness runs the function and records what it returns and the work it counts.
 const SCALARS: [(&str, &str); 18] = [
     ("nat_add",
         "for &a in &nats { for &b in &nats { same!(nat_add(a, b)); } }\n    for _ in 0..1000 { let (a, b) = (next(), next()); same!(nat_add(a, b)); same!(nat_add(a >> 1, b >> 1)); }"),
@@ -245,20 +245,6 @@ pub(super) fn golden(path: &str) -> Vec<(String, String)> {
         .collect()
 }
 
-/// Record `observed` at `path` when `LEXLEAN_WRITE_GOLDEN` is set (the run that
-/// wrote the golden files compared the handwritten runtime with the generated
-/// one first), and read the golden transcript at `path`.
-pub(super) fn golden_of(path: &str, observed: &[(String, String)]) -> Vec<(String, String)> {
-    if std::env::var_os("LEXLEAN_WRITE_GOLDEN").is_some() {
-        let text: String = observed
-            .iter()
-            .map(|(label, digest)| format!("{label} {digest}\n"))
-            .collect();
-        std::fs::write(repo_root().join(path).as_std_path(), text).expect("the golden file");
-    }
-    golden(path)
-}
-
 /// The labels in which two transcripts differ, or `None` when they agree.
 pub(super) fn disagreement(
     observed: &[(String, String)],
@@ -283,25 +269,14 @@ pub(super) fn disagreement(
     })
 }
 
-/// Run `harness` on the handwritten runtime `oracle` and on `generated` and
-/// require the two transcripts to agree: the output of the generated run, or
-/// the reason it failed or differs.
-pub(super) fn differ_with(
-    oracle: &str,
-    generated: &str,
-    harness: String,
-) -> Result<String, String> {
-    let recorded = run_harness(oracle, harness.clone())?;
-    let ran = run_harness(generated, harness)?;
-    match disagreement(&transcript_of(&ran), &transcript_of(&recorded)) {
+/// Run `harness` on `runtime` and require its transcript to be the golden
+/// one at `path`: the output of the run, or the reason it failed or differs.
+pub(super) fn observe(runtime: &str, harness: String, path: &str) -> Result<String, String> {
+    let ran = run_harness(runtime, harness)?;
+    match disagreement(&transcript_of(&ran), &golden(path)) {
         Some(reason) => Err(reason),
         None => Ok(ran),
     }
-}
-
-/// [`differ_with`] with the harness of the scalar runtime.
-fn differ(oracle: &str, generated: &str) -> Result<String, String> {
-    differ_with(oracle, generated, harness())
 }
 
 /// Run the case of `RB-16`.
@@ -317,7 +292,6 @@ pub fn run(id: &str) {
     // The shipped copy is the compiler project's module byte for byte: the
     // proofs are about one, the Rust crate reads the other.
     assert_eq!(module, shipped, "{SHIPPED} differs from {MODULE}");
-    let oracle = read("tests/rust-runtime-oracle/core.rs.txt");
     let support = runtime::support().expect("the embedded support");
     let decoded = source::decode(&shipped).expect("the module decodes");
     assert!(
@@ -330,8 +304,10 @@ pub fn run(id: &str) {
         runtime::assemble(support, &decoded.core.items),
         "the embedded module is the committed one"
     );
-    // The generated functions replace the oracle's: the base holds none of
-    // their names, so no function is declared twice.
+    // The generated functions are the runtime's: the support holds none of
+    // their names, so no function is declared twice, and the golden
+    // transcript has a label for each.
+    let recorded = golden(GOLDEN);
     for name in defined(&decoded.core.items).expect("named functions") {
         let (module, last) = name
             .rsplit_once("::")
@@ -341,32 +317,21 @@ pub fn run(id: &str) {
                 !support.contains(&format!("pub mod {module} {{")),
                 "the base still holds the module `{module}`"
             );
-            assert!(
-                oracle.contains(&format!("fixed!({module}, ")),
-                "the oracle lacks the module `{module}`"
-            );
         } else {
             assert!(
                 !support.contains(&format!("pub fn {last}(")),
                 "the base still holds `{name}`"
             );
-            assert!(
-                oracle.contains(&format!("pub fn {last}(")),
-                "the oracle lacks `{name}`"
-            );
         }
+        assert!(
+            recorded.iter().any(|(label, _)| *label == name),
+            "the golden transcript lacks `{name}`"
+        );
     }
     let generated = runtime::assemble(support, &decoded.core.items);
-    let ran = differ(&oracle, &generated).expect("the generated runtime agrees with the oracle");
+    let ran = observe(&generated, harness(), GOLDEN)
+        .expect("the generated runtime has the golden transcript");
     assert_eq!(ran.lines().last(), Some("runtime"));
-    assert_eq!(
-        disagreement(
-            &transcript_of(&ran),
-            &golden_of(GOLDEN, &transcript_of(&ran))
-        ),
-        None,
-        "the transcript is the golden one"
-    );
 
     // A function whose body computes another result is caught by the
     // differential, not by the decoder: the checked product for the checked
@@ -399,8 +364,8 @@ pub fn run(id: &str) {
             .expect("a changed body decodes")
             .core
             .items;
-        let error = differ(&oracle, &runtime::assemble(support, &items))
-            .expect_err("a changed body disagrees with the oracle");
+        let error = observe(&runtime::assemble(support, &items), harness(), GOLDEN)
+            .expect_err("a changed body has another transcript");
         assert!(
             error
                 .replace([' ', '\n'], "")

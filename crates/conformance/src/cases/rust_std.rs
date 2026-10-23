@@ -1,11 +1,12 @@
 //! The std runtime as source (SPEC.md §17.17): `RB-20` and `SP-29`.
 //!
-//! The functions of `RustStd` are decoded and printed in place of the
-//! handwritten functions of the same name, which are kept as the oracle at
-//! `tests/rust-runtime-oracle/`. One crate holds the oracle as module `old`
-//! and the generated runtime as module `new`; a harness calls both on lists of
-//! every shape and compares the result and the counted work (`RB-20`). The
-//! module's theorems are listed here, from the laws, never from the module, and
+//! The types and helpers of `RuntimeStd` and the functions of `RustStd` are
+//! decoded and printed where the handwritten std runtime stood. A harness
+//! calls the printed runtime on lists of every shape, on byte strings, texts,
+//! and numerals, and records what each call returned and the work it counted;
+//! the digests are the golden transcript at `tests/rust-runtime-golden/std.txt`,
+//! recorded from the handwritten runtime at the last pass of the differential
+//! (`RB-20`). The module's theorems are listed here, from the laws, never from the module, and
 //! accepted by the pinned Lean (`SP-29`).
 
 use std::collections::BTreeSet;
@@ -14,7 +15,7 @@ use lexlean::calculus::rust::ast::{Ident, ItemDef};
 use lexlean::calculus::rust::{rt_decode, runtime, source};
 
 use super::rust_refinement::project_of;
-use super::rust_runtime::{differ_with, disagreement, golden_of, transcript_of, RECORDER};
+use super::rust_runtime::{golden, observe, run_harness, RECORDER};
 use crate::support::{self, repo_root};
 
 const MODULE: &str = "compiler/src/RustStd.lex.tex";
@@ -173,44 +174,6 @@ fn covered(items: &[ItemDef]) -> Result<(), String> {
     Ok(())
 }
 
-/// The first public function, type, or impl of the oracle that `generated`
-/// does not define: a function by its name, a struct or enum by its name, and an impl
-/// by its head with the spacing ignored.
-fn lost(oracle: &str, generated: &str) -> Option<String> {
-    let flat = |text: &str| text.split_whitespace().collect::<Vec<_>>().join(" ");
-    let generated_flat = flat(generated);
-    let name = |rest: &str| {
-        rest.split(['<', '(', ' ', '{', ';'])
-            .next()
-            .expect("a name")
-            .to_owned()
-    };
-    oracle.lines().map(str::trim).find_map(|line| {
-        // A private helper is not part of the surface the generated text must
-        // keep: the oracle's closure-based `walk` has no counterpart, its
-        // callers are cursor loops.
-        if let Some(rest) = line.strip_prefix("pub fn ") {
-            let name = name(rest);
-            let held = name.starts_with('$')
-                || generated.contains(&format!("fn {name}<"))
-                || generated.contains(&format!("fn {name}("));
-            return (!held).then_some(name);
-        }
-        for kind in ["struct", "enum"] {
-            if let Some(rest) = line.strip_prefix(&format!("pub {kind} ")) {
-                let name = name(rest);
-                let held = generated.contains(&format!("pub {kind} {name}"));
-                return (!held).then_some(name);
-            }
-        }
-        if line.starts_with("impl") {
-            let head = flat(line.trim_end_matches('{'));
-            return (!generated_flat.contains(&head)).then_some(head);
-        }
-        None
-    })
-}
-
 /// The theorem a Lean diagnostic points at: the diagnostic carries the span
 /// of the declaration, whose first line is `theorem{` and whose next line
 /// names it.
@@ -253,16 +216,13 @@ fn read(path: &str) -> String {
         .unwrap_or_else(|error| panic!("{path}: {error}"))
 }
 
-/// `RB-20`: the generated std runtime against the oracle.
+/// `RB-20`: the generated std runtime against the golden transcript.
 fn differential() {
     let module = read(MODULE);
     let shipped = read(SHIPPED);
     // The shipped copy is the compiler project's module byte for byte: the
     // proofs are about one, the Rust crate reads the other.
     assert_eq!(module, shipped, "{SHIPPED} differs from {MODULE}");
-    let core_oracle = read("tests/rust-runtime-oracle/core.rs.txt");
-    let std_oracle = read("tests/rust-runtime-oracle/std.rs.txt");
-    let oracle = format!("{core_oracle}{std_oracle}");
     let krate = source::decode_std(&shipped).expect("the module decodes");
     assert!(
         !krate.items.is_empty(),
@@ -289,45 +249,33 @@ fn differential() {
         generated_std.starts_with(&printed),
         "the std runtime begins with the printed crate of RuntimeStd"
     );
-    // The generated functions replace the oracle's: the base holds none of
-    // their names, so no function is declared twice.
+    // The functions of the module are the runtime's free functions: the base
+    // holds none of their names, so no function is declared twice, and the
+    // golden transcript has a label for each.
+    let recorded = golden(GOLDEN);
     for name in defined(&krate.items).expect("named functions") {
         // A free function: a method of the base may carry the name.
-        let declared = |text: &str| {
-            let text = format!("\n{text}");
-            text.contains(&format!("\npub fn {name}<"))
-                || text.contains(&format!("\npub fn {name}("))
-        };
+        let text = format!("\n{}", runtime::std_base().expect("the base"));
         assert!(
-            !declared(runtime::std_base().expect("the base")),
+            !text.contains(&format!("\npub fn {name}<"))
+                && !text.contains(&format!("\npub fn {name}(")),
             "the base still holds `{name}`"
         );
-        assert!(declared(&std_oracle), "the oracle lacks `{name}`");
+        assert!(
+            recorded.iter().any(|(label, _)| *label == name),
+            "the golden transcript lacks `{name}`"
+        );
     }
-    // And none of the oracle's functions is lost: each is in the generated
-    // text, whether the base keeps it or the module defines it. One function
-    // taken out of the generated text is the plant.
-    assert_eq!(lost(&std_oracle, generated_std), None);
+    // A function taken out of the generated text leaves a harness that does
+    // not compile: it is the plant.
     let without = generated_std.replacen("pub fn length_bytes(", "pub fn length_byte(", 1);
     assert_ne!(without, generated_std, "the plant site exists");
-    assert_eq!(
-        lost(&std_oracle, &without),
-        Some("length_bytes".to_owned()),
-        "a function of the oracle that the generated runtime lacks is refused"
-    );
-    let ran = differ_with(&oracle, &format!("{core}{generated_std}"), harness())
-        .expect("the generated runtime agrees with the oracle");
+    let error = run_harness(&format!("{core}{without}"), harness())
+        .expect_err("a function the generated runtime lacks is refused");
+    assert!(error.contains("length_bytes"), "{error}");
+    let ran = observe(&format!("{core}{generated_std}"), harness(), GOLDEN)
+        .expect("the generated runtime has the golden transcript");
     assert_eq!(ran.lines().last(), Some("runtime"));
-    // The transcript is the golden one: what the handwritten runtime returned
-    // and counted, recorded at the last pass of the differential.
-    assert_eq!(
-        disagreement(
-            &transcript_of(&ran),
-            &golden_of(GOLDEN, &transcript_of(&ran))
-        ),
-        None,
-        "the transcript is the golden one"
-    );
 
     // A miscounting walk, an extra tick of the work counter, and a signature
     // without its type parameter are each found: the first two by the
@@ -406,8 +354,8 @@ fn differential() {
             "{what}: the plant site occurs once"
         );
         let planted = generated_std.replacen(from, to, 1);
-        let error = differ_with(&oracle, &format!("{core}{planted}"), harness())
-            .expect_err(&format!("{what}: a changed runtime disagrees with the oracle"));
+        let error = observe(&format!("{core}{planted}"), harness(), GOLDEN)
+            .expect_err(&format!("{what}: a changed runtime has another transcript"));
         assert!(error.contains(caught), "{what}: {error}");
     }
 

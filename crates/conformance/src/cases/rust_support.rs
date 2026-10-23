@@ -3,13 +3,13 @@
 //! `RuntimeSupport` defines `supportCrate`, a crate of `RuntimeSyntax`: the
 //! uses, the counter, the traits `Same` and `Key` with their impls, and the
 //! generic `equal` and `compare`. The Rust crate decodes, validates, and
-//! prints it where the handwritten base stood; the handwritten runtime kept
-//! at `tests/rust-runtime-oracle/` is the oracle the printed items are
-//! compared with, in result and in counted work.
+//! prints it where the handwritten base stood; the transcript of a harness on
+//! the printed items (result and counted work) is the golden one recorded from
+//! the handwritten runtime.
 
 use lexlean::calculus::rust::{rt, rt_decode, rt_validate, runtime, source};
 
-use super::rust_runtime::{differ_with, disagreement, golden_of, prelude, transcript_of};
+use super::rust_runtime::{observe, prelude};
 use crate::support::repo_root;
 
 const MODULE: &str = "compiler/src/RuntimeSupport.lex.tex";
@@ -67,7 +67,6 @@ pub fn run(id: &str) {
     let module = read(MODULE);
     let shipped = read(SHIPPED);
     assert_eq!(module, shipped, "{SHIPPED} differs from {MODULE}");
-    let oracle = read("tests/rust-runtime-oracle/core.rs.txt");
     let runtime_module = read("compiler/src/RustRuntime.lex.tex");
 
     let krate = rt_decode::decode(&shipped).expect("the module decodes");
@@ -88,20 +87,12 @@ pub fn run(id: &str) {
             && !support.contains("std::"),
         "the support holds no macro and names neither `alloc` nor `std`"
     );
-    // The printed items are the oracle's: the runtime `RustRuntime` defines
-    // follows them, and the pair agrees with the handwritten core.
+    // The runtime `RustRuntime` defines follows the printed items, and the
+    // pair has the golden transcript of the handwritten core.
     let generated = runtime::core_over(&support, &runtime_module).expect("the runtime assembles");
-    let ran = differ_with(&oracle, &generated, harness())
-        .expect("the printed support agrees with the oracle");
+    let ran = observe(&generated, harness(), GOLDEN)
+        .expect("the printed support has the golden transcript");
     assert_eq!(ran.lines().last(), Some("runtime"));
-    assert_eq!(
-        disagreement(
-            &transcript_of(&ran),
-            &golden_of(GOLDEN, &transcript_of(&ran))
-        ),
-        None,
-        "the transcript is the golden one"
-    );
     // The nested-key corpus is measured: how many of its comparisons the
     // depth-three keys decide as less, equal, and greater.
     let nested = ran
@@ -151,7 +142,7 @@ pub fn run(id: &str) {
         let changed = replace_nth(&shipped, from, to, nth);
         let printed = runtime::support_from(&changed).unwrap_or_else(|error| panic!("{what}: {error}"));
         let generated = runtime::core_over(&printed, &runtime_module).expect("assembles");
-        let error = differ_with(&oracle, &generated, harness()).expect_err(what);
+        let error = observe(&generated, harness(), GOLDEN).expect_err(what);
         assert!(error.replace([' ', '\n'], "").contains(&caught.replace(' ', "")), "{what}: {error}");
     }
 
