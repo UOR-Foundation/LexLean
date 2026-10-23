@@ -27,6 +27,13 @@ and Unreleased holds what has landed since.
   rendering of a bounded root is unchanged (`RB-20` is registered and open).
   The semantic-module schema gains the member, which moves the language-1.2
   compiler-semantics ID.
+- CI toolchain fetches (#242): every step of `ci.yml`, `honesty.yml` and
+  `reproducibility.yml` that fetches elan, the pinned Lean toolchain, or the
+  pinned Rust toolchain runs the fetch through `.github/retry.sh`, at most three
+  attempts of the same command. An HTTP 5xx or a resolver failure from a
+  release host no longer fails a leg before its first test unless it lasts
+  through all three. What is pinned and checked is unchanged. Register 443.
+
 - `cargo xtask spec` (`NS-07`, #244): edit the chapter modules of `spec/` by
   item. `replace-block` and `insert-after` act on the paragraph, table or fence
   found by its first line; `port` applies the hunks of a merged SPEC.md that lie
