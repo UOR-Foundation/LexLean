@@ -1,0 +1,41 @@
+\begin{lexlean}{IntKernels}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{corpus.titles@1.0.0}
+\title{Integer kernels}
+\begin{semanticmodule}
+definition{
+  name: clamp,
+  parameters: [value : Int, low : Int, high : Int],
+  result: Int,
+  body: (if (prim less_than value low : Bool) then low else (if (prim less_than high value : Bool) then high else value)),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: requantize,
+  parameters: [x : Int, offset : Int, multiplier : Int, divisor : Int, low : Int, high : Int],
+  result: Int,
+  body: (let shifted : Int := (prim subtract x (prim negate offset : Int) : Int); (let scaled : Int := (prim subtract (prim multiply shifted multiplier : Int) (prim negate (prim quotient divisor (2 : Int) (0 : Int) : Int) : Int) : Int); (clamp (prim quotient scaled divisor (0 : Int) : Int) low high))),
+  axioms: [propext],
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core, rust-std]}
+}
+
+theorem{
+  name: requantize_mid,
+  parameters: [],
+  statement: ((requantize (100 : Int) (20 : Int) (9365133 : Int) (4294967296 : Int) (0 : Int) (255 : Int)) = (0 : Int)),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: requantize_clamps_high,
+  parameters: [],
+  statement: ((requantize (7 : Int) (0 : Int) (1000 : Int) (1 : Int) (0 : Int) (255 : Int)) = (255 : Int)),
+  proof: decide{},
+  axioms: [propext]
+}
+\end{semanticmodule}
+\end{lexlean}

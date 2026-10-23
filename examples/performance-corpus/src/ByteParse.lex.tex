@@ -1,0 +1,40 @@
+\begin{lexlean}{ByteParse}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{corpus.titles@1.0.0}
+\title{Byte parsing}
+\begin{semanticmodule}
+definition{
+  name: word,
+  parameters: [raw : Bytes, offset : Nat],
+  result: (Option Nat),
+  body: (match (prim index raw offset : (Option UInt8))
+    | Option.none => (ctor Option.none [Nat])
+    | Option.some b0 => (match (prim index raw (offset + 1) : (Option UInt8))
+      | Option.none => (ctor Option.none [Nat])
+      | Option.some b1 => (match (prim index raw (offset + 2) : (Option UInt8))
+        | Option.none => (ctor Option.none [Nat])
+        | Option.some b2 => (match (prim index raw (offset + 3) : (Option UInt8))
+          | Option.none => (ctor Option.none [Nat])
+          | Option.some b3 => (ctor Option.some [Nat] ((((prim multiply (prim to_nat b0 : Nat) 16777216 : Nat) + (prim multiply (prim to_nat b1 : Nat) 65536 : Nat)) + (prim multiply (prim to_nat b2 : Nat) 256 : Nat)) + (prim to_nat b3 : Nat))))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+theorem{
+  name: word_big_endian,
+  parameters: [],
+  statement: ((word 0x0001020304 1) = (ctor Option.some [Nat] 16909060)),
+  proof: decide{},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: word_short,
+  parameters: [],
+  statement: ((word 0x010203 0) = (ctor Option.none [Nat])),
+  proof: decide{},
+  axioms: [Quot.sound, propext]
+}
+\end{semanticmodule}
+\end{lexlean}
