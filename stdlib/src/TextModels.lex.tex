@@ -187,7 +187,18 @@ definition{
 
 definition{
   name: genGo,
-  parameters: [score : (Fn ((List UInt32)) (List Int)), choose : (Fn ((List Int) UInt32) ((Option Nat) * UInt32)), size : Nat, capacity : Nat, keep : Bool, stop : UInt32, fuel : Nat, context : (List UInt32), output : (List UInt32), seed : UInt32],
+  parameters: [
+    score : (Fn ((List UInt32)) (List Int)),
+    choose : (Fn ((List Int) UInt32) ((Option Nat) * UInt32)),
+    size : Nat,
+    capacity : Nat,
+    keep : Bool,
+    stop : UInt32,
+    fuel : Nat,
+    context : (List UInt32),
+    output : (List UInt32),
+    seed : UInt32
+  ],
   result: (((List UInt32) * Nat) * UInt32),
   body: (match fuel
     | Nat.zero => ((output, 1), seed)
@@ -205,7 +216,17 @@ definition{
 
 definition{
   name: generateWith,
-  parameters: [score : (Fn ((List UInt32)) (List Int)), choose : (Fn ((List Int) UInt32) ((Option Nat) * UInt32)), size : Nat, capacity : Nat, keep : Bool, stop : UInt32, fuel : Nat, prompt : (List UInt32), seed : UInt32],
+  parameters: [
+    score : (Fn ((List UInt32)) (List Int)),
+    choose : (Fn ((List Int) UInt32) ((Option Nat) * UInt32)),
+    size : Nat,
+    capacity : Nat,
+    keep : Bool,
+    stop : UInt32,
+    fuel : Nat,
+    prompt : (List UInt32),
+    seed : UInt32
+  ],
   result: (((List UInt32) * Nat) * UInt32),
   body: (match (admitWith keep capacity prompt)
     | Option.none => (((nil UInt32), 3), seed)
@@ -216,20 +237,22 @@ definition{
 
 definition{
   name: generateGreedy,
-  parameters: [score : (Fn ((List UInt32)) (List Int)), size : Nat, capacity : Nat, keep : Bool, stop : UInt32, fuel : Nat, prompt : (List UInt32)],
+  parameters: [
+    score : (Fn ((List UInt32)) (List Int)),
+    size : Nat,
+    capacity : Nat,
+    keep : Bool,
+    stop : UInt32,
+    fuel : Nat,
+    prompt : (List UInt32)
+  ],
   result: ((List UInt32) * Nat),
   body: (first (generateWith score (ref chooseGreedy) size capacity keep stop fuel prompt (0 : UInt32))),
   axioms: [Quot.sound, propext],
   executable: true
 }
 
-definition{
-  name: byteVocab,
-  parameters: [],
-  result: Nat,
-  body: 256,
-  executable: true
-}
+definition{name: byteVocab, parameters: [], result: Nat, body: 256, executable: true}
 
 definition{
   name: vocabSize,
@@ -330,7 +353,16 @@ definition{
 
 definition{
   name: generateSample,
-  parameters: [score : (Fn ((List UInt32)) (List Int)), size : Nat, capacity : Nat, keep : Bool, stop : UInt32, fuel : Nat, prompt : (List UInt32), seed : UInt32],
+  parameters: [
+    score : (Fn ((List UInt32)) (List Int)),
+    size : Nat,
+    capacity : Nat,
+    keep : Bool,
+    stop : UInt32,
+    fuel : Nat,
+    prompt : (List UInt32),
+    seed : UInt32
+  ],
   result: (((List UInt32) * Nat) * UInt32),
   body: (generateWith score (ref chooseSample) size capacity keep stop fuel prompt seed),
   axioms: [Quot.sound, propext],
