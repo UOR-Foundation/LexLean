@@ -1625,6 +1625,12 @@ suite = "production"
 statement = "Every root that a conformance harness runs on a corpus and that admits `recursion` has a measured stack bound in `tests/stack-bounds.json`, whose rows are exactly the recursive packages of the committed `bootstrap` and `stdlib` exports, and the stack of the harness thread (`rust_harness::HARNESS_STACK`) and of the evaluator thread is at least the largest recorded bound times the stated headroom of 4, so that a harness stack below that bound is refused and a harness binary run on a quarter of its bound aborts instead of finishing; the bounds are measurements of the cases' own inputs on one host, evidence and not a guarantee for another host or input."
 
 [[id]]
+id = "PD-09"
+level = "build"
+suite = "production"
+statement = "A production root may name a bound, a prior theorem of its module whose statement is exactly the obligation linking generates from the root: under the hypothesis that every `nat` and `int` parameter lies in the target width, each operation of the root's own body whose registry row names its result representation stays in that width, in evaluation order; with the bound, eligibility discharges `overflow` from the effects it requires of the root and records the bound in the report, removing the bound restores the effect, and a bound that does not cover an operation, because its theorem states another obligation, the operation lies under a match, an `if`, or a lambda or in a callee, or its primitive is not one the rule covers, is refused with LLT4017 naming the operation; nothing is inferred by an optimizer or checked at run time."
+
+[[id]]
 id = "NE-01"
 level = "build"
 suite = "extraction"
@@ -1785,6 +1791,12 @@ id = "RB-14"
 level = "build"
 suite = "rust-backend"
 statement = "A library template whose self calls are all tail calls is rendered as a loop over its accumulator that breaks with its result, so that the production rows of the primitives it realizes carry no `recursion`, while a template with a call that is not a tail call is rendered as a call and keeps the effect; a rendering that states a self call where a loop is possible, and a row whose `recursion` differs from its rendering, are refused."
+
+[[id]]
+id = "RB-20"
+level = "build"
+suite = "rust-backend"
+statement = "The rendering of a production root whose bound discharges `overflow` carries no overflow check: every operation the bound covers is rendered as the plain operation of its width, the root's function returns its value and no call to it propagates, so that a package exporting it declares no failure and the differential against the pinned rustc agrees with the denotation on the seeded and boundary inputs; a rendering that keeps a checked operation or a fallible signature for a covered operation is detected."
 
 [[id]]
 id = "GN-01"
@@ -2019,6 +2031,12 @@ id = "SP-20"
 level = "build"
 suite = "preservation"
 statement = "Certificate B certifies a function the renderer writes as a loop: the library's FunOK states a function either by the correspondence for the body the crate holds or by FunLoop, that the crate's body is the loop form of an ordinary recursive body (the library's loopOf, with its Boolean checks of the renamed parameters, the kept parameters, and the freshness of the renamed names decided by evaluation) together with the correspondence for that recursive body, which funSem_of turns into the simulation through funSem_loop with the correspondence, its recursor, and the soundness theorem unchanged, and the aligner recovers the recursive body by inverting the rendering of loops (the renamed parameters, the destructuring of the state, and the Ok and Err wraps), so that for every loop of every renderer fixture in each profile and of every production root of the committed examples in each of its targets the loop form of the recovered body, computed by the library's form transliterated, is the crate's function, certificate B of the fixtures rendered as loops compiles under the pinned Lean with exactly the axioms Classical.choice, Quot.sound, and propext, and a loop that is not the loop form of any recursive body is refused, whether its state has another type, its body does not take the state apart, an end is not an Err, a renamed parameter is read by the body, a pattern rebinds a kept parameter, or the state holds a parameter the function does not have."
+
+[[id]]
+id = "SP-29"
+level = "build"
+suite = "preservation"
+statement = "Certificate A of a production root with a bound states, and the kernel checks from the bound's theorem, that the root's width predicate holds on every argument in the target width (`bounded`) and that the lowered program converges to the encoded value of the root on every such argument (`root_value`), each with its axioms pinned exactly within the certificate axioms; a bound theorem whose conclusions do not match the width predicate's checks in evaluation order, a forged bound without a kernel proof, and a bound narrowed to miss an operation fail verification or linking rather than certify the root."
 
 [[id]]
 id = "MD-01"
