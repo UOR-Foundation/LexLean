@@ -28,7 +28,14 @@ and Unreleased holds what has landed since.
   proved bridge, and wall time established by a certificate. README's "What
   it does" ties the statement to the `PD`, `TC`, `RB`, `SP`, `GN`, `GC` and
   `PX` IDs. Edited in `spec/src/Chapter03` and `Chapter04` with `cargo xtask
-  spec`; no register row (no capability changes). Register 443.
+  spec`; no register row (no capability changes). Register 444.
+
+- CI toolchain fetches (#242): every step of `ci.yml`, `honesty.yml` and
+  `reproducibility.yml` that fetches elan, the pinned Lean toolchain, or the
+  pinned Rust toolchain runs the fetch through `.github/retry.sh`, at most three
+  attempts of the same command. An HTTP 5xx or a resolver failure from a
+  release host no longer fails a leg before its first test unless it lasts
+  through all three. What is pinned and checked is unchanged. Register 443.
 
 - `cargo xtask spec` (`NS-07`, #244): edit the chapter modules of `spec/` by
   item. `replace-block` and `insert-after` act on the paragraph, table or fence

@@ -62,6 +62,12 @@
 # release they belong to named alongside: a floating tag is a dependency
 # whose contents may change after review, which R6 does not allow for the
 # code in the crate and should not allow for the code that gates it.
+#
+# Each step that fetches a toolchain runs the fetch through
+# `.github/retry.sh`: at most three attempts of the same command, with the
+# same pin and the same checks (#242). An HTTP 5xx or a resolver failure
+# from a release host says nothing about the code, and fails a leg before
+# its first test only when it lasts through every attempt.
 name: ci
 
 on:
@@ -155,16 +161,16 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install the pinned Rust toolchain
-        run: rustup toolchain install
+        run: bash .github/retry.sh rustup toolchain install
       - uses: taiki-e/install-action@b6b84cf49ebfe0176417bdce007c624f0db37f20 # v2.86.2
         with:
           tool: just,cargo-deny
       - name: Install elan and the pinned Lean toolchain
         run: |
           set -euo pipefail
-          curl https://elan.lean-lang.org/elan-init.sh -sSf | sh -s -- -y --default-toolchain none
+          bash .github/retry.sh bash -euo pipefail -c 'curl https://elan.lean-lang.org/elan-init.sh -sSf | sh -s -- -y --default-toolchain none'
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-          "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
+          bash .github/retry.sh "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
       - name: Reserve bounded overflow memory for native Atlas
         run: |
           set -euo pipefail
@@ -268,13 +274,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install the pinned Rust toolchain
-        run: rustup toolchain install
+        run: bash .github/retry.sh rustup toolchain install
       - name: Install elan and the pinned Lean toolchain
         run: |
           set -euo pipefail
-          curl https://elan.lean-lang.org/elan-init.sh -sSf | sh -s -- -y --default-toolchain none
+          bash .github/retry.sh bash -euo pipefail -c 'curl https://elan.lean-lang.org/elan-init.sh -sSf | sh -s -- -y --default-toolchain none'
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-          "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
+          bash .github/retry.sh "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
       # The one build of the gate's executable: every other Atlas job of the
       # run takes it from the artifact rather than building it again, so a
       # shard that waits on another pays the Lean toolchain and not a second
@@ -358,9 +364,9 @@ jobs:
       - name: Install elan and the pinned Lean toolchain
         run: |
           set -euo pipefail
-          curl https://elan.lean-lang.org/elan-init.sh -sSf | sh -s -- -y --default-toolchain none
+          bash .github/retry.sh bash -euo pipefail -c 'curl https://elan.lean-lang.org/elan-init.sh -sSf | sh -s -- -y --default-toolchain none'
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-          "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
+          bash .github/retry.sh "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
       # What the jobs of this run before this one wrote: the gate's executable
       # and every shard's output so far, each under the name it was uploaded
       # with. The verifier reads the shards this one needs and no other.
@@ -447,9 +453,9 @@ jobs:
       - name: Install elan and the pinned Lean toolchain
         run: |
           set -euo pipefail
-          curl https://elan.lean-lang.org/elan-init.sh -sSf | sh -s -- -y --default-toolchain none
+          bash .github/retry.sh bash -euo pipefail -c 'curl https://elan.lean-lang.org/elan-init.sh -sSf | sh -s -- -y --default-toolchain none'
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-          "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
+          bash .github/retry.sh "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
       # What the jobs of this run before this one wrote: the gate's executable
       # and every shard's output so far, each under the name it was uploaded
       # with. The verifier reads the shards this one needs and no other.
@@ -536,9 +542,9 @@ jobs:
       - name: Install elan and the pinned Lean toolchain
         run: |
           set -euo pipefail
-          curl https://elan.lean-lang.org/elan-init.sh -sSf | sh -s -- -y --default-toolchain none
+          bash .github/retry.sh bash -euo pipefail -c 'curl https://elan.lean-lang.org/elan-init.sh -sSf | sh -s -- -y --default-toolchain none'
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-          "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
+          bash .github/retry.sh "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
       # What the jobs of this run before this one wrote: the gate's executable
       # and every shard's output so far, each under the name it was uploaded
       # with. The verifier reads the shards this one needs and no other.
@@ -626,9 +632,9 @@ jobs:
       - name: Install elan and the pinned Lean toolchain
         run: |
           set -euo pipefail
-          curl https://elan.lean-lang.org/elan-init.sh -sSf | sh -s -- -y --default-toolchain none
+          bash .github/retry.sh bash -euo pipefail -c 'curl https://elan.lean-lang.org/elan-init.sh -sSf | sh -s -- -y --default-toolchain none'
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-          "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
+          bash .github/retry.sh "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
       # What the jobs of this run before this one wrote: the gate's executable
       # and every shard's output so far, each under the name it was uploaded
       # with. The verifier reads the shards this one needs and no other.
@@ -716,9 +722,9 @@ jobs:
       - name: Install elan and the pinned Lean toolchain
         run: |
           set -euo pipefail
-          curl https://elan.lean-lang.org/elan-init.sh -sSf | sh -s -- -y --default-toolchain none
+          bash .github/retry.sh bash -euo pipefail -c 'curl https://elan.lean-lang.org/elan-init.sh -sSf | sh -s -- -y --default-toolchain none'
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-          "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
+          bash .github/retry.sh "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
       # What the jobs of this run before this one wrote: the gate's executable
       # and every shard's output so far, each under the name it was uploaded
       # with. The verifier reads the shards this one needs and no other.
@@ -825,7 +831,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install the pinned Rust toolchain
-        run: rustup toolchain install
+        shell: bash
+        run: bash .github/retry.sh rustup toolchain install
       # The image label and the host triple are separate facts. A runner
       # image that changed architecture underneath the label would otherwise
       # leave one of the five §8.3 hosts silently untested.
