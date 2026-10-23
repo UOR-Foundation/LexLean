@@ -36,7 +36,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "1. a typed semantic intermediate representation;" (cons "2. canonical human-readable LaTeX;" (cons "3. prose-free Lean 4 source;" (cons "4. source maps and complete lexical-coverage records;" (cons "5. deterministic build manifests; and" (cons "6. verification attestations produced only after Lean elaboration, kernel replay, and axiom-policy checking succeed." (nil String)))))))
+      (cons "1. a typed semantic intermediate representation;" (cons "2. canonical human-readable LaTeX;" (cons "3. prose-free Lean 4 source;" (cons "4. source maps and complete lexical-coverage records;" (cons "5. deterministic build manifests;" (cons "6. verification attestations produced only after Lean elaboration, kernel replay, and axiom-policy checking succeed; and" (cons "7. for each production root of a language-1.2 project, a Rust package for each of its targets with the certificates that bind it to the root (§17.13–§17.19, §24.7)." (nil String))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -86,6 +86,34 @@ definition{
 
 definition{
   name: i0007,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Production compilation is the path from a verified project to executable code. Each production root (§17.13) is lowered to a program of the production realization calculus (§17.14) and rendered to Rust (§17.16); kernel-checked certificates relate the root's meaning to the lowered program and to each rendering (§17.17), and export publishes the packages with that evidence (§24.7)." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0008,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Production compilation exists so that every production root is certified optimal over its declared universe: a universe, a machine, and an objective fixed before any optimizer runs (§17.15), and a certificate whose premises cover every system of that universe (§17.18). A root is claimed optimal by its certificate and by nothing else; a root exported without one is certified to preserve its meaning and carries no optimality claim. §4.2 states what the guarantee never claims." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0009,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
