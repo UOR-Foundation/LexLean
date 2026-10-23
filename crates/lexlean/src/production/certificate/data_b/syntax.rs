@@ -525,6 +525,7 @@ impl Writer<'_, '_> {
             Machine::FormatDecimal(_) => "formatDecimal",
             Machine::ParseDecimal(_) => "parseDecimal",
             Machine::ParseDecimalInt => "parseDecimalInt",
+            Machine::FormatDecimalInt => "formatDecimalInt",
         };
         match machine.width() {
             Some(width) => {

@@ -88,6 +88,7 @@ fn signature(machine: Machine) -> (Vec<Type>, Type) {
         Machine::StringJoin => (vec![Type::List(Box::new(Type::Str)), Type::Str], Type::Str),
         Machine::FormatDecimal(k) => (vec![fixed(k)], Type::Str),
         Machine::ParseDecimal(k) => (vec![Type::Str], Type::Option(Box::new(fixed(k)))),
+        Machine::FormatDecimalInt => (vec![Type::Int], Type::Str),
         Machine::ParseDecimalInt => (
             vec![Type::Str],
             Type::Option(Box::new(Type::Option(Box::new(Type::Int)))),
@@ -242,6 +243,7 @@ pub fn run(id: &str) {
                     | Machine::FormatDecimal(_)
                     | Machine::ParseDecimal(_)
                     | Machine::ParseDecimalInt
+                    | Machine::FormatDecimalInt
             )
         })
         .collect();

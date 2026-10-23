@@ -314,7 +314,7 @@ impl Item {
             Self::CompareBytes => "compare_bytes".to_owned(),
             Self::SplitExact => "split_exact".to_owned(),
             Self::Join => "join".to_owned(),
-            Self::FormatInt => "format_i64".to_owned(),
+            Self::FormatInt => "format_int".to_owned(),
             Self::FormatFixed(kind) => format!("format_{}", kind.name()),
             Self::ParseInt => "parse_int".to_owned(),
             Self::ParseFixed(kind) => format!("parse_{}", kind.name()),

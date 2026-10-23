@@ -315,6 +315,7 @@ pub enum Machine {
     FormatDecimal(IntKind),
     ParseDecimal(IntKind),
     ParseDecimalInt,
+    FormatDecimalInt,
 }
 
 impl Machine {
@@ -351,6 +352,7 @@ impl Machine {
             Self::StringSplit,
             Self::StringJoin,
             Self::ParseDecimalInt,
+            Self::FormatDecimalInt,
         ];
         for kind in IntKind::ALL {
             out.extend([
@@ -424,13 +426,14 @@ impl Machine {
             Self::FormatDecimal(_) => 40,
             Self::ParseDecimal(_) => 41,
             Self::ParseDecimalInt => 42,
+            Self::FormatDecimalInt => 43,
         }
     }
 
     /// One primitive of each family, at `u8` where it has a width, in the
     /// order of [`Machine::family`].
     #[must_use]
-    pub const fn families() -> [Self; 43] {
+    pub const fn families() -> [Self; 44] {
         let kind = IntKind::U8;
         [
             Self::CheckedAdd(kind),
@@ -476,6 +479,7 @@ impl Machine {
             Self::FormatDecimal(kind),
             Self::ParseDecimal(kind),
             Self::ParseDecimalInt,
+            Self::FormatDecimalInt,
         ]
     }
 
@@ -526,7 +530,8 @@ impl Machine {
             | Self::BytesCompare
             | Self::StringSplit
             | Self::StringJoin
-            | Self::ParseDecimalInt => None,
+            | Self::ParseDecimalInt
+            | Self::FormatDecimalInt => None,
         }
     }
 
@@ -578,6 +583,7 @@ impl Machine {
             Self::FormatDecimal(_) => "format_decimal",
             Self::ParseDecimal(_) => "parse_decimal",
             Self::ParseDecimalInt => "parse_decimal_int",
+            Self::FormatDecimalInt => "format_decimal_int",
         }
     }
 
@@ -596,7 +602,8 @@ impl Machine {
             | Self::Utf8Decode
             | Self::FormatDecimal(_)
             | Self::ParseDecimal(_)
-            | Self::ParseDecimalInt => 1,
+            | Self::ParseDecimalInt
+            | Self::FormatDecimalInt => 1,
             Self::NatRem
             | Self::IntRem
             | Self::NatQuot
@@ -666,6 +673,8 @@ impl Machine {
             Self::FormatDecimal(kind) => format!("Str::format_{}({})", kind.name(), args[0]),
             Self::ParseDecimal(kind) => format!("Str::parse_{}(&{})", kind.name(), args[0]),
             Self::ParseDecimalInt => format!("Str::parse_int(&{})", args[0]),
+            // The integers are `i64` in the printed runtime (`Type::Int`).
+            Self::FormatDecimalInt => format!("Str::format_i64({})", args[0]),
         }
     }
 }
