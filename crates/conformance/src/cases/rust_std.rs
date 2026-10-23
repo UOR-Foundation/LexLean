@@ -575,7 +575,7 @@ fn refinement() {
             "a theorem that states another runtime item",
             "(ctor RustSyntax::Item.lengthList)",
             "(ctor RustSyntax::Item.lengthBytes)",
-            "RustSemantics.isBytes",
+            "= RustSemantics.ROutcome.stuck",
         ),
     ] {
         assert_eq!(
