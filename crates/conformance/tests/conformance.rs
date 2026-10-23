@@ -86,6 +86,11 @@ fn conformance_rp_16() {
 }
 
 #[test]
+fn conformance_rp_17() {
+    repo_conformance::cases::run("RP-17");
+}
+
+#[test]
 fn conformance_cf_01() {
     repo_conformance::cases::run("CF-01");
 }
@@ -2038,6 +2043,11 @@ fn conformance_au_12() {
 #[test]
 fn conformance_au_13() {
     repo_conformance::cases::run("AU-13");
+}
+
+#[test]
+fn conformance_au_14() {
+    repo_conformance::cases::run("AU-14");
 }
 
 #[test]

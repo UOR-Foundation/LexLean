@@ -107,6 +107,12 @@ suite = "repository"
 statement = "The development container installs, at image build, exactly the Rust toolchain that rust-toolchain.toml pins and exactly the Lean toolchain that lean-toolchain pins and selects no other default, so that nothing is fetched when a session starts, and a Dockerfile that names another version of either, installs a second toolchain, or selects an unpinned default is refused."
 
 [[id]]
+id = "RP-17"
+level = "build"
+suite = "repository"
+statement = "`cargo xtask release-check` reads the completion release from §2.3 and the version report from §30.3 as the chapter modules of the specification project state them, and refuses a workspace version §2.3 does not name, a version report or semantics-ID list that is not the §30.3 report for the release version and each language's ID, and a §30.3 report whose languages are not the languages the compiler supports, a plant in either chapter item changing what it refuses."
+
+[[id]]
 id = "CF-01"
 level = "build"
 suite = "configuration-lock"
@@ -1424,7 +1430,7 @@ statement = "Environment variables cannot alter semantic project configuration."
 id = "CL-18"
 level = "build"
 suite = "cli-api"
-statement = "Version output reports compiler, language, semantics ID, and Lean toolchain exactly."
+statement = "Version output reports the compiler version, every supported language in ascending order each followed by its compiler-semantics ID, and the Lean toolchain exactly."
 
 [[id]]
 id = "CL-19"
@@ -2469,6 +2475,12 @@ id = "AU-13"
 level = "build"
 suite = "authoring"
 statement = "Under language 1.2 a module written with a data argument (`\\semanticdata{…}`, `\\toolingdata{…}`, or `\\coredata{…}`) is refused with LLP2003 at the position of the data argument and naming the authoring notation, whichever of the three environments holds it; fmt does not rewrite it and reports the same refusal; lexlean::sdk::to_data_form is the one conversion into the data form and to_notation the one out of it; and the data form is still accepted under language 1.1, where the semantic example links, and is still the form of the Atlas under language 1.0."
+
+[[id]]
+id = "AU-14"
+level = "build"
+suite = "authoring"
+statement = "A source's module is the environment the structural parser opens: lexlean::surface::module::locate takes the first environment after the header and ends its body at the first end control atom, so a tooling or core module whose strings quote the begin and end markers of another kind is read by the authoring API, formatted, and decoded as its own kind and contributes its data form to the compiler-semantics ID, a module whose body holds an unescaped end marker is refused with LLP2003 and is found as no module, and on every committed source the parser reads the module found is the one it opens."
 
 [[id]]
 id = "RT-01"
