@@ -181,7 +181,11 @@ inductive{
   name: Callee,
   type_parameters: [],
   parameters: [],
-  constructors: [{name: CalFn, fields: [Nat]}, {name: CalRt, fields: [Rt]}, {name: CalMachine, fields: [Nat]}]
+  constructors: [
+    {name: CalFn, fields: [Nat]},
+    {name: CalRt, fields: [Rt]},
+    {name: CalMachine, fields: [Nat]}
+  ]
 }
 
 inductive{
@@ -699,7 +703,10 @@ definition{
   name: nameName,
   parameters: [kind : NameKind],
   result: Bytes,
-  body: (match kind | NameKind.NkAdt => (text "Adt") | NameKind.NkFn => (text "Fn") | NameKind.NkParam => (text "Param")),
+  body: (match kind
+    | NameKind.NkAdt => (text "Adt")
+    | NameKind.NkFn => (text "Fn")
+    | NameKind.NkParam => (text "Param")),
   executable: true
 }
 
@@ -707,7 +714,10 @@ definition{
   name: nameKey,
   parameters: [kind : NameKind],
   result: Bytes,
-  body: (match kind | NameKind.NkAdt => (text "adt") | NameKind.NkFn => (text "fn") | NameKind.NkParam => (text "param")),
+  body: (match kind
+    | NameKind.NkAdt => (text "adt")
+    | NameKind.NkFn => (text "fn")
+    | NameKind.NkParam => (text "param")),
   executable: true
 }
 
