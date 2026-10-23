@@ -7890,8 +7890,8 @@ integers are read from the oracle's source by the generator of the module, so th
 constructors an encoder names are read by the case from the module's own text. The corpus is 701
 crates: the committed `supportCrate` and `probeCrate` and each in the other profile, the 97 crates
 that break one rule, or one site of a rule, each (the text plants of `RB-17` on the module, its nine plants on the decoded
-crate, the sixteen of `RB-19` on the probe, and its 55 site plants, which are crates of names, derives, literals, heads and
-type scopes), and 600 seeded mutants of the two committed modules
+crate, the sixteen of `RB-19` on the probe, and its 55 site plants, which are crates of names, derives, literals, heads,
+type scopes, and the five sites of `hidden-allocation`), and 600 seeded mutants of the two committed modules
 (a string, a constructor of the same enum, a mutable flag, a visibility, or a type parameter replaced by another of the module's), 562 of the 701 refused, so that the
 refusals are by each of the 40 rules the oracle names and by no other. The module carries what the five rules added by `RB-19`
 (`identifier`, `derive`, `char-literal`, `struct-head`, `type-scope`) read: a literal its number of scalar values, a binary
