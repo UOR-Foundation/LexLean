@@ -32,6 +32,7 @@ use crate::ir::core::{
 };
 use crate::ir::semantic::{MemberRef, SemanticTerm, Step};
 
+mod bound;
 mod boundary;
 mod calls;
 mod clauses;
@@ -319,6 +320,11 @@ impl<'g, 'a> Writer<'g, 'a> {
             if let Some(axioms) = self.declared.get(owner) {
                 return Ok(axioms.clone());
             }
+        }
+        // The lemmas of Lean's `Init` the rows of a bounded root apply
+        // (`data_a::bound`), with the axioms the pinned Lean prints for them.
+        if name == "Nat.blt_eq" || name == "Bool.and_eq_true_iff" {
+            return Ok(vec!["propext".to_owned()]);
         }
         if let Some(rest) = name.strip_prefix("LexLeanRuntime.") {
             return Ok(runtime_axioms(rest));

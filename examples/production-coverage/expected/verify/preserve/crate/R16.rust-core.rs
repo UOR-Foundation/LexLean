@@ -72,14 +72,32 @@ pub fn checked_neg_i16(a: i16) -> Option<i16> { a.checked_neg() }
 pub fn checked_neg_i32(a: i32) -> Option<i32> { a.checked_neg() }
 pub fn checked_neg_i64(a: i64) -> Option<i64> { a.checked_neg() }
 
-pub fn f0(v0: u64) -> R<(Option<u64>, Result<u64, ()>)> {
-    Ok((Some(nat_succ(v0)?), {
-        let a1 = v0;
-        let a2 = 3u64;
-        if nat_lt(a1, a2) {
-            Ok::<u64, ()>(0u64)
-        } else {
-            Err::<u64, ()>(())
+pub fn f0(v0: Option<u64>, v1: Result<u64, bool>) -> R<u64> {
+    let a3 = {
+        let m1 = v0;
+        match m1 {
+            None => {
+                0u64
+            }
+            Some(v2) => {
+                v2
+            }
         }
-    }))
+    };
+    let a4 = {
+        let m2 = v1;
+        match m2 {
+            Ok(v3) => {
+                v3
+            }
+            Err(v4) => {
+                if v4 {
+                    1u64
+                } else {
+                    2u64
+                }
+            }
+        }
+    };
+    nat_add(a3, a4)
 }

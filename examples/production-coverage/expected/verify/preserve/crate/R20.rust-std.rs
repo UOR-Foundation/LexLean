@@ -291,26 +291,54 @@ decimal!(u32, format_u32, parse_u32); decimal!(u64, format_u64, parse_u64);
 decimal!(i8, format_i8, parse_i8); decimal!(i16, format_i16, parse_i16);
 decimal!(i32, format_i32, parse_i32); decimal!(i64, format_i64, parse_i64);
 
-pub fn f0(v0: u64) -> bool {
-    f1(v0)
+#[derive(Clone)]
+pub enum Fn0 {
+    F2,
 }
 
-pub fn f1(v0: u64) -> bool {
-    let m1 = v0;
-    if m1 == 0 {
-        false
-    } else {
-        let v1 = m1 - 1;
-        f2(v1)
+impl Fn0 {
+    pub fn apply(&self, p0: u64) -> bool {
+        match self {
+            Fn0::F2 => f2(p0),
+        }
+    }
+}
+
+pub fn f0(v0: List<u64>) -> List<bool> {
+    f1(Fn0::F2, v0)
+}
+
+pub fn f1(v0: Fn0, v1: List<u64>) -> List<bool> {
+    let m1 = v1;
+    match m1.uncons() {
+        None => {
+            List::<bool>::nil()
+        }
+        Some((v2, v3)) => {
+            List::cons({
+                let c2: Fn0 = v0.clone();
+                c2.apply(v2)
+            }, f1(v0, v3))
+        }
     }
 }
 
 pub fn f2(v0: u64) -> bool {
-    let m2 = v0;
-    if m2 == 0 {
+    let m3 = v0;
+    if m3 == 0 {
         true
     } else {
-        let v1 = m2 - 1;
-        f1(v1)
+        let v1 = m3 - 1;
+        f3(v1)
+    }
+}
+
+pub fn f3(v0: u64) -> bool {
+    let m4 = v0;
+    if m4 == 0 {
+        false
+    } else {
+        let v1 = m4 - 1;
+        f2(v1)
     }
 }

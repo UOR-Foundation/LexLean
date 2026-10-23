@@ -1535,8 +1535,188 @@ fn unexercised(reports: &[&lexlean::production::RootReport]) -> Vec<String> {
 ///
 /// Panics when the case's claim does not hold.
 #[allow(clippy::too_many_lines)]
+/// Edit a copied source in the authoring notation as written: `P::edit`
+/// works on the data form of a module, and the production declaration under
+/// test is spelled in the notation.
+fn edit_notation(project: &P, relative: &str, from: &str, to: &str) {
+    let text = project.read_raw(relative);
+    assert!(text.contains(from), "{relative} does not contain {from:?}");
+    std::fs::write(
+        project.root.join(relative).as_std_path(),
+        text.replacen(from, to, 1),
+    )
+    .expect("the copied source is written");
+}
+
 pub fn run(id: &str) {
     match id {
+        // §17.17: certificate A of a root with a bound states `bounded` and
+        // `root_value`, built from the bound's theorem.
+        "SP-29" => {
+            const BOUNDS: &str = "src/Bounds.lex.tex";
+            const ROOT: &str = "Coverage.Bounds.maxOfThree";
+            let project = P::copy_example("production-coverage");
+            let checked = support::checked_project(&project);
+            let limits = support::limits(&project);
+            let linked = linked_modules(&checked);
+            let hex = checked.semantic_id.to_hex()[..32].to_owned();
+            let mut certified = false;
+            for (index, root) in roots(&checked).expect("the reports").iter().enumerate() {
+                if root.report.root != ROOT {
+                    continue;
+                }
+                certified = true;
+                assert_eq!(
+                    root.report.bound.as_deref(),
+                    Some("Coverage.Bounds.maxOfThree_bound"),
+                    "the report names the bound"
+                );
+                let lowered = lower_root(&linked, &root.module, &root.name, root.report, &limits)
+                    .expect("the bounded root lowers");
+                let module = format!("LexLeanPreserve.C{hex}.R{index}");
+                let certificate = lexlean::production::certificate::certificate(
+                    &linked,
+                    &root.module,
+                    &root.name,
+                    root.report,
+                    &lowered,
+                    &module,
+                    limits.max_file_bytes,
+                )
+                .expect("certificate A of the bounded root is generated");
+                let data = certificate.data.as_ref().expect("certificate A is data");
+                let certificate_axioms = lexlean::ir::core::CoreAxiomPolicy::Exact(
+                    ["Classical.choice", "Quot.sound", "propext"]
+                        .iter()
+                        .map(|axiom| (*axiom).to_owned())
+                        .collect(),
+                );
+                for row in ["bounded", "root_value", "root"] {
+                    let name = format!("{module}.{row}");
+                    let declaration = data
+                        .declarations
+                        .iter()
+                        .find(|declaration| declaration.name == name)
+                        .unwrap_or_else(|| panic!("{name} is a row of certificate A"));
+                    assert_eq!(
+                        declaration.policy, certificate_axioms,
+                        "{name} pins its axioms exactly"
+                    );
+                }
+                // The recorded notation and the rendered text carry both rows.
+                let source = certificate
+                    .source
+                    .as_deref()
+                    .expect("certificate A is recorded");
+                for row in ["bounded", "root_value"] {
+                    assert!(
+                        source.contains(&format!("theorem {module}.{row} ")),
+                        "the record states {row}"
+                    );
+                }
+            }
+            assert!(certified, "the coverage example has the bounded root");
+            // A root without a bound has neither row.
+            let plain = P::copy_example("production-coverage");
+            edit_notation(&plain, BOUNDS,
+                "production: {bound: maxOfThree_bound, effects: [], targets: [rust-core, rust-std]}",
+                "production: {effects: [overflow], targets: [rust-core, rust-std]}",
+            );
+            let checked = support::checked_project(&plain);
+            let linked = linked_modules(&checked);
+            let hex = checked.semantic_id.to_hex()[..32].to_owned();
+            for (index, root) in roots(&checked).expect("the reports").iter().enumerate() {
+                if root.report.root != ROOT {
+                    continue;
+                }
+                assert!(root.report.bound.is_none());
+                let lowered = lower_root(&linked, &root.module, &root.name, root.report, &limits)
+                    .expect("the root lowers");
+                let module = format!("LexLeanPreserve.C{hex}.R{index}");
+                let certificate = lexlean::production::certificate::certificate(
+                    &linked,
+                    &root.module,
+                    &root.name,
+                    root.report,
+                    &lowered,
+                    &module,
+                    limits.max_file_bytes,
+                )
+                .expect("certificate A of the plain root is generated");
+                let data = certificate.data.as_ref().expect("certificate A is data");
+                assert!(
+                    !data.declarations.iter().any(|declaration| {
+                        declaration.name.ends_with(".bounded")
+                            || declaration.name.ends_with(".root_value")
+                    }),
+                    "a root without a bound has no bounded row"
+                );
+            }
+            if !support::lean_backed("SP-29") {
+                return;
+            }
+            // The pinned Lean checks the rows: the bounded module verifies,
+            // and its record states both theorems.
+            let selection =
+                || lexlean::Selection::Files(BTreeSet::from([project.root.join(BOUNDS)]));
+            let outcome = project
+                .engine()
+                .verify(lexlean::VerifyRequest {
+                    selection: selection(),
+                })
+                .expect("the bounded module verifies under the pinned Lean");
+            let record_bytes = std::fs::read(
+                outcome
+                    .root
+                    .join("preserve/preservation.json")
+                    .as_std_path(),
+            )
+            .expect("preservation.json");
+            let record: Json =
+                serde_json::from_slice(&record_bytes).expect("preservation.json is JSON");
+            let entry = record["roots"]
+                .as_array()
+                .expect("roots")
+                .iter()
+                .find(|entry| entry["root"] == ROOT)
+                .expect("the bounded root is recorded");
+            let module = entry["module"].as_str().expect("module");
+            let relative = module.replacen("LexLeanPreserve.", "", 1).replace('.', "/");
+            let notation = std::fs::read_to_string(
+                outcome
+                    .root
+                    .join(format!("preserve/LexLeanPreserve/{relative}.lex.tex"))
+                    .as_std_path(),
+            )
+            .expect("the certificate's record is published");
+            for row in ["bounded", "root_value"] {
+                assert!(
+                    notation.contains(&format!("theorem {module}.{row} ")),
+                    "the published record states {row}"
+                );
+            }
+            // A forged bound: the exact statement with a proof that does not
+            // prove it passes linking and fails verification, so nothing is
+            // published.
+            let forged = P::copy_example("production-coverage");
+            edit_notation(
+                &forged,
+                BOUNDS,
+                "  proof: linear_arithmetic{},",
+                "  proof: reflexivity{},",
+            );
+            assert!(
+                forged.check_err_or_ok(),
+                "the forged bound states the obligation"
+            );
+            let error = match forged.engine().verify(lexlean::VerifyRequest {
+                selection: lexlean::Selection::Files(BTreeSet::from([forged.root.join(BOUNDS)])),
+            }) {
+                Ok(outcome) => panic!("a forged bound verified: {}", outcome.root),
+                Err(error) => error,
+            };
+            support::expect_code(&error, "LLV7002");
+        }
         // §17.17: the lowering.
         "SP-01" => {
             let mut lowered = 0usize;

@@ -291,12 +291,12 @@ decimal!(u32, format_u32, parse_u32); decimal!(u64, format_u64, parse_u64);
 decimal!(i8, format_i8, parse_i8); decimal!(i16, format_i16, parse_i16);
 decimal!(i32, format_i32, parse_i32); decimal!(i64, format_i64, parse_i64);
 
-pub fn f0(v0: i64, v1: i8) -> (Str, Str) {
-    ({
-        let a1 = v0;
-        format_i64(a1)
+pub fn f0(v0: Str) -> R<(Option<i64>, Option<u32>)> {
+    Ok(({
+        let a1 = v0.clone();
+        parse_int(a1)?
     }, {
-        let a2 = v1;
-        format_i8(a2)
-    })
+        let a2 = v0;
+        parse_u32(a2)
+    }))
 }

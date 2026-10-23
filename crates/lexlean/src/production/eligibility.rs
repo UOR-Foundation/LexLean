@@ -83,6 +83,9 @@ pub struct LinkedModule<'a> {
 pub enum AnalysisError {
     /// A root is not eligible for one of its targets (`LLT4005`).
     Ineligible(String),
+    /// A root names a bound that does not cover an operation of its closure
+    /// that can overflow (`LLT4017`).
+    Uncovered(String),
     /// The embedded registry or a linking guarantee failed: a compiler
     /// defect, never a property of the source (`LLI9001`).
     Internal(String),
@@ -3040,6 +3043,35 @@ fn analyse_root(
         }
     }
 
+    // §17.13: a bound discharges `overflow`. Linking fixed the theorem's
+    // statement over the root's own body and certificate A proves the width
+    // predicate from it, so here the question is only whether every source
+    // of the effect is one the bound reaches: an addition or multiplication
+    // of naturals in the root itself. Any other source keeps the effect and
+    // is named, rather than admitted by inference.
+    let bound = production
+        .bound
+        .as_ref()
+        .map(|member| walk.owner(module).lean_name(member));
+    match (&bound, walk.effects.get("overflow")) {
+        (Some(bound_name), Some(sources)) => {
+            let uncovered = sources.iter().find(|(construct, instance)| {
+                *instance != root
+                    || !crate::ir::semantic::bound::COVERED.contains(&construct.as_str())
+            });
+            match uncovered {
+                Some((construct, instance)) => {
+                    return Err(AnalysisError::Uncovered(format!(
+                        "production root `{root}` names the bound `{bound_name}`, which does not cover construct `{construct}` in `{instance}`: a bound covers the additions and multiplications of naturals in the root's own body"
+                    )));
+                }
+                None => {
+                    walk.effects.remove("overflow");
+                }
+            }
+        }
+        (Some(_), None) | (None, Some(_)) | (None, None) => {}
+    }
     // The registry says `recursion` of a recursive definition, which is a
     // property of its rendering: a function whose self calls are all tail
     // calls is rendered as a loop and uses no stack (§17.13, §17.16). So
@@ -3050,6 +3082,7 @@ fn analyse_root(
         let provisional = RootReport {
             root: root.clone(),
             declared_effects: production.effects.clone(),
+            bound: bound.clone(),
             runtime: walk
                 .member_order
                 .iter()
@@ -3178,6 +3211,7 @@ fn analyse_root(
     Ok(RootReport {
         root,
         declared_effects: production.effects.clone(),
+        bound,
         runtime,
         types: walk.types,
         erased: walk.erased,
@@ -3602,7 +3636,7 @@ mod tests {
         };
         match analyse_module("Main", &modules, u64::MAX, 0, &limits) {
             Ok(report) => panic!("the root is reported eligible: {report:?}"),
-            Err(AnalysisError::Ineligible(reason)) => reason,
+            Err(AnalysisError::Ineligible(reason) | AnalysisError::Uncovered(reason)) => reason,
             Err(AnalysisError::Internal(reason) | AnalysisError::Limit(reason)) => {
                 panic!("internal failure: {reason}")
             }

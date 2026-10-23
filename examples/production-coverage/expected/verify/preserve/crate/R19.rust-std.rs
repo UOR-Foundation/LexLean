@@ -293,52 +293,65 @@ decimal!(i32, format_i32, parse_i32); decimal!(i64, format_i64, parse_i64);
 
 #[derive(Clone)]
 pub enum Fn0 {
-    F2,
+    F2(u64, u64),
+    F3(u64),
+    F4,
 }
 
 impl Fn0 {
-    pub fn apply(&self, p0: u64) -> bool {
+    pub fn apply(&self, p0: u64) -> R<u64> {
         match self {
-            Fn0::F2 => f2(p0),
+            Fn0::F2(k0, k1) => f2(*k0, *k1, p0),
+            Fn0::F3(k0) => Ok(f3(*k0, p0)),
+            Fn0::F4 => f4(p0),
         }
     }
 }
 
-pub fn f0(v0: List<u64>) -> List<bool> {
-    f1(Fn0::F2, v0)
+pub fn f0(v0: u64, v1: u64) -> R<u64> {
+    let v2: u64 = {
+        let a1 = v0;
+        let a2 = 1u64;
+        nat_add(a1, a2)?
+    };
+    let a6 = f1(Fn0::F2(v2, v1), v0)?;
+    let a7 = {
+        let a4 = {
+            let c3: Fn0 = Fn0::F3(v2);
+            c3.apply(v0)?
+        };
+        let a5 = f1(Fn0::F4, v1)?;
+        nat_add(a4, a5)?
+    };
+    nat_add(a6, a7)
 }
 
-pub fn f1(v0: Fn0, v1: List<u64>) -> List<bool> {
-    let m1 = v1;
-    match m1.uncons() {
-        None => {
-            List::<bool>::nil()
-        }
-        Some((v2, v3)) => {
-            List::cons({
-                let c2: Fn0 = v0.clone();
-                c2.apply(v2)
-            }, f1(v0, v3))
-        }
-    }
+pub fn f1(v0: Fn0, v1: u64) -> R<u64> {
+    let c8: Fn0 = v0.clone();
+    c8.apply({
+        let c9: Fn0 = v0;
+        c9.apply(v1)?
+    })
 }
 
-pub fn f2(v0: u64) -> bool {
-    let m3 = v0;
-    if m3 == 0 {
-        true
-    } else {
-        let v1 = m3 - 1;
-        f3(v1)
-    }
+pub fn f2(v0: u64, v1: u64, v2: u64) -> R<u64> {
+    let a12 = {
+        let a10 = v2;
+        let a11 = v0;
+        nat_mul(a10, a11)?
+    };
+    let a13 = v1;
+    nat_add(a12, a13)
 }
 
-pub fn f3(v0: u64) -> bool {
-    let m4 = v0;
-    if m4 == 0 {
-        false
-    } else {
-        let v1 = m4 - 1;
-        f2(v1)
-    }
+pub fn f3(v0: u64, v1: u64) -> u64 {
+    let a14 = v1;
+    let a15 = v0;
+    nat_sub(a14, a15)
+}
+
+pub fn f4(v0: u64) -> R<u64> {
+    let a16 = v0;
+    let a17 = v0;
+    nat_add(a16, a17)
 }

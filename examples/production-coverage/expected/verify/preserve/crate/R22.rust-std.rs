@@ -291,21 +291,25 @@ decimal!(u32, format_u32, parse_u32); decimal!(u64, format_u64, parse_u64);
 decimal!(i8, format_i8, parse_i8); decimal!(i16, format_i16, parse_i16);
 decimal!(i32, format_i32, parse_i32); decimal!(i64, format_i64, parse_i64);
 
-pub fn f0(v0: i16, v1: i32) -> (Option<i16>, (Option<i32>, (Option<i32>, bool))) {
+pub fn f0(v0: i8, v1: i8) -> (Option<i8>, (Option<i8>, (Option<i8>, (Option<i8>, Option<i8>)))) {
     ({
         let a1 = v0;
-        let a2 = v0;
-        fixed_i16::checked_mul(a1, a2)
+        let a2 = v1;
+        fixed_i8::checked_add(a1, a2)
     }, ({
-        let a3 = v1;
-        let a4 = -7i32;
-        fixed_i32::checked_add(a3, a4)
+        let a3 = v0;
+        let a4 = v1;
+        fixed_i8::checked_sub(a3, a4)
     }, ({
         let a5 = v0;
-        fixed_i32::convert(i128::from(a5))
-    }, {
         let a6 = v1;
-        let a7 = 3i32;
-        equal(a6, a7)
-    })))
+        fixed_i8::checked_mul(a5, a6)
+    }, ({
+        let a7 = v0;
+        let a8 = v1;
+        fixed_i8::checked_quot(a7, a8)
+    }, {
+        let a9 = v0;
+        checked_neg_i8(a9)
+    }))))
 }

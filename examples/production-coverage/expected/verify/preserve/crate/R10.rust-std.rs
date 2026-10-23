@@ -291,47 +291,6 @@ decimal!(u32, format_u32, parse_u32); decimal!(u64, format_u64, parse_u64);
 decimal!(i8, format_i8, parse_i8); decimal!(i16, format_i16, parse_i16);
 decimal!(i32, format_i32, parse_i32); decimal!(i64, format_i64, parse_i64);
 
-pub fn f0(v0: u64, v1: u64) -> R<u64> {
-    let v2: u64 = {
-        let a1 = v0;
-        let a2 = v1;
-        let a3 = 7u64;
-        nat_quot(a1, a2, a3)
-    };
-    let v3: u64 = {
-        let a4 = v0;
-        let a5 = v1;
-        let a6 = 0u64;
-        nat_rem(a4, a5, a6)
-    };
-    let a7 = v2;
-    let a8 = 0u64;
-    if if nat_eq(a7, a8) {
-        let a9 = v3;
-        let a10 = 3u64;
-        if nat_le(a9, a10) {
-            true
-        } else {
-            let a13 = {
-                let a11 = v0;
-                let a12 = v1;
-                nat_lt(a11, a12)
-            };
-            bool_not(a13)
-        }
-    } else {
-        false
-    } {
-        let a16 = {
-            let a14 = v0;
-            let a15 = v1;
-            nat_sub(a14, a15)
-        };
-        let a17 = v3;
-        nat_add(a16, a17)
-    } else {
-        let a18 = v2;
-        let a19 = v3;
-        nat_mul(a18, a19)
-    }
+pub fn f0(v0: u64, _: Str) -> (List<(Str, u64)>, (List<u64>, List<(u64, List<u64>)>)) {
+    (List::cons((Str::lit("a"), v0), List::cons((Str::lit("b"), 2u64), List::<(Str, u64)>::nil())), (List::cons(1u64, List::cons(3u64, List::<u64>::nil())), List::cons((1u64, List::cons(2u64, List::<u64>::nil())), List::cons((2u64, List::cons(1u64, List::<u64>::nil())), List::<(u64, List<u64>)>::nil()))))
 }

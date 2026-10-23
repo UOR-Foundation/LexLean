@@ -4244,6 +4244,29 @@ root whose realization could exhibit an effect, a construct, or a value
 representation that the declaration does not cover. Production compilation
 never approximates or erases computational meaning to admit a root.
 
+**Bounds.** A root may name a *bound*: `"production": {…, "bound": T}`, where
+`T` is a prior theorem of the root's module whose statement is exactly the
+obligation linking generates from the root (compared as the entry and evidence
+obligations of §17.12 are, up to the names of bound variables): under the
+hypothesis that each `nat` parameter is below 2^64, every addition and
+multiplication of naturals of the root's own body is below 2^64, as a
+conjunction in evaluation order with every `let` substituted. The rule reads
+the body through `let`, parameters, literals, `+`, and the total subtraction,
+quotient, and remainder of naturals, and nothing else: an operation under a
+match, a conditional, or a lambda, in a callee, a successor, or an integer
+operation is not covered, and a root that names a bound over such a body, or
+whose theorem states another obligation, is refused with `LLT4017` naming the
+construct. With the bound, the analysis requires `overflow` of the root only
+where a source of the effect lies outside what the bound covers, which is
+`LLT4017` as well, so the effect is discharged exactly when the theorem covers
+every source; the report records the bound (`bound`), and a root without one
+keeps the registry's answer. The bound is a theorem the pinned Lean checks at
+verification like any other theorem of the module, never a check the
+realization performs and never an inference of the analysis, and certificate A
+proves from it that the root's width predicate holds on every argument in the
+width (§17.17), so a theorem that does not imply the predicate fails
+verification rather than admit the root.
+
 **Report.** Every module with a production root has the build artifact
 `production/<full-module-path>.eligibility.json`
 (`lexlean/production-eligibility/1`, `schemas/production-eligibility.schema.json`),
@@ -5094,6 +5117,24 @@ its template's. Certificate A's arguments are unbounded: it speaks of every
 natural number and integer, including those no Rust caller can pass; the
 representable arguments are certificate E's domain. The module also defines
 `denote`, the theorem's observation as a function of the arguments.
+
+A root that names a bound (§17.13) has two more rows. `bounded` states, for
+the root's parameters and a hypothesis `xᵢ < 2^64` for each `nat` parameter,
+that `fits x₁ … xₙ = true`, and its proof is built from the bound's theorem
+applied to the parameters and hypotheses: the width predicate of such a root
+is, under the `let`s of the body, a conjunction of the checks `Nat.blt v 2^64`
+of its additions and multiplications in evaluation order, and the proof reads
+it construct by construct, `true` by reflexivity, a conjunction through
+`Bool.and_eq_true_iff` from the proofs of its halves, a `let` by instantiating
+it, and each check through `Nat.blt_eq` from the next conjunct of the
+theorem, projected out of its conclusion. `root_value` rewrites `root` with
+`bounded`: the lowered program converges on the encoded arguments to the
+encoded value of the root, for every argument in the width. Each row pins its
+axioms exactly, within the certificate axioms, and the kernel checks each
+conjunct of the theorem against the proposition the check decides, so a bound
+whose statement linking accepted but whose conjuncts do not match the
+predicate's checks, in content or in order, is refused with `LLV7013` naming
+the row; no range is decided by the generator.
 
 **Limits.** A lowered program grows with the size of the types a generic
 definition is instantiated at: a definition `g_k<T> = g_{k+1}<(T, T)>` chained
@@ -9328,6 +9369,7 @@ The registry holds exactly these codes and meanings. The table is generated from
 | `LLT4014` | A tooling module pins an authority other than the compiler's Lean release, or its registry of types, calls, and plumbing is not closed: a name declared twice, a signature or field naming an unregistered constant or an unbound variable, a type whose parameters, constructors, index requirements, or abbreviation are inconsistent, a plumbing row that is empty, unsorted, or repeats a constant, or a source pin that is not a toolchain path with a SHA-256. |
 | `LLT4015` | A tooling term is not well typed: a call with the wrong type arguments or arguments, a match that is not exhaustive at its scrutinee's index, or a binder that shadows another; a function recurses without a licence (partial, or its contiguous mutual group); a command, invocation, or evaluation does not match its grammar; or a traversal does not recurse into every field of its recursive family. |
 | `LLT4016` | A text declaration does not state the bound it must: a context window with capacity 0, or a text generator with max_tokens 0. |
+| `LLT4017` | A production root's bound is not a prior theorem of its module stating exactly the generated obligation, or an operation of the root's closure that can overflow lies outside what the bound covers: under a match, a conditional, or a lambda, in a callee, or a primitive the rule does not cover. |
 | `LLV7001` | Lean/Lake/leanchecker version or executable mismatch. |
 | `LLV7002` | Generated Lean elaboration or compilation failure. |
 | `LLV7003` | `leanchecker` replay failure. |

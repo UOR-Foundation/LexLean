@@ -72,32 +72,53 @@ pub fn checked_neg_i16(a: i16) -> Option<i16> { a.checked_neg() }
 pub fn checked_neg_i32(a: i32) -> Option<i32> { a.checked_neg() }
 pub fn checked_neg_i64(a: i64) -> Option<i64> { a.checked_neg() }
 
-pub fn f0(v0: Option<u64>, v1: Result<u64, bool>) -> R<u64> {
-    let a3 = {
-        let m1 = v0;
-        match m1 {
-            None => {
-                0u64
+#[derive(Clone)]
+pub enum Adt0 {
+    C0(u64, u64),
+}
+
+#[derive(Clone)]
+pub enum Adt1 {
+    C0(u64, u64),
+}
+
+#[derive(Clone)]
+pub enum Adt2 {
+    C0(u64, u64),
+}
+
+pub fn f0(v0: u64, v1: u64) -> R<(u64, u64)> {
+    let v2: Adt0 = Adt0::C0(v0, v1);
+    Ok(({
+        let a4 = match v2.clone() {
+            Adt0::C0(h1, _) => {
+                h1
             }
-            Some(v2) => {
-                v2
-            }
-        }
-    };
-    let a4 = {
-        let m2 = v1;
-        match m2 {
-            Ok(v3) => {
-                v3
-            }
-            Err(v4) => {
-                if v4 {
-                    1u64
-                } else {
-                    2u64
+        };
+        let a5 = {
+            let m3 = f1();
+            match m3 {
+                Adt2::C0(_, h2) => {
+                    h2
                 }
             }
+        };
+        nat_add(a4, a5)?
+    }, f2(Adt1::C0(match v2 {
+        Adt0::C0(_, h6) => {
+            h6
         }
-    };
-    nat_add(a3, a4)
+    }, 1u64))))
+}
+
+pub fn f1() -> Adt2 {
+    Adt2::C0(2u64, 3u64)
+}
+
+pub fn f2(v0: Adt1) -> u64 {
+    match v0 {
+        Adt1::C0(h7, _) => {
+            h7
+        }
+    }
 }

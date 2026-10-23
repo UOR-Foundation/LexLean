@@ -1106,6 +1106,9 @@ fn check_project_inline(
                         crate::production::eligibility::AnalysisError::Ineligible(reason) => {
                             (code!("LLT4005"), reason)
                         }
+                        crate::production::eligibility::AnalysisError::Uncovered(reason) => {
+                            (code!("LLT4017"), reason)
+                        }
                         crate::production::eligibility::AnalysisError::Internal(reason) => {
                             (code!("LLI9001"), reason)
                         }

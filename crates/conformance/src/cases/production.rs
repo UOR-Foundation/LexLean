@@ -340,8 +340,175 @@ const REGISTRY_ROWS: [(&str, &str, bool, &[&str], bool); 148] = [
 ///
 /// Panics when the case's assertion fails, and for an unwired ID.
 #[allow(clippy::too_many_lines)]
+/// Edit a copied source in the authoring notation as written: `P::edit`
+/// works on the data form of a module, and the production declaration under
+/// test is spelled in the notation.
+fn edit_notation(project: &P, relative: &str, from: &str, to: &str) {
+    let text = project.read_raw(relative);
+    assert!(text.contains(from), "{relative} does not contain {from:?}");
+    std::fs::write(
+        project.root.join(relative).as_std_path(),
+        text.replacen(from, to, 1),
+    )
+    .expect("the copied source is written");
+}
+
 pub fn run(id: &str) {
     match id {
+        // §17.13: a bound discharges `overflow`; linking fixes its statement,
+        // eligibility its coverage, and certificate A (SP-29) its proof.
+        "PD-09" => {
+            const BOUNDS: &str = "src/Bounds.lex.tex";
+            const ROOT: &str = "Coverage.Bounds.maxOfThree";
+            let bounds_report = |project: &P| -> serde_json::Value {
+                let build = support::rendered(project);
+                let (_, bytes) = build
+                    .files
+                    .iter()
+                    .find(|(path, _)| path == "production/Coverage/Bounds.eligibility.json")
+                    .expect("the coverage example publishes the Bounds report");
+                let report: serde_json::Value =
+                    serde_json::from_slice(bytes).expect("the Bounds report is JSON");
+                support::assert_schema("production-eligibility", "the Bounds report", &report);
+                report["roots"]
+                    .as_array()
+                    .expect("roots")
+                    .iter()
+                    .find(|root| root["root"] == ROOT)
+                    .cloned()
+                    .expect("maxOfThree is reported")
+            };
+            // The committed bounded root: admitted without `overflow` on both
+            // targets, the report naming its bound.
+            let committed = bounds_report(&P::copy_example("production-coverage"));
+            assert_eq!(committed["bound"], "Coverage.Bounds.maxOfThree_bound");
+            assert_eq!(committed["declared_effects"], serde_json::json!([]));
+            let targets = committed["targets"].as_array().expect("targets");
+            assert_eq!(targets.len(), 2, "both targets");
+            for target in targets {
+                assert_eq!(
+                    target["effects"],
+                    serde_json::json!([]),
+                    "{}: no effect is required of the bounded root",
+                    target["target"]
+                );
+            }
+            // Removing the bound restores the effect: the root that no longer
+            // admits `overflow` is refused for its addition, …
+            let removed = P::copy_example("production-coverage");
+            edit_notation(&removed, BOUNDS, "production: {bound: maxOfThree_bound, effects: [], targets: [rust-core, rust-std]}", "production: {effects: [], targets: [rust-core, rust-std]}");
+            let error = removed.check_fails_with("LLT4005");
+            let text = error.to_string();
+            assert!(
+                text.contains(
+                    "`Coverage.Bounds.maxOfThree` is not eligible for target `rust-core`"
+                ) && text
+                    .contains("effect mismatch: construct `term.add` realizes effect `overflow`"),
+                "{text}"
+            );
+            removed.assert_no_backend_output_with("LLT4005");
+            // … and the root that admits it is reported with the addition as
+            // the effect's source, and no bound.
+            let admitted = P::copy_example("production-coverage");
+            edit_notation(&admitted, BOUNDS,
+                "production: {bound: maxOfThree_bound, effects: [], targets: [rust-core, rust-std]}",
+                "production: {effects: [overflow], targets: [rust-core, rust-std]}",
+            );
+            let admitted = bounds_report(&admitted);
+            assert!(admitted.get("bound").is_none(), "no bound is reported");
+            assert_eq!(
+                admitted["declared_effects"],
+                serde_json::json!(["overflow"])
+            );
+            for target in admitted["targets"].as_array().expect("targets") {
+                let effects = target["effects"].as_array().expect("effects");
+                assert_eq!(effects.len(), 1, "{}: one effect", target["target"]);
+                assert_eq!(effects[0]["effect"], "overflow");
+                let sources = effects[0]["sources"].as_array().expect("sources");
+                assert!(
+                    !sources.is_empty()
+                        && sources
+                            .iter()
+                            .all(|source| source["construct"] == "term.add"
+                                && source["instance"] == ROOT),
+                    "{}: the additions of the root are the sources: {sources:?}",
+                    target["target"]
+                );
+            }
+            // A bound narrowed to the first addition states another
+            // obligation: refused by linking, naming the obligation, before
+            // any backend.
+            let narrowed = P::copy_example("production-coverage");
+            edit_notation(&narrowed, BOUNDS,
+                "(((a + (prim subtract b a : Nat)) < 18446744073709551616) /\\ (((a + (prim subtract b a : Nat)) + (prim subtract c (a + (prim subtract b a : Nat)) : Nat)) < 18446744073709551616))",
+                "((a + (prim subtract b a : Nat)) < 18446744073709551616)",
+            );
+            let error = narrowed.check_fails_with("LLT4017");
+            let text = error.to_string();
+            assert!(
+                text.contains("production bound of `maxOfThree`")
+                    && text.contains("does not state exactly the generated obligation")
+                    && text.contains(r#""kind":"prop_and""#),
+                "{text}"
+            );
+            narrowed.assert_no_backend_output_with("LLT4017");
+            // The conjuncts reordered: the same checks, not in evaluation
+            // order, are another statement.
+            let reordered = P::copy_example("production-coverage");
+            edit_notation(&reordered, BOUNDS,
+                "(((a + (prim subtract b a : Nat)) < 18446744073709551616) /\\ (((a + (prim subtract b a : Nat)) + (prim subtract c (a + (prim subtract b a : Nat)) : Nat)) < 18446744073709551616))",
+                "((((a + (prim subtract b a : Nat)) + (prim subtract c (a + (prim subtract b a : Nat)) : Nat)) < 18446744073709551616) /\\ ((a + (prim subtract b a : Nat)) < 18446744073709551616))",
+            );
+            let error = reordered.check_fails_with("LLT4017");
+            assert!(
+                error
+                    .to_string()
+                    .contains("does not state exactly the generated obligation"),
+                "{error}"
+            );
+            // A bound over a body the rule does not read: an integer
+            // multiplication, even one whose value the root never uses, keeps
+            // `overflow` and is named.
+            let integer = P::copy_example("production-coverage");
+            edit_notation(&integer, BOUNDS,
+                "body: (let larger : Nat := (a + (prim subtract b a : Nat)); (larger + (prim subtract c larger : Nat))),",
+                "body: (let larger : Nat := (a + (prim subtract b a : Nat)); (let scaled : Int := (prim multiply (3 : Int) (4 : Int) : Int); (larger + (prim subtract c larger : Nat)))),",
+            );
+            let error = integer.check_fails_with("LLT4017");
+            let text = error.to_string();
+            assert!(
+                text.contains("production bound of `maxOfThree`")
+                    && text.contains("is not covered"),
+                "{text}"
+            );
+            // The negative fixtures: a theorem stating another obligation, and
+            // an addition under an `if`.
+            for (fixture, fragment) in [
+                (
+                    "production-bound-inexact",
+                    "`double_bound` does not state exactly the generated obligation over (value : Nat)",
+                ),
+                (
+                    "production-bound-uncovered",
+                    "the construct `term.if` is not covered",
+                ),
+            ] {
+                let project = P::negative(fixture);
+                let error = project.check_fails_with("LLT4017");
+                let text = error.to_string();
+                assert!(text.contains(fragment), "{fixture}: expected {fragment:?}, got {text}");
+                assert!(
+                    project
+                        .engine()
+                        .build(lexlean::BuildRequest {
+                            selection: lexlean::Selection::Entrypoints,
+                        })
+                        .is_err(),
+                    "{fixture} never builds"
+                );
+                project.assert_no_backend_output_with("LLT4017");
+            }
+        }
         // §17.13, §17.23: the stacks the harnesses give a recursive root.
         "PD-08" => super::bootstrap::stack_bounds(),
         "PD-01" => {

@@ -291,12 +291,14 @@ decimal!(u32, format_u32, parse_u32); decimal!(u64, format_u64, parse_u64);
 decimal!(i8, format_i8, parse_i8); decimal!(i16, format_i16, parse_i16);
 decimal!(i32, format_i32, parse_i32); decimal!(i64, format_i64, parse_i64);
 
-pub fn f0(v0: (u64, bool)) -> (bool, u64) {
-    ({
-        let (_, h1) = v0;
-        h1
-    }, {
-        let (h2, _) = v0;
-        h2
-    })
+pub fn f0(v0: u64) -> R<(Option<u64>, Result<u64, ()>)> {
+    Ok((Some(nat_succ(v0)?), {
+        let a1 = v0;
+        let a2 = 3u64;
+        if nat_lt(a1, a2) {
+            Ok::<u64, ()>(0u64)
+        } else {
+            Err::<u64, ()>(())
+        }
+    }))
 }

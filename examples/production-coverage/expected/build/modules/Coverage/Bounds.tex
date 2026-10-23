@@ -1,0 +1,19 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{maxOfThree\_bound}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(a : Nat) (b : Nat) (c : Nat)}.\par
+\noindent Statement: \texttt{((a < 18446744073709551616) -> ((b < 18446744073709551616) -> ((c < 18446744073709551616) -> (((a + (LexLeanRuntime.subtract (b) (a) : Nat)) < 18446744073709551616) /\textbackslash{} (((a + (LexLeanRuntime.subtract (b) (a) : Nat)) + (LexLeanRuntime.subtract (c) ((a + (LexLeanRuntime.subtract (b) (a) : Nat))) : Nat)) < 18446744073709551616)))))}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\subsection*{\texttt{maxOfThree}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(a : Nat) (b : Nat) (c : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-core, rust-std}; admitted effects: \texttt{none}.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(let larger : Nat := (a + (LexLeanRuntime.subtract (b) (a) : Nat)); (larger + (LexLeanRuntime.subtract (c) (larger) : Nat)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\end{document}
