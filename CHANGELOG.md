@@ -17,6 +17,13 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- `term_cases` decides constructor disjointness and injectivity (#280, SPEC.md
+  §17.10, `SM-35`). Its fixed `simp only` set adds `reduceCtorEq`, `false_implies`,
+  `imp_self`, `and_true`, `true_and`, the injectivity lemmas of `Option`, `Result`
+  (`Except`), and `List`, and the injectivity lemma of every constructor with a
+  field of the module's inductive types, so "if the check returns `bad p`, the
+  report names `p`" is proved and a false case is still rejected. No
+  compiler-semantics identity moves.
 - The Rust runtime as source, #91 stage 4 (SPEC.md §17.16, §17.17, `SP-21`,
   `RB-15`, `SP-23`, `SM-35`, `SM-36`, `RB-16`, `SP-22`, `RB-17`, `SP-25`).
   The declared Rust machine grows by the primitives the runtime is written in

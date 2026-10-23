@@ -1830,6 +1830,81 @@ Not planted: the check that the term's type is an inductive of the document, the
 the absent definition, and the reserved name, each of which the case exercises with its own
 misuse; their checks were not removed one by one.
 
+### a split on a document term decides constructor equations, and can fail (SM-35, #280)
+
+The first lowering of `term_cases` decided closed propositions only, so a case that equates
+two different constructors over a variable (`Verdict.good = Verdict.bad p`, `none = some p`)
+or one constructor over different fields (`Verdict.bad x = Verdict.bad p`) was left open,
+and "if the check returns `bad p`, the report names `p`" could not be proved (#280,
+UOR-Foundation/MCP#20). The lowering now names, after the definitions, `llCase`, `ite_true`,
+and `ite_false`, the fixed constructor rules `reduceCtorEq`, `false_implies`, `imp_self`,
+`and_true`, `true_and`, `Option.some.injEq`, `Except.error.injEq`, `Except.ok.injEq`,
+`List.cons.injEq`, and then `<T>.<c>.injEq` for every constructor with a field of every
+inductive type the module declares, in declaration order (§17.10). Every rule is named in
+the script; none comes from `simp`'s default set.
+
+Reproduced first on `release/v0.4` f057b8308 with the issue's module through `lexlean verify`
+(Lean 4.32.1): `LLV7002`, unsolved goals `case good … ⊢ Verdict.good = Verdict.bad p → none =
+some p` and `case bad … ⊢ Verdict.bad x✝ = Verdict.bad p → some x✝ = some p`, the goals the
+issue reports. With the new lowering the same command prints `verified 1 module`.
+
+`conformance_sm_35` builds four more language-1.2 projects from the issue's module and
+checks that the generated Lean names the rules: the issue's module itself (disjointness and
+injectivity of `Verdict` and `Option`), the converse statement `report n = none → check n =
+Verdict.good` (an `Option` disjointness in the hypothesis), a statement over a constructor
+of two fields, `check n = Verdict.bad p → paired n = Pair.mk 0 p` (injectivity, and
+`true_and` for the equal field), and the false statement `check n = Verdict.bad p → report n
+= none`. Where the pinned Lean is installed the first three verify with exactly `[propext]`
+and the fourth is rejected with `LLV7002` and unsolved goals (`case bad … ⊢ x✝ = p →
+False`). The first cut of the rules lacked `false_implies`: the two-field project then
+failed with `⊢ False → 0 = p` (its hypothesis refuted, its conclusion not), so the rule and
+the SM-35 text name it.
+
+Each plant was one edit, run with `cargo test -p repo-conformance --test conformance --
+conformance_sm_35` and with `lexlean verify` on the four projects, and restored with `git
+checkout`. Every lowering plant fails the case at its assertion on the generated rule list;
+the Lean outputs below are the four projects through the CLI with the planted compiler.
+
+Planted (a): the old lowering (no constructor rule). The case fails. The issue's project
+leaves both goals open, as above; the `Option` project `case bad … ⊢ some x✝ = none →
+Verdict.bad x✝ = Verdict.good`; the two-field project `case good … ⊢ Verdict.good =
+Verdict.bad p → Pair.mk 0 0 = Pair.mk 0 p` and `case bad … ⊢ Verdict.bad x✝ = Verdict.bad p
+→ Pair.mk 0 x✝ = Pair.mk 0 p`; the false project stays rejected.
+
+Planted (b): `reduceCtorEq` removed. The case fails. The issue's project leaves `case good …
+⊢ Verdict.good = Verdict.bad p → none = some p`, the `Option` project `⊢ some x✝ = none →
+Verdict.bad x✝ = Verdict.good`, the two-field project `⊢ Verdict.good = Verdict.bad p → 0 =
+p`.
+
+Planted (c): every `injEq` lemma removed (the four fixed ones and the module's). The case
+fails. The issue's project leaves `case bad … ⊢ Verdict.bad x✝ = Verdict.bad p → some x✝ =
+some p`, the two-field project `⊢ Verdict.bad x✝ = Verdict.bad p → Pair.mk 0 x✝ = Pair.mk 0
+p`; the `Option` project, which needs only disjointness, still verifies.
+
+Planted (d): `false_implies` removed. The case fails; the two-field project leaves `case good
+… ⊢ False → 0 = p`; the issue's and the `Option` projects verify.
+
+Planted (e): the false statement of the case replaced by the issue's true one. The case fails
+at its expectation that verification fails (`verify fails`): the negative assertion is live.
+
+Not planted, and not exercised: `Except.error.injEq`, `Except.ok.injEq`, and
+`List.cons.injEq`. No project of the case equates two `Result` or two `List` constructors, so
+removing one of those three lemmas alone leaves the case green; they are named because a
+statement about a document term commonly returns one of those types (§17.10), and Lean
+generates each of them.
+
+The other committed uses of `term_cases` (the eleven `RuntimeKeys*` modules of `compiler/`,
+`RuntimeSupport`, and `RustRuntime`, also under `language/rust-runtime-1.2/`) were checked with
+the new lowering: `cargo xtask verify-examples` reports, for `compiler`, `stdlib`,
+`std-models`, `std-reasoning`, `bootstrap`, and every example except `uor-atlas`, that the
+normalized verification records equal `expected/verify`; `conformance_sp_25`,
+`conformance_rb_16`, `conformance_rb_17`, and `conformance_sm_36` pass. The
+compiler-semantics IDs are digests of `language/` and `schemas/`, which this change does not
+touch, so no identity moves and no lock or expected record is regenerated. Not verified
+locally: `uor-atlas` (CI shards it), and `conformance_sp_22`, which the kernel's OOM killer
+stopped inside a 10 GB memory scope with this lowering and, in the same scope, on the
+unchanged `release/v0.4` head f057b8308; CI is the evidence for both.
+
 ### the machine's natural and integer arithmetic can fail (SP-23)
 
 `RustSyntax.Machine` gains nine constructors (`checkedNatAdd`, `natSub`, `checkedNatMul`,
