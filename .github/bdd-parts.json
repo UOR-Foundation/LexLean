@@ -4,6 +4,9 @@
     "bootstrap-check": [
       "BS-04"
     ],
+    "bootstrap-lower": [
+      "BS-07"
+    ],
     "bootstrap-print": [
       "BS-06"
     ],

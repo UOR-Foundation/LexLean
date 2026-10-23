@@ -49,7 +49,7 @@ fn nat(number: u64) -> Value {
     }
 }
 
-fn adt(constructor: u64, fields: Vec<Value>) -> Value {
+pub(super) fn adt(constructor: u64, fields: Vec<Value>) -> Value {
     Value::Adt {
         constructor,
         fields,
@@ -72,7 +72,7 @@ fn chain(nil: u64, cons: u64, items: Vec<Value>) -> Value {
         })
 }
 
-fn ty_chain(items: Vec<Value>) -> Value {
+pub(super) fn ty_chain(items: Vec<Value>) -> Value {
     chain(14, 15, items)
 }
 
@@ -82,7 +82,7 @@ fn enc_tys(tys: &[Ty]) -> Value {
 
 /// `Ty`: unit, bool, nat, int, fixed, string, bytes, ordering, option,
 /// result, list, pair, adt, fn, nil, cons.
-fn enc_ty(ty: &Ty) -> Value {
+pub(super) fn enc_ty(ty: &Ty) -> Value {
     match ty {
         Ty::Unit => adt(0, Vec::new()),
         Ty::Bool => adt(1, Vec::new()),
@@ -303,7 +303,7 @@ fn enc_expr(expr: &Expr) -> Value {
 /// as parallel lists, the lists of recursive types as chains. Certificate A
 /// cannot take a structure holding a list of a recursive type, so the module
 /// rebuilds its `Program` inside the root from these.
-fn program_arguments(program: &Program) -> Vec<Value> {
+pub(super) fn program_arguments(program: &Program) -> Vec<Value> {
     vec![
         text(&program.spec),
         ty_chain(
@@ -691,9 +691,9 @@ fn arguments_run(program: &Program, entry: u64, arguments: &[Value]) -> Run {
 
 /// A program from the repository with the entry and arguments it states, if
 /// any.
-struct Source {
-    program: Program,
-    entry: Option<(u64, Vec<Value>)>,
+pub(super) struct Source {
+    pub(super) program: Program,
+    pub(super) entry: Option<(u64, Vec<Value>)>,
 }
 
 fn walk(dir: &std::path::Path, found: &mut Vec<std::path::PathBuf>) {
@@ -722,7 +722,7 @@ fn walk(dir: &std::path::Path, found: &mut Vec<std::path::PathBuf>) {
 /// by content: the fixtures of `compiler/fixtures`, the program of every
 /// committed Rust package manifest, and every lowered program a verification
 /// record preserves.
-fn committed() -> Vec<Source> {
+pub(super) fn committed() -> Vec<Source> {
     let root = support::repo_root();
     let root = root.as_std_path();
     let mut files = Vec::new();
@@ -798,7 +798,7 @@ fn size(expr: &Expr) -> usize {
     }
 }
 
-fn program_size(program: &Program) -> usize {
+pub(super) fn program_size(program: &Program) -> usize {
     program
         .functions
         .iter()
@@ -808,7 +808,7 @@ fn program_size(program: &Program) -> usize {
 
 // ---------------------------------------------------------------- corpora
 
-fn program_of(adts: Vec<Vec<Vec<Ty>>>, functions: Vec<Function>) -> Program {
+pub(super) fn program_of(adts: Vec<Vec<Vec<Ty>>>, functions: Vec<Function>) -> Program {
     Program {
         spec: PROGRAM_SPEC.to_owned(),
         adts: adts
@@ -819,14 +819,14 @@ fn program_of(adts: Vec<Vec<Vec<Ty>>>, functions: Vec<Function>) -> Program {
     }
 }
 
-fn unit_expr() -> Expr {
+pub(super) fn unit_expr() -> Expr {
     Expr::Value {
         ty: Ty::Unit,
         value: Value::Unit,
     }
 }
 
-fn constant(ty: Ty, body: Expr) -> Function {
+pub(super) fn constant(ty: Ty, body: Expr) -> Function {
     Function {
         parameters: Vec::new(),
         types: Vec::new(),
@@ -837,7 +837,7 @@ fn constant(ty: Ty, body: Expr) -> Function {
 
 /// The two declarations the type and shape corpora refer to: a type with two
 /// constructors, and a type with one.
-fn declared() -> Vec<Vec<Vec<Ty>>> {
+pub(super) fn declared() -> Vec<Vec<Vec<Ty>>> {
     vec![
         vec![vec![Ty::Nat, Ty::Bool], Vec::new()],
         vec![vec![Ty::Nat]],
@@ -945,7 +945,7 @@ fn hexes() -> Vec<String> {
 }
 
 /// A literal of every constructor, with strings drawn from the corpora.
-fn sample_values(seeded: &mut Seeded) -> Vec<Value> {
+pub(super) fn sample_values(seeded: &mut Seeded) -> Vec<Value> {
     let spellings = spellings();
     let strings = strings();
     let hexes = hexes();
@@ -1060,7 +1060,7 @@ fn sample_values(seeded: &mut Seeded) -> Vec<Value> {
     out
 }
 
-fn sample_tys() -> Vec<Ty> {
+pub(super) fn sample_tys() -> Vec<Ty> {
     let mut out = vec![
         Ty::Unit,
         Ty::Bool,
@@ -1125,7 +1125,7 @@ fn literal_program(ty: &Ty, value: &Value) -> Program {
 /// The literal programs: every sample value against every sample type with a
 /// stride, so each constructor meets each type, and every decimal spelling
 /// against each integer type.
-fn literal_corpus(seeded: &mut Seeded, count: usize) -> Vec<Program> {
+pub(super) fn literal_corpus(seeded: &mut Seeded, count: usize) -> Vec<Program> {
     let values = sample_values(seeded);
     let tys = sample_tys();
     let mut out = Vec::new();
@@ -1385,7 +1385,7 @@ fn signature(operation: &Prim, pool: &[Ty], seeded: &mut Seeded) -> Vec<Ty> {
 
 /// Every primitive at its own signature, at shifted signatures, and at
 /// operand types drawn from the pool.
-fn prim_corpus(seeded: &mut Seeded, rounds: usize) -> Vec<Program> {
+pub(super) fn prim_corpus(seeded: &mut Seeded, rounds: usize) -> Vec<Program> {
     let pool = prim_pool();
     let mut out = Vec::new();
     for operation in all_prims() {
@@ -1437,7 +1437,7 @@ fn all_shapes() -> Vec<Shape> {
 
 /// Each shape built and matched at each type: its fields, its operand count,
 /// its binders, and the coverage of a match with that one arm.
-fn shape_corpus(seeded: &mut Seeded) -> Vec<Program> {
+pub(super) fn shape_corpus(seeded: &mut Seeded) -> Vec<Program> {
     let tys = sample_tys();
     let mut out = Vec::new();
     for shape in all_shapes() {
@@ -1834,7 +1834,7 @@ fn mutate(program: &Program, seeded: &mut Seeded, values: &[Value], pool: &[Ty])
 /// committed fixture `adt-evaluation` and to constant programs, each with the
 /// text the oracle's reason must contain. A program that no longer reads is
 /// not a vector of a checker.
-fn refusals() -> Vec<(Program, &'static str)> {
+pub(super) fn refusals() -> Vec<(Program, &'static str)> {
     let root = support::repo_root();
     let base: Json = serde_json::from_slice(
         &std::fs::read(
@@ -2244,7 +2244,12 @@ fn rustc_differential(roots: &[(&str, &Lowered, &[Run])], label: &str) -> usize 
 const MODULE: &str = "LexLeanBoot.CalculusCheck";
 
 /// Mutants of the smaller committed programs: the mutation corpus.
-fn mutants(sources: &[Source], seeded: &mut Seeded, count: usize, limit: usize) -> Vec<Program> {
+pub(super) fn mutants(
+    sources: &[Source],
+    seeded: &mut Seeded,
+    count: usize,
+    limit: usize,
+) -> Vec<Program> {
     let values = sample_values(seeded);
     let pool = sample_tys();
     let small: Vec<&Source> = sources
@@ -2265,9 +2270,14 @@ fn mutants(sources: &[Source], seeded: &mut Seeded, count: usize, limit: usize) 
 
 /// The roots in the order the module declares them, each with the effects
 /// its declaration admits, which are exactly the effects its closure realizes.
-const ROOTS: [(&str, &[&str]); 2] = [
+///
+/// `siteTrees` is the typing root `BS-07` composes with the lowering: it is
+/// the module's `walk`, so its eligibility and its certified package are
+/// checked here, and its differential is the first leg of `BS-07`.
+const ROOTS: [(&str, &[&str]); 3] = [
     ("checkProgram", &["allocation", "overflow", "recursion"]),
     ("checkArguments", &["allocation", "overflow", "recursion"]),
+    ("siteTrees", &["allocation", "overflow", "recursion"]),
 ];
 
 /// Seeded mutants of the committed programs, and the other corpora, per root,
@@ -2369,7 +2379,7 @@ const PLANTS: [super::Plant; 12] = [
 /// remove is exercised by name whatever the seeds draw: a repeated binder, a
 /// field of a type with several constructors, the count of a shift, the tail
 /// of a cons, and a string with a control character in a message.
-fn targeted() -> Vec<Program> {
+pub(super) fn targeted() -> Vec<Program> {
     let var = |name: u64| Expr::Var { name };
     let function = |types: Vec<Ty>, result: Ty, body: Expr| Function {
         parameters: (0..types.len() as u64).collect(),

@@ -33,6 +33,22 @@
       "version": "1.0.0"
     },
     {
+      "name": "dead_functions",
+      "root": "LexLeanBoot.RustLower.deadFunctions",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "fallible_functions",
+      "root": "LexLeanBoot.RustLower.fallibleFunctions",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "is_closed_lean_name",
       "root": "LexLeanBoot.AxiomOutput.isClosedLeanName",
       "targets": [
@@ -83,6 +99,14 @@
     {
       "name": "scan_source",
       "root": "LexLeanBoot.PrimitiveScan.scanSource",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "site_trees",
+      "root": "LexLeanBoot.CalculusCheck.siteTrees",
       "targets": [
         "rust-std"
       ],
