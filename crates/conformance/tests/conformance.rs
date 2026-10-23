@@ -86,6 +86,11 @@ fn conformance_rp_16() {
 }
 
 #[test]
+fn conformance_rp_17() {
+    repo_conformance::cases::run("RP-17");
+}
+
+#[test]
 fn conformance_cf_01() {
     repo_conformance::cases::run("CF-01");
 }

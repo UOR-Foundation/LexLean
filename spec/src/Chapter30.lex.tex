@@ -46,7 +46,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "- compiler crate/binary SemVer;" (cons "- language identifier `1.0`;" (cons "- project schema;" (cons "- lock schema;" (cons "- lexicon schema;" (cons "- entry schema;" (cons "- artifact schemas;" (cons "- compiler-semantics ID." (nil String)))))))))
+      (cons "- compiler crate/binary SemVer;" (cons "- language identifier, one of `1.0`, `1.1`, and `1.2`, each of which a release supports;" (cons "- project schema;" (cons "- lock schema;" (cons "- lexicon schema;" (cons "- entry schema;" (cons "- artifact schemas;" (cons "- compiler-semantics ID, one for each language identifier (§21.2)." (nil String)))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -60,7 +60,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "A compiler patch release may retain the semantics ID only when canonical accepted language, IR, diagnostics required for success/failure, and generated artifacts are unchanged." (nil String))
+      (cons "A release is identified by its compiler version together with, for every language it supports, the language identifier and that language's compiler-semantics ID; §30.3 states how its binaries report them." (nil String))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -73,6 +73,20 @@ definition{
   parameters: [],
   result: DocRows::Item,
   body: constructor{
+    arguments: [
+      (cons "A compiler patch release may retain the semantics ID only when canonical accepted language, IR, diagnostics required for success/failure, and generated artifacts are unchanged." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0007,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
     arguments: [3, 1, "30.2 Compatibility"],
     constructor: DocRows::Item.heading,
     type_arguments: []
@@ -81,7 +95,7 @@ definition{
 }
 
 definition{
-  name: i0007,
+  name: i0008,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -95,7 +109,7 @@ definition{
 }
 
 definition{
-  name: i0008,
+  name: i0009,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -109,7 +123,7 @@ definition{
 }
 
 definition{
-  name: i0009,
+  name: i0010,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -121,25 +135,11 @@ definition{
 }
 
 definition{
-  name: i0010,
-  parameters: [],
-  result: DocRows::Item,
-  body: constructor{
-    arguments: [(cons "A `1.0.0` release MUST publish:" (nil String))],
-    constructor: DocRows::Item.para,
-    type_arguments: []
-  },
-  executable: true
-}
-
-definition{
   name: i0011,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
-    arguments: [
-      (cons "- source tag;" (cons "- checksums;" (cons "- supported-host binaries;" (cons "- crate package;" (cons "- compiler-semantics ID;" (cons "- generated `CONFORMANCE.md`;" (cons "- generated `ERRORS.md`;" (cons "- `SPEC.md`;" (cons "- license files;" (cons "- a software-bill-of-materials artifact;" (cons "- CI evidence that `just vv` passed on the tagged commit." (nil String))))))))))))
-    ],
+    arguments: [(cons "The completion release (§2.3) MUST publish:" (nil String))],
     constructor: DocRows::Item.para,
     type_arguments: []
   },
@@ -151,7 +151,9 @@ definition{
   parameters: [],
   result: DocRows::Item,
   body: constructor{
-    arguments: [(cons "Release binaries MUST report:" (nil String))],
+    arguments: [
+      (cons "- source tag;" (cons "- checksums;" (cons "- supported-host binaries;" (cons "- crate package;" (cons "- the compiler-semantics ID of every supported language;" (cons "- generated `CONFORMANCE.md`;" (cons "- generated `ERRORS.md`;" (cons "- `SPEC.md`;" (cons "- license files;" (cons "- a software-bill-of-materials artifact;" (cons "- CI evidence that `just vv` passed on the tagged commit." (nil String))))))))))))
+    ],
     constructor: DocRows::Item.para,
     type_arguments: []
   },
@@ -164,8 +166,22 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
+      (cons "Release binaries MUST report, where `<version>` is the release version and each `<digest>` is the compiler-semantics ID of the language on the line before it:" (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0014,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
       "text",
-      (cons "lexlean 1.0.0" (cons "language 1.0" (cons "compiler-semantics <digest>" (cons "lean-toolchain leanprover/lean4:v4.32.1" (nil String)))))
+      (cons "lexlean <version>" (cons "language 1.0" (cons "compiler-semantics <digest>" (cons "language 1.1" (cons "compiler-semantics <digest>" (cons "language 1.2" (cons "compiler-semantics <digest>" (cons "lean-toolchain leanprover/lean4:v4.32.1" (nil String)))))))))
     ],
     constructor: DocRows::Item.fence,
     type_arguments: []
@@ -174,7 +190,7 @@ definition{
 }
 
 definition{
-  name: i0014,
+  name: i0015,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -186,11 +202,13 @@ definition{
 }
 
 definition{
-  name: i0015,
+  name: i0016,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
-    arguments: [(cons "The project is complete for LexLean 1.0 only when:" (nil String))],
+    arguments: [
+      (cons "The project is complete, and a release is the completion release of §2.3, only when:" (nil String))
+    ],
     constructor: DocRows::Item.para,
     type_arguments: []
   },
@@ -198,7 +216,7 @@ definition{
 }
 
 definition{
-  name: i0016,
+  name: i0017,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -212,7 +230,7 @@ definition{
 }
 
 definition{
-  name: i0017,
+  name: i0018,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -224,7 +242,7 @@ definition{
 }
 
 definition{
-  name: i0018,
+  name: i0019,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -238,7 +256,7 @@ definition{
 }
 
 definition{
-  name: i0019,
+  name: i0020,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -252,7 +270,7 @@ definition{
 }
 
 definition{
-  name: i0020,
+  name: i0021,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
