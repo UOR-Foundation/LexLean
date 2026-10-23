@@ -4879,14 +4879,15 @@ pub fn run(id: &str) {
                     "stringJoin",
                     "formatDecimal",
                     "parseDecimal",
-                    "parseDecimalInt"
+                    "parseDecimalInt",
+                    "formatDecimalInt"
                 ],
                 "the list, byte, text, and number primitives of the std runtime (SP-29)"
             );
             assert_eq!(
                 machine.len(),
-                43,
-                "the first seventeen, the nine, and the seventeen std primitives"
+                44,
+                "the first seventeen, the nine, and the eighteen std primitives"
             );
             if !support::lean_backed("SP-23") {
                 return;

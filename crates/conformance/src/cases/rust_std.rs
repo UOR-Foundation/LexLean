@@ -34,7 +34,7 @@ const IMPORTED: [&str; 4] = [
 /// Each function the module defines with the theorem that refines it and the
 /// names its statement must be about: a theorem of the right name that runs
 /// another function or another item is refused.
-const LAWS: [(&str, &str, &[&str]); 31] = [
+const LAWS: [(&str, &str, &[&str]); 32] = [
     (
         "append_list",
         "refines_append_list",
@@ -118,6 +118,7 @@ const LAWS: [(&str, &str, &[&str]); 31] = [
     ("format_i64", "refines_format_i64", &["runExport", "runItem"]),
     ("parse_i64", "refines_parse_i64", &["runExport", "runItem"]),
     ("parse_int", "refines_parse_int", &["runExport", "runItem"]),
+    ("format_int", "refines_format_int", &["runExport", "runItem"]),
 ];
 
 /// The harness: a prelude that builds lists of four shapes, then one section per
@@ -278,9 +279,14 @@ fn differential() {
                 && !text.contains(&format!("\npub fn {name}(")),
             "the base still holds `{name}`"
         );
+        // A function the oracle had under another name is held to that label.
+        let label = super::rust_runtime::HELD_AS
+            .iter()
+            .find(|(held, _)| *held == name)
+            .map_or(name.as_str(), |(_, to)| to);
         assert!(
-            recorded.iter().any(|(label, _)| *label == name),
-            "the golden transcript lacks `{name}`"
+            recorded.iter().any(|(recorded, _)| recorded == label),
+            "the golden transcript lacks `{label}`"
         );
     }
     // A function taken out of the generated text leaves a harness that does

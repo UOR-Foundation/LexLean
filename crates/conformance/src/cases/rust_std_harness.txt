@@ -313,3 +313,9 @@ fn main() {
         let x = m::parse_int(m::Str::lit(text)).map_err(|_| ());
         seen!("parse_int", w0, x);
     }
+//@ format_int
+    for v in [i64::MIN, -1, 0, i64::MAX] {
+        let w0 = m::work();
+        let x = m::format_int(v);
+        seen!("format_int", w0, x.text());
+    }
