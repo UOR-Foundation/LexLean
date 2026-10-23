@@ -2329,4 +2329,49 @@ fn rp_17() {
         "semantics-id",
         "lists languages 1.0, 1.1",
     );
+
+    // A listed ID that is not the compiler's: the list is compared with the
+    // IDs compiled into this source, not with the report alone.
+    let id_1_1 = lexlean::compiler_semantics_id_for("1.1").to_hex();
+    let other = {
+        let first = if id_1_1.starts_with('0') { "1" } else { "0" };
+        format!("{first}{}", &id_1_1[1..])
+    };
+    assert_ne!(other, id_1_1);
+    plant(
+        "release/compiler-semantics-id.txt",
+        &format!("1.1 {id_1_1}\n"),
+        &format!("1.1 {other}\n"),
+        "semantics-id",
+        &format!("the compiler-semantics ID of language 1.1 is `{id_1_1}`"),
+    );
+    // The list and the report agreeing on that ID: `release-artifacts` writes
+    // both from one `--version` run, so their agreement is no evidence, and
+    // each is refused against the compiled-in ID.
+    let list_path = stage.join("release/compiler-semantics-id.txt");
+    let report_path = stage.join("release/version-output.txt");
+    std::fs::write(&list_path, semantics.replacen(&id_1_1, &other, 1)).expect("write");
+    std::fs::write(&report_path, report.replacen(&id_1_1, &other, 1)).expect("write");
+    let agreeing = refusals(stage);
+    std::fs::write(&list_path, &semantics).expect("restore");
+    std::fs::write(&report_path, &report).expect("restore");
+    assert!(
+        names(&agreeing, "semantics-id")
+            .iter()
+            .any(|reason| reason.contains("the compiler-semantics ID of language 1.1 is")),
+        "a list whose ID for language 1.1 the report agrees with is refused as `semantics-id`: {agreeing:?}"
+    );
+    assert!(
+        names(&agreeing, "version-output")
+            .iter()
+            .any(|reason| reason.contains("must be exactly")),
+        "a report whose ID for language 1.1 the list agrees with is refused as `version-output`: {agreeing:?}"
+    );
+    let restored = refusals(stage);
+    for name in ["source-tag", "semantics-id", "version-output"] {
+        assert!(
+            names(&restored, name).is_empty(),
+            "the restored tree meets `{name}` again: {restored:?}"
+        );
+    }
 }
