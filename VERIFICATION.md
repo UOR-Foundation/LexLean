@@ -839,6 +839,22 @@ same project is refused at its first group: `mutual group `Size` members
 decrease on different recursive families` (the old `family_of` saw a list of
 pairs as a list of one element type).
 
+A group used at one of its own types has the family of its own arguments
+only (maintainer review of this change): `Rose Item | node : Item -> List
+(Rose Item)` at `Rose (Rose Nat)` has the two members `Rose (Rose Nat)` and
+`List (Rose (Rose Nat))`, as `Rose.rec` has two motives at any
+instantiation. `mentions_family_group` takes the type arguments of the
+family and counts a named type of the group only at those arguments. The unit
+test `a_group_instantiated_at_its_own_type_has_two_motives` pins it.
+
+Planted: `mentions_family_group` ignored the arguments again (the comparison
+`observed.as_slice() == arguments` replaced by `true`). Command:
+`cargo test -p lexlean --lib family_`.
+
+```text
+test ir::semantic::family_order_tests::a_group_instantiated_at_its_own_type_has_two_motives ... FAILED
+```
+
 ### recursion call graph check can fail
 
 Planted: `check_group_call_graph` returned `Ok(())` at once, so a mutual

@@ -3015,10 +3015,14 @@ Termination evidence is semantic data, never tactic or backend text; no
    holds a member: scanning the members in order, and the constructor fields
    of each in the order the pinned Lean takes the constructors (declaration
    order for a document inductive; `nil`, `cons`; `none`, `some`; `error`,
-   `ok`; `mk`), each field that mentions the group without being a member is
+   `ok`; `mk`), each field that mentions a member without being one is
    a maximal application of `List`, `Option`, `Result`, or a product (by
    strict positivity, §17.12 recursive-data rule 3) and joins the family
-   once, at its first occurrence. These are the motives of the recursor the
+   once, at its first occurrence. A member is the group at these type
+   arguments: the group applied to others is another type and joins nothing,
+   so `Rose Item | node : Item -> List (Rose Item)` at `Rose (Rose Nat)` has
+   the two members `Rose (Rose Nat)` and `List (Rose (Rose Nat))`, as
+   `Rose.rec` has two motives at any instantiation. These are the motives of the recursor the
    pinned Lean 4.32.1 generates for the group (`#check @T.rec`), in its
    order: for `Json` with `array (List Json)` and `object (List (String *
    Json))`, `Json`, `List Json`, `List (String * Json)`, and `String *

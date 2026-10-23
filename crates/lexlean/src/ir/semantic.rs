@@ -5292,14 +5292,22 @@ fn type_children(ty: &SemanticType) -> Vec<&SemanticType> {
     }
 }
 
-/// Whether `ty` mentions a member of the group named by `keys`.
-fn mentions_family_group(ty: &SemanticType, keys: &[String]) -> bool {
-    if matches!(ty, SemanticType::Named { member, .. } if keys.contains(&member_key(member))) {
+/// Whether `ty` mentions a member of the group named by `keys` at
+/// `arguments`: a type of the group applied to other arguments is another
+/// type, not a member (`Rose Nat` inside `Rose (Rose Nat)`), and the
+/// recursor of the group has no motive for it. The search goes on into the
+/// arguments of such a type, which may hold a member.
+fn mentions_family_group(ty: &SemanticType, keys: &[String], arguments: &[SemanticType]) -> bool {
+    if matches!(
+        ty,
+        SemanticType::Named { member, arguments: observed }
+            if keys.contains(&member_key(member)) && observed.as_slice() == arguments
+    ) {
         return true;
     }
     type_children(ty)
         .into_iter()
-        .any(|child| mentions_family_group(child, keys))
+        .any(|child| mentions_family_group(child, keys, arguments))
 }
 
 /// The constructor field types of one member of a recursive family, at the
@@ -5313,13 +5321,12 @@ fn family_constructor_fields(ty: &SemanticType, env: &Environment<'_>) -> Vec<Se
             return Vec::new();
         };
         let map = substitutions(info, arguments);
-        let names: Vec<&String> = if info.constructor_order.is_empty() {
-            info.constructor_types.keys().collect()
-        } else {
-            info.constructor_order.iter().collect()
-        };
-        return names
-            .into_iter()
+        // Every member of a recursive family is a document inductive, and
+        // those keep their declaration order; a structure, the only type
+        // without one, is in no group (`group_key_of`) and is never a member.
+        return info
+            .constructor_order
+            .iter()
             .filter_map(|name| info.constructor_types.get(name))
             .flatten()
             .map(|field| substitute_type(field, &map))
@@ -5364,7 +5371,7 @@ fn family_members(
     let mut index = 0;
     while index < members.len() {
         for field in family_constructor_fields(&members[index], env) {
-            if mentions_family_group(&field, keys) && !members.contains(&field) {
+            if mentions_family_group(&field, keys, arguments) && !members.contains(&field) {
                 members.push(field);
             }
         }
@@ -6898,6 +6905,12 @@ fn check_term(
                         // constructor of the matched family member, whether
                         // that member is a document type, a list, an option,
                         // a result, or a product.
+                        // A branch whose binder types cannot be taken (a
+                        // constructor of another type, a wrong binder count)
+                        // marks no binder smaller. That is harmless: a call
+                        // that needed such a binder is refused LLT4001 as not
+                        // decreasing, and the branch itself is refused by the
+                        // match check that reports the mismatch.
                         if let Ok(fields) = branch_binder_types(decreasing, branch, env) {
                             for (binder, field) in branch.binders.iter().zip(&fields) {
                                 if in_family(field, family) {
@@ -9983,6 +9996,62 @@ mod family_order_tests {
         assert_eq!(
             family_members(&["B".to_owned()], &[], &env),
             vec![b, outer, pair, inner]
+        );
+    }
+
+    /// `Rose Item | node : Item -> List (Rose Item) -> Rose Item`, used at
+    /// one of its own types: `Rose.rec` has two motives at any instantiation,
+    /// `Rose A` and `List (Rose A)`, so at `Rose (Rose Nat)` the family is
+    /// `Rose (Rose Nat)` and `List (Rose (Rose Nat))`, and `Rose Nat`, which
+    /// the field `Item` becomes, is another type that joins nothing.
+    #[test]
+    fn a_group_instantiated_at_its_own_type_has_two_motives() {
+        let item = SemanticType::Parameter {
+            name: "Item".to_owned(),
+        };
+        let rose = |argument: SemanticType| SemanticType::Named {
+            member: MemberRef {
+                module: None,
+                name: "Rose".to_owned(),
+            },
+            arguments: vec![argument],
+        };
+        let mut env = Environment::default();
+        env.types.insert(
+            "Rose".to_owned(),
+            TypeInfo {
+                parameters: 1,
+                type_parameters: vec!["Item".to_owned()],
+                constructors: [("Rose.node".to_owned(), 2)].into_iter().collect(),
+                constructor_types: [("Rose.node".to_owned(), vec![item.clone(), list(rose(item))])]
+                    .into_iter()
+                    .collect(),
+                constructor_order: vec!["Rose.node".to_owned()],
+                group: vec!["Rose".to_owned()],
+                ..TypeInfo::default()
+            },
+        );
+        let keys = ["Rose".to_owned()];
+        let nat = SemanticType::Nat;
+        let rose_nat = rose(nat.clone());
+        let rose_rose_nat = rose(rose_nat.clone());
+        assert_eq!(
+            family_members(&keys, &[nat], &env),
+            vec![rose_nat.clone(), list(rose_nat.clone())]
+        );
+        let expected = vec![rose_rose_nat.clone(), list(rose_rose_nat.clone())];
+        assert_eq!(family_members(&keys, &[rose_nat.clone()], &env), expected);
+        // The members of that family belong to it, and `List (Rose Nat)` is
+        // the other family's.
+        for member in &expected {
+            assert_eq!(
+                family_of(member, &env),
+                Some(Family::Group(expected.clone()))
+            );
+        }
+        assert_eq!(
+            family_of(&list(rose_nat.clone()), &env),
+            Some(Family::Group(vec![rose_nat.clone(), list(rose_nat)]))
         );
     }
 }
