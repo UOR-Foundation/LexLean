@@ -9,8 +9,11 @@
 
 use std::collections::BTreeMap;
 
-use lexlean::calculus::rust::rt::{self, Block, Crate, Expr, Item, Lit, Pat, Profile, Type};
+use lexlean::calculus::rust::rt::{
+    self, Block, Crate, Expr, Function, Generic, Item, Lit, Op, Pat, Profile, Sig, Type, Variant,
+};
 use lexlean::calculus::rust::{rt_decode, rt_validate};
+use lexlean::calculus::IntKind;
 
 use crate::rust_build::{cargo_in, workspace, Built};
 use crate::support::repo_root;
@@ -19,16 +22,21 @@ use crate::support::repo_root;
 /// those of the constructs the module grew by (the eleventh new rule,
 /// `hidden-allocation`, is planted by `RB-17`'s text plants and here on the probe). `RB-17` requires the rules in
 /// the validator's source to be its own planted rules and these.
-pub(super) const RULES: [&str; 10] = [
+pub(super) const RULES: [&str; 15] = [
     "assign-immutable",
     "assign-place",
     "break-position",
+    "char-literal",
+    "derive",
+    "identifier",
     "let-position",
     "param-duplicate",
     "pattern-duplicate",
     "pattern-fields",
     "struct-fields",
+    "struct-head",
     "tuple-arity",
+    "type-scope",
     "variant-name",
 ];
 
@@ -85,6 +93,10 @@ fn main() {
 "#;
 
 fn compile_and_run(text: &str) -> Result<String, String> {
+    compile_with(text, HARNESS)
+}
+
+fn compile_with(text: &str, harness: &str) -> Result<String, String> {
     let directory = tempfile::tempdir().expect("a directory");
     let files: BTreeMap<String, Vec<u8>> = BTreeMap::from([
         (
@@ -98,7 +110,7 @@ fn compile_and_run(text: &str) -> Result<String, String> {
         &[Built {
             name: "runtime_probe".to_owned(),
             files,
-            harness: HARNESS.to_owned(),
+            harness: harness.to_owned(),
         }],
     );
     let output = cargo_in(
@@ -143,6 +155,50 @@ fn with_param(krate: &Crate, name: &str, param: rt::Param) -> Crate {
     out
 }
 
+/// A crate of the std profile holding `items`.
+fn tiny(items: Vec<Item>) -> Crate {
+    Crate {
+        profile: Profile::Std,
+        items,
+    }
+}
+
+/// `pub fn name(params) { statements }`, with the generics given.
+fn function(
+    name: &str,
+    params: Vec<rt::Param>,
+    generics: Vec<Generic>,
+    statements: Vec<Expr>,
+) -> Item {
+    Item::Fn(Function {
+        sig: Sig {
+            name: name.to_owned(),
+            receiver: false,
+            exclusive: false,
+            params,
+            result: Type::Unit,
+        },
+        generics,
+        public: true,
+        body: Block {
+            statements,
+            tail: Expr::Lit(Lit::Unit),
+        },
+    })
+}
+
+fn param(name: &str, ty: Type) -> rt::Param {
+    rt::Param {
+        name: name.to_owned(),
+        mutable: false,
+        ty,
+    }
+}
+
+fn strings(list: &[&str]) -> Vec<String> {
+    list.iter().map(|name| (*name).to_owned()).collect()
+}
+
 fn var(name: &str) -> Box<Expr> {
     Box::new(Expr::Var(name.to_owned()))
 }
@@ -150,18 +206,59 @@ fn var(name: &str) -> Box<Expr> {
 /// The constructors of `RuntimeSyntax` that the heap runtime added, each
 /// with the enum it belongs to.
 const GROWN: [&str; 53] = [
-    "RtItem.tupleStruct", "RtItem.recordStruct", "RtItem.enumItem",
-    "RtVariant.unitV", "RtVariant.tupleV", "RtVariant.structV",
-    "RtType.wide", "RtType.size", "RtType.char", "RtType.str", "RtType.slice", "RtType.refMut",
-    "RtLit.char", "RtLit.str",
-    "RtPat.bindMut", "RtPat.tuple", "RtPat.tupleStruct", "RtPat.structPat", "RtPat.lit",
-    "RtExpr.letE", "RtExpr.assign", "RtExpr.ifElse", "RtExpr.whileLoop", "RtExpr.whileLet",
-    "RtExpr.loopE", "RtExpr.forIn", "RtExpr.breakE", "RtExpr.returnE", "RtExpr.tuple",
-    "RtExpr.structLit", "RtExpr.binary", "RtExpr.notE", "RtExpr.cast", "RtExpr.index",
-    "RtExpr.rangeSlice", "RtExpr.deref", "RtExpr.borrowMut", "RtExpr.methodOf",
-    "RtExpr.blockE", "RtExpr.fieldNamed", "RtArm.guarded",
-    "RtOp.add", "RtOp.sub", "RtOp.mul", "RtOp.div", "RtOp.rem", "RtOp.andAnd",
-    "RtOp.orOr", "RtOp.ne", "RtOp.lt", "RtOp.le", "RtOp.gt", "RtOp.ge",
+    "RtItem.tupleStruct",
+    "RtItem.recordStruct",
+    "RtItem.enumItem",
+    "RtVariant.unitV",
+    "RtVariant.tupleV",
+    "RtVariant.structV",
+    "RtType.wide",
+    "RtType.size",
+    "RtType.char",
+    "RtType.str",
+    "RtType.slice",
+    "RtType.refMut",
+    "RtLit.char",
+    "RtLit.str",
+    "RtPat.bindMut",
+    "RtPat.tuple",
+    "RtPat.tupleStruct",
+    "RtPat.structPat",
+    "RtPat.lit",
+    "RtExpr.letE",
+    "RtExpr.assign",
+    "RtExpr.ifElse",
+    "RtExpr.whileLoop",
+    "RtExpr.whileLet",
+    "RtExpr.loopE",
+    "RtExpr.forIn",
+    "RtExpr.breakE",
+    "RtExpr.returnE",
+    "RtExpr.tuple",
+    "RtExpr.structLit",
+    "RtExpr.binary",
+    "RtExpr.notE",
+    "RtExpr.cast",
+    "RtExpr.index",
+    "RtExpr.rangeSlice",
+    "RtExpr.deref",
+    "RtExpr.borrowMut",
+    "RtExpr.methodOf",
+    "RtExpr.blockE",
+    "RtExpr.fieldNamed",
+    "RtArm.guarded",
+    "RtOp.add",
+    "RtOp.sub",
+    "RtOp.mul",
+    "RtOp.div",
+    "RtOp.rem",
+    "RtOp.andAnd",
+    "RtOp.orOr",
+    "RtOp.ne",
+    "RtOp.lt",
+    "RtOp.le",
+    "RtOp.gt",
+    "RtOp.ge",
 ];
 
 /// The grown constructors that `module` never applies.
@@ -209,8 +306,14 @@ pub fn run(id: &str) {
     assert!(absent.is_empty(), "the probe has no {absent:?}");
     for (constructor, text) in [
         ("RtPat.lit", shipped.replace("RtPat.lit", "RtPat.wild")),
-        ("RtExpr.tuple", shipped.replace("RtExpr.tuple", "RtExpr.lit")),
-        ("RtVariant.tupleV", shipped.replace("RtVariant.tupleV", "RtVariant.unitV")),
+        (
+            "RtExpr.tuple",
+            shipped.replace("RtExpr.tuple", "RtExpr.lit"),
+        ),
+        (
+            "RtVariant.tupleV",
+            shipped.replace("RtVariant.tupleV", "RtVariant.unitV"),
+        ),
         ("RtLit.str", shipped.replace("RtLit.str", "RtLit.nat")),
     ] {
         assert_eq!(
@@ -459,12 +562,642 @@ pub fn run(id: &str) {
         );
         planted_rules.insert(rule);
     }
+
+    // The sites of the rules, each planted alone: a rule is refused where the
+    // construct is, not only by name. A name the printer writes is an
+    // identifier, a derive is in the closed table, a character literal is one
+    // scalar value, and the head of a condition holds no struct literal.
+    let unit_item = |item: Item| tiny(vec![item]);
+    let generic = |name: &str| Generic {
+        name: name.to_owned(),
+        bounds: vec![],
+    };
+    let flip = |statement: Expr| with_statement(&krate, "flip", statement);
+    let match_arm = |pattern: Pat| {
+        Expr::Match(
+            Box::new(unit.clone()),
+            vec![rt::Arm {
+                pattern,
+                guard: None,
+                body: unit.clone(),
+            }],
+        )
+    };
+    let hostile = "x }; pub fn g() -> u8 { 0 }";
+    let literal = Expr::StructLit(vec!["Cell2".to_owned()], vec![], vec![]);
+    let empty_block = || {
+        Box::new(Block {
+            statements: vec![],
+            tail: unit.clone(),
+        })
+    };
+    let generic_body = |statement: Expr| {
+        tiny(vec![function(
+            "f",
+            vec![],
+            vec![generic("T")],
+            vec![statement],
+        )])
+    };
+    let mut sites: Vec<(&str, Crate, &str, &str)> = vec![
+        // identifiers, one site each
+        (
+            "a unit struct name",
+            unit_item(Item::UnitStruct(hostile.to_owned(), vec![])),
+            "identifier",
+            "a unit struct name",
+        ),
+        (
+            "a tuple struct name",
+            unit_item(Item::TupleStruct(
+                hostile.to_owned(),
+                vec![],
+                vec![],
+                vec![],
+            )),
+            "identifier",
+            "a tuple struct name",
+        ),
+        (
+            "a record struct name",
+            unit_item(Item::RecordStruct(
+                hostile.to_owned(),
+                vec![],
+                vec![],
+                vec![],
+                vec![],
+            )),
+            "identifier",
+            "a record struct name",
+        ),
+        (
+            "an enum name",
+            unit_item(Item::Enum(hostile.to_owned(), vec![], vec![], vec![])),
+            "identifier",
+            "an enum name",
+        ),
+        (
+            "an alias name",
+            unit_item(Item::Alias(hostile.to_owned(), vec![], Type::Unit)),
+            "identifier",
+            "an alias name",
+        ),
+        (
+            "a static name",
+            unit_item(Item::Static(
+                hostile.to_owned(),
+                Type::Nat,
+                Expr::Lit(Lit::Nat(0)),
+            )),
+            "identifier",
+            "a static name",
+        ),
+        (
+            "a trait name",
+            unit_item(Item::Trait(hostile.to_owned(), vec![])),
+            "identifier",
+            "a trait name",
+        ),
+        (
+            "a function name",
+            unit_item(function(hostile, vec![], vec![], vec![])),
+            "identifier",
+            "a function name",
+        ),
+        (
+            "a generic of a tuple struct",
+            unit_item(Item::TupleStruct(
+                "T".to_owned(),
+                strings(&["P>"]),
+                vec![],
+                vec![],
+            )),
+            "identifier",
+            "a tuple struct generic",
+        ),
+        (
+            "a generic of a record struct",
+            unit_item(Item::RecordStruct(
+                "R".to_owned(),
+                strings(&["P>"]),
+                vec![],
+                vec![],
+                vec![],
+            )),
+            "identifier",
+            "a record struct generic",
+        ),
+        (
+            "a generic of an enum",
+            unit_item(Item::Enum("E".to_owned(), strings(&["P>"]), vec![], vec![])),
+            "identifier",
+            "an enum generic",
+        ),
+        (
+            "a parameter of an alias",
+            unit_item(Item::Alias("A".to_owned(), strings(&["P>"]), Type::Unit)),
+            "identifier",
+            "an alias parameter",
+        ),
+        (
+            "a generic of a function",
+            unit_item(function("f", vec![], vec![generic("P>")], vec![])),
+            "identifier",
+            "a generic parameter",
+        ),
+        (
+            "a record field name",
+            unit_item(Item::RecordStruct(
+                "R".to_owned(),
+                vec![],
+                vec![],
+                strings(&["a: u8, pub b"]),
+                vec![Type::Nat],
+            )),
+            "identifier",
+            "a record field name",
+        ),
+        (
+            "a variant name",
+            unit_item(Item::Enum(
+                "E".to_owned(),
+                vec![],
+                vec![],
+                vec![Variant::Unit(hostile.to_owned())],
+            )),
+            "identifier",
+            "a variant name",
+        ),
+        (
+            "a record variant field name",
+            unit_item(Item::Enum(
+                "E".to_owned(),
+                vec![],
+                vec![],
+                vec![Variant::Record(
+                    "V".to_owned(),
+                    strings(&["x y"]),
+                    vec![Type::Nat],
+                )],
+            )),
+            "identifier",
+            "a record variant field name",
+        ),
+        (
+            "a method name of a trait",
+            unit_item(Item::Trait(
+                "Tr".to_owned(),
+                vec![Sig {
+                    name: hostile.to_owned(),
+                    receiver: true,
+                    exclusive: false,
+                    params: vec![],
+                    result: Type::Unit,
+                }],
+            )),
+            "identifier",
+            "a method name",
+        ),
+        (
+            "a parameter name",
+            unit_item(function(
+                "f",
+                vec![param(hostile, Type::Nat)],
+                vec![],
+                vec![],
+            )),
+            "identifier",
+            "a parameter name",
+        ),
+        (
+            "a `use` segment",
+            unit_item(Item::Use(strings(&["core", "a b"]), None)),
+            "identifier",
+            "a `use` segment",
+        ),
+        (
+            "a `use` alias",
+            unit_item(Item::Use(
+                strings(&["core", "cmp", "Ordering"]),
+                Some(hostile.to_owned()),
+            )),
+            "identifier",
+            "a `use` alias",
+        ),
+        (
+            "a binding",
+            flip(Expr::Let(
+                Pat::Bind("a b".to_owned()),
+                None,
+                Box::new(unit.clone()),
+            )),
+            "identifier",
+            "a pattern binding",
+        ),
+        (
+            "a mutable binding",
+            flip(Expr::Let(
+                Pat::BindMut("a b".to_owned()),
+                None,
+                Box::new(unit.clone()),
+            )),
+            "identifier",
+            "a pattern binding",
+        ),
+        (
+            "a field by name",
+            flip(Expr::FieldNamed(
+                var("b"),
+                "0 } pub fn g() -> u8 { 0".to_owned(),
+            )),
+            "identifier",
+            "a field access",
+        ),
+        (
+            "a path tail after a struct head",
+            flip(Expr::Path(strings(&["Cell2", "a b"]))),
+            "identifier",
+            "a path segment",
+        ),
+        (
+            "a path tail after an integer head",
+            flip(Expr::Path(strings(&["u8", "MAX; fn"]))),
+            "identifier",
+            "a path segment",
+        ),
+        (
+            "a path tail after an enum variant",
+            flip(Expr::Path(strings(&["Shape", "Dot", "x y"]))),
+            "identifier",
+            "a path segment",
+        ),
+        (
+            "a path tail after an imported head",
+            flip(Expr::Path(strings(&["Rc", "a b"]))),
+            "identifier",
+            "a path segment",
+        ),
+        (
+            "a field name of a struct pattern",
+            flip(match_arm(Pat::Struct(
+                strings(&["Rc"]),
+                strings(&["a b"]),
+                vec![Pat::Wild],
+            ))),
+            "identifier",
+            "a pattern field name",
+        ),
+        // derives, one site each
+        (
+            "a derive of a unit struct",
+            unit_item(Item::UnitStruct(
+                "S".to_owned(),
+                strings(&["Clone", "Frob"]),
+            )),
+            "derive",
+            "a unit struct",
+        ),
+        (
+            "a derive of a tuple struct",
+            unit_item(Item::TupleStruct(
+                "S".to_owned(),
+                vec![],
+                strings(&["Frob"]),
+                vec![],
+            )),
+            "derive",
+            "a tuple struct",
+        ),
+        (
+            "a derive of a record struct",
+            unit_item(Item::RecordStruct(
+                "S".to_owned(),
+                vec![],
+                strings(&["Frob"]),
+                vec![],
+                vec![],
+            )),
+            "derive",
+            "a record struct",
+        ),
+        (
+            "a derive of an enum",
+            unit_item(Item::Enum(
+                "S".to_owned(),
+                vec![],
+                strings(&["Frob"]),
+                vec![],
+            )),
+            "derive",
+            "an enum",
+        ),
+        // character literals
+        (
+            "a character literal of two characters",
+            flip(Expr::Lit(Lit::Char("ab".to_owned()))),
+            "char-literal",
+            "2 scalar values",
+        ),
+        (
+            "a character literal of none",
+            flip(Expr::Lit(Lit::Char(String::new()))),
+            "char-literal",
+            "0 scalar values",
+        ),
+        (
+            "a character literal in a pattern",
+            flip(match_arm(Pat::Lit(Lit::Char("ab".to_owned())))),
+            "char-literal",
+            "2 scalar values",
+        ),
+        // a struct literal in the head of a condition, a loop, or a match
+        (
+            "a struct literal as the condition of an if",
+            flip(Expr::If(
+                Box::new(literal.clone()),
+                empty_block(),
+                empty_block(),
+            )),
+            "struct-head",
+            "outside parentheses",
+        ),
+        (
+            "a struct literal as the condition of a while",
+            flip(Expr::While(Box::new(literal.clone()), empty_block())),
+            "struct-head",
+            "outside parentheses",
+        ),
+        (
+            "a struct literal as the value of a while let",
+            flip(Expr::WhileLet(
+                Pat::Wild,
+                Box::new(literal.clone()),
+                empty_block(),
+            )),
+            "struct-head",
+            "outside parentheses",
+        ),
+        (
+            "a struct literal as the iterator of a for",
+            flip(Expr::For(
+                Pat::Wild,
+                Box::new(literal.clone()),
+                empty_block(),
+            )),
+            "struct-head",
+            "outside parentheses",
+        ),
+        (
+            "a struct literal as the scrutinee of a match",
+            flip(Expr::Match(
+                Box::new(literal.clone()),
+                vec![rt::Arm {
+                    pattern: Pat::Wild,
+                    guard: None,
+                    body: unit.clone(),
+                }],
+            )),
+            "struct-head",
+            "outside parentheses",
+        ),
+        (
+            "a struct literal at the left of a comparison in a condition",
+            flip(Expr::If(
+                Box::new(Expr::Equals(
+                    Box::new(literal.clone()),
+                    Box::new(unit.clone()),
+                )),
+                empty_block(),
+                empty_block(),
+            )),
+            "struct-head",
+            "outside parentheses",
+        ),
+        (
+            "a struct literal behind a field in a condition",
+            flip(Expr::If(
+                Box::new(Expr::Field(Box::new(literal.clone()), 0)),
+                empty_block(),
+                empty_block(),
+            )),
+            "struct-head",
+            "outside parentheses",
+        ),
+        // a generic parameter in a type the printer writes without the generics
+        (
+            "a generic parameter in a let type",
+            generic_body(Expr::Let(
+                Pat::Wild,
+                Some(Type::Param(0)),
+                Box::new(unit.clone()),
+            )),
+            "type-scope",
+            "a `let` type",
+        ),
+        (
+            "a generic parameter in a cast",
+            generic_body(Expr::Cast(Box::new(Expr::Lit(Lit::Nat(0))), Type::Param(0))),
+            "type-scope",
+            "a cast type",
+        ),
+        (
+            "a generic parameter in a type argument",
+            generic_body(Expr::MethodOf(
+                Box::new(Expr::Lit(Lit::Str("1".to_owned()))),
+                "parse".to_owned(),
+                vec![Type::Ref(Box::new(Type::Param(0)))],
+                vec![],
+            )),
+            "type-scope",
+            "a type argument",
+        ),
+        // each site of a rule is planted, not only the rule
+        (
+            "a variant declared twice",
+            unit_item(Item::Enum(
+                "E".to_owned(),
+                vec![],
+                vec![],
+                vec![Variant::Unit("A".to_owned()), Variant::Unit("A".to_owned())],
+            )),
+            "variant-name",
+            "declares `A` twice",
+        ),
+        (
+            "a record struct with unequal names and types",
+            unit_item(Item::RecordStruct(
+                "R".to_owned(),
+                vec![],
+                vec![],
+                strings(&["a", "b"]),
+                vec![Type::Nat],
+            )),
+            "struct-fields",
+            "2 field names and 1 types",
+        ),
+        (
+            "a struct literal of a path that is no record",
+            flip(Expr::StructLit(strings(&["Shape", "Dot"]), vec![], vec![])),
+            "struct-fields",
+            "no record struct or record variant",
+        ),
+        (
+            "a tuple variant matched with the wrong number of patterns",
+            flip(match_arm(Pat::TupleStruct(
+                strings(&["Shape", "Dot"]),
+                vec![],
+            ))),
+            "pattern-fields",
+            "matched with 0 patterns",
+        ),
+        (
+            "a struct pattern with unequal names and patterns",
+            flip(match_arm(Pat::Struct(
+                strings(&["Shape", "Box2"]),
+                strings(&["w", "h"]),
+                vec![Pat::Wild],
+            ))),
+            "pattern-fields",
+            "unequal names and patterns",
+        ),
+    ];
+    // The five sites of the refusal of a name that allocates, in the core
+    // profile.
+    let core = |item: Item| Crate {
+        profile: Profile::Core,
+        items: vec![item],
+    };
+    let heap_sites = [
+        (
+            "a heap type",
+            function(
+                "f",
+                vec![param("a", Type::Named("Vec".to_owned(), vec![Type::Unit]))],
+                vec![],
+                vec![],
+            ),
+            "`Vec`",
+        ),
+        (
+            "the string type",
+            function(
+                "f",
+                vec![param("a", Type::Named("String".to_owned(), vec![]))],
+                vec![],
+                vec![],
+            ),
+            "`String`",
+        ),
+        (
+            "a call of a heap function",
+            function(
+                "f",
+                vec![],
+                vec![],
+                vec![Expr::Call(strings(&["Vec", "new"]), vec![])],
+            ),
+            "`Vec::new`",
+        ),
+        (
+            "a method that allocates",
+            function(
+                "f",
+                vec![param("a", Type::Nat)],
+                vec![],
+                vec![Expr::Method(
+                    var("a"),
+                    "push".to_owned(),
+                    vec![unit.clone()],
+                )],
+            ),
+            "`push`",
+        ),
+        (
+            "a method with type arguments that allocates",
+            function(
+                "f",
+                vec![param("a", Type::Nat)],
+                vec![],
+                vec![Expr::MethodOf(
+                    var("a"),
+                    "collect".to_owned(),
+                    vec![Type::Unit],
+                    vec![],
+                )],
+            ),
+            "`collect`",
+        ),
+    ];
+    for (what, item, name) in heap_sites {
+        let error = rt_validate::validate(&core(item)).expect_err(what);
+        assert!(
+            error.contains("runtime support: hidden-allocation") && error.contains(name),
+            "{what}: {error}"
+        );
+    }
+    sites.retain(|_| true);
+    for (what, planted, rule, site) in sites {
+        let error = rt_validate::validate(&planted).expect_err(what);
+        assert!(
+            error.contains(&format!("runtime support: {rule}")) && error.contains(site),
+            "{what}: {error}"
+        );
+        planted_rules.insert(rule);
+    }
     for rule in RULES {
         assert!(
             planted_rules.contains(rule),
             "the rule `{rule}` has no plant"
         );
     }
+
+    // The printer writes a comparison whose left operand ends in a cast with
+    // parentheses, whatever the operators between: `x + y as u8 < z` is read
+    // by `rustc` as the opening of the arguments of a type. The printed crate
+    // compiles and computes, and the same text without the parentheses is
+    // refused.
+    let compare = tiny(vec![Item::Fn(Function {
+        sig: Sig {
+            name: "less".to_owned(),
+            receiver: false,
+            exclusive: false,
+            params: vec![
+                param("x", Type::Fixed(IntKind::U8)),
+                param("y", Type::Nat),
+                param("z", Type::Fixed(IntKind::U8)),
+            ],
+            result: Type::Bool,
+        },
+        generics: vec![],
+        public: true,
+        body: Block {
+            statements: vec![],
+            tail: Expr::Binary(
+                Op::Lt,
+                Box::new(Expr::Binary(
+                    Op::Add,
+                    var("x"),
+                    Box::new(Expr::Cast(var("y"), Type::Fixed(IntKind::U8))),
+                )),
+                var("z"),
+            ),
+        },
+    })]);
+    rt_validate::validate(&compare).expect("the comparison is valid");
+    let printed = rt::print(&compare);
+    assert!(
+        printed.contains("(x + y as u8) < z"),
+        "the cast is closed by a parenthesis: {printed}"
+    );
+    let harness = "use runtime_probe as p;\nfn main() {\n    assert!(p::less(1, 2, 9));\n    assert!(!p::less(1, 2, 3));\n    println!(\"less\");\n}\n";
+    assert_eq!(
+        compile_with(&printed, harness).expect("the printed comparison compiles"),
+        "less"
+    );
+    let unclosed = printed.replace("(x + y as u8) < z", "x + y as u8 < z");
+    assert_ne!(unclosed, printed, "the plant site exists");
+    let error = compile_with(&unclosed, harness).expect_err("an unclosed cast is refused");
+    assert!(error.contains("generic arguments"), "{error}");
 
     // A module the decoder refuses, each for the rule it breaks.
     for (what, from, to, message) in [
