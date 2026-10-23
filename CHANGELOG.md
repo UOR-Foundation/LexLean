@@ -23,14 +23,36 @@ and Unreleased holds what has landed since.
   otherwise; §30.1 and §30.3 identify a release by its compiler version and,
   for every supported language, the language and its compiler-semantics ID.
   `lexlean --version` reports the languages `1.0`, `1.1` and `1.2`, each
-  followed by its own ID. `release/compiler-semantics-id.txt` holds one
-  `<language> <ID>` line per language, and `release-identity.json` gains
-  `compiler_semantics_ids` beside `compiler_semantics_id` (language 1.0's, as
-  before). `cargo xtask release-check` reads the completion release and the
-  version report from the chapter modules instead of restating `1.0.0`, and
-  `release.yml` checks each host binary's report against the §30.3 fence,
-  its line count included, instead of a count written in the workflow.
-  Register 444.
+  followed by its own ID. `cargo xtask release-artifacts` writes
+  `release/compiler-semantics-id.txt` as one `<language> <ID>` line per
+  language, and writes `release-identity.json` with `compiler_semantics_ids`
+  beside `compiler_semantics_id` (language 1.0's, as before). `cargo xtask
+  release-check` reads the completion release and the version report from the
+  chapter modules instead of restating `1.0.0`, and compares every ID the
+  staged list and report carry with the ID compiled into the compiler for that
+  language (`lexlean::compiler_semantics_id_for`), where before it compared the
+  two staged files with each other. `release.yml` checks each host binary's
+  report against the §30.3 fence, its line count included, instead of a count
+  written in the workflow. Register 445.
+
+- A source's module is the environment the parser opens (`AU-14`, #241).
+  `lexlean::surface::module::locate` takes the first environment after the
+  `\begin{lexlean}` header and ends its body at the first `\end` control atom,
+  read over the scanner's control atoms with the escape `\\` as one atom.
+  Before, it took the first `\begin{<kind>}` and the last `\end{<kind>}` in the
+  text, kind by kind, so a tooling or core module whose strings quote another
+  kind's markers was read, formatted, decoded, and hashed as that kind or as no
+  module. Such a module is now its own kind in `lexlean::sdk`, `fmt`, the core
+  decoder, and the compiler-semantics ID; a body holding an unescaped end
+  marker is `LLP2003` and no module; every committed source classifies as
+  before. Register 444.
+
+- CI toolchain fetches (#242): every step of `ci.yml`, `honesty.yml` and
+  `reproducibility.yml` that fetches elan, the pinned Lean toolchain, or the
+  pinned Rust toolchain runs the fetch through `.github/retry.sh`, at most three
+  attempts of the same command. An HTTP 5xx or a resolver failure from a
+  release host no longer fails a leg before its first test unless it lasts
+  through all three. What is pinned and checked is unchanged. Register 443.
 
 - `cargo xtask spec` (`NS-07`, #244): edit the chapter modules of `spec/` by
   item. `replace-block` and `insert-after` act on the paragraph, table or fence
