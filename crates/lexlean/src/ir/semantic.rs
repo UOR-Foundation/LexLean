@@ -10040,7 +10040,10 @@ mod family_order_tests {
             vec![rose_nat.clone(), list(rose_nat.clone())]
         );
         let expected = vec![rose_rose_nat.clone(), list(rose_rose_nat.clone())];
-        assert_eq!(family_members(&keys, &[rose_nat.clone()], &env), expected);
+        assert_eq!(
+            family_members(&keys, std::slice::from_ref(&rose_nat), &env),
+            expected
+        );
         // The members of that family belong to it, and `List (Rose Nat)` is
         // the other family's.
         for member in &expected {
