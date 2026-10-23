@@ -502,11 +502,13 @@ mod tests {
                     .unwrap_or_else(|| panic!("{path} is not declared"));
                 assert!(!declaration.contains("-> R<") && !item.fallible(), "{path}");
             } else {
+                // The free function, not a method of the same name (the
+                // number text has `Str::parse_int` beside `parse_int`).
                 let declaration = text
                     .lines()
                     .find(|line| {
-                        line.contains(&format!("pub fn {path}("))
-                            || line.contains(&format!("pub fn {path}<"))
+                        line.starts_with(&format!("pub fn {path}("))
+                            || line.starts_with(&format!("pub fn {path}<"))
                     })
                     .unwrap_or_else(|| panic!("{path} is not declared"));
                 assert_eq!(

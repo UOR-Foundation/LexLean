@@ -392,6 +392,32 @@ fn differential() {
         assert!(error.contains(caught), "{what}: {error}");
     }
 
+    // `format_int` is held to the transcript's `format_i64` (`HELD_AS`): one
+    // that formats another value keeps its own label, which the golden
+    // transcript lacks.
+    let start = generated_std
+        .find("pub fn format_int(")
+        .expect("the generated runtime has format_int");
+    let end = start + generated_std[start..].find("\n}\n").expect("its end");
+    let body = &generated_std[start..end];
+    assert_eq!(body.matches("Str::format_i64(").count(), 1, "format_int calls format_i64 once");
+    let planted = format!(
+        "{}{}{}",
+        &generated_std[..start],
+        body.replacen("Str::format_i64(", "Str::format_i64(-1 - ", 1),
+        &generated_std[end..]
+    );
+    let error = observe(&format!("{core}{planted}"), harness(), GOLDEN)
+        .expect_err("a format_int that formats another value has another transcript");
+    eprintln!(
+        "RB-20: a format_int that formats another value: {}",
+        error.lines().find(|line| !line.trim().is_empty()).unwrap_or_default()
+    );
+    assert!(
+        error.contains("the transcript differs in: format_int"),
+        "a format_int that formats another value: {error}"
+    );
+
     // The crate is checked by the validator that checks every rendering: a
     // machine call with another number of operands is refused.
     let wrong = shipped.replacen(
