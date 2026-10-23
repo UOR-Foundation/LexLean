@@ -58,7 +58,7 @@ pub const CORE: Kind = Kind {
     print: core_print,
 };
 
-/// The kinds, in the order a source is searched for them.
+/// The kinds of module with a notation.
 pub const KINDS: [&Kind; 3] = [&SEMANTIC, &TOOLING, &CORE];
 
 fn fail(message: impl Into<String>) -> SurfaceError {
@@ -159,36 +159,94 @@ impl Kind {
     }
 }
 
-/// Find the module of `text`: the first environment of a kind, to the last
-/// closing marker of that kind. `None` when `text` holds none, or holds one
-/// that is not closed.
+/// The control atoms of `text` from byte `at`, each with the byte after it,
+/// as the scanner reads them (SPEC.md §12.2): a backslash and ASCII letters, or
+/// a backslash and one ASCII nonletter. The escape `\\` is one atom, so the
+/// word after it is not a control: a marker a string quotes is not a marker. A
+/// backslash before a non-ASCII scalar or the end of the text is no atom (the
+/// scanner refuses it), and the search goes on after it.
+fn controls(text: &str, mut at: usize) -> impl Iterator<Item = (&str, usize)> + '_ {
+    let bytes = text.as_bytes();
+    std::iter::from_fn(move || loop {
+        let start = at + text.get(at..)?.find('\\')?;
+        let mut end = start + 1;
+        match bytes.get(end) {
+            Some(next) if next.is_ascii_alphabetic() => {
+                while bytes.get(end).is_some_and(u8::is_ascii_alphabetic) {
+                    end += 1;
+                }
+            }
+            Some(next) if next.is_ascii() => end += 1,
+            _ => {
+                at = end;
+                continue;
+            }
+        }
+        at = end;
+        return Some((&text[start..end], end));
+    })
+}
+
+/// The environment name a `\begin` or `\end` control ending at `at` names,
+/// `{name}`, with the byte after its closing brace.
+fn environment_name(text: &str, at: usize) -> Option<(&str, usize)> {
+    let rest = text.get(at..)?.strip_prefix('{')?;
+    let close = rest.find('}')?;
+    Some((&rest[..close], at + 1 + close + 1))
+}
+
+/// Find the module of `text`: the environment the structural parser opens
+/// (SPEC.md §15.1, §17.21.1), which is the first environment after
+/// `\begin{lexlean}`, and its body, which runs to the first `\end` control
+/// after it. Both are read over the control atoms of the text, not by a search
+/// of it, so a marker that a string quotes (`\\begin{…}`, an escaped backslash
+/// and a word) is never taken for a module's, whatever kind it names. `None`
+/// when `text` opens no environment of a kind, or when the first `\end` after
+/// the module's opening does not close it (the parser refuses that source
+/// with `LLP2003`).
 #[must_use]
 pub fn locate(text: &str) -> Option<Located> {
-    for kind in KINDS {
-        let begin = kind.begin();
-        let Some(at) = text.find(&begin) else {
+    let mut atoms = controls(text, 0);
+    let (kind, start) = loop {
+        let (control, after) = atoms.next()?;
+        if control != "\\begin" {
             continue;
-        };
-        let start = at + begin.len();
-        let end = text.rfind(&kind.end())?;
-        let body = text.get(start..end)?;
-        let data = body
-            .trim_start()
-            .strip_prefix(kind.control)
-            .and_then(|rest| {
-                let open = rest.trim_start().strip_prefix('{')?;
-                let close = open.trim_end().strip_suffix('}')?;
-                // The offsets of `close` within `text`.
-                let from = close.as_ptr() as usize - text.as_ptr() as usize;
-                Some((from, from + close.len()))
-            });
-        return Some(Located {
-            kind,
-            body: (start, end),
-            data,
+        }
+        let (name, after) = environment_name(text, after)?;
+        if name == "lexlean" {
+            continue;
+        }
+        break (
+            KINDS.into_iter().find(|kind| kind.environment == name)?,
+            after,
+        );
+    };
+    let end = loop {
+        let (control, after) = atoms.next()?;
+        if control == "\\end" {
+            let (name, _) = environment_name(text, after)?;
+            if name != kind.environment {
+                return None;
+            }
+            break after - control.len();
+        }
+    };
+    let body = text.get(start..end)?;
+    let data = body
+        .trim_start()
+        .strip_prefix(kind.control)
+        .and_then(|rest| {
+            let open = rest.trim_start().strip_prefix('{')?;
+            let close = open.trim_end().strip_suffix('}')?;
+            // The offsets of `close` within `text`.
+            let from = close.as_ptr() as usize - text.as_ptr() as usize;
+            Some((from, from + close.len()))
         });
-    }
-    None
+    Some(Located {
+        kind,
+        body: (start, end),
+        data,
+    })
 }
 
 #[cfg(test)]
@@ -214,5 +272,43 @@ mod tests {
         );
         assert!(locate("\\begin{lexlean}{M}\n\\end{lexlean}\n").is_none());
         assert!(locate("\\begin{semanticmodule}").is_none());
+    }
+
+    /// A module is the environment the parser opens: a marker a string quotes
+    /// (an escaped backslash and the marker's word) is not one, whichever kind
+    /// it names and whether or not its end is quoted too (#241).
+    #[test]
+    fn a_quoted_marker_is_not_a_module() {
+        let tooling = "\\begin{lexlean}{M}\n\\title{t}\n\\begin{toolingmodule}\n{declarations: [\"\\\\begin{semanticmodule}\"]}\n\\end{toolingmodule}\n\\end{lexlean}\n";
+        let found = locate(tooling).expect("a module");
+        assert_eq!(found.kind.environment, "toolingmodule");
+        assert_eq!(
+            &tooling[found.body.0..found.body.1],
+            "\n{declarations: [\"\\\\begin{semanticmodule}\"]}\n"
+        );
+        let both = tooling.replace(
+            "\\\\begin{semanticmodule}",
+            "\\\\begin{semanticmodule}\\\\end{semanticmodule}",
+        );
+        assert_eq!(
+            locate(&both).expect("a module").kind.environment,
+            "toolingmodule"
+        );
+        let core = "\\begin{lexlean}{M}\n\\title{t}\n\\begin{coremodule}\nx := \"\\\\begin{toolingmodule}\\\\end{toolingmodule}\"\n\\end{coremodule}\n\\end{lexlean}\n";
+        assert_eq!(
+            locate(core).expect("a module").kind.environment,
+            "coremodule"
+        );
+        let semantic = "\\begin{lexlean}{M}\n\\title{t}\n\\begin{semanticmodule}\nx := \"\\\\begin{coremodule}\\\\end{semanticmodule}\"\n\\end{semanticmodule}\n\\end{lexlean}\n";
+        let found = locate(semantic).expect("a module");
+        assert_eq!(found.kind.environment, "semanticmodule");
+        assert!(semantic[found.body.1..].starts_with("\\end{semanticmodule}\n\\end{lexlean}"));
+        // An end marker the body does not escape closes the environment
+        // there, as it does for the parser, which refuses the source.
+        let unescaped = tooling.replace("\\\\begin{semanticmodule}", "\\end{semanticmodule}");
+        assert!(locate(&unescaped).is_none());
+        // A module of no kind first: the parser reads its blocks, not a
+        // module a later marker names.
+        assert!(locate("\\begin{lexlean}{M}\n\\title{t}\n\\begin{definition}\n\\end{definition}\n\\begin{semanticmodule}\n\\end{semanticmodule}\n\\end{lexlean}\n").is_none());
     }
 }
