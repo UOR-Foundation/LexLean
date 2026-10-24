@@ -523,7 +523,7 @@ use serde_json::Value as Json;
 
 /// What the oracle makes of a crate, as the root returns it: `ok ()` or the
 /// reason's text.
-fn verdict(outcome: Result<(), String>) -> Json {
+pub(super) fn verdict(outcome: Result<(), String>) -> Json {
     serde_json::to_value(match outcome {
         Ok(()) => Value::Ok {
             value: Box::new(Value::Unit),
@@ -2573,7 +2573,7 @@ pub(super) fn rustc_differential(
 ) -> usize {
     let started = std::time::Instant::now();
     let dir = tempfile::Builder::new()
-        .prefix("lexlean-bootstrap-validate-")
+        .prefix(&format!("lexlean-bootstrap-{}-", id.to_ascii_lowercase()))
         .tempdir()
         .expect("tempdir");
     let mut members = Vec::new();
@@ -2673,6 +2673,7 @@ pub(super) fn rustc_differential(
         started.elapsed()
     );
     let mut total = 0;
+    let mut bounds: Vec<(String, std::path::PathBuf)> = Vec::new();
     for (binary, package, outcomes) in &expected {
         let path = dir
             .path()
@@ -2686,10 +2687,7 @@ pub(super) fn rustc_differential(
             "{binary}: {}",
             String::from_utf8_lossy(&ran.stderr)
         );
-        // PD-08: both roots recurse with the depth of the crate, so the
-        // harness that ran them records (measuring) or demands (otherwise)
-        // their stack bound; the row keeps the largest need of the corpora.
-        crate::stack_bounds::observe(&crate::stack_bounds::subject("bootstrap", package), &path);
+        bounds.push((package.clone(), path.clone()));
         let stdout = String::from_utf8(ran.stdout).expect("utf8");
         let printed: Vec<Json> = stdout
             .lines()
@@ -2723,6 +2721,14 @@ pub(super) fn rustc_differential(
         "{id}: {label}: {total} rustc runs agree with the oracle ({:?})",
         started.elapsed()
     );
+    // PD-08: the roots recurse with the depth of the crate, so the harness
+    // that ran them records (measuring) or demands (otherwise) their stack
+    // bound; the row keeps the largest need of the corpora. The bounds are
+    // taken after every outcome is compared, so a package without a recorded
+    // bound never hides a disagreement.
+    for (package, path) in &bounds {
+        crate::stack_bounds::observe(&crate::stack_bounds::subject("bootstrap", package), path);
+    }
     total
 }
 
@@ -2882,13 +2888,24 @@ const PLANTS: [super::Plant; 20] = [
 
 /// The roots' eligibility reports and declared effects.
 fn eligibility(project: &support::P) {
+    eligibility_of(project, "RustValidate", MODULE, &ROOTS);
+}
+
+/// The eligibility reports and declared effects of the production roots of
+/// one module of the bootstrap project, in order.
+pub(super) fn eligibility_of(
+    project: &support::P,
+    file: &str,
+    module: &str,
+    roots: &[(&str, &[&str])],
+) {
     let built = project.build_ok();
     let build_id = built.build_id.expect("built");
     let report: Json = serde_json::from_slice(
         &std::fs::read(
             project
                 .build_dir(&build_id)
-                .join("production/LexLeanBoot/RustValidate.eligibility.json")
+                .join(format!("production/LexLeanBoot/{file}.eligibility.json"))
                 .as_std_path(),
         )
         .expect("the eligibility report"),
@@ -2900,20 +2917,20 @@ fn eligibility(project: &support::P) {
             .iter()
             .map(|row| row["root"].as_str().expect("root").to_owned())
             .collect::<Vec<_>>(),
-        ROOTS
+        roots
             .iter()
-            .map(|(root, _)| format!("{MODULE}.{root}"))
+            .map(|(root, _)| format!("{module}.{root}"))
             .collect::<Vec<_>>(),
-        "the two roots are the module's production roots, in order"
+        "the roots are the module's production roots, in order"
     );
-    for (row, (root, effects)) in reported.iter().zip(ROOTS) {
+    for (row, (root, effects)) in reported.iter().zip(roots) {
         let declared: Vec<&str> = row["declared_effects"]
             .as_array()
             .expect("declared effects")
             .iter()
             .map(|effect| effect.as_str().expect("an effect"))
             .collect();
-        assert_eq!(declared, effects, "{root}: the declared effects");
+        assert_eq!(declared, *effects, "{root}: the declared effects");
         let targets = row["targets"].as_array().expect("targets");
         assert_eq!(targets.len(), 1, "{root}: one target");
         let target = &targets[0];
@@ -2926,7 +2943,7 @@ fn eligibility(project: &support::P) {
             .map(|effect| effect["effect"].as_str().expect("an effect"))
             .collect();
         assert_eq!(
-            realized, effects,
+            realized, *effects,
             "{root}: the declaration admits exactly the realized effects"
         );
     }
@@ -2945,18 +2962,18 @@ const RULES_EACH: usize = 3;
 // The counts the specification states, over the committed tree: SPEC.md
 // §17.23, the register statement of BS-05, its scenario, and VERIFICATION.md
 // restate them, and the case fails when the tree no longer gives them.
-const COMMITTED_MANIFESTS: usize = 261;
+const COMMITTED_MANIFESTS: usize = 256;
 const COMMITTED_FIXTURES: usize = 122;
-const COMMITTED_PROGRAMS: usize = 178;
-const COMMITTED_CRATES: usize = 237;
+const COMMITTED_PROGRAMS: usize = 173;
+const COMMITTED_CRATES: usize = 232;
 const RULE_VALIDATE_RUNS: usize = 132;
 const RULE_CORRESPOND_RUNS: usize = 12;
 const BRANCH_CRATES: usize = 17;
 const LOOP_CRATES: usize = 34;
 const MACHINE_CRATES: usize = 26 + 3 + 1 + 2 + 2 + 3;
-const VECTORS_VALIDATE: usize = 457;
+const VECTORS_VALIDATE: usize = 452;
 const REFUSED_VALIDATE: usize = 195;
-const VECTORS_CORRESPOND: usize = 320;
+const VECTORS_CORRESPOND: usize = 315;
 const REFUSED_CORRESPOND: usize = 82;
 const EVALUATOR_CRATES: usize = 201;
 const EVALUATOR_VALIDATE: usize = 421;

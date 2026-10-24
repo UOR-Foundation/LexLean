@@ -156,11 +156,13 @@ fn covered(items: &[ItemDef]) -> Result<(), String> {
     Ok(())
 }
 
+/// The prelude of every harness: both runtimes and the `same!` that runs a
+/// call of each and compares what it returns and the work it counts.
+pub(super) const PRELUDE: &str = "use runtime_diff::{new, old};\nmacro_rules! same {\n    ($($f:ident)::+($($a:expr),*)) => {{\n        let (w0, w1) = (old::work(), new::work());\n        let x = old::$($f)::+($($a),*);\n        let y = new::$($f)::+($($a),*);\n        assert_eq!(format!(\"{x:?}\"), format!(\"{y:?}\"), \"{} result\", stringify!($($f)::+));\n        assert_eq!(old::work() - w0, new::work() - w1, \"{} work\", stringify!($($f)::+));\n    }};\n}\nfn main() {\n    let nats = [0u64, 1, 2, 3, 7, u32::MAX as u64, u32::MAX as u64 + 1, u64::MAX / 2, u64::MAX - 2, u64::MAX - 1, u64::MAX];\n    let ints = [i64::MIN, i64::MIN + 1, -3037000500, -2, -1, 0, 1, 2, 3037000500, i64::MAX - 1, i64::MAX];\n    let mut seed = 0x9e37_79b9_7f4a_7c15_u64;\n    let mut next = move || { seed ^= seed << 13; seed ^= seed >> 7; seed ^= seed << 17; seed };\n";
+
 /// The harness: both runtimes, every function of the differential.
 fn harness() -> String {
-    let mut out = String::from(
-        "use runtime_diff::{new, old};\nmacro_rules! same {\n    ($($f:ident)::+($($a:expr),*)) => {{\n        let (w0, w1) = (old::work(), new::work());\n        let x = old::$($f)::+($($a),*);\n        let y = new::$($f)::+($($a),*);\n        assert_eq!(format!(\"{x:?}\"), format!(\"{y:?}\"), \"{} result\", stringify!($($f)::+));\n        assert_eq!(old::work() - w0, new::work() - w1, \"{} work\", stringify!($($f)::+));\n    }};\n}\nfn main() {\n    let nats = [0u64, 1, 2, 3, 7, u32::MAX as u64, u32::MAX as u64 + 1, u64::MAX / 2, u64::MAX - 2, u64::MAX - 1, u64::MAX];\n    let ints = [i64::MIN, i64::MIN + 1, -3037000500, -2, -1, 0, 1, 2, 3037000500, i64::MAX - 1, i64::MAX];\n    let mut seed = 0x9e37_79b9_7f4a_7c15_u64;\n    let mut next = move || { seed ^= seed << 13; seed ^= seed >> 7; seed ^= seed << 17; seed };\n",
-    );
+    let mut out = String::from(PRELUDE);
     for (_, calls) in differential() {
         out.push_str("    {\n    ");
         out.push_str(&calls);
@@ -173,6 +175,15 @@ fn harness() -> String {
 /// Compile the oracle and `generated` as modules of one crate and run the
 /// differential: the output of the harness, or the reason it failed.
 fn differ(oracle: &str, generated: &str) -> Result<String, String> {
+    differ_with(oracle, generated, harness())
+}
+
+/// [`differ`] with the harness `harness`.
+pub(super) fn differ_with(
+    oracle: &str,
+    generated: &str,
+    harness: String,
+) -> Result<String, String> {
     let directory = tempfile::tempdir().expect("a directory");
     let lib = format!("pub mod old {{\n{oracle}\n}}\npub mod new {{\n{generated}\n}}\n");
     let files: BTreeMap<String, Vec<u8>> = BTreeMap::from([
@@ -187,7 +198,7 @@ fn differ(oracle: &str, generated: &str) -> Result<String, String> {
         &[Built {
             name: "runtime_diff".to_owned(),
             files,
-            harness: harness(),
+            harness,
         }],
     );
     let output = cargo_in(
@@ -227,6 +238,7 @@ pub fn run(id: &str) {
         runtime::STD,
         "the std oracle is the std runtime"
     );
+    let support = runtime::support().expect("the embedded support");
     let decoded = source::decode(&shipped).expect("the module decodes");
     assert!(
         !decoded.core.items.is_empty(),
@@ -235,7 +247,7 @@ pub fn run(id: &str) {
     covered(&decoded.core.items).expect("the differential covers the module");
     assert_eq!(
         runtime::core().expect("the embedded module"),
-        runtime::assemble(&decoded.core.items),
+        runtime::assemble(support, &decoded.core.items),
         "the embedded module is the committed one"
     );
     // The generated functions replace the oracle's: the base holds none of
@@ -246,7 +258,7 @@ pub fn run(id: &str) {
             .map_or((None, name.as_str()), |(m, l)| (Some(m), l));
         if let Some(module) = module {
             assert!(
-                !runtime::CORE_BASE.contains(&format!("pub mod {module} {{")),
+                !support.contains(&format!("pub mod {module} {{")),
                 "the base still holds the module `{module}`"
             );
             assert!(
@@ -255,7 +267,7 @@ pub fn run(id: &str) {
             );
         } else {
             assert!(
-                !runtime::CORE_BASE.contains(&format!("pub fn {last}(")),
+                !support.contains(&format!("pub fn {last}(")),
                 "the base still holds `{name}`"
             );
             assert!(
@@ -264,7 +276,7 @@ pub fn run(id: &str) {
             );
         }
     }
-    let generated = runtime::assemble(&decoded.core.items);
+    let generated = runtime::assemble(support, &decoded.core.items);
     let ran = differ(&oracle, &generated).expect("the generated runtime agrees with the oracle");
     assert_eq!(ran, "runtime");
 
@@ -307,7 +319,7 @@ pub fn run(id: &str) {
             .expect("a changed body decodes")
             .core
             .items;
-        let error = differ(&oracle, &runtime::assemble(&items))
+        let error = differ(&oracle, &runtime::assemble(support, &items))
             .expect_err("a changed body disagrees with the oracle");
         assert!(
             error

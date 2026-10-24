@@ -374,8 +374,22 @@ fn proportional(works: &BTreeMap<usize, u64>) -> bool {
 /// # Panics
 ///
 /// Panics when the case's assertion fails.
-#[allow(clippy::too_many_lines)]
 pub(super) fn run(id: &str) {
+    // The evaluator recurses as deep as the chunked buffer it walks, which is
+    // past the stack of a test thread; the case runs on a thread sized as the
+    // differential's interpreter thread is.
+    std::thread::scope(|scope| {
+        std::thread::Builder::new()
+            .stack_size(1 << 29)
+            .spawn_scoped(scope, || run_on_stack(id))
+            .expect("a thread")
+            .join()
+            .expect("the SL-05 case runs");
+    });
+}
+
+#[allow(clippy::too_many_lines)]
+fn run_on_stack(id: &str) {
     assert_eq!(id, "SL-05");
     let project = P::stdlib();
     project.check_ok();

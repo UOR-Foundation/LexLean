@@ -3,20 +3,20 @@
 # compiler executable (presence only). SPEC.md §28.2, §28.4.
 
 [platform_independent]
-".lexlean/verified/$ATTESTATION/audit/LexLeanAudit.A36286669356472ef2a934082e9bcfe87.LexLeanExample.Main.lean" = "ce72b0930147248dfa799553ba634a7da3d05df24977acc9873052cdc47d91a2"
+".lexlean/verified/$ATTESTATION/audit/LexLeanAudit.A56b0abb03be9c926a50bd375ee2f8d49.LexLeanExample.Main.lean" = "ce72b0930147248dfa799553ba634a7da3d05df24977acc9873052cdc47d91a2"
 ".lexlean/verified/$ATTESTATION/audit/output.txt" = "e0a31c670eac06f52782d864e0a948c11d06d4901077474ddcc6afb86817ac0a"
-".lexlean/verified/$ATTESTATION/build-manifest.json" = "63578da0f98b6cea69f505b0225556f05dd94848333ca51ae3537e83b89972c3"
+".lexlean/verified/$ATTESTATION/build-manifest.json" = "7b34de236996ddd1a50d19819cc764cd18facdfda926533b49085f523e7dcacd"
 ".lexlean/verified/$ATTESTATION/coverage/LexLeanExample/Main.coverage.json" = "5a81aa88d63337f087021e9bf442e661a9154c61b6977d71c9d2fd8517c80bd1"
 ".lexlean/verified/$ATTESTATION/lexicons/Main.closure.json" = "e3ccaf68438657e3d4be155b2252ba99b8ced2217f6272103a7fc43b3beb96d0"
-".lexlean/verified/$ATTESTATION/maps/LexLeanExample/Main.map.json" = "fd5db127549d43cbe4f66a594cc6a4b6412c9b9460d902431be242db491cefba"
+".lexlean/verified/$ATTESTATION/maps/LexLeanExample/Main.map.json" = "972f0b8e0026b341b25396b1375eb43797e2c97b6a18f874378e6ffdc3e87571"
 ".lexlean/verified/$ATTESTATION/modules/LexLeanExample/Main.lean" = "792d7e4ee5a217e84aa1de344819b604708295330fe60d72142e4377b1fade13"
 ".lexlean/verified/$ATTESTATION/modules/LexLeanExample/Main.tex" = "8de0caeff94f772f520b5acfa68458761dd2bdf96f78488ec3872ff3d07864e8"
-".lexlean/verified/$ATTESTATION/probe/LexLeanProbe.P36286669356472ef2a934082e9bcfe87.lean" = "9b60841472826e74bb77f24f90d6dc56dcfe4ab727fa000a8ae6f164b7edb8d5"
+".lexlean/verified/$ATTESTATION/probe/LexLeanProbe.P56b0abb03be9c926a50bd375ee2f8d49.lean" = "9b60841472826e74bb77f24f90d6dc56dcfe4ab727fa000a8ae6f164b7edb8d5"
 
 [process_bound]
 files = [
     ".lexlean/verified/$ATTESTATION/attestation.json",
-    ".lexlean/verified/$ATTESTATION/audit/LexLeanAudit.A36286669356472ef2a934082e9bcfe87.LexLeanExample.Main.process.json",
+    ".lexlean/verified/$ATTESTATION/audit/LexLeanAudit.A56b0abb03be9c926a50bd375ee2f8d49.LexLeanExample.Main.process.json",
     ".lexlean/verified/$ATTESTATION/oleans/LexLeanExample/Main.olean",
     ".lexlean/verified/$ATTESTATION/probe/process.json",
     ".lexlean/verified/$ATTESTATION/process/lean/LexLeanExample.Main.json",

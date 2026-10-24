@@ -1,4 +1,4 @@
-//! `BS-09`: the literal values of the Rust lowering of SPEC.md §17.16
+//! `BS-10`: the literal values of the Rust lowering of SPEC.md §17.16
 //! (`Lowering::value`) as language-1.2 source (`LexLeanBoot.RustTerms`), the
 //! first pass of the lowering of terms. The oracle's `value` is private to the
 //! renderer, whose files the compiler-semantics digest frames, so the pass is
@@ -719,7 +719,7 @@ fn plants(detection: &[Run]) {
             plant.label
         );
         eprintln!(
-            "BS-09: plant detected: {}: {}",
+            "BS-10: plant detected: {}: {}",
             plant.label, disagreements[0]
         );
     }
@@ -748,7 +748,7 @@ pub(super) fn case() {
     let evaluator_seeded = seeded_runs(EVALUATOR_SEEDED, 0x0B59_0103);
     let rustc_seeded = seeded_runs(RUSTC_SEEDED, 0x0B59_0203);
     eprintln!(
-        "BS-09: {} explicit runs, {} + {} seeded ({:?})",
+        "BS-10: {} explicit runs, {} + {} seeded ({:?})",
         runs.len(),
         evaluator_seeded.len(),
         rustc_seeded.len(),
@@ -768,12 +768,12 @@ pub(super) fn case() {
     let checked = support::checked_project(&project);
     let values = super::lower(&checked, &project, MODULE, "lowerValueAt");
     super::rust_validate::rustc_differential(
-        "BS-09",
+        "BS-10",
         &[("lowerValueAt", &values, &runs)],
         "explicit",
     );
     if !support::normative_host() {
-        eprintln!("BS-09: platform-bound host: the evaluator, the seeded corpus, and the planted defects run on the normative host");
+        eprintln!("BS-10: platform-bound host: the evaluator, the seeded corpus, and the planted defects run on the normative host");
         return;
     }
     for (label, group) in [("explicit", &runs), ("seeded", &evaluator_seeded)] {
@@ -784,13 +784,13 @@ pub(super) fn case() {
         );
     }
     super::rust_validate::rustc_differential(
-        "BS-09",
+        "BS-10",
         &[("lowerValueAt", &values, &rustc_seeded)],
         "seeded",
     );
     let detection: Vec<Run> = runs.iter().chain(&evaluator_seeded).cloned().collect();
     plants(&detection);
-    if !support::lean_backed("BS-09") {
+    if !support::lean_backed("BS-10") {
         return;
     }
     let exported = harness::exported("bootstrap");
@@ -808,7 +808,7 @@ pub(super) fn case() {
             .max()
             .expect("a certificate");
         eprintln!(
-            "BS-09: {}: largest certificate part {largest} bytes",
+            "BS-10: {}: largest certificate part {largest} bytes",
             exported_root.root
         );
         assert!(
@@ -849,5 +849,5 @@ pub(super) fn case() {
             "packages/{relative} differs from the committed package"
         );
     }
-    eprintln!("BS-09: passed in {:?}", started.elapsed());
+    eprintln!("BS-10: passed in {:?}", started.elapsed());
 }
