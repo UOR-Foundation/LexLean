@@ -13,9 +13,9 @@ is therefore a §30 release: `cargo xtask release-check` reads the complete
 criterion that does not hold. That refusal is the accurate answer at these
 versions. Only `v0.1.0` has been tagged: the sections for `0.1.1`, `0.2.0`,
 and `0.3.0` record what the workspace carried at those versions without a tag,
-and Unreleased holds what has landed since.
+and `0.4.0` holds what has landed since.
 
-## Unreleased
+## 0.4.0
 
 - The `lexlean` crate that goes to crates.io is the crate the release attaches (`RP-18`, #260). `.github/workflows/crate.yml`, which `release.yml` calls on every run, packages the crate twice to the same bytes, runs `cargo publish --dry-run`, checks the archive for what crates.io needs (description, license, repository, the readme it names, at most 10 MiB), and compares its SHA-256 with `release/lexlean.crate` and the line `checksums.txt` lists for it; the tag's `publish` job repeats the comparison against the dry-run package and uploads to crates.io only when a `CARGO_REGISTRY_TOKEN` secret or trusted publishing (the repository variable `CRATES_IO_TRUSTED_PUBLISHING`) authorises it, and otherwise creates the release and says the crate was not uploaded, where before the first run failed after the tag was pushed because no `lexlean` crate and no trusted publisher existed. Dispatched on a `release/vX.Y` line, `crate.yml` does the same for the pre-release `X.Y.0-dev.N`, `N` being the commit's number of first-parent commits, and uploads it under the same authority. The decisions are in `.github/crate-publication.sh`, which the case runs against planted archives, checksums, refs and environments. SPEC.md §30.3 states the rule. Register 449.
 
