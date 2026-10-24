@@ -441,6 +441,15 @@ and Unreleased holds what has landed since.
   of `RustBodies` writing more than 16,777,216 bytes. Certificate B refuses a
   match arm that returns a binder of the matched type (#310). The register is
   458 IDs.
+- The value a function that can overflow returns, as language-1.2 source, third
+  pass of the lowering of terms (SPEC.md §17.23, §17.16, `BS-12`, #92; no new
+  diagnostic code, no change to the language-1.2 identity). `succeedBodies` of
+  `RustSucceed` pushes `Ok` into every tail of the bodies of the functions that
+  can overflow as `succeed` does, held to the Function items of `rust::lower`
+  by composition with the roots of `BS-11` and `applyMoves`, to the byte, on 76
+  vectors and 166 seeded mutants; no file of the renderer changes. Its
+  certificate part is 648,077 bytes, 10.3% of `max_file_bytes`. The register is
+  459 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or

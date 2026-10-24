@@ -161,6 +161,14 @@
       "version": "1.0.0"
     },
     {
+      "name": "succeed_bodies",
+      "root": "LexLeanBoot.RustSucceed.succeedBodies",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "use_trees",
       "root": "LexLeanBoot.CalculusCheck.useTrees",
       "targets": [

@@ -25,6 +25,7 @@ mod rust_bodies;
 mod rust_lower;
 mod rust_moves;
 mod rust_print;
+mod rust_succeed;
 mod rust_terms;
 mod rust_validate;
 mod scan;
@@ -2443,6 +2444,7 @@ fn case(id: &str) {
         "BS-09" => runtime_validate::case(),
         "BS-10" => rust_terms::case(),
         "BS-11" => rust_bodies::case(),
+        "BS-12" => rust_succeed::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }

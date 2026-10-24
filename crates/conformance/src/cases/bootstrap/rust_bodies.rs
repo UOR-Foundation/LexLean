@@ -61,23 +61,33 @@ const VECTORS_WITHIN: usize = 155;
 const EVALUATOR_MUTANTS: usize = 320;
 
 /// A program with what the roots are given and the oracle's items.
-struct Vector {
-    nodes: usize,
+pub(super) struct Vector {
+    pub(super) nodes: usize,
     /// The arguments of `useTrees` and the tree it returns.
-    uses: Run,
+    pub(super) uses: Run,
     /// The arguments of `lowerFrame`, and of `lowerBodies` before the frame.
-    frame: Vec<Value>,
-    bodies: Vec<Value>,
+    pub(super) frame: Vec<Value>,
+    pub(super) bodies: Vec<Value>,
     /// The Function items of the crate `rust::lower` returns.
-    items: Vec<ItemDef>,
+    pub(super) items: Vec<ItemDef>,
+    /// The arguments of `succeedBodies` before the bodies: the result types
+    /// and the functions that can overflow.
+    pub(super) succeed: Vec<Value>,
 }
 
 /// A program is a vector when the oracle lowers it and no pass this row does
 /// not carry changes its bodies.
 fn vector(program: &Program) -> Option<Vector> {
+    vector_in(program, false)
+}
+
+/// [`vector`], for the programs in which a function can overflow when
+/// `overflowing` and for the others when not: `succeed` is the row after this
+/// one, and it needs a program that reaches it.
+pub(super) fn vector_in(program: &Program, overflowing: bool) -> Option<Vector> {
     let krate = rust::lower(program, Profile::Std).ok()?;
     let fallible = rust::fallible_functions(program).ok()?;
-    if fallible.contains(&true) {
+    if fallible.contains(&true) != overflowing {
         return None;
     }
     if program
@@ -95,7 +105,8 @@ fn vector(program: &Program) -> Option<Vector> {
     let mut frame = base.clone();
     frame.extend([tree.clone(), flags(dead.clone())]);
     let mut bodies = base.clone();
-    bodies.extend([tree, enc_site(&used), flags(dead), flags(fallible)]);
+    bodies.extend([tree, enc_site(&used), flags(dead), flags(fallible.clone())]);
+    let succeed = vec![base[4].clone(), flags(fallible)];
     let items = krate
         .items
         .into_iter()
@@ -110,6 +121,7 @@ fn vector(program: &Program) -> Option<Vector> {
         frame,
         bodies,
         items,
+        succeed,
     })
 }
 
@@ -241,7 +253,7 @@ fn rules() -> Vec<Program> {
 
 /// The programs of the corpora: the rules of `BS-07`, the programs of
 /// `BS-04`, the committed programs, and seeded mutants of the smaller ones.
-fn programs(sources: &[Source]) -> Vec<Program> {
+pub(super) fn programs(sources: &[Source]) -> Vec<Program> {
     let mut seeded = Seeded(0x00B5_0011);
     let mut out: Vec<Program> = analysis();
     out.extend(rules());
@@ -253,14 +265,14 @@ fn programs(sources: &[Source]) -> Vec<Program> {
     out
 }
 
-fn drawn(sources: &[Source], seed: u64) -> Vec<Program> {
+pub(super) fn drawn(sources: &[Source], seed: u64) -> Vec<Program> {
     mutants(sources, &mut Seeded(seed), MUTANT_DRAWS, BASE_NODES)
 }
 
 /// The bodies a run of `lowerBodies` returned, put into the Function items
 /// of the oracle in place of its own, as the chain `applyMoves` takes, and
 /// the items the oracle holds.
-fn composed(vector: &Vector, bodies: &Json) -> (Vec<Value>, Json) {
+pub(super) fn composed(vector: &Vector, bodies: &Json) -> (Vec<Value>, Json) {
     let mut chain = Vec::new();
     let mut current: Value = serde_json::from_value(bodies.clone()).expect("a value");
     while let Value::Adt {

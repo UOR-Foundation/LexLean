@@ -1,0 +1,119 @@
+\begin{lexlean}{RustSucceed}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{CalculusCheck}
+\importmodule{RustAst}
+\importmodule{RustBodies}
+\importmodule{RustLower}
+\importmodule{RustTerms}
+\importmodule{RustValidate}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: overflowAt,
+  parameters: [seed : Nat],
+  result: RustValidate::Origin,
+  body: (record RustValidate::Origin {element := (prim utf8_encode "overflow" : Bytes), width := (ctor Option.none [RustValidate::IntKind])}),
+  executable: true
+}
+
+definition{
+  name: succeeded,
+  parameters: [value : RustAst::Expr],
+  result: RustAst::Expr,
+  body: (ctor RustAst::Expr.EWrap (ctor RustValidate::WrapKind.WkSucceed) value (overflowAt 0)),
+  executable: true
+}
+
+definition{
+  name: unitBound,
+  parameters: [value : RustAst::Expr],
+  result: RustAst::Expr,
+  body: (ctor RustAst::Expr.EBlockE (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ELet (ctor RustAst::Pat.PLeaf (ctor RustAst::PatLeaf.PlUnit)) false (RustBodies::unitTy 0) value (overflowAt 0) (ctor RustAst::Expr.ENil)) (succeeded (ctor RustAst::Expr.ELit (ctor RustAst::Lit.LitUnit) (overflowAt 0))))),
+  executable: true
+}
+
+definition{
+  name: otherwise,
+  parameters: [whole : RustAst::Expr, unit : Bool, mode : Nat],
+  result: RustAst::Expr,
+  body: (if (mode =? 0) then (if unit then (unitBound whole) else (succeeded whole)) else whole),
+  executable: true
+}
+
+definition{
+  name: succeedExpr,
+  parameters: [subject : RustAst::Expr, whole : RustAst::Expr, unit : Bool, mode : Nat],
+  result: RustAst::Expr,
+  body: (match subject
+    | RustAst::Expr.ELit lit at => (if ((mode =? 0) && (RustBodies::unitLit whole)) then (succeeded whole) else (otherwise whole unit mode))
+    | RustAst::Expr.ERead u1x0 u1x1 u1x2 => (otherwise whole unit mode)
+    | RustAst::Expr.EWrap u1x0 u1x1 u1x2 => (otherwise whole unit mode)
+    | RustAst::Expr.ECall callee args propagate at => (if ((mode =? 0) && propagate) then (ctor RustAst::Expr.ECall callee args false at) else (otherwise whole unit mode))
+    | RustAst::Expr.EApply holder args propagate at => (if ((mode =? 0) && propagate) then (ctor RustAst::Expr.EApply holder args false at) else (otherwise whole unit mode))
+    | RustAst::Expr.EConstruct u1x0 u1x1 u1x2 => (otherwise whole unit mode)
+    | RustAst::Expr.EPair u1x0 u1x1 u1x2 => (otherwise whole unit mode)
+    | RustAst::Expr.EIf c t e at => (if (mode =? 0) then (ctor RustAst::Expr.EIf c (succeedExpr t t unit 1) (succeedExpr e e unit 1) at) else whole)
+    | RustAst::Expr.EMatch s arms at => (if (mode =? 0) then (ctor RustAst::Expr.EMatch s (succeedExpr arms arms unit 2) at) else whole)
+    | RustAst::Expr.EBlockE u1x0 => (otherwise whole unit mode)
+    | RustAst::Expr.EProbe u1x0 u1x1 u1x2 => (otherwise whole unit mode)
+    | RustAst::Expr.EBlock lets tail => (if (mode =? 1) then (RustBodies::setTail (ctor RustAst::Expr.EBlock lets tail) (succeedExpr tail tail unit 0)) else (otherwise whole unit mode))
+    | RustAst::Expr.ENil => (otherwise whole unit mode)
+    | RustAst::Expr.ECons u1x0 u1x1 => (otherwise whole unit mode)
+    | RustAst::Expr.ELet u1x0 u1x1 u1x2 u1x3 u1x4 u1x5 => (otherwise whole unit mode)
+    | RustAst::Expr.EArm pats block rest => (if (mode =? 2) then (ctor RustAst::Expr.EArm pats (succeedExpr block block unit 1) (succeedExpr rest rest unit 2)) else (otherwise whole unit mode))
+    | RustAst::Expr.ELoop u1x0 u1x1 => (otherwise whole unit mode)),
+  executable: true,
+  recursive_argument: subject
+}
+
+definition{
+  name: unitResult,
+  parameters: [results : CalculusCheck::Ty, index : Nat],
+  result: Bool,
+  body: (match (RustTerms::chainGet results index)
+    | Option.some result => (CalculusCheck::tyEq result (ctor CalculusCheck::Ty.TUnit))
+    | Option.none => false),
+  executable: true
+}
+
+definition{
+  name: succeedChain,
+  parameters: [
+    results : CalculusCheck::Ty,
+    fallible : (List Bool),
+    subject : RustAst::Expr,
+    index : Nat
+  ],
+  result: RustAst::Expr,
+  body: (match subject
+    | RustAst::Expr.ELit u2x0 u2x1 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ERead u2x0 u2x1 u2x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EWrap u2x0 u2x1 u2x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ECall u2x0 u2x1 u2x2 u2x3 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EApply u2x0 u2x1 u2x2 u2x3 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EConstruct u2x0 u2x1 u2x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EPair u2x0 u2x1 u2x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EIf u2x0 u2x1 u2x2 u2x3 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EMatch u2x0 u2x1 u2x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EBlockE u2x0 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EProbe u2x0 u2x1 u2x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EBlock u2x0 u2x1 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ENil => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ECons head tail => (ctor RustAst::Expr.ECons (if ((RustLower::flagAt fallible index) && (not (RustBodies::isNilE head))) then (succeedExpr head head (unitResult results index) 1) else head) (succeedChain results fallible tail (index + 1)))
+    | RustAst::Expr.ELet u2x0 u2x1 u2x2 u2x3 u2x4 u2x5 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EArm u2x0 u2x1 u2x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ELoop u2x0 u2x1 => (ctor RustAst::Expr.ENil)),
+  executable: true,
+  recursive_argument: subject
+}
+
+definition{
+  name: succeedBodies,
+  parameters: [results : CalculusCheck::Ty, fallible : (List Bool), bodies : RustAst::Expr],
+  result: RustAst::Expr,
+  body: (succeedChain results fallible bodies 0),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

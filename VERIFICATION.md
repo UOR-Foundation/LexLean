@@ -10357,6 +10357,57 @@ join: the case counts 156 with them and 155 without. The counts of `BS-05`
 to `BS-08` and `BS-10` move with the packages of this row and are recounted by
 the maintainer at the landing.
 
+`BS-12` holds the production root of `LexLeanBoot.RustSucceed`
+(`bootstrap/src/RustSucceed.lex.tex`), `succeed` of the Rust lowering, to the
+Function items of the crate that `rust::lower` returns, by composition: the
+frame, the bodies, the succeeded bodies, and the fold, put in place of the
+bodies of the Function items and given to `applyMoves`, give the items to the
+byte. The programs are those in which `rust::lower` succeeds, some function can
+overflow, and none loops: 76 vectors (75 within the 300 nodes the evaluator is
+given) of the rules of the earlier rows, `BS-04`, and the committed programs,
+and 166 seeded mutants drawn 3,000 times from the smaller committed programs.
+On the normative host the evaluator agrees on the vectors and the mutants (the
+composition took 58 s), the rendered package agrees with the evaluator on the
+75 runs under the pinned rustc (one harness binary built in 5.3 s), and eleven
+planted defects in the source are each detected; the case up to the comparison
+with the committed packages takes 2,116 s on this host (4 cores) and stops
+there on this tree, the package `succeed_bodies`, the stack row, the locks, and
+the committed records being the maintainer's.
+
+Measured certificate of `succeedBodies` (bytes; the limit `max_file_bytes` is
+6,291,456 and the budget the case asserts is 3,145,728): part A 648,077 (the
+largest, 10.3% of the limit), part B 483,088, part E 150,401; the export took
+31 min 25 s. The first export was refused (`LLV7005`) because the helper that
+builds the origin `overflow` observes no axiom and declared two: a definition
+that observes none declares none.
+
+Each of eleven plants is made on a copy of `bootstrap/src/RustSucceed.lex.tex`
+on every run and is caught by the oracle; the vector is the index among the
+vectors, then the mutants:
+
+- **a call in tail position still propagates**, vector 0.
+- **an application in tail position still propagates**, vector 4.
+- **a unit literal is wrapped like any other value**, vector 53.
+- **a computed unit is not bound before the success**, vector 53.
+- **the then-branch of a conditional is not succeeded**, vector 49.
+- **the else-branch of a conditional is not succeeded**, vector 49.
+- **the body of an arm is not succeeded**, vector 18.
+- **the arms after the first are not succeeded**, vector 18.
+- **a function that cannot overflow is succeeded**, vector 0.
+- **the flags are read at the first function**, vector 0.
+- **the tail of a block is not succeeded**, vector 0.
+
+Findings. (1) The first draft carried the branch that pushes `Ok` into a block
+that is itself a tail, as the oracle does. No vector reaches it (the lowering
+merges a block into the block around it), and its plant was undetected on all
+76 vectors and 166 mutants, so the branch is removed rather than claimed.
+(2) The same corpus exercises, for the first time, the failing functions that
+`lowerBodies` of `BS-11` is given: a call or an application that propagates;
+`BS-11` kept only programs in which no function can overflow, and the
+composition agrees with the oracle on all of these as well. (3) The counts of
+the earlier rows move with the package of this root and are recounted by the
+maintainer at the landing.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the
