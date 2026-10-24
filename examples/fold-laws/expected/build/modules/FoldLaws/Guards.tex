@@ -1,0 +1,56 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{requestLines}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(text : String)}.\par
+\noindent Type: \texttt{List (String)}.\par
+\noindent Definition: \texttt{(match (LexLeanRuntime.splitExact (text) ("\textbackslash{}n") ((4097 : UInt32)) : Option (List (String))) with | Option.none => ("status error" :: ("request too-many-lines" :: ([] : List (String)))) | Option.some pieces => pieces)}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\subsection*{\texttt{nextLine}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(line : UInt32)}.\par
+\noindent Type: \texttt{List (String)}.\par
+\noindent Definition: \texttt{(match (LexLeanRuntime.checkedAdd (line) ((1 : UInt32)) : Option (UInt32)) with | Option.none => ("status error" :: ("request line-overflow" :: ([] : List (String)))) | Option.some \_ => ([] : List (String)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{respond}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(request : ByteArray)}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match (LexLeanRuntime.utf8Decode (request) : Option (String)) with | Option.none => (LexLeanRuntime.utf8Encode ("status error\textbackslash{}nrequest invalid-utf8") : ByteArray) | Option.some text => (if (Nat.blt (16384) ((LexLeanRuntime.length ((LexLeanRuntime.utf8Encode (text) : ByteArray)) : Nat))) then (LexLeanRuntime.utf8Encode ("status error\textbackslash{}nresponse too-large") : ByteArray) else (LexLeanRuntime.utf8Encode (text) : ByteArray)))}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\subsection*{\texttt{newline\_separates}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{((LexLeanRuntime.equal ("\textbackslash{}n") ("") : Bool) = false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{lines\_fit}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(4096 < (toNat ((4097 : UInt32)) : Nat))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{too\_many\_lines\_unreachable}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(text : String)}.\par
+\noindent Statement: \texttt{(((LexLeanRuntime.length ((LexLeanRuntime.utf8Encode (text) : ByteArray)) : Nat) <= 4096) -> ((match (LexLeanRuntime.splitExact (text) ("\textbackslash{}n") ((4097 : UInt32)) : Option (List (String))) with | Option.none => false | Option.some \_ => true) = true))}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\subsection*{\texttt{counter\_fits}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(((toNat ((4097 : UInt32)) : Nat) + (toNat ((1 : UInt32)) : Nat)) < 4294967296)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{line\_overflow\_unreachable}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(line : UInt32)}.\par
+\noindent Statement: \texttt{((line <= (4097 : UInt32)) -> ((match (LexLeanRuntime.checkedAdd (line) ((1 : UInt32)) : Option (UInt32)) with | Option.none => false | Option.some \_ => true) = true))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{request\_text\_fits}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(request : ByteArray) (text : String)}.\par
+\noindent Statement: \texttt{(((LexLeanRuntime.utf8Decode (request) : Option (String)) = Option.some (text)) -> (((LexLeanRuntime.length (request) : Nat) <= 4096) -> ((LexLeanRuntime.length ((LexLeanRuntime.utf8Encode (text) : ByteArray)) : Nat) <= 4096)))}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\subsection*{\texttt{response\_too\_large\_unreachable}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(request : ByteArray) (text : String)}.\par
+\noindent Statement: \texttt{(((LexLeanRuntime.utf8Decode (request) : Option (String)) = Option.some (text)) -> (((LexLeanRuntime.length (request) : Nat) <= 16384) -> ((LexLeanRuntime.length ((LexLeanRuntime.utf8Encode (text) : ByteArray)) : Nat) <= 16384)))}.\par
+\noindent Axiom policy: \texttt{exact [Classical.choice, Quot.sound, propext]}.\par
+\end{document}

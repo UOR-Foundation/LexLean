@@ -112,3 +112,49 @@ parameters = [
   { kind = "list", element = { kind = "parameter", name = "A" } },
   { kind = "list", element = { kind = "parameter", name = "A" } },
 ]
+
+# The runtime bounds (#263): what a law proof cites to show that a guard of the
+# split, the decoder, or checked addition never fails. Each conclusion is an
+# implication from a bound n on the input, and each closed side condition is a
+# premise a prior theorem discharges.
+
+# split_exact of a string whose UTF-8 byte length is at most n, on a separator
+# that is not empty, under a maximum above n, is some: a split has at most its
+# byte length plus one pieces.
+[[law]]
+name = "split_exact_fits"
+lean = "LexLeanLaws.splitExact_fits"
+type_parameters = []
+premises = 2
+parameters = [
+  { kind = "string" },
+  { kind = "string" },
+  { kind = "uint32" },
+  { kind = "nat" },
+]
+
+# A string utf8_decode reads from bytes of length at most n has a UTF-8 byte
+# length of at most n.
+[[law]]
+name = "utf8_decode_length"
+lean = "LexLeanLaws.utf8Decode_length"
+type_parameters = []
+premises = 0
+parameters = [
+  { kind = "bytes" },
+  { kind = "string" },
+  { kind = "nat" },
+]
+
+# UInt32 checked_add of a value at most n and b is some when n plus b is below
+# 2^32.
+[[law]]
+name = "checked_add_fits"
+lean = "LexLeanLaws.checkedAdd_fits"
+type_parameters = []
+premises = 1
+parameters = [
+  { kind = "uint32" },
+  { kind = "uint32" },
+  { kind = "uint32" },
+]

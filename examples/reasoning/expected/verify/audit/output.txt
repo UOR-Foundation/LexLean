@@ -105,7 +105,10 @@
 'LexLeanCollections.lessThan.eq_1' depends on axioms: [propext]
 'LexLeanCollections.listFold.eq_1' does not depend on any axioms
 'LexLeanLaws.append_list' does not depend on any axioms
+'LexLeanLaws.checkedAdd_fits' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.checkedAdd_fits.match_1' does not depend on any axioms
 'LexLeanLaws.length_list' does not depend on any axioms
+'LexLeanLaws.length_utf8Encode' does not depend on any axioms
 'LexLeanLaws.lessThan_int' depends on axioms: [propext, Quot.sound]
 'LexLeanLaws.lessThan_int16' depends on axioms: [propext, Quot.sound]
 'LexLeanLaws.lessThan_int32' depends on axioms: [propext, Quot.sound]
@@ -139,6 +142,11 @@
 'LexLeanLaws.setElements_self' does not depend on any axioms
 'LexLeanLaws.setFold_listFold' does not depend on any axioms
 'LexLeanLaws.setSize_length' does not depend on any axioms
+'LexLeanLaws.splitExact_fits' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanLaws.splitExact_fits.match_1' does not depend on any axioms
+'LexLeanLaws.splitOnAux_length_le' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanLaws.splitOnAux_length_le._unary' depends on axioms: [propext, Classical.choice, Quot.sound]
+'LexLeanLaws.splitOn_length_le' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanLaws.sumInt' does not depend on any axioms
 'LexLeanLaws.sumInt._f' does not depend on any axioms
 'LexLeanLaws.sumInt._sunfold' does not depend on any axioms
@@ -179,8 +187,13 @@
 'LexLeanLaws.sumNat_reverse' depends on axioms: [propext, Quot.sound]
 'LexLeanLaws.tdiv_ediv' depends on axioms: [propext, Quot.sound]
 'LexLeanLaws.tmod_emod' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.utf8Decode_length' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanRuntime.quotient.eq_1' does not depend on any axioms
 'LexLeanRuntime.remainder.eq_1' does not depend on any axioms
+'LexLeanRuntime.splitExact.eq_1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'String.Pos.Raw.next.eq_1' depends on axioms: [propext, Classical.choice, Quot.sound]
+'String.fromUTF8.congr_simp' does not depend on any axioms
+'String.isEmpty.eq_1' does not depend on any axioms
 'LexLeanModels.Agreement' does not depend on any axioms
 'LexLeanModels.Complete1' does not depend on any axioms
 'LexLeanModels.Complete2' does not depend on any axioms

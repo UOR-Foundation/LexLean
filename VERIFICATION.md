@@ -17002,3 +17002,101 @@ itself, and a plant that leaves the text unchanged fails the case.
 Removed: the three edits were restored; `conformance_pc_01` passes, and
 `conformance_pc_02` passes with the export of every member under the pinned
 Lean 4.32.1 (8 outputs over the 6 members, each `kernel-checked`, the bundle replayed `bindings-verified`; `cargo xtask verify-examples --write` wrote 138 normalized verification records for `performance-corpus`, attestation f92c50059ffb4f27a91ee7d43d5ca29d4ecd7c7d0e7cff63c1984b54ac344441; `check-golden --write` changed no other example; `check-test-inventory`, `cargo fmt --check` and `validate-model` pass).
+
+## Planted defects for the runtime bounds (`PF-24`, #263)
+
+Each defect below was planted in the working tree or in a scratch copy, the
+command named was run, and the plant was reverted. Linux x86-64 (WSL),
+pinned Lean 4.32.1. On the reverted tree `conformance_pf_20`..`pf_24` and
+`conformance_rt_01`..`rt_04` pass (9 passed), and `lexlean verify
+src/Guards.lex.tex` verifies the mirror.
+
+Planted (a): one law weakened by one. In the authored Lean of the laws
+module, the premise of `splitExact_fits` became `n + 1 < m.toNat` (a
+maximum two above the bound, where the shipped law asks for one). The lemma
+still proves, and it was exported into `Laws.lex.tex` by the same oracle and
+built into the compiler. `lexlean verify src/Guards.lex.tex` on a copy of
+`examples/fold-laws` refuses the mirror's citation, because the premise
+`lines_fit` (`4096 < to_nat 4097`) no longer discharges the law:
+
+```text
+verify exit 1
+error[LLV7002]: Lean rejected `FoldLaws.Guards` (error): Application type mismatch: The argument
+  lines_fit
+has type
+  4096 <
+    have __widen0 := 4097;
+    ((if LexLeanRuntime.equal (LexLeanRuntime.bitAnd __widen0 2147483648) 2147483648 = true then 2147483648 else 0) +
+    ... (the widening of `to_nat 4097`, 32 terms)
+but is expected to have type
+  4096 + 1 < UInt32.toNat 4097
+in the application
+  ...
+  --> src/Guards.lex.tex:52:1
+```
+
+Planted (b): a law the registry does not name. In a copy of
+`examples/fold-laws`, `too_many_lines_unreachable` cites `split_exact_bound`
+instead of `split_exact_fits`. `lexlean check`:
+
+```text
+error[LLT4001]: phase link: `split_exact_bound` is not a registered law
+  --> src/Guards.lex.tex:6:1
+lexlean check exit 1
+```
+
+Planted (c): the piece-count lemma one tighter. `splitOn_length_le` stated
+as `(s.splitOn sep).length ≤ s.utf8ByteSize`, without the `+ 1`, is refused
+by Lean (compiled against the runtime modules, as the oracle does). The bound
+is not slack: the empty string splits into one piece and has no bytes.
+
+```text
+error: omega could not prove the goal:
+No usable constraints found. ...
+error: Type mismatch
+  splitOnAux_length_le s sep 0 0 0 [] ...
+has type
+  (s.splitOnAux sep 0 0 0 []).length ≤ s.utf8ByteSize + 1
+but is expected to have type
+  (s.splitOnAux sep 0 0 0 []).length ≤ s.utf8ByteSize
+```
+
+Planted (d): each guard claims one more than its law gives (the split guard's
+byte bound 4097, the counter's line bound 4098, the response bound 16383).
+`conformance_pf_24` makes these edits on a copy and requires Lean to refuse
+exactly the three guard theorems with `LLV7002`. The same edits made by hand
+on a copy, `lexlean verify src/Guards.lex.tex`:
+
+```text
+verify exit 1
+error[LLV7002]: Lean rejected `FoldLaws.Guards` (error): Type mismatch
+  LexLeanLaws.splitExact_fits text "
+" 4097 4096 newline_separates lines_fit
+...
+but is expected to have type
+  LexLeanRuntime.length (LexLeanRuntime.utf8Encode text) ≤ 4097 → ...
+  --> src/Guards.lex.tex:52:1
+error[LLV7002]: Lean rejected `FoldLaws.Guards` (error): Type mismatch
+  LexLeanLaws.checkedAdd_fits line 1 4097 counter_fits
+...
+but is expected to have type
+  line ≤ 4098 → ...
+  --> src/Guards.lex.tex:74:1
+error[LLV7002]: Lean rejected `FoldLaws.Guards` (error): Type mismatch
+  LexLeanLaws.utf8Decode_length request text 16384
+...
+but is expected to have type
+  LexLeanRuntime.utf8Decode request = some text → ...
+  --> src/Guards.lex.tex:96:1
+```
+
+Before the implementation (the R3 commit), the mirror was refused at the
+citation, `error[LLT4001]: phase link: split_exact_fits is not a registered
+law`, and `conformance_pf_24` failed at its first assertion
+(`LexLeanLaws.splitExact_fits` is a declaration of the laws module).
+
+*What the evidence is.* The three laws are Lean theorems, kernel-checked in
+the runtime build and replayed by `leanchecker` in every verification that
+imports the laws module. The mirror module is what a downstream model writes.
+Plant (a) shows its proof depends on the exact statement of the law. Plant (c)
+shows the bound is the tightest constant offset.

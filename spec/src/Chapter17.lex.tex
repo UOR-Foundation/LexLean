@@ -576,7 +576,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "A lossless environment import may retain a source compiler's private" (cons "self-recursive implementation record with `generated = true`. Such a record" (cons "is not a safe kernel declaration that the native backend can recreate. It is" (cons "accepted only when no native-environment declaration refers to it; it remains" (cons "hashed import provenance and appears in neither generated backend nor the" (cons "axiom audit. Any other generated row without a native owner is rejected. This" (cons "classification is generic and structural: it is not selected by an Atlas" (cons "name, module, or feature. Generated Lean may import only the foundational" (cons "modules listed in the core data and other modules in the generated graph. The" (cons "generic environment-reconstruction runtime may privately import `Lean`, and" (cons "the runtime of a version 2 module also `Lean.Meta.Constructions.SparseCasesOn`" (cons "in full (below); no" (cons "generated module may import an independently authored implementation of the" (cons "declarations being generated." (nil String)))))))))))))))
+      (cons "A lossless environment import may retain a source compiler's private" (cons "self-recursive implementation record with `generated = true`. Such a record" (cons "is not a safe kernel declaration that the native backend can recreate. It is" (cons "accepted only when no native-environment declaration refers to it; it remains" (cons "hashed import provenance and appears in neither generated backend nor the" (cons "axiom audit. Any other generated row without a native owner is rejected. This" (cons "classification is generic and structural: it is not selected by an Atlas" (cons "name, module, or feature. Generated Lean may import only the foundational" (cons "modules listed in the core data and other modules in the generated graph. The" (cons "generic environment-reconstruction runtime may privately import `Lean`, and" (cons "the runtime of a version 2 module also `Lean.Meta.Constructions.SparseCasesOn`" (cons "in full (below) and `Init.Data.String.Legacy` in full, whose bodies of" (cons "`String.splitOn` and its loop Lean does not expose and the runtime bound of" (cons "`split_exact` unfolds (§17.12, *Runtime bounds*); no" (cons "generated module may import an independently authored implementation of the" (cons "declarations being generated." (nil String)))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -1163,8 +1163,10 @@ definition{
   parameters: [],
   result: DocRows::Item,
   body: constructor{
-    arguments: [4, 1, "Models, contracts, realizations, and evidence (language 1.2)"],
-    constructor: DocRows::Item.heading,
+    arguments: [
+      (cons "**Runtime bounds.** `LexLeanRuntime.Laws` also states three bounds of the" (cons "runtime, registered in `language/runtime-1.2/laws.toml` as laws a `law` proof" (cons "applies by name like a fold law, so that a model proves a defensive error" (cons "branch of the split, the decoder, or checked addition unreachable without raw" (cons "Lean (§16.12). Each conclusion is an implication from a bound on the input, and" (cons "each closed side condition is a premise a prior theorem discharges:" (nil String)))))))
+    ],
+    constructor: DocRows::Item.para,
     type_arguments: []
   },
   executable: true
@@ -1176,7 +1178,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "A model is a contract bound to a realization of the same interface, with" (cons "evidence about the realization. These rules are LexLean's own and are checked" (cons "in linking, before either backend runs; the diagnostic each failure raises is" (cons "named with the rule. Every model declaration *elaborates*, in linking, to" (cons "ordinary language-1.2 definitions and theorems. The Lean backend, production" (cons "eligibility, extraction, and the axiom audit read only the elaboration; the" (cons "canonical document and the snapshot read the source declaration together with" (cons "its elaboration (rule 13). No prompt text, free-form description, raw JSON," (cons "unchecked code, or untyped blob defines any meaning: every member of every" (cons "model declaration belongs to the closed `lexlean/semantic-module/2` schema," (cons "every closed set below is a closed enumeration of that schema, and an unknown" (cons "member or value is an ordinary schema failure (`LLT4001`)." (nil String)))))))))))))
+      (cons "- `split_exact_fits` (`LexLeanLaws.splitExact_fits`, parameters `s d : String`," (cons "  `m : UInt32`, `n : Nat`, premises `equal d \"\" = false` and `n < toNat m`):" (cons "  `length (utf8_encode s) <= n` implies that `split_exact s d m` is `some`," (cons "  written `(match split_exact s d m | none => false | some _ => true) = true`." (cons "  A split on a separator that is not empty has at most the UTF-8 byte length" (cons "  of the string plus one pieces, so a maximum above any bound on that length" (cons "  admits it." (cons "- `utf8_decode_length` (`LexLeanLaws.utf8Decode_length`, parameters" (cons "  `b : Bytes`, `s : String`, `n : Nat`, no premise): `utf8_decode b = some s`" (cons "  implies that `length b <= n` implies `length (utf8_encode s) <= n`; a" (cons "  decoded string's UTF-8 byte length is bounded by the length of the bytes it" (cons "  was decoded from." (cons "- `checked_add_fits` (`LexLeanLaws.checkedAdd_fits`, parameters" (cons "  `a b n : UInt32`, premise `toNat n + toNat b < 4294967296`): `a <= n`" (cons "  implies that `checked_add a b` is `some`, written as for the split." (nil String))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -1190,7 +1192,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "1. **References and order.** Every contract, realization, evidence, model," (cons "   predicate, validator, artifact, and theorem a model declaration names is" (cons "   a prior declaration of its module or an imported one. Every theorem named" (cons "   by a validator, a width obligation, a claim, a junction, or an entry is a" (cons "   prior theorem *of the same module* as the declaration naming it, as for" (cons "   termination evidence. A use of a generic contract, realization, or model" (cons "   is `{\"member\":M,\"type_arguments\":[T...]}` with exactly its type" (cons "   parameters; nothing is inferred. A model declaration's `axioms` row is" (cons "   the exact axiom policy of every Lean declaration it generates (rule 12)." (cons "2. **Artifacts** (`LLR3007`, `LLR3008`). `{\"kind\":\"artifact\",\"name\":W," (cons "   \"role\":R,\"sha256\":H,\"length\":N,\"schema\":S,\"type\":T}` names the project" (cons "   bytes configured as `[[artifact_source]]` with digest `H` (§10.1). Linking" (cons "   reads each configured artifact once, confined (§25.1), within" (cons "   `max_file_bytes`, and counted toward `max_total_source_bytes` (§10.2), and" (cons "   requires its SHA-256 to equal the configured digest. A missing file, a" (cons "   digest or length differing from the configuration or the declaration, or" (cons "   a declaration whose digest no configured source has is `LLR3007`. The" (cons "   closed schemas are `bytes` (decoding to `bytes`); `int_tensor` with an" (cons "   `element` among `int8`, `int16`, `int32`, `int64`, `uint8`, `uint16`," (cons "   `uint32`, `uint64` and a nonempty `shape` of at most 16 positive extents" (cons "   (little-endian, two's complement for the signed elements, row-major," (cons "   exactly width times the product of the extents bytes, decoding to the" (cons "   `shape`-deep nested `list int` of the exact element values); and" (cons "   `utf8_lines` (valid UTF-8 without CR, every line LF-terminated, decoding" (cons "   to `list string`). The closed roles constrain the schema: `parameters`" (cons "   and `table` take `int_tensor`, `vocabulary` takes `utf8_lines`, `binary`" (cons "   takes `bytes`, and `dataset` takes any. Bytes that do not decode under" (cons "   the schema, a declared type other than the schema's decoded type, or a" (cons "   role its schema does not admit is `LLR3008`. The rank bound, the role," (cons "   and the declared type are checked, and the bytes checked against the" (cons "   schema, before any byte is decoded. Each declaration is then charged" (cons "   before it materializes anything, because one digest may be named by any" (cons "   number of declarations and each holds its own copy: its length counts" (cons "   once more toward `max_total_source_bytes`, and the exact node count of" (cons "   its decoded value (computed from the length, the shape, and the line" (cons "   count, without building it) is charged to `max_ir_nodes` on top of every" (cons "   node linked and decoded before it in the link; exceeding either is" (cons "   `LLS8002` before decoding allocates. Decoding a project's artifacts" (cons "   therefore allocates at most a constant multiple of" (cons "   `max_total_source_bytes` bytes and `max_ir_nodes` nodes. There is no" (cons "   floating-point" (cons "   element, no JSON, ONNX, or other configuration schema, and no" (cons "   unspecified rounding. An artifact elaborates to `W.bytes : bytes`, its" (cons "   exact bytes, and `W : T`, the decoded value; generated Lean adds the" (cons "   kernel-checked theorem `W.decoded` that `W` is the decoding of" (cons "   `W.bytes` (by `decide` for tensors and lines, by `rfl` for bytes), so the" (cons "   typed value used everywhere is tied to the exact content-addressed bytes." (cons "   `W.bytes` is emitted from the bytes linking read and digest-checked" (cons "   against both the configuration and the declaration, in the same process" (cons "   that renders the module; verification does not re-digest the emitted" (cons "   literal, so that link rests on construction, while the link from the" (cons "   bytes to the typed value is the kernel's." (cons "3. **Contracts** (`LLT4006`). `{\"kind\":\"contract\",\"name\":C," (cons "   \"type_parameters\":[...],\"input\":{\"name\":x,\"type\":I}," (cons "   \"output\":{\"name\":y,\"type\":O},\"state\":{\"name\":s,\"next\":t,\"type\":S}?," (cons "   \"precondition\":P?,\"postcondition\":Q?,\"invariant\":J?,\"validators\":[...]}`." (cons "   The binder names are pairwise distinct legal names; `invariant` requires" (cons "   `state`; at least one predicate is present. Each predicate is a prior" (cons "   definition with the contract's type parameters, result `prop`, and the" (cons "   parameter types of the table below; anything else is `LLT4006`." (nil String)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+      (cons "The split and the decoder pin `Classical.choice`, so the first two laws and a" (cons "theorem proved by them observe `Classical.choice`, `Quot.sound`, and" (cons "`propext`; `checked_add_fits` observes `Quot.sound` and `propext`. The fold" (cons "laws and the rewrite set of `linear_arithmetic` do not use them." (nil String)))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -1203,10 +1205,8 @@ definition{
   parameters: [],
   result: DocRows::Item,
   body: constructor{
-    arguments: [
-      (cons "   | Contract | Precondition | Postcondition | Invariant |" (cons "   |---|---|---|---|" (cons "   | stateless | `(I)` | `(I, O)` | — |" (cons "   | stateful | `(S, I)` | `(S, I, S, O)` | `(S)` |" (nil String)))))
-    ],
-    constructor: DocRows::Item.para,
+    arguments: [4, 1, "Models, contracts, realizations, and evidence (language 1.2)"],
+    constructor: DocRows::Item.heading,
     type_arguments: []
   },
   executable: true
@@ -1218,7 +1218,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "   `validators` are strictly sorted by predicate, at most one per present" (cons "   predicate: `{\"predicate\":p,\"validator\":V,\"sound\":T,\"complete\":U?}`. `V`" (cons "   is a prior `executable` definition of the predicate's parameter types" (cons "   with result `bool`; `T` states exactly `V(args) = true -> p(args)` and" (cons "   `U`, when present, exactly `p(args) -> V(args) = true`, over the" (cons "   predicate's parameters named by the contract binders (statements are" (cons "   compared up to the names of bound variables). A missing, mistyped, or" (cons "   non-executable validator, an absent predicate, or an inexact theorem is" (cons "   `LLT4006`. A contract elaborates to no runtime declaration; generated" (cons "   Lean restates each link as `C.<predicate>_sound` and" (cons "   `C.<predicate>_complete` against the fixed `LexLeanModels.SoundN` and" (cons "   `CompleteN` (rule 12)." (cons "4. **Realizations** (`LLT4006`). `{\"kind\":\"realization\",\"name\":R," (cons "   \"type_parameters\":[...],\"input\":{\"name\":x,\"type\":I},\"output\":O," (cons "   \"state\":{\"name\":s,\"type\":S,\"initial\":v}?,\"descriptor\":D," (cons "   \"executable\":true?}` elaborates to the ordinary definition" (cons "   `R : (I) -> O`, or `R : (S, I) -> product S O` with `R.initial : S` when" (cons "   stateful, plus the companion definitions named below; companions are" (cons "   ordinary definitions under the realization's name and occupy their names" (cons "   (§17.8). Each descriptor term has the type its slot fixes (a guard" (cons "   `bool`, an action, default, or label `O`, an encoder or feature map" (cons "   `list int`, a denotation `O` or `product S O`); a term of another type is" (cons "   an interface mismatch, `LLT4006`. The closed descriptors:" (cons "   - `deterministic` `{\"body\":b}`: the denotation is `b`." (cons "   - `rule` `{\"rules\":[{\"name\":n,\"guard\":g,\"action\":a}...],\"default\":d}`:" (cons "     at least one rule, names unique; the denotation is the first rule, in" (cons "     declared order, whose guard holds, else `d`; the companion" (cons "     `R.selected : (I) -> nat` is the index of the firing rule, or the rule" (cons "     count for the default." (cons "   - `statistical` `{\"scheme\":\"linear_scoring\",\"features\":f,\"width\":w," (cons "     \"width_evidence\":T,\"weights\":Wt,\"bias\":B,\"labels\":[...]}`, stateless:" (cons "     the companions `R.features` (`f`) and `R.scores` (`Wt` times the" (cons "     features plus `B`, over mathematical integers) and the denotation, the" (cons "     label of the first maximal score." (cons "   - `neural` `{\"architecture\":\"integer_feedforward\",\"encoder\":e,\"width\":w," (cons "     \"width_evidence\":T,\"layers\":[...],\"decoder\":...}`, stateless: the" (cons "     companions `R.encoded` (`e`), `R.layer1` ... `R.layerK` (one per layer," (cons "     each `list int -> list int`), and `R.logits`, and the denotation" (cons "     decoding the final values. The closed layers are `dense`" (cons "     `{\"inputs\":n,\"outputs\":m,\"weights\":Wt,\"bias\":B}` (`Wt v + B` over" (cons "     mathematical integers), `relu` (negative values become zero), and" (cons "     `requantize` `{\"shift\":k,\"minimum\":lo,\"maximum\":hi}` (division by `2^k`" (cons "     truncating toward zero, then clamping to `[lo, hi]`; `lo <= hi` and" (cons "     `k <= 4096`). The closed decoders are `argmax` `{\"labels\":[...]}` (the" (cons "     label of the first maximal value) and `function` `{\"binder\":v," (cons "     \"body\":b}` (`b` over the final values bound to `v`)." (cons "   - `composite` `{\"form\":F}`: rule 7." (nil String))))))))))))))))))))))))))))))))))))))))))))))))
+      (cons "A model is a contract bound to a realization of the same interface, with" (cons "evidence about the realization. These rules are LexLean's own and are checked" (cons "in linking, before either backend runs; the diagnostic each failure raises is" (cons "named with the rule. Every model declaration *elaborates*, in linking, to" (cons "ordinary language-1.2 definitions and theorems. The Lean backend, production" (cons "eligibility, extraction, and the axiom audit read only the elaboration; the" (cons "canonical document and the snapshot read the source declaration together with" (cons "its elaboration (rule 13). No prompt text, free-form description, raw JSON," (cons "unchecked code, or untyped blob defines any meaning: every member of every" (cons "model declaration belongs to the closed `lexlean/semantic-module/2` schema," (cons "every closed set below is a closed enumeration of that schema, and an unknown" (cons "member or value is an ordinary schema failure (`LLT4001`)." (nil String)))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -1232,7 +1232,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "   Widths are checked statically: the first dense layer takes `width`" (cons "   inputs, each dense layer takes the current width, a weights slot is a" (cons "   `parameters` artifact of shape `[outputs, inputs]` (statistical:" (cons "   `[labels, width]`) and a bias slot one of shape `[outputs]`, and an" (cons "   argmax decoder has one label per final value; a label list is nonempty" (cons "   and each label is a closed term, mentioning no local. `width_evidence`" (cons "   states exactly" (cons "   `length(e) = w` over the input binder. Any other width, shape, role, or" (cons "   label count, or an inexact width theorem, is `LLT4006`. The kernels are" (cons "   ordinary terms over `list_fold`, `match`, the integer primitives, and" (cons "   `less_than`, so they mean exactly what Lean computes and nothing is" (cons "   approximated. A realization marked `executable` is checked as executable" (cons "   code, including its companions." (cons "5. **Evidence** (`LLT4009`). `{\"kind\":\"evidence\",\"name\":E," (cons "   \"type_parameters\":[...],\"contract\":Cuse,\"realization\":Ruse," (cons "   \"claims\":[...]}` about a contract and a realization of the same interface" (cons "   (otherwise `LLT4006`). `claims` are strictly sorted by kind and theorem." (cons "   The closed claim kinds, their generated statements (premises absent from" (cons "   the contract are dropped; `R` is the realization at its type arguments)," (cons "   and the fixed Lean helper each is restated against:" (nil String)))))))))))))))))))))
+      (cons "1. **References and order.** Every contract, realization, evidence, model," (cons "   predicate, validator, artifact, and theorem a model declaration names is" (cons "   a prior declaration of its module or an imported one. Every theorem named" (cons "   by a validator, a width obligation, a claim, a junction, or an entry is a" (cons "   prior theorem *of the same module* as the declaration naming it, as for" (cons "   termination evidence. A use of a generic contract, realization, or model" (cons "   is `{\"member\":M,\"type_arguments\":[T...]}` with exactly its type" (cons "   parameters; nothing is inferred. A model declaration's `axioms` row is" (cons "   the exact axiom policy of every Lean declaration it generates (rule 12)." (cons "2. **Artifacts** (`LLR3007`, `LLR3008`). `{\"kind\":\"artifact\",\"name\":W," (cons "   \"role\":R,\"sha256\":H,\"length\":N,\"schema\":S,\"type\":T}` names the project" (cons "   bytes configured as `[[artifact_source]]` with digest `H` (§10.1). Linking" (cons "   reads each configured artifact once, confined (§25.1), within" (cons "   `max_file_bytes`, and counted toward `max_total_source_bytes` (§10.2), and" (cons "   requires its SHA-256 to equal the configured digest. A missing file, a" (cons "   digest or length differing from the configuration or the declaration, or" (cons "   a declaration whose digest no configured source has is `LLR3007`. The" (cons "   closed schemas are `bytes` (decoding to `bytes`); `int_tensor` with an" (cons "   `element` among `int8`, `int16`, `int32`, `int64`, `uint8`, `uint16`," (cons "   `uint32`, `uint64` and a nonempty `shape` of at most 16 positive extents" (cons "   (little-endian, two's complement for the signed elements, row-major," (cons "   exactly width times the product of the extents bytes, decoding to the" (cons "   `shape`-deep nested `list int` of the exact element values); and" (cons "   `utf8_lines` (valid UTF-8 without CR, every line LF-terminated, decoding" (cons "   to `list string`). The closed roles constrain the schema: `parameters`" (cons "   and `table` take `int_tensor`, `vocabulary` takes `utf8_lines`, `binary`" (cons "   takes `bytes`, and `dataset` takes any. Bytes that do not decode under" (cons "   the schema, a declared type other than the schema's decoded type, or a" (cons "   role its schema does not admit is `LLR3008`. The rank bound, the role," (cons "   and the declared type are checked, and the bytes checked against the" (cons "   schema, before any byte is decoded. Each declaration is then charged" (cons "   before it materializes anything, because one digest may be named by any" (cons "   number of declarations and each holds its own copy: its length counts" (cons "   once more toward `max_total_source_bytes`, and the exact node count of" (cons "   its decoded value (computed from the length, the shape, and the line" (cons "   count, without building it) is charged to `max_ir_nodes` on top of every" (cons "   node linked and decoded before it in the link; exceeding either is" (cons "   `LLS8002` before decoding allocates. Decoding a project's artifacts" (cons "   therefore allocates at most a constant multiple of" (cons "   `max_total_source_bytes` bytes and `max_ir_nodes` nodes. There is no" (cons "   floating-point" (cons "   element, no JSON, ONNX, or other configuration schema, and no" (cons "   unspecified rounding. An artifact elaborates to `W.bytes : bytes`, its" (cons "   exact bytes, and `W : T`, the decoded value; generated Lean adds the" (cons "   kernel-checked theorem `W.decoded` that `W` is the decoding of" (cons "   `W.bytes` (by `decide` for tensors and lines, by `rfl` for bytes), so the" (cons "   typed value used everywhere is tied to the exact content-addressed bytes." (cons "   `W.bytes` is emitted from the bytes linking read and digest-checked" (cons "   against both the configuration and the declaration, in the same process" (cons "   that renders the module; verification does not re-digest the emitted" (cons "   literal, so that link rests on construction, while the link from the" (cons "   bytes to the typed value is the kernel's." (cons "3. **Contracts** (`LLT4006`). `{\"kind\":\"contract\",\"name\":C," (cons "   \"type_parameters\":[...],\"input\":{\"name\":x,\"type\":I}," (cons "   \"output\":{\"name\":y,\"type\":O},\"state\":{\"name\":s,\"next\":t,\"type\":S}?," (cons "   \"precondition\":P?,\"postcondition\":Q?,\"invariant\":J?,\"validators\":[...]}`." (cons "   The binder names are pairwise distinct legal names; `invariant` requires" (cons "   `state`; at least one predicate is present. Each predicate is a prior" (cons "   definition with the contract's type parameters, result `prop`, and the" (cons "   parameter types of the table below; anything else is `LLT4006`." (nil String)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -1246,7 +1246,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "   | Claim | Requires | Generated statement | Helper |" (cons "   |---|---|---|---|" (cons "   | `satisfies_contract` | postcondition | stateless: `P x -> Q x (R x)`; stateful: `J s -> P s x -> Q s x (first(R s x)) (second(R s x))` | `Satisfies`, `SatisfiesTotal`, `SatisfiesStep...` |" (cons "   | `preserves_invariant` | invariant | `J s -> P s x -> J (first(R s x))` | `Preserves`, `PreservesTotal` |" (cons "   | `initial_invariant` | invariant | `J R.initial` | `Initial` |" (cons "   | `equivalent_to` (`\"reference\":F`, a definition or model of the realization's signature) | — | `P x -> R x = F x` (stateful: over `s` and `x` with `J s`) | `Equivalent...` |" (cons "   | `dataset_agreement` (`\"dataset\":D,\"comparison\":c,\"comparison_sound\":T',\"examples\":n,\"agreements\":k`), stateless | — | `length(D) = n` and the count of examples `(a, b)` of `D` with `c (R a) b = true` is `k` | `Agreement` |" (nil String))))))))
+      (cons "   | Contract | Precondition | Postcondition | Invariant |" (cons "   |---|---|---|---|" (cons "   | stateless | `(I)` | `(I, O)` | — |" (cons "   | stateful | `(S, I)` | `(S, I, S, O)` | `(S)` |" (nil String)))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -1260,7 +1260,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "   For `dataset_agreement`, `D : list (product I O)` is a prior nullary" (cons "   definition, `c : (O, O) -> bool`, `k <= n`, and `T'` states exactly" (cons "   `c e o = true -> e = o`, so an agreement is an equality. Each claim's" (cons "   theorem states exactly its generated statement. An unknown claim kind is" (cons "   a schema failure (`LLT4001`); a claim whose contract lacks what it" (cons "   requires (a vacuous claim), an inexact, later, foreign, or non-theorem" (cons "   reference, or unsorted or duplicate claims is `LLT4009`. Evidence" (cons "   elaborates to no runtime declaration. Nothing is ever asserted without a" (cons "   theorem: a claim is *discharged* in linking and *verified* only by a" (cons "   verified attestation (rule 13)." (cons "6. **Models** (`LLT4006`, `LLT4007`, `LLT4009`). `{\"kind\":\"model\",\"name\":M," (cons "   \"type_parameters\":[...],\"contract\":Cuse,\"realization\":Ruse," (cons "   \"evidence\":[Euse...]?,\"entry\":[T...]?}`. The realization's input," (cons "   output, and state types equal the contract's at their type arguments" (cons "   (`LLT4006`); each listed evidence, listed once, is about exactly this" (cons "   contract and realization use (`LLT4009`). `entry` lists one theorem per" (cons "   *effective precondition* `e` of the realization (none for the" (cons "   noncomposite kinds; rule 7 for composites), in order, each stating" (cons "   exactly `P x -> e` (or `e` when the contract has no precondition), and" (cons "   for a stateful realization `J s -> P s x -> e` over its state and input" (cons "   (absent premises dropped); an omission or an inexact theorem is" (cons "   `LLT4007`. A claim discharges only the check it states: a dataset" (cons "   agreement or an equivalence discharges none, and satisfying the contract" (cons "   does not preserve its invariant. A model elaborates to the" (cons "   ordinary definition `M`, applying the realization, and `M.initial` when" (cons "   stateful. Its *required checks* are: `input_invariant` when the contract" (cons "   has an invariant; `output_invariant` when it has an invariant and no" (cons "   evidence discharges `preserves_invariant`; `postcondition` when it has a" (cons "   postcondition and no evidence discharges `satisfies_contract`; and" (cons "   `precondition` when it has a precondition." (cons "7. **Composition** (`LLT4007`). A composite stage is a prior model, stateless" (cons "   or stateful. Types match exactly. A stage's *checks after it runs* are the" (cons "   output invariant and the postcondition among its required checks (rule 6);" (cons "   each needs a sound validator, and they run right after the stage in that" (cons "   order, a refusal returning `ContractViolation.output_invariant` or" (cons "   `.postcondition`. So a stage whose only evidence is, for example, a dataset" (cons "   agreement composes, its postcondition checked at run time. A composite with" (cons "   any check at run time (a `checked` junction or a stage's checks after it" (cons "   runs) has the output `result O contract_violation`, `O` its output without" (cons "   checks." (nil String)))))))))))))))))))))))))))))))))))))))))
+      (cons "   `validators` are strictly sorted by predicate, at most one per present" (cons "   predicate: `{\"predicate\":p,\"validator\":V,\"sound\":T,\"complete\":U?}`. `V`" (cons "   is a prior `executable` definition of the predicate's parameter types" (cons "   with result `bool`; `T` states exactly `V(args) = true -> p(args)` and" (cons "   `U`, when present, exactly `p(args) -> V(args) = true`, over the" (cons "   predicate's parameters named by the contract binders (statements are" (cons "   compared up to the names of bound variables). A missing, mistyped, or" (cons "   non-executable validator, an absent predicate, or an inexact theorem is" (cons "   `LLT4006`. A contract elaborates to no runtime declaration; generated" (cons "   Lean restates each link as `C.<predicate>_sound` and" (cons "   `C.<predicate>_complete` against the fixed `LexLeanModels.SoundN` and" (cons "   `CompleteN` (rule 12)." (cons "4. **Realizations** (`LLT4006`). `{\"kind\":\"realization\",\"name\":R," (cons "   \"type_parameters\":[...],\"input\":{\"name\":x,\"type\":I},\"output\":O," (cons "   \"state\":{\"name\":s,\"type\":S,\"initial\":v}?,\"descriptor\":D," (cons "   \"executable\":true?}` elaborates to the ordinary definition" (cons "   `R : (I) -> O`, or `R : (S, I) -> product S O` with `R.initial : S` when" (cons "   stateful, plus the companion definitions named below; companions are" (cons "   ordinary definitions under the realization's name and occupy their names" (cons "   (§17.8). Each descriptor term has the type its slot fixes (a guard" (cons "   `bool`, an action, default, or label `O`, an encoder or feature map" (cons "   `list int`, a denotation `O` or `product S O`); a term of another type is" (cons "   an interface mismatch, `LLT4006`. The closed descriptors:" (cons "   - `deterministic` `{\"body\":b}`: the denotation is `b`." (cons "   - `rule` `{\"rules\":[{\"name\":n,\"guard\":g,\"action\":a}...],\"default\":d}`:" (cons "     at least one rule, names unique; the denotation is the first rule, in" (cons "     declared order, whose guard holds, else `d`; the companion" (cons "     `R.selected : (I) -> nat` is the index of the firing rule, or the rule" (cons "     count for the default." (cons "   - `statistical` `{\"scheme\":\"linear_scoring\",\"features\":f,\"width\":w," (cons "     \"width_evidence\":T,\"weights\":Wt,\"bias\":B,\"labels\":[...]}`, stateless:" (cons "     the companions `R.features` (`f`) and `R.scores` (`Wt` times the" (cons "     features plus `B`, over mathematical integers) and the denotation, the" (cons "     label of the first maximal score." (cons "   - `neural` `{\"architecture\":\"integer_feedforward\",\"encoder\":e,\"width\":w," (cons "     \"width_evidence\":T,\"layers\":[...],\"decoder\":...}`, stateless: the" (cons "     companions `R.encoded` (`e`), `R.layer1` ... `R.layerK` (one per layer," (cons "     each `list int -> list int`), and `R.logits`, and the denotation" (cons "     decoding the final values. The closed layers are `dense`" (cons "     `{\"inputs\":n,\"outputs\":m,\"weights\":Wt,\"bias\":B}` (`Wt v + B` over" (cons "     mathematical integers), `relu` (negative values become zero), and" (cons "     `requantize` `{\"shift\":k,\"minimum\":lo,\"maximum\":hi}` (division by `2^k`" (cons "     truncating toward zero, then clamping to `[lo, hi]`; `lo <= hi` and" (cons "     `k <= 4096`). The closed decoders are `argmax` `{\"labels\":[...]}` (the" (cons "     label of the first maximal value) and `function` `{\"binder\":v," (cons "     \"body\":b}` (`b` over the final values bound to `v`)." (cons "   - `composite` `{\"form\":F}`: rule 7." (nil String))))))))))))))))))))))))))))))))))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -1274,7 +1274,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "   *State.* A sequence, fan-out, product, or branch with stateful stages" (cons "   declares a state whose type is the right-nested product of those stages'" (cons "   states in stage order (`left` before `right`, `then` before `else`), with" (cons "   any initial value of that type; a composite without stateful stages" (cons "   declares none (`LLT4007` otherwise). Each stateful stage reads its own" (cons "   component and its step replaces exactly that component: a sequence and a" (cons "   fan-out or product replace the component of every stateful stage they run," (cons "   and a branch replaces only the component of the arm taken, carrying the" (cons "   other unchanged. A refusal returns the state the composite was given, with" (cons "   the violation. A stage's state component is the one the composite was" (cons "   given, so its invariant is established at the composite's entry unless a" (cons "   checked junction validates it at run time." (nil String)))))))))))))
+      (cons "   Widths are checked statically: the first dense layer takes `width`" (cons "   inputs, each dense layer takes the current width, a weights slot is a" (cons "   `parameters` artifact of shape `[outputs, inputs]` (statistical:" (cons "   `[labels, width]`) and a bias slot one of shape `[outputs]`, and an" (cons "   argmax decoder has one label per final value; a label list is nonempty" (cons "   and each label is a closed term, mentioning no local. `width_evidence`" (cons "   states exactly" (cons "   `length(e) = w` over the input binder. Any other width, shape, role, or" (cons "   label count, or an inexact width theorem, is `LLT4006`. The kernels are" (cons "   ordinary terms over `list_fold`, `match`, the integer primitives, and" (cons "   `less_than`, so they mean exactly what Lean computes and nothing is" (cons "   approximated. A realization marked `executable` is checked as executable" (cons "   code, including its companions." (cons "5. **Evidence** (`LLT4009`). `{\"kind\":\"evidence\",\"name\":E," (cons "   \"type_parameters\":[...],\"contract\":Cuse,\"realization\":Ruse," (cons "   \"claims\":[...]}` about a contract and a realization of the same interface" (cons "   (otherwise `LLT4006`). `claims` are strictly sorted by kind and theorem." (cons "   The closed claim kinds, their generated statements (premises absent from" (cons "   the contract are dropped; `R` is the realization at its type arguments)," (cons "   and the fixed Lean helper each is restated against:" (nil String)))))))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -1288,7 +1288,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "   The closed forms:" (cons "   - `sequence` `{\"stages\":[...],\"junctions\":[...]}`: at least two stages," (cons "     one junction per stage after the first, each stage consuming the" (cons "     previous stage's output. A junction before stage `i+1` is" (cons "     `unconditional` (the stage has no precondition), `proved`" (cons "     `{\"evidence\":T}` (the stage has a precondition), or `checked` (the" (cons "     stage has a precondition or is stateful with an invariant, and has a" (cons "     validator for each; the invariant validator, on its component, and the" (cons "     precondition validator run before it, a refusal returning" (cons "     `.input_invariant` or `.precondition`); a `proved` junction before a" (cons "     stage without a precondition, or a `checked` one before a stage with" (cons "     nothing to check, is `LLT4007`. `T` is over the" (cons "     composite's state `s` (when stateful) and the earlier stage's input `y`," (cons "     and states exactly that the earlier stage's invariant of its component" (cons "     and its precondition imply the later stage's precondition of its" (cons "     component and the earlier stage's output: `J_i(s_i) -> P_i(s_i, y) ->" (cons "     P_{i+1}(s_{i+1}, out)`, each absent premise dropped and each stateless" (cons "     stage taking no component, where `out` is `M_i(y)`, or" (cons "     `second(M_i(s_i, y))` for a stateful stage. The effective preconditions" (cons "     are the first stage's invariant and precondition and the invariant of" (cons "     every later stateful stage whose junction is not checked." (cons "   - `fanout` `{\"left\":Ml,\"right\":Mr}`: one input, output" (cons "     `product O_l O_r`; effective preconditions each stage's invariant and" (cons "     precondition (`P_l x` and `P_r x` for stateless stages; `J_l(s_l)`," (cons "     `P_l(s_l, x)`, `J_r(s_r)`, and `P_r(s_r, x)` for stateful ones, each" (cons "     absent predicate dropped)." (cons "   - `product` `{\"left\":Ml,\"right\":Mr}`: input `product I_l I_r`, output" (cons "     `product O_l O_r`; effective preconditions each stage's invariant and" (cons "     precondition (`P_l (first x)` and `P_r (second x)` for stateless" (cons "     stages; `J_l(s_l)`, `P_l(s_l, first x)`, `J_r(s_r)`, and" (cons "     `P_r(s_r, second x)` for stateful ones, each absent predicate dropped)." (cons "   - `branch` `{\"guard\":g,\"then\":Mt,\"else\":Me}`: `g : bool` (another type is" (cons "     `LLT4007`), both arms of the composite's interface; effective" (cons "     preconditions `g = true -> R` for each invariant and precondition `R`" (cons "     of the then stage and `g = false -> R` for the else stage's." (cons "   - `scan` `{\"stage\":Ms,\"junction\":j}` over one stateful stage: input" (cons "     `list I`, threading the stage's state from `Ms.initial` and collecting" (cons "     outputs in order; it declares no state of its own. The junction is" (cons "     `unconditional` (no precondition, no checks after the stage runs, and" (cons "     any invariant carried by `initial_invariant` and `preserves_invariant`" (cons "     evidence), `proved` (that evidence, no checks after the stage, and `T`" (cons "     stating exactly `J s -> P s x`; the stage has a precondition), or" (cons "     `checked` (the stage has an invariant, a precondition, or a check after" (cons "     it runs, with a validator for each; the invariant and precondition" (cons "     validators run before each step and the checks after it after each" (cons "     step; the first refusal is returned; the output is" (cons "     `result (list O) contract_violation`)." (nil String))))))))))))))))))))))))))))))))))))))))))))))))
+      (cons "   | Claim | Requires | Generated statement | Helper |" (cons "   |---|---|---|---|" (cons "   | `satisfies_contract` | postcondition | stateless: `P x -> Q x (R x)`; stateful: `J s -> P s x -> Q s x (first(R s x)) (second(R s x))` | `Satisfies`, `SatisfiesTotal`, `SatisfiesStep...` |" (cons "   | `preserves_invariant` | invariant | `J s -> P s x -> J (first(R s x))` | `Preserves`, `PreservesTotal` |" (cons "   | `initial_invariant` | invariant | `J R.initial` | `Initial` |" (cons "   | `equivalent_to` (`\"reference\":F`, a definition or model of the realization's signature) | — | `P x -> R x = F x` (stateful: over `s` and `x` with `J s`) | `Equivalent...` |" (cons "   | `dataset_agreement` (`\"dataset\":D,\"comparison\":c,\"comparison_sound\":T',\"examples\":n,\"agreements\":k`), stateless | — | `length(D) = n` and the count of examples `(a, b)` of `D` with `c (R a) b = true` is `k` | `Agreement` |" (nil String))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -1302,7 +1302,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "   Any other composition, junction, or stage is `LLT4007`. A composite's" (cons "   denotation is the ordinary typed composition of its stages' model" (cons "   functions and their validators." (cons "8. **Runtime boundary** (`LLT4008`). `checked_apply` names a model, its type" (cons "   arguments, its arguments (`x`, or `s, x` when stateful), and `checks`, a" (cons "   strictly sorted subset of `input_invariant`, `output_invariant`," (cons "   `postcondition`, and `precondition`, each of which names a predicate the" (cons "   contract has and validates with a sound validator. Its type is" (cons "   `result O contract_violation`, or `result (product S O)" (cons "   contract_violation` when stateful. It elaborates to ordinary code that" (cons "   binds the arguments once and runs the listed checks in the fixed order" (cons "   input invariant, precondition, the model, output invariant," (cons "   postcondition, returning `Result.error` of the violated predicate's" (cons "   constructor at the first refusal and `Result.ok` of the model's result" (cons "   otherwise; generated binders are spelled `__checked<n>_...`, a spelling" (cons "   no source name can take. In executable code (an executable definition" (cons "   or instance field, or a descriptor term of an executable realization), a" (cons "   `checked_apply` lists every required check of its model; a plain `call`" (cons "   or `function_ref` of a model is allowed only when the model has no" (cons "   required checks; and a realization function is never applied directly." (cons "   Anything else is `LLT4008`. Formal code may apply any model unchecked. A" (cons "   check is therefore erased exactly when a theorem discharges it, and a" (cons "   proof-only predicate is never presented as runtime enforcement." (cons "9. **The `contract_violation` type.** Its four nullary constructors are" (cons "   ordinary data, matched by `match`; they lower to the pairs of `Prod Bool" (cons "   Bool` `(false, false)` (precondition), `(false, true)` (input invariant)," (cons "   `(true, false)` (postcondition), and `(true, true)` (output invariant)," (cons "   so values cross modules unchanged, and the canonical document names the" (cons "   type `ContractViolation`." (cons "10. **Identity and accounting.** Model declarations are linked IR, so every" (cons "    digest, length, schema, role, type, descriptor, claim, junction, entry," (cons "    and check is part of the semantic ID (§21.4); artifact bytes are covered" (cons "    through their digests, and their configured digests through the source" (cons "    ID. Every source node and every elaborated declaration and obligation" (cons "    is charged to `max_ir_nodes`." (cons "11. **Elaboration in Lean.** Each elaborated definition and theorem lowers as" (cons "    any language-1.2 declaration does; a proposition-valued language-1.2" (cons "    definition is `@[expose, reducible]`, so a predicate over a finite" (cons "    domain is decidable exactly when its body is. A long list literal in an" (cons "    elaboration is a balanced `append` of literals of at most 32 elements." (cons "    Declarations a model declaration generates refer to their own module's" (cons "    members by qualified name." (cons "12. **Cross-checks and the fixed model semantics.** A module with a model" (cons "    declaration imports the runtime module `LexLeanRuntime.Models`" (cons "    (*Runtime modules*), namespace `LexLeanModels`:" (cons "    `Sound1`, `Sound2`, `Sound4`, `Complete1`, `Complete2`, `Complete4`, the" (cons "    `Satisfies`, `Preserves`, `Initial`, `Equivalent`, and `Agreement`" (cons "    helpers, and the decoders `inRange`, `encodeInt`, `tensorMatches`," (cons "    `utf8Char`, and `linesMatch`, each an exposed total definition. Every" (cons "    validator link and claim is restated against these fixed definitions by a" (cons "    generated theorem (`C.<predicate>_sound`," (cons "    `C.<predicate>_complete`, `E.<theorem>`) whose proof is exactly the" (cons "    user's theorem, or `decide` for `dataset_agreement`; every artifact has" (cons "    its `W.decoded` theorem. LexLean's statement generator is thus checked" (cons "    by pinned Lean: had it generated a statement not definitionally equal to" (cons "    the fixed helper's, Lean would refuse the restatement. `examples/models`" (cons "    produces, and verifies, every helper and every check branch, and" (cons "    `MD-12` fails if a helper of the emitted runtime is produced by none of" (cons "    its declarations. The axiom audit covers every generated declaration: each" (cons "    is allowed its owner's axioms, and their union must equal the owner's" (nil String)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+      (cons "   For `dataset_agreement`, `D : list (product I O)` is a prior nullary" (cons "   definition, `c : (O, O) -> bool`, `k <= n`, and `T'` states exactly" (cons "   `c e o = true -> e = o`, so an agreement is an equality. Each claim's" (cons "   theorem states exactly its generated statement. An unknown claim kind is" (cons "   a schema failure (`LLT4001`); a claim whose contract lacks what it" (cons "   requires (a vacuous claim), an inexact, later, foreign, or non-theorem" (cons "   reference, or unsorted or duplicate claims is `LLT4009`. Evidence" (cons "   elaborates to no runtime declaration. Nothing is ever asserted without a" (cons "   theorem: a claim is *discharged* in linking and *verified* only by a" (cons "   verified attestation (rule 13)." (cons "6. **Models** (`LLT4006`, `LLT4007`, `LLT4009`). `{\"kind\":\"model\",\"name\":M," (cons "   \"type_parameters\":[...],\"contract\":Cuse,\"realization\":Ruse," (cons "   \"evidence\":[Euse...]?,\"entry\":[T...]?}`. The realization's input," (cons "   output, and state types equal the contract's at their type arguments" (cons "   (`LLT4006`); each listed evidence, listed once, is about exactly this" (cons "   contract and realization use (`LLT4009`). `entry` lists one theorem per" (cons "   *effective precondition* `e` of the realization (none for the" (cons "   noncomposite kinds; rule 7 for composites), in order, each stating" (cons "   exactly `P x -> e` (or `e` when the contract has no precondition), and" (cons "   for a stateful realization `J s -> P s x -> e` over its state and input" (cons "   (absent premises dropped); an omission or an inexact theorem is" (cons "   `LLT4007`. A claim discharges only the check it states: a dataset" (cons "   agreement or an equivalence discharges none, and satisfying the contract" (cons "   does not preserve its invariant. A model elaborates to the" (cons "   ordinary definition `M`, applying the realization, and `M.initial` when" (cons "   stateful. Its *required checks* are: `input_invariant` when the contract" (cons "   has an invariant; `output_invariant` when it has an invariant and no" (cons "   evidence discharges `preserves_invariant`; `postcondition` when it has a" (cons "   postcondition and no evidence discharges `satisfies_contract`; and" (cons "   `precondition` when it has a precondition." (cons "7. **Composition** (`LLT4007`). A composite stage is a prior model, stateless" (cons "   or stateful. Types match exactly. A stage's *checks after it runs* are the" (cons "   output invariant and the postcondition among its required checks (rule 6);" (cons "   each needs a sound validator, and they run right after the stage in that" (cons "   order, a refusal returning `ContractViolation.output_invariant` or" (cons "   `.postcondition`. So a stage whose only evidence is, for example, a dataset" (cons "   agreement composes, its postcondition checked at run time. A composite with" (cons "   any check at run time (a `checked` junction or a stage's checks after it" (cons "   runs) has the output `result O contract_violation`, `O` its output without" (cons "   checks." (nil String)))))))))))))))))))))))))))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -1316,6 +1316,48 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
+      (cons "   *State.* A sequence, fan-out, product, or branch with stateful stages" (cons "   declares a state whose type is the right-nested product of those stages'" (cons "   states in stage order (`left` before `right`, `then` before `else`), with" (cons "   any initial value of that type; a composite without stateful stages" (cons "   declares none (`LLT4007` otherwise). Each stateful stage reads its own" (cons "   component and its step replaces exactly that component: a sequence and a" (cons "   fan-out or product replace the component of every stateful stage they run," (cons "   and a branch replaces only the component of the arm taken, carrying the" (cons "   other unchanged. A refusal returns the state the composite was given, with" (cons "   the violation. A stage's state component is the one the composite was" (cons "   given, so its invariant is established at the composite's entry unless a" (cons "   checked junction validates it at run time." (nil String)))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0099,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "   The closed forms:" (cons "   - `sequence` `{\"stages\":[...],\"junctions\":[...]}`: at least two stages," (cons "     one junction per stage after the first, each stage consuming the" (cons "     previous stage's output. A junction before stage `i+1` is" (cons "     `unconditional` (the stage has no precondition), `proved`" (cons "     `{\"evidence\":T}` (the stage has a precondition), or `checked` (the" (cons "     stage has a precondition or is stateful with an invariant, and has a" (cons "     validator for each; the invariant validator, on its component, and the" (cons "     precondition validator run before it, a refusal returning" (cons "     `.input_invariant` or `.precondition`); a `proved` junction before a" (cons "     stage without a precondition, or a `checked` one before a stage with" (cons "     nothing to check, is `LLT4007`. `T` is over the" (cons "     composite's state `s` (when stateful) and the earlier stage's input `y`," (cons "     and states exactly that the earlier stage's invariant of its component" (cons "     and its precondition imply the later stage's precondition of its" (cons "     component and the earlier stage's output: `J_i(s_i) -> P_i(s_i, y) ->" (cons "     P_{i+1}(s_{i+1}, out)`, each absent premise dropped and each stateless" (cons "     stage taking no component, where `out` is `M_i(y)`, or" (cons "     `second(M_i(s_i, y))` for a stateful stage. The effective preconditions" (cons "     are the first stage's invariant and precondition and the invariant of" (cons "     every later stateful stage whose junction is not checked." (cons "   - `fanout` `{\"left\":Ml,\"right\":Mr}`: one input, output" (cons "     `product O_l O_r`; effective preconditions each stage's invariant and" (cons "     precondition (`P_l x` and `P_r x` for stateless stages; `J_l(s_l)`," (cons "     `P_l(s_l, x)`, `J_r(s_r)`, and `P_r(s_r, x)` for stateful ones, each" (cons "     absent predicate dropped)." (cons "   - `product` `{\"left\":Ml,\"right\":Mr}`: input `product I_l I_r`, output" (cons "     `product O_l O_r`; effective preconditions each stage's invariant and" (cons "     precondition (`P_l (first x)` and `P_r (second x)` for stateless" (cons "     stages; `J_l(s_l)`, `P_l(s_l, first x)`, `J_r(s_r)`, and" (cons "     `P_r(s_r, second x)` for stateful ones, each absent predicate dropped)." (cons "   - `branch` `{\"guard\":g,\"then\":Mt,\"else\":Me}`: `g : bool` (another type is" (cons "     `LLT4007`), both arms of the composite's interface; effective" (cons "     preconditions `g = true -> R` for each invariant and precondition `R`" (cons "     of the then stage and `g = false -> R` for the else stage's." (cons "   - `scan` `{\"stage\":Ms,\"junction\":j}` over one stateful stage: input" (cons "     `list I`, threading the stage's state from `Ms.initial` and collecting" (cons "     outputs in order; it declares no state of its own. The junction is" (cons "     `unconditional` (no precondition, no checks after the stage runs, and" (cons "     any invariant carried by `initial_invariant` and `preserves_invariant`" (cons "     evidence), `proved` (that evidence, no checks after the stage, and `T`" (cons "     stating exactly `J s -> P s x`; the stage has a precondition), or" (cons "     `checked` (the stage has an invariant, a precondition, or a check after" (cons "     it runs, with a validator for each; the invariant and precondition" (cons "     validators run before each step and the checks after it after each" (cons "     step; the first refusal is returned; the output is" (cons "     `result (list O) contract_violation`)." (nil String))))))))))))))))))))))))))))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0100,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "   Any other composition, junction, or stage is `LLT4007`. A composite's" (cons "   denotation is the ordinary typed composition of its stages' model" (cons "   functions and their validators." (cons "8. **Runtime boundary** (`LLT4008`). `checked_apply` names a model, its type" (cons "   arguments, its arguments (`x`, or `s, x` when stateful), and `checks`, a" (cons "   strictly sorted subset of `input_invariant`, `output_invariant`," (cons "   `postcondition`, and `precondition`, each of which names a predicate the" (cons "   contract has and validates with a sound validator. Its type is" (cons "   `result O contract_violation`, or `result (product S O)" (cons "   contract_violation` when stateful. It elaborates to ordinary code that" (cons "   binds the arguments once and runs the listed checks in the fixed order" (cons "   input invariant, precondition, the model, output invariant," (cons "   postcondition, returning `Result.error` of the violated predicate's" (cons "   constructor at the first refusal and `Result.ok` of the model's result" (cons "   otherwise; generated binders are spelled `__checked<n>_...`, a spelling" (cons "   no source name can take. In executable code (an executable definition" (cons "   or instance field, or a descriptor term of an executable realization), a" (cons "   `checked_apply` lists every required check of its model; a plain `call`" (cons "   or `function_ref` of a model is allowed only when the model has no" (cons "   required checks; and a realization function is never applied directly." (cons "   Anything else is `LLT4008`. Formal code may apply any model unchecked. A" (cons "   check is therefore erased exactly when a theorem discharges it, and a" (cons "   proof-only predicate is never presented as runtime enforcement." (cons "9. **The `contract_violation` type.** Its four nullary constructors are" (cons "   ordinary data, matched by `match`; they lower to the pairs of `Prod Bool" (cons "   Bool` `(false, false)` (precondition), `(false, true)` (input invariant)," (cons "   `(true, false)` (postcondition), and `(true, true)` (output invariant)," (cons "   so values cross modules unchanged, and the canonical document names the" (cons "   type `ContractViolation`." (cons "10. **Identity and accounting.** Model declarations are linked IR, so every" (cons "    digest, length, schema, role, type, descriptor, claim, junction, entry," (cons "    and check is part of the semantic ID (§21.4); artifact bytes are covered" (cons "    through their digests, and their configured digests through the source" (cons "    ID. Every source node and every elaborated declaration and obligation" (cons "    is charged to `max_ir_nodes`." (cons "11. **Elaboration in Lean.** Each elaborated definition and theorem lowers as" (cons "    any language-1.2 declaration does; a proposition-valued language-1.2" (cons "    definition is `@[expose, reducible]`, so a predicate over a finite" (cons "    domain is decidable exactly when its body is. A long list literal in an" (cons "    elaboration is a balanced `append` of literals of at most 32 elements." (cons "    Declarations a model declaration generates refer to their own module's" (cons "    members by qualified name." (cons "12. **Cross-checks and the fixed model semantics.** A module with a model" (cons "    declaration imports the runtime module `LexLeanRuntime.Models`" (cons "    (*Runtime modules*), namespace `LexLeanModels`:" (cons "    `Sound1`, `Sound2`, `Sound4`, `Complete1`, `Complete2`, `Complete4`, the" (cons "    `Satisfies`, `Preserves`, `Initial`, `Equivalent`, and `Agreement`" (cons "    helpers, and the decoders `inRange`, `encodeInt`, `tensorMatches`," (cons "    `utf8Char`, and `linesMatch`, each an exposed total definition. Every" (cons "    validator link and claim is restated against these fixed definitions by a" (cons "    generated theorem (`C.<predicate>_sound`," (cons "    `C.<predicate>_complete`, `E.<theorem>`) whose proof is exactly the" (cons "    user's theorem, or `decide` for `dataset_agreement`; every artifact has" (cons "    its `W.decoded` theorem. LexLean's statement generator is thus checked" (cons "    by pinned Lean: had it generated a statement not definitionally equal to" (cons "    the fixed helper's, Lean would refuse the restatement. `examples/models`" (cons "    produces, and verifies, every helper and every check branch, and" (cons "    `MD-12` fails if a helper of the emitted runtime is produced by none of" (cons "    its declarations. The axiom audit covers every generated declaration: each" (cons "    is allowed its owner's axioms, and their union must equal the owner's" (nil String)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0101,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
       (cons "    exact policy (§22.6)." (cons "13. **Document, snapshot, and attestation.** The canonical document renders" (cons "    each model declaration as a closed catalog of facts (interface," (cons "    descriptor, schema and digest but never the bytes, predicates," (cons "    validators, claims, junctions, entry theorems, required checks), each" (cons "    generated obligation with the theorem that states it, and each" (cons "    elaborated definition, an artifact's only by name and type (its bytes" (cons "    and decoded value are never document text, whatever their size); a" (cons "    claim reads \"discharged by\" its theorem and no" (cons "    document text says \"verified\". A language-1.2 snapshot declaration" (cons "    carries its `elaboration` (declarations, the alpha identity of each" (cons "    elaborated definition, obligations, cross-checks, and required checks) when it is a model declaration or applies a model" (cons "    through `checked_apply`. Only a verified attestation records the" (cons "    generated declarations, each with its policy and result, as verified." (cons "14. **Production.** Artifacts, realizations, models, validators, and" (cons "    checked applications are realized through their elaborations; contracts" (cons "    and evidence are erased (§17.13). Lean extraction of a root sees only" (cons "    elaborated definitions." (cons "15. **IEEE-754 bit patterns as exact dyadic rationals.** Because no floating-point" (cons "    type exists in LexLean, IEEE-754 `binary32` (1 sign bit, 8-bit biased" (cons "    exponent with bias 127, 23-bit trailing significand) and `binary64` (1 sign" (cons "    bit, 11-bit biased exponent with bias 1023, 52-bit trailing significand)" (cons "    parameter bit patterns enter exact integer derivations by decoding to exact" (cons "    dyadic rationals `(sign, mantissa, exponent)` representing" (cons "    $(-1)^{\\text{sign}} \\cdot \\text{mantissa} \\cdot 2^{\\text{exponent}}$ over" (cons "    `nat` and `int`:" (cons "    - Out-of-width bit patterns and non-finite biased exponents (`255` for" (cons "      `binary32`, `2047` for `binary64`, covering infinities and NaNs) decode" (cons "      to `none`." (cons "    - Zero and subnormal patterns (`biased = 0`) decode to `mantissa = fraction`" (cons "      and `exponent = -149` (`binary32`) or `exponent = -1074` (`binary64`)." (cons "    - Normal patterns (`1 <= biased <= 254` for `binary32`, `1 <= biased <= 2046`" (cons "      for `binary64`) decode to `mantissa = 2^23 + fraction` and" (cons "      `exponent = biased - 150` (`binary32`) or `mantissa = 2^52 + fraction`" (cons "      and `exponent = biased - 1075` (`binary64`)." (cons "    - Fixed-point scale ratios $\\operatorname{round}(a \\cdot b / c \\cdot 2^{32})$" (cons "      from three `binary32` bit patterns decode $a$, $b$, and $c$ to exact" (cons "      dyadic rationals, reject any `none` operand or a zero divisor" (cons "      ($\\text{mantissa}_c = 0$) as `none`, and compute the nearest integer" (cons "      (ties to even) by exact integer Euclidean division and bit-stepping over" (cons "      `iterate_until`, kernel-checked by `decide`." (nil String))))))))))))))))))))))))))))))))))))))))))
     ],
     constructor: DocRows::Item.cont,
@@ -1325,7 +1367,7 @@ definition{
 }
 
 definition{
-  name: i0099,
+  name: i0102,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1339,7 +1381,7 @@ definition{
 }
 
 definition{
-  name: i0100,
+  name: i0103,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1351,7 +1393,7 @@ definition{
 }
 
 definition{
-  name: i0101,
+  name: i0104,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1365,7 +1407,7 @@ definition{
 }
 
 definition{
-  name: i0102,
+  name: i0105,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1379,7 +1421,7 @@ definition{
 }
 
 definition{
-  name: i0103,
+  name: i0106,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1393,7 +1435,7 @@ definition{
 }
 
 definition{
-  name: i0104,
+  name: i0107,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1407,7 +1449,7 @@ definition{
 }
 
 definition{
-  name: i0105,
+  name: i0108,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1421,7 +1463,7 @@ definition{
 }
 
 definition{
-  name: i0106,
+  name: i0109,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1435,7 +1477,7 @@ definition{
 }
 
 definition{
-  name: i0107,
+  name: i0110,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1447,7 +1489,7 @@ definition{
 }
 
 definition{
-  name: i0108,
+  name: i0111,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1461,7 +1503,7 @@ definition{
 }
 
 definition{
-  name: i0109,
+  name: i0112,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1475,7 +1517,7 @@ definition{
 }
 
 definition{
-  name: i0110,
+  name: i0113,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1489,7 +1531,7 @@ definition{
 }
 
 definition{
-  name: i0111,
+  name: i0114,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1503,7 +1545,7 @@ definition{
 }
 
 definition{
-  name: i0112,
+  name: i0115,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1515,7 +1557,7 @@ definition{
 }
 
 definition{
-  name: i0113,
+  name: i0116,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1529,7 +1571,7 @@ definition{
 }
 
 definition{
-  name: i0114,
+  name: i0117,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1543,7 +1585,7 @@ definition{
 }
 
 definition{
-  name: i0115,
+  name: i0118,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1557,7 +1599,7 @@ definition{
 }
 
 definition{
-  name: i0116,
+  name: i0119,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1571,7 +1613,7 @@ definition{
 }
 
 definition{
-  name: i0117,
+  name: i0120,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1585,7 +1627,7 @@ definition{
 }
 
 definition{
-  name: i0118,
+  name: i0121,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1597,7 +1639,7 @@ definition{
 }
 
 definition{
-  name: i0119,
+  name: i0122,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1611,7 +1653,7 @@ definition{
 }
 
 definition{
-  name: i0120,
+  name: i0123,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1625,7 +1667,7 @@ definition{
 }
 
 definition{
-  name: i0121,
+  name: i0124,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1639,7 +1681,7 @@ definition{
 }
 
 definition{
-  name: i0122,
+  name: i0125,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1651,7 +1693,7 @@ definition{
 }
 
 definition{
-  name: i0123,
+  name: i0126,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1665,7 +1707,7 @@ definition{
 }
 
 definition{
-  name: i0124,
+  name: i0127,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1680,7 +1722,7 @@ definition{
 }
 
 definition{
-  name: i0125,
+  name: i0128,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1694,7 +1736,7 @@ definition{
 }
 
 definition{
-  name: i0126,
+  name: i0129,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1706,7 +1748,7 @@ definition{
 }
 
 definition{
-  name: i0127,
+  name: i0130,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1720,7 +1762,7 @@ definition{
 }
 
 definition{
-  name: i0128,
+  name: i0131,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1734,7 +1776,7 @@ definition{
 }
 
 definition{
-  name: i0129,
+  name: i0132,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1748,7 +1790,7 @@ definition{
 }
 
 definition{
-  name: i0130,
+  name: i0133,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1762,7 +1804,7 @@ definition{
 }
 
 definition{
-  name: i0131,
+  name: i0134,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1776,7 +1818,7 @@ definition{
 }
 
 definition{
-  name: i0132,
+  name: i0135,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1790,7 +1832,7 @@ definition{
 }
 
 definition{
-  name: i0133,
+  name: i0136,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1804,7 +1846,7 @@ definition{
 }
 
 definition{
-  name: i0134,
+  name: i0137,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1818,7 +1860,7 @@ definition{
 }
 
 definition{
-  name: i0135,
+  name: i0138,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1832,7 +1874,7 @@ definition{
 }
 
 definition{
-  name: i0136,
+  name: i0139,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1846,7 +1888,7 @@ definition{
 }
 
 definition{
-  name: i0137,
+  name: i0140,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1860,7 +1902,7 @@ definition{
 }
 
 definition{
-  name: i0138,
+  name: i0141,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1874,7 +1916,7 @@ definition{
 }
 
 definition{
-  name: i0139,
+  name: i0142,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1886,7 +1928,7 @@ definition{
 }
 
 definition{
-  name: i0140,
+  name: i0143,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1900,7 +1942,7 @@ definition{
 }
 
 definition{
-  name: i0141,
+  name: i0144,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1914,7 +1956,7 @@ definition{
 }
 
 definition{
-  name: i0142,
+  name: i0145,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1928,7 +1970,7 @@ definition{
 }
 
 definition{
-  name: i0143,
+  name: i0146,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1942,7 +1984,7 @@ definition{
 }
 
 definition{
-  name: i0144,
+  name: i0147,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1956,7 +1998,7 @@ definition{
 }
 
 definition{
-  name: i0145,
+  name: i0148,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1970,7 +2012,7 @@ definition{
 }
 
 definition{
-  name: i0146,
+  name: i0149,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1984,7 +2026,7 @@ definition{
 }
 
 definition{
-  name: i0147,
+  name: i0150,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -1998,7 +2040,7 @@ definition{
 }
 
 definition{
-  name: i0148,
+  name: i0151,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2012,7 +2054,7 @@ definition{
 }
 
 definition{
-  name: i0149,
+  name: i0152,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2026,7 +2068,7 @@ definition{
 }
 
 definition{
-  name: i0150,
+  name: i0153,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2040,7 +2082,7 @@ definition{
 }
 
 definition{
-  name: i0151,
+  name: i0154,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2054,7 +2096,7 @@ definition{
 }
 
 definition{
-  name: i0152,
+  name: i0155,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2068,7 +2110,7 @@ definition{
 }
 
 definition{
-  name: i0153,
+  name: i0156,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2082,7 +2124,7 @@ definition{
 }
 
 definition{
-  name: i0154,
+  name: i0157,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2096,7 +2138,7 @@ definition{
 }
 
 definition{
-  name: i0155,
+  name: i0158,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2110,7 +2152,7 @@ definition{
 }
 
 definition{
-  name: i0156,
+  name: i0159,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2122,7 +2164,7 @@ definition{
 }
 
 definition{
-  name: i0157,
+  name: i0160,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2136,7 +2178,7 @@ definition{
 }
 
 definition{
-  name: i0158,
+  name: i0161,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2150,7 +2192,7 @@ definition{
 }
 
 definition{
-  name: i0159,
+  name: i0162,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2164,7 +2206,7 @@ definition{
 }
 
 definition{
-  name: i0160,
+  name: i0163,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2178,7 +2220,7 @@ definition{
 }
 
 definition{
-  name: i0161,
+  name: i0164,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2192,7 +2234,7 @@ definition{
 }
 
 definition{
-  name: i0162,
+  name: i0165,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2206,7 +2248,7 @@ definition{
 }
 
 definition{
-  name: i0163,
+  name: i0166,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2220,7 +2262,7 @@ definition{
 }
 
 definition{
-  name: i0164,
+  name: i0167,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2234,7 +2276,7 @@ definition{
 }
 
 definition{
-  name: i0165,
+  name: i0168,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2248,7 +2290,7 @@ definition{
 }
 
 definition{
-  name: i0166,
+  name: i0169,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2262,7 +2304,7 @@ definition{
 }
 
 definition{
-  name: i0167,
+  name: i0170,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2276,7 +2318,7 @@ definition{
 }
 
 definition{
-  name: i0168,
+  name: i0171,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2288,7 +2330,7 @@ definition{
 }
 
 definition{
-  name: i0169,
+  name: i0172,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2302,7 +2344,7 @@ definition{
 }
 
 definition{
-  name: i0170,
+  name: i0173,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2316,7 +2358,7 @@ definition{
 }
 
 definition{
-  name: i0171,
+  name: i0174,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2330,7 +2372,7 @@ definition{
 }
 
 definition{
-  name: i0172,
+  name: i0175,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2344,7 +2386,7 @@ definition{
 }
 
 definition{
-  name: i0173,
+  name: i0176,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2358,7 +2400,7 @@ definition{
 }
 
 definition{
-  name: i0174,
+  name: i0177,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2372,7 +2414,7 @@ definition{
 }
 
 definition{
-  name: i0175,
+  name: i0178,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2386,7 +2428,7 @@ definition{
 }
 
 definition{
-  name: i0176,
+  name: i0179,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2400,7 +2442,7 @@ definition{
 }
 
 definition{
-  name: i0177,
+  name: i0180,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2414,7 +2456,7 @@ definition{
 }
 
 definition{
-  name: i0178,
+  name: i0181,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2428,7 +2470,7 @@ definition{
 }
 
 definition{
-  name: i0179,
+  name: i0182,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2442,7 +2484,7 @@ definition{
 }
 
 definition{
-  name: i0180,
+  name: i0183,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2456,7 +2498,7 @@ definition{
 }
 
 definition{
-  name: i0181,
+  name: i0184,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2470,7 +2512,7 @@ definition{
 }
 
 definition{
-  name: i0182,
+  name: i0185,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2484,7 +2526,7 @@ definition{
 }
 
 definition{
-  name: i0183,
+  name: i0186,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2498,7 +2540,7 @@ definition{
 }
 
 definition{
-  name: i0184,
+  name: i0187,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2512,7 +2554,7 @@ definition{
 }
 
 definition{
-  name: i0185,
+  name: i0188,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2526,7 +2568,7 @@ definition{
 }
 
 definition{
-  name: i0186,
+  name: i0189,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2540,7 +2582,7 @@ definition{
 }
 
 definition{
-  name: i0187,
+  name: i0190,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2552,7 +2594,7 @@ definition{
 }
 
 definition{
-  name: i0188,
+  name: i0191,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2566,7 +2608,7 @@ definition{
 }
 
 definition{
-  name: i0189,
+  name: i0192,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2580,7 +2622,7 @@ definition{
 }
 
 definition{
-  name: i0190,
+  name: i0193,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2594,7 +2636,7 @@ definition{
 }
 
 definition{
-  name: i0191,
+  name: i0194,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2609,7 +2651,7 @@ definition{
 }
 
 definition{
-  name: i0192,
+  name: i0195,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2623,7 +2665,7 @@ definition{
 }
 
 definition{
-  name: i0193,
+  name: i0196,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2637,7 +2679,7 @@ definition{
 }
 
 definition{
-  name: i0194,
+  name: i0197,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2651,7 +2693,7 @@ definition{
 }
 
 definition{
-  name: i0195,
+  name: i0198,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2665,7 +2707,7 @@ definition{
 }
 
 definition{
-  name: i0196,
+  name: i0199,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2679,7 +2721,7 @@ definition{
 }
 
 definition{
-  name: i0197,
+  name: i0200,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2693,7 +2735,7 @@ definition{
 }
 
 definition{
-  name: i0198,
+  name: i0201,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2707,7 +2749,7 @@ definition{
 }
 
 definition{
-  name: i0199,
+  name: i0202,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2721,7 +2763,7 @@ definition{
 }
 
 definition{
-  name: i0200,
+  name: i0203,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2735,7 +2777,7 @@ definition{
 }
 
 definition{
-  name: i0201,
+  name: i0204,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2749,7 +2791,7 @@ definition{
 }
 
 definition{
-  name: i0202,
+  name: i0205,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2763,7 +2805,7 @@ definition{
 }
 
 definition{
-  name: i0203,
+  name: i0206,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2777,7 +2819,7 @@ definition{
 }
 
 definition{
-  name: i0204,
+  name: i0207,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2791,7 +2833,7 @@ definition{
 }
 
 definition{
-  name: i0205,
+  name: i0208,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2805,7 +2847,7 @@ definition{
 }
 
 definition{
-  name: i0206,
+  name: i0209,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2819,7 +2861,7 @@ definition{
 }
 
 definition{
-  name: i0207,
+  name: i0210,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2833,7 +2875,7 @@ definition{
 }
 
 definition{
-  name: i0208,
+  name: i0211,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2848,7 +2890,7 @@ definition{
 }
 
 definition{
-  name: i0209,
+  name: i0212,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2862,7 +2904,7 @@ definition{
 }
 
 definition{
-  name: i0210,
+  name: i0213,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2876,7 +2918,7 @@ definition{
 }
 
 definition{
-  name: i0211,
+  name: i0214,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2890,7 +2932,7 @@ definition{
 }
 
 definition{
-  name: i0212,
+  name: i0215,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2905,7 +2947,7 @@ definition{
 }
 
 definition{
-  name: i0213,
+  name: i0216,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2920,7 +2962,7 @@ definition{
 }
 
 definition{
-  name: i0214,
+  name: i0217,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2935,7 +2977,7 @@ definition{
 }
 
 definition{
-  name: i0215,
+  name: i0218,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2950,7 +2992,7 @@ definition{
 }
 
 definition{
-  name: i0216,
+  name: i0219,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2965,7 +3007,7 @@ definition{
 }
 
 definition{
-  name: i0217,
+  name: i0220,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2979,7 +3021,7 @@ definition{
 }
 
 definition{
-  name: i0218,
+  name: i0221,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -2993,7 +3035,7 @@ definition{
 }
 
 definition{
-  name: i0219,
+  name: i0222,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3007,7 +3049,7 @@ definition{
 }
 
 definition{
-  name: i0220,
+  name: i0223,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3021,7 +3063,7 @@ definition{
 }
 
 definition{
-  name: i0221,
+  name: i0224,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3035,7 +3077,7 @@ definition{
 }
 
 definition{
-  name: i0222,
+  name: i0225,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3049,7 +3091,7 @@ definition{
 }
 
 definition{
-  name: i0223,
+  name: i0226,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3063,7 +3105,7 @@ definition{
 }
 
 definition{
-  name: i0224,
+  name: i0227,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3077,7 +3119,7 @@ definition{
 }
 
 definition{
-  name: i0225,
+  name: i0228,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3089,7 +3131,7 @@ definition{
 }
 
 definition{
-  name: i0226,
+  name: i0229,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3103,7 +3145,7 @@ definition{
 }
 
 definition{
-  name: i0227,
+  name: i0230,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3117,7 +3159,7 @@ definition{
 }
 
 definition{
-  name: i0228,
+  name: i0231,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3131,7 +3173,7 @@ definition{
 }
 
 definition{
-  name: i0229,
+  name: i0232,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3146,7 +3188,7 @@ definition{
 }
 
 definition{
-  name: i0230,
+  name: i0233,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3160,7 +3202,7 @@ definition{
 }
 
 definition{
-  name: i0231,
+  name: i0234,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3175,7 +3217,7 @@ definition{
 }
 
 definition{
-  name: i0232,
+  name: i0235,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3189,7 +3231,7 @@ definition{
 }
 
 definition{
-  name: i0233,
+  name: i0236,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3203,7 +3245,7 @@ definition{
 }
 
 definition{
-  name: i0234,
+  name: i0237,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3217,7 +3259,7 @@ definition{
 }
 
 definition{
-  name: i0235,
+  name: i0238,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3231,7 +3273,7 @@ definition{
 }
 
 definition{
-  name: i0236,
+  name: i0239,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3245,7 +3287,7 @@ definition{
 }
 
 definition{
-  name: i0237,
+  name: i0240,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3259,7 +3301,7 @@ definition{
 }
 
 definition{
-  name: i0238,
+  name: i0241,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3273,7 +3315,7 @@ definition{
 }
 
 definition{
-  name: i0239,
+  name: i0242,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3287,7 +3329,7 @@ definition{
 }
 
 definition{
-  name: i0240,
+  name: i0243,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3301,7 +3343,7 @@ definition{
 }
 
 definition{
-  name: i0241,
+  name: i0244,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3316,7 +3358,7 @@ definition{
 }
 
 definition{
-  name: i0242,
+  name: i0245,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3330,7 +3372,7 @@ definition{
 }
 
 definition{
-  name: i0243,
+  name: i0246,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3342,7 +3384,7 @@ definition{
 }
 
 definition{
-  name: i0244,
+  name: i0247,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3356,7 +3398,7 @@ definition{
 }
 
 definition{
-  name: i0245,
+  name: i0248,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3370,7 +3412,7 @@ definition{
 }
 
 definition{
-  name: i0246,
+  name: i0249,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3384,7 +3426,7 @@ definition{
 }
 
 definition{
-  name: i0247,
+  name: i0250,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3398,7 +3440,7 @@ definition{
 }
 
 definition{
-  name: i0248,
+  name: i0251,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3412,7 +3454,7 @@ definition{
 }
 
 definition{
-  name: i0249,
+  name: i0252,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3426,7 +3468,7 @@ definition{
 }
 
 definition{
-  name: i0250,
+  name: i0253,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3440,7 +3482,7 @@ definition{
 }
 
 definition{
-  name: i0251,
+  name: i0254,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3454,7 +3496,7 @@ definition{
 }
 
 definition{
-  name: i0252,
+  name: i0255,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3468,7 +3510,7 @@ definition{
 }
 
 definition{
-  name: i0253,
+  name: i0256,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3482,7 +3524,7 @@ definition{
 }
 
 definition{
-  name: i0254,
+  name: i0257,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3496,7 +3538,7 @@ definition{
 }
 
 definition{
-  name: i0255,
+  name: i0258,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3510,7 +3552,7 @@ definition{
 }
 
 definition{
-  name: i0256,
+  name: i0259,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3524,7 +3566,7 @@ definition{
 }
 
 definition{
-  name: i0257,
+  name: i0260,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3538,7 +3580,7 @@ definition{
 }
 
 definition{
-  name: i0258,
+  name: i0261,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3552,7 +3594,7 @@ definition{
 }
 
 definition{
-  name: i0259,
+  name: i0262,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3566,7 +3608,7 @@ definition{
 }
 
 definition{
-  name: i0260,
+  name: i0263,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3580,7 +3622,7 @@ definition{
 }
 
 definition{
-  name: i0261,
+  name: i0264,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3592,7 +3634,7 @@ definition{
 }
 
 definition{
-  name: i0262,
+  name: i0265,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3606,7 +3648,7 @@ definition{
 }
 
 definition{
-  name: i0263,
+  name: i0266,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3620,7 +3662,7 @@ definition{
 }
 
 definition{
-  name: i0264,
+  name: i0267,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3634,7 +3676,7 @@ definition{
 }
 
 definition{
-  name: i0265,
+  name: i0268,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3648,7 +3690,7 @@ definition{
 }
 
 definition{
-  name: i0266,
+  name: i0269,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3662,7 +3704,7 @@ definition{
 }
 
 definition{
-  name: i0267,
+  name: i0270,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3676,7 +3718,7 @@ definition{
 }
 
 definition{
-  name: i0268,
+  name: i0271,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3690,7 +3732,7 @@ definition{
 }
 
 definition{
-  name: i0269,
+  name: i0272,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3704,7 +3746,7 @@ definition{
 }
 
 definition{
-  name: i0270,
+  name: i0273,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3718,7 +3760,7 @@ definition{
 }
 
 definition{
-  name: i0271,
+  name: i0274,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3732,7 +3774,7 @@ definition{
 }
 
 definition{
-  name: i0272,
+  name: i0275,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3746,7 +3788,7 @@ definition{
 }
 
 definition{
-  name: i0273,
+  name: i0276,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3760,7 +3802,7 @@ definition{
 }
 
 definition{
-  name: i0274,
+  name: i0277,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3774,7 +3816,7 @@ definition{
 }
 
 definition{
-  name: i0275,
+  name: i0278,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3788,7 +3830,7 @@ definition{
 }
 
 definition{
-  name: i0276,
+  name: i0279,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3802,7 +3844,7 @@ definition{
 }
 
 definition{
-  name: i0277,
+  name: i0280,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3816,7 +3858,7 @@ definition{
 }
 
 definition{
-  name: i0278,
+  name: i0281,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3830,7 +3872,7 @@ definition{
 }
 
 definition{
-  name: i0279,
+  name: i0282,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3844,7 +3886,7 @@ definition{
 }
 
 definition{
-  name: i0280,
+  name: i0283,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3858,7 +3900,7 @@ definition{
 }
 
 definition{
-  name: i0281,
+  name: i0284,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3870,7 +3912,7 @@ definition{
 }
 
 definition{
-  name: i0282,
+  name: i0285,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3884,7 +3926,7 @@ definition{
 }
 
 definition{
-  name: i0283,
+  name: i0286,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3898,7 +3940,7 @@ definition{
 }
 
 definition{
-  name: i0284,
+  name: i0287,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3912,7 +3954,7 @@ definition{
 }
 
 definition{
-  name: i0285,
+  name: i0288,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3926,7 +3968,7 @@ definition{
 }
 
 definition{
-  name: i0286,
+  name: i0289,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3940,7 +3982,7 @@ definition{
 }
 
 definition{
-  name: i0287,
+  name: i0290,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3954,7 +3996,7 @@ definition{
 }
 
 definition{
-  name: i0288,
+  name: i0291,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3968,7 +4010,7 @@ definition{
 }
 
 definition{
-  name: i0289,
+  name: i0292,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3982,7 +4024,7 @@ definition{
 }
 
 definition{
-  name: i0290,
+  name: i0293,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3996,7 +4038,7 @@ definition{
 }
 
 definition{
-  name: i0291,
+  name: i0294,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4010,7 +4052,7 @@ definition{
 }
 
 definition{
-  name: i0292,
+  name: i0295,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4024,7 +4066,7 @@ definition{
 }
 
 definition{
-  name: i0293,
+  name: i0296,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4038,7 +4080,7 @@ definition{
 }
 
 definition{
-  name: i0294,
+  name: i0297,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4052,7 +4094,7 @@ definition{
 }
 
 definition{
-  name: i0295,
+  name: i0298,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4066,7 +4108,7 @@ definition{
 }
 
 definition{
-  name: i0296,
+  name: i0299,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4078,7 +4120,7 @@ definition{
 }
 
 definition{
-  name: i0297,
+  name: i0300,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4092,7 +4134,7 @@ definition{
 }
 
 definition{
-  name: i0298,
+  name: i0301,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4104,7 +4146,7 @@ definition{
 }
 
 definition{
-  name: i0299,
+  name: i0302,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4118,7 +4160,7 @@ definition{
 }
 
 definition{
-  name: i0300,
+  name: i0303,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4132,7 +4174,7 @@ definition{
 }
 
 definition{
-  name: i0301,
+  name: i0304,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4144,7 +4186,7 @@ definition{
 }
 
 definition{
-  name: i0302,
+  name: i0305,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4158,7 +4200,7 @@ definition{
 }
 
 definition{
-  name: i0303,
+  name: i0306,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4173,7 +4215,7 @@ definition{
 }
 
 definition{
-  name: i0304,
+  name: i0307,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4187,7 +4229,7 @@ definition{
 }
 
 definition{
-  name: i0305,
+  name: i0308,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4199,7 +4241,7 @@ definition{
 }
 
 definition{
-  name: i0306,
+  name: i0309,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4213,7 +4255,7 @@ definition{
 }
 
 definition{
-  name: i0307,
+  name: i0310,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4228,7 +4270,7 @@ definition{
 }
 
 definition{
-  name: i0308,
+  name: i0311,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4242,7 +4284,7 @@ definition{
 }
 
 definition{
-  name: i0309,
+  name: i0312,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4254,7 +4296,7 @@ definition{
 }
 
 definition{
-  name: i0310,
+  name: i0313,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4268,7 +4310,7 @@ definition{
 }
 
 definition{
-  name: i0311,
+  name: i0314,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4282,7 +4324,7 @@ definition{
 }
 
 definition{
-  name: i0312,
+  name: i0315,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4294,7 +4336,7 @@ definition{
 }
 
 definition{
-  name: i0313,
+  name: i0316,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4308,7 +4350,7 @@ definition{
 }
 
 definition{
-  name: i0314,
+  name: i0317,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4322,7 +4364,7 @@ definition{
 }
 
 definition{
-  name: i0315,
+  name: i0318,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4336,7 +4378,7 @@ definition{
 }
 
 definition{
-  name: i0316,
+  name: i0319,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4350,7 +4392,7 @@ definition{
 }
 
 definition{
-  name: i0317,
+  name: i0320,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4364,7 +4406,7 @@ definition{
 }
 
 definition{
-  name: i0318,
+  name: i0321,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4376,7 +4418,7 @@ definition{
 }
 
 definition{
-  name: i0319,
+  name: i0322,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4390,7 +4432,7 @@ definition{
 }
 
 definition{
-  name: i0320,
+  name: i0323,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4404,7 +4446,7 @@ definition{
 }
 
 definition{
-  name: i0321,
+  name: i0324,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4416,7 +4458,7 @@ definition{
 }
 
 definition{
-  name: i0322,
+  name: i0325,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4430,7 +4472,7 @@ definition{
 }
 
 definition{
-  name: i0323,
+  name: i0326,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4444,7 +4486,7 @@ definition{
 }
 
 definition{
-  name: i0324,
+  name: i0327,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4456,7 +4498,7 @@ definition{
 }
 
 definition{
-  name: i0325,
+  name: i0328,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4470,7 +4512,7 @@ definition{
 }
 
 definition{
-  name: i0326,
+  name: i0329,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4482,7 +4524,7 @@ definition{
 }
 
 definition{
-  name: i0327,
+  name: i0330,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4496,7 +4538,7 @@ definition{
 }
 
 definition{
-  name: i0328,
+  name: i0331,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4510,7 +4552,7 @@ definition{
 }
 
 definition{
-  name: i0329,
+  name: i0332,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4525,7 +4567,7 @@ definition{
 }
 
 definition{
-  name: i0330,
+  name: i0333,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4539,7 +4581,7 @@ definition{
 }
 
 definition{
-  name: i0331,
+  name: i0334,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4553,7 +4595,7 @@ definition{
 }
 
 definition{
-  name: i0332,
+  name: i0335,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4567,7 +4609,7 @@ definition{
 }
 
 definition{
-  name: i0333,
+  name: i0336,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4581,7 +4623,7 @@ definition{
 }
 
 definition{
-  name: i0334,
+  name: i0337,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4595,7 +4637,7 @@ definition{
 }
 
 definition{
-  name: i0335,
+  name: i0338,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4607,7 +4649,7 @@ definition{
 }
 
 definition{
-  name: i0336,
+  name: i0339,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4621,7 +4663,7 @@ definition{
 }
 
 definition{
-  name: i0337,
+  name: i0340,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4635,7 +4677,7 @@ definition{
 }
 
 definition{
-  name: i0338,
+  name: i0341,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4649,7 +4691,7 @@ definition{
 }
 
 definition{
-  name: i0339,
+  name: i0342,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4663,7 +4705,7 @@ definition{
 }
 
 definition{
-  name: i0340,
+  name: i0343,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4677,7 +4719,7 @@ definition{
 }
 
 definition{
-  name: i0341,
+  name: i0344,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4691,7 +4733,7 @@ definition{
 }
 
 definition{
-  name: i0342,
+  name: i0345,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4705,7 +4747,7 @@ definition{
 }
 
 definition{
-  name: i0343,
+  name: i0346,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4717,7 +4759,7 @@ definition{
 }
 
 definition{
-  name: i0344,
+  name: i0347,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4731,7 +4773,7 @@ definition{
 }
 
 definition{
-  name: i0345,
+  name: i0348,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4745,7 +4787,7 @@ definition{
 }
 
 definition{
-  name: i0346,
+  name: i0349,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4759,7 +4801,7 @@ definition{
 }
 
 definition{
-  name: i0347,
+  name: i0350,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4773,7 +4815,7 @@ definition{
 }
 
 definition{
-  name: i0348,
+  name: i0351,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4787,7 +4829,7 @@ definition{
 }
 
 definition{
-  name: i0349,
+  name: i0352,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4801,7 +4843,7 @@ definition{
 }
 
 definition{
-  name: i0350,
+  name: i0353,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4815,7 +4857,7 @@ definition{
 }
 
 definition{
-  name: i0351,
+  name: i0354,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4829,7 +4871,7 @@ definition{
 }
 
 definition{
-  name: i0352,
+  name: i0355,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4843,7 +4885,7 @@ definition{
 }
 
 definition{
-  name: i0353,
+  name: i0356,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4857,7 +4899,7 @@ definition{
 }
 
 definition{
-  name: i0354,
+  name: i0357,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4871,7 +4913,7 @@ definition{
 }
 
 definition{
-  name: i0355,
+  name: i0358,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4885,7 +4927,7 @@ definition{
 }
 
 definition{
-  name: i0356,
+  name: i0359,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4899,7 +4941,7 @@ definition{
 }
 
 definition{
-  name: i0357,
+  name: i0360,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4913,7 +4955,7 @@ definition{
 }
 
 definition{
-  name: i0358,
+  name: i0361,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4927,7 +4969,7 @@ definition{
 }
 
 definition{
-  name: i0359,
+  name: i0362,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4941,7 +4983,7 @@ definition{
 }
 
 definition{
-  name: i0360,
+  name: i0363,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4955,7 +4997,7 @@ definition{
 }
 
 definition{
-  name: i0361,
+  name: i0364,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4969,7 +5011,7 @@ definition{
 }
 
 definition{
-  name: i0362,
+  name: i0365,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4983,7 +5025,7 @@ definition{
 }
 
 definition{
-  name: i0363,
+  name: i0366,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4997,7 +5039,7 @@ definition{
 }
 
 definition{
-  name: i0364,
+  name: i0367,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5011,7 +5053,7 @@ definition{
 }
 
 definition{
-  name: i0365,
+  name: i0368,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5025,7 +5067,7 @@ definition{
 }
 
 definition{
-  name: i0366,
+  name: i0369,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5039,7 +5081,7 @@ definition{
 }
 
 definition{
-  name: i0367,
+  name: i0370,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5053,7 +5095,7 @@ definition{
 }
 
 definition{
-  name: i0368,
+  name: i0371,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
