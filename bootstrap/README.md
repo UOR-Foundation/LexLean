@@ -2,8 +2,8 @@
 
 The compiler's own components as language-1.2 source (SPEC.md §17.23, issue 92).
 
-`src/AxiomOutput.lex.tex`, `src/CalculusCheck.lex.tex`, `src/PrimitiveScan.lex.tex`, `src/RustPrint.lex.tex`, `src/RustValidate.lex.tex`,
-and `src/TokenAudit.lex.tex` import the standard library's `Text`
+`src/AxiomOutput.lex.tex`, `src/CalculusCheck.lex.tex`, `src/PrimitiveScan.lex.tex`, `src/RuntimeValidate.lex.tex`,
+`src/RustPrint.lex.tex`, `src/RustValidate.lex.tex`, and `src/TokenAudit.lex.tex` import the standard library's `Text`
 (`stdlib/src/Text.lex.tex`) as a source package:
 `lexlean.toml` declares `stdlib` beside this project in the workspace
 (`lexlean-workspace.toml`), the lock pins it by digest, and its modules are
