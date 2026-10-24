@@ -1226,6 +1226,11 @@ fn conformance_cl_23() {
 }
 
 #[test]
+fn conformance_cl_24() {
+    repo_conformance::cases::run("CL-24");
+}
+
+#[test]
 fn conformance_se_01() {
     repo_conformance::cases::run("SE-01");
 }
