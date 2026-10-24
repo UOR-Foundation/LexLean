@@ -2507,7 +2507,7 @@ definition{
   parameters: [sc : Sc, f : FnDef],
   result: (Option Bytes),
   body: (if (not (project f public)) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: function-visibility: ") (rcat (rtick (project (project f sig) name)) (rtext " is a free function that is not public")))) else (if (project (project f sig) receiver) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: function-receiver: ") (rcat (rtext "free function ") (rcat (rtick (project (project f sig) name)) (rtext " takes `&self`"))))) else (fnOk sc (nil Generic) (ctor Ty.TyAbsent) f))),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -2538,7 +2538,7 @@ definition{
     | Item.IEnum x0 x1 x2 x3 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: module-member: ") (rcat (rtick owner) (rtext " holds an item that is neither a defined function nor a function"))))
     | Item.IMod x0 x1 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: module-member: ") (rcat (rtick owner) (rtext " holds an item that is neither a defined function nor a function"))))
     | Item.IAttr x0 x1 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: module-member: ") (rcat (rtick owner) (rtext " holds an item that is neither a defined function nor a function"))))),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
