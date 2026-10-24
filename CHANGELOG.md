@@ -63,6 +63,15 @@ and Unreleased holds what has landed since.
   base text is gone; the handwritten runtime is kept as the oracle. The
   compiler-semantics ID moves; records bound to it regenerate once, at the
   landing. `RB-19` adds the constructs of the heap runtime (40 validator rules, sixteen new): every name the printer writes is an identifier and not a keyword, a derive is in a closed table of five, a character literal is one scalar value, the head of a condition holds no struct literal outside parentheses, and a `let`, cast or type argument names no generic parameter; each site is planted, and a comparison whose left operand ends in a cast is printed with parentheses. `BS-09` holds the runtime validator's Lean twin (`RuntimeValidate`, a bootstrap root) to the Rust oracle. The twin carries the identifier, derive, character-literal, struct-head and type-scope rules of `RB-19` (40 rules), and the bootstrap project's `max_file_bytes` is 6 MiB because its certificate passed 4 MiB. The committed corpus `BS-05` and `BS-06` hold to the oracle grows by the `validate_runtime` package (256 manifests, 173 programs, 232 crates; 452 and 315 validator runs, 607 printer runs), and `validate_runtime` has its stack bound in `tests/stack-bounds.json`. `SP-26` kernel-checks the laws of the memory a runtime buffer lives in (`RustMemory`). `SP-27` kernel-checks the abstraction theorems of the list representation (`RustLists`). The register is 452 IDs.
+- The declaration check of the production registry as language-1.2 source (SPEC.md
+  §17.23, §17.13, `BS-90`, a placeholder ID, #92 step 5 row 5a; no new
+  diagnostic code, no change to the language-1.2 identity). `checkDeclaration` of
+  `ProductionRegistry` refuses a production declaration as
+  `production::check_declaration` does (no target, targets or effects not sorted
+  and unique, an unregistered target, an unregistered effect), given the
+  registry's identifiers, held to the oracle to the byte on 2,467 runs. Its
+  largest certificate part is 159,647 bytes, 2.5% of `max_file_bytes`. The
+  register is 454 IDs.
 - Two source packages of the standard library and the application that uses
   them, #32 (SPEC.md §17.22, §10.5, `SL-03`, `SL-04`, `EX-09`). `std-models`
   (`LexLeanStdModels.Scores`) holds the score combinators `best`, `margin`, and

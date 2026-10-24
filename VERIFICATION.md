@@ -9959,6 +9959,46 @@ exact axiom policy of a definition is read from the construct it reaches
 none), and the verifier reports one definition per run, so the first
 declaration of an axiom set is found by reading the construct, not by running.
 
+`BS-90` (a placeholder ID; the maintainer assigns the number at registration) holds
+the production root of `LexLeanBoot.ProductionRegistry`
+(`bootstrap/src/ProductionRegistry.lex.tex`), the declaration check of the
+production registry, to `production::check_declaration`, row 5a of step 5 of
+issue 92. The root takes the declaration and the identifiers of the registered
+targets and effects, which the host reads from `language/production-1.2.toml`
+(decision 7 of the step 4 plan). The case runs 2,467 runs under the pinned rustc
+on every host (one harness binary built in 20 s, the runs in 0.1 s): the 297
+distinct declarations of the committed `.lex.tex` sources, 170 runs of the rules
+of the check, and 2,000 seeded runs over a pool of near misses and registries
+of the pool; on the normative host the evaluator on all of them (14 s) and the
+eight planted defects. The case up to the production export takes 74 s at
+1.2 GB resident on this host, and stops there on this tree with the package
+`check_declaration` and the records left to the maintainer's regeneration.
+
+Measured certificate of `checkDeclaration` (bytes; the cap `max_file_bytes` is
+6,291,456 and the budget the case asserts is three quarters of it, 4,718,592):
+part A 66,207, part B 159,647 (the largest, 2.5% of the cap), part E 18,742. It
+was measured by a `production build` of the root alone in a copy of the project
+whose only entrypoint is `ProductionRegistry`, so that only this root is
+certified: 238 s wall, 1.70 GB peak resident set, of which `verify` took 234 s.
+The oracle function and its order check are 45 lines of Rust.
+
+The exact axiom policy of the module was aligned by running `verify` and
+reading the one violation it reports each run: `member` and `unregistered`
+observe no axiom, `less`, `ascending` and `checkDeclaration` observe `propext`.
+
+Each of these eight plants is made on a copy of
+`bootstrap/src/ProductionRegistry.lex.tex` and is caught by the differential
+under the evaluator:
+
+- **a declaration with no target is accepted**.
+- **a duplicate is accepted as sorted**.
+- **the order of the targets is not checked**.
+- **the order of the effects is not checked**.
+- **an unregistered effect is accepted**.
+- **the last unregistered name is reported, not the first**.
+- **the order is by length, not bytewise**.
+- **an unregistered target is called an effect**.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the

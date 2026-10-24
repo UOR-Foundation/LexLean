@@ -17,6 +17,14 @@
       "version": "1.0.0"
     },
     {
+      "name": "check_declaration",
+      "root": "LexLeanBoot.ProductionRegistry.checkDeclaration",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "check_program",
       "root": "LexLeanBoot.CalculusCheck.checkProgram",
       "targets": [

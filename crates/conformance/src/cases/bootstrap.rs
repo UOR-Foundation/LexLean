@@ -20,6 +20,7 @@ use crate::rust_harness::{self, Calls};
 use crate::rust_packages;
 use crate::support::{self, P};
 
+mod production_registry;
 mod runtime_validate;
 mod rust_print;
 mod rust_validate;
@@ -2428,6 +2429,7 @@ fn case(id: &str) {
         "BS-06" => rust_print::case(),
         // §17.23, §17.16: the runtime syntax validator.
         "BS-09" => runtime_validate::case(),
+        "BS-90" => production_registry::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }

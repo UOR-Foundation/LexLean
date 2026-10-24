@@ -1,0 +1,79 @@
+\begin{lexlean}{ProductionRegistry}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: less,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bool,
+  body: (prim equal (prim compare_bytes left right : Ordering) (prim compare_bytes 0x 0x01 : Ordering) : Bool),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: ascending,
+  parameters: [items : (List Bytes)],
+  result: Bool,
+  body: (first (prim list_fold (fun (state : (Bool * (Option Bytes))) (item : Bytes) => ((if (first state) then (match (second state)
+    | Option.some last => (less last item)
+    | Option.none => true) else false), (ctor Option.some [Bytes] item))) (true, (ctor Option.none [Bytes])) items : (Bool * (Option Bytes)))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: member,
+  parameters: [item : Bytes, items : (List Bytes)],
+  result: Bool,
+  body: (prim list_fold (fun [item] (found : Bool) (candidate : Bytes) => (if found then true else (prim equal candidate item : Bool))) false items : Bool),
+  executable: true
+}
+
+definition{
+  name: unregistered,
+  parameters: [items : (List Bytes), registered : (List Bytes)],
+  result: (Option Bytes),
+  body: (prim list_fold (fun [registered] (found : (Option Bytes)) (item : Bytes) => (match found
+    | Option.some earliest => (ctor Option.some [Bytes] earliest)
+    | Option.none => (if (member item registered) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] item)))) (ctor Option.none [Bytes]) items : (Option Bytes)),
+  executable: true
+}
+
+definition{
+  name: refusal,
+  parameters: [name : Bytes, rest : Bytes],
+  result: (Result Unit Bytes),
+  body: (ctor Result.error [Unit, Bytes] (prim append (prim utf8_encode "production root `" : Bytes) (prim append name (prim append (prim utf8_encode "` " : Bytes) rest : Bytes) : Bytes) : Bytes)),
+  executable: true
+}
+
+definition{
+  name: unknownRefusal,
+  parameters: [name : Bytes, kind : Bytes, unknown : Bytes],
+  result: (Result Unit Bytes),
+  body: (refusal name (prim append (prim utf8_encode "names unregistered " : Bytes) (prim append kind (prim append (prim utf8_encode " `" : Bytes) (prim append unknown (prim utf8_encode "`" : Bytes) : Bytes) : Bytes) : Bytes) : Bytes)),
+  executable: true
+}
+
+definition{
+  name: checkDeclaration,
+  parameters: [
+    name : Bytes,
+    targets : (List Bytes),
+    effects : (List Bytes),
+    registeredTargets : (List Bytes),
+    registeredEffects : (List Bytes)
+  ],
+  result: (Result Unit Bytes),
+  body: (if ((prim length targets : Nat) =? 0) then (refusal name (prim utf8_encode "names no target" : Bytes)) else (if (ascending targets) then (if (ascending effects) then (match (unregistered targets registeredTargets)
+    | Option.some unknown => (unknownRefusal name (prim utf8_encode "target" : Bytes) unknown)
+    | Option.none => (match (unregistered effects registeredEffects)
+      | Option.some unknown => (unknownRefusal name (prim utf8_encode "effect" : Bytes) unknown)
+      | Option.none => (ctor Result.ok [Unit, Bytes] ()))) else (refusal name (prim utf8_encode "effects are not sorted and unique" : Bytes))) else (refusal name (prim utf8_encode "targets are not sorted and unique" : Bytes)))),
+  axioms: [propext],
+  executable: true,
+  production: {effects: [allocation], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}
