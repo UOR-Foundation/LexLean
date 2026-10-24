@@ -512,6 +512,16 @@ impl Writer<'_, '_> {
             Machine::ListAppend => "listAppend",
             Machine::ListIndex => "listIndex",
             Machine::ListSlice => "listSlice",
+            Machine::BytesAppend => "bytesAppend",
+            Machine::BytesLength => "bytesLength",
+            Machine::StringLength => "stringLength",
+            Machine::BytesIndex => "bytesIndex",
+            Machine::BytesSlice => "bytesSlice",
+            Machine::Utf8Encode => "utf8Encode",
+            Machine::Utf8Decode => "utf8Decode",
+            Machine::BytesCompare => "bytesCompare",
+            Machine::StringSplit => "stringSplit",
+            Machine::StringJoin => "stringJoin",
         };
         match machine.width() {
             Some(width) => {

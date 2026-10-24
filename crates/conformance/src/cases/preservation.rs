@@ -4854,19 +4854,34 @@ pub fn run(id: &str) {
                 ],
                 "the natural and integer primitives"
             );
-            let lists: Vec<&str> = machine[26..]
+            let std: Vec<&str> = machine[26..]
                 .iter()
                 .map(|(name, _)| name.as_str())
                 .collect();
             assert_eq!(
-                lists,
-                ["listLength", "listAppend", "listIndex", "listSlice"],
-                "the list primitives of the std runtime (SP-29)"
+                std,
+                [
+                    "listLength",
+                    "listAppend",
+                    "listIndex",
+                    "listSlice",
+                    "bytesAppend",
+                    "bytesLength",
+                    "stringLength",
+                    "bytesIndex",
+                    "bytesSlice",
+                    "utf8Encode",
+                    "utf8Decode",
+                    "bytesCompare",
+                    "stringSplit",
+                    "stringJoin"
+                ],
+                "the list, byte, and text primitives of the std runtime (SP-29)"
             );
             assert_eq!(
                 machine.len(),
-                30,
-                "the first seventeen, the nine, and the four list primitives"
+                40,
+                "the first seventeen, the nine, and the fourteen std primitives"
             );
             if !support::lean_backed("SP-23") {
                 return;

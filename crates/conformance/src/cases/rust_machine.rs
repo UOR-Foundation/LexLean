@@ -67,6 +67,25 @@ fn signature(machine: Machine) -> (Vec<Type>, Type) {
             vec![Type::List(Box::new(Type::Param(0))), Type::Nat, Type::Nat],
             Type::Option(Box::new(Type::List(Box::new(Type::Param(0))))),
         ),
+        Machine::BytesAppend => (vec![Type::Bytes, Type::Bytes], Type::Bytes),
+        Machine::BytesLength => (vec![Type::Bytes], Type::Nat),
+        Machine::StringLength => (vec![Type::Str], Type::Nat),
+        Machine::BytesIndex => (
+            vec![Type::Bytes, Type::Nat],
+            Type::Option(Box::new(Type::Fixed(IntKind::U8))),
+        ),
+        Machine::BytesSlice => (
+            vec![Type::Bytes, Type::Nat, Type::Nat],
+            Type::Option(Box::new(Type::Bytes)),
+        ),
+        Machine::Utf8Encode => (vec![Type::Str], Type::Bytes),
+        Machine::Utf8Decode => (vec![Type::Bytes], Type::Option(Box::new(Type::Str))),
+        Machine::BytesCompare => (vec![Type::Bytes, Type::Bytes], Type::Ordering),
+        Machine::StringSplit => (
+            vec![Type::Str, Type::Str, Type::Fixed(IntKind::U32)],
+            Type::Option(Box::new(Type::List(Box::new(Type::Str)))),
+        ),
+        Machine::StringJoin => (vec![Type::List(Box::new(Type::Str)), Type::Str], Type::Str),
         Machine::CheckedIntNeg => (vec![Type::Int], Type::Option(Box::new(Type::Int))),
         Machine::CheckedIntQuot => (
             vec![Type::Int, Type::Int, Type::Int],
@@ -200,7 +219,20 @@ pub fn run(id: &str) {
         .filter(|machine| {
             !matches!(
                 machine,
-                Machine::ListLength | Machine::ListAppend | Machine::ListIndex | Machine::ListSlice
+                Machine::ListLength
+                    | Machine::ListAppend
+                    | Machine::ListIndex
+                    | Machine::ListSlice
+                    | Machine::BytesAppend
+                    | Machine::BytesLength
+                    | Machine::StringLength
+                    | Machine::BytesIndex
+                    | Machine::BytesSlice
+                    | Machine::Utf8Encode
+                    | Machine::Utf8Decode
+                    | Machine::BytesCompare
+                    | Machine::StringSplit
+                    | Machine::StringJoin
             )
         })
         .collect();
