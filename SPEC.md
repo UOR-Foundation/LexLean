@@ -2144,6 +2144,15 @@ The proof parser MUST reject:
 - a proof step after the current branch has closed;
 - a branch that does not close.
 
+A language-1.2 proof cites a lemma of the runtime library only through the
+`law` form (§17.12, *Fold laws* and *Runtime bounds*), which applies a
+registered theorem of `LexLeanRuntime.Laws` by name; no raw Lean names it. The
+runtime bounds `split_exact_fits`, `utf8_decode_length`, and
+`checked_add_fits` bound the piece count of `split_exact` by the UTF-8 byte
+length plus one, the UTF-8 byte length of a decoded string by the length of
+its bytes, and the result of `UInt32` `checked_add`, so that a model proves its
+defensive error branches unreachable.
+
 ---
 
 ## 17. Semantic elaboration and IR
@@ -2400,7 +2409,9 @@ name, module, or feature. Generated Lean may import only the foundational
 modules listed in the core data and other modules in the generated graph. The
 generic environment-reconstruction runtime may privately import `Lean`, and
 the runtime of a version 2 module also `Lean.Meta.Constructions.SparseCasesOn`
-in full (below); no
+in full (below) and `Init.Data.String.Legacy` in full, whose bodies of
+`String.splitOn` and its loop Lean does not expose and the runtime bound of
+`split_exact` unfolds (§17.12, *Runtime bounds*); no
 generated module may import an independently authored implementation of the
 declarations being generated.
 
@@ -3245,6 +3256,34 @@ rules are LexLean's own; the diagnostic each linking failure raises is
 6. **Closed instances.** `decide` evaluates a closed statement and does not
    decide one with a free variable, so a statement over all inputs is proved
    by the laws and `omega`, never by enumerating inputs.
+
+**Runtime bounds.** `LexLeanRuntime.Laws` also states three bounds of the
+runtime, registered in `language/runtime-1.2/laws.toml` as laws a `law` proof
+applies by name like a fold law, so that a model proves a defensive error
+branch of the split, the decoder, or checked addition unreachable without raw
+Lean (§16.12). Each conclusion is an implication from a bound on the input, and
+each closed side condition is a premise a prior theorem discharges:
+
+- `split_exact_fits` (`LexLeanLaws.splitExact_fits`, parameters `s d : String`,
+  `m : UInt32`, `n : Nat`, premises `equal d "" = false` and `n < toNat m`):
+  `length (utf8_encode s) <= n` implies that `split_exact s d m` is `some`,
+  written `(match split_exact s d m | none => false | some _ => true) = true`.
+  A split on a separator that is not empty has at most the UTF-8 byte length
+  of the string plus one pieces, so a maximum above any bound on that length
+  admits it.
+- `utf8_decode_length` (`LexLeanLaws.utf8Decode_length`, parameters
+  `b : Bytes`, `s : String`, `n : Nat`, no premise): `utf8_decode b = some s`
+  implies that `length b <= n` implies `length (utf8_encode s) <= n`; a
+  decoded string's UTF-8 byte length is bounded by the length of the bytes it
+  was decoded from.
+- `checked_add_fits` (`LexLeanLaws.checkedAdd_fits`, parameters
+  `a b n : UInt32`, premise `toNat n + toNat b < 4294967296`): `a <= n`
+  implies that `checked_add a b` is `some`, written as for the split.
+
+The split and the decoder pin `Classical.choice`, so the first two laws and a
+theorem proved by them observe `Classical.choice`, `Quot.sound`, and
+`propext`; `checked_add_fits` observes `Quot.sound` and `propext`. The fold
+laws and the rewrite set of `linear_arithmetic` do not use them.
 
 #### Models, contracts, realizations, and evidence (language 1.2)
 
@@ -10275,6 +10314,7 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `PF-21` | `proofs` | The language-1.2 linear_arithmetic proof form reads the runtime: it rewrites less_than, equal, negate, quotient, remainder, and fixed-width order and equality into linear arithmetic over mathematical values, splits every if and match left in the goal, proves integer kernels for all inputs, and is refused by Lean on a false one. | §17.12, §16 |
 | `PF-22` | `proofs` | The runtime module LexLeanRuntime.Laws states the fold laws as LexLean source with every row's axioms pinned, and linear_arithmetic rewrites additive list, set, and map folds into sums that are linear and invariant under append and reverse, so fold equalities verify for all inputs with decide only on closed instances. | §17.12, §22.6 |
 | `PF-23` | `proofs` | The language-1.2 law proof form applies one registered fold law (fusion, the fold of a pair, or the fold of an append) to checked type arguments, arguments, and prior theorems discharging its premises, and is refused in linking for an unregistered law, a wrong argument count or type, or a missing premise, and by Lean for a statement the law does not prove. | §17.12, §16 |
+| `PF-24` | `proofs` | The runtime module LexLeanRuntime.Laws states three bounds of the runtime as registered laws a language-1.2 law proof cites: split_exact_fits (split_exact of a string whose UTF-8 byte length is at most n, on a separator that is not empty, under a maximum above n, is some, since a split has at most its byte length plus one pieces), utf8_decode_length (a string utf8_decode reads from bytes of length at most n has a UTF-8 byte length of at most n), and checked_add_fits (UInt32 checked_add of a value at most n and b is some when n plus b is below 2^32); each row pins its exact axioms, the request guards of the fold-laws example prove their too-many-lines, line-overflow, and response too-large branches unreachable by citing them, a guard that claims one more than its law gives fails verification with LLV7002, and a law the registry does not name is refused with LLT4001. | §16, §17.12 |
 | `LN-01` | `lean-backend` | Each generated Lean file has the exact module, import, option, namespace, declaration, and end structure. | §18.1 |
 | `LN-02` | `lean-backend` | Imports are explicit, deduplicated, sorted, and every external global is fully qualified. | §18.3 |
 | `LN-03` | `lean-backend` | Generated Lean contains no comments, documentation, prose-bearing strings, or copied source prose. | §18.2 |
@@ -10566,7 +10606,7 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `NS-06` | `normative-source` | The hand-edited normative inputs of the repository are the `.lex.tex` modules of the specification project: `model/` holds only the projected files and the copies an authority row vendors, every Markdown file at the root is a projection or is on the closed list of hand-written documents, the projections carry the notice that names their source, and no hand-written document restates a registered statement, a plant of each being refused naming R1. | §27.2, §27.5, §27.10 |
 | `NS-07` | `normative-source` | `cargo xtask spec` changes the chapter modules of the specification project by item: it replaces a block, inserts one after a block, and ports the hunks of a merged SPEC.md that lie outside derived regions, each through the authoring SDK, and it writes nothing unless the regenerated SPEC.md equals the intended text outside derived regions, refusing a first line that matches no block or two and a hunk that spans two blocks. | §24.8, §27.5 |
 
-**Total required capability IDs:** 448.
+**Total required capability IDs:** 449.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

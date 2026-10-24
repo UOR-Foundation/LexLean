@@ -959,6 +959,12 @@ suite = "proofs"
 statement = "The language-1.2 law proof form applies one registered fold law (fusion, the fold of a pair, or the fold of an append) to checked type arguments, arguments, and prior theorems discharging its premises, and is refused in linking for an unregistered law, a wrong argument count or type, or a missing premise, and by Lean for a statement the law does not prove."
 
 [[id]]
+id = "PF-24"
+level = "build"
+suite = "proofs"
+statement = "The runtime module LexLeanRuntime.Laws states three bounds of the runtime as registered laws a language-1.2 law proof cites: split_exact_fits (split_exact of a string whose UTF-8 byte length is at most n, on a separator that is not empty, under a maximum above n, is some, since a split has at most its byte length plus one pieces), utf8_decode_length (a string utf8_decode reads from bytes of length at most n has a UTF-8 byte length of at most n), and checked_add_fits (UInt32 checked_add of a value at most n and b is some when n plus b is below 2^32); each row pins its exact axioms, the request guards of the fold-laws example prove their too-many-lines, line-overflow, and response too-large branches unreachable by citing them, a guard that claims one more than its law gives fails verification with LLV7002, and a law the registry does not name is refused with LLT4001."
+
+[[id]]
 id = "LN-01"
 level = "build"
 suite = "lean-backend"
