@@ -123,6 +123,15 @@ enum CommandKind {
         /// Explicit input modules.
         inputs: Vec<Utf8PathBuf>,
     },
+    /// Migrate a language-1.1 project to language 1.2 (SPEC.md section 17.12).
+    Migrate {
+        /// The target language.
+        #[arg(long, value_parser = ["1.2"])]
+        to: String,
+        /// Prove the migration and report it without writing any file.
+        #[arg(long)]
+        check: bool,
+    },
     /// Remove the configured build root.
     Clean,
     /// Print the registered entry for one diagnostic code.
@@ -156,13 +165,14 @@ enum ProductionAction {
 }
 
 /// The command names, in the order of §23.4.
-const COMMAND_NAMES: [&str; 9] = [
+const COMMAND_NAMES: [&str; 10] = [
     "init",
     "lock",
     "check",
     "build",
     "verify",
     "fmt",
+    "migrate",
     "clean",
     "explain",
     "production",
@@ -535,6 +545,7 @@ pub fn run(
         CommandKind::Build { .. } => "build",
         CommandKind::Verify { .. } => "verify",
         CommandKind::Fmt { .. } => "fmt",
+        CommandKind::Migrate { .. } => "migrate",
         CommandKind::Clean => "clean",
         CommandKind::Explain { .. } => "explain",
         CommandKind::Production { .. } => "production",
@@ -676,6 +687,31 @@ pub fn run(
                     } else {
                         format!("formatted {}\n", modules(rewritten))
                     };
+                    Ok(())
+                }
+                CommandKind::Migrate { to: _, check } => {
+                    let result = crate::api::migrate::migrate(
+                        &engine,
+                        &crate::api::migrate::MigrateRequest { check_only: check },
+                    )?;
+                    let manifests = match result.manifests.len() {
+                        0 => String::new(),
+                        1 => " and 1 lexicon package".to_owned(),
+                        count => format!(" and {count} lexicon packages"),
+                    };
+                    outcome.summary = if result.written {
+                        format!(
+                            "migrated {}{manifests} to language 1.2; wrote {}\n",
+                            modules(result.modules.len()),
+                            engine.project().config.lockfile
+                        )
+                    } else {
+                        format!(
+                            "{}{manifests} migrate to language 1.2; nothing was written\n",
+                            modules(result.modules.len())
+                        )
+                    };
+                    outcome.modules = result.modules.into_iter().collect();
                     Ok(())
                 }
                 CommandKind::Clean => {

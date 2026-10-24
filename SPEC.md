@@ -4101,22 +4101,45 @@ All of these failures occur before Lean or LaTeX generation and before any
 child process starts.
 
 Migration is explicit and versioned. A language-1.1 project becomes a
-language-1.2 project only by changing its `language` row, rewriting each
-`semanticdata` discriminator from `/1` to `/2`, changing builtin glossary
-references from `1.1.0` to `1.2.0`, and regenerating the lock with
-`lexlean lock`. Every language-1.1 value is a valid language-1.2 value with
-the same meaning, so the migration changes identities (the compiler-semantics
-ID, the lock, and every source and semantic ID) but not generated Lean
-declarations; the generated text differs only in the portable runtime, which
-a language-1.2 module imports as the runtime module `LexLeanRuntime.Portable`
-with every definition exposed instead of splicing the language-1.1 text
-(rule 6 under *Collections and state threading*, *Runtime modules*), and the
-`reducible` attribute of proposition-valued definitions (rule 11 under
-*Models, contracts, realizations, and evidence*), which change no
-definition, type, or compiled code. No command migrates a project
-implicitly: building an
-unmigrated project under a newer compiler keeps its declared language and its
-historical identities and artifact bytes.
+language-1.2 project only through `lexlean migrate --to 1.2` (§23.4, `CL-24`),
+never implicitly: building an unmigrated project under a newer compiler keeps
+its declared language and its historical identities and artifact bytes. Changing
+the `language` row and the schema tag by hand does not migrate a project,
+because language 1.2 refuses the data form of a module with `LLP2003`
+(`AU-13`, §17.21.1); the command does everything a migration needs in one
+step:
+
+- every module of every source root is rewritten from `\semanticdata{...}` to
+  the authoring notation (§17.21) through `lexlean::sdk::to_notation`, after its
+  schema tag moves from `lexlean/semantic-module/1` to
+  `lexlean/semantic-module/2`; the notation reads back to exactly that module
+  or the module is refused, so the declaration names, theorem statements, and
+  axiom policies are those of the language-1.1 module;
+- each builtin glossary reference moves from `1.1.0` to `1.2.0` in every
+  `\useglossary` of every source and in the `imports` of every path lexicon
+  package, whose manifest `language` becomes `1.2` (the package's own version
+  and its entries are unchanged);
+- the `language` row of `lexlean.toml` becomes `1.2`, in canonical form;
+- the lock is regenerated as `lexlean/lock/2`.
+
+The migrated project is written into a scratch copy first, locked, and checked
+as a language-1.2 project; a project that does not check there is refused, and
+on every refusal no file of the project is written. A project whose language
+is not `1.1` is refused with `LLC0103`, and a module that is not a
+language-1.1 semantic module in the data form (one whose data is not the
+canonical JSON that language 1.1 `check` refuses with `LLT4001` is not, and is
+not canonicalized by the migration), or whose notation does not read
+back to the module (the conversion is checked; no schema-valid module is known
+to fail it), with `LLP2003`. Every language-1.1 value is a valid
+language-1.2 value with the same meaning, so the migration changes identities
+(the compiler-semantics ID, the lock, and every source and semantic ID) but not
+generated Lean declarations; the generated text differs only in the portable
+runtime, which a language-1.2 module imports as the runtime module
+`LexLeanRuntime.Portable` with every definition exposed instead of splicing the
+language-1.1 text (rule 6 under *Collections and state threading*, *Runtime
+modules*), and the `reducible` attribute of proposition-valued definitions
+(rule 11 under *Models, contracts, realizations, and evidence*), which change
+no definition, type, or compiled code.
 
 ### 17.13 Production eligibility
 
@@ -5883,6 +5906,77 @@ parentheses, and a `let`, a cast and a type argument name no generic parameter, 
 without the generics in scope. A comparison whose left operand ends in a cast is printed with that operand in
 parentheses, so that `rustc` does not read `<` as the arguments of the cast's type. `RtType.wide` takes a Boolean that is true for `u128` and false for `i128`. `RuntimeSemantics` evaluates each of the expression constructs the module grew by as `stuck`, except a block expression, which evaluates its block, and a string literal, which is a string value; a character literal is `stuck`. Of the pattern constructs it grew by, a mutable binding binds as a binding does, and the tuple, tuple-struct, struct, and literal patterns are `stuck`. As the type of a value, `RtType.refMut` is its inner type and the other types it grew by (`RtType.wide`, `size`, `char`, `str`, `slice`) match no value.
 This row declares no meaning for the constructs it leaves `stuck`, and a theorem about a function that uses one is a claim it does not make.
+The memory of a buffer (`SP-26`). `RustMemory`, a module of the compiler project over the calculus's
+values, models what a runtime `Vec` and the slices of it stand on: a buffer (`Buf`) is its slots,
+indexed from zero, whose number is its capacity, and a length, and a window (`Window`) is its base
+slots, an offset, and a count, with `subWindow` taking a window of a window. A write is `put`, which
+replaces the slot at an index and leaves the number of slots as it was (`size_put`); `put` beyond the
+slots is a no-op in the model (`CNil` returns `CNil`) and is not the runtime's behaviour, which
+refuses out-of-bounds access. A slot is read back at the index it was written (`get_put_same`, which
+reads `none` for an index that is no slot), and the slots below (`get_put_below`) and above
+(`get_put_above`) a written index are as they were; the index of a neighbour is given as a sum with a
+gap, because the proof language has no premises (a prior theorem can be a rewrite rule, but a hypothesis cannot be assumed), so that the three laws cover every index. A new buffer
+of a capacity has that number of slots, each the fill (`size_blank`, `get_blank`). A push (`bufPush`)
+is guarded by `lessThan len (size slots)`: a buffer whose length is its capacity has no
+room (`no_room_at_capacity`), and its push is the result `none`, writing nothing (`push_at_capacity`);
+one with a slot at its length has room (`room_before_slot`), the write lands in that slot
+(`push_lands_in_slot`, `put_in_slot`), and its push is the result `some` of the buffer with the item
+in that slot and the length one more (`push_with_room`). Both push theorems are closed by simplifying
+with the prior theorems of the module as rules, which the proof language admits. Truncation
+(`bufTruncate`) lowers the length to the least of the new and the old and so its guarded read
+(`bufGet`) admits the indices below both (`below_truncated`, `get_truncated`), and a window of a window
+adds its offsets (`plus_assoc`, `window_of_window`), and the count of a window of a window is the least of the count asked for and what the parent has left after the skip (`window_count`, `subWindow`, `minusNat`). The claim is the model's. That the runtime's `Vec`
+has this behaviour, that a slice is the view the model reads, and that a push beyond the capacity
+reallocates (the declared effect `allocation`) are the evidence of the differential and of rustc, and
+the growth of a capacity is not part of this row.
+
+The representation of a list (`SP-27`). `RustLists`, a module of the compiler project on the buffers of
+`RustMemory` and over the calculus's values, models the runtime's `List` as a *handle*: the items of the
+cells in front of it (`spine`, the newest first) and a *terminal*, either the empty list or a *run*, the
+first `more + 1` slots of the buffer at an address of a *store*. A store is a chain of `Buf` indexed by
+position; a write at an address beyond it writes nothing and a read beyond it finds no cells, so that no
+operation faults. A handle reads as the list of the calculus (`absHandle`): its spine followed by its
+run's slots in reverse, the newest slot first. The counting of references is derived and not stored: a
+handle holds a buffer when its terminal is a run on the buffer's address (`holds`, the sameness of
+addresses of `RustMemory`, `same_with_itself`, `holder_on_own_buffer`, `holder_without_run`, and for a run on another address, above or below, `apart_above`, `apart_below`, `holds_apart_above`, `holds_apart_below`), and
+`aloneOn` is the test that no handle among the others holds it, the flag `Rc::get_mut` answers; it is
+what `consWorld` consults, so that a holder blocks the in-place write (`own_blocks`, `holder_blocks`) and a
+handle on another buffer, above or below, does not (`others_allow_above`, `others_allow_below`,
+`holder_elsewhere_above`, `holder_elsewhere_below`).
+
+For a buffer with room the law is one theorem, `cons_in_place`: the first buffer of a store, with the run `lead` and `front`, one slot of room after it at `old`, and any length at least the run's (a sum with a gap), cons'd onto through `consWorld` with no other handle, reads as the item before the old list. It is closed by simplifying with the pieces below as rewrite rules (`min_keeps_run`, `room_before_slot`, `put_run_abs`), which is why they are stated apart. The in-place cons of a run on a buffer nobody else holds is `consIn`: it truncates the buffer to the
+run's length (`bufTruncate`) and pushes the item with the push of `RustMemory` (`bufPush`), keeping the
+buffer when the push is refused. The guard of that push is `F = lessThan m (size slots)` with `m` the
+length after truncation, and the model states what follows in separate theorems, because the proof
+language has no premises and `bufPush` is not recursive: where `F` holds the run read back is the item
+before the old list (`push_run_abs` for the cells, `walk_cons` through a store, which states the read as
+a pick between the write and the old run by `F`; `inplace_view` and `cons_view` for the handle, the
+latter choosing the in-place write by `aloneOn`); a refused push is exactly a push at capacity
+(`full_is_capacity`, `isFull`), in which case the outcome of `consWorld` is `Full`, the store is as it
+was, and the caller grows the buffer. Growth (`growBuf`, the declared effect `allocation`) appends
+slots after the buffer's own: the slots read as they did (`append_run_abs`, `grow_run_abs`) and the grown
+buffer has room (`room_after_growth`, `grown_has_room`), so that the cons that was refused lands after
+it. The truncation keeps the whole run of a buffer at least as long as the run (`min_keeps_run`, and `truncate_keeps_run` for `bufTruncate`),
+which is the state of a run that does not outrun its buffer. The first cons onto the empty list allocates a
+buffer of length one and capacity sixteen, the item and fifteen blank slots behind it, as the runtime's
+list reserves (`alloc_capacity`, `alloc_length`), at the end of the store, at `storeLen` and no other address (`walk_alloc`,
+`cons_alloc_view`, `cons_alloc_store`), and the buffers before it are read as they were (`alloc_frame`);
+a cons onto a spine, or onto a run another handle holds, adds a cell and writes no buffer
+(`cons_cell_view`, `cons_cell_store`, `cons_shared_view`, `cons_shared_store`, and `cons_held_store` for a holder among the other handles of `consWorld`). The uncons of a spine takes
+its first item, the uncons of a run reads the slot at its last position and leaves the run one shorter,
+or the empty list when it was the last (`run_uncons_abs`, `run_last_abs`, `walk_uncons`,
+`walk_uncons_last`, `uncons_cell_abs`, `uncons_cell_taken`, `uncons_run_abs`, `uncons_run_taken`,
+`uncons_last_abs`, `uncons_last_taken`). A write to the buffer at one address is read through that
+address and through no other: `cons_frame` states it for every pair of addresses by their sameness, and
+`inplace_frame` for the handle of a run on another buffer, so that the handles that do not hold the
+buffer written read as they did. Releasing a chain of cells one at a time, as the `Drop` of a node does and
+stopping at the first cell another handle holds, ends within as many steps as the chain has cells, needs a
+step for each cell of a chain nobody else holds, and takes one step for each cell (`release_ends`,
+`release_one_short`, `release_needs_fuel`, `release_one_cell`). Every theorem is total, for the reason of
+`SP-26`. The claim is the model's: that the runtime's `Rc`, `Vec`, and `List` behave as the model, that the
+model's reference count is the `Rc`'s, and that the `Drop` loop is the release loop are the evidence of the
+differential and of the pinned rustc. The model does not count the steps of a cons or an uncons.
+
 A *loop*
 (`Expr.loop`, `SP-19`) is the one construct of the machine that repeats: it names
 a state, a local the enclosing block has bound, and a body block. The body is
@@ -9261,6 +9355,29 @@ lexlean fmt [--check] [--all | INPUT...]
 
 Parses and uniquely resolves source, rewrites canonical source, or exact-byte compares under `--check`.
 
+#### `migrate`
+
+```text
+lexlean migrate --to 1.2 [--check]
+```
+
+Migrates a language-1.1 project to language 1.2 (§17.12): it rewrites every
+data-form module to the authoring notation, moves the builtin glossary
+references of the sources and the path lexicon packages to `1.2.0`, rewrites
+the `language` row, and regenerates the lock as `lexlean/lock/2`. `--to` takes
+`1.2` and nothing else. The result is proven in a scratch copy (locked and
+checked as language 1.2) before any file is written, the files are then
+replaced together (a file that changed between the proof and the replacement
+refuses the migration with `LLV7010` and nothing is written, and a replacement
+that fails restores every file already replaced, reporting every restore that
+failed), and a refusal writes nothing and creates no build root:
+`LLC0103` for a project that is not language 1.1, `LLP2003` for a module that is
+not a language-1.1 data-form semantic module (a data form that is not canonical
+JSON included, as language 1.1 `check` refuses it) or whose notation does not
+read back to it, and the diagnostics of the scratch check for a project that does not
+check as language 1.2. With `--check` the same proof runs and nothing is
+written. The command result names the migrated modules.
+
 #### `clean`
 
 ```text
@@ -10735,6 +10852,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `CL-21` | `cli-api` | Native diagnostics distinguish package-import cycles and unqualified cross-package term ambiguities without changing diagnostic wire bytes. | §24.5 |
 | `CL-22` | `cli-api` | A host that embeds the library ends every child process group the library started and has not seen exit through the public function `lexlean::verify::end_live_children`, which installs no signal handler, alters no signal disposition, never signals the host's own process or group, reports each group as ended, already gone, or failing with the OS error, and refuses a later child start with LLV7018 until the host re-enables it, and the `lexlean` executable ends its interrupted children through the same function. | §17.17, §24.6 |
 | `CL-23` | `cli-api` | lexlean production targets prints the canonical target-descriptor document in either output mode, production build --request publishes the bundle its request names and reports the bundle and the project's source, semantic, build, and attestation IDs in its command result, production verify-artifact replays a bundle with no project, and each maps a malformed request, a refused request, and a rejected replay to the exact exit code of its registered class. | §24.7 |
+| `CL-24` | `cli-api` | lexlean migrate --to 1.2 migrates a language-1.1 data-form project to language 1.2 in one command: it rewrites every module to the authoring notation through lexlean::sdk::to_notation with the same declarations, names, statements, and axiom policies, moves the builtin glossary references of every source and the imports of every path lexicon package to 1.2.0, rewrites the language row, and regenerates the lock as lexlean/lock/2, so the result checks, has a current lock, and is canonical; --check proves the migration and writes nothing; and a project that is not language 1.1 is refused with LLC0103 and a module that is not a language-1.1 data-form semantic module, a data form that is not canonical JSON included, with LLP2003, each leaving every file of the project unchanged. | §17.12, §23.4 |
 | `SE-01` | `security` | Source, package, workspace, resource, and output paths are confined and symlinks are rejected. | §25.1 |
 | `SE-02` | `security` | Special files, duplicate filesystem identities, and case-fold collisions are rejected before processing. | §25.1 |
 | `SE-03` | `security` | All child processes use direct executable and argv invocation with no shell. | §25.2 |
@@ -10838,6 +10956,8 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SP-22` | `preservation` | Each authored item of the core runtime is in one of two sets: the refined functions are the functions the language-1.2 module `RustRuntime` defines, each of which names a runtime item, and the module holds for each a theorem `refines_<function>` stating, for all arguments of the function's parameter types, that the declared Rust semantics' run of the function in the module's core crate equals the run of the runtime item of the same name; the support items are the items of the module `RuntimeSupport`, each of a closed kind listed in SPEC.md §17.16 (a `use`, a unit struct, a type alias, a static, a trait, an impl, or a function), where a function is held by the counted-work gate if it is `tick` or `work` and by the theorems of `SP-25` if it is `equal` or `compare`; the pinned Lean accepts each refinement theorem with exactly the axioms its policy states, the set of theorems equals the set of functions the module defines, and a theorem for a function the module does not define, a function without a theorem, a function whose body is changed to another result, an authored function that names no runtime item, and a support function in neither set are each refused. | §17.16 |
 | `SP-23` | `preservation` | The declared Rust machine states the natural and integer arithmetic of the runtime's scalar functions with an overflow a body can observe: RustSyntax declares machine primitives for the checked sum and product of two naturals and the checked sum, difference, product, negation, and quotient of integers, each evaluated by RustSemantics as the calculus primitive of the same name, as `Some` of its value or as `None` when that primitive overflows, and for the difference and quotient of two naturals, which cannot overflow and are the primitive's value, which the pinned Lean evaluates on the boundary values of the widths and refuses to evaluate to a wrong value. | §17.14, §17.16 |
 | `SP-25` | `preservation` | The dispatch of the runtime's trait methods and the meaning of `equal` and `compare` are stated and checked: the declared semantics of `RuntimeSyntax` (`RuntimeSemantics`) evaluates a method call by finding, among the impls a crate declares, the one whose self type the receiver value has, and the module `RuntimeSupport` holds, for each value of the core profile's predicate that the calculus types as the arguments of `equal` (a Boolean, a natural, a fixed width, an `Ordering`) and of `compare` (a Boolean, a natural, an integer, a fixed width, and a pair of two of those), where a natural is a `u64` and an integer an `i64` in the generated Rust and so is dispatched to the impl of that width, a theorem that the evaluation of `equal` or of `compare` in `supportCrate` equals the calculus primitive of the same name on the same values; the theorems are exactly those the predicate calls for, a set the case computes from the predicate and does not read from the module, the pinned Lean accepts each with exactly the axioms its policy states, and an impl that returns another result, an impl that is missing for a value of the predicate, a value of the predicate without a theorem, a theorem for a value outside it, and a theorem that states another primitive are each refused; a pair of pairs, which the calculus's orderable types also admit, is a value of the predicate that this row does not prove, because each pair level spends fuel of the declared semantics and an induction over the depth needs arithmetic on that fuel under a symbolic depth that the proof language does not have, and the evidence for those values is the differential of `RB-17` over seeded nested keys of depth two and three, which is validation and never a proof. | §17.16 |
+| `SP-26` | `preservation` | The memory a runtime buffer lives in is modelled and its laws are kernel-checked: the module `RustMemory` of the compiler project (language 1.2, over the calculus's values) models a buffer as index-addressed slots, whose number is its capacity, and a length, with the write `put`, the guard `lessThan len (size slots)` of a push (`bufPush`), the guarded read `bufGet`, the truncation `bufTruncate`, and a window (`Window`, `subWindow`), and the pinned Lean accepts a theorem, with exactly the axioms its policy states, for each of these laws, the set the case lists and does not read from the module: a write never changes the number of slots (`size_put`); a write is read back at its own index when that index is a slot (`get_put_same`) and leaves every slot below it (`get_put_below`) and above it (`get_put_above`) as it was; a new buffer has the capacity it was asked for, every slot holding the fill (`size_blank`, `get_blank`); a buffer whose length is its capacity has no room, so that its push is refused and writes nothing (`no_room_at_capacity`, `push_at_capacity`), and one with a slot at its length has room and the write lands in that slot with the length one more (`room_before_slot`, `push_lands_in_slot`, `put_in_slot`, `push_with_room`); a truncated length admits the indices below both the new and the old length (`below_truncated`, `get_truncated`); the offsets of a window of a window add, and its count is the least of the count asked for and what its parent has left after the skip (`plus_assoc`, `window_of_window`, `window_count`); a write that lands elsewhere, a write that drops a slot, an order of indices that is reversed, a push that adds two to the length, a theorem for another function, and a missing theorem are each refused; that the runtime's `Vec` and slices behave as the model is the evidence of the differential and of the pinned rustc and is not claimed here. | §17.17 |
+| `SP-27` | `preservation` | The representation of a list in the runtime is modelled and its abstraction theorems are kernel-checked: the module `RustLists` of the compiler project (language 1.2, on the buffers of `RustMemory` and over the calculus's values) models a list as the cells in front of it and a run, the first slots of a buffer in a store addressed by position, and reads it back as the list of the calculus, and the pinned Lean accepts, with exactly the axioms its policy states, a theorem for each of these laws, the set the case lists and does not read from the module: the in-place cons of a buffer with room, which truncates the buffer to the run and pushes through the push of `RustMemory`, reads back as the item before the old list (`cons_in_place`), closed from `min_keeps_run`, `room_before_slot` and `put_run_abs`, the other pieces of it being stated apart, the same read where the slot is there and the choice of the in-place write by the holders (`push_run_abs`, `walk_cons`, `inplace_view`, `cons_view`), a refused push is a push at capacity (`full_is_capacity`), a grown buffer has room and keeps the slots it had (`grow_run_abs`, `room_after_growth`, `grown_has_room`), and the truncation to a run keeps the run of a buffer at least as long (`min_keeps_run`, `truncate_keeps_run`); the first cons onto the empty list writes a buffer of length one and capacity sixteen, the item and fifteen blank slots behind it as the runtime reserves, at the length of the store, and leaves the buffers before it as they were (`alloc_capacity`, `alloc_length`, `walk_alloc`, `alloc_frame`, `cons_alloc_view`, `cons_alloc_store`); a cons onto a cell, or onto a run that another handle holds, reads as the item before the old list and writes no buffer (`cons_cell_view`, `cons_cell_store`, `cons_shared_view`, `cons_shared_store`, and `cons_held_store` for a holder among the other handles); the uncons of a cell, of the last element of a run, and of any other run is the head and the list the rest reads as (`run_uncons_abs`, `run_last_abs`, `walk_uncons`, `walk_uncons_last`, `uncons_cell_abs`, `uncons_cell_taken`, `uncons_run_abs`, `uncons_run_taken`, `uncons_last_abs`, `uncons_last_taken`); a write to the buffer at one address is read through that address and through no other (`cons_frame`, `inplace_frame`); a handle holds a buffer exactly when its run is on the buffer's address, so that a holder blocks the in-place write and a handle on another buffer, above or below, does not hold it and does not block (`same_with_itself`, `holder_on_own_buffer`, `holder_without_run`, `apart_above`, `apart_below`, `holds_apart_above`, `holds_apart_below`, `own_blocks`, `others_allow_above`, `others_allow_below`, `holder_blocks`, `holder_elsewhere_above`, `holder_elsewhere_below`); and releasing a chain of cells one cell at a time ends within as many steps as the chain has cells, needs a step for each cell of a chain nobody else holds, and takes one step for each (`release_ends`, `release_one_short`, `release_needs_fuel`, `release_one_cell`); a cons that writes the wrong slot, an uncons that reads the wrong slot, a shared run written in place, a write that reaches the next buffer, a release given a step too few, a growth that drops the slots, a fresh buffer that is not at the length of the store, a fresh buffer short of the capacity of sixteen, a refusal that is the opposite of the capacity, a holder that does not block the write, a theorem for another function, and a missing theorem are each refused; that the runtime's `Rc`, `Vec`, and `List` behave as the model is the evidence of the differential and of the pinned rustc and is not claimed here. | §17.17 |
 | `MD-01` | `models` | Language 1.2 artifact, contract, realization, evidence, and model declarations, the checked_apply term, the contract_violation type, and the less_than primitive belong to the closed lexlean/semantic-module/2 schema and its snapshot schema, are rejected under language 1.1 before either backend runs, and admit no member outside the closed schema, such as prompt text, a free-form description, or raw model configuration. | §17.12 |
 | `MD-02` | `models` | A model artifact is admitted only from a configured, content-addressed, confined project file whose SHA-256 and byte length equal its declaration and whose bytes decode under its declared closed schema to its declared type and role; a missing artifact or a digest or length mismatch fails with LLR3007, a schema, type, or role violation fails with LLR3008, and the generated Lean embeds the exact bytes with a kernel-checked theorem that the typed value is their decoding. | §17.12, §10.1, §26.3 |
 | `MD-03` | `models` | A contract names typed input, output, and optional state interfaces and prior proposition-valued predicates of exactly those interface signatures, and each runtime validator is an executable Boolean definition of the same signature linked to its predicate by a statement-exact soundness theorem and an optional completeness theorem that Lean restates against the fixed model semantics; any mismatch fails with LLT4006. | §17.12 |

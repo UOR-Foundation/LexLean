@@ -4803,6 +4803,10 @@ pub fn run(id: &str) {
         "SP-22" => super::rust_refinement::run(id),
         // §17.16: the meaning of the runtime's trait methods.
         "SP-25" => super::runtime_semantics::run(id),
+        // §17.16: the memory of a runtime buffer.
+        "SP-26" => super::rust_memory::run(id),
+        // §17.16: the representation of a list.
+        "SP-27" => super::rust_lists::run(id),
         "SP-23" => {
             let syntax = support::module_json(
                 &std::fs::read_to_string(
