@@ -25,6 +25,7 @@ mod latex_pdf;
 mod lean_backend;
 mod lexical_closure;
 mod lexicon;
+mod migration;
 mod models;
 mod operational;
 mod oracle;
