@@ -110,7 +110,7 @@ fn enc_args(args: &[Expr]) -> Value {
 }
 
 /// A block (11): lets as a chain of `ELet`, then the tail.
-fn enc_block(block: &Block) -> Value {
+pub(super) fn enc_block(block: &Block) -> Value {
     let lets = block
         .lets
         .iter()
@@ -242,7 +242,7 @@ pub(super) fn enc_expr(expr: &Expr) -> Value {
 }
 
 /// `Par`: nil, cons (pattern, type, the rest).
-fn enc_params(parameters: &[(Pat, ast::Type)]) -> Value {
+pub(super) fn enc_params(parameters: &[(Pat, ast::Type)]) -> Value {
     parameters
         .iter()
         .rev()

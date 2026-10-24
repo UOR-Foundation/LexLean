@@ -7,6 +7,9 @@
     "bootstrap-succeed": [
       "BS-12"
     ],
+    "bootstrap-loops": [
+      "BS-13"
+    ],
     "bootstrap-check": [
       "BS-04"
     ],

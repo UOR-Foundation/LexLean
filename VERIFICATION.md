@@ -10302,14 +10302,14 @@ the budget the case asserts is 5,505,024, 87.5%):
 
 | Root | Part A | Part B | Part E |
 | --- | ---: | ---: | ---: |
-| `useTrees` | 3,144,977 | 3,039,538 | 121,053 |
-| `lowerFrame` | 1,223,239 | 1,084,324 | 134,226 |
-| `lowerBodies` | 5,327,163 (84.7%) | 4,236,363 | 291,583 |
-| `foldBodies` | 356,763 | 236,561 | 130,927 |
+| `useTrees` | 3,145,029 | 3,039,538 | 121,053 |
+| `lowerFrame` | 1,223,291 | 1,084,324 | 134,226 |
+| `lowerBodies` | 5,328,431 (84.7%) | 4,235,313 | 293,138 |
+| `foldBodies` | 356,815 | 236,561 | 130,927 |
 
 The export of the four roots took 31 min 44 s. `lowerBodies` is beyond the 75%
 of `max_file_bytes` that issue 92 sets for the typing roots registered after
-#259, by 608,571 bytes: the lowering of terms is one recursion family (each kind
+#259, by 609,839 bytes: the lowering of terms is one recursion family (each kind
 of term lowers through the same operands, the same choice for a conditional or
 a match, and the same arms, with the fresh names threaded through all of
 them) and the smallest cut that any vector reaches, so the row states the
@@ -10407,6 +10407,68 @@ merges a block into the block around it), and its plant was undetected on all
 composition agrees with the oracle on all of these as well. (3) The counts of
 the earlier rows move with the package of this root and are recounted by the
 maintainer at the landing.
+
+`BS-13` holds the production root of `LexLeanBoot.RustLoops`
+(`bootstrap/src/RustLoops.lex.tex`), `tail::looped` of the Rust lowering, to the
+Function items of the crate that `rust::lower` returns, by composition and one
+function at a time: the terms from the counter of the fresh names (the root of
+`BS-11` with its new counter), `succeed`, the fold, and `loopFunction`, which
+returns the counter after the names it took; the next function starts there.
+The items so made are given to `applyMoves` and compared with the oracle's. The
+programs are those in which `rust::lower` succeeds and some function loops: 88
+vectors (43 within the 300 nodes the evaluator is given) of the rules of the
+earlier rows, `BS-04`, the committed programs, and four rules of this row (a
+function with a tail self call and a self call in a binding, a condition, or the
+scrutinee of a match, and a function with a parameter nothing reads, each beside
+a countdown that loops), and 107 seeded mutants drawn 3,000 times from the
+smaller committed programs (87 vectors without the package of this root).
+`loopFunction` says of each function that it loops exactly when
+`calculus::rust::loops` does, and the case fails where the two disagree. On the
+normative host the evaluator agrees on the vectors and the mutants (the
+composition took 115 s), the rendered package agrees with the evaluator on 328
+runs under the pinned rustc (two harness binaries built in 10.0 s), and twelve
+planted defects in the source are each detected; the case up to the comparison
+with the committed packages takes 2,270 s on this host (4 cores) and stops there
+on this tree, the package `loop_function`, the stack row, the locks, and the
+committed records being the maintainer's.
+
+Measured certificate of `loopFunction` (bytes; the limit `max_file_bytes` is
+6,291,456 and the budget the case asserts is 3,145,728): part A 744,534 (the
+largest, 11.8% of the limit), part B 623,883, part E 160,793; the export took
+30 min 32 s.
+
+Each of twelve plants is made on a copy of `bootstrap/src/RustLoops.lex.tex` on
+every run and is caught by the oracle; the vector is the index among the
+vectors, then the mutants:
+
+- **a call to the function itself is not found by name**, vector 3.
+- **a binding that calls the function does not stop the loop**, vector 39.
+- **a parameter passed on as a clone is a change**, vector 0.
+- **the type of the state is nested to the left**, vector 0.
+- **the pattern of the state is nested to the left**, vector 0.
+- **a renamed parameter takes the name of the holder**, vector 0.
+- **the counter after the loop is one short**, vector 0.
+- **the else-branch of a conditional is not retargeted**, vector 0.
+- **the arms after the first are not retargeted**, vector 0.
+- **the next state is read from the second argument**, vector 1.
+- **a parameter every call passes on is part of the state**, vector 0.
+- **a function with a parameter no pattern binds still loops**, vector 42.
+
+Findings. (1) The loop and the terms share one counter, so the pass could not be
+held to the oracle as a function of one body: `lowerBodies` of `BS-11` now takes
+the counter its numbering starts from and returns the one after its bodies (a
+structure of the bodies and the counter, where it returned the bodies), and the
+cases of `BS-11` and `BS-12` pass 0. The certificate of `lowerBodies` moves by
+the parameter, from 5,327,163 to 5,328,431 bytes for part A (the figures of `BS-11`
+above are those of this tree). (2) Three guards of the oracle were in the first draft and had
+no vector that reaches them, with plants undetected on the vectors, the
+mutants, and the four rules written to reach them: that the condition of a
+conditional does not call the function, that the scrutinee of a match does not,
+and the handling of a block that is itself a tail. They are removed rather than
+claimed. A guard that only repeats a later one (a function with no tail self
+call is refused again by the absence of a changed parameter) has no plant that
+could detect it, and is kept with no plant. (3) The counts of the earlier rows move with the
+package of this root and are recounted by the maintainer at the landing.
 
 ## The `bdd` recipe as the parts of one run (Issue #131)
 

@@ -436,7 +436,7 @@ and Unreleased holds what has landed since.
   `Lowering::expr` and `fold` do, held to the Function items of `rust::lower`
   by composition with `applyMoves`, to the byte, on 156 vectors and 320 seeded
   mutants; no file of the renderer changes. The largest certificate part is
-  5,327,163 bytes (`lowerBodies`), 84.7% of `max_file_bytes`. The bootstrap
+  5,328,431 bytes (`lowerBodies`), 84.7% of `max_file_bytes`. The bootstrap
   project configures `max_child_output_bytes = 33554432`, the Lean extraction
   of `RustBodies` writing more than 16,777,216 bytes. Certificate B refuses a
   match arm that returns a binder of the matched type (#310). The register is
@@ -450,6 +450,16 @@ and Unreleased holds what has landed since.
   vectors and 166 seeded mutants; no file of the renderer changes. Its
   certificate part is 648,077 bytes, 10.3% of `max_file_bytes`. The register is
   459 IDs.
+- A function whose self calls are all tail calls, rendered as a loop, as
+  language-1.2 source (SPEC.md §17.23, §17.16, `BS-13`, #92; no new diagnostic
+  code, no change to the language-1.2 identity). `loopFunction` of `RustLoops`
+  ports `tail::looped`, held to the Function items of `rust::lower` by
+  composition with the roots of `BS-11` and `BS-12` and `applyMoves`, function
+  by function with the counter of the fresh names, to the byte, on 88 vectors
+  and 107 seeded mutants; `lowerBodies` takes that counter and returns the one
+  after its bodies. No file of the renderer changes. The certificate part of
+  `loopFunction` is 744,534 bytes, 11.8% of `max_file_bytes`. The register is
+  460 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or

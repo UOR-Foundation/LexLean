@@ -13,7 +13,7 @@
 use serde_json::Value as Json;
 
 use super::calculus_check::committed;
-use super::rust_bodies::{composed, drawn, programs, vector_in, Vector};
+use super::rust_bodies::{composed, drawn, lower_bodies, programs, vector_in, Mode, Vector};
 use super::Run;
 use crate::production_export as harness;
 use crate::support;
@@ -53,9 +53,7 @@ impl Roots {
     /// The bodies before `succeed`, after it, and after the fold.
     fn run(&self, vector: &Vector) -> (Json, Json, Json) {
         let frame = super::evaluate_once(&self.frame, &vector.frame);
-        let mut arguments = vector.bodies.clone();
-        arguments.push(serde_json::from_value(frame).expect("a value"));
-        let bodies = super::evaluate_once(&self.bodies, &arguments);
+        let (_, bodies, _) = lower_bodies(&self.bodies, &vector.bodies, &frame, 0);
         let mut arguments = vector.succeed.clone();
         arguments.push(serde_json::from_value(bodies.clone()).expect("a value"));
         let succeeded = super::evaluate_once(&self.succeed, &arguments);
@@ -207,7 +205,7 @@ pub(super) fn case() {
         &["allocation", "overflow", "recursion"],
     );
     let sources = committed();
-    let overflowing = |program: &lexlean::calculus::Program| vector_in(program, true);
+    let overflowing = |program: &lexlean::calculus::Program| vector_in(program, Mode::Overflowing);
     let all: Vec<Vector> = programs(&sources).iter().filter_map(overflowing).collect();
     let within: Vec<&Vector> = all
         .iter()

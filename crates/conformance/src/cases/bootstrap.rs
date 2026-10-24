@@ -22,6 +22,7 @@ use crate::support::{self, P};
 
 mod runtime_validate;
 mod rust_bodies;
+mod rust_loops;
 mod rust_lower;
 mod rust_moves;
 mod rust_print;
@@ -2445,6 +2446,7 @@ fn case(id: &str) {
         "BS-10" => rust_terms::case(),
         "BS-11" => rust_bodies::case(),
         "BS-12" => rust_succeed::case(),
+        "BS-13" => rust_loops::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }

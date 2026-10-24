@@ -2746,10 +2746,11 @@ definition{
     uses : CalculusCheck::Ty,
     dead : (List Bool),
     fallible : (List Bool),
-    frame : Frame
+    frame : Frame,
+    start : Nat
   ],
-  result: RustAst::Expr,
-  body: (let program : CalculusCheck::Program := (record CalculusCheck::Program {spec := spec, adts := adts, parameters := parameters, types := types, results := results, bodies := bodies}); (let ctx : Ctx := (record Ctx {program := program, known := (project frame known), edges := (project frame edges), adts := adts, types := types, results := results, fallible := fallible, ordered := (project frame ordered), inhabited := (project frame inhabited)}); (project (driveBodies ctx bodies sites uses dead 0 0) expr))),
+  result: Lowered,
+  body: (let program : CalculusCheck::Program := (record CalculusCheck::Program {spec := spec, adts := adts, parameters := parameters, types := types, results := results, bodies := bodies}); (let ctx : Ctx := (record Ctx {program := program, known := (project frame known), edges := (project frame edges), adts := adts, types := types, results := results, fallible := fallible, ordered := (project frame ordered), inhabited := (project frame inhabited)}); (driveBodies ctx bodies sites uses dead 0 start))),
   axioms: [Quot.sound, propext],
   executable: true,
   production: {effects: [allocation, overflow, recursion], targets: [rust-std]}

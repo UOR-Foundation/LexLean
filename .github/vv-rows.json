@@ -90,6 +90,15 @@
     "hints": ""
   },
   {
+    "part": "bdd-bootstrap-loops",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-loops",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
     "part": "bdd-bootstrap-terms",
     "recipes": "bdd",
     "examples_part": "",

@@ -73,29 +73,45 @@ pub(super) struct Vector {
     /// The arguments of `succeedBodies` before the bodies: the result types
     /// and the functions that can overflow.
     pub(super) succeed: Vec<Value>,
+    /// The functions the analysis finds dead, and those that loop.
+    pub(super) dead: Vec<bool>,
+    pub(super) loops: Vec<bool>,
+}
+
+/// Which programs a row holds: the passes that a program reaches decide it.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum Mode {
+    /// No function can overflow and none loops.
+    Plain,
+    /// Some function can overflow and none loops.
+    Overflowing,
+    /// Some function loops.
+    Looping,
 }
 
 /// A program is a vector when the oracle lowers it and no pass this row does
 /// not carry changes its bodies.
 fn vector(program: &Program) -> Option<Vector> {
-    vector_in(program, false)
+    vector_in(program, Mode::Plain)
 }
 
-/// [`vector`], for the programs in which a function can overflow when
-/// `overflowing` and for the others when not: `succeed` is the row after this
-/// one, and it needs a program that reaches it.
-pub(super) fn vector_in(program: &Program, overflowing: bool) -> Option<Vector> {
+/// [`vector`] for the programs `mode` holds: a pass is a row of its own, and
+/// a row needs programs that reach it.
+pub(super) fn vector_in(program: &Program, mode: Mode) -> Option<Vector> {
     let krate = rust::lower(program, Profile::Std).ok()?;
     let fallible = rust::fallible_functions(program).ok()?;
-    if fallible.contains(&true) != overflowing {
-        return None;
-    }
-    if program
+    let loops: Vec<bool> = program
         .functions
         .iter()
         .enumerate()
-        .any(|(position, function)| rust::loops(position as u64, function))
-    {
+        .map(|(position, function)| rust::loops(position as u64, function))
+        .collect();
+    let held = match mode {
+        Mode::Plain => !fallible.contains(&true) && !loops.contains(&true),
+        Mode::Overflowing => fallible.contains(&true) && !loops.contains(&true),
+        Mode::Looping => loops.contains(&true),
+    };
+    if !held {
         return None;
     }
     let (dead, _) = lowered(program)?;
@@ -105,7 +121,12 @@ pub(super) fn vector_in(program: &Program, overflowing: bool) -> Option<Vector> 
     let mut frame = base.clone();
     frame.extend([tree.clone(), flags(dead.clone())]);
     let mut bodies = base.clone();
-    bodies.extend([tree, enc_site(&used), flags(dead), flags(fallible.clone())]);
+    bodies.extend([
+        tree,
+        enc_site(&used),
+        flags(dead.clone()),
+        flags(fallible.clone()),
+    ]);
     let succeed = vec![base[4].clone(), flags(fallible)];
     let items = krate
         .items
@@ -122,6 +143,8 @@ pub(super) fn vector_in(program: &Program, overflowing: bool) -> Option<Vector> 
         bodies,
         items,
         succeed,
+        dead,
+        loops,
     })
 }
 
@@ -132,7 +155,7 @@ fn unit() -> Expr {
     }
 }
 
-fn natural(value: &str) -> Expr {
+pub(super) fn natural(value: &str) -> Expr {
     Expr::Value {
         ty: Ty::Nat,
         value: Value::Nat {
@@ -141,11 +164,11 @@ fn natural(value: &str) -> Expr {
     }
 }
 
-fn var(name: u64) -> Expr {
+pub(super) fn var(name: u64) -> Expr {
     Expr::Var { name }
 }
 
-fn function(parameters: Vec<(u64, Ty)>, result: Ty, body: Expr) -> Function {
+pub(super) fn function(parameters: Vec<(u64, Ty)>, result: Ty, body: Expr) -> Function {
     Function {
         parameters: parameters.iter().map(|(name, _)| *name).collect(),
         types: parameters.into_iter().map(|(_, ty)| ty).collect(),
@@ -154,7 +177,7 @@ fn function(parameters: Vec<(u64, Ty)>, result: Ty, body: Expr) -> Function {
     }
 }
 
-fn arm(shape: Shape, binders: Vec<u64>, body: Expr) -> Arm {
+pub(super) fn arm(shape: Shape, binders: Vec<u64>, body: Expr) -> Arm {
     Arm {
         shape,
         binders,
@@ -342,18 +365,45 @@ impl Roots {
         }
     }
 
-    /// The frame the analysis returns, the bodies before and after the fold.
-    fn run(&self, vector: &Vector) -> (Json, Json, Json) {
+    /// The frame the analysis returns, what `lowerBodies` returns, the bodies
+    /// in it, and the bodies after the fold.
+    fn run(&self, vector: &Vector) -> (Json, Json, Json, Json) {
         let frame = super::evaluate_once(&self.frame, &vector.frame);
-        let mut arguments = vector.bodies.clone();
-        arguments.push(serde_json::from_value(frame.clone()).expect("a value"));
-        let bodies = super::evaluate_once(&self.bodies, &arguments);
+        let (lowered, bodies, _) = lower_bodies(&self.bodies, &vector.bodies, &frame, 0);
         let folded = super::evaluate_once(
             &self.fold,
             &[serde_json::from_value(bodies.clone()).expect("a value")],
         );
-        (frame, bodies, folded)
+        (frame, lowered, bodies, folded)
     }
+}
+
+/// `lowerBodies` on `arguments` given the frame the analysis returned and the
+/// counter the fresh names continue from: what it returns, the bodies in it,
+/// and the counter after them.
+pub(super) fn lower_bodies(
+    root: &super::Lowered,
+    arguments: &[Value],
+    frame: &Json,
+    start: u64,
+) -> (Json, Json, u64) {
+    let mut given = arguments.to_vec();
+    given.push(serde_json::from_value(frame.clone()).expect("a value"));
+    given.push(super::calculus_check::nat(start));
+    let lowered = super::evaluate_once(root, &given);
+    let Value::Adt { mut fields, .. } = serde_json::from_value(lowered.clone()).expect("a value")
+    else {
+        panic!("lowerBodies returns a structure");
+    };
+    let Some(Value::Nat { value }) = fields.pop() else {
+        panic!("the counter after the bodies");
+    };
+    let bodies = fields.pop().expect("the bodies");
+    (
+        lowered,
+        serde_json::to_value(bodies).expect("a value is JSON"),
+        value.parse().expect("a counter"),
+    )
 }
 
 /// The runs of the evaluator on `vectors`: where the composed items differ
@@ -366,7 +416,7 @@ fn composition(
 ) -> Vec<String> {
     let mut out = Vec::new();
     for (at, vector) in vectors.iter().enumerate() {
-        let (_, _, folded) = roots.run(vector);
+        let (_, _, _, folded) = roots.run(vector);
         let (input, expected) = composed(vector, &folded);
         let disagreements = super::evaluate(moves, &[(input, expected)], 1);
         if let Some(first) = disagreements.into_iter().next() {
@@ -551,25 +601,27 @@ pub(super) fn case() {
     );
     // The rendered packages of the three roots agree with the evaluator on
     // the vectors: the realizations of one program.
-    let runs: Vec<(Json, Json, Json)> = within.iter().map(|vector| roots.run(vector)).collect();
+    let runs: Vec<(Json, Json, Json, Json)> =
+        within.iter().map(|vector| roots.run(vector)).collect();
     let as_run = |arguments: Vec<Value>, expected: &Json| -> Run { (arguments, expected.clone()) };
     let frame_runs: Vec<Run> = within
         .iter()
         .zip(&runs)
-        .map(|(vector, (frame, _, _))| as_run(vector.frame.clone(), frame))
+        .map(|(vector, (frame, _, _, _))| as_run(vector.frame.clone(), frame))
         .collect();
     let body_runs: Vec<Run> = within
         .iter()
         .zip(&runs)
-        .map(|(vector, (frame, bodies, _))| {
+        .map(|(vector, (frame, lowered, _, _))| {
             let mut arguments = vector.bodies.clone();
             arguments.push(serde_json::from_value(frame.clone()).expect("a value"));
-            as_run(arguments, bodies)
+            arguments.push(super::calculus_check::nat(0));
+            as_run(arguments, lowered)
         })
         .collect();
     let fold_runs: Vec<Run> = runs
         .iter()
-        .map(|(_, bodies, folded)| {
+        .map(|(_, _, bodies, folded)| {
             as_run(
                 vec![serde_json::from_value(bodies.clone()).expect("a value")],
                 folded,

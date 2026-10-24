@@ -81,6 +81,14 @@
       "version": "1.0.0"
     },
     {
+      "name": "loop_function",
+      "root": "LexLeanBoot.RustLoops.loopFunction",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "lower_bodies",
       "root": "LexLeanBoot.RustBodies.lowerBodies",
       "targets": [
