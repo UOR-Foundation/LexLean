@@ -3,7 +3,7 @@ name = "bootstrap"
 language = "1.2"
 module_prefix = "LexLeanBoot"
 source_roots = ["src"]
-entrypoints = ["src/AxiomOutput.lex.tex", "src/CalculusCheck.lex.tex", "src/PrimitiveScan.lex.tex", "src/RustAst.lex.tex", "src/RustPrint.lex.tex", "src/RustValidate.lex.tex", "src/TokenAudit.lex.tex"]
+entrypoints = ["src/AxiomOutput.lex.tex", "src/CalculusCheck.lex.tex", "src/PrimitiveScan.lex.tex", "src/RuntimeValidate.lex.tex", "src/RustAst.lex.tex", "src/RustPrint.lex.tex", "src/RustValidate.lex.tex", "src/TokenAudit.lex.tex"]
 build_root = ".lexlean"
 lockfile = "lexlean.lock"
 lean_workspace = "."
@@ -20,7 +20,7 @@ kind = "path"
 path = "stdlib"
 
 [limits]
-max_file_bytes = 4194304
+max_file_bytes = 6291456
 max_total_source_bytes = 67108864
 max_primitive_atoms = 2000000
 max_token_lattice_edges = 4000000

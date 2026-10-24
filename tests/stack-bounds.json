@@ -50,6 +50,9 @@
     },
     "bootstrap/validate_crate": {
       "debug": 5046272
+    },
+    "bootstrap/validate_runtime": {
+      "debug": 4259840
     }
   }
 }
