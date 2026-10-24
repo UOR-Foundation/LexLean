@@ -76,6 +76,9 @@
     "preservation-support": [
       "SP-25"
     ],
+    "preservation-prims": [
+      "SP-28"
+    ],
     "production": [
       "CL-01",
       "CL-03",

@@ -117,6 +117,15 @@
     "hints": ""
   },
   {
+    "part": "bdd-preservation-prims",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "preservation-prims",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
     "part": "bdd-preservation-runtime",
     "recipes": "bdd",
     "examples_part": "",
