@@ -1,6 +1,30 @@
 {
   "roots": [
     {
+      "name": "write_numbers",
+      "root": "LexLeanStd.Buffer.writeNumbers",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "write_each",
+      "root": "LexLeanStd.Buffer.writeEach",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "write_all",
+      "root": "LexLeanStd.Buffer.writeAll",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "starts_with",
       "root": "LexLeanStd.Text.startsWith",
       "targets": [
