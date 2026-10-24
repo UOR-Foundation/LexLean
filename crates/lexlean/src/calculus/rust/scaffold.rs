@@ -144,6 +144,9 @@ pub struct Scaffold {
     pub edition: String,
     /// Whether Cargo may publish the crate.
     pub publish: bool,
+    /// Where the package keeps its library: the path its `Cargo.toml` names
+    /// and the file the renderer writes.
+    pub library: String,
     /// The gate on rustc's lints.
     pub rustc: Vec<Gate>,
     /// The gate on Clippy's lints before any exception.
@@ -556,7 +559,7 @@ pub fn decode(source: &str) -> Result<Scaffold, String> {
     for (name, expected) in [
         ("Gate", vec!["lint", "level", "priority"]),
         ("LintRow", vec!["lint", "group", "reason"]),
-        ("Scaffold", vec!["edition", "publish"]),
+        ("Scaffold", vec!["edition", "publish", "library"]),
     ] {
         let structure = declared(name, "structure")?;
         let found = names(member(structure, "fields", name)?, name)?;
@@ -578,15 +581,16 @@ pub fn decode(source: &str) -> Result<Scaffold, String> {
         }
         member(definition, "body", name)
     };
-    let [edition, publish] = record_term(
+    let [edition, publish, library] = record_term(
         body("scaffold")?,
         "Scaffold",
-        ["edition", "publish"],
+        ["edition", "publish", "library"],
         "`scaffold`",
     )?;
     let scaffold = Scaffold {
         edition: string_term(edition, "`edition`")?,
         publish: bool_term(publish, "`publish`")?,
+        library: string_term(library, "`library`")?,
         rustc: gates(body("rustcGates")?, "`rustcGates`")?,
         clippy: gates(body("clippyGates")?, "`clippyGates`")?,
         allowed: list_term(body("allowedLints")?, "`allowedLints`", |row| {
@@ -685,7 +689,11 @@ impl Scaffold {
     /// may hold as text of its own.
     #[must_use]
     pub fn content(&self) -> Vec<String> {
-        let mut out = vec![self.edition.clone(), format!("publish = {}", self.publish)];
+        let mut out = vec![
+            self.edition.clone(),
+            format!("publish = {}", self.publish),
+            self.library.clone(),
+        ];
         for gate in self.rustc.iter().chain(&self.clippy) {
             out.push(gate.lint.clone());
             if gate.priority != 0 {

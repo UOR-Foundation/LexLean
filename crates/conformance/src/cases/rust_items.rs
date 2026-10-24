@@ -60,8 +60,11 @@ fn statements(text: &str) -> Result<Vec<Statement>, String> {
         let function = after(statement, "(RustSemantics::runExport 12 (")
             .and_then(|tail| after(tail, ") \""))
             .and_then(|tail| tail.split('"').next());
-        let stated = after(statement, "(RustSemantics::runItem (ctor RustSyntax::Profile.")
-            .map(|tail| (word(tail), after(tail, ") (ctor RustSyntax::Item.")));
+        let stated = after(
+            statement,
+            "(RustSemantics::runItem (ctor RustSyntax::Profile.",
+        )
+        .map(|tail| (word(tail), after(tail, ") (ctor RustSyntax::Item.")));
         let (Some(function), Some((profile, Some(item)))) = (function, stated) else {
             return Err(format!(
                 "`{theorem}` does not state the run of a function against a runtime item"
@@ -234,7 +237,12 @@ fn within(text: &str, name: &str, from: &str, to: &str) -> String {
         statement.contains(from),
         "`{name}`: the plant site is its statement"
     );
-    format!("{}{}{}", &text[..start], block.replacen(from, to, 1), &text[end..])
+    format!(
+        "{}{}{}",
+        &text[..start],
+        block.replacen(from, to, 1),
+        &text[end..]
+    )
 }
 
 /// Run the case of `SP-30`.

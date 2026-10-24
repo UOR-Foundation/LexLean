@@ -38,21 +38,36 @@ fn schema(name: &str) -> Json {
     .expect("schema JSON")
 }
 
-/// The source of each file of the renderer.
+/// The source of every file that prints Rust: each `.rs` file of
+/// `calculus/rust/`, the renderer's (`RENDERER_FILES`) and the runtime's
+/// (`rt.rs`, `rt_decode.rs`, `rt_validate.rs`) alike, so that a table parked
+/// in a file the renderer digest does not name is read as well.
 fn renderer_sources() -> Vec<(String, String)> {
-    rust::RENDERER_FILES
+    let directory = repo_root().join("crates/lexlean/src/calculus/rust");
+    let mut names: Vec<String> = std::fs::read_dir(directory.as_std_path())
+        .expect("the renderer directory")
+        .map(|entry| {
+            entry
+                .expect("an entry")
+                .file_name()
+                .to_string_lossy()
+                .into_owned()
+        })
+        .filter(|name| name.ends_with(".rs"))
+        .collect();
+    names.sort();
+    for named in rust::RENDERER_FILES {
+        assert!(
+            names.iter().any(|name| name == named),
+            "`{named}` is a file of the directory"
+        );
+    }
+    names
         .into_iter()
         .map(|name| {
-            (
-                name.to_owned(),
-                std::fs::read_to_string(
-                    repo_root()
-                        .join("crates/lexlean/src/calculus/rust")
-                        .join(name)
-                        .as_std_path(),
-                )
-                .expect("renderer source"),
-            )
+            let text = std::fs::read_to_string(directory.join(&name).as_std_path())
+                .expect("renderer source");
+            (name, text)
         })
         .collect()
 }
@@ -76,7 +91,7 @@ fn expected_cargo(scaffold: &Scaffold, name: &str, version: &str) -> String {
         format!("publish = {}", scaffold.publish),
         String::new(),
         "[lib]".to_owned(),
-        format!("path = \"{}\"", package::LIBRARY_PATH),
+        format!("path = \"{}\"", scaffold.library),
         String::new(),
         "[lints.rust]".to_owned(),
     ];
@@ -146,6 +161,9 @@ fn rb_10() {
         scaffold::get().expect("the embedded module"),
         "the module on disk is the one the compiler embeds"
     );
+    // The library path is the module's: a package keeps its library where the
+    // module says, and no renderer file holds the path as text (planted below).
+    assert_eq!(record.library, "src/lib.rs");
     // Armed: an empty module states nothing for the audit to protect.
     assert!(
         record.allowed.len() > 1 && record.content().len() > record.allowed.len(),
@@ -207,6 +225,32 @@ fn rb_10() {
             "validate.rs",
             "\nconst KEY: &str = \"[lints] priority = -1\";\n".to_owned(),
             "priority = -1".to_owned(),
+        ),
+        (
+            "package.rs",
+            format!("\nconst LIBRARY: &str = \"{}\";\n", record.library),
+            record.library.clone(),
+        ),
+        (
+            "rt.rs",
+            format!(
+                "\nconst HEADER: &str = \"#![forbid({})]\\n\";\n",
+                record.rustc[0].lint
+            ),
+            record.rustc[0].lint.clone(),
+        ),
+        (
+            "rt_decode.rs",
+            format!(
+                "\nconst KEY: &str = \"edition = \\\"{}\\\"\";\n",
+                record.edition
+            ),
+            record.edition.clone(),
+        ),
+        (
+            "rt_validate.rs",
+            format!("\nconst LINT: &str = \"{}\";\n", record.clippy[0].lint),
+            record.clippy[0].lint.clone(),
         ),
     ] {
         let mut planted_sources = sources.clone();
@@ -332,10 +376,14 @@ fn rb_10() {
     refused(
         scaffold::decode(&plant(
             &text,
-            "body: (record Scaffold {edition := \"2021\", publish := false})",
-            "body: (if true then (record Scaffold {edition := \"2021\", publish := false}) else (record Scaffold {edition := \"2021\", publish := false}))",
+            "body: (record Scaffold {edition := \"2021\", publish := false, library := \"src/lib.rs\"})",
+            "body: (if true then (record Scaffold {edition := \"2021\", publish := false, library := \"src/lib.rs\"}) else (record Scaffold {edition := \"2021\", publish := false, library := \"src/lib.rs\"}))",
         )),
         "is not a record",
+    );
+    refused(
+        scaffold::decode(&plant(&text, ", {name: library, type: String}", "")),
+        "`Scaffold` has the fields",
     );
     refused(
         scaffold::decode(&plant(&text, "edition := \"2021\"", "edition := \"20 21\"")),

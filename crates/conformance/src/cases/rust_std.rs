@@ -103,22 +103,50 @@ const LAWS: [(&str, &str, &[&str]); 32] = [
     ("join", "refines_join", &["runExport", "runItem"]),
     ("format_u8", "refines_format_u8", &["runExport", "runItem"]),
     ("parse_u8", "refines_parse_u8", &["runExport", "runItem"]),
-    ("format_u16", "refines_format_u16", &["runExport", "runItem"]),
+    (
+        "format_u16",
+        "refines_format_u16",
+        &["runExport", "runItem"],
+    ),
     ("parse_u16", "refines_parse_u16", &["runExport", "runItem"]),
-    ("format_u32", "refines_format_u32", &["runExport", "runItem"]),
+    (
+        "format_u32",
+        "refines_format_u32",
+        &["runExport", "runItem"],
+    ),
     ("parse_u32", "refines_parse_u32", &["runExport", "runItem"]),
-    ("format_u64", "refines_format_u64", &["runExport", "runItem"]),
+    (
+        "format_u64",
+        "refines_format_u64",
+        &["runExport", "runItem"],
+    ),
     ("parse_u64", "refines_parse_u64", &["runExport", "runItem"]),
     ("format_i8", "refines_format_i8", &["runExport", "runItem"]),
     ("parse_i8", "refines_parse_i8", &["runExport", "runItem"]),
-    ("format_i16", "refines_format_i16", &["runExport", "runItem"]),
+    (
+        "format_i16",
+        "refines_format_i16",
+        &["runExport", "runItem"],
+    ),
     ("parse_i16", "refines_parse_i16", &["runExport", "runItem"]),
-    ("format_i32", "refines_format_i32", &["runExport", "runItem"]),
+    (
+        "format_i32",
+        "refines_format_i32",
+        &["runExport", "runItem"],
+    ),
     ("parse_i32", "refines_parse_i32", &["runExport", "runItem"]),
-    ("format_i64", "refines_format_i64", &["runExport", "runItem"]),
+    (
+        "format_i64",
+        "refines_format_i64",
+        &["runExport", "runItem"],
+    ),
     ("parse_i64", "refines_parse_i64", &["runExport", "runItem"]),
     ("parse_int", "refines_parse_int", &["runExport", "runItem"]),
-    ("format_int", "refines_format_int", &["runExport", "runItem"]),
+    (
+        "format_int",
+        "refines_format_int",
+        &["runExport", "runItem"],
+    ),
 ];
 
 /// The harness: a prelude that builds lists of four shapes, then one section per
@@ -400,7 +428,11 @@ fn differential() {
         .expect("the generated runtime has format_int");
     let end = start + generated_std[start..].find("\n}\n").expect("its end");
     let body = &generated_std[start..end];
-    assert_eq!(body.matches("Str::format_i64(").count(), 1, "format_int calls format_i64 once");
+    assert_eq!(
+        body.matches("Str::format_i64(").count(),
+        1,
+        "format_int calls format_i64 once"
+    );
     let planted = format!(
         "{}{}{}",
         &generated_std[..start],
@@ -411,7 +443,10 @@ fn differential() {
         .expect_err("a format_int that formats another value has another transcript");
     eprintln!(
         "RB-20: a format_int that formats another value: {}",
-        error.lines().find(|line| !line.trim().is_empty()).unwrap_or_default()
+        error
+            .lines()
+            .find(|line| !line.trim().is_empty())
+            .unwrap_or_default()
     );
     assert!(
         error.contains("the transcript differs in: format_int"),
