@@ -54,6 +54,7 @@ mod std_packages;
 mod stdlib;
 mod stdlib_buffer;
 mod stdlib_sha256;
+mod text_models;
 mod tooling;
 mod typed_diagnostics;
 mod verification;

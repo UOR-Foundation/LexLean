@@ -61,11 +61,32 @@ Feature: language-models
     And the declaration kinds are unchanged and a false contract fails verification
 
   @LM-09 @build
-  Scenario: No prompt is code: no member of the closed language maps `string` or `bytes` to a function, a term, or source — every operation of the primitive registry that takes a `string` or `bytes` operand is classified by the audit with a data result, the registry's schema enumeration and the production registry's primitive rows equal one another and equal that classified set, and the text declarations of `lexlean/semantic-module/2` state no `string`-typed member, so a prompt reaches a model only as the tokens `encodeText` makes of it; a planted operation or text member of that shape is caught by the audit with its name.
-    Given the primitive registry, the production registry, and the text declarations of the closed schema
+  Scenario: No prompt is code: no member of the closed language maps `string` or `bytes` to a function, a term, or source — every operation of the primitive registry that takes a `string` or `bytes` operand is classified by the audit with a data result, the registry's schema enumeration and the production registry's primitive rows equal one another and equal that classified set, and the text declarations of `lexlean/semantic-module/2` state no `string`-typed member and neither do the `text_rows` of a production eligibility report, whose members are numbers, closed members, and qualified names, so a prompt reaches a model only as the tokens `encodeText` makes of it; a planted operation, text member, or report member of that shape is caught by the audit with its name.
+    Given the primitive registry, the production registry, the text declarations of the closed schema, and the text rows of the eligibility report
     When the audit classifies every operation that takes a `string` or `bytes` operand
     Then every one has a data result and the two registries agree
     And a planted operation or text member that maps a string to code is caught by name
+
+  @LM-10 @build
+  Scenario: Text components are produced as ordinary executable language-1.2 definitions: a production root whose runtime closure reaches a tokenizer, a context window, a text generator, or a text classifier is eligible for `rust-std`, admitting the effects `allocation`, `overflow`, and `recursion`, and is refused for `rust-core` with `LLT4005` because strings and bytes allocate; every library function an elaboration applies has a production form in `LexLeanStd.TextModels` related to it by a kernel-checked equality, so that the generated laws are proved of the realized definitions; the eligibility report records in `text_rows`, one row per text component the closure reaches, its closed nondeterminism contract — its scheme or disposition, its bound, its policy, and for `sample` the closed generator and distribution and the positions of the seed and of the next seed, and for `greedy` that it takes no seed — and the generated laws that state the bound, with no member of type `string`; and the `rust-std` rendering of a text root agrees with its oracle on the differential and satisfies certificates A, B, and E.
+    Given a root that reaches each kind of text component, built for `rust-std` and for `rust-core`
+    When its eligibility, its report, its differential and its certificates are checked
+    Then the root is eligible on `rust-std` with a row per component and refused on `rust-core` with `LLT4005`
+    And a rendering that drops a token of a kept window disagrees with its oracle
+
+  @LM-11 @build
+  Scenario: `examples/text-models` is a language-1.2 project that builds, verifies, and produces through the real pipeline a longest-match and a byte-level tokenizer, a window of each overflow disposition, a greedy and a sampled text generator, and a classifier of each tokenizer, each with a production root, with the records of that run under `expected/`; a token outside the vocabulary and a context that overflows the refusing window are answered `none` by their roots, a vocabulary artifact that is not UTF-8 is refused at check and a changed artifact byte with `LLR3007`, and a planted mutation of the scorer is refused by the example's kernel-evaluated facts.
+    Given the end-to-end text-model example and its negatives
+    When the example is built, verified and produced, and its negatives and a planted mutation are run
+    Then every record under `expected/` is reproduced and every negative is answered or refused as stated
+    And the mutated scorer is refused by the kernel-evaluated facts
+
+  @LM-12 @build
+  Scenario: Every fixed name of the text-laws library is reached: each name of `text_laws::names::ALL` occurs, as a whole word, in the Lean generated for the main module of `examples/text-models`, or in the type or value of a library declaration reached that way, transitively; the audit measures textual reach on that one example, and neither the realization of a function nor the kernel evaluation of one nor the application of a lemma by a particular proof, and a name that is not reached fails the audit with its name and its kind, function or lemma, as dead library.
+    Given the library's fixed names and the Lean generated for the main module of the example
+    When the coverage audit follows every name through the library declarations that name it
+    Then each fixed name is reached
+    And a name that is not reached is named by the audit as dead library
 
   @LM-13 @build
   Scenario: The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text.

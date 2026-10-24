@@ -40,6 +40,18 @@ pub const PREFIX: &str = "LexLeanText";
 /// declaration's elaboration adds to a generated module.
 pub const LAWS_MODULE: &str = "LexLeanText.LexLeanText";
 
+/// The module of the standard library that holds the production form of
+/// every library function an elaboration applies (SPEC.md §17.12). A module
+/// that declares a text component imports it by writing the import itself,
+/// and its project lists the `std` source package.
+pub const PRODUCTION_MODULE: &str = "LexLeanStd.TextModels";
+
+/// The modules of the language-1.2 runtime library the laws library imports
+/// (SPEC.md §17.12): the production forms' bridges state the runtime's checked
+/// conversions and collections as the production forms apply them, so the
+/// library names them, and nothing else outside `Init` and itself.
+pub const RUNTIME_IMPORTS: [&str; 2] = ["LexLeanRuntime.Portable", "LexLeanRuntime.Collections"];
+
 /// The import line a generated module carries for the laws module.
 pub const IMPORT_LINE: &str = "public import LexLeanText.LexLeanText";
 
@@ -138,6 +150,139 @@ pub mod names {
     /// The generator's `context_bounded` law under `sample`.
     pub const GENERATE_SAMPLE_GUARDED_LAW: &str = "generateSample_guarded";
 
+    /// The production `admitRefuse` equals the library's, given `fits` and its defining equation.
+    pub const ADMIT_REFUSE_BRIDGE: &str = "admitRefuse_bridge";
+    /// The production `admitKeepLast` equals the library's, given a `drop` with the equations of `List.drop`.
+    pub const ADMIT_KEEP_LAST_BRIDGE: &str = "admitKeepLast_bridge";
+    /// The production `pushRefuse` equals the library's, given the bridge of `admitRefuse`.
+    pub const PUSH_REFUSE_BRIDGE: &str = "pushRefuse_bridge";
+    /// The production `pushKeepLast` equals the library's, given the bridge of `admitKeepLast`.
+    pub const PUSH_KEEP_LAST_BRIDGE: &str = "pushKeepLast_bridge";
+    /// The window's `bounded` law of an admission under `refuse`, for any function equal to `admitRefuse`.
+    pub const ADMIT_REFUSE_BOUNDED_OF: &str = "admitRefuse_bounded_of";
+    /// The window's `bounded` law of an admission under `keep_last`, for any function equal to `admitKeepLast`.
+    pub const ADMIT_KEEP_LAST_BOUNDED_OF: &str = "admitKeepLast_bounded_of";
+    /// The window's `push_bounded` law under `refuse`, for any function equal to `pushRefuse`.
+    pub const PUSH_REFUSE_BOUNDED_OF: &str = "pushRefuse_bounded_of";
+    /// The window's `push_bounded` law under `keep_last`, for any function equal to `pushKeepLast`.
+    pub const PUSH_KEEP_LAST_BOUNDED_OF: &str = "pushKeepLast_bounded_of";
+    /// The window's `exact` law under `refuse`, for any function equal to `admitRefuse`.
+    pub const ADMIT_REFUSE_EXACT_OF: &str = "admitRefuse_exact_of";
+    /// The window's `exact` law under `keep_last`, for any function equal to `admitKeepLast`.
+    pub const ADMIT_KEEP_LAST_EXACT_OF: &str = "admitKeepLast_exact_of";
+    /// The window's `suffix` law under `keep_last`, for any function equal to `admitKeepLast`.
+    pub const ADMIT_KEEP_LAST_SUFFIX_OF: &str = "admitKeepLast_suffix_of";
+    /// The window's `refuses` law under `refuse`, for any function equal to `admitRefuse`.
+    pub const ADMIT_REFUSE_REFUSES_OF: &str = "admitRefuse_refuses_of";
+
+    /// The production `tokenId` counts to the library's `Nat.toUInt32` below `idBound`, given its step and the counting loop.
+    pub const TOKEN_ID_BRIDGE: &str = "tokenId_bridge";
+    /// The production `firstMaxGo` equals the library's, given its defining equations.
+    pub const FIRST_MAX_GO_BRIDGE: &str = "firstMaxGo_bridge";
+    /// The production `firstMax` equals the library's, given the bridge of `firstMaxGo`.
+    pub const FIRST_MAX_BRIDGE: &str = "firstMax_bridge";
+    /// The production `chooseGreedy` equals the library's, given the bridge of `firstMax`.
+    pub const CHOOSE_GREEDY_BRIDGE: &str = "chooseGreedy_bridge";
+    /// The production `admitWith` equals the library's `admit`, given the bridges of both admissions.
+    pub const ADMIT_WITH_BRIDGE: &str = "admitWith_bridge";
+    /// The production `pushWith` equals the library's `push`, given the bridges of both pushes.
+    pub const PUSH_WITH_BRIDGE: &str = "pushWith_bridge";
+    /// The production `genGo` equals the library's, given the bridges of `tokenId` and `pushWith`.
+    pub const GEN_GO_BRIDGE: &str = "genGo_bridge";
+    /// The production `generateWith` equals the library's, given the bridges of `admitWith` and `genGo`.
+    pub const GENERATE_WITH_BRIDGE: &str = "generateWith_bridge";
+    /// The production `generateGreedy` equals the library's, given the bridges of `generateWith` and `chooseGreedy`.
+    pub const GENERATE_GREEDY_BRIDGE: &str = "generateGreedy_bridge";
+    /// The generator's `bounded` law under `greedy`, for any function equal to `generateGreedy`.
+    pub const GENERATE_GREEDY_BOUNDED_OF: &str = "generateGreedy_bounded_of";
+    /// The generator's `context_bounded` law under `greedy`, for any function equal to `generateGreedy`.
+    pub const GENERATE_GREEDY_GUARDED_OF: &str = "generateGreedy_guarded_of";
+    /// The production `vocabSize` equals the library's, given its constant.
+    pub const VOCAB_SIZE_BRIDGE: &str = "vocabSize_bridge";
+    /// The tokenizer's `in_range` law under `longest_match`, for any size function equal to `vocabSize`.
+    pub const IN_RANGE_OF: &str = "in_range_of";
+    /// The tokenizer's `in_range` law under `byte_level`, for any size function equal to `vocabSize`.
+    pub const IN_RANGE_BYTES_OF: &str = "in_range_bytes_of";
+
+    /// The production `xorshift32` equals the library's.
+    pub const XORSHIFT32_BRIDGE: &str = "xorshift32_bridge";
+    /// The production seed read bit by bit as an `Int` is the seed's `Nat`.
+    pub const SEED_BITS_BRIDGE: &str = "seedBits_bridge";
+    /// The production `weight` is the library's, read as an `Int`.
+    pub const WEIGHT_BRIDGE: &str = "weight_bridge";
+    /// The production `totalWeight` is the library's, read as an `Int`.
+    pub const TOTAL_WEIGHT_BRIDGE: &str = "totalWeight_bridge";
+    /// The production `drawGo` over an `Int` remainder equals the library's over a `Nat`.
+    pub const DRAW_GO_BRIDGE: &str = "drawGo_bridge";
+    /// The production `proportional` equals the library's.
+    pub const PROPORTIONAL_BRIDGE: &str = "proportional_bridge";
+    /// The production `chooseSample` equals the library's.
+    pub const CHOOSE_SAMPLE_BRIDGE: &str = "chooseSample_bridge";
+    /// The production `generateSample` equals the library's.
+    pub const GENERATE_SAMPLE_BRIDGE: &str = "generateSample_bridge";
+    /// The generator's `bounded` law under `sample`, for any function equal to `generateSample`.
+    pub const GENERATE_SAMPLE_BOUNDED_OF: &str = "generateSample_bounded_of";
+    /// The generator's `context_bounded` law under `sample`, for any function equal to `generateSample`.
+    pub const GENERATE_SAMPLE_GUARDED_OF: &str = "generateSample_guarded_of";
+
+    /// The runtime's checked widening of a byte to a token is the token of that value.
+    pub const CONV_U8_U32: &str = "conv_u8_u32";
+    /// The production `byteToken` is the byte's value as a token.
+    pub const BYTE_TOKEN_BRIDGE: &str = "byteToken_bridge";
+    /// The production bytes-to-list conversion reads the bytes in order.
+    pub const BYTES_FROM_BRIDGE: &str = "bytesFrom_bridge";
+    /// The production token read bit by bit as a `Nat` is the token's value.
+    pub const NAT_BITS_BRIDGE: &str = "natBits_bridge";
+    /// The production `pieceBytes` equals the library's, given the conversion.
+    pub const PIECE_BYTES_BRIDGE: &str = "pieceBytes_bridge";
+    /// The production `pieceOf` equals the library's.
+    pub const PIECE_OF_BRIDGE: &str = "pieceOf_bridge";
+    /// The production `isPrefixOfBytes` equals the library's.
+    pub const IS_PREFIX_BRIDGE: &str = "isPrefixOfBytes_bridge";
+    /// The production `candidates`, over identifier-carrying entries, is the library's with each index read as its token.
+    pub const CANDIDATES_BRIDGE: &str = "candidates_bridge";
+    /// The production `bestPiece` is the library's with the index read as its token.
+    pub const BEST_PIECE_BRIDGE: &str = "bestPiece_bridge";
+    /// The production `dropBytes` is `List.drop`.
+    pub const DROP_BYTES_BRIDGE: &str = "dropBytes_bridge";
+    /// The production `encodeGo` equals the library's.
+    pub const ENCODE_GO_BRIDGE: &str = "encodeGo_bridge";
+    /// The production `encodeWith` equals the library's.
+    pub const ENCODE_WITH_BRIDGE: &str = "encodeWith_bridge";
+    /// The production `encodeBytes` equals the library's.
+    pub const ENCODE_BYTES_BRIDGE: &str = "encodeBytes_bridge";
+    /// The production `encodeText` equals the library's.
+    pub const ENCODE_TEXT_BRIDGE: &str = "encodeText_bridge";
+    /// The production `encodeTextBytes` equals the library's.
+    pub const ENCODE_TEXT_BYTES_BRIDGE: &str = "encodeTextBytes_bridge";
+    /// The production `decodeGo` equals the library's.
+    pub const DECODE_GO_BRIDGE: &str = "decodeGo_bridge";
+    /// The production `decodeWith`, building bytes from the table of all byte values, equals the library's.
+    pub const DECODE_WITH_BRIDGE: &str = "decodeWith_bridge";
+    /// The production `decodeText` equals the library's.
+    pub const DECODE_TEXT_BRIDGE: &str = "decodeText_bridge";
+    /// The round trip under `longest_match`, for any encoder and decoder equal to the library's.
+    pub const ROUNDTRIP_OF: &str = "roundtrip_of";
+    /// The round trip under `byte_level`, for any encoder and decoder equal to the library's.
+    pub const ROUNDTRIP_BYTES_OF: &str = "roundtrip_bytes_of";
+    /// The text round trip under `longest_match`, for any encoder and decoder equal to the library's.
+    pub const TEXT_ROUNDTRIP_OF: &str = "text_roundtrip_of";
+    /// The text round trip under `byte_level`, for any encoder and decoder equal to the library's.
+    pub const TEXT_ROUNDTRIP_BYTES_OF: &str = "text_roundtrip_bytes_of";
+
+    /// The production `countOf` equals the library's, given the token's value.
+    pub const COUNT_OF_BRIDGE: &str = "countOf_bridge";
+    /// The production `features` equals the library's.
+    pub const FEATURES_BRIDGE: &str = "features_bridge";
+    /// The classifier's `features_width` law, for any function equal to `features`.
+    pub const FEATURES_WIDTH_OF: &str = "features_width_of";
+    /// The classifier's `features_fit` law, for any fixed-width map and any features equal to the library's.
+    pub const FEATURES_FIT_BRIDGE_OF: &str = "features_fit_bridge_of";
+    /// The classifier's `features_total` law under `longest_match`, for any features, encoder and size equal to the library's.
+    pub const FEATURES_TOTAL_TEXT_OF: &str = "features_total_text_of";
+    /// The classifier's `features_total` law under `byte_level`, for any features, encoder and size equal to the library's.
+    pub const FEATURES_TOTAL_TEXT_BYTES_OF: &str = "features_total_text_bytes_of";
+
     /// `features : Nat -> List UInt32 -> List Int`, the count of each id
     /// below a size.
     pub const FEATURES: &str = "features";
@@ -151,13 +296,20 @@ pub mod names {
     pub const FEATURES_WIDTH: &str = "features_width";
     /// The classifier's `features_fit` law.
     pub const FEATURES_FIT: &str = "features_fit";
+    /// `features_fit` for any function equal to `fitWidth`, the form a
+    /// production form's bridge proves it through.
+    pub const FEATURES_FIT_OF: &str = "features_fit_of";
+    /// A `take` and a `zeros` that satisfy the equations of `List.take` and
+    /// `List.replicate n 0` make `take n xs ++ zeros (n - xs.length)`
+    /// `fitWidth n xs`, the bridge of `fitWidth`'s production form.
+    pub const FIT_WIDTH_OF: &str = "fitWidth_of";
     /// The classifier's `features_total` law under `longest_match`.
     pub const FEATURES_TOTAL_TEXT: &str = "features_total_text";
     /// The classifier's `features_total` law under `byte_level`.
     pub const FEATURES_TOTAL_TEXT_BYTES: &str = "features_total_text_bytes";
 
     /// Every name above, each of which the native module must declare.
-    pub const ALL: [&str; 47] = [
+    pub const ALL: [&str; 113] = [
         VOCAB_SIZE,
         ENCODE_WITH,
         ENCODE_BYTES,
@@ -197,12 +349,78 @@ pub mod names {
         GENERATE_SAMPLE_BOUNDED,
         GENERATE_GREEDY_GUARDED_LAW,
         GENERATE_SAMPLE_GUARDED_LAW,
+        ADMIT_REFUSE_BRIDGE,
+        ADMIT_KEEP_LAST_BRIDGE,
+        PUSH_REFUSE_BRIDGE,
+        PUSH_KEEP_LAST_BRIDGE,
+        ADMIT_REFUSE_BOUNDED_OF,
+        ADMIT_KEEP_LAST_BOUNDED_OF,
+        PUSH_REFUSE_BOUNDED_OF,
+        PUSH_KEEP_LAST_BOUNDED_OF,
+        ADMIT_REFUSE_EXACT_OF,
+        ADMIT_KEEP_LAST_EXACT_OF,
+        ADMIT_KEEP_LAST_SUFFIX_OF,
+        ADMIT_REFUSE_REFUSES_OF,
+        TOKEN_ID_BRIDGE,
+        FIRST_MAX_GO_BRIDGE,
+        FIRST_MAX_BRIDGE,
+        CHOOSE_GREEDY_BRIDGE,
+        ADMIT_WITH_BRIDGE,
+        PUSH_WITH_BRIDGE,
+        GEN_GO_BRIDGE,
+        GENERATE_WITH_BRIDGE,
+        GENERATE_GREEDY_BRIDGE,
+        GENERATE_GREEDY_BOUNDED_OF,
+        GENERATE_GREEDY_GUARDED_OF,
+        VOCAB_SIZE_BRIDGE,
+        IN_RANGE_OF,
+        IN_RANGE_BYTES_OF,
+        XORSHIFT32_BRIDGE,
+        SEED_BITS_BRIDGE,
+        WEIGHT_BRIDGE,
+        TOTAL_WEIGHT_BRIDGE,
+        DRAW_GO_BRIDGE,
+        PROPORTIONAL_BRIDGE,
+        CHOOSE_SAMPLE_BRIDGE,
+        GENERATE_SAMPLE_BRIDGE,
+        GENERATE_SAMPLE_BOUNDED_OF,
+        GENERATE_SAMPLE_GUARDED_OF,
+        CONV_U8_U32,
+        BYTE_TOKEN_BRIDGE,
+        BYTES_FROM_BRIDGE,
+        NAT_BITS_BRIDGE,
+        PIECE_BYTES_BRIDGE,
+        PIECE_OF_BRIDGE,
+        IS_PREFIX_BRIDGE,
+        CANDIDATES_BRIDGE,
+        BEST_PIECE_BRIDGE,
+        DROP_BYTES_BRIDGE,
+        ENCODE_GO_BRIDGE,
+        ENCODE_WITH_BRIDGE,
+        ENCODE_BYTES_BRIDGE,
+        ENCODE_TEXT_BRIDGE,
+        ENCODE_TEXT_BYTES_BRIDGE,
+        DECODE_GO_BRIDGE,
+        DECODE_WITH_BRIDGE,
+        DECODE_TEXT_BRIDGE,
+        ROUNDTRIP_OF,
+        ROUNDTRIP_BYTES_OF,
+        TEXT_ROUNDTRIP_OF,
+        TEXT_ROUNDTRIP_BYTES_OF,
+        COUNT_OF_BRIDGE,
+        FEATURES_BRIDGE,
+        FEATURES_WIDTH_OF,
+        FEATURES_FIT_BRIDGE_OF,
+        FEATURES_TOTAL_TEXT_OF,
+        FEATURES_TOTAL_TEXT_BYTES_OF,
         FEATURES,
         FIT_WIDTH,
         TOTAL,
         TOKEN_COUNT,
         FEATURES_WIDTH,
         FEATURES_FIT,
+        FEATURES_FIT_OF,
+        FIT_WIDTH_OF,
         FEATURES_TOTAL_TEXT,
         FEATURES_TOTAL_TEXT_BYTES,
     ];
@@ -375,7 +593,7 @@ fn checked(library: Library) -> Result<Library, String> {
 }
 
 /// Build the native library from the registry and the native sources it
-/// names: every module parsed, its imports closed over `Init` and the
+/// names: every module parsed, its imports closed over `Init`, the runtime library and the
 /// earlier library modules, its Lean generated, its declarations collected,
 /// and every name the elaboration applies found among them.
 fn build_native(
@@ -393,7 +611,10 @@ fn build_native(
         let core = crate::ir::core::CoreModule::from_source(&source, "1.2")
             .map_err(|reason| format!("{path}: {reason}"))?;
         for import in &core.imports {
-            if import != "Init" && !seen_modules.contains(import) {
+            if import != "Init"
+                && !RUNTIME_IMPORTS.contains(&import.as_str())
+                && !seen_modules.contains(import)
+            {
                 return Err(format!(
                     "{path}: imports `{import}`, which is neither `Init` nor an earlier library module"
                 ));

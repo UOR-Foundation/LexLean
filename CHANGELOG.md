@@ -17,6 +17,36 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- Production of text components, slice 4 of #30 (SPEC.md §17.12 *Text
+  components* rule 11, §17.13, §17.22, `LM-10`..`LM-12`; no new code). A
+  tokenizer, a context window, a text generator, and a text classifier are
+  `runtime` constructs: their elaborated definitions are executable and apply
+  production forms in `LexLeanStd.TextModels`, a new module of `std`, instead of
+  functions of the laws library. Each form is related to its library function by
+  a bridge the elaboration proves in the user module, and each library law has
+  an of-equality form whose bridge is a hypothesis, so the generated laws are
+  proved of the realized definitions and no proof variant was added. A module
+  that declares a text component imports `LexLeanStd.TextModels` explicitly and
+  its project lists `std`; without either the declaration is refused naming the
+  import. A root that reaches one is eligible for `rust-std` (effects
+  `allocation`, `overflow`, `recursion`) and refused for `rust-core`
+  (`LLT4005`), and its eligibility report carries `text_rows`, one row per
+  component with its scheme or disposition, bound, policy, and for `sample`
+  the generator, distribution, and the positions of the seed and of the next
+  seed. The four `declaration.*` text rows of `language/production-1.2.toml`
+  move from `formal-only` to `runtime`, which moves the compiler-semantics
+  identity; every language-1.2 record is regenerated once on the merged line.
+  The text-laws library imports `LexLeanRuntime.Portable` and
+  `LexLeanRuntime.Collections` (MIGRATION entry 4), holds 353 declarations,
+  and declares all 113 names of `text_laws::names::ALL`. The audit of certificate
+  A pins a definition a construct elaborates to by the union of the pins of the
+  definitions its body names, to a fixed point, where it pinned `[]`: the
+  mutual-group union of #221 covers rows of one group, and this is a derived
+  definition whose callees carry axioms (`decodeText` brings
+  `Classical.choice`). `examples/text-models` is the end-to-end example, with
+  nine production roots and kernel facts stated on tokens and bytes. The
+  register is 456 IDs with the line (453 on release/v0.4 before this merge).
+
 - `lexlean migrate --to 1.2 [--check]`, #257 (SPEC.md §17.12, §23.4,
   `CL-24`): the one command that migrates a language-1.1 data-form project to
   language 1.2. It rewrites every module to the authoring notation through

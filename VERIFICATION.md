@@ -11082,6 +11082,19 @@ are the first panic message, trimmed.
 | `LM-08` | the same file: `features_width` states a width of `0` for `size` | `the module verifies with real Lean: ... LLV7002 ... Lean rejected `Models.Recognizer` (error): Type mismatch LexLeanText.features_width Digits.size __tokens` |
 | `LM-09` | `language/production-1.2.toml`: a `primitive.eval_string` row | `the audit holds: primitive `eval_string` is in the production registry and not in the schema enumeration` |
 | `LM-09` | `schemas/semantic-module-v2.schema.json`: a `prompt` member of type string on `text_classifier` | `the audit holds: text declaration `text_classifier` member `prompt` is a free string` |
+| `LM-09` | `schemas/production-eligibility.schema.json`: a `prompt` member of type string on `text_row` | `the text row audit holds: text row member `prompt` is a free string` |
+| `LM-01` | `ir/semantic/language_model.rs`: the vocabulary-role test of `check_tokenizer` made `false &&` | `expected "a tokenizer needs role Vocabulary" under LLT4006, got LLT4006: phase link: tokenizer `Digits` vocabulary `hiddenWeights` is a int_tensor artifact; a tokenizer needs the utf8_lines schema` |
+| `LM-02` | `verify/mod.rs`: both tests of a generated declaration's axiom policy made `false &&` | `verify fails` (`support.rs:889`, the expected `LLV7005` did not occur) |
+| `LM-03` | `ir/semantic/model.rs`: `utf8_lines` decoded with `String::from_utf8_lossy` | `check fails` (`support.rs:862`) |
+| `LM-04` | `ir/semantic/language_model.rs`: the capacity-0 test of `check_context_window` made `false &&` | `check fails` (`support.rs:862`) |
+| `LM-05` | the same file: the `max_tokens` 0 test of `check_text_generator` made `false &&` | `check fails` (`support.rs:862`) |
+| `LM-06` | `ir/semantic.rs`: `#[serde(alias = "mt19937")]` on `SamplingGenerator::Xorshift32` | `check fails` (`support.rs:862`) |
+| `LM-10` | `production/eligibility.rs`: `if target.allocation \|\| true` | `check fails` (`support.rs:862`, `rust-core` accepted the tokenizer root) |
+| `LM-10` | the same file: `row.seed_input = None` | `assertion `left == right` failed: the seed is the last input and the second result` |
+| `LM-10` | `production/certificate/data_a.rs`: `union.extend(...)` replaced by `let _ = axioms;` | ``…R7.__fits_1` pins the axioms of the tokenizer the generator applies: ["Quot.sound", "propext"]` |
+| `LM-11` | `examples/text-models/src/Main.lex.tex`: the weight `(cons (6 : Int)` made `(cons (0 : Int)` | `LLV7002 … Tactic `rfl` failed … Greedy.generateTokens [256, 257]` |
+| `LM-12` | `examples/text-models/src/Main.lex.tex`: `Shape` over `Words` in place of `Raw` | `lemma `LexLeanText.features_total_text_bytes_of` is applied by no generated proof and by no library declaration they apply: dead library` |
+| `LM-13` | `language/text-1.2/library/Stray.lean` declaring `namespace LexLeanText` | `language/text-1.2/library/Stray.lean: an independently authored Lean file declares `namespace LexLeanText`` |
 
 Two attempts at planting a new declaration kind (`text_adapter`) in the schema
 were not evidence for `LM-08`: the schema is an input of the compiler-semantics
@@ -11177,6 +11190,203 @@ pins []
 
 The plant was restored with `git checkout`. The same verification with the fix in
 place is the regeneration of the bootstrap records in this change.
+
+### the text components can fail (LM-01..LM-06, LM-09..LM-13)
+
+Command and host: `cargo test -p repo-conformance --test conformance --
+conformance_lm_<nn>`, one case at a time. `LM-01`, `LM-03`, `LM-09`, `LM-12`,
+and `LM-13` run to their end without Lean; `LM-04`, `LM-05`, and `LM-06` run
+their negatives first and then, under `lean_backed`, verify with the pinned Lean
+4.32.1 on the normative host (Linux x86-64, where a missing toolchain fails the
+case, §8.3); `LM-02`, `LM-10`, and `LM-11` are Lean-backed throughout their
+second half. Measured on this host with the toolchain installed: `LM-01` 12 s,
+`LM-03` 7 s, `LM-09` 0.6 s, `LM-12` 3.6 s, `LM-13` 6 s (no Lean), `LM-04` 709 s,
+`LM-05` 561 s, `LM-02` 577 s, `LM-06` 500 s, `LM-10` 532 s (nine roots, certificates A, B, and E), `LM-11` 490 s
+(a verification of the example of about 90 s before its certificates, and the
+planted mutation). Each plant below was applied, the case run, the signature
+recorded, and the plant restored with `git checkout`; the case then passes.
+
+#### LM-01: a tokenizer's vocabulary role
+
+Planted: in `check_tokenizer` the role test was disabled
+(`if false && role != ArtifactRole::Vocabulary`).
+
+```text
+thread 'conformance_lm_01' panicked at crates/conformance/src/cases/models.rs:101:5:
+expected "a tokenizer needs role Vocabulary" under LLT4006, got LLT4006: phase link: tokenizer `Digits` vocabulary `hiddenWeights` is a int_tensor artifact; a tokenizer needs the utf8_lines schema
+```
+
+#### LM-02: the axiom policy is exact over an elaboration
+
+Planted: both tests of the policy of a generated declaration in `verify` were
+disabled, the one against the set a declaration observes and the one against
+the union over the elaboration (`false &&`). The case's tokenizer, whose policy
+omits an axiom its laws observe, was then verified instead of refused with
+`LLV7005`, so the case's `verify_fails_with` failed (931 s). Disabling the first test alone did not fail the case, because the
+second test also refuses an understated policy: the two are redundant for that
+defect and each must be removed to see it.
+
+```text
+thread 'conformance_lm_02' panicked at crates/conformance/src/support.rs:889:14:
+verify fails
+```
+
+#### LM-03: text that is not UTF-8 never becomes tokens
+
+Planted: the `utf8_lines` decoding of an artifact replaced by
+`String::from_utf8_lossy`, in both places that decode it.
+
+```text
+thread 'conformance_lm_03' panicked at crates/conformance/src/support.rs:862:14:
+check fails
+```
+
+(an invalid vocabulary that the case expects `check` to refuse was accepted).
+
+#### LM-04: a window holds at least one token
+
+Planted: `if false && *capacity == 0` in `check_context_window`.
+
+```text
+thread 'conformance_lm_04' panicked at crates/conformance/src/support.rs:862:14:
+check fails
+```
+
+#### LM-05: a generator states a bound
+
+Planted: `if false && *max_tokens == 0` in `check_text_generator`.
+
+```text
+thread 'conformance_lm_05' panicked at crates/conformance/src/support.rs:862:14:
+check fails
+```
+
+#### LM-06: the sampling members are closed
+
+The closed generators and distributions are Rust enums (`SamplingGenerator`,
+`SamplingDistribution`), not schema enumerations: widening the generator
+enumeration of `schemas/semantic-module-v2.schema.json` to `mt19937` left
+`conformance_lm_06` passing, so that plant does not test the case. Planted
+instead: `#[serde(alias = "mt19937")]` on `SamplingGenerator::Xorshift32`.
+
+```text
+thread 'conformance_lm_06' panicked at crates/conformance/src/support.rs:862:14:
+check fails
+```
+
+#### LM-09: no prompt is code, also in an eligibility report
+
+Planted: a `prompt` member of type `string` added to the `text_row` of
+`schemas/production-eligibility.schema.json`.
+
+```text
+thread 'conformance_lm_09' panicked at crates/conformance/src/cases/language_models.rs:2035:34:
+the text row audit holds: text row member `prompt` is a free string
+```
+
+The case also plants, inside itself, a free string on each text declaration, a
+free string reached through a reference, an open `component` name, and a report
+that does not state its rows as `text_row`, and expects each to be named.
+
+#### LM-10: production of a text component
+
+Three plants, each failing before any Lean runs.
+
+Planted: the allocation test in `analyse_root` made true for every target
+(`if target.allocation || true`), so `rust-core` admitted a root that allocates.
+The case's `rust-core` plant of the tokenizer root, which must be refused
+with `LLT4005`, was accepted.
+
+```text
+thread 'conformance_lm_10' panicked at crates/conformance/src/support.rs:862:14:
+check fails
+```
+
+Planted: the seed position of a sampling generator's row omitted
+(`row.seed_input = None`).
+
+```text
+thread 'conformance_lm_10' panicked at crates/conformance/src/cases/text_models.rs:534:5:
+assertion `left == right` failed: the seed is the last input and the second result
+```
+
+Planted: the union of certificate A (§17.17), dropped from the pin of a definition
+a construct elaborates to (`let _ = axioms;` for `union.extend(axioms…)`).
+The pin of the row that states the result type of `continueGreedy` omits the
+`Classical.choice` that Lean finds for the tokenizer's `decodeText`, which the
+audit would refuse after about nine minutes with `LLV7013`; the case reads the
+pin first, in 134 s:
+
+```text
+thread 'conformance_lm_10' panicked at crates/conformance/src/cases/text_models.rs:665:5:
+`LexLeanPreserve.C8c4f1da5e97ac9d64e1dd77468da8cb6.R7.__fits_1` pins the axioms of the tokenizer the generator applies: ["Quot.sound", "propext"]
+```
+
+Without the rule (the state before this slice) the same row pinned
+`["Quot.sound", "propext"]` and Lean refused it:
+
+```text
+error[LLV7013]: certificate A: the certificate row `LexLeanPreserve.C8c4f1da5e97ac9d64e1dd77468da8cb6.R7.__fits_1` depends on ["Classical.choice", "Quot.sound", "propext"], its policy pins ["Quot.sound", "propext"]
+```
+
+Why the rule is not a proxy: it conditions on the pins of the definitions a
+derived definition names, not on its module, and follows `Call` and
+`FunctionRef` terms (`visit_terms` reaches lambda bodies and arguments). On
+`examples/helpdesk`, `examples/models`, and `examples/reasoning` every
+certificate-A pin (1072 rows) is the same with and without it, so it moves no
+existing certificate; the day a derived definition names a package definition
+with a pin (`std-models` `Scores` has 15), it is the pin Lean prints. A name the
+walk misses leaves the pin short, and the audit refuses the certificate with
+`LLV7013`, as above.
+
+The case also plants, inside itself, a window declared to refuse overflow in
+place of the one that keeps the last tokens: the lowered `keepRecent` answers
+`none` for a context of seven, the differential names it, and the case expects
+that.
+
+#### LM-11: a mutation of the example
+
+Planted: the weight of `mat` in the scorer, `(cons (6 : Int)` to `(cons (0 : Int)`,
+in `examples/text-models/src/Main.lex.tex`. The generators emit different
+tokens, and the kernel-evaluated facts refuse it (`LLV7002`):
+
+```text
+error[LLV7002]: Lean rejected `TextModels.Main` (error): Tactic `rfl` failed: The left-hand side
+  Greedy.generateTokens [256, 257]
+is not definitionally equal to the right-hand side
+  Except.ok ([260, 260, 260, 260, 260], Greedy.End.exhausted)
+```
+
+A vocabulary that is not UTF-8 is refused at check, a changed byte of it is
+`LLR3007`, and the lowered roots answer `none` for a token outside the
+vocabulary and for a context that overflows the refusing window; the case runs
+all four.
+
+#### LM-12: a helper nothing reaches
+
+Planted: the classifier `Shape` of `examples/text-models` over the `Words`
+tokenizer in place of `Raw`, so no generated proof applies the byte-level
+totality law.
+
+```text
+thread 'conformance_lm_12' panicked at crates/conformance/src/cases/text_models.rs:1059:34:
+the coverage audit holds: lemma `LexLeanText.features_total_text_bytes_of` is applied by no generated proof and by no library declaration they apply: dead library
+```
+
+The case also plants a ghost name, empty generated Lean, and the removal of the
+one lemma's applications. The audit measures whole-word textual reach in the
+Lean generated for the example's main module and transitive reach through
+library declarations; it does not measure realization, kernel evaluation, or
+which proof applies a lemma.
+
+#### LM-13: the laws are LexLean source
+
+Planted: `language/text-1.2/library/Stray.lean` declaring `namespace LexLeanText`.
+
+```text
+thread 'conformance_lm_13' panicked at crates/conformance/src/support.rs:75:9:
+language/text-1.2/library/Stray.lean: an independently authored Lean file declares `namespace LexLeanText`
+```
 
 ## Planted defects for the crate that goes to crates.io (`RP-18`, #260)
 

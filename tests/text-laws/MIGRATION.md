@@ -345,3 +345,90 @@ above printed the lines recorded above.
 2. **The Lean source is not committed.** The additions' Lean is the scratch
    input of the round trip, as the first two records' was; the committed data
    is the module, and a change to it goes through the same round trip.
+
+## Fourth record: the production bridge (slice 4 of #30)
+
+Slice 4 (`LM-10`) realizes text components as ordinary executable language-1.2
+definitions (`LexLeanStd.TextModels`, SPEC.md §17.12) and relates each to the
+library function it replaces by a **bridge**: an equation, proved by the
+elaboration in the user module, between a production form and the library
+function. The library names no generated constant, so every law that mentions a
+function with a production form has an **of-equality form** that takes the
+function as a parameter and the bridge as a hypothesis, and a generated
+theorem applies it to the production form and to the proved bridge. No proof
+variant was added: a generated proof is one application of a lemma to terms and
+to `rfl` equations, the shapes the proof language already has.
+
+Each addition was authored once as Lean outside the release tree in the scratch
+module `LexLeanText.Ext`, which imports the library module the compiler
+generates from the committed data, proved under `leanprover/lean4:v4.32.1`
+with no `sorry`, no `admit`, and no new axiom, exported alone with the first
+record's `export.lean` and `flags.lean`, and joined to the committed data by
+the third record's method.
+
+### What was added
+
+Seven groups, each a set of bridge lemmas, of-equality forms of the laws the
+group's functions already had, and the helper definitions the production forms
+needed:
+
+- **Windows.** `admitRefuse_bridge`, `admitKeepLast_bridge`,
+  `pushRefuse_bridge`, `pushKeepLast_bridge`, and the of-forms of `bounded`,
+  `exact`, `suffix`, and `refuses` for both dispositions.
+- **Greedy decoding and the vocabulary size.** `vocabSize_bridge`,
+  `firstMax_bridge` and its loop, `chooseGreedy_bridge`, `admitWith_bridge`,
+  `pushWith_bridge`, `genGo_bridge`, `generateWith_bridge`,
+  `generateGreedy_bridge`, and the of-forms of `generateGreedy_bounded` and
+  `generateGreedy_guarded`.
+- **Sampling.** `xorshift32_bridge`, `seedBits_bridge`, `weight_bridge`,
+  `totalWeight_bridge`, `drawGo_bridge`, `proportional_bridge`,
+  `chooseSample_bridge`, `generateSample_bridge`, and the of-forms of
+  `generateSample_bounded` and `generateSample_guarded`.
+- **The tokenizer.** The bridges from `byteToken_bridge` to
+  `encodeTextBytes_bridge` (`longest_match` and `byte_level`), the decoding
+  bridges, `in_range_of`, `in_range_bytes_of`, `roundtrip_of`,
+  `roundtrip_bytes_of`, `text_roundtrip_of`, and `text_roundtrip_bytes_of`.
+- **The classifier.** `countOf_bridge`, `features_bridge`, `fitWidth_of`,
+  `features_fit_of`, `features_fit_bridge_of`, `features_width_of`,
+  `features_total_text_of`, and `features_total_text_bytes_of`.
+- **Uniqueness.** `withIndex_unique`, the lemma of the first additions.
+- **Counters.** `natBits_bridge` and `tokenId_bridge`, which relate the
+  production forms' `UInt32` counters to the library's `Nat` ones, because the
+  calculus has no conversion from `Nat` to a fixed width and none from `Int` to
+  `Nat`.
+
+Every one of the 113 names in `lexlean::text_laws::names::ALL` is declared by
+the committed module; `LM-12` reads that the generated Lean, and the library
+declarations it applies, reach each of them.
+
+### Equivalence
+
+The Lean the compiler generates from the committed data was compiled by the
+pinned Lean as `LexLeanText.LexLeanText`, and every theorem of it prints its
+axioms with `#print axioms`; each declaration pins them exactly in the data
+(`Exact`), and the verifier audits the pinned set of each against the set Lean
+reports. The committed module holds 59,331 nodes and 353 declarations, of which
+the first 229 are equal to the declarations of the third record.
+
+### Differences, stated plainly
+
+1. **The library imports the runtime.** The first three records import
+   `["Init"]` alone. A production form is written over the runtime's
+   operations (`LexLeanRuntime.Portable` and `LexLeanRuntime.Collections`), so
+   the bridges that unfold them import those two modules, and the module's
+   `imports` are now `["Init", "LexLeanRuntime.Portable",
+   "LexLeanRuntime.Collections"]`. The verifier compiles the runtime modules
+   before the text library and stages them as the library's dependencies; the
+   loader refuses a library module that imports anything else. No constant of
+   the runtime was added, and the library is still formal-only.
+2. **Proof data of existing nodes.** `proof_nodes` is derived, and the new
+   statements reach nodes that only proofs reached before, so those nodes are
+   written as ordinary nodes in the notation. No node, declaration, or value
+   changed.
+3. **No lazily generated lemma is cited.** The decoder refuses declarations
+   that Lean generates on demand (equation lemmas, matcher splitters, private
+   matchers), so every proof states its defining equations itself as `rfl`
+   lemmas, and `simp`, `unfold`, and `decide +kernel` are not used where they
+   would generate or replay one.
+4. **The Lean source is not committed.** As in the earlier records, the
+   additions' Lean is the scratch input of the round trip.
