@@ -25,7 +25,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::OnceLock;
 
-use super::Profile;
+use super::{rt, rt_validate, Profile};
 use crate::artifact::canonical_json::Json;
 use crate::surface::module::{self, SEMANTIC};
 
@@ -669,20 +669,34 @@ impl Scaffold {
                 profile.target()
             )
         })?;
-        Ok(self.attributes_with(target.allocation))
+        self.attributes_with(target.allocation)
     }
 
-    /// The crate attributes of a package whose target has `allocation`.
-    #[must_use]
-    pub fn attributes_with(&self, allocation: bool) -> String {
-        let mut out = String::new();
+    /// The crate attributes of a package whose target has `allocation`: the
+    /// inner attributes as `RuntimeSyntax` items, checked by its validator and
+    /// printed by its printer, one line each.
+    ///
+    /// # Errors
+    ///
+    /// The attributes are not valid, which a gate that is not a plain lint
+    /// name would cause.
+    pub fn attributes_with(&self, allocation: bool) -> Result<String, String> {
+        let mut items = Vec::new();
         if !allocation {
-            out.push_str("#![no_std]\n");
+            items.push(rt::Item::InnerAttr("no_std".to_owned(), Vec::new()));
         }
         for gate in self.rustc.iter().filter(|gate| gate.level == Level::Forbid) {
-            out.push_str(&format!("#![{}({})]\n", Level::Forbid.as_str(), gate.lint));
+            items.push(rt::Item::InnerAttr(
+                Level::Forbid.as_str().to_owned(),
+                vec![gate.lint.clone()],
+            ));
         }
-        out
+        let krate = rt::Crate {
+            profile: rt::Profile::Core,
+            items,
+        };
+        rt_validate::validate(&krate)?;
+        rt::print(&krate)
     }
 
     /// Every string the module states as content: what no renderer source

@@ -319,8 +319,14 @@ fn rb_10() {
 
     // The header follows its two sources: no allocation prints `no_std`,
     // another forbidden gate is restated, and a gate below `forbid` is not.
-    assert!(record.attributes_with(false).starts_with("#![no_std]\n"));
-    assert!(!record.attributes_with(true).contains("no_std"));
+    assert!(record
+        .attributes_with(false)
+        .expect("attributes")
+        .starts_with("#![no_std]\n"));
+    assert!(!record
+        .attributes_with(true)
+        .expect("attributes")
+        .contains("no_std"));
     let mut widened = record.clone();
     widened.rustc.push(scaffold::Gate {
         lint: "missing_docs".to_owned(),
@@ -329,9 +335,23 @@ fn rb_10() {
     });
     assert!(widened
         .attributes_with(true)
+        .expect("attributes")
         .ends_with("#![forbid(missing_docs)]\n"));
     widened.rustc.last_mut().expect("a gate").level = Level::Deny;
-    assert_eq!(widened.attributes_with(true), record.attributes_with(true));
+    assert_eq!(
+        widened.attributes_with(true).expect("attributes"),
+        record.attributes_with(true).expect("attributes")
+    );
+    // A gate that is not a lint name is refused by the validator of the
+    // attribute nodes the header is printed from.
+    let mut unnamed = record.clone();
+    unnamed.rustc.push(scaffold::Gate {
+        lint: "not a lint".to_owned(),
+        level: Level::Forbid,
+        priority: 0,
+    });
+    let error = unnamed.attributes_with(true).expect_err("not a lint name");
+    assert!(error.contains("attribute-args"), "{error}");
 
     // A row dropped from the module is a row dropped from `Cargo.toml`, and
     // the committed manifests, which state it, no longer equal the module.

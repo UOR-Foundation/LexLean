@@ -10,6 +10,7 @@
 //! name a runtime function that does not exist or call one with the wrong
 //! failure mode.
 
+use std::collections::BTreeMap;
 use std::sync::OnceLock;
 
 use super::super::IntKind;
@@ -19,51 +20,66 @@ use super::{ast, rt, rt_decode, rt_validate, source, validate};
 /// An item whose exported name is a path `module::name` is printed inside
 /// `pub mod module { … }` under its last segment, with the consecutive items
 /// of one module in one block, so the module's path in the exported name is
-/// the runtime item's path (`fixed_u8::checked_add`).
-#[must_use]
-pub fn assemble(support: &str, items: &[ast::ItemDef]) -> String {
-    let mut text = support.to_owned();
+/// the runtime item's path (`fixed_u8::checked_add`). The blocks are
+/// `RuntimeSyntax` nodes, a [`rt::Item::Mod`] of [`rt::Item::Defined`] paths,
+/// checked by the validator of `RuntimeSyntax` and printed by `rt`, which is
+/// given the text of each definition.
+///
+/// # Errors
+///
+/// An item that is not a function with an exported name, or the nodes of the
+/// blocks are not valid.
+pub fn assemble(support: &str, items: &[ast::ItemDef]) -> Result<String, String> {
+    let mut texts: BTreeMap<String, String> = BTreeMap::new();
+    let mut nodes: Vec<rt::Item> = Vec::new();
+    let mut members: Vec<rt::Item> = Vec::new();
     let mut open: Option<String> = None;
     for item in items {
-        let (module, shown) = match item {
-            ast::ItemDef::Function {
-                name: ast::Ident::Export(name),
-                ..
-            } if name.contains("::") => {
-                let (module, last) = name.rsplit_once("::").expect("a path");
+        let ast::ItemDef::Function {
+            name: ast::Ident::Export(path),
+            ..
+        } = item
+        else {
+            return Err("a runtime item that is not a function with an exported name".to_owned());
+        };
+        let (module, shown) = match path.rsplit_once("::") {
+            Some((module, last)) => {
                 let mut shown = item.clone();
                 if let ast::ItemDef::Function { name, .. } = &mut shown {
                     *name = ast::Ident::Export(last.to_owned());
                 }
                 (Some(module.to_owned()), shown)
             }
-            _ => (None, item.clone()),
+            None => (None, item.clone()),
         };
+        texts.insert(path.clone(), ast::print_item(&shown));
         if module != open {
-            if open.is_some() {
-                text.push_str("}\n");
-            }
-            if let Some(module) = &module {
-                text.push_str(&format!("\npub mod {module} {{"));
+            if let Some(closed) = open.take() {
+                nodes.push(rt::Item::Mod(closed, std::mem::take(&mut members)));
             }
             open = module;
         }
-        text.push('\n');
-        let printed = ast::print_item(&shown);
+        let defined = rt::Item::Defined(path.clone());
         if open.is_some() {
-            for line in printed.lines() {
-                text.push_str("    ");
-                text.push_str(line);
-                text.push('\n');
-            }
+            members.push(defined);
         } else {
-            text.push_str(&printed);
+            nodes.push(defined);
         }
     }
-    if open.is_some() {
-        text.push_str("}\n");
+    if let Some(closed) = open {
+        nodes.push(rt::Item::Mod(closed, members));
     }
-    text
+    let krate = rt::Crate {
+        profile: rt::Profile::Std,
+        items: nodes,
+    };
+    rt_validate::validate(&krate)?;
+    let mut text = support.to_owned();
+    if !krate.items.is_empty() {
+        text.push('\n');
+        text.push_str(&rt::print_with(&krate, &|path| texts.get(path).cloned())?);
+    }
+    Ok(text)
 }
 
 /// The text of a `RuntimeSupport` module: its crate decoded, checked by the
@@ -75,7 +91,7 @@ pub fn assemble(support: &str, items: &[ast::ItemDef]) -> String {
 pub fn support_from(module: &str) -> Result<String, String> {
     let krate = rt_decode::decode(module)?;
     rt_validate::validate(&krate)?;
-    Ok(rt::print(&krate))
+    rt::print(&krate)
 }
 
 /// The core runtime text of a `RustRuntime` module over the support text
@@ -93,7 +109,7 @@ pub fn core_over(support: &str, module: &str) -> Result<String, String> {
     let source = source::decode(module)?;
     validate::validate(&source.core)
         .map_err(|error| format!("the core runtime is not a valid crate: {error}"))?;
-    Ok(assemble(support, &source.core.items))
+    assemble(support, &source.core.items)
 }
 
 /// The core runtime text of a `RustRuntime` module over the embedded support.
@@ -151,7 +167,7 @@ pub fn std_types_from(module: &str) -> Result<String, String> {
     support.profile = rt::Profile::Std;
     support.items.extend(krate.items.iter().cloned());
     rt_validate::validate(&support)?;
-    Ok(rt::print(&krate))
+    rt::print(&krate)
 }
 
 /// The base the functions of `RustStd` are printed after: [`std_types_from`]
@@ -179,7 +195,7 @@ pub fn std_over(base: &str, module: &str) -> Result<String, String> {
     let krate = source::decode_std(module)?;
     validate::validate(&krate)
         .map_err(|error| format!("the std runtime is not a valid crate: {error}"))?;
-    Ok(assemble(base, &krate.items))
+    assemble(base, &krate.items)
 }
 
 /// The std runtime text of a `RustStd` module over [`std_base`].

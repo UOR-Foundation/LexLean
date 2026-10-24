@@ -207,9 +207,12 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
         imported: Vec::new(),
         associated: BTreeMap::new(),
     };
+    attributes(&krate.items)?;
     let mut declared = Vec::<&str>::new();
     for item in &krate.items {
         match item {
+            Item::InnerAttr(..) | Item::Defined(_) => {}
+            Item::Mod(name, _) => once(&mut declared, name)?,
             Item::Use(path, alias) => {
                 let Some(root) = path.first() else {
                     return rule("use-path", "empty");
@@ -309,7 +312,24 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
     }
     for item in &krate.items {
         match item {
-            Item::Use(..) | Item::UnitStruct(..) => {}
+            Item::Use(..) | Item::UnitStruct(..) | Item::InnerAttr(..) => {}
+            Item::Defined(path) => defined_path(path)?,
+            Item::Mod(name, members) => {
+                for member in members {
+                    match member {
+                        Item::Defined(path) => defined_path(path)?,
+                        Item::Fn(function) => scope.free(function)?,
+                        _ => {
+                            return rule(
+                                "module-member",
+                                format!(
+                                    "`{name}` holds an item that is neither a defined function nor a function"
+                                ),
+                            )
+                        }
+                    }
+                }
+            }
             Item::Alias(_, parameters, ty) => {
                 scope.ty(ty, parameters.len(), false)?;
             }
@@ -347,24 +367,7 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
                     }
                 }
             }
-            Item::Fn(function) => {
-                if !function.public {
-                    return rule(
-                        "function-visibility",
-                        format!(
-                            "`{}` is a free function that is not public",
-                            function.sig.name
-                        ),
-                    );
-                }
-                if function.sig.receiver {
-                    return rule(
-                        "function-receiver",
-                        format!("free function `{}` takes `&self`", function.sig.name),
-                    );
-                }
-                scope.function(function, &[], None)?;
-            }
+            Item::Fn(function) => scope.free(function)?,
             Item::Impl(generics, tr, ty, functions) => {
                 scope.generics(generics)?;
                 scope.ty(ty, generics.len(), false)?;
@@ -380,6 +383,51 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
         }
     }
     Ok(())
+}
+
+/// The inner attributes of a crate: the closed set (`no_std` with no
+/// arguments, `forbid` with the lints it forbids), before every other item.
+/// A crate is checked for them before anything else.
+fn attributes(items: &[Item]) -> Result<(), String> {
+    let mut over = false;
+    for item in items {
+        let Item::InnerAttr(name, args) = item else {
+            over = true;
+            continue;
+        };
+        if over {
+            return rule(
+                "attribute-position",
+                format!("`#![{name}]` follows an item"),
+            );
+        }
+        match (name.as_str(), args.as_slice()) {
+            ("no_std", []) => {}
+            ("no_std", _) => return rule("attribute-args", "`no_std` takes no arguments"),
+            ("forbid", []) => return rule("attribute-args", "`forbid` takes a lint"),
+            ("forbid", lints) => {
+                if lints.iter().any(String::is_empty) {
+                    return rule("attribute-args", "`forbid` takes a lint with a name");
+                }
+            }
+            (other, _) => {
+                return rule(
+                    "attribute-name",
+                    format!("`{other}` is not an inner attribute of the closed set"),
+                )
+            }
+        }
+    }
+    Ok(())
+}
+
+/// The path of a `defined` item names something: it is not empty.
+fn defined_path(path: &str) -> Result<(), String> {
+    if path.is_empty() {
+        rule("defined-path", "empty")
+    } else {
+        Ok(())
+    }
 }
 
 impl Variant {
@@ -465,6 +513,26 @@ fn binds(pattern: &Pat, out: &mut Vec<(String, bool)>) -> Result<(), String> {
 }
 
 impl<'a> Scope<'a> {
+    /// A free function: public, with no receiver, and a valid body.
+    fn free(&self, function: &'a Function) -> Result<(), String> {
+        if !function.public {
+            return rule(
+                "function-visibility",
+                format!(
+                    "`{}` is a free function that is not public",
+                    function.sig.name
+                ),
+            );
+        }
+        if function.sig.receiver {
+            return rule(
+                "function-receiver",
+                format!("free function `{}` takes `&self`", function.sig.name),
+            );
+        }
+        self.function(function, &[], None)
+    }
+
     fn generics(&self, generics: &[Generic]) -> Result<(), String> {
         for generic in generics {
             for bound in &generic.bounds {

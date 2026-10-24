@@ -457,6 +457,18 @@ impl<'a> Reader<'a> {
                     self.list(&a[3], "variants", Self::rt_variant)?,
                 )
             }
+            "defined" => Item::Defined(self.string(&take(1)?[0], "a defined path")?),
+            "moduleItem" => {
+                let a = take(2)?;
+                Item::Mod(
+                    self.string(&a[0], "a module")?,
+                    self.list(&a[1], "the items of a module", Self::rt_item)?,
+                )
+            }
+            "innerAttribute" => {
+                let a = take(2)?;
+                Item::InnerAttr(self.string(&a[0], "an attribute")?, self.names(&a[1])?)
+            }
             other => return fail(format!("`RtItem.{other}` is not an item")),
         })
     }

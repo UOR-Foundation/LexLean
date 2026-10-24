@@ -466,7 +466,7 @@ pub fn run(id: &str) {
         "the probe holds an item of each construct"
     );
     rt_validate::validate(&krate).expect("the probe is valid");
-    let text = rt::print(&krate);
+    let text = rt::print(&krate).expect("the probe prints");
     let ran = compile_and_run(&text).expect("the printed probe computes what the harness states");
     assert_eq!(ran, "probe");
 

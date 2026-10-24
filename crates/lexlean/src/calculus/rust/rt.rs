@@ -213,7 +213,22 @@ pub enum Item {
     RecordStruct(String, Vec<String>, Vec<String>, Vec<String>, Vec<Type>),
     /// `#[derive(..)] pub enum Name<..> { variants }`.
     Enum(String, Vec<String>, Vec<String>, Vec<Variant>),
+    /// `#![name(args)]`, an inner attribute of the crate: `no_std`, or
+    /// `forbid` with the lints it forbids.
+    InnerAttr(String, Vec<String>),
+    /// `pub mod name { members }`: the members are [`Item::Defined`] and
+    /// [`Item::Fn`] items.
+    Mod(String, Vec<Item>),
+    /// The definition the crate's `RustSyntax` module gives under this
+    /// path (`fixed_u8::checked_add`), printed where this item stands. The
+    /// Lean `RtItem.defined` holds the path alone; the printer is given the
+    /// definitions.
+    Defined(String),
 }
+
+/// How the printer finds the text of a [`Item::Defined`] path: the whole
+/// lines of the definition, or none when no definition has the path.
+pub type Definitions<'a> = &'a dyn Fn(&str) -> Option<String>;
 
 /// The crate: a profile and its items in order.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -628,10 +643,48 @@ impl Variant {
 }
 
 impl Item {
-    /// The Rust text of the item, one or more whole lines.
-    #[must_use]
-    pub fn print(&self) -> String {
+    /// The Rust text of the item, one or more whole lines, `defined` giving
+    /// the text of a [`Item::Defined`] path.
+    ///
+    /// # Errors
+    ///
+    /// A path of a `defined` item that `defined` has no text for.
+    pub fn print_with(&self, defined: Definitions<'_>) -> Result<String, String> {
         match self {
+            Item::InnerAttr(name, args) if args.is_empty() => Ok(format!("#![{name}]\n")),
+            Item::InnerAttr(name, args) => Ok(format!("#![{name}({})]\n", args.join(", "))),
+            Item::Defined(path) => {
+                defined(path).ok_or_else(|| format!("`defined {path}` names no definition"))
+            }
+            Item::Mod(name, members) => {
+                let mut text = format!("pub mod {name} {{\n");
+                let printed = members
+                    .iter()
+                    .map(|member| member.print_with(defined))
+                    .collect::<Result<Vec<_>, _>>()?;
+                for (at, member) in printed.iter().enumerate() {
+                    if at > 0 {
+                        text.push('\n');
+                    }
+                    for line in member.lines() {
+                        if line.is_empty() {
+                            text.push('\n');
+                        } else {
+                            text.push_str(&format!("    {line}\n"));
+                        }
+                    }
+                }
+                text.push_str("}\n");
+                Ok(text)
+            }
+            other => Ok(other.print_plain()),
+        }
+    }
+
+    /// The text of an item that holds no other item and names no definition.
+    fn print_plain(&self) -> String {
+        match self {
+            Item::InnerAttr(..) | Item::Mod(..) | Item::Defined(_) => String::new(),
             Item::Use(path, None) => format!("use {};\n", path.join("::")),
             Item::Use(path, Some(alias)) => format!("use {} as {alias};\n", path.join("::")),
             Item::UnitStruct(name, derives) => {
@@ -725,8 +778,22 @@ fn print_uses(uses: &[(&Vec<String>, &Option<String>)]) -> String {
 }
 
 /// The text of `items`, in order.
-#[must_use]
-pub fn print(krate: &Crate) -> String {
+///
+/// # Errors
+///
+/// A `defined` item: use [`print_with`].
+pub fn print(krate: &Crate) -> Result<String, String> {
+    print_with(krate, &|_| None)
+}
+
+/// The text of `items`, in order, `defined` giving the text of each
+/// [`Item::Defined`] path. Consecutive inner attributes are consecutive
+/// lines; every other item is set off by a blank line.
+///
+/// # Errors
+///
+/// A path of a `defined` item that `defined` has no text for.
+pub fn print_with(krate: &Crate, defined: Definitions<'_>) -> Result<String, String> {
     let mut chunks: Vec<String> = Vec::new();
     let mut at = 0;
     while at < krate.items.len() {
@@ -742,10 +809,17 @@ pub fn print(krate: &Crate) -> String {
             }
             at += group.len();
             chunks.push(print_uses(&group));
+        } else if matches!(krate.items[at], Item::InnerAttr(..)) {
+            let mut lines = String::new();
+            while let Some(attribute @ Item::InnerAttr(..)) = krate.items.get(at) {
+                lines.push_str(&attribute.print_with(defined)?);
+                at += 1;
+            }
+            chunks.push(lines);
         } else {
-            chunks.push(krate.items[at].print());
+            chunks.push(krate.items[at].print_with(defined)?);
             at += 1;
         }
     }
-    chunks.join("\n")
+    Ok(chunks.join("\n"))
 }

@@ -385,6 +385,12 @@ fn enc_item(item: &Item) -> Value {
             "IRecord",
             vec![text(name), texts(generics), texts(fields), enc_types(types)],
         ),
+        Item::Defined(path) => i("IDefined", vec![text(path)]),
+        Item::Mod(name, members) => i(
+            "IMod",
+            vec![text(name), list(members.iter().map(enc_item).collect())],
+        ),
+        Item::InnerAttr(name, args) => i("IAttr", vec![text(name), texts(args)]),
         Item::Enum(name, generics, _, variants) => i(
             "IEnum",
             vec![
