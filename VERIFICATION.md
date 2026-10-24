@@ -9926,7 +9926,7 @@ strings, every runtime row and machine primitive with its operands and with
 one too many, every constructor, pattern, block, conditional, match with a
 scrutinee that begins with a brace, and loop) under the pinned rustc on
 every host (42 harness binaries, 504 s: the part the host matrix runs), and on
-the normative host the evaluator on 558 + 2,011 of them (the crates of at most
+the normative host the evaluator on 557 + 2,011 of them (the crates of at most
 6,000 nodes of data), 400 + 399 seeded mutants of the crates of at most 80
 expressions, 2,984 more mutants under rustc (67 s), thirteen planted defects, and
 the production export of the project (the whole case: 1,658 s on this host,
