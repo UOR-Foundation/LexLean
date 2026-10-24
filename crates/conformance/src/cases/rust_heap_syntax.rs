@@ -16,8 +16,8 @@ use crate::rust_build::{cargo_in, workspace, Built};
 use crate::support::repo_root;
 
 /// The rules of the validator that this case plants and `RB-17`'s does not:
-/// those of the constructs the module grew by (the eleventh new rule,
-/// `hidden-allocation`, is planted by `RB-17`'s text plants and here on the probe). `RB-17` requires the rules in
+/// those of the constructs the module grew by (`hidden-allocation`, which joins them, is
+/// planted by `RB-17`'s text plants and here on the probe). `RB-17` requires the rules in
 /// the validator's source to be its own planted rules and these.
 pub(super) const RULES: [&str; 15] = [
     "assign-immutable",

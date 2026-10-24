@@ -5872,7 +5872,7 @@ The heap constructs (`RB-19`). `RuntimeSyntax` grows by exactly the constructs t
 (`probeCrate`, shipped byte for byte at `language/rust-runtime-1.2/RuntimeProbe.lex.tex`) whose
 printed functions the pinned rustc compiles under `warnings = deny` and a harness checks against an
 independent computation. *Items:* a tuple struct, a record struct, and an enum with unit, tuple, and
-record variants, each with generic parameters and derives. *Types:* `u128` and `i128`, `usize`,
+record variants, each with generic parameters and derives; a `pub mod` of functions and of definitions that the crate's `RustSyntax` module gives, named by path (`RtItem.moduleItem`, `RtItem.defined`); and an inner attribute of the crate header, `no_std` or `forbid` of named lints (`RtItem.innerAttribute`). *Types:* `u128` and `i128`, `usize`,
 `char`, `str`, a slice `[T]`, and `&mut T`. *Literals:* a character and a string. *Patterns:* a
 `mut` binding, a tuple, a tuple struct, a struct (or a record variant) with named fields, and a
 literal; a `match` arm may carry a guard. *Expressions:* `let` with an optional type, which binds for
@@ -5885,8 +5885,8 @@ rewrite to the original. The closed table of the standard library (51 names): `R
 of `from` or `try_from` is also admitted for every integer type. The names of the table that allocate
 (`Rc`, `Vec`, `String`, `Rc::new`, `Rc::from`, `Rc::try_unwrap`, `Rc::get_mut`, `Vec::new`,
 `Vec::with_capacity`, `String::new`, `push`, `pop`, `truncate`, `push_str`, `extend_from_slice`,
-`to_string`, `collect`) are refused in the core profile as `hidden-allocation`. Eleven rules join the
-24 of `RB-17`, 35 in all: `assign-immutable`, `assign-place`, `break-position`, `hidden-allocation`, `let-position`,
+`to_string`, `collect`) are refused in the core profile as `hidden-allocation`. Sixteen rules join the
+24 of `RB-17`, 40 in all: `assign-immutable`, `assign-place`, `attribute-args`, `attribute-name`, `attribute-position`, `break-position`, `defined-path`, `hidden-allocation`, `let-position`, `module-member`,
 `param-duplicate`, `pattern-duplicate`, `pattern-fields`, `struct-fields`, `tuple-arity`, and
 `variant-name`; each is planted. `RtType.wide` takes a Boolean that is true for `u128` and false for `i128`. `RuntimeSemantics` evaluates each of the expression and pattern constructs the module grew by as `stuck`, except a block expression, which evaluates its block, and a string literal, which is a string value; a character literal is `stuck`. As the type of a value, `RtType.refMut` is its inner type and the other types it grew by (`RtType.wide`, `size`, `char`, `str`, `slice`) match no value.
 This row declares no meaning for the constructs it leaves `stuck`, and a theorem about a function that uses one is a claim it does not make.
@@ -7992,15 +7992,15 @@ chains (a statement list, an argument list, and a list of arms are each a chain 
 and `Cons`, and a `let` statement a `LetS` that binds for the rest), a record is the one constructor of
 its structure, and the tables of types, calls, methods, type-argument methods, standard traits, and
 integers are read from the oracle's source by the generator of the module, so the two cannot drift. The
-constructors an encoder names are read by the case from the module's own text. The corpus is 648
-crates: the committed `supportCrate` and `probeCrate` and each in the other profile, the 44 crates
+constructors an encoder names are read by the case from the module's own text. The corpus is 654
+crates: the committed `supportCrate` and `probeCrate` and each in the other profile, the 50 crates
 that break one rule each (the text plants of `RB-17` on the module, its nine plants on the decoded
-crate, and the eighteen of `RB-19` on the probe), and 600 seeded mutants of the two committed modules
-(a string, a constructor of the same enum, a mutable flag, a visibility, or a type parameter replaced by another of the module's), 495 of the 648 refused, so that the
-refusals are by each of the 35 rules the oracle names and by no other. The outcome of a run is the
+crate, and the twenty-four of `RB-19` on the probe, six of them for the module, definition, and inner-attribute nodes), and 600 seeded mutants of the two committed modules
+(a string, a constructor of the same enum, a mutable flag, a visibility, or a type parameter replaced by another of the module's), 502 of the 654 refused, so that the
+refusals are by each of the 40 rules the oracle names and by no other. The outcome of a run is the
 result and, for a refusal, the message, and one difference fails the case. On every host the rendered
 `rust-std` package, compiled by the pinned rustc, is run on all of them; on the normative host the
-calculus evaluator (§17.14) also runs on all 648 and eight planted defects in the source (a name
+calculus evaluator (§17.14) also runs on all 654 and eight planted defects in the source (a name
 declared twice, a tuple of one, a `break` outside a loop, a private free function, a `std` use under
 `rust-core`, an assignment to an immutable name, a match with no arm, and a heap type under
 `rust-core`, each accepted) are each detected by the differential. Under the pinned Lean the production
