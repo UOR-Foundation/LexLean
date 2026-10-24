@@ -378,8 +378,9 @@ and Unreleased holds what has landed since.
   `Lowering::value` does, held to the tail of that function in the crate
   `rust::lower` returns, to the byte, on 358 explicit runs and seeded ones; no
   file of the renderer changes. Its certificate part is 2,004,962 bytes, 47.8% of
-  `max_file_bytes`. The bootstrap project's roots together pass the default
-  `max_total_source_bytes` with this one (see SPEC.md §17.23). The register is
+  `max_file_bytes`. The bootstrap project's roots together passed the default
+  `max_total_source_bytes` at this root (67,815,299 bytes), so the project
+  configures 134217728 (SPEC.md §17.23). The register is
   448 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every

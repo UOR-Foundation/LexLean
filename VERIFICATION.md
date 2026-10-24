@@ -10105,11 +10105,11 @@ runs, then the seeded ones:
 Findings. (1) The production export of the bootstrap project is now beyond the
 default `max_total_source_bytes` (67,108,864): the limit counts the programs,
 the crates, and the certificates of every production root of the project
-together, and this root passed it at 67,815,299 bytes. The measurements above
-were made with the limit at 134,217,728 in `bootstrap/lexlean.toml`, which is
-a semantic input and moves the lock and every package of the project; the
-decision is the maintainer's (the remaining term-lowering passes need it
-again). (2) A branch the oracle cannot reach is removed rather than planted:
+together, and this root passed it at 67,815,299 bytes. The bootstrap
+project now configures 134,217,728 in `bootstrap/lexlean.toml` (the maintainer's
+decision; a semantic input, so the lock and every package of the project move
+at the landing), and the measurements above were made with it; the remaining
+term-lowering passes need about 100 MB in all. (2) A branch the oracle cannot reach is removed rather than planted:
 the sign and the upper-case forms the lowering accepts (the checker refuses
 them) were in the first draft and had no plant that could detect them.
 (3) The counts of `BS-05`, `BS-06`, `BS-07`, and `BS-08` move with the package

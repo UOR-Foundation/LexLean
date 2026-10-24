@@ -7959,8 +7959,9 @@ runs, ten planted defects in the source, and the production export (§24.7).
 The bootstrap project's production export is the first project whose roots
 together approach `max_total_source_bytes` (§10.2): the limit counts the
 programs, the crates, and the certificates of every production root of the
-project, 67,815,299 bytes with this root against 67,108,864, so a project of
-this size configures a larger limit.
+project, 67,815,299 bytes with this root against 67,108,864, so the bootstrap
+project configures `max_total_source_bytes = 134217728` (twice the default), the
+term-lowering passes needing about 100 MB in all.
 
 ## 18. Lean backend
 
