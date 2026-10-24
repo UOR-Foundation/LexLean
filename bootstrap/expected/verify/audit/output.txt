@@ -219,6 +219,220 @@
 'LexLeanBoot.PrimitiveScan.stepScan' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.PrimitiveScan.ticks' does not depend on any axioms
 'LexLeanBoot.PrimitiveScan.zeroStep' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.Crate' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.Entry' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.EnumE' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.Expr' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.FnDef' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.Fr' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.Generic' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.Item' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.Param' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.Pat' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.Sc' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.Seen' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.Sig' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.StructE' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.TraitE' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.Ty' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.Var' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.Variant' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.addFnMethods' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.addMethods' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.armsOk' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RuntimeValidate.assignable' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.bEq' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.bindsOf' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RuntimeValidate.blockOk' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RuntimeValidate.boundCheck' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.callAllocates' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.callArity' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.callCheck' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.callDirectArity' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.callDirectHeap' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.callExpected' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.callHeap' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.completes' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RuntimeValidate.countIn' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.countNamed' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.declare' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.derivesErr' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.emptyFr' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.endsInCast' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.exposed' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.exprLen' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.exprOk' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RuntimeValidate.exprPrec' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.exprsOk' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RuntimeValidate.findAlias' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.findEnum' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.findFunction' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.findStruct' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.findTrait' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.findVar' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.findVariant' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.firstDuplicate' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.firstDuplicateSig' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.firstNamed' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.fnOk' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RuntimeValidate.genericsOk' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RuntimeValidate.hasCount' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.hasSigNamed' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.headErr' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.headName' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.identByte' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RuntimeValidate.identErr' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RuntimeValidate.identShape' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RuntimeValidate.identsErr' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RuntimeValidate.inList' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.inRangeB' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RuntimeValidate.indexNames' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.isAbsent' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.isEmptyChain' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.isInteger' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.isNone' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.isRefMut' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.isTableHeap' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.isUnknown' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.isWrapperName' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.joinCounts' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.joinWith' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.keywords' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.lastName' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.leftParenthesized' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.literalErr' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.methodArity' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.methodCounts' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.methodHeap' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.methodOk' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.nthBounds' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.nthName' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.opPrec' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.orElse' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.pairPart' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.paramVars' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.paramsOk' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RuntimeValidate.pass1' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RuntimeValidate.pass1Item' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RuntimeValidate.pass2Item' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RuntimeValidate.patArity' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.patFields' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.patLen' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.patOk' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RuntimeValidate.patWrapperPath' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.pathCore' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.pathOk' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RuntimeValidate.postCheck' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.preCheck' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.provided' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.rcat' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.rdec' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.recordFields' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.resolveSelf' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.rtext' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.rtick' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.sameFields' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.segmentsErr' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RuntimeValidate.sigOk' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RuntimeValidate.sigShow' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.sigsOfTrait' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.stdTraitExclusive' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.stdTraitMethod' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.stmtsOk' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RuntimeValidate.stripRefs' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.tupleStructArity' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.turbofishArgs' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.turbofishTypes' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.tyLen' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.tyOk' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.tyShow' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.typeArity' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.typeExpected' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.typeHeap' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.typeOf' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.unscopedErr' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.validateRuntime' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RuntimeValidate.variantArity' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.variantName' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.variantProblem' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RuntimeValidate.variantRecord' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.variantTuple' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.variantTypes' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.withBound' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.wrapperArity' does not depend on any axioms
+'LexLeanBoot.RustAst.Callee' does not depend on any axioms
+'LexLeanBoot.RustAst.Crate' does not depend on any axioms
+'LexLeanBoot.RustAst.Def' does not depend on any axioms
+'LexLeanBoot.RustAst.Expr' does not depend on any axioms
+'LexLeanBoot.RustAst.Lit' does not depend on any axioms
+'LexLeanBoot.RustAst.OrderingKind' does not depend on any axioms
+'LexLeanBoot.RustAst.Par' does not depend on any axioms
+'LexLeanBoot.RustAst.Pat' does not depend on any axioms
+'LexLeanBoot.RustAst.PatLeaf' does not depend on any axioms
+'LexLeanBoot.RustPrint.argSep' does not depend on any axioms
+'LexLeanBoot.RustPrint.byteHex' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPrint.bytesStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPrint.calleeFamily' does not depend on any axioms
+'LexLeanBoot.RustPrint.captureName' does not depend on any axioms
+'LexLeanBoot.RustPrint.capturePassed' does not depend on any axioms
+'LexLeanBoot.RustPrint.conOpens' does not depend on any axioms
+'LexLeanBoot.RustPrint.conPrefix' does not depend on any axioms
+'LexLeanBoot.RustPrint.continuation' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPrint.disEmpty' does not depend on any axioms
+'LexLeanBoot.RustPrint.firstMid' does not depend on any axioms
+'LexLeanBoot.RustPrint.fixedMethod' does not depend on any axioms
+'LexLeanBoot.RustPrint.fixedPost' does not depend on any axioms
+'LexLeanBoot.RustPrint.fixedPre' does not depend on any axioms
+'LexLeanBoot.RustPrint.hexDigit' does not depend on any axioms
+'LexLeanBoot.RustPrint.indent' does not depend on any axioms
+'LexLeanBoot.RustPrint.indentStep' does not depend on any axioms
+'LexLeanBoot.RustPrint.isUnitBlock' does not depend on any axioms
+'LexLeanBoot.RustPrint.joinedMethod' does not depend on any axioms
+'LexLeanBoot.RustPrint.kindName' does not depend on any axioms
+'LexLeanBoot.RustPrint.leadingZero' does not depend on any axioms
+'LexLeanBoot.RustPrint.machineArity' does not depend on any axioms
+'LexLeanBoot.RustPrint.machineClose' does not depend on any axioms
+'LexLeanBoot.RustPrint.machineOpen' does not depend on any axioms
+'LexLeanBoot.RustPrint.minimum' does not depend on any axioms
+'LexLeanBoot.RustPrint.nonEmpty' does not depend on any axioms
+'LexLeanBoot.RustPrint.opensBrace' does not depend on any axioms
+'LexLeanBoot.RustPrint.paramStep' does not depend on any axioms
+'LexLeanBoot.RustPrint.plainHigh' does not depend on any axioms
+'LexLeanBoot.RustPrint.plainLow' does not depend on any axioms
+'LexLeanBoot.RustPrint.printCrate' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPrint.printExpr' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPrint.printNode' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPrint.probeCode' does not depend on any axioms
+'LexLeanBoot.RustPrint.putBytesLit' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPrint.putDefs' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPrint.putDis' does not depend on any axioms
+'LexLeanBoot.RustPrint.putId' does not depend on any axioms
+'LexLeanBoot.RustPrint.putItem' does not depend on any axioms
+'LexLeanBoot.RustPrint.putItemDef' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPrint.putKind' does not depend on any axioms
+'LexLeanBoot.RustPrint.putLeaf' does not depend on any axioms
+'LexLeanBoot.RustPrint.putLit' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPrint.putNat' does not depend on any axioms
+'LexLeanBoot.RustPrint.putOrdering' does not depend on any axioms
+'LexLeanBoot.RustPrint.putParamTys' does not depend on any axioms
+'LexLeanBoot.RustPrint.putPars' does not depend on any axioms
+'LexLeanBoot.RustPrint.putPat' does not depend on any axioms
+'LexLeanBoot.RustPrint.putQuoted' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPrint.putReturns' does not depend on any axioms
+'LexLeanBoot.RustPrint.putRow' does not depend on any axioms
+'LexLeanBoot.RustPrint.putS' does not depend on any axioms
+'LexLeanBoot.RustPrint.putTy' does not depend on any axioms
+'LexLeanBoot.RustPrint.quoteStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPrint.scalarAt' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPrint.scalarHex' does not depend on any axioms
+'LexLeanBoot.RustPrint.secondMid' does not depend on any axioms
+'LexLeanBoot.RustPrint.tag' does not depend on any axioms
+'LexLeanBoot.RustPrint.tyIsFn' does not depend on any axioms
+'LexLeanBoot.RustPrint.tyIsUnit' does not depend on any axioms
+'LexLeanBoot.RustPrint.tyNonEmpty' does not depend on any axioms
+'LexLeanBoot.RustPrint.unaryClose' does not depend on any axioms
+'LexLeanBoot.RustPrint.unaryOpen' does not depend on any axioms
+'LexLeanBoot.RustPrint.unitLit' does not depend on any axioms
 'LexLeanBoot.RustValidate.BinaryKind' does not depend on any axioms
 'LexLeanBoot.RustValidate.Callee' does not depend on any axioms
 'LexLeanBoot.RustValidate.Cap' does not depend on any axioms
@@ -317,6 +531,11 @@
 'LexLeanBoot.RustValidate.instHas' does not depend on any axioms
 'LexLeanBoot.RustValidate.instSame' does not depend on any axioms
 'LexLeanBoot.RustValidate.isNilExpr' does not depend on any axioms
+'LexLeanBoot.RustValidate.isOverflowArgs' does not depend on any axioms
+'LexLeanBoot.RustValidate.isOverflowErr' does not depend on any axioms
+'LexLeanBoot.RustValidate.isOverflowExpr' does not depend on any axioms
+'LexLeanBoot.RustValidate.isOverflowLit' does not depend on any axioms
+'LexLeanBoot.RustValidate.isOverflowTy' does not depend on any axioms
 'LexLeanBoot.RustValidate.isSome' does not depend on any axioms
 'LexLeanBoot.RustValidate.isUncons' does not depend on any axioms
 'LexLeanBoot.RustValidate.itemFallible' does not depend on any axioms
@@ -337,6 +556,9 @@
 'LexLeanBoot.RustValidate.lookupFlag' does not depend on any axioms
 'LexLeanBoot.RustValidate.lookupNat' does not depend on any axioms
 'LexLeanBoot.RustValidate.lookupVariants' does not depend on any axioms
+'LexLeanBoot.RustValidate.machineArity' does not depend on any axioms
+'LexLeanBoot.RustValidate.machineCallC' does not depend on any axioms
+'LexLeanBoot.RustValidate.machineName' does not depend on any axioms
 'LexLeanBoot.RustValidate.minConstruct' depends on axioms: [propext]
 'LexLeanBoot.RustValidate.movedInLoop' depends on axioms: [propext]
 'LexLeanBoot.RustValidate.nameIsFn' does not depend on any axioms
@@ -746,6 +968,26 @@
 'LexLeanRuntime.subtract' does not depend on any axioms
 'LexLeanRuntime.utf8Decode' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanRuntime.utf8Encode' does not depend on any axioms
+'LexLeanStd.Buffer.Buffer' does not depend on any axioms
+'LexLeanStd.Buffer.byteStep' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Buffer.decimal' does not depend on any axioms
+'LexLeanStd.Buffer.digit' does not depend on any axioms
+'LexLeanStd.Buffer.exceeded' does not depend on any axioms
+'LexLeanStd.Buffer.finish' does not depend on any axioms
+'LexLeanStd.Buffer.joinAll' does not depend on any axioms
+'LexLeanStd.Buffer.length' does not depend on any axioms
+'LexLeanStd.Buffer.new' does not depend on any axioms
+'LexLeanStd.Buffer.pairStep' does not depend on any axioms
+'LexLeanStd.Buffer.pairUp' does not depend on any axioms
+'LexLeanStd.Buffer.refuse' does not depend on any axioms
+'LexLeanStd.Buffer.seal' does not depend on any axioms
+'LexLeanStd.Buffer.writeAll' does not depend on any axioms
+'LexLeanStd.Buffer.writeByte' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Buffer.writeBytes' does not depend on any axioms
+'LexLeanStd.Buffer.writeDecimal' does not depend on any axioms
+'LexLeanStd.Buffer.writeEach' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Buffer.writeNumbers' does not depend on any axioms
+'LexLeanStd.Buffer.zeroStep' does not depend on any axioms
 'LexLeanStd.Text.byteAt' does not depend on any axioms
 'LexLeanStd.Text.chomp' does not depend on any axioms
 'LexLeanStd.Text.endsWith' does not depend on any axioms

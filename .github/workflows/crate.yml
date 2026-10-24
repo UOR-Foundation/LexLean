@@ -1,0 +1,165 @@
+# The lexlean crate on crates.io (#260): what must hold before anyone uploads it,
+# and the upload of a development pre-release of a release line.
+#
+# `release.yml` calls this workflow for every run, so a rehearsal and a tag both
+# prove the crate: it packages twice to the same bytes, the bytes `cargo publish
+# --dry-run` would send are those bytes, they meet what crates.io needs from an
+# archive, and they are the `lexlean.crate` that `cargo xtask release-artifacts`
+# attaches, with the SHA-256 its `checksums.txt` lists. A tag's upload is the
+# `publish` job of release.yml.
+#
+# Dispatched on a release line (`release/vX.Y`) with `prerelease`, it does the
+# same for `X.Y.0-dev.<n>`, n being the number of first-parent commits of the
+# line at the dispatched commit, and uploads that version when a credential
+# exists. The upload needs a `CARGO_REGISTRY_TOKEN` secret in the crates.io
+# environment, or the repository variable CRATES_IO_TRUSTED_PUBLISHING set to
+# `true` once the owner has configured trusted publishing for the crate. With
+# neither, nothing is uploaded and the run says so. The first upload of a name
+# is the owner's: trusted publishing cannot be configured for a crate that does
+# not exist.
+name: crate
+
+on:
+  workflow_call:
+    inputs:
+      prerelease:
+        description: Package a development pre-release of the release line instead of the workspace version
+        type: boolean
+        default: false
+    outputs:
+      sha256:
+        description: The SHA-256 of the crate every check agreed on
+        value: ${{ jobs.readiness.outputs.sha256 }}
+      version:
+        description: The crate version
+        value: ${{ jobs.readiness.outputs.version }}
+  workflow_dispatch:
+    inputs:
+      prerelease:
+        description: Package, and upload when authorised, X.Y.0-dev.<n> of the release line this is dispatched on
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: never
+
+jobs:
+  readiness:
+    name: crate readiness
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    outputs:
+      sha256: ${{ steps.prove.outputs.sha256 }}
+      version: ${{ steps.prove.outputs.version }}
+    steps:
+      # The whole history: a pre-release is named by its commit count.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install
+      - id: prove
+        shell: bash
+        env:
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          set -euo pipefail
+          version="$(.github/crate-publication.sh prepare "$PRERELEASE")"
+          a="${RUNNER_TEMP}/package-a" b="${RUNNER_TEMP}/package-b" dry="${RUNNER_TEMP}/dry"
+          crate="lexlean-${version}.crate"
+          # A pre-release is packaged from a stamped copy of the commit, which
+          # cargo calls dirty; the crate records the commit it was cut from
+          # and that it was stamped (`.cargo_vcs_info.json`).
+          dirty=()
+          if [ "$PRERELEASE" = true ]; then dirty=(--allow-dirty); fi
+          cargo package --locked "${dirty[@]}" --package lexlean --target-dir "$a"
+          cargo package --locked --no-verify "${dirty[@]}" --package lexlean --target-dir "$b"
+          cmp "$a/package/$crate" "$b/package/$crate"
+          cargo publish --dry-run --locked "${dirty[@]}" --package lexlean --target-dir "$dry"
+          cmp "$a/package/$crate" "$dry/package/$crate"
+          .github/crate-publication.sh metadata "$dry/package/$crate"
+          if [ "$PRERELEASE" = true ]; then
+            sha256="$(sha256sum "$dry/package/$crate" | cut -d' ' -f1)"
+            agreed="three packagings of the same commit"
+          else
+            # The crate the release attaches and the checksum it lists for it.
+            cargo xtask release-artifacts
+            sha256="$(.github/crate-publication.sh identity release "$dry/package/$crate")"
+            agreed="the crate release-artifacts attaches and the checksum checksums.txt lists"
+          fi
+          echo "sha256=$sha256" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          {
+            echo "## lexlean ${version}"
+            echo
+            echo "Packaged, dry-run, and checked against crates.io's metadata; ${agreed} agree:"
+            echo
+            echo '```text'
+            echo "${sha256}  ${crate}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  prerelease:
+    name: upload the development pre-release
+    needs: readiness
+    # Only a dispatch uploads from here; a call from release.yml proves the
+    # crate and uploads nothing.
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    environment: crates.io
+    env:
+      HAS_CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN != '' }}
+      TRUSTED_PUBLISHING: ${{ vars.CRATES_IO_TRUSTED_PUBLISHING == 'true' }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install
+      - name: Decide how the upload is authorised
+        id: upload
+        shell: bash
+        run: echo "mode=$(.github/crate-publication.sh mode)" >> "$GITHUB_OUTPUT"
+      - name: Acquire crates.io trusted-publisher token
+        if: ${{ steps.upload.outputs.mode == 'trusted' }}
+        uses: rust-lang/crates-io-auth-action@c6f97d42243bad5fab37ca0427f495c86d5b1a18
+        id: crates-auth
+      - name: No upload credential
+        if: ${{ steps.upload.outputs.mode == 'none' }}
+        env:
+          VERSION: ${{ needs.readiness.outputs.version }}
+          CRATE_SHA256: ${{ needs.readiness.outputs.sha256 }}
+        run: echo "::notice::lexlean ${VERSION} (sha256 ${CRATE_SHA256}) was packaged and dry-run; no CARGO_REGISTRY_TOKEN and no trusted publishing, so nothing was uploaded"
+      - name: Upload the exact checked crate
+        if: ${{ steps.upload.outputs.mode != 'none' }}
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN || steps.crates-auth.outputs.token }}
+          VERSION: ${{ needs.readiness.outputs.version }}
+          CRATE_SHA256: ${{ needs.readiness.outputs.sha256 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [ "$(.github/crate-publication.sh prepare true)" = "$VERSION" ]
+          cargo package --locked --no-verify --allow-dirty --package lexlean --target-dir "${RUNNER_TEMP}/upload"
+          test "$(sha256sum "${RUNNER_TEMP}/upload/package/lexlean-${VERSION}.crate" | cut -d' ' -f1)" = "$CRATE_SHA256"
+          cargo publish --locked --allow-dirty --package lexlean --target-dir "${RUNNER_TEMP}/upload"
+          for attempt in $(seq 1 30); do
+            printf 'checking crates.io visibility (attempt %s/30)\n' "$attempt"
+            if curl --fail --location --silent --show-error \
+                "https://crates.io/api/v1/crates/lexlean/${VERSION}/download" \
+                --output "${RUNNER_TEMP}/lexlean-public.crate"; then
+              test "$(sha256sum "${RUNNER_TEMP}/lexlean-public.crate" | cut -d' ' -f1)" = "$CRATE_SHA256"
+              echo "lexlean ${VERSION} is on crates.io with sha256 ${CRATE_SHA256}"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::lexlean ${VERSION} did not become publicly downloadable" >&2
+          exit 1
