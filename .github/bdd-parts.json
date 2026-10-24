@@ -197,6 +197,15 @@
     ],
     "bootstrap-runtime": [
       "BS-09"
+    ],
+    "bootstrap-lower": [
+      "BS-07"
+    ],
+    "bootstrap-moves": [
+      "BS-08"
+    ],
+    "bootstrap-terms": [
+      "BS-10"
     ]
   }
 }

@@ -9943,6 +9943,311 @@ exact axiom policy of a definition is read from the construct it reaches
 none), and the verifier reports one definition per run, so the first
 declaration of an axiom set is found by reading the construct, not by running.
 
+`BS-07` holds the three roots of the failure typing of the lowering to the
+oracle: `siteTrees` of `LexLeanBoot.CalculusCheck` (the tree of typing sites,
+`calculus::sites::trees`), and `deadFunctions` and `fallibleFunctions` of
+`LexLeanBoot.RustLower` (`bootstrap/src/RustLower.lex.tex`; the dead functions
+are the functions the crate of `rust::lower` renders as an empty match, and the
+failures are `calculus::rust::fallible_functions`). No file of the renderer
+(`RENDERER_FILES`) is changed, so the renderer's digest does not move. The case runs 309
+vectors per root (the 22 programs of the rules of the analysis, the programs of
+the corpora of `BS-04` that the checker accepts, and the committed target
+programs) under the pinned rustc on every host (38 harness binaries built in
+531 s, 927 runs in 17 s more), and on the normative host the evaluator on the
+272 of them of at most 300 nodes with 150 seeded mutants (37 s for
+`siteTrees`, 12 s for `deadFunctions`, 23 s for `fallibleFunctions`), 4,500
+more runs for the 1,500 seeded mutants under rustc (25 binaries, 189 s),
+thirteen planted defects, and the production export. The case up to the
+comparison with the committed packages takes 1,990 s on this host (4 cores);
+the packages are the maintainer's regeneration at landing.
+
+Measured certificates (the largest part of each root, in bytes; the file limit
+`max_file_bytes` is 4,194,304 and three quarters of it, which the case asserts
+for each root, is 3,145,728):
+
+| Build | Largest part |
+| --- | --- |
+| one root, the whole analysis (collect, edges, liveness, reach, failures) | 4,465,840 (refused, `LLS8002`) |
+| the same in two roots, `deadFunctions` and `fallibleFunctions`, each calling `walk` | 3,987,444 and 3,841,069 |
+| `walk` alone, as the root `inferTy` (a probe, not committed) | 2,977,029 |
+| `siteTrees` with its body chain as a second recursion over `Expr` | 3,157,718 (11,990 over the budget) |
+| `siteTrees` with the chain folded into `siteTree` | **3,144,673** (1,055 under) |
+| `deadFunctions` and `fallibleFunctions` reading the tree | **1,250,877** and **1,003,841** |
+
+The margin of `siteTrees` is therefore 1,055 bytes, and the second `match` over
+`Expr` that the fold removed (16 arms, 120 pairs of arms) bought the 12,000
+bytes. The rule for the later slices of `BS-07`: nothing is added to the
+closure of `siteTrees`; a slice that needs more from the typing root splits it,
+by item or by kind of site, and measures, rather than growing it. The consumers
+sit at 30 and 24 percent of the limit, and that is the room the remaining
+slices live in. The typing root is `walk` and `inferTy` of `CalculusCheck`
+(one copy, the one `checkProgram` runs on), and `RustLower` holds no second
+copy: its own `inferTy` and `armFields` were moved into the module and removed
+from it. The roots recurse with the depth of their input; the stack bounds that
+the case measured in a debug build, which the landing regeneration records, are
+5,242,880 bytes for `site_trees`, 4,063,232 for `dead_functions`, and 4,128,768
+for `fallible_functions`.
+
+The evaluator share is bounded by a measurement, not an estimate. The first
+design (one root holding the analysis, with `walk` in it) took 1,789 s on the
+295 vectors of the corpus then. With the typing root the 272 vectors within 300
+nodes take 37 s for `siteTrees` (the root that carries `walk`), and all 309
+vectors take 874 s for it, so the 37 largest programs cost 835 s on one root;
+the bound of 300 nodes keeps the three roots at 72 s with the mutants. A
+program above the bound is still a vector under rustc on every host.
+
+Each of these thirteen plants is made on a copy of `bootstrap/src/RustLower.lex.tex`
+(the first ten) or `bootstrap/src/CalculusCheck.lex.tex` (the last three) on
+every run, and is caught on the leg of its root; the run is the index among the
+vectors of the root (the programs of the rules first):
+
+- **an addition of naturals does not fail**, `fallibleFunctions`, run 0.
+- **a successor does not fail**, `fallibleFunctions`, run 6.
+- **a parse of an integer does not fail**, `fallibleFunctions`, run 90: the
+  program gives `[false]`, the oracle `[true]`.
+- **a call is not an edge**, `fallibleFunctions`, run 0.
+- **an application is not an edge**, `fallibleFunctions`, run 7.
+- **the closures of a dead function count**, `deadFunctions`, run 9: the
+  function whose only argument type is inhabited by the closure of a dead
+  function is dead in the second round, not in the first.
+- **the failures are followed one round**, `fallibleFunctions`, run 0.
+- **a closure of any function type makes an application fail**,
+  `fallibleFunctions`, run 7.
+- **no type holds itself**, `deadFunctions`, run 12.
+- **every function type is inhabited**, `deadFunctions`, run 9.
+- **an applied target reads as no type**, `siteTrees`, run 7.
+- **the body of an arm is typed without its binders**, `siteTrees`, run 131.
+- **the body of a let is typed without its binding**, `siteTrees`, run 21.
+
+The case's first failure, before the module existed (R3), was `no bootstrap
+case is wired for BS-07`. Removed: the source was not changed (the plants are
+made on copies).
+
+Findings while building the roots. (1) A gate that reads its own vectors can
+be vacuous without failing: eight of the programs of the rules were refused by
+the checker (a quotient and a remainder with two operands, and types with no
+constructor), and `vectors` drops a program the checker refuses, so the plant
+of "the closures of a dead function count" was undetected until the case found
+that the program built to catch it had never been a vector. The programs are
+now valid (an argument no value inhabits is a function type no closure
+inhabits), and the case fails if a program of the rules is refused or if none
+of them has a dead function. (2) The outcome of the typing root nests with the
+length of the chains of a program, past the 128 levels that the JSON reader
+allows by default; the harness reads an outcome line without the limit, as the
+other readers of a deep value do. (3) Certificate A cannot name the matched
+variable in a branch, and a function that returned the matched chain in its
+leaves rebuilds it from the fields of the pattern. (4) The exact axiom policy
+of a definition follows the construct it reaches, so a definition that reached
+`walk` states `[Quot.sound, propext]` and states none once it no longer does
+(`LLV7005` says so, one definition per run). (5) The committed-package
+comparison of the case ends it on a tree whose packages were not regenerated:
+on a clean checkout at the assertion that the exported package files are the
+committed ones (the three package directories are absent), and on a tree with
+the three packages copied in at `audit_tokens/package.json`, which differs
+because every package carries the identity of the project, as for `BS-06`.
+
+`BS-07`, second slice: `lowerTypes` of `LexLeanBoot.RustLower` returns the
+items of the crate that declare its types (the `Enum` of each ADT and of each
+function type, and the `Apply` of each function type) as a `RustAst.Def`
+chain, held to the items of the crate that `rust::lower` builds before its
+first function. Its input is the program, the tree of `siteTrees`, the dead
+functions, and the failing functions, so the case feeds it the legs of the
+vector before it. The case runs 310 vectors per root (one more than the first
+slice: the package of `lowerTypes` is a committed program) under the pinned
+rustc on every host (58 harness binaries built in 875 s, 1,240 runs in 23 s
+more), and on the normative host the evaluator on the 272 of them of at most
+300 nodes with 150 seeded mutants (53 s for `siteTrees`, 14 s for
+`deadFunctions`, 24 s for `fallibleFunctions`, 26 s for `lowerTypes`), 6,000
+seeded runs under rustc (35 binaries, 278 s), twenty planted defects, and the
+production export. The case up to the comparison with the committed packages
+takes 2,589 s on this host (4 cores), and stops there on this tree with the
+packages and the records left to the maintainer's regeneration: the packages
+`lower_types`, `dead_functions` and `fallible_functions`, `bootstrap/expected/`,
+the locks, and the PD-08 rows. The rows measured in a debug build with the four
+packages of `BS-07` are 4,063,232 bytes for `lower_types`, 4,063,232 for
+`dead_functions` (as in the first slice), and 4,063,232 for `fallible_functions`
+(4,128,768 in the first slice: one step of the bisection less, with the corpus of
+the second slice).
+
+Measured certificates after the slice (the largest part of each root, in
+bytes; the budget is 3,145,728, three quarters of `max_file_bytes`):
+
+| Root | Largest part | Share of the limit |
+| --- | --- | --- |
+| `siteTrees` | 3,144,673 | 75.0% (1,055 under the budget; unchanged) |
+| `deadFunctions` | 1,273,118 | 30.4% (was 1,250,877) |
+| `fallibleFunctions` | 1,058,398 | 25.2% (was 1,003,841) |
+| `lowerTypes` | 1,535,849 | 36.6% |
+
+Nothing was added to the closure of `siteTrees`, as the rule for the slices
+requires: the typing root is unchanged, and the two consumers grew by 22,000
+and 55,000 bytes because the collector they share now numbers the function
+types as the oracle does. Before the slice was built, a probe root returning a
+`Def` chain of `n` empty enums certified under the pinned Lean with parts of
+48,495 and 40,258 bytes, so certificate B takes a value of a recursive sort as
+an output and no chain encoding is needed; the `Def` of the output is the one
+`RustPrint` prints.
+
+The numbering of the function types is part of the output, and it is the
+oracle's: the types of each function and its result before its body, the type
+of a closure and its record before the closures in its captures, and the
+fields of the ADTs after all the functions. Two differences between the first
+slice's collector and the oracle did not matter for the flags and matter for
+the numbers: the closure was recorded after its captures, and the chain of
+known types was built newest first. Both are fixed in the collector, and the
+plant "function types are numbered newest first" (run 7) is the second.
+
+Each of these seven plants is made on a copy of `bootstrap/src/RustLower.lex.tex`
+on every run and is caught on the leg of `lowerTypes`; the run is the index
+among the vectors of the root:
+
+- **a field that holds its owner is not boxed**, run 11.
+- **a boxed capture is cloned**, run 130.
+- **an application of a function type is never fallible**, run 7.
+- **the closures of a function type are listed newest first**, run 7.
+- **a function type with closures is written as the stated type**, run 7.
+- **function types are numbered newest first**, run 7.
+- **a string capture is copied**, run 128.
+
+The counts of `BS-05` and `BS-06` are restated on the tree with the four
+packages of `BS-07` (259 manifests and packages, 176 programs, 235 crates; 455
+and 318 vectors of `BS-05`; 613 vectors of `printCrate` and 470 committed
+distinct crates of `BS-06`, 545 of the evaluator's), computed by running their
+cases on that tree.
+
+`BS-08` holds the production root of `LexLeanBoot.RustMoves`
+(`bootstrap/src/RustMoves.lex.tex`), the last-use moves of the lowering, to the
+public oracle `calculus::rust::moves::apply`, the first pass of the function
+bodies and a case of its own (the first draft of it was a leg of the case of
+`BS-07`, whose run, with the mutants drawn from the
+compiler's own crates, reached 14 GB of memory and was killed after 44 minutes; the case is split by pass
+and the mutation bases are the crates of at most 80 expressions, as `BS-05`
+draws them: 4.7 GB resident). The case runs 352 crates (the hand-built
+rule crates, the hand-built crates of `BS-05`, and the crates the renderer
+lowers from the 260 committed manifests) under the pinned rustc on every host
+(21 harness binaries built in 263 s, 352 runs in 24 s more), and on the
+normative host the evaluator on the 317 of them of at most 400 expressions with
+150 seeded mutants (47 s), 1,500 seeded mutants under rustc (9 binaries, 54
+s), eight planted defects, and the production export. The case up to the
+comparison with the committed packages takes 1,734 s on this host (4 cores),
+and stops there on this tree with the packages and the records left to the
+maintainer's regeneration: the package `apply_moves`, `bootstrap/expected/`,
+the locks, and the PD-08 row `bootstrap/apply_moves`, which the case measured in
+a debug build as 6,029,312 bytes.
+
+Measured certificate of `applyMoves` (bytes; the limit `max_file_bytes` is
+4,194,304 and the budget the case asserts is 3,145,728): part A 551,083, part B
+565,927 (the largest, 13.5% of the limit), part E 164,725; the export took 19
+min 46 s. The exact axiom policy observed is `Classical.choice`, `Quot.sound`,
+and `propext`. The pass is 218 lines of oracle source, about 2,600 bytes of
+certificate per line. The typing root `siteTrees` is untouched, as the rule for
+the slices requires.
+
+The pass is a backwards liveness pass over the 17 constructors of `Expr` with
+the live set an association list of counts. It is written as two recursions
+beside each other, the reads of an expression given what is read after it, and
+its rewrite given the same, because the structure that holds a recursive sort
+beside the set was not needed: the rewrite never returns the set. Each of
+these eight plants is made on a copy of `bootstrap/src/RustMoves.lex.tex` on
+every run and is caught by the oracle; the run is the index among the crates
+(the rule crates first):
+
+- **a last read never moves**, run 0.
+- **a component moves though another is read twice**, run 8.
+- **the reads of a component on two alternatives are added**, run 9.
+- **the holder of an application is not read before its operands**, run 21.
+- **the left of a pair is read before its right**, run 23.
+- **a pattern does not unbind its names**, run 3.
+- **a pattern that binds both components is a projection**, run 11.
+- **the state of a loop is not read**, run 24.
+
+Findings. (1) A plant is only as strong as the crates that reach it: five of
+the first drafts of these were not detected, and each turned out to be
+equivalent or too weak on the crates then in the corpus: replacing one arm of
+`mayMove` left the other answering `true`; the order of two reads in the
+function that only counts them does not change the counts, so the plant went to
+the function that rewrites; the sum of the reads of two alternatives is
+non-zero where their maximum is, so it went to the counts of the components. A
+rule crate was added for each that needs one (a component projected while
+another is read twice after it, a component read once on each of two
+alternatives, an application whose holder is also an operand, a pattern that
+binds both components after a projection, a read of the state before a loop).
+(2) The whole case takes 29 minutes (1,734 s) on this host, and `BS-07` keeps its own. (3) The counts of `BS-05`,
+`BS-06`, and `BS-07` move with the package of this root (260 manifests and
+packages, 177 programs, 236 crates; `BS-05` 456 and 319 vectors; `BS-06` 615
+vectors of `printCrate` and 472 committed distinct crates; `BS-07` 311
+vectors) and are recounted by running their cases on this tree.
+
+`BS-10` holds the production root of `LexLeanBoot.RustTerms`
+(`bootstrap/src/RustTerms.lex.tex`), the literal values of the lowering of
+terms (`Lowering::value`), to the tail of the function whose body is a literal
+in the crate that `rust::lower` returns. The oracle's `value` is private to the
+renderer, whose files the compiler-semantics digest frames, so it is held by
+composition and not exposed: the case asserts that the body of such a function
+has no binding, so its tail is the expression `value` built. The case runs 358
+explicit runs (every scalar literal at the ends of its range in each of five
+contexts: no ADT, a list that holds itself, ADTs that hold an option, a result,
+and a pair, two ADTs that hold each other through an option, and a program that
+states a function type; the composite literals; the literals of those ADTs; the
+absent option of a function type) under the pinned rustc on every host (one
+harness binary built in 4 s, 358 runs in 0.03 s more), and on the normative
+host the evaluator on those and on 150 seeded runs, 1,500 seeded runs under
+rustc (two binaries, 14 s), ten planted defects, and the production export.
+The case up to the comparison with the committed packages takes 1,260 s on
+this host (4 cores), and stops there on this tree with the packages and the
+records left to the maintainer's regeneration: the package `lower_value_at`,
+`bootstrap/expected/`, the locks, and the PD-08 row `bootstrap/lower_value_at`,
+which the case measured in a debug build as 1,048,576 bytes on the explicit
+runs and 4,390,912 on the seeded ones (the larger is the row).
+
+Measured certificate of `lowerValueAt` (bytes; the limit `max_file_bytes` is
+4,194,304 and the budget the case asserts is 3,145,728): part A 2,004,962 (the
+largest, 47.8% of the limit), part B 1,879,973, part E 247,001; the export took
+20 min 36 s. The root carries the analysis of `lowerTypes` (the numbering of the
+function types, the edges that decide which field of an ADT is boxed) beside
+the literal; the typing roots are untouched.
+
+The corpora measure what the root cannot be wrong about: the oracle's checker
+refuses every text the lowering would refuse (`+5`, `007`, `-0`, a magnitude
+beyond 64 bits, upper-case or odd-length hexadecimal, a literal of a shape that
+does not fit its type, an ADT literal with a missing or an extra field or a
+constructor out of range), so none of the 358 explicit and 1,650 seeded runs
+expects a refusal, and the case asserts it. The first draft read the signs and
+the upper-case digits the lowering reads; they are removed, because no vector
+reaches them and a branch the oracle cannot exercise is a claim nothing holds.
+Each of ten plants is made on a copy of `bootstrap/src/RustTerms.lex.tex` on
+every run and is caught by the oracle; the run is the index among the explicit
+runs, then the seeded ones:
+
+- **the minus of an integer is dropped**, run 13.
+- **a digit is worth nine times the place before it**, run 6.
+- **the letters of a hexadecimal digit are one less**, run 59.
+- **the width of a fixed literal is not in its origin**, run 18.
+- **the origin of an error is that of an err**, run 335.
+- **the type of an absent option is the option's own**, run 330.
+- **the types of an error constructor are swapped**, run 335.
+- **the head and the tail of a list are swapped**, run 338.
+- **a field that holds its ADT is not boxed**, run 345.
+- **every field of an ADT is boxed**, run 345.
+
+Findings. (1) The production export of the bootstrap project is now beyond the
+default `max_total_source_bytes` (67,108,864): the limit counts the programs,
+the crates, and the certificates of every production root of the project
+together, and this root passed it at 67,815,299 bytes. The bootstrap
+project now configures 134,217,728 in `bootstrap/lexlean.toml` (the maintainer's
+decision; a semantic input, so the lock and every package of the project move
+at the landing), and the measurements above were made with it; the remaining
+term-lowering passes need about 100 MB in all. (2) A branch the oracle cannot reach is removed rather than planted:
+the sign and the upper-case forms the lowering accepts (the checker refuses
+them) were in the first draft and had no plant that could detect them.
+(3) The counts of `BS-05`, `BS-06`, `BS-07`, and `BS-08` move with the package
+of this root (261 manifests and packages, 178 programs, 237 crates; `BS-05` 457
+and 320 vectors; `BS-06` 617 vectors of `printCrate`, 474 committed distinct
+crates, 543 of the evaluator's; `BS-07` 312 vectors; `BS-08` 353 crates) and
+are recounted by running their cases on this tree until they passed every
+count they assert (the cases were run for 400 to 900 s each and stopped there,
+not to completion: the full runs, with the packages, are the maintainer's).
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the

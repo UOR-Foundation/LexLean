@@ -54,6 +54,33 @@
     "hints": ""
   },
   {
+    "part": "bdd-bootstrap-lower",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-lower",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-moves",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-moves",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-terms",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-terms",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
     "part": "bdd-compiler",
     "recipes": "bdd",
     "examples_part": "",

@@ -21,7 +21,10 @@ use crate::rust_packages;
 use crate::support::{self, P};
 
 mod runtime_validate;
+mod rust_lower;
+mod rust_moves;
 mod rust_print;
+mod rust_terms;
 mod rust_validate;
 mod scan;
 
@@ -2426,8 +2429,11 @@ fn case(id: &str) {
         "BS-04" => calculus_check::case(),
         "BS-05" => rust_validate::case(),
         "BS-06" => rust_print::case(),
+        "BS-07" => rust_lower::case(),
+        "BS-08" => rust_moves::case(),
         // §17.23, §17.16: the runtime syntax validator.
         "BS-09" => runtime_validate::case(),
+        "BS-10" => rust_terms::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }

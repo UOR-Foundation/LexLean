@@ -2551,6 +2551,18 @@ pub(super) fn value_nodes(value: &Value) -> usize {
 /// runs are spread over several harness binaries of one compiled package.
 pub(super) const HARNESS_NODES: usize = 60_000;
 
+/// One outcome line, whatever its depth: a program's typing tree nests with
+/// the length of its chains, past the reader's default limit of 128 levels,
+/// and the reader's recursion is the host stack's, as everywhere a value of a
+/// recursive type is read.
+fn parse_deep(line: &str) -> Result<Json, serde_json::Error> {
+    let mut reader = serde_json::Deserializer::from_str(line);
+    reader.disable_recursion_limit();
+    let value = serde::Deserialize::deserialize(&mut reader)?;
+    reader.end()?;
+    Ok(value)
+}
+
 /// The rendered `rust-std` packages of the roots, compiled by the pinned
 /// rustc, run on `runs` of each root: one outcome per run, each equal to the
 /// oracle's. Returns the number of runs.
@@ -2681,8 +2693,7 @@ pub(super) fn rustc_differential(
             .lines()
             .filter(|line| !line.starts_with("work "))
             .map(|line| {
-                serde_json::from_str(line)
-                    .unwrap_or_else(|error| panic!("{binary}: {error}: {line}"))
+                parse_deep(line).unwrap_or_else(|error| panic!("{binary}: {error}: {line}"))
             })
             .collect();
         assert_eq!(

@@ -1,0 +1,434 @@
+\begin{lexlean}{RustMoves}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{RustAst}
+\importmodule{RustValidate}
+\title{Natural number addition}
+\begin{semanticmodule}
+structure{
+  name: Later,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: whole, type: Nat}, {name: parts, type: (List (Nat * Nat))}]
+}
+
+definition{
+  name: idKey,
+  parameters: [ident : RustValidate::Id],
+  result: (Nat * Nat),
+  body: (match ident
+    | RustValidate::Id.IdLocal n => (0, n)
+    | RustValidate::Id.IdHolder n => (1, n)
+    | RustValidate::Id.IdOperand n => (2, n)
+    | RustValidate::Id.IdCallee n => (3, n)
+    | RustValidate::Id.IdBoxed n => (4, n)
+    | RustValidate::Id.IdPart n => (5, n)
+    | RustValidate::Id.IdCapture n => (6, n)
+    | RustValidate::Id.IdParam n => (7, n)
+    | RustValidate::Id.IdFunction n => (8, n)
+    | RustValidate::Id.IdExport n => (9, 0)),
+  executable: true
+}
+
+definition{
+  name: idEq,
+  parameters: [left : RustValidate::Id, right : RustValidate::Id],
+  result: Bool,
+  body: (let one : (Nat * Nat) := (idKey left); (let two : (Nat * Nat) := (idKey right); (((first one) =? (first two)) && ((second one) =? (second two))))),
+  executable: true
+}
+
+definition{
+  name: natMax,
+  parameters: [left : Nat, right : Nat],
+  result: Nat,
+  body: (if (left <? right) then right else left),
+  executable: true
+}
+
+definition{
+  name: partCount,
+  parameters: [parts : (List (Nat * Nat)), part : Nat],
+  result: Nat,
+  body: (match parts
+    | List.nil => 0
+    | List.cons head tail => (if ((first head) =? part) then (second head) else (partCount tail part))),
+  executable: true,
+  recursive_argument: parts
+}
+
+definition{
+  name: partSet,
+  parameters: [parts : (List (Nat * Nat)), part : Nat, count : Nat],
+  result: (List (Nat * Nat)),
+  body: (match parts
+    | List.nil => (cons (part, count) (nil (Nat * Nat)))
+    | List.cons head tail => (if ((first head) =? part) then (cons (part, count) tail) else (cons head (partSet tail part count)))),
+  executable: true,
+  recursive_argument: parts
+}
+
+definition{
+  name: mergeParts,
+  parameters: [left : (List (Nat * Nat)), right : (List (Nat * Nat))],
+  result: (List (Nat * Nat)),
+  body: (match right
+    | List.nil => left
+    | List.cons head tail => (mergeParts (partSet left (first head) (natMax (second head) (partCount left (first head)))) tail)),
+  executable: true,
+  recursive_argument: right
+}
+
+definition{
+  name: atMostOne,
+  parameters: [parts : (List (Nat * Nat))],
+  result: Bool,
+  body: (match parts
+    | List.nil => true
+    | List.cons head tail => (if ((second head) <? 2) then (atMostOne tail) else false)),
+  executable: true,
+  recursive_argument: parts
+}
+
+definition{
+  name: liveFind,
+  parameters: [live : (List (RustValidate::Id * Later)), ident : RustValidate::Id],
+  result: (Option Later),
+  body: (match live
+    | List.nil => (ctor Option.none [Later])
+    | List.cons head tail => (if (idEq (first head) ident) then (ctor Option.some [Later] (second head)) else (liveFind tail ident))),
+  executable: true,
+  recursive_argument: live
+}
+
+definition{
+  name: liveSet,
+  parameters: [live : (List (RustValidate::Id * Later)), ident : RustValidate::Id, later : Later],
+  result: (List (RustValidate::Id * Later)),
+  body: (match live
+    | List.nil => (cons (ident, later) (nil (RustValidate::Id * Later)))
+    | List.cons head tail => (if (idEq (first head) ident) then (cons (ident, later) tail) else (cons head (liveSet tail ident later)))),
+  executable: true,
+  recursive_argument: live
+}
+
+definition{
+  name: liveRemove,
+  parameters: [live : (List (RustValidate::Id * Later)), ident : RustValidate::Id],
+  result: (List (RustValidate::Id * Later)),
+  body: (match live
+    | List.nil => (nil (RustValidate::Id * Later))
+    | List.cons head tail => (if (idEq (first head) ident) then tail else (cons head (liveRemove tail ident)))),
+  executable: true,
+  recursive_argument: live
+}
+
+definition{
+  name: entryOf,
+  parameters: [live : (List (RustValidate::Id * Later)), ident : RustValidate::Id],
+  result: Later,
+  body: (match (liveFind live ident)
+    | Option.some found => found
+    | Option.none => (record Later {whole := 0, parts := (nil (Nat * Nat))})),
+  executable: true
+}
+
+definition{
+  name: mergeLive,
+  parameters: [left : (List (RustValidate::Id * Later)), right : (List (RustValidate::Id * Later))],
+  result: (List (RustValidate::Id * Later)),
+  body: (match right
+    | List.nil => left
+    | List.cons head tail => (let current : Later := (entryOf left (first head)); (mergeLive (liveSet left (first head) (record Later {whole := (natMax (project current whole) (project (second head) whole)), parts := (mergeParts (project current parts) (project (second head) parts))})) tail))),
+  executable: true,
+  recursive_argument: right
+}
+
+definition{
+  name: readWhole,
+  parameters: [live : (List (RustValidate::Id * Later)), ident : RustValidate::Id],
+  result: (List (RustValidate::Id * Later)),
+  body: (let current : Later := (entryOf live ident); (liveSet live ident (record Later {whole := ((project current whole) + 1), parts := (project current parts)}))),
+  executable: true
+}
+
+definition{
+  name: readPart,
+  parameters: [live : (List (RustValidate::Id * Later)), ident : RustValidate::Id, part : Nat],
+  result: (List (RustValidate::Id * Later)),
+  body: (let current : Later := (entryOf live ident); (liveSet live ident (record Later {whole := (project current whole), parts := (partSet (project current parts) part ((partCount (project current parts) part) + 1))}))),
+  executable: true
+}
+
+definition{
+  name: mayMove,
+  parameters: [live : (List (RustValidate::Id * Later)), ident : RustValidate::Id],
+  result: Bool,
+  body: (match (liveFind live ident)
+    | Option.some found => (((project found whole) =? 0) && ((prim length (project found parts) : Nat) =? 0))
+    | Option.none => true),
+  executable: true
+}
+
+definition{
+  name: mayMovePart,
+  parameters: [live : (List (RustValidate::Id * Later)), ident : RustValidate::Id, part : Nat],
+  result: Bool,
+  body: (match (liveFind live ident)
+    | Option.some found => (((project found whole) =? 0) && (((partCount (project found parts) part) =? 0) && (atMostOne (project found parts))))
+    | Option.none => true),
+  executable: true
+}
+
+definition{
+  name: unbind,
+  parameters: [pattern : RustAst::Pat, live : (List (RustValidate::Id * Later))],
+  result: (List (RustValidate::Id * Later)),
+  body: (match pattern
+    | RustAst::Pat.PLeaf d0 => live
+    | RustAst::Pat.PBind ident => (liveRemove live ident)
+    | RustAst::Pat.PTuple parts => (unbind parts live)
+    | RustAst::Pat.PWrap kind inner => (unbind inner live)
+    | RustAst::Pat.PAdt adt constructor parts => (unbind parts live)
+    | RustAst::Pat.PNil => live
+    | RustAst::Pat.PCons head tail => (let one : (List (RustValidate::Id * Later)) := (unbind head live); (unbind tail one))
+    | RustAst::Pat.POrdering d0 => live),
+  executable: true,
+  recursive_argument: pattern
+}
+
+definition{
+  name: isWild,
+  parameters: [pattern : RustAst::Pat],
+  result: Bool,
+  body: (match pattern
+    | RustAst::Pat.PLeaf leaf => (match leaf
+      | RustAst::PatLeaf.PlWild => true
+      | RustAst::PatLeaf.PlUnit => false
+      | RustAst::PatLeaf.PlNone => false)
+    | RustAst::Pat.PBind d0 => false
+    | RustAst::Pat.PTuple d0 => false
+    | RustAst::Pat.PWrap d0 d1 => false
+    | RustAst::Pat.PAdt d0 d1 d2 => false
+    | RustAst::Pat.PNil => false
+    | RustAst::Pat.PCons d0 d1 => false
+    | RustAst::Pat.POrdering d0 => false),
+  executable: true
+}
+
+definition{
+  name: boundCount,
+  parameters: [parts : RustAst::Pat],
+  result: Nat,
+  body: (match parts
+    | RustAst::Pat.PLeaf d0 => 0
+    | RustAst::Pat.PBind d0 => 0
+    | RustAst::Pat.PTuple d0 => 0
+    | RustAst::Pat.PWrap d0 d1 => 0
+    | RustAst::Pat.PAdt d0 d1 d2 => 0
+    | RustAst::Pat.PNil => 0
+    | RustAst::Pat.PCons head tail => (if (isWild head) then (boundCount tail) else (1 + (boundCount tail)))
+    | RustAst::Pat.POrdering d0 => 0),
+  executable: true,
+  recursive_argument: parts
+}
+
+definition{
+  name: partsLength,
+  parameters: [parts : RustAst::Pat],
+  result: Nat,
+  body: (match parts
+    | RustAst::Pat.PLeaf d0 => 0
+    | RustAst::Pat.PBind d0 => 0
+    | RustAst::Pat.PTuple d0 => 0
+    | RustAst::Pat.PWrap d0 d1 => 0
+    | RustAst::Pat.PAdt d0 d1 d2 => 0
+    | RustAst::Pat.PNil => 0
+    | RustAst::Pat.PCons head tail => (1 + (partsLength tail))
+    | RustAst::Pat.POrdering d0 => 0),
+  executable: true,
+  recursive_argument: parts
+}
+
+definition{
+  name: firstBound,
+  parameters: [parts : RustAst::Pat, at : Nat],
+  result: Nat,
+  body: (match parts
+    | RustAst::Pat.PLeaf d0 => at
+    | RustAst::Pat.PBind d0 => at
+    | RustAst::Pat.PTuple d0 => at
+    | RustAst::Pat.PWrap d0 d1 => at
+    | RustAst::Pat.PAdt d0 d1 d2 => at
+    | RustAst::Pat.PNil => at
+    | RustAst::Pat.PCons head tail => (if (isWild head) then (firstBound tail (at + 1)) else at)
+    | RustAst::Pat.POrdering d0 => at),
+  executable: true,
+  recursive_argument: parts
+}
+
+definition{
+  name: cloneRead,
+  parameters: [value : RustAst::Expr],
+  result: (Option (RustValidate::Id * RustValidate::Origin)),
+  body: (match value
+    | RustAst::Expr.ELit d0 d1 => (ctor Option.none [(RustValidate::Id * RustValidate::Origin)])
+    | RustAst::Expr.ERead kind ident o => (match kind
+      | RustValidate::ReadKind.RkClone => (ctor Option.some [(RustValidate::Id * RustValidate::Origin)] (ident, o))
+      | RustValidate::ReadKind.RkMove => (ctor Option.none [(RustValidate::Id * RustValidate::Origin)])
+      | RustValidate::ReadKind.RkCopy => (ctor Option.none [(RustValidate::Id * RustValidate::Origin)])
+      | RustValidate::ReadKind.RkDeref => (ctor Option.none [(RustValidate::Id * RustValidate::Origin)])
+      | RustValidate::ReadKind.RkUnbox => (ctor Option.none [(RustValidate::Id * RustValidate::Origin)]))
+    | RustAst::Expr.EWrap d0 d1 d2 => (ctor Option.none [(RustValidate::Id * RustValidate::Origin)])
+    | RustAst::Expr.ECall d0 d1 d2 d3 => (ctor Option.none [(RustValidate::Id * RustValidate::Origin)])
+    | RustAst::Expr.EApply d0 d1 d2 d3 => (ctor Option.none [(RustValidate::Id * RustValidate::Origin)])
+    | RustAst::Expr.EConstruct d0 d1 d2 => (ctor Option.none [(RustValidate::Id * RustValidate::Origin)])
+    | RustAst::Expr.EPair d0 d1 d2 => (ctor Option.none [(RustValidate::Id * RustValidate::Origin)])
+    | RustAst::Expr.EIf d0 d1 d2 d3 => (ctor Option.none [(RustValidate::Id * RustValidate::Origin)])
+    | RustAst::Expr.EMatch d0 d1 d2 => (ctor Option.none [(RustValidate::Id * RustValidate::Origin)])
+    | RustAst::Expr.EBlockE d0 => (ctor Option.none [(RustValidate::Id * RustValidate::Origin)])
+    | RustAst::Expr.EProbe d0 d1 d2 => (ctor Option.none [(RustValidate::Id * RustValidate::Origin)])
+    | RustAst::Expr.EBlock d0 d1 => (ctor Option.none [(RustValidate::Id * RustValidate::Origin)])
+    | RustAst::Expr.ENil => (ctor Option.none [(RustValidate::Id * RustValidate::Origin)])
+    | RustAst::Expr.ECons d0 d1 => (ctor Option.none [(RustValidate::Id * RustValidate::Origin)])
+    | RustAst::Expr.ELet d0 d1 d2 d3 d4 d5 => (ctor Option.none [(RustValidate::Id * RustValidate::Origin)])
+    | RustAst::Expr.EArm d0 d1 d2 => (ctor Option.none [(RustValidate::Id * RustValidate::Origin)])
+    | RustAst::Expr.ELoop d0 d1 => (ctor Option.none [(RustValidate::Id * RustValidate::Origin)])),
+  executable: true
+}
+
+definition{
+  name: projectionOf,
+  parameters: [pattern : RustAst::Pat, value : RustAst::Expr],
+  result: (Option (Nat * (RustValidate::Id * RustValidate::Origin))),
+  body: (match pattern
+    | RustAst::Pat.PLeaf d0 => (ctor Option.none [(Nat * (RustValidate::Id * RustValidate::Origin))])
+    | RustAst::Pat.PBind d0 => (ctor Option.none [(Nat * (RustValidate::Id * RustValidate::Origin))])
+    | RustAst::Pat.PTuple parts => (match (cloneRead value)
+      | Option.some found => (if (((boundCount parts) =? 1) && (1 <? (partsLength parts))) then (ctor Option.some [(Nat * (RustValidate::Id * RustValidate::Origin))] ((firstBound parts 0), found)) else (ctor Option.none [(Nat * (RustValidate::Id * RustValidate::Origin))]))
+      | Option.none => (ctor Option.none [(Nat * (RustValidate::Id * RustValidate::Origin))]))
+    | RustAst::Pat.PWrap d0 d1 => (ctor Option.none [(Nat * (RustValidate::Id * RustValidate::Origin))])
+    | RustAst::Pat.PAdt d0 d1 d2 => (ctor Option.none [(Nat * (RustValidate::Id * RustValidate::Origin))])
+    | RustAst::Pat.PNil => (ctor Option.none [(Nat * (RustValidate::Id * RustValidate::Origin))])
+    | RustAst::Pat.PCons d0 d1 => (ctor Option.none [(Nat * (RustValidate::Id * RustValidate::Origin))])
+    | RustAst::Pat.POrdering d0 => (ctor Option.none [(Nat * (RustValidate::Id * RustValidate::Origin))])),
+  executable: true
+}
+
+definition{
+  name: isNilExpr,
+  parameters: [e : RustAst::Expr],
+  result: Bool,
+  body: (match e
+    | RustAst::Expr.ELit d0 d1 => false
+    | RustAst::Expr.ERead d0 d1 d2 => false
+    | RustAst::Expr.EWrap d0 d1 d2 => false
+    | RustAst::Expr.ECall d0 d1 d2 d3 => false
+    | RustAst::Expr.EApply d0 d1 d2 d3 => false
+    | RustAst::Expr.EConstruct d0 d1 d2 => false
+    | RustAst::Expr.EPair d0 d1 d2 => false
+    | RustAst::Expr.EIf d0 d1 d2 d3 => false
+    | RustAst::Expr.EMatch d0 d1 d2 => false
+    | RustAst::Expr.EBlockE d0 => false
+    | RustAst::Expr.EProbe d0 d1 d2 => false
+    | RustAst::Expr.EBlock d0 d1 => false
+    | RustAst::Expr.ENil => true
+    | RustAst::Expr.ECons d0 d1 => false
+    | RustAst::Expr.ELet d0 d1 d2 d3 d4 d5 => false
+    | RustAst::Expr.EArm d0 d1 d2 => false
+    | RustAst::Expr.ELoop d0 d1 => false),
+  executable: true
+}
+
+definition{
+  name: isCloneKind,
+  parameters: [kind : RustValidate::ReadKind],
+  result: Bool,
+  body: (match kind
+    | RustValidate::ReadKind.RkClone => true
+    | RustValidate::ReadKind.RkMove => false
+    | RustValidate::ReadKind.RkCopy => false
+    | RustValidate::ReadKind.RkDeref => false
+    | RustValidate::ReadKind.RkUnbox => false),
+  executable: true
+}
+
+definition{
+  name: readsE,
+  parameters: [e : RustAst::Expr, live : (List (RustValidate::Id * Later)), mode : Nat],
+  result: (List (RustValidate::Id * Later)),
+  body: (match e
+    | RustAst::Expr.ELit lit o => live
+    | RustAst::Expr.ERead kind ident o => (readWhole live ident)
+    | RustAst::Expr.EWrap kind inner o => (readsE inner live 0)
+    | RustAst::Expr.ECall callee args propagate o => (readsE args live 0)
+    | RustAst::Expr.EApply holder args propagate o => (let held : (List (RustValidate::Id * Later)) := (readWhole live holder); (readsE args held 0))
+    | RustAst::Expr.EConstruct con args o => (readsE args live 0)
+    | RustAst::Expr.EPair left right o => (let after : (List (RustValidate::Id * Later)) := (readsE right live 0); (readsE left after 0))
+    | RustAst::Expr.EIf condition thenBranch elseBranch o => (let one : (List (RustValidate::Id * Later)) := (readsE thenBranch live 0); (let two : (List (RustValidate::Id * Later)) := (readsE elseBranch live 0); (readsE condition (mergeLive one two) 0)))
+    | RustAst::Expr.EMatch scrutinee arms o => (let through : (List (RustValidate::Id * Later)) := (if (isNilExpr arms) then live else (readsE arms live 1)); (readsE scrutinee through 0))
+    | RustAst::Expr.EBlockE inner => (readsE inner live 0)
+    | RustAst::Expr.EProbe kind ident o => (readWhole live ident)
+    | RustAst::Expr.EBlock lets tail => (let after : (List (RustValidate::Id * Later)) := (readsE tail live 0); (readsE lets after 0))
+    | RustAst::Expr.ENil => (if (mode =? 1) then (nil (RustValidate::Id * Later)) else live)
+    | RustAst::Expr.ECons head tail => (let after : (List (RustValidate::Id * Later)) := (readsE tail live 0); (readsE head after 0))
+    | RustAst::Expr.ELet pat mutable ty value o rest => (let inner : (List (RustValidate::Id * Later)) := (readsE rest live 0); (let bound : (List (RustValidate::Id * Later)) := (unbind pat inner); (match (projectionOf pat value)
+      | Option.some found => (readPart bound (first (second found)) (first found))
+      | Option.none => (readsE value bound 0))))
+    | RustAst::Expr.EArm pat body rest => (let seen : (List (RustValidate::Id * Later)) := (readsE body live 0); (let later : (List (RustValidate::Id * Later)) := (readsE rest live 1); (mergeLive (unbind pat seen) later)))
+    | RustAst::Expr.ELoop state body => (let bare : (List (RustValidate::Id * Later)) := (readsE body (nil (RustValidate::Id * Later)) 0); (let reads : (List (RustValidate::Id * Later)) := (liveRemove bare state); (let inside : (List (RustValidate::Id * Later)) := (liveRemove (mergeLive live reads) state); (let ran : (List (RustValidate::Id * Later)) := (readsE body inside 0); (readWhole ran state)))))),
+  executable: true,
+  recursive_argument: e
+}
+
+definition{
+  name: moveE,
+  parameters: [e : RustAst::Expr, live : (List (RustValidate::Id * Later))],
+  result: RustAst::Expr,
+  body: (match e
+    | RustAst::Expr.ELit lit o => (ctor RustAst::Expr.ELit lit o)
+    | RustAst::Expr.ERead kind ident o => (if (isCloneKind kind) then (if (mayMove live ident) then (ctor RustAst::Expr.ERead (ctor RustValidate::ReadKind.RkMove) ident o) else (ctor RustAst::Expr.ERead kind ident o)) else (ctor RustAst::Expr.ERead kind ident o))
+    | RustAst::Expr.EWrap kind inner o => (ctor RustAst::Expr.EWrap kind (moveE inner live) o)
+    | RustAst::Expr.ECall callee args propagate o => (ctor RustAst::Expr.ECall callee (moveE args live) propagate o)
+    | RustAst::Expr.EApply holder args propagate o => (let held : (List (RustValidate::Id * Later)) := (readWhole live holder); (ctor RustAst::Expr.EApply holder (moveE args held) propagate o))
+    | RustAst::Expr.EConstruct con args o => (ctor RustAst::Expr.EConstruct con (moveE args live) o)
+    | RustAst::Expr.EPair left right o => (let after : (List (RustValidate::Id * Later)) := (readsE right live 0); (ctor RustAst::Expr.EPair (moveE left after) (moveE right live) o))
+    | RustAst::Expr.EIf condition thenBranch elseBranch o => (let one : (List (RustValidate::Id * Later)) := (readsE thenBranch live 0); (let two : (List (RustValidate::Id * Later)) := (readsE elseBranch live 0); (ctor RustAst::Expr.EIf (moveE condition (mergeLive one two)) (moveE thenBranch live) (moveE elseBranch live) o)))
+    | RustAst::Expr.EMatch scrutinee arms o => (let through : (List (RustValidate::Id * Later)) := (if (isNilExpr arms) then live else (readsE arms live 1)); (ctor RustAst::Expr.EMatch (moveE scrutinee through) (moveE arms live) o))
+    | RustAst::Expr.EBlockE inner => (ctor RustAst::Expr.EBlockE (moveE inner live))
+    | RustAst::Expr.EProbe kind ident o => (ctor RustAst::Expr.EProbe kind ident o)
+    | RustAst::Expr.EBlock lets tail => (let after : (List (RustValidate::Id * Later)) := (readsE tail live 0); (ctor RustAst::Expr.EBlock (moveE lets after) (moveE tail live)))
+    | RustAst::Expr.ENil => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ECons head tail => (let after : (List (RustValidate::Id * Later)) := (readsE tail live 0); (ctor RustAst::Expr.ECons (moveE head after) (moveE tail live)))
+    | RustAst::Expr.ELet pat mutable ty value o rest => (let inner : (List (RustValidate::Id * Later)) := (readsE rest live 0); (let bound : (List (RustValidate::Id * Later)) := (unbind pat inner); (ctor RustAst::Expr.ELet pat mutable ty (match (projectionOf pat value)
+      | Option.some found => (if (mayMovePart bound (first (second found)) (first found)) then (ctor RustAst::Expr.ERead (ctor RustValidate::ReadKind.RkMove) (first (second found)) (second (second found))) else value)
+      | Option.none => (moveE value bound)) o (moveE rest live))))
+    | RustAst::Expr.EArm pat body rest => (ctor RustAst::Expr.EArm pat (moveE body live) (moveE rest live))
+    | RustAst::Expr.ELoop state body => (let bare : (List (RustValidate::Id * Later)) := (readsE body (nil (RustValidate::Id * Later)) 0); (let reads : (List (RustValidate::Id * Later)) := (liveRemove bare state); (let inside : (List (RustValidate::Id * Later)) := (liveRemove (mergeLive live reads) state); (ctor RustAst::Expr.ELoop state (moveE body inside)))))),
+  executable: true,
+  recursive_argument: e
+}
+
+definition{
+  name: moveItems,
+  parameters: [items : RustAst::Def],
+  result: RustAst::Def,
+  body: (match items
+    | RustAst::Def.DEnum ty row o => (ctor RustAst::Def.DEnum ty row o)
+    | RustAst::Def.DApply number parameters result fallible dispatch o => (ctor RustAst::Def.DApply number parameters result fallible dispatch o)
+    | RustAst::Def.DFunction name parameters result body o => (ctor RustAst::Def.DFunction name parameters result (moveE body (nil (RustValidate::Id * Later))) o)
+    | RustAst::Def.DNil => (ctor RustAst::Def.DNil)
+    | RustAst::Def.DCons item rest => (ctor RustAst::Def.DCons (moveItems item) (moveItems rest))),
+  executable: true,
+  recursive_argument: items
+}
+
+definition{
+  name: applyMoves,
+  parameters: [items : RustAst::Def],
+  result: RustAst::Def,
+  body: (moveItems items),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}
