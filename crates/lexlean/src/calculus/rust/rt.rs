@@ -338,7 +338,75 @@ const UNARY: u8 = 12;
 const POSTFIX: u8 = 13;
 const ATOM: u8 = 14;
 
+/// Whether the left operand of a binary operator is written in parentheses.
+/// A comparison does not chain, so the operand of equal strength is; and
+/// `a as T < b` reads `<` as the opening of the arguments of a type, so a left
+/// operand whose text ends in a cast is, whatever its own strength.
+fn binary_left_parenthesized(op: Op, left: &Expr) -> bool {
+    let own = op.precedence();
+    let needed = if own == 5 { own + 1 } else { own };
+    (op == Op::Lt && left.ends_in_cast()) || left.precedence() < needed
+}
+
 impl Expr {
+    /// Whether the text of the expression ends in a cast, which no
+    /// parenthesis closes: the cast itself, or a binary operator whose right
+    /// operand is written without parentheses and ends in one.
+    fn ends_in_cast(&self) -> bool {
+        match self {
+            Expr::Cast(..) => true,
+            Expr::Binary(op, _, right) => {
+                right.precedence() > op.precedence() && right.ends_in_cast()
+            }
+            _ => false,
+        }
+    }
+
+    /// Whether the text holds a struct literal outside every parenthesis,
+    /// bracket and brace, where the head of an `if`, a loop, or a `match`
+    /// reads its brace as the body.
+    #[must_use]
+    pub fn struct_exposed(&self) -> bool {
+        let bare =
+            |inner: &Expr, needed: u8| inner.precedence() >= needed && inner.struct_exposed();
+        match self {
+            Expr::StructLit(..) => true,
+            Expr::Method(receiver, ..)
+            | Expr::MethodOf(receiver, ..)
+            | Expr::Field(receiver, _)
+            | Expr::FieldNamed(receiver, _)
+            | Expr::Index(receiver, _)
+            | Expr::RangeSlice(receiver, ..) => bare(receiver, POSTFIX),
+            Expr::Borrow(inner)
+            | Expr::BorrowMut(inner)
+            | Expr::Deref(inner)
+            | Expr::Not(inner) => bare(inner, UNARY),
+            Expr::Cast(inner, _) => bare(inner, CAST),
+            Expr::Equals(a, b) => bare(a, 6) || bare(b, 6),
+            Expr::Binary(op, a, b) => {
+                (!binary_left_parenthesized(*op, a) && a.struct_exposed())
+                    || bare(b, op.precedence() + 1)
+            }
+            Expr::Assign(place, value) => place.struct_exposed() || value.struct_exposed(),
+            Expr::Return(Some(value)) => value.struct_exposed(),
+            Expr::Return(None)
+            | Expr::Var(_)
+            | Expr::Lit(_)
+            | Expr::Path(_)
+            | Expr::Call(..)
+            | Expr::Match(..)
+            | Expr::Let(..)
+            | Expr::If(..)
+            | Expr::While(..)
+            | Expr::WhileLet(..)
+            | Expr::Loop(_)
+            | Expr::For(..)
+            | Expr::Break
+            | Expr::Tuple(_)
+            | Expr::Block(_) => false,
+        }
+    }
+
     /// The binding strength of the expression's outermost construct.
     fn precedence(&self) -> u8 {
         match self {
@@ -407,15 +475,10 @@ impl Expr {
             Expr::Equals(a, b) => format!("{} == {}", a.at(6), b.at(6)),
             Expr::Binary(op, a, b) => {
                 let own = op.precedence();
-                // A comparison does not chain, and `a as T < b` reads `<` as
-                // the opening of a type's arguments, so a cast on its left
-                // is parenthesised.
-                let left = if *op == Op::Lt && matches!(**a, Expr::Cast(..)) {
+                let left = if binary_left_parenthesized(*op, a) {
                     format!("({})", a.print())
-                } else if own == 5 {
-                    a.at(own + 1)
                 } else {
-                    a.at(own)
+                    a.print()
                 };
                 format!("{left} {} {}", op.text(), b.at(own + 1))
             }

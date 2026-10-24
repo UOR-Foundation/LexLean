@@ -11,7 +11,7 @@
 use std::collections::BTreeMap;
 
 use super::rt::{
-    Arm, Block, Crate, Expr, Function, Generic, Item, Pat, Profile, Sig, Type, Variant,
+    Arm, Block, Crate, Expr, Function, Generic, Item, Lit, Pat, Profile, Sig, Type, Variant,
 };
 
 /// The types a crate may name without declaring them, with their arity and
@@ -144,6 +144,21 @@ pub fn allocating() -> Vec<String> {
     out
 }
 
+/// The traits an item may derive, the closed table of derives: the printer
+/// writes each as it is, so a derive outside the table is refused rather than
+/// printed.
+const DERIVES: [&str; 5] = ["Clone", "Copy", "Debug", "Eq", "PartialEq"];
+
+/// The words of the language that a name may not be: `rustc` reads them as
+/// syntax, so a name spelled as one prints a crate that is not the module.
+const KEYWORDS: [&str; 52] = [
+    "abstract", "as", "async", "await", "become", "box", "break", "const", "continue", "crate",
+    "do", "dyn", "else", "enum", "extern", "false", "final", "fn", "for", "if", "impl", "in",
+    "let", "loop", "macro", "match", "mod", "move", "mut", "override", "priv", "pub", "ref",
+    "return", "self", "Self", "static", "struct", "super", "trait", "true", "try", "type",
+    "typeof", "unsafe", "unsized", "use", "virtual", "where", "while", "yield", "_",
+];
+
 /// The roots a `use` path may start at, by profile. `alloc` is in neither: a
 /// crate that names it allocates through a path the table does not list.
 fn roots(profile: Profile) -> &'static [&'static str] {
@@ -184,6 +199,115 @@ fn heap<T>(what: &str) -> Result<T, String> {
     )
 }
 
+/// `name` is an identifier: the printer writes every name of a crate as it
+/// is, so a name that is not one (a space, a brace, a keyword) would print
+/// text that is not the module.
+fn ident(what: &str, name: &str) -> Result<(), String> {
+    let mut chars = name.chars();
+    let spelled = chars
+        .next()
+        .is_some_and(|first| first.is_ascii_alphabetic() || first == '_')
+        && chars.all(|next| next.is_ascii_alphanumeric() || next == '_');
+    if spelled && !KEYWORDS.contains(&name) {
+        Ok(())
+    } else {
+        rule(
+            "identifier",
+            format!("{what} `{name}` is not an identifier"),
+        )
+    }
+}
+
+/// Each of `names` is an identifier.
+fn idents<'a>(what: &str, names: impl IntoIterator<Item = &'a String>) -> Result<(), String> {
+    names.into_iter().try_for_each(|name| ident(what, name))
+}
+
+/// The segments of a path are identifiers; `Self` and the roots of a `use`
+/// are the words a path may start with.
+fn segments(what: &str, path: &[String]) -> Result<(), String> {
+    path.iter().try_for_each(|segment| {
+        if matches!(segment.as_str(), "Self" | "self" | "crate" | "super") {
+            Ok(())
+        } else {
+            ident(what, segment)
+        }
+    })
+}
+
+/// The derives of an item come from the closed table.
+fn derives(what: &str, names: &[String]) -> Result<(), String> {
+    for name in names {
+        if !DERIVES.contains(&name.as_str()) {
+            return rule(
+                "derive",
+                format!("{what} derives `{name}`, which is not in the closed table"),
+            );
+        }
+    }
+    Ok(())
+}
+
+/// A character literal is one scalar value: the printer writes one character
+/// and would otherwise drop or invent the rest.
+fn literal(lit: &Lit) -> Result<(), String> {
+    match lit {
+        Lit::Char(text) if text.chars().count() != 1 => rule(
+            "char-literal",
+            format!(
+                "a character literal of {} scalar values",
+                text.chars().count()
+            ),
+        ),
+        _ => Ok(()),
+    }
+}
+
+/// The head of an `if`, a `while`, a `while let`, a `for`, or a `match`
+/// holds no struct literal outside parentheses: `rustc` reads the brace as the
+/// body, so the crate the printer writes would not compile.
+fn head(expr: &Expr) -> Result<(), String> {
+    if expr.struct_exposed() {
+        rule(
+            "struct-head",
+            "a struct literal outside parentheses in the head of a condition, a loop, or a match",
+        )
+    } else {
+        Ok(())
+    }
+}
+
+/// The type names no generic parameter: a `let`, a cast, and a type argument
+/// are printed without the generics in scope.
+fn unscoped(what: &str, ty: &Type) -> Result<(), String> {
+    match ty {
+        Type::Param(_) => rule(
+            "type-scope",
+            format!(
+                "{what} names a generic parameter, which the printer writes without the generics in scope"
+            ),
+        ),
+        Type::Ref(inner) | Type::RefMut(inner) | Type::Slice(inner) => unscoped(what, inner),
+        Type::Pair(a, b) => {
+            unscoped(what, a)?;
+            unscoped(what, b)
+        }
+        Type::Named(_, arguments) => arguments
+            .iter()
+            .try_for_each(|argument| unscoped(what, argument)),
+        Type::Unit
+        | Type::Bool
+        | Type::Nat
+        | Type::Fixed(_)
+        | Type::Ordering
+        | Type::SelfType
+        | Type::Wide(_)
+        | Type::Size
+        | Type::Char
+        | Type::Str => Ok(()),
+    }
+}
+
 /// Validate `krate`.
 ///
 /// # Errors
@@ -192,8 +316,11 @@ fn heap<T>(what: &str) -> Result<T, String> {
 /// name declared twice or not declared, a trait an impl does not complete, a
 /// bound that names no trait, a method a bound does not provide, a variable
 /// not in scope, a call of the wrong arity, a `break` outside a loop, a
-/// struct literal whose fields are not the struct's, or a name that allocates
-/// in the core profile.
+/// struct literal whose fields are not the struct's, a name that is not an
+/// identifier, a derive outside the closed table, a character literal that
+/// is not one scalar value, a struct literal in the head of a condition, a
+/// generic parameter in a type of an expression, or a name that allocates in
+/// the core profile.
 pub fn validate(krate: &Crate) -> Result<(), String> {
     let mut scope = Scope {
         profile: krate.profile,
@@ -223,20 +350,30 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
                         ),
                     );
                 }
+                segments("a `use` segment", path)?;
+                if let Some(alias) = alias {
+                    ident("a `use` alias", alias)?;
+                }
                 let last = alias.as_ref().or_else(|| path.last());
                 scope.imported.extend(last.cloned());
             }
-            Item::UnitStruct(name, _) => {
-                once(&mut declared, name)?;
+            Item::UnitStruct(name, derived) => {
+                once(&mut declared, "a unit struct name", name)?;
+                derives("a unit struct", derived)?;
                 scope.structs.insert(name, (Vec::new(), 0));
             }
-            Item::TupleStruct(name, generics, _, types) => {
-                once(&mut declared, name)?;
+            Item::TupleStruct(name, generics, derived, types) => {
+                once(&mut declared, "a tuple struct name", name)?;
+                idents("a tuple struct generic", generics)?;
+                derives("a tuple struct", derived)?;
                 let fields = (0..types.len()).map(|at| at.to_string()).collect();
                 scope.structs.insert(name, (fields, generics.len()));
             }
-            Item::RecordStruct(name, generics, _, fields, types) => {
-                once(&mut declared, name)?;
+            Item::RecordStruct(name, generics, derived, fields, types) => {
+                once(&mut declared, "a record struct name", name)?;
+                idents("a record struct generic", generics)?;
+                derives("a record struct", derived)?;
+                idents("a record field name", fields)?;
                 if fields.len() != types.len() {
                     return rule(
                         "struct-fields",
@@ -249,11 +386,17 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
                 }
                 scope.structs.insert(name, (fields.clone(), generics.len()));
             }
-            Item::Enum(name, generics, _, variants) => {
-                once(&mut declared, name)?;
+            Item::Enum(name, generics, derived, variants) => {
+                once(&mut declared, "an enum name", name)?;
+                idents("an enum generic", generics)?;
+                derives("an enum", derived)?;
                 let mut seen = Vec::new();
                 for variant in variants {
                     let shown = variant.name();
+                    ident("a variant name", shown)?;
+                    if let Variant::Record(_, fields, _) = variant {
+                        idents("a record variant field name", fields)?;
+                    }
                     if seen.contains(&shown) {
                         return rule("variant-name", format!("`{name}` declares `{shown}` twice"));
                     }
@@ -262,15 +405,16 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
                 scope.enums.insert(name, (variants, generics.len()));
             }
             Item::Alias(name, parameters, _) => {
-                once(&mut declared, name)?;
+                once(&mut declared, "an alias name", name)?;
+                idents("an alias parameter", parameters)?;
                 scope.aliases.insert(name, parameters.len());
             }
             Item::Static(name, _, _) => {
-                once(&mut declared, name)?;
+                once(&mut declared, "a static name", name)?;
                 scope.statics.push(name);
             }
             Item::Trait(name, sigs) => {
-                once(&mut declared, name)?;
+                once(&mut declared, "a trait name", name)?;
                 scope.traits.insert(name, sigs);
                 for sig in sigs {
                     scope
@@ -281,7 +425,7 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
                 }
             }
             Item::Fn(function) => {
-                once(&mut declared, &function.sig.name)?;
+                once(&mut declared, "a function name", &function.sig.name)?;
                 scope
                     .functions
                     .insert(&function.sig.name, function.sig.params.len());
@@ -397,7 +541,8 @@ impl Variant {
     }
 }
 
-fn once<'a>(declared: &mut Vec<&'a str>, name: &'a str) -> Result<(), String> {
+fn once<'a>(declared: &mut Vec<&'a str>, what: &str, name: &'a str) -> Result<(), String> {
+    ident(what, name)?;
     if declared.contains(&name) {
         return rule("duplicate-name", format!("`{name}` is declared twice"));
     }
@@ -445,6 +590,7 @@ impl<'a> Frame<'a> {
 /// twice is refused.
 fn binds(pattern: &Pat, out: &mut Vec<(String, bool)>) -> Result<(), String> {
     let one = |name: &String, mutable: bool, out: &mut Vec<(String, bool)>| {
+        ident("a pattern binding", name)?;
         if out.iter().any(|(held, _)| held == name) {
             return rule(
                 "pattern-duplicate",
@@ -467,6 +613,7 @@ fn binds(pattern: &Pat, out: &mut Vec<(String, bool)>) -> Result<(), String> {
 impl<'a> Scope<'a> {
     fn generics(&self, generics: &[Generic]) -> Result<(), String> {
         for generic in generics {
+            ident("a generic parameter", &generic.name)?;
             for bound in &generic.bounds {
                 if !self.traits.contains_key(bound.as_str())
                     && !STD_TRAITS.iter().any(|(known, ..)| known == bound)
@@ -549,6 +696,7 @@ impl<'a> Scope<'a> {
     }
 
     fn sig(&self, sig: &Sig, params: usize, has_self: bool) -> Result<(), String> {
+        ident("a method name", &sig.name)?;
         if sig.exclusive && !sig.receiver {
             return rule(
                 "function-receiver",
@@ -556,6 +704,7 @@ impl<'a> Scope<'a> {
             );
         }
         for param in &sig.params {
+            ident("a parameter name", &param.name)?;
             self.ty(&param.ty, params, has_self)?;
         }
         self.ty(&sig.result, params, has_self)
@@ -711,6 +860,7 @@ impl<'a> Scope<'a> {
                 Expr::Let(pattern, ty, value) => {
                     if let Some(ty) = ty {
                         self.ty(ty, inner.generics.len(), inner.selfs.is_some())?;
+                        unscoped("a `let` type", ty)?;
                     }
                     self.expr(value, &inner)?;
                     let mut bound = Vec::new();
@@ -809,6 +959,7 @@ impl<'a> Scope<'a> {
     }
 
     fn path(&self, path: &[String]) -> Result<(), String> {
+        segments("a path segment", path)?;
         let head = path.first().map(String::as_str).unwrap_or_default();
         if let Some((variants, _)) = self.enums.get(head) {
             return match path.get(1) {
@@ -839,7 +990,8 @@ impl<'a> Scope<'a> {
 
     fn pattern(&self, pattern: &Pat) -> Result<(), String> {
         match pattern {
-            Pat::Wild | Pat::Bind(_) | Pat::BindMut(_) | Pat::Lit(_) => Ok(()),
+            Pat::Wild | Pat::Bind(_) | Pat::BindMut(_) => Ok(()),
+            Pat::Lit(lit) => literal(lit),
             Pat::Path(path) => self.path(path),
             Pat::Tuple(items) => items.iter().try_for_each(|item| self.pattern(item)),
             Pat::TupleStruct(path, items) => {
@@ -870,6 +1022,7 @@ impl<'a> Scope<'a> {
             }
             Pat::Struct(path, names, items) => {
                 self.path(path)?;
+                idents("a pattern field name", names)?;
                 if names.len() != items.len() {
                     return rule(
                         "pattern-fields",
@@ -908,11 +1061,13 @@ impl<'a> Scope<'a> {
 
     fn expr(&self, expr: &Expr, frame: &Frame<'a>) -> Result<(), String> {
         match expr {
-            Expr::Lit(_) | Expr::Break => {
-                if matches!(expr, Expr::Break) && !frame.in_loop {
-                    return rule("break-position", "a `break` outside a loop");
+            Expr::Lit(lit) => literal(lit),
+            Expr::Break => {
+                if frame.in_loop {
+                    Ok(())
+                } else {
+                    rule("break-position", "a `break` outside a loop")
                 }
-                Ok(())
             }
             Expr::Var(name) => {
                 if frame.variables.iter().any(|(held, ..)| held == name)
@@ -1014,14 +1169,17 @@ impl<'a> Scope<'a> {
                 }
                 for ty in types {
                     self.ty(ty, frame.generics.len(), frame.selfs.is_some())?;
+                    unscoped("a type argument", ty)?;
                 }
                 arguments
                     .iter()
                     .try_for_each(|argument| self.expr(argument, frame))
             }
-            Expr::Field(inner, _) | Expr::FieldNamed(inner, _) | Expr::Borrow(inner) => {
+            Expr::FieldNamed(inner, name) => {
+                ident("a field access", name)?;
                 self.expr(inner, frame)
             }
+            Expr::Field(inner, _) | Expr::Borrow(inner) => self.expr(inner, frame),
             Expr::Deref(inner) | Expr::BorrowMut(inner) | Expr::Not(inner) => {
                 self.expr(inner, frame)
             }
@@ -1031,6 +1189,7 @@ impl<'a> Scope<'a> {
             }
             Expr::Cast(inner, ty) => {
                 self.ty(ty, frame.generics.len(), frame.selfs.is_some())?;
+                unscoped("a cast type", ty)?;
                 self.expr(inner, frame)
             }
             Expr::RangeSlice(inner, from, to) => {
@@ -1047,16 +1206,19 @@ impl<'a> Scope<'a> {
                 self.expr(value, frame)
             }
             Expr::If(condition, then, otherwise) => {
+                head(condition)?;
                 self.expr(condition, frame)?;
                 self.block(then, frame)?;
                 self.block(otherwise, frame)
             }
             Expr::While(condition, body) => {
+                head(condition)?;
                 self.expr(condition, frame)?;
                 self.block(body, &frame.with(Vec::new(), true))
             }
             Expr::Loop(body) => self.block(body, &frame.with(Vec::new(), true)),
             Expr::WhileLet(pattern, value, body) | Expr::For(pattern, value, body) => {
+                head(value)?;
                 self.expr(value, frame)?;
                 self.pattern(pattern)?;
                 let mut bound = Vec::new();
@@ -1101,6 +1263,7 @@ impl<'a> Scope<'a> {
                 values.iter().try_for_each(|value| self.expr(value, frame))
             }
             Expr::Match(scrutinee, arms) => {
+                head(scrutinee)?;
                 self.expr(scrutinee, frame)?;
                 if arms.is_empty() {
                     return rule("match-arms", "a match with no arm");
