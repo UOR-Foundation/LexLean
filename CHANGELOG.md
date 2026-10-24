@@ -427,7 +427,7 @@ and Unreleased holds what has landed since.
   `max_file_bytes`. The bootstrap project's roots together passed the default
   `max_total_source_bytes` at this root (67,815,299 bytes), so the project
   configures 134217728 (SPEC.md §17.23). The register is
-  453 IDs.
+  456 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or
