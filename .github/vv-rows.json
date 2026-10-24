@@ -36,6 +36,15 @@
     "hints": ""
   },
   {
+    "part": "bdd-bootstrap-registry",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-registry",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
     "part": "bdd-bootstrap-runtime",
     "recipes": "bdd",
     "examples_part": "",

@@ -7,6 +7,9 @@
     "bootstrap-print": [
       "BS-06"
     ],
+    "bootstrap-registry": [
+      "BS-90"
+    ],
     "bootstrap-validate": [
       "BS-05"
     ],
