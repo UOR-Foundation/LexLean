@@ -92,7 +92,7 @@ inductive{
   name: NameKind,
   type_parameters: [],
   parameters: [],
-  constructors: [{name: NkAdt, fields: []}, {name: NkFn, fields: []}]
+  constructors: [{name: NkAdt, fields: []}, {name: NkFn, fields: []}, {name: NkParam, fields: []}]
 }
 
 inductive{
@@ -703,7 +703,10 @@ definition{
   name: nameName,
   parameters: [kind : NameKind],
   result: Bytes,
-  body: (match kind | NameKind.NkAdt => (text "Adt") | NameKind.NkFn => (text "Fn")),
+  body: (match kind
+    | NameKind.NkAdt => (text "Adt")
+    | NameKind.NkFn => (text "Fn")
+    | NameKind.NkParam => (text "Param")),
   executable: true
 }
 
@@ -711,7 +714,10 @@ definition{
   name: nameKey,
   parameters: [kind : NameKind],
   result: Bytes,
-  body: (match kind | NameKind.NkAdt => (text "adt") | NameKind.NkFn => (text "fn")),
+  body: (match kind
+    | NameKind.NkAdt => (text "adt")
+    | NameKind.NkFn => (text "fn")
+    | NameKind.NkParam => (text "param")),
   executable: true
 }
 
@@ -719,7 +725,15 @@ definition{
   name: nameIsFn,
   parameters: [kind : NameKind],
   result: Bool,
-  body: (match kind | NameKind.NkAdt => false | NameKind.NkFn => true),
+  body: (match kind | NameKind.NkAdt => false | NameKind.NkFn => true | NameKind.NkParam => false),
+  executable: true
+}
+
+definition{
+  name: nameIsParam,
+  parameters: [kind : NameKind],
+  result: Bool,
+  body: (match kind | NameKind.NkAdt => false | NameKind.NkFn => false | NameKind.NkParam => true),
   executable: true
 }
 
@@ -748,7 +762,7 @@ definition{
     | Ty.TyFixed d0 => false
     | Ty.TyUnary k inner => (match (unaryHeap k) | Bool.true => true | Bool.false => (tyHeap inner))
     | Ty.TyBinary k left right => (let l : Bool := (tyHeap left); (let r : Bool := (tyHeap right); (l || r)))
-    | Ty.TyNamed d0 d1 => false
+    | Ty.TyNamed k n => (nameIsParam k)
     | Ty.TyNil => false
     | Ty.TyCons d0 d1 => false),
   executable: true,
@@ -1040,13 +1054,15 @@ definition{
     | Ty.TyBinary k left right => (match (tyWalk cx left)
       | Result.ok done => (tyWalk cx right)
       | Result.error problem1 => (ctor Result.error [Unit, Bytes] problem1))
-    | Ty.TyNamed k n => (match (nameIsFn k)
-      | Bool.true => (match (hasVariants (project (project cx decl) closures) n)
-        | Bool.true => (ctor Result.ok [Unit, Bytes] ())
-        | Bool.false => (ctor Result.error [Unit, Bytes] (cat (text "type Fn") (cat (decimal n) (text " is not declared")))))
-      | Bool.false => (match (hasVariants (project (project cx decl) adts) n)
-        | Bool.true => (ctor Result.ok [Unit, Bytes] ())
-        | Bool.false => (ctor Result.error [Unit, Bytes] (cat (text "type Adt") (cat (decimal n) (text " is not declared"))))))
+    | Ty.TyNamed k n => (match (nameIsParam k)
+      | Bool.true => (ctor Result.ok [Unit, Bytes] ())
+      | Bool.false => (match (nameIsFn k)
+        | Bool.true => (match (hasVariants (project (project cx decl) closures) n)
+          | Bool.true => (ctor Result.ok [Unit, Bytes] ())
+          | Bool.false => (ctor Result.error [Unit, Bytes] (cat (text "type Fn") (cat (decimal n) (text " is not declared")))))
+        | Bool.false => (match (hasVariants (project (project cx decl) adts) n)
+          | Bool.true => (ctor Result.ok [Unit, Bytes] ())
+          | Bool.false => (ctor Result.error [Unit, Bytes] (cat (text "type Adt") (cat (decimal n) (text " is not declared")))))))
     | Ty.TyNil => (ctor Result.ok [Unit, Bytes] ())
     | Ty.TyCons d0 d1 => (ctor Result.ok [Unit, Bytes] ())),
   executable: true,
@@ -2220,7 +2236,7 @@ definition{
   name: machineName,
   parameters: [m : Nat],
   result: Bytes,
-  body: (if (m =? 0) then (text "checked_add") else (if (m =? 1) then (text "checked_sub") else (if (m =? 2) then (text "checked_mul") else (if (m =? 3) then (text "checked_div") else (if (m =? 4) then (text "checked_neg") else (if (m =? 5) then (text "checked_shl") else (if (m =? 6) then (text "checked_shr") else (if (m =? 7) then (text "convert") else (if (m =? 8) then (text "bit_and") else (if (m =? 9) then (text "bit_or") else (if (m =? 10) then (text "bit_xor") else (if (m =? 11) then (text "bit_not") else (if (m =? 12) then (text "nat_eq") else (if (m =? 13) then (text "nat_le") else (if (m =? 14) then (text "nat_lt") else (if (m =? 15) then (text "nat_rem") else (if (m =? 16) then (text "int_rem") else (if (m =? 17) then (text "nat_add") else (if (m =? 18) then (text "nat_sub") else (if (m =? 19) then (text "nat_mul") else (if (m =? 20) then (text "nat_quot") else (if (m =? 21) then (text "int_add") else (if (m =? 22) then (text "int_sub") else (if (m =? 23) then (text "int_mul") else (if (m =? 24) then (text "int_neg") else (if (m =? 25) then (text "int_quot") else 0x)))))))))))))))))))))))))),
+  body: (if (m =? 0) then (text "checked_add") else (if (m =? 1) then (text "checked_sub") else (if (m =? 2) then (text "checked_mul") else (if (m =? 3) then (text "checked_div") else (if (m =? 4) then (text "checked_neg") else (if (m =? 5) then (text "checked_shl") else (if (m =? 6) then (text "checked_shr") else (if (m =? 7) then (text "convert") else (if (m =? 8) then (text "bit_and") else (if (m =? 9) then (text "bit_or") else (if (m =? 10) then (text "bit_xor") else (if (m =? 11) then (text "bit_not") else (if (m =? 12) then (text "nat_eq") else (if (m =? 13) then (text "nat_le") else (if (m =? 14) then (text "nat_lt") else (if (m =? 15) then (text "nat_rem") else (if (m =? 16) then (text "int_rem") else (if (m =? 17) then (text "nat_add") else (if (m =? 18) then (text "nat_sub") else (if (m =? 19) then (text "nat_mul") else (if (m =? 20) then (text "nat_quot") else (if (m =? 21) then (text "int_add") else (if (m =? 22) then (text "int_sub") else (if (m =? 23) then (text "int_mul") else (if (m =? 24) then (text "int_neg") else (if (m =? 25) then (text "int_quot") else (if (m =? 26) then (text "list_length") else (if (m =? 27) then (text "list_append") else (if (m =? 28) then (text "list_index") else (if (m =? 29) then (text "list_slice") else 0x)))))))))))))))))))))))))))))),
   executable: true
 }
 
@@ -2228,7 +2244,7 @@ definition{
   name: machineArity,
   parameters: [m : Nat],
   result: Nat,
-  body: (if (m =? 0) then 2 else (if (m =? 1) then 2 else (if (m =? 2) then 2 else (if (m =? 3) then 2 else (if (m =? 4) then 1 else (if (m =? 5) then 2 else (if (m =? 6) then 2 else (if (m =? 7) then 1 else (if (m =? 8) then 2 else (if (m =? 9) then 2 else (if (m =? 10) then 2 else (if (m =? 11) then 1 else (if (m =? 12) then 2 else (if (m =? 13) then 2 else (if (m =? 14) then 2 else (if (m =? 15) then 3 else (if (m =? 16) then 3 else (if (m =? 17) then 2 else (if (m =? 18) then 2 else (if (m =? 19) then 2 else (if (m =? 20) then 3 else (if (m =? 21) then 2 else (if (m =? 22) then 2 else (if (m =? 23) then 2 else (if (m =? 24) then 1 else (if (m =? 25) then 3 else 0)))))))))))))))))))))))))),
+  body: (if (m =? 0) then 2 else (if (m =? 1) then 2 else (if (m =? 2) then 2 else (if (m =? 3) then 2 else (if (m =? 4) then 1 else (if (m =? 5) then 2 else (if (m =? 6) then 2 else (if (m =? 7) then 1 else (if (m =? 8) then 2 else (if (m =? 9) then 2 else (if (m =? 10) then 2 else (if (m =? 11) then 1 else (if (m =? 12) then 2 else (if (m =? 13) then 2 else (if (m =? 14) then 2 else (if (m =? 15) then 3 else (if (m =? 16) then 3 else (if (m =? 17) then 2 else (if (m =? 18) then 2 else (if (m =? 19) then 2 else (if (m =? 20) then 3 else (if (m =? 21) then 2 else (if (m =? 22) then 2 else (if (m =? 23) then 2 else (if (m =? 24) then 1 else (if (m =? 25) then 3 else (if (m =? 26) then 1 else (if (m =? 27) then 2 else (if (m =? 28) then 2 else (if (m =? 29) then 3 else 0)))))))))))))))))))))))))))))),
   executable: true
 }
 

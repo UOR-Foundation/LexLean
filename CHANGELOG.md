@@ -17,8 +17,10 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- The `lexlean` crate that goes to crates.io is the crate the release attaches (`RP-18`, #260). `.github/workflows/crate.yml`, which `release.yml` calls on every run, packages the crate twice to the same bytes, runs `cargo publish --dry-run`, checks the archive for what crates.io needs (description, license, repository, the readme it names, at most 10 MiB), and compares its SHA-256 with `release/lexlean.crate` and the line `checksums.txt` lists for it; the tag's `publish` job repeats the comparison against the dry-run package and uploads to crates.io only when a `CARGO_REGISTRY_TOKEN` secret or trusted publishing (the repository variable `CRATES_IO_TRUSTED_PUBLISHING`) authorises it, and otherwise creates the release and says the crate was not uploaded, where before the first run failed after the tag was pushed because no `lexlean` crate and no trusted publisher existed. Dispatched on a `release/vX.Y` line, `crate.yml` does the same for the pre-release `X.Y.0-dev.N`, `N` being the commit's number of first-parent commits, and uploads it under the same authority. The decisions are in `.github/crate-publication.sh`, which the case runs against planted archives, checksums, refs and environments. SPEC.md §30.3 states the rule. Register 449.
+
 - The Rust runtime as source, #91 stage 4 (SPEC.md §17.16, §17.17, `SP-21`,
-  `RB-15`, `SP-23`, `SM-35`, `SM-36`, `RB-16`, `SP-22`, `RB-17`, `SP-25`, `RB-19`, `BS-09`, `SP-26`, `SP-27`, `SP-28`).
+  `RB-15`, `SP-23`, `SM-35`, `SM-36`, `RB-16`, `SP-22`, `RB-17`, `SP-25`, `RB-19`, `BS-09`, `SP-26`, `SP-27`, `SP-28`, `SP-29`, `RB-20`).
   The declared Rust machine grows by the primitives the runtime is written in
   (the bit operations, the natural and integer comparisons and remainders, the
   checked natural and integer arithmetic that is `Some` or `None` on overflow)
@@ -36,7 +38,7 @@ and Unreleased holds what has landed since.
   two scalars (nested keys are validated, not proved: #249). The handwritten
   base text is gone; the handwritten runtime is kept as the oracle. The
   compiler-semantics ID moves; records bound to it regenerate once, at the
-  landing. `RB-19` adds the constructs of the heap runtime (35 validator rules, eleven new). `BS-09` holds the runtime validator's Lean twin (`RuntimeValidate`, a bootstrap root) to the Rust oracle. `SP-26` kernel-checks the laws of the memory a runtime buffer lives in (`RustMemory`). `SP-27` kernel-checks the abstraction theorems of the list representation (`RustLists`). `SP-28` states the meaning of the buffer, share, and replace primitives over that model (`RustPrims`). The register is 450 IDs.
+  landing. `RB-19` adds the constructs of the heap runtime (40 validator rules, sixteen new): every name the printer writes is an identifier and not a keyword, a derive is in a closed table of five, a character literal is one scalar value, the head of a condition holds no struct literal outside parentheses, and a `let`, cast or type argument names no generic parameter; each site is planted, and a comparison whose left operand ends in a cast is printed with parentheses. `BS-09` holds the runtime validator's Lean twin (`RuntimeValidate`, a bootstrap root) to the Rust oracle. The twin carries the identifier, derive, character-literal, struct-head and type-scope rules of `RB-19` (40 rules), and the bootstrap project's `max_file_bytes` is 6 MiB because its certificate passed 4 MiB. The committed corpus `BS-05` and `BS-06` hold to the oracle grows by the `validate_runtime` package (256 manifests, 173 programs, 232 crates; 456 and 319 validator runs, 620 printer runs), and `validate_runtime` has its stack bound in `tests/stack-bounds.json`. `SP-26` kernel-checks the laws of the memory a runtime buffer lives in (`RustMemory`). `SP-27` kernel-checks the abstraction theorems of the list representation (`RustLists`). `SP-28` states the meaning of the buffer, share, and replace primitives over that model (`RustPrims`). `SP-29` and `RB-20` carry the first four functions of the `rust-std` runtime, `append_list`, `length_list`, `index_list` and `slice_list`, as source: the module `RustStd` defines each as one machine call (`Machine.listAppend`, `listLength`, `listIndex`, `listSlice`, whose meaning `RustSemantics` states as the calculus primitive `append`, `length`, `index`, `slice`), `refines_<function>` is kernel-checked against the run of the runtime item, the std text is the handwritten base with the generated functions in place of their oracle functions, and a differential with counted work holds them to the oracle. The shipped crate gains `Type::Param`, the four machine families, and the decoder of the std module; the library audit reads the std text as generated. The register is 455 IDs.
 - Two source packages of the standard library and the application that uses
   them, #32 (SPEC.md §17.22, §10.5, `SL-03`, `SL-04`, `EX-09`). `std-models`
   (`LexLeanStdModels.Scores`) holds the score combinators `best`, `margin`, and
@@ -345,6 +347,18 @@ and Unreleased holds what has landed since.
   ones. The register is 430 IDs. A finding about the certificate generator,
   #222, is worked around by building the correspondence table in a definition
   of its own.
+- The Rust printer as language-1.2 source and the standard library's output
+  buffer (SPEC.md §17.23, §17.22, §17.16, `BS-06` and `SL-05`, #92; no new
+  diagnostic code, no change to the language-1.2 identity). `LexLeanStd.Buffer`
+  writes in order into a buffer of a given capacity, with the capacity
+  exceeded a refusal of `finish`; it is chunked over today's primitives
+  because a chain of `append` is quadratic (the work counter quadruples as n
+  doubles). `bootstrap/src/RustPrint.lex.tex` over `RustAst.lex.tex` declares
+  `printCrate` and `printExpr` as production roots for `rust-std`. `BS-06`
+  runs 2,559 vectors under the pinned `rustc` on every host, and on the
+  normative host the evaluator on 541 + 1,955 of them and 400 + 399 seeded
+  mutants, 2,984 more under `rustc`, twelve planted defects, and the certified
+  packages against the committed ones. The register is 447 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or

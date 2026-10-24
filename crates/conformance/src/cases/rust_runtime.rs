@@ -230,14 +230,6 @@ pub fn run(id: &str) {
     // proofs are about one, the Rust crate reads the other.
     assert_eq!(module, shipped, "{SHIPPED} differs from {MODULE}");
     let oracle = read("tests/rust-runtime-oracle/core.rs.txt");
-    // The handwritten text of the `rust-std` runtime is kept beside it and is
-    // still the text the compiler prints: no function of it is defined by the
-    // module yet, so the oracle is that text exactly.
-    assert_eq!(
-        read("tests/rust-runtime-oracle/std.rs.txt"),
-        runtime::STD,
-        "the std oracle is the std runtime"
-    );
     let support = runtime::support().expect("the embedded support");
     let decoded = source::decode(&shipped).expect("the module decodes");
     assert!(

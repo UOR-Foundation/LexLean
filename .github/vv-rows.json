@@ -27,6 +27,15 @@
     "hints": ""
   },
   {
+    "part": "bdd-bootstrap-print",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-print",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
     "part": "bdd-bootstrap-runtime",
     "recipes": "bdd",
     "examples_part": "",
@@ -76,6 +85,15 @@
     "recipes": "bdd",
     "examples_part": "",
     "bdd_part": "preservation-prims",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-preservation-std",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "preservation-std",
     "width": "",
     "memory_kib": "",
     "hints": ""

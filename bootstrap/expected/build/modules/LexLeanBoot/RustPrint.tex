@@ -1,0 +1,463 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{putS}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(out : LexLeanStd.Buffer.Buffer) (literal : String)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Buffer.Buffer}.\par
+\noindent Definition: \texttt{LexLeanStd.Buffer.writeBytes (out) ((LexLeanRuntime.utf8Encode (literal) : ByteArray))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{putNat}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(out : LexLeanStd.Buffer.Buffer) (number : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Buffer.Buffer}.\par
+\noindent Definition: \texttt{LexLeanStd.Buffer.writeDecimal (out) (number)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{indentStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(depth : Nat) (state : (Prod (Nat) (LexLeanStd.Buffer.Buffer)))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option ((Prod (Nat) (LexLeanStd.Buffer.Buffer)))}.\par
+\noindent Definition: \texttt{(if (Nat.blt ((state).1) (depth)) then Option.some ((((state).1 + 1), putS ((state).2) ("    "))) else Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{indent}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(out : LexLeanStd.Buffer.Buffer) (depth : Nat)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{(depth)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Buffer.Buffer}.\par
+\noindent Definition: \texttt{(((LexLeanCollections.iterateUntil ((fun (state : (Prod (Nat) (LexLeanStd.Buffer.Buffer))) => indentStep (depth) (state))) (depth) ((0, out)) : (Prod ((Prod (Nat) (LexLeanStd.Buffer.Buffer))) (Bool)))).1).2}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{kindName}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : LexLeanBoot.RustValidate.IntKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{String}.\par
+\noindent Definition: \texttt{(match kind with | LexLeanBoot.RustValidate.IntKind.U8 => "u8" | LexLeanBoot.RustValidate.IntKind.U16 => "u16" | LexLeanBoot.RustValidate.IntKind.U32 => "u32" | LexLeanBoot.RustValidate.IntKind.U64 => "u64" | LexLeanBoot.RustValidate.IntKind.I8 => "i8" | LexLeanBoot.RustValidate.IntKind.I16 => "i16" | LexLeanBoot.RustValidate.IntKind.I32 => "i32" | LexLeanBoot.RustValidate.IntKind.I64 => "i64")}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{minimum}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : LexLeanBoot.RustValidate.IntKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match kind with | LexLeanBoot.RustValidate.IntKind.U8 => 0 | LexLeanBoot.RustValidate.IntKind.U16 => 0 | LexLeanBoot.RustValidate.IntKind.U32 => 0 | LexLeanBoot.RustValidate.IntKind.U64 => 0 | LexLeanBoot.RustValidate.IntKind.I8 => 128 | LexLeanBoot.RustValidate.IntKind.I16 => 32768 | LexLeanBoot.RustValidate.IntKind.I32 => 2147483648 | LexLeanBoot.RustValidate.IntKind.I64 => 9223372036854775808)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{putKind}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(out : LexLeanStd.Buffer.Buffer) (kind : LexLeanBoot.RustValidate.IntKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Buffer.Buffer}.\par
+\noindent Definition: \texttt{putS (out) (kindName (kind))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{putId}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(out : LexLeanStd.Buffer.Buffer) (ident : LexLeanBoot.RustValidate.Id)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Buffer.Buffer}.\par
+\noindent Definition: \texttt{(match ident with | LexLeanBoot.RustValidate.Id.IdLocal n => putNat (putS (out) ("v")) (n) | LexLeanBoot.RustValidate.Id.IdHolder n => putNat (putS (out) ("m")) (n) | LexLeanBoot.RustValidate.Id.IdOperand n => putNat (putS (out) ("a")) (n) | LexLeanBoot.RustValidate.Id.IdCallee n => putNat (putS (out) ("c")) (n) | LexLeanBoot.RustValidate.Id.IdBoxed n => putNat (putS (out) ("r")) (n) | LexLeanBoot.RustValidate.Id.IdPart n => putNat (putS (out) ("h")) (n) | LexLeanBoot.RustValidate.Id.IdCapture n => putNat (putS (out) ("k")) (n) | LexLeanBoot.RustValidate.Id.IdParam n => putNat (putS (out) ("p")) (n) | LexLeanBoot.RustValidate.Id.IdFunction n => putNat (putS (out) ("f")) (n) | LexLeanBoot.RustValidate.Id.IdExport name => LexLeanStd.Buffer.writeBytes (out) (name))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{putLeaf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(out : LexLeanStd.Buffer.Buffer) (kind : LexLeanBoot.RustValidate.LeafKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Buffer.Buffer}.\par
+\noindent Definition: \texttt{putS (out) ((match kind with | LexLeanBoot.RustValidate.LeafKind.LkUnit => "()" | LexLeanBoot.RustValidate.LeafKind.LkBool => "bool" | LexLeanBoot.RustValidate.LeafKind.LkNat => "u64" | LexLeanBoot.RustValidate.LeafKind.LkInt => "i64" | LexLeanBoot.RustValidate.LeafKind.LkOrdering => "Ordering" | LexLeanBoot.RustValidate.LeafKind.LkStr => "Str" | LexLeanBoot.RustValidate.LeafKind.LkBytes => "Bytes" | LexLeanBoot.RustValidate.LeafKind.LkOverflow => "Overflow" | LexLeanBoot.RustValidate.LeafKind.LkI128 => "i128"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{unaryOpen}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : LexLeanBoot.RustValidate.UnaryKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{String}.\par
+\noindent Definition: \texttt{(match kind with | LexLeanBoot.RustValidate.UnaryKind.UkOption => "Option<" | LexLeanBoot.RustValidate.UnaryKind.UkList => "List<" | LexLeanBoot.RustValidate.UnaryKind.UkRc => "std::rc::Rc<" | LexLeanBoot.RustValidate.UnaryKind.UkFallible => "R<" | LexLeanBoot.RustValidate.UnaryKind.UkRef => "\&")}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{unaryClose}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : LexLeanBoot.RustValidate.UnaryKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{String}.\par
+\noindent Definition: \texttt{(match kind with | LexLeanBoot.RustValidate.UnaryKind.UkOption => ">" | LexLeanBoot.RustValidate.UnaryKind.UkList => ">" | LexLeanBoot.RustValidate.UnaryKind.UkRc => ">" | LexLeanBoot.RustValidate.UnaryKind.UkFallible => ">" | LexLeanBoot.RustValidate.UnaryKind.UkRef => "")}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{putTy}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(out : LexLeanStd.Buffer.Buffer) (ty : LexLeanBoot.RustValidate.Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Buffer.Buffer}.\par
+\noindent Definition: \texttt{(match ty with | LexLeanBoot.RustValidate.Ty.TyLeaf k => putLeaf (out) (k) | LexLeanBoot.RustValidate.Ty.TyFixed k => putKind (out) (k) | LexLeanBoot.RustValidate.Ty.TyUnary k inner => putS (putTy (putS (out) (unaryOpen (k))) (inner)) (unaryClose (k)) | LexLeanBoot.RustValidate.Ty.TyBinary k left right => (match k with | LexLeanBoot.RustValidate.BinaryKind.BkResult => putS (putTy (putS (putTy (putS (out) ("Result<")) (left)) (", ")) (right)) (">") | LexLeanBoot.RustValidate.BinaryKind.BkPair => putS (putTy (putS (putTy (putS (out) ("(")) (left)) (", ")) (right)) (")")) | LexLeanBoot.RustValidate.Ty.TyNamed k n => (match k with | LexLeanBoot.RustValidate.NameKind.NkAdt => putNat (putS (out) ("Adt")) (n) | LexLeanBoot.RustValidate.NameKind.NkFn => putNat (putS (out) ("Fn")) (n)) | LexLeanBoot.RustValidate.Ty.TyNil => out | LexLeanBoot.RustValidate.Ty.TyCons head tail => (match tail with | LexLeanBoot.RustValidate.Ty.TyCons \_ \_ => putTy (putS (putTy (out) (head)) (", ")) (tail) | LexLeanBoot.RustValidate.Ty.TyNil => putTy (out) (head) | LexLeanBoot.RustValidate.Ty.TyLeaf \_ => putTy (out) (head) | LexLeanBoot.RustValidate.Ty.TyFixed \_ => putTy (out) (head) | LexLeanBoot.RustValidate.Ty.TyUnary \_ \_ => putTy (out) (head) | LexLeanBoot.RustValidate.Ty.TyBinary \_ \_ \_ => putTy (out) (head) | LexLeanBoot.RustValidate.Ty.TyNamed \_ \_ => putTy (out) (head)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{hexDigit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(number : Nat) (place : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanStd.Text.sliceOr (ByteArray.mk \#[48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102]) ((LexLeanRuntime.remainder ((LexLeanRuntime.quotient (number) (place) (0) : Nat)) (16) (0) : Nat)) (1)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{leadingZero}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(digits : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Nat)}.\par
+\noindent Definition: \texttt{(match LexLeanStd.Text.byteAt (digits) (position) with | Option.some byte => (if (LexLeanRuntime.equal (byte) ((48 : UInt8)) : Bool) then Option.some ((position + 1)) else Option.none) | Option.none => Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{scalarHex}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(out : LexLeanStd.Buffer.Buffer) (scalar : Nat)}.\par
+\noindent Closure 1: binds \texttt{(position)}, captures \texttt{(digits)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Buffer.Buffer}.\par
+\noindent Definition: \texttt{(let digits : ByteArray := (LexLeanRuntime.append (hexDigit (scalar) (268435456)) ((LexLeanRuntime.append (hexDigit (scalar) (16777216)) ((LexLeanRuntime.append (hexDigit (scalar) (1048576)) ((LexLeanRuntime.append (hexDigit (scalar) (65536)) ((LexLeanRuntime.append (hexDigit (scalar) (4096)) ((LexLeanRuntime.append (hexDigit (scalar) (256)) ((LexLeanRuntime.append (hexDigit (scalar) (16)) (hexDigit (scalar) (1)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray); (let zeros : Nat := ((LexLeanCollections.iterateUntil ((fun (position : Nat) => leadingZero (digits) (position))) (7) (0) : (Prod (Nat) (Bool)))).1; LexLeanStd.Buffer.writeBytes (out) (LexLeanStd.Text.sliceOr (digits) (zeros) ((LexLeanRuntime.subtract (8) (zeros) : Nat)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{byteHex}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(out : LexLeanStd.Buffer.Buffer) (byte : UInt8)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Buffer.Buffer}.\par
+\noindent Definition: \texttt{(let value : Nat := (toNat (byte) : Nat); LexLeanStd.Buffer.writeBytes (out) ((LexLeanRuntime.append (hexDigit (value) (16)) (hexDigit (value) (1)) : ByteArray)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{continuation}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match LexLeanStd.Text.byteAt (subject) (position) with | Option.some byte => (LexLeanRuntime.remainder ((toNat (byte) : Nat)) (64) (0) : Nat) | Option.none => 0)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{scalarAt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (Nat) (Nat))}.\par
+\noindent Definition: \texttt{(match LexLeanStd.Text.byteAt (subject) (position) with | Option.some lead => (let code0 : Nat := (toNat (lead) : Nat); (if (Nat.blt (code0) (128)) then (code0, 1) else (if (Nat.blt (code0) (224)) then (((LexLeanRuntime.multiply ((LexLeanRuntime.remainder (code0) (32) (0) : Nat)) (64) : Nat) + continuation (subject) ((position + 1))), 2) else (if (Nat.blt (code0) (240)) then (((LexLeanRuntime.multiply ((LexLeanRuntime.remainder (code0) (16) (0) : Nat)) (4096) : Nat) + ((LexLeanRuntime.multiply (continuation (subject) ((position + 1))) (64) : Nat) + continuation (subject) ((position + 2)))), 3) else (((LexLeanRuntime.multiply ((LexLeanRuntime.remainder (code0) (8) (0) : Nat)) (262144) : Nat) + ((LexLeanRuntime.multiply (continuation (subject) ((position + 1))) (4096) : Nat) + ((LexLeanRuntime.multiply (continuation (subject) ((position + 2))) (64) : Nat) + continuation (subject) ((position + 3))))), 4))))) | Option.none => (0, 1))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{quoteStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (state : (Prod (Nat) (LexLeanStd.Buffer.Buffer)))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option ((Prod (Nat) (LexLeanStd.Buffer.Buffer)))}.\par
+\noindent Definition: \texttt{(if (Nat.blt ((state).1) ((LexLeanRuntime.length (subject) : Nat))) then (let scalar : (Prod (Nat) (Nat)) := scalarAt (subject) ((state).1); (let code : Nat := (scalar).1; Option.some ((((state).1 + (scalar).2), (if (Nat.beq (code) (34)) then putS ((state).2) ("\textbackslash{}\textbackslash{}\textbackslash{}"") else (if (Nat.beq (code) (92)) then putS ((state).2) ("\textbackslash{}\textbackslash{}\textbackslash{}\textbackslash{}") else (if ((Nat.ble (32) (code)) \&\& (Nat.ble (code) (126))) then LexLeanStd.Buffer.writeBytes ((state).2) (LexLeanStd.Text.sliceOr (subject) ((state).1) (1)) else putS (scalarHex (putS ((state).2) ("\textbackslash{}\textbackslash{}u\{")) (code)) ("\}")))))))) else Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{putQuoted}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(out : LexLeanStd.Buffer.Buffer) (subject : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{(subject)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Buffer.Buffer}.\par
+\noindent Definition: \texttt{putS ((((LexLeanCollections.iterateUntil ((fun (state : (Prod (Nat) (LexLeanStd.Buffer.Buffer))) => quoteStep (subject) (state))) ((LexLeanRuntime.length (subject) : Nat)) ((0, putS (out) ("\textbackslash{}""))) : (Prod ((Prod (Nat) (LexLeanStd.Buffer.Buffer))) (Bool)))).1).2) ("\textbackslash{}"")}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{bytesStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (state : (Prod (Nat) (LexLeanStd.Buffer.Buffer)))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option ((Prod (Nat) (LexLeanStd.Buffer.Buffer)))}.\par
+\noindent Definition: \texttt{(match LexLeanStd.Text.byteAt (subject) ((state).1) with | Option.some byte => Option.some ((((state).1 + 1), byteHex (putS ((if (Nat.beq ((state).1) (0)) then (state).2 else putS ((state).2) (", "))) ("0x")) (byte))) | Option.none => Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{putBytesLit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(out : LexLeanStd.Buffer.Buffer) (subject : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{(subject)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Buffer.Buffer}.\par
+\noindent Definition: \texttt{putS ((((LexLeanCollections.iterateUntil ((fun (state : (Prod (Nat) (LexLeanStd.Buffer.Buffer))) => bytesStep (subject) (state))) ((LexLeanRuntime.length (subject) : Nat)) ((0, putS (out) ("Bytes::lit(\&["))) : (Prod ((Prod (Nat) (LexLeanStd.Buffer.Buffer))) (Bool)))).1).2) ("])")}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{putOrdering}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(out : LexLeanStd.Buffer.Buffer) (kind : LexLeanBoot.RustAst.OrderingKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Buffer.Buffer}.\par
+\noindent Definition: \texttt{putS (out) ((match kind with | LexLeanBoot.RustAst.OrderingKind.OkLess => "Ordering::Less" | LexLeanBoot.RustAst.OrderingKind.OkEqual => "Ordering::Equal" | LexLeanBoot.RustAst.OrderingKind.OkGreater => "Ordering::Greater"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{putLit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(out : LexLeanStd.Buffer.Buffer) (literal : LexLeanBoot.RustAst.Lit)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Buffer.Buffer}.\par
+\noindent Definition: \texttt{(match literal with | LexLeanBoot.RustAst.Lit.LitUnit => putS (out) ("()") | LexLeanBoot.RustAst.Lit.LitBool value => (if value then putS (out) ("true") else putS (out) ("false")) | LexLeanBoot.RustAst.Lit.LitNat value => putS (putNat (out) (value)) ("u64") | LexLeanBoot.RustAst.Lit.LitInt negative magnitude => (if (negative \&\& (Nat.beq (magnitude) (9223372036854775808))) then putS (out) ("i64::MIN") else putS (putNat ((if negative then putS (out) ("-") else out)) (magnitude)) ("i64")) | LexLeanBoot.RustAst.Lit.LitFixed kind negative magnitude => (if (negative \&\& (Nat.beq (magnitude) (minimum (kind)))) then putS (putKind (out) (kind)) ("::MIN") else putKind (putNat ((if negative then putS (out) ("-") else out)) (magnitude)) (kind)) | LexLeanBoot.RustAst.Lit.LitStr text => putS (putQuoted (putS (out) ("Str::lit(")) (text)) (")") | LexLeanBoot.RustAst.Lit.LitBytes octets => putBytesLit (out) (octets) | LexLeanBoot.RustAst.Lit.LitOrdering kind => putOrdering (out) (kind) | LexLeanBoot.RustAst.Lit.LitOverflow => putS (out) ("Overflow"))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{putPat}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(out : LexLeanStd.Buffer.Buffer) (pat : LexLeanBoot.RustAst.Pat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Buffer.Buffer}.\par
+\noindent Definition: \texttt{(match pat with | LexLeanBoot.RustAst.Pat.PLeaf kind => putS (out) ((match kind with | LexLeanBoot.RustAst.PatLeaf.PlWild => "\_" | LexLeanBoot.RustAst.PatLeaf.PlUnit => "()" | LexLeanBoot.RustAst.PatLeaf.PlNone => "None")) | LexLeanBoot.RustAst.Pat.PBind ident => putId (out) (ident) | LexLeanBoot.RustAst.Pat.PTuple items => putS (putPat (putS (out) ("(")) (items)) (")") | LexLeanBoot.RustAst.Pat.PWrap kind inner => putS (putPat (putS (out) ((match kind with | LexLeanBoot.RustValidate.PatWrap.PwSome => "Some(" | LexLeanBoot.RustValidate.PatWrap.PwOk => "Ok(" | LexLeanBoot.RustValidate.PatWrap.PwErr => "Err("))) (inner)) (")") | LexLeanBoot.RustAst.Pat.PAdt adt constructor fields => (let head : LexLeanStd.Buffer.Buffer := putNat (putS (putNat (putS (out) ("Adt")) (adt)) ("::C")) (constructor); (match fields with | LexLeanBoot.RustAst.Pat.PNil => head | LexLeanBoot.RustAst.Pat.PCons \_ \_ => putS (putPat (putS (head) ("(")) (fields)) (")") | LexLeanBoot.RustAst.Pat.PLeaf \_ => head | LexLeanBoot.RustAst.Pat.PBind \_ => head | LexLeanBoot.RustAst.Pat.PTuple \_ => head | LexLeanBoot.RustAst.Pat.PWrap \_ \_ => head | LexLeanBoot.RustAst.Pat.PAdt \_ \_ \_ => head | LexLeanBoot.RustAst.Pat.POrdering \_ => head)) | LexLeanBoot.RustAst.Pat.PNil => out | LexLeanBoot.RustAst.Pat.PCons head tail => (match tail with | LexLeanBoot.RustAst.Pat.PCons \_ \_ => putPat (putS (putPat (out) (head)) (", ")) (tail) | LexLeanBoot.RustAst.Pat.PNil => putPat (out) (head) | LexLeanBoot.RustAst.Pat.PLeaf \_ => putPat (out) (head) | LexLeanBoot.RustAst.Pat.PBind \_ => putPat (out) (head) | LexLeanBoot.RustAst.Pat.PTuple \_ => putPat (out) (head) | LexLeanBoot.RustAst.Pat.PWrap \_ \_ => putPat (out) (head) | LexLeanBoot.RustAst.Pat.PAdt \_ \_ \_ => putPat (out) (head) | LexLeanBoot.RustAst.Pat.POrdering \_ => putPat (out) (head)) | LexLeanBoot.RustAst.Pat.POrdering kind => putOrdering (out) (kind))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{plainLow}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(family : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{String}.\par
+\noindent Definition: \texttt{(if (Nat.beq (family) (0)) then "nat\_add" else (if (Nat.beq (family) (1)) then "nat\_sub" else (if (Nat.beq (family) (2)) then "nat\_mul" else (if (Nat.beq (family) (3)) then "nat\_quot" else (if (Nat.beq (family) (4)) then "nat\_rem" else (if (Nat.beq (family) (5)) then "nat\_eq" else (if (Nat.beq (family) (6)) then "nat\_le" else (if (Nat.beq (family) (7)) then "nat\_lt" else (if (Nat.beq (family) (8)) then "nat\_succ" else (if (Nat.beq (family) (9)) then "int\_add" else (if (Nat.beq (family) (10)) then "int\_sub" else (if (Nat.beq (family) (11)) then "int\_mul" else (if (Nat.beq (family) (12)) then "int\_neg" else (if (Nat.beq (family) (13)) then "int\_quot" else (if (Nat.beq (family) (14)) then "int\_rem" else (if (Nat.beq (family) (15)) then "bool\_not" else (if (Nat.beq (family) (16)) then "bool\_and" else (if (Nat.beq (family) (17)) then "bool\_or" else (if (Nat.beq (family) (18)) then "equal" else (if (Nat.beq (family) (19)) then "compare" else ""))))))))))))))))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{plainHigh}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(family : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{String}.\par
+\noindent Definition: \texttt{(if (Nat.beq (family) (32)) then "append\_list" else (if (Nat.beq (family) (33)) then "append\_bytes" else (if (Nat.beq (family) (34)) then "length\_list" else (if (Nat.beq (family) (35)) then "length\_bytes" else (if (Nat.beq (family) (36)) then "length\_string" else (if (Nat.beq (family) (37)) then "index\_list" else (if (Nat.beq (family) (38)) then "index\_bytes" else (if (Nat.beq (family) (39)) then "slice\_list" else (if (Nat.beq (family) (40)) then "slice\_bytes" else (if (Nat.beq (family) (41)) then "utf8\_encode" else (if (Nat.beq (family) (42)) then "utf8\_decode" else (if (Nat.beq (family) (43)) then "compare\_bytes" else (if (Nat.beq (family) (44)) then "split\_exact" else (if (Nat.beq (family) (45)) then "join" else (if (Nat.beq (family) (46)) then "format\_i64" else (if (Nat.beq (family) (48)) then "parse\_int" else ""))))))))))))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{fixedMethod}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(family : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{String}.\par
+\noindent Definition: \texttt{(if (Nat.beq (family) (20)) then "checked\_add" else (if (Nat.beq (family) (21)) then "checked\_sub" else (if (Nat.beq (family) (22)) then "checked\_mul" else (if (Nat.beq (family) (23)) then "checked\_quot" else (if (Nat.beq (family) (25)) then "bit\_and" else (if (Nat.beq (family) (26)) then "bit\_or" else (if (Nat.beq (family) (27)) then "bit\_xor" else (if (Nat.beq (family) (28)) then "bit\_not" else (if (Nat.beq (family) (29)) then "shift\_left" else (if (Nat.beq (family) (30)) then "shift\_right" else (if (Nat.beq (family) (31)) then "convert" else "")))))))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{putItem}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(out : LexLeanStd.Buffer.Buffer) (rt : LexLeanBoot.RustValidate.Rt)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Buffer.Buffer}.\par
+\noindent Definition: \texttt{(let family : Nat := (rt).family; (match (rt).width with | Option.some kind => (if (Nat.beq (family) (24)) then putKind (putS (out) ("checked\_neg\_")) (kind) else (if (Nat.beq (family) (47)) then putKind (putS (out) ("format\_")) (kind) else (if (Nat.beq (family) (49)) then putKind (putS (out) ("parse\_")) (kind) else putS (putS (putKind (putS (out) ("fixed\_")) (kind)) ("::")) (fixedMethod (family))))) | Option.none => putS (out) ((if (Nat.blt (family) (20)) then plainLow (family) else plainHigh (family)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{joinedMethod}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(family : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{String}.\par
+\noindent Definition: \texttt{(if (Nat.beq (family) (0)) then "checked\_add" else (if (Nat.beq (family) (1)) then "checked\_sub" else (if (Nat.beq (family) (2)) then "checked\_mul" else (if (Nat.beq (family) (3)) then "checked\_div" else (if (Nat.beq (family) (4)) then "checked\_neg" else (if (Nat.beq (family) (5)) then "checked\_shl" else (if (Nat.beq (family) (6)) then "checked\_shr" else "")))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{fixedPre}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(family : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{String}.\par
+\noindent Definition: \texttt{(if (Nat.beq (family) (8)) then "core::ops::BitAnd::bitand(" else (if (Nat.beq (family) (9)) then "core::ops::BitOr::bitor(" else (if (Nat.beq (family) (10)) then "core::ops::BitXor::bitxor(" else (if (Nat.beq (family) (11)) then "core::ops::Not::not(" else (if (Nat.beq (family) (12)) then "core::cmp::PartialEq::eq(\&" else (if (Nat.beq (family) (13)) then "core::cmp::PartialOrd::le(\&" else (if (Nat.beq (family) (14)) then "core::cmp::PartialOrd::lt(\&" else (if (Nat.beq (family) (15)) then "u64::checked\_rem(" else (if (Nat.beq (family) (16)) then "\{ let (a, b, z): (i64, i64, i64) = (" else (if (Nat.beq (family) (17)) then "u64::checked\_add(" else (if (Nat.beq (family) (18)) then "u64::saturating\_sub(" else (if (Nat.beq (family) (19)) then "u64::checked\_mul(" else (if (Nat.beq (family) (20)) then "u64::checked\_div(" else (if (Nat.beq (family) (21)) then "i64::checked\_add(" else (if (Nat.beq (family) (22)) then "i64::checked\_sub(" else (if (Nat.beq (family) (23)) then "i64::checked\_mul(" else (if (Nat.beq (family) (24)) then "i64::checked\_neg(" else (if (Nat.beq (family) (25)) then "\{ let (a, b, z): (i64, i64, i64) = (" else ""))))))))))))))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{firstMid}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(family : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{String}.\par
+\noindent Definition: \texttt{(if (Nat.beq (family) (12)) then ", \&" else (if (Nat.beq (family) (13)) then ", \&" else (if (Nat.beq (family) (14)) then ", \&" else (if (Nat.beq (family) (8)) then ", " else (if (Nat.beq (family) (9)) then ", " else (if (Nat.beq (family) (10)) then ", " else (if (Nat.beq (family) (11)) then ", " else (if (Nat.beq (family) (15)) then ", " else (if (Nat.beq (family) (16)) then ", " else (if (Nat.beq (family) (17)) then ", " else (if (Nat.beq (family) (18)) then ", " else (if (Nat.beq (family) (19)) then ", " else (if (Nat.beq (family) (20)) then ", " else (if (Nat.beq (family) (21)) then ", " else (if (Nat.beq (family) (22)) then ", " else (if (Nat.beq (family) (23)) then ", " else (if (Nat.beq (family) (24)) then ", " else (if (Nat.beq (family) (25)) then ", " else ", "))))))))))))))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{secondMid}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(family : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{String}.\par
+\noindent Definition: \texttt{(if (Nat.beq (family) (15)) then ").unwrap\_or(" else (if (Nat.beq (family) (16)) then ", " else (if (Nat.beq (family) (20)) then ").unwrap\_or(" else (if (Nat.beq (family) (25)) then ", " else ", "))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{fixedPost}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(family : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{String}.\par
+\noindent Definition: \texttt{(if (Nat.beq (family) (16)) then "); if b == 0 \{ z \} else \{ a.wrapping\_rem(b) \} \}" else (if (Nat.beq (family) (25)) then "); if b == 0 \{ Some(z) \} else \{ a.checked\_div(b) \} \}" else (if (Nat.beq (family) (15)) then ")" else (if (Nat.beq (family) (20)) then ")" else (if (Nat.beq (family) (8)) then ")" else (if (Nat.beq (family) (9)) then ")" else (if (Nat.beq (family) (10)) then ")" else (if (Nat.beq (family) (11)) then ")" else (if (Nat.beq (family) (12)) then ")" else (if (Nat.beq (family) (13)) then ")" else (if (Nat.beq (family) (14)) then ")" else (if (Nat.beq (family) (17)) then ")" else (if (Nat.beq (family) (18)) then ")" else (if (Nat.beq (family) (19)) then ")" else (if (Nat.beq (family) (21)) then ")" else (if (Nat.beq (family) (22)) then ")" else (if (Nat.beq (family) (23)) then ")" else (if (Nat.beq (family) (24)) then ")" else ")"))))))))))))))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{machineArity}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(family : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(if ((Nat.blt (family) (8)) || (Nat.ble (26) (family))) then 100000 else (if (Nat.beq (family) (11)) then 1 else (if (Nat.beq (family) (24)) then 1 else (if (Nat.beq (family) (15)) then 3 else (if (Nat.beq (family) (16)) then 3 else (if (Nat.beq (family) (20)) then 3 else (if (Nat.beq (family) (25)) then 3 else 2)))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{machineOpen}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(out : LexLeanStd.Buffer.Buffer) (family : Nat) (width : Option (LexLeanBoot.RustValidate.IntKind))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Buffer.Buffer}.\par
+\noindent Definition: \texttt{(if (Nat.blt (family) (8)) then (match width with | Option.some kind => putS (putS (putS (putKind (out) (kind)) ("::")) ((if (Nat.beq (family) (7)) then "try\_from" else joinedMethod (family)))) ("(") | Option.none => out) else putS (out) (fixedPre (family)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{machineClose}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(out : LexLeanStd.Buffer.Buffer) (family : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Buffer.Buffer}.\par
+\noindent Definition: \texttt{(if (Nat.blt (family) (8)) then putS (out) ((if (Nat.beq (family) (7)) then ").ok()" else ")")) else putS (out) (fixedPost (family)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{argSep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(out : LexLeanStd.Buffer.Buffer) (family : Nat) (slot : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Buffer.Buffer}.\par
+\noindent Definition: \texttt{(if (Nat.blt (family) (8)) then putS (out) (", ") else (if (Nat.beq (family) (100)) then putS (out) (", ") else (if (Nat.beq (slot) (0)) then putS (out) (firstMid (family)) else putS (out) (secondMid (family)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tag}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(node : LexLeanBoot.RustAst.Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match node with | LexLeanBoot.RustAst.Expr.ELit \_ \_ => 0 | LexLeanBoot.RustAst.Expr.ERead \_ \_ \_ => 1 | LexLeanBoot.RustAst.Expr.EWrap \_ \_ \_ => 2 | LexLeanBoot.RustAst.Expr.ECall \_ \_ \_ \_ => 3 | LexLeanBoot.RustAst.Expr.EApply \_ \_ \_ \_ => 4 | LexLeanBoot.RustAst.Expr.EConstruct \_ \_ \_ => 5 | LexLeanBoot.RustAst.Expr.EPair \_ \_ \_ => 6 | LexLeanBoot.RustAst.Expr.EIf \_ \_ \_ \_ => 7 | LexLeanBoot.RustAst.Expr.EMatch \_ \_ \_ => 8 | LexLeanBoot.RustAst.Expr.EBlockE \_ => 9 | LexLeanBoot.RustAst.Expr.EProbe \_ \_ \_ => 10 | LexLeanBoot.RustAst.Expr.EBlock \_ \_ => 11 | LexLeanBoot.RustAst.Expr.ENil => 12 | LexLeanBoot.RustAst.Expr.ECons \_ \_ => 13 | LexLeanBoot.RustAst.Expr.ELet \_ \_ \_ \_ \_ \_ => 14 | LexLeanBoot.RustAst.Expr.EArm \_ \_ \_ => 15 | LexLeanBoot.RustAst.Expr.ELoop \_ \_ => 16)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{nonEmpty}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : LexLeanBoot.RustAst.Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(Nat.beq (tag (items)) (13))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{unitLit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(node : LexLeanBoot.RustAst.Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match node with | LexLeanBoot.RustAst.Expr.ELit d0 \_ => (match d0 with | LexLeanBoot.RustAst.Lit.LitUnit => true | LexLeanBoot.RustAst.Lit.LitBool \_ => false | LexLeanBoot.RustAst.Lit.LitNat \_ => false | LexLeanBoot.RustAst.Lit.LitInt \_ \_ => false | LexLeanBoot.RustAst.Lit.LitFixed \_ \_ \_ => false | LexLeanBoot.RustAst.Lit.LitStr \_ => false | LexLeanBoot.RustAst.Lit.LitBytes \_ => false | LexLeanBoot.RustAst.Lit.LitOrdering \_ => false | LexLeanBoot.RustAst.Lit.LitOverflow => false) | LexLeanBoot.RustAst.Expr.ERead \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EWrap \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.ECall \_ \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EApply \_ \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EConstruct \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EPair \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EIf \_ \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EMatch \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EBlockE \_ => false | LexLeanBoot.RustAst.Expr.EProbe \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EBlock \_ \_ => false | LexLeanBoot.RustAst.Expr.ENil => false | LexLeanBoot.RustAst.Expr.ECons \_ \_ => false | LexLeanBoot.RustAst.Expr.ELet \_ \_ \_ \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EArm \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.ELoop \_ \_ => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{isUnitBlock}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(node : LexLeanBoot.RustAst.Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match node with | LexLeanBoot.RustAst.Expr.ELit \_ \_ => false | LexLeanBoot.RustAst.Expr.ERead \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EWrap \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.ECall \_ \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EApply \_ \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EConstruct \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EPair \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EIf \_ \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EMatch \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EBlockE \_ => false | LexLeanBoot.RustAst.Expr.EProbe \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EBlock d0 d1 => (if (Nat.beq (tag (d0)) (12)) then unitLit (d1) else false) | LexLeanBoot.RustAst.Expr.ENil => false | LexLeanBoot.RustAst.Expr.ECons \_ \_ => false | LexLeanBoot.RustAst.Expr.ELet \_ \_ \_ \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EArm \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.ELoop \_ \_ => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{calleeFamily}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(callee : LexLeanBoot.RustAst.Callee)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match callee with | LexLeanBoot.RustAst.Callee.CalFn \_ => 1000 | LexLeanBoot.RustAst.Callee.CalRt \_ => 1000 | LexLeanBoot.RustAst.Callee.CalMachine family \_ => family)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{probeCode}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(node : LexLeanBoot.RustAst.Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match node with | LexLeanBoot.RustAst.Expr.ELit \_ \_ => 1000 | LexLeanBoot.RustAst.Expr.ERead \_ \_ \_ => 1000 | LexLeanBoot.RustAst.Expr.EWrap \_ \_ \_ => 1000 | LexLeanBoot.RustAst.Expr.ECall \_ \_ \_ \_ => 1000 | LexLeanBoot.RustAst.Expr.EApply \_ \_ \_ \_ => 1000 | LexLeanBoot.RustAst.Expr.EConstruct \_ \_ \_ => 1000 | LexLeanBoot.RustAst.Expr.EPair \_ \_ \_ => 1000 | LexLeanBoot.RustAst.Expr.EIf \_ \_ \_ \_ => 1000 | LexLeanBoot.RustAst.Expr.EMatch \_ \_ \_ => 1000 | LexLeanBoot.RustAst.Expr.EBlockE \_ => 1000 | LexLeanBoot.RustAst.Expr.EProbe d0 \_ \_ => (match d0 with | LexLeanBoot.RustValidate.ProbeKind.PkIsZero => 0 | LexLeanBoot.RustValidate.ProbeKind.PkNonZero => 1 | LexLeanBoot.RustValidate.ProbeKind.PkUncons => 2 | LexLeanBoot.RustValidate.ProbeKind.PkPred => 3) | LexLeanBoot.RustAst.Expr.EBlock \_ \_ => 1000 | LexLeanBoot.RustAst.Expr.ENil => 1000 | LexLeanBoot.RustAst.Expr.ECons \_ \_ => 1000 | LexLeanBoot.RustAst.Expr.ELet \_ \_ \_ \_ \_ \_ => 1000 | LexLeanBoot.RustAst.Expr.EArm \_ \_ \_ => 1000 | LexLeanBoot.RustAst.Expr.ELoop \_ \_ => 1000)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{opensBrace}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(node : LexLeanBoot.RustAst.Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match node with | LexLeanBoot.RustAst.Expr.ELit \_ \_ => false | LexLeanBoot.RustAst.Expr.ERead \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EWrap \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.ECall d0 \_ \_ \_ => ((Nat.beq (calleeFamily (d0)) (16)) || (Nat.beq (calleeFamily (d0)) (25))) | LexLeanBoot.RustAst.Expr.EApply \_ \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EConstruct \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EPair \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EIf \_ \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EMatch d0 d1 \_ => (if (Nat.beq (tag (d1)) (15)) then opensBrace (d0) else false) | LexLeanBoot.RustAst.Expr.EBlockE \_ => true | LexLeanBoot.RustAst.Expr.EProbe \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EBlock \_ \_ => false | LexLeanBoot.RustAst.Expr.ENil => false | LexLeanBoot.RustAst.Expr.ECons \_ \_ => false | LexLeanBoot.RustAst.Expr.ELet \_ \_ \_ \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EArm \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.ELoop \_ \_ => true)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{conPrefix}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(out : LexLeanStd.Buffer.Buffer) (con : LexLeanBoot.RustValidate.Con)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Buffer.Buffer}.\par
+\noindent Definition: \texttt{(match con with | LexLeanBoot.RustValidate.Con.ConNone ty => putS (putTy (putS (out) ("None::<")) (ty)) (">") | LexLeanBoot.RustValidate.Con.ConSome => putS (out) ("Some(") | LexLeanBoot.RustValidate.Con.ConOk ok error => putS (putTy (putS (putTy (putS (out) ("Ok::<")) (ok)) (", ")) (error)) (">(") | LexLeanBoot.RustValidate.Con.ConErr ok error => putS (putTy (putS (putTy (putS (out) ("Err::<")) (ok)) (", ")) (error)) (">(") | LexLeanBoot.RustValidate.Con.ConAdt adt constructor => putNat (putS (putNat (putS (out) ("Adt")) (adt)) ("::C")) (constructor) | LexLeanBoot.RustValidate.Con.ConClosure fnType function => putNat (putS (putNat (putS (out) ("Fn")) (fnType)) ("::F")) (function) | LexLeanBoot.RustValidate.Con.ConCons => putS (out) ("List::cons(") | LexLeanBoot.RustValidate.Con.ConNil ty => putS (putTy (putS (out) ("List::<")) (ty)) (">::nil()"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{conOpens}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(con : LexLeanBoot.RustValidate.Con)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match con with | LexLeanBoot.RustValidate.Con.ConNone \_ => 0 | LexLeanBoot.RustValidate.Con.ConSome => 1 | LexLeanBoot.RustValidate.Con.ConOk \_ \_ => 1 | LexLeanBoot.RustValidate.Con.ConErr \_ \_ => 1 | LexLeanBoot.RustValidate.Con.ConAdt \_ \_ => 2 | LexLeanBoot.RustValidate.Con.ConClosure \_ \_ => 2 | LexLeanBoot.RustValidate.Con.ConCons => 1 | LexLeanBoot.RustValidate.Con.ConNil \_ => 0)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{printNode}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(out : LexLeanStd.Buffer.Buffer) (node : LexLeanBoot.RustAst.Expr) (depth : Nat) (family : Nat) (slot : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Buffer.Buffer}.\par
+\noindent Definition: \texttt{(match node with | LexLeanBoot.RustAst.Expr.ELit literal \_ => putLit (out) (literal) | LexLeanBoot.RustAst.Expr.ERead kind ident \_ => (match kind with | LexLeanBoot.RustValidate.ReadKind.RkMove => putId (out) (ident) | LexLeanBoot.RustValidate.ReadKind.RkClone => putS (putId (out) (ident)) (".clone()") | LexLeanBoot.RustValidate.ReadKind.RkCopy => putId (out) (ident) | LexLeanBoot.RustValidate.ReadKind.RkDeref => putId (putS (out) ("*")) (ident) | LexLeanBoot.RustValidate.ReadKind.RkUnbox => putS (putId (putS (out) ("(*")) (ident)) (").clone()")) | LexLeanBoot.RustAst.Expr.EWrap kind inner \_ => (match kind with | LexLeanBoot.RustValidate.WrapKind.WkNot => (if ((Nat.beq (probeCode (inner)) (0)) || ((Nat.beq (probeCode (inner)) (1)) || (Nat.beq (probeCode (inner)) (3)))) then putS (printNode (putS (out) ("!(")) (inner) (depth) (100) (0)) (")") else printNode (putS (out) ("!")) (inner) (depth) (100) (0)) | LexLeanBoot.RustValidate.WrapKind.WkBox => putS (printNode (putS (out) ("std::rc::Rc::new(")) (inner) (depth) (100) (0)) (")") | LexLeanBoot.RustValidate.WrapKind.WkWiden => putS (printNode (putS (out) ("i128::from(")) (inner) (depth) (100) (0)) (")") | LexLeanBoot.RustValidate.WrapKind.WkSucceed => putS (printNode (putS (out) ("Ok(")) (inner) (depth) (100) (0)) (")")) | LexLeanBoot.RustAst.Expr.ECall callee args propagate \_ => (let called : Nat := calleeFamily (callee); (let opened : LexLeanStd.Buffer.Buffer := (match callee with | LexLeanBoot.RustAst.Callee.CalFn n => putS (putNat (putS (out) ("f")) (n)) ("(") | LexLeanBoot.RustAst.Callee.CalRt rt => putS (putItem (out) (rt)) ("(") | LexLeanBoot.RustAst.Callee.CalMachine machine width => machineOpen (out) (machine) (width)); (let inside : LexLeanStd.Buffer.Buffer := printNode (opened) (args) (depth) (called) (0); (let closed : LexLeanStd.Buffer.Buffer := (match callee with | LexLeanBoot.RustAst.Callee.CalFn \_ => putS (inside) (")") | LexLeanBoot.RustAst.Callee.CalRt \_ => putS (inside) (")") | LexLeanBoot.RustAst.Callee.CalMachine machine \_ => machineClose (inside) (machine)); (if propagate then putS (closed) ("?") else closed))))) | LexLeanBoot.RustAst.Expr.EApply holder args propagate \_ => (let applied : LexLeanStd.Buffer.Buffer := putS (printNode (putS (putId (out) (holder)) (".apply(")) (args) (depth) (100) (0)) (")"); (if propagate then putS (applied) ("?") else applied)) | LexLeanBoot.RustAst.Expr.EConstruct con args \_ => (let opened : LexLeanStd.Buffer.Buffer := conPrefix (out) (con); (if (Nat.beq (conOpens (con)) (1)) then putS (printNode (opened) (args) (depth) (100) (0)) (")") else (if (Nat.beq (conOpens (con)) (2)) then (if nonEmpty (args) then putS (printNode (putS (opened) ("(")) (args) (depth) (100) (0)) (")") else opened) else opened))) | LexLeanBoot.RustAst.Expr.EPair left right \_ => putS (printNode (putS (printNode (putS (out) ("(")) (left) (depth) (100) (0)) (", ")) (right) (depth) (100) (0)) (")") | LexLeanBoot.RustAst.Expr.EIf condition thenBranch elseBranch \_ => (let head : LexLeanStd.Buffer.Buffer := printNode (putS (printNode (putS (out) ("if ")) (condition) (depth) (100) (0)) (" ")) (thenBranch) (depth) (100) (0); (if isUnitBlock (elseBranch) then head else printNode (putS (head) (" else ")) (elseBranch) (depth) (100) (0))) | LexLeanBoot.RustAst.Expr.EMatch scrutinee arms \_ => (if (Nat.beq (tag (arms)) (15)) then (if opensBrace (scrutinee) then (let opened : LexLeanStd.Buffer.Buffer := printNode (putS (printNode (putS (out) ("\{ let value = ")) (scrutinee) (depth) (100) (0)) ("; match value \{\textbackslash{}n")) (arms) (depth) (100) (0); putS (indent (opened) (depth)) ("\} \}")) else (let opened : LexLeanStd.Buffer.Buffer := printNode (putS (printNode (putS (out) ("match ")) (scrutinee) (depth) (100) (0)) (" \{\textbackslash{}n")) (arms) (depth) (100) (0); putS (indent (opened) (depth)) ("\}"))) else putS (printNode (putS (out) ("match ")) (scrutinee) (depth) (100) (0)) (" \{\}")) | LexLeanBoot.RustAst.Expr.EBlockE block => printNode (out) (block) (depth) (family) (slot) | LexLeanBoot.RustAst.Expr.EProbe kind ident \_ => (match kind with | LexLeanBoot.RustValidate.ProbeKind.PkIsZero => putS (putId (out) (ident)) (" == 0") | LexLeanBoot.RustValidate.ProbeKind.PkNonZero => putS (putId (out) (ident)) (" != 0") | LexLeanBoot.RustValidate.ProbeKind.PkUncons => putS (putId (out) (ident)) (".uncons()") | LexLeanBoot.RustValidate.ProbeKind.PkPred => putS (putId (out) (ident)) (" - 1")) | LexLeanBoot.RustAst.Expr.EBlock lets tail => (if ((Nat.beq (tag (lets)) (12)) \&\& unitLit (tail)) then putS (out) ("\{\}") else (let opened : LexLeanStd.Buffer.Buffer := printNode (putS (out) ("\{\textbackslash{}n")) (lets) (depth) (100) (0); (let tailed : LexLeanStd.Buffer.Buffer := (if unitLit (tail) then opened else putS (printNode (indent (opened) ((depth + 1))) (tail) ((depth + 1)) (100) (0)) ("\textbackslash{}n")); putS (indent (tailed) (depth)) ("\}")))) | LexLeanBoot.RustAst.Expr.ENil => out | LexLeanBoot.RustAst.Expr.ECons head tail => (if (Nat.blt (slot) (machineArity (family))) then (let printed : LexLeanStd.Buffer.Buffer := printNode (out) (head) (depth) (100) (0); (if nonEmpty (tail) then (if (Nat.blt ((slot + 1)) (machineArity (family))) then printNode (argSep (printed) (family) (slot)) (tail) (depth) (family) ((slot + 1)) else printed) else printed)) else out) | LexLeanBoot.RustAst.Expr.ELet pat typed ty value \_ rest => (let named : LexLeanStd.Buffer.Buffer := putPat (putS (indent (out) ((depth + 1))) ("let ")) (pat); (let annotated : LexLeanStd.Buffer.Buffer := (if typed then putTy (putS (named) (": ")) (ty) else named); (let bound : LexLeanStd.Buffer.Buffer := putS (printNode (putS (annotated) (" = ")) (value) ((depth + 1)) (100) (0)) (";\textbackslash{}n"); printNode (bound) (rest) (depth) (100) (0)))) | LexLeanBoot.RustAst.Expr.EArm pat body rest => (let armed : LexLeanStd.Buffer.Buffer := putS (printNode (putS (putPat (indent (out) ((depth + 1))) (pat)) (" => ")) (body) ((depth + 1)) (100) (0)) ("\textbackslash{}n"); printNode (armed) (rest) (depth) (100) (0)) | LexLeanBoot.RustAst.Expr.ELoop state body => (let named : LexLeanStd.Buffer.Buffer := putId (putS (indent (putS (out) ("\{\textbackslash{}n")) ((depth + 1))) ("let mut ")) (state); (let rebound : LexLeanStd.Buffer.Buffer := putS (putId (putS (named) (" = ")) (state)) (";\textbackslash{}n"); (let looped : LexLeanStd.Buffer.Buffer := putS (indent (rebound) ((depth + 1))) ("loop \{\textbackslash{}n"); (let stepped : LexLeanStd.Buffer.Buffer := putS (printNode (putS (indent (looped) ((depth + 2))) ("let step = ")) (body) ((depth + 2)) (100) (0)) (";\textbackslash{}n"); (let matched : LexLeanStd.Buffer.Buffer := putS (indent (stepped) ((depth + 2))) ("match step \{\textbackslash{}n"); (let continued : LexLeanStd.Buffer.Buffer := putS (putId (putS (indent (matched) ((depth + 3))) ("Ok(next) => \{ ")) (state)) (" = next; \}\textbackslash{}n"); (let finished : LexLeanStd.Buffer.Buffer := putS (indent (continued) ((depth + 3))) ("Err(done) => break done,\textbackslash{}n"); putS (indent (putS (indent (putS (indent (finished) ((depth + 2))) ("\}\textbackslash{}n")) ((depth + 1))) ("\}\textbackslash{}n")) (depth)) ("\}")))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{tyNonEmpty}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(tys : LexLeanBoot.RustValidate.Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match tys with | LexLeanBoot.RustValidate.Ty.TyCons \_ \_ => true | LexLeanBoot.RustValidate.Ty.TyNil => false | LexLeanBoot.RustValidate.Ty.TyLeaf \_ => false | LexLeanBoot.RustValidate.Ty.TyFixed \_ => false | LexLeanBoot.RustValidate.Ty.TyUnary \_ \_ => false | LexLeanBoot.RustValidate.Ty.TyBinary \_ \_ \_ => false | LexLeanBoot.RustValidate.Ty.TyNamed \_ \_ => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tyIsUnit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(ty : LexLeanBoot.RustValidate.Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match ty with | LexLeanBoot.RustValidate.Ty.TyLeaf kind => (match kind with | LexLeanBoot.RustValidate.LeafKind.LkUnit => true | LexLeanBoot.RustValidate.LeafKind.LkBool => false | LexLeanBoot.RustValidate.LeafKind.LkNat => false | LexLeanBoot.RustValidate.LeafKind.LkInt => false | LexLeanBoot.RustValidate.LeafKind.LkOrdering => false | LexLeanBoot.RustValidate.LeafKind.LkStr => false | LexLeanBoot.RustValidate.LeafKind.LkBytes => false | LexLeanBoot.RustValidate.LeafKind.LkOverflow => false | LexLeanBoot.RustValidate.LeafKind.LkI128 => false) | LexLeanBoot.RustValidate.Ty.TyCons \_ \_ => false | LexLeanBoot.RustValidate.Ty.TyNil => false | LexLeanBoot.RustValidate.Ty.TyFixed \_ => false | LexLeanBoot.RustValidate.Ty.TyUnary \_ \_ => false | LexLeanBoot.RustValidate.Ty.TyBinary \_ \_ \_ => false | LexLeanBoot.RustValidate.Ty.TyNamed \_ \_ => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tyIsFn}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(ty : LexLeanBoot.RustValidate.Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match ty with | LexLeanBoot.RustValidate.Ty.TyNamed kind \_ => (match kind with | LexLeanBoot.RustValidate.NameKind.NkAdt => false | LexLeanBoot.RustValidate.NameKind.NkFn => true) | LexLeanBoot.RustValidate.Ty.TyLeaf \_ => false | LexLeanBoot.RustValidate.Ty.TyCons \_ \_ => false | LexLeanBoot.RustValidate.Ty.TyNil => false | LexLeanBoot.RustValidate.Ty.TyFixed \_ => false | LexLeanBoot.RustValidate.Ty.TyUnary \_ \_ => false | LexLeanBoot.RustValidate.Ty.TyBinary \_ \_ \_ => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{putReturns}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(out : LexLeanStd.Buffer.Buffer) (result : LexLeanBoot.RustValidate.Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Buffer.Buffer}.\par
+\noindent Definition: \texttt{(if tyIsUnit (result) then out else putTy (putS (out) (" -> ")) (result))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{putParamTys}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(out : LexLeanStd.Buffer.Buffer) (tys : LexLeanBoot.RustValidate.Ty) (<U+00AB>at<U+00BB> : Nat) (unread : Bool)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Buffer.Buffer}.\par
+\noindent Definition: \texttt{(match tys with | LexLeanBoot.RustValidate.Ty.TyCons head tail => (let sep : LexLeanStd.Buffer.Buffer := (if (Nat.beq (<U+00AB>at<U+00BB>) (0)) then out else putS (out) (", ")); (let named : LexLeanStd.Buffer.Buffer := putNat (putS ((if unread then putS (sep) ("\_") else sep)) ("p")) (<U+00AB>at<U+00BB>); putParamTys (putTy (putS (named) (": ")) (head)) (tail) ((<U+00AB>at<U+00BB> + 1)) (unread))) | LexLeanBoot.RustValidate.Ty.TyNil => out | LexLeanBoot.RustValidate.Ty.TyLeaf \_ => out | LexLeanBoot.RustValidate.Ty.TyFixed \_ => out | LexLeanBoot.RustValidate.Ty.TyUnary \_ \_ => out | LexLeanBoot.RustValidate.Ty.TyBinary \_ \_ \_ => out | LexLeanBoot.RustValidate.Ty.TyNamed \_ \_ => out)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{putPars}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(out : LexLeanStd.Buffer.Buffer) (pars : LexLeanBoot.RustAst.Par) (initial : Bool)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Buffer.Buffer}.\par
+\noindent Definition: \texttt{(match pars with | LexLeanBoot.RustAst.Par.ParNil => out | LexLeanBoot.RustAst.Par.ParCons pat ty rest => putPars (putTy (putS (putPat ((if initial then out else putS (out) (", "))) (pat)) (": ")) (ty)) (rest) (false))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{putRow}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(out : LexLeanStd.Buffer.Buffer) (row : LexLeanBoot.RustValidate.Row) (isFn : Bool)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Buffer.Buffer}.\par
+\noindent Definition: \texttt{(match row with | LexLeanBoot.RustValidate.Row.RowNil => out | LexLeanBoot.RustValidate.Row.RowCons number fields rest => (let named : LexLeanStd.Buffer.Buffer := putNat (putS (putS (out) ("    ")) ((if isFn then "F" else "C"))) (number); (let listed : LexLeanStd.Buffer.Buffer := (if tyNonEmpty (fields) then putS (putTy (putS (named) ("(")) (fields)) (")") else named); putRow (putS (listed) (",\textbackslash{}n")) (rest) (isFn))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{captureName}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(state : (Prod (Nat) (LexLeanStd.Buffer.Buffer))) (cap : LexLeanBoot.RustValidate.Cap)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (Nat) (LexLeanStd.Buffer.Buffer))}.\par
+\noindent Definition: \texttt{(let sep : LexLeanStd.Buffer.Buffer := (if (Nat.beq ((state).1) (0)) then (state).2 else putS ((state).2) (", ")); (((state).1 + 1), (match cap with | LexLeanBoot.RustValidate.Cap.CapCopy => putNat (putS (sep) ("k")) ((state).1) | LexLeanBoot.RustValidate.Cap.CapClone => putNat (putS (sep) ("k")) ((state).1) | LexLeanBoot.RustValidate.Cap.CapUnbox => putNat (putS (sep) ("k")) ((state).1) | LexLeanBoot.RustValidate.Cap.CapUnit => putS (sep) ("\_"))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{capturePassed}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(state : (Prod (Nat) (LexLeanStd.Buffer.Buffer))) (cap : LexLeanBoot.RustValidate.Cap)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (Nat) (LexLeanStd.Buffer.Buffer))}.\par
+\noindent Definition: \texttt{(let sep : LexLeanStd.Buffer.Buffer := (if (Nat.beq ((state).1) (0)) then (state).2 else putS ((state).2) (", ")); (((state).1 + 1), (match cap with | LexLeanBoot.RustValidate.Cap.CapCopy => putNat (putS (sep) ("*k")) ((state).1) | LexLeanBoot.RustValidate.Cap.CapClone => putS (putNat (putS (sep) ("k")) ((state).1)) (".clone()") | LexLeanBoot.RustValidate.Cap.CapUnbox => putS (putNat (putS (sep) ("(**k")) ((state).1)) (").clone()") | LexLeanBoot.RustValidate.Cap.CapUnit => putS (sep) ("()"))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{paramStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(count : Nat) (captured : Nat) (state : (Prod (Nat) (LexLeanStd.Buffer.Buffer)))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option ((Prod (Nat) (LexLeanStd.Buffer.Buffer)))}.\par
+\noindent Definition: \texttt{(if (Nat.blt ((state).1) (count)) then Option.some ((((state).1 + 1), putNat (putS ((if ((Nat.beq ((state).1) (0)) \&\& (Nat.beq (captured) (0))) then (state).2 else putS ((state).2) (", "))) ("p")) ((state).1))) else Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{putDis}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(out : LexLeanStd.Buffer.Buffer) (dis : LexLeanBoot.RustValidate.Dis) (fnType : Nat) (count : Nat) (unitResult : Bool) (fallible : Bool)}.\par
+\noindent Closure 1: binds \texttt{(state, cap)}, captures \texttt{()}.\par
+\noindent Closure 2: binds \texttt{(state, cap)}, captures \texttt{()}.\par
+\noindent Closure 3: binds \texttt{(state)}, captures \texttt{(captured, count)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Buffer.Buffer}.\par
+\noindent Definition: \texttt{(match dis with | LexLeanBoot.RustValidate.Dis.DisNil => out | LexLeanBoot.RustValidate.Dis.DisCons function caps functionFallible rest => (let captured : Nat := (LexLeanRuntime.length (caps) : Nat); (let head : LexLeanStd.Buffer.Buffer := putNat (putS (putNat (putS (out) ("            Fn")) (fnType)) ("::F")) (function); (let pattern : LexLeanStd.Buffer.Buffer := (if (Nat.beq (captured) (0)) then head else putS (((LexLeanCollections.listFold ((fun (state : (Prod (Nat) (LexLeanStd.Buffer.Buffer))) (cap : LexLeanBoot.RustValidate.Cap) => captureName (state) (cap))) ((0, putS (head) ("("))) (caps) : (Prod (Nat) (LexLeanStd.Buffer.Buffer)))).2) (")")); (let wrapped : Bool := (fallible \&\& (!functionFallible)); (let opener : LexLeanStd.Buffer.Buffer := putS (pattern) (" => "); (let started : LexLeanStd.Buffer.Buffer := (if wrapped then (if unitResult then putS (opener) ("\{ let () = ") else putS (opener) ("Ok(")) else opener); (let called : LexLeanStd.Buffer.Buffer := putS (putNat (putS (started) ("f")) (function)) ("("); (let withCaps : LexLeanStd.Buffer.Buffer := ((LexLeanCollections.listFold ((fun (state : (Prod (Nat) (LexLeanStd.Buffer.Buffer))) (cap : LexLeanBoot.RustValidate.Cap) => capturePassed (state) (cap))) ((0, called)) (caps) : (Prod (Nat) (LexLeanStd.Buffer.Buffer)))).2; (let withParams : LexLeanStd.Buffer.Buffer := (((LexLeanCollections.iterateUntil ((fun (state : (Prod (Nat) (LexLeanStd.Buffer.Buffer))) => paramStep (count) (captured) (state))) (count) ((0, withCaps)) : (Prod ((Prod (Nat) (LexLeanStd.Buffer.Buffer))) (Bool)))).1).2; (let closed : LexLeanStd.Buffer.Buffer := putS (withParams) (")"); (let finished : LexLeanStd.Buffer.Buffer := (if wrapped then (if unitResult then putS (closed) ("; Ok(()) \}") else putS (closed) (")")) else closed); putDis (putS (finished) (",\textbackslash{}n")) (rest) (fnType) (count) (unitResult) (fallible)))))))))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{disEmpty}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(dis : LexLeanBoot.RustValidate.Dis)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match dis with | LexLeanBoot.RustValidate.Dis.DisNil => true | LexLeanBoot.RustValidate.Dis.DisCons \_ \_ \_ \_ => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{putItemDef}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(out : LexLeanStd.Buffer.Buffer) (item : LexLeanBoot.RustAst.Def)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Buffer.Buffer}.\par
+\noindent Definition: \texttt{(match item with | LexLeanBoot.RustAst.Def.DEnum ty row \_ => putS (putRow (putS (putTy (putS (out) ("\#[derive(Clone)]\textbackslash{}npub enum ")) (ty)) (" \{\textbackslash{}n")) (row) (tyIsFn (ty))) ("\}\textbackslash{}n") | LexLeanBoot.RustAst.Def.DApply fnType parameters result fallible dis \_ => (let unread : Bool := disEmpty (dis); (let head : LexLeanStd.Buffer.Buffer := putNat (putS (out) ("impl Fn")) (fnType); (let signature : LexLeanStd.Buffer.Buffer := putS (putParamTys (putS (putS (head) (" \{\textbackslash{}n")) ("    pub fn apply(\&self, ")) (parameters) (0) (unread)) (")"); (let returned : LexLeanStd.Buffer.Buffer := (if fallible then putS (putTy (putS (signature) (" -> R<")) (result)) (">") else putReturns (signature) (result)); (let opened : LexLeanStd.Buffer.Buffer := putS (returned) (" \{\textbackslash{}n"); (let body : LexLeanStd.Buffer.Buffer := (if unread then putS (opened) ("        match *self \{\}\textbackslash{}n") else putS (putDis (putS (opened) ("        match self \{\textbackslash{}n")) (dis) (fnType) (LexLeanBoot.RustValidate.tyLen (parameters)) (tyIsUnit (result)) (fallible)) ("        \}\textbackslash{}n")); putS (putS (body) ("    \}\textbackslash{}n")) ("\}\textbackslash{}n"))))))) | LexLeanBoot.RustAst.Def.DFunction name parameters result body \_ => putS (printNode (putS (putReturns (putS (putPars (putS (putId (putS (out) ("pub fn ")) (name)) ("(")) (parameters) (true)) (")")) (result)) (" ")) (body) (0) (100) (0)) ("\textbackslash{}n") | LexLeanBoot.RustAst.Def.DNil => out | LexLeanBoot.RustAst.Def.DCons \_ \_ => out)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{putDefs}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(out : LexLeanStd.Buffer.Buffer) (items : LexLeanBoot.RustAst.Def)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Buffer.Buffer}.\par
+\noindent Definition: \texttt{(match items with | LexLeanBoot.RustAst.Def.DNil => out | LexLeanBoot.RustAst.Def.DCons item rest => putDefs (putItemDef (putS (out) ("\textbackslash{}n")) (item)) (rest) | LexLeanBoot.RustAst.Def.DEnum \_ \_ \_ => out | LexLeanBoot.RustAst.Def.DApply \_ \_ \_ \_ \_ \_ => out | LexLeanBoot.RustAst.Def.DFunction \_ \_ \_ \_ \_ => out)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{printCrate}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(capacity : Nat) (header : ByteArray) (krate : LexLeanBoot.RustAst.Crate)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{Except (ByteArray) (ByteArray)}.\par
+\noindent Definition: \texttt{LexLeanStd.Buffer.finish (putDefs (LexLeanStd.Buffer.writeBytes (LexLeanStd.Buffer.new (capacity)) (header)) ((krate).items))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{printExpr}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(capacity : Nat) (expr : LexLeanBoot.RustAst.Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{Except (ByteArray) (ByteArray)}.\par
+\noindent Definition: \texttt{LexLeanStd.Buffer.finish (printNode (LexLeanStd.Buffer.new (capacity)) (expr) (0) (100) (0))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\end{document}

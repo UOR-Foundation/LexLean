@@ -1,4 +1,4 @@
-//! The representation of a list (SPEC.md §17.16): `SP-27`.
+//! The representation of a list (SPEC.md §17.17): `SP-27`.
 //!
 //! `RustLists` models a list as the cells in front of it and a run, the first
 //! slots of a buffer in a store, and reads it back as the list of the
@@ -245,10 +245,19 @@ fn check(id: &str) {
     }
 }
 
+type Plant = (
+    &'static str,
+    &'static [&'static str],
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+);
+
 /// The defects of the module: what is planted, the theorems Lean refuses, the
 /// kind of its diagnostic, a fragment of the goal it leaves open, and the
 /// text replaced.
-const PLANTS: [(&str, &[&str], &str, &str, &str, &str); 10] = [
+const PLANTS: [Plant; 10] = [
     (
         "a cons that writes the wrong slot, the buffer not truncated to the run",
         &["walk_cons", "cons_in_place"],
