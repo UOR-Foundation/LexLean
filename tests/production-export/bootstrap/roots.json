@@ -95,6 +95,14 @@
         "rust-std"
       ],
       "version": "1.0.0"
+    },
+    {
+      "name": "validate_runtime",
+      "root": "LexLeanBoot.RuntimeValidate.validateRuntime",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
     }
   ]
 }

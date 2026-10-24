@@ -41,6 +41,7 @@ mod rust_backend;
 mod rust_heap_syntax;
 mod rust_loops;
 mod rust_machine;
+mod rust_memory;
 mod rust_refinement;
 mod rust_runtime;
 mod rust_scaffold;

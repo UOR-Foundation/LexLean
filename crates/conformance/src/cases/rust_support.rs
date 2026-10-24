@@ -45,7 +45,7 @@ fn harness() -> String {
 }
 
 /// `text` with the `n`th (from 0) occurrence of `from` replaced by `to`.
-fn replace_nth(text: &str, from: &str, to: &str, n: usize) -> String {
+pub(super) fn replace_nth(text: &str, from: &str, to: &str, n: usize) -> String {
     let at = text
         .match_indices(from)
         .nth(n)
@@ -148,9 +148,122 @@ pub fn run(id: &str) {
     // A crate outside the closed set or its tables is refused by the rule it
     // breaks, named.
     let mut planted: std::collections::BTreeSet<&str> = std::collections::BTreeSet::new();
+    for (what, from, to, nth, rule) in text_plants() {
+        let changed = replace_nth(&shipped, from, to, nth);
+        let error = runtime::support_from(&changed).expect_err(what);
+        assert!(
+            error.contains(&format!("runtime support: {rule}")),
+            "{what}: {error}"
+        );
+        planted.insert(rule);
+    }
+
+    // The nine rules the text of the module cannot reach without a second
+    // change are planted on the decoded crate.
+    let decoded = rt_decode::decode(&shipped).expect("the module decodes");
+    for (what, mutate, rule) in ast_plants() {
+        let mut crate_ = decoded.clone();
+        mutate(&mut crate_);
+        let error = rt_validate::validate(&crate_).expect_err(what);
+        assert!(
+            error.contains(&format!("runtime support: {rule}")),
+            "{what}: {error}"
+        );
+        planted.insert(rule);
+    }
+    // No rule of the validator is without a plant: the rules are read from
+    // its source, so a rule added there is a failure here until it is planted.
+    let source = read("crates/lexlean/src/calculus/rust/rt_validate.rs");
+    let named = rules_named(&source);
+    // The rules of the constructs `RB-19` grew the set by are planted there.
+    planted.extend(super::rust_heap_syntax::RULES);
+    let missing: Vec<&String> = named
+        .iter()
+        .filter(|name| !planted.contains(name.as_str()))
+        .collect();
+    assert!(missing.is_empty(), "rules without a plant: {missing:?}");
+    assert_eq!(
+        named.len(),
+        planted.len(),
+        "a plant names a rule the validator lacks"
+    );
+
+    // A module the decoder refuses, each for the rule it breaks.
+    for (what, from, to, message) in [
+        ("no support crate", "name: supportCrate", "name: otherCrate", "does not define `supportCrate`"),
+        (
+            "an expression constructor RuntimeSyntax lacks",
+            "RtExpr.matchOn",
+            "RtExpr.matchOff",
+            "is not an expression",
+        ),
+        (
+            "an item constructor RuntimeSyntax lacks",
+            "RtItem.traitItem",
+            "RtItem.traitItems",
+            "is not an item",
+        ),
+        (
+            "a constructor with another number of arguments",
+            "(ctor RuntimeSyntax::RtExpr.borrow (ctor RuntimeSyntax::RtExpr.var \"b\"))",
+            "(ctor RuntimeSyntax::RtExpr.borrow (ctor RuntimeSyntax::RtExpr.var \"b\") (nil RuntimeSyntax::RtExpr))",
+            "takes 1 arguments",
+        ),
+        (
+            "a constructor of the other module",
+            "RuntimeSyntax::RtProfile.core",
+            "RustSyntax::Profile.core",
+            "is not a constructor of `RuntimeSyntax::RtProfile`",
+        ),
+    ] {
+        let edited = shipped.replacen(from, to, 1);
+        assert_ne!(edited, shipped, "{what}: the plant site exists");
+        let error = rt_decode::decode(&edited).expect_err(what);
+        assert!(error.contains(message), "{what}: {error}");
+    }
+    // `i128` is runtime-only: a crate that names it in a parameter, as
+    // `convert` does, is accepted by the validator and refused by the
+    // correspondence between a rendering and its program, which has no row for
+    // `type:i128`. A row added for it fails here.
+    {
+        use lexlean::calculus::rust::ast::{
+            Block as RustBlock, Crate as RustCrate, Expr as RustExpr, Ident, ItemDef,
+            Lit as RustLit, Origin, Pat as RustPat, Type as RustType,
+        };
+        let wide = RustCrate {
+            profile: lexlean::calculus::rust::Profile::Std,
+            items: vec![ItemDef::Function {
+                name: Ident::Function(0),
+                parameters: vec![(RustPat::Bind(Ident::Local(0)), RustType::I128)],
+                result: RustType::Overflow,
+                body: RustBlock::of(RustExpr::Lit(RustLit::Overflow, Origin::of("function"))),
+                at: Origin::of("function"),
+            }],
+        };
+        let elements: std::collections::BTreeSet<String> = ["function".to_owned()].into();
+        let error = lexlean::calculus::rust::validate::correspond(&wide, &elements)
+            .expect_err("a lowered crate cannot name i128");
+        assert!(
+            error.contains("type:i128") && error.contains("no target-semantics correspondence"),
+            "{error}"
+        );
+    }
+    // The first module's reader still reads its own.
+    source::decode(&runtime_module).expect("RustRuntime still decodes");
+}
+
+/// The refusals the text of the shipped module reaches: the description, the
+/// text replaced, its replacement, which occurrence, and the rule that refuses.
+pub(super) fn text_plants() -> Vec<(
+    &'static str,
+    &'static str,
+    &'static str,
+    usize,
+    &'static str,
+)> {
     let sig_same = "{name := \"same\", receiver := true";
     let first_use = "(cons \"core\" (cons \"cmp\"";
-    for (what, from, to, nth, rule) in [
+    vec![
         ("a use outside the profile", first_use, "(cons \"alloc\" (cons \"cmp\"", 0, "profile-root"),
         ("a std use in the core profile", first_use, "(cons \"std\" (cons \"cmp\"", 0, "profile-root"),
         (
@@ -258,112 +371,14 @@ pub fn run(id: &str) {
             0,
             "type-parameter",
         ),
-    ] {
-        let changed = replace_nth(&shipped, from, to, nth);
-        let error = runtime::support_from(&changed).expect_err(what);
-        assert!(error.contains(&format!("runtime support: {rule}")), "{what}: {error}");
-        planted.insert(rule);
-    }
-
-    // The nine rules the text of the module cannot reach without a second
-    // change are planted on the decoded crate.
-    let decoded = rt_decode::decode(&shipped).expect("the module decodes");
-    for (what, mutate, rule) in ast_plants() {
-        let mut crate_ = decoded.clone();
-        mutate(&mut crate_);
-        let error = rt_validate::validate(&crate_).expect_err(what);
-        assert!(
-            error.contains(&format!("runtime support: {rule}")),
-            "{what}: {error}"
-        );
-        planted.insert(rule);
-    }
-    // No rule of the validator is without a plant: the rules are read from
-    // its source, so a rule added there is a failure here until it is planted.
-    let source = read("crates/lexlean/src/calculus/rust/rt_validate.rs");
-    let named = rules_named(&source);
-    // The rules of the constructs `RB-19` grew the set by are planted there.
-    planted.extend(super::rust_heap_syntax::RULES);
-    let missing: Vec<&String> = named
-        .iter()
-        .filter(|name| !planted.contains(name.as_str()))
-        .collect();
-    assert!(missing.is_empty(), "rules without a plant: {missing:?}");
-    assert_eq!(
-        named.len(),
-        planted.len(),
-        "a plant names a rule the validator lacks"
-    );
-
-    // A module the decoder refuses, each for the rule it breaks.
-    for (what, from, to, message) in [
-        ("no support crate", "name: supportCrate", "name: otherCrate", "does not define `supportCrate`"),
-        (
-            "an expression constructor RuntimeSyntax lacks",
-            "RtExpr.matchOn",
-            "RtExpr.matchOff",
-            "is not an expression",
-        ),
-        (
-            "an item constructor RuntimeSyntax lacks",
-            "RtItem.traitItem",
-            "RtItem.traitItems",
-            "is not an item",
-        ),
-        (
-            "a constructor with another number of arguments",
-            "(ctor RuntimeSyntax::RtExpr.borrow (ctor RuntimeSyntax::RtExpr.var \"b\"))",
-            "(ctor RuntimeSyntax::RtExpr.borrow (ctor RuntimeSyntax::RtExpr.var \"b\") (nil RuntimeSyntax::RtExpr))",
-            "takes 1 arguments",
-        ),
-        (
-            "a constructor of the other module",
-            "RuntimeSyntax::RtProfile.core",
-            "RustSyntax::Profile.core",
-            "is not a constructor of `RuntimeSyntax::RtProfile`",
-        ),
-    ] {
-        let edited = shipped.replacen(from, to, 1);
-        assert_ne!(edited, shipped, "{what}: the plant site exists");
-        let error = rt_decode::decode(&edited).expect_err(what);
-        assert!(error.contains(message), "{what}: {error}");
-    }
-    // `i128` is runtime-only: a crate that names it in a parameter, as
-    // `convert` does, is accepted by the validator and refused by the
-    // correspondence between a rendering and its program, which has no row for
-    // `type:i128`. A row added for it fails here.
-    {
-        use lexlean::calculus::rust::ast::{
-            Block as RustBlock, Crate as RustCrate, Expr as RustExpr, Ident, ItemDef,
-            Lit as RustLit, Origin, Pat as RustPat, Type as RustType,
-        };
-        let wide = RustCrate {
-            profile: lexlean::calculus::rust::Profile::Std,
-            items: vec![ItemDef::Function {
-                name: Ident::Function(0),
-                parameters: vec![(RustPat::Bind(Ident::Local(0)), RustType::I128)],
-                result: RustType::Overflow,
-                body: RustBlock::of(RustExpr::Lit(RustLit::Overflow, Origin::of("function"))),
-                at: Origin::of("function"),
-            }],
-        };
-        let elements: std::collections::BTreeSet<String> = ["function".to_owned()].into();
-        let error = lexlean::calculus::rust::validate::correspond(&wide, &elements)
-            .expect_err("a lowered crate cannot name i128");
-        assert!(
-            error.contains("type:i128") && error.contains("no target-semantics correspondence"),
-            "{error}"
-        );
-    }
-    // The first module's reader still reads its own.
-    source::decode(&runtime_module).expect("RustRuntime still decodes");
+    ]
 }
 
-type Mutation = fn(&mut rt::Crate);
+pub(super) type Mutation = fn(&mut rt::Crate);
 
 /// The rules planted on the decoded crate: the construct that breaks each,
 /// added to or changed in the crate the module defines.
-fn ast_plants() -> Vec<(&'static str, Mutation, &'static str)> {
+pub(super) fn ast_plants() -> Vec<(&'static str, Mutation, &'static str)> {
     use rt::{Expr, Item, Type};
     fn function<'a>(krate: &'a mut rt::Crate, name: &str) -> &'a mut rt::Function {
         krate
@@ -480,7 +495,7 @@ fn ast_plants() -> Vec<(&'static str, Mutation, &'static str)> {
 
 /// The names of the rules a validator source refuses by: the first string
 /// literal after each `rule(`.
-fn rules_named(source: &str) -> std::collections::BTreeSet<String> {
+pub(super) fn rules_named(source: &str) -> std::collections::BTreeSet<String> {
     let mut out = std::collections::BTreeSet::new();
     let mut rest = source;
     while let Some(at) = rest.find("rule(") {
