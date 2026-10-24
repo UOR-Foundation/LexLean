@@ -39,6 +39,7 @@ mod runtime;
 mod runtime_semantics;
 mod rust_backend;
 mod rust_heap_syntax;
+mod rust_lists;
 mod rust_loops;
 mod rust_machine;
 mod rust_memory;
