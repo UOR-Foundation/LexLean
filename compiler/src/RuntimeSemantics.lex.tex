@@ -171,7 +171,10 @@ definition{
       | RuntimeSyntax::RtItem.fnItem function => (if (prim equal (project (project function signature) name) wanted : Bool) then (ctor Option.some [RuntimeSyntax::RtFn] function) else (findFree rest wanted))
       | RuntimeSyntax::RtItem.tupleStruct ignoredTupleName ignoredTupleGenerics ignoredTupleDerives ignoredTupleTypes => (findFree rest wanted)
       | RuntimeSyntax::RtItem.recordStruct ignoredRecordName ignoredRecordGenerics ignoredRecordDerives ignoredRecordFields ignoredRecordTypes => (findFree rest wanted)
-      | RuntimeSyntax::RtItem.enumItem ignoredEnumName ignoredEnumGenerics ignoredEnumDerives ignoredEnumVariants => (findFree rest wanted))),
+      | RuntimeSyntax::RtItem.enumItem ignoredEnumName ignoredEnumGenerics ignoredEnumDerives ignoredEnumVariants => (findFree rest wanted)
+      | RuntimeSyntax::RtItem.defined ignoredDefinedPath => (findFree rest wanted)
+      | RuntimeSyntax::RtItem.moduleItem ignoredModuleName ignoredModuleItems => (findFree rest wanted)
+      | RuntimeSyntax::RtItem.innerAttribute ignoredAttributeName ignoredAttributeArgs => (findFree rest wanted))),
   recursive_argument: items
 }
 
@@ -198,7 +201,10 @@ definition{
       | RuntimeSyntax::RtItem.fnItem function => (findMethod fuel rest wanted value)
       | RuntimeSyntax::RtItem.tupleStruct ignoredTupleName ignoredTupleGenerics ignoredTupleDerives ignoredTupleTypes => (findMethod fuel rest wanted value)
       | RuntimeSyntax::RtItem.recordStruct ignoredRecordName ignoredRecordGenerics ignoredRecordDerives ignoredRecordFields ignoredRecordTypes => (findMethod fuel rest wanted value)
-      | RuntimeSyntax::RtItem.enumItem ignoredEnumName ignoredEnumGenerics ignoredEnumDerives ignoredEnumVariants => (findMethod fuel rest wanted value))),
+      | RuntimeSyntax::RtItem.enumItem ignoredEnumName ignoredEnumGenerics ignoredEnumDerives ignoredEnumVariants => (findMethod fuel rest wanted value)
+      | RuntimeSyntax::RtItem.defined ignoredDefinedPath => (findMethod fuel rest wanted value)
+      | RuntimeSyntax::RtItem.moduleItem ignoredModuleName ignoredModuleItems => (findMethod fuel rest wanted value)
+      | RuntimeSyntax::RtItem.innerAttribute ignoredAttributeName ignoredAttributeArgs => (findMethod fuel rest wanted value))),
   recursive_argument: items
 }
 

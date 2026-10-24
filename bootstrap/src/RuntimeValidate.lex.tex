@@ -157,7 +157,10 @@ inductive{
     {name: IFn, fields: [FnDef]},
     {name: ITuple, fields: [Bytes, (List Bytes), (List Bytes), Ty]},
     {name: IRecord, fields: [Bytes, (List Bytes), (List Bytes), (List Bytes), Ty]},
-    {name: IEnum, fields: [Bytes, (List Bytes), (List Bytes), (List Variant)]}
+    {name: IEnum, fields: [Bytes, (List Bytes), (List Bytes), (List Variant)]},
+    {name: IDefined, fields: [Bytes]},
+    {name: IMod, fields: [Bytes, (List Item)]},
+    {name: IAttr, fields: [Bytes, (List Bytes)]}
   ]
 }
 
@@ -2474,6 +2477,9 @@ definition{
       | Result.ok s2 => (match (orElse (identsErr "a record struct generic" generics) (orElse (derivesErr "a record struct" derived) (identsErr "a record field name" fields)))
         | Option.some stop => (ctor Result.error [Sc, Bytes] stop)
         | Option.none => (if ((prim length fields : Nat) =? (tyLen tys)) then (ctor Result.ok [Sc, Bytes] (record Sc {core := (project s2 core), declared := (project s2 declared), traits := (project s2 traits), structs := (prim append (project s2 structs) (cons (record StructE {name := name, fields := fields, gcount := (prim length generics : Nat)}) (nil StructE)) : (List StructE)), enums := (project s2 enums), aliases := (project s2 aliases), statics := (project s2 statics), functions := (project s2 functions), methods := (project s2 methods), imported := (project s2 imported)})) else (ctor Result.error [Sc, Bytes] (rcat (rtext "runtime support: struct-fields: ") (rcat (rtick name) (rcat (rtext " has ") (rcat (rdec (prim length fields : Nat)) (rcat (rtext " field names and ") (rcat (rdec (tyLen tys)) (rtext " types"))))))))))))
+    | Item.IDefined path => (ctor Result.ok [Sc, Bytes] sc)
+    | Item.IMod name members => (preCheck (identErr "a module name" name) (declare sc name))
+    | Item.IAttr name args => (ctor Result.ok [Sc, Bytes] sc)
     | Item.IEnum name generics derived variants => (preCheck (identErr "an enum name" name) (match (declare sc name)
       | Result.error problem => (ctor Result.error [Sc, Bytes] problem)
       | Result.ok s2 => (match (orElse (identsErr "an enum generic" generics) (orElse (derivesErr "an enum" derived) (variantProblem name variants)))
@@ -2493,6 +2499,99 @@ definition{
     | Result.error problem => (ctor Result.error [Sc, Bytes] problem)
     | Result.ok held => (pass1Item held item))) (ctor Result.ok [Sc, Bytes] sc) items : (Result Sc Bytes)),
   axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: freeFnOk,
+  parameters: [sc : Sc, f : FnDef],
+  result: (Option Bytes),
+  body: (if (not (project f public)) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: function-visibility: ") (rcat (rtick (project (project f sig) name)) (rtext " is a free function that is not public")))) else (if (project (project f sig) receiver) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: function-receiver: ") (rcat (rtext "free function ") (rcat (rtick (project (project f sig) name)) (rtext " takes `&self`"))))) else (fnOk sc (nil Generic) (ctor Ty.TyAbsent) f))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: definedPathOk,
+  parameters: [path : Bytes],
+  result: (Option Bytes),
+  body: (if ((prim length path : Nat) =? 0) then (ctor Option.some [Bytes] (rtext "runtime support: defined-path: empty")) else (ctor Option.none [Bytes])),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: memberOk,
+  parameters: [sc : Sc, owner : Bytes, member : Item],
+  result: (Option Bytes),
+  body: (match member
+    | Item.IDefined path => (definedPathOk path)
+    | Item.IFn f => (freeFnOk sc f)
+    | Item.IUse x0 x1 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: module-member: ") (rcat (rtick owner) (rtext " holds an item that is neither a defined function nor a function"))))
+    | Item.IUnit x0 x1 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: module-member: ") (rcat (rtick owner) (rtext " holds an item that is neither a defined function nor a function"))))
+    | Item.IAlias x0 x1 x2 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: module-member: ") (rcat (rtick owner) (rtext " holds an item that is neither a defined function nor a function"))))
+    | Item.IStatic x0 x1 x2 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: module-member: ") (rcat (rtick owner) (rtext " holds an item that is neither a defined function nor a function"))))
+    | Item.ITrait x0 x1 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: module-member: ") (rcat (rtick owner) (rtext " holds an item that is neither a defined function nor a function"))))
+    | Item.IImpl x0 x1 x2 x3 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: module-member: ") (rcat (rtick owner) (rtext " holds an item that is neither a defined function nor a function"))))
+    | Item.ITuple x0 x1 x2 x3 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: module-member: ") (rcat (rtick owner) (rtext " holds an item that is neither a defined function nor a function"))))
+    | Item.IRecord x0 x1 x2 x3 x4 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: module-member: ") (rcat (rtick owner) (rtext " holds an item that is neither a defined function nor a function"))))
+    | Item.IEnum x0 x1 x2 x3 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: module-member: ") (rcat (rtick owner) (rtext " holds an item that is neither a defined function nor a function"))))
+    | Item.IMod x0 x1 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: module-member: ") (rcat (rtick owner) (rtext " holds an item that is neither a defined function nor a function"))))
+    | Item.IAttr x0 x1 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: module-member: ") (rcat (rtick owner) (rtext " holds an item that is neither a defined function nor a function"))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+structure{
+  name: AttrSeen,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: over, type: Bool}, {name: stop, type: (Option Bytes)}]
+}
+
+definition{
+  name: attributeStop,
+  parameters: [name : Bytes, args : (List Bytes)],
+  result: (Option Bytes),
+  body: (if (bEq name (rtext "no_std")) then (match args
+    | List.nil => (ctor Option.none [Bytes])
+    | List.cons lead others => (ctor Option.some [Bytes] (rcat (rtext "runtime support: attribute-args: ") (rcat (rtick name) (rtext " takes no arguments"))))) else (if (bEq name (rtext "forbid")) then (match args
+    | List.nil => (ctor Option.some [Bytes] (rcat (rtext "runtime support: attribute-args: ") (rcat (rtick name) (rtext " takes a lint"))))
+    | List.cons lead others => (if (prim list_fold (fun (empty : Bool) (arg : Bytes) => (if empty then true else ((prim length arg : Nat) =? 0))) false args : Bool) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: attribute-args: ") (rcat (rtick name) (rtext " takes a lint with a name")))) else (ctor Option.none [Bytes]))) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: attribute-name: ") (rcat (rtick name) (rtext " is not an inner attribute of the closed set")))))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: attributeStep,
+  parameters: [state : AttrSeen, item : Item],
+  result: AttrSeen,
+  body: (match item
+    | Item.IUse x0 x1 => (record AttrSeen {over := true, stop := (ctor Option.none [Bytes])})
+    | Item.IUnit x0 x1 => (record AttrSeen {over := true, stop := (ctor Option.none [Bytes])})
+    | Item.IAlias x0 x1 x2 => (record AttrSeen {over := true, stop := (ctor Option.none [Bytes])})
+    | Item.IStatic x0 x1 x2 => (record AttrSeen {over := true, stop := (ctor Option.none [Bytes])})
+    | Item.ITrait x0 x1 => (record AttrSeen {over := true, stop := (ctor Option.none [Bytes])})
+    | Item.IImpl x0 x1 x2 x3 => (record AttrSeen {over := true, stop := (ctor Option.none [Bytes])})
+    | Item.IFn x0 => (record AttrSeen {over := true, stop := (ctor Option.none [Bytes])})
+    | Item.ITuple x0 x1 x2 x3 => (record AttrSeen {over := true, stop := (ctor Option.none [Bytes])})
+    | Item.IRecord x0 x1 x2 x3 x4 => (record AttrSeen {over := true, stop := (ctor Option.none [Bytes])})
+    | Item.IEnum x0 x1 x2 x3 => (record AttrSeen {over := true, stop := (ctor Option.none [Bytes])})
+    | Item.IDefined x0 => (record AttrSeen {over := true, stop := (ctor Option.none [Bytes])})
+    | Item.IMod x0 x1 => (record AttrSeen {over := true, stop := (ctor Option.none [Bytes])})
+    | Item.IAttr name args => (if (project state over) then (record AttrSeen {over := true, stop := (ctor Option.some [Bytes] (rcat (rtext "runtime support: attribute-position: `#![") (rcat name (rtext "]` follows an item"))))}) else (record AttrSeen {over := false, stop := (attributeStop name args)}))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: attributesOk,
+  parameters: [items : (List Item)],
+  result: (Option Bytes),
+  body: (project (prim list_fold (fun (state : AttrSeen) (item : Item) => (match (project state stop)
+    | Option.some held => state
+    | Option.none => (attributeStep state item))) (record AttrSeen {over := false, stop := (ctor Option.none [Bytes])}) items : AttrSeen) stop),
+  axioms: [],
   executable: true
 }
 
@@ -2523,7 +2622,7 @@ definition{
           | List.nil => (prim list_fold (fun [generics, sc, ty] (found : (Option Bytes)) (f : FnDef) => (match found
             | Option.some stop => (ctor Option.some [Bytes] stop)
             | Option.none => (fnOk sc generics ty f))) (ctor Option.none [Bytes]) fns : (Option Bytes)))))
-    | Item.IFn f => (if (not (project f public)) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: function-visibility: ") (rcat (rtick (project (project f sig) name)) (rtext " is a free function that is not public")))) else (if (project (project f sig) receiver) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: function-receiver: ") (rcat (rtext "free function ") (rcat (rtick (project (project f sig) name)) (rtext " takes `&self`"))))) else (fnOk sc (nil Generic) (ctor Ty.TyAbsent) f)))
+    | Item.IFn f => (freeFnOk sc f)
     | Item.ITuple name generics derived tys => (tyOk sc tys (prim length generics : Nat) false)
     | Item.IRecord name generics derived fields tys => (tyOk sc tys (prim length generics : Nat) false)
     | Item.IEnum name generics derived variants => (prim list_fold (fun [generics, sc] (found : (Option Bytes)) (variant : Variant) => (match found
@@ -2531,7 +2630,12 @@ definition{
       | Option.none => (match variant
         | Variant.VUnit n => (ctor Option.none [Bytes])
         | Variant.VTuple n tys => (tyOk sc tys (prim length generics : Nat) false)
-        | Variant.VRecord n fs tys => (tyOk sc tys (prim length generics : Nat) false)))) (ctor Option.none [Bytes]) variants : (Option Bytes))),
+        | Variant.VRecord n fs tys => (tyOk sc tys (prim length generics : Nat) false)))) (ctor Option.none [Bytes]) variants : (Option Bytes))
+    | Item.IDefined path => (definedPathOk path)
+    | Item.IMod name members => (prim list_fold (fun [name, sc] (found : (Option Bytes)) (member : Item) => (match found
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (memberOk sc name member))) (ctor Option.none [Bytes]) members : (Option Bytes))
+    | Item.IAttr name args => (ctor Option.none [Bytes])),
   axioms: [Quot.sound, propext],
   executable: true
 }
@@ -2540,13 +2644,15 @@ definition{
   name: validateRuntime,
   parameters: [krate : Crate],
   result: (Result Unit Bytes),
-  body: (match (pass1 (record Sc {core := (project krate core), declared := (nil Bytes), traits := (nil TraitE), structs := (nil StructE), enums := (nil EnumE), aliases := (nil Entry), statics := (nil Bytes), functions := (nil Entry), methods := (nil Entry), imported := (nil Bytes)}) (project krate items))
-    | Result.error problem => (ctor Result.error [Unit, Bytes] problem)
-    | Result.ok sc => (match (prim list_fold (fun [sc] (found : (Option Bytes)) (item : Item) => (match found
-        | Option.some stop => (ctor Option.some [Bytes] stop)
-        | Option.none => (pass2Item sc item))) (ctor Option.none [Bytes]) (project krate items) : (Option Bytes))
-      | Option.some problem2 => (ctor Result.error [Unit, Bytes] problem2)
-      | Option.none => (ctor Result.ok [Unit, Bytes] ()))),
+  body: (match (attributesOk (project krate items))
+    | Option.some attributeProblem => (ctor Result.error [Unit, Bytes] attributeProblem)
+    | Option.none => (match (pass1 (record Sc {core := (project krate core), declared := (nil Bytes), traits := (nil TraitE), structs := (nil StructE), enums := (nil EnumE), aliases := (nil Entry), statics := (nil Bytes), functions := (nil Entry), methods := (nil Entry), imported := (nil Bytes)}) (project krate items))
+      | Result.error problem => (ctor Result.error [Unit, Bytes] problem)
+      | Result.ok sc => (match (prim list_fold (fun [sc] (found : (Option Bytes)) (item : Item) => (match found
+          | Option.some stop => (ctor Option.some [Bytes] stop)
+          | Option.none => (pass2Item sc item))) (ctor Option.none [Bytes]) (project krate items) : (Option Bytes))
+        | Option.some problem2 => (ctor Result.error [Unit, Bytes] problem2)
+        | Option.none => (ctor Result.ok [Unit, Bytes] ())))),
   axioms: [Quot.sound, propext],
   executable: true,
   production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
