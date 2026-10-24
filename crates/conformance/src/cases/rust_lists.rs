@@ -245,10 +245,20 @@ fn check(id: &str) {
     }
 }
 
-/// The defects of the module: what is planted, the theorems Lean refuses, the
-/// kind of its diagnostic, a fragment of the goal it leaves open, and the
-/// text replaced.
-const PLANTS: [(&str, &[&str], &str, &str, &str, &str); 10] = [
+/// A planted defect: what is planted, the theorems Lean refuses, the kind of
+/// its diagnostic, a fragment of the goal it leaves open, the text replaced,
+/// and the text that replaces it.
+type Plant = (
+    &'static str,
+    &'static [&'static str],
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+);
+
+/// The defects of the module.
+const PLANTS: [Plant; 10] = [
     (
         "a cons that writes the wrong slot, the buffer not truncated to the run",
         &["walk_cons", "cons_in_place"],
