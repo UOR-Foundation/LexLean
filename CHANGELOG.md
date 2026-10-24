@@ -13,9 +13,9 @@ is therefore a §30 release: `cargo xtask release-check` reads the complete
 criterion that does not hold. That refusal is the accurate answer at these
 versions. Only `v0.1.0` has been tagged: the sections for `0.1.1`, `0.2.0`,
 and `0.3.0` record what the workspace carried at those versions without a tag,
-and Unreleased holds what has landed since.
+and `0.4.0` holds what has landed since.
 
-## Unreleased
+## 0.4.0
 
 - `lexlean migrate --to 1.2 [--check]`, #257 (SPEC.md §17.12, §23.4,
   `CL-24`): the one command that migrates a language-1.1 data-form project to
