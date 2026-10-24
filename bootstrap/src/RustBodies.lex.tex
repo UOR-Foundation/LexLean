@@ -1,0 +1,2767 @@
+\begin{lexlean}{RustBodies}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{CalculusCheck}
+\importmodule{LexLeanStd.Buffer}
+\importmodule{LexLeanStd.Text}
+\importmodule{RustAst}
+\importmodule{RustLower}
+\importmodule{RustTerms}
+\importmodule{RustValidate}
+\title{Natural number addition}
+\begin{semanticmodule}
+structure{
+  name: Lowered,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: expr, type: RustAst::Expr}, {name: next, type: Nat}]
+}
+
+structure{
+  name: Ctx,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: program, type: CalculusCheck::Program},
+    {name: known, type: CalculusCheck::Ty},
+    {name: edges, type: RustLower::Edges},
+    {name: adts, type: CalculusCheck::Ty},
+    {name: types, type: CalculusCheck::Ty},
+    {name: results, type: CalculusCheck::Ty},
+    {name: fallible, type: (List Bool)},
+    {name: ordered, type: RustLower::Clos},
+    {name: inhabited, type: CalculusCheck::Ty}
+  ]
+}
+
+definition{
+  name: done,
+  parameters: [expression : RustAst::Expr, next : Nat],
+  result: Lowered,
+  body: (record Lowered {expr := expression, next := next}),
+  executable: true
+}
+
+definition{
+  name: termKind,
+  parameters: [term : CalculusCheck::Expr],
+  result: Bytes,
+  body: (match term
+    | CalculusCheck::Expr.EValue d0 d1 => (prim utf8_encode "value" : Bytes)
+    | CalculusCheck::Expr.EVar d0 => (prim utf8_encode "var" : Bytes)
+    | CalculusCheck::Expr.ELet d0 d1 d2 d3 => (prim utf8_encode "let" : Bytes)
+    | CalculusCheck::Expr.ECond d0 d1 d2 => (prim utf8_encode "cond" : Bytes)
+    | CalculusCheck::Expr.EMatch d0 d1 d2 => (prim utf8_encode "match" : Bytes)
+    | CalculusCheck::Expr.EBuild d0 d1 d2 => (prim utf8_encode "build" : Bytes)
+    | CalculusCheck::Expr.ECall d0 d1 => (prim utf8_encode "call" : Bytes)
+    | CalculusCheck::Expr.EClosure d0 d1 => (prim utf8_encode "closure" : Bytes)
+    | CalculusCheck::Expr.EApply d0 d1 => (prim utf8_encode "apply" : Bytes)
+    | CalculusCheck::Expr.EPrim d0 d1 => (prim utf8_encode "prim" : Bytes)
+    | CalculusCheck::Expr.EFirst d0 => (prim utf8_encode "first" : Bytes)
+    | CalculusCheck::Expr.ESecond d0 => (prim utf8_encode "second" : Bytes)
+    | CalculusCheck::Expr.EField d0 d1 => (prim utf8_encode "field" : Bytes)
+    | CalculusCheck::Expr.ENil => (prim utf8_encode "" : Bytes)
+    | CalculusCheck::Expr.ECons u1x0 u1x1 => (prim utf8_encode "" : Bytes)
+    | CalculusCheck::Expr.EArm u1x0 u1x1 u1x2 => (prim utf8_encode "" : Bytes)),
+  executable: true
+}
+
+definition{
+  name: termAt,
+  parameters: [term : CalculusCheck::Expr],
+  result: RustValidate::Origin,
+  body: (record RustValidate::Origin {element := (prim append (prim utf8_encode "expr:" : Bytes) (termKind term) : Bytes), width := (ctor Option.none [RustValidate::IntKind])}),
+  executable: true
+}
+
+definition{
+  name: shapeKind,
+  parameters: [shape : CalculusCheck::Shape],
+  result: Bytes,
+  body: (match shape
+    | CalculusCheck::Shape.SNone => (prim utf8_encode "none" : Bytes)
+    | CalculusCheck::Shape.SSome => (prim utf8_encode "some" : Bytes)
+    | CalculusCheck::Shape.SOk => (prim utf8_encode "ok" : Bytes)
+    | CalculusCheck::Shape.SError => (prim utf8_encode "error" : Bytes)
+    | CalculusCheck::Shape.SNil => (prim utf8_encode "nil" : Bytes)
+    | CalculusCheck::Shape.SCons => (prim utf8_encode "cons" : Bytes)
+    | CalculusCheck::Shape.SZero => (prim utf8_encode "zero" : Bytes)
+    | CalculusCheck::Shape.SSucc => (prim utf8_encode "succ" : Bytes)
+    | CalculusCheck::Shape.SPair => (prim utf8_encode "pair" : Bytes)
+    | CalculusCheck::Shape.STrue => (prim utf8_encode "true" : Bytes)
+    | CalculusCheck::Shape.SFalse => (prim utf8_encode "false" : Bytes)
+    | CalculusCheck::Shape.SUnit => (prim utf8_encode "unit" : Bytes)
+    | CalculusCheck::Shape.SLt => (prim utf8_encode "lt" : Bytes)
+    | CalculusCheck::Shape.SEq => (prim utf8_encode "eq" : Bytes)
+    | CalculusCheck::Shape.SGt => (prim utf8_encode "gt" : Bytes)
+    | CalculusCheck::Shape.SAdt d0 => (prim utf8_encode "adt" : Bytes)),
+  executable: true
+}
+
+definition{
+  name: shapeAt,
+  parameters: [shape : CalculusCheck::Shape],
+  result: RustValidate::Origin,
+  body: (record RustValidate::Origin {element := (prim append (prim utf8_encode "shape:" : Bytes) (shapeKind shape) : Bytes), width := (ctor Option.none [RustValidate::IntKind])}),
+  executable: true
+}
+
+definition{
+  name: shapeCode,
+  parameters: [shape : CalculusCheck::Shape],
+  result: Nat,
+  body: (match shape
+    | CalculusCheck::Shape.SNone => 0
+    | CalculusCheck::Shape.SSome => 1
+    | CalculusCheck::Shape.SOk => 2
+    | CalculusCheck::Shape.SError => 3
+    | CalculusCheck::Shape.SNil => 4
+    | CalculusCheck::Shape.SCons => 5
+    | CalculusCheck::Shape.SZero => 6
+    | CalculusCheck::Shape.SSucc => 7
+    | CalculusCheck::Shape.SPair => 8
+    | CalculusCheck::Shape.STrue => 9
+    | CalculusCheck::Shape.SFalse => 10
+    | CalculusCheck::Shape.SUnit => 11
+    | CalculusCheck::Shape.SLt => 12
+    | CalculusCheck::Shape.SEq => 13
+    | CalculusCheck::Shape.SGt => 14
+    | CalculusCheck::Shape.SAdt c => (16 + c)),
+  executable: true
+}
+
+definition{
+  name: primKind,
+  parameters: [operation : CalculusCheck::Prim],
+  result: Bytes,
+  body: (match operation
+    | CalculusCheck::Prim.NatAdd => (prim utf8_encode "nat_add" : Bytes)
+    | CalculusCheck::Prim.NatSub => (prim utf8_encode "nat_sub" : Bytes)
+    | CalculusCheck::Prim.NatMul => (prim utf8_encode "nat_mul" : Bytes)
+    | CalculusCheck::Prim.NatQuot => (prim utf8_encode "nat_quot" : Bytes)
+    | CalculusCheck::Prim.NatRem => (prim utf8_encode "nat_rem" : Bytes)
+    | CalculusCheck::Prim.NatEq => (prim utf8_encode "nat_eq" : Bytes)
+    | CalculusCheck::Prim.NatLe => (prim utf8_encode "nat_le" : Bytes)
+    | CalculusCheck::Prim.NatLt => (prim utf8_encode "nat_lt" : Bytes)
+    | CalculusCheck::Prim.IntAdd => (prim utf8_encode "int_add" : Bytes)
+    | CalculusCheck::Prim.IntSub => (prim utf8_encode "int_sub" : Bytes)
+    | CalculusCheck::Prim.IntMul => (prim utf8_encode "int_mul" : Bytes)
+    | CalculusCheck::Prim.IntNeg => (prim utf8_encode "int_neg" : Bytes)
+    | CalculusCheck::Prim.IntQuot => (prim utf8_encode "int_quot" : Bytes)
+    | CalculusCheck::Prim.IntRem => (prim utf8_encode "int_rem" : Bytes)
+    | CalculusCheck::Prim.CheckedAdd => (prim utf8_encode "checked_add" : Bytes)
+    | CalculusCheck::Prim.CheckedSub => (prim utf8_encode "checked_sub" : Bytes)
+    | CalculusCheck::Prim.CheckedMul => (prim utf8_encode "checked_mul" : Bytes)
+    | CalculusCheck::Prim.CheckedNeg => (prim utf8_encode "checked_neg" : Bytes)
+    | CalculusCheck::Prim.CheckedQuot => (prim utf8_encode "checked_quot" : Bytes)
+    | CalculusCheck::Prim.BitAnd => (prim utf8_encode "bit_and" : Bytes)
+    | CalculusCheck::Prim.BitOr => (prim utf8_encode "bit_or" : Bytes)
+    | CalculusCheck::Prim.BitXor => (prim utf8_encode "bit_xor" : Bytes)
+    | CalculusCheck::Prim.BitNot => (prim utf8_encode "bit_not" : Bytes)
+    | CalculusCheck::Prim.ShiftLeft => (prim utf8_encode "shift_left" : Bytes)
+    | CalculusCheck::Prim.ShiftRight => (prim utf8_encode "shift_right" : Bytes)
+    | CalculusCheck::Prim.Equal => (prim utf8_encode "equal" : Bytes)
+    | CalculusCheck::Prim.BoolNot => (prim utf8_encode "bool_not" : Bytes)
+    | CalculusCheck::Prim.BoolAnd => (prim utf8_encode "bool_and" : Bytes)
+    | CalculusCheck::Prim.BoolOr => (prim utf8_encode "bool_or" : Bytes)
+    | CalculusCheck::Prim.Append => (prim utf8_encode "append" : Bytes)
+    | CalculusCheck::Prim.Length => (prim utf8_encode "length" : Bytes)
+    | CalculusCheck::Prim.Index => (prim utf8_encode "index" : Bytes)
+    | CalculusCheck::Prim.Slice => (prim utf8_encode "slice" : Bytes)
+    | CalculusCheck::Prim.Utf8Encode => (prim utf8_encode "utf8_encode" : Bytes)
+    | CalculusCheck::Prim.Utf8Decode => (prim utf8_encode "utf8_decode" : Bytes)
+    | CalculusCheck::Prim.CompareBytes => (prim utf8_encode "compare_bytes" : Bytes)
+    | CalculusCheck::Prim.SplitExact => (prim utf8_encode "split_exact" : Bytes)
+    | CalculusCheck::Prim.Join => (prim utf8_encode "join" : Bytes)
+    | CalculusCheck::Prim.FormatDecimal => (prim utf8_encode "format_decimal" : Bytes)
+    | CalculusCheck::Prim.Compare => (prim utf8_encode "compare" : Bytes)
+    | CalculusCheck::Prim.Convert d0 => (prim utf8_encode "convert" : Bytes)
+    | CalculusCheck::Prim.ParseDecimal d0 => (prim utf8_encode "parse_decimal" : Bytes)),
+  executable: true
+}
+
+definition{
+  name: kindIntOf,
+  parameters: [ty : CalculusCheck::Ty],
+  result: (Option RustValidate::IntKind),
+  body: (match ty
+    | CalculusCheck::Ty.TUnit => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Ty.TBool => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Ty.TNat => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Ty.TInt => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Ty.TFixed width => (ctor Option.some [RustValidate::IntKind] (RustLower::kindOf width))
+    | CalculusCheck::Ty.TString => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Ty.TBytes => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Ty.TOrdering => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Ty.TOption u5x0 => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Ty.TResult u5x0 u5x1 => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Ty.TList u5x0 => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Ty.TPair u5x0 u5x1 => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Ty.TAdt u5x0 => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Ty.TFn u5x0 u5x1 => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Ty.TNil => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Ty.TCons u5x0 u5x1 => (ctor Option.none [RustValidate::IntKind])),
+  executable: true
+}
+
+definition{
+  name: primWidth,
+  parameters: [operation : CalculusCheck::Prim, head : CalculusCheck::Ty],
+  result: (Option RustValidate::IntKind),
+  body: (match operation
+    | CalculusCheck::Prim.NatAdd => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Prim.NatSub => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Prim.NatMul => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Prim.NatQuot => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Prim.NatRem => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Prim.NatEq => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Prim.NatLe => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Prim.NatLt => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Prim.IntAdd => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Prim.IntSub => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Prim.IntMul => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Prim.IntNeg => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Prim.IntQuot => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Prim.IntRem => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Prim.CheckedAdd => (kindIntOf head)
+    | CalculusCheck::Prim.CheckedSub => (kindIntOf head)
+    | CalculusCheck::Prim.CheckedMul => (kindIntOf head)
+    | CalculusCheck::Prim.CheckedNeg => (kindIntOf head)
+    | CalculusCheck::Prim.CheckedQuot => (kindIntOf head)
+    | CalculusCheck::Prim.BitAnd => (kindIntOf head)
+    | CalculusCheck::Prim.BitOr => (kindIntOf head)
+    | CalculusCheck::Prim.BitXor => (kindIntOf head)
+    | CalculusCheck::Prim.BitNot => (kindIntOf head)
+    | CalculusCheck::Prim.ShiftLeft => (kindIntOf head)
+    | CalculusCheck::Prim.ShiftRight => (kindIntOf head)
+    | CalculusCheck::Prim.Equal => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Prim.BoolNot => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Prim.BoolAnd => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Prim.BoolOr => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Prim.Append => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Prim.Length => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Prim.Index => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Prim.Slice => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Prim.Utf8Encode => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Prim.Utf8Decode => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Prim.CompareBytes => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Prim.SplitExact => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Prim.Join => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Prim.FormatDecimal => (kindIntOf head)
+    | CalculusCheck::Prim.Compare => (ctor Option.none [RustValidate::IntKind])
+    | CalculusCheck::Prim.Convert target => (ctor Option.some [RustValidate::IntKind] (RustLower::kindOf target))
+    | CalculusCheck::Prim.ParseDecimal target => (kindIntOf target)),
+  executable: true
+}
+
+definition{
+  name: primAt,
+  parameters: [operation : CalculusCheck::Prim, head : CalculusCheck::Ty],
+  result: RustValidate::Origin,
+  body: (record RustValidate::Origin {element := (prim append (prim utf8_encode "prim:" : Bytes) (primKind operation) : Bytes), width := (primWidth operation head)}),
+  executable: true
+}
+
+definition{
+  name: headPick,
+  parameters: [head : CalculusCheck::Ty, onList : Nat, onBytes : Nat, onString : Nat],
+  result: Nat,
+  body: (match head
+    | CalculusCheck::Ty.TUnit => onList
+    | CalculusCheck::Ty.TBool => onList
+    | CalculusCheck::Ty.TNat => onList
+    | CalculusCheck::Ty.TInt => onList
+    | CalculusCheck::Ty.TFixed u7x0 => onList
+    | CalculusCheck::Ty.TString => onString
+    | CalculusCheck::Ty.TBytes => onBytes
+    | CalculusCheck::Ty.TOrdering => onList
+    | CalculusCheck::Ty.TOption u7x0 => onList
+    | CalculusCheck::Ty.TResult u7x0 u7x1 => onList
+    | CalculusCheck::Ty.TList d0 => onList
+    | CalculusCheck::Ty.TPair u7x0 u7x1 => onList
+    | CalculusCheck::Ty.TAdt u7x0 => onList
+    | CalculusCheck::Ty.TFn u7x0 u7x1 => onList
+    | CalculusCheck::Ty.TNil => onList
+    | CalculusCheck::Ty.TCons u7x0 u7x1 => onList),
+  executable: true
+}
+
+definition{
+  name: primFamily,
+  parameters: [operation : CalculusCheck::Prim, head : CalculusCheck::Ty],
+  result: Nat,
+  body: (match operation
+    | CalculusCheck::Prim.NatAdd => 0
+    | CalculusCheck::Prim.NatSub => 1
+    | CalculusCheck::Prim.NatMul => 2
+    | CalculusCheck::Prim.NatQuot => 3
+    | CalculusCheck::Prim.NatRem => 4
+    | CalculusCheck::Prim.NatEq => 5
+    | CalculusCheck::Prim.NatLe => 6
+    | CalculusCheck::Prim.NatLt => 7
+    | CalculusCheck::Prim.IntAdd => 9
+    | CalculusCheck::Prim.IntSub => 10
+    | CalculusCheck::Prim.IntMul => 11
+    | CalculusCheck::Prim.IntNeg => 12
+    | CalculusCheck::Prim.IntQuot => 13
+    | CalculusCheck::Prim.IntRem => 14
+    | CalculusCheck::Prim.CheckedAdd => 20
+    | CalculusCheck::Prim.CheckedSub => 21
+    | CalculusCheck::Prim.CheckedMul => 22
+    | CalculusCheck::Prim.CheckedNeg => 24
+    | CalculusCheck::Prim.CheckedQuot => 23
+    | CalculusCheck::Prim.BitAnd => 25
+    | CalculusCheck::Prim.BitOr => 26
+    | CalculusCheck::Prim.BitXor => 27
+    | CalculusCheck::Prim.BitNot => 28
+    | CalculusCheck::Prim.ShiftLeft => 29
+    | CalculusCheck::Prim.ShiftRight => 30
+    | CalculusCheck::Prim.Equal => 18
+    | CalculusCheck::Prim.BoolNot => 15
+    | CalculusCheck::Prim.BoolAnd => 16
+    | CalculusCheck::Prim.BoolOr => 17
+    | CalculusCheck::Prim.Append => (headPick head 32 33 32)
+    | CalculusCheck::Prim.Length => (headPick head 34 35 36)
+    | CalculusCheck::Prim.Index => (headPick head 37 38 37)
+    | CalculusCheck::Prim.Slice => (headPick head 39 40 39)
+    | CalculusCheck::Prim.Utf8Encode => 41
+    | CalculusCheck::Prim.Utf8Decode => 42
+    | CalculusCheck::Prim.CompareBytes => 43
+    | CalculusCheck::Prim.SplitExact => 44
+    | CalculusCheck::Prim.Join => 45
+    | CalculusCheck::Prim.FormatDecimal => (match head
+      | CalculusCheck::Ty.TUnit => 47
+      | CalculusCheck::Ty.TBool => 47
+      | CalculusCheck::Ty.TNat => 47
+      | CalculusCheck::Ty.TInt => 46
+      | CalculusCheck::Ty.TFixed u8x0 => 47
+      | CalculusCheck::Ty.TString => 47
+      | CalculusCheck::Ty.TBytes => 47
+      | CalculusCheck::Ty.TOrdering => 47
+      | CalculusCheck::Ty.TOption u8x0 => 47
+      | CalculusCheck::Ty.TResult u8x0 u8x1 => 47
+      | CalculusCheck::Ty.TList u8x0 => 47
+      | CalculusCheck::Ty.TPair u8x0 u8x1 => 47
+      | CalculusCheck::Ty.TAdt u8x0 => 47
+      | CalculusCheck::Ty.TFn u8x0 u8x1 => 47
+      | CalculusCheck::Ty.TNil => 47
+      | CalculusCheck::Ty.TCons u8x0 u8x1 => 47)
+    | CalculusCheck::Prim.Compare => 19
+    | CalculusCheck::Prim.Convert d0 => 31
+    | CalculusCheck::Prim.ParseDecimal target => (match target
+      | CalculusCheck::Ty.TUnit => 49
+      | CalculusCheck::Ty.TBool => 49
+      | CalculusCheck::Ty.TNat => 49
+      | CalculusCheck::Ty.TInt => 48
+      | CalculusCheck::Ty.TFixed u9x0 => 49
+      | CalculusCheck::Ty.TString => 49
+      | CalculusCheck::Ty.TBytes => 49
+      | CalculusCheck::Ty.TOrdering => 49
+      | CalculusCheck::Ty.TOption u9x0 => 49
+      | CalculusCheck::Ty.TResult u9x0 u9x1 => 49
+      | CalculusCheck::Ty.TList u9x0 => 49
+      | CalculusCheck::Ty.TPair u9x0 u9x1 => 49
+      | CalculusCheck::Ty.TAdt u9x0 => 49
+      | CalculusCheck::Ty.TFn u9x0 u9x1 => 49
+      | CalculusCheck::Ty.TNil => 49
+      | CalculusCheck::Ty.TCons u9x0 u9x1 => 49)),
+  executable: true
+}
+
+definition{
+  name: rtFallible,
+  parameters: [family : Nat],
+  result: Bool,
+  body: (if (family =? 0) then true else (if (family =? 2) then true else (if (family =? 8) then true else (if (family =? 48) then true else ((7 <? family) && (family <? 14)))))),
+  executable: true
+}
+
+definition{
+  name: idTag,
+  parameters: [ident : RustValidate::Id],
+  result: Nat,
+  body: (match ident
+    | RustValidate::Id.IdLocal n => 0
+    | RustValidate::Id.IdHolder n => 1
+    | RustValidate::Id.IdOperand n => 2
+    | RustValidate::Id.IdCallee n => 3
+    | RustValidate::Id.IdBoxed n => 4
+    | RustValidate::Id.IdPart n => 5
+    | RustValidate::Id.IdCapture n => 6
+    | RustValidate::Id.IdParam n => 7
+    | RustValidate::Id.IdFunction n => 8
+    | RustValidate::Id.IdExport d0 => 9),
+  executable: true
+}
+
+definition{
+  name: idNum,
+  parameters: [ident : RustValidate::Id],
+  result: Nat,
+  body: (match ident
+    | RustValidate::Id.IdLocal n => n
+    | RustValidate::Id.IdHolder n => n
+    | RustValidate::Id.IdOperand n => n
+    | RustValidate::Id.IdCallee n => n
+    | RustValidate::Id.IdBoxed n => n
+    | RustValidate::Id.IdPart n => n
+    | RustValidate::Id.IdCapture n => n
+    | RustValidate::Id.IdParam n => n
+    | RustValidate::Id.IdFunction n => n
+    | RustValidate::Id.IdExport d0 => 0),
+  executable: true
+}
+
+definition{
+  name: idEq,
+  parameters: [left : RustValidate::Id, right : RustValidate::Id],
+  result: Bool,
+  body: (if ((idTag left) =? (idTag right)) then ((idNum left) =? (idNum right)) else false),
+  executable: true
+}
+
+definition{
+  name: keepE,
+  parameters: [value : RustAst::Expr],
+  result: RustAst::Expr,
+  body: value,
+  executable: true
+}
+
+definition{
+  name: keepP,
+  parameters: [value : RustAst::Pat],
+  result: RustAst::Pat,
+  body: value,
+  executable: true
+}
+
+definition{
+  name: blockOn,
+  parameters: [subject : RustAst::Expr, whole : RustAst::Expr],
+  result: RustAst::Expr,
+  body: (match subject
+    | RustAst::Expr.ELit u13x0 u13x1 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) whole)
+    | RustAst::Expr.ERead u13x0 u13x1 u13x2 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) whole)
+    | RustAst::Expr.EWrap u13x0 u13x1 u13x2 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) whole)
+    | RustAst::Expr.ECall u13x0 u13x1 u13x2 u13x3 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) whole)
+    | RustAst::Expr.EApply u13x0 u13x1 u13x2 u13x3 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) whole)
+    | RustAst::Expr.EConstruct u13x0 u13x1 u13x2 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) whole)
+    | RustAst::Expr.EPair u13x0 u13x1 u13x2 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) whole)
+    | RustAst::Expr.EIf u13x0 u13x1 u13x2 u13x3 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) whole)
+    | RustAst::Expr.EMatch u13x0 u13x1 u13x2 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) whole)
+    | RustAst::Expr.EBlockE inner => (keepE inner)
+    | RustAst::Expr.EProbe u13x0 u13x1 u13x2 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) whole)
+    | RustAst::Expr.EBlock u13x0 u13x1 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) whole)
+    | RustAst::Expr.ENil => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) whole)
+    | RustAst::Expr.ECons u13x0 u13x1 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) whole)
+    | RustAst::Expr.ELet u13x0 u13x1 u13x2 u13x3 u13x4 u13x5 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) whole)
+    | RustAst::Expr.EArm u13x0 u13x1 u13x2 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) whole)
+    | RustAst::Expr.ELoop u13x0 u13x1 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) whole)),
+  executable: true
+}
+
+definition{
+  name: blockOf,
+  parameters: [expression : RustAst::Expr],
+  result: RustAst::Expr,
+  body: (blockOn expression expression),
+  executable: true
+}
+
+definition{
+  name: blockLets,
+  parameters: [block : RustAst::Expr],
+  result: RustAst::Expr,
+  body: (match block
+    | RustAst::Expr.ELit u14x0 u14x1 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ERead u14x0 u14x1 u14x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EWrap u14x0 u14x1 u14x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ECall u14x0 u14x1 u14x2 u14x3 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EApply u14x0 u14x1 u14x2 u14x3 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EConstruct u14x0 u14x1 u14x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EPair u14x0 u14x1 u14x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EIf u14x0 u14x1 u14x2 u14x3 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EMatch u14x0 u14x1 u14x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EBlockE u14x0 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EProbe u14x0 u14x1 u14x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EBlock lets tail => (keepE lets)
+    | RustAst::Expr.ENil => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ECons u14x0 u14x1 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ELet u14x0 u14x1 u14x2 u14x3 u14x4 u14x5 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EArm u14x0 u14x1 u14x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ELoop u14x0 u14x1 => (ctor RustAst::Expr.ENil)),
+  executable: true
+}
+
+definition{
+  name: blockTail,
+  parameters: [block : RustAst::Expr],
+  result: RustAst::Expr,
+  body: (match block
+    | RustAst::Expr.ELit u15x0 u15x1 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ERead u15x0 u15x1 u15x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EWrap u15x0 u15x1 u15x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ECall u15x0 u15x1 u15x2 u15x3 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EApply u15x0 u15x1 u15x2 u15x3 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EConstruct u15x0 u15x1 u15x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EPair u15x0 u15x1 u15x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EIf u15x0 u15x1 u15x2 u15x3 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EMatch u15x0 u15x1 u15x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EBlockE u15x0 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EProbe u15x0 u15x1 u15x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EBlock lets tail => (keepE tail)
+    | RustAst::Expr.ENil => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ECons u15x0 u15x1 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ELet u15x0 u15x1 u15x2 u15x3 u15x4 u15x5 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EArm u15x0 u15x1 u15x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ELoop u15x0 u15x1 => (ctor RustAst::Expr.ENil)),
+  executable: true
+}
+
+definition{
+  name: isNilE,
+  parameters: [expression : RustAst::Expr],
+  result: Bool,
+  body: (match expression
+    | RustAst::Expr.ELit u16x0 u16x1 => false
+    | RustAst::Expr.ERead u16x0 u16x1 u16x2 => false
+    | RustAst::Expr.EWrap u16x0 u16x1 u16x2 => false
+    | RustAst::Expr.ECall u16x0 u16x1 u16x2 u16x3 => false
+    | RustAst::Expr.EApply u16x0 u16x1 u16x2 u16x3 => false
+    | RustAst::Expr.EConstruct u16x0 u16x1 u16x2 => false
+    | RustAst::Expr.EPair u16x0 u16x1 u16x2 => false
+    | RustAst::Expr.EIf u16x0 u16x1 u16x2 u16x3 => false
+    | RustAst::Expr.EMatch u16x0 u16x1 u16x2 => false
+    | RustAst::Expr.EBlockE u16x0 => false
+    | RustAst::Expr.EProbe u16x0 u16x1 u16x2 => false
+    | RustAst::Expr.EBlock u16x0 u16x1 => false
+    | RustAst::Expr.ENil => true
+    | RustAst::Expr.ECons u16x0 u16x1 => false
+    | RustAst::Expr.ELet u16x0 u16x1 u16x2 u16x3 u16x4 u16x5 => false
+    | RustAst::Expr.EArm u16x0 u16x1 u16x2 => false
+    | RustAst::Expr.ELoop u16x0 u16x1 => false),
+  executable: true
+}
+
+definition{
+  name: appendLets,
+  parameters: [left : RustAst::Expr, right : RustAst::Expr],
+  result: RustAst::Expr,
+  body: (match left
+    | RustAst::Expr.ELit u17x0 u17x1 => right
+    | RustAst::Expr.ERead u17x0 u17x1 u17x2 => right
+    | RustAst::Expr.EWrap u17x0 u17x1 u17x2 => right
+    | RustAst::Expr.ECall u17x0 u17x1 u17x2 u17x3 => right
+    | RustAst::Expr.EApply u17x0 u17x1 u17x2 u17x3 => right
+    | RustAst::Expr.EConstruct u17x0 u17x1 u17x2 => right
+    | RustAst::Expr.EPair u17x0 u17x1 u17x2 => right
+    | RustAst::Expr.EIf u17x0 u17x1 u17x2 u17x3 => right
+    | RustAst::Expr.EMatch u17x0 u17x1 u17x2 => right
+    | RustAst::Expr.EBlockE u17x0 => right
+    | RustAst::Expr.EProbe u17x0 u17x1 u17x2 => right
+    | RustAst::Expr.EBlock u17x0 u17x1 => right
+    | RustAst::Expr.ENil => right
+    | RustAst::Expr.ECons u17x0 u17x1 => right
+    | RustAst::Expr.ELet pat typed ty value at rest => (ctor RustAst::Expr.ELet pat typed ty value at (appendLets rest right))
+    | RustAst::Expr.EArm u17x0 u17x1 u17x2 => right
+    | RustAst::Expr.ELoop u17x0 u17x1 => right),
+  executable: true,
+  recursive_argument: left
+}
+
+definition{
+  name: after,
+  parameters: [lets : RustAst::Expr, expression : RustAst::Expr],
+  result: RustAst::Expr,
+  body: (if (isNilE lets) then expression else (let inner : RustAst::Expr := (blockOf expression); (ctor RustAst::Expr.EBlockE (ctor RustAst::Expr.EBlock (appendLets lets (blockLets inner)) (blockTail inner))))),
+  executable: true
+}
+
+definition{
+  name: setTailOn,
+  parameters: [block : RustAst::Expr, subject : RustAst::Expr, whole : RustAst::Expr],
+  result: RustAst::Expr,
+  body: (match subject
+    | RustAst::Expr.ELit u18x0 u18x1 => (ctor RustAst::Expr.EBlock (blockLets block) whole)
+    | RustAst::Expr.ERead u18x0 u18x1 u18x2 => (ctor RustAst::Expr.EBlock (blockLets block) whole)
+    | RustAst::Expr.EWrap u18x0 u18x1 u18x2 => (ctor RustAst::Expr.EBlock (blockLets block) whole)
+    | RustAst::Expr.ECall u18x0 u18x1 u18x2 u18x3 => (ctor RustAst::Expr.EBlock (blockLets block) whole)
+    | RustAst::Expr.EApply u18x0 u18x1 u18x2 u18x3 => (ctor RustAst::Expr.EBlock (blockLets block) whole)
+    | RustAst::Expr.EConstruct u18x0 u18x1 u18x2 => (ctor RustAst::Expr.EBlock (blockLets block) whole)
+    | RustAst::Expr.EPair u18x0 u18x1 u18x2 => (ctor RustAst::Expr.EBlock (blockLets block) whole)
+    | RustAst::Expr.EIf u18x0 u18x1 u18x2 u18x3 => (ctor RustAst::Expr.EBlock (blockLets block) whole)
+    | RustAst::Expr.EMatch u18x0 u18x1 u18x2 => (ctor RustAst::Expr.EBlock (blockLets block) whole)
+    | RustAst::Expr.EBlockE inner => (ctor RustAst::Expr.EBlock (appendLets (blockLets block) (blockLets inner)) (blockTail inner))
+    | RustAst::Expr.EProbe u18x0 u18x1 u18x2 => (ctor RustAst::Expr.EBlock (blockLets block) whole)
+    | RustAst::Expr.EBlock u18x0 u18x1 => (ctor RustAst::Expr.EBlock (blockLets block) whole)
+    | RustAst::Expr.ENil => (ctor RustAst::Expr.EBlock (blockLets block) whole)
+    | RustAst::Expr.ECons u18x0 u18x1 => (ctor RustAst::Expr.EBlock (blockLets block) whole)
+    | RustAst::Expr.ELet u18x0 u18x1 u18x2 u18x3 u18x4 u18x5 => (ctor RustAst::Expr.EBlock (blockLets block) whole)
+    | RustAst::Expr.EArm u18x0 u18x1 u18x2 => (ctor RustAst::Expr.EBlock (blockLets block) whole)
+    | RustAst::Expr.ELoop u18x0 u18x1 => (ctor RustAst::Expr.EBlock (blockLets block) whole)),
+  executable: true
+}
+
+definition{
+  name: setTail,
+  parameters: [block : RustAst::Expr, expression : RustAst::Expr],
+  result: RustAst::Expr,
+  body: (setTailOn block expression expression),
+  executable: true
+}
+
+definition{
+  name: unitLit,
+  parameters: [expression : RustAst::Expr],
+  result: Bool,
+  body: (match expression
+    | RustAst::Expr.ELit lit at => (match lit
+      | RustAst::Lit.LitUnit => true
+      | RustAst::Lit.LitBool d0 => false
+      | RustAst::Lit.LitNat d0 => false
+      | RustAst::Lit.LitInt d0 d1 => false
+      | RustAst::Lit.LitFixed d0 d1 d2 => false
+      | RustAst::Lit.LitStr d0 => false
+      | RustAst::Lit.LitBytes d0 => false
+      | RustAst::Lit.LitOrdering d0 => false
+      | RustAst::Lit.LitOverflow => false)
+    | RustAst::Expr.ERead u19x0 u19x1 u19x2 => false
+    | RustAst::Expr.EWrap u19x0 u19x1 u19x2 => false
+    | RustAst::Expr.ECall u19x0 u19x1 u19x2 u19x3 => false
+    | RustAst::Expr.EApply u19x0 u19x1 u19x2 u19x3 => false
+    | RustAst::Expr.EConstruct u19x0 u19x1 u19x2 => false
+    | RustAst::Expr.EPair u19x0 u19x1 u19x2 => false
+    | RustAst::Expr.EIf u19x0 u19x1 u19x2 u19x3 => false
+    | RustAst::Expr.EMatch u19x0 u19x1 u19x2 => false
+    | RustAst::Expr.EBlockE u19x0 => false
+    | RustAst::Expr.EProbe u19x0 u19x1 u19x2 => false
+    | RustAst::Expr.EBlock u19x0 u19x1 => false
+    | RustAst::Expr.ENil => false
+    | RustAst::Expr.ECons u19x0 u19x1 => false
+    | RustAst::Expr.ELet u19x0 u19x1 u19x2 u19x3 u19x4 u19x5 => false
+    | RustAst::Expr.EArm u19x0 u19x1 u19x2 => false
+    | RustAst::Expr.ELoop u19x0 u19x1 => false),
+  executable: true
+}
+
+definition{
+  name: boolCode,
+  parameters: [expression : RustAst::Expr],
+  result: Nat,
+  body: (match expression
+    | RustAst::Expr.ELit lit at => (match lit
+      | RustAst::Lit.LitUnit => 0
+      | RustAst::Lit.LitBool flag => (if flag then 1 else 2)
+      | RustAst::Lit.LitNat d0 => 0
+      | RustAst::Lit.LitInt d0 d1 => 0
+      | RustAst::Lit.LitFixed d0 d1 d2 => 0
+      | RustAst::Lit.LitStr d0 => 0
+      | RustAst::Lit.LitBytes d0 => 0
+      | RustAst::Lit.LitOrdering d0 => 0
+      | RustAst::Lit.LitOverflow => 0)
+    | RustAst::Expr.ERead u20x0 u20x1 u20x2 => 0
+    | RustAst::Expr.EWrap u20x0 u20x1 u20x2 => 0
+    | RustAst::Expr.ECall u20x0 u20x1 u20x2 u20x3 => 0
+    | RustAst::Expr.EApply u20x0 u20x1 u20x2 u20x3 => 0
+    | RustAst::Expr.EConstruct u20x0 u20x1 u20x2 => 0
+    | RustAst::Expr.EPair u20x0 u20x1 u20x2 => 0
+    | RustAst::Expr.EIf u20x0 u20x1 u20x2 u20x3 => 0
+    | RustAst::Expr.EMatch u20x0 u20x1 u20x2 => 0
+    | RustAst::Expr.EBlockE u20x0 => 0
+    | RustAst::Expr.EProbe u20x0 u20x1 u20x2 => 0
+    | RustAst::Expr.EBlock u20x0 u20x1 => 0
+    | RustAst::Expr.ENil => 0
+    | RustAst::Expr.ECons u20x0 u20x1 => 0
+    | RustAst::Expr.ELet u20x0 u20x1 u20x2 u20x3 u20x4 u20x5 => 0
+    | RustAst::Expr.EArm u20x0 u20x1 u20x2 => 0
+    | RustAst::Expr.ELoop u20x0 u20x1 => 0),
+  executable: true
+}
+
+definition{
+  name: emptyBlock,
+  parameters: [block : RustAst::Expr],
+  result: Bool,
+  body: (if (isNilE (blockLets block)) then (unitLit (blockTail block)) else false),
+  executable: true
+}
+
+definition{
+  name: literalCode,
+  parameters: [block : RustAst::Expr],
+  result: Nat,
+  body: (if (isNilE (blockLets block)) then (boolCode (blockTail block)) else 0),
+  executable: true
+}
+
+definition{
+  name: mkLet,
+  parameters: [
+    pat : RustAst::Pat,
+    typed : Bool,
+    ty : RustValidate::Ty,
+    value : RustAst::Expr,
+    at : RustValidate::Origin,
+    rest : RustAst::Expr
+  ],
+  result: RustAst::Expr,
+  body: (ctor RustAst::Expr.ELet pat typed ty value at rest),
+  executable: true
+}
+
+definition{
+  name: unitTy,
+  parameters: [seed : Nat],
+  result: RustValidate::Ty,
+  body: (ctor RustValidate::Ty.TyLeaf (ctor RustValidate::LeafKind.LkUnit)),
+  executable: true
+}
+
+definition{
+  name: wildPat,
+  parameters: [seed : Nat],
+  result: RustAst::Pat,
+  body: (ctor RustAst::Pat.PLeaf (ctor RustAst::PatLeaf.PlWild)),
+  executable: true
+}
+
+definition{
+  name: isWildPat,
+  parameters: [pat : RustAst::Pat],
+  result: Bool,
+  body: (match pat
+    | RustAst::Pat.PLeaf leaf => (match leaf
+      | RustAst::PatLeaf.PlWild => true
+      | RustAst::PatLeaf.PlUnit => false
+      | RustAst::PatLeaf.PlNone => false)
+    | RustAst::Pat.PBind u21x0 => false
+    | RustAst::Pat.PTuple u21x0 => false
+    | RustAst::Pat.PWrap u21x0 u21x1 => false
+    | RustAst::Pat.PAdt u21x0 u21x1 u21x2 => false
+    | RustAst::Pat.PNil => false
+    | RustAst::Pat.PCons u21x0 u21x1 => false
+    | RustAst::Pat.POrdering u21x0 => false),
+  executable: true
+}
+
+definition{
+  name: plainLet,
+  parameters: [
+    pat : RustAst::Pat,
+    value : RustAst::Expr,
+    at : RustValidate::Origin,
+    rest : RustAst::Expr
+  ],
+  result: RustAst::Expr,
+  body: (ctor RustAst::Expr.ELet pat false (unitTy 0) value at rest),
+  executable: true
+}
+
+definition{
+  name: mentions,
+  parameters: [term : CalculusCheck::Expr, name : Nat],
+  result: Bool,
+  body: (match term
+    | CalculusCheck::Expr.EValue d0 d1 => false
+    | CalculusCheck::Expr.EVar used => (used =? name)
+    | CalculusCheck::Expr.ELet bound ty value body => (if (mentions value name) then true else (if (bound =? name) then false else (mentions body name)))
+    | CalculusCheck::Expr.ECond c t e => (if (mentions c name) then true else (if (mentions t name) then true else (mentions e name)))
+    | CalculusCheck::Expr.EMatch ty scrutinee arms => (if (mentions scrutinee name) then true else (mentions arms name))
+    | CalculusCheck::Expr.EBuild shape ty operands => (mentions operands name)
+    | CalculusCheck::Expr.ECall function operands => (mentions operands name)
+    | CalculusCheck::Expr.EClosure function captures => (mentions captures name)
+    | CalculusCheck::Expr.EApply target operands => (if (mentions target name) then true else (mentions operands name))
+    | CalculusCheck::Expr.EPrim operation operands => (mentions operands name)
+    | CalculusCheck::Expr.EFirst value => (mentions value name)
+    | CalculusCheck::Expr.ESecond value => (mentions value name)
+    | CalculusCheck::Expr.EField value index => (mentions value name)
+    | CalculusCheck::Expr.ENil => false
+    | CalculusCheck::Expr.ECons head tail => (if (mentions head name) then true else (mentions tail name))
+    | CalculusCheck::Expr.EArm shape binders body => (if (RustLower::natMember binders name) then false else (mentions body name))),
+  executable: true,
+  recursive_argument: term
+}
+
+definition{
+  name: binderPat,
+  parameters: [name : Nat, ty : CalculusCheck::Ty, body : CalculusCheck::Expr],
+  result: RustAst::Pat,
+  body: (if ((CalculusCheck::tyEq ty (ctor CalculusCheck::Ty.TUnit)) || (not (mentions body name))) then (ctor RustAst::Pat.PLeaf (ctor RustAst::PatLeaf.PlWild)) else (ctor RustAst::Pat.PBind (ctor RustValidate::Id.IdLocal name))),
+  executable: true
+}
+
+definition{
+  name: consHead,
+  parameters: [chain : CalculusCheck::Ty],
+  result: CalculusCheck::Ty,
+  body: (CalculusCheck::tyFirst chain),
+  executable: true
+}
+
+definition{
+  name: consTail,
+  parameters: [chain : CalculusCheck::Ty],
+  result: CalculusCheck::Ty,
+  body: (CalculusCheck::tySecond chain),
+  executable: true
+}
+
+definition{
+  name: isConsTy,
+  parameters: [chain : CalculusCheck::Ty],
+  result: Bool,
+  body: ((CalculusCheck::tyTag chain) =? 15),
+  executable: true
+}
+
+definition{
+  name: returnedLet,
+  parameters: [pat : RustAst::Pat, typed : Bool, tail : RustAst::Expr],
+  result: Bool,
+  body: (match pat
+    | RustAst::Pat.PLeaf u24x0 => false
+    | RustAst::Pat.PBind bound => (if typed then false else (match tail
+      | RustAst::Expr.ELit u23x0 u23x1 => false
+      | RustAst::Expr.ERead kind read at => (match kind
+        | RustValidate::ReadKind.RkMove => (idEq bound read)
+        | RustValidate::ReadKind.RkClone => false
+        | RustValidate::ReadKind.RkCopy => (idEq bound read)
+        | RustValidate::ReadKind.RkDeref => false
+        | RustValidate::ReadKind.RkUnbox => false)
+      | RustAst::Expr.EWrap u23x0 u23x1 u23x2 => false
+      | RustAst::Expr.ECall u23x0 u23x1 u23x2 u23x3 => false
+      | RustAst::Expr.EApply u23x0 u23x1 u23x2 u23x3 => false
+      | RustAst::Expr.EConstruct u23x0 u23x1 u23x2 => false
+      | RustAst::Expr.EPair u23x0 u23x1 u23x2 => false
+      | RustAst::Expr.EIf u23x0 u23x1 u23x2 u23x3 => false
+      | RustAst::Expr.EMatch u23x0 u23x1 u23x2 => false
+      | RustAst::Expr.EBlockE u23x0 => false
+      | RustAst::Expr.EProbe u23x0 u23x1 u23x2 => false
+      | RustAst::Expr.EBlock u23x0 u23x1 => false
+      | RustAst::Expr.ENil => false
+      | RustAst::Expr.ECons u23x0 u23x1 => false
+      | RustAst::Expr.ELet u23x0 u23x1 u23x2 u23x3 u23x4 u23x5 => false
+      | RustAst::Expr.EArm u23x0 u23x1 u23x2 => false
+      | RustAst::Expr.ELoop u23x0 u23x1 => false))
+    | RustAst::Pat.PTuple u24x0 => false
+    | RustAst::Pat.PWrap u24x0 u24x1 => false
+    | RustAst::Pat.PAdt u24x0 u24x1 u24x2 => false
+    | RustAst::Pat.PNil => false
+    | RustAst::Pat.PCons u24x0 u24x1 => false
+    | RustAst::Pat.POrdering u24x0 => false),
+  executable: true
+}
+
+definition{
+  name: popFold,
+  parameters: [lets : RustAst::Expr, tail : RustAst::Expr],
+  result: RustAst::Expr,
+  body: (match lets
+    | RustAst::Expr.ELit u25x0 u25x1 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) tail)
+    | RustAst::Expr.ERead u25x0 u25x1 u25x2 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) tail)
+    | RustAst::Expr.EWrap u25x0 u25x1 u25x2 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) tail)
+    | RustAst::Expr.ECall u25x0 u25x1 u25x2 u25x3 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) tail)
+    | RustAst::Expr.EApply u25x0 u25x1 u25x2 u25x3 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) tail)
+    | RustAst::Expr.EConstruct u25x0 u25x1 u25x2 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) tail)
+    | RustAst::Expr.EPair u25x0 u25x1 u25x2 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) tail)
+    | RustAst::Expr.EIf u25x0 u25x1 u25x2 u25x3 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) tail)
+    | RustAst::Expr.EMatch u25x0 u25x1 u25x2 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) tail)
+    | RustAst::Expr.EBlockE u25x0 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) tail)
+    | RustAst::Expr.EProbe u25x0 u25x1 u25x2 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) tail)
+    | RustAst::Expr.EBlock u25x0 u25x1 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) tail)
+    | RustAst::Expr.ENil => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) tail)
+    | RustAst::Expr.ECons u25x0 u25x1 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) tail)
+    | RustAst::Expr.ELet pat typed ty value at rest => (let reduced : RustAst::Expr := (popFold rest tail); (if (isNilE (blockLets reduced)) then (if (returnedLet pat typed (blockTail reduced)) then (blockOf value) else (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ELet pat typed ty value at (ctor RustAst::Expr.ENil)) (blockTail reduced))) else (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ELet pat typed ty value at (blockLets reduced)) (blockTail reduced))))
+    | RustAst::Expr.EArm u25x0 u25x1 u25x2 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) tail)
+    | RustAst::Expr.ELoop u25x0 u25x1 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) tail)),
+  executable: true,
+  recursive_argument: lets
+}
+
+definition{
+  name: foldExpr,
+  parameters: [expression : RustAst::Expr],
+  result: RustAst::Expr,
+  body: (match expression
+    | RustAst::Expr.ELit lit at => (ctor RustAst::Expr.ELit lit at)
+    | RustAst::Expr.ERead kind ident at => (ctor RustAst::Expr.ERead kind ident at)
+    | RustAst::Expr.EWrap kind inner at => (ctor RustAst::Expr.EWrap kind (foldExpr inner) at)
+    | RustAst::Expr.ECall callee args prop at => (ctor RustAst::Expr.ECall callee (foldExpr args) prop at)
+    | RustAst::Expr.EApply holder args prop at => (ctor RustAst::Expr.EApply holder (foldExpr args) prop at)
+    | RustAst::Expr.EConstruct con args at => (ctor RustAst::Expr.EConstruct con (foldExpr args) at)
+    | RustAst::Expr.EPair left right at => (ctor RustAst::Expr.EPair (foldExpr left) (foldExpr right) at)
+    | RustAst::Expr.EIf c t e at => (ctor RustAst::Expr.EIf (foldExpr c) (foldExpr t) (foldExpr e) at)
+    | RustAst::Expr.EMatch s arms at => (ctor RustAst::Expr.EMatch (foldExpr s) (foldExpr arms) at)
+    | RustAst::Expr.EBlockE block => (ctor RustAst::Expr.EBlockE (foldExpr block))
+    | RustAst::Expr.EProbe kind ident at => (ctor RustAst::Expr.EProbe kind ident at)
+    | RustAst::Expr.EBlock lets tail => (popFold (foldExpr lets) (foldExpr tail))
+    | RustAst::Expr.ENil => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ECons head tail => (ctor RustAst::Expr.ECons (foldExpr head) (foldExpr tail))
+    | RustAst::Expr.ELet pat typed ty value at rest => (ctor RustAst::Expr.ELet pat typed ty (foldExpr value) at (foldExpr rest))
+    | RustAst::Expr.EArm pat body rest => (ctor RustAst::Expr.EArm pat (foldExpr body) (foldExpr rest))
+    | RustAst::Expr.ELoop state body => (ctor RustAst::Expr.ELoop state (foldExpr body))),
+  executable: true,
+  recursive_argument: expression
+}
+
+structure{
+  name: Flat,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: toks, type: (List (Nat * Nat))},
+    {name: blobs, type: (List Bytes)},
+    {name: names, type: (List (RustValidate::Id * Nat))},
+    {name: next, type: Nat}
+  ]
+}
+
+definition{
+  name: push,
+  parameters: [state : Flat, code : Nat, number : Nat],
+  result: Flat,
+  body: (record Flat {toks := (cons (code, number) (project state toks)), blobs := (project state blobs), names := (project state names), next := (project state next)}),
+  executable: true
+}
+
+definition{
+  name: pushBlob,
+  parameters: [state : Flat, code : Nat, blob : Bytes],
+  result: Flat,
+  body: (record Flat {toks := (cons (code, (prim length blob : Nat)) (project state toks)), blobs := (cons blob (project state blobs)), names := (project state names), next := (project state next)}),
+  executable: true
+}
+
+definition{
+  name: leafCode,
+  parameters: [kind : RustValidate::LeafKind],
+  result: Nat,
+  body: (match kind
+    | RustValidate::LeafKind.LkUnit => 0
+    | RustValidate::LeafKind.LkBool => 1
+    | RustValidate::LeafKind.LkNat => 2
+    | RustValidate::LeafKind.LkInt => 3
+    | RustValidate::LeafKind.LkOrdering => 4
+    | RustValidate::LeafKind.LkStr => 5
+    | RustValidate::LeafKind.LkBytes => 6
+    | RustValidate::LeafKind.LkOverflow => 7
+    | RustValidate::LeafKind.LkI128 => 8),
+  executable: true
+}
+
+definition{
+  name: unaryCode,
+  parameters: [kind : RustValidate::UnaryKind],
+  result: Nat,
+  body: (match kind
+    | RustValidate::UnaryKind.UkOption => 0
+    | RustValidate::UnaryKind.UkList => 1
+    | RustValidate::UnaryKind.UkRc => 2
+    | RustValidate::UnaryKind.UkFallible => 3
+    | RustValidate::UnaryKind.UkRef => 4),
+  executable: true
+}
+
+definition{
+  name: intCode,
+  parameters: [kind : RustValidate::IntKind],
+  result: Nat,
+  body: (match kind
+    | RustValidate::IntKind.U8 => 0
+    | RustValidate::IntKind.U16 => 1
+    | RustValidate::IntKind.U32 => 2
+    | RustValidate::IntKind.U64 => 3
+    | RustValidate::IntKind.I8 => 4
+    | RustValidate::IntKind.I16 => 5
+    | RustValidate::IntKind.I32 => 6
+    | RustValidate::IntKind.I64 => 7),
+  executable: true
+}
+
+definition{
+  name: widthCode,
+  parameters: [width : (Option RustValidate::IntKind)],
+  result: Nat,
+  body: (match width | Option.some kind => (1 + (intCode kind)) | Option.none => 0),
+  executable: true
+}
+
+definition{
+  name: readClass,
+  parameters: [kind : RustValidate::ReadKind],
+  result: Nat,
+  body: (match kind
+    | RustValidate::ReadKind.RkMove => 0
+    | RustValidate::ReadKind.RkClone => 1
+    | RustValidate::ReadKind.RkCopy => 0
+    | RustValidate::ReadKind.RkDeref => 2
+    | RustValidate::ReadKind.RkUnbox => 3),
+  executable: true
+}
+
+definition{
+  name: wrapCode,
+  parameters: [kind : RustValidate::WrapKind],
+  result: Nat,
+  body: (match kind
+    | RustValidate::WrapKind.WkNot => 0
+    | RustValidate::WrapKind.WkBox => 1
+    | RustValidate::WrapKind.WkWiden => 2
+    | RustValidate::WrapKind.WkSucceed => 3),
+  executable: true
+}
+
+definition{
+  name: probeCode2,
+  parameters: [kind : RustValidate::ProbeKind],
+  result: Nat,
+  body: (match kind
+    | RustValidate::ProbeKind.PkIsZero => 0
+    | RustValidate::ProbeKind.PkNonZero => 1
+    | RustValidate::ProbeKind.PkUncons => 2
+    | RustValidate::ProbeKind.PkPred => 3),
+  executable: true
+}
+
+definition{
+  name: patWrapCode,
+  parameters: [kind : RustValidate::PatWrap],
+  result: Nat,
+  body: (match kind
+    | RustValidate::PatWrap.PwSome => 0
+    | RustValidate::PatWrap.PwOk => 1
+    | RustValidate::PatWrap.PwErr => 2),
+  executable: true
+}
+
+definition{
+  name: leafPatCode,
+  parameters: [kind : RustAst::PatLeaf],
+  result: Nat,
+  body: (match kind
+    | RustAst::PatLeaf.PlWild => 0
+    | RustAst::PatLeaf.PlUnit => 1
+    | RustAst::PatLeaf.PlNone => 2),
+  executable: true
+}
+
+definition{
+  name: ordCode,
+  parameters: [kind : RustAst::OrderingKind],
+  result: Nat,
+  body: (match kind
+    | RustAst::OrderingKind.OkLess => 0
+    | RustAst::OrderingKind.OkEqual => 1
+    | RustAst::OrderingKind.OkGreater => 2),
+  executable: true
+}
+
+definition{
+  name: flatTy,
+  parameters: [ty : RustValidate::Ty, state : Flat],
+  result: Flat,
+  body: (match ty
+    | RustValidate::Ty.TyLeaf kind => (push state 30 (leafCode kind))
+    | RustValidate::Ty.TyFixed kind => (push state 31 (intCode kind))
+    | RustValidate::Ty.TyUnary kind inner => (flatTy inner (push state 32 (unaryCode kind)))
+    | RustValidate::Ty.TyBinary kind left right => (flatTy right (flatTy left (push state 33 (match kind
+      | RustValidate::BinaryKind.BkResult => 0
+      | RustValidate::BinaryKind.BkPair => 1))))
+    | RustValidate::Ty.TyNamed kind number => (push (push state 34 (match kind
+      | RustValidate::NameKind.NkAdt => 0
+      | RustValidate::NameKind.NkFn => 1)) 35 number)
+    | RustValidate::Ty.TyNil => (push state 36 0)
+    | RustValidate::Ty.TyCons head tail => (flatTy tail (flatTy head (push state 37 0)))),
+  executable: true,
+  recursive_argument: ty
+}
+
+definition{
+  name: flatLit,
+  parameters: [lit : RustAst::Lit, state : Flat],
+  result: Flat,
+  body: (match lit
+    | RustAst::Lit.LitUnit => (push state 0 0)
+    | RustAst::Lit.LitBool flag => (push state 1 (if flag then 1 else 0))
+    | RustAst::Lit.LitNat number => (push state 2 number)
+    | RustAst::Lit.LitInt negative magnitude => (push (push state 3 (if negative then 1 else 0)) 4 magnitude)
+    | RustAst::Lit.LitFixed kind negative magnitude => (push (push (push state 5 (intCode kind)) 3 (if negative then 1 else 0)) 4 magnitude)
+    | RustAst::Lit.LitStr text => (pushBlob state 6 text)
+    | RustAst::Lit.LitBytes octets => (pushBlob state 7 octets)
+    | RustAst::Lit.LitOrdering kind => (push state 8 (ordCode kind))
+    | RustAst::Lit.LitOverflow => (push state 9 0)),
+  executable: true
+}
+
+definition{
+  name: flatCon,
+  parameters: [con : RustValidate::Con, state : Flat],
+  result: Flat,
+  body: (match con
+    | RustValidate::Con.ConNone ty => (flatTy ty (push state 40 0))
+    | RustValidate::Con.ConSome => (push state 41 0)
+    | RustValidate::Con.ConOk ok error => (flatTy error (flatTy ok (push state 42 0)))
+    | RustValidate::Con.ConErr ok error => (flatTy error (flatTy ok (push state 43 0)))
+    | RustValidate::Con.ConAdt adt constructor => (push (push state 44 adt) 45 constructor)
+    | RustValidate::Con.ConClosure fnType function => (push (push state 46 fnType) 47 function)
+    | RustValidate::Con.ConCons => (push state 48 0)
+    | RustValidate::Con.ConNil ty => (flatTy ty (push state 49 0))),
+  executable: true
+}
+
+definition{
+  name: flatCallee,
+  parameters: [callee : RustAst::Callee, state : Flat],
+  result: Flat,
+  body: (match callee
+    | RustAst::Callee.CalFn number => (push state 50 number)
+    | RustAst::Callee.CalRt rt => (push (push state 51 (project rt family)) 52 (widthCode (project rt width)))
+    | RustAst::Callee.CalMachine family width => (push (push state 53 family) 54 (widthCode width))),
+  executable: true
+}
+
+definition{
+  name: lookupBound,
+  parameters: [names : (List (RustValidate::Id * Nat)), ident : RustValidate::Id],
+  result: (Option Nat),
+  body: (match names
+    | List.nil => (ctor Option.none [Nat])
+    | List.cons entry rest => (if (idEq (first entry) ident) then (ctor Option.some [Nat] (second entry)) else (lookupBound rest ident))),
+  executable: true,
+  recursive_argument: names
+}
+
+definition{
+  name: flatId,
+  parameters: [ident : RustValidate::Id, state : Flat],
+  result: Flat,
+  body: (match (lookupBound (project state names) ident)
+    | Option.some number => (push (push state (100 + (idTag ident)) number) 99 0)
+    | Option.none => (push state (60 + (idTag ident)) (idNum ident))),
+  executable: true
+}
+
+definition{
+  name: flatPat,
+  parameters: [pat : RustAst::Pat, state : Flat],
+  result: Flat,
+  body: (match pat
+    | RustAst::Pat.PLeaf leaf => (push state 80 (leafPatCode leaf))
+    | RustAst::Pat.PBind ident => (record Flat {toks := (cons ((90 + (idTag ident)), 0) (project state toks)), blobs := (project state blobs), names := (cons (ident, (project state next)) (project state names)), next := ((project state next) + 1)})
+    | RustAst::Pat.PTuple items => (flatPat items (push state 81 0))
+    | RustAst::Pat.PWrap kind inner => (flatPat inner (push state 82 (patWrapCode kind)))
+    | RustAst::Pat.PAdt adt constructor fields => (flatPat fields (push (push state 83 adt) 84 constructor))
+    | RustAst::Pat.PNil => (push state 85 0)
+    | RustAst::Pat.PCons head tail => (flatPat tail (flatPat head (push state 86 0)))
+    | RustAst::Pat.POrdering kind => (push state 87 (ordCode kind))),
+  executable: true,
+  recursive_argument: pat
+}
+
+definition{
+  name: flatE,
+  parameters: [expression : RustAst::Expr, state : Flat],
+  result: Flat,
+  body: (match expression
+    | RustAst::Expr.ELit lit at => (flatLit lit (push state 1 0))
+    | RustAst::Expr.ERead kind ident at => (flatId ident (push state 2 (readClass kind)))
+    | RustAst::Expr.EWrap kind inner at => (flatE inner (push state 3 (wrapCode kind)))
+    | RustAst::Expr.ECall callee args prop at => (flatE args (flatCallee callee (push state 4 (if prop then 1 else 0))))
+    | RustAst::Expr.EApply holder args prop at => (flatE args (flatId holder (push state 5 (if prop then 1 else 0))))
+    | RustAst::Expr.EConstruct con args at => (flatE args (flatCon con (push state 6 0)))
+    | RustAst::Expr.EPair left right at => (flatE right (flatE left (push state 7 0)))
+    | RustAst::Expr.EIf c t e at => (flatE e (flatE t (flatE c (push state 8 0))))
+    | RustAst::Expr.EMatch scrutinee arms at => (flatE arms (flatE scrutinee (push state 9 0)))
+    | RustAst::Expr.EBlockE block => (flatE block state)
+    | RustAst::Expr.EProbe kind ident at => (flatId ident (push state 10 (probeCode2 kind)))
+    | RustAst::Expr.EBlock lets tail => (flatE tail (push (flatE lets (push state 11 0)) 12 0))
+    | RustAst::Expr.ENil => (push state 13 0)
+    | RustAst::Expr.ECons head tail => (flatE tail (flatE head (push state 14 0)))
+    | RustAst::Expr.ELet pat typed ty value at rest => (flatE rest (flatPat pat (flatE value (if typed then (flatTy ty (push state 15 1)) else (push state 15 0)))))
+    | RustAst::Expr.EArm pat body rest => (flatE rest (flatE body (flatPat pat (push state 16 0))))
+    | RustAst::Expr.ELoop state0 body => (flatE body (flatId state0 (push state 17 0)))),
+  executable: true,
+  recursive_argument: expression
+}
+
+definition{
+  name: tokensEq,
+  parameters: [left : (List (Nat * Nat)), right : (List (Nat * Nat))],
+  result: Bool,
+  body: (match left
+    | List.nil => (match right | List.nil => true | List.cons y ys => false)
+    | List.cons x xs => (match right
+      | List.nil => false
+      | List.cons y ys => (if (((first x) =? (first y)) && ((second x) =? (second y))) then (tokensEq xs ys) else false))),
+  executable: true,
+  recursive_argument: left
+}
+
+definition{
+  name: blobsEq,
+  parameters: [left : (List Bytes), right : (List Bytes)],
+  result: Bool,
+  body: (match left
+    | List.nil => (match right | List.nil => true | List.cons y ys => false)
+    | List.cons x xs => (match right
+      | List.nil => false
+      | List.cons y ys => (if (prim equal x y : Bool) then (blobsEq xs ys) else false))),
+  executable: true,
+  recursive_argument: left
+}
+
+definition{
+  name: emptyFlat,
+  parameters: [seed : Nat],
+  result: Flat,
+  body: (record Flat {toks := (nil (Nat * Nat)), blobs := (nil Bytes), names := (nil (RustValidate::Id * Nat)), next := 0}),
+  executable: true
+}
+
+definition{
+  name: sameCode,
+  parameters: [left : RustAst::Expr, right : RustAst::Expr],
+  result: Bool,
+  body: (let one : Flat := (flatE left (emptyFlat 0)); (let two : Flat := (flatE right (emptyFlat 0)); (if (tokensEq (project one toks) (project two toks)) then (blobsEq (project one blobs) (project two blobs)) else false))),
+  executable: true
+}
+
+definition{
+  name: negateOn,
+  parameters: [subject : RustAst::Expr, whole : RustAst::Expr, at : RustValidate::Origin],
+  result: RustAst::Expr,
+  body: (match subject
+    | RustAst::Expr.ELit lit o => (if ((boolCode whole) =? 1) then (ctor RustAst::Expr.ELit (ctor RustAst::Lit.LitBool false) at) else (if ((boolCode whole) =? 2) then (ctor RustAst::Expr.ELit (ctor RustAst::Lit.LitBool true) at) else (ctor RustAst::Expr.EWrap (ctor RustValidate::WrapKind.WkNot) whole at)))
+    | RustAst::Expr.ERead u42x0 u42x1 u42x2 => (ctor RustAst::Expr.EWrap (ctor RustValidate::WrapKind.WkNot) whole at)
+    | RustAst::Expr.EWrap kind inner o => (if ((wrapCode kind) =? 0) then inner else (ctor RustAst::Expr.EWrap (ctor RustValidate::WrapKind.WkNot) whole at))
+    | RustAst::Expr.ECall u42x0 u42x1 u42x2 u42x3 => (ctor RustAst::Expr.EWrap (ctor RustValidate::WrapKind.WkNot) whole at)
+    | RustAst::Expr.EApply u42x0 u42x1 u42x2 u42x3 => (ctor RustAst::Expr.EWrap (ctor RustValidate::WrapKind.WkNot) whole at)
+    | RustAst::Expr.EConstruct u42x0 u42x1 u42x2 => (ctor RustAst::Expr.EWrap (ctor RustValidate::WrapKind.WkNot) whole at)
+    | RustAst::Expr.EPair u42x0 u42x1 u42x2 => (ctor RustAst::Expr.EWrap (ctor RustValidate::WrapKind.WkNot) whole at)
+    | RustAst::Expr.EIf u42x0 u42x1 u42x2 u42x3 => (ctor RustAst::Expr.EWrap (ctor RustValidate::WrapKind.WkNot) whole at)
+    | RustAst::Expr.EMatch u42x0 u42x1 u42x2 => (ctor RustAst::Expr.EWrap (ctor RustValidate::WrapKind.WkNot) whole at)
+    | RustAst::Expr.EBlockE u42x0 => (ctor RustAst::Expr.EWrap (ctor RustValidate::WrapKind.WkNot) whole at)
+    | RustAst::Expr.EProbe kind ident o => (if ((probeCode2 kind) =? 0) then (ctor RustAst::Expr.EProbe (ctor RustValidate::ProbeKind.PkNonZero) ident o) else (if ((probeCode2 kind) =? 1) then (ctor RustAst::Expr.EProbe (ctor RustValidate::ProbeKind.PkIsZero) ident o) else (ctor RustAst::Expr.EWrap (ctor RustValidate::WrapKind.WkNot) whole at)))
+    | RustAst::Expr.EBlock u42x0 u42x1 => (ctor RustAst::Expr.EWrap (ctor RustValidate::WrapKind.WkNot) whole at)
+    | RustAst::Expr.ENil => (ctor RustAst::Expr.EWrap (ctor RustValidate::WrapKind.WkNot) whole at)
+    | RustAst::Expr.ECons u42x0 u42x1 => (ctor RustAst::Expr.EWrap (ctor RustValidate::WrapKind.WkNot) whole at)
+    | RustAst::Expr.ELet u42x0 u42x1 u42x2 u42x3 u42x4 u42x5 => (ctor RustAst::Expr.EWrap (ctor RustValidate::WrapKind.WkNot) whole at)
+    | RustAst::Expr.EArm u42x0 u42x1 u42x2 => (ctor RustAst::Expr.EWrap (ctor RustValidate::WrapKind.WkNot) whole at)
+    | RustAst::Expr.ELoop u42x0 u42x1 => (ctor RustAst::Expr.EWrap (ctor RustValidate::WrapKind.WkNot) whole at)),
+  executable: true
+}
+
+definition{
+  name: negate,
+  parameters: [expression : RustAst::Expr, at : RustValidate::Origin],
+  result: RustAst::Expr,
+  body: (negateOn expression expression at),
+  executable: true
+}
+
+definition{
+  name: ordEq,
+  parameters: [left : RustAst::OrderingKind, right : RustAst::OrderingKind],
+  result: Bool,
+  body: ((ordCode left) =? (ordCode right)),
+  executable: true
+}
+
+definition{
+  name: conCode,
+  parameters: [con : RustValidate::Con],
+  result: Nat,
+  body: (match con
+    | RustValidate::Con.ConNone d0 => 0
+    | RustValidate::Con.ConSome => 1
+    | RustValidate::Con.ConOk d0 d1 => 2
+    | RustValidate::Con.ConErr d0 d1 => 3
+    | RustValidate::Con.ConAdt d0 d1 => 4
+    | RustValidate::Con.ConClosure d0 d1 => 5
+    | RustValidate::Con.ConCons => 6
+    | RustValidate::Con.ConNil d0 => 7),
+  executable: true
+}
+
+definition{
+  name: constructCode,
+  parameters: [tail : RustAst::Expr],
+  result: Nat,
+  body: (match tail
+    | RustAst::Expr.ELit u44x0 u44x1 => 99
+    | RustAst::Expr.ERead u44x0 u44x1 u44x2 => 99
+    | RustAst::Expr.EWrap u44x0 u44x1 u44x2 => 99
+    | RustAst::Expr.ECall u44x0 u44x1 u44x2 u44x3 => 99
+    | RustAst::Expr.EApply u44x0 u44x1 u44x2 u44x3 => 99
+    | RustAst::Expr.EConstruct con args at => (conCode con)
+    | RustAst::Expr.EPair u44x0 u44x1 u44x2 => 99
+    | RustAst::Expr.EIf u44x0 u44x1 u44x2 u44x3 => 99
+    | RustAst::Expr.EMatch u44x0 u44x1 u44x2 => 99
+    | RustAst::Expr.EBlockE u44x0 => 99
+    | RustAst::Expr.EProbe u44x0 u44x1 u44x2 => 99
+    | RustAst::Expr.EBlock u44x0 u44x1 => 99
+    | RustAst::Expr.ENil => 99
+    | RustAst::Expr.ECons u44x0 u44x1 => 99
+    | RustAst::Expr.ELet u44x0 u44x1 u44x2 u44x3 u44x4 u44x5 => 99
+    | RustAst::Expr.EArm u44x0 u44x1 u44x2 => 99
+    | RustAst::Expr.ELoop u44x0 u44x1 => 99),
+  executable: true
+}
+
+definition{
+  name: constructArgs,
+  parameters: [tail : RustAst::Expr],
+  result: RustAst::Expr,
+  body: (match tail
+    | RustAst::Expr.ELit u45x0 u45x1 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ERead u45x0 u45x1 u45x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EWrap u45x0 u45x1 u45x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ECall u45x0 u45x1 u45x2 u45x3 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EApply u45x0 u45x1 u45x2 u45x3 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EConstruct con args at => (keepE args)
+    | RustAst::Expr.EPair u45x0 u45x1 u45x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EIf u45x0 u45x1 u45x2 u45x3 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EMatch u45x0 u45x1 u45x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EBlockE u45x0 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EProbe u45x0 u45x1 u45x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EBlock u45x0 u45x1 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ENil => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ECons u45x0 u45x1 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ELet u45x0 u45x1 u45x2 u45x3 u45x4 u45x5 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EArm u45x0 u45x1 u45x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ELoop u45x0 u45x1 => (ctor RustAst::Expr.ENil)),
+  executable: true
+}
+
+definition{
+  name: constructIsAdt,
+  parameters: [tail : RustAst::Expr, adt : Nat, constructor : Nat],
+  result: Bool,
+  body: (match tail
+    | RustAst::Expr.ELit u47x0 u47x1 => false
+    | RustAst::Expr.ERead u47x0 u47x1 u47x2 => false
+    | RustAst::Expr.EWrap u47x0 u47x1 u47x2 => false
+    | RustAst::Expr.ECall u47x0 u47x1 u47x2 u47x3 => false
+    | RustAst::Expr.EApply u47x0 u47x1 u47x2 u47x3 => false
+    | RustAst::Expr.EConstruct con args at => (match con
+      | RustValidate::Con.ConNone u46x0 => false
+      | RustValidate::Con.ConSome => false
+      | RustValidate::Con.ConOk u46x0 u46x1 => false
+      | RustValidate::Con.ConErr u46x0 u46x1 => false
+      | RustValidate::Con.ConAdt built builtCtor => (if (adt =? built) then (constructor =? builtCtor) else false)
+      | RustValidate::Con.ConClosure u46x0 u46x1 => false
+      | RustValidate::Con.ConCons => false
+      | RustValidate::Con.ConNil u46x0 => false)
+    | RustAst::Expr.EPair u47x0 u47x1 u47x2 => false
+    | RustAst::Expr.EIf u47x0 u47x1 u47x2 u47x3 => false
+    | RustAst::Expr.EMatch u47x0 u47x1 u47x2 => false
+    | RustAst::Expr.EBlockE u47x0 => false
+    | RustAst::Expr.EProbe u47x0 u47x1 u47x2 => false
+    | RustAst::Expr.EBlock u47x0 u47x1 => false
+    | RustAst::Expr.ENil => false
+    | RustAst::Expr.ECons u47x0 u47x1 => false
+    | RustAst::Expr.ELet u47x0 u47x1 u47x2 u47x3 u47x4 u47x5 => false
+    | RustAst::Expr.EArm u47x0 u47x1 u47x2 => false
+    | RustAst::Expr.ELoop u47x0 u47x1 => false),
+  executable: true
+}
+
+definition{
+  name: orderingLit,
+  parameters: [tail : RustAst::Expr, matched : RustAst::OrderingKind],
+  result: Bool,
+  body: (match tail
+    | RustAst::Expr.ELit lit at => (match lit
+      | RustAst::Lit.LitUnit => false
+      | RustAst::Lit.LitBool u48x0 => false
+      | RustAst::Lit.LitNat u48x0 => false
+      | RustAst::Lit.LitInt u48x0 u48x1 => false
+      | RustAst::Lit.LitFixed u48x0 u48x1 u48x2 => false
+      | RustAst::Lit.LitStr u48x0 => false
+      | RustAst::Lit.LitBytes u48x0 => false
+      | RustAst::Lit.LitOrdering built => (ordEq matched built)
+      | RustAst::Lit.LitOverflow => false)
+    | RustAst::Expr.ERead u49x0 u49x1 u49x2 => false
+    | RustAst::Expr.EWrap u49x0 u49x1 u49x2 => false
+    | RustAst::Expr.ECall u49x0 u49x1 u49x2 u49x3 => false
+    | RustAst::Expr.EApply u49x0 u49x1 u49x2 u49x3 => false
+    | RustAst::Expr.EConstruct u49x0 u49x1 u49x2 => false
+    | RustAst::Expr.EPair u49x0 u49x1 u49x2 => false
+    | RustAst::Expr.EIf u49x0 u49x1 u49x2 u49x3 => false
+    | RustAst::Expr.EMatch u49x0 u49x1 u49x2 => false
+    | RustAst::Expr.EBlockE u49x0 => false
+    | RustAst::Expr.EProbe u49x0 u49x1 u49x2 => false
+    | RustAst::Expr.EBlock u49x0 u49x1 => false
+    | RustAst::Expr.ENil => false
+    | RustAst::Expr.ECons u49x0 u49x1 => false
+    | RustAst::Expr.ELet u49x0 u49x1 u49x2 u49x3 u49x4 u49x5 => false
+    | RustAst::Expr.EArm u49x0 u49x1 u49x2 => false
+    | RustAst::Expr.ELoop u49x0 u49x1 => false),
+  executable: true
+}
+
+definition{
+  name: sameField,
+  parameters: [pat : RustAst::Pat, arg : RustAst::Expr],
+  result: Bool,
+  body: (match pat
+    | RustAst::Pat.PLeaf leaf => (if ((leafPatCode leaf) =? 0) then (unitLit arg) else false)
+    | RustAst::Pat.PBind bound => (match arg
+      | RustAst::Expr.ELit u50x0 u50x1 => false
+      | RustAst::Expr.ERead kind ident at => (if ((readClass kind) =? 0) then (idEq bound ident) else false)
+      | RustAst::Expr.EWrap u50x0 u50x1 u50x2 => false
+      | RustAst::Expr.ECall u50x0 u50x1 u50x2 u50x3 => false
+      | RustAst::Expr.EApply u50x0 u50x1 u50x2 u50x3 => false
+      | RustAst::Expr.EConstruct u50x0 u50x1 u50x2 => false
+      | RustAst::Expr.EPair u50x0 u50x1 u50x2 => false
+      | RustAst::Expr.EIf u50x0 u50x1 u50x2 u50x3 => false
+      | RustAst::Expr.EMatch u50x0 u50x1 u50x2 => false
+      | RustAst::Expr.EBlockE u50x0 => false
+      | RustAst::Expr.EProbe u50x0 u50x1 u50x2 => false
+      | RustAst::Expr.EBlock u50x0 u50x1 => false
+      | RustAst::Expr.ENil => false
+      | RustAst::Expr.ECons u50x0 u50x1 => false
+      | RustAst::Expr.ELet u50x0 u50x1 u50x2 u50x3 u50x4 u50x5 => false
+      | RustAst::Expr.EArm u50x0 u50x1 u50x2 => false
+      | RustAst::Expr.ELoop u50x0 u50x1 => false)
+    | RustAst::Pat.PTuple u51x0 => false
+    | RustAst::Pat.PWrap u51x0 u51x1 => false
+    | RustAst::Pat.PAdt u51x0 u51x1 u51x2 => false
+    | RustAst::Pat.PNil => false
+    | RustAst::Pat.PCons u51x0 u51x1 => false
+    | RustAst::Pat.POrdering u51x0 => false),
+  executable: true
+}
+
+definition{
+  name: sameAll,
+  parameters: [pats : RustAst::Pat, args : RustAst::Expr],
+  result: Bool,
+  body: (match pats
+    | RustAst::Pat.PLeaf u53x0 => false
+    | RustAst::Pat.PBind u53x0 => false
+    | RustAst::Pat.PTuple u53x0 => false
+    | RustAst::Pat.PWrap u53x0 u53x1 => false
+    | RustAst::Pat.PAdt u53x0 u53x1 u53x2 => false
+    | RustAst::Pat.PNil => (isNilE args)
+    | RustAst::Pat.PCons head tail => (match args
+      | RustAst::Expr.ELit u52x0 u52x1 => false
+      | RustAst::Expr.ERead u52x0 u52x1 u52x2 => false
+      | RustAst::Expr.EWrap u52x0 u52x1 u52x2 => false
+      | RustAst::Expr.ECall u52x0 u52x1 u52x2 u52x3 => false
+      | RustAst::Expr.EApply u52x0 u52x1 u52x2 u52x3 => false
+      | RustAst::Expr.EConstruct u52x0 u52x1 u52x2 => false
+      | RustAst::Expr.EPair u52x0 u52x1 u52x2 => false
+      | RustAst::Expr.EIf u52x0 u52x1 u52x2 u52x3 => false
+      | RustAst::Expr.EMatch u52x0 u52x1 u52x2 => false
+      | RustAst::Expr.EBlockE u52x0 => false
+      | RustAst::Expr.EProbe u52x0 u52x1 u52x2 => false
+      | RustAst::Expr.EBlock u52x0 u52x1 => false
+      | RustAst::Expr.ENil => false
+      | RustAst::Expr.ECons arg rest => (if (sameField head arg) then (sameAll tail rest) else false)
+      | RustAst::Expr.ELet u52x0 u52x1 u52x2 u52x3 u52x4 u52x5 => false
+      | RustAst::Expr.EArm u52x0 u52x1 u52x2 => false
+      | RustAst::Expr.ELoop u52x0 u52x1 => false)
+    | RustAst::Pat.POrdering u53x0 => false),
+  executable: true,
+  recursive_argument: pats
+}
+
+definition{
+  name: oneArg,
+  parameters: [inner : RustAst::Pat, args : RustAst::Expr],
+  result: Bool,
+  body: (match args
+    | RustAst::Expr.ELit u54x0 u54x1 => false
+    | RustAst::Expr.ERead u54x0 u54x1 u54x2 => false
+    | RustAst::Expr.EWrap u54x0 u54x1 u54x2 => false
+    | RustAst::Expr.ECall u54x0 u54x1 u54x2 u54x3 => false
+    | RustAst::Expr.EApply u54x0 u54x1 u54x2 u54x3 => false
+    | RustAst::Expr.EConstruct u54x0 u54x1 u54x2 => false
+    | RustAst::Expr.EPair u54x0 u54x1 u54x2 => false
+    | RustAst::Expr.EIf u54x0 u54x1 u54x2 u54x3 => false
+    | RustAst::Expr.EMatch u54x0 u54x1 u54x2 => false
+    | RustAst::Expr.EBlockE u54x0 => false
+    | RustAst::Expr.EProbe u54x0 u54x1 u54x2 => false
+    | RustAst::Expr.EBlock u54x0 u54x1 => false
+    | RustAst::Expr.ENil => false
+    | RustAst::Expr.ECons arg rest => (if (isNilE rest) then (sameField inner arg) else false)
+    | RustAst::Expr.ELet u54x0 u54x1 u54x2 u54x3 u54x4 u54x5 => false
+    | RustAst::Expr.EArm u54x0 u54x1 u54x2 => false
+    | RustAst::Expr.ELoop u54x0 u54x1 => false),
+  executable: true
+}
+
+definition{
+  name: rebuildsTail,
+  parameters: [pat : RustAst::Pat, tail : RustAst::Expr],
+  result: Bool,
+  body: (match pat
+    | RustAst::Pat.PLeaf leaf => (if ((leafPatCode leaf) =? 2) then ((constructCode tail) =? 0) else false)
+    | RustAst::Pat.PBind u55x0 => false
+    | RustAst::Pat.PTuple u55x0 => false
+    | RustAst::Pat.PWrap kind inner => (if ((constructCode tail) =? (1 + (patWrapCode kind))) then (oneArg inner (constructArgs tail)) else false)
+    | RustAst::Pat.PAdt adt constructor fields => (if (constructIsAdt tail adt constructor) then (sameAll fields (constructArgs tail)) else false)
+    | RustAst::Pat.PNil => false
+    | RustAst::Pat.PCons u55x0 u55x1 => false
+    | RustAst::Pat.POrdering matched => (orderingLit tail matched)),
+  executable: true
+}
+
+definition{
+  name: rebuilds,
+  parameters: [pat : RustAst::Pat, block : RustAst::Expr],
+  result: Bool,
+  body: (if (isNilE (blockLets block)) then (rebuildsTail pat (blockTail block)) else false),
+  executable: true
+}
+
+definition{
+  name: thenHoldsIf,
+  parameters: [tail : RustAst::Expr],
+  result: Bool,
+  body: (match tail
+    | RustAst::Expr.ELit u56x0 u56x1 => false
+    | RustAst::Expr.ERead u56x0 u56x1 u56x2 => false
+    | RustAst::Expr.EWrap u56x0 u56x1 u56x2 => false
+    | RustAst::Expr.ECall u56x0 u56x1 u56x2 u56x3 => false
+    | RustAst::Expr.EApply u56x0 u56x1 u56x2 u56x3 => false
+    | RustAst::Expr.EConstruct u56x0 u56x1 u56x2 => false
+    | RustAst::Expr.EPair u56x0 u56x1 u56x2 => false
+    | RustAst::Expr.EIf c t e at => (emptyBlock e)
+    | RustAst::Expr.EMatch u56x0 u56x1 u56x2 => false
+    | RustAst::Expr.EBlockE u56x0 => false
+    | RustAst::Expr.EProbe u56x0 u56x1 u56x2 => false
+    | RustAst::Expr.EBlock u56x0 u56x1 => false
+    | RustAst::Expr.ENil => false
+    | RustAst::Expr.ECons u56x0 u56x1 => false
+    | RustAst::Expr.ELet u56x0 u56x1 u56x2 u56x3 u56x4 u56x5 => false
+    | RustAst::Expr.EArm u56x0 u56x1 u56x2 => false
+    | RustAst::Expr.ELoop u56x0 u56x1 => false),
+  executable: true
+}
+
+definition{
+  name: holdCondition,
+  parameters: [block : RustAst::Expr, next : Nat],
+  result: Lowered,
+  body: (match (blockTail block)
+    | RustAst::Expr.ELit u57x0 u57x1 => (done block next)
+    | RustAst::Expr.ERead u57x0 u57x1 u57x2 => (done block next)
+    | RustAst::Expr.EWrap u57x0 u57x1 u57x2 => (done block next)
+    | RustAst::Expr.ECall u57x0 u57x1 u57x2 u57x3 => (done block next)
+    | RustAst::Expr.EApply u57x0 u57x1 u57x2 u57x3 => (done block next)
+    | RustAst::Expr.EConstruct u57x0 u57x1 u57x2 => (done block next)
+    | RustAst::Expr.EPair u57x0 u57x1 u57x2 => (done block next)
+    | RustAst::Expr.EIf c t e at => (let held : RustValidate::Id := (ctor RustValidate::Id.IdHolder (next + 1)); (done (ctor RustAst::Expr.EBlock (appendLets (blockLets block) (ctor RustAst::Expr.ELet (ctor RustAst::Pat.PBind held) false (unitTy 0) c at (ctor RustAst::Expr.ENil))) (ctor RustAst::Expr.EIf (ctor RustAst::Expr.ERead (ctor RustValidate::ReadKind.RkMove) held at) t e at)) (next + 1)))
+    | RustAst::Expr.EMatch u57x0 u57x1 u57x2 => (done block next)
+    | RustAst::Expr.EBlockE u57x0 => (done block next)
+    | RustAst::Expr.EProbe u57x0 u57x1 u57x2 => (done block next)
+    | RustAst::Expr.EBlock u57x0 u57x1 => (done block next)
+    | RustAst::Expr.ENil => (done block next)
+    | RustAst::Expr.ECons u57x0 u57x1 => (done block next)
+    | RustAst::Expr.ELet u57x0 u57x1 u57x2 u57x3 u57x4 u57x5 => (done block next)
+    | RustAst::Expr.EArm u57x0 u57x1 u57x2 => (done block next)
+    | RustAst::Expr.ELoop u57x0 u57x1 => (done block next)),
+  executable: true
+}
+
+definition{
+  name: choose,
+  parameters: [
+    condition : RustAst::Expr,
+    thenBranch : RustAst::Expr,
+    elseBranch : RustAst::Expr,
+    at : RustValidate::Origin,
+    next : Nat
+  ],
+  result: Lowered,
+  body: (let held : Lowered := (if ((emptyBlock elseBranch) && ((isNilE (blockLets thenBranch)) && (thenHoldsIf (blockTail thenBranch)))) then (holdCondition thenBranch next) else (done thenBranch next)); (let thenB : RustAst::Expr := (project held expr); (let n1 : Nat := (project held next); (if (((literalCode thenB) =? 1) && ((literalCode elseBranch) =? 2)) then (done condition n1) else (if (((literalCode thenB) =? 2) && ((literalCode elseBranch) =? 1)) then (done (negate condition at) n1) else (if (sameCode thenB elseBranch) then (done (ctor RustAst::Expr.EBlockE (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ELet (ctor RustAst::Pat.PLeaf (ctor RustAst::PatLeaf.PlWild)) false (unitTy 0) condition at (blockLets thenB)) (blockTail thenB))) n1) else (if (0 <? (boolCode condition)) then (done (ctor RustAst::Expr.EBlockE (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ELet (ctor RustAst::Pat.PBind (ctor RustValidate::Id.IdHolder (n1 + 1))) false (unitTy 0) condition at (ctor RustAst::Expr.ENil)) (ctor RustAst::Expr.EIf (ctor RustAst::Expr.ERead (ctor RustValidate::ReadKind.RkMove) (ctor RustValidate::Id.IdHolder (n1 + 1)) at) thenB elseBranch at))) (n1 + 1)) else (done (ctor RustAst::Expr.EIf condition thenB elseBranch at) n1)))))))),
+  executable: true
+}
+
+definition{
+  name: anyComputedUnit,
+  parameters: [rendered : RustAst::Expr, types : CalculusCheck::Ty],
+  result: Bool,
+  body: (match rendered
+    | RustAst::Expr.ELit u58x0 u58x1 => false
+    | RustAst::Expr.ERead u58x0 u58x1 u58x2 => false
+    | RustAst::Expr.EWrap u58x0 u58x1 u58x2 => false
+    | RustAst::Expr.ECall u58x0 u58x1 u58x2 u58x3 => false
+    | RustAst::Expr.EApply u58x0 u58x1 u58x2 u58x3 => false
+    | RustAst::Expr.EConstruct u58x0 u58x1 u58x2 => false
+    | RustAst::Expr.EPair u58x0 u58x1 u58x2 => false
+    | RustAst::Expr.EIf u58x0 u58x1 u58x2 u58x3 => false
+    | RustAst::Expr.EMatch u58x0 u58x1 u58x2 => false
+    | RustAst::Expr.EBlockE u58x0 => false
+    | RustAst::Expr.EProbe u58x0 u58x1 u58x2 => false
+    | RustAst::Expr.EBlock u58x0 u58x1 => false
+    | RustAst::Expr.ENil => false
+    | RustAst::Expr.ECons head tail => (if (isConsTy types) then (if ((CalculusCheck::tyEq (consHead types) (ctor CalculusCheck::Ty.TUnit)) && (not (unitLit head))) then true else (anyComputedUnit tail (consTail types))) else false)
+    | RustAst::Expr.ELet u58x0 u58x1 u58x2 u58x3 u58x4 u58x5 => false
+    | RustAst::Expr.EArm u58x0 u58x1 u58x2 => false
+    | RustAst::Expr.ELoop u58x0 u58x1 => false),
+  executable: true,
+  recursive_argument: rendered
+}
+
+definition{
+  name: bindOperands,
+  parameters: [
+    rendered : RustAst::Expr,
+    types : CalculusCheck::Ty,
+    at : RustValidate::Origin,
+    next : Nat
+  ],
+  result: Lowered,
+  body: (match rendered
+    | RustAst::Expr.ELit u59x0 u59x1 => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)
+    | RustAst::Expr.ERead u59x0 u59x1 u59x2 => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)
+    | RustAst::Expr.EWrap u59x0 u59x1 u59x2 => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)
+    | RustAst::Expr.ECall u59x0 u59x1 u59x2 u59x3 => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)
+    | RustAst::Expr.EApply u59x0 u59x1 u59x2 u59x3 => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)
+    | RustAst::Expr.EConstruct u59x0 u59x1 u59x2 => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)
+    | RustAst::Expr.EPair u59x0 u59x1 u59x2 => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)
+    | RustAst::Expr.EIf u59x0 u59x1 u59x2 u59x3 => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)
+    | RustAst::Expr.EMatch u59x0 u59x1 u59x2 => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)
+    | RustAst::Expr.EBlockE u59x0 => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)
+    | RustAst::Expr.EProbe u59x0 u59x1 u59x2 => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)
+    | RustAst::Expr.EBlock u59x0 u59x1 => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)
+    | RustAst::Expr.ENil => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)
+    | RustAst::Expr.ECons head tail => (if (isConsTy types) then (let isUnit : Bool := (CalculusCheck::tyEq (consHead types) (ctor CalculusCheck::Ty.TUnit)); (let inner : Lowered := (bindOperands tail (consTail types) at (if isUnit then next else (next + 1))); (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ELet (if isUnit then (ctor RustAst::Pat.PLeaf (ctor RustAst::PatLeaf.PlUnit)) else (ctor RustAst::Pat.PBind (ctor RustValidate::Id.IdOperand (next + 1)))) false (unitTy 0) head at (blockLets (project inner expr))) (ctor RustAst::Expr.ECons (if isUnit then (ctor RustAst::Expr.ELit (ctor RustAst::Lit.LitUnit) at) else (ctor RustAst::Expr.ERead (ctor RustValidate::ReadKind.RkMove) (ctor RustValidate::Id.IdOperand (next + 1)) at)) (blockTail (project inner expr)))) (project inner next)))) else (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next))
+    | RustAst::Expr.ELet u59x0 u59x1 u59x2 u59x3 u59x4 u59x5 => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)
+    | RustAst::Expr.EArm u59x0 u59x1 u59x2 => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)
+    | RustAst::Expr.ELoop u59x0 u59x1 => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)),
+  executable: true,
+  recursive_argument: rendered
+}
+
+definition{
+  name: operandsOf,
+  parameters: [
+    rendered : RustAst::Expr,
+    types : CalculusCheck::Ty,
+    at : RustValidate::Origin,
+    next : Nat
+  ],
+  result: Lowered,
+  body: (if (anyComputedUnit rendered types) then (bindOperands rendered types at next) else (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) rendered) next)),
+  executable: true
+}
+
+definition{
+  name: allRebuild,
+  parameters: [arms : RustAst::Expr],
+  result: Bool,
+  body: (match arms
+    | RustAst::Expr.ELit u60x0 u60x1 => false
+    | RustAst::Expr.ERead u60x0 u60x1 u60x2 => false
+    | RustAst::Expr.EWrap u60x0 u60x1 u60x2 => false
+    | RustAst::Expr.ECall u60x0 u60x1 u60x2 u60x3 => false
+    | RustAst::Expr.EApply u60x0 u60x1 u60x2 u60x3 => false
+    | RustAst::Expr.EConstruct u60x0 u60x1 u60x2 => false
+    | RustAst::Expr.EPair u60x0 u60x1 u60x2 => false
+    | RustAst::Expr.EIf u60x0 u60x1 u60x2 u60x3 => false
+    | RustAst::Expr.EMatch u60x0 u60x1 u60x2 => false
+    | RustAst::Expr.EBlockE u60x0 => false
+    | RustAst::Expr.EProbe u60x0 u60x1 u60x2 => false
+    | RustAst::Expr.EBlock u60x0 u60x1 => false
+    | RustAst::Expr.ENil => true
+    | RustAst::Expr.ECons u60x0 u60x1 => false
+    | RustAst::Expr.ELet u60x0 u60x1 u60x2 u60x3 u60x4 u60x5 => false
+    | RustAst::Expr.EArm pat body rest => (if (rebuilds pat body) then (allRebuild rest) else false)
+    | RustAst::Expr.ELoop u60x0 u60x1 => false),
+  executable: true,
+  recursive_argument: arms
+}
+
+definition{
+  name: rebuilt,
+  parameters: [arms : RustAst::Expr, scrutinee : RustAst::Expr, at : RustValidate::Origin],
+  result: RustAst::Expr,
+  body: (if ((not (isNilE arms)) && (allRebuild arms)) then scrutinee else (ctor RustAst::Expr.EMatch scrutinee arms at)),
+  executable: true
+}
+
+definition{
+  name: movedHolder,
+  parameters: [holder : RustValidate::Id],
+  result: RustAst::Expr,
+  body: (ctor RustAst::Expr.ERead (ctor RustValidate::ReadKind.RkMove) holder (record RustValidate::Origin {element := (prim utf8_encode "expr:match" : Bytes), width := (ctor Option.none [RustValidate::IntKind])})),
+  executable: true
+}
+
+definition{
+  name: armShapeCode,
+  parameters: [head : CalculusCheck::Expr],
+  result: Nat,
+  body: (match head
+    | CalculusCheck::Expr.EValue u61x0 u61x1 => 9999
+    | CalculusCheck::Expr.EVar u61x0 => 9999
+    | CalculusCheck::Expr.ELet u61x0 u61x1 u61x2 u61x3 => 9999
+    | CalculusCheck::Expr.ECond u61x0 u61x1 u61x2 => 9999
+    | CalculusCheck::Expr.EMatch u61x0 u61x1 u61x2 => 9999
+    | CalculusCheck::Expr.EBuild u61x0 u61x1 u61x2 => 9999
+    | CalculusCheck::Expr.ECall u61x0 u61x1 => 9999
+    | CalculusCheck::Expr.EClosure u61x0 u61x1 => 9999
+    | CalculusCheck::Expr.EApply u61x0 u61x1 => 9999
+    | CalculusCheck::Expr.EPrim u61x0 u61x1 => 9999
+    | CalculusCheck::Expr.EFirst u61x0 => 9999
+    | CalculusCheck::Expr.ESecond u61x0 => 9999
+    | CalculusCheck::Expr.EField u61x0 u61x1 => 9999
+    | CalculusCheck::Expr.ENil => 9999
+    | CalculusCheck::Expr.ECons u61x0 u61x1 => 9999
+    | CalculusCheck::Expr.EArm shape binders body => (shapeCode shape)),
+  executable: true
+}
+
+definition{
+  name: isArmItem,
+  parameters: [item : RustAst::Expr],
+  result: Bool,
+  body: (match item
+    | RustAst::Expr.ELit u62x0 u62x1 => false
+    | RustAst::Expr.ERead u62x0 u62x1 u62x2 => false
+    | RustAst::Expr.EWrap u62x0 u62x1 u62x2 => false
+    | RustAst::Expr.ECall u62x0 u62x1 u62x2 u62x3 => false
+    | RustAst::Expr.EApply u62x0 u62x1 u62x2 u62x3 => false
+    | RustAst::Expr.EConstruct u62x0 u62x1 u62x2 => false
+    | RustAst::Expr.EPair u62x0 u62x1 u62x2 => false
+    | RustAst::Expr.EIf u62x0 u62x1 u62x2 u62x3 => false
+    | RustAst::Expr.EMatch u62x0 u62x1 u62x2 => false
+    | RustAst::Expr.EBlockE u62x0 => false
+    | RustAst::Expr.EProbe u62x0 u62x1 u62x2 => false
+    | RustAst::Expr.EBlock u62x0 u62x1 => false
+    | RustAst::Expr.ENil => false
+    | RustAst::Expr.ECons u62x0 u62x1 => false
+    | RustAst::Expr.ELet u62x0 u62x1 u62x2 u62x3 u62x4 u62x5 => false
+    | RustAst::Expr.EArm pats block rest => true
+    | RustAst::Expr.ELoop u62x0 u62x1 => false),
+  executable: true
+}
+
+definition{
+  name: itemPats,
+  parameters: [item : RustAst::Expr],
+  result: RustAst::Pat,
+  body: (match item
+    | RustAst::Expr.ELit u63x0 u63x1 => (ctor RustAst::Pat.PNil)
+    | RustAst::Expr.ERead u63x0 u63x1 u63x2 => (ctor RustAst::Pat.PNil)
+    | RustAst::Expr.EWrap u63x0 u63x1 u63x2 => (ctor RustAst::Pat.PNil)
+    | RustAst::Expr.ECall u63x0 u63x1 u63x2 u63x3 => (ctor RustAst::Pat.PNil)
+    | RustAst::Expr.EApply u63x0 u63x1 u63x2 u63x3 => (ctor RustAst::Pat.PNil)
+    | RustAst::Expr.EConstruct u63x0 u63x1 u63x2 => (ctor RustAst::Pat.PNil)
+    | RustAst::Expr.EPair u63x0 u63x1 u63x2 => (ctor RustAst::Pat.PNil)
+    | RustAst::Expr.EIf u63x0 u63x1 u63x2 u63x3 => (ctor RustAst::Pat.PNil)
+    | RustAst::Expr.EMatch u63x0 u63x1 u63x2 => (ctor RustAst::Pat.PNil)
+    | RustAst::Expr.EBlockE u63x0 => (ctor RustAst::Pat.PNil)
+    | RustAst::Expr.EProbe u63x0 u63x1 u63x2 => (ctor RustAst::Pat.PNil)
+    | RustAst::Expr.EBlock u63x0 u63x1 => (ctor RustAst::Pat.PNil)
+    | RustAst::Expr.ENil => (ctor RustAst::Pat.PNil)
+    | RustAst::Expr.ECons u63x0 u63x1 => (ctor RustAst::Pat.PNil)
+    | RustAst::Expr.ELet u63x0 u63x1 u63x2 u63x3 u63x4 u63x5 => (ctor RustAst::Pat.PNil)
+    | RustAst::Expr.EArm pats block rest => (keepP pats)
+    | RustAst::Expr.ELoop u63x0 u63x1 => (ctor RustAst::Pat.PNil)),
+  executable: true
+}
+
+definition{
+  name: itemBlock,
+  parameters: [item : RustAst::Expr],
+  result: RustAst::Expr,
+  body: (match item
+    | RustAst::Expr.ELit u64x0 u64x1 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ERead u64x0 u64x1 u64x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EWrap u64x0 u64x1 u64x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ECall u64x0 u64x1 u64x2 u64x3 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EApply u64x0 u64x1 u64x2 u64x3 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EConstruct u64x0 u64x1 u64x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EPair u64x0 u64x1 u64x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EIf u64x0 u64x1 u64x2 u64x3 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EMatch u64x0 u64x1 u64x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EBlockE u64x0 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EProbe u64x0 u64x1 u64x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EBlock u64x0 u64x1 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ENil => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ECons u64x0 u64x1 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ELet u64x0 u64x1 u64x2 u64x3 u64x4 u64x5 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EArm pats block rest => (keepE block)
+    | RustAst::Expr.ELoop u64x0 u64x1 => (ctor RustAst::Expr.ENil)),
+  executable: true
+}
+
+definition{
+  name: itemHead,
+  parameters: [items : RustAst::Expr],
+  result: RustAst::Expr,
+  body: (match items
+    | RustAst::Expr.ELit u65x0 u65x1 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ERead u65x0 u65x1 u65x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EWrap u65x0 u65x1 u65x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ECall u65x0 u65x1 u65x2 u65x3 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EApply u65x0 u65x1 u65x2 u65x3 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EConstruct u65x0 u65x1 u65x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EPair u65x0 u65x1 u65x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EIf u65x0 u65x1 u65x2 u65x3 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EMatch u65x0 u65x1 u65x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EBlockE u65x0 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EProbe u65x0 u65x1 u65x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EBlock u65x0 u65x1 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ENil => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ECons item itemsTail => (keepE item)
+    | RustAst::Expr.ELet u65x0 u65x1 u65x2 u65x3 u65x4 u65x5 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EArm u65x0 u65x1 u65x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ELoop u65x0 u65x1 => (ctor RustAst::Expr.ENil)),
+  executable: true
+}
+
+definition{
+  name: itemTail,
+  parameters: [items : RustAst::Expr],
+  result: RustAst::Expr,
+  body: (match items
+    | RustAst::Expr.ELit u66x0 u66x1 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ERead u66x0 u66x1 u66x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EWrap u66x0 u66x1 u66x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ECall u66x0 u66x1 u66x2 u66x3 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EApply u66x0 u66x1 u66x2 u66x3 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EConstruct u66x0 u66x1 u66x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EPair u66x0 u66x1 u66x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EIf u66x0 u66x1 u66x2 u66x3 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EMatch u66x0 u66x1 u66x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EBlockE u66x0 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EProbe u66x0 u66x1 u66x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EBlock u66x0 u66x1 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ENil => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ECons item itemsTail => (keepE itemsTail)
+    | RustAst::Expr.ELet u66x0 u66x1 u66x2 u66x3 u66x4 u66x5 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EArm u66x0 u66x1 u66x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ELoop u66x0 u66x1 => (ctor RustAst::Expr.ENil)),
+  executable: true
+}
+
+definition{
+  name: armEntry,
+  parameters: [termArms : CalculusCheck::Expr, items : RustAst::Expr, code : Nat],
+  result: (Option (RustAst::Pat * RustAst::Expr)),
+  body: (match termArms
+    | CalculusCheck::Expr.EValue u67x0 u67x1 => (ctor Option.none [(RustAst::Pat * RustAst::Expr)])
+    | CalculusCheck::Expr.EVar u67x0 => (ctor Option.none [(RustAst::Pat * RustAst::Expr)])
+    | CalculusCheck::Expr.ELet u67x0 u67x1 u67x2 u67x3 => (ctor Option.none [(RustAst::Pat * RustAst::Expr)])
+    | CalculusCheck::Expr.ECond u67x0 u67x1 u67x2 => (ctor Option.none [(RustAst::Pat * RustAst::Expr)])
+    | CalculusCheck::Expr.EMatch u67x0 u67x1 u67x2 => (ctor Option.none [(RustAst::Pat * RustAst::Expr)])
+    | CalculusCheck::Expr.EBuild u67x0 u67x1 u67x2 => (ctor Option.none [(RustAst::Pat * RustAst::Expr)])
+    | CalculusCheck::Expr.ECall u67x0 u67x1 => (ctor Option.none [(RustAst::Pat * RustAst::Expr)])
+    | CalculusCheck::Expr.EClosure u67x0 u67x1 => (ctor Option.none [(RustAst::Pat * RustAst::Expr)])
+    | CalculusCheck::Expr.EApply u67x0 u67x1 => (ctor Option.none [(RustAst::Pat * RustAst::Expr)])
+    | CalculusCheck::Expr.EPrim u67x0 u67x1 => (ctor Option.none [(RustAst::Pat * RustAst::Expr)])
+    | CalculusCheck::Expr.EFirst u67x0 => (ctor Option.none [(RustAst::Pat * RustAst::Expr)])
+    | CalculusCheck::Expr.ESecond u67x0 => (ctor Option.none [(RustAst::Pat * RustAst::Expr)])
+    | CalculusCheck::Expr.EField u67x0 u67x1 => (ctor Option.none [(RustAst::Pat * RustAst::Expr)])
+    | CalculusCheck::Expr.ENil => (ctor Option.none [(RustAst::Pat * RustAst::Expr)])
+    | CalculusCheck::Expr.ECons head tail => (match (armEntry tail (itemTail items) code)
+      | Option.some found => (ctor Option.some [(RustAst::Pat * RustAst::Expr)] found)
+      | Option.none => (if (((armShapeCode head) =? code) && (isArmItem (itemHead items))) then (ctor Option.some [(RustAst::Pat * RustAst::Expr)] ((itemPats (itemHead items)), (itemBlock (itemHead items)))) else (ctor Option.none [(RustAst::Pat * RustAst::Expr)])))
+    | CalculusCheck::Expr.EArm u67x0 u67x1 u67x2 => (ctor Option.none [(RustAst::Pat * RustAst::Expr)])),
+  executable: true,
+  recursive_argument: termArms
+}
+
+definition{
+  name: patAt,
+  parameters: [pats : RustAst::Pat, position : Nat],
+  result: RustAst::Pat,
+  body: (match pats
+    | RustAst::Pat.PLeaf u68x0 => (ctor RustAst::Pat.PLeaf (ctor RustAst::PatLeaf.PlWild))
+    | RustAst::Pat.PBind u68x0 => (ctor RustAst::Pat.PLeaf (ctor RustAst::PatLeaf.PlWild))
+    | RustAst::Pat.PTuple items => (patAt items position)
+    | RustAst::Pat.PWrap u68x0 u68x1 => (ctor RustAst::Pat.PLeaf (ctor RustAst::PatLeaf.PlWild))
+    | RustAst::Pat.PAdt u68x0 u68x1 u68x2 => (ctor RustAst::Pat.PLeaf (ctor RustAst::PatLeaf.PlWild))
+    | RustAst::Pat.PNil => (ctor RustAst::Pat.PLeaf (ctor RustAst::PatLeaf.PlWild))
+    | RustAst::Pat.PCons head tail => (match position
+      | Nat.zero => (keepP head)
+      | Nat.succ previous => (patAt tail previous))
+    | RustAst::Pat.POrdering u68x0 => (ctor RustAst::Pat.PLeaf (ctor RustAst::PatLeaf.PlWild))),
+  executable: true,
+  recursive_argument: pats
+}
+
+definition{
+  name: optionArms,
+  parameters: [
+    holder : RustValidate::Id,
+    termArms : CalculusCheck::Expr,
+    items : RustAst::Expr,
+    next : Nat
+  ],
+  result: Lowered,
+  body: (let arms : RustAst::Expr := (let tailArm : RustAst::Expr := (match (armEntry termArms items 1)
+    | Option.some e2 => (ctor RustAst::Expr.EArm (ctor RustAst::Pat.PWrap (ctor RustValidate::PatWrap.PwSome) (patAt (first e2) 0)) (second e2) (ctor RustAst::Expr.ENil))
+    | Option.none => (ctor RustAst::Expr.ENil)); (match (armEntry termArms items 0)
+    | Option.some e1 => (ctor RustAst::Expr.EArm (ctor RustAst::Pat.PLeaf (ctor RustAst::PatLeaf.PlNone)) (second e1) tailArm)
+    | Option.none => tailArm)); (done (rebuilt arms (movedHolder holder) (shapeAt (ctor CalculusCheck::Shape.SNone))) next)),
+  executable: true
+}
+
+definition{
+  name: resultArms,
+  parameters: [
+    holder : RustValidate::Id,
+    termArms : CalculusCheck::Expr,
+    items : RustAst::Expr,
+    next : Nat
+  ],
+  result: Lowered,
+  body: (let arms : RustAst::Expr := (let tailArm : RustAst::Expr := (match (armEntry termArms items 3)
+    | Option.some e2 => (ctor RustAst::Expr.EArm (ctor RustAst::Pat.PWrap (ctor RustValidate::PatWrap.PwErr) (patAt (first e2) 0)) (second e2) (ctor RustAst::Expr.ENil))
+    | Option.none => (ctor RustAst::Expr.ENil)); (match (armEntry termArms items 2)
+    | Option.some e1 => (ctor RustAst::Expr.EArm (ctor RustAst::Pat.PWrap (ctor RustValidate::PatWrap.PwOk) (patAt (first e1) 0)) (second e1) tailArm)
+    | Option.none => tailArm)); (done (rebuilt arms (movedHolder holder) (shapeAt (ctor CalculusCheck::Shape.SOk))) next)),
+  executable: true
+}
+
+definition{
+  name: listArms,
+  parameters: [
+    holder : RustValidate::Id,
+    termArms : CalculusCheck::Expr,
+    items : RustAst::Expr,
+    next : Nat
+  ],
+  result: Lowered,
+  body: (let arms : RustAst::Expr := (let tailArm : RustAst::Expr := (match (armEntry termArms items 5)
+    | Option.some e2 => (ctor RustAst::Expr.EArm (ctor RustAst::Pat.PWrap (ctor RustValidate::PatWrap.PwSome) (ctor RustAst::Pat.PTuple (ctor RustAst::Pat.PCons (patAt (first e2) 0) (ctor RustAst::Pat.PCons (patAt (first e2) 1) (ctor RustAst::Pat.PNil))))) (second e2) (ctor RustAst::Expr.ENil))
+    | Option.none => (ctor RustAst::Expr.ENil)); (match (armEntry termArms items 4)
+    | Option.some e1 => (ctor RustAst::Expr.EArm (ctor RustAst::Pat.PLeaf (ctor RustAst::PatLeaf.PlNone)) (second e1) tailArm)
+    | Option.none => tailArm)); (done (ctor RustAst::Expr.EMatch (ctor RustAst::Expr.EProbe (ctor RustValidate::ProbeKind.PkUncons) holder (record RustValidate::Origin {element := (prim utf8_encode "" : Bytes), width := (ctor Option.none [RustValidate::IntKind])})) arms (shapeAt (ctor CalculusCheck::Shape.SNil))) next)),
+  executable: true
+}
+
+definition{
+  name: orderingArms,
+  parameters: [
+    holder : RustValidate::Id,
+    termArms : CalculusCheck::Expr,
+    items : RustAst::Expr,
+    next : Nat
+  ],
+  result: Lowered,
+  body: (let greaterArm : RustAst::Expr := (match (armEntry termArms items 14)
+    | Option.some e3 => (ctor RustAst::Expr.EArm (ctor RustAst::Pat.POrdering (ctor RustAst::OrderingKind.OkGreater)) (second e3) (ctor RustAst::Expr.ENil))
+    | Option.none => (ctor RustAst::Expr.ENil)); (let equalArm : RustAst::Expr := (match (armEntry termArms items 13)
+    | Option.some e2 => (ctor RustAst::Expr.EArm (ctor RustAst::Pat.POrdering (ctor RustAst::OrderingKind.OkEqual)) (second e2) greaterArm)
+    | Option.none => greaterArm); (let arms : RustAst::Expr := (match (armEntry termArms items 12)
+    | Option.some e1 => (ctor RustAst::Expr.EArm (ctor RustAst::Pat.POrdering (ctor RustAst::OrderingKind.OkLess)) (second e1) equalArm)
+    | Option.none => equalArm); (done (rebuilt arms (movedHolder holder) (shapeAt (ctor CalculusCheck::Shape.SLt))) next)))),
+  executable: true
+}
+
+definition{
+  name: natArms,
+  parameters: [
+    holder : RustValidate::Id,
+    termArms : CalculusCheck::Expr,
+    items : RustAst::Expr,
+    next : Nat
+  ],
+  result: Lowered,
+  body: (match (armEntry termArms items 6)
+    | Option.some zeroEntry => (match (armEntry termArms items 7)
+      | Option.some succEntry => (let succBlock : RustAst::Expr := (second succEntry); (let predecessor : RustAst::Pat := (patAt (first succEntry) 0); (let loaded : RustAst::Expr := (if (isWildPat predecessor) then succBlock else (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ELet predecessor false (unitTy 0) (ctor RustAst::Expr.EProbe (ctor RustValidate::ProbeKind.PkPred) holder (record RustValidate::Origin {element := (prim utf8_encode "" : Bytes), width := (ctor Option.none [RustValidate::IntKind])})) (shapeAt (ctor CalculusCheck::Shape.SSucc)) (blockLets succBlock)) (blockTail succBlock))); (choose (ctor RustAst::Expr.EProbe (ctor RustValidate::ProbeKind.PkIsZero) holder (shapeAt (ctor CalculusCheck::Shape.SZero))) (second zeroEntry) loaded (shapeAt (ctor CalculusCheck::Shape.SZero)) next))))
+      | Option.none => (done (ctor RustAst::Expr.ENil) next))
+    | Option.none => (done (ctor RustAst::Expr.ENil) next)),
+  executable: true
+}
+
+definition{
+  name: boolArms,
+  parameters: [
+    holder : RustValidate::Id,
+    termArms : CalculusCheck::Expr,
+    items : RustAst::Expr,
+    next : Nat
+  ],
+  result: Lowered,
+  body: (match (armEntry termArms items 9)
+    | Option.some yesEntry => (match (armEntry termArms items 10)
+      | Option.some noEntry => (choose (movedHolder holder) (second yesEntry) (second noEntry) (shapeAt (ctor CalculusCheck::Shape.STrue)) next)
+      | Option.none => (done (ctor RustAst::Expr.ENil) next))
+    | Option.none => (done (ctor RustAst::Expr.ENil) next)),
+  executable: true
+}
+
+definition{
+  name: pairArms,
+  parameters: [
+    holder : RustValidate::Id,
+    termArms : CalculusCheck::Expr,
+    items : RustAst::Expr,
+    next : Nat
+  ],
+  result: Lowered,
+  body: (match (armEntry termArms items 8)
+    | Option.some found => (let body : RustAst::Expr := (second found); (done (ctor RustAst::Expr.EBlockE (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ELet (ctor RustAst::Pat.PTuple (ctor RustAst::Pat.PCons (patAt (first found) 0) (ctor RustAst::Pat.PCons (patAt (first found) 1) (ctor RustAst::Pat.PNil)))) false (unitTy 0) (movedHolder holder) (shapeAt (ctor CalculusCheck::Shape.SPair)) (blockLets body)) (blockTail body))) next))
+    | Option.none => (done (ctor RustAst::Expr.ENil) next)),
+  executable: true
+}
+
+structure{
+  name: Loads,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: lets, type: RustAst::Expr},
+    {name: fields, type: RustAst::Pat},
+    {name: next, type: Nat}
+  ]
+}
+
+definition{
+  name: patChain,
+  parameters: [pat : RustAst::Pat],
+  result: RustAst::Pat,
+  body: (match pat
+    | RustAst::Pat.PLeaf u69x0 => (ctor RustAst::Pat.PNil)
+    | RustAst::Pat.PBind u69x0 => (ctor RustAst::Pat.PNil)
+    | RustAst::Pat.PTuple items => (keepP items)
+    | RustAst::Pat.PWrap u69x0 u69x1 => (ctor RustAst::Pat.PNil)
+    | RustAst::Pat.PAdt u69x0 u69x1 u69x2 => (ctor RustAst::Pat.PNil)
+    | RustAst::Pat.PNil => (ctor RustAst::Pat.PNil)
+    | RustAst::Pat.PCons u69x0 u69x1 => (ctor RustAst::Pat.PNil)
+    | RustAst::Pat.POrdering u69x0 => (ctor RustAst::Pat.PNil)),
+  executable: true
+}
+
+definition{
+  name: loadFields,
+  parameters: [
+    known : CalculusCheck::Ty,
+    edges : RustLower::Edges,
+    adt : Nat,
+    pats : RustAst::Pat,
+    types : CalculusCheck::Ty,
+    next : Nat
+  ],
+  result: Loads,
+  body: (match pats
+    | RustAst::Pat.PLeaf u70x0 => (record Loads {lets := (ctor RustAst::Expr.ENil), fields := (ctor RustAst::Pat.PNil), next := next})
+    | RustAst::Pat.PBind u70x0 => (record Loads {lets := (ctor RustAst::Expr.ENil), fields := (ctor RustAst::Pat.PNil), next := next})
+    | RustAst::Pat.PTuple u70x0 => (record Loads {lets := (ctor RustAst::Expr.ENil), fields := (ctor RustAst::Pat.PNil), next := next})
+    | RustAst::Pat.PWrap u70x0 u70x1 => (record Loads {lets := (ctor RustAst::Expr.ENil), fields := (ctor RustAst::Pat.PNil), next := next})
+    | RustAst::Pat.PAdt u70x0 u70x1 u70x2 => (record Loads {lets := (ctor RustAst::Expr.ENil), fields := (ctor RustAst::Pat.PNil), next := next})
+    | RustAst::Pat.PNil => (record Loads {lets := (ctor RustAst::Expr.ENil), fields := (ctor RustAst::Pat.PNil), next := next})
+    | RustAst::Pat.PCons head tail => (if (isConsTy types) then (let boxed : Bool := (if (isWildPat head) then false else (RustLower::cyclic known edges (ctor CalculusCheck::Ty.TAdt adt) (consHead types))); (let held : RustValidate::Id := (ctor RustValidate::Id.IdBoxed (next + 1)); (let inner : Loads := (loadFields known edges adt tail (consTail types) (if boxed then (next + 1) else next)); (record Loads {lets := (if boxed then (ctor RustAst::Expr.ELet head false (unitTy 0) (ctor RustAst::Expr.ERead (ctor RustValidate::ReadKind.RkUnbox) held (record RustValidate::Origin {element := (prim utf8_encode "indirection" : Bytes), width := (ctor Option.none [RustValidate::IntKind])})) (record RustValidate::Origin {element := (prim utf8_encode "indirection" : Bytes), width := (ctor Option.none [RustValidate::IntKind])}) (project inner lets)) else (project inner lets)), fields := (ctor RustAst::Pat.PCons (if boxed then (ctor RustAst::Pat.PBind held) else head) (project inner fields)), next := (project inner next)})))) else (record Loads {lets := (ctor RustAst::Expr.ENil), fields := (ctor RustAst::Pat.PNil), next := next}))
+    | RustAst::Pat.POrdering u70x0 => (record Loads {lets := (ctor RustAst::Expr.ENil), fields := (ctor RustAst::Pat.PNil), next := next})),
+  executable: true,
+  recursive_argument: pats
+}
+
+definition{
+  name: adtCount,
+  parameters: [adts : CalculusCheck::Ty, adt : Nat],
+  result: Nat,
+  body: (match (RustTerms::chainGet adts adt)
+    | Option.some constructors => (CalculusCheck::tyChainLength constructors)
+    | Option.none => 0),
+  executable: true
+}
+
+definition{
+  name: adtArms,
+  parameters: [
+    known : CalculusCheck::Ty,
+    edges : RustLower::Edges,
+    adts : CalculusCheck::Ty,
+    adt : Nat,
+    index : Nat,
+    remaining : Nat,
+    termArms : CalculusCheck::Expr,
+    items : RustAst::Expr,
+    next : Nat
+  ],
+  result: Lowered,
+  body: (match remaining
+    | Nat.zero => (done (ctor RustAst::Expr.ENil) next)
+    | Nat.succ previous => (match (armEntry termArms items (16 + index))
+      | Option.some found => (match (RustTerms::adtFields adts adt index)
+        | Option.some types => (let loads : Loads := (loadFields known edges adt (patChain (first found)) types next); (let body : RustAst::Expr := (second found); (let rest : Lowered := (adtArms known edges adts adt (index + 1) previous termArms items (project loads next)); (done (ctor RustAst::Expr.EArm (ctor RustAst::Pat.PAdt adt index (project loads fields)) (ctor RustAst::Expr.EBlock (appendLets (project loads lets) (blockLets body)) (blockTail body)) (project rest expr)) (project rest next)))))
+        | Option.none => (adtArms known edges adts adt (index + 1) previous termArms items next))
+      | Option.none => (adtArms known edges adts adt (index + 1) previous termArms items next))),
+  executable: true,
+  recursive_argument: remaining
+}
+
+definition{
+  name: adtMatch,
+  parameters: [
+    known : CalculusCheck::Ty,
+    edges : RustLower::Edges,
+    adts : CalculusCheck::Ty,
+    holder : RustValidate::Id,
+    adt : Nat,
+    termArms : CalculusCheck::Expr,
+    items : RustAst::Expr,
+    next : Nat
+  ],
+  result: Lowered,
+  body: (let built : Lowered := (adtArms known edges adts adt 0 (adtCount adts adt) termArms items next); (done (rebuilt (project built expr) (movedHolder holder) (shapeAt (ctor CalculusCheck::Shape.SAdt 0))) (project built next))),
+  executable: true
+}
+
+definition{
+  name: assembleArms,
+  parameters: [
+    ctx : Ctx,
+    holder : RustValidate::Id,
+    subject : CalculusCheck::Ty,
+    termArms : CalculusCheck::Expr,
+    items : RustAst::Expr,
+    next : Nat
+  ],
+  result: Lowered,
+  body: (match subject
+    | CalculusCheck::Ty.TUnit => (done (ctor RustAst::Expr.ENil) next)
+    | CalculusCheck::Ty.TBool => (boolArms holder termArms items next)
+    | CalculusCheck::Ty.TNat => (natArms holder termArms items next)
+    | CalculusCheck::Ty.TInt => (done (ctor RustAst::Expr.ENil) next)
+    | CalculusCheck::Ty.TFixed u71x0 => (done (ctor RustAst::Expr.ENil) next)
+    | CalculusCheck::Ty.TString => (done (ctor RustAst::Expr.ENil) next)
+    | CalculusCheck::Ty.TBytes => (done (ctor RustAst::Expr.ENil) next)
+    | CalculusCheck::Ty.TOrdering => (orderingArms holder termArms items next)
+    | CalculusCheck::Ty.TOption d0 => (optionArms holder termArms items next)
+    | CalculusCheck::Ty.TResult d0 d1 => (resultArms holder termArms items next)
+    | CalculusCheck::Ty.TList d0 => (listArms holder termArms items next)
+    | CalculusCheck::Ty.TPair d0 d1 => (pairArms holder termArms items next)
+    | CalculusCheck::Ty.TAdt adt => (adtMatch (project ctx known) (project ctx edges) (project ctx adts) holder adt termArms items next)
+    | CalculusCheck::Ty.TFn u71x0 u71x1 => (done (ctor RustAst::Expr.ENil) next)
+    | CalculusCheck::Ty.TNil => (done (ctor RustAst::Expr.ENil) next)
+    | CalculusCheck::Ty.TCons u71x0 u71x1 => (done (ctor RustAst::Expr.ENil) next)),
+  executable: true
+}
+
+definition{
+  name: argAt,
+  parameters: [args : RustAst::Expr, position : Nat],
+  result: RustAst::Expr,
+  body: (match args
+    | RustAst::Expr.ELit u72x0 u72x1 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ERead u72x0 u72x1 u72x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EWrap u72x0 u72x1 u72x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ECall u72x0 u72x1 u72x2 u72x3 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EApply u72x0 u72x1 u72x2 u72x3 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EConstruct u72x0 u72x1 u72x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EPair u72x0 u72x1 u72x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EIf u72x0 u72x1 u72x2 u72x3 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EMatch u72x0 u72x1 u72x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EBlockE u72x0 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EProbe u72x0 u72x1 u72x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EBlock u72x0 u72x1 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ENil => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ECons head tail => (match position
+      | Nat.zero => (keepE head)
+      | Nat.succ previous => (argAt tail previous))
+    | RustAst::Expr.ELet u72x0 u72x1 u72x2 u72x3 u72x4 u72x5 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EArm u72x0 u72x1 u72x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ELoop u72x0 u72x1 => (ctor RustAst::Expr.ENil)),
+  executable: true,
+  recursive_argument: args
+}
+
+definition{
+  name: storeEach,
+  parameters: [
+    known : CalculusCheck::Ty,
+    edges : RustLower::Edges,
+    owner : CalculusCheck::Ty,
+    args : RustAst::Expr,
+    types : CalculusCheck::Ty
+  ],
+  result: RustAst::Expr,
+  body: (match args
+    | RustAst::Expr.ELit u73x0 u73x1 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ERead u73x0 u73x1 u73x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EWrap u73x0 u73x1 u73x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ECall u73x0 u73x1 u73x2 u73x3 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EApply u73x0 u73x1 u73x2 u73x3 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EConstruct u73x0 u73x1 u73x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EPair u73x0 u73x1 u73x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EIf u73x0 u73x1 u73x2 u73x3 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EMatch u73x0 u73x1 u73x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EBlockE u73x0 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EProbe u73x0 u73x1 u73x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EBlock u73x0 u73x1 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ENil => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ECons head tail => (if (isConsTy types) then (ctor RustAst::Expr.ECons (if (RustLower::cyclic known edges owner (consHead types)) then (ctor RustAst::Expr.EWrap (ctor RustValidate::WrapKind.WkBox) head (record RustValidate::Origin {element := (prim utf8_encode "indirection" : Bytes), width := (ctor Option.none [RustValidate::IntKind])})) else head) (storeEach known edges owner tail (consTail types))) else (ctor RustAst::Expr.ENil))
+    | RustAst::Expr.ELet u73x0 u73x1 u73x2 u73x3 u73x4 u73x5 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.EArm u73x0 u73x1 u73x2 => (ctor RustAst::Expr.ENil)
+    | RustAst::Expr.ELoop u73x0 u73x1 => (ctor RustAst::Expr.ENil)),
+  executable: true,
+  recursive_argument: args
+}
+
+structure{
+  name: Cn,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: types, type: CalculusCheck::Ty},
+    {name: con, type: RustValidate::Con},
+    {name: stored, type: Bool}
+  ]
+}
+
+definition{
+  name: adtTypesOf,
+  parameters: [adts : CalculusCheck::Ty, adt : Nat, constructor : Nat],
+  result: CalculusCheck::Ty,
+  body: (match (RustTerms::adtFields adts adt constructor)
+    | Option.some types => types
+    | Option.none => (ctor CalculusCheck::Ty.TNil)),
+  executable: true
+}
+
+definition{
+  name: buildCon,
+  parameters: [
+    known : CalculusCheck::Ty,
+    adts : CalculusCheck::Ty,
+    shape : CalculusCheck::Shape,
+    ty : CalculusCheck::Ty
+  ],
+  result: Cn,
+  body: (match shape
+    | CalculusCheck::Shape.SNone => (record Cn {types := (ctor CalculusCheck::Ty.TNil), con := (ctor RustValidate::Con.ConCons), stored := false})
+    | CalculusCheck::Shape.SSome => (record Cn {types := (ctor CalculusCheck::Ty.TCons (CalculusCheck::tyFirst ty) (ctor CalculusCheck::Ty.TNil)), con := (ctor RustValidate::Con.ConSome), stored := false})
+    | CalculusCheck::Shape.SOk => (record Cn {types := (ctor CalculusCheck::Ty.TCons (CalculusCheck::tyFirst ty) (ctor CalculusCheck::Ty.TNil)), con := (ctor RustValidate::Con.ConOk (RustLower::vty known (CalculusCheck::tyFirst ty)) (RustLower::vty known (CalculusCheck::tySecond ty))), stored := false})
+    | CalculusCheck::Shape.SError => (record Cn {types := (ctor CalculusCheck::Ty.TCons (CalculusCheck::tySecond ty) (ctor CalculusCheck::Ty.TNil)), con := (ctor RustValidate::Con.ConErr (RustLower::vty known (CalculusCheck::tyFirst ty)) (RustLower::vty known (CalculusCheck::tySecond ty))), stored := false})
+    | CalculusCheck::Shape.SNil => (record Cn {types := (ctor CalculusCheck::Ty.TNil), con := (ctor RustValidate::Con.ConCons), stored := false})
+    | CalculusCheck::Shape.SCons => (record Cn {types := (ctor CalculusCheck::Ty.TCons (CalculusCheck::tyFirst ty) (ctor CalculusCheck::Ty.TCons ty (ctor CalculusCheck::Ty.TNil))), con := (ctor RustValidate::Con.ConCons), stored := false})
+    | CalculusCheck::Shape.SZero => (record Cn {types := (ctor CalculusCheck::Ty.TNil), con := (ctor RustValidate::Con.ConCons), stored := false})
+    | CalculusCheck::Shape.SSucc => (record Cn {types := (ctor CalculusCheck::Ty.TNil), con := (ctor RustValidate::Con.ConCons), stored := false})
+    | CalculusCheck::Shape.SPair => (record Cn {types := (ctor CalculusCheck::Ty.TNil), con := (ctor RustValidate::Con.ConCons), stored := false})
+    | CalculusCheck::Shape.STrue => (record Cn {types := (ctor CalculusCheck::Ty.TNil), con := (ctor RustValidate::Con.ConCons), stored := false})
+    | CalculusCheck::Shape.SFalse => (record Cn {types := (ctor CalculusCheck::Ty.TNil), con := (ctor RustValidate::Con.ConCons), stored := false})
+    | CalculusCheck::Shape.SUnit => (record Cn {types := (ctor CalculusCheck::Ty.TNil), con := (ctor RustValidate::Con.ConCons), stored := false})
+    | CalculusCheck::Shape.SLt => (record Cn {types := (ctor CalculusCheck::Ty.TNil), con := (ctor RustValidate::Con.ConCons), stored := false})
+    | CalculusCheck::Shape.SEq => (record Cn {types := (ctor CalculusCheck::Ty.TNil), con := (ctor RustValidate::Con.ConCons), stored := false})
+    | CalculusCheck::Shape.SGt => (record Cn {types := (ctor CalculusCheck::Ty.TNil), con := (ctor RustValidate::Con.ConCons), stored := false})
+    | CalculusCheck::Shape.SAdt constructor => (record Cn {types := (adtTypesOf adts (CalculusCheck::tyAdtIndex ty) constructor), con := (ctor RustValidate::Con.ConAdt (CalculusCheck::tyAdtIndex ty) constructor), stored := true})),
+  executable: true
+}
+
+definition{
+  name: buildOperands,
+  parameters: [
+    known : CalculusCheck::Ty,
+    edges : RustLower::Edges,
+    adts : CalculusCheck::Ty,
+    shape : CalculusCheck::Shape,
+    ty : CalculusCheck::Ty,
+    rendered : RustAst::Expr,
+    at : RustValidate::Origin,
+    next : Nat
+  ],
+  result: Lowered,
+  body: (let cn : Cn := (buildCon known adts shape ty); (let ol : Lowered := (operandsOf rendered (project cn types) at next); (done (after (blockLets (project ol expr)) (ctor RustAst::Expr.EConstruct (project cn con) (if (project cn stored) then (storeEach known edges ty (blockTail (project ol expr)) (project cn types)) else (blockTail (project ol expr))) at)) (project ol next)))),
+  executable: true
+}
+
+definition{
+  name: shapeLit,
+  parameters: [shape : CalculusCheck::Shape],
+  result: RustAst::Lit,
+  body: (match shape
+    | CalculusCheck::Shape.SNone => (ctor RustAst::Lit.LitUnit)
+    | CalculusCheck::Shape.SSome => (ctor RustAst::Lit.LitUnit)
+    | CalculusCheck::Shape.SOk => (ctor RustAst::Lit.LitUnit)
+    | CalculusCheck::Shape.SError => (ctor RustAst::Lit.LitUnit)
+    | CalculusCheck::Shape.SNil => (ctor RustAst::Lit.LitUnit)
+    | CalculusCheck::Shape.SCons => (ctor RustAst::Lit.LitUnit)
+    | CalculusCheck::Shape.SZero => (ctor RustAst::Lit.LitNat 0)
+    | CalculusCheck::Shape.SSucc => (ctor RustAst::Lit.LitUnit)
+    | CalculusCheck::Shape.SPair => (ctor RustAst::Lit.LitUnit)
+    | CalculusCheck::Shape.STrue => (ctor RustAst::Lit.LitBool true)
+    | CalculusCheck::Shape.SFalse => (ctor RustAst::Lit.LitBool false)
+    | CalculusCheck::Shape.SUnit => (ctor RustAst::Lit.LitUnit)
+    | CalculusCheck::Shape.SLt => (ctor RustAst::Lit.LitOrdering (ctor RustAst::OrderingKind.OkLess))
+    | CalculusCheck::Shape.SEq => (ctor RustAst::Lit.LitOrdering (ctor RustAst::OrderingKind.OkEqual))
+    | CalculusCheck::Shape.SGt => (ctor RustAst::Lit.LitOrdering (ctor RustAst::OrderingKind.OkGreater))
+    | CalculusCheck::Shape.SAdt u75x0 => (ctor RustAst::Lit.LitUnit)),
+  executable: true
+}
+
+definition{
+  name: buildFrom,
+  parameters: [
+    known : CalculusCheck::Ty,
+    edges : RustLower::Edges,
+    adts : CalculusCheck::Ty,
+    shape : CalculusCheck::Shape,
+    ty : CalculusCheck::Ty,
+    rendered : RustAst::Expr,
+    at : RustValidate::Origin,
+    next : Nat
+  ],
+  result: Lowered,
+  body: (match shape
+    | CalculusCheck::Shape.SNone => (match ty
+      | CalculusCheck::Ty.TUnit => (done (ctor RustAst::Expr.ENil) next)
+      | CalculusCheck::Ty.TBool => (done (ctor RustAst::Expr.ENil) next)
+      | CalculusCheck::Ty.TNat => (done (ctor RustAst::Expr.ENil) next)
+      | CalculusCheck::Ty.TInt => (done (ctor RustAst::Expr.ENil) next)
+      | CalculusCheck::Ty.TFixed u76x0 => (done (ctor RustAst::Expr.ENil) next)
+      | CalculusCheck::Ty.TString => (done (ctor RustAst::Expr.ENil) next)
+      | CalculusCheck::Ty.TBytes => (done (ctor RustAst::Expr.ENil) next)
+      | CalculusCheck::Ty.TOrdering => (done (ctor RustAst::Expr.ENil) next)
+      | CalculusCheck::Ty.TOption value => (done (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConNone (RustLower::vty known value)) (ctor RustAst::Expr.ENil) at) next)
+      | CalculusCheck::Ty.TResult u76x0 u76x1 => (done (ctor RustAst::Expr.ENil) next)
+      | CalculusCheck::Ty.TList u76x0 => (done (ctor RustAst::Expr.ENil) next)
+      | CalculusCheck::Ty.TPair u76x0 u76x1 => (done (ctor RustAst::Expr.ENil) next)
+      | CalculusCheck::Ty.TAdt u76x0 => (done (ctor RustAst::Expr.ENil) next)
+      | CalculusCheck::Ty.TFn u76x0 u76x1 => (done (ctor RustAst::Expr.ENil) next)
+      | CalculusCheck::Ty.TNil => (done (ctor RustAst::Expr.ENil) next)
+      | CalculusCheck::Ty.TCons u76x0 u76x1 => (done (ctor RustAst::Expr.ENil) next))
+    | CalculusCheck::Shape.SSome => (buildOperands known edges adts shape ty rendered at next)
+    | CalculusCheck::Shape.SOk => (buildOperands known edges adts shape ty rendered at next)
+    | CalculusCheck::Shape.SError => (buildOperands known edges adts shape ty rendered at next)
+    | CalculusCheck::Shape.SNil => (match ty
+      | CalculusCheck::Ty.TUnit => (done (ctor RustAst::Expr.ENil) next)
+      | CalculusCheck::Ty.TBool => (done (ctor RustAst::Expr.ENil) next)
+      | CalculusCheck::Ty.TNat => (done (ctor RustAst::Expr.ENil) next)
+      | CalculusCheck::Ty.TInt => (done (ctor RustAst::Expr.ENil) next)
+      | CalculusCheck::Ty.TFixed u77x0 => (done (ctor RustAst::Expr.ENil) next)
+      | CalculusCheck::Ty.TString => (done (ctor RustAst::Expr.ENil) next)
+      | CalculusCheck::Ty.TBytes => (done (ctor RustAst::Expr.ENil) next)
+      | CalculusCheck::Ty.TOrdering => (done (ctor RustAst::Expr.ENil) next)
+      | CalculusCheck::Ty.TOption u77x0 => (done (ctor RustAst::Expr.ENil) next)
+      | CalculusCheck::Ty.TResult u77x0 u77x1 => (done (ctor RustAst::Expr.ENil) next)
+      | CalculusCheck::Ty.TList element => (done (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConNil (RustLower::vty known element)) (ctor RustAst::Expr.ENil) at) next)
+      | CalculusCheck::Ty.TPair u77x0 u77x1 => (done (ctor RustAst::Expr.ENil) next)
+      | CalculusCheck::Ty.TAdt u77x0 => (done (ctor RustAst::Expr.ENil) next)
+      | CalculusCheck::Ty.TFn u77x0 u77x1 => (done (ctor RustAst::Expr.ENil) next)
+      | CalculusCheck::Ty.TNil => (done (ctor RustAst::Expr.ENil) next)
+      | CalculusCheck::Ty.TCons u77x0 u77x1 => (done (ctor RustAst::Expr.ENil) next))
+    | CalculusCheck::Shape.SCons => (buildOperands known edges adts shape ty rendered at next)
+    | CalculusCheck::Shape.SZero => (done (ctor RustAst::Expr.ELit (shapeLit shape) at) next)
+    | CalculusCheck::Shape.SSucc => (done (ctor RustAst::Expr.ECall (ctor RustAst::Callee.CalRt (record RustValidate::Rt {family := 8, width := (ctor Option.none [RustValidate::IntKind])})) rendered true at) next)
+    | CalculusCheck::Shape.SPair => (done (ctor RustAst::Expr.EPair (argAt rendered 0) (argAt rendered 1) at) next)
+    | CalculusCheck::Shape.STrue => (done (ctor RustAst::Expr.ELit (shapeLit shape) at) next)
+    | CalculusCheck::Shape.SFalse => (done (ctor RustAst::Expr.ELit (shapeLit shape) at) next)
+    | CalculusCheck::Shape.SUnit => (done (ctor RustAst::Expr.ELit (shapeLit shape) at) next)
+    | CalculusCheck::Shape.SLt => (done (ctor RustAst::Expr.ELit (shapeLit shape) at) next)
+    | CalculusCheck::Shape.SEq => (done (ctor RustAst::Expr.ELit (shapeLit shape) at) next)
+    | CalculusCheck::Shape.SGt => (done (ctor RustAst::Expr.ELit (shapeLit shape) at) next)
+    | CalculusCheck::Shape.SAdt constructor => (buildOperands known edges adts shape ty rendered at next)),
+  executable: true
+}
+
+definition{
+  name: scopeType,
+  parameters: [scope : (List (Nat * CalculusCheck::Ty)), name : Nat],
+  result: CalculusCheck::Ty,
+  body: (match scope
+    | List.nil => (ctor CalculusCheck::Ty.TNil)
+    | List.cons entry rest => (if ((first entry) =? name) then (second entry) else (scopeType rest name))),
+  executable: true,
+  recursive_argument: scope
+}
+
+definition{
+  name: allVisible,
+  parameters: [fields : CalculusCheck::Ty, inhabited : CalculusCheck::Ty],
+  result: Bool,
+  body: (match fields
+    | CalculusCheck::Ty.TUnit => true
+    | CalculusCheck::Ty.TBool => true
+    | CalculusCheck::Ty.TNat => true
+    | CalculusCheck::Ty.TInt => true
+    | CalculusCheck::Ty.TFixed u79x0 => true
+    | CalculusCheck::Ty.TString => true
+    | CalculusCheck::Ty.TBytes => true
+    | CalculusCheck::Ty.TOrdering => true
+    | CalculusCheck::Ty.TOption u79x0 => true
+    | CalculusCheck::Ty.TResult u79x0 u79x1 => true
+    | CalculusCheck::Ty.TList u79x0 => true
+    | CalculusCheck::Ty.TPair u79x0 u79x1 => true
+    | CalculusCheck::Ty.TAdt u79x0 => true
+    | CalculusCheck::Ty.TFn u79x0 u79x1 => true
+    | CalculusCheck::Ty.TNil => true
+    | CalculusCheck::Ty.TCons ty rest => (if (RustLower::visible ty inhabited) then (allVisible rest inhabited) else false)),
+  executable: true,
+  recursive_argument: fields
+}
+
+definition{
+  name: armPatterns,
+  parameters: [binders : (List Nat), fields : CalculusCheck::Ty, body : CalculusCheck::Expr],
+  result: RustAst::Pat,
+  body: (match binders
+    | List.nil => (ctor RustAst::Pat.PNil)
+    | List.cons name rest => (match fields
+      | CalculusCheck::Ty.TUnit => (ctor RustAst::Pat.PNil)
+      | CalculusCheck::Ty.TBool => (ctor RustAst::Pat.PNil)
+      | CalculusCheck::Ty.TNat => (ctor RustAst::Pat.PNil)
+      | CalculusCheck::Ty.TInt => (ctor RustAst::Pat.PNil)
+      | CalculusCheck::Ty.TFixed u80x0 => (ctor RustAst::Pat.PNil)
+      | CalculusCheck::Ty.TString => (ctor RustAst::Pat.PNil)
+      | CalculusCheck::Ty.TBytes => (ctor RustAst::Pat.PNil)
+      | CalculusCheck::Ty.TOrdering => (ctor RustAst::Pat.PNil)
+      | CalculusCheck::Ty.TOption u80x0 => (ctor RustAst::Pat.PNil)
+      | CalculusCheck::Ty.TResult u80x0 u80x1 => (ctor RustAst::Pat.PNil)
+      | CalculusCheck::Ty.TList u80x0 => (ctor RustAst::Pat.PNil)
+      | CalculusCheck::Ty.TPair u80x0 u80x1 => (ctor RustAst::Pat.PNil)
+      | CalculusCheck::Ty.TAdt u80x0 => (ctor RustAst::Pat.PNil)
+      | CalculusCheck::Ty.TFn u80x0 u80x1 => (ctor RustAst::Pat.PNil)
+      | CalculusCheck::Ty.TNil => (ctor RustAst::Pat.PNil)
+      | CalculusCheck::Ty.TCons ty tys => (ctor RustAst::Pat.PCons (binderPat name ty body) (armPatterns rest tys body)))),
+  executable: true,
+  recursive_argument: binders
+}
+
+definition{
+  name: calleeTypes,
+  parameters: [ctx : Ctx, function : Nat],
+  result: CalculusCheck::Ty,
+  body: (match (RustTerms::chainGet (project ctx types) function)
+    | Option.some types => types
+    | Option.none => (ctor CalculusCheck::Ty.TNil)),
+  executable: true
+}
+
+definition{
+  name: calleeResult,
+  parameters: [ctx : Ctx, function : Nat],
+  result: CalculusCheck::Ty,
+  body: (match (RustTerms::chainGet (project ctx results) function)
+    | Option.some result => result
+    | Option.none => (ctor CalculusCheck::Ty.TNil)),
+  executable: true
+}
+
+definition{
+  name: fnParts,
+  parameters: [ty : CalculusCheck::Ty],
+  result: (CalculusCheck::Ty * CalculusCheck::Ty),
+  body: ((CalculusCheck::tyFirst ty), (CalculusCheck::tySecond ty)),
+  executable: true
+}
+
+definition{
+  name: headType,
+  parameters: [operands : CalculusCheck::Expr, uses : CalculusCheck::Ty],
+  result: CalculusCheck::Ty,
+  body: (match operands
+    | CalculusCheck::Expr.EValue u81x0 u81x1 => (ctor CalculusCheck::Ty.TUnit)
+    | CalculusCheck::Expr.EVar u81x0 => (ctor CalculusCheck::Ty.TUnit)
+    | CalculusCheck::Expr.ELet u81x0 u81x1 u81x2 u81x3 => (ctor CalculusCheck::Ty.TUnit)
+    | CalculusCheck::Expr.ECond u81x0 u81x1 u81x2 => (ctor CalculusCheck::Ty.TUnit)
+    | CalculusCheck::Expr.EMatch u81x0 u81x1 u81x2 => (ctor CalculusCheck::Ty.TUnit)
+    | CalculusCheck::Expr.EBuild u81x0 u81x1 u81x2 => (ctor CalculusCheck::Ty.TUnit)
+    | CalculusCheck::Expr.ECall u81x0 u81x1 => (ctor CalculusCheck::Ty.TUnit)
+    | CalculusCheck::Expr.EClosure u81x0 u81x1 => (ctor CalculusCheck::Ty.TUnit)
+    | CalculusCheck::Expr.EApply u81x0 u81x1 => (ctor CalculusCheck::Ty.TUnit)
+    | CalculusCheck::Expr.EPrim u81x0 u81x1 => (ctor CalculusCheck::Ty.TUnit)
+    | CalculusCheck::Expr.EFirst u81x0 => (ctor CalculusCheck::Ty.TUnit)
+    | CalculusCheck::Expr.ESecond u81x0 => (ctor CalculusCheck::Ty.TUnit)
+    | CalculusCheck::Expr.EField u81x0 u81x1 => (ctor CalculusCheck::Ty.TUnit)
+    | CalculusCheck::Expr.ENil => (ctor CalculusCheck::Ty.TUnit)
+    | CalculusCheck::Expr.ECons head tail => (RustLower::siteOwn (RustLower::kidA uses))
+    | CalculusCheck::Expr.EArm u81x0 u81x1 u81x2 => (ctor CalculusCheck::Ty.TUnit)),
+  executable: true
+}
+
+definition{
+  name: primLets,
+  parameters: [
+    rendered : RustAst::Expr,
+    convert : Bool,
+    realized : RustValidate::Origin,
+    at : RustValidate::Origin,
+    next : Nat
+  ],
+  result: Lowered,
+  body: (match rendered
+    | RustAst::Expr.ELit u82x0 u82x1 => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)
+    | RustAst::Expr.ERead u82x0 u82x1 u82x2 => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)
+    | RustAst::Expr.EWrap u82x0 u82x1 u82x2 => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)
+    | RustAst::Expr.ECall u82x0 u82x1 u82x2 u82x3 => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)
+    | RustAst::Expr.EApply u82x0 u82x1 u82x2 u82x3 => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)
+    | RustAst::Expr.EConstruct u82x0 u82x1 u82x2 => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)
+    | RustAst::Expr.EPair u82x0 u82x1 u82x2 => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)
+    | RustAst::Expr.EIf u82x0 u82x1 u82x2 u82x3 => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)
+    | RustAst::Expr.EMatch u82x0 u82x1 u82x2 => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)
+    | RustAst::Expr.EBlockE u82x0 => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)
+    | RustAst::Expr.EProbe u82x0 u82x1 u82x2 => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)
+    | RustAst::Expr.EBlock u82x0 u82x1 => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)
+    | RustAst::Expr.ENil => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)
+    | RustAst::Expr.ECons head tail => (let inner : Lowered := (primLets tail convert realized at (next + 1)); (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ELet (ctor RustAst::Pat.PBind (ctor RustValidate::Id.IdOperand (next + 1))) false (unitTy 0) head at (blockLets (project inner expr))) (ctor RustAst::Expr.ECons (if convert then (ctor RustAst::Expr.EWrap (ctor RustValidate::WrapKind.WkWiden) (ctor RustAst::Expr.ERead (ctor RustValidate::ReadKind.RkMove) (ctor RustValidate::Id.IdOperand (next + 1)) at) (record RustValidate::Origin {element := (project realized element), width := (ctor Option.none [RustValidate::IntKind])})) else (ctor RustAst::Expr.ERead (ctor RustValidate::ReadKind.RkMove) (ctor RustValidate::Id.IdOperand (next + 1)) at)) (blockTail (project inner expr)))) (project inner next)))
+    | RustAst::Expr.ELet u82x0 u82x1 u82x2 u82x3 u82x4 u82x5 => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)
+    | RustAst::Expr.EArm u82x0 u82x1 u82x2 => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)
+    | RustAst::Expr.ELoop u82x0 u82x1 => (done (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) next)),
+  executable: true,
+  recursive_argument: rendered
+}
+
+definition{
+  name: isMoveOf,
+  parameters: [expression : RustAst::Expr, holder : RustValidate::Id],
+  result: Bool,
+  body: (match expression
+    | RustAst::Expr.ELit u83x0 u83x1 => false
+    | RustAst::Expr.ERead kind ident at => (match kind
+      | RustValidate::ReadKind.RkMove => (idEq ident holder)
+      | RustValidate::ReadKind.RkClone => false
+      | RustValidate::ReadKind.RkCopy => false
+      | RustValidate::ReadKind.RkDeref => false
+      | RustValidate::ReadKind.RkUnbox => false)
+    | RustAst::Expr.EWrap u83x0 u83x1 u83x2 => false
+    | RustAst::Expr.ECall u83x0 u83x1 u83x2 u83x3 => false
+    | RustAst::Expr.EApply u83x0 u83x1 u83x2 u83x3 => false
+    | RustAst::Expr.EConstruct u83x0 u83x1 u83x2 => false
+    | RustAst::Expr.EPair u83x0 u83x1 u83x2 => false
+    | RustAst::Expr.EIf u83x0 u83x1 u83x2 u83x3 => false
+    | RustAst::Expr.EMatch u83x0 u83x1 u83x2 => false
+    | RustAst::Expr.EBlockE u83x0 => false
+    | RustAst::Expr.EProbe u83x0 u83x1 u83x2 => false
+    | RustAst::Expr.EBlock u83x0 u83x1 => false
+    | RustAst::Expr.ENil => false
+    | RustAst::Expr.ECons u83x0 u83x1 => false
+    | RustAst::Expr.ELet u83x0 u83x1 u83x2 u83x3 u83x4 u83x5 => false
+    | RustAst::Expr.EArm u83x0 u83x1 u83x2 => false
+    | RustAst::Expr.ELoop u83x0 u83x1 => false),
+  executable: true
+}
+
+definition{
+  name: isPlainRead,
+  parameters: [expression : RustAst::Expr],
+  result: Bool,
+  body: (match expression
+    | RustAst::Expr.ELit u84x0 u84x1 => false
+    | RustAst::Expr.ERead kind ident at => (match kind
+      | RustValidate::ReadKind.RkMove => true
+      | RustValidate::ReadKind.RkClone => true
+      | RustValidate::ReadKind.RkCopy => true
+      | RustValidate::ReadKind.RkDeref => false
+      | RustValidate::ReadKind.RkUnbox => false)
+    | RustAst::Expr.EWrap u84x0 u84x1 u84x2 => false
+    | RustAst::Expr.ECall u84x0 u84x1 u84x2 u84x3 => false
+    | RustAst::Expr.EApply u84x0 u84x1 u84x2 u84x3 => false
+    | RustAst::Expr.EConstruct u84x0 u84x1 u84x2 => false
+    | RustAst::Expr.EPair u84x0 u84x1 u84x2 => false
+    | RustAst::Expr.EIf u84x0 u84x1 u84x2 u84x3 => false
+    | RustAst::Expr.EMatch u84x0 u84x1 u84x2 => false
+    | RustAst::Expr.EBlockE u84x0 => false
+    | RustAst::Expr.EProbe u84x0 u84x1 u84x2 => false
+    | RustAst::Expr.EBlock u84x0 u84x1 => false
+    | RustAst::Expr.ENil => false
+    | RustAst::Expr.ECons u84x0 u84x1 => false
+    | RustAst::Expr.ELet u84x0 u84x1 u84x2 u84x3 u84x4 u84x5 => false
+    | RustAst::Expr.EArm u84x0 u84x1 u84x2 => false
+    | RustAst::Expr.ELoop u84x0 u84x1 => false),
+  executable: true
+}
+
+definition{
+  name: fieldPatterns,
+  parameters: [types : CalculusCheck::Ty, selected : Nat, held : RustValidate::Id, position : Nat],
+  result: RustAst::Pat,
+  body: (match types
+    | CalculusCheck::Ty.TUnit => (ctor RustAst::Pat.PNil)
+    | CalculusCheck::Ty.TBool => (ctor RustAst::Pat.PNil)
+    | CalculusCheck::Ty.TNat => (ctor RustAst::Pat.PNil)
+    | CalculusCheck::Ty.TInt => (ctor RustAst::Pat.PNil)
+    | CalculusCheck::Ty.TFixed u85x0 => (ctor RustAst::Pat.PNil)
+    | CalculusCheck::Ty.TString => (ctor RustAst::Pat.PNil)
+    | CalculusCheck::Ty.TBytes => (ctor RustAst::Pat.PNil)
+    | CalculusCheck::Ty.TOrdering => (ctor RustAst::Pat.PNil)
+    | CalculusCheck::Ty.TOption u85x0 => (ctor RustAst::Pat.PNil)
+    | CalculusCheck::Ty.TResult u85x0 u85x1 => (ctor RustAst::Pat.PNil)
+    | CalculusCheck::Ty.TList u85x0 => (ctor RustAst::Pat.PNil)
+    | CalculusCheck::Ty.TPair u85x0 u85x1 => (ctor RustAst::Pat.PNil)
+    | CalculusCheck::Ty.TAdt u85x0 => (ctor RustAst::Pat.PNil)
+    | CalculusCheck::Ty.TFn u85x0 u85x1 => (ctor RustAst::Pat.PNil)
+    | CalculusCheck::Ty.TNil => (ctor RustAst::Pat.PNil)
+    | CalculusCheck::Ty.TCons ty rest => (ctor RustAst::Pat.PCons (if (position =? selected) then (ctor RustAst::Pat.PBind held) else (ctor RustAst::Pat.PLeaf (ctor RustAst::PatLeaf.PlWild))) (fieldPatterns rest selected held (position + 1)))),
+  executable: true,
+  recursive_argument: types
+}
+
+definition{
+  name: armFieldTys,
+  parameters: [adts : CalculusCheck::Ty, subject : CalculusCheck::Ty, shape : CalculusCheck::Shape],
+  result: CalculusCheck::Ty,
+  body: (match shape
+    | CalculusCheck::Shape.SNone => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Shape.SSome => (ctor CalculusCheck::Ty.TCons (CalculusCheck::tyFirst subject) (ctor CalculusCheck::Ty.TNil))
+    | CalculusCheck::Shape.SOk => (ctor CalculusCheck::Ty.TCons (CalculusCheck::tyFirst subject) (ctor CalculusCheck::Ty.TNil))
+    | CalculusCheck::Shape.SError => (ctor CalculusCheck::Ty.TCons (CalculusCheck::tySecond subject) (ctor CalculusCheck::Ty.TNil))
+    | CalculusCheck::Shape.SNil => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Shape.SCons => (ctor CalculusCheck::Ty.TCons (CalculusCheck::tyFirst subject) (ctor CalculusCheck::Ty.TCons subject (ctor CalculusCheck::Ty.TNil)))
+    | CalculusCheck::Shape.SZero => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Shape.SSucc => (ctor CalculusCheck::Ty.TCons (ctor CalculusCheck::Ty.TNat) (ctor CalculusCheck::Ty.TNil))
+    | CalculusCheck::Shape.SPair => (ctor CalculusCheck::Ty.TCons (CalculusCheck::tyFirst subject) (ctor CalculusCheck::Ty.TCons (CalculusCheck::tySecond subject) (ctor CalculusCheck::Ty.TNil)))
+    | CalculusCheck::Shape.STrue => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Shape.SFalse => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Shape.SUnit => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Shape.SLt => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Shape.SEq => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Shape.SGt => (ctor CalculusCheck::Ty.TNil)
+    | CalculusCheck::Shape.SAdt constructor => (match (RustTerms::adtIndex subject)
+      | Option.some adt => (match (RustTerms::adtFields adts adt constructor)
+        | Option.some types => types
+        | Option.none => (ctor CalculusCheck::Ty.TNil))
+      | Option.none => (ctor CalculusCheck::Ty.TNil))),
+  executable: true
+}
+
+definition{
+  name: lowerExpr,
+  parameters: [
+    ctx : Ctx,
+    term : CalculusCheck::Expr,
+    sites : CalculusCheck::Ty,
+    uses : CalculusCheck::Ty,
+    scope : (List (Nat * CalculusCheck::Ty)),
+    subject : CalculusCheck::Ty,
+    mode : Nat,
+    at : RustValidate::Origin,
+    next : Nat
+  ],
+  result: Lowered,
+  body: (match term
+    | CalculusCheck::Expr.EValue ty value => (done (RustTerms::lowerValue (project ctx known) (project ctx edges) (project ctx adts) (ctor CalculusCheck::Ty.TNil) 0 value ty) next)
+    | CalculusCheck::Expr.EVar name => (let ty : CalculusCheck::Ty := (scopeType scope name); (done (if (CalculusCheck::tyEq ty (ctor CalculusCheck::Ty.TUnit)) then (ctor RustAst::Expr.ELit (ctor RustAst::Lit.LitUnit) at) else (ctor RustAst::Expr.ERead (if (RustLower::copyTy ty) then (ctor RustValidate::ReadKind.RkCopy) else (ctor RustValidate::ReadKind.RkClone)) (ctor RustValidate::Id.IdLocal name) at)) next))
+    | CalculusCheck::Expr.ELet name ty bound body => (let one : Lowered := (lowerExpr ctx bound (RustLower::kidA sites) (RustLower::kidA uses) scope (ctor CalculusCheck::Ty.TNil) 0 (termAt bound) next); (let two : Lowered := (lowerExpr ctx body (RustLower::kidB sites) (RustLower::kidB uses) (CalculusCheck::extendScope name ty scope) (ctor CalculusCheck::Ty.TNil) 0 (termAt body) (project one next)); (let inner : RustAst::Expr := (blockOf (project two expr)); (done (ctor RustAst::Expr.EBlockE (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ELet (binderPat name ty body) true (RustLower::vty (project ctx known) ty) (project one expr) at (blockLets inner)) (blockTail inner))) (project two next)))))
+    | CalculusCheck::Expr.ECond condition thenBranch elseBranch => (let one : Lowered := (lowerExpr ctx condition (RustLower::kidA sites) (RustLower::kidA uses) scope (ctor CalculusCheck::Ty.TNil) 0 (termAt condition) next); (let condBlock : RustAst::Expr := (blockOf (project one expr)); (let two : Lowered := (lowerExpr ctx thenBranch (RustLower::kidB sites) (RustLower::kidB uses) scope (ctor CalculusCheck::Ty.TNil) 0 (termAt thenBranch) (project one next)); (let three : Lowered := (lowerExpr ctx elseBranch (RustLower::kidC sites) (RustLower::kidC uses) scope (ctor CalculusCheck::Ty.TNil) 0 (termAt elseBranch) (project two next)); (let chosen : Lowered := (choose (blockTail condBlock) (blockOf (project two expr)) (blockOf (project three expr)) at (project three next)); (let combined : RustAst::Expr := (setTail (ctor RustAst::Expr.EBlock (blockLets condBlock) (ctor RustAst::Expr.ELit (ctor RustAst::Lit.LitUnit) at)) (project chosen expr)); (done (if (isNilE (blockLets combined)) then (blockTail combined) else (ctor RustAst::Expr.EBlockE combined)) (project chosen next))))))))
+    | CalculusCheck::Expr.EMatch ty scrutinee arms => (let sty : CalculusCheck::Ty := (RustLower::siteOwn sites); (let one : Lowered := (lowerExpr ctx scrutinee (RustLower::kidA sites) (RustLower::kidA uses) scope (ctor CalculusCheck::Ty.TNil) 0 (termAt scrutinee) next); (if (CalculusCheck::tyEq sty (ctor CalculusCheck::Ty.TUnit)) then (let two : Lowered := (lowerExpr ctx arms (RustLower::kidB sites) (RustLower::kidB uses) scope (ctor CalculusCheck::Ty.TNil) 3 (termAt arms) (project one next)); (let inner : RustAst::Expr := (blockOf (project two expr)); (done (ctor RustAst::Expr.EBlockE (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ELet (ctor RustAst::Pat.PLeaf (ctor RustAst::PatLeaf.PlUnit)) false (unitTy 0) (project one expr) (shapeAt (ctor CalculusCheck::Shape.SUnit)) (blockLets inner)) (blockTail inner))) (project two next)))) else (let holder : RustValidate::Id := (ctor RustValidate::Id.IdHolder ((project one next) + 1)); (let armsL : Lowered := (lowerExpr ctx arms (RustLower::kidB sites) (RustLower::kidB uses) scope sty 2 (termAt arms) ((project one next) + 1)); (let bodyL : Lowered := (assembleArms ctx holder sty arms (project armsL expr) (project armsL next)); (if (isMoveOf (project bodyL expr) holder) then (done (project one expr) (project bodyL next)) else (let inner : RustAst::Expr := (blockOf (project bodyL expr)); (done (ctor RustAst::Expr.EBlockE (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ELet (ctor RustAst::Pat.PBind holder) false (unitTy 0) (project one expr) at (blockLets inner)) (blockTail inner))) (project bodyL next))))))))))
+    | CalculusCheck::Expr.EBuild shape ty operands => (let one : Lowered := (lowerExpr ctx operands (RustLower::kidA sites) (RustLower::kidA uses) scope (ctor CalculusCheck::Ty.TNil) 1 (termAt operands) next); (buildFrom (project ctx known) (project ctx edges) (project ctx adts) shape ty (project one expr) (shapeAt shape) (project one next)))
+    | CalculusCheck::Expr.ECall function operands => (let one : Lowered := (lowerExpr ctx operands (RustLower::kidA sites) (RustLower::kidA uses) scope (ctor CalculusCheck::Ty.TNil) 1 (termAt operands) next); (let ol : Lowered := (operandsOf (project one expr) (calleeTypes ctx function) at (project one next)); (done (after (blockLets (project ol expr)) (ctor RustAst::Expr.ECall (ctor RustAst::Callee.CalFn function) (blockTail (project ol expr)) (RustLower::flagAt (project ctx fallible) function) at)) (project ol next))))
+    | CalculusCheck::Expr.EClosure function captures => (let one : Lowered := (lowerExpr ctx captures (RustLower::kidA sites) (RustLower::kidA uses) scope (ctor CalculusCheck::Ty.TNil) 1 (termAt captures) next); (let count : Nat := (CalculusCheck::exprChainLength captures); (let ctypes : CalculusCheck::Ty := (RustLower::tyTake (calleeTypes ctx function) count); (let fnTy : CalculusCheck::Ty := (ctor CalculusCheck::Ty.TFn (RustLower::tyDrop (calleeTypes ctx function) count) (calleeResult ctx function)); (let position : Nat := (RustLower::fnPosition (project ctx known) fnTy 0); (let ol : Lowered := (operandsOf (project one expr) ctypes at (project one next)); (done (after (blockLets (project ol expr)) (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConClosure position function) (storeEach (project ctx known) (project ctx edges) fnTy (blockTail (project ol expr)) ctypes) at)) (project ol next))))))))
+    | CalculusCheck::Expr.EApply target operands => (let ty : CalculusCheck::Ty := (RustLower::siteOwn sites); (let parts : (CalculusCheck::Ty * CalculusCheck::Ty) := (fnParts ty); (let position : Nat := (RustLower::fnPosition (project ctx known) ty 0); (let callee : RustValidate::Id := (ctor RustValidate::Id.IdCallee (next + 1)); (let one : Lowered := (lowerExpr ctx target (RustLower::kidA sites) (RustLower::kidA uses) scope (ctor CalculusCheck::Ty.TNil) 0 (termAt target) (next + 1)); (let two : Lowered := (lowerExpr ctx operands (RustLower::kidB sites) (RustLower::kidB uses) scope (ctor CalculusCheck::Ty.TNil) 1 (termAt operands) (project one next)); (let ol : Lowered := (operandsOf (project two expr) (first parts) at (project two next)); (done (ctor RustAst::Expr.EBlockE (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ELet (ctor RustAst::Pat.PBind callee) true (ctor RustValidate::Ty.TyNamed (ctor RustValidate::NameKind.NkFn) position) (project one expr) at (blockLets (project ol expr))) (ctor RustAst::Expr.EApply callee (blockTail (project ol expr)) (RustLower::applyFails ty (project ctx fallible) (project ctx ordered)) at))) (project ol next)))))))))
+    | CalculusCheck::Expr.EPrim operation operands => (let head : CalculusCheck::Ty := (headType operands (RustLower::kidA uses)); (let one : Lowered := (lowerExpr ctx operands (RustLower::kidA sites) (RustLower::kidA uses) scope (ctor CalculusCheck::Ty.TNil) 1 (termAt operands) next); (let family : Nat := (primFamily operation head); (let realized : RustValidate::Origin := (primAt operation head); (let bound : Lowered := (primLets (project one expr) (family =? 31) realized at (project one next)); (done (ctor RustAst::Expr.EBlockE (ctor RustAst::Expr.EBlock (blockLets (project bound expr)) (ctor RustAst::Expr.ECall (ctor RustAst::Callee.CalRt (record RustValidate::Rt {family := family, width := (primWidth operation head)})) (blockTail (project bound expr)) (rtFallible family) realized))) (project bound next)))))))
+    | CalculusCheck::Expr.EFirst value => (let held : RustValidate::Id := (ctor RustValidate::Id.IdPart (next + 1)); (let one : Lowered := (lowerExpr ctx value (RustLower::kidA sites) (RustLower::kidA uses) scope (ctor CalculusCheck::Ty.TNil) 0 (termAt value) (next + 1)); (done (ctor RustAst::Expr.EBlockE (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ELet (ctor RustAst::Pat.PTuple (ctor RustAst::Pat.PCons (ctor RustAst::Pat.PBind held) (ctor RustAst::Pat.PCons (ctor RustAst::Pat.PLeaf (ctor RustAst::PatLeaf.PlWild)) (ctor RustAst::Pat.PNil)))) false (unitTy 0) (project one expr) at (ctor RustAst::Expr.ENil)) (ctor RustAst::Expr.ERead (ctor RustValidate::ReadKind.RkMove) held at))) (project one next))))
+    | CalculusCheck::Expr.ESecond value => (let held : RustValidate::Id := (ctor RustValidate::Id.IdPart (next + 1)); (let one : Lowered := (lowerExpr ctx value (RustLower::kidA sites) (RustLower::kidA uses) scope (ctor CalculusCheck::Ty.TNil) 0 (termAt value) (next + 1)); (done (ctor RustAst::Expr.EBlockE (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ELet (ctor RustAst::Pat.PTuple (ctor RustAst::Pat.PCons (ctor RustAst::Pat.PLeaf (ctor RustAst::PatLeaf.PlWild)) (ctor RustAst::Pat.PCons (ctor RustAst::Pat.PBind held) (ctor RustAst::Pat.PNil)))) false (unitTy 0) (project one expr) at (ctor RustAst::Expr.ENil)) (ctor RustAst::Expr.ERead (ctor RustValidate::ReadKind.RkMove) held at))) (project one next))))
+    | CalculusCheck::Expr.EField value index => (match (RustTerms::adtIndex (RustLower::siteOwn (RustLower::kidA uses)))
+      | Option.some adt => (match (RustTerms::adtFields (project ctx adts) adt 0)
+        | Option.some types => (match (RustTerms::chainGet types index)
+          | Option.some fieldTy => (let held : RustValidate::Id := (ctor RustValidate::Id.IdPart (next + 1)); (let read : RustAst::Expr := (if (RustLower::cyclic (project ctx known) (project ctx edges) (ctor CalculusCheck::Ty.TAdt adt) fieldTy) then (ctor RustAst::Expr.ERead (ctor RustValidate::ReadKind.RkUnbox) held (record RustValidate::Origin {element := (prim utf8_encode "indirection" : Bytes), width := (ctor Option.none [RustValidate::IntKind])})) else (ctor RustAst::Expr.ERead (ctor RustValidate::ReadKind.RkMove) held at)); (let one : Lowered := (lowerExpr ctx value (RustLower::kidA sites) (RustLower::kidA uses) scope (ctor CalculusCheck::Ty.TNil) 0 (termAt value) (next + 1)); (let armPat : RustAst::Pat := (ctor RustAst::Pat.PAdt adt 0 (fieldPatterns types index held 0)); (if (isPlainRead (project one expr)) then (done (ctor RustAst::Expr.EMatch (project one expr) (ctor RustAst::Expr.EArm armPat (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) read) (ctor RustAst::Expr.ENil)) at) (project one next)) else (let holder : RustValidate::Id := (ctor RustValidate::Id.IdHolder ((project one next) + 1)); (done (ctor RustAst::Expr.EBlockE (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ELet (ctor RustAst::Pat.PBind holder) false (unitTy 0) (project one expr) at (ctor RustAst::Expr.ENil)) (ctor RustAst::Expr.EMatch (ctor RustAst::Expr.ERead (ctor RustValidate::ReadKind.RkMove) holder at) (ctor RustAst::Expr.EArm armPat (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) read) (ctor RustAst::Expr.ENil)) at))) ((project one next) + 1))))))))
+          | Option.none => (done (ctor RustAst::Expr.ENil) next))
+        | Option.none => (done (ctor RustAst::Expr.ENil) next))
+      | Option.none => (done (ctor RustAst::Expr.ENil) next))
+    | CalculusCheck::Expr.ENil => (done (ctor RustAst::Expr.ENil) next)
+    | CalculusCheck::Expr.ECons head tail => (if (mode =? 3) then (lowerExpr ctx head (RustLower::kidA sites) (RustLower::kidA uses) scope (ctor CalculusCheck::Ty.TNil) 5 (termAt head) next) else (if (mode =? 2) then (let item : Lowered := (lowerExpr ctx head (RustLower::kidA sites) (RustLower::kidA uses) scope subject 4 (termAt head) next); (let rest : Lowered := (lowerExpr ctx tail (RustLower::kidB sites) (RustLower::kidB uses) scope subject 2 (termAt tail) (project item next)); (done (ctor RustAst::Expr.ECons (project item expr) (project rest expr)) (project rest next)))) else (let one : Lowered := (lowerExpr ctx head (RustLower::kidA sites) (RustLower::kidA uses) scope (ctor CalculusCheck::Ty.TNil) 0 (termAt head) next); (let two : Lowered := (lowerExpr ctx tail (RustLower::kidB sites) (RustLower::kidB uses) scope subject 1 (termAt tail) (project one next)); (done (ctor RustAst::Expr.ECons (project one expr) (project two expr)) (project two next))))))
+    | CalculusCheck::Expr.EArm shape binders body => (if (mode =? 5) then (lowerExpr ctx body (RustLower::kidA sites) (RustLower::kidA uses) scope (ctor CalculusCheck::Ty.TNil) 0 (termAt body) next) else (let fields : CalculusCheck::Ty := (armFieldTys (project ctx adts) subject shape); (if (allVisible fields (project ctx inhabited)) then (let two : Lowered := (lowerExpr ctx body (RustLower::kidA sites) (RustLower::kidA uses) (CalculusCheck::bindAll binders fields scope) (ctor CalculusCheck::Ty.TNil) 0 (termAt body) next); (done (ctor RustAst::Expr.EArm (ctor RustAst::Pat.PTuple (armPatterns binders fields body)) (blockOf (project two expr)) (ctor RustAst::Expr.ENil)) (project two next))) else (done (ctor RustAst::Expr.ENil) next))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: term
+}
+
+definition{
+  name: driveBodies,
+  parameters: [
+    ctx : Ctx,
+    bodies : CalculusCheck::Expr,
+    sites : CalculusCheck::Ty,
+    uses : CalculusCheck::Ty,
+    dead : (List Bool),
+    index : Nat,
+    next : Nat
+  ],
+  result: Lowered,
+  body: (match bodies
+    | CalculusCheck::Expr.EValue u88x0 u88x1 => (done (ctor RustAst::Expr.ENil) next)
+    | CalculusCheck::Expr.EVar u88x0 => (done (ctor RustAst::Expr.ENil) next)
+    | CalculusCheck::Expr.ELet u88x0 u88x1 u88x2 u88x3 => (done (ctor RustAst::Expr.ENil) next)
+    | CalculusCheck::Expr.ECond u88x0 u88x1 u88x2 => (done (ctor RustAst::Expr.ENil) next)
+    | CalculusCheck::Expr.EMatch u88x0 u88x1 u88x2 => (done (ctor RustAst::Expr.ENil) next)
+    | CalculusCheck::Expr.EBuild u88x0 u88x1 u88x2 => (done (ctor RustAst::Expr.ENil) next)
+    | CalculusCheck::Expr.ECall u88x0 u88x1 => (done (ctor RustAst::Expr.ENil) next)
+    | CalculusCheck::Expr.EClosure u88x0 u88x1 => (done (ctor RustAst::Expr.ENil) next)
+    | CalculusCheck::Expr.EApply u88x0 u88x1 => (done (ctor RustAst::Expr.ENil) next)
+    | CalculusCheck::Expr.EPrim u88x0 u88x1 => (done (ctor RustAst::Expr.ENil) next)
+    | CalculusCheck::Expr.EFirst u88x0 => (done (ctor RustAst::Expr.ENil) next)
+    | CalculusCheck::Expr.ESecond u88x0 => (done (ctor RustAst::Expr.ENil) next)
+    | CalculusCheck::Expr.EField u88x0 u88x1 => (done (ctor RustAst::Expr.ENil) next)
+    | CalculusCheck::Expr.ENil => (done (ctor RustAst::Expr.ENil) next)
+    | CalculusCheck::Expr.ECons head tail => (if (RustLower::flagAt dead index) then (let restL : Lowered := (driveBodies ctx tail (RustLower::kidB sites) (RustLower::kidB uses) dead (index + 1) next); (done (ctor RustAst::Expr.ECons (ctor RustAst::Expr.ENil) (project restL expr)) (project restL next))) else (let scope : (List (Nat * CalculusCheck::Ty)) := (CalculusCheck::bindAll (CalculusCheck::functionNames (project ctx program) index) (CalculusCheck::functionTypesOr (project ctx program) index) (nil (Nat * CalculusCheck::Ty))); (let one : Lowered := (lowerExpr ctx head (RustLower::kidA sites) (RustLower::kidA uses) scope (ctor CalculusCheck::Ty.TNil) 0 (termAt head) next); (let restL : Lowered := (driveBodies ctx tail (RustLower::kidB sites) (RustLower::kidB uses) dead (index + 1) (project one next)); (done (ctor RustAst::Expr.ECons (blockOf (project one expr)) (project restL expr)) (project restL next))))))
+    | CalculusCheck::Expr.EArm u88x0 u88x1 u88x2 => (done (ctor RustAst::Expr.ENil) next)),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: bodies
+}
+
+structure{
+  name: Frame,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: known, type: CalculusCheck::Ty},
+    {name: edges, type: RustLower::Edges},
+    {name: inhabited, type: CalculusCheck::Ty},
+    {name: ordered, type: RustLower::Clos}
+  ]
+}
+
+definition{
+  name: lowerFrame,
+  parameters: [
+    spec : Bytes,
+    adts : CalculusCheck::Ty,
+    parameters : (List (List Nat)),
+    types : CalculusCheck::Ty,
+    results : CalculusCheck::Ty,
+    bodies : CalculusCheck::Expr,
+    sites : CalculusCheck::Ty,
+    dead : (List Bool)
+  ],
+  result: Frame,
+  body: (let program : CalculusCheck::Program := (record CalculusCheck::Program {spec := spec, adts := adts, parameters := parameters, types := types, results := results, bodies := bodies}); (let numbered : RustLower::Collect := (RustLower::collectFunctions program record{
+    type: RustLower::Collect,
+    fields: [
+      {field: known, value: (ctor CalculusCheck::Ty.TNil)},
+      {field: closures, value: (ctor RustLower::Clos.ClNil)}
+    ],
+    type_arguments: []
+  } bodies 0 (nil Bool) sites); (let known : CalculusCheck::Ty := (RustLower::registerAdts (project numbered known) adts); (let live : RustLower::Collect := (RustLower::collectFunctions program record{
+    type: RustLower::Collect,
+    fields: [{field: known, value: known}, {field: closures, value: (ctor RustLower::Clos.ClNil)}],
+    type_arguments: []
+  } bodies 0 dead sites); (let owners : CalculusCheck::Ty := (RustLower::tyAppend (RustLower::adtOwners (CalculusCheck::tyChainLength adts)) known); (let direct : RustLower::Edges := (RustLower::allEdges program known (project numbered closures) owners (ctor RustLower::Edges.EdgeNil)); (let edges : RustLower::Edges := (RustLower::closeEdges direct (1 + (prim multiply (CalculusCheck::tyChainLength owners) (CalculusCheck::tyChainLength owners) : Nat))); (record Frame {known := known, edges := edges, inhabited := (RustLower::inhabitation program known (project numbered closures) edges owners), ordered := (RustLower::revClos (project live closures) (ctor RustLower::Clos.ClNil))})))))))),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: lowerBodies,
+  parameters: [
+    spec : Bytes,
+    adts : CalculusCheck::Ty,
+    parameters : (List (List Nat)),
+    types : CalculusCheck::Ty,
+    results : CalculusCheck::Ty,
+    bodies : CalculusCheck::Expr,
+    sites : CalculusCheck::Ty,
+    uses : CalculusCheck::Ty,
+    dead : (List Bool),
+    fallible : (List Bool),
+    frame : Frame
+  ],
+  result: RustAst::Expr,
+  body: (let program : CalculusCheck::Program := (record CalculusCheck::Program {spec := spec, adts := adts, parameters := parameters, types := types, results := results, bodies := bodies}); (let ctx : Ctx := (record Ctx {program := program, known := (project frame known), edges := (project frame edges), adts := adts, types := types, results := results, fallible := fallible, ordered := (project frame ordered), inhabited := (project frame inhabited)}); (project (driveBodies ctx bodies sites uses dead 0 0) expr))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: foldBodies,
+  parameters: [bodies : RustAst::Expr],
+  result: RustAst::Expr,
+  body: (foldExpr bodies),
+  executable: true,
+  production: {effects: [allocation, recursion], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

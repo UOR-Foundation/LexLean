@@ -28,7 +28,9 @@ definition{
   name: hexValue,
   parameters: [byte : UInt8],
   result: (Option Nat),
-  body: (let n : Nat := (prim to_nat byte : Nat); (if (n <? 48) then (ctor Option.none [Nat]) else (if (n <? 58) then (ctor Option.some [Nat] (prim subtract n 48 : Nat)) else (if (n <? 97) then (ctor Option.none [Nat]) else (if (n <? 103) then (ctor Option.some [Nat] (prim subtract n 87 : Nat)) else (ctor Option.none [Nat])))))),
+  body: (match (digitValue byte)
+    | Option.some digit => (ctor Option.some [Nat] digit)
+    | Option.none => (let n : Nat := (prim to_nat byte : Nat); (if (n <? 97) then (ctor Option.none [Nat]) else (if (n <? 103) then (ctor Option.some [Nat] (prim subtract n 87 : Nat)) else (ctor Option.none [Nat]))))),
   axioms: [Quot.sound, propext],
   executable: true
 }
@@ -191,7 +193,7 @@ definition{
     | CalculusCheck::Ty.TBool => (ctor Option.none [RustValidate::IntKind])
     | CalculusCheck::Ty.TNat => (ctor Option.none [RustValidate::IntKind])
     | CalculusCheck::Ty.TInt => (ctor Option.none [RustValidate::IntKind])
-  | CalculusCheck::Ty.TFixed width => (ctor Option.some [RustValidate::IntKind] (RustLower::kindOf width))
+    | CalculusCheck::Ty.TFixed width => (ctor Option.some [RustValidate::IntKind] (RustLower::kindOf width))
     | CalculusCheck::Ty.TString => (ctor Option.none [RustValidate::IntKind])
     | CalculusCheck::Ty.TBytes => (ctor Option.none [RustValidate::IntKind])
     | CalculusCheck::Ty.TOrdering => (ctor Option.none [RustValidate::IntKind])
@@ -215,7 +217,7 @@ definition{
     | CalculusCheck::Ty.TBool => (ctor Option.none [CalculusCheck::IntKind])
     | CalculusCheck::Ty.TNat => (ctor Option.none [CalculusCheck::IntKind])
     | CalculusCheck::Ty.TInt => (ctor Option.none [CalculusCheck::IntKind])
-  | CalculusCheck::Ty.TFixed width => (ctor Option.some [CalculusCheck::IntKind] width)
+    | CalculusCheck::Ty.TFixed width => (ctor Option.some [CalculusCheck::IntKind] width)
     | CalculusCheck::Ty.TString => (ctor Option.none [CalculusCheck::IntKind])
     | CalculusCheck::Ty.TBytes => (ctor Option.none [CalculusCheck::IntKind])
     | CalculusCheck::Ty.TOrdering => (ctor Option.none [CalculusCheck::IntKind])
@@ -227,54 +229,6 @@ definition{
     | CalculusCheck::Ty.TFn d0 d1 => (ctor Option.none [CalculusCheck::IntKind])
     | CalculusCheck::Ty.TNil => (ctor Option.none [CalculusCheck::IntKind])
     | CalculusCheck::Ty.TCons d0 d1 => (ctor Option.none [CalculusCheck::IntKind])),
-  executable: true
-}
-
-definition{
-  name: optionInner,
-  parameters: [ty : CalculusCheck::Ty],
-  result: (Option CalculusCheck::Ty),
-  body: (match ty
-    | CalculusCheck::Ty.TUnit => (ctor Option.none [CalculusCheck::Ty])
-    | CalculusCheck::Ty.TBool => (ctor Option.none [CalculusCheck::Ty])
-    | CalculusCheck::Ty.TNat => (ctor Option.none [CalculusCheck::Ty])
-    | CalculusCheck::Ty.TInt => (ctor Option.none [CalculusCheck::Ty])
-    | CalculusCheck::Ty.TFixed d0 => (ctor Option.none [CalculusCheck::Ty])
-    | CalculusCheck::Ty.TString => (ctor Option.none [CalculusCheck::Ty])
-    | CalculusCheck::Ty.TBytes => (ctor Option.none [CalculusCheck::Ty])
-    | CalculusCheck::Ty.TOrdering => (ctor Option.none [CalculusCheck::Ty])
-  | CalculusCheck::Ty.TOption inner => (ctor Option.some [CalculusCheck::Ty] inner)
-    | CalculusCheck::Ty.TResult d0 d1 => (ctor Option.none [CalculusCheck::Ty])
-    | CalculusCheck::Ty.TList d0 => (ctor Option.none [CalculusCheck::Ty])
-    | CalculusCheck::Ty.TPair d0 d1 => (ctor Option.none [CalculusCheck::Ty])
-    | CalculusCheck::Ty.TAdt d0 => (ctor Option.none [CalculusCheck::Ty])
-    | CalculusCheck::Ty.TFn d0 d1 => (ctor Option.none [CalculusCheck::Ty])
-    | CalculusCheck::Ty.TNil => (ctor Option.none [CalculusCheck::Ty])
-    | CalculusCheck::Ty.TCons d0 d1 => (ctor Option.none [CalculusCheck::Ty])),
-  executable: true
-}
-
-definition{
-  name: listElement,
-  parameters: [ty : CalculusCheck::Ty],
-  result: (Option CalculusCheck::Ty),
-  body: (match ty
-    | CalculusCheck::Ty.TUnit => (ctor Option.none [CalculusCheck::Ty])
-    | CalculusCheck::Ty.TBool => (ctor Option.none [CalculusCheck::Ty])
-    | CalculusCheck::Ty.TNat => (ctor Option.none [CalculusCheck::Ty])
-    | CalculusCheck::Ty.TInt => (ctor Option.none [CalculusCheck::Ty])
-    | CalculusCheck::Ty.TFixed d0 => (ctor Option.none [CalculusCheck::Ty])
-    | CalculusCheck::Ty.TString => (ctor Option.none [CalculusCheck::Ty])
-    | CalculusCheck::Ty.TBytes => (ctor Option.none [CalculusCheck::Ty])
-    | CalculusCheck::Ty.TOrdering => (ctor Option.none [CalculusCheck::Ty])
-    | CalculusCheck::Ty.TOption d0 => (ctor Option.none [CalculusCheck::Ty])
-    | CalculusCheck::Ty.TResult d0 d1 => (ctor Option.none [CalculusCheck::Ty])
-  | CalculusCheck::Ty.TList element => (ctor Option.some [CalculusCheck::Ty] element)
-    | CalculusCheck::Ty.TPair d0 d1 => (ctor Option.none [CalculusCheck::Ty])
-    | CalculusCheck::Ty.TAdt d0 => (ctor Option.none [CalculusCheck::Ty])
-    | CalculusCheck::Ty.TFn d0 d1 => (ctor Option.none [CalculusCheck::Ty])
-    | CalculusCheck::Ty.TNil => (ctor Option.none [CalculusCheck::Ty])
-    | CalculusCheck::Ty.TCons d0 d1 => (ctor Option.none [CalculusCheck::Ty])),
   executable: true
 }
 
@@ -295,58 +249,10 @@ definition{
     | CalculusCheck::Ty.TResult d0 d1 => (ctor Option.none [Nat])
     | CalculusCheck::Ty.TList d0 => (ctor Option.none [Nat])
     | CalculusCheck::Ty.TPair d0 d1 => (ctor Option.none [Nat])
-  | CalculusCheck::Ty.TAdt index => (ctor Option.some [Nat] index)
+    | CalculusCheck::Ty.TAdt index => (ctor Option.some [Nat] index)
     | CalculusCheck::Ty.TFn d0 d1 => (ctor Option.none [Nat])
     | CalculusCheck::Ty.TNil => (ctor Option.none [Nat])
     | CalculusCheck::Ty.TCons d0 d1 => (ctor Option.none [Nat])),
-  executable: true
-}
-
-definition{
-  name: resultParts,
-  parameters: [ty : CalculusCheck::Ty],
-  result: (Option (CalculusCheck::Ty * CalculusCheck::Ty)),
-  body: (match ty
-    | CalculusCheck::Ty.TUnit => (ctor Option.none [(CalculusCheck::Ty * CalculusCheck::Ty)])
-    | CalculusCheck::Ty.TBool => (ctor Option.none [(CalculusCheck::Ty * CalculusCheck::Ty)])
-    | CalculusCheck::Ty.TNat => (ctor Option.none [(CalculusCheck::Ty * CalculusCheck::Ty)])
-    | CalculusCheck::Ty.TInt => (ctor Option.none [(CalculusCheck::Ty * CalculusCheck::Ty)])
-    | CalculusCheck::Ty.TFixed d0 => (ctor Option.none [(CalculusCheck::Ty * CalculusCheck::Ty)])
-    | CalculusCheck::Ty.TString => (ctor Option.none [(CalculusCheck::Ty * CalculusCheck::Ty)])
-    | CalculusCheck::Ty.TBytes => (ctor Option.none [(CalculusCheck::Ty * CalculusCheck::Ty)])
-    | CalculusCheck::Ty.TOrdering => (ctor Option.none [(CalculusCheck::Ty * CalculusCheck::Ty)])
-    | CalculusCheck::Ty.TOption d0 => (ctor Option.none [(CalculusCheck::Ty * CalculusCheck::Ty)])
-  | CalculusCheck::Ty.TResult ok error => (ctor Option.some [(CalculusCheck::Ty * CalculusCheck::Ty)] (ok, error))
-    | CalculusCheck::Ty.TList d0 => (ctor Option.none [(CalculusCheck::Ty * CalculusCheck::Ty)])
-    | CalculusCheck::Ty.TPair d0 d1 => (ctor Option.none [(CalculusCheck::Ty * CalculusCheck::Ty)])
-    | CalculusCheck::Ty.TAdt d0 => (ctor Option.none [(CalculusCheck::Ty * CalculusCheck::Ty)])
-    | CalculusCheck::Ty.TFn d0 d1 => (ctor Option.none [(CalculusCheck::Ty * CalculusCheck::Ty)])
-    | CalculusCheck::Ty.TNil => (ctor Option.none [(CalculusCheck::Ty * CalculusCheck::Ty)])
-    | CalculusCheck::Ty.TCons d0 d1 => (ctor Option.none [(CalculusCheck::Ty * CalculusCheck::Ty)])),
-  executable: true
-}
-
-definition{
-  name: pairParts,
-  parameters: [ty : CalculusCheck::Ty],
-  result: (Option (CalculusCheck::Ty * CalculusCheck::Ty)),
-  body: (match ty
-    | CalculusCheck::Ty.TUnit => (ctor Option.none [(CalculusCheck::Ty * CalculusCheck::Ty)])
-    | CalculusCheck::Ty.TBool => (ctor Option.none [(CalculusCheck::Ty * CalculusCheck::Ty)])
-    | CalculusCheck::Ty.TNat => (ctor Option.none [(CalculusCheck::Ty * CalculusCheck::Ty)])
-    | CalculusCheck::Ty.TInt => (ctor Option.none [(CalculusCheck::Ty * CalculusCheck::Ty)])
-    | CalculusCheck::Ty.TFixed d0 => (ctor Option.none [(CalculusCheck::Ty * CalculusCheck::Ty)])
-    | CalculusCheck::Ty.TString => (ctor Option.none [(CalculusCheck::Ty * CalculusCheck::Ty)])
-    | CalculusCheck::Ty.TBytes => (ctor Option.none [(CalculusCheck::Ty * CalculusCheck::Ty)])
-    | CalculusCheck::Ty.TOrdering => (ctor Option.none [(CalculusCheck::Ty * CalculusCheck::Ty)])
-    | CalculusCheck::Ty.TOption d0 => (ctor Option.none [(CalculusCheck::Ty * CalculusCheck::Ty)])
-    | CalculusCheck::Ty.TResult d0 d1 => (ctor Option.none [(CalculusCheck::Ty * CalculusCheck::Ty)])
-    | CalculusCheck::Ty.TList d0 => (ctor Option.none [(CalculusCheck::Ty * CalculusCheck::Ty)])
-  | CalculusCheck::Ty.TPair left right => (ctor Option.some [(CalculusCheck::Ty * CalculusCheck::Ty)] (left, right))
-    | CalculusCheck::Ty.TAdt d0 => (ctor Option.none [(CalculusCheck::Ty * CalculusCheck::Ty)])
-    | CalculusCheck::Ty.TFn d0 d1 => (ctor Option.none [(CalculusCheck::Ty * CalculusCheck::Ty)])
-    | CalculusCheck::Ty.TNil => (ctor Option.none [(CalculusCheck::Ty * CalculusCheck::Ty)])
-    | CalculusCheck::Ty.TCons d0 d1 => (ctor Option.none [(CalculusCheck::Ty * CalculusCheck::Ty)])),
   executable: true
 }
 
@@ -370,9 +276,9 @@ definition{
     | CalculusCheck::Ty.TAdt d0 => (ctor Option.none [CalculusCheck::Ty])
     | CalculusCheck::Ty.TFn d0 d1 => (ctor Option.none [CalculusCheck::Ty])
     | CalculusCheck::Ty.TNil => (ctor Option.none [CalculusCheck::Ty])
-  | CalculusCheck::Ty.TCons head tail => (match index
-   | Nat.zero => (ctor Option.some [CalculusCheck::Ty] head)
-   | Nat.succ previous => (chainGet tail previous))),
+    | CalculusCheck::Ty.TCons head tail => (match index
+      | Nat.zero => (ctor Option.some [CalculusCheck::Ty] head)
+      | Nat.succ previous => (chainGet tail previous))),
   executable: true,
   recursive_argument: chain
 }
@@ -396,108 +302,83 @@ definition{
 }
 
 definition{
+  name: fixedLiteral,
+  parameters: [text : Bytes, ty : CalculusCheck::Ty, element : Bytes],
+  result: RustAst::Expr,
+  body: (match (fixedWidth ty)
+    | Option.some width => (match (fixedLit text)
+      | Option.some parsed => (ctor RustAst::Expr.ELit (ctor RustAst::Lit.LitFixed (RustLower::kindOf width) (first parsed) (second parsed)) (valueAt element ty))
+      | Option.none => (failed 0))
+    | Option.none => (failed 0)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
   name: lowerValue,
-  parameters: [known : CalculusCheck::Ty, edges : RustLower::Edges, adts : CalculusCheck::Ty, owner : CalculusCheck::Ty, mode : Nat, value : CalculusCheck::Value, ty : CalculusCheck::Ty],
+  parameters: [
+    known : CalculusCheck::Ty,
+    edges : RustLower::Edges,
+    adts : CalculusCheck::Ty,
+    owner : CalculusCheck::Ty,
+    mode : Nat,
+    value : CalculusCheck::Value,
+    ty : CalculusCheck::Ty
+  ],
   result: RustAst::Expr,
   body: (match value
     | CalculusCheck::Value.VUnit => (ctor RustAst::Expr.ELit (ctor RustAst::Lit.LitUnit) (valueAt (prim utf8_encode "value:unit" : Bytes) ty))
     | CalculusCheck::Value.VBool flag => (ctor RustAst::Expr.ELit (ctor RustAst::Lit.LitBool flag) (valueAt (prim utf8_encode "value:bool" : Bytes) ty))
     | CalculusCheck::Value.VNat text => (match (natLit text)
-    | Option.some number => (ctor RustAst::Expr.ELit (ctor RustAst::Lit.LitNat number) (valueAt (prim utf8_encode "value:nat" : Bytes) ty))
-    | Option.none => (failed 0))
+      | Option.some number => (ctor RustAst::Expr.ELit (ctor RustAst::Lit.LitNat number) (valueAt (prim utf8_encode "value:nat" : Bytes) ty))
+      | Option.none => (failed 0))
     | CalculusCheck::Value.VInt text => (match (intLit text)
-    | Option.some parsed => (ctor RustAst::Expr.ELit (ctor RustAst::Lit.LitInt (first parsed) (second parsed)) (valueAt (prim utf8_encode "value:int" : Bytes) ty))
-    | Option.none => (failed 0))
-    | CalculusCheck::Value.VU8 text => (match (fixedWidth ty)
-      | Option.some width => (match (fixedLit text)
-        | Option.some parsed => (ctor RustAst::Expr.ELit (ctor RustAst::Lit.LitFixed (RustLower::kindOf width) (first parsed) (second parsed)) (valueAt (prim utf8_encode "value:u8" : Bytes) ty))
-        | Option.none => (failed 0))
+      | Option.some parsed => (ctor RustAst::Expr.ELit (ctor RustAst::Lit.LitInt (first parsed) (second parsed)) (valueAt (prim utf8_encode "value:int" : Bytes) ty))
       | Option.none => (failed 0))
-    | CalculusCheck::Value.VU16 text => (match (fixedWidth ty)
-      | Option.some width => (match (fixedLit text)
-        | Option.some parsed => (ctor RustAst::Expr.ELit (ctor RustAst::Lit.LitFixed (RustLower::kindOf width) (first parsed) (second parsed)) (valueAt (prim utf8_encode "value:u16" : Bytes) ty))
-        | Option.none => (failed 0))
-      | Option.none => (failed 0))
-    | CalculusCheck::Value.VU32 text => (match (fixedWidth ty)
-      | Option.some width => (match (fixedLit text)
-        | Option.some parsed => (ctor RustAst::Expr.ELit (ctor RustAst::Lit.LitFixed (RustLower::kindOf width) (first parsed) (second parsed)) (valueAt (prim utf8_encode "value:u32" : Bytes) ty))
-        | Option.none => (failed 0))
-      | Option.none => (failed 0))
-    | CalculusCheck::Value.VU64 text => (match (fixedWidth ty)
-      | Option.some width => (match (fixedLit text)
-        | Option.some parsed => (ctor RustAst::Expr.ELit (ctor RustAst::Lit.LitFixed (RustLower::kindOf width) (first parsed) (second parsed)) (valueAt (prim utf8_encode "value:u64" : Bytes) ty))
-        | Option.none => (failed 0))
-      | Option.none => (failed 0))
-    | CalculusCheck::Value.VI8 text => (match (fixedWidth ty)
-      | Option.some width => (match (fixedLit text)
-        | Option.some parsed => (ctor RustAst::Expr.ELit (ctor RustAst::Lit.LitFixed (RustLower::kindOf width) (first parsed) (second parsed)) (valueAt (prim utf8_encode "value:i8" : Bytes) ty))
-        | Option.none => (failed 0))
-      | Option.none => (failed 0))
-    | CalculusCheck::Value.VI16 text => (match (fixedWidth ty)
-      | Option.some width => (match (fixedLit text)
-        | Option.some parsed => (ctor RustAst::Expr.ELit (ctor RustAst::Lit.LitFixed (RustLower::kindOf width) (first parsed) (second parsed)) (valueAt (prim utf8_encode "value:i16" : Bytes) ty))
-        | Option.none => (failed 0))
-      | Option.none => (failed 0))
-    | CalculusCheck::Value.VI32 text => (match (fixedWidth ty)
-      | Option.some width => (match (fixedLit text)
-        | Option.some parsed => (ctor RustAst::Expr.ELit (ctor RustAst::Lit.LitFixed (RustLower::kindOf width) (first parsed) (second parsed)) (valueAt (prim utf8_encode "value:i32" : Bytes) ty))
-        | Option.none => (failed 0))
-      | Option.none => (failed 0))
-    | CalculusCheck::Value.VI64 text => (match (fixedWidth ty)
-      | Option.some width => (match (fixedLit text)
-        | Option.some parsed => (ctor RustAst::Expr.ELit (ctor RustAst::Lit.LitFixed (RustLower::kindOf width) (first parsed) (second parsed)) (valueAt (prim utf8_encode "value:i64" : Bytes) ty))
-        | Option.none => (failed 0))
-      | Option.none => (failed 0))
+    | CalculusCheck::Value.VU8 text => (fixedLiteral text ty (prim utf8_encode "value:u8" : Bytes))
+    | CalculusCheck::Value.VU16 text => (fixedLiteral text ty (prim utf8_encode "value:u16" : Bytes))
+    | CalculusCheck::Value.VU32 text => (fixedLiteral text ty (prim utf8_encode "value:u32" : Bytes))
+    | CalculusCheck::Value.VU64 text => (fixedLiteral text ty (prim utf8_encode "value:u64" : Bytes))
+    | CalculusCheck::Value.VI8 text => (fixedLiteral text ty (prim utf8_encode "value:i8" : Bytes))
+    | CalculusCheck::Value.VI16 text => (fixedLiteral text ty (prim utf8_encode "value:i16" : Bytes))
+    | CalculusCheck::Value.VI32 text => (fixedLiteral text ty (prim utf8_encode "value:i32" : Bytes))
+    | CalculusCheck::Value.VI64 text => (fixedLiteral text ty (prim utf8_encode "value:i64" : Bytes))
     | CalculusCheck::Value.VString text => (ctor RustAst::Expr.ELit (ctor RustAst::Lit.LitStr text) (valueAt (prim utf8_encode "value:string" : Bytes) ty))
     | CalculusCheck::Value.VBytes hex => (match (hexOctets hex)
-    | Option.some octets => (ctor RustAst::Expr.ELit (ctor RustAst::Lit.LitBytes octets) (valueAt (prim utf8_encode "value:bytes" : Bytes) ty))
-    | Option.none => (failed 0))
+      | Option.some octets => (ctor RustAst::Expr.ELit (ctor RustAst::Lit.LitBytes octets) (valueAt (prim utf8_encode "value:bytes" : Bytes) ty))
+      | Option.none => (failed 0))
     | CalculusCheck::Value.VOrdering order => (ctor RustAst::Expr.ELit (ctor RustAst::Lit.LitOrdering (match order
       | CalculusCheck::OrderingValue.OLt => (ctor RustAst::OrderingKind.OkLess)
       | CalculusCheck::OrderingValue.OEq => (ctor RustAst::OrderingKind.OkEqual)
       | CalculusCheck::OrderingValue.OGt => (ctor RustAst::OrderingKind.OkGreater))) (valueAt (prim utf8_encode "value:ordering" : Bytes) ty))
-    | CalculusCheck::Value.VNone => (match (optionInner ty)
-    | Option.some inner => (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConNone (RustLower::vty known inner)) (ctor RustAst::Expr.ENil) (valueAt (prim utf8_encode "value:none" : Bytes) ty))
-    | Option.none => (failed 0))
-    | CalculusCheck::Value.VSome inner => (match (optionInner ty)
-    | Option.some element => (let one : RustAst::Expr := (lowerValue known edges adts owner 0 inner element); (if (bad one) then (failed 0) else (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConSome) (ctor RustAst::Expr.ECons one (ctor RustAst::Expr.ENil)) (valueAt (prim utf8_encode "value:some" : Bytes) ty))))
-    | Option.none => (failed 0))
-    | CalculusCheck::Value.VOk inner => (match (resultParts ty)
-    | Option.some parts => (let one : RustAst::Expr := (lowerValue known edges adts owner 0 inner (first parts)); (if (bad one) then (failed 0) else (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConOk (RustLower::vty known (first parts)) (RustLower::vty known (second parts))) (ctor RustAst::Expr.ECons one (ctor RustAst::Expr.ENil)) (valueAt (prim utf8_encode "value:ok" : Bytes) ty))))
-    | Option.none => (failed 0))
-    | CalculusCheck::Value.VError inner => (match (resultParts ty)
-    | Option.some parts => (let one : RustAst::Expr := (lowerValue known edges adts owner 0 inner (second parts)); (if (bad one) then (failed 0) else (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConErr (RustLower::vty known (first parts)) (RustLower::vty known (second parts))) (ctor RustAst::Expr.ECons one (ctor RustAst::Expr.ENil)) (valueAt (prim utf8_encode "value:error" : Bytes) ty))))
-    | Option.none => (failed 0))
-    | CalculusCheck::Value.VList items => (match (listElement ty)
-    | Option.some element => (lowerValue known edges adts owner 1 items element)
-    | Option.none => (failed 0))
-    | CalculusCheck::Value.VPair left right => (match (pairParts ty)
-    | Option.some parts => (let one : RustAst::Expr := (lowerValue known edges adts owner 0 left (first parts)); (if (bad one) then (failed 0) else (let two : RustAst::Expr := (lowerValue known edges adts owner 0 right (second parts)); (if (bad two) then (failed 0) else (ctor RustAst::Expr.EPair one two (valueAt (prim utf8_encode "value:pair" : Bytes) ty))))))
-    | Option.none => (failed 0))
-    | CalculusCheck::Value.VAdt constructor fields => (match (adtIndex ty)
-    | Option.some adt => (match (adtFields adts adt constructor)
-    | Option.some types => (let one : RustAst::Expr := (lowerValue known edges adts (ctor CalculusCheck::Ty.TAdt adt) 2 fields types); (if (bad one) then (failed 0) else (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConAdt adt constructor) one (valueAt (prim utf8_encode "value:adt" : Bytes) ty))))
-    | Option.none => (failed 0))
-    | Option.none => (failed 0))
+    | CalculusCheck::Value.VNone => (let inner : CalculusCheck::Ty := (CalculusCheck::tyFirst ty); (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConNone (RustLower::vty known inner)) (ctor RustAst::Expr.ENil) (valueAt (prim utf8_encode "value:none" : Bytes) ty)))
+    | CalculusCheck::Value.VSome inner => (let element : CalculusCheck::Ty := (CalculusCheck::tyFirst ty); (let one : RustAst::Expr := (lowerValue known edges adts owner 0 inner element); (if (bad one) then (failed 0) else (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConSome) (ctor RustAst::Expr.ECons one (ctor RustAst::Expr.ENil)) (valueAt (prim utf8_encode "value:some" : Bytes) ty)))))
+    | CalculusCheck::Value.VOk inner => (let one : RustAst::Expr := (lowerValue known edges adts owner 0 inner (CalculusCheck::tyFirst ty)); (if (bad one) then (failed 0) else (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConOk (RustLower::vty known (CalculusCheck::tyFirst ty)) (RustLower::vty known (CalculusCheck::tySecond ty))) (ctor RustAst::Expr.ECons one (ctor RustAst::Expr.ENil)) (valueAt (prim utf8_encode "value:ok" : Bytes) ty))))
+    | CalculusCheck::Value.VError inner => (let one : RustAst::Expr := (lowerValue known edges adts owner 0 inner (CalculusCheck::tySecond ty)); (if (bad one) then (failed 0) else (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConErr (RustLower::vty known (CalculusCheck::tyFirst ty)) (RustLower::vty known (CalculusCheck::tySecond ty))) (ctor RustAst::Expr.ECons one (ctor RustAst::Expr.ENil)) (valueAt (prim utf8_encode "value:error" : Bytes) ty))))
+    | CalculusCheck::Value.VList items => (lowerValue known edges adts owner 1 items (CalculusCheck::tyFirst ty))
+    | CalculusCheck::Value.VPair left right => (let one : RustAst::Expr := (lowerValue known edges adts owner 0 left (CalculusCheck::tyFirst ty)); (if (bad one) then (failed 0) else (let two : RustAst::Expr := (lowerValue known edges adts owner 0 right (CalculusCheck::tySecond ty)); (if (bad two) then (failed 0) else (ctor RustAst::Expr.EPair one two (valueAt (prim utf8_encode "value:pair" : Bytes) ty))))))
+    | CalculusCheck::Value.VAdt constructor fields => (let adt : Nat := (CalculusCheck::tyAdtIndex ty); (match (adtFields adts adt constructor)
+      | Option.some types => (let one : RustAst::Expr := (lowerValue known edges adts (ctor CalculusCheck::Ty.TAdt adt) 2 fields types); (if (bad one) then (failed 0) else (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConAdt adt constructor) one (valueAt (prim utf8_encode "value:adt" : Bytes) ty))))
+      | Option.none => (failed 0)))
     | CalculusCheck::Value.VClosure d0 d1 => (failed 0)
     | CalculusCheck::Value.VNil => (if (mode =? 1) then (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConNil (RustLower::vty known ty)) (ctor RustAst::Expr.ENil) (record RustValidate::Origin {element := (prim utf8_encode "value:list" : Bytes), width := (ctor Option.none [RustValidate::IntKind])})) else (if (mode =? 2) then (ctor RustAst::Expr.ENil) else (failed 0)))
     | CalculusCheck::Value.VCons item rest => (if (mode =? 1) then (let one : RustAst::Expr := (lowerValue known edges adts owner 0 item ty); (if (bad one) then (failed 0) else (let two : RustAst::Expr := (lowerValue known edges adts owner 1 rest ty); (if (bad two) then (failed 0) else (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConCons) (ctor RustAst::Expr.ECons one (ctor RustAst::Expr.ECons two (ctor RustAst::Expr.ENil))) (record RustValidate::Origin {element := (prim utf8_encode "value:list" : Bytes), width := (ctor Option.none [RustValidate::IntKind])})))))) else (if (mode =? 2) then (match ty
-    | CalculusCheck::Ty.TUnit => (ctor RustAst::Expr.ENil)
-    | CalculusCheck::Ty.TBool => (ctor RustAst::Expr.ENil)
-    | CalculusCheck::Ty.TNat => (ctor RustAst::Expr.ENil)
-    | CalculusCheck::Ty.TInt => (ctor RustAst::Expr.ENil)
-    | CalculusCheck::Ty.TFixed d0 => (ctor RustAst::Expr.ENil)
-    | CalculusCheck::Ty.TString => (ctor RustAst::Expr.ENil)
-    | CalculusCheck::Ty.TBytes => (ctor RustAst::Expr.ENil)
-    | CalculusCheck::Ty.TOrdering => (ctor RustAst::Expr.ENil)
-    | CalculusCheck::Ty.TOption d0 => (ctor RustAst::Expr.ENil)
-    | CalculusCheck::Ty.TResult d0 d1 => (ctor RustAst::Expr.ENil)
-    | CalculusCheck::Ty.TList d0 => (ctor RustAst::Expr.ENil)
-    | CalculusCheck::Ty.TPair d0 d1 => (ctor RustAst::Expr.ENil)
-    | CalculusCheck::Ty.TAdt d0 => (ctor RustAst::Expr.ENil)
-    | CalculusCheck::Ty.TFn d0 d1 => (ctor RustAst::Expr.ENil)
-    | CalculusCheck::Ty.TNil => (ctor RustAst::Expr.ENil)
-  | CalculusCheck::Ty.TCons head tail => (let one : RustAst::Expr := (lowerValue known edges adts owner 0 item head); (if (bad one) then (failed 0) else (let two : RustAst::Expr := (lowerValue known edges adts owner 2 rest tail); (if (bad two) then (failed 0) else (ctor RustAst::Expr.ECons (if (RustLower::cyclic known edges owner head) then (ctor RustAst::Expr.EWrap (ctor RustValidate::WrapKind.WkBox) one (record RustValidate::Origin {element := (prim utf8_encode "indirection" : Bytes), width := (ctor Option.none [RustValidate::IntKind])})) else one) two)))))) else (failed 0)))),
+      | CalculusCheck::Ty.TUnit => (ctor RustAst::Expr.ENil)
+      | CalculusCheck::Ty.TBool => (ctor RustAst::Expr.ENil)
+      | CalculusCheck::Ty.TNat => (ctor RustAst::Expr.ENil)
+      | CalculusCheck::Ty.TInt => (ctor RustAst::Expr.ENil)
+      | CalculusCheck::Ty.TFixed d0 => (ctor RustAst::Expr.ENil)
+      | CalculusCheck::Ty.TString => (ctor RustAst::Expr.ENil)
+      | CalculusCheck::Ty.TBytes => (ctor RustAst::Expr.ENil)
+      | CalculusCheck::Ty.TOrdering => (ctor RustAst::Expr.ENil)
+      | CalculusCheck::Ty.TOption d0 => (ctor RustAst::Expr.ENil)
+      | CalculusCheck::Ty.TResult d0 d1 => (ctor RustAst::Expr.ENil)
+      | CalculusCheck::Ty.TList d0 => (ctor RustAst::Expr.ENil)
+      | CalculusCheck::Ty.TPair d0 d1 => (ctor RustAst::Expr.ENil)
+      | CalculusCheck::Ty.TAdt d0 => (ctor RustAst::Expr.ENil)
+      | CalculusCheck::Ty.TFn d0 d1 => (ctor RustAst::Expr.ENil)
+      | CalculusCheck::Ty.TNil => (ctor RustAst::Expr.ENil)
+      | CalculusCheck::Ty.TCons head tail => (let one : RustAst::Expr := (lowerValue known edges adts owner 0 item head); (if (bad one) then (failed 0) else (let two : RustAst::Expr := (lowerValue known edges adts owner 2 rest tail); (if (bad two) then (failed 0) else (ctor RustAst::Expr.ECons (if (RustLower::cyclic known edges owner head) then (ctor RustAst::Expr.EWrap (ctor RustValidate::WrapKind.WkBox) one (record RustValidate::Origin {element := (prim utf8_encode "indirection" : Bytes), width := (ctor Option.none [RustValidate::IntKind])})) else one) two)))))) else (failed 0)))),
   axioms: [Quot.sound, propext],
   executable: true,
   recursive_argument: value
@@ -556,7 +437,16 @@ definition{
 
 definition{
   name: lowerValueAt,
-  parameters: [spec : Bytes, adts : CalculusCheck::Ty, parameters : (List (List Nat)), types : CalculusCheck::Ty, results : CalculusCheck::Ty, bodies : CalculusCheck::Expr, sites : CalculusCheck::Ty, at : Nat],
+  parameters: [
+    spec : Bytes,
+    adts : CalculusCheck::Ty,
+    parameters : (List (List Nat)),
+    types : CalculusCheck::Ty,
+    results : CalculusCheck::Ty,
+    bodies : CalculusCheck::Expr,
+    sites : CalculusCheck::Ty,
+    at : Nat
+  ],
   result: (Option RustAst::Expr),
   body: (let program : CalculusCheck::Program := (record CalculusCheck::Program {spec := spec, adts := adts, parameters := parameters, types := types, results := results, bodies := bodies}); (let numbered : RustLower::Collect := (RustLower::collectFunctions program record{
     type: RustLower::Collect,
@@ -571,9 +461,8 @@ definition{
       | Option.none => (ctor Option.none [RustAst::Expr]))
     | Option.none => (ctor Option.none [RustAst::Expr])))))))),
   axioms: [Quot.sound, propext],
-  production: {effects: [allocation, overflow, recursion], targets: [rust-std]},
-  executable: true
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
 }
-
 \end{semanticmodule}
 \end{lexlean}

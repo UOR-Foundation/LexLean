@@ -1,11 +1,26 @@
 {
   "remainder": "rest",
   "parts": {
+    "bootstrap-bodies": [
+      "BS-11"
+    ],
     "bootstrap-check": [
       "BS-04"
     ],
+    "bootstrap-lower": [
+      "BS-07"
+    ],
+    "bootstrap-moves": [
+      "BS-08"
+    ],
     "bootstrap-print": [
       "BS-06"
+    ],
+    "bootstrap-runtime": [
+      "BS-09"
+    ],
+    "bootstrap-terms": [
+      "BS-10"
     ],
     "bootstrap-validate": [
       "BS-05"
@@ -51,6 +66,15 @@
       "SP-12",
       "SP-13",
       "SP-14"
+    ],
+    "preservation-lists": [
+      "SP-15"
+    ],
+    "preservation-runtime": [
+      "SP-22"
+    ],
+    "preservation-support": [
+      "SP-25"
     ],
     "production": [
       "CL-01",
@@ -185,27 +209,6 @@
       "VR-21",
       "VR-22",
       "VR-23"
-    ],
-    "preservation-lists": [
-      "SP-15"
-    ],
-    "preservation-runtime": [
-      "SP-22"
-    ],
-    "preservation-support": [
-      "SP-25"
-    ],
-    "bootstrap-runtime": [
-      "BS-09"
-    ],
-    "bootstrap-lower": [
-      "BS-07"
-    ],
-    "bootstrap-moves": [
-      "BS-08"
-    ],
-    "bootstrap-terms": [
-      "BS-10"
     ]
   }
 }

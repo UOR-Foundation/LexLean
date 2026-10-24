@@ -1958,7 +1958,7 @@ definition{
   name: siteOwn,
   parameters: [own : Ty, tree : Ty],
   result: Ty,
-  body: (ctor Ty.TPair own (tySecond tree)),
+  body: (ctor Ty.TPair own (if (isNilTy tree) then (ctor Ty.TNil) else (tySecond tree))),
   executable: true
 }
 
@@ -1988,7 +1988,7 @@ definition{
     | Expr.EField value index => (siteOne (siteOwn (inferTy program value scope) (useTree program value scope (ctor Ty.TNil) 0)))
     | Expr.ENil => (ctor Ty.TNil)
     | Expr.ECons head tail => (match position
-      | Nat.zero => (let one : Ty := (useTree program head scope (ctor Ty.TNil) 0); (siteNode (ctor Ty.TNil) (if (isNilTy subject) then one else (siteOwn (inferTy program head scope) one)) (ctor Ty.TCons (useTree program tail scope subject 0) (ctor Ty.TNil))))
+      | Nat.zero => (let one : Ty := (useTree program head scope subject 0); (siteNode (ctor Ty.TNil) (if (isNilTy subject) then one else (siteOwn (inferTy program head scope) one)) (ctor Ty.TCons (useTree program tail scope subject 0) (ctor Ty.TNil))))
       | Nat.succ previous => (siteNode (ctor Ty.TNil) (useTree program head (bindAll (functionNames program previous) (functionTypesOr program previous) (nil (Nat * Ty))) (ctor Ty.TNil) 0) (ctor Ty.TCons (useTree program tail scope subject (position + 1)) (ctor Ty.TNil))))
     | Expr.EArm shape binders body => (siteNode (ctor Ty.TNil) (useTree program body (bindAll binders (armFields program shape subject) scope) (ctor Ty.TNil) 0) (ctor Ty.TNil))),
   axioms: [Quot.sound, propext],

@@ -10264,6 +10264,91 @@ are recounted by running their cases on this tree until they passed every
 count they assert (the cases were run for 400 to 900 s each and stopped there,
 not to completion: the full runs, with the packages, are the maintainer's).
 
+`BS-11` holds four production roots, `LexLeanBoot.CalculusCheck.useTrees` and
+`LexLeanBoot.RustBodies.lowerFrame`, `lowerBodies`, and `foldBodies`
+(`bootstrap/src/RustBodies.lex.tex`), the lowering of the terms of a function
+body (`Lowering::expr`) and the `fold` of `lower`, to the Function items of the
+crate that `rust::lower` returns, by composition: the oracle's `expr` is
+private to the renderer, whose files the compiler-semantics digest frames, so
+it is not exposed. The bodies the roots return are put in place of the bodies of
+the Function items and given to `applyMoves` of `BS-08`, and the items come out
+to the byte. The programs are those in which `rust::lower` succeeds, no function
+can overflow, and none loops: the vectors are the programs of four rules of the
+row (a typed let that is returned, a computed unit operand, the load of a boxed
+field in an arm, an inner conditional), those of `BS-07` and `BS-04`, and the
+committed ones that qualify, 156 in all with the packages of this row among the
+committed ones (155 without, within the 300 nodes the evaluator is given), and
+320 seeded mutants drawn 3,000 times from the smaller committed programs. On
+every host the rendered `useTrees` package agrees with `calculus::sites::uses` on
+the 156 vectors (rustc built the packages and the harness in 5.5 s, the runs
+took 0.1 s); on the normative host the evaluator agrees on the vectors and the
+mutants (465 runs, 22.6 s, the composition 124.7 s) and the rendered packages of
+the roots agree with it. The case up to the comparison with the committed
+packages takes 2,220 s on this host (4 cores) and stops there on this tree: the
+packages `use_trees`, `lower_frame`, `lower_bodies`, `fold_bodies`, the stack
+rows, `bootstrap/expected/`, the locks, and the committed records are the
+maintainer's to regenerate.
+
+Measured certificate parts (bytes; the limit `max_file_bytes` is 6,291,456 and
+the budget the case asserts is 5,505,024, 87.5%):
+
+| Root | Part A | Part B | Part E |
+| --- | ---: | ---: | ---: |
+| `useTrees` | 3,144,977 | 3,039,538 | 121,053 |
+| `lowerFrame` | 1,223,239 | 1,084,324 | 134,226 |
+| `lowerBodies` | 5,327,163 (84.7%) | 4,236,363 | 291,583 |
+| `foldBodies` | 356,763 | 236,561 | 130,927 |
+
+The export of the four roots took 31 min 44 s. `lowerBodies` is beyond the 75%
+of `max_file_bytes` that issue 92 sets for the typing roots registered after
+#259, by 608,571 bytes: the lowering of terms is one recursion family (each kind
+of term lowers through the same operands, the same choice for a conditional or
+a match, and the same arms, with the fresh names threaded through all of
+them) and the smallest cut that any vector reaches, so the row states the
+budget of 87.5% and the headroom of 15% that remains is measured at every
+landing. The lower bound of certificate A that the lowering phase reports for the single
+root went 8.44 MB, 7.59 MB, and 4.82 MB over the drafts: the printer of the first
+`sameCode` was replaced by a token comparison, the default expansions of
+single-pick matches were removed, and the root was cut into the frame, the
+bodies, and the fold. The measured part of the last draft is the figure above.
+
+Thirteen planted defects are made on a copy of `bootstrap/src/RustBodies.lex.tex`
+on every run and each is caught by the oracle; the vector is the index among
+the vectors, then the mutants:
+
+- **a variable of a copy type is cloned**, vector 3.
+- **a binding with a stated type is folded into the value it returns**, vector 3.
+- **a conditional on true and false is not the condition**, vector 88.
+- **a conditional on false and true is not the negated condition**, vector 88.
+- **a computed unit operand is not bound first**, vector 4.
+- **a match whose arms rebuild what they matched is kept**, vector 119.
+- **the predecessor of a successor arm is not bound**, vector 119.
+- **a boxed field of an arm is not loaded**, vector 5.
+- **a closure's function type keeps the captured parameters**, vector 339.
+- **a conversion's operand is not widened**, vector 61.
+- **two branches of one code are never the same code**, vector 88.
+- **the condition of an inner conditional is not held**, vector 6.
+- **a literal condition is not bound first**, vector 119.
+
+Findings. (1) The Lean extraction of `RustBodies` writes more than the default
+`max_child_output_bytes` (16,777,216 bytes), so the bootstrap project
+configures 33,554,432 in `bootstrap/lexlean.toml` (a semantic input, like
+`max_total_source_bytes`, so the lock and every package of the project move at
+the landing). (2) Certificate B was refused by the Lean kernel (`LLV7015`, an
+application type mismatch in the `Corr` proof of a match) for any arm whose whole
+body is a binder of the matched recursive type; the error names a root of the
+project that is not the culprit, because verification covers every root of the
+entrypoint closure. It was reproduced in a one-module project (issue 310): the
+arm `itemsTail` is refused, a constant is not, and the same value through the
+identity function `(same itemsTail)` is not. `RustBodies` hands such binders
+through `keepE` and `keepP` until that is fixed. (3) The effects of `foldBodies`
+are `allocation` and `recursion`: the fold does no arithmetic, and the case
+requires the declared effects to be exactly the realized ones. (4) The count of
+the vectors depends on the committed programs, which the packages of this row
+join: the case counts 156 with them and 155 without. The counts of `BS-05`
+to `BS-08` and `BS-10` move with the packages of this row and are recounted by
+the maintainer at the landing.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the

@@ -72,6 +72,15 @@
     "hints": ""
   },
   {
+    "part": "bdd-bootstrap-bodies",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-bodies",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
     "part": "bdd-bootstrap-terms",
     "recipes": "bdd",
     "examples_part": "",

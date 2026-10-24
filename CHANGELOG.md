@@ -428,6 +428,19 @@ and Unreleased holds what has landed since.
   `max_total_source_bytes` at this root (67,815,299 bytes), so the project
   configures 134217728 (SPEC.md §17.23). The register is
   456 IDs.
+- The terms of a function body of the Rust lowering as language-1.2 source,
+  second pass of the lowering of terms (SPEC.md §17.23, §17.16, `BS-11`, #92;
+  no new diagnostic code, no change to the language-1.2 identity). `useTrees`
+  of `CalculusCheck` and `lowerFrame`, `lowerBodies`, and `foldBodies` of
+  `RustBodies` lower the function bodies of a program and fold them as
+  `Lowering::expr` and `fold` do, held to the Function items of `rust::lower`
+  by composition with `applyMoves`, to the byte, on 156 vectors and 320 seeded
+  mutants; no file of the renderer changes. The largest certificate part is
+  5,327,163 bytes (`lowerBodies`), 84.7% of `max_file_bytes`. The bootstrap
+  project configures `max_child_output_bytes = 33554432`, the Lean extraction
+  of `RustBodies` writing more than 16,777,216 bytes. Certificate B refuses a
+  match arm that returns a binder of the matched type (#310). The register is
+  457 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or

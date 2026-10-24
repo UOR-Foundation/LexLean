@@ -79,14 +79,14 @@ struct Legs {
     types: Run,
 }
 
-fn flags(flags: Vec<bool>) -> Value {
+pub(super) fn flags(flags: Vec<bool>) -> Value {
     list(flags.into_iter().map(boolean).collect())
 }
 
 /// The dead functions as the lowering shows them: a function with an argument
 /// no value inhabits renders as the empty match on that argument, and no live
 /// body is one. The oracle needs no entry of its own for them.
-fn lowered(program: &Program) -> Option<(Vec<bool>, Value)> {
+pub(super) fn lowered(program: &Program) -> Option<(Vec<bool>, Value)> {
     let krate = rust::lower(program, Profile::Std).ok()?;
     let mut dead = vec![false; program.functions.len()];
     for item in &krate.items {
@@ -209,7 +209,7 @@ fn adt(index: u64) -> Ty {
 /// with an argument no value inhabits whose closures do not count, and types
 /// that hold themselves or a function type.
 #[allow(clippy::too_many_lines)]
-fn analysis() -> Vec<Program> {
+pub(super) fn analysis() -> Vec<Program> {
     let fun = function_type(vec![Ty::Nat], Ty::Nat);
     let mut out = Vec::new();
     // A chain of calls to a failing primitive, and a function that calls none.

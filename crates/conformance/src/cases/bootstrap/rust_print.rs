@@ -252,7 +252,7 @@ fn enc_params(parameters: &[(Pat, ast::Type)]) -> Value {
 }
 
 /// `Def`: enum, apply, function, nil, cons.
-fn enc_item_def(item: &ItemDef) -> Value {
+pub(super) fn enc_item_def(item: &ItemDef) -> Value {
     match item {
         ItemDef::Enum { name, variants, at } => {
             adt(0, vec![enc_type(name), enc_row(variants), enc_origin(at)])

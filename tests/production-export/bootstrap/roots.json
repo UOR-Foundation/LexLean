@@ -57,6 +57,14 @@
       "version": "1.0.0"
     },
     {
+      "name": "fold_bodies",
+      "root": "LexLeanBoot.RustBodies.foldBodies",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "is_closed_lean_name",
       "root": "LexLeanBoot.AxiomOutput.isClosedLeanName",
       "targets": [
@@ -67,6 +75,22 @@
     {
       "name": "lex",
       "root": "LexLeanBoot.TokenAudit.lex",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "lower_bodies",
+      "root": "LexLeanBoot.RustBodies.lowerBodies",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "lower_frame",
+      "root": "LexLeanBoot.RustBodies.lowerFrame",
       "targets": [
         "rust-std"
       ],
@@ -131,6 +155,14 @@
     {
       "name": "site_trees",
       "root": "LexLeanBoot.CalculusCheck.siteTrees",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "use_trees",
+      "root": "LexLeanBoot.CalculusCheck.useTrees",
       "targets": [
         "rust-std"
       ],
