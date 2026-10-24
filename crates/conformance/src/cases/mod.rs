@@ -29,6 +29,7 @@ mod normative_source;
 mod operational;
 mod oracle;
 mod packages;
+mod performance_corpus;
 mod preservation;
 mod production;
 mod production_export;
@@ -113,6 +114,7 @@ pub fn run(id: &str) {
         "CL" => cli_api::run(id),
         "SE" => security::run(id),
         "EX" => examples::run(id),
+        "PC" => performance_corpus::run(id),
         "PD" => production::run(id),
         "PX" => production_export::run(id),
         "NE" => extraction::run(id),

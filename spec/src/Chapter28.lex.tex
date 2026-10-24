@@ -365,6 +365,60 @@ definition{
   parameters: [],
   result: DocRows::Item,
   body: constructor{
+    arguments: [3, 1, "28.7 The performance corpus"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0029,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The performance corpus is the language-1.2 project `examples/performance-corpus` with its manifest `corpus.toml` (`lexlean/performance-corpus/1`). It is the one object over which every acceptance criterion about the performance of compiled programs quantifies: a criterion names the corpus as `performance-corpus`, a kind, or a member by its identifier, and never a program outside it. The corpus is general: no member names or depends on a consumer of LexLean, and a consumer is cited as evidence, never admitted as a member." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0030,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The manifest fixes the closed kinds `integer-kernels`, `byte-parsing`, `long-folds`, `maps-and-sets`, `recursion`, and `compiler`, and one `[[member]]` row per member: its identifier `<kind>/<name>`, its kind, its production root (§17.13), the targets and effects the root declares, and its contract, one sentence stating the function the root computes over the inputs it admits. Every member is exactly one production root of the project, and every root is the root of at most one member. The kind `compiler` states its precondition, that the compiler is itself a production root (§17.23), and has no member while that precondition does not hold; every other kind has at least one member." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0031,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Membership is checked by machine (`PC-01`, `PC-02`): a manifest with an unknown field, an unregistered kind, a member whose root is not a production root of the project or is declared with other targets or effects than its row states, a kind without a precondition and without a member, or a kind with both, fails the check naming the defect. A member is specific to a consumer, and refused, when the project declares a source package or a lexicon source that is neither builtin nor a path inside the project, or when any file of the corpus holds a network address or names a repository. Every member exports through `lexlean::api::production` (§24.7) in every target it declares with status `kernel-checked`, one output per member and target, and the published bundle replays with status `bindings-verified`." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0032,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
     arguments: [(cons "---" (nil String))],
     constructor: DocRows::Item.para,
     type_arguments: []

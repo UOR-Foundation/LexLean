@@ -77,7 +77,7 @@ and Unreleased holds what has landed since.
   plants). A loop of a fallible function that ends with a branch whose tails
   are not fallible values, which the old end check let through, is refused.
   The renderer digest and the language-1.2 compiler-semantics ID move.
-  Register 445.
+  Register 448.
 
 - CI toolchain fetches (#242): every step of `ci.yml`, `honesty.yml` and
   `reproducibility.yml` that fetches elan, the pinned Lean toolchain, or the
@@ -85,6 +85,21 @@ and Unreleased holds what has landed since.
   attempts of the same command. An HTTP 5xx or a resolver failure from a
   release host no longer fails a leg before its first test unless it lasts
   through all three. What is pinned and checked is unchanged. Register 443.
+
+- The general performance corpus (`PC-01`, `PC-02`, #124, L4.6 of #106):
+  `examples/performance-corpus`, a language-1.2 project whose manifest
+  `corpus.toml` (`lexlean/performance-corpus/1`) fixes the closed kinds
+  `integer-kernels`, `byte-parsing`, `long-folds`, `maps-and-sets`,
+  `recursion`, and `compiler`, and one row per member: its identifier
+  `<kind>/<name>`, its production root, the targets and effects the root
+  declares, and its contract. `conformance_pc_01` reads the manifest against
+  the project's production roots and refuses each registered defect;
+  `conformance_pc_02` refuses a source package, a lexicon source outside the
+  project, an address, or a repository name (so no member is specific to a
+  consumer, C1) and exports every member through `lexlean::api::production`.
+  The `compiler` kind states its precondition (the compiler as a production
+  root, §17.23) and has no member while it does not hold. SPEC.md gains
+  §28.7. Register 447.
 
 - `cargo xtask spec` (`NS-07`, #244): edit the chapter modules of `spec/` by
   item. `replace-block` and `insert-after` act on the paragraph, table or fence

@@ -1,0 +1,54 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{Tree}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{leaf}: \texttt{()}.\par
+\noindent Constructor \texttt{node}: \texttt{(Tree, Nat, Tree)}.\par
+\subsection*{\texttt{treeSum}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(tree : Tree)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match tree with | Tree.leaf => 0 | Tree.node l v r => ((treeSum (l) + v) + treeSum (r)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{treeDepth}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(tree : Tree)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match tree with | Tree.leaf => 0 | Tree.node l \_ r => (let dl : Nat := treeDepth (l); (let dr : Nat := treeDepth (r); (if (Nat.blt (dl) (dr)) then (dr + 1) else (dl + 1)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{treeStats}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(tree : Tree)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{(Prod (Nat) (Nat))}.\par
+\noindent Definition: \texttt{(treeSum (tree), treeDepth (tree))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{bisect\_decreases}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(target : Nat) (low : Nat) (high : Nat)}.\par
+\noindent Statement: \texttt{(((Nat.blt (low) (high)) = true) -> (((Nat.ble (target) ((low + low))) = false) -> ((LexLeanRuntime.subtract (high) ((low + 1)) : Nat) < (LexLeanRuntime.subtract (high) (low) : Nat))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{bisect}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Well-founded measure: \texttt{(LexLeanRuntime.subtract (high) (low) : Nat)}; decrease evidence per call: \texttt{bisect\_decreases}.\par
+\noindent Parameters: \texttt{(target : Nat) (low : Nat) (high : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-core, rust-std}; admitted effects: \texttt{overflow}.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(if (Nat.blt (low) (high)) then (if (Nat.ble (target) ((low + low))) then low else bisect (target) ((low + 1)) (high)) else high)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{tree\_stats\_example}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(treeStats (Tree.node (Tree.node (Tree.leaf) (1) (Tree.leaf)) (2) (Tree.leaf)) = (3, 2))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{bisect\_first}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(bisect (7) (0) (10) = 4)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\end{document}

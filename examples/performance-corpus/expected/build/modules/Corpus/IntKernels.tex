@@ -1,0 +1,29 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{clamp}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : Int) (low : Int) (high : Int)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Int}.\par
+\noindent Definition: \texttt{(if (LexLeanCollections.lessThan (value) (low) : Bool) then low else (if (LexLeanCollections.lessThan (high) (value) : Bool) then high else value))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{requantize}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(x : Int) (offset : Int) (multiplier : Int) (divisor : Int) (low : Int) (high : Int)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-core, rust-std}; admitted effects: \texttt{overflow}.\par
+\noindent Type: \texttt{Int}.\par
+\noindent Definition: \texttt{(let shifted : Int := (LexLeanRuntime.subtract (x) ((LexLeanRuntime.negate (offset) : Int)) : Int); (let scaled : Int := (LexLeanRuntime.subtract ((LexLeanRuntime.multiply (shifted) (multiplier) : Int)) ((LexLeanRuntime.negate ((LexLeanRuntime.quotient (divisor) ((2 : Int)) ((0 : Int)) : Int)) : Int)) : Int); clamp ((LexLeanRuntime.quotient (scaled) (divisor) ((0 : Int)) : Int)) (low) (high)))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{requantize\_mid}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(requantize ((100 : Int)) ((20 : Int)) ((9365133 : Int)) ((4294967296 : Int)) ((0 : Int)) ((255 : Int)) = (0 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{requantize\_clamps\_high}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(requantize ((7 : Int)) ((0 : Int)) ((1000 : Int)) ((1 : Int)) ((0 : Int)) ((255 : Int)) = (255 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\end{document}
