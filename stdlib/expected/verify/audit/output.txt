@@ -261,6 +261,26 @@
 'LexLeanRuntime.subtract' does not depend on any axioms
 'LexLeanRuntime.utf8Decode' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanRuntime.utf8Encode' does not depend on any axioms
+'LexLeanStd.Buffer.Buffer' does not depend on any axioms
+'LexLeanStd.Buffer.byteStep' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Buffer.decimal' does not depend on any axioms
+'LexLeanStd.Buffer.digit' does not depend on any axioms
+'LexLeanStd.Buffer.exceeded' does not depend on any axioms
+'LexLeanStd.Buffer.finish' does not depend on any axioms
+'LexLeanStd.Buffer.joinAll' does not depend on any axioms
+'LexLeanStd.Buffer.length' does not depend on any axioms
+'LexLeanStd.Buffer.new' does not depend on any axioms
+'LexLeanStd.Buffer.pairStep' does not depend on any axioms
+'LexLeanStd.Buffer.pairUp' does not depend on any axioms
+'LexLeanStd.Buffer.refuse' does not depend on any axioms
+'LexLeanStd.Buffer.seal' does not depend on any axioms
+'LexLeanStd.Buffer.writeAll' does not depend on any axioms
+'LexLeanStd.Buffer.writeByte' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Buffer.writeBytes' does not depend on any axioms
+'LexLeanStd.Buffer.writeDecimal' does not depend on any axioms
+'LexLeanStd.Buffer.writeEach' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Buffer.writeNumbers' does not depend on any axioms
+'LexLeanStd.Buffer.zeroStep' does not depend on any axioms
 'LexLeanStd.Sha256.Digest' does not depend on any axioms
 'LexLeanStd.Sha256.Schedule' does not depend on any axioms
 'LexLeanStd.Sha256.Working' does not depend on any axioms
