@@ -4807,6 +4807,7 @@ pub fn run(id: &str) {
         "SP-26" => super::rust_memory::run(id),
         // §17.16: the representation of a list.
         "SP-27" => super::rust_lists::run(id),
+        "SP-28" => super::rust_prims::run(id),
         "SP-23" => {
             let syntax = support::module_json(
                 &std::fs::read_to_string(
