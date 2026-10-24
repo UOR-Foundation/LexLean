@@ -4101,22 +4101,45 @@ All of these failures occur before Lean or LaTeX generation and before any
 child process starts.
 
 Migration is explicit and versioned. A language-1.1 project becomes a
-language-1.2 project only by changing its `language` row, rewriting each
-`semanticdata` discriminator from `/1` to `/2`, changing builtin glossary
-references from `1.1.0` to `1.2.0`, and regenerating the lock with
-`lexlean lock`. Every language-1.1 value is a valid language-1.2 value with
-the same meaning, so the migration changes identities (the compiler-semantics
-ID, the lock, and every source and semantic ID) but not generated Lean
-declarations; the generated text differs only in the portable runtime, which
-a language-1.2 module imports as the runtime module `LexLeanRuntime.Portable`
-with every definition exposed instead of splicing the language-1.1 text
-(rule 6 under *Collections and state threading*, *Runtime modules*), and the
-`reducible` attribute of proposition-valued definitions (rule 11 under
-*Models, contracts, realizations, and evidence*), which change no
-definition, type, or compiled code. No command migrates a project
-implicitly: building an
-unmigrated project under a newer compiler keeps its declared language and its
-historical identities and artifact bytes.
+language-1.2 project only through `lexlean migrate --to 1.2` (§23.4, `CL-24`),
+never implicitly: building an unmigrated project under a newer compiler keeps
+its declared language and its historical identities and artifact bytes. Changing
+the `language` row and the schema tag by hand does not migrate a project,
+because language 1.2 refuses the data form of a module with `LLP2003`
+(`AU-13`, §17.21.1); the command does everything a migration needs in one
+step:
+
+- every module of every source root is rewritten from `\semanticdata{...}` to
+  the authoring notation (§17.21) through `lexlean::sdk::to_notation`, after its
+  schema tag moves from `lexlean/semantic-module/1` to
+  `lexlean/semantic-module/2`; the notation reads back to exactly that module
+  or the module is refused, so the declaration names, theorem statements, and
+  axiom policies are those of the language-1.1 module;
+- each builtin glossary reference moves from `1.1.0` to `1.2.0` in every
+  `\useglossary` of every source and in the `imports` of every path lexicon
+  package, whose manifest `language` becomes `1.2` (the package's own version
+  and its entries are unchanged);
+- the `language` row of `lexlean.toml` becomes `1.2`, in canonical form;
+- the lock is regenerated as `lexlean/lock/2`.
+
+The migrated project is written into a scratch copy first, locked, and checked
+as a language-1.2 project; a project that does not check there is refused, and
+on every refusal no file of the project is written. A project whose language
+is not `1.1` is refused with `LLC0103`, and a module that is not a
+language-1.1 semantic module in the data form (one whose data is not the
+canonical JSON that language 1.1 `check` refuses with `LLT4001` is not, and is
+not canonicalized by the migration), or whose notation does not read
+back to the module (the conversion is checked; no schema-valid module is known
+to fail it), with `LLP2003`. Every language-1.1 value is a valid
+language-1.2 value with the same meaning, so the migration changes identities
+(the compiler-semantics ID, the lock, and every source and semantic ID) but not
+generated Lean declarations; the generated text differs only in the portable
+runtime, which a language-1.2 module imports as the runtime module
+`LexLeanRuntime.Portable` with every definition exposed instead of splicing the
+language-1.1 text (rule 6 under *Collections and state threading*, *Runtime
+modules*), and the `reducible` attribute of proposition-valued definitions
+(rule 11 under *Models, contracts, realizations, and evidence*), which change
+no definition, type, or compiled code.
 
 ### 17.13 Production eligibility
 
@@ -9274,6 +9297,29 @@ lexlean fmt [--check] [--all | INPUT...]
 
 Parses and uniquely resolves source, rewrites canonical source, or exact-byte compares under `--check`.
 
+#### `migrate`
+
+```text
+lexlean migrate --to 1.2 [--check]
+```
+
+Migrates a language-1.1 project to language 1.2 (§17.12): it rewrites every
+data-form module to the authoring notation, moves the builtin glossary
+references of the sources and the path lexicon packages to `1.2.0`, rewrites
+the `language` row, and regenerates the lock as `lexlean/lock/2`. `--to` takes
+`1.2` and nothing else. The result is proven in a scratch copy (locked and
+checked as language 1.2) before any file is written, the files are then
+replaced together (a file that changed between the proof and the replacement
+refuses the migration with `LLV7010` and nothing is written, and a replacement
+that fails restores every file already replaced, reporting every restore that
+failed), and a refusal writes nothing and creates no build root:
+`LLC0103` for a project that is not language 1.1, `LLP2003` for a module that is
+not a language-1.1 data-form semantic module (a data form that is not canonical
+JSON included, as language 1.1 `check` refuses it) or whose notation does not
+read back to it, and the diagnostics of the scratch check for a project that does not
+check as language 1.2. With `--check` the same proof runs and nothing is
+written. The command result names the migrated modules.
+
 #### `clean`
 
 ```text
@@ -10748,6 +10794,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `CL-21` | `cli-api` | Native diagnostics distinguish package-import cycles and unqualified cross-package term ambiguities without changing diagnostic wire bytes. | §24.5 |
 | `CL-22` | `cli-api` | A host that embeds the library ends every child process group the library started and has not seen exit through the public function `lexlean::verify::end_live_children`, which installs no signal handler, alters no signal disposition, never signals the host's own process or group, reports each group as ended, already gone, or failing with the OS error, and refuses a later child start with LLV7018 until the host re-enables it, and the `lexlean` executable ends its interrupted children through the same function. | §17.17, §24.6 |
 | `CL-23` | `cli-api` | lexlean production targets prints the canonical target-descriptor document in either output mode, production build --request publishes the bundle its request names and reports the bundle and the project's source, semantic, build, and attestation IDs in its command result, production verify-artifact replays a bundle with no project, and each maps a malformed request, a refused request, and a rejected replay to the exact exit code of its registered class. | §24.7 |
+| `CL-24` | `cli-api` | lexlean migrate --to 1.2 migrates a language-1.1 data-form project to language 1.2 in one command: it rewrites every module to the authoring notation through lexlean::sdk::to_notation with the same declarations, names, statements, and axiom policies, moves the builtin glossary references of every source and the imports of every path lexicon package to 1.2.0, rewrites the language row, and regenerates the lock as lexlean/lock/2, so the result checks, has a current lock, and is canonical; --check proves the migration and writes nothing; and a project that is not language 1.1 is refused with LLC0103 and a module that is not a language-1.1 data-form semantic module, a data form that is not canonical JSON included, with LLP2003, each leaving every file of the project unchanged. | §17.12, §23.4 |
 | `SE-01` | `security` | Source, package, workspace, resource, and output paths are confined and symlinks are rejected. | §25.1 |
 | `SE-02` | `security` | Special files, duplicate filesystem identities, and case-fold collisions are rejected before processing. | §25.1 |
 | `SE-03` | `security` | All child processes use direct executable and argv invocation with no shell. | §25.2 |
@@ -10962,7 +11009,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-09` | `language-models` | No prompt is code: no member of the closed language maps `string` or `bytes` to a function, a term, or source — every operation of the primitive registry that takes a `string` or `bytes` operand is classified by the audit with a data result, the registry's schema enumeration and the production registry's primitive rows equal one another and equal that classified set, and the text declarations of `lexlean/semantic-module/2` state no `string`-typed member, so a prompt reaches a model only as the tokens `encodeText` makes of it; a planted operation or text member of that shape is caught by the audit with its name. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 456.
+**Total required capability IDs:** 457.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 
