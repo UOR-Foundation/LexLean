@@ -314,7 +314,7 @@ impl Item {
             Self::CompareBytes => "compare_bytes".to_owned(),
             Self::SplitExact => "split_exact".to_owned(),
             Self::Join => "join".to_owned(),
-            Self::FormatInt => "format_i64".to_owned(),
+            Self::FormatInt => "format_int".to_owned(),
             Self::FormatFixed(kind) => format!("format_{}", kind.name()),
             Self::ParseInt => "parse_int".to_owned(),
             Self::ParseFixed(kind) => format!("parse_{}", kind.name()),
@@ -502,11 +502,13 @@ mod tests {
                     .unwrap_or_else(|| panic!("{path} is not declared"));
                 assert!(!declaration.contains("-> R<") && !item.fallible(), "{path}");
             } else {
+                // The free function, not a method of the same name (the
+                // number text has `Str::parse_int` beside `parse_int`).
                 let declaration = text
                     .lines()
                     .find(|line| {
-                        line.contains(&format!("pub fn {path}("))
-                            || line.contains(&format!("pub fn {path}<"))
+                        line.starts_with(&format!("pub fn {path}("))
+                            || line.starts_with(&format!("pub fn {path}<"))
                     })
                     .unwrap_or_else(|| panic!("{path} is not declared"));
                 assert_eq!(

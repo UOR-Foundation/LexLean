@@ -4809,6 +4809,8 @@ pub fn run(id: &str) {
         "SP-27" => super::rust_lists::run(id),
         "SP-28" => super::rust_prims::run(id),
         "SP-29" => super::rust_std::run(id),
+        // §17.16, §17.17: every runtime item has its refinement statement.
+        "SP-30" => super::rust_items::run(id),
         "SP-23" => {
             let syntax = support::module_json(
                 &std::fs::read_to_string(
@@ -4874,14 +4876,18 @@ pub fn run(id: &str) {
                     "utf8Decode",
                     "bytesCompare",
                     "stringSplit",
-                    "stringJoin"
+                    "stringJoin",
+                    "formatDecimal",
+                    "parseDecimal",
+                    "parseDecimalInt",
+                    "formatDecimalInt"
                 ],
-                "the list, byte, and text primitives of the std runtime (SP-29)"
+                "the list, byte, text, and number primitives of the std runtime (SP-29)"
             );
             assert_eq!(
                 machine.len(),
-                40,
-                "the first seventeen, the nine, and the fourteen std primitives"
+                44,
+                "the first seventeen, the nine, and the eighteen std primitives"
             );
             if !support::lean_backed("SP-23") {
                 return;

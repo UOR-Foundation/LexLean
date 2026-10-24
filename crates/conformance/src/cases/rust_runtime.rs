@@ -225,13 +225,32 @@ pub(super) fn run_harness(runtime: &str, harness: String) -> Result<String, Stri
 /// The transcript a harness printed: each label with the digest of what the
 /// calls under it returned and counted.
 pub(super) fn transcript_of(output: &str) -> Vec<(String, String)> {
-    output
+    let lines: Vec<(String, String)> = output
         .lines()
         .filter_map(|line| line.strip_prefix("transcript "))
         .filter_map(|line| line.rsplit_once(' '))
         .map(|(label, digest)| (label.to_owned(), digest.to_owned()))
+        .collect();
+    // A label held to another is dropped when its digest is that label's, and
+    // kept (so that the golden transcript, which lacks it, disagrees) when not.
+    lines
+        .iter()
+        .filter(|(label, digest)| {
+            !HELD_AS.iter().any(|(held, to)| {
+                label == held && lines.iter().any(|(l, d)| l == to && d == digest)
+            })
+        })
+        .cloned()
         .collect()
 }
+
+/// The functions of the printed runtime that the removed oracle did not have
+/// under their own name, each with the label of the transcript it is held to.
+/// The oracle called the decimal text of an integer (`Item::FormatInt`) as
+/// `format_i64`; `format_int` is that item's own function, and on the values
+/// of `format_i64`'s section it must observe what the oracle's `format_i64`
+/// did, result and counted work.
+pub(super) const HELD_AS: [(&str, &str); 1] = [("format_int", "format_i64")];
 
 /// The committed golden transcript: one file, whose first line names its
 /// format and the SHA-256 of the lines after it, and whose other lines are a
