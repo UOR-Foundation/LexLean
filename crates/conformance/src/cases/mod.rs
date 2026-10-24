@@ -38,6 +38,7 @@ mod reasoning;
 mod repository;
 mod runtime;
 mod rust_backend;
+mod rust_loop_ends;
 mod rust_loops;
 mod rust_scaffold;
 mod security;

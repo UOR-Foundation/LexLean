@@ -342,7 +342,8 @@ structure{
     {name: core, type: Bool},
     {name: decl, type: Decl},
     {name: fallible, type: Bool},
-    {name: items, type: (List ItemRow)}
+    {name: items, type: (List ItemRow)},
+    {name: ends, type: Bool}
   ]
 }
 
@@ -2128,7 +2129,7 @@ definition{
   parameters: [st : St, cx : Cx, e : Expr, tail : Bool],
   result: (Result St Bytes),
   body: (match e
-    | Expr.ELit lit org => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
+    | Expr.ELit lit org => (let gated : Bool := (if tail then (if (project cx ends) then false else (project cx fallible)) else false); (match gated
       | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (project cx items) (ctor Expr.ELit lit org)) (text ", is not a fallible value"))))
       | Bool.false => (match lit
         | Lit.LitUnit => (ctor Result.ok [St, Bytes] st)
@@ -2139,7 +2140,7 @@ definition{
         | Lit.LitStr => (heapSt cx st (text "a string literal"))
         | Lit.LitBytes => (heapSt cx st (text "a byte string literal"))
         | Lit.LitOrdering => (ctor Result.ok [St, Bytes] st))))
-    | Expr.ERead k who org => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
+    | Expr.ERead k who org => (let gated : Bool := (if tail then (if (project cx ends) then false else (project cx fallible)) else false); (match gated
       | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (project cx items) (ctor Expr.ERead k who org)) (text ", is not a fallible value"))))
       | Bool.false => (match k
         | ReadKind.RkMove => (consume st who)
@@ -2158,47 +2159,47 @@ definition{
             | Result.error problem12 => (ctor Result.error [St, Bytes] problem12))
           | Result.error problem13 => (ctor Result.error [St, Bytes] problem13)))))
     | Expr.EWrap k inner org => (match k
-      | WrapKind.WkNot => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
+      | WrapKind.WkNot => (let gated : Bool := (if tail then (if (project cx ends) then false else (project cx fallible)) else false); (match gated
         | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (project cx items) (ctor Expr.EWrap k inner org)) (text ", is not a fallible value"))))
         | Bool.false => (match (negatesZero inner)
           | Bool.true => (ctor Result.error [St, Bytes] (text "a negated zero test or predecessor: a zero test is negated as its complement, and a predecessor is not a Boolean"))
           | Bool.false => (exprC st cx inner false))))
-      | WrapKind.WkBox => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
+      | WrapKind.WkBox => (let gated : Bool := (if tail then (if (project cx ends) then false else (project cx fallible)) else false); (match gated
         | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (project cx items) (ctor Expr.EWrap k inner org)) (text ", is not a fallible value"))))
         | Bool.false => (match (heapUnit cx (text "a box"))
           | Result.ok done => (exprC st cx inner false)
           | Result.error problem14 => (ctor Result.error [St, Bytes] problem14))))
-      | WrapKind.WkWiden => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
+      | WrapKind.WkWiden => (let gated : Bool := (if tail then (if (project cx ends) then false else (project cx fallible)) else false); (match gated
         | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (project cx items) (ctor Expr.EWrap k inner org)) (text ", is not a fallible value"))))
         | Bool.false => (exprC st cx inner false)))
       | WrapKind.WkSucceed => (exprC st cx inner false))
     | Expr.ECall callee args propagate org => (match propagate
-      | Bool.true => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
+      | Bool.true => (let gated : Bool := (if tail then (if (project cx ends) then false else (project cx fallible)) else false); (match gated
         | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (project cx items) (ctor Expr.ECall callee args propagate org)) (text ", is not a fallible value"))))
         | Bool.false => (match (argsC st cx args)
           | Result.ok s1 => (match callee
             | Callee.CalFn n => (match (lookupFlag (project (project cx decl) functions) n)
               | Option.none => (ctor Result.error [St, Bytes] (cat (text "f") (cat (decimal n) (text " is not declared"))))
-              | Option.some declared => (callOk s1 cx declared propagate tail (cat (text "f") (decimal n))))
+              | Option.some declared => (callOk s1 cx declared propagate (if (project cx ends) then false else tail) (cat (text "f") (decimal n))))
             | Callee.CalRt item => (let path : Bytes := (itemPath (project cx items) item); (match (match (itemHeap (project cx items) item)
                 | Bool.true => (heapUnit cx (cat (text "the runtime function ") (tick path)))
                 | Bool.false => (ctor Result.ok [Unit, Bytes] ()))
-              | Result.ok done => (callOk s1 cx (itemFallible (project cx items) item) propagate tail (tick path))
+              | Result.ok done => (callOk s1 cx (itemFallible (project cx items) item) propagate (if (project cx ends) then false else tail) (tick path))
               | Result.error problem15 => (ctor Result.error [St, Bytes] problem15))))
           | Result.error problem16 => (ctor Result.error [St, Bytes] problem16))))
       | Bool.false => (match (argsC st cx args)
         | Result.ok s1 => (match callee
           | Callee.CalFn n => (match (lookupFlag (project (project cx decl) functions) n)
             | Option.none => (ctor Result.error [St, Bytes] (cat (text "f") (cat (decimal n) (text " is not declared"))))
-            | Option.some declared => (callOk s1 cx declared propagate tail (cat (text "f") (decimal n))))
+            | Option.some declared => (callOk s1 cx declared propagate (if (project cx ends) then false else tail) (cat (text "f") (decimal n))))
           | Callee.CalRt item => (let path : Bytes := (itemPath (project cx items) item); (match (match (itemHeap (project cx items) item)
               | Bool.true => (heapUnit cx (cat (text "the runtime function ") (tick path)))
               | Bool.false => (ctor Result.ok [Unit, Bytes] ()))
-            | Result.ok done => (callOk s1 cx (itemFallible (project cx items) item) propagate tail (tick path))
+            | Result.ok done => (callOk s1 cx (itemFallible (project cx items) item) propagate (if (project cx ends) then false else tail) (tick path))
             | Result.error problem15 => (ctor Result.error [St, Bytes] problem15))))
         | Result.error problem16 => (ctor Result.error [St, Bytes] problem16)))
     | Expr.EApply who args propagate org => (match propagate
-      | Bool.true => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
+      | Bool.true => (let gated : Bool := (if tail then (if (project cx ends) then false else (project cx fallible)) else false); (match gated
         | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (project cx items) (ctor Expr.EApply who args propagate org)) (text ", is not a fallible value"))))
         | Bool.false => (match (readOk st who)
           | Result.ok done => (match (argsC st cx args)
@@ -2210,14 +2211,20 @@ definition{
           | Result.ok s1 => (ctor Result.ok [St, Bytes] (record St {bound := (project s1 bound), scope := (project s1 scope), moved := (project s1 moved), parted := (project s1 parted), propagates := (if propagate then true else (project s1 propagates))}))
           | Result.error problem17 => (ctor Result.error [St, Bytes] problem17))
         | Result.error problem18 => (ctor Result.error [St, Bytes] problem18)))
-    | Expr.EConstruct con args org => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
-      | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (project cx items) (ctor Expr.EConstruct con args org)) (text ", is not a fallible value"))))
-      | Bool.false => (match (argsC st cx args)
+    | Expr.EConstruct con args org => (let ending : Bool := (if tail then (if (project cx ends) then (conIsErr con) else false) else false); (match ending
+      | Bool.true => (match (endArgsC st (record Cx {core := (project cx core), decl := (project cx decl), fallible := (project cx fallible), items := (project cx items), ends := false}) args)
         | Result.ok s1 => (match (conOk cx con (exprLen args))
           | Result.ok done => (ctor Result.ok [St, Bytes] s1)
-          | Result.error problem19 => (ctor Result.error [St, Bytes] problem19))
-        | Result.error problem20 => (ctor Result.error [St, Bytes] problem20))))
-    | Expr.EPair left right org => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
+          | Result.error problem60 => (ctor Result.error [St, Bytes] problem60))
+        | Result.error problem61 => (ctor Result.error [St, Bytes] problem61))
+      | Bool.false => (let gated : Bool := (if tail then (if (project cx ends) then false else (project cx fallible)) else false); (match gated
+        | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (project cx items) (ctor Expr.EConstruct con args org)) (text ", is not a fallible value"))))
+        | Bool.false => (match (argsC st cx args)
+          | Result.ok s1 => (match (conOk cx con (exprLen args))
+            | Result.ok done => (ctor Result.ok [St, Bytes] s1)
+            | Result.error problem19 => (ctor Result.error [St, Bytes] problem19))
+          | Result.error problem20 => (ctor Result.error [St, Bytes] problem20))))))
+    | Expr.EPair left right org => (let gated : Bool := (if tail then (if (project cx ends) then false else (project cx fallible)) else false); (match gated
       | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (project cx items) (ctor Expr.EPair left right org)) (text ", is not a fallible value"))))
       | Bool.false => (match (exprC st cx left false)
         | Result.ok s1 => (exprC s1 cx right false)
@@ -2237,7 +2244,7 @@ definition{
       | Result.ok s1 => (armsC s1 cx s1 (project s1 scope) arms tail)
       | Result.error problem27 => (ctor Result.error [St, Bytes] problem27))
     | Expr.EBlockE inner => (blockC st cx inner tail)
-    | Expr.EProbe k who org => (let gated : Bool := (if tail then (project cx fallible) else false); (match gated
+    | Expr.EProbe k who org => (let gated : Bool := (if tail then (if (project cx ends) then false else (project cx fallible)) else false); (match gated
       | Bool.true => (ctor Result.error [St, Bytes] (cat (text "arithmetic: the value a fallible function returns, ") (cat (constructsOf (project cx items) (ctor Expr.EProbe k who org)) (text ", is not a fallible value"))))
       | Bool.false => (match k
         | ProbeKind.PkIsZero => (match (readOk st who)
@@ -2259,11 +2266,11 @@ definition{
     | Expr.ECons d0 d1 => (ctor Result.ok [St, Bytes] st)
     | Expr.ELet d0 d1 d2 d3 d4 d5 => (ctor Result.ok [St, Bytes] st)
     | Expr.EArm d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
-    | Expr.ELoop state body => (let gated : Bool := (if tail then (project cx fallible) else false); (let ends : (Result Unit Bytes) := (match gated
+    | Expr.ELoop state body => (let gated : Bool := (if tail then (if (project cx ends) then false else (project cx fallible)) else false); (let ends : (Result Unit Bytes) := (match gated
       | Bool.true => (endsBlock (project cx items) body)
       | Bool.false => (ctor Result.ok [Unit, Bytes] ())); (match ends
       | Result.ok done0 => (match (consume st state)
-        | Result.ok s1 => (let entry : St := (record St {bound := (project s1 bound), scope := (project s1 scope), moved := (dropId (project s1 moved) state), parted := (project s1 parted), propagates := (project s1 propagates)}); (match (blockC entry cx body false)
+        | Result.ok s1 => (let entry : St := (record St {bound := (project s1 bound), scope := (project s1 scope), moved := (dropId (project s1 moved) state), parted := (project s1 parted), propagates := (project s1 propagates)}); (match (blockC entry (record Cx {core := (project cx core), decl := (project cx decl), fallible := (project cx fallible), items := (project cx items), ends := gated}) body gated)
           | Result.ok s2 => (match (movedInLoop (project s2 moved) state (project entry moved) (project s1 scope))
             | Option.some who => (ctor Result.error [St, Bytes] (cat (text "ownership: ") (cat (tick (idText who)) (text " is moved in the body of a loop that runs again"))))
             | Option.none => (match (partedInLoop (project s2 parted) (project entry parted) (project s1 scope))
@@ -2344,6 +2351,36 @@ definition{
     | Expr.ECons head tail => (match (exprC st cx head false)
       | Result.ok s1 => (argsC s1 cx tail)
       | Result.error problem38 => (ctor Result.error [St, Bytes] problem38))
+    | Expr.ELet d0 d1 d2 d3 d4 d5 => (ctor Result.ok [St, Bytes] st)
+    | Expr.EArm d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
+    | Expr.ELoop d0 d1 => (ctor Result.ok [St, Bytes] st)),
+  axioms: [propext],
+  executable: true,
+  mutual: CheckExpr,
+  recursive_argument: args
+}
+
+definition{
+  name: endArgsC,
+  parameters: [st : St, cx : Cx, args : Expr],
+  result: (Result St Bytes),
+  body: (match args
+    | Expr.ELit d0 d1 => (ctor Result.ok [St, Bytes] st)
+    | Expr.ERead d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
+    | Expr.EWrap d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
+    | Expr.ECall d0 d1 d2 d3 => (ctor Result.ok [St, Bytes] st)
+    | Expr.EApply d0 d1 d2 d3 => (ctor Result.ok [St, Bytes] st)
+    | Expr.EConstruct d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
+    | Expr.EPair d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
+    | Expr.EIf d0 d1 d2 d3 => (ctor Result.ok [St, Bytes] st)
+    | Expr.EMatch d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
+    | Expr.EBlockE d0 => (ctor Result.ok [St, Bytes] st)
+    | Expr.EProbe d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
+    | Expr.EBlock d0 d1 => (ctor Result.ok [St, Bytes] st)
+    | Expr.ENil => (ctor Result.ok [St, Bytes] st)
+    | Expr.ECons head tail => (match (exprC st cx head true)
+      | Result.ok s1 => (endArgsC s1 cx tail)
+      | Result.error problem62 => (ctor Result.error [St, Bytes] problem62))
     | Expr.ELet d0 d1 d2 d3 d4 d5 => (ctor Result.ok [St, Bytes] st)
     | Expr.EArm d0 d1 d2 => (ctor Result.ok [St, Bytes] st)
     | Expr.ELoop d0 d1 => (ctor Result.ok [St, Bytes] st)),
@@ -2664,13 +2701,13 @@ definition{
   parameters: [core : Bool, decl : Decl, rows : (List ItemRow), item : Def],
   result: (Result Unit Bytes),
   body: (match item
-    | Def.DEnum name variants org => (rowTysOk (record Cx {core := core, decl := decl, fallible := false, items := rows}) variants)
-    | Def.DApply fnType parameters result fallible arms org => (let cx : Cx := (record Cx {core := core, decl := decl, fallible := false, items := rows}); (match (tysOk cx parameters)
+    | Def.DEnum name variants org => (rowTysOk (record Cx {core := core, decl := decl, fallible := false, items := rows, ends := false}) variants)
+    | Def.DApply fnType parameters result fallible arms org => (let cx : Cx := (record Cx {core := core, decl := decl, fallible := false, items := rows, ends := false}); (match (tysOk cx parameters)
       | Result.ok done => (match (tyOk cx result)
         | Result.ok again => (disOk cx fnType fallible arms)
         | Result.error problem52 => (ctor Result.error [Unit, Bytes] problem52))
       | Result.error problem53 => (ctor Result.error [Unit, Bytes] problem53)))
-    | Def.DFunction name parameters result body org => (let fallible : Bool := (tyIsFallible result); (let cx : Cx := (record Cx {core := core, decl := decl, fallible := fallible, items := rows}); (match (tyOk cx result)
+    | Def.DFunction name parameters result body org => (let fallible : Bool := (tyIsFallible result); (let cx : Cx := (record Cx {core := core, decl := decl, fallible := fallible, items := rows, ends := false}); (match (tyOk cx result)
       | Result.ok done => (match (parsOk cx (record St {bound := (nil Id), scope := (nil Id), moved := (nil Id), parted := (nil (Id * (List Nat))), propagates := false}) parameters)
         | Result.ok s1 => (match (blockC s1 cx body true)
           | Result.ok s2 => (match (if (project s2 propagates) then (not fallible) else false)

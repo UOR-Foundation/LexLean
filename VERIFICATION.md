@@ -14590,6 +14590,50 @@ and no other, and the `ready_for_review` type that reruns them. The plan
 itself is checked by `cargo xtask ci-shards` and inside `RP-14` by
 `repo_conformance::shards::check`.
 
+### a fallible loop that ends with another fallible call can fail its rendering (`RB-21`, SPEC.md §17.13, §17.16, #279)
+
+A function whose self calls are all tail calls is rendered as a loop (`RB-14`),
+and every tail value `e` that is not a self call ends it as `Err(e)`, so the
+loop breaks with `e`. When the function is fallible and the loop is its value,
+`e` is what the function returns, so a call of another fallible function there
+returns that function's result as it is. `rust::validate` checked the loop body
+with `tail = false`, so it refused that call (`LLB6005`, the fallible call does
+not propagate its overflow) and the module of #279 had no `rust-std` rendering.
+The validator now checks the operand of each `Err` at a tail of such a loop as
+the function's tail, and every other position of the body as before;
+`LexLeanBoot.RustValidate` mirrors it (`BS-05`). The project
+`tests/rust-backend/loop-ends` holds the module of #279 as filed and a variant
+whose callee is itself a loop. `RB-21` renders both roots, checks that each
+loop ends with the callee's result as it is, plants the call bound before the
+end and the end dropped and expects both refused, runs both packages under
+the pinned rustc beside the calculus evaluator on 54 inputs (the callee's
+overflow among them), and under the pinned Lean exports both roots, replays
+the bundle, and compares the exported programs with the ones it ran. The case
+passed in 208 s. Each plant below was made in a clean tree, run with
+`cargo test -p repo-conformance --test conformance -- --exact conformance_rb_21`,
+and removed:
+
+- **the fix reverted** (`validate.rs` as on `release/v0.5`):
+
+  ```text
+  panicked at crates/conformance/src/cases/rust_loop_ends.rs:253:38:
+  LoopEnds.Main.run: no rendering in rust-std: arithmetic: the fallible call of f2 does not propagate its overflow
+  ```
+
+- **every tail of the loop's body checked as the function's tail** (the
+  arm that checks a tail other than an `Err` as an ordinary value removed):
+
+  ```text
+  panicked at crates/conformance/src/cases/rust_loop_ends.rs:253:38:
+  LoopEnds.Main.run: no rendering in rust-std: arithmetic: the value a fallible function returns, construct:ok, is not a fallible value
+  ```
+
+The end check that ran before #279 looks only at the outer construct of each
+operand, so a loop of a fallible function ending with `Err` of a branch of two
+units was accepted; the hand-built crate of `BS-05` that has this shape (run 153)
+is now refused by both the oracle and the module, and is the vector the
+seventeenth `BS-05` plant is detected on.
+
 ### the partition can fail
 
 Each record is a defect planted in `.github/verify-shards.json` or `ci.yml`,
@@ -15583,15 +15627,15 @@ Authoring found four shapes certificate A and certificate B do not accept, each 
 
 ### the bootstrap Rust crate validator can fail its oracle (SPEC.md §17.23, §17.16)
 
-`BS-05` holds the two production roots of `LexLeanBoot.RustValidate` (`bootstrap/src/RustValidate.lex.tex`) to the stage-0 oracle they replace, `calculus::rust::validate::{validate, correspond}`. The 164 distinct programs among the 247 committed package manifests and 122 fixtures lower to 223 distinct crates over both profiles; with 132 `validateCrate` and 12 `correspondCrate` rule runs (each of the 48 reachable refusals three times, found by a seeded mutation search at a fixed seed, which asserts that it reached the target and does not stop short of it), 17 hand-built crates of the merge of moved sets, and 34 hand-built crates of the loop rules, that is 406 `validateCrate` vectors (165 refused) and 269 `correspondCrate` vectors (46 refused), 675 in all. On every host both roots' rendered `rust-std` packages, compiled by the pinned rustc, agree with the oracle on all 675. On the normative host the evaluator agrees on the 200 crates of at most 400 expressions, the rule runs, and the hand-built crates (383 + 246 vectors), and on 500 seeded mutants (271 and 244 refused), and the rendered packages agree on 2,000 further seeded mutants per root. The case passed on the branch merged with `main` after wave 6 (#220), with the production export under the pinned Lean 4.32.1. Every one of these counts is an assertion of the case (`COMMITTED_*`, `RULE_*`, `VECTORS_*`, `EVALUATOR_*`, `SEEDED_*`), so a tree that no longer gives them fails the case instead of leaving this paragraph stale.
+`BS-05` holds the two production roots of `LexLeanBoot.RustValidate` (`bootstrap/src/RustValidate.lex.tex`) to the stage-0 oracle they replace, `calculus::rust::validate::{validate, correspond}`. The 164 distinct programs among the 247 committed package manifests and 122 fixtures lower to 223 distinct crates over both profiles; with 132 `validateCrate` and 12 `correspondCrate` rule runs (each of the 48 reachable refusals three times, found by a seeded mutation search at a fixed seed, which asserts that it reached the target and does not stop short of it), 17 hand-built crates of the merge of moved sets, and 37 hand-built crates of the loop rules, that is 409 `validateCrate` vectors (168 refused) and 272 `correspondCrate` vectors (49 refused), 681 in all. On every host both roots' rendered `rust-std` packages, compiled by the pinned rustc, agree with the oracle on all 681. On the normative host the evaluator agrees on the 200 crates of at most 400 expressions, the rule runs, and the hand-built crates (386 + 249 vectors), and on 500 seeded mutants (271 and 244 refused), and the rendered packages agree on 2,000 further seeded mutants per root. The case passed on the branch merged with `main` after wave 6 (#220), with the production export under the pinned Lean 4.32.1. Every one of these counts is an assertion of the case (`COMMITTED_*`, `RULE_*`, `VECTORS_*`, `EVALUATOR_*`, `SEEDED_*`), so a tree that no longer gives them fails the case instead of leaving this paragraph stale.
 
-The loop rules (the oracle's `Expr::Loop`, SP-19 and RB-14) are `ELoop [Id, Expr]` of the module: ownership of the state across a body that runs again (two refusals, for a name and for a component, naming the least offender in the oracle's order of names), the fallible-tail rule, `apply_types` with `tail = false` for the body, and the correspondence traversal treating the body as a block. The correspondence table was re-diffed against the oracle's `CORRESPONDENCE` after SP-19: 97 rows, and the six that gained `expr:call` (`destructure:pair`, `type:result`, `type:pair`, `construct:ok`, `construct:err`, `construct:pair`) are the only difference from the table first transcribed; the module's table and the oracle's are equal row for row and element for element.
+The loop rules (the oracle's `Expr::Loop`, SP-19 and RB-14) are `ELoop [Id, Expr]` of the module: ownership of the state across a body that runs again (two refusals, for a name and for a component, naming the least offender in the oracle's order of names), the fallible-tail rule (the operand of each `Err` that ends a loop which is the value of a fallible function is checked as that function's tail, #279), `apply_types` with `tail = false` for the body, and the correspondence traversal treating the body as a block. The correspondence table was re-diffed against the oracle's `CORRESPONDENCE` after SP-19: 97 rows, and the six that gained `expr:call` (`destructure:pair`, `type:result`, `type:pair`, `construct:ok`, `construct:err`, `construct:pair`) are the only difference from the table first transcribed; the module's table and the oracle's are equal row for row and element for element.
 
 The refusal that a construct has no row of the correspondence table cannot be reached by any crate of the closed AST (every construct it emits has a row), so no vector reaches it and the module's transcription of it is held by reading, not by a run. A crate whose exported name or origin element holds a non-ASCII or non-printable scalar is outside the claim.
 
 **Certificate A bounds the shape of the module.** The certificate states the pairs of arms of every match (SPEC.md §17.17), so it grows with the square of the constructors of the sort matched; the first draft, with `Expr` of 27 constructors, `Ty` of 19, `Pat` of 12, and `Rt` of 50, had a certificate part of 5,040,689 bytes against `max_file_bytes` of 4,194,304. The module therefore gathers the variants a function does not tell apart into small kinds (`Expr` 17 constructors with `ELoop`, `Ty` 7, `Pat` 7: reads, wrappers, and probes carry a kind; the leaf, unary, binary, and named types carry theirs), keeps the 50 runtime functions of `runtime::Item` as a table of rows built in chunks (`family`, stem, form, failure, heap) instead of a match, and builds the 97-row correspondence table and the item table in chunks of `let`s, because a canonical program may nest 128 levels (`Program::to_file_bytes`). The 17th constructor of `Expr` still fits (`lexlean verify` of the project, then the export). One limit was met on the way and is a finding about the compiler, not about the module: with the six extra `expr:call` elements the table, built inside `correspondCrate` as before, made the certificate row `__fits_76._unsafe_rec` of that root depend on `propext` while its policy pins none (`LLV7013`, from `lexlean verify` itself); the same module with the six elements removed verified, and so did the module with the table as a definition of its own (`correspondTable`, taking `()`), while moving the item rows out as well did not. The module therefore builds the table in its own definition; why the row moves with the size of the root is for the certificate generator to say, and the finding is filed as #222 with the reproducer and the exact message. Other limits met earlier, each worked around in the module and none in the compiler: a recursive call as the argument of another is not structural for certificate A (each is bound by a `let`); a mutual group is entered through its first-declared member and must be strongly connected (`endsArgs` is therefore a function of its own beside the group `LoopEnds`); a `match` that returns a field of a recursive sort beside constant arms of it is rejected by certificate B (`LLV7015`, the pair-projection helper is inlined); each definition declares its exact axioms (`propext` where `bytesLess` is reached).
 
-Each of these sixteen plants is made on a copy of `bootstrap/src/RustValidate.lex.tex` on every run (the first disagreement, from the case). Run numbers index the vectors of the root as `detection` holds them, which puts the rule runs first: for `validateCrate` runs 0..131 are the generator's, 132..148 the merge crates by hand, 149..182 the loop crates by hand, then the seeded mutants; for `correspondCrate` runs 0..11 are the generator's, 12..45 the loop crates by hand, then the seeded mutants. The oracle's message is the one of the vector named.
+Each of these seventeen plants is made on a copy of `bootstrap/src/RustValidate.lex.tex` on every run (the first disagreement, from the case). Run numbers index the vectors of the root as `detection` holds them, which puts the rule runs first: for `validateCrate` runs 0..131 are the generator's, 132..148 the merge crates by hand, 149..185 the loop crates by hand, then the seeded mutants; for `correspondCrate` runs 0..11 are the generator's, 12..48 the loop crates by hand, then the seeded mutants. The oracle's message is the one of the vector named.
 
 - **a heap type admitted under `rust-core`** (`(let blocked : Bool := (if (project cx core) then heapy else false);` -> `... then false else false);`), `validateCrate`, run 0: the oracle `hidden allocation: rust-core renders the heap type List(Nat), which rust-core does not provide`.
 - **a name bound twice accepted** (`(match (idHas (project st bound) who)` -> `(match (idHas (nil Id) who)`), run 7: the oracle `hygiene: `a3` is bound twice in one function`.
@@ -15609,6 +15653,7 @@ Each of these sixteen plants is made on a copy of `bootstrap/src/RustValidate.le
 - **a loop's state not moved into the loop** (`(match (consume st state)` -> `(match (ctor Result.ok [St, Bytes] st)`), run 18: the oracle `ownership: `m3` is moved twice`.
 - **the name a loop's refusal reports not the least** (`(match (idLess who seen)` -> `(match true`), run 164, a hand-built loop crate that moves several outer names: the oracle `ownership: `v1` is moved in the body of a loop that runs again`.
 - **a loop body checked as a tail** (`(applyBlock types decl body false)` -> `(applyBlock types decl body tail)`), run 70: the oracle `arithmetic: an application of Fn0 drops a failure its apply can have`.
+- **the end of a fallible loop not in the function's tail** (`ends := gated}) body gated)` -> `ends := false}) body false)`), run 153, a hand-built loop crate whose loop ends with `Err` of a branch of two units: the program `ok ()`, the oracle `arithmetic: the value a fallible function returns, lit:unit, is not a fallible value`. Before #279 the oracle accepted this crate too, because its end check looks only at the operand's outer construct, and an `if` passes it; checking the operand as the function's tail refuses it, so the refused counts above rose by one more than the two refusing crates #279 adds.
 
 The case's first failure, before the module existed (R3), was `no bootstrap case is wired for BS-05`; its first failure on the loop work was the conformance crate not compiling against `Expr::Loop`. Removed: the source was not changed (the plants are made on copies). The case no longer has switches that skip a leg (`BS05_QUICK`, `BS05_PLANTS`, `BS05_STOP`): every leg runs on every run.
 

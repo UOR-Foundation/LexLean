@@ -93,3 +93,9 @@ Feature: rust-backend
     When each is rendered in both profiles and its self calls are classified as tail calls or not
     Then every template whose self calls are all tail calls renders as a loop that breaks with its result, and its primitives' registry rows say `recursion = false`
     And every other template renders as a call and keeps `recursion = true`, and a template rendered with a self call it could have as a loop, or a row that disagrees with its rendering, is refused
+
+  @RB-21 @build
+  Scenario: A fallible function rendered as a loop that is its value returns the operand of each `Err` that ends the loop, so a call of another fallible function there, looped or not, is in tail position and returns the callee's result without `?`: the module of issue 279 and a variant whose callee is itself a loop render in `rust-std`, export, and replay, their packages realize the programs the case lowers and agree with the calculus evaluator on every input of the case, an overflow included, and the same call bound before the loop's end without propagating, or left as the loop body's value with the end dropped, is refused because the fallible call does not propagate its overflow.
+    Given the committed project `tests/rust-backend/loop-ends`, whose `Main` is the module of issue 279 and whose `Looped` ends its loop with a call of a function that is itself a loop
+    When each root is lowered and rendered in `rust-std`, its loop's ending call is bound before the end or left as the body's value, its package is compiled by the pinned rustc and run beside the calculus evaluator, and both roots are exported and replayed
+    Then each rendering ends its loop with the callee's result as it is and is valid, each planted crate is refused because the fallible call does not propagate its overflow, every run agrees with the evaluator, an overflow included, and the exported packages realize the lowered programs
