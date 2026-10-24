@@ -171,7 +171,7 @@ pub(crate) fn run(id: &str) {
         // exactly the one prescribed diagnostic code.
         "EX-07" => {
             let root = support::repo_root();
-            let prescribed: [(&str, &str); 297] = [
+            let prescribed: [(&str, &str); 298] = [
                 ("unknown-word", "LLL1004"),
                 ("unknown-symbol", "LLL1004"),
                 ("unknown-control", "LLL1004"),
@@ -333,6 +333,10 @@ pub(crate) fn run(id: &str) {
                 // §17.12: models fail closed (artifacts, interfaces, composition,
                 // boundaries, evidence) before any backend, or at verification.
                 ("model-under-1.1", "LLT4001"),
+                // §17.12, §23.4: a module that is not a language-1.1 module (the
+                // notation cannot spell it) is not migrated, and nothing is
+                // written (CL-24).
+                ("migrate-module-without-notation", "LLP2003"),
                 ("model-opaque-member", "LLT4001"),
                 ("model-float-descriptor", "LLT4001"),
                 ("model-unregistered-claim", "LLT4001"),
