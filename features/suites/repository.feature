@@ -120,3 +120,11 @@ Feature: repository
     Then the Rust toolchain it installs is the channel rust-toolchain.toml pins and the Lean toolchain it installs is the one lean-toolchain pins
     And it installs no other toolchain and selects no unpinned default
     And a Dockerfile that names another version of either, a second toolchain, or an unpinned default is refused
+
+  @RP-18 @build
+  Scenario: The release workflow packages the lexlean crate twice to the same bytes, runs cargo publish --dry-run, and refuses a crate whose SHA-256 differs from the one release/checksums.txt lists for it or from the bytes cargo would upload, or whose archive lacks the metadata and size crates.io requires, and uploads to crates.io only when a CARGO_REGISTRY_TOKEN secret or trusted publishing authorises it; a commit of a release line release/vX.Y is published as the pre-release X.Y.0-dev.N, N being its number of first-parent commits, and a plant in each of these checks is refused.
+    Given .github/workflows/release.yml, .github/workflows/crate.yml, and .github/crate-publication.sh
+    When the workflows are read and the script is run against planted release directories, archives, refs, and environments
+    Then the crate is packaged twice to the same bytes and dry-run on every run, and the crate cargo would upload is the crate release/lexlean.crate holds and release/checksums.txt lists
+    And the only step that uploads to crates.io runs after those checks, and only when a token or trusted publishing is present
+    And a commit of a release line is named X.Y.0-dev.N, and a package, checksum, metadata, version, or credential check that is removed or planted is refused
