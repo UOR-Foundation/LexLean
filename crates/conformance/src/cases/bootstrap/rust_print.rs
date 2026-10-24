@@ -962,6 +962,47 @@ fn crates() -> Vec<Crate> {
             }],
         });
     }
+    // Functions with type parameters, so that the generic list and the names
+    // of the parameters are held to the oracle: a parameter at index 0 and at
+    // an index of 3 or more (`T3`), a parameter in the result only, parameters
+    // nested in every type constructor that holds one, and an order of first
+    // occurrence that is not the order of the indices (the list is sorted).
+    let param = |n: u64| T::Param(n);
+    for (parameters, result) in [
+        (vec![(Pat::Bind(Ident::Param(0)), param(0))], param(0)),
+        (vec![(Pat::Bind(Ident::Param(0)), param(3))], T::Unit),
+        (Vec::new(), param(1)),
+        (
+            vec![
+                (Pat::Bind(Ident::Param(0)), T::List(Box::new(param(0)))),
+                (Pat::Bind(Ident::Param(1)), T::Option(Box::new(param(1)))),
+                (
+                    Pat::Bind(Ident::Param(2)),
+                    T::Pair(Box::new(param(2)), Box::new(param(4))),
+                ),
+                (Pat::Bind(Ident::Param(3)), T::Ref(Box::new(param(5)))),
+            ],
+            T::Fallible(Box::new(T::Rc(Box::new(param(7))))),
+        ),
+        (
+            vec![
+                (Pat::Bind(Ident::Param(0)), param(5)),
+                (Pat::Bind(Ident::Param(1)), param(1)),
+            ],
+            T::Result(Box::new(param(0)), Box::new(param(12))),
+        ),
+    ] {
+        out.push(Crate {
+            profile: Profile::Std,
+            items: vec![ItemDef::Function {
+                name: Ident::Export("generic".to_owned()),
+                parameters,
+                result,
+                body: block(Vec::new(), unit()),
+                at: at(),
+            }],
+        });
+    }
     out
 }
 
@@ -1051,7 +1092,7 @@ fn exact_expr(expr: &Expr) -> Option<Run> {
 }
 
 /// A defect planted in the source and the root whose differential catches it.
-const PLANTS: [super::Plant; 12] = [
+const PLANTS: [super::Plant; 13] = [
     super::Plant {
         label: "the quote is not escaped",
         site: "(if (code =? 34) then (putS (second state) \"\\\\\\\"\")",
@@ -1123,6 +1164,11 @@ const PLANTS: [super::Plant; 12] = [
         site: "(if unread then (putS opened \"        match *self {}\\n\")",
         replacement: "(if false then (putS opened \"        match *self {}\\n\")",
         root: "printCrate",
+    },    super::Plant {
+        label: "a type parameter is written P<n>",
+        site: "(putNat (putS out \"T\") n)",
+        replacement: "(putNat (putS out \"P\") n)",
+        root: "printCrate",
     },
 ];
 
@@ -1142,12 +1188,12 @@ const COMMITTED_FIXTURES: usize = 122;
 const COMMITTED_PROGRAMS: usize = 173;
 const COMMITTED_CRATES: usize = 232;
 const COMMITTED_PACKAGES: usize = 256;
-const VECTORS_CRATE: usize = 610;
+const VECTORS_CRATE: usize = 623;
 const COMMITTED_DISTINCT: usize = 464;
-const REFUSED_CRATE: usize = 58;
+const REFUSED_CRATE: usize = 61;
 const VECTORS_EXPR: usize = 2_011;
 const HAND_EXPR: usize = 1_460;
-const EVALUATOR_CRATE: usize = 542;
+const EVALUATOR_CRATE: usize = 558;
 const SEEDED_CRATE: usize = 400;
 const SEEDED_EXPR: usize = 399;
 const RUSTC_SEEDED_RUNS: usize = 2_984;
