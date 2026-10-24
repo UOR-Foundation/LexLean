@@ -1,0 +1,76 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{OrderingKind}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{OkLess}: \texttt{()}.\par
+\noindent Constructor \texttt{OkEqual}: \texttt{()}.\par
+\noindent Constructor \texttt{OkGreater}: \texttt{()}.\par
+\subsection*{\texttt{Lit}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{LitUnit}: \texttt{()}.\par
+\noindent Constructor \texttt{LitBool}: \texttt{(Bool)}.\par
+\noindent Constructor \texttt{LitNat}: \texttt{(Nat)}.\par
+\noindent Constructor \texttt{LitInt}: \texttt{(Bool, Nat)}.\par
+\noindent Constructor \texttt{LitFixed}: \texttt{(LexLeanBoot.RustValidate.IntKind, Bool, Nat)}.\par
+\noindent Constructor \texttt{LitStr}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{LitBytes}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{LitOrdering}: \texttt{(OrderingKind)}.\par
+\noindent Constructor \texttt{LitOverflow}: \texttt{()}.\par
+\subsection*{\texttt{PatLeaf}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{PlWild}: \texttt{()}.\par
+\noindent Constructor \texttt{PlUnit}: \texttt{()}.\par
+\noindent Constructor \texttt{PlNone}: \texttt{()}.\par
+\subsection*{\texttt{Pat}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{PLeaf}: \texttt{(PatLeaf)}.\par
+\noindent Constructor \texttt{PBind}: \texttt{(LexLeanBoot.RustValidate.Id)}.\par
+\noindent Constructor \texttt{PTuple}: \texttt{(Pat)}.\par
+\noindent Constructor \texttt{PWrap}: \texttt{(LexLeanBoot.RustValidate.PatWrap, Pat)}.\par
+\noindent Constructor \texttt{PAdt}: \texttt{(Nat, Nat, Pat)}.\par
+\noindent Constructor \texttt{PNil}: \texttt{()}.\par
+\noindent Constructor \texttt{PCons}: \texttt{(Pat, Pat)}.\par
+\noindent Constructor \texttt{POrdering}: \texttt{(OrderingKind)}.\par
+\subsection*{\texttt{Callee}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{CalFn}: \texttt{(Nat)}.\par
+\noindent Constructor \texttt{CalRt}: \texttt{(LexLeanBoot.RustValidate.Rt)}.\par
+\noindent Constructor \texttt{CalMachine}: \texttt{(Nat, Option (LexLeanBoot.RustValidate.IntKind))}.\par
+\subsection*{\texttt{Expr}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{ELit}: \texttt{(Lit, LexLeanBoot.RustValidate.Origin)}.\par
+\noindent Constructor \texttt{ERead}: \texttt{(LexLeanBoot.RustValidate.ReadKind, LexLeanBoot.RustValidate.Id, LexLeanBoot.RustValidate.Origin)}.\par
+\noindent Constructor \texttt{EWrap}: \texttt{(LexLeanBoot.RustValidate.WrapKind, Expr, LexLeanBoot.RustValidate.Origin)}.\par
+\noindent Constructor \texttt{ECall}: \texttt{(Callee, Expr, Bool, LexLeanBoot.RustValidate.Origin)}.\par
+\noindent Constructor \texttt{EApply}: \texttt{(LexLeanBoot.RustValidate.Id, Expr, Bool, LexLeanBoot.RustValidate.Origin)}.\par
+\noindent Constructor \texttt{EConstruct}: \texttt{(LexLeanBoot.RustValidate.Con, Expr, LexLeanBoot.RustValidate.Origin)}.\par
+\noindent Constructor \texttt{EPair}: \texttt{(Expr, Expr, LexLeanBoot.RustValidate.Origin)}.\par
+\noindent Constructor \texttt{EIf}: \texttt{(Expr, Expr, Expr, LexLeanBoot.RustValidate.Origin)}.\par
+\noindent Constructor \texttt{EMatch}: \texttt{(Expr, Expr, LexLeanBoot.RustValidate.Origin)}.\par
+\noindent Constructor \texttt{EBlockE}: \texttt{(Expr)}.\par
+\noindent Constructor \texttt{EProbe}: \texttt{(LexLeanBoot.RustValidate.ProbeKind, LexLeanBoot.RustValidate.Id, LexLeanBoot.RustValidate.Origin)}.\par
+\noindent Constructor \texttt{EBlock}: \texttt{(Expr, Expr)}.\par
+\noindent Constructor \texttt{ENil}: \texttt{()}.\par
+\noindent Constructor \texttt{ECons}: \texttt{(Expr, Expr)}.\par
+\noindent Constructor \texttt{ELet}: \texttt{(Pat, Bool, LexLeanBoot.RustValidate.Ty, Expr, LexLeanBoot.RustValidate.Origin, Expr)}.\par
+\noindent Constructor \texttt{EArm}: \texttt{(Pat, Expr, Expr)}.\par
+\noindent Constructor \texttt{ELoop}: \texttt{(LexLeanBoot.RustValidate.Id, Expr)}.\par
+\subsection*{\texttt{Par}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{ParNil}: \texttt{()}.\par
+\noindent Constructor \texttt{ParCons}: \texttt{(Pat, LexLeanBoot.RustValidate.Ty, Par)}.\par
+\subsection*{\texttt{Def}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{DEnum}: \texttt{(LexLeanBoot.RustValidate.Ty, LexLeanBoot.RustValidate.Row, LexLeanBoot.RustValidate.Origin)}.\par
+\noindent Constructor \texttt{DApply}: \texttt{(Nat, LexLeanBoot.RustValidate.Ty, LexLeanBoot.RustValidate.Ty, Bool, LexLeanBoot.RustValidate.Dis, LexLeanBoot.RustValidate.Origin)}.\par
+\noindent Constructor \texttt{DFunction}: \texttt{(LexLeanBoot.RustValidate.Id, Par, LexLeanBoot.RustValidate.Ty, Expr, LexLeanBoot.RustValidate.Origin)}.\par
+\noindent Constructor \texttt{DNil}: \texttt{()}.\par
+\noindent Constructor \texttt{DCons}: \texttt{(Def, Def)}.\par
+\subsection*{\texttt{Crate}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{core}: \texttt{Bool}.\par
+\noindent Field \texttt{items}: \texttt{Def}.\par
+\end{document}

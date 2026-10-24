@@ -17,7 +17,13 @@ inductive{
     {name: param, fields: [Nat]},
     {name: ref, fields: [RtType]},
     {name: pair, fields: [RtType, RtType]},
-    {name: named, fields: [String, (List RtType)]}
+    {name: named, fields: [String, (List RtType)]},
+    {name: wide, fields: [Bool]},
+    {name: size, fields: []},
+    {name: char, fields: []},
+    {name: str, fields: []},
+    {name: slice, fields: [RtType]},
+    {name: refMut, fields: [RtType]}
   ]
 }
 
@@ -25,7 +31,33 @@ inductive{
   name: RtLit,
   type_parameters: [],
   parameters: [],
-  constructors: [{name: unit, fields: []}, {name: bool, fields: [Bool]}, {name: nat, fields: [Nat]}]
+  constructors: [
+    {name: unit, fields: []},
+    {name: bool, fields: [Bool]},
+    {name: nat, fields: [Nat]},
+    {name: char, fields: [String]},
+    {name: str, fields: [String]}
+  ]
+}
+
+inductive{
+  name: RtOp,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: add, fields: []},
+    {name: sub, fields: []},
+    {name: mul, fields: []},
+    {name: div, fields: []},
+    {name: rem, fields: []},
+    {name: andAnd, fields: []},
+    {name: orOr, fields: []},
+    {name: ne, fields: []},
+    {name: lt, fields: []},
+    {name: le, fields: []},
+    {name: gt, fields: []},
+    {name: ge, fields: []}
+  ]
 }
 
 inductive{
@@ -35,7 +67,12 @@ inductive{
   constructors: [
     {name: wild, fields: []},
     {name: bind, fields: [String]},
-    {name: path, fields: [(List String)]}
+    {name: path, fields: [(List String)]},
+    {name: bindMut, fields: [String]},
+    {name: tuple, fields: [(List RtPat)]},
+    {name: tupleStruct, fields: [(List String), (List RtPat)]},
+    {name: structPat, fields: [(List String), (List String), (List RtPat)]},
+    {name: lit, fields: [RtLit]}
   ]
 }
 
@@ -52,7 +89,28 @@ inductive{
     {name: field, fields: [RtExpr, Nat]},
     {name: borrow, fields: [RtExpr]},
     {name: equals, fields: [RtExpr, RtExpr]},
-    {name: matchOn, fields: [RtExpr, (List RtArm)]}
+    {name: matchOn, fields: [RtExpr, (List RtArm)]},
+    {name: letE, fields: [RtPat, (Option RtType), RtExpr]},
+    {name: assign, fields: [RtExpr, RtExpr]},
+    {name: ifElse, fields: [RtExpr, RtBlock, RtBlock]},
+    {name: whileLoop, fields: [RtExpr, RtBlock]},
+    {name: whileLet, fields: [RtPat, RtExpr, RtBlock]},
+    {name: loopE, fields: [RtBlock]},
+    {name: forIn, fields: [RtPat, RtExpr, RtBlock]},
+    {name: breakE, fields: []},
+    {name: returnE, fields: [(Option RtExpr)]},
+    {name: tuple, fields: [(List RtExpr)]},
+    {name: structLit, fields: [(List String), (List String), (List RtExpr)]},
+    {name: binary, fields: [RtOp, RtExpr, RtExpr]},
+    {name: notE, fields: [RtExpr]},
+    {name: cast, fields: [RtExpr, RtType]},
+    {name: index, fields: [RtExpr, RtExpr]},
+    {name: rangeSlice, fields: [RtExpr, (Option RtExpr), (Option RtExpr)]},
+    {name: deref, fields: [RtExpr]},
+    {name: borrowMut, fields: [RtExpr]},
+    {name: methodOf, fields: [RtExpr, String, (List RtType), (List RtExpr)]},
+    {name: blockE, fields: [RtBlock]},
+    {name: fieldNamed, fields: [RtExpr, String]}
   ],
   mutual: RtCode
 }
@@ -61,7 +119,10 @@ inductive{
   name: RtArm,
   type_parameters: [],
   parameters: [],
-  constructors: [{name: mk, fields: [RtPat, RtExpr]}],
+  constructors: [
+    {name: mk, fields: [RtPat, RtExpr]},
+    {name: guarded, fields: [RtPat, RtExpr, RtExpr]}
+  ],
   mutual: RtCode
 }
 
@@ -84,7 +145,7 @@ structure{
   name: RtParam,
   type_parameters: [],
   parameters: [],
-  fields: [{name: name, type: String}, {name: type, type: RtType}]
+  fields: [{name: name, type: String}, {name: mutable, type: Bool}, {name: type, type: RtType}]
 }
 
 structure{
@@ -94,6 +155,7 @@ structure{
   fields: [
     {name: name, type: String},
     {name: receiver, type: Bool},
+    {name: exclusive, type: Bool},
     {name: parameters, type: (List RtParam)},
     {name: result, type: RtType}
   ]
@@ -112,6 +174,17 @@ structure{
 }
 
 inductive{
+  name: RtVariant,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: unitV, fields: [String]},
+    {name: tupleV, fields: [String, (List RtType)]},
+    {name: structV, fields: [String, (List String), (List RtType)]}
+  ]
+}
+
+inductive{
   name: RtItem,
   type_parameters: [],
   parameters: [],
@@ -122,7 +195,13 @@ inductive{
     {name: staticItem, fields: [String, RtType, RtExpr]},
     {name: traitItem, fields: [String, (List RtSig)]},
     {name: implItem, fields: [(List RtGeneric), (Option String), RtType, (List RtFn)]},
-    {name: fnItem, fields: [RtFn]}
+    {name: fnItem, fields: [RtFn]},
+    {name: tupleStruct, fields: [String, (List String), (List String), (List RtType)]},
+    {
+      name: recordStruct,
+      fields: [String, (List String), (List String), (List String), (List RtType)]
+    },
+    {name: enumItem, fields: [String, (List String), (List String), (List RtVariant)]}
   ]
 }
 

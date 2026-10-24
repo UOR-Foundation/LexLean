@@ -27,6 +27,24 @@
     "hints": ""
   },
   {
+    "part": "bdd-bootstrap-print",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-print",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-runtime",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-runtime",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
     "part": "bdd-bootstrap-validate",
     "recipes": "bdd",
     "examples_part": "",

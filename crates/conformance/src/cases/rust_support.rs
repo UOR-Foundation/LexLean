@@ -45,7 +45,7 @@ fn harness() -> String {
 }
 
 /// `text` with the `n`th (from 0) occurrence of `from` replaced by `to`.
-fn replace_nth(text: &str, from: &str, to: &str, n: usize) -> String {
+pub(super) fn replace_nth(text: &str, from: &str, to: &str, n: usize) -> String {
     let at = text
         .match_indices(from)
         .nth(n)
@@ -148,113 +148,13 @@ pub fn run(id: &str) {
     // A crate outside the closed set or its tables is refused by the rule it
     // breaks, named.
     let mut planted: std::collections::BTreeSet<&str> = std::collections::BTreeSet::new();
-    let sig_same = "{name := \"same\", receiver := true";
-    let first_use = "(cons \"core\" (cons \"cmp\"";
-    for (what, from, to, nth, rule) in [
-        ("a use outside the profile", first_use, "(cons \"alloc\" (cons \"cmp\"", 0, "profile-root"),
-        ("a std use in the core profile", first_use, "(cons \"std\" (cons \"cmp\"", 0, "profile-root"),
-        (
-            "a type that is neither declared nor in the table",
-            "RtType.named \"AtomicU64\"",
-            "RtType.named \"Vec\"",
-            0,
-            "type-name",
-        ),
-        (
-            "a type with another number of arguments",
-            "RtType.named \"Overflow\" (nil RuntimeSyntax::RtType)",
-            "RtType.named \"Overflow\" (cons (ctor RuntimeSyntax::RtType.bool) (nil RuntimeSyntax::RtType))",
-            0,
-            "type-arity",
-        ),
-        (
-            "a bound on a trait that is not declared",
-            "{name := \"T\", bounds := (cons \"Same\"",
-            "{name := \"T\", bounds := (cons \"Sane\"",
-            0,
-            "bound-trait",
-        ),
-        (
-            "a method the bound does not provide",
-            "{name := \"T\", bounds := (cons \"Same\"",
-            "{name := \"T\", bounds := (cons \"Key\"",
-            0,
-            "method-bound",
-        ),
-        (
-            "an impl that lacks a method of its trait",
-            sig_same,
-            "{name := \"sane\", receiver := true",
-            1,
-            "impl-complete",
-        ),
-        (
-            "an impl that states another signature",
-            "{name := \"other\", type := (ctor RuntimeSyntax::RtType.ref (ctor RuntimeSyntax::RtType.selfType))}) (nil RuntimeSyntax::RtParam)), result := (ctor RuntimeSyntax::RtType.bool)}), generics := (nil RuntimeSyntax::RtGeneric), public := false",
-            "{name := \"other\", type := (ctor RuntimeSyntax::RtType.ref (ctor RuntimeSyntax::RtType.selfType))}) (nil RuntimeSyntax::RtParam)), result := (ctor RuntimeSyntax::RtType.ordering)}), generics := (nil RuntimeSyntax::RtGeneric), public := false",
-            0,
-            "impl-signature",
-        ),
-        (
-            "an impl of a trait that is not declared",
-            "(ctor Option.some [String] \"Same\")",
-            "(ctor Option.some [String] \"Sane\")",
-            0,
-            "impl-trait",
-        ),
-        (
-            "a trait method made public in its impl",
-            "generics := (nil RuntimeSyntax::RtGeneric), public := false",
-            "generics := (nil RuntimeSyntax::RtGeneric), public := true",
-            0,
-            "impl-visibility",
-        ),
-        (
-            "a free function that is not public",
-            "generics := (nil RuntimeSyntax::RtGeneric), public := true",
-            "generics := (nil RuntimeSyntax::RtGeneric), public := false",
-            0,
-            "function-visibility",
-        ),
-        (
-            "a variable that is not in scope",
-            "(ctor RuntimeSyntax::RtExpr.var \"units\")",
-            "(ctor RuntimeSyntax::RtExpr.var \"unitz\")",
-            0,
-            "variable-scope",
-        ),
-        (
-            "a method of no trait and not in the table",
-            "\"fetch_add\"",
-            "\"fetch_sub\"",
-            0,
-            "method-name",
-        ),
-        (
-            "a path no use declares",
-            "(cons \"Memory\" (cons \"Relaxed\"",
-            "(cons \"Memori\" (cons \"Relaxed\"",
-            0,
-            "path-name",
-        ),
-        (
-            "a call of a path outside the table",
-            "(ctor RuntimeSyntax::RtExpr.call (cons \"AtomicU64\" (cons \"new\"",
-            "(ctor RuntimeSyntax::RtExpr.call (cons \"AtomicU64\" (cons \"neu\"",
-            0,
-            "call-name",
-        ),
-        (
-            "a type parameter beyond the generics in scope",
-            "RtType.param 1",
-            "RtType.param 5",
-            0,
-            "type-parameter",
-        ),
-    ] {
+    for (what, from, to, nth, rule) in text_plants() {
         let changed = replace_nth(&shipped, from, to, nth);
         let error = runtime::support_from(&changed).expect_err(what);
-        assert!(error.contains(&format!("runtime support: {rule}")), "{what}: {error}");
+        assert!(
+            error.contains(&format!("runtime support: {rule}")),
+            "{what}: {error}"
+        );
         planted.insert(rule);
     }
 
@@ -275,6 +175,8 @@ pub fn run(id: &str) {
     // its source, so a rule added there is a failure here until it is planted.
     let source = read("crates/lexlean/src/calculus/rust/rt_validate.rs");
     let named = rules_named(&source);
+    // The rules of the constructs `RB-19` grew the set by are planted there.
+    planted.extend(super::rust_heap_syntax::RULES);
     let missing: Vec<&String> = named
         .iter()
         .filter(|name| !planted.contains(name.as_str()))
@@ -350,11 +252,133 @@ pub fn run(id: &str) {
     source::decode(&runtime_module).expect("RustRuntime still decodes");
 }
 
-type Mutation = fn(&mut rt::Crate);
+/// The refusals the text of the shipped module reaches: the description, the
+/// text replaced, its replacement, which occurrence, and the rule that refuses.
+pub(super) fn text_plants() -> Vec<(
+    &'static str,
+    &'static str,
+    &'static str,
+    usize,
+    &'static str,
+)> {
+    let sig_same = "{name := \"same\", receiver := true";
+    let first_use = "(cons \"core\" (cons \"cmp\"";
+    vec![
+        ("a use outside the profile", first_use, "(cons \"alloc\" (cons \"cmp\"", 0, "profile-root"),
+        ("a std use in the core profile", first_use, "(cons \"std\" (cons \"cmp\"", 0, "profile-root"),
+        (
+            "a type that is neither declared nor in the table",
+            "RtType.named \"AtomicU64\"",
+            "RtType.named \"Vecc\"",
+            0,
+            "type-name",
+        ),
+        (
+            "a heap type in the core profile",
+            "RtType.named \"AtomicU64\"",
+            "RtType.named \"Vec\"",
+            0,
+            "hidden-allocation",
+        ),
+        (
+            "a type with another number of arguments",
+            "RtType.named \"Overflow\" (nil RuntimeSyntax::RtType)",
+            "RtType.named \"Overflow\" (cons (ctor RuntimeSyntax::RtType.bool) (nil RuntimeSyntax::RtType))",
+            0,
+            "type-arity",
+        ),
+        (
+            "a bound on a trait that is not declared",
+            "{name := \"T\", bounds := (cons \"Same\"",
+            "{name := \"T\", bounds := (cons \"Sane\"",
+            0,
+            "bound-trait",
+        ),
+        (
+            "a method the bound does not provide",
+            "{name := \"T\", bounds := (cons \"Same\"",
+            "{name := \"T\", bounds := (cons \"Key\"",
+            0,
+            "method-bound",
+        ),
+        (
+            "an impl that lacks a method of its trait",
+            sig_same,
+            "{name := \"sane\", receiver := true",
+            1,
+            "impl-complete",
+        ),
+        (
+            "an impl that states another signature",
+            "{name := \"other\", mutable := false, type := (ctor RuntimeSyntax::RtType.ref (ctor RuntimeSyntax::RtType.selfType))}) (nil RuntimeSyntax::RtParam)), result := (ctor RuntimeSyntax::RtType.bool)}), generics := (nil RuntimeSyntax::RtGeneric), public := false",
+            "{name := \"other\", mutable := false, type := (ctor RuntimeSyntax::RtType.ref (ctor RuntimeSyntax::RtType.selfType))}) (nil RuntimeSyntax::RtParam)), result := (ctor RuntimeSyntax::RtType.ordering)}), generics := (nil RuntimeSyntax::RtGeneric), public := false",
+            0,
+            "impl-signature",
+        ),
+        (
+            "an impl of a trait that is not declared",
+            "(ctor Option.some [String] \"Same\")",
+            "(ctor Option.some [String] \"Sane\")",
+            0,
+            "impl-trait",
+        ),
+        (
+            "a trait method made public in its impl",
+            "generics := (nil RuntimeSyntax::RtGeneric), public := false",
+            "generics := (nil RuntimeSyntax::RtGeneric), public := true",
+            0,
+            "impl-visibility",
+        ),
+        (
+            "a free function that is not public",
+            "generics := (nil RuntimeSyntax::RtGeneric), public := true",
+            "generics := (nil RuntimeSyntax::RtGeneric), public := false",
+            0,
+            "function-visibility",
+        ),
+        (
+            "a variable that is not in scope",
+            "(ctor RuntimeSyntax::RtExpr.var \"units\")",
+            "(ctor RuntimeSyntax::RtExpr.var \"unitz\")",
+            0,
+            "variable-scope",
+        ),
+        (
+            "a method of no trait and not in the table",
+            "\"fetch_add\"",
+            "\"fetch_sub\"",
+            0,
+            "method-name",
+        ),
+        (
+            "a path no use declares",
+            "(cons \"Memory\" (cons \"Relaxed\"",
+            "(cons \"Memori\" (cons \"Relaxed\"",
+            0,
+            "path-name",
+        ),
+        (
+            "a call of a path outside the table",
+            "(ctor RuntimeSyntax::RtExpr.call (cons \"AtomicU64\" (cons \"new\"",
+            "(ctor RuntimeSyntax::RtExpr.call (cons \"AtomicU64\" (cons \"neu\"",
+            0,
+            "call-name",
+        ),
+        (
+            "a type parameter beyond the generics in scope",
+            "RtType.param 1",
+            "RtType.param 5",
+            0,
+            "type-parameter",
+        ),
+    ]
+}
+
+pub(super) type Mutation = fn(&mut rt::Crate);
 
 /// The rules planted on the decoded crate: the construct that breaks each,
 /// added to or changed in the crate the module defines.
-fn ast_plants() -> Vec<(&'static str, Mutation, &'static str)> {
+pub(super) fn ast_plants() -> Vec<(&'static str, Mutation, &'static str)> {
     use rt::{Expr, Item, Type};
     fn function<'a>(krate: &'a mut rt::Crate, name: &str) -> &'a mut rt::Function {
         krate
@@ -471,7 +495,7 @@ fn ast_plants() -> Vec<(&'static str, Mutation, &'static str)> {
 
 /// The names of the rules a validator source refuses by: the first string
 /// literal after each `rule(`.
-fn rules_named(source: &str) -> std::collections::BTreeSet<String> {
+pub(super) fn rules_named(source: &str) -> std::collections::BTreeSet<String> {
     let mut out = std::collections::BTreeSet::new();
     let mut rest = source;
     while let Some(at) = rest.find("rule(") {
