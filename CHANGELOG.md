@@ -394,7 +394,7 @@ and Unreleased holds what has landed since.
   on 352 crates and on seeded mutants of the smaller ones. Its certificate
   part is 565,927 bytes, 13.5% of `max_file_bytes`. The register is 447 IDs.
 - The literal values of the Rust lowering as language-1.2 source, first pass of
-  the lowering of terms (SPEC.md §17.23, §17.16, `BS-09`, #92; no new diagnostic
+  the lowering of terms (SPEC.md §17.23, §17.16, `BS-10`, #92; no new diagnostic
   code, no change to the language-1.2 identity). `lowerValueAt` of `RustTerms`
   lowers the literal that is the body of a function of a program as
   `Lowering::value` does, held to the tail of that function in the crate

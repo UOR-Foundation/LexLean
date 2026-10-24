@@ -10178,7 +10178,7 @@ packages, 177 programs, 236 crates; `BS-05` 456 and 319 vectors; `BS-06` 615
 vectors of `printCrate` and 472 committed distinct crates; `BS-07` 311
 vectors) and are recounted by running their cases on this tree.
 
-`BS-09` holds the production root of `LexLeanBoot.RustTerms`
+`BS-10` holds the production root of `LexLeanBoot.RustTerms`
 (`bootstrap/src/RustTerms.lex.tex`), the literal values of the lowering of
 terms (`Lowering::value`), to the tail of the function whose body is a literal
 in the crate that `rust::lower` returns. The oracle's `value` is private to the
