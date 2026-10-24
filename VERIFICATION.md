@@ -9916,11 +9916,11 @@ packages (the records are regenerated at landing).
 
 `BS-06` holds the two production roots of `LexLeanBoot.RustPrint`
 (`bootstrap/src/RustPrint.lex.tex`, over `RustAst.lex.tex`) to the oracle,
-`calculus::rust::ast::{print, print_expr}`. The case runs 620 vectors of
+`calculus::rust::ast::{print, print_expr}`. The case runs 622 vectors of
 `printCrate` (464 the distinct committed crates: 232 lowered by the renderer
 from 173 programs, and the crates of 256 packages; the hand-built crates; the
 real header of each profile; five functions with type parameters; 60 refused for a capacity one byte short) and
-1,971 of `printExpr` (1,420 hand-built: every literal at the edge of each
+2,011 of `printExpr` (1,460 hand-built: every literal at the edge of each
 width and sign, the 128 ASCII scalars and the edges of UTF-8 in strings, byte
 strings, every runtime row and machine primitive with its operands and with
 one too many, every constructor, pattern, block, conditional, match with a
