@@ -44,7 +44,7 @@ inductive{
     {name: PTuple, fields: [Pat]},
     {name: PTupleStruct, fields: [(List Bytes), Pat]},
     {name: PStruct, fields: [(List Bytes), (List Bytes), Pat]},
-    {name: PLit, fields: []},
+    {name: PLit, fields: [Nat]},
     {name: PNil, fields: []},
     {name: PCons, fields: [Pat, Pat]}
   ]
@@ -56,7 +56,7 @@ inductive{
   parameters: [],
   constructors: [
     {name: EVar, fields: [Bytes]},
-    {name: ELit, fields: []},
+    {name: ELit, fields: [Nat]},
     {name: EPath, fields: [(List Bytes)]},
     {name: ECall, fields: [(List Bytes), Expr]},
     {name: EMethod, fields: [Expr, Bytes, Expr]},
@@ -76,7 +76,7 @@ inductive{
     {name: EReturn, fields: [Expr]},
     {name: ETuple, fields: [Expr]},
     {name: EStructLit, fields: [(List Bytes), (List Bytes), Expr]},
-    {name: EBinary, fields: [Expr, Expr]},
+    {name: EBinary, fields: [Nat, Expr, Expr]},
     {name: ENot, fields: [Expr]},
     {name: ECast, fields: [Expr, Ty]},
     {name: EIndex, fields: [Expr, Expr]},
@@ -149,15 +149,15 @@ inductive{
   parameters: [],
   constructors: [
     {name: IUse, fields: [(List Bytes), (List Bytes)]},
-    {name: IUnit, fields: [Bytes]},
+    {name: IUnit, fields: [Bytes, (List Bytes)]},
     {name: IAlias, fields: [Bytes, (List Bytes), Ty]},
     {name: IStatic, fields: [Bytes, Ty, Expr]},
     {name: ITrait, fields: [Bytes, (List Sig)]},
     {name: IImpl, fields: [(List Generic), (List Bytes), Ty, (List FnDef)]},
     {name: IFn, fields: [FnDef]},
-    {name: ITuple, fields: [Bytes, (List Bytes), Ty]},
-    {name: IRecord, fields: [Bytes, (List Bytes), (List Bytes), Ty]},
-    {name: IEnum, fields: [Bytes, (List Bytes), (List Variant)]}
+    {name: ITuple, fields: [Bytes, (List Bytes), (List Bytes), Ty]},
+    {name: IRecord, fields: [Bytes, (List Bytes), (List Bytes), (List Bytes), Ty]},
+    {name: IEnum, fields: [Bytes, (List Bytes), (List Bytes), (List Variant)]}
   ]
 }
 
@@ -333,6 +333,303 @@ definition{
 }
 
 definition{
+  name: orElse,
+  parameters: [lead : (Option Bytes), other : (Option Bytes)],
+  result: (Option Bytes),
+  body: (match lead | Option.some stop => (ctor Option.some [Bytes] stop) | Option.none => other),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: inRangeB,
+  parameters: [byte : UInt8, low : UInt8, high : UInt8],
+  result: Bool,
+  body: (match (prim checked_subtract byte low : (Option UInt8))
+    | Option.some above => (match (prim checked_subtract high byte : (Option UInt8))
+      | Option.some below => true
+      | Option.none => false)
+    | Option.none => false),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: identByte,
+  parameters: [raw : Bytes, at : Nat],
+  result: Bool,
+  body: (match (LexLeanStd.Text::byteAt raw at)
+    | Option.some byte => (if (inRangeB byte (97 : UInt8) (122 : UInt8)) then true else (if (inRangeB byte (65 : UInt8) (90 : UInt8)) then true else (if (prim equal byte (95 : UInt8) : Bool) then true else (if (0 <? at) then (inRangeB byte (48 : UInt8) (57 : UInt8)) else false))))
+    | Option.none => false),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: identShape,
+  parameters: [raw : Bytes],
+  result: Bool,
+  body: (if (0 <? (prim length raw : Nat)) then ((first (prim iterate_until (fun [raw] (at : Nat) => (if (identByte raw at) then (ctor Option.some [Nat] (at + 1)) else (ctor Option.none [Nat]))) (prim length raw : Nat) 0 : (Nat * Bool))) =? (prim length raw : Nat)) else false),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: keywords,
+  parameters: [],
+  result: (List Bytes),
+  body: (cons (rtext "abstract") (cons (rtext "as") (cons (rtext "async") (cons (rtext "await") (cons (rtext "become") (cons (rtext "box") (cons (rtext "break") (cons (rtext "const") (cons (rtext "continue") (cons (rtext "crate") (cons (rtext "do") (cons (rtext "dyn") (cons (rtext "else") (cons (rtext "enum") (cons (rtext "extern") (cons (rtext "false") (cons (rtext "final") (cons (rtext "fn") (cons (rtext "for") (cons (rtext "if") (cons (rtext "impl") (cons (rtext "in") (cons (rtext "let") (cons (rtext "loop") (cons (rtext "macro") (cons (rtext "match") (cons (rtext "mod") (cons (rtext "move") (cons (rtext "mut") (cons (rtext "override") (cons (rtext "priv") (cons (rtext "pub") (cons (rtext "ref") (cons (rtext "return") (cons (rtext "self") (cons (rtext "Self") (cons (rtext "static") (cons (rtext "struct") (cons (rtext "super") (cons (rtext "trait") (cons (rtext "true") (cons (rtext "try") (cons (rtext "type") (cons (rtext "typeof") (cons (rtext "unsafe") (cons (rtext "unsized") (cons (rtext "use") (cons (rtext "virtual") (cons (rtext "where") (cons (rtext "while") (cons (rtext "yield") (cons (rtext "_") (nil Bytes))))))))))))))))))))))))))))))))))))))))))))))))))))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: identErr,
+  parameters: [what : String, name : Bytes],
+  result: (Option Bytes),
+  body: (if (if (identShape name) then (not (inList (keywords) name)) else false) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: identifier: ") (rcat (rtext what) (rcat (rtext " ") (rcat (rtick name) (rtext " is not an identifier"))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: identsErr,
+  parameters: [what : String, names : (List Bytes)],
+  result: (Option Bytes),
+  body: (prim list_fold (fun [what] (found : (Option Bytes)) (name : Bytes) => (match found
+    | Option.some stop => (ctor Option.some [Bytes] stop)
+    | Option.none => (identErr what name))) (ctor Option.none [Bytes]) names : (Option Bytes)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: segmentsErr,
+  parameters: [what : String, path : (List Bytes)],
+  result: (Option Bytes),
+  body: (prim list_fold (fun [what] (found : (Option Bytes)) (segment : Bytes) => (match found
+    | Option.some stop => (ctor Option.some [Bytes] stop)
+    | Option.none => (if (if (bEq segment (rtext "Self")) then true else (if (bEq segment (rtext "self")) then true else (if (bEq segment (rtext "crate")) then true else (bEq segment (rtext "super"))))) then (ctor Option.none [Bytes]) else (identErr what segment)))) (ctor Option.none [Bytes]) path : (Option Bytes)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: derivesErr,
+  parameters: [what : String, names : (List Bytes)],
+  result: (Option Bytes),
+  body: (prim list_fold (fun [what] (found : (Option Bytes)) (name : Bytes) => (match found
+    | Option.some stop => (ctor Option.some [Bytes] stop)
+    | Option.none => (if (if (bEq name (rtext "Clone")) then true else (if (bEq name (rtext "Copy")) then true else (if (bEq name (rtext "Debug")) then true else (if (bEq name (rtext "Eq")) then true else (bEq name (rtext "PartialEq")))))) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: derive: ") (rcat (rtext what) (rcat (rtext " derives ") (rcat (rtick name) (rtext ", which is not in the closed table"))))))))) (ctor Option.none [Bytes]) names : (Option Bytes)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: literalErr,
+  parameters: [scalars : Nat],
+  result: (Option Bytes),
+  body: (if (scalars =? 1) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: char-literal: ") (rcat (rtext "a character literal of ") (rcat (rdec scalars) (rtext " scalar values")))))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: opPrec,
+  parameters: [op : Nat],
+  result: Nat,
+  body: (if (op =? 6) then 3 else (if (op =? 5) then 4 else (if (op =? 7) then 5 else (if (op =? 8) then 5 else (if (op =? 9) then 5 else (if (op =? 10) then 5 else (if (op =? 11) then 5 else (if (op =? 0) then 9 else (if (op =? 1) then 9 else 10))))))))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: exprPrec,
+  parameters: [e : Expr],
+  result: Nat,
+  body: (match e
+    | Expr.EVar x0 => 14
+    | Expr.ELit x0 => 14
+    | Expr.EPath x0 => 14
+    | Expr.ECall x0 x1 => 13
+    | Expr.EMethod x0 x1 x2 => 13
+    | Expr.EField x0 x1 => 13
+    | Expr.EFieldNamed x0 x1 => 13
+    | Expr.EBorrow x0 => 12
+    | Expr.EEquals x0 x1 => 5
+    | Expr.EMatch x0 x1 => 14
+    | Expr.ELet x0 x1 x2 => 1
+    | Expr.EAssign x0 x1 => 1
+    | Expr.EIf x0 x1 x2 => 14
+    | Expr.EWhile x0 x1 => 14
+    | Expr.EWhileLet x0 x1 x2 => 14
+    | Expr.ELoop x0 => 14
+    | Expr.EFor x0 x1 x2 => 14
+    | Expr.EBreak => 1
+    | Expr.EReturn x0 => 1
+    | Expr.ETuple x0 => 14
+    | Expr.EStructLit x0 x1 x2 => 14
+    | Expr.EBinary op x1 x2 => (opPrec op)
+    | Expr.ENot x0 => 12
+    | Expr.ECast x0 x1 => 11
+    | Expr.EIndex x0 x1 => 13
+    | Expr.ERange x0 x1 x2 => 14
+    | Expr.EDeref x0 => 12
+    | Expr.EBorrowMut x0 => 12
+    | Expr.EMethodOf x0 x1 x2 x3 => 13
+    | Expr.EBlock x0 x1 => 14
+    | Expr.ENone => 14
+    | Expr.ENil => 14
+    | Expr.ECons x0 x1 => 14
+    | Expr.ELetS x0 x1 x2 x3 => 14
+    | Expr.EArm x0 x1 x2 x3 => 14),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: endsInCast,
+  parameters: [e : Expr],
+  result: Bool,
+  body: (match e
+    | Expr.EVar x0 => false
+    | Expr.ELit x0 => false
+    | Expr.EPath x0 => false
+    | Expr.ECall x0 x1 => false
+    | Expr.EMethod x0 x1 x2 => false
+    | Expr.EField x0 x1 => false
+    | Expr.EFieldNamed x0 x1 => false
+    | Expr.EBorrow x0 => false
+    | Expr.EEquals x0 x1 => false
+    | Expr.EMatch x0 x1 => false
+    | Expr.ELet x0 x1 x2 => false
+    | Expr.EAssign x0 x1 => false
+    | Expr.EIf x0 x1 x2 => false
+    | Expr.EWhile x0 x1 => false
+    | Expr.EWhileLet x0 x1 x2 => false
+    | Expr.ELoop x0 => false
+    | Expr.EFor x0 x1 x2 => false
+    | Expr.EBreak => false
+    | Expr.EReturn x0 => false
+    | Expr.ETuple x0 => false
+    | Expr.EStructLit x0 x1 x2 => false
+    | Expr.EBinary op x1 right => (if ((opPrec op) <? (exprPrec right)) then (endsInCast right) else false)
+    | Expr.ENot x0 => false
+    | Expr.ECast x0 x1 => true
+    | Expr.EIndex x0 x1 => false
+    | Expr.ERange x0 x1 x2 => false
+    | Expr.EDeref x0 => false
+    | Expr.EBorrowMut x0 => false
+    | Expr.EMethodOf x0 x1 x2 x3 => false
+    | Expr.EBlock x0 x1 => false
+    | Expr.ENone => false
+    | Expr.ENil => false
+    | Expr.ECons x0 x1 => false
+    | Expr.ELetS x0 x1 x2 x3 => false
+    | Expr.EArm x0 x1 x2 x3 => false),
+  axioms: [],
+  executable: true,
+  recursive_argument: e
+}
+
+definition{
+  name: leftParenthesized,
+  parameters: [op : Nat, left : Expr],
+  result: Bool,
+  body: (if (if (op =? 8) then (endsInCast left) else false) then true else ((exprPrec left) <? (if ((opPrec op) =? 5) then 6 else (opPrec op)))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: exposed,
+  parameters: [e : Expr],
+  result: Bool,
+  body: (match e
+    | Expr.EVar x0 => false
+    | Expr.ELit x0 => false
+    | Expr.EPath x0 => false
+    | Expr.ECall x0 x1 => false
+    | Expr.EMethod receiver x1 x2 => (if (13 <=? (exprPrec receiver)) then (exposed receiver) else false)
+    | Expr.EField receiver x1 => (if (13 <=? (exprPrec receiver)) then (exposed receiver) else false)
+    | Expr.EFieldNamed receiver x1 => (if (13 <=? (exprPrec receiver)) then (exposed receiver) else false)
+    | Expr.EBorrow inner => (if (12 <=? (exprPrec inner)) then (exposed inner) else false)
+    | Expr.EEquals a b => (if (if (6 <=? (exprPrec a)) then (exposed a) else false) then true else (if (6 <=? (exprPrec b)) then (exposed b) else false))
+    | Expr.EMatch x0 x1 => false
+    | Expr.ELet x0 x1 x2 => false
+    | Expr.EAssign place value => (if (exposed place) then true else (exposed value))
+    | Expr.EIf x0 x1 x2 => false
+    | Expr.EWhile x0 x1 => false
+    | Expr.EWhileLet x0 x1 x2 => false
+    | Expr.ELoop x0 => false
+    | Expr.EFor x0 x1 x2 => false
+    | Expr.EBreak => false
+    | Expr.EReturn value => (exposed value)
+    | Expr.ETuple x0 => false
+    | Expr.EStructLit x0 x1 x2 => true
+    | Expr.EBinary op a b => (if (if (leftParenthesized op a) then false else (exposed a)) then true else (if (((opPrec op) + 1) <=? (exprPrec b)) then (exposed b) else false))
+    | Expr.ENot inner => (if (12 <=? (exprPrec inner)) then (exposed inner) else false)
+    | Expr.ECast inner x1 => (if (11 <=? (exprPrec inner)) then (exposed inner) else false)
+    | Expr.EIndex receiver x1 => (if (13 <=? (exprPrec receiver)) then (exposed receiver) else false)
+    | Expr.ERange receiver x1 x2 => (if (13 <=? (exprPrec receiver)) then (exposed receiver) else false)
+    | Expr.EDeref inner => (if (12 <=? (exprPrec inner)) then (exposed inner) else false)
+    | Expr.EBorrowMut inner => (if (12 <=? (exprPrec inner)) then (exposed inner) else false)
+    | Expr.EMethodOf receiver x1 x2 x3 => (if (13 <=? (exprPrec receiver)) then (exposed receiver) else false)
+    | Expr.EBlock x0 x1 => false
+    | Expr.ENone => false
+    | Expr.ENil => false
+    | Expr.ECons x0 x1 => false
+    | Expr.ELetS x0 x1 x2 x3 => false
+    | Expr.EArm x0 x1 x2 x3 => false),
+  axioms: [],
+  executable: true,
+  recursive_argument: e
+}
+
+definition{
+  name: headErr,
+  parameters: [e : Expr],
+  result: (Option Bytes),
+  body: (if (exposed e) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: struct-head: ") (rtext "a struct literal outside parentheses in the head of a condition, a loop, or a match"))) else (ctor Option.none [Bytes])),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: unscopedErr,
+  parameters: [what : String, ty : Ty],
+  result: (Option Bytes),
+  body: (match ty
+    | Ty.TyUnit => (ctor Option.none [Bytes])
+    | Ty.TyBool => (ctor Option.none [Bytes])
+    | Ty.TyNat => (ctor Option.none [Bytes])
+    | Ty.TyFixed => (ctor Option.none [Bytes])
+    | Ty.TyOrdering => (ctor Option.none [Bytes])
+    | Ty.TySelf => (ctor Option.none [Bytes])
+    | Ty.TyParam x0 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: type-scope: ") (rcat (rtext what) (rtext " names a generic parameter, which the printer writes without the generics in scope"))))
+    | Ty.TyRef inner => (unscopedErr what inner)
+    | Ty.TyRefMut inner => (unscopedErr what inner)
+    | Ty.TyPair a b => (match (unscopedErr what a)
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (unscopedErr what b))
+    | Ty.TyNamed x0 arguments => (unscopedErr what arguments)
+    | Ty.TyWide => (ctor Option.none [Bytes])
+    | Ty.TySize => (ctor Option.none [Bytes])
+    | Ty.TyChar => (ctor Option.none [Bytes])
+    | Ty.TyStr => (ctor Option.none [Bytes])
+    | Ty.TySlice inner => (unscopedErr what inner)
+    | Ty.TyUnknown => (ctor Option.none [Bytes])
+    | Ty.TyAbsent => (ctor Option.none [Bytes])
+    | Ty.TyNil => (ctor Option.none [Bytes])
+    | Ty.TyCons head tail => (match (unscopedErr what head)
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (unscopedErr what tail))),
+  axioms: [],
+  executable: true,
+  recursive_argument: ty
+}
+
+definition{
   name: tyLen,
   parameters: [chain : Ty],
   result: Nat,
@@ -374,7 +671,7 @@ definition{
     | Pat.PTuple x0 => 0
     | Pat.PTupleStruct x0 x1 => 0
     | Pat.PStruct x0 x1 x2 => 0
-    | Pat.PLit => 0
+    | Pat.PLit d0lit => 0
     | Pat.PNil => 0
     | Pat.PCons head tail => ((patLen tail) + 1)),
   axioms: [],
@@ -388,7 +685,7 @@ definition{
   result: Nat,
   body: (match chain
     | Expr.EVar x0 => 0
-    | Expr.ELit => 0
+    | Expr.ELit d0lit => 0
     | Expr.EPath x0 => 0
     | Expr.ECall x0 x1 => 0
     | Expr.EMethod x0 x1 x2 => 0
@@ -408,7 +705,7 @@ definition{
     | Expr.EReturn x0 => 0
     | Expr.ETuple x0 => 0
     | Expr.EStructLit x0 x1 x2 => 0
-    | Expr.EBinary x0 x1 => 0
+    | Expr.EBinary x0 x1 x2 => 0
     | Expr.ENot x0 => 0
     | Expr.ECast x0 x1 => 0
     | Expr.EIndex x0 x1 => 0
@@ -849,22 +1146,26 @@ definition{
   result: (Result (List Var) Bytes),
   body: (match p
     | Pat.PWild => (ctor Result.ok [(List Var), Bytes] acc)
-    | Pat.PBind name => (match (findVar acc name)
-      | Option.some held => (ctor Result.error [(List Var), Bytes] (rcat (rtext "runtime support: pattern-duplicate: ") (rcat (rtick name) (rtext " is bound twice in one pattern"))))
-      | Option.none => (ctor Result.ok [(List Var), Bytes] (cons (record Var {name := name, mutable := false, ty := (ctor Ty.TyUnknown)}) acc)))
-    | Pat.PBindMut name => (match (findVar acc name)
-      | Option.some held => (ctor Result.error [(List Var), Bytes] (rcat (rtext "runtime support: pattern-duplicate: ") (rcat (rtick name) (rtext " is bound twice in one pattern"))))
-      | Option.none => (ctor Result.ok [(List Var), Bytes] (cons (record Var {name := name, mutable := true, ty := (ctor Ty.TyUnknown)}) acc)))
+    | Pat.PBind name => (match (identErr "a pattern binding" name)
+      | Option.some bad => (ctor Result.error [(List Var), Bytes] bad)
+      | Option.none => (match (findVar acc name)
+        | Option.some held => (ctor Result.error [(List Var), Bytes] (rcat (rtext "runtime support: pattern-duplicate: ") (rcat (rtick name) (rtext " is bound twice in one pattern"))))
+        | Option.none => (ctor Result.ok [(List Var), Bytes] (cons (record Var {name := name, mutable := false, ty := (ctor Ty.TyUnknown)}) acc))))
+    | Pat.PBindMut name => (match (identErr "a pattern binding" name)
+      | Option.some bad => (ctor Result.error [(List Var), Bytes] bad)
+      | Option.none => (match (findVar acc name)
+        | Option.some held => (ctor Result.error [(List Var), Bytes] (rcat (rtext "runtime support: pattern-duplicate: ") (rcat (rtick name) (rtext " is bound twice in one pattern"))))
+        | Option.none => (ctor Result.ok [(List Var), Bytes] (cons (record Var {name := name, mutable := true, ty := (ctor Ty.TyUnknown)}) acc))))
     | Pat.PPath d0 => (ctor Result.ok [(List Var), Bytes] acc)
     | Pat.PTuple items => (bindsOf acc items)
     | Pat.PTupleStruct path items => (bindsOf acc items)
     | Pat.PStruct path names items => (bindsOf acc items)
-    | Pat.PLit => (ctor Result.ok [(List Var), Bytes] acc)
+    | Pat.PLit d0lit => (ctor Result.ok [(List Var), Bytes] acc)
     | Pat.PNil => (ctor Result.ok [(List Var), Bytes] acc)
     | Pat.PCons head tail => (match (bindsOf acc head)
       | Result.ok next => (bindsOf next tail)
       | Result.error problem => (ctor Result.error [(List Var), Bytes] problem))),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true,
   recursive_argument: p
 }
@@ -941,14 +1242,16 @@ definition{
   result: (Option Bytes),
   body: (prim list_fold (fun [sc] (found : (Option Bytes)) (g : Generic) => (match found
     | Option.some stop => (ctor Option.some [Bytes] stop)
-    | Option.none => (prim list_fold (fun [g, sc] (foundBound : (Option Bytes)) (bound : Bytes) => (match foundBound
-      | Option.some stop => (ctor Option.some [Bytes] stop)
-      | Option.none => (if (match (findTrait sc bound)
-        | Option.some held => true
-        | Option.none => (match (stdTraitMethod bound)
-          | Option.some m => true
-          | Option.none => false)) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: bound-trait: ") (rcat (rtick (rcat (project g name) (rcat (rtext ": ") bound))) (rtext " names no declared trait"))))))) (ctor Option.none [Bytes]) (project g bounds) : (Option Bytes)))) (ctor Option.none [Bytes]) gs : (Option Bytes)),
-  axioms: [],
+    | Option.none => (match (identErr "a generic parameter" (project g name))
+      | Option.some bad => (ctor Option.some [Bytes] bad)
+      | Option.none => (prim list_fold (fun [g, sc] (foundBound : (Option Bytes)) (bound : Bytes) => (match foundBound
+        | Option.some stop => (ctor Option.some [Bytes] stop)
+        | Option.none => (if (match (findTrait sc bound)
+          | Option.some held => true
+          | Option.none => (match (stdTraitMethod bound)
+            | Option.some m => true
+            | Option.none => false)) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: bound-trait: ") (rcat (rtick (rcat (project g name) (rcat (rtext ": ") bound))) (rtext " names no declared trait"))))))) (ctor Option.none [Bytes]) (project g bounds) : (Option Bytes))))) (ctor Option.none [Bytes]) gs : (Option Bytes)),
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -958,8 +1261,10 @@ definition{
   result: (Option Bytes),
   body: (prim list_fold (fun [hasSelf, params, sc] (found : (Option Bytes)) (p : Param) => (match found
     | Option.some stop => (ctor Option.some [Bytes] stop)
-    | Option.none => (tyOk sc (project p ty) params hasSelf))) (ctor Option.none [Bytes]) ps : (Option Bytes)),
-  axioms: [],
+    | Option.none => (match (identErr "a parameter name" (project p name))
+      | Option.some bad => (ctor Option.some [Bytes] bad)
+      | Option.none => (tyOk sc (project p ty) params hasSelf)))) (ctor Option.none [Bytes]) ps : (Option Bytes)),
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -967,10 +1272,12 @@ definition{
   name: sigOk,
   parameters: [sc : Sc, sig : Sig, params : Nat, hasSelf : Bool],
   result: (Option Bytes),
-  body: (if (if (project sig exclusive) then (not (project sig receiver)) else false) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: function-receiver: ") (rcat (rtick (project sig name)) (rtext " is exclusive without a receiver")))) else (match (paramsOk sc (project sig params) params hasSelf)
-    | Option.some stop => (ctor Option.some [Bytes] stop)
-    | Option.none => (tyOk sc (project sig result) params hasSelf))),
-  axioms: [],
+  body: (match (identErr "a method name" (project sig name))
+    | Option.some bad => (ctor Option.some [Bytes] bad)
+    | Option.none => (if (if (project sig exclusive) then (not (project sig receiver)) else false) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: function-receiver: ") (rcat (rtick (project sig name)) (rtext " is exclusive without a receiver")))) else (match (paramsOk sc (project sig params) params hasSelf)
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (tyOk sc (project sig result) params hasSelf)))),
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -988,7 +1295,7 @@ definition{
 }
 
 definition{
-  name: pathOk,
+  name: pathCore,
   parameters: [sc : Sc, path : (List Bytes)],
   result: (Option Bytes),
   body: (let head : Bytes := (headName path); (match (findEnum sc head)
@@ -1001,6 +1308,17 @@ definition{
       | Option.some held2 => true
       | Option.none => false) then true else (if (inList (project sc statics) head) then true else (if (isInteger head) then true else (if (bEq head (rtext "None")) then true else (if (bEq head (rtext "Self")) then true else (bEq head (rtext "usize")))))))) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: path-name: ") (rcat (rtick (joinWith path "::")) (rcat (rtext " starts at ") (rcat (rtick head) (rtext ", which no `use` or item declares"))))))))),
   axioms: [],
+  executable: true
+}
+
+definition{
+  name: pathOk,
+  parameters: [sc : Sc, path : (List Bytes)],
+  result: (Option Bytes),
+  body: (match (segmentsErr "a path segment" path)
+    | Option.some bad => (ctor Option.some [Bytes] bad)
+    | Option.none => (pathCore sc path)),
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -1062,15 +1380,17 @@ definition{
         | Option.none => (patOk sc items))))
     | Pat.PStruct path names items => (match (pathOk sc path)
       | Option.some stop => (ctor Option.some [Bytes] stop)
-      | Option.none => (if ((prim length names : Nat) =? (patLen items)) then (match (patFields sc path names)
-        | Option.some stop => (ctor Option.some [Bytes] stop)
-        | Option.none => (patOk sc items)) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: pattern-fields: ") (rtext "a struct pattern with unequal names and patterns")))))
-    | Pat.PLit => (ctor Option.none [Bytes])
+      | Option.none => (match (identsErr "a pattern field name" names)
+        | Option.some bad => (ctor Option.some [Bytes] bad)
+        | Option.none => (if ((prim length names : Nat) =? (patLen items)) then (match (patFields sc path names)
+          | Option.some stop => (ctor Option.some [Bytes] stop)
+          | Option.none => (patOk sc items)) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: pattern-fields: ") (rtext "a struct pattern with unequal names and patterns"))))))
+    | Pat.PLit scalars => (literalErr scalars)
     | Pat.PNil => (ctor Option.none [Bytes])
     | Pat.PCons head tail => (match (patOk sc head)
       | Option.some stop => (ctor Option.some [Bytes] stop)
       | Option.none => (patOk sc tail))),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true,
   recursive_argument: p
 }
@@ -1276,7 +1596,7 @@ definition{
     | Expr.EVar name => (match (findVar (project fr vars) name)
       | Option.some held => (project held ty)
       | Option.none => (ctor Ty.TyUnknown))
-    | Expr.ELit => (ctor Ty.TyUnknown)
+    | Expr.ELit d0lit => (ctor Ty.TyUnknown)
     | Expr.EPath d0 => (ctor Ty.TyUnknown)
     | Expr.ECall d0 d1 => (ctor Ty.TyUnknown)
     | Expr.EMethod d0 d1 d2 => (ctor Ty.TyUnknown)
@@ -1296,7 +1616,7 @@ definition{
     | Expr.EReturn d0 => (ctor Ty.TyUnknown)
     | Expr.ETuple d0 => (ctor Ty.TyUnknown)
     | Expr.EStructLit d0 d1 d2 => (ctor Ty.TyUnknown)
-    | Expr.EBinary d0 d1 => (ctor Ty.TyUnknown)
+    | Expr.EBinary d0 d1 d2 => (ctor Ty.TyUnknown)
     | Expr.ENot d0 => (ctor Ty.TyUnknown)
     | Expr.ECast d0 d1 => (ctor Ty.TyUnknown)
     | Expr.EIndex d0 d1 => (ctor Ty.TyUnknown)
@@ -1323,7 +1643,7 @@ definition{
     | Expr.EVar name => (match (findVar (project fr vars) name)
       | Option.none => (ctor Option.some [Bytes] (rcat (rtext "runtime support: variable-scope: ") (rcat (rtick name) (rtext " is not in scope"))))
       | Option.some held => (if (project held mutable) then (ctor Option.none [Bytes]) else (if (isRefMut (project held ty)) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-immutable: ") (rcat (rtick name) (rtext " is assigned and is not `mut` or `&mut`")))))))
-    | Expr.ELit => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
+    | Expr.ELit d0lit => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
     | Expr.EPath d0 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
     | Expr.ECall d0 d1 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
     | Expr.EMethod d0 d1 d2 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
@@ -1343,7 +1663,7 @@ definition{
     | Expr.EReturn d0 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
     | Expr.ETuple d0 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
     | Expr.EStructLit d0 d1 d2 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
-    | Expr.EBinary d0 d1 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
+    | Expr.EBinary d0 d1 d2 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
     | Expr.ENot d0 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
     | Expr.ECast d0 d1 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
     | Expr.EIndex inner at => (assignable fr inner)
@@ -1457,7 +1777,7 @@ definition{
   result: Bool,
   body: (match e
     | Expr.EVar d0 => false
-    | Expr.ELit => false
+    | Expr.ELit d0lit => false
     | Expr.EPath d0 => false
     | Expr.ECall d0 d1 => false
     | Expr.EMethod d0 d1 d2 => false
@@ -1477,7 +1797,7 @@ definition{
     | Expr.EReturn d0 => false
     | Expr.ETuple d0 => false
     | Expr.EStructLit d0 d1 d2 => false
-    | Expr.EBinary d0 d1 => false
+    | Expr.EBinary d0 d1 d2 => false
     | Expr.ENot d0 => false
     | Expr.ECast d0 d1 => false
     | Expr.EIndex d0 d1 => false
@@ -1501,7 +1821,7 @@ definition{
   result: Bool,
   body: (match e
     | Expr.EVar d0 => false
-    | Expr.ELit => false
+    | Expr.ELit d0lit => false
     | Expr.EPath d0 => false
     | Expr.ECall d0 d1 => false
     | Expr.EMethod d0 d1 d2 => false
@@ -1521,7 +1841,7 @@ definition{
     | Expr.EReturn d0 => false
     | Expr.ETuple d0 => false
     | Expr.EStructLit d0 d1 d2 => false
-    | Expr.EBinary d0 d1 => false
+    | Expr.EBinary d0 d1 d2 => false
     | Expr.ENot d0 => false
     | Expr.ECast d0 d1 => false
     | Expr.EIndex d0 d1 => false
@@ -1565,7 +1885,7 @@ definition{
     | Expr.EVar name => (match (findVar (project fr vars) name)
       | Option.some held => (ctor Option.none [Bytes])
       | Option.none => (if (inList (project sc statics) name) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: variable-scope: ") (rcat (rtick name) (rtext " is not in scope"))))))
-    | Expr.ELit => (ctor Option.none [Bytes])
+    | Expr.ELit scalars => (literalErr scalars)
     | Expr.EPath path => (pathOk sc path)
     | Expr.ECall path args => (match (callCheck sc path (exprLen args))
       | Option.some stop => (ctor Option.some [Bytes] stop)
@@ -1576,12 +1896,14 @@ definition{
         | Option.some stop => (ctor Option.some [Bytes] stop)
         | Option.none => (exprsOk sc fr args)))
     | Expr.EField inner at => (exprOk sc fr inner)
-    | Expr.EFieldNamed inner name => (exprOk sc fr inner)
+    | Expr.EFieldNamed inner name => (match (identErr "a field access" name)
+      | Option.some bad => (ctor Option.some [Bytes] bad)
+      | Option.none => (exprOk sc fr inner))
     | Expr.EBorrow inner => (exprOk sc fr inner)
     | Expr.EEquals a b => (match (exprOk sc fr a)
       | Option.some stop => (ctor Option.some [Bytes] stop)
       | Option.none => (exprOk sc fr b))
-    | Expr.EMatch scrutinee arms => (match (exprOk sc fr scrutinee)
+    | Expr.EMatch scrutinee arms => (match (orElse (headErr scrutinee) (exprOk sc fr scrutinee))
       | Option.some stop => (ctor Option.some [Bytes] stop)
       | Option.none => (if (isEmptyChain arms) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: match-arms: ") (rtext "a match with no arm"))) else (armsOk sc fr arms)))
     | Expr.ELet pat ty value => (ctor Option.some [Bytes] (rcat (rtext "runtime support: let-position: ") (rtext "a `let` that is not a statement of a block")))
@@ -1590,15 +1912,15 @@ definition{
       | Option.none => (match (exprOk sc fr place)
         | Option.some stop => (ctor Option.some [Bytes] stop)
         | Option.none => (exprOk sc fr value)))
-    | Expr.EIf cond thenBlock elseBlock => (match (exprOk sc fr cond)
+    | Expr.EIf cond thenBlock elseBlock => (match (orElse (headErr cond) (exprOk sc fr cond))
       | Option.some stop => (ctor Option.some [Bytes] stop)
       | Option.none => (match (blockOk sc fr thenBlock)
         | Option.some stop => (ctor Option.some [Bytes] stop)
         | Option.none => (blockOk sc fr elseBlock)))
-    | Expr.EWhile cond body => (match (exprOk sc fr cond)
+    | Expr.EWhile cond body => (match (orElse (headErr cond) (exprOk sc fr cond))
       | Option.some stop => (ctor Option.some [Bytes] stop)
       | Option.none => (blockOk sc (withBound fr (nil Var) true) body))
-    | Expr.EWhileLet pat value body => (match (exprOk sc fr value)
+    | Expr.EWhileLet pat value body => (match (orElse (headErr value) (exprOk sc fr value))
       | Option.some stop => (ctor Option.some [Bytes] stop)
       | Option.none => (match (patOk sc pat)
         | Option.some stop => (ctor Option.some [Bytes] stop)
@@ -1606,7 +1928,7 @@ definition{
           | Result.error problem => (ctor Option.some [Bytes] problem)
           | Result.ok bound => (blockOk sc (withBound fr bound true) body))))
     | Expr.ELoop body => (blockOk sc (withBound fr (nil Var) true) body)
-    | Expr.EFor pat value body => (match (exprOk sc fr value)
+    | Expr.EFor pat value body => (match (orElse (headErr value) (exprOk sc fr value))
       | Option.some stop => (ctor Option.some [Bytes] stop)
       | Option.none => (match (patOk sc pat)
         | Option.some stop => (ctor Option.some [Bytes] stop)
@@ -1621,11 +1943,11 @@ definition{
       | Option.none => (match (recordFields sc path)
         | Option.none => (ctor Option.some [Bytes] (rcat (rtext "runtime support: struct-fields: ") (rcat (rtick (joinWith path "::")) (rtext " is no record struct or record variant"))))
         | Option.some held => (if (sameFields names held (exprLen values)) then (exprsOk sc fr values) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: struct-fields: ") (rcat (rtick (joinWith path "::")) (rcat (rtext " is given ") (rcat (joinWith names ", ") (rcat (rtext ", not ") (joinWith held ", "))))))))))
-    | Expr.EBinary a b => (match (exprOk sc fr a)
+    | Expr.EBinary op a b => (match (exprOk sc fr a)
       | Option.some stop => (ctor Option.some [Bytes] stop)
       | Option.none => (exprOk sc fr b))
     | Expr.ENot inner => (exprOk sc fr inner)
-    | Expr.ECast inner ty => (match (tyOk sc ty (prim length (project fr generics) : Nat) (not (isAbsent (project fr selfTy))))
+    | Expr.ECast inner ty => (match (orElse (tyOk sc ty (prim length (project fr generics) : Nat) (not (isAbsent (project fr selfTy)))) (unscopedErr "a cast type" ty))
       | Option.some stop => (ctor Option.some [Bytes] stop)
       | Option.none => (exprOk sc fr inner))
     | Expr.EIndex a b => (match (exprOk sc fr a)
@@ -1642,7 +1964,7 @@ definition{
       | Option.some stop => (ctor Option.some [Bytes] stop)
       | Option.none => (match (turbofishTypes name)
         | Option.none => (ctor Option.some [Bytes] (rcat (rtext "runtime support: method-name: ") (rcat (rtick name) (rtext " takes no type arguments in the closed table"))))
-        | Option.some count => (if (if (count =? (tyLen tys)) then ((turbofishArgs name) =? (exprLen args)) else false) then (if (if (project sc core) then (bEq name (rtext "collect")) else false) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: hidden-allocation: ") (rcat (rtext "rust-core renders ") (rcat (rtick name) (rtext ", which requires heap allocation"))))) else (match (tyOk sc tys (prim length (project fr generics) : Nat) (not (isAbsent (project fr selfTy))))
+        | Option.some count => (if (if (count =? (tyLen tys)) then ((turbofishArgs name) =? (exprLen args)) else false) then (if (if (project sc core) then (bEq name (rtext "collect")) else false) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: hidden-allocation: ") (rcat (rtext "rust-core renders ") (rcat (rtick name) (rtext ", which requires heap allocation"))))) else (match (orElse (tyOk sc tys (prim length (project fr generics) : Nat) (not (isAbsent (project fr selfTy)))) (unscopedErr "a type argument" tys))
           | Option.some stop => (ctor Option.some [Bytes] stop)
           | Option.none => (exprsOk sc fr args))) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: method-arity: ") (rcat (rtick name) (rcat (rtext " takes ") (rcat (rdec count) (rcat (rtext " type arguments and ") (rcat (rdec (turbofishArgs name)) (rtext " arguments")))))))))))
     | Expr.EBlock stmts tail => (match (stmtsOk sc fr stmts)
@@ -1653,7 +1975,7 @@ definition{
     | Expr.ECons d0 d1 => (ctor Option.none [Bytes])
     | Expr.ELetS d0 d1 d2 d3 => (ctor Option.none [Bytes])
     | Expr.EArm d0 d1 d2 d3 => (ctor Option.none [Bytes])),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true,
   mutual: CheckRt,
   recursive_argument: e
@@ -1665,7 +1987,7 @@ definition{
   result: (Option Bytes),
   body: (match es
     | Expr.EVar d0 => (ctor Option.none [Bytes])
-    | Expr.ELit => (ctor Option.none [Bytes])
+    | Expr.ELit d0lit => (ctor Option.none [Bytes])
     | Expr.EPath d0 => (ctor Option.none [Bytes])
     | Expr.ECall d0 d1 => (ctor Option.none [Bytes])
     | Expr.EMethod d0 d1 d2 => (ctor Option.none [Bytes])
@@ -1685,7 +2007,7 @@ definition{
     | Expr.EReturn d0 => (ctor Option.none [Bytes])
     | Expr.ETuple d0 => (ctor Option.none [Bytes])
     | Expr.EStructLit d0 d1 d2 => (ctor Option.none [Bytes])
-    | Expr.EBinary d0 d1 => (ctor Option.none [Bytes])
+    | Expr.EBinary d0 d1 d2 => (ctor Option.none [Bytes])
     | Expr.ENot d0 => (ctor Option.none [Bytes])
     | Expr.ECast d0 d1 => (ctor Option.none [Bytes])
     | Expr.EIndex d0 d1 => (ctor Option.none [Bytes])
@@ -1701,7 +2023,7 @@ definition{
       | Option.none => (exprsOk sc fr tail))
     | Expr.ELetS d0 d1 d2 d3 => (ctor Option.none [Bytes])
     | Expr.EArm d0 d1 d2 d3 => (ctor Option.none [Bytes])),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true,
   mutual: CheckRt,
   recursive_argument: es
@@ -1713,7 +2035,7 @@ definition{
   result: (Option Bytes),
   body: (match b
     | Expr.EVar d0 => (ctor Option.none [Bytes])
-    | Expr.ELit => (ctor Option.none [Bytes])
+    | Expr.ELit d0lit => (ctor Option.none [Bytes])
     | Expr.EPath d0 => (ctor Option.none [Bytes])
     | Expr.ECall d0 d1 => (ctor Option.none [Bytes])
     | Expr.EMethod d0 d1 d2 => (ctor Option.none [Bytes])
@@ -1733,7 +2055,7 @@ definition{
     | Expr.EReturn d0 => (ctor Option.none [Bytes])
     | Expr.ETuple d0 => (ctor Option.none [Bytes])
     | Expr.EStructLit d0 d1 d2 => (ctor Option.none [Bytes])
-    | Expr.EBinary d0 d1 => (ctor Option.none [Bytes])
+    | Expr.EBinary d0 d1 d2 => (ctor Option.none [Bytes])
     | Expr.ENot d0 => (ctor Option.none [Bytes])
     | Expr.ECast d0 d1 => (ctor Option.none [Bytes])
     | Expr.EIndex d0 d1 => (ctor Option.none [Bytes])
@@ -1749,7 +2071,7 @@ definition{
     | Expr.ECons d0 d1 => (ctor Option.none [Bytes])
     | Expr.ELetS d0 d1 d2 d3 => (ctor Option.none [Bytes])
     | Expr.EArm d0 d1 d2 d3 => (ctor Option.none [Bytes])),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true,
   mutual: CheckRt,
   recursive_argument: b
@@ -1761,7 +2083,7 @@ definition{
   result: (Result Fr Bytes),
   body: (match stmts
     | Expr.EVar d0 => (ctor Result.ok [Fr, Bytes] fr)
-    | Expr.ELit => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.ELit d0lit => (ctor Result.ok [Fr, Bytes] fr)
     | Expr.EPath d0 => (ctor Result.ok [Fr, Bytes] fr)
     | Expr.ECall d0 d1 => (ctor Result.ok [Fr, Bytes] fr)
     | Expr.EMethod d0 d1 d2 => (ctor Result.ok [Fr, Bytes] fr)
@@ -1781,7 +2103,7 @@ definition{
     | Expr.EReturn d0 => (ctor Result.ok [Fr, Bytes] fr)
     | Expr.ETuple d0 => (ctor Result.ok [Fr, Bytes] fr)
     | Expr.EStructLit d0 d1 d2 => (ctor Result.ok [Fr, Bytes] fr)
-    | Expr.EBinary d0 d1 => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.EBinary d0 d1 d2 => (ctor Result.ok [Fr, Bytes] fr)
     | Expr.ENot d0 => (ctor Result.ok [Fr, Bytes] fr)
     | Expr.ECast d0 d1 => (ctor Result.ok [Fr, Bytes] fr)
     | Expr.EIndex d0 d1 => (ctor Result.ok [Fr, Bytes] fr)
@@ -1795,7 +2117,7 @@ definition{
     | Expr.ECons stmt rest => (match (exprOk sc fr stmt)
       | Option.some problem => (ctor Result.error [Fr, Bytes] problem)
       | Option.none => (stmtsOk sc fr rest))
-    | Expr.ELetS pat ty value rest => (match (if (isAbsent ty) then (ctor Option.none [Bytes]) else (tyOk sc ty (prim length (project fr generics) : Nat) (not (isAbsent (project fr selfTy)))))
+    | Expr.ELetS pat ty value rest => (match (if (isAbsent ty) then (ctor Option.none [Bytes]) else (orElse (tyOk sc ty (prim length (project fr generics) : Nat) (not (isAbsent (project fr selfTy)))) (unscopedErr "a `let` type" ty)))
       | Option.some problem => (ctor Result.error [Fr, Bytes] problem)
       | Option.none => (match (exprOk sc fr value)
         | Option.some problem2 => (ctor Result.error [Fr, Bytes] problem2)
@@ -1805,7 +2127,7 @@ definition{
             | Option.some problem4 => (ctor Result.error [Fr, Bytes] problem4)
             | Option.none => (stmtsOk sc (withBound fr bound false) rest)))))
     | Expr.EArm d0 d1 d2 d3 => (ctor Result.ok [Fr, Bytes] fr)),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true,
   mutual: CheckRt,
   recursive_argument: stmts
@@ -1817,7 +2139,7 @@ definition{
   result: (Option Bytes),
   body: (match arms
     | Expr.EVar d0 => (ctor Option.none [Bytes])
-    | Expr.ELit => (ctor Option.none [Bytes])
+    | Expr.ELit d0lit => (ctor Option.none [Bytes])
     | Expr.EPath d0 => (ctor Option.none [Bytes])
     | Expr.ECall d0 d1 => (ctor Option.none [Bytes])
     | Expr.EMethod d0 d1 d2 => (ctor Option.none [Bytes])
@@ -1837,7 +2159,7 @@ definition{
     | Expr.EReturn d0 => (ctor Option.none [Bytes])
     | Expr.ETuple d0 => (ctor Option.none [Bytes])
     | Expr.EStructLit d0 d1 d2 => (ctor Option.none [Bytes])
-    | Expr.EBinary d0 d1 => (ctor Option.none [Bytes])
+    | Expr.EBinary d0 d1 d2 => (ctor Option.none [Bytes])
     | Expr.ENot d0 => (ctor Option.none [Bytes])
     | Expr.ECast d0 d1 => (ctor Option.none [Bytes])
     | Expr.EIndex d0 d1 => (ctor Option.none [Bytes])
@@ -1859,7 +2181,7 @@ definition{
           | Option.none => (match (exprOk sc inner body)
             | Option.some stop => (ctor Option.some [Bytes] stop)
             | Option.none => (armsOk sc fr rest))))))),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true,
   mutual: CheckRt,
   recursive_argument: arms
@@ -1891,7 +2213,7 @@ definition{
         | Result.ok start => (match (paramVars (ctor Result.ok [(List Var), Bytes] start) (project sg params) (project sg name))
           | Result.error problem2 => (ctor Option.some [Bytes] problem2)
           | Result.ok vars => (blockOk sc (record Fr {generics := gens, vars := vars, selfTy := selfTy, inLoop := false}) (project f body))))))))),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -1954,7 +2276,7 @@ definition{
         | Option.none => (prim list_fold (fun [generics, sc, sigs, tr, ty] (foundFn : (Option Bytes)) (f : FnDef) => (match foundFn
           | Option.some stop => (ctor Option.some [Bytes] stop)
           | Option.none => (if (not (hasSigNamed sigs (project (project f sig) name))) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: impl-extra: ") (rcat (rtext "`impl ") (rcat tr (rcat (rtext "` states ") (rcat (rtick (project (project f sig) name)) (rtext ", which the trait does not"))))))) else (if (project f public) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: impl-visibility: ") (rcat (rtick (project (project f sig) name)) (rcat (rtext " of `impl ") (rcat tr (rtext "` is public; a trait method has the trait's visibility")))))) else (fnOk sc generics ty f))))) (ctor Option.none [Bytes]) fns : (Option Bytes))))),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -2015,43 +2337,89 @@ definition{
 }
 
 definition{
+  name: preCheck,
+  parameters: [check : (Option Bytes), after : (Result Sc Bytes)],
+  result: (Result Sc Bytes),
+  body: (match check
+    | Option.some problem => (ctor Result.error [Sc, Bytes] problem)
+    | Option.none => after),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: postCheck,
+  parameters: [done : (Result Sc Bytes), check : (Option Bytes)],
+  result: (Result Sc Bytes),
+  body: (match done
+    | Result.error problem => (ctor Result.error [Sc, Bytes] problem)
+    | Result.ok held => (match check
+      | Option.some stop => (ctor Result.error [Sc, Bytes] stop)
+      | Option.none => done)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: variantProblem,
+  parameters: [enumName : Bytes, variants : (List Variant)],
+  result: (Option Bytes),
+  body: (project (prim list_fold (fun [enumName] (seen : Seen) (variant : Variant) => (match (project seen dup)
+    | Option.some held => seen
+    | Option.none => (match (identErr "a variant name" (variantName variant))
+      | Option.some bad => (record Seen {names := (project seen names), dup := (ctor Option.some [Bytes] bad)})
+      | Option.none => (match (match variant
+          | Variant.VUnit n => (ctor Option.none [Bytes])
+          | Variant.VTuple n tys => (ctor Option.none [Bytes])
+          | Variant.VRecord n fs tys => (identsErr "a record variant field name" fs))
+        | Option.some bad2 => (record Seen {names := (project seen names), dup := (ctor Option.some [Bytes] bad2)})
+        | Option.none => (if (inList (project seen names) (variantName variant)) then (record Seen {names := (project seen names), dup := (ctor Option.some [Bytes] (rcat (rtext "runtime support: variant-name: ") (rcat (rtick enumName) (rcat (rtext " declares ") (rcat (rtick (variantName variant)) (rtext " twice"))))))}) else (record Seen {names := (cons (variantName variant) (project seen names)), dup := (ctor Option.none [Bytes])})))))) (record Seen {names := (nil Bytes), dup := (ctor Option.none [Bytes])}) variants : Seen) dup),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
   name: pass1Item,
   parameters: [sc : Sc, item : Item],
   result: (Result Sc Bytes),
   body: (match item
-    | Item.IUse path alias => (match path
+    | Item.IUse path alias => (postCheck (match path
       | List.nil => (ctor Result.error [Sc, Bytes] (rtext "runtime support: use-path: empty"))
       | List.cons root more => (if (if (bEq root (rtext "core")) then true else (if (project sc core) then false else (bEq root (rtext "std")))) then (ctor Result.ok [Sc, Bytes] (record Sc {core := (project sc core), declared := (project sc declared), traits := (project sc traits), structs := (project sc structs), enums := (project sc enums), aliases := (project sc aliases), statics := (project sc statics), functions := (project sc functions), methods := (project sc methods), imported := (prim append (project sc imported) (cons (match alias
         | List.nil => (lastName path)
-        | List.cons renamed rest => renamed) (nil Bytes)) : (List Bytes))})) else (ctor Result.error [Sc, Bytes] (rcat (rtext "runtime support: profile-root: ") (rcat (rtick (rcat (rtext "use ") (joinWith path "::"))) (rcat (rtext " starts at ") (rcat (rtick root) (rtext ", which the profile does not carry"))))))))
-    | Item.IUnit name => (match (declare sc name)
+        | List.cons renamed rest => renamed) (nil Bytes)) : (List Bytes))})) else (ctor Result.error [Sc, Bytes] (rcat (rtext "runtime support: profile-root: ") (rcat (rtick (rcat (rtext "use ") (joinWith path "::"))) (rcat (rtext " starts at ") (rcat (rtick root) (rtext ", which the profile does not carry")))))))) (orElse (segmentsErr "a `use` segment" path) (identsErr "a `use` alias" alias)))
+    | Item.IUnit name derived => (preCheck (identErr "a unit struct name" name) (postCheck (match (declare sc name)
       | Result.error problem => (ctor Result.error [Sc, Bytes] problem)
-      | Result.ok s2 => (ctor Result.ok [Sc, Bytes] (record Sc {core := (project s2 core), declared := (project s2 declared), traits := (project s2 traits), structs := (prim append (project s2 structs) (cons (record StructE {name := name, fields := (nil Bytes), gcount := 0}) (nil StructE)) : (List StructE)), enums := (project s2 enums), aliases := (project s2 aliases), statics := (project s2 statics), functions := (project s2 functions), methods := (project s2 methods), imported := (project s2 imported)})))
-    | Item.IAlias name params ty => (match (declare sc name)
+      | Result.ok s2 => (ctor Result.ok [Sc, Bytes] (record Sc {core := (project s2 core), declared := (project s2 declared), traits := (project s2 traits), structs := (prim append (project s2 structs) (cons (record StructE {name := name, fields := (nil Bytes), gcount := 0}) (nil StructE)) : (List StructE)), enums := (project s2 enums), aliases := (project s2 aliases), statics := (project s2 statics), functions := (project s2 functions), methods := (project s2 methods), imported := (project s2 imported)}))) (derivesErr "a unit struct" derived)))
+    | Item.IAlias name params ty => (preCheck (identErr "an alias name" name) (postCheck (match (declare sc name)
       | Result.error problem => (ctor Result.error [Sc, Bytes] problem)
-      | Result.ok s2 => (ctor Result.ok [Sc, Bytes] (record Sc {core := (project s2 core), declared := (project s2 declared), traits := (project s2 traits), structs := (project s2 structs), enums := (project s2 enums), aliases := (prim append (project s2 aliases) (cons (record Entry {name := name, n := (prim length params : Nat)}) (nil Entry)) : (List Entry)), statics := (project s2 statics), functions := (project s2 functions), methods := (project s2 methods), imported := (project s2 imported)})))
-    | Item.IStatic name ty init => (match (declare sc name)
+      | Result.ok s2 => (ctor Result.ok [Sc, Bytes] (record Sc {core := (project s2 core), declared := (project s2 declared), traits := (project s2 traits), structs := (project s2 structs), enums := (project s2 enums), aliases := (prim append (project s2 aliases) (cons (record Entry {name := name, n := (prim length params : Nat)}) (nil Entry)) : (List Entry)), statics := (project s2 statics), functions := (project s2 functions), methods := (project s2 methods), imported := (project s2 imported)}))) (identsErr "an alias parameter" params)))
+    | Item.IStatic name ty init => (preCheck (identErr "a static name" name) (match (declare sc name)
       | Result.error problem => (ctor Result.error [Sc, Bytes] problem)
-      | Result.ok s2 => (ctor Result.ok [Sc, Bytes] (record Sc {core := (project s2 core), declared := (project s2 declared), traits := (project s2 traits), structs := (project s2 structs), enums := (project s2 enums), aliases := (project s2 aliases), statics := (prim append (project s2 statics) (cons name (nil Bytes)) : (List Bytes)), functions := (project s2 functions), methods := (project s2 methods), imported := (project s2 imported)})))
-    | Item.ITrait name sigs => (match (declare sc name)
+      | Result.ok s2 => (ctor Result.ok [Sc, Bytes] (record Sc {core := (project s2 core), declared := (project s2 declared), traits := (project s2 traits), structs := (project s2 structs), enums := (project s2 enums), aliases := (project s2 aliases), statics := (prim append (project s2 statics) (cons name (nil Bytes)) : (List Bytes)), functions := (project s2 functions), methods := (project s2 methods), imported := (project s2 imported)}))))
+    | Item.ITrait name sigs => (preCheck (identErr "a trait name" name) (match (declare sc name)
       | Result.error problem => (ctor Result.error [Sc, Bytes] problem)
-      | Result.ok s2 => (ctor Result.ok [Sc, Bytes] (addMethods (record Sc {core := (project s2 core), declared := (project s2 declared), traits := (prim append (project s2 traits) (cons (record TraitE {name := name, sigs := sigs}) (nil TraitE)) : (List TraitE)), structs := (project s2 structs), enums := (project s2 enums), aliases := (project s2 aliases), statics := (project s2 statics), functions := (project s2 functions), methods := (project s2 methods), imported := (project s2 imported)}) sigs)))
+      | Result.ok s2 => (ctor Result.ok [Sc, Bytes] (addMethods (record Sc {core := (project s2 core), declared := (project s2 declared), traits := (prim append (project s2 traits) (cons (record TraitE {name := name, sigs := sigs}) (nil TraitE)) : (List TraitE)), structs := (project s2 structs), enums := (project s2 enums), aliases := (project s2 aliases), statics := (project s2 statics), functions := (project s2 functions), methods := (project s2 methods), imported := (project s2 imported)}) sigs))))
     | Item.IImpl generics tr ty fns => (ctor Result.ok [Sc, Bytes] (addFnMethods sc fns))
-    | Item.IFn f => (match (declare sc (project (project f sig) name))
+    | Item.IFn f => (preCheck (identErr "a function name" (project (project f sig) name)) (match (declare sc (project (project f sig) name))
       | Result.error problem => (ctor Result.error [Sc, Bytes] problem)
-      | Result.ok s2 => (ctor Result.ok [Sc, Bytes] (record Sc {core := (project s2 core), declared := (project s2 declared), traits := (project s2 traits), structs := (project s2 structs), enums := (project s2 enums), aliases := (project s2 aliases), statics := (project s2 statics), functions := (prim append (project s2 functions) (cons (record Entry {name := (project (project f sig) name), n := (prim length (project (project f sig) params) : Nat)}) (nil Entry)) : (List Entry)), methods := (project s2 methods), imported := (project s2 imported)})))
-    | Item.ITuple name generics tys => (match (declare sc name)
+      | Result.ok s2 => (ctor Result.ok [Sc, Bytes] (record Sc {core := (project s2 core), declared := (project s2 declared), traits := (project s2 traits), structs := (project s2 structs), enums := (project s2 enums), aliases := (project s2 aliases), statics := (project s2 statics), functions := (prim append (project s2 functions) (cons (record Entry {name := (project (project f sig) name), n := (prim length (project (project f sig) params) : Nat)}) (nil Entry)) : (List Entry)), methods := (project s2 methods), imported := (project s2 imported)}))))
+    | Item.ITuple name generics derived tys => (preCheck (identErr "a tuple struct name" name) (postCheck (match (declare sc name)
       | Result.error problem => (ctor Result.error [Sc, Bytes] problem)
-      | Result.ok s2 => (ctor Result.ok [Sc, Bytes] (record Sc {core := (project s2 core), declared := (project s2 declared), traits := (project s2 traits), structs := (prim append (project s2 structs) (cons (record StructE {name := name, fields := (indexNames tys 0), gcount := (prim length generics : Nat)}) (nil StructE)) : (List StructE)), enums := (project s2 enums), aliases := (project s2 aliases), statics := (project s2 statics), functions := (project s2 functions), methods := (project s2 methods), imported := (project s2 imported)})))
-    | Item.IRecord name generics fields tys => (match (declare sc name)
+      | Result.ok s2 => (ctor Result.ok [Sc, Bytes] (record Sc {core := (project s2 core), declared := (project s2 declared), traits := (project s2 traits), structs := (prim append (project s2 structs) (cons (record StructE {name := name, fields := (indexNames tys 0), gcount := (prim length generics : Nat)}) (nil StructE)) : (List StructE)), enums := (project s2 enums), aliases := (project s2 aliases), statics := (project s2 statics), functions := (project s2 functions), methods := (project s2 methods), imported := (project s2 imported)}))) (orElse (identsErr "a tuple struct generic" generics) (derivesErr "a tuple struct" derived))))
+    | Item.IRecord name generics derived fields tys => (preCheck (identErr "a record struct name" name) (match (declare sc name)
       | Result.error problem => (ctor Result.error [Sc, Bytes] problem)
-      | Result.ok s2 => (if ((prim length fields : Nat) =? (tyLen tys)) then (ctor Result.ok [Sc, Bytes] (record Sc {core := (project s2 core), declared := (project s2 declared), traits := (project s2 traits), structs := (prim append (project s2 structs) (cons (record StructE {name := name, fields := fields, gcount := (prim length generics : Nat)}) (nil StructE)) : (List StructE)), enums := (project s2 enums), aliases := (project s2 aliases), statics := (project s2 statics), functions := (project s2 functions), methods := (project s2 methods), imported := (project s2 imported)})) else (ctor Result.error [Sc, Bytes] (rcat (rtext "runtime support: struct-fields: ") (rcat (rtick name) (rcat (rtext " has ") (rcat (rdec (prim length fields : Nat)) (rcat (rtext " field names and ") (rcat (rdec (tyLen tys)) (rtext " types"))))))))))
-    | Item.IEnum name generics variants => (match (declare sc name)
+      | Result.ok s2 => (match (orElse (identsErr "a record struct generic" generics) (orElse (derivesErr "a record struct" derived) (identsErr "a record field name" fields)))
+        | Option.some stop => (ctor Result.error [Sc, Bytes] stop)
+        | Option.none => (if ((prim length fields : Nat) =? (tyLen tys)) then (ctor Result.ok [Sc, Bytes] (record Sc {core := (project s2 core), declared := (project s2 declared), traits := (project s2 traits), structs := (prim append (project s2 structs) (cons (record StructE {name := name, fields := fields, gcount := (prim length generics : Nat)}) (nil StructE)) : (List StructE)), enums := (project s2 enums), aliases := (project s2 aliases), statics := (project s2 statics), functions := (project s2 functions), methods := (project s2 methods), imported := (project s2 imported)})) else (ctor Result.error [Sc, Bytes] (rcat (rtext "runtime support: struct-fields: ") (rcat (rtick name) (rcat (rtext " has ") (rcat (rdec (prim length fields : Nat)) (rcat (rtext " field names and ") (rcat (rdec (tyLen tys)) (rtext " types"))))))))))))
+    | Item.IEnum name generics derived variants => (preCheck (identErr "an enum name" name) (match (declare sc name)
       | Result.error problem => (ctor Result.error [Sc, Bytes] problem)
-      | Result.ok s2 => (match (firstDuplicate variants)
-        | Option.some twice => (ctor Result.error [Sc, Bytes] (rcat (rtext "runtime support: variant-name: ") (rcat (rtick name) (rcat (rtext " declares ") (rcat (rtick twice) (rtext " twice"))))))
-        | Option.none => (ctor Result.ok [Sc, Bytes] (record Sc {core := (project s2 core), declared := (project s2 declared), traits := (project s2 traits), structs := (project s2 structs), enums := (prim append (project s2 enums) (cons (record EnumE {name := name, variants := variants, gcount := (prim length generics : Nat)}) (nil EnumE)) : (List EnumE)), aliases := (project s2 aliases), statics := (project s2 statics), functions := (project s2 functions), methods := (project s2 methods), imported := (project s2 imported)}))))),
-  axioms: [],
+      | Result.ok s2 => (match (orElse (identsErr "an enum generic" generics) (orElse (derivesErr "an enum" derived) (variantProblem name variants)))
+        | Option.some stop => (ctor Result.error [Sc, Bytes] stop)
+        | Option.none => (match (firstDuplicate variants)
+          | Option.some twice => (ctor Result.error [Sc, Bytes] (rcat (rtext "runtime support: variant-name: ") (rcat (rtick name) (rcat (rtext " declares ") (rcat (rtick twice) (rtext " twice"))))))
+          | Option.none => (ctor Result.ok [Sc, Bytes] (record Sc {core := (project s2 core), declared := (project s2 declared), traits := (project s2 traits), structs := (project s2 structs), enums := (prim append (project s2 enums) (cons (record EnumE {name := name, variants := variants, gcount := (prim length generics : Nat)}) (nil EnumE)) : (List EnumE)), aliases := (project s2 aliases), statics := (project s2 statics), functions := (project s2 functions), methods := (project s2 methods), imported := (project s2 imported)}))))))),
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -2062,7 +2430,7 @@ definition{
   body: (prim list_fold (fun (state : (Result Sc Bytes)) (item : Item) => (match state
     | Result.error problem => (ctor Result.error [Sc, Bytes] problem)
     | Result.ok held => (pass1Item held item))) (ctor Result.ok [Sc, Bytes] sc) items : (Result Sc Bytes)),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -2072,7 +2440,7 @@ definition{
   result: (Option Bytes),
   body: (match item
     | Item.IUse path alias => (ctor Option.none [Bytes])
-    | Item.IUnit name => (ctor Option.none [Bytes])
+    | Item.IUnit name derived => (ctor Option.none [Bytes])
     | Item.IAlias name params ty => (tyOk sc ty (prim length params : Nat) false)
     | Item.IStatic name ty init => (match (tyOk sc ty 0 false)
       | Option.some stop => (ctor Option.some [Bytes] stop)
@@ -2094,15 +2462,15 @@ definition{
             | Option.some stop => (ctor Option.some [Bytes] stop)
             | Option.none => (fnOk sc generics ty f))) (ctor Option.none [Bytes]) fns : (Option Bytes)))))
     | Item.IFn f => (if (not (project f public)) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: function-visibility: ") (rcat (rtick (project (project f sig) name)) (rtext " is a free function that is not public")))) else (if (project (project f sig) receiver) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: function-receiver: ") (rcat (rtext "free function ") (rcat (rtick (project (project f sig) name)) (rtext " takes `&self`"))))) else (fnOk sc (nil Generic) (ctor Ty.TyAbsent) f)))
-    | Item.ITuple name generics tys => (tyOk sc tys (prim length generics : Nat) false)
-    | Item.IRecord name generics fields tys => (tyOk sc tys (prim length generics : Nat) false)
-    | Item.IEnum name generics variants => (prim list_fold (fun [generics, sc] (found : (Option Bytes)) (variant : Variant) => (match found
+    | Item.ITuple name generics derived tys => (tyOk sc tys (prim length generics : Nat) false)
+    | Item.IRecord name generics derived fields tys => (tyOk sc tys (prim length generics : Nat) false)
+    | Item.IEnum name generics derived variants => (prim list_fold (fun [generics, sc] (found : (Option Bytes)) (variant : Variant) => (match found
       | Option.some stop => (ctor Option.some [Bytes] stop)
       | Option.none => (match variant
         | Variant.VUnit n => (ctor Option.none [Bytes])
         | Variant.VTuple n tys => (tyOk sc tys (prim length generics : Nat) false)
         | Variant.VRecord n fs tys => (tyOk sc tys (prim length generics : Nat) false)))) (ctor Option.none [Bytes]) variants : (Option Bytes))),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -2117,7 +2485,7 @@ definition{
         | Option.none => (pass2Item sc item))) (ctor Option.none [Bytes]) (project krate items) : (Option Bytes))
       | Option.some problem2 => (ctor Result.error [Unit, Bytes] problem2)
       | Option.none => (ctor Result.ok [Unit, Bytes] ()))),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true,
   production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
 }
