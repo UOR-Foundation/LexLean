@@ -1,0 +1,29 @@
+\begin{lexlean}{LongFolds}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{corpus.titles@1.0.0}
+\title{Long folds}
+\begin{semanticmodule}
+definition{
+  name: moments,
+  parameters: [xs : (List Nat)],
+  result: (Nat * (Nat * Nat)),
+  body: (prim list_fold (fun (acc : (Nat * (Nat * Nat))) (v : Nat) => (((first acc) + 1), (((first (second acc)) + v), ((second (second acc)) + (prim multiply v v : Nat))))) (0, (0, 0)) xs : (Nat * (Nat * Nat))),
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+theorem{
+  name: moments_three,
+  parameters: [],
+  statement: ((moments (cons 1 (cons 2 (cons 3 (nil Nat))))) = (3, (6, 14))),
+  proof: decide{}
+}
+
+theorem{
+  name: moments_empty,
+  parameters: [],
+  statement: ((moments (nil Nat)) = (0, (0, 0))),
+  proof: decide{}
+}
+\end{semanticmodule}
+\end{lexlean}

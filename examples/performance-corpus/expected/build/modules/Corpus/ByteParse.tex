@@ -1,0 +1,22 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{word}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(raw : ByteArray) (offset : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{Option (Nat)}.\par
+\noindent Definition: \texttt{(match (LexLeanRuntime.index (raw) (offset) : Option (UInt8)) with | Option.none => Option.none | Option.some b0 => (match (LexLeanRuntime.index (raw) ((offset + 1)) : Option (UInt8)) with | Option.none => Option.none | Option.some b1 => (match (LexLeanRuntime.index (raw) ((offset + 2)) : Option (UInt8)) with | Option.none => Option.none | Option.some b2 => (match (LexLeanRuntime.index (raw) ((offset + 3)) : Option (UInt8)) with | Option.none => Option.none | Option.some b3 => Option.some (((((LexLeanRuntime.multiply ((toNat (b0) : Nat)) (16777216) : Nat) + (LexLeanRuntime.multiply ((toNat (b1) : Nat)) (65536) : Nat)) + (LexLeanRuntime.multiply ((toNat (b2) : Nat)) (256) : Nat)) + (toNat (b3) : Nat)))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{word\_big\_endian}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(word (ByteArray.mk \#[0, 1, 2, 3, 4]) (1) = Option.some (16909060))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{word\_short}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(word (ByteArray.mk \#[1, 2, 3]) (0) = Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\end{document}
