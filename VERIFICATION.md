@@ -10377,7 +10377,8 @@ the committed records being the maintainer's.
 Measured certificate of `succeedBodies` (bytes; the limit `max_file_bytes` is
 6,291,456 and the budget the case asserts is 3,145,728): part A 648,077 (the
 largest, 10.3% of the limit), part B 483,088, part E 150,401; the export took
-31 min 25 s. The first export was refused (`LLV7005`) because the helper that
+31 min 25 s. (On the tree of the next row, where the source of the project is
+another, part A is 648,102 bytes.) The first export was refused (`LLV7005`) because the helper that
 builds the origin `overflow` observes no axiom and declared two: a definition
 that observes none declares none.
 
