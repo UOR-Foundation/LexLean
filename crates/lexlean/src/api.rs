@@ -24,6 +24,10 @@ use crate::source::coverage::Coverage;
 // the result without the source.
 pub mod production;
 
+// The migration of a language-1.1 project to language 1.2 (§17.12): one
+// function beside the stable engine, which keeps its seven entry points.
+pub mod migrate;
+
 /// The stable engine (§24.1).
 pub struct Engine {
     project: Project,
