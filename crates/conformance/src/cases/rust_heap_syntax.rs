@@ -19,9 +19,14 @@ use crate::support::repo_root;
 /// those of the constructs the module grew by (the eleventh new rule,
 /// `hidden-allocation`, is planted by `RB-17`'s text plants and here on the probe). `RB-17` requires the rules in
 /// the validator's source to be its own planted rules and these.
-pub(super) const RULES: [&str; 10] = [
+pub(super) const RULES: [&str; 15] = [
     "assign-immutable",
     "assign-place",
+    "attribute-args",
+    "attribute-name",
+    "attribute-position",
+    "defined-path",
+    "module-member",
     "break-position",
     "let-position",
     "param-duplicate",
@@ -76,6 +81,8 @@ fn main() {
         }
     }
     assert_eq!(p::twin_total(3, 4), 7);
+    assert_eq!(p::inner::seven(), 7);
+    assert_eq!(p::defined_probe(), 9);
     let before = p::drops();
     p::make_and_drop();
     p::make_and_drop();
@@ -183,7 +190,10 @@ fn var(name: &str) -> Box<Expr> {
 
 /// The constructors of `RuntimeSyntax` that the heap runtime added, each
 /// with the enum it belongs to.
-const GROWN: [&str; 53] = [
+const GROWN: [&str; 56] = [
+    "RtItem.defined",
+    "RtItem.moduleItem",
+    "RtItem.innerAttribute",
     "RtItem.tupleStruct",
     "RtItem.recordStruct",
     "RtItem.enumItem",
@@ -257,7 +267,64 @@ fn constructors_absent(module: &str) -> Vec<String> {
 /// the description, the crate, and the rule that refuses it.
 pub(super) fn probe_plants(krate: &Crate) -> Vec<(&'static str, Crate, &'static str)> {
     let unit = Expr::Lit(Lit::Unit);
+    let with_item = |item: Item| {
+        let mut out = krate.clone();
+        out.items.push(item);
+        out
+    };
     vec![
+        (
+            "an inner attribute after an item",
+            with_item(Item::InnerAttr("no_std".to_owned(), vec![])),
+            "attribute-position",
+        ),
+        (
+            "an inner attribute outside the closed set",
+            {
+                let mut out = krate.clone();
+                out.items.insert(
+                    0,
+                    Item::InnerAttr("allow".to_owned(), vec!["dead_code".to_owned()]),
+                );
+                out
+            },
+            "attribute-name",
+        ),
+        (
+            "a forbid that names no lint",
+            {
+                let mut out = krate.clone();
+                out.items
+                    .insert(0, Item::InnerAttr("forbid".to_owned(), vec![]));
+                out
+            },
+            "attribute-args",
+        ),
+        (
+            "a no_std that is given arguments",
+            {
+                let mut out = krate.clone();
+                out.items.insert(
+                    0,
+                    Item::InnerAttr("no_std".to_owned(), vec!["x".to_owned()]),
+                );
+                out
+            },
+            "attribute-args",
+        ),
+        (
+            "a module that holds an item other than a function",
+            with_item(Item::Mod(
+                "holder".to_owned(),
+                vec![Item::Use(vec!["std".to_owned(), "fmt".to_owned()], None)],
+            )),
+            "module-member",
+        ),
+        (
+            "a definition with an empty path",
+            with_item(Item::Defined(String::new())),
+            "defined-path",
+        ),
         (
             "a break outside a loop",
             with_statement(krate, "flip", Expr::Break),
@@ -466,7 +533,13 @@ pub fn run(id: &str) {
         "the probe holds an item of each construct"
     );
     rt_validate::validate(&krate).expect("the probe is valid");
-    let text = rt::print(&krate).expect("the probe prints");
+    // `defined_probe` stands for a definition the crate's `RustSyntax` module
+    // gives: the printer is handed its text, as `runtime.rs` hands it the
+    // definitions it prints.
+    let text = rt::print_with(&krate, &|path| {
+        (path == "defined_probe").then(|| "pub fn defined_probe() -> u64 { 9 }\n".to_owned())
+    })
+    .expect("the probe prints");
     let ran = compile_and_run(&text).expect("the printed probe computes what the harness states");
     assert_eq!(ran, "probe");
 

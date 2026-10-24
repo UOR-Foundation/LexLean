@@ -721,19 +721,3 @@ fn refinement() {
         );
     }
 }
-
-#[cfg(test)]
-mod dump {
-    #[test]
-    fn dump_runtime() {
-        use lexlean::calculus::rust::{ast, runtime};
-        let path = std::env::var("RT_DUMP").expect("RT_DUMP");
-        let text = format!(
-            "{}\n=====\n{}",
-            runtime::core().unwrap(),
-            runtime::std().unwrap()
-        );
-        std::fs::write(path, text).unwrap();
-        let _ = ast::print_item;
-    }
-}

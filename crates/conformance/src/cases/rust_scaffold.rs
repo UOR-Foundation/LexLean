@@ -342,15 +342,17 @@ fn rb_10() {
         widened.attributes_with(true).expect("attributes"),
         record.attributes_with(true).expect("attributes")
     );
-    // A gate that is not a lint name is refused by the validator of the
+    // A gate with no lint name is refused by the validator of the
     // attribute nodes the header is printed from.
     let mut unnamed = record.clone();
     unnamed.rustc.push(scaffold::Gate {
-        lint: "not a lint".to_owned(),
+        lint: String::new(),
         level: Level::Forbid,
         priority: 0,
     });
-    let error = unnamed.attributes_with(true).expect_err("not a lint name");
+    let error = unnamed
+        .attributes_with(true)
+        .expect_err("an empty lint name");
     assert!(error.contains("attribute-args"), "{error}");
 
     // A row dropped from the module is a row dropped from `Cargo.toml`, and
