@@ -81,6 +81,14 @@
       "version": "1.0.0"
     },
     {
+      "name": "lower_value_at",
+      "root": "LexLeanBoot.RustTerms.lowerValueAt",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "parse_audit_output",
       "root": "LexLeanBoot.AxiomOutput.parseAuditOutput",
       "targets": [

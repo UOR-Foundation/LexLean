@@ -371,6 +371,16 @@ and Unreleased holds what has landed since.
   `calculus::rust::moves::apply` does, held to the public oracle to the byte
   on 352 crates and on seeded mutants of the smaller ones. Its certificate
   part is 565,927 bytes, 13.5% of `max_file_bytes`. The register is 447 IDs.
+- The literal values of the Rust lowering as language-1.2 source, first pass of
+  the lowering of terms (SPEC.md §17.23, §17.16, `BS-09`, #92; no new diagnostic
+  code, no change to the language-1.2 identity). `lowerValueAt` of `RustTerms`
+  lowers the literal that is the body of a function of a program as
+  `Lowering::value` does, held to the tail of that function in the crate
+  `rust::lower` returns, to the byte, on 358 explicit runs and seeded ones; no
+  file of the renderer changes. Its certificate part is 2,004,962 bytes, 47.8% of
+  `max_file_bytes`. The bootstrap project's roots together pass the default
+  `max_total_source_bytes` with this one (see SPEC.md §17.23). The register is
+  448 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or

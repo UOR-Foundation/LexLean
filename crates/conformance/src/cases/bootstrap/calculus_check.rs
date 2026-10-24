@@ -43,7 +43,7 @@ fn kind_index(kind: IntKind) -> u64 {
     }
 }
 
-fn nat(number: u64) -> Value {
+pub(super) fn nat(number: u64) -> Value {
     Value::Nat {
         value: number.to_string(),
     }

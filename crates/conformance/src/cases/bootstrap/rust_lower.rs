@@ -52,7 +52,7 @@ const TYPING: &str = "LexLeanBoot.CalculusCheck";
 /// A tree of typing sites as the `Ty` the typing root returns: a node is a
 /// pair of its own type (nil when it reads none) and the chain of its
 /// children, a leaf is nil.
-fn enc_site(site: &Site) -> Value {
+pub(super) fn enc_site(site: &Site) -> Value {
     match site {
         Site::Leaf => constructor(14, Vec::new()),
         Site::Node { own, kids } => constructor(
@@ -596,7 +596,7 @@ fn types_leg(legs: &Legs) -> &Run {
 /// of them and of the committed programs, as the statement of the register row
 /// and SPEC.md §17.23 count them.
 const RULE_PROGRAMS: usize = 22;
-const VECTORS: usize = 311;
+const VECTORS: usize = 312;
 const VECTORS_WITHIN: usize = 272;
 const LITERALS: usize = 200;
 const PRIM_ROUNDS: usize = 3;

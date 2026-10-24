@@ -54,6 +54,15 @@
     "hints": ""
   },
   {
+    "part": "bdd-bootstrap-terms",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-terms",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
     "part": "bdd-bootstrap-validate",
     "recipes": "bdd",
     "examples_part": "",

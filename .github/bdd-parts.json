@@ -13,6 +13,9 @@
     "bootstrap-print": [
       "BS-06"
     ],
+    "bootstrap-terms": [
+      "BS-09"
+    ],
     "bootstrap-validate": [
       "BS-05"
     ],
@@ -57,6 +60,12 @@
       "SP-12",
       "SP-13",
       "SP-14"
+    ],
+    "preservation-lists": [
+      "SP-15"
+    ],
+    "preservation-runtime": [
+      "SP-22"
     ],
     "production": [
       "CL-01",
@@ -191,12 +200,6 @@
       "VR-21",
       "VR-22",
       "VR-23"
-    ],
-    "preservation-lists": [
-      "SP-15"
-    ],
-    "preservation-runtime": [
-      "SP-22"
     ]
   }
 }

@@ -10050,6 +10050,76 @@ packages, 177 programs, 236 crates; `BS-05` 456 and 319 vectors; `BS-06` 615
 vectors of `printCrate` and 472 committed distinct crates; `BS-07` 311
 vectors) and are recounted by running their cases on this tree.
 
+`BS-09` holds the production root of `LexLeanBoot.RustTerms`
+(`bootstrap/src/RustTerms.lex.tex`), the literal values of the lowering of
+terms (`Lowering::value`), to the tail of the function whose body is a literal
+in the crate that `rust::lower` returns. The oracle's `value` is private to the
+renderer, whose files the compiler-semantics digest frames, so it is held by
+composition and not exposed: the case asserts that the body of such a function
+has no binding, so its tail is the expression `value` built. The case runs 358
+explicit runs (every scalar literal at the ends of its range in each of five
+contexts: no ADT, a list that holds itself, ADTs that hold an option, a result,
+and a pair, two ADTs that hold each other through an option, and a program that
+states a function type; the composite literals; the literals of those ADTs; the
+absent option of a function type) under the pinned rustc on every host (one
+harness binary built in 4 s, 358 runs in 0.03 s more), and on the normative
+host the evaluator on those and on 150 seeded runs, 1,500 seeded runs under
+rustc (two binaries, 14 s), ten planted defects, and the production export.
+The case up to the comparison with the committed packages takes 1,260 s on
+this host (4 cores), and stops there on this tree with the packages and the
+records left to the maintainer's regeneration: the package `lower_value_at`,
+`bootstrap/expected/`, the locks, and the PD-08 row `bootstrap/lower_value_at`,
+which the case measured in a debug build as 1,048,576 bytes on the explicit
+runs and 4,390,912 on the seeded ones (the larger is the row).
+
+Measured certificate of `lowerValueAt` (bytes; the limit `max_file_bytes` is
+4,194,304 and the budget the case asserts is 3,145,728): part A 2,004,962 (the
+largest, 47.8% of the limit), part B 1,879,973, part E 247,001; the export took
+20 min 36 s. The root carries the analysis of `lowerTypes` (the numbering of the
+function types, the edges that decide which field of an ADT is boxed) beside
+the literal; the typing roots are untouched.
+
+The corpora measure what the root cannot be wrong about: the oracle's checker
+refuses every text the lowering would refuse (`+5`, `007`, `-0`, a magnitude
+beyond 64 bits, upper-case or odd-length hexadecimal, a literal of a shape that
+does not fit its type, an ADT literal with a missing or an extra field or a
+constructor out of range), so none of the 358 explicit and 1,650 seeded runs
+expects a refusal, and the case asserts it. The first draft read the signs and
+the upper-case digits the lowering reads; they are removed, because no vector
+reaches them and a branch the oracle cannot exercise is a claim nothing holds.
+Each of ten plants is made on a copy of `bootstrap/src/RustTerms.lex.tex` on
+every run and is caught by the oracle; the run is the index among the explicit
+runs, then the seeded ones:
+
+- **the minus of an integer is dropped**, run 13.
+- **a digit is worth nine times the place before it**, run 6.
+- **the letters of a hexadecimal digit are one less**, run 59.
+- **the width of a fixed literal is not in its origin**, run 18.
+- **the origin of an error is that of an err**, run 335.
+- **the type of an absent option is the option's own**, run 330.
+- **the types of an error constructor are swapped**, run 335.
+- **the head and the tail of a list are swapped**, run 338.
+- **a field that holds its ADT is not boxed**, run 345.
+- **every field of an ADT is boxed**, run 345.
+
+Findings. (1) The production export of the bootstrap project is now beyond the
+default `max_total_source_bytes` (67,108,864): the limit counts the programs,
+the crates, and the certificates of every production root of the project
+together, and this root passed it at 67,815,299 bytes. The measurements above
+were made with the limit at 134,217,728 in `bootstrap/lexlean.toml`, which is
+a semantic input and moves the lock and every package of the project; the
+decision is the maintainer's (the remaining term-lowering passes need it
+again). (2) A branch the oracle cannot reach is removed rather than planted:
+the sign and the upper-case forms the lowering accepts (the checker refuses
+them) were in the first draft and had no plant that could detect them.
+(3) The counts of `BS-05`, `BS-06`, `BS-07`, and `BS-08` move with the package
+of this root (261 manifests and packages, 178 programs, 237 crates; `BS-05` 457
+and 320 vectors; `BS-06` 617 vectors of `printCrate`, 474 committed distinct
+crates, 543 of the evaluator's; `BS-07` 312 vectors; `BS-08` 353 crates) and
+are recounted by running their cases on this tree until they passed every
+count they assert (the cases were run for 400 to 900 s each and stopped there,
+not to completion: the full runs, with the packages, are the maintainer's).
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the
