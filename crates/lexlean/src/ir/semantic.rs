@@ -714,8 +714,9 @@ pub enum SemanticProof {
     /// of an inductive type of the document and a nonempty set of prior
     /// document definitions, and lowers to a split of the goal on every
     /// constructor of the term's type, with the hypothesis that equates the
-    /// term to the constructor, then `simp only` over the definitions and that
-    /// hypothesis with closed propositions decided (§17.10, `SM-35`).
+    /// term to the constructor, then `simp only` over the definitions, that
+    /// hypothesis, and the fixed conditional and constructor rules, with
+    /// closed propositions decided (§17.10, `SM-35`).
     TermCases {
         scrutinee: SemanticTerm,
         definitions: Vec<MemberRef>,
