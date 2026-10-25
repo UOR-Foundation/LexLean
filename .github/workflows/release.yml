@@ -92,6 +92,15 @@ jobs:
     name: crate readiness
     needs: identity
     uses: ./.github/workflows/crate.yml
+    # A reusable workflow is validated at startup against what its caller
+    # grants, before any `if` is read: `crate.yml`'s upload job asks for
+    # `id-token: write` and names the crates.io secret, so the call grants
+    # both or the whole run is a startup failure (rehearsal 40219629854).
+    # The upload job itself runs only on a dispatch of `crate.yml`.
+    permissions:
+      contents: read
+      id-token: write
+    secrets: inherit
     with:
       prerelease: false
 
