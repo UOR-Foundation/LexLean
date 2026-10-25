@@ -64,6 +64,7 @@ public inductive BinaryKind where
 public inductive NameKind where
   | NkAdt
   | NkFn
+  | NkParam
 
 public inductive Ty where
   | TyLeaf (_ : LeafKind)
@@ -278,11 +279,13 @@ public structure Found where
 
 @[expose] public def binaryKey (kind : BinaryKind) : ByteArray := (match kind with | BinaryKind.BkResult => text ("result") | BinaryKind.BkPair => text ("pair"))
 
-@[expose] public def nameName (kind : NameKind) : ByteArray := (match kind with | NameKind.NkAdt => text ("Adt") | NameKind.NkFn => text ("Fn"))
+@[expose] public def nameName (kind : NameKind) : ByteArray := (match kind with | NameKind.NkAdt => text ("Adt") | NameKind.NkFn => text ("Fn") | NameKind.NkParam => text ("Param"))
 
-@[expose] public def nameKey (kind : NameKind) : ByteArray := (match kind with | NameKind.NkAdt => text ("adt") | NameKind.NkFn => text ("fn"))
+@[expose] public def nameKey (kind : NameKind) : ByteArray := (match kind with | NameKind.NkAdt => text ("adt") | NameKind.NkFn => text ("fn") | NameKind.NkParam => text ("param"))
 
-@[expose] public def nameIsFn (kind : NameKind) : Bool := (match kind with | NameKind.NkAdt => false | NameKind.NkFn => true)
+@[expose] public def nameIsFn (kind : NameKind) : Bool := (match kind with | NameKind.NkAdt => false | NameKind.NkFn => true | NameKind.NkParam => false)
+
+@[expose] public def nameIsParam (kind : NameKind) : Bool := (match kind with | NameKind.NkAdt => false | NameKind.NkFn => false | NameKind.NkParam => true)
 
 @[expose] public def tyDebug : (ty : Ty) -> ByteArray
   | Ty.TyLeaf k => leafName (k)
@@ -298,7 +301,7 @@ public structure Found where
   | Ty.TyFixed _ => false
   | Ty.TyUnary k inner => (match unaryHeap (k) with | Bool.true => true | Bool.false => tyHeap (inner))
   | Ty.TyBinary _ left right => (let l : Bool := tyHeap (left); (let r : Bool := tyHeap (right); (l || r)))
-  | Ty.TyNamed _ _ => false
+  | Ty.TyNamed k _ => nameIsParam (k)
   | Ty.TyNil => false
   | Ty.TyCons _ _ => false
 
@@ -390,7 +393,7 @@ public structure Found where
   | _cx, Ty.TyFixed _ => Except.ok (())
   | cx, Ty.TyUnary _ inner => tyWalk (cx) (inner)
   | cx, Ty.TyBinary _ left right => (match tyWalk (cx) (left) with | Except.ok _ => tyWalk (cx) (right) | Except.error problem1 => Except.error (problem1))
-  | cx, Ty.TyNamed k n => (match nameIsFn (k) with | Bool.true => (match hasVariants (((cx).decl).closures) (n) with | Bool.true => Except.ok (()) | Bool.false => Except.error (cat (text ("type Fn")) (cat (decimal (n)) (text (" is not declared"))))) | Bool.false => (match hasVariants (((cx).decl).adts) (n) with | Bool.true => Except.ok (()) | Bool.false => Except.error (cat (text ("type Adt")) (cat (decimal (n)) (text (" is not declared"))))))
+  | cx, Ty.TyNamed k n => (match nameIsParam (k) with | Bool.true => Except.ok (()) | Bool.false => (match nameIsFn (k) with | Bool.true => (match hasVariants (((cx).decl).closures) (n) with | Bool.true => Except.ok (()) | Bool.false => Except.error (cat (text ("type Fn")) (cat (decimal (n)) (text (" is not declared"))))) | Bool.false => (match hasVariants (((cx).decl).adts) (n) with | Bool.true => Except.ok (()) | Bool.false => Except.error (cat (text ("type Adt")) (cat (decimal (n)) (text (" is not declared")))))))
   | _cx, Ty.TyNil => Except.ok (())
   | _cx, Ty.TyCons _ _ => Except.ok (())
 
@@ -681,9 +684,9 @@ termination_by structural _ t => t
 termination_by structural _ arms => arms
 end
 
-@[expose] public def machineName (m : Nat) : ByteArray := (if (Nat.beq (m) (0)) then text ("checked_add") else (if (Nat.beq (m) (1)) then text ("checked_sub") else (if (Nat.beq (m) (2)) then text ("checked_mul") else (if (Nat.beq (m) (3)) then text ("checked_div") else (if (Nat.beq (m) (4)) then text ("checked_neg") else (if (Nat.beq (m) (5)) then text ("checked_shl") else (if (Nat.beq (m) (6)) then text ("checked_shr") else (if (Nat.beq (m) (7)) then text ("convert") else (if (Nat.beq (m) (8)) then text ("bit_and") else (if (Nat.beq (m) (9)) then text ("bit_or") else (if (Nat.beq (m) (10)) then text ("bit_xor") else (if (Nat.beq (m) (11)) then text ("bit_not") else (if (Nat.beq (m) (12)) then text ("nat_eq") else (if (Nat.beq (m) (13)) then text ("nat_le") else (if (Nat.beq (m) (14)) then text ("nat_lt") else (if (Nat.beq (m) (15)) then text ("nat_rem") else (if (Nat.beq (m) (16)) then text ("int_rem") else (if (Nat.beq (m) (17)) then text ("nat_add") else (if (Nat.beq (m) (18)) then text ("nat_sub") else (if (Nat.beq (m) (19)) then text ("nat_mul") else (if (Nat.beq (m) (20)) then text ("nat_quot") else (if (Nat.beq (m) (21)) then text ("int_add") else (if (Nat.beq (m) (22)) then text ("int_sub") else (if (Nat.beq (m) (23)) then text ("int_mul") else (if (Nat.beq (m) (24)) then text ("int_neg") else (if (Nat.beq (m) (25)) then text ("int_quot") else _root_.ByteArray.mk #[]))))))))))))))))))))))))))
+@[expose] public def machineName (m : Nat) : ByteArray := (if (Nat.beq (m) (0)) then text ("checked_add") else (if (Nat.beq (m) (1)) then text ("checked_sub") else (if (Nat.beq (m) (2)) then text ("checked_mul") else (if (Nat.beq (m) (3)) then text ("checked_div") else (if (Nat.beq (m) (4)) then text ("checked_neg") else (if (Nat.beq (m) (5)) then text ("checked_shl") else (if (Nat.beq (m) (6)) then text ("checked_shr") else (if (Nat.beq (m) (7)) then text ("convert") else (if (Nat.beq (m) (8)) then text ("bit_and") else (if (Nat.beq (m) (9)) then text ("bit_or") else (if (Nat.beq (m) (10)) then text ("bit_xor") else (if (Nat.beq (m) (11)) then text ("bit_not") else (if (Nat.beq (m) (12)) then text ("nat_eq") else (if (Nat.beq (m) (13)) then text ("nat_le") else (if (Nat.beq (m) (14)) then text ("nat_lt") else (if (Nat.beq (m) (15)) then text ("nat_rem") else (if (Nat.beq (m) (16)) then text ("int_rem") else (if (Nat.beq (m) (17)) then text ("nat_add") else (if (Nat.beq (m) (18)) then text ("nat_sub") else (if (Nat.beq (m) (19)) then text ("nat_mul") else (if (Nat.beq (m) (20)) then text ("nat_quot") else (if (Nat.beq (m) (21)) then text ("int_add") else (if (Nat.beq (m) (22)) then text ("int_sub") else (if (Nat.beq (m) (23)) then text ("int_mul") else (if (Nat.beq (m) (24)) then text ("int_neg") else (if (Nat.beq (m) (25)) then text ("int_quot") else (if (Nat.beq (m) (26)) then text ("list_length") else (if (Nat.beq (m) (27)) then text ("list_append") else (if (Nat.beq (m) (28)) then text ("list_index") else (if (Nat.beq (m) (29)) then text ("list_slice") else _root_.ByteArray.mk #[]))))))))))))))))))))))))))))))
 
-@[expose] public def machineArity (m : Nat) : Nat := (if (Nat.beq (m) (0)) then 2 else (if (Nat.beq (m) (1)) then 2 else (if (Nat.beq (m) (2)) then 2 else (if (Nat.beq (m) (3)) then 2 else (if (Nat.beq (m) (4)) then 1 else (if (Nat.beq (m) (5)) then 2 else (if (Nat.beq (m) (6)) then 2 else (if (Nat.beq (m) (7)) then 1 else (if (Nat.beq (m) (8)) then 2 else (if (Nat.beq (m) (9)) then 2 else (if (Nat.beq (m) (10)) then 2 else (if (Nat.beq (m) (11)) then 1 else (if (Nat.beq (m) (12)) then 2 else (if (Nat.beq (m) (13)) then 2 else (if (Nat.beq (m) (14)) then 2 else (if (Nat.beq (m) (15)) then 3 else (if (Nat.beq (m) (16)) then 3 else (if (Nat.beq (m) (17)) then 2 else (if (Nat.beq (m) (18)) then 2 else (if (Nat.beq (m) (19)) then 2 else (if (Nat.beq (m) (20)) then 3 else (if (Nat.beq (m) (21)) then 2 else (if (Nat.beq (m) (22)) then 2 else (if (Nat.beq (m) (23)) then 2 else (if (Nat.beq (m) (24)) then 1 else (if (Nat.beq (m) (25)) then 3 else 0))))))))))))))))))))))))))
+@[expose] public def machineArity (m : Nat) : Nat := (if (Nat.beq (m) (0)) then 2 else (if (Nat.beq (m) (1)) then 2 else (if (Nat.beq (m) (2)) then 2 else (if (Nat.beq (m) (3)) then 2 else (if (Nat.beq (m) (4)) then 1 else (if (Nat.beq (m) (5)) then 2 else (if (Nat.beq (m) (6)) then 2 else (if (Nat.beq (m) (7)) then 1 else (if (Nat.beq (m) (8)) then 2 else (if (Nat.beq (m) (9)) then 2 else (if (Nat.beq (m) (10)) then 2 else (if (Nat.beq (m) (11)) then 1 else (if (Nat.beq (m) (12)) then 2 else (if (Nat.beq (m) (13)) then 2 else (if (Nat.beq (m) (14)) then 2 else (if (Nat.beq (m) (15)) then 3 else (if (Nat.beq (m) (16)) then 3 else (if (Nat.beq (m) (17)) then 2 else (if (Nat.beq (m) (18)) then 2 else (if (Nat.beq (m) (19)) then 2 else (if (Nat.beq (m) (20)) then 3 else (if (Nat.beq (m) (21)) then 2 else (if (Nat.beq (m) (22)) then 2 else (if (Nat.beq (m) (23)) then 2 else (if (Nat.beq (m) (24)) then 1 else (if (Nat.beq (m) (25)) then 3 else (if (Nat.beq (m) (26)) then 1 else (if (Nat.beq (m) (27)) then 2 else (if (Nat.beq (m) (28)) then 2 else (if (Nat.beq (m) (29)) then 3 else 0))))))))))))))))))))))))))))))
 
 @[expose] public def machineCallC (st : St) (cx : Cx) (m : Nat) (args : Expr) (propagate : Bool) (tail : Bool) : Except (ByteArray) (St) := (match (Nat.beq (exprLen (args)) (machineArity (m))) with | Bool.true => callOk (st) (cx) (false) (propagate) (tail) (tick (machineName (m))) | Bool.false => Except.error (cat (text ("machine: ")) (cat (tick (machineName (m))) (cat (text (" receives ")) (cat (decimal (exprLen (args))) (cat (text (" operands of ")) (decimal (machineArity (m)))))))))
 
