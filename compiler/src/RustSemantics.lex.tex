@@ -1223,7 +1223,17 @@ definition{
     | RustSyntax::Machine.listLength => (ctor TargetSyntax::Prim.length)
     | RustSyntax::Machine.listAppend => (ctor TargetSyntax::Prim.append)
     | RustSyntax::Machine.listIndex => (ctor TargetSyntax::Prim.index)
-    | RustSyntax::Machine.listSlice => (ctor TargetSyntax::Prim.slice))
+    | RustSyntax::Machine.listSlice => (ctor TargetSyntax::Prim.slice)
+    | RustSyntax::Machine.bytesAppend => (ctor TargetSyntax::Prim.append)
+    | RustSyntax::Machine.bytesLength => (ctor TargetSyntax::Prim.length)
+    | RustSyntax::Machine.stringLength => (ctor TargetSyntax::Prim.length)
+    | RustSyntax::Machine.bytesIndex => (ctor TargetSyntax::Prim.index)
+    | RustSyntax::Machine.bytesSlice => (ctor TargetSyntax::Prim.slice)
+    | RustSyntax::Machine.utf8Encode => (ctor TargetSyntax::Prim.utf8Encode)
+    | RustSyntax::Machine.utf8Decode => (ctor TargetSyntax::Prim.utf8Decode)
+    | RustSyntax::Machine.bytesCompare => (ctor TargetSyntax::Prim.compareBytes)
+    | RustSyntax::Machine.stringSplit => (ctor TargetSyntax::Prim.splitExact)
+    | RustSyntax::Machine.stringJoin => (ctor TargetSyntax::Prim.join))
 }
 
 definition{
@@ -1260,7 +1270,17 @@ definition{
     | RustSyntax::Machine.listLength => (ctor Option.none [TargetSyntax::IntKind])
     | RustSyntax::Machine.listAppend => (ctor Option.none [TargetSyntax::IntKind])
     | RustSyntax::Machine.listIndex => (ctor Option.none [TargetSyntax::IntKind])
-    | RustSyntax::Machine.listSlice => (ctor Option.none [TargetSyntax::IntKind]))
+    | RustSyntax::Machine.listSlice => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.bytesAppend => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.bytesLength => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.stringLength => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.bytesIndex => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.bytesSlice => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.utf8Encode => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.utf8Decode => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.bytesCompare => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.stringSplit => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.stringJoin => (ctor Option.none [TargetSyntax::IntKind]))
 }
 
 definition{
@@ -1297,7 +1317,17 @@ definition{
     | RustSyntax::Machine.listLength => false
     | RustSyntax::Machine.listAppend => false
     | RustSyntax::Machine.listIndex => false
-    | RustSyntax::Machine.listSlice => false)
+    | RustSyntax::Machine.listSlice => false
+    | RustSyntax::Machine.bytesAppend => false
+    | RustSyntax::Machine.bytesLength => false
+    | RustSyntax::Machine.stringLength => false
+    | RustSyntax::Machine.bytesIndex => false
+    | RustSyntax::Machine.bytesSlice => false
+    | RustSyntax::Machine.utf8Encode => false
+    | RustSyntax::Machine.utf8Decode => false
+    | RustSyntax::Machine.bytesCompare => false
+    | RustSyntax::Machine.stringSplit => false
+    | RustSyntax::Machine.stringJoin => false)
 }
 
 definition{
@@ -1334,7 +1364,17 @@ definition{
     | RustSyntax::Machine.listLength => false
     | RustSyntax::Machine.listAppend => false
     | RustSyntax::Machine.listIndex => false
-    | RustSyntax::Machine.listSlice => false)
+    | RustSyntax::Machine.listSlice => false
+    | RustSyntax::Machine.bytesAppend => false
+    | RustSyntax::Machine.bytesLength => false
+    | RustSyntax::Machine.stringLength => false
+    | RustSyntax::Machine.bytesIndex => false
+    | RustSyntax::Machine.bytesSlice => false
+    | RustSyntax::Machine.utf8Encode => false
+    | RustSyntax::Machine.utf8Decode => false
+    | RustSyntax::Machine.bytesCompare => false
+    | RustSyntax::Machine.stringSplit => false
+    | RustSyntax::Machine.stringJoin => false)
 }
 
 definition{

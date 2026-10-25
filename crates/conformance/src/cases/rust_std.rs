@@ -31,7 +31,7 @@ const IMPORTED: [&str; 4] = [
 /// Each function the module defines with the theorem that refines it and the
 /// names its statement must be about: a theorem of the right name that runs
 /// another function or another item is refused.
-const LAWS: [(&str, &str, &[&str]); 4] = [
+const LAWS: [(&str, &str, &[&str]); 14] = [
     (
         "append_list",
         "refines_append_list",
@@ -52,15 +52,61 @@ const LAWS: [(&str, &str, &[&str]); 4] = [
         "refines_slice_list",
         &["runExport", "runItem"],
     ),
+    (
+        "append_bytes",
+        "refines_append_bytes",
+        &["runExport", "runItem"],
+    ),
+    (
+        "length_bytes",
+        "refines_length_bytes",
+        &["runExport", "runItem"],
+    ),
+    (
+        "length_string",
+        "refines_length_string",
+        &["runExport", "runItem"],
+    ),
+    (
+        "index_bytes",
+        "refines_index_bytes",
+        &["runExport", "runItem"],
+    ),
+    (
+        "slice_bytes",
+        "refines_slice_bytes",
+        &["runExport", "runItem"],
+    ),
+    (
+        "utf8_encode",
+        "refines_utf8_encode",
+        &["runExport", "runItem"],
+    ),
+    (
+        "utf8_decode",
+        "refines_utf8_decode",
+        &["runExport", "runItem"],
+    ),
+    (
+        "compare_bytes",
+        "refines_compare_bytes",
+        &["runExport", "runItem"],
+    ),
+    (
+        "split_exact",
+        "refines_split_exact",
+        &["runExport", "runItem"],
+    ),
+    ("join", "refines_join", &["runExport", "runItem"]),
 ];
 
 /// The prelude of the harness: both runtimes, and a builder of a list of `n`
 /// cells of one of four shapes, which returns the list and the handles that
 /// keep the buffer it shares alive for the call.
-const PRELUDE: &str = "use runtime_diff::{new, old};\nmacro_rules! build {\n    ($m:ident, $n:expr, $shape:expr) => {{\n        let mut list = $m::List::nil();\n        for i in 0..$n { list = $m::List::cons(i as u64, list); }\n        match $shape {\n            1 => match list.uncons() {\n                Some((head, tail)) => { drop(list); ($m::List::cons(head, tail), None) }\n                None => (list, None),\n            },\n            2 => { let shared = list.clone(); ($m::List::cons(7u64, shared), Some(list)) }\n            3 => { let shared = list.clone(); ($m::List::cons(1u64, $m::List::cons(2u64, shared)), Some(list)) }\n            _ => (list, None),\n        }\n    }};\n}\nmacro_rules! items {\n    ($l:expr) => {{\n        let mut out = Vec::new();\n        let mut cur = $l;\n        while let Some((head, tail)) = cur.uncons() { out.push(head); cur = tail; }\n        out\n    }};\n}\nfn main() {\n    let lengths: Vec<usize> = (0..=70).chain([1000, 4096, 200_000]).collect();\n";
+const PRELUDE: &str = "use runtime_diff::{new, old};\nmacro_rules! build {\n    ($m:ident, $n:expr, $shape:expr) => {{\n        let mut list = $m::List::nil();\n        for i in 0..$n { list = $m::List::cons(i as u64, list); }\n        match $shape {\n            1 => match list.uncons() {\n                Some((head, tail)) => { drop(list); ($m::List::cons(head, tail), None) }\n                None => (list, None),\n            },\n            2 => { let shared = list.clone(); ($m::List::cons(7u64, shared), Some(list)) }\n            3 => { let shared = list.clone(); ($m::List::cons(1u64, $m::List::cons(2u64, shared)), Some(list)) }\n            _ => (list, None),\n        }\n    }};\n}\nmacro_rules! items {\n    ($l:expr) => {{\n        let mut out = Vec::new();\n        let mut cur = $l;\n        while let Some((head, tail)) = cur.uncons() { out.push(head); cur = tail; }\n        out\n    }};\n}\nfn main() {\n    let lengths: Vec<usize> = (0..=70).chain([1000, 4096, 200_000]).collect();\n    let byte_cases: Vec<Vec<u8>> = vec![vec![], vec![0], vec![1, 2, 3], (0..70u8).collect(), vec![255; 1000], (0..4096u32).map(|i| i as u8).collect(), \"h\u{e9}llo\".as_bytes().to_vec(), vec![0xff, 0xfe], vec![0xe2, 0x82]];\n    let text_cases: Vec<String> = vec![String::new(), \"a\".into(), \"h\u{e9}llo\".into(), \"a,b,,c\".into(), \",\".into(), \"\u{e9},\".repeat(2000), \"abc\".repeat(1500), \"\u{1f600}x\".into()];\n    macro_rules! texts {\n        ($m:ident, $v:expr) => {{\n            let mut list = $m::List::nil();\n            for t in $v.iter().rev() { list = $m::List::cons($m::Str::lit(t), list); }\n            list\n        }};\n    }\n    macro_rules! strings {\n        ($l:expr) => {{ items!($l).iter().map(|t| t.text().to_owned()).collect::<Vec<String>>() }};\n    }\n";
 
 /// The calls the differential makes of each function the module defines.
-const CALLS: [(&str, &str); 4] = [
+const CALLS: [(&str, &str); 14] = [
     (
         "append_list",
         "    for &n in &lengths {\n        for m in [0usize, 1, 5, 70, 1000] {\n            for shape in 0..4 {\n                let (a, _keep_a) = build!(old, n, shape);\n                let (b, _keep_b) = build!(new, n, shape);\n                let (c, _keep_c) = build!(old, m, 0);\n                let (d, _keep_d) = build!(new, m, 0);\n                let (w0, w1) = (old::work(), new::work());\n                let x = old::append_list(a, c);\n                let y = new::append_list(b, d);\n                assert_eq!(old::work() - w0, new::work() - w1, \"append_list work\");\n                assert_eq!(items!(x), items!(y), \"append_list result\");\n            }\n        }\n    }\n",
@@ -76,6 +122,46 @@ const CALLS: [(&str, &str); 4] = [
     (
         "slice_list",
         "    for &n in &lengths {\n        let n = n as u64;\n        for (start, count) in [(0, 0), (0, n), (1, n), (n / 2, n / 4), (n, 0), (n, 1), (n.saturating_sub(1), 1), (u64::MAX, u64::MAX), (1, u64::MAX)] {\n            for shape in 0..4 {\n                let (a, _keep_a) = build!(old, n as usize, shape);\n                let (b, _keep_b) = build!(new, n as usize, shape);\n                let (w0, w1) = (old::work(), new::work());\n                let x = old::slice_list(a, start, count);\n                let y = new::slice_list(b, start, count);\n                assert_eq!(old::work() - w0, new::work() - w1, \"slice_list work\");\n                assert_eq!(x.map(|l| items!(l)), y.map(|l| items!(l)), \"slice_list result\");\n            }\n        }\n    }\n",
+    ),
+    (
+        "append_bytes",
+        "    for a in &byte_cases {\n        for b in &byte_cases {\n            let (w0, w1) = (old::work(), new::work());\n            let x = old::append_bytes(old::Bytes::lit(a), old::Bytes::lit(b));\n            let y = new::Bytes::append(new::Bytes::lit(a), new::Bytes::lit(b));\n            assert_eq!(old::work() - w0, new::work() - w1, \"append_bytes work\");\n            assert_eq!(x.octets(), y.octets(), \"append_bytes result\");\n        }\n    }\n",
+    ),
+    (
+        "length_bytes",
+        "    for a in &byte_cases {\n        let (w0, w1) = (old::work(), new::work());\n        let x = old::length_bytes(old::Bytes::lit(a));\n        let y = new::Bytes::length(&new::Bytes::lit(a));\n        assert_eq!(x, y, \"length_bytes result\");\n        assert_eq!(old::work() - w0, new::work() - w1, \"length_bytes work\");\n    }\n",
+    ),
+    (
+        "length_string",
+        "    for a in &text_cases {\n        let (w0, w1) = (old::work(), new::work());\n        let x = old::length_string(old::Str::lit(a));\n        let y = new::Str::length(&new::Str::lit(a));\n        assert_eq!(x, y, \"length_string result\");\n        assert_eq!(old::work() - w0, new::work() - w1, \"length_string work\");\n    }\n",
+    ),
+    (
+        "index_bytes",
+        "    for a in &byte_cases {\n        let n = a.len() as u64;\n        for at in [0, 1, n / 2, n.saturating_sub(1), n, n + 1, u64::MAX] {\n            let (w0, w1) = (old::work(), new::work());\n            let x = old::index_bytes(old::Bytes::lit(a), at);\n            let y = new::Bytes::index(&new::Bytes::lit(a), at);\n            assert_eq!(x, y, \"index_bytes result\");\n            assert_eq!(old::work() - w0, new::work() - w1, \"index_bytes work\");\n        }\n    }\n",
+    ),
+    (
+        "slice_bytes",
+        "    for a in &byte_cases {\n        let n = a.len() as u64;\n        for (start, count) in [(0, 0), (0, n), (1, n), (n / 2, n / 4), (n, 0), (n, 1), (n.saturating_sub(1), 1), (u64::MAX, u64::MAX), (1, u64::MAX)] {\n            let (w0, w1) = (old::work(), new::work());\n            let x = old::slice_bytes(old::Bytes::lit(a), start, count);\n            let y = new::Bytes::slice(&new::Bytes::lit(a), start, count);\n            assert_eq!(old::work() - w0, new::work() - w1, \"slice_bytes work\");\n            assert_eq!(x.map(|b| b.octets().to_vec()), y.map(|b| b.octets().to_vec()), \"slice_bytes result\");\n        }\n    }\n",
+    ),
+    (
+        "utf8_encode",
+        "    for a in &text_cases {\n        let (w0, w1) = (old::work(), new::work());\n        let x = old::utf8_encode(old::Str::lit(a));\n        let y = new::Str::utf8_encode(&new::Str::lit(a));\n        assert_eq!(old::work() - w0, new::work() - w1, \"utf8_encode work\");\n        assert_eq!(x.octets(), y.octets(), \"utf8_encode result\");\n    }\n",
+    ),
+    (
+        "utf8_decode",
+        "    for a in &byte_cases {\n        let (w0, w1) = (old::work(), new::work());\n        let x = old::utf8_decode(old::Bytes::lit(a));\n        let y = new::Bytes::utf8_decode(&new::Bytes::lit(a));\n        assert_eq!(old::work() - w0, new::work() - w1, \"utf8_decode work\");\n        assert_eq!(x.map(|t| t.text().to_owned()), y.map(|t| t.text().to_owned()), \"utf8_decode result\");\n    }\n",
+    ),
+    (
+        "compare_bytes",
+        "    for a in &byte_cases {\n        for b in &byte_cases {\n            let (w0, w1) = (old::work(), new::work());\n            let x = old::compare_bytes(old::Bytes::lit(a), old::Bytes::lit(b));\n            let y = new::Bytes::compare(&new::Bytes::lit(a), &new::Bytes::lit(b));\n            assert_eq!(x, y, \"compare_bytes result\");\n            assert_eq!(old::work() - w0, new::work() - w1, \"compare_bytes work\");\n        }\n    }\n",
+    ),
+    (
+        "split_exact",
+        "    for text in &text_cases {\n        for delimiter in [\",\", \"\", \"\\u{e9}\", \"ab\", \", \", \"a\"] {\n            for maximum in [0u32, 1, 3, 4001, u32::MAX] {\n                let (w0, w1) = (old::work(), new::work());\n                let x = old::split_exact(old::Str::lit(text), old::Str::lit(delimiter), maximum);\n                let y = new::Str::split_exact(&new::Str::lit(text), &new::Str::lit(delimiter), maximum);\n                assert_eq!(old::work() - w0, new::work() - w1, \"split_exact work\");\n                assert_eq!(x.map(|l| strings!(l)), y.map(|l| strings!(l)), \"split_exact result\");\n            }\n        }\n    }\n",
+    ),
+    (
+        "join",
+        "    for count in [0usize, 1, 2, 3, 8] {\n        let parts: Vec<String> = text_cases.iter().cycle().take(count).cloned().collect();\n        for delimiter in [\"\", \",\", \"\\u{e9}\", \" and \"] {\n            let (w0, w1) = (old::work(), new::work());\n            let x = old::join(texts!(old, parts), old::Str::lit(delimiter));\n            let y = new::Str::join(texts!(new, parts), &new::Str::lit(delimiter));\n            assert_eq!(old::work() - w0, new::work() - w1, \"join work\");\n            assert_eq!(x.text(), y.text(), \"join result\");\n        }\n    }\n",
     ),
 ];
 
@@ -203,14 +289,17 @@ fn differential() {
     // The generated functions replace the oracle's: the base holds none of
     // their names, so no function is declared twice.
     for name in defined(&krate.items).expect("named functions") {
+        // A free function: a method of the base may carry the name.
+        let declared = |text: &str| {
+            let text = format!("\n{text}");
+            text.contains(&format!("\npub fn {name}<"))
+                || text.contains(&format!("\npub fn {name}("))
+        };
         assert!(
-            !runtime::STD_BASE.contains(&format!("pub fn {name}<")),
+            !declared(runtime::STD_BASE),
             "the base still holds `{name}`"
         );
-        assert!(
-            std_oracle.contains(&format!("pub fn {name}<")),
-            "the oracle lacks `{name}`"
-        );
+        assert!(declared(&std_oracle), "the oracle lacks `{name}`");
     }
     // And none of the oracle's functions is lost: each is in the generated
     // text, whether the base keeps it or the module defines it. One function
@@ -260,6 +349,36 @@ fn differential() {
             "if position < end { None }",
             "if position + 1 < end { None }",
             "slice_list",
+        ),
+        (
+            "a comparison that does not count the first unit of work",
+            "tick(1 + self.0.len().min(other.0.len()) as u64); self.0.cmp(&other.0)",
+            "tick(self.0.len().min(other.0.len()) as u64); self.0.cmp(&other.0)",
+            "compare_bytes work",
+        ),
+        (
+            "a join that does not count its delimiters",
+            "if !first { chars(&delimiter.0); out.push_str(&delimiter.0); }",
+            "if !first { out.push_str(&delimiter.0); }",
+            "join work",
+        ),
+        (
+            "a split that refuses the maximum itself",
+            "if fields.len() as u128 > u128::from(maximum) { return None; }",
+            "if fields.len() as u128 >= u128::from(maximum) { return None; }",
+            "split_exact",
+        ),
+        (
+            "a decoding that does not count its bytes",
+            "pub fn utf8_decode(&self) -> Option<Str> { tick(self.0.len() as u64);",
+            "pub fn utf8_decode(&self) -> Option<Str> {",
+            "utf8_decode work",
+        ),
+        (
+            "a slice that counts one more",
+            "        tick(count);\n        Some(Bytes::lit(",
+            "        tick(count + 1);\n        Some(Bytes::lit(",
+            "slice_bytes work",
         ),
         (
             "a signature without its type parameter",
@@ -456,7 +575,7 @@ fn refinement() {
             "a theorem that states another runtime item",
             "(ctor RustSyntax::Item.lengthList)",
             "(ctor RustSyntax::Item.lengthBytes)",
-            "RustSemantics.isBytes",
+            "= RustSemantics.ROutcome.stuck",
         ),
     ] {
         assert_eq!(

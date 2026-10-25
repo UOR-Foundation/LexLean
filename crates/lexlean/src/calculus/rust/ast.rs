@@ -302,6 +302,16 @@ pub enum Machine {
     ListAppend,
     ListIndex,
     ListSlice,
+    BytesAppend,
+    BytesLength,
+    StringLength,
+    BytesIndex,
+    BytesSlice,
+    Utf8Encode,
+    Utf8Decode,
+    BytesCompare,
+    StringSplit,
+    StringJoin,
 }
 
 impl Machine {
@@ -327,6 +337,16 @@ impl Machine {
             Self::ListAppend,
             Self::ListIndex,
             Self::ListSlice,
+            Self::BytesAppend,
+            Self::BytesLength,
+            Self::StringLength,
+            Self::BytesIndex,
+            Self::BytesSlice,
+            Self::Utf8Encode,
+            Self::Utf8Decode,
+            Self::BytesCompare,
+            Self::StringSplit,
+            Self::StringJoin,
         ];
         for kind in IntKind::ALL {
             out.extend([
@@ -385,13 +405,23 @@ impl Machine {
             Self::ListAppend => 27,
             Self::ListIndex => 28,
             Self::ListSlice => 29,
+            Self::BytesAppend => 30,
+            Self::BytesLength => 31,
+            Self::StringLength => 32,
+            Self::BytesIndex => 33,
+            Self::BytesSlice => 34,
+            Self::Utf8Encode => 35,
+            Self::Utf8Decode => 36,
+            Self::BytesCompare => 37,
+            Self::StringSplit => 38,
+            Self::StringJoin => 39,
         }
     }
 
     /// One primitive of each family, at `u8` where it has a width, in the
     /// order of [`Machine::family`].
     #[must_use]
-    pub const fn families() -> [Self; 30] {
+    pub const fn families() -> [Self; 40] {
         let kind = IntKind::U8;
         [
             Self::CheckedAdd(kind),
@@ -424,6 +454,16 @@ impl Machine {
             Self::ListAppend,
             Self::ListIndex,
             Self::ListSlice,
+            Self::BytesAppend,
+            Self::BytesLength,
+            Self::StringLength,
+            Self::BytesIndex,
+            Self::BytesSlice,
+            Self::Utf8Encode,
+            Self::Utf8Decode,
+            Self::BytesCompare,
+            Self::StringSplit,
+            Self::StringJoin,
         ]
     }
 
@@ -460,7 +500,17 @@ impl Machine {
             | Self::ListLength
             | Self::ListAppend
             | Self::ListIndex
-            | Self::ListSlice => None,
+            | Self::ListSlice
+            | Self::BytesAppend
+            | Self::BytesLength
+            | Self::StringLength
+            | Self::BytesIndex
+            | Self::BytesSlice
+            | Self::Utf8Encode
+            | Self::Utf8Decode
+            | Self::BytesCompare
+            | Self::StringSplit
+            | Self::StringJoin => None,
         }
     }
 
@@ -499,6 +549,16 @@ impl Machine {
             Self::ListAppend => "list_append",
             Self::ListIndex => "list_index",
             Self::ListSlice => "list_slice",
+            Self::BytesAppend => "bytes_append",
+            Self::BytesLength => "bytes_length",
+            Self::StringLength => "string_length",
+            Self::BytesIndex => "bytes_index",
+            Self::BytesSlice => "bytes_slice",
+            Self::Utf8Encode => "utf8_encode",
+            Self::Utf8Decode => "utf8_decode",
+            Self::BytesCompare => "bytes_compare",
+            Self::StringSplit => "string_split",
+            Self::StringJoin => "string_join",
         }
     }
 
@@ -510,12 +570,18 @@ impl Machine {
             | Self::TryFrom(_)
             | Self::BitNot(_)
             | Self::CheckedIntNeg
-            | Self::ListLength => 1,
+            | Self::ListLength
+            | Self::BytesLength
+            | Self::StringLength
+            | Self::Utf8Encode
+            | Self::Utf8Decode => 1,
             Self::NatRem
             | Self::IntRem
             | Self::NatQuot
             | Self::CheckedIntQuot
-            | Self::ListSlice => 3,
+            | Self::ListSlice
+            | Self::BytesSlice
+            | Self::StringSplit => 3,
             _ => 2,
         }
     }
@@ -565,6 +631,16 @@ impl Machine {
             Self::ListAppend => format!("List::append({}, {})", args[0], args[1]),
             Self::ListIndex => format!("List::index(&{}, {})", args[0], args[1]),
             Self::ListSlice => format!("List::slice(&{}, {}, {})", args[0], args[1], args[2]),
+            Self::BytesAppend => format!("Bytes::append({}, {})", args[0], args[1]),
+            Self::BytesLength => format!("Bytes::length(&{})", args[0]),
+            Self::StringLength => format!("Str::length(&{})", args[0]),
+            Self::BytesIndex => format!("Bytes::index(&{}, {})", args[0], args[1]),
+            Self::BytesSlice => format!("Bytes::slice(&{}, {}, {})", args[0], args[1], args[2]),
+            Self::Utf8Encode => format!("Str::utf8_encode(&{})", args[0]),
+            Self::Utf8Decode => format!("Bytes::utf8_decode(&{})", args[0]),
+            Self::BytesCompare => format!("Bytes::compare(&{}, &{})", args[0], args[1]),
+            Self::StringSplit => format!("Str::split_exact(&{}, &{}, {})", args[0], args[1], args[2]),
+            Self::StringJoin => format!("Str::join({}, &{})", args[0], args[1]),
         }
     }
 }

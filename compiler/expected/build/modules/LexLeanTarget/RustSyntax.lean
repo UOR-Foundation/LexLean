@@ -160,6 +160,16 @@ public inductive Machine where
   | listAppend
   | listIndex
   | listSlice
+  | bytesAppend
+  | bytesLength
+  | stringLength
+  | bytesIndex
+  | bytesSlice
+  | utf8Encode
+  | utf8Decode
+  | bytesCompare
+  | stringSplit
+  | stringJoin
 
 public inductive Callee where
   | function (_ : Nat)
