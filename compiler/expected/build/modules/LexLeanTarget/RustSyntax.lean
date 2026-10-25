@@ -42,6 +42,7 @@ public inductive RustType where
   | ref (_ : RustType)
   | overflow
   | i128
+  | param (_ : Nat)
 
 public inductive Lit where
   | unit
@@ -155,6 +156,10 @@ public inductive Machine where
   | checkedIntMul
   | checkedIntNeg
   | checkedIntQuot
+  | listLength
+  | listAppend
+  | listIndex
+  | listSlice
 
 public inductive Callee where
   | function (_ : Nat)
