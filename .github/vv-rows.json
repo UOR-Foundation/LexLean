@@ -99,6 +99,15 @@
     "hints": ""
   },
   {
+    "part": "bdd-bootstrap-assemble",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-assemble",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
     "part": "bdd-bootstrap-terms",
     "recipes": "bdd",
     "examples_part": "",

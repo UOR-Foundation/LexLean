@@ -9900,17 +9900,17 @@ packages (the records are regenerated at landing).
 
 `BS-06` holds the two production roots of `LexLeanBoot.RustPrint`
 (`bootstrap/src/RustPrint.lex.tex`, over `RustAst.lex.tex`) to the oracle,
-`calculus::rust::ast::{print, print_expr}`. The case runs 607 vectors of
-`printCrate` (464 the distinct committed crates: 232 lowered by the renderer
-from 173 programs, and the crates of 256 packages; the hand-built crates; the
-real header of each profile; 57 refused for a capacity one byte short) and
-1,955 of `printExpr` (1,404 hand-built: every literal at the edge of each
+`calculus::rust::ast::{print, print_expr}`. The case runs 637 vectors of
+`printCrate` (492 the distinct committed crates: 246 lowered by the renderer
+from 187 programs, and the crates of 270 packages; the hand-built crates; the
+real header of each profile; 59 refused for a capacity one byte short) and
+1,961 of `printExpr` (1,404 hand-built: every literal at the edge of each
 width and sign, the 128 ASCII scalars and the edges of UTF-8 in strings, byte
 strings, every runtime row and machine primitive with its operands and with
 one too many, every constructor, pattern, block, conditional, match with a
 scrutinee that begins with a brace, and loop) under the pinned rustc on
 every host (42 harness binaries, 504 s: the part the host matrix runs), and on
-the normative host the evaluator on 542 + 1,955 of them (the crates of at most
+the normative host the evaluator on 544 + 1,961 of them (the crates of at most
 6,000 nodes of data), 400 + 399 seeded mutants of the crates of at most 80
 expressions, 2,984 more mutants under rustc (67 s), twelve planted defects, and
 the production export of the project (the whole case: 1,658 s on this host,
@@ -10077,7 +10077,9 @@ chain, held to the items of the crate that `rust::lower` builds before its
 first function. Its input is the program, the tree of `siteTrees`, the dead
 functions, and the failing functions, so the case feeds it the legs of the
 vector before it. The case runs 310 vectors per root (one more than the first
-slice: the package of `lowerTypes` is a committed program) under the pinned
+slice: the package of `lowerTypes` is a committed program; the measurement is on
+the tree of that slice, and with the packages of the later rows the
+vectors are 321 per root and the runs 1,284) under the pinned
 rustc on every host (58 harness binaries built in 875 s, 1,240 runs in 23 s
 more), and on the normative host the evaluator on the 272 of them of at most
 300 nodes with 150 seeded mutants (53 s for `siteTrees`, 14 s for
@@ -10146,11 +10148,12 @@ bodies and a case of its own (the first draft of it was a leg of the case of
 `BS-07`, whose run, with the mutants drawn from the
 compiler's own crates, reached 14 GB of memory and was killed after 44 minutes; the case is split by pass
 and the mutation bases are the crates of at most 80 expressions, as `BS-05`
-draws them: 4.7 GB resident). The case runs 352 crates (the hand-built
+draws them: 4.7 GB resident). The case runs 362 crates (the hand-built
 rule crates, the hand-built crates of `BS-05`, and the crates the renderer
-lowers from the 260 committed manifests) under the pinned rustc on every host
-(21 harness binaries built in 263 s, 352 runs in 24 s more), and on the
-normative host the evaluator on the 317 of them of at most 400 expressions with
+lowers from the 270 committed manifests) under the pinned rustc on every host
+(21 harness binaries built in 263 s, the runs in 24 s more, both measured when
+the case had 352 crates), and on the
+normative host the evaluator on the 318 of them of at most 400 expressions with
 150 seeded mutants (47 s), 1,500 seeded mutants under rustc (9 binaries, 54
 s), eight planted defects, and the production export. The case up to the
 comparison with the committed packages takes 1,734 s on this host (4 cores),
@@ -10197,10 +10200,9 @@ another is read twice after it, a component read once on each of two
 alternatives, an application whose holder is also an operand, a pattern that
 binds both components after a projection, a read of the state before a loop).
 (2) The whole case takes 29 minutes (1,734 s) on this host, and `BS-07` keeps its own. (3) The counts of `BS-05`,
-`BS-06`, and `BS-07` move with the package of this root (260 manifests and
-packages, 177 programs, 236 crates; `BS-05` 456 and 319 vectors; `BS-06` 615
-vectors of `printCrate` and 472 committed distinct crates; `BS-07` 311
-vectors) and are recounted by running their cases on this tree.
+`BS-06`, and `BS-07` move with the packages of the rows that follow this one
+(the cases assert them, and the records of those rows give the counts of the
+stack's tree).
 
 `BS-10` holds the production root of `LexLeanBoot.RustTerms`
 (`bootstrap/src/RustTerms.lex.tex`), the literal values of the lowering of
@@ -10264,13 +10266,13 @@ at the landing), and the measurements above were made with it; the remaining
 term-lowering passes need about 100 MB in all. (2) A branch the oracle cannot reach is removed rather than planted:
 the sign and the upper-case forms the lowering accepts (the checker refuses
 them) were in the first draft and had no plant that could detect them.
-(3) The counts of `BS-05`, `BS-06`, `BS-07`, and `BS-08` move with the package
-of this root (261 manifests and packages, 178 programs, 237 crates; `BS-05` 457
-and 320 vectors; `BS-06` 617 vectors of `printCrate`, 474 committed distinct
-crates, 543 of the evaluator's; `BS-07` 312 vectors; `BS-08` 353 crates) and
-are recounted by running their cases on this tree until they passed every
-count they assert (the cases were run for 400 to 900 s each and stopped there,
-not to completion: the full runs, with the packages, are the maintainer's).
+(3) The counts of `BS-05`, `BS-06`, `BS-07`, and `BS-08` move with the packages
+of the stack (the roots of `BS-07` to `BS-14` add fourteen to the committed
+manifests and packages): the cases assert them, and the records of those rows
+give the counts of the stack's tree (270 manifests and packages, 187 programs,
+246 crates; `BS-05` 466 and 329 vectors; `BS-06` 637 vectors of `printCrate`,
+492 committed distinct crates, 544 of the evaluator's; `BS-07` 321 vectors;
+`BS-08` 362 crates).
 
 `BS-11` holds four production roots, `LexLeanBoot.CalculusCheck.useTrees` and
 `LexLeanBoot.RustBodies.lowerFrame`, `lowerBodies`, and `foldBodies`
@@ -10470,6 +10472,78 @@ claimed. A guard that only repeats a later one (a function with no tail self
 call is refused again by the absence of a changed parameter) has no plant that
 could detect it, and is kept with no plant. (3) The counts of the earlier rows move with the
 package of this root and are recounted by the maintainer at the landing.
+
+`BS-14` holds the two production roots of `LexLeanBoot.RustAssemble`
+(`bootstrap/src/RustAssemble.lex.tex`), the crate around the bodies of the Rust
+lowering, to the whole chain of items of the crate that `rust::lower` returns:
+the frame, the shells of `functionShells`, then for each live function in order
+the terms from the counter of the fresh names, `succeed`, the fold, and the
+loop, `assembleItems` over the items of `lowerTypes`, the shells, and what the
+loop returned, and `applyMoves`; the chain so made is compared with the
+oracle's, the items of the types too. The programs are every program
+`rust::lower` succeeds on: 324 vectors (276 within the 300 nodes the evaluator
+is given) of the rules of the earlier rows, `BS-04`, the committed programs,
+the four rules of `BS-13`, and two rules of this row (a function whose
+uninhabited parameter, a function type no closure inhabits, is not its first,
+the second with live parameters on both sides of it); 322 without the packages
+of this row; and 537 seeded mutants (560 without them). On the normative host
+the evaluator agrees on the vectors and the mutants (the composition took 403 s),
+the rendered packages agree with the evaluator on 552 runs under the pinned
+rustc (four harness binaries built in 23.3 s), and eleven planted defects in the
+source and three planted hosts are each detected; the case up to the comparison
+with the committed packages takes 2,836 s on this host (4 cores) and stops there
+on this tree, the packages `function_shells` and `assemble_items`, the stack
+rows, the locks, and the committed records being the maintainer's.
+
+Measured certificates (bytes; the limit `max_file_bytes` is 6,291,456 and the
+budget the case asserts is 3,145,728):
+
+| Root | Part A | Part B | Part E |
+| --- | ---: | ---: | ---: |
+| `functionShells` | 1,195,444 (19.0%) | 960,728 | 279,092 |
+| `assembleItems` | 107,569 | 109,542 | 169,057 |
+
+The export of the two roots took 30 min 48 s. The first export was refused
+(`LLV7013`, certificate A, an application type mismatch in a `__rel_` of the
+kernel) for `paramsOf`, a recursive function over the chain of parameter types
+that took the list of the names first and matched it in the arm of the chain;
+the same function with the chain first, with no match on the list, or with a
+number for the list, exports (issue 314). `paramsOf` takes the chain first.
+
+Each of eleven plants is made on a copy of `bootstrap/src/RustAssemble.lex.tex`
+on every run and is caught by the oracle; the vector is the index among the
+vectors, then the mutants:
+
+- **a name for a parameter the body does not mention**, vector 7.
+- **a parameter of unit type is named**, vector 109.
+- **a result that can overflow is not wrapped**, vector 0.
+- **no parameter is found uninhabited**, vector 9.
+- **the uninhabited parameter is not bound**, vector 9.
+- **the empty match is on the first parameter**, vector 274.
+- **a function type is named an ADT in an origin**, vector 9.
+- **a dead function takes a loop result**, vector 9.
+- **the items of the types come after the functions**, vector 7.
+- **a loop's renamed parameters are not put in**, vector 114.
+- **the position of a function is not advanced**, vector 0.
+
+Each of three hosts is the honest one with one more thing done, and the
+comparison with the crate sees it:
+
+- **the counter starts again at each function**, vector 7.
+- **the functions are lowered last to first**, vector 0.
+- **the items of the first live function are not put in**, vector 0.
+
+Findings. (1) The first draft read the inhabited types from the frame of
+`BS-11`, which assumes every function is live; the lowering leaves the closures
+of the dead functions out and so finds more types uninhabited, and vector 9
+(a function type inhabited only by the closure of a dead function) differed in
+the body of a dead function. `functionShells` now computes the set again from
+the frame's edges and ordered closures, and takes the whole program. (2) The
+plant on the name of the empty match needed a program whose uninhabited
+parameter is not the first; the first rule written for it used an ADT that holds
+itself, which the lowering counts as inhabited, and the second a function type
+with no closure. (3) The counts of the earlier rows move with the packages of
+this root and are recounted by the maintainer at the landing.
 
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
@@ -10849,7 +10923,7 @@ Authoring found four shapes certificate A and certificate B do not accept, each 
 
 ### the bootstrap Rust crate validator can fail its oracle (SPEC.md §17.23, §17.16)
 
-`BS-05` holds the two production roots of `LexLeanBoot.RustValidate` (`bootstrap/src/RustValidate.lex.tex`) to the stage-0 oracle they replace, `calculus::rust::validate::{validate, correspond}`. The 173 distinct programs among the 256 committed package manifests and 122 fixtures lower to 232 distinct crates over both profiles; with 132 `validateCrate` and 12 `correspondCrate` rule runs (each of the 48 reachable refusals three times, found by a seeded mutation search at a fixed seed, which asserts that it reached the target and does not stop short of it), 17 hand-built crates of the merge of moved sets, 34 hand-built crates of the loop rules, and 37 hand-built crates of the machine callee and the overflow value (#91 stage 4, `SP-18`, `RB-15`), that is 452 `validateCrate` vectors (195 refused) and 315 `correspondCrate` vectors (82 refused), 765 in all. On every host both roots' rendered `rust-std` packages, compiled by the pinned rustc, agree with the oracle on all 765. On the normative host the evaluator agrees on the 201 crates of at most 400 expressions, the rule runs, and the hand-built crates (421 + 284 vectors), and on 500 seeded mutants (271 and 244 refused), and the rendered packages agree on 2,000 further seeded mutants per root. The case passed on the branch merged with `main` after wave 6 (#220), with the production export under the pinned Lean 4.32.1. Every one of these counts is an assertion of the case (`COMMITTED_*`, `RULE_*`, `VECTORS_*`, `EVALUATOR_*`, `SEEDED_*`), so a tree that no longer gives them fails the case instead of leaving this paragraph stale. The figures of this paragraph were measured on the head with `bootstrap/lexlean.lock` relocked locally, because every committed lock is stale under the head's compiler (the compiler-semantics ID has moved); the lock is not committed on a branch, and the regeneration at landing commits the relock.
+`BS-05` holds the two production roots of `LexLeanBoot.RustValidate` (`bootstrap/src/RustValidate.lex.tex`) to the stage-0 oracle they replace, `calculus::rust::validate::{validate, correspond}`. The 187 distinct programs among the 270 committed package manifests and 122 fixtures lower to 246 distinct crates over both profiles; with 132 `validateCrate` and 12 `correspondCrate` rule runs (each of the 48 reachable refusals three times, found by a seeded mutation search at a fixed seed, which asserts that it reached the target and does not stop short of it), 17 hand-built crates of the merge of moved sets, 34 hand-built crates of the loop rules, and 37 hand-built crates of the machine callee and the overflow value (#91 stage 4, `SP-18`, `RB-15`), that is 466 `validateCrate` vectors (195 refused) and 329 `correspondCrate` vectors (82 refused), 795 in all. On every host both roots' rendered `rust-std` packages, compiled by the pinned rustc, agree with the oracle on all 795. On the normative host the evaluator agrees on the 202 crates of at most 400 expressions, the rule runs, and the hand-built crates (422 + 285 vectors), and on 500 seeded mutants (271 and 244 refused), and the rendered packages agree on 2,000 further seeded mutants per root. The case passed on the branch merged with `main` after wave 6 (#220), with the production export under the pinned Lean 4.32.1. Every one of these counts is an assertion of the case (`COMMITTED_*`, `RULE_*`, `VECTORS_*`, `EVALUATOR_*`, `SEEDED_*`), so a tree that no longer gives them fails the case instead of leaving this paragraph stale. The figures of this paragraph were measured on the head with `bootstrap/lexlean.lock` relocked locally, because every committed lock is stale under the head's compiler (the compiler-semantics ID has moved); the lock is not committed on a branch, and the regeneration at landing commits the relock.
 
 Measured on the merge of `release/v0.4` (b8ff7bef6) into the stage 4 stack, #248's head `63bd949a3` (this host, `bootstrap/lexlean.lock` and `compiler/lexlean.lock` relocked locally with a freshly built `lexlean` and restored): the counts the case asserts held without a second edit (226 distinct crates from 167 programs among 250 committed manifests; 446 `validateCrate` vectors, 195 refused; 309 `correspondCrate` vectors, 82 refused), every plant was detected, the production export of the module certified under certificate A with `close_forward_references` removed (release/v0.4's union pin, #221, replaces it), and the case failed only at the comparison with the committed packages (`packages/rust-std/audit_tokens/package.json differs from the committed package`), the record bound to the compiler-semantics ID. 1,995 s for the case, 33 min 16 s wall.
 

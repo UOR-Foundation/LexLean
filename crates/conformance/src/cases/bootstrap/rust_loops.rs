@@ -83,7 +83,7 @@ fn predecessor() -> Expr {
 /// tail self call and one that is not in tail position, whether it is a
 /// binding, a condition, or the scrutinee of a match, and a function with a
 /// parameter nothing reads, which stays a call.
-fn rules() -> Vec<Program> {
+pub(super) fn rules() -> Vec<Program> {
     let beside = |other: Function| program_of(Vec::new(), vec![countdown(), other]);
     vec![
         beside(function(
@@ -133,25 +133,25 @@ fn rules() -> Vec<Program> {
     ]
 }
 
-struct Roots {
-    frame: super::Lowered,
-    bodies: super::Lowered,
-    succeed: super::Lowered,
-    fold: super::Lowered,
-    looped: super::Lowered,
+pub(super) struct Roots {
+    pub(super) frame: super::Lowered,
+    pub(super) bodies: super::Lowered,
+    pub(super) succeed: super::Lowered,
+    pub(super) fold: super::Lowered,
+    pub(super) looped: super::Lowered,
 }
 
 /// What the roots made of one function: the arguments `loopFunction` was
 /// given and what it returned, and the parameters and body that go into the
 /// item.
-struct Step {
-    run: Run,
-    parameters: Value,
-    body: Value,
+pub(super) struct Step {
+    pub(super) run: Run,
+    pub(super) parameters: Value,
+    pub(super) body: Value,
 }
 
 /// The element `at` of a chain of expressions.
-fn nth(chain: &Json, at: usize) -> Value {
+pub(super) fn nth(chain: &Json, at: usize) -> Value {
     let mut current: Value = serde_json::from_value(chain.clone()).expect("a value");
     for _ in 0..at {
         let Value::Adt { mut fields, .. } = current else {
@@ -208,7 +208,7 @@ fn before_loop(item: &ItemDef, loops: bool) -> (Vec<(Pat, Type)>, Type) {
 }
 
 impl Roots {
-    fn of(project: &support::P) -> Self {
+    pub(super) fn of(project: &support::P) -> Self {
         let checked = support::checked_project(project);
         Self {
             frame: super::lower(&checked, project, BODIES, "lowerFrame"),
@@ -221,12 +221,13 @@ impl Roots {
 
     /// The function at `position`, lowered alone: the terms from the counter
     /// `start`, `succeed`, the fold, and the loop.
-    fn function(
+    pub(super) fn function(
         &self,
         vector: &Vector,
         frame: &Json,
         position: usize,
         start: u64,
+        signature: (Value, Value),
     ) -> Result<(Step, u64), String> {
         let mask: Vec<bool> = (0..vector.dead.len()).map(|at| at != position).collect();
         let mut given = vector.bodies.clone();
@@ -241,11 +242,11 @@ impl Roots {
             &[serde_json::from_value(succeeded).expect("a value")],
         );
         let body = nth(&folded, position);
-        let (parameters, result) = before_loop(&vector.items[position], vector.loops[position]);
+        let (parameters, result) = signature;
         let arguments = vec![
             nat(position as u64),
-            enc_params(&parameters),
-            enc_type(&result),
+            parameters.clone(),
+            result,
             body.clone(),
             nat(terms),
         ];
@@ -278,7 +279,7 @@ impl Roots {
         } else {
             Step {
                 run: (arguments, returned),
-                parameters: enc_params(&parameters),
+                parameters,
                 body,
             }
         };
@@ -295,7 +296,9 @@ impl Roots {
         for (position, item) in vector.items.iter().enumerate() {
             let mut encoded = enc_item_def(item);
             if !vector.dead[position] {
-                let (step, after) = self.function(vector, &frame, position, start)?;
+                let (parameters, result) = before_loop(item, vector.loops[position]);
+                let signature = (enc_params(&parameters), enc_type(&result));
+                let (step, after) = self.function(vector, &frame, position, start, signature)?;
                 start = after;
                 if let Value::Adt { fields, .. } = &mut encoded {
                     fields[1] = step.parameters.clone();

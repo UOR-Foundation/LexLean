@@ -596,8 +596,8 @@ fn types_leg(legs: &Legs) -> &Run {
 /// of them and of the committed programs, as the statement of the register row
 /// and SPEC.md §17.23 count them.
 const RULE_PROGRAMS: usize = 22;
-const VECTORS: usize = 312;
-const VECTORS_WITHIN: usize = 272;
+const VECTORS: usize = 321;
+const VECTORS_WITHIN: usize = 273;
 const LITERALS: usize = 200;
 const PRIM_ROUNDS: usize = 3;
 /// The programs the evaluator is given in full: those of at most this many nodes.
