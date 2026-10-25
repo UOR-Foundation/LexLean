@@ -460,6 +460,18 @@ and Unreleased holds what has landed since.
   after its bodies. No file of the renderer changes. The certificate part of
   `loopFunction` is 744,534 bytes, 11.8% of `max_file_bytes`. The register is
   460 IDs.
+- The crate around the bodies of the Rust lowering as language-1.2 source, last
+  pass of the lowering of terms (SPEC.md §17.23, §17.16, `BS-14`, #92; no new
+  diagnostic code, no change to the language-1.2 identity). `functionShells`
+  and `assembleItems` of `RustAssemble` make the parameters, the result type,
+  and the body of a function with an uninhabited parameter, and put the items
+  of the types, those shells, and what the loop pass returned into one chain,
+  held to the whole chain of items of `rust::lower`'s crate (the types' too) by
+  composition with the earlier roots and `applyMoves`, to the byte, on 324
+  vectors and 537 seeded mutants; what the Rust host still does is thread the
+  counter of the fresh names, and three hosts that do more are planted. The
+  largest certificate part is 1,195,444 bytes (`functionShells`). The register
+  is 461 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or

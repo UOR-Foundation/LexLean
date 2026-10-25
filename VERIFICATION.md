@@ -10471,6 +10471,78 @@ call is refused again by the absence of a changed parameter) has no plant that
 could detect it, and is kept with no plant. (3) The counts of the earlier rows move with the
 package of this root and are recounted by the maintainer at the landing.
 
+`BS-14` holds the two production roots of `LexLeanBoot.RustAssemble`
+(`bootstrap/src/RustAssemble.lex.tex`), the crate around the bodies of the Rust
+lowering, to the whole chain of items of the crate that `rust::lower` returns:
+the frame, the shells of `functionShells`, then for each live function in order
+the terms from the counter of the fresh names, `succeed`, the fold, and the
+loop, `assembleItems` over the items of `lowerTypes`, the shells, and what the
+loop returned, and `applyMoves`; the chain so made is compared with the
+oracle's, the items of the types too. The programs are every program
+`rust::lower` succeeds on: 324 vectors (276 within the 300 nodes the evaluator
+is given) of the rules of the earlier rows, `BS-04`, the committed programs,
+the four rules of `BS-13`, and two rules of this row (a function whose
+uninhabited parameter, a function type no closure inhabits, is not its first,
+the second with live parameters on both sides of it); 322 without the packages
+of this row; and 537 seeded mutants (560 without them). On the normative host
+the evaluator agrees on the vectors and the mutants (the composition took 403 s),
+the rendered packages agree with the evaluator on 552 runs under the pinned
+rustc (four harness binaries built in 23.3 s), and eleven planted defects in the
+source and three planted hosts are each detected; the case up to the comparison
+with the committed packages takes 2,836 s on this host (4 cores) and stops there
+on this tree, the packages `function_shells` and `assemble_items`, the stack
+rows, the locks, and the committed records being the maintainer's.
+
+Measured certificates (bytes; the limit `max_file_bytes` is 6,291,456 and the
+budget the case asserts is 3,145,728):
+
+| Root | Part A | Part B | Part E |
+| --- | ---: | ---: | ---: |
+| `functionShells` | 1,195,444 (19.0%) | 960,728 | 279,092 |
+| `assembleItems` | 107,569 | 109,542 | 169,057 |
+
+The export of the two roots took 30 min 48 s. The first export was refused
+(`LLV7013`, certificate A, an application type mismatch in a `__rel_` of the
+kernel) for `paramsOf`, a recursive function over the chain of parameter types
+that took the list of the names first and matched it in the arm of the chain;
+the same function with the chain first, with no match on the list, or with a
+number for the list, exports (issue 314). `paramsOf` takes the chain first.
+
+Each of eleven plants is made on a copy of `bootstrap/src/RustAssemble.lex.tex`
+on every run and is caught by the oracle; the vector is the index among the
+vectors, then the mutants:
+
+- **a name for a parameter the body does not mention**, vector 7.
+- **a parameter of unit type is named**, vector 109.
+- **a result that can overflow is not wrapped**, vector 0.
+- **no parameter is found uninhabited**, vector 9.
+- **the uninhabited parameter is not bound**, vector 9.
+- **the empty match is on the first parameter**, vector 274.
+- **a function type is named an ADT in an origin**, vector 9.
+- **a dead function takes a loop result**, vector 9.
+- **the items of the types come after the functions**, vector 7.
+- **a loop's renamed parameters are not put in**, vector 114.
+- **the position of a function is not advanced**, vector 0.
+
+Each of three hosts is the honest one with one more thing done, and the
+comparison with the crate sees it:
+
+- **the counter starts again at each function**, vector 7.
+- **the functions are lowered last to first**, vector 0.
+- **the items of the first live function are not put in**, vector 0.
+
+Findings. (1) The first draft read the inhabited types from the frame of
+`BS-11`, which assumes every function is live; the lowering leaves the closures
+of the dead functions out and so finds more types uninhabited, and vector 9
+(a function type inhabited only by the closure of a dead function) differed in
+the body of a dead function. `functionShells` now computes the set again from
+the frame's edges and ordered closures, and takes the whole program. (2) The
+plant on the name of the empty match needed a program whose uninhabited
+parameter is not the first; the first rule written for it used an ADT that holds
+itself, which the lowering counts as inhabited, and the second a function type
+with no closure. (3) The counts of the earlier rows move with the packages of
+this root and are recounted by the maintainer at the landing.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the

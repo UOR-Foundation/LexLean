@@ -9,6 +9,14 @@
       "version": "1.0.0"
     },
     {
+      "name": "assemble_items",
+      "root": "LexLeanBoot.RustAssemble.assembleItems",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "audit_tokens",
       "root": "LexLeanBoot.TokenAudit.auditTokens",
       "targets": [
@@ -59,6 +67,14 @@
     {
       "name": "fold_bodies",
       "root": "LexLeanBoot.RustBodies.foldBodies",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "function_shells",
+      "root": "LexLeanBoot.RustAssemble.functionShells",
       "targets": [
         "rust-std"
       ],

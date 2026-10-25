@@ -10,6 +10,9 @@
     "bootstrap-loops": [
       "BS-13"
     ],
+    "bootstrap-assemble": [
+      "BS-14"
+    ],
     "bootstrap-check": [
       "BS-04"
     ],

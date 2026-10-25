@@ -70,6 +70,8 @@ pub(super) struct Vector {
     pub(super) bodies: Vec<Value>,
     /// The Function items of the crate `rust::lower` returns.
     pub(super) items: Vec<ItemDef>,
+    /// Every item of that crate, the types' too.
+    pub(super) crate_items: Vec<ItemDef>,
     /// The arguments of `succeedBodies` before the bodies: the result types
     /// and the functions that can overflow.
     pub(super) succeed: Vec<Value>,
@@ -87,6 +89,8 @@ pub(super) enum Mode {
     Overflowing,
     /// Some function loops.
     Looping,
+    /// Every program the oracle lowers.
+    Any,
 }
 
 /// A program is a vector when the oracle lowers it and no pass this row does
@@ -110,6 +114,7 @@ pub(super) fn vector_in(program: &Program, mode: Mode) -> Option<Vector> {
         Mode::Plain => !fallible.contains(&true) && !loops.contains(&true),
         Mode::Overflowing => fallible.contains(&true) && !loops.contains(&true),
         Mode::Looping => loops.contains(&true),
+        Mode::Any => true,
     };
     if !held {
         return None;
@@ -128,6 +133,7 @@ pub(super) fn vector_in(program: &Program, mode: Mode) -> Option<Vector> {
         flags(fallible.clone()),
     ]);
     let succeed = vec![base[4].clone(), flags(fallible)];
+    let crate_items = krate.items.clone();
     let items = krate
         .items
         .into_iter()
@@ -142,6 +148,7 @@ pub(super) fn vector_in(program: &Program, mode: Mode) -> Option<Vector> {
         frame,
         bodies,
         items,
+        crate_items,
         succeed,
         dead,
         loops,
