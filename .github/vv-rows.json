@@ -90,6 +90,15 @@
     "hints": ""
   },
   {
+    "part": "bdd-preservation-std",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "preservation-std",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
     "part": "bdd-preservation-runtime",
     "recipes": "bdd",
     "examples_part": "",
