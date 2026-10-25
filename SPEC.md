@@ -4870,8 +4870,11 @@ closures can: the least fixed point of these rules, computed by a worklist
 over the reverse call and application edges. A function that can overflow
 returns `R<T>` and every call to it ends in `?`, except in tail position,
 where its result is returned as it is; any other function returns its value
-and no call to it propagates. The length of a sequence cannot exceed
-`2^64 - 1` on any machine that holds it, so `length` cannot overflow.
+and no call to it propagates. The operand of an `Err` that ends a loop which
+is the value of a function that can overflow is in tail position: the loop
+breaks with it, so it is the value the function returns. The length of a
+sequence cannot exceed `2^64 - 1` on any machine that holds it, so `length`
+cannot overflow.
 
 **Checks.** Before printing, `rust::validate` refuses, as `LLB6005`:
 
@@ -7608,7 +7611,9 @@ body that moves a name outside it, or a component of one, is refused with the
 least such name in the oracle's order of names, and the value a fallible loop
 ends with, at each `Err` of its body, must be a fallible value; the body is
 checked as a block that is not a tail, for its applications as for its moves,
-and the correspondence traversal treats it as a block.
+except that the operand of each `Err` that ends a loop which is the value of a
+fallible function is that function's tail, and the correspondence traversal
+treats it as a block.
 `correspondCrate` lists the constructs a crate emits instance by instance and
 checks each against the 97 rows of the correspondence table, the element it was
 lowered from, its width, and the elements the program uses; a repeated
@@ -7626,8 +7631,8 @@ the `elements` the renderer realizes), a rule corpus that reaches each of the
 runs and 12 `correspondCrate` runs, asserted: the corpus fails if its draws run
 out first; the refusal that a construct has no row of the table cannot be
 reached), 17 crates by hand for the merge of moved sets at an `if` and a
-`match`, and 34 by hand for the loop rules; that is 406 runs of `validateCrate`
-(165 refused) and 269 of `correspondCrate` (46 refused), and the case asserts
+`match`, and 37 by hand for the loop rules; that is 409 runs of `validateCrate`
+(168 refused) and 272 of `correspondCrate` (49 refused), and the case asserts
 these counts. On every host, the rendered `rust-std` packages of both
 roots (§17.16), compiled by the pinned rustc, are run on all of them. On the
 normative host, the lowered programs of both roots are run under the calculus
@@ -7640,7 +7645,7 @@ binding or arm dropped, doubled, or swapped, a call's propagation flipped, a
 dispatch arm restated, a block run in a loop, the profile exchanged, and the
 elements of the program changed); the rendered packages are also run on 2,000 further seeded mutants
 per root. The outcome of a run is the result and, for a refusal, the message,
-and one difference fails the case. Sixteen planted defects in the source (a heap
+and one difference fails the case. Seventeen planted defects in the source (a heap
 type admitted under `rust-core`, a name bound twice accepted, the moves of
 earlier match arms forgotten, a component moved after its whole accepted, an
 undeclared ADT type accepted, a `?` in an infallible function accepted, a
@@ -7648,8 +7653,8 @@ fallible call without propagation accepted, an `apply` arm's failure not
 compared with its function's, a correspondence row narrowed, the width of a
 runtime call not compared, a name or a component moved in a loop body accepted,
 the end of a fallible loop not checked, a loop's state not moved into the loop,
-the name a loop's refusal reports not the least, and a loop body checked as a
-tail) are each detected by the same differential, and
+the name a loop's refusal reports not the least, a loop body checked as a
+tail, and the end of a fallible loop not checked as its function's tail) are each detected by the same differential, and
 under the pinned Lean the production export (§24.7) certifies both roots beside
 the others, whose packages are the committed ones under
 `tests/production-export/bootstrap/`.
@@ -10451,6 +10456,7 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `RB-12` | `rust-backend` | The language-1.2 compiler-semantics ID covers the package scaffold: changing a lint row, the edition, or a gate of a copy of the embedded tree changes it, writing the module in its data form or reformatting its notation does not, and the module is outside the identities of languages 1.0 and 1.1. | §17.16, §21.2 |
 | `RB-13` | `rust-backend` | A package states the effects of its realization: `package.json` and `provenance.json` record them, ascending and registered, the production registry says that exhausting the stack aborts the process, and an unregistered or unordered list, or one that states allocation on `rust-core`, is refused. | §17.13, §17.16 |
 | `RB-14` | `rust-backend` | A library template whose self calls are all tail calls is rendered as a loop over its accumulator that breaks with its result, so that the production rows of the primitives it realizes carry no `recursion`, while a template with a call that is not a tail call is rendered as a call and keeps the effect; a rendering that states a self call where a loop is possible, and a row whose `recursion` differs from its rendering, are refused. | §17.13, §17.14, §17.16 |
+| `RB-21` | `rust-backend` | A fallible function rendered as a loop that is its value returns the operand of each `Err` that ends the loop, so a call of another fallible function there, looped or not, is in tail position and returns the callee's result without `?`: the module of issue 279 and a variant whose callee is itself a loop render in `rust-std`, export, and replay, their packages realize the programs the case lowers and agree with the calculus evaluator on every input of the case, an overflow included, and the same call bound before the loop's end without propagating, or left as the loop body's value with the end dropped, is refused because the fallible call does not propagate its overflow. | §17.13, §17.16 |
 | `GN-01` | `gnaf` | Every committed GNAF request and fixture is canonical, validates against the GNAF schemas whose calculus definitions are the target program schema's, and states its components' universe identity; a malformed request, an invalid reference, plan, or realized program, a reference without a value on a domain argument, or a wrong universe identity fails closed with LLB6006, and a machine or request beyond the host's capacity fails closed with LLS8002. | §17.15, §26.3 |
 | `GN-02` | `gnaf` | The GNAF model is a kernel-checked LexLean definition, Lean's kernel reduces the universe, the system statuses, and the answer of every committed request to what the host transcription computes, and a wrong answer, an answer computed from a universe with a system omitted, a tie with a member dropped, and a universe with a system omitted are rejected by Lean. | §17.15 |
 | `GN-03` | `gnaf` | Candidate membership is the grammar's expansion, which a kernel-checked theorem proves equal to the grammar's well-formed selectors for every grammar, independent of evaluation and fixed by a universe identity before any optimizer, and optimizer-defined, discovered, cached, and internal-plan universes and missing, self-referential, or optimizer-citing completeness evidence are rejected. | §17.15 |
@@ -10600,7 +10606,7 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `NS-06` | `normative-source` | The hand-edited normative inputs of the repository are the `.lex.tex` modules of the specification project: `model/` holds only the projected files and the copies an authority row vendors, every Markdown file at the root is a projection or is on the closed list of hand-written documents, the projections carry the notice that names their source, and no hand-written document restates a registered statement, a plant of each being refused naming R1. | §27.2, §27.5, §27.10 |
 | `NS-07` | `normative-source` | `cargo xtask spec` changes the chapter modules of the specification project by item: it replaces a block, inserts one after a block, and ports the hunks of a merged SPEC.md that lie outside derived regions, each through the authoring SDK, and it writes nothing unless the regenerated SPEC.md equals the intended text outside derived regions, refusing a first line that matches no block or two and a hunk that spans two blocks. | §24.8, §27.5 |
 
-**Total required capability IDs:** 448.
+**Total required capability IDs:** 449.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

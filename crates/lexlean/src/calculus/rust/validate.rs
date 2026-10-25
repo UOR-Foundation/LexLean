@@ -89,6 +89,10 @@ struct Checker<'a> {
     /// Whether the current function is fallible, so its tail may return a
     /// fallible call's result without propagating it.
     fallible: bool,
+    /// Whether the tail being checked is the body of a loop that is the
+    /// value of a fallible function, so an `Err` there ends the loop with
+    /// the value the function returns.
+    ends: bool,
 }
 
 impl Checker<'_> {
@@ -313,6 +317,28 @@ impl Checker<'_> {
     /// returns.
     #[allow(clippy::too_many_lines)]
     fn expr(&mut self, expr: &Expr, tail: bool) -> Result<(), String> {
+        // The tail of a loop that is the value of a fallible function: the
+        // operand of an `Err` there is the value the function returns, a
+        // branch or block passes the position on, and any other tail is an
+        // ordinary value.
+        if tail && self.ends {
+            match expr {
+                Expr::If { .. } | Expr::Match { .. } | Expr::Block(_) => {}
+                Expr::Construct {
+                    ctor: Ctor::Err(ok, error),
+                    args,
+                    ..
+                } => {
+                    self.ends = false;
+                    let checked = args.iter().try_for_each(|arg| self.expr(arg, true));
+                    self.ends = true;
+                    checked?;
+                    self.ty(ok)?;
+                    return self.ty(error);
+                }
+                _ => return self.expr(expr, false),
+            }
+        }
         // The value a fallible function returns is `R<T>`: an `Ok`, a
         // fallible call or application returning its own result, a branch or
         // block whose tails are such values, or a loop whose ends are.
@@ -511,7 +537,12 @@ impl Checker<'_> {
                 // Only a binding the loop does not itself bind again is read
                 // by the next run: a name bound in the body is bound anew.
                 let outside = self.scope.clone();
-                self.block(body, false)?;
+                // The ends of a loop that is the value of a fallible
+                // function are in that function's tail.
+                let ends = std::mem::replace(&mut self.ends, tail && self.fallible);
+                let checked = self.block(body, tail && self.fallible);
+                self.ends = ends;
+                checked?;
                 for ident in &self.moved {
                     if ident != state && !entry.0.contains(ident) && outside.contains(ident) {
                         return fail(format!(
@@ -723,6 +754,7 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
             parted: BTreeMap::new(),
             propagates: false,
             fallible: false,
+            ends: false,
         };
         match item {
             ItemDef::Enum { variants, .. } => {

@@ -287,6 +287,7 @@
 'LexLeanBoot.RustValidate.digit' does not depend on any axioms
 'LexLeanBoot.RustValidate.disOk' does not depend on any axioms
 'LexLeanBoot.RustValidate.dropId' does not depend on any axioms
+'LexLeanBoot.RustValidate.endArgsC' depends on axioms: [propext]
 'LexLeanBoot.RustValidate.endsArgs' depends on axioms: [propext]
 'LexLeanBoot.RustValidate.endsArms' depends on axioms: [propext]
 'LexLeanBoot.RustValidate.endsBlock' depends on axioms: [propext]
