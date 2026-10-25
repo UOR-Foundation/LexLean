@@ -163,6 +163,10 @@ impl Writer<'_, '_> {
             }
             Type::Overflow => self.rs("RustType.overflow"),
             Type::I128 => self.rs("RustType.i128"),
+            Type::Param(n) => {
+                let n = self.nat_u(*n);
+                self.rs_apply("RustType.param", &[n])
+            }
         }
     }
 
@@ -504,6 +508,20 @@ impl Writer<'_, '_> {
             Machine::CheckedIntMul => "checkedIntMul",
             Machine::CheckedIntNeg => "checkedIntNeg",
             Machine::CheckedIntQuot => "checkedIntQuot",
+            Machine::ListLength => "listLength",
+            Machine::ListAppend => "listAppend",
+            Machine::ListIndex => "listIndex",
+            Machine::ListSlice => "listSlice",
+            Machine::BytesAppend => "bytesAppend",
+            Machine::BytesLength => "bytesLength",
+            Machine::StringLength => "stringLength",
+            Machine::BytesIndex => "bytesIndex",
+            Machine::BytesSlice => "bytesSlice",
+            Machine::Utf8Encode => "utf8Encode",
+            Machine::Utf8Decode => "utf8Decode",
+            Machine::BytesCompare => "bytesCompare",
+            Machine::StringSplit => "stringSplit",
+            Machine::StringJoin => "stringJoin",
         };
         match machine.width() {
             Some(width) => {

@@ -50,7 +50,8 @@ inductive{
     {name: fallible, fields: [RustType]},
     {name: ref, fields: [RustType]},
     {name: overflow, fields: []},
-    {name: i128, fields: []}
+    {name: i128, fields: []},
+    {name: param, fields: [Nat]}
   ]
 }
 
@@ -193,7 +194,21 @@ inductive{
     {name: checkedIntSub, fields: []},
     {name: checkedIntMul, fields: []},
     {name: checkedIntNeg, fields: []},
-    {name: checkedIntQuot, fields: []}
+    {name: checkedIntQuot, fields: []},
+    {name: listLength, fields: []},
+    {name: listAppend, fields: []},
+    {name: listIndex, fields: []},
+    {name: listSlice, fields: []},
+    {name: bytesAppend, fields: []},
+    {name: bytesLength, fields: []},
+    {name: stringLength, fields: []},
+    {name: bytesIndex, fields: []},
+    {name: bytesSlice, fields: []},
+    {name: utf8Encode, fields: []},
+    {name: utf8Decode, fields: []},
+    {name: bytesCompare, fields: []},
+    {name: stringSplit, fields: []},
+    {name: stringJoin, fields: []}
   ]
 }
 

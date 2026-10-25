@@ -1,5 +1,5 @@
 //! The meaning of the runtime's buffer, share, and replace primitives
-//! (SPEC.md §17.16): `SP-28`.
+//! (SPEC.md §17.17): `SP-28`.
 //!
 //! `RustPrims` reads a buffer as the list of its items, gives the primitives
 //! their erased meaning on that list, and states what the runtime does with a
@@ -19,12 +19,15 @@ const MODULE: &str = "compiler/src/RustPrims.lex.tex";
 const IMPORTED: [&str; 3] = ["RustLists", "RustMemory", "TargetSyntax"];
 
 /// Each law with the functions its statement must be about: a theorem of the
-/// right name that states another function is refused.
+/// right name that states another function is refused. The four laws of the
+/// calculus primitives name no function, so they carry the token of the
+/// primitive their statement applies (`"operation":"append"`), which a
+/// content-free restatement would lack.
 const LAWS: [(&str, &[&str]); 21] = [
-    ("prim_append_nil", &[]),
-    ("prim_append_cons", &[]),
-    ("prim_length_nil", &[]),
-    ("prim_length_cons", &[]),
+    ("prim_append_nil", &["operation\":\"append"]),
+    ("prim_append_cons", &["operation\":\"append"]),
+    ("prim_length_nil", &["operation\":\"length"]),
+    ("prim_length_cons", &["operation\":\"length"]),
     ("first_of_front", &["firstOf", "append", "size", "itemsOf"]),
     ("first_of_snoc", &["firstOf", "append", "size", "itemsOf"]),
     (

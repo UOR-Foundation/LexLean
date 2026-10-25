@@ -51,6 +51,41 @@ fn signature(machine: Machine) -> (Vec<Type>, Type) {
             vec![Type::Int, Type::Int],
             Type::Option(Box::new(Type::Int)),
         ),
+        Machine::ListLength => (vec![Type::List(Box::new(Type::Param(0)))], Type::Nat),
+        Machine::ListAppend => (
+            vec![
+                Type::List(Box::new(Type::Param(0))),
+                Type::List(Box::new(Type::Param(0))),
+            ],
+            Type::List(Box::new(Type::Param(0))),
+        ),
+        Machine::ListIndex => (
+            vec![Type::List(Box::new(Type::Param(0))), Type::Nat],
+            Type::Option(Box::new(Type::Param(0))),
+        ),
+        Machine::ListSlice => (
+            vec![Type::List(Box::new(Type::Param(0))), Type::Nat, Type::Nat],
+            Type::Option(Box::new(Type::List(Box::new(Type::Param(0))))),
+        ),
+        Machine::BytesAppend => (vec![Type::Bytes, Type::Bytes], Type::Bytes),
+        Machine::BytesLength => (vec![Type::Bytes], Type::Nat),
+        Machine::StringLength => (vec![Type::Str], Type::Nat),
+        Machine::BytesIndex => (
+            vec![Type::Bytes, Type::Nat],
+            Type::Option(Box::new(Type::Fixed(IntKind::U8))),
+        ),
+        Machine::BytesSlice => (
+            vec![Type::Bytes, Type::Nat, Type::Nat],
+            Type::Option(Box::new(Type::Bytes)),
+        ),
+        Machine::Utf8Encode => (vec![Type::Str], Type::Bytes),
+        Machine::Utf8Decode => (vec![Type::Bytes], Type::Option(Box::new(Type::Str))),
+        Machine::BytesCompare => (vec![Type::Bytes, Type::Bytes], Type::Ordering),
+        Machine::StringSplit => (
+            vec![Type::Str, Type::Str, Type::Fixed(IntKind::U32)],
+            Type::Option(Box::new(Type::List(Box::new(Type::Str)))),
+        ),
+        Machine::StringJoin => (vec![Type::List(Box::new(Type::Str)), Type::Str], Type::Str),
         Machine::CheckedIntNeg => (vec![Type::Int], Type::Option(Box::new(Type::Int))),
         Machine::CheckedIntQuot => (
             vec![Type::Int, Type::Int, Type::Int],
@@ -178,7 +213,29 @@ fn refused(krate: &Crate, message: &str) {
 /// Run the case of `RB-15`.
 pub fn run(id: &str) {
     assert_eq!(id, "RB-15");
-    let machines = Machine::all();
+    // The list machine calls are std ones: the Core harness takes the others.
+    let machines: Vec<Machine> = Machine::all()
+        .into_iter()
+        .filter(|machine| {
+            !matches!(
+                machine,
+                Machine::ListLength
+                    | Machine::ListAppend
+                    | Machine::ListIndex
+                    | Machine::ListSlice
+                    | Machine::BytesAppend
+                    | Machine::BytesLength
+                    | Machine::StringLength
+                    | Machine::BytesIndex
+                    | Machine::BytesSlice
+                    | Machine::Utf8Encode
+                    | Machine::Utf8Decode
+                    | Machine::BytesCompare
+                    | Machine::StringSplit
+                    | Machine::StringJoin
+            )
+        })
+        .collect();
     // Seventeen constructors, eleven of them at each of eight widths and one
     // at the four signed ones: the list is the Lean `Machine` type's.
     assert_eq!(machines.len(), 5 + 9 + 8 * 11 + 4);

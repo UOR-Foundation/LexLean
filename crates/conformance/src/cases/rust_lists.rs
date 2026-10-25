@@ -1,4 +1,4 @@
-//! The representation of a list (SPEC.md §17.16): `SP-27`.
+//! The representation of a list (SPEC.md §17.17): `SP-27`.
 //!
 //! `RustLists` models a list as the cells in front of it and a run, the first
 //! slots of a buffer in a store, and reads it back as the list of the
