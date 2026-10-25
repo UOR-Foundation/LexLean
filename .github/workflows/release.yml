@@ -393,7 +393,11 @@ jobs:
         run: |
           set -euo pipefail
           cargo publish --dry-run --locked --package lexlean --target-dir "${RUNNER_TEMP}/dry"
-          sha256="$(.github/crate-publication.sh identity release "${RUNNER_TEMP}/dry/package/lexlean-${VERSION}.crate")"
+          # The dry run leaves the archive where its cargo release puts it (1.97:
+          # `package/tmp-crate/`), so it is located by name, as in crate.yml.
+          dry_crate="$(find "${RUNNER_TEMP}/dry/package" -type f -name "lexlean-${VERSION}.crate" | head -1)"
+          [ -n "$dry_crate" ] || { echo "::error::cargo publish --dry-run left no lexlean-${VERSION}.crate under ${RUNNER_TEMP}/dry/package"; exit 1; }
+          sha256="$(.github/crate-publication.sh identity release "$dry_crate")"
           if [ "$sha256" != "$CRATE_SHA256" ]; then
             echo "::error::the crate packaged here ($sha256) is not the one the crate job checked ($CRATE_SHA256)"
             exit 1
