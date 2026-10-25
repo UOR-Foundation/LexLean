@@ -200,6 +200,9 @@
     ],
     "preservation-prims": [
       "SP-28"
+    ],
+    "preservation-std": [
+      "SP-29"
     ]
   }
 }

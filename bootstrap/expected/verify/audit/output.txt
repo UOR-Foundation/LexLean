@@ -383,12 +383,14 @@
 'LexLeanBoot.RustPrint.fixedMethod' does not depend on any axioms
 'LexLeanBoot.RustPrint.fixedPost' does not depend on any axioms
 'LexLeanBoot.RustPrint.fixedPre' does not depend on any axioms
+'LexLeanBoot.RustPrint.genericStep' does not depend on any axioms
 'LexLeanBoot.RustPrint.hexDigit' does not depend on any axioms
 'LexLeanBoot.RustPrint.indent' does not depend on any axioms
 'LexLeanBoot.RustPrint.indentStep' does not depend on any axioms
 'LexLeanBoot.RustPrint.isUnitBlock' does not depend on any axioms
 'LexLeanBoot.RustPrint.joinedMethod' does not depend on any axioms
 'LexLeanBoot.RustPrint.kindName' does not depend on any axioms
+'LexLeanBoot.RustPrint.larger' does not depend on any axioms
 'LexLeanBoot.RustPrint.leadingZero' does not depend on any axioms
 'LexLeanBoot.RustPrint.machineArity' does not depend on any axioms
 'LexLeanBoot.RustPrint.machineClose' does not depend on any axioms
@@ -396,6 +398,10 @@
 'LexLeanBoot.RustPrint.minimum' does not depend on any axioms
 'LexLeanBoot.RustPrint.nonEmpty' does not depend on any axioms
 'LexLeanBoot.RustPrint.opensBrace' does not depend on any axioms
+'LexLeanBoot.RustPrint.parBound' does not depend on any axioms
+'LexLeanBoot.RustPrint.parOccurs' does not depend on any axioms
+'LexLeanBoot.RustPrint.paramBound' does not depend on any axioms
+'LexLeanBoot.RustPrint.paramOccurs' does not depend on any axioms
 'LexLeanBoot.RustPrint.paramStep' does not depend on any axioms
 'LexLeanBoot.RustPrint.plainHigh' does not depend on any axioms
 'LexLeanBoot.RustPrint.plainLow' does not depend on any axioms
@@ -406,6 +412,7 @@
 'LexLeanBoot.RustPrint.putBytesLit' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.RustPrint.putDefs' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.RustPrint.putDis' does not depend on any axioms
+'LexLeanBoot.RustPrint.putGenerics' does not depend on any axioms
 'LexLeanBoot.RustPrint.putId' does not depend on any axioms
 'LexLeanBoot.RustPrint.putItem' does not depend on any axioms
 'LexLeanBoot.RustPrint.putItemDef' depends on axioms: [propext, Quot.sound]
@@ -414,6 +421,7 @@
 'LexLeanBoot.RustPrint.putLit' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.RustPrint.putNat' does not depend on any axioms
 'LexLeanBoot.RustPrint.putOrdering' does not depend on any axioms
+'LexLeanBoot.RustPrint.putParamName' does not depend on any axioms
 'LexLeanBoot.RustPrint.putParamTys' does not depend on any axioms
 'LexLeanBoot.RustPrint.putPars' does not depend on any axioms
 'LexLeanBoot.RustPrint.putPat' does not depend on any axioms
@@ -562,6 +570,7 @@
 'LexLeanBoot.RustValidate.minConstruct' depends on axioms: [propext]
 'LexLeanBoot.RustValidate.movedInLoop' depends on axioms: [propext]
 'LexLeanBoot.RustValidate.nameIsFn' does not depend on any axioms
+'LexLeanBoot.RustValidate.nameIsParam' does not depend on any axioms
 'LexLeanBoot.RustValidate.nameKey' does not depend on any axioms
 'LexLeanBoot.RustValidate.nameName' does not depend on any axioms
 'LexLeanBoot.RustValidate.natHas' does not depend on any axioms

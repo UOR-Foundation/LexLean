@@ -1219,7 +1219,11 @@ definition{
     | RustSyntax::Machine.checkedIntSub => (ctor TargetSyntax::Prim.intSub)
     | RustSyntax::Machine.checkedIntMul => (ctor TargetSyntax::Prim.intMul)
     | RustSyntax::Machine.checkedIntNeg => (ctor TargetSyntax::Prim.intNeg)
-    | RustSyntax::Machine.checkedIntQuot => (ctor TargetSyntax::Prim.intQuot))
+    | RustSyntax::Machine.checkedIntQuot => (ctor TargetSyntax::Prim.intQuot)
+    | RustSyntax::Machine.listLength => (ctor TargetSyntax::Prim.length)
+    | RustSyntax::Machine.listAppend => (ctor TargetSyntax::Prim.append)
+    | RustSyntax::Machine.listIndex => (ctor TargetSyntax::Prim.index)
+    | RustSyntax::Machine.listSlice => (ctor TargetSyntax::Prim.slice))
 }
 
 definition{
@@ -1252,7 +1256,11 @@ definition{
     | RustSyntax::Machine.checkedIntSub => (ctor Option.none [TargetSyntax::IntKind])
     | RustSyntax::Machine.checkedIntMul => (ctor Option.none [TargetSyntax::IntKind])
     | RustSyntax::Machine.checkedIntNeg => (ctor Option.none [TargetSyntax::IntKind])
-    | RustSyntax::Machine.checkedIntQuot => (ctor Option.none [TargetSyntax::IntKind]))
+    | RustSyntax::Machine.checkedIntQuot => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.listLength => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.listAppend => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.listIndex => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.listSlice => (ctor Option.none [TargetSyntax::IntKind]))
 }
 
 definition{
@@ -1285,7 +1293,11 @@ definition{
     | RustSyntax::Machine.checkedIntSub => false
     | RustSyntax::Machine.checkedIntMul => false
     | RustSyntax::Machine.checkedIntNeg => false
-    | RustSyntax::Machine.checkedIntQuot => false)
+    | RustSyntax::Machine.checkedIntQuot => false
+    | RustSyntax::Machine.listLength => false
+    | RustSyntax::Machine.listAppend => false
+    | RustSyntax::Machine.listIndex => false
+    | RustSyntax::Machine.listSlice => false)
 }
 
 definition{
@@ -1318,7 +1330,11 @@ definition{
     | RustSyntax::Machine.checkedIntSub => true
     | RustSyntax::Machine.checkedIntMul => true
     | RustSyntax::Machine.checkedIntNeg => true
-    | RustSyntax::Machine.checkedIntQuot => true)
+    | RustSyntax::Machine.checkedIntQuot => true
+    | RustSyntax::Machine.listLength => false
+    | RustSyntax::Machine.listAppend => false
+    | RustSyntax::Machine.listIndex => false
+    | RustSyntax::Machine.listSlice => false)
 }
 
 definition{
@@ -1459,7 +1475,8 @@ definition{
     | RustSyntax::RustType.fallible ignoredInner => true
     | RustSyntax::RustType.ref ignored556 => false
     | RustSyntax::RustType.overflow => false
-    | RustSyntax::RustType.i128 => false)
+    | RustSyntax::RustType.i128 => false
+    | RustSyntax::RustType.param ignoredParameter => false)
 }
 
 definition{

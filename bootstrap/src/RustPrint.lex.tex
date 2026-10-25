@@ -140,6 +140,14 @@ definition{
 }
 
 definition{
+  name: putParamName,
+  parameters: [out : LexLeanStd.Buffer::Buffer, n : Nat],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (if (n =? 0) then (putS out "T") else (if (n =? 1) then (putS out "U") else (if (n =? 2) then (putS out "V") else (putNat (putS out "T") n)))),
+  executable: true
+}
+
+definition{
   name: putTy,
   parameters: [out : LexLeanStd.Buffer::Buffer, ty : RustValidate::Ty],
   result: LexLeanStd.Buffer::Buffer,
@@ -152,7 +160,8 @@ definition{
       | RustValidate::BinaryKind.BkPair => (putS (putTy (putS (putTy (putS out "(") left) ", ") right) ")"))
     | RustValidate::Ty.TyNamed k n => (match k
       | RustValidate::NameKind.NkAdt => (putNat (putS out "Adt") n)
-      | RustValidate::NameKind.NkFn => (putNat (putS out "Fn") n))
+      | RustValidate::NameKind.NkFn => (putNat (putS out "Fn") n)
+      | RustValidate::NameKind.NkParam => (putParamName out n))
     | RustValidate::Ty.TyNil => out
     | RustValidate::Ty.TyCons head tail => (match tail
       | RustValidate::Ty.TyCons d0 d1 => (putTy (putS (putTy out head) ", ") tail)
@@ -375,7 +384,7 @@ definition{
   name: fixedPre,
   parameters: [family : Nat],
   result: String,
-  body: (if (family =? 8) then "core::ops::BitAnd::bitand(" else (if (family =? 9) then "core::ops::BitOr::bitor(" else (if (family =? 10) then "core::ops::BitXor::bitxor(" else (if (family =? 11) then "core::ops::Not::not(" else (if (family =? 12) then "core::cmp::PartialEq::eq(&" else (if (family =? 13) then "core::cmp::PartialOrd::le(&" else (if (family =? 14) then "core::cmp::PartialOrd::lt(&" else (if (family =? 15) then "u64::checked_rem(" else (if (family =? 16) then "{ let (a, b, z): (i64, i64, i64) = (" else (if (family =? 17) then "u64::checked_add(" else (if (family =? 18) then "u64::saturating_sub(" else (if (family =? 19) then "u64::checked_mul(" else (if (family =? 20) then "u64::checked_div(" else (if (family =? 21) then "i64::checked_add(" else (if (family =? 22) then "i64::checked_sub(" else (if (family =? 23) then "i64::checked_mul(" else (if (family =? 24) then "i64::checked_neg(" else (if (family =? 25) then "{ let (a, b, z): (i64, i64, i64) = (" else "")))))))))))))))))),
+  body: (if (family =? 8) then "core::ops::BitAnd::bitand(" else (if (family =? 9) then "core::ops::BitOr::bitor(" else (if (family =? 10) then "core::ops::BitXor::bitxor(" else (if (family =? 11) then "core::ops::Not::not(" else (if (family =? 12) then "core::cmp::PartialEq::eq(&" else (if (family =? 13) then "core::cmp::PartialOrd::le(&" else (if (family =? 14) then "core::cmp::PartialOrd::lt(&" else (if (family =? 15) then "u64::checked_rem(" else (if (family =? 16) then "{ let (a, b, z): (i64, i64, i64) = (" else (if (family =? 17) then "u64::checked_add(" else (if (family =? 18) then "u64::saturating_sub(" else (if (family =? 19) then "u64::checked_mul(" else (if (family =? 20) then "u64::checked_div(" else (if (family =? 21) then "i64::checked_add(" else (if (family =? 22) then "i64::checked_sub(" else (if (family =? 23) then "i64::checked_mul(" else (if (family =? 24) then "i64::checked_neg(" else (if (family =? 25) then "{ let (a, b, z): (i64, i64, i64) = (" else (if (family =? 26) then "List::length(&" else (if (family =? 27) then "List::append(" else (if (family =? 28) then "List::index(&" else (if (family =? 29) then "List::slice(&" else "")))))))))))))))))))))),
   executable: true
 }
 
@@ -407,7 +416,7 @@ definition{
   name: machineArity,
   parameters: [family : Nat],
   result: Nat,
-  body: (if ((family <? 8) || (26 <=? family)) then 100000 else (if (family =? 11) then 1 else (if (family =? 24) then 1 else (if (family =? 15) then 3 else (if (family =? 16) then 3 else (if (family =? 20) then 3 else (if (family =? 25) then 3 else 2))))))),
+  body: (if ((family <? 8) || (30 <=? family)) then 100000 else (if (family =? 11) then 1 else (if ((family =? 24) || (family =? 26)) then 1 else (if (family =? 15) then 3 else (if (family =? 16) then 3 else (if (family =? 20) then 3 else (if ((family =? 25) || (family =? 29)) then 3 else 2))))))),
   executable: true
 }
 
@@ -729,7 +738,8 @@ definition{
   body: (match ty
     | RustValidate::Ty.TyNamed kind d0 => (match kind
       | RustValidate::NameKind.NkAdt => false
-      | RustValidate::NameKind.NkFn => true)
+      | RustValidate::NameKind.NkFn => true
+      | RustValidate::NameKind.NkParam => false)
     | RustValidate::Ty.TyLeaf d0 => false
     | RustValidate::Ty.TyCons d0 d1 => false
     | RustValidate::Ty.TyNil => false
@@ -846,13 +856,102 @@ definition{
 }
 
 definition{
+  name: larger,
+  parameters: [a : Nat, b : Nat],
+  result: Nat,
+  body: (if (a <? b) then b else a),
+  executable: true
+}
+
+definition{
+  name: paramBound,
+  parameters: [ty : RustValidate::Ty],
+  result: Nat,
+  body: (match ty
+    | RustValidate::Ty.TyNamed kind n => (match kind
+      | RustValidate::NameKind.NkParam => (n + 1)
+      | RustValidate::NameKind.NkAdt => 0
+      | RustValidate::NameKind.NkFn => 0)
+    | RustValidate::Ty.TyLeaf d0 => 0
+    | RustValidate::Ty.TyFixed d0 => 0
+    | RustValidate::Ty.TyUnary d0 inner => (paramBound inner)
+    | RustValidate::Ty.TyBinary d0 left right => (larger (paramBound left) (paramBound right))
+    | RustValidate::Ty.TyNil => 0
+    | RustValidate::Ty.TyCons head tail => (larger (paramBound head) (paramBound tail))),
+  executable: true,
+  recursive_argument: ty
+}
+
+definition{
+  name: paramOccurs,
+  parameters: [ty : RustValidate::Ty, wanted : Nat],
+  result: Bool,
+  body: (match ty
+    | RustValidate::Ty.TyNamed kind n => (match kind
+      | RustValidate::NameKind.NkParam => (n =? wanted)
+      | RustValidate::NameKind.NkAdt => false
+      | RustValidate::NameKind.NkFn => false)
+    | RustValidate::Ty.TyLeaf d0 => false
+    | RustValidate::Ty.TyFixed d0 => false
+    | RustValidate::Ty.TyUnary d0 inner => (paramOccurs inner wanted)
+    | RustValidate::Ty.TyBinary d0 left right => ((paramOccurs left wanted) || (paramOccurs right wanted))
+    | RustValidate::Ty.TyNil => false
+    | RustValidate::Ty.TyCons head tail => ((paramOccurs head wanted) || (paramOccurs tail wanted))),
+  executable: true,
+  recursive_argument: ty
+}
+
+definition{
+  name: parBound,
+  parameters: [pars : RustAst::Par],
+  result: Nat,
+  body: (match pars
+    | RustAst::Par.ParNil => 0
+    | RustAst::Par.ParCons pat ty rest => (larger (paramBound ty) (parBound rest))),
+  executable: true,
+  recursive_argument: pars
+}
+
+definition{
+  name: parOccurs,
+  parameters: [pars : RustAst::Par, wanted : Nat],
+  result: Bool,
+  body: (match pars
+    | RustAst::Par.ParNil => false
+    | RustAst::Par.ParCons pat ty rest => ((paramOccurs ty wanted) || (parOccurs rest wanted))),
+  executable: true,
+  recursive_argument: pars
+}
+
+definition{
+  name: genericStep,
+  parameters: [
+    pars : RustAst::Par,
+    result : RustValidate::Ty,
+    bound : Nat,
+    state : (Nat * (LexLeanStd.Buffer::Buffer * Bool))
+  ],
+  result: (Option (Nat * (LexLeanStd.Buffer::Buffer * Bool))),
+  body: (if ((first state) <? bound) then (ctor Option.some [(Nat * (LexLeanStd.Buffer::Buffer * Bool))] (((first state) + 1), (if ((parOccurs pars (first state)) || (paramOccurs result (first state))) then ((putS (putParamName (putS (first (second state)) (if (second (second state)) then ", " else "<")) (first state)) ": Clone"), true) else (second state)))) else (ctor Option.none [(Nat * (LexLeanStd.Buffer::Buffer * Bool))])),
+  executable: true
+}
+
+definition{
+  name: putGenerics,
+  parameters: [out : LexLeanStd.Buffer::Buffer, pars : RustAst::Par, result : RustValidate::Ty],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (let bound : Nat := (larger (parBound pars) (paramBound result)); (let ran : ((Nat * (LexLeanStd.Buffer::Buffer * Bool)) * Bool) := (prim iterate_until (fun [bound, pars, result] (state : (Nat * (LexLeanStd.Buffer::Buffer * Bool))) => (genericStep pars result bound state)) bound (0, (out, false)) : ((Nat * (LexLeanStd.Buffer::Buffer * Bool)) * Bool)); (let finished : (LexLeanStd.Buffer::Buffer * Bool) := (second (first ran)); (if (second finished) then (putS (first finished) ">") else (first finished))))),
+  executable: true
+}
+
+definition{
   name: putItemDef,
   parameters: [out : LexLeanStd.Buffer::Buffer, item : RustAst::Def],
   result: LexLeanStd.Buffer::Buffer,
   body: (match item
     | RustAst::Def.DEnum ty row at => (putS (putRow (putS (putTy (putS out "#[derive(Clone)]\npub enum ") ty) " {\n") row (tyIsFn ty)) "}\n")
     | RustAst::Def.DApply fnType parameters result fallible dis at => (let unread : Bool := (disEmpty dis); (let head : LexLeanStd.Buffer::Buffer := (putNat (putS out "impl Fn") fnType); (let signature : LexLeanStd.Buffer::Buffer := (putS (putParamTys (putS (putS head " {\n") "    pub fn apply(&self, ") parameters 0 unread) ")"); (let returned : LexLeanStd.Buffer::Buffer := (if fallible then (putS (putTy (putS signature " -> R<") result) ">") else (putReturns signature result)); (let opened : LexLeanStd.Buffer::Buffer := (putS returned " {\n"); (let body : LexLeanStd.Buffer::Buffer := (if unread then (putS opened "        match *self {}\n") else (putS (putDis (putS opened "        match self {\n") dis fnType (RustValidate::tyLen parameters) (tyIsUnit result) fallible) "        }\n")); (putS (putS body "    }\n") "}\n")))))))
-    | RustAst::Def.DFunction name parameters result body at => (putS (printNode (putS (putReturns (putS (putPars (putS (putId (putS out "pub fn ") name) "(") parameters true) ")") result) " ") body 0 100 0) "\n")
+    | RustAst::Def.DFunction name parameters result body at => (putS (printNode (putS (putReturns (putS (putPars (putS (putGenerics (putId (putS out "pub fn ") name) parameters result) "(") parameters true) ")") result) " ") body 0 100 0) "\n")
     | RustAst::Def.DNil => out
     | RustAst::Def.DCons d0 d1 => out),
   axioms: [Quot.sound, propext],
