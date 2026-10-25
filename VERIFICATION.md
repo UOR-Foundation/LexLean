@@ -10077,7 +10077,9 @@ chain, held to the items of the crate that `rust::lower` builds before its
 first function. Its input is the program, the tree of `siteTrees`, the dead
 functions, and the failing functions, so the case feeds it the legs of the
 vector before it. The case runs 310 vectors per root (one more than the first
-slice: the package of `lowerTypes` is a committed program) under the pinned
+slice: the package of `lowerTypes` is a committed program; the measurement is on
+the tree of that slice, and with the package of `applyMoves` of `BS-08` the
+vectors are 311 per root and the runs 1,244) under the pinned
 rustc on every host (58 harness binaries built in 875 s, 1,240 runs in 23 s
 more), and on the normative host the evaluator on the 272 of them of at most
 300 nodes with 150 seeded mutants (53 s for `siteTrees`, 14 s for
