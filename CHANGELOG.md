@@ -407,15 +407,15 @@ and Unreleased holds what has landed since.
   type as a `RustAst.Def` chain, given the typing tree and the dead and failing
   functions of the first slice, and numbers the function types as the oracle
   does. Its largest certificate part is 1,535,849 bytes (the budget is
-  3,145,728; the typing root is unchanged). `BS-07` runs 1,240 vectors under
-  `rustc` on every host and 6,000 seeded runs, the evaluator on 272 vectors
+  3,145,728; the typing root is unchanged). `BS-07` runs 1,284 vectors under
+  `rustc` on every host and 6,000 seeded runs, the evaluator on 273 vectors
   and 150 mutants per root, twenty planted defects. The register is 446 IDs.
 - The last-use moves of the Rust lowering as language-1.2 source, first pass of
   the function bodies (SPEC.md §17.23, §17.16, `BS-08`, #92; no new diagnostic
   code, no change to the language-1.2 identity). `applyMoves` of `RustMoves`
   rewrites the function bodies of a `RustAst` crate as
   `calculus::rust::moves::apply` does, held to the public oracle to the byte
-  on 352 crates and on seeded mutants of the smaller ones. Its certificate
+  on 362 crates and on seeded mutants of the smaller ones. Its certificate
   part is 565,927 bytes, 13.5% of `max_file_bytes`. The register is 447 IDs.
 - The literal values of the Rust lowering as language-1.2 source, first pass of
   the lowering of terms (SPEC.md §17.23, §17.16, `BS-10`, #92; no new diagnostic
