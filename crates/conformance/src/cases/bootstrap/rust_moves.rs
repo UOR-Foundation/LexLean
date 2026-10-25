@@ -35,8 +35,8 @@ const CERTIFICATE_BUDGET: u64 = 3_145_728;
 /// The crates of at most this many expressions are the evaluator's share.
 const EVALUATOR_NODES: usize = 400;
 /// The crates the moves are run on, and those within the evaluator's share.
-const CRATES: usize = 353;
-const WITHIN: usize = 317;
+const CRATES: usize = 362;
+const WITHIN: usize = 318;
 const EVALUATOR_MUTANTS: usize = 150;
 const RUSTC_MUTANTS: usize = 1_500;
 
