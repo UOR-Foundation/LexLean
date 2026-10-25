@@ -701,6 +701,30 @@ impl<T: Clone> List<T> {
             Repr::Cell(cell) => Some((cell.head.clone(), cell.tail.clone())),
         }
     }
+    pub fn length(&self) -> u64 {
+        let mut count = 0;
+        self.walk(&mut |_| { count += 1; true });
+        count
+    }
+    pub fn append(a: List<T>, b: List<T>) -> List<T> { List::onto(a.items(), b) }
+    pub fn index(&self, i: u64) -> Option<T> {
+        let mut position = 0;
+        let mut found = None;
+        self.walk(&mut |item| { if position == i { found = Some(item.clone()); return false; } position += 1; true });
+        found
+    }
+    pub fn slice(&self, start: u64, count: u64) -> Option<List<T>> {
+        let end = u128::from(start) + u128::from(count);
+        let mut part = Vec::new();
+        let mut position: u128 = 0;
+        self.walk(&mut |item| {
+            if position >= end { return false; }
+            if position >= u128::from(start) { part.push(item.clone()); }
+            position += 1;
+            true
+        });
+        if position < end { None } else { Some(List::onto(part, List::nil())) }
+    }
     /// Walk the items in order, ticking one per item, until `each` says to stop: the cells
     /// in front, then the run they end in.
     fn walk(&self, each: &mut dyn FnMut(&T) -> bool) {
@@ -757,7 +781,6 @@ impl Key for Str {
     }
 }
 
-pub fn append_list<T: Clone>(a: List<T>, b: List<T>) -> List<T> { List::onto(a.items(), b) }
 pub fn append_bytes(a: Bytes, b: Bytes) -> Bytes {
     tick((a.0.len() + b.0.len()) as u64);
     let mut out = Vec::with_capacity(a.0.len() + b.0.len());
@@ -765,32 +788,9 @@ pub fn append_bytes(a: Bytes, b: Bytes) -> Bytes {
     out.extend_from_slice(&b.0);
     Bytes(std::rc::Rc::from(out))
 }
-pub fn length_list<T: Clone>(a: List<T>) -> u64 {
-    let mut count = 0;
-    a.walk(&mut |_| { count += 1; true });
-    count
-}
 pub fn length_bytes(a: Bytes) -> u64 { a.0.len() as u64 }
 pub fn length_string(a: Str) -> u64 { chars(&a.0) }
-pub fn index_list<T: Clone>(a: List<T>, i: u64) -> Option<T> {
-    let mut position = 0;
-    let mut found = None;
-    a.walk(&mut |item| { if position == i { found = Some(item.clone()); return false; } position += 1; true });
-    found
-}
 pub fn index_bytes(a: Bytes, i: u64) -> Option<u8> { usize::try_from(i).ok().and_then(|i| a.0.get(i)).copied() }
-pub fn slice_list<T: Clone>(a: List<T>, start: u64, count: u64) -> Option<List<T>> {
-    let end = u128::from(start) + u128::from(count);
-    let mut part = Vec::new();
-    let mut position: u128 = 0;
-    a.walk(&mut |item| {
-        if position >= end { return false; }
-        if position >= u128::from(start) { part.push(item.clone()); }
-        position += 1;
-        true
-    });
-    if position < end { None } else { Some(List::onto(part, List::nil())) }
-}
 pub fn slice_bytes(a: Bytes, start: u64, count: u64) -> Option<Bytes> {
     let end = u128::from(start) + u128::from(count);
     if end > a.0.len() as u128 { return None; }
@@ -845,6 +845,22 @@ decimal!(u8, format_u8, parse_u8); decimal!(u16, format_u16, parse_u16);
 decimal!(u32, format_u32, parse_u32); decimal!(u64, format_u64, parse_u64);
 decimal!(i8, format_i8, parse_i8); decimal!(i16, format_i16, parse_i16);
 decimal!(i32, format_i32, parse_i32); decimal!(i64, format_i64, parse_i64);
+
+pub fn append_list<T: Clone>(p0: List<T>, p1: List<T>) -> List<T> {
+    List::append(p0, p1)
+}
+
+pub fn length_list<T: Clone>(p0: List<T>) -> u64 {
+    List::length(&p0)
+}
+
+pub fn index_list<T: Clone>(p0: List<T>, p1: u64) -> Option<T> {
+    List::index(&p0, p1)
+}
+
+pub fn slice_list<T: Clone>(p0: List<T>, p1: u64, p2: u64) -> Option<List<T>> {
+    List::slice(&p0, p1, p2)
+}
 
 pub fn f0(v0: i64, v1: i8) -> (Option<u16>, Option<i64>) {
     ({
