@@ -39,6 +39,18 @@ negative-fixture bullet of #34 is not met for them. The language-model rows are
 `LM-01` to `LM-09` and `LM-13`. Nothing below claims more than the certificates
 of this tree show.
 
+- The release workflow's evidence is the gate run of the tagged commit (SPEC.md
+  §9.4, §30.3; `RP-18`). `release.yml` no longer runs `just vv` on one runner:
+  rehearsals 3 and 4 showed the `bdd` recipe alone takes over four hours there
+  and the job hits the six-hour limit before Atlas. `.github/release-gate.sh`
+  finds the `ci.yml` run that was the whole gate on the commit's tree (the
+  commit, or the second parent of a merge that lands its tree unchanged, as
+  `ci-plan.sh` reads a push), requires every job of it to have passed with the
+  Atlas join, every host, and every leg present, and writes `vv-evidence.txt`
+  with the run, its jobs, and the legs' retained transcripts. `conformance_rp_18`
+  requires the gate job to run the script and no recipe, and runs the script
+  against planted runs: a run with a failed job, a draft run, and no run are
+  refused, and a run on the tree-equal parent is accepted.
 - `lexlean migrate --to 1.2 [--check]`, #257 (SPEC.md §17.12, §23.4,
   `CL-24`): the one command that migrates a language-1.1 data-form project to
   language 1.2. It rewrites every module to the authoring notation through
