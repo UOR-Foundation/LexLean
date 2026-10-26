@@ -625,226 +625,100 @@ pub mod fixed_i64 {
 pub fn checked_neg_i64(p0: i64) -> Option<i64> {
     i64::checked_neg(p0)
 }
+use core::str;
+
+use std::mem;
+
+use std::rc::Rc;
 
 #[derive(Clone)]
-pub struct Str(std::rc::Rc<str>);
+pub struct Str(Rc<str>);
+
 impl Str {
-    pub fn lit(text: &str) -> Str { Str(std::rc::Rc::from(text)) }
+    pub fn lit(text: &str) -> Str { Str(Rc::from(text)) }
     pub fn text(&self) -> &str { &self.0 }
     pub fn length(&self) -> u64 { chars(&self.0) }
     pub fn utf8_encode(&self) -> Bytes { tick(self.0.len() as u64); Bytes::lit(self.0.as_bytes()) }
-    pub fn split_exact(&self, delimiter: &Str, maximum: u32) -> Option<List<Str>> {
-        if delimiter.0.is_empty() { return None; }
-        chars(&self.0);
-        let fields: Vec<Str> = self.0.split(&*delimiter.0).map(Str::lit).collect();
-        if fields.len() as u128 > u128::from(maximum) { return None; }
-        Some(List::onto(fields, List::nil()))
-    }
-    pub fn join(texts: List<Str>, delimiter: &Str) -> Str {
-        let mut out = String::new();
-        let mut first = true;
-        texts.walk(&mut |text| {
-            if !first { chars(&delimiter.0); out.push_str(&delimiter.0); }
-            first = false;
-            chars(&text.0);
-            out.push_str(&text.0);
-            true
-        });
-        Str::lit(&out)
-    }
+    pub fn split_exact(&self, delimiter: &Str, maximum: u32) -> Option<List<Str>> { if delimiter.0.is_empty() { return None; }; chars(&self.0); let mut fields: Vec<Str> = Vec::new(); for piece in self.0.split(&*delimiter.0) { fields.push(Str::lit(piece)); }; if fields.len() as u128 > u128::from(maximum) { return None; }; Some(List::onto(fields, List::nil())) }
+    pub fn join(texts: List<Str>, delimiter: &Str) -> Str { let mut out = String::new(); let mut first = true; let mut cursor = &texts; while let Repr::Cell(cell) = &cursor.0 { tick(1); if !first { chars(&delimiter.0); out.push_str(&delimiter.0); }; first = false; chars(&cell.head.0); out.push_str(&cell.head.0); cursor = &cell.tail; }; match &cursor.0 { Repr::Run { buffer, len } => { for text in buffer[..*len].iter().rev() { tick(1); if !first { chars(&delimiter.0); out.push_str(&delimiter.0); }; first = false; chars(&text.0); out.push_str(&text.0); } }, _ => { }, }; Str::lit(&out) }
+    pub fn parse_int(text: &Str) -> Option<Option<i64>> { match canonical_decimal(&text.0) { None => Some(None), Some(Some(n)) => match i64::try_from(n) { Ok(value) => Some(Some(value)), Err(_) => None, }, Some(None) => None, } }
+    pub fn format_u8(a: u8) -> Str { let text = a.to_string(); tick(text.len() as u64); Str::lit(&text) }
+    pub fn parse_u8(text: &Str) -> Option<u8> { match canonical_decimal(&text.0) { Some(Some(n)) => u8::try_from(n).ok(), _ => None, } }
+    pub fn format_u16(a: u16) -> Str { let text = a.to_string(); tick(text.len() as u64); Str::lit(&text) }
+    pub fn parse_u16(text: &Str) -> Option<u16> { match canonical_decimal(&text.0) { Some(Some(n)) => u16::try_from(n).ok(), _ => None, } }
+    pub fn format_u32(a: u32) -> Str { let text = a.to_string(); tick(text.len() as u64); Str::lit(&text) }
+    pub fn parse_u32(text: &Str) -> Option<u32> { match canonical_decimal(&text.0) { Some(Some(n)) => u32::try_from(n).ok(), _ => None, } }
+    pub fn format_u64(a: u64) -> Str { let text = a.to_string(); tick(text.len() as u64); Str::lit(&text) }
+    pub fn parse_u64(text: &Str) -> Option<u64> { match canonical_decimal(&text.0) { Some(Some(n)) => u64::try_from(n).ok(), _ => None, } }
+    pub fn format_i8(a: i8) -> Str { let text = a.to_string(); tick(text.len() as u64); Str::lit(&text) }
+    pub fn parse_i8(text: &Str) -> Option<i8> { match canonical_decimal(&text.0) { Some(Some(n)) => i8::try_from(n).ok(), _ => None, } }
+    pub fn format_i16(a: i16) -> Str { let text = a.to_string(); tick(text.len() as u64); Str::lit(&text) }
+    pub fn parse_i16(text: &Str) -> Option<i16> { match canonical_decimal(&text.0) { Some(Some(n)) => i16::try_from(n).ok(), _ => None, } }
+    pub fn format_i32(a: i32) -> Str { let text = a.to_string(); tick(text.len() as u64); Str::lit(&text) }
+    pub fn parse_i32(text: &Str) -> Option<i32> { match canonical_decimal(&text.0) { Some(Some(n)) => i32::try_from(n).ok(), _ => None, } }
+    pub fn format_i64(a: i64) -> Str { let text = a.to_string(); tick(text.len() as u64); Str::lit(&text) }
+    pub fn parse_i64(text: &Str) -> Option<i64> { match canonical_decimal(&text.0) { Some(Some(n)) => i64::try_from(n).ok(), _ => None, } }
 }
+
 #[derive(Clone)]
-pub struct Bytes(std::rc::Rc<[u8]>);
+pub struct Bytes(Rc<[u8]>);
+
 impl Bytes {
-    pub fn lit(octets: &[u8]) -> Bytes { Bytes(std::rc::Rc::from(octets)) }
+    pub fn lit(octets: &[u8]) -> Bytes { Bytes(Rc::from(octets)) }
     pub fn octets(&self) -> &[u8] { &self.0 }
-    pub fn append(a: Bytes, b: Bytes) -> Bytes {
-        tick((a.0.len() + b.0.len()) as u64);
-        let mut out = Vec::with_capacity(a.0.len() + b.0.len());
-        out.extend_from_slice(&a.0);
-        out.extend_from_slice(&b.0);
-        Bytes(std::rc::Rc::from(out))
-    }
+    pub fn append(a: Bytes, b: Bytes) -> Bytes { tick((a.0.len() + b.0.len()) as u64); let mut out = Vec::with_capacity(a.0.len() + b.0.len()); out.extend_from_slice(&a.0); out.extend_from_slice(&b.0); Bytes(Rc::from(out)) }
     pub fn length(&self) -> u64 { self.0.len() as u64 }
-    pub fn index(&self, i: u64) -> Option<u8> { usize::try_from(i).ok().and_then(|i| self.0.get(i)).copied() }
-    pub fn slice(&self, start: u64, count: u64) -> Option<Bytes> {
-        let end = u128::from(start) + u128::from(count);
-        if end > self.0.len() as u128 { return None; }
-        tick(count);
-        Some(Bytes::lit(&self.0[start as usize..end as usize]))
-    }
-    pub fn utf8_decode(&self) -> Option<Str> { tick(self.0.len() as u64); core::str::from_utf8(&self.0).ok().map(Str::lit) }
+    pub fn index(&self, i: u64) -> Option<u8> { match usize::try_from(i) { Ok(at) => self.0.get(at).copied(), Err(_) => None, } }
+    pub fn slice(&self, start: u64, count: u64) -> Option<Bytes> { let end = u128::from(start) + u128::from(count); if end > self.0.len() as u128 { return None; }; tick(count); Some(Bytes::lit(&self.0[start as usize..end as usize])) }
+    pub fn utf8_decode(&self) -> Option<Str> { tick(self.0.len() as u64); match str::from_utf8(&self.0) { Ok(text) => Some(Str::lit(text)), Err(_) => None, } }
     pub fn compare(&self, other: &Bytes) -> Ordering { tick(1 + self.0.len().min(other.0.len()) as u64); self.0.cmp(&other.0) }
 }
 
 pub struct Node<T> { head: T, tail: List<T> }
-/// A list is a run of cells laid out contiguously, from the newest at the end of a buffer
-/// to the oldest at its start, or a cell in front of another list. A `cons` onto a run that
-/// owns its buffer alone pushes in place; a `cons` onto any other list is one cell, so
-/// building and taking apart a cell is constant work whatever the sharing, and no buffer is
-/// written while another list can see it.
-pub enum Repr<T> { Nil, Run { buffer: std::rc::Rc<Vec<T>>, len: usize }, Cell(std::rc::Rc<Node<T>>) }
+
+pub enum Repr<T> { Nil, Run { buffer: Rc<Vec<T>>, len: usize }, Cell(Rc<Node<T>>) }
+
 pub struct List<T>(Repr<T>);
+
 impl<T> Clone for List<T> {
-    fn clone(&self) -> Self {
-        List(match &self.0 {
-            Repr::Nil => Repr::Nil,
-            Repr::Run { buffer, len } => Repr::Run { buffer: buffer.clone(), len: *len },
-            Repr::Cell(cell) => Repr::Cell(cell.clone()),
-        })
-    }
+    fn clone(&self) -> Self { List(match &self.0 { Repr::Nil => Repr::Nil, Repr::Run { buffer, len } => Repr::Run { buffer: buffer.clone(), len: *len }, Repr::Cell(cell) => Repr::Cell(cell.clone()), }) }
 }
+
 impl<T> List<T> {
-    fn take(&mut self) -> Repr<T> { std::mem::replace(&mut self.0, Repr::Nil) }
+    fn take(&mut self) -> Repr<T> { mem::replace(&mut self.0, Repr::Nil) }
 }
+
 impl<T> Drop for Node<T> {
-    fn drop(&mut self) {
-        let mut next = match self.tail.take() { Repr::Cell(cell) => Some(cell), _ => None };
-        while let Some(cell) = next { // release
-            match std::rc::Rc::try_unwrap(cell) {
-                Ok(mut node) => next = match node.tail.take() { Repr::Cell(cell) => Some(cell), _ => None },
-                Err(_) => break,
-            }
-        }
-    }
+    fn drop(&mut self) { let mut next = match self.tail.take() { Repr::Cell(cell) => Some(cell), _ => None, }; while let Some(cell) = next { match Rc::try_unwrap(cell) { Ok(mut node) => next = match node.tail.take() { Repr::Cell(cell) => Some(cell), _ => None, }, Err(_) => break, } } }
 }
+
 impl<T: Clone> List<T> {
     pub fn nil() -> Self { List(Repr::Nil) }
-    pub fn cons(head: T, mut tail: List<T>) -> Self {
-        List(match tail.take() {
-            Repr::Nil => {
-                let mut buffer = Vec::with_capacity(16);
-                buffer.push(head);
-                Repr::Run { buffer: std::rc::Rc::new(buffer), len: 1 }
-            }
-            Repr::Run { mut buffer, len } => {
-                if let Some(cells) = std::rc::Rc::get_mut(&mut buffer) {
-                    cells.truncate(len);
-                    cells.push(head);
-                    Repr::Run { buffer, len: len + 1 }
-                } else {
-                    Repr::Cell(std::rc::Rc::new(Node { head, tail: List(Repr::Run { buffer, len }) }))
-                }
-            }
-            rest => Repr::Cell(std::rc::Rc::new(Node { head, tail: List(rest) })),
-        })
-    }
-    pub fn uncons(&self) -> Option<(T, List<T>)> {
-        match &self.0 {
-            Repr::Nil => None,
-            Repr::Run { buffer, len } => {
-                let head = buffer[len - 1].clone();
-                Some((head, List(if *len == 1 { Repr::Nil } else { Repr::Run { buffer: buffer.clone(), len: len - 1 } })))
-            }
-            Repr::Cell(cell) => Some((cell.head.clone(), cell.tail.clone())),
-        }
-    }
-    pub fn length(&self) -> u64 {
-        let mut count = 0;
-        self.walk(&mut |_| { count += 1; true });
-        count
-    }
+    pub fn cons(head: T, mut tail: List<T>) -> Self { List(match tail.take() { Repr::Nil => { let mut buffer = Vec::with_capacity(16); buffer.push(head); Repr::Run { buffer: Rc::new(buffer), len: 1 } }, Repr::Run { mut buffer, len } => { match Rc::get_mut(&mut buffer) { Some(cells) => { cells.truncate(len); cells.push(head); Repr::Run { buffer, len: len + 1 } }, None => Repr::Cell(Rc::new(Node { head, tail: List(Repr::Run { buffer, len }) })), } }, rest => Repr::Cell(Rc::new(Node { head, tail: List(rest) })), }) }
+    pub fn uncons(&self) -> Option<(T, List<T>)> { match &self.0 { Repr::Nil => None, Repr::Run { buffer, len } => { let head = buffer[len - 1].clone(); Some((head, List(if *len == 1 { Repr::Nil } else { Repr::Run { buffer: buffer.clone(), len: len - 1 } }))) }, Repr::Cell(cell) => Some((cell.head.clone(), cell.tail.clone())), } }
+    pub fn length(&self) -> u64 { let mut count = 0; let mut cursor = self; while let Repr::Cell(cell) = &cursor.0 { tick(1); count += 1; cursor = &cell.tail; }; match &cursor.0 { Repr::Run { buffer, len } => { for _ in buffer[..*len].iter().rev() { tick(1); count += 1; } }, _ => { }, }; count }
     pub fn append(a: List<T>, b: List<T>) -> List<T> { List::onto(a.items(), b) }
-    pub fn index(&self, i: u64) -> Option<T> {
-        let mut position = 0;
-        let mut found = None;
-        self.walk(&mut |item| { if position == i { found = Some(item.clone()); return false; } position += 1; true });
-        found
-    }
-    pub fn slice(&self, start: u64, count: u64) -> Option<List<T>> {
-        let end = u128::from(start) + u128::from(count);
-        let mut part = Vec::new();
-        let mut position: u128 = 0;
-        self.walk(&mut |item| {
-            if position >= end { return false; }
-            if position >= u128::from(start) { part.push(item.clone()); }
-            position += 1;
-            true
-        });
-        if position < end { None } else { Some(List::onto(part, List::nil())) }
-    }
-    /// Walk the items in order, ticking one per item, until `each` says to stop: the cells
-    /// in front, then the run they end in.
-    fn walk(&self, each: &mut dyn FnMut(&T) -> bool) {
-        let mut cursor = self;
-        while let Repr::Cell(cell) = &cursor.0 { tick(1); if !each(&cell.head) { return; } cursor = &cell.tail; }
-        if let Repr::Run { buffer, len } = &cursor.0 {
-            for item in buffer[..*len].iter().rev() { tick(1); if !each(item) { return; } }
-        }
-    }
-    fn items(&self) -> Vec<T> {
-        let mut out = Vec::new();
-        self.walk(&mut |item| { out.push(item.clone()); true });
-        out
-    }
-    fn onto(items: Vec<T>, tail: List<T>) -> List<T> {
-        let mut out = tail;
-        for item in items.into_iter().rev() { tick(1); out = List::cons(item, out); }
-        out
-    }
+    pub fn index(&self, i: u64) -> Option<T> { let mut position = 0; let mut cursor = self; while let Repr::Cell(cell) = &cursor.0 { tick(1); if position == i { return Some(cell.head.clone()); }; position += 1; cursor = &cell.tail; }; match &cursor.0 { Repr::Run { buffer, len } => { for item in buffer[..*len].iter().rev() { tick(1); if position == i { return Some(item.clone()); }; position += 1; } }, _ => { }, }; None }
+    pub fn slice(&self, start: u64, count: u64) -> Option<List<T>> { let end = u128::from(start) + u128::from(count); let mut part = Vec::new(); let mut position: u128 = 0; let mut cursor = self; while let Repr::Cell(cell) = &cursor.0 { tick(1); if position >= end { return Some(List::onto(part, List::nil())); }; if position >= u128::from(start) { part.push(cell.head.clone()); }; position += 1; cursor = &cell.tail; }; match &cursor.0 { Repr::Run { buffer, len } => { for item in buffer[..*len].iter().rev() { tick(1); if position >= end { return Some(List::onto(part, List::nil())); }; if position >= u128::from(start) { part.push(item.clone()); }; position += 1; } }, _ => { }, }; if position < end { None } else { Some(List::onto(part, List::nil())) } }
+    fn items(&self) -> Vec<T> { let mut out = Vec::new(); let mut cursor = self; while let Repr::Cell(cell) = &cursor.0 { tick(1); out.push(cell.head.clone()); cursor = &cell.tail; }; match &cursor.0 { Repr::Run { buffer, len } => { for item in buffer[..*len].iter().rev() { tick(1); out.push(item.clone()); } }, _ => { }, }; out }
+    fn onto(mut items: Vec<T>, tail: List<T>) -> List<T> { let mut out = tail; while let Some(item) = items.pop() { tick(1); out = List::cons(item, out); }; out }
 }
 
-fn chars(text: &str) -> u64 {
-    let mut count = 0;
-    for _ in text.chars() { tick(1); count += 1; }
-    count
-}
+pub fn chars(text: &str) -> u64 { let mut count = 0; for _ in text.chars() { tick(1); count += 1; }; count }
 
 impl Same for Str {
-    fn same(&self, other: &Self) -> bool {
-        let mut left = self.0.chars();
-        let mut right = other.0.chars();
-        loop {
-            tick(1);
-            match (left.next(), right.next()) { (None, None) => return true, (a, b) if a != b => return false, _ => {} }
-        }
-    }
+    fn same(&self, other: &Self) -> bool { let mut left = self.0.chars(); let mut right = other.0.chars(); loop { tick(1); match (left.next(), right.next()) { (None, None) => return true, (a, b) if a != b => return false, _ => { }, } } }
 }
+
 impl Same for Bytes {
     fn same(&self, other: &Self) -> bool { tick(1 + self.0.len().min(other.0.len()) as u64); self.0 == other.0 }
 }
+
 impl Key for Str {
-    fn key(&self, other: &Self) -> Ordering {
-        let mut left = self.0.chars();
-        let mut right = other.0.chars();
-        loop {
-            tick(1);
-            match (left.next(), right.next()) {
-                (None, None) => return Ordering::Equal,
-                (None, Some(_)) => return Ordering::Less,
-                (Some(_), None) => return Ordering::Greater,
-                (Some(a), Some(b)) => match a.cmp(&b) { Ordering::Equal => {} decided => return decided },
-            }
-        }
-    }
+    fn key(&self, other: &Self) -> Ordering { let mut left = self.0.chars(); let mut right = other.0.chars(); loop { tick(1); match (left.next(), right.next()) { (None, None) => return Ordering::Equal, (None, Some(_)) => return Ordering::Less, (Some(_), None) => return Ordering::Greater, (Some(a), Some(b)) => match a.cmp(&b) { Ordering::Equal => { }, decided => return decided, }, } } }
 }
 
-fn canonical_decimal(text: &str) -> Option<Option<i128>> {
-    let digits = text.strip_prefix('-').unwrap_or(text);
-    let mut canonical = !digits.is_empty() && (digits == "0" || !digits.starts_with('0')) && text != "-0";
-    for c in digits.chars() { tick(1); canonical = canonical && c.is_ascii_digit(); }
-    if !canonical { return None; }
-    Some(text.parse::<i128>().ok())
-}
-pub fn parse_int(text: Str) -> R<Option<i64>> {
-    match canonical_decimal(&text.0) {
-        None => Ok(None),
-        Some(Some(n)) => i64::try_from(n).map(Some).map_err(|_| Overflow),
-        Some(None) => Err(Overflow),
-    }
-}
-macro_rules! decimal {
-    ($t:ident, $format:ident, $parse:ident) => {
-        pub fn $format(a: $t) -> Str { let text = a.to_string(); tick(text.len() as u64); Str::lit(&text) }
-        pub fn $parse(text: Str) -> Option<$t> {
-            match canonical_decimal(&text.0) { Some(Some(n)) => $t::try_from(n).ok(), _ => None }
-        }
-    };
-}
-decimal!(u8, format_u8, parse_u8); decimal!(u16, format_u16, parse_u16);
-decimal!(u32, format_u32, parse_u32); decimal!(u64, format_u64, parse_u64);
-decimal!(i8, format_i8, parse_i8); decimal!(i16, format_i16, parse_i16);
-decimal!(i32, format_i32, parse_i32); decimal!(i64, format_i64, parse_i64);
+pub fn canonical_decimal(text: &str) -> Option<Option<i128>> { let digits = match text.strip_prefix('-') { Some(rest) => rest, None => text, }; let mut canonical = !digits.is_empty() && (digits == "0" || !digits.starts_with('0')) && text != "-0"; for c in digits.chars() { tick(1); canonical = canonical && c.is_ascii_digit(); }; if !canonical { return None; }; Some(text.parse::<i128>().ok()) }
 
 pub fn append_list<T: Clone>(p0: List<T>, p1: List<T>) -> List<T> {
     List::append(p0, p1)
@@ -900,6 +774,85 @@ pub fn split_exact(p0: Str, p1: Str, p2: u32) -> Option<List<Str>> {
 
 pub fn join(p0: List<Str>, p1: Str) -> Str {
     Str::join(p0, &p1)
+}
+
+pub fn format_u8(p0: u8) -> Str {
+    Str::format_u8(p0)
+}
+
+pub fn parse_u8(p0: Str) -> Option<u8> {
+    Str::parse_u8(&p0)
+}
+
+pub fn format_u16(p0: u16) -> Str {
+    Str::format_u16(p0)
+}
+
+pub fn parse_u16(p0: Str) -> Option<u16> {
+    Str::parse_u16(&p0)
+}
+
+pub fn format_u32(p0: u32) -> Str {
+    Str::format_u32(p0)
+}
+
+pub fn parse_u32(p0: Str) -> Option<u32> {
+    Str::parse_u32(&p0)
+}
+
+pub fn format_u64(p0: u64) -> Str {
+    Str::format_u64(p0)
+}
+
+pub fn parse_u64(p0: Str) -> Option<u64> {
+    Str::parse_u64(&p0)
+}
+
+pub fn format_i8(p0: i8) -> Str {
+    Str::format_i8(p0)
+}
+
+pub fn parse_i8(p0: Str) -> Option<i8> {
+    Str::parse_i8(&p0)
+}
+
+pub fn format_i16(p0: i16) -> Str {
+    Str::format_i16(p0)
+}
+
+pub fn parse_i16(p0: Str) -> Option<i16> {
+    Str::parse_i16(&p0)
+}
+
+pub fn format_i32(p0: i32) -> Str {
+    Str::format_i32(p0)
+}
+
+pub fn parse_i32(p0: Str) -> Option<i32> {
+    Str::parse_i32(&p0)
+}
+
+pub fn format_i64(p0: i64) -> Str {
+    Str::format_i64(p0)
+}
+
+pub fn parse_i64(p0: Str) -> Option<i64> {
+    Str::parse_i64(&p0)
+}
+
+pub fn parse_int(p0: Str) -> R<Option<i64>> {
+    match Str::parse_int(&p0) {
+        Some(v0) => {
+            Ok(v0)
+        }
+        None => {
+            Err::<Option<i64>, Overflow>(Overflow)
+        }
+    }
+}
+
+pub fn format_int(p0: i64) -> Str {
+    Str::format_i64(p0)
 }
 
 pub fn f0(v0: List<(u64, Str)>, v1: u64) -> bool {

@@ -3152,7 +3152,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "`RustType.overflow` is a fallible value, and it is the only way a runtime function fails; an" (cons "`Err` of another value or of another error type is not one, and a heap type in the core" (cons "runtime is the hidden allocation the validator refuses in every `rust-core` crate. A printed" (cons "`match` whose scrutinee begins with a block, which the machine forms of `int_rem` and `int_quot`" (cons "are, binds it first (`{ let value = <block>; match value { … } }`), as a loop's step is bound," (cons "because Clippy's default lints refuse a block as a scrutinee. The handwritten text of every function the module defines is kept at" (cons "`tests/rust-runtime-oracle/` and read by tests alone; one crate holds it as module `old` and" (cons "the generated runtime as module `new`, and a harness calls both on the boundary and seeded" (cons "values of each defined function and compares the result and the counted work. A function" (cons "the module defines that the differential does not cover is refused by the case. Each" (cons "function has a theorem `refines_<function>` in the module (`SP-22`), where `<function>` is the function's exported path with `::` written `_` (`refines_fixed_u8_checked_add` for `fixed_u8::checked_add`): for all arguments of" (cons "its parameter types, the declared semantics' run of the function in `coreCrate` equals the" (cons "run of the runtime item of the same name, proved by `term_cases` (`SM-35`) and accepted with the" (cons "axioms its policy states; the fuel is fixed in each theorem (12) and only the run of the" (cons "function spends it, so a fuel too small for a body would make that side `exhausted`, and the" (cons "theorem would be unprovable, never a false equation proved; the set of theorems equals the set of defined functions, and a" (cons "theorem that runs another function than its name says is refused. The functions of a width are" (cons "written out, one definition per function and width, and not as a family (#91): an exported name" (cons "that is a path `fixed_u8::checked_add` prints inside `pub mod fixed_u8 { … }` under its last" (cons "segment, so the module's path is the runtime item's path and the printer, which groups the" (cons "consecutive functions of one module, adds no construct to `RustSyntax`. The conversion to a width" (cons "takes `i128`, the node `RustType.i128` (`Type::I128`), and is a call of the machine primitive" (cons "`tryFrom`; its theorem states the run of the item on an `int`." (nil String))))))))))))))))))))))))
+      (cons "`RustType.overflow` is a fallible value, and it is the only way a runtime function fails; an" (cons "`Err` of another value or of another error type is not one, and a heap type in the core" (cons "runtime is the hidden allocation the validator refuses in every `rust-core` crate. A printed" (cons "`match` whose scrutinee begins with a block, which the machine forms of `int_rem` and `int_quot`" (cons "are, binds it first (`{ let value = <block>; match value { … } }`), as a loop's step is bound," (cons "because Clippy's default lints refuse a block as a scrutinee. A harness calls the generated runtime on the boundary and seeded" (cons "values of each defined function and records, per label, a 64-bit FNV-1a digest of what each" (cons "call returned (its debug form) and the work it counted; the digests are the golden transcript" (cons "`tests/rust-runtime-golden/transcript.txt` (section `core`), which was recorded from the handwritten runtime at the" (cons "last pass of the differential, when the handwritten and the printed runtime were compiled" (cons "together and agreed on every call (VERIFICATION.md names the commit). The handwritten runtime" (cons "is not in the tree. A function the module defines that the golden transcript has no label for" (cons "is refused by the case. Each" (cons "function has a theorem `refines_<function>` in the module (`SP-22`), where `<function>` is the function's exported path with `::` written `_` (`refines_fixed_u8_checked_add` for `fixed_u8::checked_add`): for all arguments of" (cons "its parameter types, the declared semantics' run of the function in `coreCrate` equals the" (cons "run of the runtime item of the same name, proved by `term_cases` (`SM-35`) and accepted with the" (cons "axioms its policy states; the fuel is fixed in each theorem (12) and only the run of the" (cons "function spends it, so a fuel too small for a body would make that side `exhausted`, and the" (cons "theorem would be unprovable, never a false equation proved; the set of theorems equals the set of defined functions, and a" (cons "theorem that runs another function than its name says is refused. The functions of a width are" (cons "written out, one definition per function and width, and not as a family (#91): an exported name" (cons "that is a path `fixed_u8::checked_add` prints inside `pub mod fixed_u8 { … }` under its last" (cons "segment, so the module's path is the runtime item's path and the printer, which groups the" (cons "consecutive functions of one module, adds no construct to `RustSyntax`. The conversion to a width" (cons "takes `i128`, the node `RustType.i128` (`Type::I128`), and is a call of the machine primitive" (cons "`tryFrom`; its theorem states the run of the item on an `int`." (nil String)))))))))))))))))))))))))))
     ],
     constructor: DocRows::Item.cont,
     type_arguments: []
@@ -3166,7 +3166,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "The base is not handwritten either (`RB-17`, `SP-25`). The core runtime's support items are the" (cons "definitions of a second language-1.2 module of the compiler project, `RuntimeSupport`, shipped byte" (cons "for byte at `language/rust-runtime-1.2/RuntimeSupport.lex.tex`, which defines `supportCrate`, a crate" (cons "of `RuntimeSyntax`. `RuntimeSyntax` is a second closed module beside `RustSyntax`, not a widening of" (cons "it: a generated program holds no trait, impl, or generic, and the calculus that proves a generated" (cons "program is not asked about one. Its set is closed, and an item or construct outside it is refused by" (cons "name. *Items:* a `use`; a unit struct with derives; a type alias with parameters; a static; a trait" (cons "of method signatures; an impl, of a trait or of a type, with bounded generic parameters; a function" (cons "with bounded generic parameters. *Types:* the unit type, `bool`, a natural (`u64`), a fixed width," (cons "`Ordering`, `Self`, a generic parameter by index, a reference, a pair, and a named struct or alias." (cons "*Expressions:* a variable, a unit, Boolean, or natural literal, a path, a call of a path, a method" (cons "call, a field of a pair, a borrow, an equality, and a `match` over wildcard, binding, and path" (cons "patterns, whose arms are expressions. A name that is not declared by the crate is one entry of a" (cons "closed table of the standard library (the types `Result` and `AtomicU64`, the call `AtomicU64::new`," (cons "the methods `fetch_add`, `load`, and `cmp`). The Rust crate decodes the shipped copy" (cons "(`rust::rt_decode`) with the reader of `rust::source`, never evaluates it, checks it with a validator" (cons "of its own (`rust::rt_validate`), and prints it (`rust::rt`) where the handwritten base stood, so" (cons "`runtime::core` holds no handwritten Rust text. The validator names each rule it refuses by:" (cons "`profile-root` (a `use` outside the profile's roots: `core` in the core profile, `core` and `std` in" (cons "the std profile, `alloc` in neither), `duplicate-name`, `type-name` and `type-arity` (a type neither" (cons "declared nor in the table, which in the core profile is the hidden allocation the validator refuses in" (cons "every `rust-core` crate), `type-parameter`, `self-type`, `bound-trait` (a bound on a trait the crate" (cons "does not declare), `impl-trait`, `impl-complete`, `impl-signature`, `impl-extra`, `impl-visibility`" (cons "(an impl states each method of its trait once with the trait's signature, and no more, and none is" (cons "`pub`), `function-visibility`, `function-receiver`, `call-name`, `call-arity`, `method-name`," (cons "`method-arity`, `method-bound` (a method of a trait called on a parameter whose bounds do not provide" (cons "it), `variable-scope`, `path-name`, `match-arms`, `trait-method` (a trait that declares a method twice), and `use-path`: 24 rules, each planted by `RB-17`, and the case reads the rules from the validator's source, so a rule added there fails until it is planted. The handwritten core runtime kept at" (cons "`tests/rust-runtime-oracle/core.rs.txt` is the oracle: `equal`, `compare`, `tick`, and `work` agree" (cons "with it in result and in counted work on the boundary and seeded values of the core profile. The" (cons "validator of this module is the Rust rule set above and its plants: the evidence for the closed set is" (cons "the differential and the plants, and nothing in the repository yet reads the module through a second" (cons "implementation. The condition on the heap profile (R8: whoever moves the machine moves the normative" (cons "validator) is that a Lean twin of `rust::rt_validate`, a bootstrap root with its own row beside `BS-05` (`BS-09`)," (cons "exists before any function that allocates is source. The meaning of a trait method is" (cons "declared by `RuntimeSemantics`, which evaluates a `RuntimeSyntax` crate over the values of the" (cons "calculus and finds a method by the shape of its receiver among the impls the crate declares;" (cons "`RuntimeSupport` holds, for each value of the core profile's predicate that the calculus types as the" (cons "arguments of `equal` (a Boolean, a natural, a fixed width, an `Ordering`) and of `compare` (a Boolean, a" (cons "natural, an integer, a fixed width, and a pair of two of those), where a natural is a `u64` and an" (cons "integer an `i64` in the generated Rust and so is dispatched to the impl of that width, a" (cons "theorem that the evaluation of `equal` or of `compare` in `supportCrate` equals the calculus" (cons "primitive of the same name on the same values (`SP-25`). `tick` and `work` are effects of a static" (cons "counter that the erased-value semantics does not model; the counted-work gate (`RB-06`, `TC-07`)" (cons "holds them, and `SP-22` states that its refined functions and its support items are the two sets" (cons "that hold every authored item, and refuses an authored item in neither." (nil String))))))))))))))))))))))))))))))))))))))))))))))
+      (cons "The base is not handwritten either (`RB-17`, `SP-25`). The core runtime's support items are the" (cons "definitions of a second language-1.2 module of the compiler project, `RuntimeSupport`, shipped byte" (cons "for byte at `language/rust-runtime-1.2/RuntimeSupport.lex.tex`, which defines `supportCrate`, a crate" (cons "of `RuntimeSyntax`. `RuntimeSyntax` is a second closed module beside `RustSyntax`, not a widening of" (cons "it: a generated program holds no trait, impl, or generic, and the calculus that proves a generated" (cons "program is not asked about one. Its set is closed, and an item or construct outside it is refused by" (cons "name. *Items:* a `use`; a unit struct with derives; a type alias with parameters; a static; a trait" (cons "of method signatures; an impl, of a trait or of a type, with bounded generic parameters; a function" (cons "with bounded generic parameters. *Types:* the unit type, `bool`, a natural (`u64`), a fixed width," (cons "`Ordering`, `Self`, a generic parameter by index, a reference, a pair, and a named struct or alias." (cons "*Expressions:* a variable, a unit, Boolean, or natural literal, a path, a call of a path, a method" (cons "call, a field of a pair, a borrow, an equality, and a `match` over wildcard, binding, and path" (cons "patterns, whose arms are expressions. A name that is not declared by the crate is one entry of a" (cons "closed table of the standard library (the types `Result` and `AtomicU64`, the call `AtomicU64::new`," (cons "the methods `fetch_add`, `load`, and `cmp`). The Rust crate decodes the shipped copy" (cons "(`rust::rt_decode`) with the reader of `rust::source`, never evaluates it, checks it with a validator" (cons "of its own (`rust::rt_validate`), and prints it (`rust::rt`) where the handwritten base stood, so" (cons "`runtime::core` holds no handwritten Rust text. The validator names each rule it refuses by:" (cons "`profile-root` (a `use` outside the profile's roots: `core` in the core profile, `core` and `std` in" (cons "the std profile, `alloc` in neither), `duplicate-name`, `type-name` and `type-arity` (a type neither" (cons "declared nor in the table, which in the core profile is the hidden allocation the validator refuses in" (cons "every `rust-core` crate), `type-parameter`, `self-type`, `bound-trait` (a bound on a trait the crate" (cons "does not declare), `impl-trait`, `impl-complete`, `impl-signature`, `impl-extra`, `impl-visibility`" (cons "(an impl states each method of its trait once with the trait's signature, and no more, and none is" (cons "`pub`), `function-visibility`, `function-receiver`, `call-name`, `call-arity`, `method-name`," (cons "`method-arity`, `method-bound` (a method of a trait called on a parameter whose bounds do not provide" (cons "it), `variable-scope`, `path-name`, `match-arms`, `trait-method` (a trait that declares a method twice), and `use-path`: 24 rules, each planted by `RB-17`, and the case reads the rules from the validator's source, so a rule added there fails until it is planted. The golden transcript" (cons "`tests/rust-runtime-golden/transcript.txt` (section `support`), recorded from the handwritten core runtime, holds `equal`, `compare`, `tick`, and `work`" (cons "to its result and counted work on the boundary and seeded values of the core profile. The" (cons "validator of this module is the Rust rule set above and its plants: the evidence for the closed set is" (cons "the differential and the plants, and nothing in the repository yet reads the module through a second" (cons "implementation. The condition on the heap profile (R8: whoever moves the machine moves the normative" (cons "validator) is that a Lean twin of `rust::rt_validate`, a bootstrap root with its own row beside `BS-05` (`BS-09`)," (cons "exists before any function that allocates is source. The meaning of a trait method is" (cons "declared by `RuntimeSemantics`, which evaluates a `RuntimeSyntax` crate over the values of the" (cons "calculus and finds a method by the shape of its receiver among the impls the crate declares;" (cons "`RuntimeSupport` holds, for each value of the core profile's predicate that the calculus types as the" (cons "arguments of `equal` (a Boolean, a natural, a fixed width, an `Ordering`) and of `compare` (a Boolean, a" (cons "natural, an integer, a fixed width, and a pair of two of those), where a natural is a `u64` and an" (cons "integer an `i64` in the generated Rust and so is dispatched to the impl of that width, a" (cons "theorem that the evaluation of `equal` or of `compare` in `supportCrate` equals the calculus" (cons "primitive of the same name on the same values (`SP-25`). `tick` and `work` are effects of a static" (cons "counter that the erased-value semantics does not model; the counted-work gate (`RB-06`, `TC-07`)" (cons "holds them, and `SP-22` states that its refined functions and its support items are the two sets" (cons "that hold every authored item, and refuses an authored item in neither." (nil String))))))))))))))))))))))))))))))))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -3236,7 +3236,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "The std runtime as source (`RB-20`, `SP-29`). The text of the `rust-std` runtime is the handwritten base" (cons "(`runtime::STD_BASE`) followed by the functions of the language-1.2 module `RustStd` of the compiler project," (cons "shipped byte for byte at `language/rust-runtime-1.2/RustStd.lex.tex`, which defines `stdCrate`, a crate of" (cons "`RustSyntax` with the std profile. The Rust crate decodes it (`source::decode_std`), never evaluates it, checks it" (cons "with the validator that checks every rendering, and prints each function in place of the handwritten function of the" (cons "same name; the handwritten std runtime is kept at `tests/rust-runtime-oracle/std.rs.txt` as the oracle until the" (cons "last row of the heap half removes it. The functions are the list functions `append_list`, `length_list`, `index_list`, and `slice_list` and the byte and text" (cons "functions `append_bytes`, `length_bytes`, `length_string`, `index_bytes`, `slice_bytes`, `utf8_encode`, `utf8_decode`," (cons "`compare_bytes`, `split_exact`, and `join`. The body of each is one machine call on its moved parameters," (cons "`Machine.listAppend`, `listLength`, `listIndex`, `listSlice`, `bytesAppend`, `bytesLength`, `stringLength`," (cons "`bytesIndex`, `bytesSlice`, `utf8Encode`, `utf8Decode`, `bytesCompare`, `stringSplit`, and `stringJoin`, whose meaning" (cons "`machinePrimitive` states as the calculus primitive of the runtime item of the same function (`append`, `length`," (cons "`index`, `slice`, `utf8Encode`, `utf8Decode`, `compareBytes`, `splitExact`, `join` of `TargetSyntax.Prim`), as the" (cons "arithmetic items of the core runtime are one machine call each. The signatures are those of the handwritten functions" (cons "with the type parameter `T: Clone` of the list functions (`fn append_list<T: Clone>(a: List<T>, b: List<T>) ->" (cons "List<T>`, and so on; `fn index_bytes(a: Bytes, i: u64) -> Option<u8>`, `fn split_exact(text: Str, delimiter: Str," (cons "maximum: u32) -> Option<List<Str>>`, `fn join(texts: List<Str>, delimiter: Str) -> Str`), the type parameter being the" (cons "node `RustType.param`, which the syntax carries, `fallibleType` and the semantics erase, and the printer writes as the" (cons "generic list of the function. The calls print as calls of a method of `List`, `Bytes`, or `Str` (`List::append(a, b)`," (cons "`List::length(&a)`, `Bytes::slice(&a, start, count)`, `Str::split_exact(&text, &delimiter, maximum)`, `Str::join(texts," (cons "&delimiter)`, and so on), where each is a method of the handwritten base: the walk of the cells or the bytes that ticks" (cons "the work counter as the handwritten function did, moved out of the function it was the body of. The theorems" (cons "`refines_<function>` (`SP-29`) have the shape of those of the core runtime: for every list, byte string, and text (and" (cons "every position, start, count, delimiter, and maximum), the run of the function in `stdCrate` equals the run of the" (cons "runtime item of the same name; the set of the module's theorems equals the set of the functions it defines. That is" (cons "the whole of what is kernel-checked. It does not refine the walks: that each method counts, copies, or reads the cells or" (cons "the bytes of the value the handle abstracts, ticks as the handwritten function did, and touches no buffer it does not own" (cons "is held by the abstraction theorems of `RustLists` and `RustPrims` (`SP-27`, `SP-28`), by the validator twin of `BS-09`," (cons "and by the differential of `RB-20`, which compiles the oracle and the printed runtime together and compares the result" (cons "and the counted work of the functions on lists of every length from 0 to 70 and of 1,000, 4,096 and 200,000 cells, built" (cons "fresh, after an uncons has made a unique buffer longer than its run, shared by a clone, and with cells in front, on" (cons "byte strings and texts of the empty, the single, the multi-byte, the invalid, and the long, at the positions, counts," (cons "delimiters, and maxima that include the ends and the largest `u64` and `u32`. The length walk's count overflows where" (cons "the `natResult` of `Prim.length` overflows, at 2^64 cells; the differential cannot construct such a list, so that point" (cons "is declared and not exercised. The functions that remain handwritten are those of the numbers: `parse_int`, which is" (cons "fallible and whose decimal text is the helper of the fixed-width modules, and the `decimal!` modules; they are not in" (cons "this row. The module name `RustStd` is also the suffix of the certificate-B module of a `rust-std` crate" (cons "(`production/rust_cert.rs`); the two are different Lean modules (`LexLeanTarget.RustStd` here, `<certificate A>.RustStd`" (cons "there) and nothing imports one as the other. The shipped crate changes in this row, each with its plant in the case:" (cons "`RustType.param` and the generic list it prints (a signature printed without it does not compile), the fourteen machine" (cons "families 26 to 39 (arity one to three, refused with the wrong number of operands by the validator), and the decoder of" (cons "the std crate (a module without `stdCrate` or of another profile is refused). The bootstrap validator twin of" (cons "`RustValidate` names a machine call by its family and so learns the twenty-seventh to the fortieth; its measurement is" (cons "repeated with this row." (nil String)))))))))))))))))))))))))))))))))))))))))))))
+      (cons "The std runtime as source (`RB-20`, `SP-29`). The text of the `rust-std` runtime is the types, impls, and helpers" (cons "of the language-1.2 module `RuntimeStd`, then the functions of the language-1.2 module `RustStd` of the compiler project. `RuntimeStd` is shipped" (cons "byte for byte at `language/rust-runtime-1.2/RuntimeStd.lex.tex` and defines `stdSupportCrate`, a `std` crate of" (cons "`RuntimeSyntax`: the types `Str`, `Bytes`, `Node`, `Repr`, and `List`, their impls (the constructors, `Clone`, the" (cons "release of a list, the walks that tick the work counter), `chars`, and the `Same` and `Key` impls of texts and byte" (cons "strings. The Rust crate decodes it (`rt_decode::decode_std`), never evaluates it, checks it with the validator of" (cons "`RuntimeSyntax` together with the support items it stands on (a call of an associated function of a declared type is" (cons "checked against its impl, as a call of a variant is against its enum), and prints it where the handwritten text stood. `RustStd`," (cons "shipped byte for byte at `language/rust-runtime-1.2/RustStd.lex.tex`, defines `stdCrate`, a crate of" (cons "`RustSyntax` with the std profile. The Rust crate decodes it (`source::decode_std`), never evaluates it, checks it" (cons "with the validator that checks every rendering, and prints each function where the handwritten function of the" (cons "same name stood; the handwritten std runtime is not in the tree, and `tests/rust-runtime-golden/transcript.txt` (section `std`) holds what it returned and counted. The functions are the list functions `append_list`, `length_list`, `index_list`, and `slice_list` and the byte and text" (cons "functions `append_bytes`, `length_bytes`, `length_string`, `index_bytes`, `slice_bytes`, `utf8_encode`, `utf8_decode`," (cons "`compare_bytes`, `split_exact`, and `join`, and the number functions `parse_int`, `format_int`, and the `format_` and `parse_` function of each fixed width (`u8`, `u16`, `u32`, `u64`, `i8`, `i16`, `i32`, `i64`). The body of each is one machine call on its parameters," (cons "`Machine.listAppend`, `listLength`, `listIndex`, `listSlice`, `bytesAppend`, `bytesLength`, `stringLength`," (cons "`bytesIndex`, `bytesSlice`, `utf8Encode`, `utf8Decode`, `bytesCompare`, `stringSplit`, `stringJoin`, `formatDecimal` and `parseDecimal` (each at its width), `parseDecimalInt`, and `formatDecimalInt`, whose meaning" (cons "`machinePrimitive` states as the calculus primitive of the runtime item of the same function (`append`, `length`," (cons "`index`, `slice`, `utf8Encode`, `utf8Decode`, `compareBytes`, `splitExact`, `join`, `formatDecimal`, and `parseDecimal` at the width or at the integers, of `TargetSyntax.Prim`), as the" (cons "arithmetic items of the core runtime are one machine call each. The signatures are those of the handwritten functions" (cons "with the type parameter `T: Clone` of the list functions (`fn append_list<T: Clone>(a: List<T>, b: List<T>) ->" (cons "List<T>`, and so on; `fn index_bytes(a: Bytes, i: u64) -> Option<u8>`, `fn split_exact(text: Str, delimiter: Str," (cons "maximum: u32) -> Option<List<Str>>`, `fn join(texts: List<Str>, delimiter: Str) -> Str`), the type parameter being the" (cons "node `RustType.param`, which the syntax carries, `fallibleType` and the semantics erase, and the printer writes as the" (cons "generic list of the function. The calls print as calls of a method of `List`, `Bytes`, or `Str` (`List::append(a, b)`," (cons "`List::length(&a)`, `Bytes::slice(&a, start, count)`, `Str::split_exact(&text, &delimiter, maximum)`, `Str::join(texts," (cons "&delimiter)`, `Str::format_u8(a)`, `Str::parse_u8(&text)`, `Str::parse_int(&text)`, `Str::format_i64(a)` for `format_int`, the integers being `i64` in the printed runtime, and so on), where each is a method of `RuntimeStd`: the walk of the cells or the bytes that ticks" (cons "the work counter as the handwritten function did, moved out of the function it was the body of. The theorems" (cons "`refines_<function>` (`SP-29`) have the shape of those of the core runtime: for every list, byte string, text, and number (and" (cons "every position, start, count, delimiter, and maximum), the run of the function in `stdCrate` equals the run of the" (cons "runtime item of the same name; the set of the module's theorems equals the set of the functions it defines. That is" (cons "the whole of what is kernel-checked. It does not refine the walks: that each method counts, copies, or reads the cells or" (cons "the bytes of the value the handle abstracts, ticks as the handwritten function did, and touches no buffer it does not own" (cons "is held by the abstraction theorems of `RustLists` and `RustPrims` (`SP-27`, `SP-28`), by the validator twin of `BS-09`," (cons "and by the transcript of `RB-20`, which compiles the printed runtime and compares, with the golden digest, the result" (cons "and the counted work of the functions on lists of every length from 0 to 70 and of 1,000, 4,096 and 200,000 cells, built" (cons "fresh, after an uncons has made a unique buffer longer than its run, shared by a clone, and with cells in front, on" (cons "byte strings and texts of the empty, the single, the multi-byte, the invalid, and the long, at the positions, counts," (cons "delimiters, and maxima that include the ends and the largest `u64` and `u32`, and on lists of texts of every shape, and on the order in which a list is taken apart and the equality and order of texts and byte strings. The length walk's count overflows where" (cons "the `natResult` of `Prim.length` overflows, at 2^64 cells; the differential cannot construct such a list, so that point" (cons "is declared and not exercised. The number text (`canonical_decimal` and the methods `Str::parse_int`, `Str::format_<width>`, and `Str::parse_<width>`) is in `RuntimeStd`, the eighteen functions that call it are in `RustStd`, and the transcript holds them on the bounds of each width and on numerals that are and are not canonical; `canonical_decimal` and the digits of the methods are evidence, not proof, as the walks are. `parse_int` is fallible: its machine call is optional (`machineOptional`), the overflow of the integer being `None`, which the function turns into `Err(Overflow)` as `nat_add` does. `format_int` is the function of the item `formatInt`, the decimal text of an integer, which the handwritten runtime called as `format_i64`: it is one call of `formatDecimalInt`, whose meaning is `formatDecimal` at the integers, it prints as the call of the same method, and the transcript holds it to the digest of `format_i64` on the same values (it has no label of its own, as the handwritten runtime had no such function). The module name `RustStd` is also the suffix of the certificate-B module of a `rust-std` crate" (cons "(`production/rust_cert.rs`); the two are different Lean modules (`LexLeanTarget.RustStd` here, `<certificate A>.RustStd`" (cons "there) and nothing imports one as the other. The shipped crate changes in this row, each with its plant in the case:" (cons "`RustType.param` and the generic list it prints (a signature printed without it does not compile), the eighteen machine" (cons "families 26 to 43 (arity one to three, refused with the wrong number of operands by the validator), and the decoder of" (cons "the std crate (a module without `stdCrate` or of another profile is refused), the decoder of `RuntimeStd` (a module without `stdSupportCrate` or of another profile is refused), and the validator rule for an associated function (`Gauge::absent` and `Gauge::fresh()` are refused). The bootstrap validator twin of" (cons "`RustValidate` names a machine call by its family and so learns the twenty-seventh to the forty-fourth; its measurement is" (cons "repeated with this row." (nil String))))))))))))))))))))))))))))))))))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -3250,7 +3250,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "A *loop*" (cons "(`Expr.loop`, `SP-19`) is the one construct of the machine that repeats: it names" (cons "a state, a local the enclosing block has bound, and a body block. The body is" (cons "evaluated in the environment with the state, and its value is a `Result`: `Ok`" (cons "of a next state rebinds the state to that value and evaluates the loop again, and" (cons "`Err` of a done value ends the loop with it as the value of the loop, so a loop" (cons "breaks with a value and has no labels. A body whose value is neither is stuck," (cons "and the loop recurses through `eval` with the fuel the body left, so a loop that" (cons "does not end within the fuel is exhausted, never a wrong value. The renderer" (cons "prints a loop as `{ let mut s = s; loop { let step = { body }; match step { Ok(next) =>" (cons "{ s = next; } Err(done) => break done, } } }`, binding the body's value first because" (cons "Rust's lint gate refuses a block with bindings as a scrutinee; the validator lets the body move the state, which" (cons "the loop's own binding holds, and nothing else, because the body runs again after" (cons "every `Ok`. The lowering produces a loop for a function every self call of" (cons "which is a tail call and some self call of which changes a parameter the body" (cons "reads (`calculus::rust::loops` decides it on the calculus, and the lowering" (cons "fails when it disagrees; `RB-14`): the parameters the self calls change are the" (cons "state, a tuple nested to the right when there are several and the parameter" (cons "itself when there is one, held in a binding the function makes from them" (cons "(the changed parameters are renamed in the signature, and the body begins by" (cons "binding the original names from it); each tail self call is `Ok` of the next state and" (cons "every other tail value is `Err` of the value, so the loop breaks with the value" (cons "the function returns; a parameter every self call passes on as it got it stays" (cons "a parameter, which the body clones. A function with a self call that is not a" (cons "tail call, or with a parameter nothing reads (which the loop's state could" (cons "not carry), is rendered as a call. Every runtime" (cons "item (`rust::runtime::Item`) is declared as the calculus" (cons "primitive it realizes on the same operands (the successor as `nat_add` with" (cons "one), fallible exactly when the renderer types it `R<T>`, and present in" (cons "`rust-core` only when it needs no heap; an overflow of an item that cannot" (cons "fail is the machine's *abort*, which no machine can avoid: the only such" (cons "overflow is the length of a sequence of `2^64` or more elements. An item" (cons "of a width is a distinct Rust function per width, so the machine indexes it" (cons "by its width: a checked, bitwise, shift, or formatting item takes only" (cons "operands of its width (a shift only its shifted operand), and is stuck on" (cons "any other, so `fixed_u16::checked_add` on two `u8` values means nothing," (cons "as in Rust, rather than the `u8` addition the calculus primitive would" (cons "compute. Likewise a list, bytes, or text item (`length_list`," (cons "`length_bytes`, `length_string`, and the append, index, and slice items)" (cons "takes only a first operand of its own sequence, so `length_bytes` on text" (cons "does not count its characters. The correspondence's value typing carries" (cons "what these guards read: a fixed-width value's width, and a list's, bytes'," (cons "or text's constructor. Every certified root's crate" (cons "is built as a `RustSyntax` kernel term (`production::certificate::data_b`," (cons "audited for default arms) that Lean elaborates and the machine evaluates; on the seeded inputs of" (cons "the differential, its outcome equals the calculus interpreter's on the" (cons "lowered program. That rustc agrees with this declaration is `build`" (cons "evidence, measured by the conformance suite, never assumed by a proof." (nil String)))))))))))))))))))))))))))))))))))))))))))))))))
+      (cons "Every runtime item has its refinement statement (`SP-30`). The compiler's table of runtime items (`runtime::Item::all`, every fixed width included: the items the lowering can call) is compared with the statements of the theorems `refines_<function>` of `RustRuntime` and `RustStd`, each read for the function its statement runs (`runExport 12 <crate> \"<function>\"`) and the item it equates that run with (`runItem <profile> Item.<item>`); neither list is read from the other. An item is held when exactly one theorem states it, at its profile (`std` for an item that takes or returns heap storage, `core` otherwise) and in the module of that profile, on the function the generated code calls for it (`Item::path`); `equal` and `compare`, which the generated code calls as the trait functions of `RuntimeSupport`, are held by the theorems of `SP-25` instead. That Lean accepts the statements is `SP-22`'s and `SP-29`'s; this row is the bijection between the items and the statements, and it runs without Lean. A runtime item with no refinement statement, a statement of another item than the one its function is called for, a statement at the other profile, an item the generated code calls another function for (the decimal text of an integer called as `format_i64`, as it was before this row), and a trait item without its theorems are each refused naming the item. With this row every runtime item but the two trait functions is a kernel-checked refinement of its calculus primitive; what it does not cover is named in the paragraph above: the walks and the number text the machine primitives print as calls of, which are evidence." (nil String))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -3264,7 +3264,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "**Certificate B.** Each certified root's crate in each of its targets is" (cons "related to the root's lowered program by a second kernel-checked theorem," (cons "the module `LexLeanPreserve.C<hex>.R<i>.RustCore` or `.RustStd` beside" (cons "certificate A, which proves" (nil String)))))
+      (cons "The runtime text is never held (`RB-21`). No string literal in the sources of the `lexlean` crate holds the head of" (cons "a runtime item as the printer writes it: a line that starts, after an optional `pub`, with `fn`, `struct`, `enum`," (cons "`trait`, `macro_rules!`, or `impl` and a name (a placeholder where the name stands, or doubled braces, as in a format string, is a printer's template and not" (cons "runtime text). The case scans every `.rs` file under `crates/lexlean/src`, strings of the test modules among them, with a" (cons "reader of comments, character literals, and strings that is its own; it must read `runtime.rs`, `rt.rs`, and `ast.rs`" (cons "and more than a thousand literals, so a scan that reads nothing is refused, and each of five planted constants is found in" (cons "the copy of `runtime.rs` it is planted in and only there. There is no list of literals the scan lets pass. The oracle" (cons "directory `tests/rust-runtime-oracle/` is absent. The golden transcript is one file," (cons "`tests/rust-runtime-golden/transcript.txt`: a header that names the format and the SHA-256 of the lines after it" (cons "(so the file is content-addressed), then a section (`core`, `support`, or `std`), a label, and a 16-digit" (cons "hexadecimal digest per line. It is written by `cargo xtask check-golden --write` from the printed runtime and reviewed" (cons "as a diff (§28.3), never edited; `check-golden` without `--write` compares it to the printed runtime's transcript, and a" (cons "digest changed, a label dropped or added, or a header rewritten is refused by the case. The comparison is against a" (cons "recorded transcript of the removed oracle, not against the oracle: VERIFICATION.md records the oracle's commit and" (cons "the run of the differential that produced the first file. This is `build` evidence: the transcript digests are 64-bit," (cons "and what they hold is what the handwritten runtime did on the harness's calls, not a proof about the printed one" (cons "(`SP-29`, `SP-22` prove the machine calls)." (nil String))))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -3277,6 +3277,34 @@ definition{
   parameters: [],
   result: DocRows::Item,
   body: constructor{
+    arguments: [
+      (cons "A *loop*" (cons "(`Expr.loop`, `SP-19`) is the one construct of the machine that repeats: it names" (cons "a state, a local the enclosing block has bound, and a body block. The body is" (cons "evaluated in the environment with the state, and its value is a `Result`: `Ok`" (cons "of a next state rebinds the state to that value and evaluates the loop again, and" (cons "`Err` of a done value ends the loop with it as the value of the loop, so a loop" (cons "breaks with a value and has no labels. A body whose value is neither is stuck," (cons "and the loop recurses through `eval` with the fuel the body left, so a loop that" (cons "does not end within the fuel is exhausted, never a wrong value. The renderer" (cons "prints a loop as `{ let mut s = s; loop { let step = { body }; match step { Ok(next) =>" (cons "{ s = next; } Err(done) => break done, } } }`, binding the body's value first because" (cons "Rust's lint gate refuses a block with bindings as a scrutinee; the validator lets the body move the state, which" (cons "the loop's own binding holds, and nothing else, because the body runs again after" (cons "every `Ok`. The lowering produces a loop for a function every self call of" (cons "which is a tail call and some self call of which changes a parameter the body" (cons "reads (`calculus::rust::loops` decides it on the calculus, and the lowering" (cons "fails when it disagrees; `RB-14`): the parameters the self calls change are the" (cons "state, a tuple nested to the right when there are several and the parameter" (cons "itself when there is one, held in a binding the function makes from them" (cons "(the changed parameters are renamed in the signature, and the body begins by" (cons "binding the original names from it); each tail self call is `Ok` of the next state and" (cons "every other tail value is `Err` of the value, so the loop breaks with the value" (cons "the function returns; a parameter every self call passes on as it got it stays" (cons "a parameter, which the body clones. A function with a self call that is not a" (cons "tail call, or with a parameter nothing reads (which the loop's state could" (cons "not carry), is rendered as a call. Every runtime" (cons "item (`rust::runtime::Item`) is declared as the calculus" (cons "primitive it realizes on the same operands (the successor as `nat_add` with" (cons "one), fallible exactly when the renderer types it `R<T>`, and present in" (cons "`rust-core` only when it needs no heap; an overflow of an item that cannot" (cons "fail is the machine's *abort*, which no machine can avoid: the only such" (cons "overflow is the length of a sequence of `2^64` or more elements. An item" (cons "of a width is a distinct Rust function per width, so the machine indexes it" (cons "by its width: a checked, bitwise, shift, or formatting item takes only" (cons "operands of its width (a shift only its shifted operand), and is stuck on" (cons "any other, so `fixed_u16::checked_add` on two `u8` values means nothing," (cons "as in Rust, rather than the `u8` addition the calculus primitive would" (cons "compute. Likewise a list, bytes, or text item (`length_list`," (cons "`length_bytes`, `length_string`, and the append, index, and slice items)" (cons "takes only a first operand of its own sequence, so `length_bytes` on text" (cons "does not count its characters. The correspondence's value typing carries" (cons "what these guards read: a fixed-width value's width, and a list's, bytes'," (cons "or text's constructor. Every certified root's crate" (cons "is built as a `RustSyntax` kernel term (`production::certificate::data_b`," (cons "audited for default arms) that Lean elaborates and the machine evaluates; on the seeded inputs of" (cons "the differential, its outcome equals the calculus interpreter's on the" (cons "lowered program. That rustc agrees with this declaration is `build`" (cons "evidence, measured by the conformance suite, never assumed by a proof." (nil String)))))))))))))))))))))))))))))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0240,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "**Certificate B.** Each certified root's crate in each of its targets is" (cons "related to the root's lowered program by a second kernel-checked theorem," (cons "the module `LexLeanPreserve.C<hex>.R<i>.RustCore` or `.RustStd` beside" (cons "certificate A, which proves" (nil String)))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0241,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
     arguments: ["lean", (cons "theorem root : ∀ n f, FunSem program krate flags n f" (nil String))],
     constructor: DocRows::Item.fence,
     type_arguments: []
@@ -3285,7 +3313,7 @@ definition{
 }
 
 definition{
-  name: i0240,
+  name: i0242,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3299,7 +3327,7 @@ definition{
 }
 
 definition{
-  name: i0241,
+  name: i0243,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3313,41 +3341,12 @@ definition{
 }
 
 definition{
-  name: i0242,
-  parameters: [],
-  result: DocRows::Item,
-  body: constructor{
-    arguments: [
-      (cons "**Certificate E.** Certificates A and B compose into the end-to-end" (cons "statement, the module `LexLeanPreserve.C<hex>.R<i>.Compose.RustCore` or" (cons "`.Compose.RustStd`, which imports both and proves" (nil String))))
-    ],
-    constructor: DocRows::Item.para,
-    type_arguments: []
-  },
-  executable: true
-}
-
-definition{
-  name: i0243,
-  parameters: [],
-  result: DocRows::Item,
-  body: constructor{
-    arguments: [
-      "lean",
-      (cons "theorem root (x₁ … xₙ) (__e_hrep : RepresentableL [enc x₁, …, enc xₙ]) :" (cons "    ∃ ro, RealizesFn F (denote x₁ … xₙ) ro ∧" (cons "      RCI krate (fnIdent 0) [enc x₁, …, enc xₙ] ro" (nil String))))
-    ],
-    constructor: DocRows::Item.fence,
-    type_arguments: []
-  },
-  executable: true
-}
-
-definition{
   name: i0244,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "where `denote` is certificate A's observation, `krate` certificate B's" (cons "crate, `F` whether the root's Rust function returns `R<T>`, and `RCI c f" (cons "args ro` that the machine, invoked on the Rust function `f` with `args`," (cons "ends in the outcome `ro`: for every source argument, the rendered root" (cons "returns the encoded source result, `Err(Overflow)` exactly when the width" (cons "predicate fails and the function is fallible, or the machine's abort. For a" (cons "root with a boundary entry, the function invoked is the entry and the" (cons "theorem is" (nil String)))))))))
+      (cons "**Certificate E.** Certificates A and B compose into the end-to-end" (cons "statement, the module `LexLeanPreserve.C<hex>.R<i>.Compose.RustCore` or" (cons "`.Compose.RustStd`, which imports both and proves" (nil String))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -3362,7 +3361,7 @@ definition{
   body: constructor{
     arguments: [
       "lean",
-      (cons "theorem root (x₁ … xₙ) (__e_hrep : RepresentableL [enc x₁, …, enc xₙ]) :" (cons "    ∃ ro, RCI krate (fnIdent e) [enc x₁, …, enc xₙ] ro ∧" (cons "      (accepts x₁ … xₙ → RealizesFn F (someObs (denote x₁ … xₙ)) ro) ∧" (cons "      (¬ accepts x₁ … xₙ → RealizesFn F (Obs.value Value.none) ro)" (nil String)))))
+      (cons "theorem root (x₁ … xₙ) (__e_hrep : RepresentableL [enc x₁, …, enc xₙ]) :" (cons "    ∃ ro, RealizesFn F (denote x₁ … xₙ) ro ∧" (cons "      RCI krate (fnIdent 0) [enc x₁, …, enc xₙ] ro" (nil String))))
     ],
     constructor: DocRows::Item.fence,
     type_arguments: []
@@ -3376,7 +3375,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "The names the composition binds itself (`__e_hrep`, the witness `__e_ro`, and the lambdas and pattern variables of its proof) begin with two underscores, which no semantic name does, so no parameter of the root, whatever its name, can capture one; `conformance_sp_09` checks every binder of every composition. So the rendered entry realizes the encoded source result as `some` for" (cons "arguments that satisfy §17.12's invariants and refuses every other with" (cons "`none`. `RepresentableL` restricts the theorem to the arguments a Rust caller" (cons "can pass: a natural number is a `u64` and an integer an `i64`, wherever it" (cons "occurs in an argument (the proof does not use it; the statement is the" (cons "smaller). The machine has no stack and no heap bound: a call that exhausts" (cons "the stack or fails to allocate aborts the process in Rust, the theorem says" (cons "nothing of it (§17.16 gives no stack-depth guarantee), and the only abort the" (cons "machine itself models is the overflow of an item that cannot fail, the length" (cons "of a sequence of 2^64 or more elements. The" (cons "proof is the library's `compose` applied to the two theorems and to a" (cons "generated proof that every encoded argument is well typed for the root's" (cons "parameters, `WT (enc x) t`, written construct by construct over the" (cons "encoders: one theorem per encoder, mutual over a recursive group as the" (cons "encoders are, with the library's lemmas for every primitive and container" (cons "value. A certificate E that does not compile silently, fails its replay," (cons "or whose theorem's axioms are not exactly the three above is `LLV7016`." (nil String))))))))))))))))))
+      (cons "where `denote` is certificate A's observation, `krate` certificate B's" (cons "crate, `F` whether the root's Rust function returns `R<T>`, and `RCI c f" (cons "args ro` that the machine, invoked on the Rust function `f` with `args`," (cons "ends in the outcome `ro`: for every source argument, the rendered root" (cons "returns the encoded source result, `Err(Overflow)` exactly when the width" (cons "predicate fails and the function is fallible, or the machine's abort. For a" (cons "root with a boundary entry, the function invoked is the entry and the" (cons "theorem is" (nil String)))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -3390,9 +3389,10 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "**Certificate E as data.** Certificate E is not Lean text. The compiler" (cons "builds it as a native core module of schema `lexlean/core-module/2`" (cons "(§17.10): the terms above as kernel terms, every argument and universe level" (cons "written. A lemma's type is read from the native preservation library, whose derived" (cons "rows (§17.10) state none and which no certificate cites, and" (cons "instantiated one binder at a time, so the implicit program, crate, and flags" (cons "of every lemma, the element types and encoders of the container lemmas, the" (cons "field values and types of a document, and the environment the entry binds" (cons "are all stated, and an `rfl` is `Eq.refl` at the equation the binder states." (cons "The well-typedness theorems of a recursive group are the group's recursor" (cons "(`T.rec` for each of its document types and `T.rec_j` of the block's first" (cons "type for the `j`-th container the kernel nests, in the order it nests them)," (cons "an induction hypothesis standing where the text recursed. The one core" (cons "backend renders the module (`lean_text_legacy`) to the Lean verification" (cons "compiles, scoped in `namespace <module>` with `import` lines and no `module`" (cons "header so each certificate's inline core-v2 decoder stays inside its own" (cons "namespace and because certificates A, B, and E and the staged audit module" (cons "import one another outside Lean's `module` system (Lean refuses a `module` that" (cons "imports a non-`module` file), and the verify record holds the module in the" (cons "authoring notation (§17.21.8), at the module's path with the extension" (cons "`.lex.tex`, which reads back to the data byte for byte; `preservation.json`" (cons "binds those bytes. A certificate held as data is audited row by row and" (cons "never as text: it imports only modules of the environment, declares only" (cons "safe theorems, definitions, and abbreviations, each pinning its axioms" (cons "exactly (the registry's for the library lemmas a row applies, the three" (cons "above for the composition), and names no forbidden constant in any" (cons "spelling; the audit module prints the axioms of every row of such a" (cons "certificate, and a row whose policy does not state what Lean prints is" (cons "`LLV7016`. `conformance_sp_14` builds every certificate E of the four" (cons "corpora this way, reads each record back to its data, verifies the" (cons "production example under the pinned Lean, and plants a wrong lemma, a changed" (cons "statement, a forged crate reference, and an added axiom, each refused." (nil String)))))))))))))))))))))))))))))))))
+      "lean",
+      (cons "theorem root (x₁ … xₙ) (__e_hrep : RepresentableL [enc x₁, …, enc xₙ]) :" (cons "    ∃ ro, RCI krate (fnIdent e) [enc x₁, …, enc xₙ] ro ∧" (cons "      (accepts x₁ … xₙ → RealizesFn F (someObs (denote x₁ … xₙ)) ro) ∧" (cons "      (¬ accepts x₁ … xₙ → RealizesFn F (Obs.value Value.none) ro)" (nil String)))))
     ],
-    constructor: DocRows::Item.para,
+    constructor: DocRows::Item.fence,
     type_arguments: []
   },
   executable: true
@@ -3404,7 +3404,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "**Certificate A as data.** Certificate A is kernel-term data as well. The" (cons "compiler builds it as a native core module of schema `lexlean/core-module/2`" (cons "from the lowered program, the layout, the semantic source of the root's" (cons "closure, and the recorded types of the library's lemmas; no Lean text template" (cons "for it remains in the compiler. Its rows are the program literal `__prog`, the" (cons "encoders, a width predicate `__fits_k` and a relation theorem `__rel_k` for each" (cons "function of the closure, the boundary validators and the entry when the root has" (cons "them, then `denote` and `root`. A relation theorem is derived node by node" (cons "alongside the lowering of the function: a library lemma is applied at the" (cons "operator, operand expressions, and evaluation environment its node has in the" (cons "program, and what the lemma's type leaves implicit is stated, either from the" (cons "program or from the types of the arguments. A definition's denotation appears in" (cons "the statements as the definition itself, so its body is never unfolded to" (cons "compare it. A recursive definition's predicate and theorem are written with the" (cons "eliminator its recursion has: the recursor of the argument's type for structural" (cons "recursion (a mutual group on one type packing its members as a product, a group" (cons "with nested containers by the recursor of the first type and `rec_j` for the" (cons "`j`-th container), and `WellFounded.fix` over the source's measure for" (cons "well-founded recursion, a recursive call being the induction hypothesis applied" (cons "to the packed arguments and the source's own decrease theorem, which quantifies" (cons "the arms enclosing the call, so every numbered `if` and `match` of such a body" (cons "is written by cases on its scrutinee with the equation the arm was taken by." (cons "The compiler's implementation record `f._unsafe_rec` of a recursive predicate," (cons "a partial definition beside the safe one, gives the code generator the direct" (cons "recursion it has no code for in a recursor; no theorem depends on it. The" (cons "records of one mutual group are pinned to the group's union, and the audit" (cons "checks that the union of the sets it prints for the group's members equals that" (cons "pin (`LLV7013`, naming the group), because what Lean prints of one member is not" (cons "a property of the member's term alone: it stores axiom data for a module's" (cons "constants by one shared traversal, in the order of a hash map keyed by names" (cons "that carry the identity, with a sentinel for a constant in progress, so a member" (cons "whose term refers to no other member, or only to a later one, printed `[]` on" (cons "one identity and `[propext]` on another with identical sources (the first" (cons "member of the bootstrap project's R6 group, `__fits_76`; and the core library's" (cons "`__fits_78`, which calls the later `__fits_111`, #227). Every other row is" (cons "checked row by row. A" (cons "definition that a model construct elaborates to pins no axiom: the construct's" (cons "declared set bounds it, and the audit finds none for a definition that proves" (cons "nothing. Each row pins its axioms exactly, the audit module prints and checks" (cons "them, and the record is the authoring notation at the module's path with the" (cons "extension `.lex.tex`, which reads back to the data byte for byte." (cons "`tests/preservation-certificates/A-STATEMENTS.md` records that the statement of" (cons "every theorem of every certificate A of the four corpora is, up to the kernel's" (cons "definitional equality, the statement the text certificate stated." (cons "`conformance_sp_15` builds every certificate A of the four corpora this way," (cons "reads each record back, verifies the production example under the pinned Lean," (cons "and plants a wrong lemma application, a changed statement, a forged program" (cons "literal, and an added axiom, each refused." (nil String)))))))))))))))))))))))))))))))))))))))))))))))))
+      (cons "The names the composition binds itself (`__e_hrep`, the witness `__e_ro`, and the lambdas and pattern variables of its proof) begin with two underscores, which no semantic name does, so no parameter of the root, whatever its name, can capture one; `conformance_sp_09` checks every binder of every composition. So the rendered entry realizes the encoded source result as `some` for" (cons "arguments that satisfy §17.12's invariants and refuses every other with" (cons "`none`. `RepresentableL` restricts the theorem to the arguments a Rust caller" (cons "can pass: a natural number is a `u64` and an integer an `i64`, wherever it" (cons "occurs in an argument (the proof does not use it; the statement is the" (cons "smaller). The machine has no stack and no heap bound: a call that exhausts" (cons "the stack or fails to allocate aborts the process in Rust, the theorem says" (cons "nothing of it (§17.16 gives no stack-depth guarantee), and the only abort the" (cons "machine itself models is the overflow of an item that cannot fail, the length" (cons "of a sequence of 2^64 or more elements. The" (cons "proof is the library's `compose` applied to the two theorems and to a" (cons "generated proof that every encoded argument is well typed for the root's" (cons "parameters, `WT (enc x) t`, written construct by construct over the" (cons "encoders: one theorem per encoder, mutual over a recursive group as the" (cons "encoders are, with the library's lemmas for every primitive and container" (cons "value. A certificate E that does not compile silently, fails its replay," (cons "or whose theorem's axioms are not exactly the three above is `LLV7016`." (nil String))))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -3418,7 +3418,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "**Certificate B as data.** Certificate B is kernel-term data too. The compiler" (cons "builds each as a native core module of schema `lexlean/core-module/2`" (cons "(`production::certificate::data_b`): the rows `program` (the target program," (cons "built by the same builder as certificate A's `__prog`), `krate` (the crate as a" (cons "`RustSyntax` term, constructor for constructor), `flags`, one theorem `fun<n>`" (cons "per function, `crate_ok`, and `root`. The derivation of a function is the" (cons "`Corr` rule applications the aligner finds, each a library constructor applied" (cons "to every argument it has: the program, crate, and flags; the scope and the" (cons "judgment the rule concludes, which the aligner states; the arguments the rule" (cons "leaves to its premises, which it hands the premise's type; and the few values" (cons "the text left to the elaborator's unification, which it holds from the" (cons "constructs it relates (the function literal a call or closure names, the part" (cons "a field read binds, the slot a `let` binds). A side condition is `Eq.refl` at" (cons "the equation the rule states, which the kernel decides by evaluation. `fun<n>`" (cons "is `FunOK` written out: the witnesses of its existentials (the function, the" (cons "parameters, result, body, and scope of the Rust item) and the derivation; for a" (cons "function with a parameter no value inhabits, the membership of that parameter's" (cons "type in the function's types. `crate_ok` is the case analysis on the function" (cons "index, one `Nat.casesOn` per function handing it its theorem, and an index past" (cons "the last refuted by the lookup the kernel evaluates; `root` is the library's" (cons "`simulate` applied to it. The library did not grow: every implicit argument of" (cons "the 49 rules is stated by the judgment or held by the aligner. Each row pins" (cons "its axioms exactly, the audit module prints and checks them, and the record is" (cons "the authoring notation at the module's path with the extension `.lex.tex`," (cons "which reads back to the data byte for byte." (cons "`tests/preservation-certificates/B-STATEMENTS.md` records that the statement of" (cons "every row of every certificate B of the four corpora is, up to the kernel's" (cons "definitional equality, the statement the text certificate stated." (cons "`conformance_sp_16` builds every certificate B of the four corpora this way," (cons "reads each record back, verifies the production example under the pinned Lean," (cons "and plants a wrong lemma application, a changed statement, a forged program" (cons "literal, an added axiom, and a row whose policy lies, each refused." (nil String)))))))))))))))))))))))))))))))))
+      (cons "**Certificate E as data.** Certificate E is not Lean text. The compiler" (cons "builds it as a native core module of schema `lexlean/core-module/2`" (cons "(§17.10): the terms above as kernel terms, every argument and universe level" (cons "written. A lemma's type is read from the native preservation library, whose derived" (cons "rows (§17.10) state none and which no certificate cites, and" (cons "instantiated one binder at a time, so the implicit program, crate, and flags" (cons "of every lemma, the element types and encoders of the container lemmas, the" (cons "field values and types of a document, and the environment the entry binds" (cons "are all stated, and an `rfl` is `Eq.refl` at the equation the binder states." (cons "The well-typedness theorems of a recursive group are the group's recursor" (cons "(`T.rec` for each of its document types and `T.rec_j` of the block's first" (cons "type for the `j`-th container the kernel nests, in the order it nests them)," (cons "an induction hypothesis standing where the text recursed. The one core" (cons "backend renders the module (`lean_text_legacy`) to the Lean verification" (cons "compiles, scoped in `namespace <module>` with `import` lines and no `module`" (cons "header so each certificate's inline core-v2 decoder stays inside its own" (cons "namespace and because certificates A, B, and E and the staged audit module" (cons "import one another outside Lean's `module` system (Lean refuses a `module` that" (cons "imports a non-`module` file), and the verify record holds the module in the" (cons "authoring notation (§17.21.8), at the module's path with the extension" (cons "`.lex.tex`, which reads back to the data byte for byte; `preservation.json`" (cons "binds those bytes. A certificate held as data is audited row by row and" (cons "never as text: it imports only modules of the environment, declares only" (cons "safe theorems, definitions, and abbreviations, each pinning its axioms" (cons "exactly (the registry's for the library lemmas a row applies, the three" (cons "above for the composition), and names no forbidden constant in any" (cons "spelling; the audit module prints the axioms of every row of such a" (cons "certificate, and a row whose policy does not state what Lean prints is" (cons "`LLV7016`. `conformance_sp_14` builds every certificate E of the four" (cons "corpora this way, reads each record back to its data, verifies the" (cons "production example under the pinned Lean, and plants a wrong lemma, a changed" (cons "statement, a forged crate reference, and an added axiom, each refused." (nil String)))))))))))))))))))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -3432,7 +3432,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "**A function rendered as a loop** (`SP-20`). The renderer writes a function whose" (cons "self calls are all tail calls as a loop (§17.16), so the crate no longer holds" (cons "the recursive body that the calculus function corresponds to. `FunOK` is" (cons "therefore the disjunction of two statements: `FunOK0`, the one above, and" (cons "`FunLoop`, that the crate's body is the loop form `loopOf` of an ordinary" (cons "recursive body, with the Boolean checks of `loopCheckOf` (the renamed" (cons "parameters and the kept ones are distinct, the originals of the changed" (cons "parameters are none of the kept ones, the kept ones are locals, and the loop" (cons "body mentions no renamed parameter) closed by evaluation, together with the" (cons "`Corr` derivation for that recursive body. The recursive body, how each" (cons "parameter is carried (changed, kept, or dropped), the state and result types," (cons "and the numbers of the holder and of the renamed parameters are the witnesses" (cons "of `FunLoop`. `funSem_loop` proves the simulation of such a function from the" (cons "simulation of the recursive body, the iteration of the loop on the iteration" (cons "of the calls, and `funSem_of` takes the second disjunct to it; `Corr`, its" (cons "recursor, and `sound` are untouched. The aligner recovers the witnesses by" (cons "inverting the rendering of loops, which reads the holder bound to the state," (cons "the destructuring that begins the loop body, the renamed parameters, and the" (cons "`Ok` and `Err` wraps of the tails, and then requires the library's form of the" (cons "recovered body, transliterated, to be exactly the crate's function: a loop that" (cons "is not in the image of the rendering is refused with *Certificate B rejected*" (cons "(`LLV7015`) and the reason, not aligned by guess. Two things of the recursive" (cons "body leave no trace in the loop form and are chosen: a kept parameter is read" (cons "by `Clone`, which the library accepts as it accepts every read, and the" (cons "argument of a dropped parameter is recovered only when it is a temporary the" (cons "block binds." (nil String)))))))))))))))))))))))))))
+      (cons "**Certificate A as data.** Certificate A is kernel-term data as well. The" (cons "compiler builds it as a native core module of schema `lexlean/core-module/2`" (cons "from the lowered program, the layout, the semantic source of the root's" (cons "closure, and the recorded types of the library's lemmas; no Lean text template" (cons "for it remains in the compiler. Its rows are the program literal `__prog`, the" (cons "encoders, a width predicate `__fits_k` and a relation theorem `__rel_k` for each" (cons "function of the closure, the boundary validators and the entry when the root has" (cons "them, then `denote` and `root`. A relation theorem is derived node by node" (cons "alongside the lowering of the function: a library lemma is applied at the" (cons "operator, operand expressions, and evaluation environment its node has in the" (cons "program, and what the lemma's type leaves implicit is stated, either from the" (cons "program or from the types of the arguments. A definition's denotation appears in" (cons "the statements as the definition itself, so its body is never unfolded to" (cons "compare it. A recursive definition's predicate and theorem are written with the" (cons "eliminator its recursion has: the recursor of the argument's type for structural" (cons "recursion (a mutual group on one type packing its members as a product, a group" (cons "with nested containers by the recursor of the first type and `rec_j` for the" (cons "`j`-th container), and `WellFounded.fix` over the source's measure for" (cons "well-founded recursion, a recursive call being the induction hypothesis applied" (cons "to the packed arguments and the source's own decrease theorem, which quantifies" (cons "the arms enclosing the call, so every numbered `if` and `match` of such a body" (cons "is written by cases on its scrutinee with the equation the arm was taken by." (cons "The compiler's implementation record `f._unsafe_rec` of a recursive predicate," (cons "a partial definition beside the safe one, gives the code generator the direct" (cons "recursion it has no code for in a recursor; no theorem depends on it. The" (cons "records of one mutual group are pinned to the group's union, and the audit" (cons "checks that the union of the sets it prints for the group's members equals that" (cons "pin (`LLV7013`, naming the group), because what Lean prints of one member is not" (cons "a property of the member's term alone: it stores axiom data for a module's" (cons "constants by one shared traversal, in the order of a hash map keyed by names" (cons "that carry the identity, with a sentinel for a constant in progress, so a member" (cons "whose term refers to no other member, or only to a later one, printed `[]` on" (cons "one identity and `[propext]` on another with identical sources (the first" (cons "member of the bootstrap project's R6 group, `__fits_76`; and the core library's" (cons "`__fits_78`, which calls the later `__fits_111`, #227). Every other row is" (cons "checked row by row. A" (cons "definition that a model construct elaborates to pins no axiom: the construct's" (cons "declared set bounds it, and the audit finds none for a definition that proves" (cons "nothing. Each row pins its axioms exactly, the audit module prints and checks" (cons "them, and the record is the authoring notation at the module's path with the" (cons "extension `.lex.tex`, which reads back to the data byte for byte." (cons "`tests/preservation-certificates/A-STATEMENTS.md` records that the statement of" (cons "every theorem of every certificate A of the four corpora is, up to the kernel's" (cons "definitional equality, the statement the text certificate stated." (cons "`conformance_sp_15` builds every certificate A of the four corpora this way," (cons "reads each record back, verifies the production example under the pinned Lean," (cons "and plants a wrong lemma application, a changed statement, a forged program" (cons "literal, and an added axiom, each refused." (nil String)))))))))))))))))))))))))))))))))))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -3446,7 +3446,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "**No Lean text template in the production compiler.** The staged audit module" (cons "is an auxiliary module of typed commands (`#print axioms`, `#print \"marker\"`," (cons "`#print name`, `#check @name`) that the Lean backend renders. It is rendered" (cons "without the `module` header, because Lean refuses a `module` that imports a" (cons "file that is not one and the certificates it imports are rendered outside the" (cons "module system via `lean_text_legacy` (scoped in `namespace <module>` without a" (cons "`module` header so each certificate's inline decoder stays local and can be" (cons "imported by certificate E and the audit module). No other string literal under `crates/lexlean/src/production/`," (cons "and none in the probe and audit module part of `backend/lean.rs` beyond the" (cons "renderer of those commands and the quote of a name, is Lean syntax: a" (cons "lexer-level scan of the sources, which drops test code and reads every string" (cons "literal, finds none outside a short allow-list of the printouts of kernel terms" (cons "that developers read (`conformance_sp_17`; the definition of Lean syntax and" (cons "the planted templates it reports are in VERIFICATION.md)." (nil String)))))))))))))))
+      (cons "**Certificate B as data.** Certificate B is kernel-term data too. The compiler" (cons "builds each as a native core module of schema `lexlean/core-module/2`" (cons "(`production::certificate::data_b`): the rows `program` (the target program," (cons "built by the same builder as certificate A's `__prog`), `krate` (the crate as a" (cons "`RustSyntax` term, constructor for constructor), `flags`, one theorem `fun<n>`" (cons "per function, `crate_ok`, and `root`. The derivation of a function is the" (cons "`Corr` rule applications the aligner finds, each a library constructor applied" (cons "to every argument it has: the program, crate, and flags; the scope and the" (cons "judgment the rule concludes, which the aligner states; the arguments the rule" (cons "leaves to its premises, which it hands the premise's type; and the few values" (cons "the text left to the elaborator's unification, which it holds from the" (cons "constructs it relates (the function literal a call or closure names, the part" (cons "a field read binds, the slot a `let` binds). A side condition is `Eq.refl` at" (cons "the equation the rule states, which the kernel decides by evaluation. `fun<n>`" (cons "is `FunOK` written out: the witnesses of its existentials (the function, the" (cons "parameters, result, body, and scope of the Rust item) and the derivation; for a" (cons "function with a parameter no value inhabits, the membership of that parameter's" (cons "type in the function's types. `crate_ok` is the case analysis on the function" (cons "index, one `Nat.casesOn` per function handing it its theorem, and an index past" (cons "the last refuted by the lookup the kernel evaluates; `root` is the library's" (cons "`simulate` applied to it. The library did not grow: every implicit argument of" (cons "the 49 rules is stated by the judgment or held by the aligner. Each row pins" (cons "its axioms exactly, the audit module prints and checks them, and the record is" (cons "the authoring notation at the module's path with the extension `.lex.tex`," (cons "which reads back to the data byte for byte." (cons "`tests/preservation-certificates/B-STATEMENTS.md` records that the statement of" (cons "every row of every certificate B of the four corpora is, up to the kernel's" (cons "definitional equality, the statement the text certificate stated." (cons "`conformance_sp_16` builds every certificate B of the four corpora this way," (cons "reads each record back, verifies the production example under the pinned Lean," (cons "and plants a wrong lemma application, a changed statement, a forged program" (cons "literal, an added axiom, and a row whose policy lies, each refused." (nil String)))))))))))))))))))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -3460,7 +3460,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "**Evidence.** The conformance suite certifies every production root of" (cons "`examples/production`, `examples/production-coverage`, `examples/models`, and" (cons "`examples/reasoning`, and verification checks every example's certificates as part of its" (cons "published set. Together these roots exercise every runtime row of the" (cons "production registry (§17.13), a type parameter through an instance of a" (cons "generic definition: arithmetic at every width, text and bytes, documents," (cons "records, instances, generic and nested inductive types, higher-order" (cons "functions with captures, structural, mutual, and well-founded recursion," (cons "every collection template, every key order, the model constructs, and a" (cons "recursive tree (`Grove`) whose nodes carry a set, a list of children, a map," (cons "an option of a child, and a list of pairs of a number and a child, whose" (cons "leaves carry a map and whose third constructor holds a result of a child or a" (cons "number, and whose boundary validators are one mutual group." (nil String))))))))))))))
+      (cons "**A function rendered as a loop** (`SP-20`). The renderer writes a function whose" (cons "self calls are all tail calls as a loop (§17.16), so the crate no longer holds" (cons "the recursive body that the calculus function corresponds to. `FunOK` is" (cons "therefore the disjunction of two statements: `FunOK0`, the one above, and" (cons "`FunLoop`, that the crate's body is the loop form `loopOf` of an ordinary" (cons "recursive body, with the Boolean checks of `loopCheckOf` (the renamed" (cons "parameters and the kept ones are distinct, the originals of the changed" (cons "parameters are none of the kept ones, the kept ones are locals, and the loop" (cons "body mentions no renamed parameter) closed by evaluation, together with the" (cons "`Corr` derivation for that recursive body. The recursive body, how each" (cons "parameter is carried (changed, kept, or dropped), the state and result types," (cons "and the numbers of the holder and of the renamed parameters are the witnesses" (cons "of `FunLoop`. `funSem_loop` proves the simulation of such a function from the" (cons "simulation of the recursive body, the iteration of the loop on the iteration" (cons "of the calls, and `funSem_of` takes the second disjunct to it; `Corr`, its" (cons "recursor, and `sound` are untouched. The aligner recovers the witnesses by" (cons "inverting the rendering of loops, which reads the holder bound to the state," (cons "the destructuring that begins the loop body, the renamed parameters, and the" (cons "`Ok` and `Err` wraps of the tails, and then requires the library's form of the" (cons "recovered body, transliterated, to be exactly the crate's function: a loop that" (cons "is not in the image of the rendering is refused with *Certificate B rejected*" (cons "(`LLV7015`) and the reason, not aligned by guess. Two things of the recursive" (cons "body leave no trace in the loop form and are chosen: a kept parameter is read" (cons "by `Clone`, which the library accepts as it accepts every read, and the" (cons "argument of a dropped parameter is recovered only when it is a temporary the" (cons "block binds." (nil String)))))))))))))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -3474,7 +3474,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "Mutations. It plants defects after lowering, while the proof is still" (cons "derived from the source, in the lowered program: branches swapped, an" (cons "addition that subtracts, a checked operation bounded as another, a wrong" (cons "constructor, a slice's bounds exchanged, a wrong callee, a wrong literal; and" (cons "in the boundary, an entry that omits the check of a validated parameter, a" (cons "validator that omits the check of a component of its type, and a validator" (cons "that admits an equal key. Each of the first seven is planted at the first, a" (cons "middle, and the last place it applies in the roots of the coverage example," (cons "and each of the three of the boundary at every place it applies, so that every" (cons "validated parameter and every component check is planted in turn. Lean must" (cons "reject each, and the first error must lie in the relation of the function the" (cons "mutation changed (`__rel_k` for a definition, instance, or lambda `k`," (cons "`__vrel_k` for a validator, `entry` for the entry; for a member of a library" (cons "template, whose relation the certificate states where it is instantiated, the" (cons "relation of a caller). It plants defects after rendering, in each crate," (cons "while the program is unchanged: the same kinds, and an entry that omits the" (cons "check of a validated parameter, at the first, a middle, and the last place" (cons "each applies across the renderings of the renderer fixtures and of the entries" (cons "of the coverage roots (every validated parameter for the last); the aligner" (cons "must refuse the crate naming the mutated function, or Lean's first error on" (cons "the realigned derivation and on the unmutated derivation restated over the" (cons "mutated crate must lie in the derivation `fun<k>` of that function; the" (cons "width change is also refused by the renderer's correspondence check (§17.16)." (cons "A defect in A or B leaves certificate E unbuildable, since it imports both; it" (cons "also plants, in certificate E's own statement, at every place, the other" (cons "result shape of each `RealizesFn` and another function for each `fnIdent`," (cons "and Lean's first error must lie in the composition `root`. A lowering that does" (cons "not validate a parameter, or lowers a validator that checks nothing, is" (cons "planted in the lowered program and the certificate generator must refuse it" (cons "(**Boundary**); a call of a validator from the root, a validator that reaches" (cons "the program, and validators with no entry are each refused by the boundary" (cons "audit." (nil String)))))))))))))))))))))))))))))))))
+      (cons "**No Lean text template in the production compiler.** The staged audit module" (cons "is an auxiliary module of typed commands (`#print axioms`, `#print \"marker\"`," (cons "`#print name`, `#check @name`) that the Lean backend renders. It is rendered" (cons "without the `module` header, because Lean refuses a `module` that imports a" (cons "file that is not one and the certificates it imports are rendered outside the" (cons "module system via `lean_text_legacy` (scoped in `namespace <module>` without a" (cons "`module` header so each certificate's inline decoder stays local and can be" (cons "imported by certificate E and the audit module). No other string literal under `crates/lexlean/src/production/`," (cons "and none in the probe and audit module part of `backend/lean.rs` beyond the" (cons "renderer of those commands and the quote of a name, is Lean syntax: a" (cons "lexer-level scan of the sources, which drops test code and reads every string" (cons "literal, finds none outside a short allow-list of the printouts of kernel terms" (cons "that developers read (`conformance_sp_17`; the definition of Lean syntax and" (cons "the planted templates it reports are in VERIFICATION.md)." (nil String)))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -3488,7 +3488,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "Differentials. On seeded inputs to every root, on inputs with larger numbers" (cons "and longer sequences, on inputs at the top and the bottom of every scalar type" (cons "and with each parameter in turn at the top, on a search over inputs whose" (cons "scalars are each small or at a bound, and, through its entry, on valid inputs" (cons "and on inputs that break the invariant of each validated parameter in turn," (cons "the calculus interpreter's outcome must equal the certificate's `denote` or" (cons "`denoteEntry` evaluated by Lean and the declared machine's outcome on the" (cons "root's crate. Every root whose closure declares an overflow is run on an input" (cons "on which it overflows, so the overflow arm of each statement is exercised on" (cons "the interpreter, Lean, the machine, and rustc, except the roots below, whose" (cons "declared overflow no input reaches (the registry's effect rows" (cons "over-approximate). Of the 59 certified roots of the four examples, 44" (cons "declare an overflow, 19 of them reach it, and the other 25 rest on the" (cons "kernel proof alone for the overflow arm of E, B, and the machine, because" (cons "either the operands that can overflow do not depend on the root's parameters," (cons "or the overflow is a sequence, text, or collection of 2^64 elements, which no" (cons "test can build, or, for the model roots, no input found overflows their" (cons "arithmetic over the decoded weights, or, for four of the reasoning roots," (cons "no input found overflows the arithmetic of their rule guards and conclusions. The list is checked against the suite" (cons "both ways: a root on it that overflows, or a root off it that does not, fails" (cons "`conformance_sp_03`." (nil String))))))))))))))))))))))
+      (cons "**Evidence.** The conformance suite certifies every production root of" (cons "`examples/production`, `examples/production-coverage`, `examples/models`, and" (cons "`examples/reasoning`, and verification checks every example's certificates as part of its" (cons "published set. Together these roots exercise every runtime row of the" (cons "production registry (§17.13), a type parameter through an instance of a" (cons "generic definition: arithmetic at every width, text and bytes, documents," (cons "records, instances, generic and nested inductive types, higher-order" (cons "functions with captures, structural, mutual, and well-founded recursion," (cons "every collection template, every key order, the model constructs, and a" (cons "recursive tree (`Grove`) whose nodes carry a set, a list of children, a map," (cons "an option of a child, and a list of pairs of a number and a child, whose" (cons "leaves carry a map and whose third constructor holds a result of a child or a" (cons "number, and whose boundary validators are one mutual group." (nil String))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -3498,6 +3498,34 @@ definition{
 
 definition{
   name: i0255,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Mutations. It plants defects after lowering, while the proof is still" (cons "derived from the source, in the lowered program: branches swapped, an" (cons "addition that subtracts, a checked operation bounded as another, a wrong" (cons "constructor, a slice's bounds exchanged, a wrong callee, a wrong literal; and" (cons "in the boundary, an entry that omits the check of a validated parameter, a" (cons "validator that omits the check of a component of its type, and a validator" (cons "that admits an equal key. Each of the first seven is planted at the first, a" (cons "middle, and the last place it applies in the roots of the coverage example," (cons "and each of the three of the boundary at every place it applies, so that every" (cons "validated parameter and every component check is planted in turn. Lean must" (cons "reject each, and the first error must lie in the relation of the function the" (cons "mutation changed (`__rel_k` for a definition, instance, or lambda `k`," (cons "`__vrel_k` for a validator, `entry` for the entry; for a member of a library" (cons "template, whose relation the certificate states where it is instantiated, the" (cons "relation of a caller). It plants defects after rendering, in each crate," (cons "while the program is unchanged: the same kinds, and an entry that omits the" (cons "check of a validated parameter, at the first, a middle, and the last place" (cons "each applies across the renderings of the renderer fixtures and of the entries" (cons "of the coverage roots (every validated parameter for the last); the aligner" (cons "must refuse the crate naming the mutated function, or Lean's first error on" (cons "the realigned derivation and on the unmutated derivation restated over the" (cons "mutated crate must lie in the derivation `fun<k>` of that function; the" (cons "width change is also refused by the renderer's correspondence check (§17.16)." (cons "A defect in A or B leaves certificate E unbuildable, since it imports both; it" (cons "also plants, in certificate E's own statement, at every place, the other" (cons "result shape of each `RealizesFn` and another function for each `fnIdent`," (cons "and Lean's first error must lie in the composition `root`. A lowering that does" (cons "not validate a parameter, or lowers a validator that checks nothing, is" (cons "planted in the lowered program and the certificate generator must refuse it" (cons "(**Boundary**); a call of a validator from the root, a validator that reaches" (cons "the program, and validators with no entry are each refused by the boundary" (cons "audit." (nil String)))))))))))))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0256,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Differentials. On seeded inputs to every root, on inputs with larger numbers" (cons "and longer sequences, on inputs at the top and the bottom of every scalar type" (cons "and with each parameter in turn at the top, on a search over inputs whose" (cons "scalars are each small or at a bound, and, through its entry, on valid inputs" (cons "and on inputs that break the invariant of each validated parameter in turn," (cons "the calculus interpreter's outcome must equal the certificate's `denote` or" (cons "`denoteEntry` evaluated by Lean and the declared machine's outcome on the" (cons "root's crate. Every root whose closure declares an overflow is run on an input" (cons "on which it overflows, so the overflow arm of each statement is exercised on" (cons "the interpreter, Lean, the machine, and rustc, except the roots below, whose" (cons "declared overflow no input reaches (the registry's effect rows" (cons "over-approximate). Of the 59 certified roots of the four examples, 44" (cons "declare an overflow, 19 of them reach it, and the other 25 rest on the" (cons "kernel proof alone for the overflow arm of E, B, and the machine, because" (cons "either the operands that can overflow do not depend on the root's parameters," (cons "or the overflow is a sequence, text, or collection of 2^64 elements, which no" (cons "test can build, or, for the model roots, no input found overflows their" (cons "arithmetic over the decoded weights, or, for four of the reasoning roots," (cons "no input found overflows the arithmetic of their rule guards and conclusions. The list is checked against the suite" (cons "both ways: a root on it that overflows, or a root off it that does not, fails" (cons "`conformance_sp_03`." (nil String))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0257,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3512,7 +3540,7 @@ definition{
 }
 
 definition{
-  name: i0256,
+  name: i0258,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3526,7 +3554,7 @@ definition{
 }
 
 definition{
-  name: i0257,
+  name: i0259,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3538,7 +3566,7 @@ definition{
 }
 
 definition{
-  name: i0258,
+  name: i0260,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3552,7 +3580,7 @@ definition{
 }
 
 definition{
-  name: i0259,
+  name: i0261,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3566,7 +3594,7 @@ definition{
 }
 
 definition{
-  name: i0260,
+  name: i0262,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3580,7 +3608,7 @@ definition{
 }
 
 definition{
-  name: i0261,
+  name: i0263,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3594,7 +3622,7 @@ definition{
 }
 
 definition{
-  name: i0262,
+  name: i0264,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3608,7 +3636,7 @@ definition{
 }
 
 definition{
-  name: i0263,
+  name: i0265,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3622,7 +3650,7 @@ definition{
 }
 
 definition{
-  name: i0264,
+  name: i0266,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3636,7 +3664,7 @@ definition{
 }
 
 definition{
-  name: i0265,
+  name: i0267,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3650,7 +3678,7 @@ definition{
 }
 
 definition{
-  name: i0266,
+  name: i0268,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3664,7 +3692,7 @@ definition{
 }
 
 definition{
-  name: i0267,
+  name: i0269,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3678,7 +3706,7 @@ definition{
 }
 
 definition{
-  name: i0268,
+  name: i0270,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3692,7 +3720,7 @@ definition{
 }
 
 definition{
-  name: i0269,
+  name: i0271,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3706,7 +3734,7 @@ definition{
 }
 
 definition{
-  name: i0270,
+  name: i0272,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3720,7 +3748,7 @@ definition{
 }
 
 definition{
-  name: i0271,
+  name: i0273,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3734,7 +3762,7 @@ definition{
 }
 
 definition{
-  name: i0272,
+  name: i0274,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3748,7 +3776,7 @@ definition{
 }
 
 definition{
-  name: i0273,
+  name: i0275,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3762,7 +3790,7 @@ definition{
 }
 
 definition{
-  name: i0274,
+  name: i0276,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3776,7 +3804,7 @@ definition{
 }
 
 definition{
-  name: i0275,
+  name: i0277,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3788,7 +3816,7 @@ definition{
 }
 
 definition{
-  name: i0276,
+  name: i0278,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3802,7 +3830,7 @@ definition{
 }
 
 definition{
-  name: i0277,
+  name: i0279,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3816,7 +3844,7 @@ definition{
 }
 
 definition{
-  name: i0278,
+  name: i0280,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3830,7 +3858,7 @@ definition{
 }
 
 definition{
-  name: i0279,
+  name: i0281,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3844,7 +3872,7 @@ definition{
 }
 
 definition{
-  name: i0280,
+  name: i0282,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3858,7 +3886,7 @@ definition{
 }
 
 definition{
-  name: i0281,
+  name: i0283,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3872,7 +3900,7 @@ definition{
 }
 
 definition{
-  name: i0282,
+  name: i0284,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3886,7 +3914,7 @@ definition{
 }
 
 definition{
-  name: i0283,
+  name: i0285,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3900,7 +3928,7 @@ definition{
 }
 
 definition{
-  name: i0284,
+  name: i0286,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3914,7 +3942,7 @@ definition{
 }
 
 definition{
-  name: i0285,
+  name: i0287,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3928,7 +3956,7 @@ definition{
 }
 
 definition{
-  name: i0286,
+  name: i0288,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3942,7 +3970,7 @@ definition{
 }
 
 definition{
-  name: i0287,
+  name: i0289,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3956,7 +3984,7 @@ definition{
 }
 
 definition{
-  name: i0288,
+  name: i0290,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3970,7 +3998,7 @@ definition{
 }
 
 definition{
-  name: i0289,
+  name: i0291,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3984,7 +4012,7 @@ definition{
 }
 
 definition{
-  name: i0290,
+  name: i0292,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -3998,7 +4026,7 @@ definition{
 }
 
 definition{
-  name: i0291,
+  name: i0293,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4012,7 +4040,7 @@ definition{
 }
 
 definition{
-  name: i0292,
+  name: i0294,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4026,7 +4054,7 @@ definition{
 }
 
 definition{
-  name: i0293,
+  name: i0295,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4040,7 +4068,7 @@ definition{
 }
 
 definition{
-  name: i0294,
+  name: i0296,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4054,7 +4082,7 @@ definition{
 }
 
 definition{
-  name: i0295,
+  name: i0297,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4066,7 +4094,7 @@ definition{
 }
 
 definition{
-  name: i0296,
+  name: i0298,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4080,7 +4108,7 @@ definition{
 }
 
 definition{
-  name: i0297,
+  name: i0299,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4094,7 +4122,7 @@ definition{
 }
 
 definition{
-  name: i0298,
+  name: i0300,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4108,7 +4136,7 @@ definition{
 }
 
 definition{
-  name: i0299,
+  name: i0301,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4122,7 +4150,7 @@ definition{
 }
 
 definition{
-  name: i0300,
+  name: i0302,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4136,7 +4164,7 @@ definition{
 }
 
 definition{
-  name: i0301,
+  name: i0303,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4150,7 +4178,7 @@ definition{
 }
 
 definition{
-  name: i0302,
+  name: i0304,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4164,7 +4192,7 @@ definition{
 }
 
 definition{
-  name: i0303,
+  name: i0305,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4178,7 +4206,7 @@ definition{
 }
 
 definition{
-  name: i0304,
+  name: i0306,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4192,7 +4220,7 @@ definition{
 }
 
 definition{
-  name: i0305,
+  name: i0307,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4206,7 +4234,7 @@ definition{
 }
 
 definition{
-  name: i0306,
+  name: i0308,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4220,7 +4248,7 @@ definition{
 }
 
 definition{
-  name: i0307,
+  name: i0309,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4234,7 +4262,7 @@ definition{
 }
 
 definition{
-  name: i0308,
+  name: i0310,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4248,7 +4276,7 @@ definition{
 }
 
 definition{
-  name: i0309,
+  name: i0311,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4262,7 +4290,7 @@ definition{
 }
 
 definition{
-  name: i0310,
+  name: i0312,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4274,7 +4302,7 @@ definition{
 }
 
 definition{
-  name: i0311,
+  name: i0313,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4288,7 +4316,7 @@ definition{
 }
 
 definition{
-  name: i0312,
+  name: i0314,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4300,7 +4328,7 @@ definition{
 }
 
 definition{
-  name: i0313,
+  name: i0315,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4314,7 +4342,7 @@ definition{
 }
 
 definition{
-  name: i0314,
+  name: i0316,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4328,7 +4356,7 @@ definition{
 }
 
 definition{
-  name: i0315,
+  name: i0317,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4340,7 +4368,7 @@ definition{
 }
 
 definition{
-  name: i0316,
+  name: i0318,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4354,7 +4382,7 @@ definition{
 }
 
 definition{
-  name: i0317,
+  name: i0319,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4369,7 +4397,7 @@ definition{
 }
 
 definition{
-  name: i0318,
+  name: i0320,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4383,7 +4411,7 @@ definition{
 }
 
 definition{
-  name: i0319,
+  name: i0321,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4395,7 +4423,7 @@ definition{
 }
 
 definition{
-  name: i0320,
+  name: i0322,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4409,7 +4437,7 @@ definition{
 }
 
 definition{
-  name: i0321,
+  name: i0323,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4424,7 +4452,7 @@ definition{
 }
 
 definition{
-  name: i0322,
+  name: i0324,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4438,7 +4466,7 @@ definition{
 }
 
 definition{
-  name: i0323,
+  name: i0325,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4450,7 +4478,7 @@ definition{
 }
 
 definition{
-  name: i0324,
+  name: i0326,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4464,7 +4492,7 @@ definition{
 }
 
 definition{
-  name: i0325,
+  name: i0327,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4478,7 +4506,7 @@ definition{
 }
 
 definition{
-  name: i0326,
+  name: i0328,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4490,7 +4518,7 @@ definition{
 }
 
 definition{
-  name: i0327,
+  name: i0329,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4504,7 +4532,7 @@ definition{
 }
 
 definition{
-  name: i0328,
+  name: i0330,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4518,7 +4546,7 @@ definition{
 }
 
 definition{
-  name: i0329,
+  name: i0331,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4532,7 +4560,7 @@ definition{
 }
 
 definition{
-  name: i0330,
+  name: i0332,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4546,7 +4574,7 @@ definition{
 }
 
 definition{
-  name: i0331,
+  name: i0333,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4560,7 +4588,7 @@ definition{
 }
 
 definition{
-  name: i0332,
+  name: i0334,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4572,7 +4600,7 @@ definition{
 }
 
 definition{
-  name: i0333,
+  name: i0335,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4586,7 +4614,7 @@ definition{
 }
 
 definition{
-  name: i0334,
+  name: i0336,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4600,7 +4628,7 @@ definition{
 }
 
 definition{
-  name: i0335,
+  name: i0337,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4612,7 +4640,7 @@ definition{
 }
 
 definition{
-  name: i0336,
+  name: i0338,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4626,7 +4654,7 @@ definition{
 }
 
 definition{
-  name: i0337,
+  name: i0339,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4640,7 +4668,7 @@ definition{
 }
 
 definition{
-  name: i0338,
+  name: i0340,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4652,7 +4680,7 @@ definition{
 }
 
 definition{
-  name: i0339,
+  name: i0341,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4666,7 +4694,7 @@ definition{
 }
 
 definition{
-  name: i0340,
+  name: i0342,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4678,7 +4706,7 @@ definition{
 }
 
 definition{
-  name: i0341,
+  name: i0343,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4692,7 +4720,7 @@ definition{
 }
 
 definition{
-  name: i0342,
+  name: i0344,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4706,7 +4734,7 @@ definition{
 }
 
 definition{
-  name: i0343,
+  name: i0345,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4721,7 +4749,7 @@ definition{
 }
 
 definition{
-  name: i0344,
+  name: i0346,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4735,7 +4763,7 @@ definition{
 }
 
 definition{
-  name: i0345,
+  name: i0347,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4749,7 +4777,7 @@ definition{
 }
 
 definition{
-  name: i0346,
+  name: i0348,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4763,7 +4791,7 @@ definition{
 }
 
 definition{
-  name: i0347,
+  name: i0349,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4777,7 +4805,7 @@ definition{
 }
 
 definition{
-  name: i0348,
+  name: i0350,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4791,7 +4819,7 @@ definition{
 }
 
 definition{
-  name: i0349,
+  name: i0351,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4803,7 +4831,7 @@ definition{
 }
 
 definition{
-  name: i0350,
+  name: i0352,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4817,7 +4845,7 @@ definition{
 }
 
 definition{
-  name: i0351,
+  name: i0353,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4831,7 +4859,7 @@ definition{
 }
 
 definition{
-  name: i0352,
+  name: i0354,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4845,7 +4873,7 @@ definition{
 }
 
 definition{
-  name: i0353,
+  name: i0355,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4859,7 +4887,7 @@ definition{
 }
 
 definition{
-  name: i0354,
+  name: i0356,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4873,7 +4901,7 @@ definition{
 }
 
 definition{
-  name: i0355,
+  name: i0357,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4887,7 +4915,7 @@ definition{
 }
 
 definition{
-  name: i0356,
+  name: i0358,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4901,7 +4929,7 @@ definition{
 }
 
 definition{
-  name: i0357,
+  name: i0359,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4913,7 +4941,7 @@ definition{
 }
 
 definition{
-  name: i0358,
+  name: i0360,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4927,7 +4955,7 @@ definition{
 }
 
 definition{
-  name: i0359,
+  name: i0361,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4941,7 +4969,7 @@ definition{
 }
 
 definition{
-  name: i0360,
+  name: i0362,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4955,7 +4983,7 @@ definition{
 }
 
 definition{
-  name: i0361,
+  name: i0363,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4969,7 +4997,7 @@ definition{
 }
 
 definition{
-  name: i0362,
+  name: i0364,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4983,7 +5011,7 @@ definition{
 }
 
 definition{
-  name: i0363,
+  name: i0365,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4997,7 +5025,7 @@ definition{
 }
 
 definition{
-  name: i0364,
+  name: i0366,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5011,7 +5039,7 @@ definition{
 }
 
 definition{
-  name: i0365,
+  name: i0367,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5025,7 +5053,7 @@ definition{
 }
 
 definition{
-  name: i0366,
+  name: i0368,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5037,7 +5065,7 @@ definition{
 }
 
 definition{
-  name: i0367,
+  name: i0369,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5051,7 +5079,7 @@ definition{
 }
 
 definition{
-  name: i0368,
+  name: i0370,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5065,7 +5093,7 @@ definition{
 }
 
 definition{
-  name: i0369,
+  name: i0371,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5079,7 +5107,7 @@ definition{
 }
 
 definition{
-  name: i0370,
+  name: i0372,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5093,7 +5121,7 @@ definition{
 }
 
 definition{
-  name: i0371,
+  name: i0373,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5107,7 +5135,7 @@ definition{
 }
 
 definition{
-  name: i0372,
+  name: i0374,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5121,7 +5149,7 @@ definition{
 }
 
 definition{
-  name: i0373,
+  name: i0375,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5135,7 +5163,7 @@ definition{
 }
 
 definition{
-  name: i0374,
+  name: i0376,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5149,7 +5177,7 @@ definition{
 }
 
 definition{
-  name: i0375,
+  name: i0377,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5163,7 +5191,7 @@ definition{
 }
 
 definition{
-  name: i0376,
+  name: i0378,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5177,7 +5205,7 @@ definition{
 }
 
 definition{
-  name: i0377,
+  name: i0379,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5191,7 +5219,7 @@ definition{
 }
 
 definition{
-  name: i0378,
+  name: i0380,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5205,7 +5233,7 @@ definition{
 }
 
 definition{
-  name: i0379,
+  name: i0381,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5219,7 +5247,7 @@ definition{
 }
 
 definition{
-  name: i0380,
+  name: i0382,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5233,7 +5261,7 @@ definition{
 }
 
 definition{
-  name: i0381,
+  name: i0383,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5247,7 +5275,7 @@ definition{
 }
 
 definition{
-  name: i0382,
+  name: i0384,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5261,7 +5289,7 @@ definition{
 }
 
 definition{
-  name: i0383,
+  name: i0385,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5275,7 +5303,7 @@ definition{
 }
 
 definition{
-  name: i0384,
+  name: i0386,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5289,7 +5317,7 @@ definition{
 }
 
 definition{
-  name: i0385,
+  name: i0387,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5303,7 +5331,7 @@ definition{
 }
 
 definition{
-  name: i0386,
+  name: i0388,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5317,7 +5345,7 @@ definition{
 }
 
 definition{
-  name: i0387,
+  name: i0389,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5331,7 +5359,7 @@ definition{
 }
 
 definition{
-  name: i0388,
+  name: i0390,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5345,7 +5373,7 @@ definition{
 }
 
 definition{
-  name: i0389,
+  name: i0391,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5359,7 +5387,7 @@ definition{
 }
 
 definition{
-  name: i0390,
+  name: i0392,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5373,12 +5401,12 @@ definition{
 }
 
 definition{
-  name: i0391,
+  name: i0393,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "`BS-05` holds both roots to the oracle. The crates are those the renderer" (cons "lowers (`rust::lower`) from the 173 distinct programs among the 256 committed" (cons "package manifests of `compiler/rust` and `tests/production-export` and the 122" (cons "fixtures of `compiler/fixtures` (232 distinct crates over both profiles, with" (cons "the `elements` the renderer realizes), a rule corpus that reaches each of the" (cons "48 refusals a crate of the closed AST can reach three times (132 `validateCrate`" (cons "runs and 12 `correspondCrate` runs, asserted: the corpus fails if its draws run" (cons "out first), 17 crates by hand for the merge of moved sets at an `if` and a" (cons "`match`, 37 by hand for the loop rules, and 51 by hand for the machine callee and" (cons "the overflow value (a call of each of the 40 families of machine primitives with" (cons "one operand too many, three with the right count, a propagating call, the overflow" (cons "value alone, one in an `Err`, one function that takes the error type of the runtime, one that takes `i128`, and the failure of a runtime function: a fallible function whose tail is `Err::<T, Overflow>(Overflow)`, which both validators accept, and the same `Err` with another payload and with another error type, which both refuse), which reach the three refusals no mutant of a" (cons "committed crate reaches (an operand count, a stray overflow value, and the" (cons "construct `call:machine`, which no row of the table has); that is 469 runs of" (cons "`validateCrate` (212 refused) and 332 of `correspondCrate` (99 refused), and the case asserts" (cons "these counts. On every host, the rendered `rust-std` packages of both" (cons "roots (§17.16), compiled by the pinned rustc, are run on all of them. On the" (cons "normative host, the lowered programs of both roots are run under the calculus" (cons "evaluator (§17.14) on the crates of at most 400 expressions (201 of the 232;" (cons "the larger ones are the compiler's own packages and are held to the oracle by" (cons "the compiled run) with the rule corpus, and on 500 seeded mutants of the" (cons "crates of at most 80 expressions (a node replaced by another of the crate, a" (cons "name, type, pattern, constructor, callee, origin, or width changed, an item or" (cons "binding or arm dropped, doubled, or swapped, a call's propagation flipped, a" (cons "dispatch arm restated, a block run in a loop, the profile exchanged, and the" (cons "elements of the program changed); the rendered packages are also run on 2,000 further seeded mutants" (cons "per root. The outcome of a run is the result and, for a refusal, the message," (cons "and one difference fails the case. Twenty-one planted defects in the source (a heap" (cons "type admitted under `rust-core`, a name bound twice accepted, the moves of" (cons "earlier match arms forgotten, a component moved after its whole accepted, an" (cons "undeclared ADT type accepted, a `?` in an infallible function accepted, a" (cons "fallible call without propagation accepted, an `apply` arm's failure not" (cons "compared with its function's, a correspondence row narrowed, the width of a" (cons "runtime call not compared, a name or a component moved in a loop body accepted," (cons "the end of a fallible loop not checked, a loop's state not moved into the loop," (cons "the name a loop's refusal reports not the least, a loop body checked as a" (cons "tail, the end of a fallible loop not checked as its function's tail, the" (cons "operands of a machine call not counted, a stray overflow value accepted, the" (cons "overflow value in an `Err` refused, and a machine call not an instance of the" (cons "correspondence) are each detected by the same differential, and" (cons "under the pinned Lean the production export (§24.7) certifies both roots beside" (cons "the others, whose packages are the committed ones under" (cons "`tests/production-export/bootstrap/`." (nil String))))))))))))))))))))))))))))))))))))))))))))
+      (cons "`BS-05` holds both roots to the oracle. The crates are those the renderer" (cons "lowers (`rust::lower`) from the 173 distinct programs among the 256 committed" (cons "package manifests of `compiler/rust` and `tests/production-export` and the 122" (cons "fixtures of `compiler/fixtures` (232 distinct crates over both profiles, with" (cons "the `elements` the renderer realizes), a rule corpus that reaches each of the" (cons "48 refusals a crate of the closed AST can reach three times (132 `validateCrate`" (cons "runs and 12 `correspondCrate` runs, asserted: the corpus fails if its draws run" (cons "out first), 17 crates by hand for the merge of moved sets at an `if` and a" (cons "`match`, 37 by hand for the loop rules, and 55 by hand for the machine callee and" (cons "the overflow value (a call of each of the 44 families of machine primitives with" (cons "one operand too many, three with the right count, a propagating call, the overflow" (cons "value alone, one in an `Err`, one function that takes the error type of the runtime, one that takes `i128`, and the failure of a runtime function: a fallible function whose tail is `Err::<T, Overflow>(Overflow)`, which both validators accept, and the same `Err` with another payload and with another error type, which both refuse), which reach the three refusals no mutant of a" (cons "committed crate reaches (an operand count, a stray overflow value, and the" (cons "construct `call:machine`, which no row of the table has); that is 473 runs of" (cons "`validateCrate` (216 refused) and 336 of `correspondCrate` (103 refused), and the case asserts" (cons "these counts. On every host, the rendered `rust-std` packages of both" (cons "roots (§17.16), compiled by the pinned rustc, are run on all of them. On the" (cons "normative host, the lowered programs of both roots are run under the calculus" (cons "evaluator (§17.14) on the crates of at most 400 expressions (201 of the 232;" (cons "the larger ones are the compiler's own packages and are held to the oracle by" (cons "the compiled run) with the rule corpus, and on 500 seeded mutants of the" (cons "crates of at most 80 expressions (a node replaced by another of the crate, a" (cons "name, type, pattern, constructor, callee, origin, or width changed, an item or" (cons "binding or arm dropped, doubled, or swapped, a call's propagation flipped, a" (cons "dispatch arm restated, a block run in a loop, the profile exchanged, and the" (cons "elements of the program changed); the rendered packages are also run on 2,000 further seeded mutants" (cons "per root. The outcome of a run is the result and, for a refusal, the message," (cons "and one difference fails the case. Twenty-one planted defects in the source (a heap" (cons "type admitted under `rust-core`, a name bound twice accepted, the moves of" (cons "earlier match arms forgotten, a component moved after its whole accepted, an" (cons "undeclared ADT type accepted, a `?` in an infallible function accepted, a" (cons "fallible call without propagation accepted, an `apply` arm's failure not" (cons "compared with its function's, a correspondence row narrowed, the width of a" (cons "runtime call not compared, a name or a component moved in a loop body accepted," (cons "the end of a fallible loop not checked, a loop's state not moved into the loop," (cons "the name a loop's refusal reports not the least, a loop body checked as a" (cons "tail, the end of a fallible loop not checked as its function's tail, the" (cons "operands of a machine call not counted, a stray overflow value accepted, the" (cons "overflow value in an `Err` refused, and a machine call not an instance of the" (cons "correspondence) are each detected by the same differential, and" (cons "under the pinned Lean the production export (§24.7) certifies both roots beside" (cons "the others, whose packages are the committed ones under" (cons "`tests/production-export/bootstrap/`." (nil String))))))))))))))))))))))))))))))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -5387,7 +5415,7 @@ definition{
 }
 
 definition{
-  name: i0392,
+  name: i0394,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5401,7 +5429,7 @@ definition{
 }
 
 definition{
-  name: i0393,
+  name: i0395,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5415,7 +5443,7 @@ definition{
 }
 
 definition{
-  name: i0394,
+  name: i0396,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5429,12 +5457,12 @@ definition{
 }
 
 definition{
-  name: i0395,
+  name: i0397,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "`BS-06` holds both roots to the oracle. The counts here are the case's own" (cons "report: it asserts them, so a tree that no longer gives them fails the case." (cons "The tree is the one with the packages of the two roots of this component and" (cons "of the three roots of `Buffer` (`SL-05`) committed, so the committed manifests" (cons "are 256; `BS-05` asserts the same corpus. On every host" (cons "the rendered packages, compiled by the pinned rustc, run 2,633 vectors: 622" (cons "of `printCrate` (464 the distinct crates the renderer lowers from the 173" (cons "distinct programs among the 256 committed manifests and 122 fixtures and the" (cons "crates of the 256 committed packages, the hand-built crates of every item and" (cons "profile, the real header of each profile, and 60 runs with a capacity one byte" (cons "short of the output) and 2,011 of `printExpr` (1,460 hand-built expressions of" (cons "every construct, literal, runtime row and machine primitive, and the function" (cons "bodies of the committed crates). The items of each of the 256 committed" (cons "libraries are the oracle's printed items; the header before them is the" (cons "runtime of the committed export, which the regeneration of the records moves" (cons "with the runtime. On the normative host the evaluator agrees on 557 and 2,011" (cons "of those vectors (the crates of at most 6,000 nodes of data) and on 400 and" (cons "399 seeded mutants of the crates of at most 80 expressions, the rendered" (cons "packages agree on 2,984 further mutants, thirteen planted defects in the source" (cons "are each detected, and the production export (§24.7) certifies both roots" (cons "beside the others under `tests/production-export/bootstrap/`." (nil String))))))))))))))))))))))
+      (cons "`BS-06` holds both roots to the oracle. The counts here are the case's own" (cons "report: it asserts them, so a tree that no longer gives them fails the case." (cons "The tree is the one with the packages of the two roots of this component and" (cons "of the three roots of `Buffer` (`SL-05`) committed, so the committed manifests" (cons "are 256; `BS-05` asserts the same corpus. On every host" (cons "the rendered packages, compiled by the pinned rustc, run 2,710 vectors: 627" (cons "of `printCrate` (464 the distinct crates the renderer lowers from the 173" (cons "distinct programs among the 256 committed manifests and 122 fixtures and the" (cons "crates of the 256 committed packages, the hand-built crates of every item and" (cons "profile, the real header of each profile, and 61 runs with a capacity one byte" (cons "short of the output) and 2,083 of `printExpr` (1,532 hand-built expressions of" (cons "every construct, literal, runtime row and machine primitive, and the function" (cons "bodies of the committed crates). The items of each of the 256 committed" (cons "libraries are the oracle's printed items; the header before them is the" (cons "runtime of the committed export, which the regeneration of the records moves" (cons "with the runtime. On the normative host the evaluator agrees on 562 and 2,083" (cons "of those vectors (the crates of at most 6,000 nodes of data) and on 400 and" (cons "399 seeded mutants of the crates of at most 80 expressions, the rendered" (cons "packages agree on 2,984 further mutants, thirteen planted defects in the source" (cons "are each detected, and the production export (§24.7) certifies both roots" (cons "beside the others under `tests/production-export/bootstrap/`." (nil String))))))))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -5443,12 +5471,12 @@ definition{
 }
 
 definition{
-  name: i0396,
+  name: i0398,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "`BS-09` holds `validateRuntime` of `RuntimeValidate` to `rust::rt_validate::validate`. The module is the" (cons "oracle's rule set, rule for rule, over the crate as module data: the sorts `Ty`, `Pat`, and `Expr` are" (cons "chains (a statement list, an argument list, and a list of arms are each a chain of the sort's own `Nil`" (cons "and `Cons`, and a `let` statement a `LetS` that binds for the rest), a record is the one constructor of" (cons "its structure, and the tables of types, calls, methods, type-argument methods, standard traits, and" (cons "integers are read from the oracle's source by the generator of the module, so the two cannot drift. The" (cons "constructors an encoder names are read by the case from the module's own text. The corpus is 701" (cons "crates: the committed `supportCrate` and `probeCrate` and each in the other profile, the 97 crates" (cons "that break one rule, or one site of a rule, each (the text plants of `RB-17` on the module, its nine plants on the decoded" (cons "crate, the sixteen of `RB-19` on the probe, and its 55 site plants, which are crates of names, derives, literals, heads," (cons "type scopes, and the five sites of `hidden-allocation`), and 600 seeded mutants of the two committed modules" (cons "(a string, a constructor of the same enum, a mutable flag, a visibility, or a type parameter replaced by another of the module's), 562 of the 701 refused, so that the" (cons "refusals are by each of the 40 rules the oracle names and by no other. The module carries what the five rules added by `RB-19`" (cons "(`identifier`, `derive`, `char-literal`, `struct-head`, `type-scope`) read: a literal its number of scalar values, a binary" (cons "operator its code, an item its derives. The outcome of a run is the" (cons "result and, for a refusal, the message, and one difference fails the case. On every host the rendered" (cons "`rust-std` package, compiled by the pinned rustc, is run on all of them; on the normative host the" (cons "calculus evaluator (§17.14) also runs on all 701 and eight planted defects in the source (a name" (cons "declared twice, a tuple of one, a `break` outside a loop, a private free function, a `std` use under" (cons "`rust-core`, an assignment to an immutable name, a match with no arm, and a heap type under" (cons "`rust-core`, each accepted) are each detected by the differential. Under the pinned Lean the production" (cons "export certifies the root beside the others and its package is the committed one." (nil String)))))))))))))))))))))))
+      (cons "`BS-09` holds `validateRuntime` of `RuntimeValidate` to `rust::rt_validate::validate`. The module is the" (cons "oracle's rule set, rule for rule, over the crate as module data: the sorts `Ty`, `Pat`, and `Expr` are" (cons "chains (a statement list, an argument list, and a list of arms are each a chain of the sort's own `Nil`" (cons "and `Cons`, and a `let` statement a `LetS` that binds for the rest), a record is the one constructor of" (cons "its structure, and the tables of types, calls, methods, type-argument methods, standard traits, and" (cons "integers are read from the oracle's source by the generator of the module, so the two cannot drift. The" (cons "constructors an encoder names are read by the case from the module's own text. The corpus is 703" (cons "crates: the committed `supportCrate` and `probeCrate` and each in the other profile, the 99 crates" (cons "that break one rule, or one site of a rule, each (the text plants of `RB-17` on the module, its nine plants on the decoded" (cons "crate, the eighteen of `RB-19` on the probe, and its 55 site plants, which are crates of names, derives, literals, heads," (cons "type scopes, and the five sites of `hidden-allocation`), and 600 seeded mutants of the two committed modules" (cons "(a string, a constructor of the same enum, a mutable flag, a visibility, or a type parameter replaced by another of the module's), 564 of the 703 refused, so that the" (cons "refusals are by each of the 40 rules the oracle names and by no other. The module carries what the five rules added by `RB-19`" (cons "(`identifier`, `derive`, `char-literal`, `struct-head`, `type-scope`) read: a literal its number of scalar values, a binary" (cons "operator its code, an item its derives. The outcome of a run is the" (cons "result and, for a refusal, the message, and one difference fails the case. On every host the rendered" (cons "`rust-std` package, compiled by the pinned rustc, is run on all of them; on the normative host the" (cons "calculus evaluator (§17.14) also runs on all 703 and eight planted defects in the source (a name" (cons "declared twice, a tuple of one, a `break` outside a loop, a private free function, a `std` use under" (cons "`rust-core`, an assignment to an immutable name, a match with no arm, and a heap type under" (cons "`rust-core`, each accepted) are each detected by the differential. Under the pinned Lean the production" (cons "export certifies the root beside the others and its package is the committed one." (nil String)))))))))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []

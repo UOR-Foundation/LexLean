@@ -749,6 +749,12 @@ fn published_build(
 /// §28.3: the published build tree of every example equals its committed
 /// oracle byte for byte; golden outputs change only through `--write`.
 fn check_golden(root: &Path, write: bool) -> Result<(), Fail> {
+    let transcript = repo_conformance::cases::check_runtime_transcript(root, write)?;
+    if write {
+        println!("check-golden: wrote the runtime transcript ({transcript} labels)");
+    } else {
+        println!("check-golden: the runtime transcript ({transcript} labels) equals the printed runtime's (R10)");
+    }
     for dir in example_dirs(root)? {
         let name = dir
             .file_name()

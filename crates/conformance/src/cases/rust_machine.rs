@@ -86,6 +86,13 @@ fn signature(machine: Machine) -> (Vec<Type>, Type) {
             Type::Option(Box::new(Type::List(Box::new(Type::Str)))),
         ),
         Machine::StringJoin => (vec![Type::List(Box::new(Type::Str)), Type::Str], Type::Str),
+        Machine::FormatDecimal(k) => (vec![fixed(k)], Type::Str),
+        Machine::ParseDecimal(k) => (vec![Type::Str], Type::Option(Box::new(fixed(k)))),
+        Machine::FormatDecimalInt => (vec![Type::Int], Type::Str),
+        Machine::ParseDecimalInt => (
+            vec![Type::Str],
+            Type::Option(Box::new(Type::Option(Box::new(Type::Int)))),
+        ),
         Machine::CheckedIntNeg => (vec![Type::Int], Type::Option(Box::new(Type::Int))),
         Machine::CheckedIntQuot => (
             vec![Type::Int, Type::Int, Type::Int],
@@ -233,6 +240,10 @@ pub fn run(id: &str) {
                     | Machine::BytesCompare
                     | Machine::StringSplit
                     | Machine::StringJoin
+                    | Machine::FormatDecimal(_)
+                    | Machine::ParseDecimal(_)
+                    | Machine::ParseDecimalInt
+                    | Machine::FormatDecimalInt
             )
         })
         .collect();
