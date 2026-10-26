@@ -1,5 +1,5 @@
 //! The compiler running the `Sha256` package reproduces it (SPEC.md §17.22,
-//! `SL-07`, #126 stage 2): the digests the committed exports record are the
+//! `SL-08`, #126 stage 2): the digests the committed exports record are the
 //! oracle's, the package's `lib.rs` holds none of them, and the standard
 //! library rebuilt by the compiler is the committed export, whose `sha256`
 //! `lib.rs` is the file the compiler links. The oracle may falsify and never
@@ -88,14 +88,14 @@ fn lib_holds_a_digest(lib: &str, provenance: &str) -> Option<String> {
         .find(|digest| lib.contains(digest.as_str()))
 }
 
-/// Run the case for `SL-07`.
+/// Run the case for `SL-08`.
 ///
 /// # Panics
 ///
 /// Panics when the case's assertion fails.
 #[allow(clippy::too_many_lines)]
 pub(super) fn run(id: &str) {
-    assert_eq!(id, "SL-07");
+    assert_eq!(id, "SL-08");
     let root = support::repo_root();
 
     // The digests every committed export records are the oracle's.
@@ -158,7 +158,7 @@ pub(super) fn run(id: &str) {
     // Under the pinned Lean, rebuilding the standard library with the
     // compiler running the package yields the committed packages, and the
     // rebuilt `lib.rs` of `sha256` is the file the compiler links.
-    if !support::lean_backed("SL-07") {
+    if !support::lean_backed("SL-08") {
         return;
     }
     let exported = harness::exported("stdlib");

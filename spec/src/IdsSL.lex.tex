@@ -12,6 +12,7 @@ definition{
   executable: true
 }
 
+
 definition{
   name: sl02,
   parameters: [],
@@ -21,26 +22,53 @@ definition{
 }
 
 definition{
+  name: sl03,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SL-03", level := "build", suite := "stdlib", statement := "The standard library's `std-models` package is the language-1.2 project `std-models` of the workspace under the module prefix `LexLeanStdModels`, whose one module `Scores` states the score combinators `best` (the index of the first maximal score), `margin` (its distance from the runner-up), and `decideOr` (that index, or an abstention when fewer than two scores are given or the margin is below the threshold) over `List Int`, and the contract `Gating`, the realization `Gate`, the evidence `GateEvidence`, and the model `GateModel` generic over a type parameter; its manifest declares no source package, artifact, or glossary, no file of Lean source accompanies it, and its behavior is held by kernel-checked theorems and not by the Rust-std differential of `SL-01`; it verifies by itself under the pinned Lean with exact axiom policies, a planted comparison that picks the last maximal score is refused by the kernel with `LLV7002`, and language 1.2 being generic over types and not over predicates or stages, it offers no composite that takes an importer's models.", sections := "§10.5, §17.22"}),
+  executable: true
+}
+
+definition{
+  name: sl04,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SL-04", level := "build", suite := "stdlib", statement := "The standard library's `std-reasoning` package is the language-1.2 project `std-reasoning` of the workspace under the module prefix `LexLeanStdReasoning`, whose one module `Worklist` states the logic `Countdown` over a state of a type parameter and a work count ranked by the count, its guarded rules `Tick` and `Burn`, the verifier `Drained`, and the terminating work-list reasoner `Drain`, each generic over the carried type, with the reasoner's termination bound a kernel-checked theorem; its manifest declares no source package, artifact, or glossary, no file of Lean source accompanies it, and its behavior is held by kernel-checked theorems and not by the Rust-std differential of `SL-01`; it verifies by itself under the pinned Lean with exact axiom policies, a planted termination bound that the ranking does not meet is refused at link with `LLT4010`, and a reasoner of an importing project instantiates its logic, rules, and verifier at the importer's own type.", sections := "§10.5, §17.22"}),
+  executable: true
+}
+
+definition{
   name: sl05,
   parameters: [],
   result: Rows::IdRow,
-  body: (record Rows::IdRow {id := "SL-05", level := "build", suite := "stdlib", statement := "The compiler computes its content identities with the standard library's certified `Sha256` package instead of the `sha2` crate: the shipped `lexlean` crate links the committed production export of `LexLeanStd.Sha256` through an in-crate link that resolves to that file and nothing else, its manifest has no `sha2` dependency, and `Sha256Digest::of`, `FramedHasher`, and `tree_digest` compute through the package; through the compiler's own API the digest of every example NIST states (the examples of FIPS 180-4 and the million-`a` message of FIPS 180-2) and every NIST CAVP SHA-256 short- and long-message vector, each cited by a `some-true` row of `model/authorities.toml` that vendors it or states its digest,, of every message length from 0 to 300 bytes and around each power of two up to 4 MiB, and of a seeded corpus agrees with the authority's digest and with the `sha2` crate as an oracle that can falsify and never establish, and the frames and tree rows agree with an independent recomputation of the §21.1 and §11.5 encodings, a disagreement failing closed and never resolved by adopting the oracle's digest; and a planted bit of the first round constant in a built copy of the package, a link that differs from the export by one byte, a `sha2` dependency added to the manifest, a message truncated by one byte, and a frame length written little-endian are each detected.", sections := "§17.22"}),
+  body: (record Rows::IdRow {id := "SL-05", level := "build", suite := "stdlib", statement := "The standard library's `Buffer` module is language-1.2 source stating an output buffer of a given capacity that is written in order (`writeBytes`, `writeByte`, `writeDecimal`), kept as sealed chunks of at least 256 bytes and one pending chunk so that a write copies at most one chunk and the output is joined once by pairwise merging, whose `finish` returns the bytes or, when a write would pass the capacity, the refusal `output exceeds the capacity of the buffer`; its roots `writeAll`, `writeEach`, and `writeNumbers` are production roots eligible for `rust-std` with exactly their declared effects; the lowered programs under the calculus evaluator and the rendered `rust-std` packages under the pinned rustc agree with the concatenation of the pieces, of the bytes, and of the decimals in Rust, and with the refusal at one byte beyond the capacity, on a seeded corpus whose sizes cross the chunk boundary; the work the rendered package counts for one-byte writes grows in proportion to their number; a planted defect is detected; and the certified packages the production export publishes for the three roots are the committed ones.", sections := "§17.22"}),
   executable: true
 }
+
 
 definition{
   name: sl06,
   parameters: [],
   result: Rows::IdRow,
-  body: (record Rows::IdRow {id := "SL-06", level := "build", suite := "stdlib", statement := "Every content identity the compiler computes is byte-identical under the standard library's `Sha256` package to the identity it computed with the `sha2` crate: every tracked file of the repository digests identically under the compiler's `Sha256Digest::of` and under `sha2`; the compiler-semantics IDs of languages 1.0, 1.1, and 1.2 equal the values pinned in the committed example locks; the frame, tree, source, and semantic identities equal their independent recomputations (`AR-05`, `AR-06`, `SM-10`, `CF-07`, `CF-09`, `TX-10`); every example other than `uor-atlas`, the standard library, the compiler project, and the bootstrap project recompute their locks and pins on `check`; and a bit changed in a tracked file's digest, in a pinned compiler-semantics ID, or in the order of a source-ID recipe's frames is detected.", sections := "§21"}),
+  body: (record Rows::IdRow {id := "SL-06", level := "build", suite := "stdlib", statement := "The compiler computes its content identities with the standard library's certified `Sha256` package instead of the `sha2` crate: the shipped `lexlean` crate links the committed production export of `LexLeanStd.Sha256` through an in-crate link that resolves to that file and nothing else, its manifest has no `sha2` dependency, and `Sha256Digest::of`, `FramedHasher`, and `tree_digest` compute through the package; through the compiler's own API the digest of every example NIST states (the examples of FIPS 180-4 and the million-`a` message of FIPS 180-2) and every NIST CAVP SHA-256 short- and long-message vector, each cited by a `some-true` row of `model/authorities.toml` that vendors it or states its digest,, of every message length from 0 to 300 bytes and around each power of two up to 4 MiB, and of a seeded corpus agrees with the authority's digest and with the `sha2` crate as an oracle that can falsify and never establish, and the frames and tree rows agree with an independent recomputation of the §21.1 and §11.5 encodings, a disagreement failing closed and never resolved by adopting the oracle's digest; and a planted bit of the first round constant in a built copy of the package, a link that differs from the export by one byte, a `sha2` dependency added to the manifest, a message truncated by one byte, and a frame length written little-endian are each detected.", sections := "§17.22"}),
   executable: true
 }
+
 
 definition{
   name: sl07,
   parameters: [],
   result: Rows::IdRow,
-  body: (record Rows::IdRow {id := "SL-07", level := "build", suite := "stdlib", statement := "The compiler running the standard library's `Sha256` package reproduces that package: the digest of every file that the `provenance.json` of every committed production export names equals the digest `sha2` gives its bytes; `lib.rs` of the two SHA-256 packages holds none of the digests their provenance records; and, under the pinned Lean, rebuilding the standard library with the compiler yields packages byte-identical to the committed ones and a `lib.rs` for `sha256` that is the file the compiler links, so that regenerating the export a second time changes nothing; a bit changed in a recorded digest, a digest written into `lib.rs`, and a link that is not the rebuilt `lib.rs` are each detected.", sections := "§17.22"}),
+  body: (record Rows::IdRow {id := "SL-07", level := "build", suite := "stdlib", statement := "Every content identity the compiler computes is byte-identical under the standard library's `Sha256` package to the identity it computed with the `sha2` crate: every tracked file of the repository digests identically under the compiler's `Sha256Digest::of` and under `sha2`; the compiler-semantics IDs of languages 1.0, 1.1, and 1.2 equal the values pinned in the committed example locks; the frame, tree, source, and semantic identities equal their independent recomputations (`AR-05`, `AR-06`, `SM-10`, `CF-07`, `CF-09`, `TX-10`); every example other than `uor-atlas`, the standard library, the compiler project, and the bootstrap project recompute their locks and pins on `check`; and a bit changed in a tracked file's digest, in a pinned compiler-semantics ID, or in the order of a source-ID recipe's frames is detected.", sections := "§21"}),
+  executable: true
+}
+
+
+definition{
+  name: sl08,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SL-08", level := "build", suite := "stdlib", statement := "The compiler running the standard library's `Sha256` package reproduces that package: the digest of every file that the `provenance.json` of every committed production export names equals the digest `sha2` gives its bytes; `lib.rs` of the two SHA-256 packages holds none of the digests their provenance records; and, under the pinned Lean, rebuilding the standard library with the compiler yields packages byte-identical to the committed ones and a `lib.rs` for `sha256` that is the file the compiler links, so that regenerating the export a second time changes nothing; a bit changed in a recorded digest, a digest written into `lib.rs`, and a link that is not the rebuilt `lib.rs` are each detected.", sections := "§17.22"}),
   executable: true
 }
 \end{semanticmodule}

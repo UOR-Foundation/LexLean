@@ -194,6 +194,20 @@ definition{
   parameters: [],
   result: DocRows::Item,
   body: constructor{
+    arguments: [
+      (cons "The crate package MUST be the crate `cargo publish` would upload: the release workflow packages the crate twice to the same bytes, runs `cargo publish --dry-run`, and refuses a package whose SHA-256 differs from the one `checksums.txt` lists for the crate, from the dry-run package, or from what crates.io requires of an archive (a description, a license, a repository, the readme it names, and at most 10 MiB). It uploads to crates.io only when a `CARGO_REGISTRY_TOKEN` secret or trusted publishing authorises it, and otherwise creates the release without the upload and says so. A commit of a release line `release/vX.Y` is published as the pre-release `X.Y.0-dev.N`, `N` being the number of first-parent commits of the line at that commit, so that a release `X.Y.0` supersedes every one of them; `RP-18` reads the workflows and runs the script that decides each of these." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0016,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
     arguments: [3, 1, "30.4 Completion criterion"],
     constructor: DocRows::Item.heading,
     type_arguments: []
@@ -202,7 +216,7 @@ definition{
 }
 
 definition{
-  name: i0016,
+  name: i0017,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -216,7 +230,7 @@ definition{
 }
 
 definition{
-  name: i0017,
+  name: i0018,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -230,7 +244,7 @@ definition{
 }
 
 definition{
-  name: i0018,
+  name: i0019,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -242,7 +256,7 @@ definition{
 }
 
 definition{
-  name: i0019,
+  name: i0020,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -256,7 +270,7 @@ definition{
 }
 
 definition{
-  name: i0020,
+  name: i0021,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -270,7 +284,7 @@ definition{
 }
 
 definition{
-  name: i0021,
+  name: i0022,
   parameters: [],
   result: DocRows::Item,
   body: constructor{

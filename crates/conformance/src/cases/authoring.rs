@@ -24,12 +24,28 @@ use lexlean::{FormatRequest, Selection};
 
 use crate::support::{self, repo_root, P};
 
-/// Run the case for one authoring ID.
+/// Run the case for one authoring ID. The committed corpus includes the
+/// runtime module (`language/rust-runtime-1.2/RustRuntime.lex.tex`), whose
+/// lists nest over a hundred levels and overflow a default test thread's two
+/// megabytes in a debug build, so every authoring case runs on a thread sized
+/// by [`lexlean::READER_STACK`].
 ///
 /// # Panics
 ///
 /// When the case's assertion fails, or for an unwired ID.
 pub fn run(id: &str) {
+    let id = id.to_owned();
+    std::thread::scope(|scope| {
+        std::thread::Builder::new()
+            .stack_size(lexlean::READER_STACK)
+            .spawn_scoped(scope, || check(&id))
+            .expect("a thread for the authoring case")
+            .join()
+            .unwrap_or_else(|panic| std::panic::resume_unwind(panic));
+    });
+}
+
+fn check(id: &str) {
     match id {
         "AU-01" => round_trip(),
         "AU-02" => equivalence(),

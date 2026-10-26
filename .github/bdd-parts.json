@@ -4,6 +4,9 @@
     "bootstrap-check": [
       "BS-04"
     ],
+    "bootstrap-print": [
+      "BS-06"
+    ],
     "bootstrap-validate": [
       "BS-05"
     ],
@@ -185,6 +188,21 @@
     ],
     "preservation-lists": [
       "SP-15"
+    ],
+    "preservation-runtime": [
+      "SP-22"
+    ],
+    "preservation-support": [
+      "SP-25"
+    ],
+    "bootstrap-runtime": [
+      "BS-09"
+    ],
+    "preservation-prims": [
+      "SP-28"
+    ],
+    "preservation-std": [
+      "SP-29"
     ]
   }
 }

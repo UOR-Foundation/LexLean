@@ -1,0 +1,842 @@
+\begin{lexlean}{RustStd}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{RustSemantics}
+\importmodule{RustSyntax}
+\importmodule{TargetSemantics}
+\importmodule{TargetSyntax}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: appendListFunction,
+  parameters: [],
+  result: RustSyntax::ItemDef,
+  body: (ctor RustSyntax::ItemDef.function (ctor RustSyntax::Ident.exported "append_list") (cons (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 0)), type := (ctor RustSyntax::RustType.list (ctor RustSyntax::RustType.param 0))}) (cons (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 1)), type := (ctor RustSyntax::RustType.list (ctor RustSyntax::RustType.param 0))}) (nil RustSyntax::Parameter))) (ctor RustSyntax::RustType.list (ctor RustSyntax::RustType.param 0)) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.call (ctor RustSyntax::Callee.machine (ctor RustSyntax::Machine.listAppend)) (cons (ctor RustSyntax::Expr.move (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 0)) (cons (ctor RustSyntax::Expr.move (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 1)) (nil RustSyntax::Expr))) false)))
+}
+
+definition{
+  name: lengthListFunction,
+  parameters: [],
+  result: RustSyntax::ItemDef,
+  body: (ctor RustSyntax::ItemDef.function (ctor RustSyntax::Ident.exported "length_list") (cons (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 0)), type := (ctor RustSyntax::RustType.list (ctor RustSyntax::RustType.param 0))}) (nil RustSyntax::Parameter)) (ctor RustSyntax::RustType.nat) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.call (ctor RustSyntax::Callee.machine (ctor RustSyntax::Machine.listLength)) (cons (ctor RustSyntax::Expr.move (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 0)) (nil RustSyntax::Expr)) false)))
+}
+
+definition{
+  name: indexListFunction,
+  parameters: [],
+  result: RustSyntax::ItemDef,
+  body: (ctor RustSyntax::ItemDef.function (ctor RustSyntax::Ident.exported "index_list") (cons (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 0)), type := (ctor RustSyntax::RustType.list (ctor RustSyntax::RustType.param 0))}) (cons (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 1)), type := (ctor RustSyntax::RustType.nat)}) (nil RustSyntax::Parameter))) (ctor RustSyntax::RustType.option (ctor RustSyntax::RustType.param 0)) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.call (ctor RustSyntax::Callee.machine (ctor RustSyntax::Machine.listIndex)) (cons (ctor RustSyntax::Expr.move (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 0)) (cons (ctor RustSyntax::Expr.move (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 1)) (nil RustSyntax::Expr))) false)))
+}
+
+definition{
+  name: sliceListFunction,
+  parameters: [],
+  result: RustSyntax::ItemDef,
+  body: (ctor RustSyntax::ItemDef.function (ctor RustSyntax::Ident.exported "slice_list") (cons (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 0)), type := (ctor RustSyntax::RustType.list (ctor RustSyntax::RustType.param 0))}) (cons (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 1)), type := (ctor RustSyntax::RustType.nat)}) (cons (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 2)), type := (ctor RustSyntax::RustType.nat)}) (nil RustSyntax::Parameter)))) (ctor RustSyntax::RustType.option (ctor RustSyntax::RustType.list (ctor RustSyntax::RustType.param 0))) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.call (ctor RustSyntax::Callee.machine (ctor RustSyntax::Machine.listSlice)) (cons (ctor RustSyntax::Expr.move (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 0)) (cons (ctor RustSyntax::Expr.move (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 1)) (cons (ctor RustSyntax::Expr.move (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 2)) (nil RustSyntax::Expr)))) false)))
+}
+
+definition{
+  name: appendBytesFunction,
+  parameters: [],
+  result: RustSyntax::ItemDef,
+  body: (ctor RustSyntax::ItemDef.function (ctor RustSyntax::Ident.exported "append_bytes") (cons (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 0)), type := (ctor RustSyntax::RustType.bytes)}) (cons (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 1)), type := (ctor RustSyntax::RustType.bytes)}) (nil RustSyntax::Parameter))) (ctor RustSyntax::RustType.bytes) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.call (ctor RustSyntax::Callee.machine (ctor RustSyntax::Machine.bytesAppend)) (cons (ctor RustSyntax::Expr.move (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 0)) (cons (ctor RustSyntax::Expr.move (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 1)) (nil RustSyntax::Expr))) false)))
+}
+
+definition{
+  name: lengthBytesFunction,
+  parameters: [],
+  result: RustSyntax::ItemDef,
+  body: (ctor RustSyntax::ItemDef.function (ctor RustSyntax::Ident.exported "length_bytes") (cons (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 0)), type := (ctor RustSyntax::RustType.bytes)}) (nil RustSyntax::Parameter)) (ctor RustSyntax::RustType.nat) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.call (ctor RustSyntax::Callee.machine (ctor RustSyntax::Machine.bytesLength)) (cons (ctor RustSyntax::Expr.move (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 0)) (nil RustSyntax::Expr)) false)))
+}
+
+definition{
+  name: lengthStringFunction,
+  parameters: [],
+  result: RustSyntax::ItemDef,
+  body: (ctor RustSyntax::ItemDef.function (ctor RustSyntax::Ident.exported "length_string") (cons (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 0)), type := (ctor RustSyntax::RustType.str)}) (nil RustSyntax::Parameter)) (ctor RustSyntax::RustType.nat) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.call (ctor RustSyntax::Callee.machine (ctor RustSyntax::Machine.stringLength)) (cons (ctor RustSyntax::Expr.move (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 0)) (nil RustSyntax::Expr)) false)))
+}
+
+definition{
+  name: indexBytesFunction,
+  parameters: [],
+  result: RustSyntax::ItemDef,
+  body: (ctor RustSyntax::ItemDef.function (ctor RustSyntax::Ident.exported "index_bytes") (cons (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 0)), type := (ctor RustSyntax::RustType.bytes)}) (cons (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 1)), type := (ctor RustSyntax::RustType.nat)}) (nil RustSyntax::Parameter))) (ctor RustSyntax::RustType.option (ctor RustSyntax::RustType.fixed (ctor TargetSyntax::IntKind.u8))) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.call (ctor RustSyntax::Callee.machine (ctor RustSyntax::Machine.bytesIndex)) (cons (ctor RustSyntax::Expr.move (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 0)) (cons (ctor RustSyntax::Expr.move (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 1)) (nil RustSyntax::Expr))) false)))
+}
+
+definition{
+  name: sliceBytesFunction,
+  parameters: [],
+  result: RustSyntax::ItemDef,
+  body: (ctor RustSyntax::ItemDef.function (ctor RustSyntax::Ident.exported "slice_bytes") (cons (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 0)), type := (ctor RustSyntax::RustType.bytes)}) (cons (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 1)), type := (ctor RustSyntax::RustType.nat)}) (cons (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 2)), type := (ctor RustSyntax::RustType.nat)}) (nil RustSyntax::Parameter)))) (ctor RustSyntax::RustType.option (ctor RustSyntax::RustType.bytes)) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.call (ctor RustSyntax::Callee.machine (ctor RustSyntax::Machine.bytesSlice)) (cons (ctor RustSyntax::Expr.move (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 0)) (cons (ctor RustSyntax::Expr.move (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 1)) (cons (ctor RustSyntax::Expr.move (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 2)) (nil RustSyntax::Expr)))) false)))
+}
+
+definition{
+  name: utf8EncodeFunction,
+  parameters: [],
+  result: RustSyntax::ItemDef,
+  body: (ctor RustSyntax::ItemDef.function (ctor RustSyntax::Ident.exported "utf8_encode") (cons (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 0)), type := (ctor RustSyntax::RustType.str)}) (nil RustSyntax::Parameter)) (ctor RustSyntax::RustType.bytes) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.call (ctor RustSyntax::Callee.machine (ctor RustSyntax::Machine.utf8Encode)) (cons (ctor RustSyntax::Expr.move (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 0)) (nil RustSyntax::Expr)) false)))
+}
+
+definition{
+  name: utf8DecodeFunction,
+  parameters: [],
+  result: RustSyntax::ItemDef,
+  body: (ctor RustSyntax::ItemDef.function (ctor RustSyntax::Ident.exported "utf8_decode") (cons (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 0)), type := (ctor RustSyntax::RustType.bytes)}) (nil RustSyntax::Parameter)) (ctor RustSyntax::RustType.option (ctor RustSyntax::RustType.str)) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.call (ctor RustSyntax::Callee.machine (ctor RustSyntax::Machine.utf8Decode)) (cons (ctor RustSyntax::Expr.move (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 0)) (nil RustSyntax::Expr)) false)))
+}
+
+definition{
+  name: compareBytesFunction,
+  parameters: [],
+  result: RustSyntax::ItemDef,
+  body: (ctor RustSyntax::ItemDef.function (ctor RustSyntax::Ident.exported "compare_bytes") (cons (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 0)), type := (ctor RustSyntax::RustType.bytes)}) (cons (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 1)), type := (ctor RustSyntax::RustType.bytes)}) (nil RustSyntax::Parameter))) (ctor RustSyntax::RustType.ordering) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.call (ctor RustSyntax::Callee.machine (ctor RustSyntax::Machine.bytesCompare)) (cons (ctor RustSyntax::Expr.move (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 0)) (cons (ctor RustSyntax::Expr.move (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 1)) (nil RustSyntax::Expr))) false)))
+}
+
+definition{
+  name: splitExactFunction,
+  parameters: [],
+  result: RustSyntax::ItemDef,
+  body: (ctor RustSyntax::ItemDef.function (ctor RustSyntax::Ident.exported "split_exact") (cons (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 0)), type := (ctor RustSyntax::RustType.str)}) (cons (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 1)), type := (ctor RustSyntax::RustType.str)}) (cons (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 2)), type := (ctor RustSyntax::RustType.fixed (ctor TargetSyntax::IntKind.u32))}) (nil RustSyntax::Parameter)))) (ctor RustSyntax::RustType.option (ctor RustSyntax::RustType.list (ctor RustSyntax::RustType.str))) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.call (ctor RustSyntax::Callee.machine (ctor RustSyntax::Machine.stringSplit)) (cons (ctor RustSyntax::Expr.move (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 0)) (cons (ctor RustSyntax::Expr.move (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 1)) (cons (ctor RustSyntax::Expr.move (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 2)) (nil RustSyntax::Expr)))) false)))
+}
+
+definition{
+  name: joinFunction,
+  parameters: [],
+  result: RustSyntax::ItemDef,
+  body: (ctor RustSyntax::ItemDef.function (ctor RustSyntax::Ident.exported "join") (cons (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 0)), type := (ctor RustSyntax::RustType.list (ctor RustSyntax::RustType.str))}) (cons (record RustSyntax::Parameter {pattern := (ctor RustSyntax::Pat.bind (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 1)), type := (ctor RustSyntax::RustType.str)}) (nil RustSyntax::Parameter))) (ctor RustSyntax::RustType.str) (ctor RustSyntax::Block.mk (nil RustSyntax::Let) (ctor RustSyntax::Expr.call (ctor RustSyntax::Callee.machine (ctor RustSyntax::Machine.stringJoin)) (cons (ctor RustSyntax::Expr.move (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 0)) (cons (ctor RustSyntax::Expr.move (ctor RustSyntax::Ident.generated (ctor RustSyntax::IdentKind.param) 1)) (nil RustSyntax::Expr))) false)))
+}
+
+definition{
+  name: stdCrate,
+  parameters: [],
+  result: RustSyntax::Crate,
+  body: (record RustSyntax::Crate {profile := (ctor RustSyntax::Profile.std), items := (cons (appendListFunction) (cons (lengthListFunction) (cons (indexListFunction) (cons (sliceListFunction) (cons (appendBytesFunction) (cons (lengthBytesFunction) (cons (lengthStringFunction) (cons (indexBytesFunction) (cons (sliceBytesFunction) (cons (utf8EncodeFunction) (cons (utf8DecodeFunction) (cons (compareBytesFunction) (cons (splitExactFunction) (cons (joinFunction) (nil RustSyntax::ItemDef)))))))))))))))})
+}
+
+theorem{
+  name: refines_append_list,
+  parameters: [a : (List TargetSyntax::Value), b : (List TargetSyntax::Value)],
+  statement: ((RustSemantics::runExport 12 (stdCrate) "append_list" (cons (ctor TargetSyntax::Value.list a) (cons (ctor TargetSyntax::Value.list b) (nil TargetSyntax::Value)))) = (RustSemantics::runItem (ctor RustSyntax::Profile.std) (ctor RustSyntax::Item.appendList) (cons (ctor TargetSyntax::Value.list a) (cons (ctor TargetSyntax::Value.list b) (nil TargetSyntax::Value))))),
+  proof: term_cases{
+    definitions: [
+      RustSemantics::bindPattern,
+      RustSemantics::bindPatterns,
+      RustSemantics::eval,
+      RustSemantics::evalBlock,
+      RustSemantics::evalList,
+      RustSemantics::findFunction,
+      RustSemantics::finished,
+      RustSemantics::invoke,
+      RustSemantics::isBytes,
+      RustSemantics::isList,
+      RustSemantics::isString,
+      RustSemantics::itemAccepts,
+      RustSemantics::itemOperands,
+      RustSemantics::itemPrimitive,
+      RustSemantics::itemTakes,
+      RustSemantics::itemWidth,
+      RustSemantics::lookup,
+      RustSemantics::machineAccepts,
+      RustSemantics::machinePrimitive,
+      RustSemantics::machineWidth,
+      RustSemantics::patternsOf,
+      RustSemantics::returned,
+      RustSemantics::runExport,
+      RustSemantics::runItem,
+      RustSemantics::runMachine,
+      appendBytesFunction,
+      appendListFunction,
+      compareBytesFunction,
+      indexBytesFunction,
+      indexListFunction,
+      joinFunction,
+      lengthBytesFunction,
+      lengthListFunction,
+      lengthStringFunction,
+      sliceBytesFunction,
+      sliceListFunction,
+      splitExactFunction,
+      stdCrate,
+      utf8DecodeFunction,
+      utf8EncodeFunction
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.append) (cons (ctor TargetSyntax::Value.list a) (cons (ctor TargetSyntax::Value.list b) (nil TargetSyntax::Value))))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: refines_length_list,
+  parameters: [items : (List TargetSyntax::Value)],
+  statement: ((RustSemantics::runExport 12 (stdCrate) "length_list" (cons (ctor TargetSyntax::Value.list items) (nil TargetSyntax::Value))) = (RustSemantics::runItem (ctor RustSyntax::Profile.std) (ctor RustSyntax::Item.lengthList) (cons (ctor TargetSyntax::Value.list items) (nil TargetSyntax::Value)))),
+  proof: term_cases{
+    definitions: [
+      RustSemantics::bindPattern,
+      RustSemantics::bindPatterns,
+      RustSemantics::eval,
+      RustSemantics::evalBlock,
+      RustSemantics::evalList,
+      RustSemantics::findFunction,
+      RustSemantics::finished,
+      RustSemantics::invoke,
+      RustSemantics::isBytes,
+      RustSemantics::isList,
+      RustSemantics::isString,
+      RustSemantics::itemAccepts,
+      RustSemantics::itemOperands,
+      RustSemantics::itemPrimitive,
+      RustSemantics::itemTakes,
+      RustSemantics::itemWidth,
+      RustSemantics::lookup,
+      RustSemantics::machineAccepts,
+      RustSemantics::machinePrimitive,
+      RustSemantics::machineWidth,
+      RustSemantics::patternsOf,
+      RustSemantics::returned,
+      RustSemantics::runExport,
+      RustSemantics::runItem,
+      RustSemantics::runMachine,
+      appendBytesFunction,
+      appendListFunction,
+      compareBytesFunction,
+      indexBytesFunction,
+      indexListFunction,
+      joinFunction,
+      lengthBytesFunction,
+      lengthListFunction,
+      lengthStringFunction,
+      sliceBytesFunction,
+      sliceListFunction,
+      splitExactFunction,
+      stdCrate,
+      utf8DecodeFunction,
+      utf8EncodeFunction
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.length) (cons (ctor TargetSyntax::Value.list items) (nil TargetSyntax::Value)))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: refines_index_list,
+  parameters: [items : (List TargetSyntax::Value), at : Nat],
+  statement: ((RustSemantics::runExport 12 (stdCrate) "index_list" (cons (ctor TargetSyntax::Value.list items) (cons (ctor TargetSyntax::Value.nat at) (nil TargetSyntax::Value)))) = (RustSemantics::runItem (ctor RustSyntax::Profile.std) (ctor RustSyntax::Item.indexList) (cons (ctor TargetSyntax::Value.list items) (cons (ctor TargetSyntax::Value.nat at) (nil TargetSyntax::Value))))),
+  proof: term_cases{
+    definitions: [
+      RustSemantics::bindPattern,
+      RustSemantics::bindPatterns,
+      RustSemantics::eval,
+      RustSemantics::evalBlock,
+      RustSemantics::evalList,
+      RustSemantics::findFunction,
+      RustSemantics::finished,
+      RustSemantics::invoke,
+      RustSemantics::isBytes,
+      RustSemantics::isList,
+      RustSemantics::isString,
+      RustSemantics::itemAccepts,
+      RustSemantics::itemOperands,
+      RustSemantics::itemPrimitive,
+      RustSemantics::itemTakes,
+      RustSemantics::itemWidth,
+      RustSemantics::lookup,
+      RustSemantics::machineAccepts,
+      RustSemantics::machinePrimitive,
+      RustSemantics::machineWidth,
+      RustSemantics::patternsOf,
+      RustSemantics::returned,
+      RustSemantics::runExport,
+      RustSemantics::runItem,
+      RustSemantics::runMachine,
+      appendBytesFunction,
+      appendListFunction,
+      compareBytesFunction,
+      indexBytesFunction,
+      indexListFunction,
+      joinFunction,
+      lengthBytesFunction,
+      lengthListFunction,
+      lengthStringFunction,
+      sliceBytesFunction,
+      sliceListFunction,
+      splitExactFunction,
+      stdCrate,
+      utf8DecodeFunction,
+      utf8EncodeFunction
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.index) (cons (ctor TargetSyntax::Value.list items) (cons (ctor TargetSyntax::Value.nat at) (nil TargetSyntax::Value))))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: refines_slice_list,
+  parameters: [items : (List TargetSyntax::Value), start : Nat, count : Nat],
+  statement: ((RustSemantics::runExport 12 (stdCrate) "slice_list" (cons (ctor TargetSyntax::Value.list items) (cons (ctor TargetSyntax::Value.nat start) (cons (ctor TargetSyntax::Value.nat count) (nil TargetSyntax::Value))))) = (RustSemantics::runItem (ctor RustSyntax::Profile.std) (ctor RustSyntax::Item.sliceList) (cons (ctor TargetSyntax::Value.list items) (cons (ctor TargetSyntax::Value.nat start) (cons (ctor TargetSyntax::Value.nat count) (nil TargetSyntax::Value)))))),
+  proof: term_cases{
+    definitions: [
+      RustSemantics::bindPattern,
+      RustSemantics::bindPatterns,
+      RustSemantics::eval,
+      RustSemantics::evalBlock,
+      RustSemantics::evalList,
+      RustSemantics::findFunction,
+      RustSemantics::finished,
+      RustSemantics::invoke,
+      RustSemantics::isBytes,
+      RustSemantics::isList,
+      RustSemantics::isString,
+      RustSemantics::itemAccepts,
+      RustSemantics::itemOperands,
+      RustSemantics::itemPrimitive,
+      RustSemantics::itemTakes,
+      RustSemantics::itemWidth,
+      RustSemantics::lookup,
+      RustSemantics::machineAccepts,
+      RustSemantics::machinePrimitive,
+      RustSemantics::machineWidth,
+      RustSemantics::patternsOf,
+      RustSemantics::returned,
+      RustSemantics::runExport,
+      RustSemantics::runItem,
+      RustSemantics::runMachine,
+      appendBytesFunction,
+      appendListFunction,
+      compareBytesFunction,
+      indexBytesFunction,
+      indexListFunction,
+      joinFunction,
+      lengthBytesFunction,
+      lengthListFunction,
+      lengthStringFunction,
+      sliceBytesFunction,
+      sliceListFunction,
+      splitExactFunction,
+      stdCrate,
+      utf8DecodeFunction,
+      utf8EncodeFunction
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.slice) (cons (ctor TargetSyntax::Value.list items) (cons (ctor TargetSyntax::Value.nat start) (cons (ctor TargetSyntax::Value.nat count) (nil TargetSyntax::Value)))))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: refines_append_bytes,
+  parameters: [a : Bytes, b : Bytes],
+  statement: ((RustSemantics::runExport 12 (stdCrate) "append_bytes" (cons (ctor TargetSyntax::Value.bytes a) (cons (ctor TargetSyntax::Value.bytes b) (nil TargetSyntax::Value)))) = (RustSemantics::runItem (ctor RustSyntax::Profile.std) (ctor RustSyntax::Item.appendBytes) (cons (ctor TargetSyntax::Value.bytes a) (cons (ctor TargetSyntax::Value.bytes b) (nil TargetSyntax::Value))))),
+  proof: term_cases{
+    definitions: [
+      RustSemantics::bindPattern,
+      RustSemantics::bindPatterns,
+      RustSemantics::eval,
+      RustSemantics::evalBlock,
+      RustSemantics::evalList,
+      RustSemantics::findFunction,
+      RustSemantics::finished,
+      RustSemantics::invoke,
+      RustSemantics::isBytes,
+      RustSemantics::isList,
+      RustSemantics::isString,
+      RustSemantics::itemAccepts,
+      RustSemantics::itemOperands,
+      RustSemantics::itemPrimitive,
+      RustSemantics::itemTakes,
+      RustSemantics::itemWidth,
+      RustSemantics::lookup,
+      RustSemantics::machineAccepts,
+      RustSemantics::machinePrimitive,
+      RustSemantics::machineWidth,
+      RustSemantics::patternsOf,
+      RustSemantics::returned,
+      RustSemantics::runExport,
+      RustSemantics::runItem,
+      RustSemantics::runMachine,
+      appendBytesFunction,
+      appendListFunction,
+      compareBytesFunction,
+      indexBytesFunction,
+      indexListFunction,
+      joinFunction,
+      lengthBytesFunction,
+      lengthListFunction,
+      lengthStringFunction,
+      sliceBytesFunction,
+      sliceListFunction,
+      splitExactFunction,
+      stdCrate,
+      utf8DecodeFunction,
+      utf8EncodeFunction
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.append) (cons (ctor TargetSyntax::Value.bytes a) (cons (ctor TargetSyntax::Value.bytes b) (nil TargetSyntax::Value))))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: refines_length_bytes,
+  parameters: [a : Bytes],
+  statement: ((RustSemantics::runExport 12 (stdCrate) "length_bytes" (cons (ctor TargetSyntax::Value.bytes a) (nil TargetSyntax::Value))) = (RustSemantics::runItem (ctor RustSyntax::Profile.std) (ctor RustSyntax::Item.lengthBytes) (cons (ctor TargetSyntax::Value.bytes a) (nil TargetSyntax::Value)))),
+  proof: term_cases{
+    definitions: [
+      RustSemantics::bindPattern,
+      RustSemantics::bindPatterns,
+      RustSemantics::eval,
+      RustSemantics::evalBlock,
+      RustSemantics::evalList,
+      RustSemantics::findFunction,
+      RustSemantics::finished,
+      RustSemantics::invoke,
+      RustSemantics::isBytes,
+      RustSemantics::isList,
+      RustSemantics::isString,
+      RustSemantics::itemAccepts,
+      RustSemantics::itemOperands,
+      RustSemantics::itemPrimitive,
+      RustSemantics::itemTakes,
+      RustSemantics::itemWidth,
+      RustSemantics::lookup,
+      RustSemantics::machineAccepts,
+      RustSemantics::machinePrimitive,
+      RustSemantics::machineWidth,
+      RustSemantics::patternsOf,
+      RustSemantics::returned,
+      RustSemantics::runExport,
+      RustSemantics::runItem,
+      RustSemantics::runMachine,
+      appendBytesFunction,
+      appendListFunction,
+      compareBytesFunction,
+      indexBytesFunction,
+      indexListFunction,
+      joinFunction,
+      lengthBytesFunction,
+      lengthListFunction,
+      lengthStringFunction,
+      sliceBytesFunction,
+      sliceListFunction,
+      splitExactFunction,
+      stdCrate,
+      utf8DecodeFunction,
+      utf8EncodeFunction
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.length) (cons (ctor TargetSyntax::Value.bytes a) (nil TargetSyntax::Value)))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: refines_length_string,
+  parameters: [a : String],
+  statement: ((RustSemantics::runExport 12 (stdCrate) "length_string" (cons (ctor TargetSyntax::Value.string a) (nil TargetSyntax::Value))) = (RustSemantics::runItem (ctor RustSyntax::Profile.std) (ctor RustSyntax::Item.lengthString) (cons (ctor TargetSyntax::Value.string a) (nil TargetSyntax::Value)))),
+  proof: term_cases{
+    definitions: [
+      RustSemantics::bindPattern,
+      RustSemantics::bindPatterns,
+      RustSemantics::eval,
+      RustSemantics::evalBlock,
+      RustSemantics::evalList,
+      RustSemantics::findFunction,
+      RustSemantics::finished,
+      RustSemantics::invoke,
+      RustSemantics::isBytes,
+      RustSemantics::isList,
+      RustSemantics::isString,
+      RustSemantics::itemAccepts,
+      RustSemantics::itemOperands,
+      RustSemantics::itemPrimitive,
+      RustSemantics::itemTakes,
+      RustSemantics::itemWidth,
+      RustSemantics::lookup,
+      RustSemantics::machineAccepts,
+      RustSemantics::machinePrimitive,
+      RustSemantics::machineWidth,
+      RustSemantics::patternsOf,
+      RustSemantics::returned,
+      RustSemantics::runExport,
+      RustSemantics::runItem,
+      RustSemantics::runMachine,
+      appendBytesFunction,
+      appendListFunction,
+      compareBytesFunction,
+      indexBytesFunction,
+      indexListFunction,
+      joinFunction,
+      lengthBytesFunction,
+      lengthListFunction,
+      lengthStringFunction,
+      sliceBytesFunction,
+      sliceListFunction,
+      splitExactFunction,
+      stdCrate,
+      utf8DecodeFunction,
+      utf8EncodeFunction
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.length) (cons (ctor TargetSyntax::Value.string a) (nil TargetSyntax::Value)))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: refines_index_bytes,
+  parameters: [a : Bytes, at : Nat],
+  statement: ((RustSemantics::runExport 12 (stdCrate) "index_bytes" (cons (ctor TargetSyntax::Value.bytes a) (cons (ctor TargetSyntax::Value.nat at) (nil TargetSyntax::Value)))) = (RustSemantics::runItem (ctor RustSyntax::Profile.std) (ctor RustSyntax::Item.indexBytes) (cons (ctor TargetSyntax::Value.bytes a) (cons (ctor TargetSyntax::Value.nat at) (nil TargetSyntax::Value))))),
+  proof: term_cases{
+    definitions: [
+      RustSemantics::bindPattern,
+      RustSemantics::bindPatterns,
+      RustSemantics::eval,
+      RustSemantics::evalBlock,
+      RustSemantics::evalList,
+      RustSemantics::findFunction,
+      RustSemantics::finished,
+      RustSemantics::invoke,
+      RustSemantics::isBytes,
+      RustSemantics::isList,
+      RustSemantics::isString,
+      RustSemantics::itemAccepts,
+      RustSemantics::itemOperands,
+      RustSemantics::itemPrimitive,
+      RustSemantics::itemTakes,
+      RustSemantics::itemWidth,
+      RustSemantics::lookup,
+      RustSemantics::machineAccepts,
+      RustSemantics::machinePrimitive,
+      RustSemantics::machineWidth,
+      RustSemantics::patternsOf,
+      RustSemantics::returned,
+      RustSemantics::runExport,
+      RustSemantics::runItem,
+      RustSemantics::runMachine,
+      appendBytesFunction,
+      appendListFunction,
+      compareBytesFunction,
+      indexBytesFunction,
+      indexListFunction,
+      joinFunction,
+      lengthBytesFunction,
+      lengthListFunction,
+      lengthStringFunction,
+      sliceBytesFunction,
+      sliceListFunction,
+      splitExactFunction,
+      stdCrate,
+      utf8DecodeFunction,
+      utf8EncodeFunction
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.index) (cons (ctor TargetSyntax::Value.bytes a) (cons (ctor TargetSyntax::Value.nat at) (nil TargetSyntax::Value))))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: refines_slice_bytes,
+  parameters: [a : Bytes, start : Nat, count : Nat],
+  statement: ((RustSemantics::runExport 12 (stdCrate) "slice_bytes" (cons (ctor TargetSyntax::Value.bytes a) (cons (ctor TargetSyntax::Value.nat start) (cons (ctor TargetSyntax::Value.nat count) (nil TargetSyntax::Value))))) = (RustSemantics::runItem (ctor RustSyntax::Profile.std) (ctor RustSyntax::Item.sliceBytes) (cons (ctor TargetSyntax::Value.bytes a) (cons (ctor TargetSyntax::Value.nat start) (cons (ctor TargetSyntax::Value.nat count) (nil TargetSyntax::Value)))))),
+  proof: term_cases{
+    definitions: [
+      RustSemantics::bindPattern,
+      RustSemantics::bindPatterns,
+      RustSemantics::eval,
+      RustSemantics::evalBlock,
+      RustSemantics::evalList,
+      RustSemantics::findFunction,
+      RustSemantics::finished,
+      RustSemantics::invoke,
+      RustSemantics::isBytes,
+      RustSemantics::isList,
+      RustSemantics::isString,
+      RustSemantics::itemAccepts,
+      RustSemantics::itemOperands,
+      RustSemantics::itemPrimitive,
+      RustSemantics::itemTakes,
+      RustSemantics::itemWidth,
+      RustSemantics::lookup,
+      RustSemantics::machineAccepts,
+      RustSemantics::machinePrimitive,
+      RustSemantics::machineWidth,
+      RustSemantics::patternsOf,
+      RustSemantics::returned,
+      RustSemantics::runExport,
+      RustSemantics::runItem,
+      RustSemantics::runMachine,
+      appendBytesFunction,
+      appendListFunction,
+      compareBytesFunction,
+      indexBytesFunction,
+      indexListFunction,
+      joinFunction,
+      lengthBytesFunction,
+      lengthListFunction,
+      lengthStringFunction,
+      sliceBytesFunction,
+      sliceListFunction,
+      splitExactFunction,
+      stdCrate,
+      utf8DecodeFunction,
+      utf8EncodeFunction
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.slice) (cons (ctor TargetSyntax::Value.bytes a) (cons (ctor TargetSyntax::Value.nat start) (cons (ctor TargetSyntax::Value.nat count) (nil TargetSyntax::Value)))))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: refines_utf8_encode,
+  parameters: [a : String],
+  statement: ((RustSemantics::runExport 12 (stdCrate) "utf8_encode" (cons (ctor TargetSyntax::Value.string a) (nil TargetSyntax::Value))) = (RustSemantics::runItem (ctor RustSyntax::Profile.std) (ctor RustSyntax::Item.utf8Encode) (cons (ctor TargetSyntax::Value.string a) (nil TargetSyntax::Value)))),
+  proof: term_cases{
+    definitions: [
+      RustSemantics::bindPattern,
+      RustSemantics::bindPatterns,
+      RustSemantics::eval,
+      RustSemantics::evalBlock,
+      RustSemantics::evalList,
+      RustSemantics::findFunction,
+      RustSemantics::finished,
+      RustSemantics::invoke,
+      RustSemantics::isBytes,
+      RustSemantics::isList,
+      RustSemantics::isString,
+      RustSemantics::itemAccepts,
+      RustSemantics::itemOperands,
+      RustSemantics::itemPrimitive,
+      RustSemantics::itemTakes,
+      RustSemantics::itemWidth,
+      RustSemantics::lookup,
+      RustSemantics::machineAccepts,
+      RustSemantics::machinePrimitive,
+      RustSemantics::machineWidth,
+      RustSemantics::patternsOf,
+      RustSemantics::returned,
+      RustSemantics::runExport,
+      RustSemantics::runItem,
+      RustSemantics::runMachine,
+      appendBytesFunction,
+      appendListFunction,
+      compareBytesFunction,
+      indexBytesFunction,
+      indexListFunction,
+      joinFunction,
+      lengthBytesFunction,
+      lengthListFunction,
+      lengthStringFunction,
+      sliceBytesFunction,
+      sliceListFunction,
+      splitExactFunction,
+      stdCrate,
+      utf8DecodeFunction,
+      utf8EncodeFunction
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.utf8Encode) (cons (ctor TargetSyntax::Value.string a) (nil TargetSyntax::Value)))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: refines_utf8_decode,
+  parameters: [a : Bytes],
+  statement: ((RustSemantics::runExport 12 (stdCrate) "utf8_decode" (cons (ctor TargetSyntax::Value.bytes a) (nil TargetSyntax::Value))) = (RustSemantics::runItem (ctor RustSyntax::Profile.std) (ctor RustSyntax::Item.utf8Decode) (cons (ctor TargetSyntax::Value.bytes a) (nil TargetSyntax::Value)))),
+  proof: term_cases{
+    definitions: [
+      RustSemantics::bindPattern,
+      RustSemantics::bindPatterns,
+      RustSemantics::eval,
+      RustSemantics::evalBlock,
+      RustSemantics::evalList,
+      RustSemantics::findFunction,
+      RustSemantics::finished,
+      RustSemantics::invoke,
+      RustSemantics::isBytes,
+      RustSemantics::isList,
+      RustSemantics::isString,
+      RustSemantics::itemAccepts,
+      RustSemantics::itemOperands,
+      RustSemantics::itemPrimitive,
+      RustSemantics::itemTakes,
+      RustSemantics::itemWidth,
+      RustSemantics::lookup,
+      RustSemantics::machineAccepts,
+      RustSemantics::machinePrimitive,
+      RustSemantics::machineWidth,
+      RustSemantics::patternsOf,
+      RustSemantics::returned,
+      RustSemantics::runExport,
+      RustSemantics::runItem,
+      RustSemantics::runMachine,
+      appendBytesFunction,
+      appendListFunction,
+      compareBytesFunction,
+      indexBytesFunction,
+      indexListFunction,
+      joinFunction,
+      lengthBytesFunction,
+      lengthListFunction,
+      lengthStringFunction,
+      sliceBytesFunction,
+      sliceListFunction,
+      splitExactFunction,
+      stdCrate,
+      utf8DecodeFunction,
+      utf8EncodeFunction
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.utf8Decode) (cons (ctor TargetSyntax::Value.bytes a) (nil TargetSyntax::Value)))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: refines_compare_bytes,
+  parameters: [a : Bytes, b : Bytes],
+  statement: ((RustSemantics::runExport 12 (stdCrate) "compare_bytes" (cons (ctor TargetSyntax::Value.bytes a) (cons (ctor TargetSyntax::Value.bytes b) (nil TargetSyntax::Value)))) = (RustSemantics::runItem (ctor RustSyntax::Profile.std) (ctor RustSyntax::Item.compareBytes) (cons (ctor TargetSyntax::Value.bytes a) (cons (ctor TargetSyntax::Value.bytes b) (nil TargetSyntax::Value))))),
+  proof: term_cases{
+    definitions: [
+      RustSemantics::bindPattern,
+      RustSemantics::bindPatterns,
+      RustSemantics::eval,
+      RustSemantics::evalBlock,
+      RustSemantics::evalList,
+      RustSemantics::findFunction,
+      RustSemantics::finished,
+      RustSemantics::invoke,
+      RustSemantics::isBytes,
+      RustSemantics::isList,
+      RustSemantics::isString,
+      RustSemantics::itemAccepts,
+      RustSemantics::itemOperands,
+      RustSemantics::itemPrimitive,
+      RustSemantics::itemTakes,
+      RustSemantics::itemWidth,
+      RustSemantics::lookup,
+      RustSemantics::machineAccepts,
+      RustSemantics::machinePrimitive,
+      RustSemantics::machineWidth,
+      RustSemantics::patternsOf,
+      RustSemantics::returned,
+      RustSemantics::runExport,
+      RustSemantics::runItem,
+      RustSemantics::runMachine,
+      appendBytesFunction,
+      appendListFunction,
+      compareBytesFunction,
+      indexBytesFunction,
+      indexListFunction,
+      joinFunction,
+      lengthBytesFunction,
+      lengthListFunction,
+      lengthStringFunction,
+      sliceBytesFunction,
+      sliceListFunction,
+      splitExactFunction,
+      stdCrate,
+      utf8DecodeFunction,
+      utf8EncodeFunction
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.compareBytes) (cons (ctor TargetSyntax::Value.bytes a) (cons (ctor TargetSyntax::Value.bytes b) (nil TargetSyntax::Value))))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: refines_split_exact,
+  parameters: [text : String, delimiter : String, maximum : UInt32],
+  statement: ((RustSemantics::runExport 12 (stdCrate) "split_exact" (cons (ctor TargetSyntax::Value.string text) (cons (ctor TargetSyntax::Value.string delimiter) (cons (ctor TargetSyntax::Value.u32 maximum) (nil TargetSyntax::Value))))) = (RustSemantics::runItem (ctor RustSyntax::Profile.std) (ctor RustSyntax::Item.splitExact) (cons (ctor TargetSyntax::Value.string text) (cons (ctor TargetSyntax::Value.string delimiter) (cons (ctor TargetSyntax::Value.u32 maximum) (nil TargetSyntax::Value)))))),
+  proof: term_cases{
+    definitions: [
+      RustSemantics::bindPattern,
+      RustSemantics::bindPatterns,
+      RustSemantics::eval,
+      RustSemantics::evalBlock,
+      RustSemantics::evalList,
+      RustSemantics::findFunction,
+      RustSemantics::finished,
+      RustSemantics::invoke,
+      RustSemantics::isBytes,
+      RustSemantics::isList,
+      RustSemantics::isString,
+      RustSemantics::itemAccepts,
+      RustSemantics::itemOperands,
+      RustSemantics::itemPrimitive,
+      RustSemantics::itemTakes,
+      RustSemantics::itemWidth,
+      RustSemantics::lookup,
+      RustSemantics::machineAccepts,
+      RustSemantics::machinePrimitive,
+      RustSemantics::machineWidth,
+      RustSemantics::patternsOf,
+      RustSemantics::returned,
+      RustSemantics::runExport,
+      RustSemantics::runItem,
+      RustSemantics::runMachine,
+      appendBytesFunction,
+      appendListFunction,
+      compareBytesFunction,
+      indexBytesFunction,
+      indexListFunction,
+      joinFunction,
+      lengthBytesFunction,
+      lengthListFunction,
+      lengthStringFunction,
+      sliceBytesFunction,
+      sliceListFunction,
+      splitExactFunction,
+      stdCrate,
+      utf8DecodeFunction,
+      utf8EncodeFunction
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.splitExact) (cons (ctor TargetSyntax::Value.string text) (cons (ctor TargetSyntax::Value.string delimiter) (cons (ctor TargetSyntax::Value.u32 maximum) (nil TargetSyntax::Value)))))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: refines_join,
+  parameters: [texts : (List TargetSyntax::Value), delimiter : String],
+  statement: ((RustSemantics::runExport 12 (stdCrate) "join" (cons (ctor TargetSyntax::Value.list texts) (cons (ctor TargetSyntax::Value.string delimiter) (nil TargetSyntax::Value)))) = (RustSemantics::runItem (ctor RustSyntax::Profile.std) (ctor RustSyntax::Item.join) (cons (ctor TargetSyntax::Value.list texts) (cons (ctor TargetSyntax::Value.string delimiter) (nil TargetSyntax::Value))))),
+  proof: term_cases{
+    definitions: [
+      RustSemantics::bindPattern,
+      RustSemantics::bindPatterns,
+      RustSemantics::eval,
+      RustSemantics::evalBlock,
+      RustSemantics::evalList,
+      RustSemantics::findFunction,
+      RustSemantics::finished,
+      RustSemantics::invoke,
+      RustSemantics::isBytes,
+      RustSemantics::isList,
+      RustSemantics::isString,
+      RustSemantics::itemAccepts,
+      RustSemantics::itemOperands,
+      RustSemantics::itemPrimitive,
+      RustSemantics::itemTakes,
+      RustSemantics::itemWidth,
+      RustSemantics::lookup,
+      RustSemantics::machineAccepts,
+      RustSemantics::machinePrimitive,
+      RustSemantics::machineWidth,
+      RustSemantics::patternsOf,
+      RustSemantics::returned,
+      RustSemantics::runExport,
+      RustSemantics::runItem,
+      RustSemantics::runMachine,
+      appendBytesFunction,
+      appendListFunction,
+      compareBytesFunction,
+      indexBytesFunction,
+      indexListFunction,
+      joinFunction,
+      lengthBytesFunction,
+      lengthListFunction,
+      lengthStringFunction,
+      sliceBytesFunction,
+      sliceListFunction,
+      splitExactFunction,
+      stdCrate,
+      utf8DecodeFunction,
+      utf8EncodeFunction
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.join) (cons (ctor TargetSyntax::Value.list texts) (cons (ctor TargetSyntax::Value.string delimiter) (nil TargetSyntax::Value))))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+\end{semanticmodule}
+\end{lexlean}

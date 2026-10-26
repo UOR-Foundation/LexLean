@@ -12,6 +12,7 @@ definition{
   executable: true
 }
 
+
 definition{
   name: cl02,
   parameters: [],
@@ -19,6 +20,7 @@ definition{
   body: (record Rows::IdRow {id := "CL-02", level := "build", suite := "cli-api", statement := "Init creates the complete canonical skeleton only in an absent or empty destination and never overwrites.", sections := "§23.4"}),
   executable: true
 }
+
 
 definition{
   name: cl03,
@@ -28,6 +30,7 @@ definition{
   executable: true
 }
 
+
 definition{
   name: cl04,
   parameters: [],
@@ -35,6 +38,7 @@ definition{
   body: (record Rows::IdRow {id := "CL-04", level := "build", suite := "cli-api", statement := "Check runs through linked IR and emits no build artifacts.", sections := "§23.4"}),
   executable: true
 }
+
 
 definition{
   name: cl05,
@@ -44,6 +48,7 @@ definition{
   executable: true
 }
 
+
 definition{
   name: cl06,
   parameters: [],
@@ -51,6 +56,7 @@ definition{
   body: (record Rows::IdRow {id := "CL-06", level := "build", suite := "cli-api", statement := "Verify runs the complete fixed verification pipeline and accepts no output or suppression option.", sections := "§23.4"}),
   executable: true
 }
+
 
 definition{
   name: cl07,
@@ -60,6 +66,7 @@ definition{
   executable: true
 }
 
+
 definition{
   name: cl08,
   parameters: [],
@@ -67,6 +74,7 @@ definition{
   body: (record Rows::IdRow {id := "CL-08", level := "build", suite := "cli-api", statement := "Clean removes only the validated configured build root and no source or external cache.", sections := "§23.4"}),
   executable: true
 }
+
 
 definition{
   name: cl09,
@@ -76,6 +84,7 @@ definition{
   executable: true
 }
 
+
 definition{
   name: cl10,
   parameters: [],
@@ -83,6 +92,7 @@ definition{
   body: (record Rows::IdRow {id := "CL-10", level := "build", suite := "cli-api", statement := "All, explicit-files, and entrypoint selections return sorted project result sets including import closure.", sections := "§23.3"}),
   executable: true
 }
+
 
 definition{
   name: cl11,
@@ -92,6 +102,7 @@ definition{
   executable: true
 }
 
+
 definition{
   name: cl12,
   parameters: [],
@@ -99,6 +110,7 @@ definition{
   body: (record Rows::IdRow {id := "CL-12", level := "build", suite := "cli-api", statement := "Human and canonical-JSON output modes obey exact stream, color, and cardinality rules.", sections := "§23.7"}),
   executable: true
 }
+
 
 definition{
   name: cl13,
@@ -108,6 +120,7 @@ definition{
   executable: true
 }
 
+
 definition{
   name: cl14,
   parameters: [],
@@ -115,6 +128,7 @@ definition{
   body: (record Rows::IdRow {id := "CL-14", level := "build", suite := "cli-api", statement := "Every public multi-module operation returns a ProjectResultSet or VerifiedProject rather than a singular unit.", sections := "§24.2, §24.4"}),
   executable: true
 }
+
 
 definition{
   name: cl15,
@@ -124,6 +138,7 @@ definition{
   executable: true
 }
 
+
 definition{
   name: cl16,
   parameters: [],
@@ -131,6 +146,7 @@ definition{
   body: (record Rows::IdRow {id := "CL-16", level := "build", suite := "cli-api", statement := "Every public failure is a LexLeanError and malformed user input cannot panic.", sections := "§24.5"}),
   executable: true
 }
+
 
 definition{
   name: cl17,
@@ -140,6 +156,7 @@ definition{
   executable: true
 }
 
+
 definition{
   name: cl18,
   parameters: [],
@@ -147,6 +164,7 @@ definition{
   body: (record Rows::IdRow {id := "CL-18", level := "build", suite := "cli-api", statement := "Version output reports the compiler version, every supported language in ascending order each followed by its compiler-semantics ID, and the Lean toolchain exactly.", sections := "§30.3"}),
   executable: true
 }
+
 
 definition{
   name: cl19,
@@ -156,6 +174,7 @@ definition{
   executable: true
 }
 
+
 definition{
   name: cl20,
   parameters: [],
@@ -163,6 +182,7 @@ definition{
   body: (record Rows::IdRow {id := "CL-20", level := "build", suite := "cli-api", statement := "Language-1.1 init creates and verifies a declarative Lake workspace containing no source Lean module.", sections := "§23.4"}),
   executable: true
 }
+
 
 definition{
   name: cl21,
@@ -172,6 +192,7 @@ definition{
   executable: true
 }
 
+
 definition{
   name: cl22,
   parameters: [],
@@ -180,11 +201,20 @@ definition{
   executable: true
 }
 
+
 definition{
   name: cl23,
   parameters: [],
   result: Rows::IdRow,
   body: (record Rows::IdRow {id := "CL-23", level := "build", suite := "cli-api", statement := "lexlean production targets prints the canonical target-descriptor document in either output mode, production build --request publishes the bundle its request names and reports the bundle and the project's source, semantic, build, and attestation IDs in its command result, production verify-artifact replays a bundle with no project, and each maps a malformed request, a refused request, and a rejected replay to the exact exit code of its registered class.", sections := "§24.7"}),
+  executable: true
+}
+
+definition{
+  name: cl24,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CL-24", level := "build", suite := "cli-api", statement := "lexlean migrate --to 1.2 migrates a language-1.1 data-form project to language 1.2 in one command: it rewrites every module to the authoring notation through lexlean::sdk::to_notation with the same declarations, names, statements, and axiom policies, moves the builtin glossary references of every source and the imports of every path lexicon package to 1.2.0, rewrites the language row, and regenerates the lock as lexlean/lock/2, so the result checks, has a current lock, and is canonical; --check proves the migration and writes nothing; and a project that is not language 1.1 is refused with LLC0103 and a module that is not a language-1.1 data-form semantic module, a data form that is not canonical JSON included, with LLP2003, each leaving every file of the project unchanged.", sections := "§17.12, §23.4"}),
   executable: true
 }
 \end{semanticmodule}

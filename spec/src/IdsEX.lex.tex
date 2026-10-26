@@ -12,6 +12,7 @@ definition{
   executable: true
 }
 
+
 definition{
   name: ex02,
   parameters: [],
@@ -19,6 +20,7 @@ definition{
   body: (record Rows::IdRow {id := "EX-02", level := "build", suite := "examples", statement := "Changing the example proposition while retaining the old proof causes remapped Lean verification failure.", sections := "§29.6"}),
   executable: true
 }
+
 
 definition{
   name: ex03,
@@ -28,6 +30,7 @@ definition{
   executable: true
 }
 
+
 definition{
   name: ex04,
   parameters: [],
@@ -35,6 +38,7 @@ definition{
   body: (record Rows::IdRow {id := "EX-04", level := "build", suite := "examples", statement := "Adding an indistinguishable same-surface entry causes ambiguity rather than priority selection.", sections := "§29.6"}),
   executable: true
 }
+
 
 definition{
   name: ex05,
@@ -44,6 +48,7 @@ definition{
   executable: true
 }
 
+
 definition{
   name: ex06,
   parameters: [],
@@ -51,6 +56,7 @@ definition{
   body: (record Rows::IdRow {id := "EX-06", level := "build", suite := "examples", statement := "Two clean example builds in distinct paths have byte-identical platform-independent artifacts.", sections := "§29.6"}),
   executable: true
 }
+
 
 definition{
   name: ex07,
@@ -60,11 +66,20 @@ definition{
   executable: true
 }
 
+
 definition{
   name: ex08,
   parameters: [],
   result: Rows::IdRow,
   body: (record Rows::IdRow {id := "EX-08", level := "build", suite := "examples", statement := "Every example directory is discovered automatically and must satisfy the full example gate.", sections := "§28.6"}),
+  executable: true
+}
+
+definition{
+  name: ex09,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "EX-09", level := "build", suite := "examples", statement := "The `helpdesk` example is a text application written entirely from language-1.2 source and the three source packages `std`, `std-models`, and `std-reasoning` that its lock pins: its production roots `classify`, `plan`, and `dispatch : Bytes -> Bytes` use the model alone, the reasoner alone, and both together, `dispatch` trimming the request with `LexLeanStd.Text`, scoring it with an integer feed-forward model whose weights are content-addressed artifacts and which is applied through its required precondition check, abstaining with `decideOr`, committing through the generic `GateModel` of `std-models`, and planning the reply with the `Drain` reasoner of `std-reasoning`; the example holds no handwritten Lean or Rust, verifies under the pinned Lean, its roots export through `lexlean production build` with the packages committed under `tests/production-export/helpdesk/`, and a changed byte or version of a package is `LLC0105`, an import of a module of an undeclared package `LLR3009`, a tampered artifact `LLR3007`, and a model applied without its required check `LLT4008`.", sections := "§10.5, §17.22, §24.7, §28.6"}),
   executable: true
 }
 \end{semanticmodule}

@@ -1,4 +1,4 @@
-//! The ends of a fallible loop (SPEC.md §17.16, issue 279): `RB-21`.
+//! The ends of a fallible loop (SPEC.md §17.16, issue 279): `RB-22`.
 //!
 //! A function whose self calls are all tail calls is rendered as a loop
 //! (`RB-14`): a tail self call continues it with `Ok` of the next state, and
@@ -237,10 +237,10 @@ fn operand(end: Expr) -> Expr {
 ///
 /// # Panics
 ///
-/// When an assertion of `RB-21` fails.
+/// When an assertion of `RB-22` fails.
 #[allow(clippy::too_many_lines)]
 pub fn run(id: &str) {
-    assert_eq!(id, "RB-21");
+    assert_eq!(id, "RB-22");
     let project = P::copy_tests_project(PROJECT);
     let checked = support::checked_project(&project);
     let lowered: Vec<(&str, &str, Lowered)> = ROOTS

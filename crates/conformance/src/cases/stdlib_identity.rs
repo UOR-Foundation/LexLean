@@ -1,5 +1,5 @@
 //! Every content identity is the one the `sha2` crate gave (SPEC.md §21,
-//! `SL-06`, #126 stage 2): the compiler's digest is held, over the whole
+//! `SL-07`, #126 stage 2): the compiler's digest is held, over the whole
 //! repository tree, to the oracle that computed every committed identity
 //! before the package replaced it, to the values those identities left in the
 //! committed locks, and to the independent recomputations of the recipes. The
@@ -56,13 +56,13 @@ fn pinned(root: &camino::Utf8Path, lock: &str) -> String {
         .to_owned()
 }
 
-/// Run the case for `SL-06`.
+/// Run the case for `SL-07`.
 ///
 /// # Panics
 ///
 /// Panics when the case's assertion fails.
 pub(super) fn run(id: &str) {
-    assert_eq!(id, "SL-06");
+    assert_eq!(id, "SL-07");
     let root = support::repo_root();
 
     // Armed: the two sides are two implementations, so agreement is evidence.

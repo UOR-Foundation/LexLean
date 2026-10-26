@@ -1,4 +1,4 @@
-//! The `examples` suite: EX-01..EX-08.
+//! The `examples` suite: EX-01..EX-09.
 
 use crate::support::{self, P};
 
@@ -171,7 +171,7 @@ pub(crate) fn run(id: &str) {
         // exactly the one prescribed diagnostic code.
         "EX-07" => {
             let root = support::repo_root();
-            let prescribed: [(&str, &str); 285] = [
+            let prescribed: [(&str, &str); 298] = [
                 ("unknown-word", "LLL1004"),
                 ("unknown-symbol", "LLL1004"),
                 ("unknown-control", "LLL1004"),
@@ -282,6 +282,20 @@ pub(crate) fn run(id: &str) {
                 ("recursion-missing-evidence", "LLT4001"),
                 ("recursion-evidence-omits-match", "LLT4001"),
                 ("semantic-unknown-member", "LLT4001"),
+                // §17.10: `term_cases` fails closed (`SM-35`).
+                ("term-cases-language-11", "LLT4001"),
+                ("term-cases-empty-definitions", "LLT4001"),
+                ("term-cases-definitions-unsorted", "LLT4001"),
+                ("term-cases-definition-repeated", "LLT4001"),
+                ("term-cases-definition-absent", "LLT4001"),
+                ("term-cases-scrutinee-not-inductive", "LLT4001"),
+                ("term-cases-reserved-name", "LLT4001"),
+                // §17.10: `cases` on a Boolean fails closed (`SM-36`).
+                ("cases-bool-language-11", "LLT4001"),
+                ("cases-bool-missing-branch", "LLT4001"),
+                ("cases-bool-branch-repeated", "LLT4001"),
+                ("cases-bool-branch-binder", "LLT4001"),
+                ("cases-bool-induction", "LLT4001"),
                 ("mutual-label-shared", "LLT4001"),
                 ("recursion-member-under-lambda", "LLT4001"),
                 ("recursion-well-founded-reference", "LLT4001"),
@@ -319,6 +333,10 @@ pub(crate) fn run(id: &str) {
                 // §17.12: models fail closed (artifacts, interfaces, composition,
                 // boundaries, evidence) before any backend, or at verification.
                 ("model-under-1.1", "LLT4001"),
+                // §17.12, §23.4: a module that is not a language-1.1 module (the
+                // notation cannot spell it) is not migrated, and nothing is
+                // written (CL-24).
+                ("migrate-module-without-notation", "LLP2003"),
                 ("model-opaque-member", "LLT4001"),
                 ("model-float-descriptor", "LLT4001"),
                 ("model-unregistered-claim", "LLT4001"),
@@ -673,6 +691,8 @@ pub(crate) fn run(id: &str) {
             );
         }
         // §28.6: every example directory is discovered and gate-complete.
+        // §10.5, §17.22: the helpdesk text application.
+        "EX-09" => super::helpdesk::run(id),
         "EX-08" => {
             let examples = support::repo_root().join("examples");
             let mut found = 0usize;
