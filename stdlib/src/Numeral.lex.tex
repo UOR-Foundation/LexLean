@@ -1,0 +1,207 @@
+\begin{lexlean}{Numeral}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Hexadecimal and decimal}
+\begin{semanticmodule}
+definition{
+  name: decimalDigits,
+  parameters: [],
+  result: Bytes,
+  body: 0x30313233343536373839,
+  executable: true
+}
+
+definition{
+  name: hexDigits,
+  parameters: [],
+  result: Bytes,
+  body: 0x30313233343536373839616263646566,
+  executable: true
+}
+
+definition{
+  name: byteValues,
+  parameters: [],
+  result: Bytes,
+  body: 0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff,
+  executable: true
+}
+
+definition{
+  name: pick,
+  parameters: [table : Bytes, value : Nat],
+  result: Bytes,
+  body: (match (prim slice table value 1 : (Option Bytes))
+    | Option.some piece => piece
+    | Option.none => 0x),
+  executable: true
+}
+
+definition{
+  name: digitStep,
+  parameters: [table : Bytes, radix : Nat, state : (Nat * Bytes)],
+  result: (Option (Nat * Bytes)),
+  body: (let rest : Nat := (first state); (if (rest =? 0) then (ctor Option.none [(Nat * Bytes)]) else (ctor Option.some [(Nat * Bytes)] ((prim quotient rest radix 0 : Nat), (prim append (pick table (prim remainder rest radix 0 : Nat)) (second state) : Bytes))))),
+  executable: true
+}
+
+definition{
+  name: digits,
+  parameters: [table : Bytes, radix : Nat, number : Nat],
+  result: Bytes,
+  body: (if (number =? 0) then (pick table 0) else (second (first (prim iterate_until (fun [radix, table] (state : (Nat * Bytes)) => (digitStep table radix state)) number (number, 0x) : ((Nat * Bytes) * Bool))))),
+  executable: true
+}
+
+definition{
+  name: decimal,
+  parameters: [number : Nat],
+  result: Bytes,
+  body: (digits (decimalDigits) 10 number),
+  executable: true,
+  production: {effects: [allocation], targets: [rust-std]}
+}
+
+definition{
+  name: hexNat,
+  parameters: [number : Nat],
+  result: Bytes,
+  body: (digits (hexDigits) 16 number),
+  executable: true,
+  production: {effects: [allocation], targets: [rust-std]}
+}
+
+definition{
+  name: isDecimal,
+  parameters: [byte : UInt8],
+  result: Bool,
+  body: (let value : Nat := (prim to_nat byte : Nat); ((48 <=? value) && (value <=? 57))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: decimalValue,
+  parameters: [byte : UInt8],
+  result: Nat,
+  body: (prim subtract (prim to_nat byte : Nat) 48 : Nat),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: decimalEnd,
+  parameters: [subject : Bytes],
+  result: Nat,
+  body: (first (prim iterate_until (fun [subject] (position : Nat) => (match (prim index subject position : (Option UInt8))
+    | Option.some byte => (if (isDecimal byte) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat]))
+    | Option.none => (ctor Option.none [Nat]))) (prim length subject : Nat) 0 : (Nat * Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: canonicalDecimal,
+  parameters: [subject : Bytes],
+  result: Bool,
+  body: (let total : Nat := (prim length subject : Nat); (if (0 <? total) then (if ((decimalEnd subject) =? total) then (if (1 <? total) then (match (prim index subject 0 : (Option UInt8))
+    | Option.some byte => (if (prim equal byte (48 : UInt8) : Bool) then false else true)
+    | Option.none => false) else true) else false) else false)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: accumulate,
+  parameters: [subject : Bytes, state : (Nat * Nat)],
+  result: (Option (Nat * Nat)),
+  body: (match (prim index subject (first state) : (Option UInt8))
+    | Option.some byte => (ctor Option.some [(Nat * Nat)] (((first state) + 1), ((prim multiply (second state) 10 : Nat) + (decimalValue byte))))
+    | Option.none => (ctor Option.none [(Nat * Nat)])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: parseDecimal,
+  parameters: [subject : Bytes],
+  result: (Option Nat),
+  body: (if (canonicalDecimal subject) then (ctor Option.some [Nat] (second (first (prim iterate_until (fun [subject] (state : (Nat * Nat)) => (accumulate subject state)) (prim length subject : Nat) (0, 0) : ((Nat * Nat) * Bool))))) else (ctor Option.none [Nat])),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: hexByte,
+  parameters: [byte : UInt8],
+  result: Bytes,
+  body: (let value : Nat := (prim to_nat byte : Nat); (prim append (pick (hexDigits) (prim quotient value 16 0 : Nat)) (pick (hexDigits) (prim remainder value 16 0 : Nat)) : Bytes)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: hexStep,
+  parameters: [subject : Bytes, state : (Nat * Bytes)],
+  result: (Option (Nat * Bytes)),
+  body: (match (prim index subject (first state) : (Option UInt8))
+    | Option.some byte => (ctor Option.some [(Nat * Bytes)] (((first state) + 1), (prim append (second state) (hexByte byte) : Bytes)))
+    | Option.none => (ctor Option.none [(Nat * Bytes)])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: hex,
+  parameters: [subject : Bytes],
+  result: Bytes,
+  body: (second (first (prim iterate_until (fun [subject] (state : (Nat * Bytes)) => (hexStep subject state)) (prim length subject : Nat) (0, 0x) : ((Nat * Bytes) * Bool)))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: isHex,
+  parameters: [byte : UInt8],
+  result: Bool,
+  body: (let value : Nat := (prim to_nat byte : Nat); (((48 <=? value) && (value <=? 57)) || ((97 <=? value) && (value <=? 102)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: hexValue,
+  parameters: [byte : UInt8],
+  result: Nat,
+  body: (let value : Nat := (prim to_nat byte : Nat); (if (value <=? 57) then (prim subtract value 48 : Nat) else (prim subtract value 87 : Nat))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: pairStep,
+  parameters: [subject : Bytes, state : (Nat * (Option Bytes))],
+  result: (Option (Nat * (Option Bytes))),
+  body: (let position : Nat := (first state); (match (second state)
+    | Option.none => (ctor Option.none [(Nat * (Option Bytes))])
+    | Option.some sofar => (match (prim index subject position : (Option UInt8))
+      | Option.none => (ctor Option.none [(Nat * (Option Bytes))])
+      | Option.some high => (match (prim index subject (position + 1) : (Option UInt8))
+        | Option.none => (ctor Option.some [(Nat * (Option Bytes))] (position, (ctor Option.none [Bytes])))
+        | Option.some low => (if ((isHex high) && (isHex low)) then (ctor Option.some [(Nat * (Option Bytes))] ((position + 2), (ctor Option.some [Bytes] (prim append sofar (pick (byteValues) ((prim multiply (hexValue high) 16 : Nat) + (hexValue low))) : Bytes)))) else (ctor Option.some [(Nat * (Option Bytes))] (position, (ctor Option.none [Bytes])))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: parseHex,
+  parameters: [subject : Bytes],
+  result: (Option Bytes),
+  body: (let total : Nat := (prim length subject : Nat); (if ((prim remainder total 2 0 : Nat) =? 0) then (second (first (prim iterate_until (fun [subject] (state : (Nat * (Option Bytes))) => (pairStep subject state)) total (0, (ctor Option.some [Bytes] 0x)) : ((Nat * (Option Bytes)) * Bool)))) else (ctor Option.none [Bytes]))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}
