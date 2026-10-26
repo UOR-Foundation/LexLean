@@ -79,15 +79,20 @@ jobs:
           cargo package --locked --no-verify "${dirty[@]}" --package lexlean --target-dir "$b"
           cmp "$a/package/$crate" "$b/package/$crate"
           cargo publish --dry-run --locked "${dirty[@]}" --package lexlean --target-dir "$dry"
-          cmp "$a/package/$crate" "$dry/package/$crate"
-          .github/crate-publication.sh metadata "$dry/package/$crate"
+          # Where the dry run leaves the archive moved between cargo releases
+          # (1.97 writes it under `package/tmp-crate/`), so the archive is
+          # located by name, not by a path one cargo version used.
+          dry_crate="$(find "$dry/package" -type f -name "$crate" | head -1)"
+          [ -n "$dry_crate" ] || { echo "::error::cargo publish --dry-run left no $crate under $dry/package"; exit 1; }
+          cmp "$a/package/$crate" "$dry_crate"
+          .github/crate-publication.sh metadata "$dry_crate"
           if [ "$PRERELEASE" = true ]; then
-            sha256="$(sha256sum "$dry/package/$crate" | cut -d' ' -f1)"
+            sha256="$(sha256sum "$dry_crate" | cut -d' ' -f1)"
             agreed="three packagings of the same commit"
           else
             # The crate the release attaches and the checksum it lists for it.
             cargo xtask release-artifacts
-            sha256="$(.github/crate-publication.sh identity release "$dry/package/$crate")"
+            sha256="$(.github/crate-publication.sh identity release "$dry_crate")"
             agreed="the crate release-artifacts attaches and the checksum checksums.txt lists"
           fi
           echo "sha256=$sha256" >> "$GITHUB_OUTPUT"
