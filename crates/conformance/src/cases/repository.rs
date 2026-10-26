@@ -2843,9 +2843,17 @@ fn release_gate_decisions() {
     green.push(stamp("atlas (prefix)", "success"));
     green.push(stamp("atlas (join)", "success"));
     green.extend(hosts.iter().map(|host| stamp(host, "success")));
+    // One host failed: the join, the hosts' count, and every leg are still
+    // there, so only the reading of every conclusion refuses it.
     let one_failed: Vec<String> = green
         .iter()
-        .map(|job| job.replacen("atlas (join)\tsuccess", "atlas (join)\tfailure", 1))
+        .map(|job| {
+            job.replacen(
+                &format!("{}\tsuccess", hosts[0]),
+                &format!("{}\tfailure", hosts[0]),
+                1,
+            )
+        })
         .collect();
     let no_join: Vec<String> = green
         .iter()
