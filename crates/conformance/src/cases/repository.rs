@@ -2861,6 +2861,18 @@ fn release_gate_decisions() {
         .cloned()
         .collect();
     let draft: Vec<String> = vec![stamp("plan", "success"), stamp("just vv (rest)", "success")];
+    // Every job but one host: only the count of the hosts refuses it.
+    let missing_host: Vec<String> = green
+        .iter()
+        .filter(|job| !job.starts_with(hosts[1].as_str()))
+        .cloned()
+        .collect();
+    // Every job but one leg: only the reading of every leg refuses it.
+    let missing_leg: Vec<String> = green
+        .iter()
+        .filter(|job| !job.starts_with("just vv (examples)"))
+        .cloned()
+        .collect();
 
     let scratch = tempfile::tempdir().expect("tempdir");
     let dir = scratch.path();
@@ -3030,6 +3042,16 @@ fn release_gate_decisions() {
             &no_join,
         ),
         ("a draft run", vec![(head.as_str(), run_line("16"))], &draft),
+        (
+            "a missing leg",
+            vec![(head.as_str(), run_line("17"))],
+            &missing_leg,
+        ),
+        (
+            "a missing host",
+            vec![(head.as_str(), run_line("18"))],
+            &missing_host,
+        ),
     ] {
         let (code, evidence, stderr) = decide(&head, &runs, jobs);
         assert_eq!(code, 1, "{why}: refused ({stderr})");
