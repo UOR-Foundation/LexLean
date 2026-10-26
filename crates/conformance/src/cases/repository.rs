@@ -1,4 +1,4 @@
-//! The `repository` suite: RP-01..RP-16.
+//! The `repository` suite: RP-01..RP-16 and RP-18.
 
 use std::collections::BTreeSet;
 
@@ -407,7 +407,7 @@ pub(crate) fn run(id: &str) {
         "RP-01" => {
             let workspace = root_file("Cargo.toml");
             for required in [
-                "version = \"0.3.0\"",
+                "version = \"0.4.0\"",
                 "edition = \"2021\"",
                 "rust-version = \"1.97\"",
                 "license = \"MIT OR Apache-2.0\"",
@@ -440,7 +440,7 @@ pub(crate) fn run(id: &str) {
             let (exit, stdout, _) = support::cli_in(&root, &["--version"]);
             assert_eq!(exit, 0);
             assert!(
-                stdout.starts_with("lexlean 0.3.0\n"),
+                stdout.starts_with("lexlean 0.4.0\n"),
                 "§30.3: the binary reports the lexlean identity, got {stdout:?}"
             );
         }
@@ -538,7 +538,11 @@ pub(crate) fn run(id: &str) {
             // sanctioned `expected/` oracle directories), so no tracked subtree
             // can hide from the walkers.
             let is_sanctioned_expected = |parts: &[&str], index: usize| -> bool {
-                (index == 1 && matches!(parts[0], "bootstrap" | "compiler" | "stdlib"))
+                (index == 1
+                    && matches!(
+                        parts[0],
+                        "bootstrap" | "compiler" | "std-models" | "std-reasoning" | "stdlib"
+                    ))
                     || (index == 2 && parts[0] == "examples")
                     || (index == 3
                         && parts[0] == "tests"
@@ -756,7 +760,7 @@ pub(crate) fn run(id: &str) {
             let model = repo_model::Model::load(&root.join("model").into_std_path_buf())
                 .expect("the model loads");
             let table = spec_table();
-            assert_eq!(table.len(), 430, "§31 has 430 rows");
+            assert_eq!(table.len(), 456, "§31 has 456 rows");
             assert_eq!(model.ids.id.len(), table.len(), "register row count");
             for ((spec_id, spec_suite, spec_statement), row) in
                 table.iter().zip(model.ids.id.iter())
@@ -1029,7 +1033,7 @@ pub(crate) fn run(id: &str) {
                 "no workspace test is ignored or cfg-hidden: {hidden_tests:?}"
             );
             let unmet = repo_model::release::check(root.as_std_path(), &hidden_tests)
-                .expect_err("a 0.3.0 tree must refuse release (§2.3, §30.4)");
+                .expect_err("a 0.4.0 tree must refuse release (§2.3, §30.4)");
             // The criterion reads the attribute-block scan, so a hidden test
             // is unmet whatever attribute form hides it (§30.4).
             let planted: BTreeSet<String> = ["conformance_rp_12".to_owned()].into_iter().collect();
@@ -2017,6 +2021,9 @@ pub(crate) fn run(id: &str) {
                 );
             }
         }
+        // §30.3: the crate that goes to crates.io is the crate the release
+        // attaches, proved on every run, and uploaded only with a credential.
+        "RP-18" => rp_18(),
         other => panic!("no repository case is wired for {other}"),
     }
 }
@@ -2153,4 +2160,616 @@ fn rp_15() {
             .expect_err("an unread consumer fails")
             .contains(path));
     }
+}
+
+/// The body of the job `name` of a workflow: the lines after its key at two
+/// spaces of indentation, up to the next line at that indentation.
+fn workflow_job(workflow: &str, name: &str) -> Result<String, String> {
+    let header = format!("\n  {name}:\n");
+    let start = workflow
+        .find(&header)
+        .ok_or_else(|| format!("no job `{name}`"))?
+        + header.len();
+    let body: Vec<&str> = workflow[start..]
+        .lines()
+        .take_while(|line| line.is_empty() || line.starts_with("   "))
+        .collect();
+    Ok(body.join("\n"))
+}
+
+/// Where `needle` first appears in `text`, or the refusal that names it.
+fn position_of(text: &str, needle: &str, context: &str) -> Result<usize, String> {
+    text.find(needle)
+        .ok_or_else(|| format!("{context} has no `{needle}`"))
+}
+
+/// RP-18 (§30.3, #260): the workflows prove the crate on every run and gate its
+/// upload. The crate job packages twice to the same bytes, dry-runs, checks the
+/// archive against what crates.io needs, and compares the bytes with the crate
+/// the release attaches and the checksum it lists; the tag's `publish` job
+/// repeats the comparison against the dry-run package before it asks how the
+/// upload is authorised, and the one step that runs `cargo publish` without
+/// `--dry-run` there, and the one in the pre-release job, run only when it is.
+fn crate_publication_workflows(release: &str, crate_workflow: &str) -> Result<(), String> {
+    let in_order = |text: &str, context: &str, needles: &[&str]| -> Result<(), String> {
+        let mut previous = 0;
+        for needle in needles {
+            let at = position_of(text, needle, context)?;
+            if at < previous {
+                return Err(format!(
+                    "{context}: `{needle}` comes before the step it must follow"
+                ));
+            }
+            previous = at;
+        }
+        Ok(())
+    };
+    let uploads = |text: &str| -> usize {
+        text.lines()
+            .filter(|line| line.contains("cargo publish ") && !line.contains("--dry-run"))
+            .filter(|line| {
+                !line.trim_start().starts_with('#') && !line.trim_start().starts_with("echo")
+            })
+            .count()
+    };
+
+    // release.yml: every run calls the crate workflow, and the tag waits for it.
+    let crate_job = workflow_job(release, "crate")?;
+    for needle in [
+        "needs: identity",
+        "uses: ./.github/workflows/crate.yml",
+        "prerelease: false",
+    ] {
+        position_of(&crate_job, needle, "release.yml job `crate`")?;
+    }
+    let publish = workflow_job(release, "publish")?;
+    let needs = publish
+        .lines()
+        .find(|line| line.trim_start().starts_with("needs:"))
+        .ok_or("release.yml job `publish` has no needs")?;
+    if !needs.contains("crate,") {
+        return Err("release.yml job `publish` does not wait for the `crate` job".to_owned());
+    }
+    in_order(
+        &publish,
+        "release.yml job `publish`",
+        &[
+            "cargo xtask release-artifacts",
+            "cargo publish --dry-run --locked --package lexlean",
+            ".github/crate-publication.sh identity release",
+            ".github/crate-publication.sh mode",
+            "if: steps.upload.outputs.mode == 'trusted'",
+            "if: steps.upload.outputs.mode != 'none'",
+            "cargo publish --locked --package lexlean",
+        ],
+    )?;
+    position_of(
+        &publish,
+        "needs.crate.outputs.sha256",
+        "release.yml job `publish`",
+    )?;
+    if uploads(&publish) != 1 {
+        return Err(
+            "release.yml job `publish` runs `cargo publish` without --dry-run other than once"
+                .to_owned(),
+        );
+    }
+    for guarded in [
+        "- name: Publish the exact verified crate to crates.io\n        if: steps.upload.outputs.mode != 'none'\n",
+        "- name: Acquire crates.io trusted-publisher token\n        if: steps.upload.outputs.mode == 'trusted'\n",
+    ] {
+        position_of(&publish, guarded, "release.yml job `publish`")?;
+    }
+    // The token reaches cargo in the one step that uploads.
+    let token_uses = publish.matches("secrets.CARGO_REGISTRY_TOKEN").count();
+    if token_uses != 2 {
+        return Err(format!(
+            "release.yml job `publish` reads the token {token_uses} times: once to learn it exists and once to upload"
+        ));
+    }
+
+    // crate.yml: the proof, then the guarded upload of a pre-release.
+    let readiness = workflow_job(crate_workflow, "readiness")?;
+    in_order(
+        &readiness,
+        "crate.yml job `readiness`",
+        &[
+            ".github/crate-publication.sh prepare",
+            "cargo package --locked \"${dirty[@]}\" --package lexlean --target-dir \"$a\"",
+            "cargo package --locked --no-verify \"${dirty[@]}\" --package lexlean --target-dir \"$b\"",
+            "cmp \"$a/package/$crate\" \"$b/package/$crate\"",
+            "cargo publish --dry-run --locked \"${dirty[@]}\" --package lexlean --target-dir \"$dry\"",
+            "cmp \"$a/package/$crate\" \"$dry_crate\"",
+            ".github/crate-publication.sh metadata \"$dry_crate\"",
+            "cargo xtask release-artifacts",
+            ".github/crate-publication.sh identity release \"$dry_crate\"",
+        ],
+    )?;
+    if uploads(&readiness) != 0 {
+        return Err("crate.yml job `readiness` uploads".to_owned());
+    }
+    let prerelease = workflow_job(crate_workflow, "prerelease")?;
+    position_of(
+        &prerelease,
+        "if: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease }}",
+        "crate.yml job `prerelease`",
+    )?;
+    in_order(
+        &prerelease,
+        "crate.yml job `prerelease`",
+        &[
+            ".github/crate-publication.sh mode",
+            "- name: Upload the exact checked crate\n        if: ${{ steps.upload.outputs.mode != 'none' }}\n",
+            "test \"$(sha256sum \"${RUNNER_TEMP}/upload/package/lexlean-${VERSION}.crate\"",
+            "cargo publish --locked --allow-dirty --package lexlean",
+        ],
+    )?;
+    if uploads(&prerelease) != 1 {
+        return Err(
+            "crate.yml job `prerelease` runs `cargo publish` without --dry-run other than once"
+                .to_owned(),
+        );
+    }
+    position_of(
+        &prerelease,
+        "- name: Acquire crates.io trusted-publisher token\n        if: ${{ steps.upload.outputs.mode == 'trusted' }}\n",
+        "crate.yml job `prerelease`",
+    )?;
+    Ok(())
+}
+
+/// What `.github/crate-publication.sh` decides for planted inputs (RP-18): the
+/// script runs in scratch directories, so that each decision is shown and each
+/// way of being wrong is refused. It is bash with `sha256sum`, `tar` and `sed`,
+/// run where the gate runs (§8.3, §9.4: the normative host is Linux).
+fn crate_publication_decisions() {
+    use std::process::Command;
+    if !cfg!(target_os = "linux") {
+        return;
+    }
+    let root = support::repo_root();
+    let script = root.join(".github/crate-publication.sh");
+    let scratch = tempfile::tempdir().expect("tempdir");
+    let dir = scratch.path();
+    let run = |args: &[&str], environment: &[(&str, &str)]| -> (i32, String, String) {
+        let mut command = Command::new("bash");
+        command
+            .arg(script.as_std_path())
+            .args(args)
+            .current_dir(dir)
+            .env_remove("HAS_CARGO_REGISTRY_TOKEN")
+            .env_remove("TRUSTED_PUBLISHING");
+        for (key, value) in environment {
+            command.env(key, value);
+        }
+        let output = command.output().expect("bash runs");
+        (
+            output.status.code().expect("an exit code"),
+            String::from_utf8_lossy(&output.stdout).trim().to_owned(),
+            String::from_utf8_lossy(&output.stderr).trim().to_owned(),
+        )
+    };
+
+    // How the upload is authorised: a token, trusted publishing, or neither.
+    for (environment, expected) in [
+        (vec![("HAS_CARGO_REGISTRY_TOKEN", "true")], "token"),
+        (
+            vec![
+                ("HAS_CARGO_REGISTRY_TOKEN", "true"),
+                ("TRUSTED_PUBLISHING", "true"),
+            ],
+            "token",
+        ),
+        (vec![("TRUSTED_PUBLISHING", "true")], "trusted"),
+        (
+            vec![
+                ("HAS_CARGO_REGISTRY_TOKEN", "false"),
+                ("TRUSTED_PUBLISHING", "false"),
+            ],
+            "none",
+        ),
+        (vec![("HAS_CARGO_REGISTRY_TOKEN", "")], "none"),
+        (vec![], "none"),
+    ] {
+        let (status, out, _) = run(&["mode"], &environment);
+        assert_eq!(
+            (status, out.as_str()),
+            (0, expected),
+            "mode for {environment:?}"
+        );
+    }
+
+    // A commit of a release line is a development pre-release of its release.
+    assert_eq!(
+        run(&["prerelease", "release/v0.4", "242"], &[]).1,
+        "0.4.0-dev.242"
+    );
+    assert_eq!(
+        run(&["prerelease", "release/v12.3", "7"], &[]).1,
+        "12.3.0-dev.7"
+    );
+    for (reference, count) in [
+        ("main", "242"),
+        ("release/v0.4.1", "242"),
+        ("refs/heads/release/v0.4", "242"),
+        ("release/v0.4", "x"),
+        ("release/v0.4", ""),
+        ("release/v0.4", "-1"),
+    ] {
+        let (status, _, error) = run(&["prerelease", reference, count], &[]);
+        assert_ne!(
+            status, 0,
+            "{reference} at {count:?} names no pre-release: {error}"
+        );
+    }
+
+    // The workspace and its crates take the stamped version, and nothing else does.
+    let manifest = root_file("Cargo.toml");
+    let stamped = dir.join("stamped");
+    std::fs::create_dir(&stamped).expect("mkdir");
+    std::fs::write(stamped.join("Cargo.toml"), &manifest).expect("write");
+    let (status, previous, error) = run(
+        &["stamp", "0.4.0-dev.242", stamped.to_str().expect("utf8")],
+        &[],
+    );
+    assert_eq!(status, 0, "{error}");
+    let after = std::fs::read_to_string(stamped.join("Cargo.toml")).expect("read");
+    assert_eq!(
+        after.matches("0.4.0-dev.242").count(),
+        4,
+        "the workspace and its three crates"
+    );
+    assert!(
+        !after.contains(&format!("version = \"{previous}\"")),
+        "no version stays"
+    );
+    assert_eq!(
+        after.replace("0.4.0-dev.242", &previous),
+        manifest,
+        "stamping changes the four versions and nothing else"
+    );
+    for version in ["0.4", "v0.4.0", "0.4.0-rc.1", "latest", ""] {
+        let (status, _, _) = run(&["stamp", version, stamped.to_str().expect("utf8")], &[]);
+        assert_ne!(
+            status, 0,
+            "{version:?} is no version a pre-release may take"
+        );
+    }
+    let bare = dir.join("bare");
+    std::fs::create_dir(&bare).expect("mkdir");
+    std::fs::write(bare.join("Cargo.toml"), "[workspace]\nmembers = []\n").expect("write");
+    assert_ne!(
+        run(&["stamp", "0.4.0-dev.1", bare.to_str().expect("utf8")], &[]).0,
+        0
+    );
+
+    // The crate cargo would upload is the crate the release holds and lists.
+    let release = dir.join("release");
+    std::fs::create_dir(&release).expect("mkdir");
+    let crate_bytes: Vec<u8> = (0..4096u32).map(|n| (n * 31 % 251) as u8).collect();
+    std::fs::write(release.join("lexlean.crate"), &crate_bytes).expect("write");
+    let digest = |bytes: &[u8]| -> String {
+        let output = Command::new("sha256sum")
+            .current_dir(dir)
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::piped())
+            .spawn()
+            .and_then(|mut child| {
+                use std::io::Write;
+                child.stdin.take().expect("stdin").write_all(bytes)?;
+                child.wait_with_output()
+            })
+            .expect("sha256sum runs");
+        String::from_utf8_lossy(&output.stdout)
+            .split_whitespace()
+            .next()
+            .expect("a digest")
+            .to_owned()
+    };
+    let good = digest(&crate_bytes);
+    let packaged = dir.join("packaged.crate");
+    let release_arg = release.to_str().expect("utf8");
+    let packaged_arg = packaged.to_str().expect("utf8");
+    let other_hash = format!(
+        "{}{}",
+        if good.starts_with('0') { "1" } else { "0" },
+        &good[1..]
+    );
+    let mut altered = crate_bytes.clone();
+    altered[100] ^= 1;
+    let cases: [(&str, Vec<u8>, String, bool); 6] = [
+        (
+            "the crate the release lists and holds",
+            crate_bytes.clone(),
+            format!("{good}  lexlean.crate\n"),
+            true,
+        ),
+        (
+            "a package one byte from the crate the release holds",
+            altered.clone(),
+            format!("{good}  lexlean.crate\n"),
+            false,
+        ),
+        (
+            "a checksum line of another digest",
+            crate_bytes.clone(),
+            format!("{other_hash}  lexlean.crate\n"),
+            false,
+        ),
+        (
+            "no line for the crate",
+            crate_bytes.clone(),
+            format!("{good}  SPEC.md\n"),
+            false,
+        ),
+        (
+            "two lines for the crate",
+            crate_bytes.clone(),
+            format!("{good}  lexlean.crate\n{good}  lexlean.crate\n"),
+            false,
+        ),
+        (
+            "an empty checksum list",
+            crate_bytes.clone(),
+            String::new(),
+            false,
+        ),
+    ];
+    for (label, package, checksums, accepted) in cases {
+        std::fs::write(&packaged, &package).expect("write");
+        std::fs::write(release.join("checksums.txt"), &checksums).expect("write");
+        let (status, out, error) = run(&["identity", release_arg, packaged_arg], &[]);
+        if accepted {
+            assert_eq!(
+                (status, out.as_str()),
+                (0, good.as_str()),
+                "{label}: {error}"
+            );
+        } else {
+            assert_ne!(status, 0, "{label} is refused");
+            assert!(error.starts_with("identity:"), "{label}: {error}");
+        }
+    }
+    // The release without the crate, without its list, and without a package.
+    std::fs::write(&packaged, &crate_bytes).expect("write");
+    std::fs::write(
+        release.join("checksums.txt"),
+        format!("{good}  lexlean.crate\n"),
+    )
+    .expect("write");
+    for missing in ["lexlean.crate", "checksums.txt"] {
+        let kept = std::fs::read(release.join(missing)).expect("read");
+        std::fs::remove_file(release.join(missing)).expect("remove");
+        assert_ne!(
+            run(&["identity", release_arg, packaged_arg], &[]).0,
+            0,
+            "{missing} is missing"
+        );
+        std::fs::write(release.join(missing), kept).expect("restore");
+    }
+    assert_ne!(
+        run(
+            &[
+                "identity",
+                release_arg,
+                dir.join("absent.crate").to_str().expect("utf8")
+            ],
+            &[]
+        )
+        .0,
+        0,
+        "no package"
+    );
+
+    // What crates.io needs from an archive.
+    let archive = |name: &str, manifest: &[&str], files: &[(&str, Vec<u8>)]| -> String {
+        let folder = dir.join(format!("{name}-1.0.0"));
+        std::fs::create_dir_all(&folder).expect("mkdir");
+        let mut text = format!("[package]\nname = \"{name}\"\nversion = \"1.0.0\"\n");
+        for line in manifest {
+            text.push_str(line);
+            text.push('\n');
+        }
+        std::fs::write(folder.join("Cargo.toml"), text).expect("write");
+        for (file, bytes) in files {
+            std::fs::write(folder.join(file), bytes).expect("write");
+        }
+        let path = dir.join(format!("{name}.crate"));
+        let status = Command::new("tar")
+            .current_dir(dir)
+            .args([
+                "-czf",
+                path.to_str().expect("utf8"),
+                &format!("{name}-1.0.0"),
+            ])
+            .status()
+            .expect("tar runs");
+        assert!(status.success());
+        path.to_str().expect("utf8").to_owned()
+    };
+    let complete = [
+        "description = \"A sample\"",
+        "license = \"MIT\"",
+        "repository = \"https://example.test/sample\"",
+        "readme = \"README.md\"",
+    ];
+    let readme: Vec<(&str, Vec<u8>)> = vec![("README.md", b"# sample\n".to_vec())];
+    let without = |field: &str| -> Vec<&str> {
+        complete
+            .iter()
+            .copied()
+            .filter(|line| !line.starts_with(field))
+            .collect()
+    };
+    let (status, _, error) = run(&["metadata", &archive("complete", &complete, &readme)], &[]);
+    assert_eq!(status, 0, "an archive with what crates.io needs: {error}");
+    // Incompressible bytes, so that the archive is as large as its contents.
+    let mut state = 0x2545_F491_4F6C_DD1Du64;
+    let large: Vec<u8> = (0..11 * 1024 * 1024)
+        .map(|_| {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            (state >> 24) as u8
+        })
+        .collect();
+    let mut oversize = readme.clone();
+    oversize.push(("padding.bin", large));
+    for (label, path, says) in [
+        (
+            "no description",
+            archive("nodescription", &without("description"), &readme),
+            "no `description`",
+        ),
+        (
+            "no license",
+            archive("nolicense", &without("license"), &readme),
+            "neither `license` nor `license-file`",
+        ),
+        (
+            "no repository",
+            archive("norepository", &without("repository"), &readme),
+            "no `repository`",
+        ),
+        (
+            "a readme it lacks",
+            archive("noreadme", &complete, &[]),
+            "names a file the archive does not carry",
+        ),
+        (
+            "more than 10 MiB",
+            archive("oversize", &complete, &oversize),
+            "exceeds the crates.io limit",
+        ),
+    ] {
+        let (status, _, error) = run(&["metadata", &path], &[]);
+        assert_ne!(status, 0, "{label} is refused");
+        assert!(error.contains(says), "{label}: {error}");
+    }
+}
+
+/// RP-18: see [`crate_publication_workflows`] and
+/// [`crate_publication_decisions`]. The workflows are read as committed and
+/// then with one check removed or reversed at a time; a removal that changes
+/// nothing is itself a failure, because it would plant nothing.
+fn rp_18() {
+    let release = root_file(".github/workflows/release.yml");
+    let crate_workflow = root_file(".github/workflows/crate.yml");
+    crate_publication_workflows(&release, &crate_workflow)
+        .expect("the committed workflows prove the crate and gate its upload");
+
+    let replaced = |text: &str, from: &str, to: &str| -> String {
+        assert!(text.contains(from), "the plant `{from}` is in the workflow");
+        text.replacen(from, to, 1)
+    };
+    let publish_dry_run =
+        "cargo publish --dry-run --locked --package lexlean --target-dir \"${RUNNER_TEMP}/dry\"";
+    let release_plants: Vec<(&str, String)> = vec![
+        (
+            "a tag that does not wait for the crate job",
+            replaced(&release, "needs: [identity, crate, gate, binaries, manifest]", "needs: [identity, gate, binaries, manifest]"),
+        ),
+        (
+            "a release that does not call the crate workflow",
+            replaced(&release, "uses: ./.github/workflows/crate.yml", "uses: ./.github/workflows/other.yml"),
+        ),
+        (
+            "an upload without the dry run first",
+            replaced(&release, publish_dry_run, "true"),
+        ),
+        (
+            "an upload without the identity check",
+            replaced(&release, ".github/crate-publication.sh identity release", "true"),
+        ),
+        (
+            "an upload that ignores how it is authorised",
+            replaced(
+                &release,
+                "- name: Publish the exact verified crate to crates.io\n        if: steps.upload.outputs.mode != 'none'\n",
+                "- name: Publish the exact verified crate to crates.io\n",
+            ),
+        ),
+        (
+            "an upload whose guard is always true",
+            replaced(
+                &release,
+                "if: steps.upload.outputs.mode != 'none'\n        env:\n          CARGO_REGISTRY_TOKEN",
+                "if: always()\n        env:\n          CARGO_REGISTRY_TOKEN",
+            ),
+        ),
+        (
+            "trusted publishing acquired without being selected",
+            replaced(
+                &release,
+                "- name: Acquire crates.io trusted-publisher token\n        if: steps.upload.outputs.mode == 'trusted'\n",
+                "- name: Acquire crates.io trusted-publisher token\n",
+            ),
+        ),
+        (
+            "a second upload step",
+            format!("{release}\n      - run: cargo publish --locked --package lexlean\n"),
+        ),
+        (
+            "the token read where it is not needed",
+            replaced(&release, "      TRUSTED_PUBLISHING:", "      EXTRA: ${{ secrets.CARGO_REGISTRY_TOKEN }}\n      TRUSTED_PUBLISHING:"),
+        ),
+    ];
+    for (why, text) in &release_plants {
+        assert!(
+            crate_publication_workflows(text, &crate_workflow).is_err(),
+            "release.yml with {why} is refused"
+        );
+    }
+    let cmp_ab = "cmp \"$a/package/$crate\" \"$b/package/$crate\"";
+    let crate_plants: Vec<(&str, String)> = vec![
+        ("packages once, so never compared", replaced(&crate_workflow, cmp_ab, "true")),
+        (
+            "no dry run",
+            replaced(
+                &crate_workflow,
+                "cargo publish --dry-run --locked \"${dirty[@]}\" --package lexlean --target-dir \"$dry\"",
+                "true",
+            ),
+        ),
+        (
+            "no archive metadata check",
+            replaced(&crate_workflow, ".github/crate-publication.sh metadata \"$dry_crate\"", "true"),
+        ),
+        (
+            "no comparison with the checksum the release lists",
+            replaced(&crate_workflow, ".github/crate-publication.sh identity release \"$dry_crate\"", "true"),
+        ),
+        (
+            "a pre-release uploaded by a call from the release workflow",
+            replaced(
+                &crate_workflow,
+                "if: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease }}",
+                "if: ${{ inputs.prerelease }}",
+            ),
+        ),
+        (
+            "a pre-release uploaded without a credential",
+            replaced(
+                &crate_workflow,
+                "- name: Upload the exact checked crate\n        if: ${{ steps.upload.outputs.mode != 'none' }}\n",
+                "- name: Upload the exact checked crate\n",
+            ),
+        ),
+        (
+            "a pre-release uploaded without comparing its bytes",
+            replaced(&crate_workflow, "test \"$(sha256sum \"${RUNNER_TEMP}/upload/package/lexlean-${VERSION}.crate\"", "true \"$(sha256sum \"${RUNNER_TEMP}/upload/package/lexlean-${VERSION}.crate\""),
+        ),
+        (
+            "the readiness job uploading",
+            replaced(&crate_workflow, "          cmp \"$a/package/$crate\" \"$dry_crate\"\n", "          cmp \"$a/package/$crate\" \"$dry_crate\"\n          cargo publish --locked --package lexlean\n"),
+        ),
+    ];
+    for (why, text) in &crate_plants {
+        assert!(
+            crate_publication_workflows(&release, text).is_err(),
+            "crate.yml with {why} is refused"
+        );
+    }
+
+    crate_publication_decisions();
 }

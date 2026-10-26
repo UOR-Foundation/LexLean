@@ -671,8 +671,8 @@ pub fn package(manifest: &Manifest) -> Result<Package, String> {
     let library = ast::print(&krate)?.into_bytes();
     let cargo = cargo_toml(manifest)?.into_bytes();
     let runtime = match profile {
-        Profile::Core => runtime::CORE.to_owned(),
-        Profile::Std => format!("{}{}", runtime::CORE, runtime::STD),
+        Profile::Core => runtime::core()?.to_owned(),
+        Profile::Std => format!("{}{}", runtime::core()?, runtime::std()?),
     };
     let provenance = serde_json::json!({
         "spec": PROVENANCE_SPEC,

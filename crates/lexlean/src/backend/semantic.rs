@@ -137,6 +137,15 @@ fn proof_uses(proof: &SemanticProof, local: &str) -> bool {
         SemanticProof::Apply { arguments, .. } | SemanticProof::Law { arguments, .. } => {
             arguments.iter().any(|argument| term_uses(argument, local))
         }
+        SemanticProof::TermCases {
+            scrutinee,
+            definitions,
+        } => {
+            term_uses(scrutinee, local)
+                || definitions
+                    .iter()
+                    .any(|member| member.module.is_none() && member.name == local)
+        }
     }
 }
 
@@ -1268,6 +1277,18 @@ impl Render<'_> {
                 }
                 out
             }
+            SemanticProof::TermCases {
+                scrutinee,
+                definitions,
+            } => format!(
+                "{pad}set_option linter.unusedSimpArgs false in\n{pad}cases llCase : {} <;>\n{pad}  simp (config := {{decide := true}}) only [{}, llCase, ite_true, ite_false]\n",
+                self.term(scrutinee),
+                definitions
+                    .iter()
+                    .map(|member| self.member(member))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
             SemanticProof::Congruence => format!("{pad}congr 1\n"),
             SemanticProof::BooleanReflection { reflection } => match reflection {
                 SemanticReflection::List {
@@ -2975,6 +2996,18 @@ fn latex_text(
         latex_line(text, "Laws", &laws());
         latex_line(text, "Axiom policy", &latex_policy(axioms));
     }
+    if let SemanticDeclaration::TextClassifier {
+        tokenizer,
+        model,
+        axioms,
+        ..
+    } = declaration
+    {
+        latex_line(text, "Tokenizer", &render.member(tokenizer));
+        latex_line(text, "Model", &latex_use(render, model));
+        latex_line(text, "Laws", &laws());
+        latex_line(text, "Axiom policy", &latex_policy(axioms));
+    }
     for derived in module.elaboration.lowered(index) {
         if let SemanticDeclaration::Inductive {
             name, constructors, ..
@@ -3257,17 +3290,9 @@ pub fn render_latex(
             }
             SemanticDeclaration::Tokenizer { .. }
             | SemanticDeclaration::ContextWindow { .. }
-            | SemanticDeclaration::TextGenerator { .. } => {
+            | SemanticDeclaration::TextGenerator { .. }
+            | SemanticDeclaration::TextClassifier { .. } => {
                 latex_text(&render, module, index, declaration, &mut text);
-            }
-            SemanticDeclaration::TextClassifier { .. } => {
-                return Err(Diagnostic::new(
-                    code!("LLI9001"),
-                    format!(
-                        "phase latex-backend: text declaration `{}` was not elaborated",
-                        declaration.name()
-                    ),
-                ));
             }
         }
     }

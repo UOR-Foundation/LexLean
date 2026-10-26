@@ -13,9 +13,14 @@
 # the container image: `ghcr.io/<owner>/lexlean`, carrying the compiler and the
 # pinned Lean toolchain its `verify` command needs. The host binaries, the
 # packaged crate, the software bill of materials, the checksums, and the gate
-# evidence are attached to the GitHub Release; the byte-identical verified
-# crate is also published to crates.io through short-lived trusted-publisher
-# credentials.
+# evidence are attached to the GitHub Release. The crate is proved on every run
+# (`crate.yml`: packaged to the same bytes twice, dry-run, checked against the
+# checksum the release lists), and a tag uploads the byte-identical crate to
+# crates.io only when a credential exists: a `CARGO_REGISTRY_TOKEN` secret in
+# the crates.io environment for the owner's first upload, or trusted publishing
+# once the owner has configured it (the repository variable
+# CRATES_IO_TRUSTED_PUBLISHING). With neither, the release is created without
+# the upload and says so (RP-18, #260).
 name: release
 
 on:
@@ -80,6 +85,24 @@ jobs:
             echo "image_tag=sha-${GITHUB_SHA:0:7}" >> "$GITHUB_OUTPUT"
             echo "lexlean $workspace (rehearsal at ${GITHUB_SHA:0:7}; nothing is published)"
           fi
+
+  # The crate on crates.io is the crate this release attaches (#260): proved on
+  # every run, a rehearsal included, so a tag is not the first time it is tried.
+  crate:
+    name: crate readiness
+    needs: identity
+    uses: ./.github/workflows/crate.yml
+    # A reusable workflow is validated at startup against what its caller
+    # grants, before any `if` is read: `crate.yml`'s upload job asks for
+    # `id-token: write` and names the crates.io secret, so the call grants
+    # both or the whole run is a startup failure (rehearsal 40219629854).
+    # The upload job itself runs only on a dispatch of `crate.yml`.
+    permissions:
+      contents: read
+      id-token: write
+    secrets: inherit
+    with:
+      prerelease: false
 
   # §30.3 CI evidence: the normative acceptance gate on the normative host,
   # from a clean checkout, naming the tagged commit.
@@ -260,13 +283,14 @@ jobs:
   # publish. This is the only job that writes to the repository.
   publish:
     name: publish the release
-    needs: [identity, gate, binaries, manifest]
+    needs: [identity, crate, gate, binaries, manifest]
     # Only a tag is a release. A manual run has already proved the gate, the
     # binaries, and the image by reaching here.
-    if: needs.identity.outputs.tagged == 'true' 
+    if: needs.identity.outputs.tagged == 'true'
     environment: crates.io
     env:
       HAS_CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN != '' }}
+      TRUSTED_PUBLISHING: ${{ vars.CRATES_IO_TRUSTED_PUBLISHING == 'true' }}
     permissions:
       contents: write
       id-token: write
@@ -358,11 +382,42 @@ jobs:
         run: tar -czf "release/lexlean-${VERSION}-binaries.tar.gz" -C release bin
       - name: Checksum every assembled file
         run: cargo xtask release-artifacts
+      # What cargo would send is what the release attaches and lists (#260):
+      # the dry run is cargo's own packaging of the upload, so equality here is
+      # equality of the bytes, and the crate job proved the same digest.
+      - name: The crate cargo would upload is the crate this release attaches
+        env:
+          VERSION: ${{ needs.identity.outputs.version }}
+          CRATE_SHA256: ${{ needs.crate.outputs.sha256 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo publish --dry-run --locked --package lexlean --target-dir "${RUNNER_TEMP}/dry"
+          # The dry run leaves the archive where its cargo release puts it (1.97:
+          # `package/tmp-crate/`), so it is located by name, as in crate.yml.
+          dry_crate="$(find "${RUNNER_TEMP}/dry/package" -type f -name "lexlean-${VERSION}.crate" | head -1)"
+          [ -n "$dry_crate" ] || { echo "::error::cargo publish --dry-run left no lexlean-${VERSION}.crate under ${RUNNER_TEMP}/dry/package"; exit 1; }
+          sha256="$(.github/crate-publication.sh identity release "$dry_crate")"
+          if [ "$sha256" != "$CRATE_SHA256" ]; then
+            echo "::error::the crate packaged here ($sha256) is not the one the crate job checked ($CRATE_SHA256)"
+            exit 1
+          fi
+          echo "lexlean ${VERSION} sha256 ${sha256}"
+      - name: Decide how the upload is authorised
+        id: upload
+        shell: bash
+        run: echo "mode=$(.github/crate-publication.sh mode)" >> "$GITHUB_OUTPUT"
       - name: Acquire crates.io trusted-publisher token
-        if: env.HAS_CARGO_REGISTRY_TOKEN != 'true'
+        if: steps.upload.outputs.mode == 'trusted'
         uses: rust-lang/crates-io-auth-action@c6f97d42243bad5fab37ca0427f495c86d5b1a18
         id: crates-auth
+      - name: No upload credential
+        if: steps.upload.outputs.mode == 'none'
+        env:
+          VERSION: ${{ needs.identity.outputs.version }}
+        run: echo "::notice::lexlean ${VERSION} was packaged and dry-run, and is on the GitHub release; no CARGO_REGISTRY_TOKEN and no trusted publishing, so it was not uploaded to crates.io"
       - name: Publish the exact verified crate to crates.io
+        if: steps.upload.outputs.mode != 'none'
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN || steps.crates-auth.outputs.token }}
           VERSION: ${{ needs.identity.outputs.version }}

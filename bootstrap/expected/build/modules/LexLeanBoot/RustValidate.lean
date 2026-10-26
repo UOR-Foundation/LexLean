@@ -47,6 +47,8 @@ public inductive LeafKind where
   | LkOrdering
   | LkStr
   | LkBytes
+  | LkOverflow
+  | LkI128
 
 public inductive UnaryKind where
   | UkOption
@@ -62,6 +64,7 @@ public inductive BinaryKind where
 public inductive NameKind where
   | NkAdt
   | NkFn
+  | NkParam
 
 public inductive Ty where
   | TyLeaf (_ : LeafKind)
@@ -81,6 +84,7 @@ public inductive Lit where
   | LitStr
   | LitBytes
   | LitOrdering
+  | LitOverflow
 
 public inductive Con where
   | ConNone (_ : Ty)
@@ -115,6 +119,7 @@ public inductive Pat where
 public inductive Callee where
   | CalFn (_ : Nat)
   | CalRt (_ : Rt)
+  | CalMachine (_ : Nat)
 
 public inductive Cap where
   | CapCopy
@@ -256,11 +261,11 @@ public structure Found where
 
 @[expose] public def idHas (items : List (Id)) (who : Id) : Bool := (LexLeanCollections.listFold ((fun (found : Bool) (item : Id) => (let same : Bool := idEq (item) (who); (found || same)))) (false) (items) : Bool)
 
-@[expose] public def leafName (kind : LeafKind) : ByteArray := (match kind with | LeafKind.LkUnit => text ("Unit") | LeafKind.LkBool => text ("Bool") | LeafKind.LkNat => text ("Nat") | LeafKind.LkInt => text ("Int") | LeafKind.LkOrdering => text ("Ordering") | LeafKind.LkStr => text ("Str") | LeafKind.LkBytes => text ("Bytes"))
+@[expose] public def leafName (kind : LeafKind) : ByteArray := (match kind with | LeafKind.LkUnit => text ("Unit") | LeafKind.LkBool => text ("Bool") | LeafKind.LkNat => text ("Nat") | LeafKind.LkInt => text ("Int") | LeafKind.LkOrdering => text ("Ordering") | LeafKind.LkStr => text ("Str") | LeafKind.LkBytes => text ("Bytes") | LeafKind.LkOverflow => text ("Overflow") | LeafKind.LkI128 => text ("I128"))
 
-@[expose] public def leafKey (kind : LeafKind) : ByteArray := (match kind with | LeafKind.LkUnit => text ("unit") | LeafKind.LkBool => text ("bool") | LeafKind.LkNat => text ("nat") | LeafKind.LkInt => text ("int") | LeafKind.LkOrdering => text ("ordering") | LeafKind.LkStr => text ("string") | LeafKind.LkBytes => text ("bytes"))
+@[expose] public def leafKey (kind : LeafKind) : ByteArray := (match kind with | LeafKind.LkUnit => text ("unit") | LeafKind.LkBool => text ("bool") | LeafKind.LkNat => text ("nat") | LeafKind.LkInt => text ("int") | LeafKind.LkOrdering => text ("ordering") | LeafKind.LkStr => text ("string") | LeafKind.LkBytes => text ("bytes") | LeafKind.LkOverflow => text ("overflow") | LeafKind.LkI128 => text ("i128"))
 
-@[expose] public def leafHeap (kind : LeafKind) : Bool := (match kind with | LeafKind.LkUnit => false | LeafKind.LkBool => false | LeafKind.LkNat => false | LeafKind.LkInt => false | LeafKind.LkOrdering => false | LeafKind.LkStr => true | LeafKind.LkBytes => true)
+@[expose] public def leafHeap (kind : LeafKind) : Bool := (match kind with | LeafKind.LkUnit => false | LeafKind.LkBool => false | LeafKind.LkNat => false | LeafKind.LkInt => false | LeafKind.LkOrdering => false | LeafKind.LkStr => true | LeafKind.LkBytes => true | LeafKind.LkOverflow => false | LeafKind.LkI128 => false)
 
 @[expose] public def unaryName (kind : UnaryKind) : ByteArray := (match kind with | UnaryKind.UkOption => text ("Option") | UnaryKind.UkList => text ("List") | UnaryKind.UkRc => text ("Rc") | UnaryKind.UkFallible => text ("Fallible") | UnaryKind.UkRef => text ("Ref"))
 
@@ -274,11 +279,13 @@ public structure Found where
 
 @[expose] public def binaryKey (kind : BinaryKind) : ByteArray := (match kind with | BinaryKind.BkResult => text ("result") | BinaryKind.BkPair => text ("pair"))
 
-@[expose] public def nameName (kind : NameKind) : ByteArray := (match kind with | NameKind.NkAdt => text ("Adt") | NameKind.NkFn => text ("Fn"))
+@[expose] public def nameName (kind : NameKind) : ByteArray := (match kind with | NameKind.NkAdt => text ("Adt") | NameKind.NkFn => text ("Fn") | NameKind.NkParam => text ("Param"))
 
-@[expose] public def nameKey (kind : NameKind) : ByteArray := (match kind with | NameKind.NkAdt => text ("adt") | NameKind.NkFn => text ("fn"))
+@[expose] public def nameKey (kind : NameKind) : ByteArray := (match kind with | NameKind.NkAdt => text ("adt") | NameKind.NkFn => text ("fn") | NameKind.NkParam => text ("param"))
 
-@[expose] public def nameIsFn (kind : NameKind) : Bool := (match kind with | NameKind.NkAdt => false | NameKind.NkFn => true)
+@[expose] public def nameIsFn (kind : NameKind) : Bool := (match kind with | NameKind.NkAdt => false | NameKind.NkFn => true | NameKind.NkParam => false)
+
+@[expose] public def nameIsParam (kind : NameKind) : Bool := (match kind with | NameKind.NkAdt => false | NameKind.NkFn => false | NameKind.NkParam => true)
 
 @[expose] public def tyDebug : (ty : Ty) -> ByteArray
   | Ty.TyLeaf k => leafName (k)
@@ -294,7 +301,7 @@ public structure Found where
   | Ty.TyFixed _ => false
   | Ty.TyUnary k inner => (match unaryHeap (k) with | Bool.true => true | Bool.false => tyHeap (inner))
   | Ty.TyBinary _ left right => (let l : Bool := tyHeap (left); (let r : Bool := tyHeap (right); (l || r)))
-  | Ty.TyNamed _ _ => false
+  | Ty.TyNamed k _ => nameIsParam (k)
   | Ty.TyNil => false
   | Ty.TyCons _ _ => false
 
@@ -386,7 +393,7 @@ public structure Found where
   | _cx, Ty.TyFixed _ => Except.ok (())
   | cx, Ty.TyUnary _ inner => tyWalk (cx) (inner)
   | cx, Ty.TyBinary _ left right => (match tyWalk (cx) (left) with | Except.ok _ => tyWalk (cx) (right) | Except.error problem1 => Except.error (problem1))
-  | cx, Ty.TyNamed k n => (match nameIsFn (k) with | Bool.true => (match hasVariants (((cx).decl).closures) (n) with | Bool.true => Except.ok (()) | Bool.false => Except.error (cat (text ("type Fn")) (cat (decimal (n)) (text (" is not declared"))))) | Bool.false => (match hasVariants (((cx).decl).adts) (n) with | Bool.true => Except.ok (()) | Bool.false => Except.error (cat (text ("type Adt")) (cat (decimal (n)) (text (" is not declared"))))))
+  | cx, Ty.TyNamed k n => (match nameIsParam (k) with | Bool.true => Except.ok (()) | Bool.false => (match nameIsFn (k) with | Bool.true => (match hasVariants (((cx).decl).closures) (n) with | Bool.true => Except.ok (()) | Bool.false => Except.error (cat (text ("type Fn")) (cat (decimal (n)) (text (" is not declared"))))) | Bool.false => (match hasVariants (((cx).decl).adts) (n) with | Bool.true => Except.ok (()) | Bool.false => Except.error (cat (text ("type Adt")) (cat (decimal (n)) (text (" is not declared")))))))
   | _cx, Ty.TyNil => Except.ok (())
   | _cx, Ty.TyCons _ _ => Except.ok (())
 
@@ -490,9 +497,11 @@ public structure Found where
   | found, Ty.TyNil => found
   | found, Ty.TyCons head tail => (let f1 : Found := foundTy (found) (head); foundTy (f1) (tail))
 
-@[expose] public def litKind (lit : Lit) : ByteArray := (match lit with | Lit.LitUnit => text ("lit:unit") | Lit.LitBool => text ("lit:bool") | Lit.LitNat => text ("lit:nat") | Lit.LitInt => text ("lit:int") | Lit.LitFixed _ => text ("lit:fixed") | Lit.LitStr => text ("lit:string") | Lit.LitBytes => text ("lit:bytes") | Lit.LitOrdering => text ("lit:ordering"))
+@[expose] public def litKind (lit : Lit) : ByteArray := (match lit with | Lit.LitUnit => text ("lit:unit") | Lit.LitBool => text ("lit:bool") | Lit.LitNat => text ("lit:nat") | Lit.LitInt => text ("lit:int") | Lit.LitFixed _ => text ("lit:fixed") | Lit.LitStr => text ("lit:string") | Lit.LitBytes => text ("lit:bytes") | Lit.LitOrdering => text ("lit:ordering") | Lit.LitOverflow => text ("lit:overflow"))
 
-@[expose] public def litWidth (lit : Lit) : Option (IntKind) := (match lit with | Lit.LitUnit => Option.none | Lit.LitBool => Option.none | Lit.LitNat => Option.none | Lit.LitInt => Option.none | Lit.LitFixed k => Option.some (k) | Lit.LitStr => Option.none | Lit.LitBytes => Option.none | Lit.LitOrdering => Option.none)
+@[expose] public def litWidth (lit : Lit) : Option (IntKind) := (match lit with | Lit.LitUnit => Option.none | Lit.LitBool => Option.none | Lit.LitNat => Option.none | Lit.LitInt => Option.none | Lit.LitFixed k => Option.some (k) | Lit.LitStr => Option.none | Lit.LitBytes => Option.none | Lit.LitOrdering => Option.none | Lit.LitOverflow => Option.none)
+
+@[expose] public def isOverflowLit (lit : Lit) : Bool := (match lit with | Lit.LitUnit => false | Lit.LitBool => false | Lit.LitNat => false | Lit.LitInt => false | Lit.LitFixed _ => false | Lit.LitStr => false | Lit.LitBytes => false | Lit.LitOrdering => false | Lit.LitOverflow => true)
 
 @[expose] public def patLeafConstruct (kind : PatLeaf) : Option (ByteArray) := (match kind with | PatLeaf.PlWild => Option.none | PatLeaf.PlUnit => Option.none | PatLeaf.PlNone => Option.some (text ("match:option")) | PatLeaf.PlOrdering => Option.some (text ("match:ordering")))
 
@@ -538,10 +547,10 @@ public structure Found where
 @[expose] public def foundCon (found : Found) (con : Con) : Found := (match con with | Con.ConNone ty => foundTy (found) (ty) | Con.ConSome => found | Con.ConOk ok error => foundTy (foundTy (found) (ok)) (error) | Con.ConErr ok error => foundTy (foundTy (found) (ok)) (error) | Con.ConAdt _ _ => found | Con.ConClosure _ _ => found | Con.ConCons => found | Con.ConNil ty => foundTy (found) (ty))
 
 @[expose] public def foundExpr : (found : Found) -> (e : Expr) -> Found
-  | found, Expr.ELit lit org => foundWide (found) (litKind (lit)) (org) (litWidth (lit))
+  | found, Expr.ELit lit org => (match isOverflowLit (lit) with | Bool.true => found | Bool.false => foundWide (found) (litKind (lit)) (org) (litWidth (lit)))
   | found, Expr.ERead k _ org => foundAt (found) (readConstruct (k)) (org)
   | found, Expr.EWrap k inner org => (let f1 : Found := foundAt (found) (wrapConstruct (k)) (org); foundExpr (f1) (inner))
-  | found, Expr.ECall callee args _ org => (let f1 : Found := (match callee with | Callee.CalFn _ => foundAt (found) (text ("call:function")) (org) | Callee.CalRt item => foundWide (found) (cat (text ("call:runtime:")) (runtimeKind (lastSegment (itemPath ((found).items) (item))))) (org) (itemWidth ((found).items) (item))); foundExpr (f1) (args))
+  | found, Expr.ECall callee args _ org => (let f1 : Found := (match callee with | Callee.CalFn _ => foundAt (found) (text ("call:function")) (org) | Callee.CalMachine _ => foundAt (found) (text ("call:machine")) (org) | Callee.CalRt item => foundWide (found) (cat (text ("call:runtime:")) (runtimeKind (lastSegment (itemPath ((found).items) (item))))) (org) (itemWidth ((found).items) (item))); foundExpr (f1) (args))
   | found, Expr.EApply _ args _ org => (let f1 : Found := foundAt (found) (text ("apply")) (org); foundExpr (f1) (args))
   | found, Expr.EConstruct con args org => (let f1 : Found := foundAt (foundCon (found) (con)) (cat (text ("construct:")) (conKind (con))) (org); foundExpr (f1) (args))
   | found, Expr.EPair left right org => (let f1 : Found := foundAt (found) (text ("construct:pair")) (org); (let f2 : Found := foundExpr (f1) (left); foundExpr (f2) (right)))
@@ -570,7 +579,15 @@ public structure Found where
 
 @[expose] public def conIsErr (con : Con) : Bool := (match con with | Con.ConNone _ => false | Con.ConSome => false | Con.ConOk _ _ => false | Con.ConErr _ _ => true | Con.ConAdt _ _ => false | Con.ConClosure _ _ => false | Con.ConCons => false | Con.ConNil _ => false)
 
-@[expose] public def returnsResult (e : Expr) : Bool := (match e with | Expr.ELit _ _ => false | Expr.ERead _ _ _ => false | Expr.EWrap k _ _ => (match k with | WrapKind.WkNot => false | WrapKind.WkBox => false | WrapKind.WkWiden => false | WrapKind.WkSucceed => true) | Expr.ECall _ _ propagate _ => (if propagate then false else true) | Expr.EApply _ _ propagate _ => (if propagate then false else true) | Expr.EConstruct _ _ _ => false | Expr.EPair _ _ _ => false | Expr.EIf _ _ _ _ => true | Expr.EMatch _ _ _ => true | Expr.EBlockE _ => true | Expr.EProbe _ _ _ => false | Expr.EBlock _ _ => false | Expr.ENil => false | Expr.ECons _ _ => false | Expr.ELet _ _ _ _ _ _ => false | Expr.EArm _ _ _ => false | Expr.ELoop _ _ => true)
+@[expose] public def isOverflowExpr (e : Expr) : Bool := (match e with | Expr.ELit lit _ => isOverflowLit (lit) | Expr.ERead _ _ _ => false | Expr.EWrap _ _ _ => false | Expr.ECall _ _ _ _ => false | Expr.EApply _ _ _ _ => false | Expr.EConstruct _ _ _ => false | Expr.EPair _ _ _ => false | Expr.EIf _ _ _ _ => false | Expr.EMatch _ _ _ => false | Expr.EBlockE _ => false | Expr.EProbe _ _ _ => false | Expr.EBlock _ _ => false | Expr.ENil => false | Expr.ECons _ _ => false | Expr.ELet _ _ _ _ _ _ => false | Expr.EArm _ _ _ => false | Expr.ELoop _ _ => false)
+
+@[expose] public def isOverflowTy (ty : Ty) : Bool := (match ty with | Ty.TyLeaf kind => (match kind with | LeafKind.LkUnit => false | LeafKind.LkBool => false | LeafKind.LkNat => false | LeafKind.LkInt => false | LeafKind.LkOrdering => false | LeafKind.LkStr => false | LeafKind.LkBytes => false | LeafKind.LkOverflow => true | LeafKind.LkI128 => false) | Ty.TyFixed _ => false | Ty.TyUnary _ _ => false | Ty.TyBinary _ _ _ => false | Ty.TyNamed _ _ => false | Ty.TyNil => false | Ty.TyCons _ _ => false)
+
+@[expose] public def isOverflowArgs (args : Expr) : Bool := (match args with | Expr.ELit _ _ => false | Expr.ERead _ _ _ => false | Expr.EWrap _ _ _ => false | Expr.ECall _ _ _ _ => false | Expr.EApply _ _ _ _ => false | Expr.EConstruct _ _ _ => false | Expr.EPair _ _ _ => false | Expr.EIf _ _ _ _ => false | Expr.EMatch _ _ _ => false | Expr.EBlockE _ => false | Expr.EProbe _ _ _ => false | Expr.EBlock _ _ => false | Expr.ENil => false | Expr.ECons head tail => (let single : Bool := (Nat.beq (exprLen (tail)) (0)); (let overflow : Bool := isOverflowExpr (head); (single && overflow))) | Expr.ELet _ _ _ _ _ _ => false | Expr.EArm _ _ _ => false | Expr.ELoop _ _ => false)
+
+@[expose] public def isOverflowErr (con : Con) (args : Expr) : Bool := (match con with | Con.ConNone _ => false | Con.ConSome => false | Con.ConOk _ _ => false | Con.ConErr _ errTy => (let typed : Bool := isOverflowTy (errTy); (let payload : Bool := isOverflowArgs (args); (typed && payload))) | Con.ConAdt _ _ => false | Con.ConClosure _ _ => false | Con.ConCons => false | Con.ConNil _ => false)
+
+@[expose] public def returnsResult (e : Expr) : Bool := (match e with | Expr.ELit _ _ => false | Expr.ERead _ _ _ => false | Expr.EWrap k _ _ => (match k with | WrapKind.WkNot => false | WrapKind.WkBox => false | WrapKind.WkWiden => false | WrapKind.WkSucceed => true) | Expr.ECall _ _ propagate _ => (if propagate then false else true) | Expr.EApply _ _ propagate _ => (if propagate then false else true) | Expr.EConstruct con args _ => isOverflowErr (con) (args) | Expr.EPair _ _ _ => false | Expr.EIf _ _ _ _ => true | Expr.EMatch _ _ _ => true | Expr.EBlockE _ => true | Expr.EProbe _ _ _ => false | Expr.EBlock _ _ => false | Expr.ENil => false | Expr.ECons _ _ => false | Expr.ELet _ _ _ _ _ _ => false | Expr.EArm _ _ _ => false | Expr.ELoop _ _ => true)
 
 @[expose] public def idLess (left : Id) (right : Id) : Bool := (if (Nat.beq (idTag (left)) (idTag (right))) then (if (Nat.beq (idTag (left)) (9)) then bytesLess (idName (left)) (idName (right)) else (Nat.blt (idNum (left)) (idNum (right)))) else (Nat.blt (idTag (left)) (idTag (right))))
 
@@ -667,6 +684,12 @@ termination_by structural _ t => t
 termination_by structural _ arms => arms
 end
 
+@[expose] public def machineName (m : Nat) : ByteArray := (if (Nat.beq (m) (0)) then text ("checked_add") else (if (Nat.beq (m) (1)) then text ("checked_sub") else (if (Nat.beq (m) (2)) then text ("checked_mul") else (if (Nat.beq (m) (3)) then text ("checked_div") else (if (Nat.beq (m) (4)) then text ("checked_neg") else (if (Nat.beq (m) (5)) then text ("checked_shl") else (if (Nat.beq (m) (6)) then text ("checked_shr") else (if (Nat.beq (m) (7)) then text ("convert") else (if (Nat.beq (m) (8)) then text ("bit_and") else (if (Nat.beq (m) (9)) then text ("bit_or") else (if (Nat.beq (m) (10)) then text ("bit_xor") else (if (Nat.beq (m) (11)) then text ("bit_not") else (if (Nat.beq (m) (12)) then text ("nat_eq") else (if (Nat.beq (m) (13)) then text ("nat_le") else (if (Nat.beq (m) (14)) then text ("nat_lt") else (if (Nat.beq (m) (15)) then text ("nat_rem") else (if (Nat.beq (m) (16)) then text ("int_rem") else (if (Nat.beq (m) (17)) then text ("nat_add") else (if (Nat.beq (m) (18)) then text ("nat_sub") else (if (Nat.beq (m) (19)) then text ("nat_mul") else (if (Nat.beq (m) (20)) then text ("nat_quot") else (if (Nat.beq (m) (21)) then text ("int_add") else (if (Nat.beq (m) (22)) then text ("int_sub") else (if (Nat.beq (m) (23)) then text ("int_mul") else (if (Nat.beq (m) (24)) then text ("int_neg") else (if (Nat.beq (m) (25)) then text ("int_quot") else (if (Nat.beq (m) (26)) then text ("list_length") else (if (Nat.beq (m) (27)) then text ("list_append") else (if (Nat.beq (m) (28)) then text ("list_index") else (if (Nat.beq (m) (29)) then text ("list_slice") else (if (Nat.beq (m) (30)) then text ("bytes_append") else (if (Nat.beq (m) (31)) then text ("bytes_length") else (if (Nat.beq (m) (32)) then text ("string_length") else (if (Nat.beq (m) (33)) then text ("bytes_index") else (if (Nat.beq (m) (34)) then text ("bytes_slice") else (if (Nat.beq (m) (35)) then text ("utf8_encode") else (if (Nat.beq (m) (36)) then text ("utf8_decode") else (if (Nat.beq (m) (37)) then text ("bytes_compare") else (if (Nat.beq (m) (38)) then text ("string_split") else (if (Nat.beq (m) (39)) then text ("string_join") else _root_.ByteArray.mk #[]))))))))))))))))))))))))))))))))))))))))
+
+@[expose] public def machineArity (m : Nat) : Nat := (if (Nat.beq (m) (0)) then 2 else (if (Nat.beq (m) (1)) then 2 else (if (Nat.beq (m) (2)) then 2 else (if (Nat.beq (m) (3)) then 2 else (if (Nat.beq (m) (4)) then 1 else (if (Nat.beq (m) (5)) then 2 else (if (Nat.beq (m) (6)) then 2 else (if (Nat.beq (m) (7)) then 1 else (if (Nat.beq (m) (8)) then 2 else (if (Nat.beq (m) (9)) then 2 else (if (Nat.beq (m) (10)) then 2 else (if (Nat.beq (m) (11)) then 1 else (if (Nat.beq (m) (12)) then 2 else (if (Nat.beq (m) (13)) then 2 else (if (Nat.beq (m) (14)) then 2 else (if (Nat.beq (m) (15)) then 3 else (if (Nat.beq (m) (16)) then 3 else (if (Nat.beq (m) (17)) then 2 else (if (Nat.beq (m) (18)) then 2 else (if (Nat.beq (m) (19)) then 2 else (if (Nat.beq (m) (20)) then 3 else (if (Nat.beq (m) (21)) then 2 else (if (Nat.beq (m) (22)) then 2 else (if (Nat.beq (m) (23)) then 2 else (if (Nat.beq (m) (24)) then 1 else (if (Nat.beq (m) (25)) then 3 else (if (Nat.beq (m) (26)) then 1 else (if (Nat.beq (m) (27)) then 2 else (if (Nat.beq (m) (28)) then 2 else (if (Nat.beq (m) (29)) then 3 else (if (Nat.beq (m) (30)) then 2 else (if (Nat.beq (m) (31)) then 1 else (if (Nat.beq (m) (32)) then 1 else (if (Nat.beq (m) (33)) then 2 else (if (Nat.beq (m) (34)) then 3 else (if (Nat.beq (m) (35)) then 1 else (if (Nat.beq (m) (36)) then 1 else (if (Nat.beq (m) (37)) then 2 else (if (Nat.beq (m) (38)) then 3 else (if (Nat.beq (m) (39)) then 2 else 0))))))))))))))))))))))))))))))))))))))))
+
+@[expose] public def machineCallC (st : St) (cx : Cx) (m : Nat) (args : Expr) (propagate : Bool) (tail : Bool) : Except (ByteArray) (St) := (match (Nat.beq (exprLen (args)) (machineArity (m))) with | Bool.true => callOk (st) (cx) (false) (propagate) (tail) (tick (machineName (m))) | Bool.false => Except.error (cat (text ("machine: ")) (cat (tick (machineName (m))) (cat (text (" receives ")) (cat (decimal (exprLen (args))) (cat (text (" operands of ")) (decimal (machineArity (m)))))))))
+
 mutual
 @[expose] public def blockC : (st : St) -> (cx : Cx) -> (b : Expr) -> (tail : Bool) -> Except (ByteArray) (St)
   | st, _cx, Expr.ELit _ _, _tail => Except.ok (st)
@@ -689,12 +712,12 @@ mutual
 termination_by structural _ _ b _ => b
 
 @[expose] public def exprC : (st : St) -> (cx : Cx) -> (e : Expr) -> (tail : Bool) -> Except (ByteArray) (St)
-  | st, cx, Expr.ELit lit org, tail => (let gated : Bool := (if tail then (cx).fallible else false); (match gated with | Bool.true => Except.error (cat (text ("arithmetic: the value a fallible function returns, ")) (cat (constructsOf ((cx).items) (Expr.ELit (lit) (org))) (text (", is not a fallible value")))) | Bool.false => (match lit with | Lit.LitUnit => Except.ok (st) | Lit.LitBool => Except.ok (st) | Lit.LitNat => Except.ok (st) | Lit.LitInt => Except.ok (st) | Lit.LitFixed _ => Except.ok (st) | Lit.LitStr => heapSt (cx) (st) (text ("a string literal")) | Lit.LitBytes => heapSt (cx) (st) (text ("a byte string literal")) | Lit.LitOrdering => Except.ok (st))))
+  | st, cx, Expr.ELit lit org, tail => (let gated : Bool := (if tail then (cx).fallible else false); (match gated with | Bool.true => Except.error (cat (text ("arithmetic: the value a fallible function returns, ")) (cat (constructsOf ((cx).items) (Expr.ELit (lit) (org))) (text (", is not a fallible value")))) | Bool.false => (match lit with | Lit.LitUnit => Except.ok (st) | Lit.LitBool => Except.ok (st) | Lit.LitNat => Except.ok (st) | Lit.LitInt => Except.ok (st) | Lit.LitFixed _ => Except.ok (st) | Lit.LitStr => heapSt (cx) (st) (text ("a string literal")) | Lit.LitBytes => heapSt (cx) (st) (text ("a byte string literal")) | Lit.LitOrdering => Except.ok (st) | Lit.LitOverflow => Except.error (text ("overflow: the overflow value stands outside the payload of an `Err`")))))
   | st, cx, Expr.ERead k who org, tail => (let gated : Bool := (if tail then (cx).fallible else false); (match gated with | Bool.true => Except.error (cat (text ("arithmetic: the value a fallible function returns, ")) (cat (constructsOf ((cx).items) (Expr.ERead (k) (who) (org))) (text (", is not a fallible value")))) | Bool.false => (match k with | ReadKind.RkMove => consume (st) (who) | ReadKind.RkClone => (match readOk (st) (who) with | Except.ok _ => Except.ok (st) | Except.error problem9 => Except.error (problem9)) | ReadKind.RkCopy => (match readOk (st) (who) with | Except.ok _ => Except.ok (st) | Except.error problem10 => Except.error (problem10)) | ReadKind.RkDeref => (match readOk (st) (who) with | Except.ok _ => Except.ok (st) | Except.error problem11 => Except.error (problem11)) | ReadKind.RkUnbox => (match heapUnit (cx) (text ("a boxed read")) with | Except.ok _ => (match readOk (st) (who) with | Except.ok _ => Except.ok (st) | Except.error problem12 => Except.error (problem12)) | Except.error problem13 => Except.error (problem13)))))
   | st, cx, Expr.EWrap k inner org, tail => (match k with | WrapKind.WkNot => (let gated : Bool := (if tail then (cx).fallible else false); (match gated with | Bool.true => Except.error (cat (text ("arithmetic: the value a fallible function returns, ")) (cat (constructsOf ((cx).items) (Expr.EWrap (k) (inner) (org))) (text (", is not a fallible value")))) | Bool.false => (match negatesZero (inner) with | Bool.true => Except.error (text ("a negated zero test or predecessor: a zero test is negated as its complement, and a predecessor is not a Boolean")) | Bool.false => exprC (st) (cx) (inner) (false)))) | WrapKind.WkBox => (let gated : Bool := (if tail then (cx).fallible else false); (match gated with | Bool.true => Except.error (cat (text ("arithmetic: the value a fallible function returns, ")) (cat (constructsOf ((cx).items) (Expr.EWrap (k) (inner) (org))) (text (", is not a fallible value")))) | Bool.false => (match heapUnit (cx) (text ("a box")) with | Except.ok _ => exprC (st) (cx) (inner) (false) | Except.error problem14 => Except.error (problem14)))) | WrapKind.WkWiden => (let gated : Bool := (if tail then (cx).fallible else false); (match gated with | Bool.true => Except.error (cat (text ("arithmetic: the value a fallible function returns, ")) (cat (constructsOf ((cx).items) (Expr.EWrap (k) (inner) (org))) (text (", is not a fallible value")))) | Bool.false => exprC (st) (cx) (inner) (false))) | WrapKind.WkSucceed => exprC (st) (cx) (inner) (false))
-  | st, cx, Expr.ECall callee args propagate org, tail => (match propagate with | Bool.true => (let gated : Bool := (if tail then (cx).fallible else false); (match gated with | Bool.true => Except.error (cat (text ("arithmetic: the value a fallible function returns, ")) (cat (constructsOf ((cx).items) (Expr.ECall (callee) (args) (propagate) (org))) (text (", is not a fallible value")))) | Bool.false => (match argsC (st) (cx) (args) with | Except.ok s1 => (match callee with | Callee.CalFn n => (match lookupFlag (((cx).decl).functions) (n) with | Option.none => Except.error (cat (text ("f")) (cat (decimal (n)) (text (" is not declared")))) | Option.some declared => callOk (s1) (cx) (declared) (propagate) (tail) (cat (text ("f")) (decimal (n)))) | Callee.CalRt item => (let path : ByteArray := itemPath ((cx).items) (item); (match (match itemHeap ((cx).items) (item) with | Bool.true => heapUnit (cx) (cat (text ("the runtime function ")) (tick (path))) | Bool.false => Except.ok (())) with | Except.ok _ => callOk (s1) (cx) (itemFallible ((cx).items) (item)) (propagate) (tail) (tick (path)) | Except.error problem15 => Except.error (problem15)))) | Except.error problem16 => Except.error (problem16)))) | Bool.false => (match argsC (st) (cx) (args) with | Except.ok s1 => (match callee with | Callee.CalFn n => (match lookupFlag (((cx).decl).functions) (n) with | Option.none => Except.error (cat (text ("f")) (cat (decimal (n)) (text (" is not declared")))) | Option.some declared => callOk (s1) (cx) (declared) (propagate) (tail) (cat (text ("f")) (decimal (n)))) | Callee.CalRt item => (let path : ByteArray := itemPath ((cx).items) (item); (match (match itemHeap ((cx).items) (item) with | Bool.true => heapUnit (cx) (cat (text ("the runtime function ")) (tick (path))) | Bool.false => Except.ok (())) with | Except.ok _ => callOk (s1) (cx) (itemFallible ((cx).items) (item)) (propagate) (tail) (tick (path)) | Except.error problem15 => Except.error (problem15)))) | Except.error problem16 => Except.error (problem16)))
-  | st, cx, Expr.EApply who args propagate org, tail => (match propagate with | Bool.true => (let gated : Bool := (if tail then (cx).fallible else false); (match gated with | Bool.true => Except.error (cat (text ("arithmetic: the value a fallible function returns, ")) (cat (constructsOf ((cx).items) (Expr.EApply (who) (args) (propagate) (org))) (text (", is not a fallible value")))) | Bool.false => (match readOk (st) (who) with | Except.ok _ => (match argsC (st) (cx) (args) with | Except.ok s1 => Except.ok (({ bound := (s1).bound, scope := (s1).scope, moved := (s1).moved, parted := (s1).parted, propagates := (if propagate then true else (s1).propagates) } : St)) | Except.error problem17 => Except.error (problem17)) | Except.error problem18 => Except.error (problem18)))) | Bool.false => (match readOk (st) (who) with | Except.ok _ => (match argsC (st) (cx) (args) with | Except.ok s1 => Except.ok (({ bound := (s1).bound, scope := (s1).scope, moved := (s1).moved, parted := (s1).parted, propagates := (if propagate then true else (s1).propagates) } : St)) | Except.error problem17 => Except.error (problem17)) | Except.error problem18 => Except.error (problem18)))
-  | st, cx, Expr.EConstruct con args org, tail => (let gated : Bool := (if tail then (cx).fallible else false); (match gated with | Bool.true => Except.error (cat (text ("arithmetic: the value a fallible function returns, ")) (cat (constructsOf ((cx).items) (Expr.EConstruct (con) (args) (org))) (text (", is not a fallible value")))) | Bool.false => (match argsC (st) (cx) (args) with | Except.ok s1 => (match conOk (cx) (con) (exprLen (args)) with | Except.ok _ => Except.ok (s1) | Except.error problem19 => Except.error (problem19)) | Except.error problem20 => Except.error (problem20))))
+  | st, cx, Expr.ECall callee args propagate org, tail => (match propagate with | Bool.true => (let gated : Bool := (if tail then (cx).fallible else false); (match gated with | Bool.true => Except.error (cat (text ("arithmetic: the value a fallible function returns, ")) (cat (constructsOf ((cx).items) (Expr.ECall (callee) (args) (propagate) (org))) (text (", is not a fallible value")))) | Bool.false => (match argsC (st) (cx) (false) (args) with | Except.ok s1 => (match callee with | Callee.CalFn n => (match lookupFlag (((cx).decl).functions) (n) with | Option.none => Except.error (cat (text ("f")) (cat (decimal (n)) (text (" is not declared")))) | Option.some declared => callOk (s1) (cx) (declared) (propagate) (tail) (cat (text ("f")) (decimal (n)))) | Callee.CalMachine m => machineCallC (s1) (cx) (m) (args) (propagate) (tail) | Callee.CalRt item => (let path : ByteArray := itemPath ((cx).items) (item); (match (match itemHeap ((cx).items) (item) with | Bool.true => heapUnit (cx) (cat (text ("the runtime function ")) (tick (path))) | Bool.false => Except.ok (())) with | Except.ok _ => callOk (s1) (cx) (itemFallible ((cx).items) (item)) (propagate) (tail) (tick (path)) | Except.error problem15 => Except.error (problem15)))) | Except.error problem16 => Except.error (problem16)))) | Bool.false => (match argsC (st) (cx) (false) (args) with | Except.ok s1 => (match callee with | Callee.CalFn n => (match lookupFlag (((cx).decl).functions) (n) with | Option.none => Except.error (cat (text ("f")) (cat (decimal (n)) (text (" is not declared")))) | Option.some declared => callOk (s1) (cx) (declared) (propagate) (tail) (cat (text ("f")) (decimal (n)))) | Callee.CalMachine m => machineCallC (s1) (cx) (m) (args) (propagate) (tail) | Callee.CalRt item => (let path : ByteArray := itemPath ((cx).items) (item); (match (match itemHeap ((cx).items) (item) with | Bool.true => heapUnit (cx) (cat (text ("the runtime function ")) (tick (path))) | Bool.false => Except.ok (())) with | Except.ok _ => callOk (s1) (cx) (itemFallible ((cx).items) (item)) (propagate) (tail) (tick (path)) | Except.error problem15 => Except.error (problem15)))) | Except.error problem16 => Except.error (problem16)))
+  | st, cx, Expr.EApply who args propagate org, tail => (match propagate with | Bool.true => (let gated : Bool := (if tail then (cx).fallible else false); (match gated with | Bool.true => Except.error (cat (text ("arithmetic: the value a fallible function returns, ")) (cat (constructsOf ((cx).items) (Expr.EApply (who) (args) (propagate) (org))) (text (", is not a fallible value")))) | Bool.false => (match readOk (st) (who) with | Except.ok _ => (match argsC (st) (cx) (false) (args) with | Except.ok s1 => Except.ok (({ bound := (s1).bound, scope := (s1).scope, moved := (s1).moved, parted := (s1).parted, propagates := (if propagate then true else (s1).propagates) } : St)) | Except.error problem17 => Except.error (problem17)) | Except.error problem18 => Except.error (problem18)))) | Bool.false => (match readOk (st) (who) with | Except.ok _ => (match argsC (st) (cx) (false) (args) with | Except.ok s1 => Except.ok (({ bound := (s1).bound, scope := (s1).scope, moved := (s1).moved, parted := (s1).parted, propagates := (if propagate then true else (s1).propagates) } : St)) | Except.error problem17 => Except.error (problem17)) | Except.error problem18 => Except.error (problem18)))
+  | st, cx, Expr.EConstruct con args org, tail => (let gated : Bool := (if tail then (if (cx).fallible then (!isOverflowErr (con) (args)) else false) else false); (match gated with | Bool.true => Except.error (cat (text ("arithmetic: the value a fallible function returns, ")) (cat (constructsOf ((cx).items) (Expr.EConstruct (con) (args) (org))) (text (", is not a fallible value")))) | Bool.false => (match argsC (st) (cx) (conIsErr (con)) (args) with | Except.ok s1 => (match conOk (cx) (con) (exprLen (args)) with | Except.ok _ => Except.ok (s1) | Except.error problem19 => Except.error (problem19)) | Except.error problem20 => Except.error (problem20))))
   | st, cx, Expr.EPair left right org, tail => (let gated : Bool := (if tail then (cx).fallible else false); (match gated with | Bool.true => Except.error (cat (text ("arithmetic: the value a fallible function returns, ")) (cat (constructsOf ((cx).items) (Expr.EPair (left) (right) (org))) (text (", is not a fallible value")))) | Bool.false => (match exprC (st) (cx) (left) (false) with | Except.ok s1 => exprC (s1) (cx) (right) (false) | Except.error problem21 => Except.error (problem21))))
   | st, cx, Expr.EIf condition thenBranch elseBranch _, tail => (match exprC (st) (cx) (condition) (false) with | Except.ok s1 => (let bThen0 : St := ({ bound := (s1).bound, scope := (s1).scope, moved := (s1).moved, parted := (s1).parted, propagates := (s1).propagates } : St); (match bindPat (bThen0) ((cx).decl) (Pat.PLeaf (PatLeaf.PlWild)) with | Except.ok bThen2 => (match blockC (bThen2) (cx) (thenBranch) (tail) with | Except.ok bThen3 => (let r1 : St := ({ bound := (bThen3).bound, scope := (s1).scope, moved := unionIds ((s1).moved) ((bThen3).moved), parted := unionParts ((s1).parted) ((bThen3).parted), propagates := (bThen3).propagates } : St); (let bElse0 : St := ({ bound := (r1).bound, scope := (s1).scope, moved := (s1).moved, parted := (s1).parted, propagates := (r1).propagates } : St); (match bindPat (bElse0) ((cx).decl) (Pat.PLeaf (PatLeaf.PlWild)) with | Except.ok bElse2 => (match blockC (bElse2) (cx) (elseBranch) (tail) with | Except.ok bElse3 => (let r2 : St := ({ bound := (bElse3).bound, scope := (s1).scope, moved := unionIds ((r1).moved) ((bElse3).moved), parted := unionParts ((r1).parted) ((bElse3).parted), propagates := (bElse3).propagates } : St); Except.ok (r2)) | Except.error problem24 => Except.error (problem24)) | Except.error problem25 => Except.error (problem25)))) | Except.error problem22 => Except.error (problem22)) | Except.error problem23 => Except.error (problem23))) | Except.error problem26 => Except.error (problem26))
   | st, cx, Expr.EMatch scrutinee arms _, tail => (match exprC (st) (cx) (scrutinee) (false) with | Except.ok s1 => armsC (s1) (cx) (s1) ((s1).scope) (arms) (tail) | Except.error problem27 => Except.error (problem27))
@@ -728,25 +751,25 @@ termination_by structural _ _ e _ => e
   | st, _cx, Expr.ELoop _ _ => Except.ok (st)
 termination_by structural _ _ lets => lets
 
-@[expose] public def argsC : (st : St) -> (cx : Cx) -> (args : Expr) -> Except (ByteArray) (St)
-  | st, _cx, Expr.ELit _ _ => Except.ok (st)
-  | st, _cx, Expr.ERead _ _ _ => Except.ok (st)
-  | st, _cx, Expr.EWrap _ _ _ => Except.ok (st)
-  | st, _cx, Expr.ECall _ _ _ _ => Except.ok (st)
-  | st, _cx, Expr.EApply _ _ _ _ => Except.ok (st)
-  | st, _cx, Expr.EConstruct _ _ _ => Except.ok (st)
-  | st, _cx, Expr.EPair _ _ _ => Except.ok (st)
-  | st, _cx, Expr.EIf _ _ _ _ => Except.ok (st)
-  | st, _cx, Expr.EMatch _ _ _ => Except.ok (st)
-  | st, _cx, Expr.EBlockE _ => Except.ok (st)
-  | st, _cx, Expr.EProbe _ _ _ => Except.ok (st)
-  | st, _cx, Expr.EBlock _ _ => Except.ok (st)
-  | st, _cx, Expr.ENil => Except.ok (st)
-  | st, cx, Expr.ECons head tail => (match exprC (st) (cx) (head) (false) with | Except.ok s1 => argsC (s1) (cx) (tail) | Except.error problem38 => Except.error (problem38))
-  | st, _cx, Expr.ELet _ _ _ _ _ _ => Except.ok (st)
-  | st, _cx, Expr.EArm _ _ _ => Except.ok (st)
-  | st, _cx, Expr.ELoop _ _ => Except.ok (st)
-termination_by structural _ _ args => args
+@[expose] public def argsC : (st : St) -> (cx : Cx) -> (err : Bool) -> (args : Expr) -> Except (ByteArray) (St)
+  | st, _cx, _err, Expr.ELit _ _ => Except.ok (st)
+  | st, _cx, _err, Expr.ERead _ _ _ => Except.ok (st)
+  | st, _cx, _err, Expr.EWrap _ _ _ => Except.ok (st)
+  | st, _cx, _err, Expr.ECall _ _ _ _ => Except.ok (st)
+  | st, _cx, _err, Expr.EApply _ _ _ _ => Except.ok (st)
+  | st, _cx, _err, Expr.EConstruct _ _ _ => Except.ok (st)
+  | st, _cx, _err, Expr.EPair _ _ _ => Except.ok (st)
+  | st, _cx, _err, Expr.EIf _ _ _ _ => Except.ok (st)
+  | st, _cx, _err, Expr.EMatch _ _ _ => Except.ok (st)
+  | st, _cx, _err, Expr.EBlockE _ => Except.ok (st)
+  | st, _cx, _err, Expr.EProbe _ _ _ => Except.ok (st)
+  | st, _cx, _err, Expr.EBlock _ _ => Except.ok (st)
+  | st, _cx, _err, Expr.ENil => Except.ok (st)
+  | st, cx, err, Expr.ECons head tail => (let skip : Bool := (if err then isOverflowExpr (head) else false); (match skip with | Bool.true => argsC (st) (cx) (err) (tail) | Bool.false => (match exprC (st) (cx) (head) (false) with | Except.ok s1 => argsC (s1) (cx) (err) (tail) | Except.error problem38 => Except.error (problem38))))
+  | st, _cx, _err, Expr.ELet _ _ _ _ _ _ => Except.ok (st)
+  | st, _cx, _err, Expr.EArm _ _ _ => Except.ok (st)
+  | st, _cx, _err, Expr.ELoop _ _ => Except.ok (st)
+termination_by structural _ _ _ args => args
 
 @[expose] public def armsC : (before : St) -> (cx : Cx) -> (acc : St) -> (fork : List (Id)) -> (arms : Expr) -> (tail : Bool) -> Except (ByteArray) (St)
   | _before, _cx, acc, _fork, Expr.ELit _ _, _tail => Except.ok (acc)

@@ -1,0 +1,28 @@
+{
+  "roots": [
+    {
+      "name": "classify",
+      "root": "Helpdesk.Main.classify",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "dispatch",
+      "root": "Helpdesk.Main.dispatch",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "plan",
+      "root": "Helpdesk.Main.plan",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    }
+  ]
+}
