@@ -12,7 +12,6 @@ definition{
   executable: true
 }
 
-
 definition{
   name: sl02,
   parameters: [],
@@ -45,7 +44,6 @@ definition{
   executable: true
 }
 
-
 definition{
   name: sl06,
   parameters: [],
@@ -54,7 +52,6 @@ definition{
   executable: true
 }
 
-
 definition{
   name: sl07,
   parameters: [],
@@ -62,7 +59,6 @@ definition{
   body: (record Rows::IdRow {id := "SL-07", level := "build", suite := "stdlib", statement := "Every content identity the compiler computes is byte-identical under the standard library's `Sha256` package to the identity it computed with the `sha2` crate: every tracked file of the repository digests identically under the compiler's `Sha256Digest::of` and under `sha2`; the compiler-semantics IDs of languages 1.0, 1.1, and 1.2 equal the values pinned in the committed example locks; the frame, tree, source, and semantic identities equal their independent recomputations (`AR-05`, `AR-06`, `SM-10`, `CF-07`, `CF-09`, `TX-10`); every example other than `uor-atlas`, the standard library, the compiler project, and the bootstrap project recompute their locks and pins on `check`; and a bit changed in a tracked file's digest, in a pinned compiler-semantics ID, or in the order of a source-ID recipe's frames is detected.", sections := "§21"}),
   executable: true
 }
-
 
 definition{
   name: sl08,

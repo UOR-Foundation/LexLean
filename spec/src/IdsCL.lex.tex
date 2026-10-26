@@ -12,7 +12,6 @@ definition{
   executable: true
 }
 
-
 definition{
   name: cl02,
   parameters: [],
@@ -20,7 +19,6 @@ definition{
   body: (record Rows::IdRow {id := "CL-02", level := "build", suite := "cli-api", statement := "Init creates the complete canonical skeleton only in an absent or empty destination and never overwrites.", sections := "§23.4"}),
   executable: true
 }
-
 
 definition{
   name: cl03,
@@ -30,7 +28,6 @@ definition{
   executable: true
 }
 
-
 definition{
   name: cl04,
   parameters: [],
@@ -38,7 +35,6 @@ definition{
   body: (record Rows::IdRow {id := "CL-04", level := "build", suite := "cli-api", statement := "Check runs through linked IR and emits no build artifacts.", sections := "§23.4"}),
   executable: true
 }
-
 
 definition{
   name: cl05,
@@ -48,7 +44,6 @@ definition{
   executable: true
 }
 
-
 definition{
   name: cl06,
   parameters: [],
@@ -56,7 +51,6 @@ definition{
   body: (record Rows::IdRow {id := "CL-06", level := "build", suite := "cli-api", statement := "Verify runs the complete fixed verification pipeline and accepts no output or suppression option.", sections := "§23.4"}),
   executable: true
 }
-
 
 definition{
   name: cl07,
@@ -66,7 +60,6 @@ definition{
   executable: true
 }
 
-
 definition{
   name: cl08,
   parameters: [],
@@ -74,7 +67,6 @@ definition{
   body: (record Rows::IdRow {id := "CL-08", level := "build", suite := "cli-api", statement := "Clean removes only the validated configured build root and no source or external cache.", sections := "§23.4"}),
   executable: true
 }
-
 
 definition{
   name: cl09,
@@ -84,7 +76,6 @@ definition{
   executable: true
 }
 
-
 definition{
   name: cl10,
   parameters: [],
@@ -92,7 +83,6 @@ definition{
   body: (record Rows::IdRow {id := "CL-10", level := "build", suite := "cli-api", statement := "All, explicit-files, and entrypoint selections return sorted project result sets including import closure.", sections := "§23.3"}),
   executable: true
 }
-
 
 definition{
   name: cl11,
@@ -102,7 +92,6 @@ definition{
   executable: true
 }
 
-
 definition{
   name: cl12,
   parameters: [],
@@ -110,7 +99,6 @@ definition{
   body: (record Rows::IdRow {id := "CL-12", level := "build", suite := "cli-api", statement := "Human and canonical-JSON output modes obey exact stream, color, and cardinality rules.", sections := "§23.7"}),
   executable: true
 }
-
 
 definition{
   name: cl13,
@@ -120,7 +108,6 @@ definition{
   executable: true
 }
 
-
 definition{
   name: cl14,
   parameters: [],
@@ -128,7 +115,6 @@ definition{
   body: (record Rows::IdRow {id := "CL-14", level := "build", suite := "cli-api", statement := "Every public multi-module operation returns a ProjectResultSet or VerifiedProject rather than a singular unit.", sections := "§24.2, §24.4"}),
   executable: true
 }
-
 
 definition{
   name: cl15,
@@ -138,7 +124,6 @@ definition{
   executable: true
 }
 
-
 definition{
   name: cl16,
   parameters: [],
@@ -146,7 +131,6 @@ definition{
   body: (record Rows::IdRow {id := "CL-16", level := "build", suite := "cli-api", statement := "Every public failure is a LexLeanError and malformed user input cannot panic.", sections := "§24.5"}),
   executable: true
 }
-
 
 definition{
   name: cl17,
@@ -156,7 +140,6 @@ definition{
   executable: true
 }
 
-
 definition{
   name: cl18,
   parameters: [],
@@ -164,7 +147,6 @@ definition{
   body: (record Rows::IdRow {id := "CL-18", level := "build", suite := "cli-api", statement := "Version output reports the compiler version, every supported language in ascending order each followed by its compiler-semantics ID, and the Lean toolchain exactly.", sections := "§30.3"}),
   executable: true
 }
-
 
 definition{
   name: cl19,
@@ -174,7 +156,6 @@ definition{
   executable: true
 }
 
-
 definition{
   name: cl20,
   parameters: [],
@@ -182,7 +163,6 @@ definition{
   body: (record Rows::IdRow {id := "CL-20", level := "build", suite := "cli-api", statement := "Language-1.1 init creates and verifies a declarative Lake workspace containing no source Lean module.", sections := "§23.4"}),
   executable: true
 }
-
 
 definition{
   name: cl21,
@@ -192,7 +172,6 @@ definition{
   executable: true
 }
 
-
 definition{
   name: cl22,
   parameters: [],
@@ -200,7 +179,6 @@ definition{
   body: (record Rows::IdRow {id := "CL-22", level := "build", suite := "cli-api", statement := "A host that embeds the library ends every child process group the library started and has not seen exit through the public function `lexlean::verify::end_live_children`, which installs no signal handler, alters no signal disposition, never signals the host's own process or group, reports each group as ended, already gone, or failing with the OS error, and refuses a later child start with LLV7018 until the host re-enables it, and the `lexlean` executable ends its interrupted children through the same function.", sections := "§17.17, §24.6"}),
   executable: true
 }
-
 
 definition{
   name: cl23,

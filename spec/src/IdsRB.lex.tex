@@ -12,7 +12,6 @@ definition{
   executable: true
 }
 
-
 definition{
   name: rb02,
   parameters: [],
@@ -20,7 +19,6 @@ definition{
   body: (record Rows::IdRow {id := "RB-02", level := "build", suite := "rust-backend", statement := "An exported name that is not a lowercase snake-case identifier, is a Rust keyword, imitates a generated name, or is declared by the runtime, a name exported twice, and an unavailable crate name each fail with LLB6005, and a crate binding one name twice in a function is refused.", sections := "§17.16, §26.3"}),
   executable: true
 }
-
 
 definition{
   name: rb03,
@@ -30,7 +28,6 @@ definition{
   executable: true
 }
 
-
 definition{
   name: rb04,
   parameters: [],
@@ -38,7 +35,6 @@ definition{
   body: (record Rows::IdRow {id := "RB-04", level := "build", suite := "rust-backend", statement := "A package whose boundary holds a function value at any depth, whose program computes a value of a type no value inhabits, or whose rust-core program needs the heap fails with LLB6005, and a rust-core crate naming any heap type, runtime function, or construct is refused.", sections := "§17.13, §17.16"}),
   executable: true
 }
-
 
 definition{
   name: rb05,
@@ -48,7 +44,6 @@ definition{
   executable: true
 }
 
-
 definition{
   name: rb06,
   parameters: [],
@@ -56,7 +51,6 @@ definition{
   body: (record Rows::IdRow {id := "RB-06", level := "build", suite := "rust-backend", statement := "Every committed package builds offline under its declared gates, rustc warnings and Clippy's default lints denied with ten documented exceptions, the export of each one with an observable outcome, called from a separate crate, prints exactly the denotation's observable outcome, and so does every primitive instance on its boundary and seeded inputs; a planted lint and a planted semantic mutation are detected.", sections := "§17.16"}),
   executable: true
 }
-
 
 definition{
   name: rb07,
@@ -66,7 +60,6 @@ definition{
   executable: true
 }
 
-
 definition{
   name: rb08,
   parameters: [],
@@ -74,7 +67,6 @@ definition{
   body: (record Rows::IdRow {id := "RB-08", level := "build", suite := "rust-backend", statement := "A read of a binding that nothing after it reads is a move and a projection of a pair component that nothing after it reads moves the component out of the pair, every other read clones, and every clone a rendering keeps is one the ownership check requires; a list is a run of contiguous cells, and building or taking apart a cell is constant work on any list; a crate that reads or moves a binding after a component was moved out of it, or moves a component twice, is refused.", sections := "§17.16"}),
   executable: true
 }
-
 
 definition{
   name: rb09,
@@ -84,7 +76,6 @@ definition{
   executable: true
 }
 
-
 definition{
   name: rb10,
   parameters: [],
@@ -92,7 +83,6 @@ definition{
   body: (record Rows::IdRow {id := "RB-10", level := "build", suite := "rust-backend", statement := "The scaffolding of a Rust package is data and not renderer text: the edition, whether the crate is published, the lint gates, and every allowed lint with its Clippy group and reason are read from the language-1.2 semantic module `RustPackage`, `#![no_std]` is the production target row's `allocation = false`, and `#![forbid(lint)]` restates each gate on rustc's lints at `forbid`; a renderer source holding a string of the module, a module that is not the shape the reader accepts, and a `Cargo.toml` or crate header that differs from the module are refused.", sections := "§17.16"}),
   executable: true
 }
-
 
 definition{
   name: rb11,
@@ -102,7 +92,6 @@ definition{
   executable: true
 }
 
-
 definition{
   name: rb12,
   parameters: [],
@@ -111,7 +100,6 @@ definition{
   executable: true
 }
 
-
 definition{
   name: rb13,
   parameters: [],
@@ -119,7 +107,6 @@ definition{
   body: (record Rows::IdRow {id := "RB-13", level := "build", suite := "rust-backend", statement := "A package states the effects of its realization: `package.json` and `provenance.json` record them, ascending and registered, the production registry says that exhausting the stack aborts the process, and an unregistered or unordered list, or one that states allocation on `rust-core`, is refused.", sections := "§17.13, §17.16"}),
   executable: true
 }
-
 
 definition{
   name: rb14,
@@ -168,7 +155,6 @@ definition{
   body: (record Rows::IdRow {id := "RB-20", level := "build", suite := "rust-backend", statement := "The std runtime every `rust-std` package carries is the text of a handwritten base and of the functions the language-1.2 module `RustStd` defines: the compiler project's module, shipped byte for byte at `language/rust-runtime-1.2/RustStd.lex.tex`, defines `stdCrate`, a crate of `RustSyntax` with the std profile that the Rust crate decodes, never evaluates, checks with the validator that checks every rendering, and prints in place of the handwritten function of the same name, and each printed function agrees with that handwritten function in result and in counted work on lists of every length from 0 to 70 and of 1,000, 4,096 and 200,000 cells, and on byte strings and texts of the empty, the single, the multi-byte, the invalid, and the long, built fresh, after an uncons has made a unique buffer longer than its run, shared by a clone, and with cells in front, when both are compiled by the pinned rustc with warnings denied; the changes this makes to the shipped crate are named and each has its plant: a type parameter of a signature (`RustType.param`, printed as the generic list `<T: Clone>`, a call of a function without it fails to compile), the machine primitives `Machine.listAppend`, `listLength`, `listIndex`, `listSlice`, `bytesAppend`, `bytesLength`, `stringLength`, `bytesIndex`, `bytesSlice`, `utf8Encode`, `utf8Decode`, `bytesCompare`, `stringSplit`, and `stringJoin` (families 26 to 39, printed as calls of the methods of `List`, `Bytes`, and `Str` that hold the walks, for example `List::length(&a)` and `Bytes::slice(&a, start, count)`; a call with two operands of the one-operand length is refused by the validator), the decoder of the std crate (`stdCrate` of the std profile, a module without it or with another profile is refused), and the base's methods of `List`, `Bytes`, and `Str` that hold the walks, a miscount and an extra tick of which the differential finds; a defined function that no differential covers, a function of the oracle that the generated runtime lacks, a shipped copy that differs from the compiler project's module, and a function whose body is changed are each refused.", sections := "§17.16"}),
   executable: true
 }
-
 
 definition{
   name: rb22,

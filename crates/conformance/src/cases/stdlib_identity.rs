@@ -131,8 +131,10 @@ pub(super) fn run(id: &str) {
         .collect();
     names.sort();
     assert!(names.len() >= 10, "{} examples", names.len());
+    // An example that imports a source package is copied beside it and the
+    // workspace file, as a project outside a workspace cannot declare one.
     for name in &names {
-        P::copy_example(name).check_ok();
+        P::example_with_packages(name).check_ok();
     }
     for project in [P::stdlib(), P::compiler(), P::bootstrap()] {
         project.check_ok();
