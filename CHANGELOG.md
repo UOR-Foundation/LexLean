@@ -27,7 +27,9 @@ and Unreleased holds what has landed since.
   `SL-08` (they were `SL-05` to `SL-07`); `SL-03`, `SL-04`, and `SL-05` are the
   `0.4.0` rows. The bootstrap validator `LexLeanBoot.RustValidate` and the Rust
   oracle carry both the loop-end tail check of #279 and the machine callee and
-  the overflow value of #91 stage 4. Locks, records, goldens, the production
+  the overflow value of #91 stage 4. `NS-07` plants a marker no sentence of the
+  specification carries, since the merged text has the word "tampered" of its
+  own (`LLR3007`, `EX-09`). Locks, records, goldens, the production
   exports, and the compiler-semantics IDs are regenerated at the landing. The
   register is 472 IDs.
 
