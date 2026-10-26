@@ -760,7 +760,7 @@ pub(crate) fn run(id: &str) {
             let model = repo_model::Model::load(&root.join("model").into_std_path_buf())
                 .expect("the model loads");
             let table = spec_table();
-            assert_eq!(table.len(), 456, "§31 has 456 rows");
+            assert_eq!(table.len(), 457, "§31 has 457 rows");
             assert_eq!(model.ids.id.len(), table.len(), "register row count");
             for ((spec_id, spec_suite, spec_statement), row) in
                 table.iter().zip(model.ids.id.iter())
@@ -2213,6 +2213,23 @@ fn crate_publication_workflows(release: &str, crate_workflow: &str) -> Result<()
             .count()
     };
 
+    // release.yml: the gate job reads the gate run of the commit and runs no
+    // recipe of the gate (§9.4, §30.3).
+    let gate_job = workflow_job(release, "gate")?;
+    for needle in [
+        "needs: identity",
+        "actions: read",
+        ".github/release-gate.sh",
+    ] {
+        position_of(&gate_job, needle, "release.yml job `gate`")?;
+    }
+    if gate_job.lines().any(|line| {
+        let line = line.trim_start();
+        !line.starts_with('#') && (line.starts_with("just ") || line.contains(" just "))
+    }) {
+        return Err("release.yml job `gate` runs a recipe of the gate itself".to_owned());
+    }
+
     // release.yml: every run calls the crate workflow, and the tag waits for it.
     let crate_job = workflow_job(release, "crate")?;
     for needle in [
@@ -2713,6 +2730,14 @@ fn rp_18() {
             "the token read where it is not needed",
             replaced(&release, "      TRUSTED_PUBLISHING:", "      EXTRA: ${{ secrets.CARGO_REGISTRY_TOKEN }}\n      TRUSTED_PUBLISHING:"),
         ),
+        (
+            "a gate job that runs the gate on one runner",
+            replaced(&release, "          .github/release-gate.sh\n", "          just vv 2>&1 | tee -a release/vv-evidence.txt\n"),
+        ),
+        (
+            "a gate job that cannot read the runs",
+            replaced(&release, "      contents: read\n      actions: read\n    steps:\n      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1\n        with:\n          # The second parent", "      contents: read\n    steps:\n      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1\n        with:\n          # The second parent"),
+        ),
     ];
     for (why, text) in &release_plants {
         assert!(
@@ -2772,4 +2797,276 @@ fn rp_18() {
     }
 
     crate_publication_decisions();
+    release_gate_decisions();
+}
+
+/// What `.github/release-gate.sh` accepts as the release's evidence (§9.4,
+/// §30.3): the script runs in a scratch repository with a stand-in for `gh`
+/// that answers with planted runs and jobs, so that the run it names is shown
+/// and each way of being wrong is refused.
+fn release_gate_decisions() {
+    use std::process::Command;
+    // Bash, `git`, `jq`, and the stand-in on `PATH`, where the gate runs
+    // (§8.3); the other hosts of the matrix skip this part as `plan_decisions`
+    // does, and no decision depends on the host.
+    if !cfg!(target_os = "linux") {
+        return;
+    }
+    let root = support::repo_root();
+    let script = root.join(".github/release-gate.sh");
+    let rows_file = root.join(".github/vv-rows.json");
+    let workflow = root.join(".github/workflows/ci.yml");
+    let rows: Vec<serde_json::Value> =
+        serde_json::from_str(&root_file(".github/vv-rows.json")).expect("the legs");
+    let ci = root_file(".github/workflows/ci.yml");
+    let hosts: Vec<String> = ci
+        .lines()
+        .filter(|line| line.starts_with("          - { os: "))
+        .map(|line| {
+            let target = line.split("target: ").nth(1).expect("a target");
+            format!(
+                "build and non-Lean tests ({})",
+                target.trim_end_matches(" }")
+            )
+        })
+        .collect();
+    let stamp = |name: &str, conclusion: &str| {
+        format!("{name}\t{conclusion}\t2026-01-01T00:00:00Z\t2026-01-01T01:00:00Z")
+    };
+    let mut green: Vec<String> = vec![stamp("plan", "success")];
+    green.extend(rows.iter().map(|row| {
+        stamp(
+            &format!("just vv ({})", row["part"].as_str().expect("a part")),
+            "success",
+        )
+    }));
+    green.push(stamp("atlas (prefix)", "success"));
+    green.push(stamp("atlas (join)", "success"));
+    green.extend(hosts.iter().map(|host| stamp(host, "success")));
+    // One host failed: the join, the hosts' count, and every leg are still
+    // there, so only the reading of every conclusion refuses it.
+    let one_failed: Vec<String> = green
+        .iter()
+        .map(|job| {
+            job.replacen(
+                &format!("{}\tsuccess", hosts[0]),
+                &format!("{}\tfailure", hosts[0]),
+                1,
+            )
+        })
+        .collect();
+    let no_join: Vec<String> = green
+        .iter()
+        .filter(|job| !job.starts_with("atlas (join)"))
+        .cloned()
+        .collect();
+    let draft: Vec<String> = vec![stamp("plan", "success"), stamp("just vv (rest)", "success")];
+    // Every job but one host: only the count of the hosts refuses it.
+    let missing_host: Vec<String> = green
+        .iter()
+        .filter(|job| !job.starts_with(hosts[1].as_str()))
+        .cloned()
+        .collect();
+    // Every job but one leg: only the reading of every leg refuses it.
+    let missing_leg: Vec<String> = green
+        .iter()
+        .filter(|job| !job.starts_with("just vv (examples)"))
+        .cloned()
+        .collect();
+
+    let scratch = tempfile::tempdir().expect("tempdir");
+    let dir = scratch.path();
+    let git = |args: &[&str]| -> String {
+        let output = Command::new("git")
+            .current_dir(dir)
+            .args([
+                "-c",
+                "user.name=t",
+                "-c",
+                "user.email=t@t",
+                "-c",
+                "commit.gpgsign=false",
+            ])
+            .args(args)
+            .output()
+            .expect("git runs");
+        assert!(
+            output.status.success(),
+            "git {args:?}: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        String::from_utf8(output.stdout)
+            .expect("utf8")
+            .trim()
+            .to_owned()
+    };
+    let write = |name: &str, text: &str| std::fs::write(dir.join(name), text).expect("write");
+    git(&["init", "-q", "-b", "main"]);
+    write("a", "a\n");
+    git(&["add", "."]);
+    git(&["commit", "-q", "-m", "base"]);
+    let base = git(&["rev-parse", "HEAD"]);
+    git(&["checkout", "-q", "-b", "head"]);
+    write("b", "b\n");
+    git(&["add", "."]);
+    git(&["commit", "-q", "-m", "change"]);
+    let head = git(&["rev-parse", "HEAD"]);
+    git(&["checkout", "-q", "main"]);
+    git(&["merge", "-q", "--no-ff", "-m", "merge", "head"]);
+    let merge_equal = git(&["rev-parse", "HEAD"]);
+    git(&["checkout", "-q", "-b", "behind", &base]);
+    write("c", "c\n");
+    git(&["add", "."]);
+    git(&["commit", "-q", "-m", "change"]);
+    let behind = git(&["rev-parse", "HEAD"]);
+    git(&["checkout", "-q", "main"]);
+    write("d", "d\n");
+    git(&["add", "."]);
+    git(&["commit", "-q", "-m", "main moves"]);
+    git(&["merge", "-q", "--no-ff", "-m", "merge", "behind"]);
+    let merge_different = git(&["rev-parse", "HEAD"]);
+
+    // `gh`: the runs of a commit (`STUB_RUNS_<sha>`), the jobs of every run
+    // (`STUB_JOBS`), and a download that writes one leg's transcript.
+    let bin = dir.join("bin");
+    std::fs::create_dir(&bin).expect("bin");
+    let stub = bin.join("gh");
+    std::fs::write(
+        &stub,
+        "#!/usr/bin/env bash\n\
+         case \"$1 $2\" in\n\
+           api\\ */workflows/ci.yml/runs\\?head_sha=*)\n\
+             sha=${2#*head_sha=}; sha=${sha%%&*}\n\
+             var=STUB_RUNS_$sha; printf '%s\\n' \"${!var:-}\" ;;\n\
+           api\\ */runs/*/jobs\\?*) printf '%s\\n' \"${STUB_JOBS:-}\" ;;\n\
+           run\\ download)\n\
+             while [ $# -gt 0 ]; do [ \"$1\" = -D ] && dest=$2; shift; done\n\
+             mkdir -p \"$dest/acceptance-gate-evidence-rest\"\n\
+             printf '%s\\n' '[1.000] vv part: every recipe passed' > \"$dest/acceptance-gate-evidence-rest/vv.txt\" ;;\n\
+           *) exit 2 ;;\n\
+         esac\n",
+    )
+    .expect("stub");
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(&stub, std::fs::Permissions::from_mode(0o755)).expect("chmod");
+    }
+    let path = format!("{}:{}", bin.display(), std::env::var("PATH").expect("PATH"));
+    let run_line = |id: &str| {
+        format!("{id}\tpush\t2026-01-01T00:00:00Z\t2026-01-01T02:00:00Z\thttps://example.test/runs/{id}")
+    };
+    // (exit code, the evidence, stderr) for a planted commit, the runs of each
+    // commit, and the jobs of every run.
+    let decide = |sha: &str, runs: &[(&str, String)], jobs: &[String]| {
+        let out = dir.join("vv-evidence.txt");
+        let _ = std::fs::remove_file(&out);
+        let mut command = Command::new("bash");
+        command
+            .current_dir(dir)
+            .arg(script.as_std_path())
+            .env("PATH", &path)
+            .env("REPO", "owner/repo")
+            .env("SHA", sha)
+            .env("OUT", &out)
+            .env("REF", "refs/tags/v0.0.0")
+            .env("RELEASE_RUN", "https://example.test/release")
+            .env("LEXLEAN_CI_ROWS", rows_file.as_std_path())
+            .env("LEXLEAN_CI_WORKFLOW", workflow.as_std_path())
+            .env("STUB_JOBS", jobs.join("\n"));
+        for (commit, lines) in runs {
+            command.env(format!("STUB_RUNS_{commit}"), lines);
+        }
+        let output = command.output().expect("bash runs");
+        (
+            output.status.code().expect("an exit code"),
+            std::fs::read_to_string(&out).unwrap_or_default(),
+            String::from_utf8_lossy(&output.stderr).into_owned(),
+        )
+    };
+
+    // A run of the whole gate on the commit itself.
+    let (code, evidence, stderr) = decide(&head, &[(head.as_str(), run_line("11"))], &green);
+    assert_eq!(
+        code, 0,
+        "a passed gate run on the commit is the evidence: {stderr}"
+    );
+    for needed in [
+        &format!("commit {head}"),
+        "gate run https://example.test/runs/11",
+        &format!("gate run commit {head} (the tagged commit)"),
+        "atlas (join)\tsuccess",
+        "--- acceptance-gate-evidence-rest/vv.txt",
+        "vv part: every recipe passed",
+    ] {
+        assert!(
+            evidence.contains(needed),
+            "the evidence carries `{needed}`:\n{evidence}"
+        );
+    }
+    // The release job reads the file with the §30.3 criterion: what the
+    // script writes is what `release-check` accepts, or the tag's run would
+    // refuse evidence every rehearsal passed.
+    assert_eq!(
+        repo_model::release::ci_evidence(&evidence),
+        Ok(()),
+        "the evidence satisfies the release criterion"
+    );
+    // The merge of a head whose tree it lands unchanged: the head's run.
+    let (code, evidence, stderr) = decide(&merge_equal, &[(head.as_str(), run_line("12"))], &green);
+    assert_eq!(
+        code, 0,
+        "the run on the tree-equal parent is the evidence: {stderr}"
+    );
+    assert!(
+        evidence.contains(&format!("gate run commit {head} (the second parent")),
+        "the evidence names the parent:\n{evidence}"
+    );
+    // A merge whose tree no run verified: the parent's run is not evidence.
+    let (code, _, stderr) = decide(
+        &merge_different,
+        &[(behind.as_str(), run_line("13"))],
+        &green,
+    );
+    assert_eq!(
+        code, 1,
+        "a run on a parent whose tree the merge changed is refused"
+    );
+    assert!(
+        stderr.contains("no run of ci.yml was the whole gate"),
+        "{stderr}"
+    );
+    // No run, a run with a failed job, a run without the join, a draft run.
+    for (why, runs, jobs) in [
+        ("no run", vec![], &green),
+        (
+            "a failed job",
+            vec![(head.as_str(), run_line("14"))],
+            &one_failed,
+        ),
+        (
+            "no Atlas join",
+            vec![(head.as_str(), run_line("15"))],
+            &no_join,
+        ),
+        ("a draft run", vec![(head.as_str(), run_line("16"))], &draft),
+        (
+            "a missing leg",
+            vec![(head.as_str(), run_line("17"))],
+            &missing_leg,
+        ),
+        (
+            "a missing host",
+            vec![(head.as_str(), run_line("18"))],
+            &missing_host,
+        ),
+    ] {
+        let (code, evidence, stderr) = decide(&head, &runs, jobs);
+        assert_eq!(code, 1, "{why}: refused ({stderr})");
+        assert!(evidence.is_empty(), "{why}: no evidence is written");
+        assert!(
+            stderr.contains("no run of ci.yml was the whole gate"),
+            "{why}: {stderr}"
+        );
+    }
 }

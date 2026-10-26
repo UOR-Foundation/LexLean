@@ -1698,6 +1698,46 @@ definition{
 }
 
 definition{
+  name: tyOwner,
+  parameters: [ty : Ty],
+  result: (Option Bytes),
+  body: (match ty
+    | Ty.TyUnit => (ctor Option.none [Bytes])
+    | Ty.TyBool => (ctor Option.none [Bytes])
+    | Ty.TyNat => (ctor Option.none [Bytes])
+    | Ty.TyFixed => (ctor Option.none [Bytes])
+    | Ty.TyOrdering => (ctor Option.none [Bytes])
+    | Ty.TySelf => (ctor Option.none [Bytes])
+    | Ty.TyParam x0 => (ctor Option.none [Bytes])
+    | Ty.TyRef x0 => (ctor Option.none [Bytes])
+    | Ty.TyRefMut x0 => (ctor Option.none [Bytes])
+    | Ty.TyPair x0 x1 => (ctor Option.none [Bytes])
+    | Ty.TyNamed name args => (ctor Option.some [Bytes] name)
+    | Ty.TyWide => (ctor Option.none [Bytes])
+    | Ty.TySize => (ctor Option.none [Bytes])
+    | Ty.TyChar => (ctor Option.none [Bytes])
+    | Ty.TyStr => (ctor Option.none [Bytes])
+    | Ty.TySlice x0 => (ctor Option.none [Bytes])
+    | Ty.TyUnknown => (ctor Option.none [Bytes])
+    | Ty.TyAbsent => (ctor Option.none [Bytes])
+    | Ty.TyNil => (ctor Option.none [Bytes])
+    | Ty.TyCons x0 x1 => (ctor Option.none [Bytes])),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: associatedArity,
+  parameters: [sc : Sc, owner : Bytes, name : Bytes],
+  result: (Option Nat),
+  body: (match (findFunction sc (rcat owner (rcat (rtext "::") name)))
+    | Option.some held => (ctor Option.some [Nat] (project held n))
+    | Option.none => (ctor Option.none [Nat])),
+  axioms: [],
+  executable: true
+}
+
+definition{
   name: callExpected,
   parameters: [sc : Sc, path : (List Bytes)],
   result: (Option Nat),
@@ -1712,7 +1752,9 @@ definition{
       | List.cons name more => (match more
         | List.nil => (match (callArity owner name)
           | Option.some count => (ctor Option.some [Nat] count)
-          | Option.none => (variantArity sc owner name))
+          | Option.none => (match (variantArity sc owner name)
+            | Option.some count => (ctor Option.some [Nat] count)
+            | Option.none => (associatedArity sc owner name)))
         | List.cons extra others => (ctor Option.none [Nat])))),
   axioms: [],
   executable: true
@@ -2307,6 +2349,26 @@ definition{
   executable: true
 }
 
+definition{
+  name: addAssociated,
+  parameters: [sc : Sc, owner : Bytes, fns : (List FnDef)],
+  result: Sc,
+  body: (prim list_fold (fun [owner] (scope : Sc) (f : FnDef) => (if (project (project f sig) receiver) then scope else (record Sc {core := (project scope core), declared := (project scope declared), traits := (project scope traits), structs := (project scope structs), enums := (project scope enums), aliases := (project scope aliases), statics := (project scope statics), functions := (prim append (project scope functions) (cons (record Entry {name := (rcat owner (rcat (rtext "::") (project (project f sig) name))), n := (prim length (project (project f sig) params) : Nat)}) (nil Entry)) : (List Entry)), methods := (project scope methods), imported := (project scope imported)}))) sc fns : Sc),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: addImpl,
+  parameters: [sc : Sc, ty : Ty, fns : (List FnDef)],
+  result: Sc,
+  body: (match (tyOwner ty)
+    | Option.some owner => (addAssociated sc owner fns)
+    | Option.none => sc),
+  axioms: [],
+  executable: true
+}
+
 structure{
   name: Seen,
   type_parameters: [],
@@ -2400,7 +2462,7 @@ definition{
     | Item.ITrait name sigs => (preCheck (identErr "a trait name" name) (match (declare sc name)
       | Result.error problem => (ctor Result.error [Sc, Bytes] problem)
       | Result.ok s2 => (ctor Result.ok [Sc, Bytes] (addMethods (record Sc {core := (project s2 core), declared := (project s2 declared), traits := (prim append (project s2 traits) (cons (record TraitE {name := name, sigs := sigs}) (nil TraitE)) : (List TraitE)), structs := (project s2 structs), enums := (project s2 enums), aliases := (project s2 aliases), statics := (project s2 statics), functions := (project s2 functions), methods := (project s2 methods), imported := (project s2 imported)}) sigs))))
-    | Item.IImpl generics tr ty fns => (ctor Result.ok [Sc, Bytes] (addFnMethods sc fns))
+    | Item.IImpl generics tr ty fns => (ctor Result.ok [Sc, Bytes] (addImpl (addFnMethods sc fns) ty fns))
     | Item.IFn f => (preCheck (identErr "a function name" (project (project f sig) name)) (match (declare sc (project (project f sig) name))
       | Result.error problem => (ctor Result.error [Sc, Bytes] problem)
       | Result.ok s2 => (ctor Result.ok [Sc, Bytes] (record Sc {core := (project s2 core), declared := (project s2 declared), traits := (project s2 traits), structs := (project s2 structs), enums := (project s2 enums), aliases := (project s2 aliases), statics := (project s2 statics), functions := (prim append (project s2 functions) (cons (record Entry {name := (project (project f sig) name), n := (prim length (project (project f sig) params) : Nat)}) (nil Entry)) : (List Entry)), methods := (project s2 methods), imported := (project s2 imported)}))))

@@ -181,6 +181,9 @@ struct Scope<'a> {
     /// Every method an impl or a trait states, with its number of arguments.
     methods: BTreeMap<&'a str, Vec<usize>>,
     imported: Vec<String>,
+    /// The associated functions of the declared types: `(type, name)` to the
+    /// number of arguments, for an impl function with no receiver.
+    associated: BTreeMap<(&'a str, &'a str), usize>,
 }
 
 fn rule<T>(rule: &str, what: impl std::fmt::Display) -> Result<T, String> {
@@ -329,6 +332,7 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
         functions: BTreeMap::new(),
         methods: BTreeMap::new(),
         imported: Vec::new(),
+        associated: BTreeMap::new(),
     };
     let mut declared = Vec::<&str>::new();
     for item in &krate.items {
@@ -426,7 +430,17 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
                     .functions
                     .insert(&function.sig.name, function.sig.params.len());
             }
-            Item::Impl(_, _, _, functions) => {
+            Item::Impl(_, _, ty, functions) => {
+                if let Type::Named(owner, _) = ty {
+                    for function in functions.iter().filter(|function| !function.sig.receiver) {
+                        // The first impl function of a name stands for it, as the
+                        // Lean twin's list lookup finds the first.
+                        scope
+                            .associated
+                            .entry((owner, &function.sig.name))
+                            .or_insert(function.sig.params.len());
+                    }
+                }
                 for function in functions {
                     scope
                         .methods
@@ -1096,7 +1110,11 @@ impl<'a> Scope<'a> {
                             }
                             Some(*count)
                         } else {
-                            self.variant_arity(owner, name)
+                            self.variant_arity(owner, name).or_else(|| {
+                                self.associated
+                                    .get(&(owner.as_str(), name.as_str()))
+                                    .copied()
+                            })
                         }
                     }
                     _ => None,
