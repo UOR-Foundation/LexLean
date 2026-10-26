@@ -1077,32 +1077,32 @@ note = "Realized through the bounded loops and step types it elaborates to; its 
 
 [[construct]]
 key = "declaration.tokenizer"
-disposition = "formal-only"
+disposition = "runtime"
 allocation = false
 overflow = []
 recursion = false
-note = "Formal only: its elaborated definitions apply the embedded text-laws library, which no production target realizes, so a root whose closure reaches one fails; its generated theorems are erased."
+note = "Realized through the ordinary definitions it elaborates to, which apply the production forms of the text-laws library functions (`LexLeanStd.TextModels`); the library itself is formal-only and in no closure, and its generated theorems are erased."
 
 [[construct]]
 key = "declaration.context_window"
-disposition = "formal-only"
+disposition = "runtime"
 allocation = false
 overflow = []
 recursion = false
-note = "Formal only: its elaborated definitions apply the embedded text-laws library's admission and push, which no production target realizes, so a root whose closure reaches one fails; its generated theorems are erased."
+note = "Realized through the ordinary definitions it elaborates to (capacity, admission, push), which apply the production forms of the library's admission and push; its generated theorems are erased."
 
 [[construct]]
 key = "declaration.text_generator"
-disposition = "formal-only"
+disposition = "runtime"
 allocation = false
 overflow = []
 recursion = false
-note = "Formal only: its elaborated definitions apply the embedded text-laws library's bounded generation loop, which no production target realizes, so a root whose closure reaches one fails; its generated theorems are erased."
+note = "Realized through the scorer, the outcome types, and the bounded generation loop it elaborates to, which apply the production forms of the library's loop; its generated theorems are erased."
 
 [[construct]]
 key = "declaration.text_classifier"
-disposition = "formal-only"
+disposition = "runtime"
 allocation = false
 overflow = []
 recursion = false
-note = "Formal only: linking does not elaborate a text classifier in this release (it is refused before any closure is formed)."
+note = "Realized through the features, token classification, and text classification it elaborates to, which apply the production forms of the library's features and fixed-width map; its generated theorems are erased."

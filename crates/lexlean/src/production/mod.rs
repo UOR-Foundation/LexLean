@@ -428,6 +428,9 @@ pub struct RootReport {
     /// Language 1.2 (reasoning): the explicit resource account of every
     /// reasoner the closure runs (§17.13).
     pub reasoning: Vec<ReasoningRow>,
+    /// Language 1.2 (text): the contract of every text component in the
+    /// closure, including the nondeterminism contract of a generator.
+    pub text: Vec<TextRow>,
 }
 
 /// The resources one reasoner in a root's closure accounts for: its
@@ -454,6 +457,37 @@ pub struct ReasoningRow {
     /// The counters of its ledger.
     pub ledger: Vec<String>,
     /// The generated theorems bounding the ledger, qualified.
+    pub bounds: Vec<String>,
+}
+
+/// The contract of one text component in a root's closure: what bounds it and
+/// what, if anything, it draws from (§17.12, *Text components*, §17.13). Every
+/// field is a closed member or a qualified name, and none is free text.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TextRow {
+    /// The qualified Lean name of the component.
+    pub component: String,
+    /// `tokenizer`, `context_window`, `text_generator`, or `text_classifier`.
+    pub kind: String,
+    /// A tokenizer's scheme: `byte_level` or `longest_match`.
+    pub scheme: Option<String>,
+    /// A window's capacity in tokens.
+    pub capacity: Option<u64>,
+    /// A window's overflow disposition: `refuse` or `keep_last`.
+    pub overflow: Option<String>,
+    /// A generator's policy: `greedy` or `sample`.
+    pub policy: Option<String>,
+    /// A generator's bound on the tokens it generates.
+    pub max_tokens: Option<u64>,
+    /// A sampling generator's closed generator.
+    pub generator: Option<String>,
+    /// A sampling generator's closed distribution.
+    pub distribution: Option<String>,
+    /// Where a sampling generator takes its seed in its inputs: `last`.
+    pub seed_input: Option<String>,
+    /// Where it returns the next seed in its result: `second`.
+    pub seed_output: Option<String>,
+    /// The generated theorems that state the component's bound, qualified.
     pub bounds: Vec<String>,
 }
 
@@ -526,6 +560,41 @@ impl RootReport {
                 })).collect::<Vec<_>>(),
             })).collect::<Vec<_>>(),
         });
+        if !root.text.is_empty() {
+            value["text_rows"] = root
+                .text
+                .iter()
+                .map(|row| {
+                    let mut item = serde_json::json!({
+                        "component": row.component,
+                        "kind": row.kind,
+                        "bounds": strings(row.bounds.iter().cloned()),
+                    });
+                    let optional = [
+                        ("scheme", &row.scheme),
+                        ("overflow", &row.overflow),
+                        ("policy", &row.policy),
+                        ("generator", &row.generator),
+                        ("distribution", &row.distribution),
+                        ("seed_input", &row.seed_input),
+                        ("seed_output", &row.seed_output),
+                    ];
+                    for (key, value) in optional {
+                        if let Some(value) = value {
+                            item[key] = serde_json::Value::String(value.clone());
+                        }
+                    }
+                    if let Some(capacity) = row.capacity {
+                        item["capacity"] = serde_json::json!(capacity);
+                    }
+                    if let Some(max_tokens) = row.max_tokens {
+                        item["max_tokens"] = serde_json::json!(max_tokens);
+                    }
+                    item
+                })
+                .collect::<Vec<_>>()
+                .into();
+        }
         if !root.reasoning.is_empty() {
             value["reasoning"] = root
                 .reasoning

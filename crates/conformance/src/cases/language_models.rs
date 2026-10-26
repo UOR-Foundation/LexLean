@@ -15,7 +15,7 @@ use serde_json::json;
 
 use super::models::{
     edit_declaration, elaboration, module_data, names, refused, replace_artifact, snapshot,
-    write_module_data, EXAMPLE,
+    write_module_data,
 };
 use crate::support::{self, repo_root, P};
 
@@ -44,6 +44,7 @@ pub fn run(id: &str) {
         "LM-07" => lm_07(),
         "LM-08" => lm_08(),
         "LM-09" => lm_09(),
+        "LM-10" | "LM-11" | "LM-12" => super::text_models::run(id),
         "LM-13" => lm_13(),
         _ => panic!("no language-models conformance case is wired for {id}"),
     }
@@ -60,10 +61,46 @@ fn tokenizer(name: &str, scheme: &str, vocabulary: &str) -> serde_json::Value {
     })
 }
 
+/// The directory of the example, below the workspace.
+const EXAMPLE_DIR: &str = "examples/models";
+
+/// A copy of the example beside the standard library, the workspace a text
+/// declaration needs (§17.12): the project lists the `std` source package and
+/// the module that declares the text components imports the module that
+/// holds their production forms, as `\importmodule{LexLeanStd.TextModels}`.
+/// Neither is in the committed example, which declares no text component.
+fn text_workspace() -> P {
+    let project = P::workspace_project(EXAMPLE_DIR, &[EXAMPLE_DIR, "stdlib"]);
+    let workspace = project.workspace_dir();
+    std::fs::write(
+        workspace.join("lexlean-workspace.toml").as_std_path(),
+        "spec = \"lexlean/workspace/1\"\nmembers = [\"examples/models\", \"stdlib\"]\n",
+    )
+    .expect("the workspace file");
+    let manifest = project.root.join("lexlean.toml");
+    let mut text = std::fs::read_to_string(manifest.as_std_path()).expect("manifest");
+    text.push_str("\n[[source_package]]\npackage = \"std\"\nversion = \"1.0.0\"\nkind = \"path\"\npath = \"stdlib\"\n");
+    std::fs::write(manifest.as_std_path(), text).expect("manifest");
+    let module = project.root.join(format!("src/{MODULE}.lex.tex"));
+    let source = std::fs::read_to_string(module.as_std_path()).expect("module");
+    let imported = source.replacen(
+        "\\importmodule{Glyphs}",
+        &format!(
+            "\\importmodule{{Glyphs}}\n\\importmodule{{{}}}",
+            text_laws::PRODUCTION_MODULE
+        ),
+        1,
+    );
+    assert_ne!(source, imported, "the module imports Glyphs");
+    std::fs::write(module.as_std_path(), imported).expect("module");
+    project.relock();
+    project
+}
+
 /// A copy of the example with two tokenizers over the vocabulary: `Digits`
 /// under `longest_match` and `Raw` under `byte_level`.
 fn tokenized() -> P {
-    let project = P::copy_example(EXAMPLE);
+    let project = text_workspace();
     let mut data = module_data(&project, MODULE);
     let declarations = data["declarations"].as_array_mut().expect("declarations");
     declarations.push(tokenizer("Digits", "longest_match", VOCABULARY));
@@ -104,11 +141,16 @@ fn lm_01() {
         assert_eq!(
             names(row.theorems()),
             [
+                format!("{name}.encode_bridge"),
+                format!("{name}.decode_bridge"),
+                format!("{name}.encodeText_bridge"),
+                format!("{name}.decodeText_bridge"),
                 format!("{name}.roundtrip"),
+                format!("{name}.size_bridge"),
                 format!("{name}.in_range"),
                 format!("{name}.text_roundtrip")
             ],
-            "{name} generates its three laws"
+            "{name} generates the bridges of its production forms and its three laws"
         );
         let typed: Vec<(String, String)> = row
             .declarations()
@@ -244,7 +286,16 @@ fn lm_02() {
         .as_array()
         .expect("declarations");
     for tokenizer in ["Digits", "Raw"] {
-        for law in ["roundtrip", "in_range", "text_roundtrip"] {
+        for law in [
+            "encode_bridge",
+            "decode_bridge",
+            "encodeText_bridge",
+            "decodeText_bridge",
+            "roundtrip",
+            "size_bridge",
+            "in_range",
+            "text_roundtrip",
+        ] {
             let name = format!("{LEAN_MODULE}.{tokenizer}.{law}");
             let row = rows
                 .iter()
@@ -713,6 +764,9 @@ fn evaluates(name: &str, left: serde_json::Value, right: serde_json::Value) -> s
         "parameters": [],
         "statement": {"kind": "eq", "left": left, "right": right},
         "proof": {"kind": "reflexivity"},
+        // The kernel evaluates the production forms the generator applies,
+        // whose definitions observe these axioms.
+        "axioms": ["Quot.sound", "propext"],
     })
 }
 
@@ -754,8 +808,16 @@ fn lm_04() {
         );
         assert_eq!(
             names(row.theorems()),
-            ["bounded", "push_bounded", "exact", last].map(|law| format!("{name}.{law}")),
-            "{name} generates its laws"
+            [
+                "admit_bridge",
+                "push_bridge",
+                "bounded",
+                "push_bounded",
+                "exact",
+                last
+            ]
+            .map(|law| format!("{name}.{law}")),
+            "{name} generates the bridges of its production forms and its laws"
         );
     }
     let build = support::rendered(&project);
@@ -813,7 +875,14 @@ fn lm_04() {
     let _guard = support::env_shared();
     let rows = attested(&support::verify_ok(&project));
     for (name, last) in [("Last2", "suffix"), ("Strict2", "refuses")] {
-        for law in ["bounded", "push_bounded", "exact", last] {
+        for law in [
+            "admit_bridge",
+            "push_bridge",
+            "bounded",
+            "push_bounded",
+            "exact",
+            last,
+        ] {
             assert_ok(&rows, &format!("{LEAN_MODULE}.{name}.{law}"));
         }
     }
@@ -894,8 +963,12 @@ fn lm_05() {
         );
         assert_eq!(
             names(row.theorems()),
-            [format!("{name}.bounded"), format!("{name}.context_bounded")],
-            "{name} generates its laws"
+            [
+                format!("{name}.run_bridge"),
+                format!("{name}.bounded"),
+                format!("{name}.context_bounded")
+            ],
+            "{name} generates the bridge of its production loop and its laws"
         );
         // Greedy is deterministic by type: nothing it elaborates to takes a seed.
         for declaration in row.declarations() {
@@ -1226,8 +1299,8 @@ fn lm_06() {
     }
     assert_eq!(
         names(row.theorems()),
-        ["Draw.bounded", "Draw.context_bounded"],
-        "a sampling generator has the same laws"
+        ["Draw.run_bridge", "Draw.bounded", "Draw.context_bounded"],
+        "a sampling generator has the same laws and the bridge of its loop"
     );
     let build = support::rendered(&project);
     let lean = support::lean_text(&build, MODULE);
@@ -1449,8 +1522,14 @@ fn lm_07() {
         );
         assert_eq!(
             names(row.theorems()),
-            ["features_width", "features_total", "features_fit"].map(|law| format!("{name}.{law}")),
-            "{name} generates its three laws"
+            [
+                "features_width",
+                "features_total",
+                "fitWidth_bridge",
+                "features_fit"
+            ]
+            .map(|law| format!("{name}.{law}")),
+            "{name} generates its three laws and the bridge of the production fitWidth"
         );
         let results: Vec<String> = row
             .declarations()
@@ -1487,13 +1566,13 @@ fn lm_07() {
     let lean = support::lean_text(&build, MODULE);
     assert!(
         lean.contains("LexLeanText.features"),
-        "the generated Lean applies the library's features"
+        "the generated Lean states the library's features"
     );
     for lemma in [
-        "LexLeanText.features_width",
-        "LexLeanText.features_fit",
-        "LexLeanText.features_total_text ",
-        "LexLeanText.features_total_text_bytes",
+        "LexLeanText.features_width_of",
+        "LexLeanText.features_fit_bridge_of",
+        "LexLeanText.features_total_text_of",
+        "LexLeanText.features_total_text_bytes_of",
     ] {
         assert!(lean.contains(lemma), "the generated Lean proves by {lemma}");
     }
@@ -1608,7 +1687,7 @@ fn lm_07() {
         .as_array_mut()
         .expect("declarations")
         .extend(facts.into_iter().map(|mut fact| {
-            fact["axioms"] = json!(["propext"]);
+            fact["axioms"] = json!(["Quot.sound", "propext"]);
             fact
         }));
     write_module_data(&evaluated, MODULE, &data);
@@ -1900,6 +1979,26 @@ fn audit_no_prompt_as_code(
     Ok(taking_text)
 }
 
+/// The audit over the eligibility report: each member of a `text_rows` row is
+/// a closed member, a number, or a qualified name, and none is a free string,
+/// so a row records what bounds a component and never text a prompt could
+/// reach. Returns the number of members audited, or the first violation.
+fn audit_text_rows(report: &serde_json::Value) -> Result<usize, String> {
+    let row = &report["$defs"]["text_row"];
+    let properties = row["properties"]
+        .as_object()
+        .ok_or("the eligibility schema states no text row")?;
+    if report["$defs"]["root"]["properties"]["text_rows"]["items"]["$ref"] != "#/$defs/text_row" {
+        return Err("`text_rows` does not state its rows as `text_row`".to_owned());
+    }
+    for (member, node) in properties {
+        if free_string(report, node, &mut Vec::new()) {
+            return Err(format!("text row member `{member}` is a free string"));
+        }
+    }
+    Ok(properties.len())
+}
+
 /// LM-09 (§17.12): no operation of the closed language maps a `string` or
 /// `bytes` operand to a function, a term, or source, and no text declaration
 /// states a string; a planted operation or member of that shape is caught
@@ -1927,6 +2026,34 @@ fn lm_09() {
         serde_json::from_value::<lexlean::SnapshotPrimitive>(json!(operation))
             .unwrap_or_else(|error| panic!("`{operation}` is a compiler primitive: {error}"));
     }
+    // The eligibility report's text rows are audited the same way: a root
+    // reports the contract of each text component it runs and no free text.
+    let report: serde_json::Value =
+        serde_json::from_str(&read("schemas/production-eligibility.schema.json"))
+            .expect("eligibility schema");
+    let audited = audit_text_rows(&report)
+        .unwrap_or_else(|reason| panic!("the text row audit holds: {reason}"));
+    assert!(
+        audited > 0,
+        "the text row audit is armed: a row has members"
+    );
+    let mut leaking = report.clone();
+    leaking["$defs"]["text_row"]["properties"]["prompt"] = json!({"type": "string"});
+    let error = audit_text_rows(&leaking).expect_err("a free string row member is caught");
+    assert!(
+        error.contains("prompt") && error.contains("free string"),
+        "the audit names the member: {error}"
+    );
+    let mut unpatterned = report.clone();
+    unpatterned["$defs"]["text_row"]["properties"]["component"] = json!({"type": "string"});
+    let error = audit_text_rows(&unpatterned).expect_err("an open component name is caught");
+    assert!(error.contains("component"), "{error}");
+    let mut unreached = report.clone();
+    unreached["$defs"]["root"]["properties"]["text_rows"]["items"] = json!({"type": "object"});
+    assert!(
+        audit_text_rows(&unreached).is_err(),
+        "a report that does not state its rows as text rows is caught"
+    );
     // The audit reads every text member of every text declaration: a
     // `prompt` member of type string on any of them is caught by name.
     let declarations = schema["$defs"]["declaration"]["oneOf"]
@@ -2218,7 +2345,7 @@ fn composing() -> P {
         ],
         "result": {"kind": "prop"},
         "body": adapted,
-        "axioms": ["propext"],
+        "axioms": ["Quot.sound", "propext"],
     }));
     declarations.push(json!({
         "kind": "contract",
@@ -2236,7 +2363,7 @@ fn composing() -> P {
             "kind": "deterministic",
             "body": call("Words.classify", vec![var("text")]),
         },
-        "axioms": ["propext"],
+        "axioms": ["Quot.sound", "propext"],
     }));
     declarations.push(json!({
         "kind": "theorem",
@@ -2254,7 +2381,7 @@ fn composing() -> P {
                 {"kind": "reflexivity"},
             ],
         },
-        "axioms": ["propext"],
+        "axioms": ["Classical.choice", "Quot.sound", "propext"],
     }));
     declarations.push(json!({
         "kind": "evidence",
@@ -2262,7 +2389,7 @@ fn composing() -> P {
         "claims": [{"kind": "satisfies_contract", "theorem": member("classify_text_adapted")}],
         "contract": {"member": member("ClassifyTextContract")},
         "realization": {"member": member("ClassifyText")},
-        "axioms": ["propext"],
+        "axioms": ["Classical.choice", "Quot.sound", "propext"],
     }));
     declarations.push(json!({
         "kind": "model",
@@ -2270,7 +2397,7 @@ fn composing() -> P {
         "contract": {"member": member("ClassifyTextContract")},
         "realization": {"member": member("ClassifyText")},
         "evidence": [{"member": member("ClassifyTextEvidence")}],
-        "axioms": ["propext"],
+        "axioms": ["Quot.sound", "propext"],
     }));
     let generated = json!({
         "kind": "result",
@@ -2368,11 +2495,15 @@ fn composing() -> P {
         json!({"kind": "nil", "element": option_type(token_list())}),
         |tail, tokens| json!({"kind": "cons", "head": some_context(tokens), "tail": tail}),
     );
-    declarations.push(evaluates(
+    let mut stream_run = evaluates(
         "recent_stream_run",
         call("RecentStream", vec![token_literal(&[1, 2, 3])]),
         pushes,
-    ));
+    );
+    // The window the scan runs applies production forms, which the kernel
+    // evaluates without an axiom: the policy is exact, so it is empty.
+    stream_run["axioms"] = json!([]);
+    declarations.push(stream_run);
     write_module_data(&project, MODULE, &data);
     project
 }

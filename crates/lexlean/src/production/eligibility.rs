@@ -26,7 +26,7 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use super::{
     registry, BoundaryRow, CallPath, ClosureMember, Disposition, EffectRow, ModuleReport,
-    ReasoningRow, Registry, RootReport, TargetRow,
+    ReasoningRow, Registry, RootReport, TargetRow, TextRow,
 };
 use crate::config::Limits;
 use crate::ir::semantic::{
@@ -3060,6 +3060,7 @@ fn analyse_root(
             constructs: walk.constructs.clone(),
             targets: Vec::new(),
             reasoning: Vec::new(),
+            text: Vec::new(),
         };
         match super::lower::lower_root(modules, module, name, &provisional, limits) {
             Ok(lowered) => {
@@ -3175,6 +3176,7 @@ fn analyse_root(
         .filter_map(|instance| walk.members.get(instance).cloned())
         .collect();
     let reasoning = reasoning_rows(&runtime, modules);
+    let text = text_rows(&runtime, modules);
     Ok(RootReport {
         root,
         declared_effects: production.effects.clone(),
@@ -3184,6 +3186,7 @@ fn analyse_root(
         constructs: walk.constructs,
         targets,
         reasoning,
+        text,
     })
 }
 
@@ -3308,6 +3311,166 @@ fn reasoning_rows(
         }
     }
     rows.sort_by(|left, right| left.reasoner.cmp(&right.reasoner));
+    rows
+}
+
+/// §17.12, §17.13: the contract of every text component whose elaboration
+/// the runtime closure reaches. A generator's nondeterminism is explicit: a
+/// greedy generator takes no seed and is deterministic by type, a sampling
+/// generator draws through the closed `xorshift32` and `proportional`
+/// members and takes its seed as its last input and returns the next seed as
+/// the second component of its result.
+#[allow(clippy::too_many_lines)]
+fn text_rows(
+    runtime: &[ClosureMember],
+    modules: &BTreeMap<String, LinkedModule<'_>>,
+) -> Vec<TextRow> {
+    use crate::ir::semantic::{
+        GenerationPolicy, OverflowDisposition, SamplingDistribution, SamplingGenerator,
+        TokenizerScheme,
+    };
+    const KINDS: [&str; 4] = [
+        "tokenizer",
+        "context_window",
+        "text_generator",
+        "text_classifier",
+    ];
+    let reached: BTreeSet<&str> = runtime
+        .iter()
+        .map(|member| member.declaration.as_str())
+        .collect();
+    let mut rows = Vec::new();
+    for linked in modules.values() {
+        let qualify = |name: &str| format!("{}.{name}", linked.lean_module);
+        for (index, declaration) in linked.semantic.declarations.iter().enumerate() {
+            let kind = declaration.kind();
+            if !KINDS.contains(&kind) {
+                continue;
+            }
+            let runs = linked
+                .semantic
+                .elaboration
+                .lowered(index)
+                .iter()
+                .any(|derived| reached.contains(qualify(derived.name()).as_str()));
+            if !runs {
+                continue;
+            }
+            let name = declaration.name();
+            let bound_suffixes: [&str; 2] = if kind == KINDS[0] {
+                ["in_range", "in_range"]
+            } else if kind == KINDS[1] {
+                ["bounded", "push_bounded"]
+            } else if kind == KINDS[2] {
+                ["bounded", "context_bounded"]
+            } else {
+                ["features_width", "features_width"]
+            };
+            let bounds = linked
+                .semantic
+                .elaboration
+                .theorems(index)
+                .iter()
+                .filter(|theorem| {
+                    bound_suffixes
+                        .iter()
+                        .any(|suffix| theorem.name == format!("{name}.{suffix}"))
+                })
+                .map(|theorem| qualify(&theorem.name))
+                .collect();
+            let mut row = TextRow {
+                component: qualify(name),
+                kind: kind.to_owned(),
+                scheme: None,
+                capacity: None,
+                overflow: None,
+                policy: None,
+                max_tokens: None,
+                generator: None,
+                distribution: None,
+                seed_input: None,
+                seed_output: None,
+                bounds,
+            };
+            if kind == KINDS[0] {
+                let SemanticDeclaration::Tokenizer {
+                    name: _,
+                    type_parameters: _,
+                    scheme,
+                    vocabulary: _,
+                    axioms: _,
+                } = declaration
+                else {
+                    continue;
+                };
+                row.scheme = Some(
+                    match scheme {
+                        TokenizerScheme::ByteLevel => "byte_level",
+                        TokenizerScheme::LongestMatch => "longest_match",
+                    }
+                    .to_owned(),
+                );
+            } else if kind == KINDS[1] {
+                let SemanticDeclaration::ContextWindow {
+                    name: _,
+                    capacity,
+                    overflow,
+                    axioms: _,
+                } = declaration
+                else {
+                    continue;
+                };
+                row.capacity = Some(*capacity);
+                row.overflow = Some(
+                    match overflow {
+                        OverflowDisposition::Refuse => "refuse",
+                        OverflowDisposition::KeepLast => "keep_last",
+                    }
+                    .to_owned(),
+                );
+            } else if kind == KINDS[2] {
+                let SemanticDeclaration::TextGenerator {
+                    name: _,
+                    tokenizer: _,
+                    window: _,
+                    scorer: _,
+                    max_tokens,
+                    stop: _,
+                    policy,
+                    axioms: _,
+                } = declaration
+                else {
+                    continue;
+                };
+                row.max_tokens = Some(*max_tokens);
+                match policy {
+                    GenerationPolicy::Greedy => row.policy = Some("greedy".to_owned()),
+                    GenerationPolicy::Sample {
+                        generator,
+                        distribution,
+                    } => {
+                        row.policy = Some("sample".to_owned());
+                        row.generator = Some(
+                            match generator {
+                                SamplingGenerator::Xorshift32 => "xorshift32",
+                            }
+                            .to_owned(),
+                        );
+                        row.distribution = Some(
+                            match distribution {
+                                SamplingDistribution::Proportional => "proportional",
+                            }
+                            .to_owned(),
+                        );
+                        row.seed_input = Some("last".to_owned());
+                        row.seed_output = Some("second".to_owned());
+                    }
+                }
+            }
+            rows.push(row);
+        }
+    }
+    rows.sort_by(|left, right| left.component.cmp(&right.component));
     rows
 }
 
