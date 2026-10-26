@@ -1,24 +1,27 @@
 //! The std runtime as source (SPEC.md §17.17): `RB-20` and `SP-29`.
 //!
-//! The functions of `RustStd` are decoded and printed in place of the
-//! handwritten functions of the same name, which are kept as the oracle at
-//! `tests/rust-runtime-oracle/`. One crate holds the oracle as module `old`
-//! and the generated runtime as module `new`; a harness calls both on lists of
-//! every shape and compares the result and the counted work (`RB-20`). The
-//! module's theorems are listed here, from the laws, never from the module, and
+//! The types and helpers of `RuntimeStd` and the functions of `RustStd` are
+//! decoded and printed where the handwritten std runtime stood. A harness
+//! calls the printed runtime on lists of every shape, on byte strings, texts,
+//! and numerals, and records what each call returned and the work it counted;
+//! the digests are the golden transcript at `tests/rust-runtime-golden/transcript.txt`,
+//! recorded from the handwritten runtime at the last pass of the differential
+//! (`RB-20`). The module's theorems are listed here, from the laws, never from the module, and
 //! accepted by the pinned Lean (`SP-29`).
 
 use std::collections::BTreeSet;
 
 use lexlean::calculus::rust::ast::{Ident, ItemDef};
-use lexlean::calculus::rust::{runtime, source};
+use lexlean::calculus::rust::{rt_decode, runtime, source};
 
 use super::rust_refinement::project_of;
-use super::rust_runtime::differ_with;
+use super::rust_runtime::{golden, observe, run_harness, RECORDER};
 use crate::support::{self, repo_root};
 
 const MODULE: &str = "compiler/src/RustStd.lex.tex";
 const SHIPPED: &str = "language/rust-runtime-1.2/RustStd.lex.tex";
+const TYPES: &str = "compiler/src/RuntimeStd.lex.tex";
+const TYPES_SHIPPED: &str = "language/rust-runtime-1.2/RuntimeStd.lex.tex";
 
 /// The modules the std module imports.
 const IMPORTED: [&str; 4] = [
@@ -100,78 +103,46 @@ const LAWS: [(&str, &str, &[&str]); 14] = [
     ("join", "refines_join", &["runExport", "runItem"]),
 ];
 
-/// The prelude of the harness: both runtimes, and a builder of a list of `n`
-/// cells of one of four shapes, which returns the list and the handles that
-/// keep the buffer it shares alive for the call.
-const PRELUDE: &str = "use runtime_diff::{new, old};\nmacro_rules! build {\n    ($m:ident, $n:expr, $shape:expr) => {{\n        let mut list = $m::List::nil();\n        for i in 0..$n { list = $m::List::cons(i as u64, list); }\n        match $shape {\n            1 => match list.uncons() {\n                Some((head, tail)) => { drop(list); ($m::List::cons(head, tail), None) }\n                None => (list, None),\n            },\n            2 => { let shared = list.clone(); ($m::List::cons(7u64, shared), Some(list)) }\n            3 => { let shared = list.clone(); ($m::List::cons(1u64, $m::List::cons(2u64, shared)), Some(list)) }\n            _ => (list, None),\n        }\n    }};\n}\nmacro_rules! items {\n    ($l:expr) => {{\n        let mut out = Vec::new();\n        let mut cur = $l;\n        while let Some((head, tail)) = cur.uncons() { out.push(head); cur = tail; }\n        out\n    }};\n}\nfn main() {\n    let lengths: Vec<usize> = (0..=70).chain([1000, 4096, 200_000]).collect();\n    let byte_cases: Vec<Vec<u8>> = vec![vec![], vec![0], vec![1, 2, 3], (0..70u8).collect(), vec![255; 1000], (0..4096u32).map(|i| i as u8).collect(), \"h\u{e9}llo\".as_bytes().to_vec(), vec![0xff, 0xfe], vec![0xe2, 0x82]];\n    let text_cases: Vec<String> = vec![String::new(), \"a\".into(), \"h\u{e9}llo\".into(), \"a,b,,c\".into(), \",\".into(), \"\u{e9},\".repeat(2000), \"abc\".repeat(1500), \"\u{1f600}x\".into()];\n    macro_rules! texts {\n        ($m:ident, $v:expr) => {{\n            let mut list = $m::List::nil();\n            for t in $v.iter().rev() { list = $m::List::cons($m::Str::lit(t), list); }\n            list\n        }};\n    }\n    macro_rules! strings {\n        ($l:expr) => {{ items!($l).iter().map(|t| t.text().to_owned()).collect::<Vec<String>>() }};\n    }\n";
+/// The harness: a prelude that builds lists of four shapes, then one section per
+/// function of the module and per group of the support and the number text.
+/// Every call goes through the recorder of the harnesses, so the digest under
+/// a label is what the calls under it returned and counted.
+const HARNESS: &str = include_str!("rust_std_harness.txt");
 
-/// The calls the differential makes of each function the module defines.
-const CALLS: [(&str, &str); 14] = [
-    (
-        "append_list",
-        "    for &n in &lengths {\n        for m in [0usize, 1, 5, 70, 1000] {\n            for shape in 0..4 {\n                let (a, _keep_a) = build!(old, n, shape);\n                let (b, _keep_b) = build!(new, n, shape);\n                let (c, _keep_c) = build!(old, m, 0);\n                let (d, _keep_d) = build!(new, m, 0);\n                let (w0, w1) = (old::work(), new::work());\n                let x = old::append_list(a, c);\n                let y = new::append_list(b, d);\n                assert_eq!(old::work() - w0, new::work() - w1, \"append_list work\");\n                assert_eq!(items!(x), items!(y), \"append_list result\");\n            }\n        }\n    }\n",
-    ),
-    (
-        "length_list",
-        "    for &n in &lengths {\n        for shape in 0..4 {\n            let (a, _keep_a) = build!(old, n, shape);\n            let (b, _keep_b) = build!(new, n, shape);\n            let (w0, w1) = (old::work(), new::work());\n            let x = old::length_list(a);\n            let y = new::length_list(b);\n            assert_eq!(x, y, \"length_list result\");\n            assert_eq!(old::work() - w0, new::work() - w1, \"length_list work\");\n        }\n    }\n",
-    ),
-    (
-        "index_list",
-        "    for &n in &lengths {\n        let n = n as u64;\n        for at in [0, 1, n / 2, n.saturating_sub(1), n, n + 1, u64::MAX] {\n            for shape in 0..4 {\n                let (a, _keep_a) = build!(old, n as usize, shape);\n                let (b, _keep_b) = build!(new, n as usize, shape);\n                let (w0, w1) = (old::work(), new::work());\n                let x = old::index_list(a, at);\n                let y = new::index_list(b, at);\n                assert_eq!(x, y, \"index_list result\");\n                assert_eq!(old::work() - w0, new::work() - w1, \"index_list work\");\n            }\n        }\n    }\n",
-    ),
-    (
-        "slice_list",
-        "    for &n in &lengths {\n        let n = n as u64;\n        for (start, count) in [(0, 0), (0, n), (1, n), (n / 2, n / 4), (n, 0), (n, 1), (n.saturating_sub(1), 1), (u64::MAX, u64::MAX), (1, u64::MAX)] {\n            for shape in 0..4 {\n                let (a, _keep_a) = build!(old, n as usize, shape);\n                let (b, _keep_b) = build!(new, n as usize, shape);\n                let (w0, w1) = (old::work(), new::work());\n                let x = old::slice_list(a, start, count);\n                let y = new::slice_list(b, start, count);\n                assert_eq!(old::work() - w0, new::work() - w1, \"slice_list work\");\n                assert_eq!(x.map(|l| items!(l)), y.map(|l| items!(l)), \"slice_list result\");\n            }\n        }\n    }\n",
-    ),
-    (
-        "append_bytes",
-        "    for a in &byte_cases {\n        for b in &byte_cases {\n            let (w0, w1) = (old::work(), new::work());\n            let x = old::append_bytes(old::Bytes::lit(a), old::Bytes::lit(b));\n            let y = new::Bytes::append(new::Bytes::lit(a), new::Bytes::lit(b));\n            assert_eq!(old::work() - w0, new::work() - w1, \"append_bytes work\");\n            assert_eq!(x.octets(), y.octets(), \"append_bytes result\");\n        }\n    }\n",
-    ),
-    (
-        "length_bytes",
-        "    for a in &byte_cases {\n        let (w0, w1) = (old::work(), new::work());\n        let x = old::length_bytes(old::Bytes::lit(a));\n        let y = new::Bytes::length(&new::Bytes::lit(a));\n        assert_eq!(x, y, \"length_bytes result\");\n        assert_eq!(old::work() - w0, new::work() - w1, \"length_bytes work\");\n    }\n",
-    ),
-    (
-        "length_string",
-        "    for a in &text_cases {\n        let (w0, w1) = (old::work(), new::work());\n        let x = old::length_string(old::Str::lit(a));\n        let y = new::Str::length(&new::Str::lit(a));\n        assert_eq!(x, y, \"length_string result\");\n        assert_eq!(old::work() - w0, new::work() - w1, \"length_string work\");\n    }\n",
-    ),
-    (
-        "index_bytes",
-        "    for a in &byte_cases {\n        let n = a.len() as u64;\n        for at in [0, 1, n / 2, n.saturating_sub(1), n, n + 1, u64::MAX] {\n            let (w0, w1) = (old::work(), new::work());\n            let x = old::index_bytes(old::Bytes::lit(a), at);\n            let y = new::Bytes::index(&new::Bytes::lit(a), at);\n            assert_eq!(x, y, \"index_bytes result\");\n            assert_eq!(old::work() - w0, new::work() - w1, \"index_bytes work\");\n        }\n    }\n",
-    ),
-    (
-        "slice_bytes",
-        "    for a in &byte_cases {\n        let n = a.len() as u64;\n        for (start, count) in [(0, 0), (0, n), (1, n), (n / 2, n / 4), (n, 0), (n, 1), (n.saturating_sub(1), 1), (u64::MAX, u64::MAX), (1, u64::MAX)] {\n            let (w0, w1) = (old::work(), new::work());\n            let x = old::slice_bytes(old::Bytes::lit(a), start, count);\n            let y = new::Bytes::slice(&new::Bytes::lit(a), start, count);\n            assert_eq!(old::work() - w0, new::work() - w1, \"slice_bytes work\");\n            assert_eq!(x.map(|b| b.octets().to_vec()), y.map(|b| b.octets().to_vec()), \"slice_bytes result\");\n        }\n    }\n",
-    ),
-    (
-        "utf8_encode",
-        "    for a in &text_cases {\n        let (w0, w1) = (old::work(), new::work());\n        let x = old::utf8_encode(old::Str::lit(a));\n        let y = new::Str::utf8_encode(&new::Str::lit(a));\n        assert_eq!(old::work() - w0, new::work() - w1, \"utf8_encode work\");\n        assert_eq!(x.octets(), y.octets(), \"utf8_encode result\");\n    }\n",
-    ),
-    (
-        "utf8_decode",
-        "    for a in &byte_cases {\n        let (w0, w1) = (old::work(), new::work());\n        let x = old::utf8_decode(old::Bytes::lit(a));\n        let y = new::Bytes::utf8_decode(&new::Bytes::lit(a));\n        assert_eq!(old::work() - w0, new::work() - w1, \"utf8_decode work\");\n        assert_eq!(x.map(|t| t.text().to_owned()), y.map(|t| t.text().to_owned()), \"utf8_decode result\");\n    }\n",
-    ),
-    (
-        "compare_bytes",
-        "    for a in &byte_cases {\n        for b in &byte_cases {\n            let (w0, w1) = (old::work(), new::work());\n            let x = old::compare_bytes(old::Bytes::lit(a), old::Bytes::lit(b));\n            let y = new::Bytes::compare(&new::Bytes::lit(a), &new::Bytes::lit(b));\n            assert_eq!(x, y, \"compare_bytes result\");\n            assert_eq!(old::work() - w0, new::work() - w1, \"compare_bytes work\");\n        }\n    }\n",
-    ),
-    (
-        "split_exact",
-        "    for text in &text_cases {\n        for delimiter in [\",\", \"\", \"\\u{e9}\", \"ab\", \", \", \"a\"] {\n            for maximum in [0u32, 1, 3, 4001, u32::MAX] {\n                let (w0, w1) = (old::work(), new::work());\n                let x = old::split_exact(old::Str::lit(text), old::Str::lit(delimiter), maximum);\n                let y = new::Str::split_exact(&new::Str::lit(text), &new::Str::lit(delimiter), maximum);\n                assert_eq!(old::work() - w0, new::work() - w1, \"split_exact work\");\n                assert_eq!(x.map(|l| strings!(l)), y.map(|l| strings!(l)), \"split_exact result\");\n            }\n        }\n    }\n",
-    ),
-    (
-        "join",
-        "    for count in [0usize, 1, 2, 3, 8] {\n        let parts: Vec<String> = text_cases.iter().cycle().take(count).cloned().collect();\n        for delimiter in [\"\", \",\", \"\\u{e9}\", \" and \"] {\n            let (w0, w1) = (old::work(), new::work());\n            let x = old::join(texts!(old, parts), old::Str::lit(delimiter));\n            let y = new::Str::join(texts!(new, parts), &new::Str::lit(delimiter));\n            assert_eq!(old::work() - w0, new::work() - w1, \"join work\");\n            assert_eq!(x.text(), y.text(), \"join result\");\n        }\n    }\n",
-    ),
-];
+/// The golden transcript of the harness on the std runtime.
+const GOLDEN: &str = "std";
 
-/// The harness: both runtimes, every function of the differential.
-fn harness() -> String {
-    let mut out = String::from(PRELUDE);
-    for (_, calls) in CALLS {
-        out.push_str(calls);
+/// The sections of the harness, each with its name.
+fn sections() -> Vec<(&'static str, &'static str)> {
+    let mut out = Vec::new();
+    let mut rest = HARNESS;
+    while let Some(at) = rest.find("//@ ") {
+        let after = &rest[at + 4..];
+        let (name, body) = after.split_once('\n').expect("a section name line");
+        let end = body.find("//@ ").unwrap_or(body.len());
+        out.push((name, &body[..end]));
+        rest = &body[end..];
     }
-    out.push_str("    println!(\"runtime\");\n}\n");
+    out
+}
+
+/// The names of the sections that call one function of the module each.
+fn called() -> BTreeSet<String> {
+    sections()
+        .into_iter()
+        .map(|(name, _)| name)
+        .filter(|name| !matches!(*name, "prelude" | "support" | "decimal"))
+        .map(str::to_owned)
+        .collect()
+}
+
+/// The harness: every function of the module, then the support and the number text.
+pub(super) fn harness() -> String {
+    let mut out = String::from(RECORDER);
+    for (_, body) in sections() {
+        out.push_str(body);
+    }
+    out.push_str("    report();\n    println!(\"runtime\");\n}\n");
     out
 }
 
@@ -194,31 +165,13 @@ fn defined(items: &[ItemDef]) -> Result<BTreeSet<String>, String> {
 /// Whether the differential covers exactly the functions the module defines.
 fn covered(items: &[ItemDef]) -> Result<(), String> {
     let defined = defined(items)?;
-    let differential: BTreeSet<String> = CALLS.iter().map(|(name, _)| (*name).to_owned()).collect();
+    let differential = called();
     if defined != differential {
         return Err(format!(
             "the module defines {defined:?}, the differential covers {differential:?}"
         ));
     }
     Ok(())
-}
-
-/// The first function of the oracle that `generated` does not define.
-fn lost(oracle: &str, generated: &str) -> Option<String> {
-    oracle
-        .lines()
-        .filter(|line| line.starts_with("pub fn "))
-        .map(|line| {
-            line["pub fn ".len()..]
-                .split(['<', '('])
-                .next()
-                .expect("a name")
-                .to_owned()
-        })
-        .find(|name| {
-            !generated.contains(&format!("pub fn {name}<"))
-                && !generated.contains(&format!("pub fn {name}("))
-        })
 }
 
 /// The theorem a Lean diagnostic points at: the diagnostic carries the span
@@ -263,22 +216,27 @@ fn read(path: &str) -> String {
         .unwrap_or_else(|error| panic!("{path}: {error}"))
 }
 
-/// `RB-20`: the generated std runtime against the oracle.
+/// `RB-20`: the generated std runtime against the golden transcript.
 fn differential() {
     let module = read(MODULE);
     let shipped = read(SHIPPED);
     // The shipped copy is the compiler project's module byte for byte: the
     // proofs are about one, the Rust crate reads the other.
     assert_eq!(module, shipped, "{SHIPPED} differs from {MODULE}");
-    let core_oracle = read("tests/rust-runtime-oracle/core.rs.txt");
-    let std_oracle = read("tests/rust-runtime-oracle/std.rs.txt");
-    let oracle = format!("{core_oracle}{std_oracle}");
     let krate = source::decode_std(&shipped).expect("the module decodes");
     assert!(
         !krate.items.is_empty(),
         "an empty std module defines nothing the differential could compare"
     );
     covered(&krate.items).expect("the differential covers the module");
+    let types = read(TYPES);
+    let types_shipped = read(TYPES_SHIPPED);
+    assert_eq!(types, types_shipped, "{TYPES_SHIPPED} differs from {TYPES}");
+    let support = rt_decode::decode_std(&types_shipped).expect("RuntimeStd decodes");
+    assert!(
+        !support.items.is_empty(),
+        "an empty RuntimeStd defines nothing the differential could compare"
+    );
     let core = runtime::core().expect("the core runtime");
     let generated_std = runtime::std().expect("the embedded std module");
     assert_eq!(
@@ -286,35 +244,38 @@ fn differential() {
         runtime::std_from(&shipped).expect("the std runtime is valid"),
         "std() is std_from of the embedded module"
     );
-    // The generated functions replace the oracle's: the base holds none of
-    // their names, so no function is declared twice.
+    let printed = runtime::std_types_from(&types_shipped).expect("RuntimeStd is valid");
+    assert!(
+        generated_std.starts_with(&printed),
+        "the std runtime begins with the printed crate of RuntimeStd"
+    );
+    // The functions of the module are the runtime's free functions: the base
+    // holds none of their names, so no function is declared twice, and the
+    // golden transcript has a label for each.
+    let recorded = golden(GOLDEN);
     for name in defined(&krate.items).expect("named functions") {
         // A free function: a method of the base may carry the name.
-        let declared = |text: &str| {
-            let text = format!("\n{text}");
-            text.contains(&format!("\npub fn {name}<"))
-                || text.contains(&format!("\npub fn {name}("))
-        };
+        let text = format!("\n{}", runtime::std_base().expect("the base"));
         assert!(
-            !declared(runtime::STD_BASE),
+            !text.contains(&format!("\npub fn {name}<"))
+                && !text.contains(&format!("\npub fn {name}(")),
             "the base still holds `{name}`"
         );
-        assert!(declared(&std_oracle), "the oracle lacks `{name}`");
+        assert!(
+            recorded.iter().any(|(label, _)| *label == name),
+            "the golden transcript lacks `{name}`"
+        );
     }
-    // And none of the oracle's functions is lost: each is in the generated
-    // text, whether the base keeps it or the module defines it. One function
-    // taken out of the generated text is the plant.
-    assert_eq!(lost(&std_oracle, generated_std), None);
+    // A function taken out of the generated text leaves a harness that does
+    // not compile: it is the plant.
     let without = generated_std.replacen("pub fn length_bytes(", "pub fn length_byte(", 1);
     assert_ne!(without, generated_std, "the plant site exists");
-    assert_eq!(
-        lost(&std_oracle, &without),
-        Some("length_bytes".to_owned()),
-        "a function of the oracle that the generated runtime lacks is refused"
-    );
-    let ran = differ_with(&oracle, &format!("{core}{generated_std}"), harness())
-        .expect("the generated runtime agrees with the oracle");
-    assert_eq!(ran, "runtime");
+    let error = run_harness(&format!("{core}{without}"), harness())
+        .expect_err("a function the generated runtime lacks is refused");
+    assert!(error.contains("length_bytes"), "{error}");
+    let ran = observe(&format!("{core}{generated_std}"), harness(), GOLDEN)
+        .expect("the generated runtime has the golden transcript");
+    assert_eq!(ran.lines().last(), Some("runtime"));
 
     // A miscounting walk, an extra tick of the work counter, and a signature
     // without its type parameter are each found: the first two by the
@@ -322,15 +283,15 @@ fn differential() {
     for (what, from, to, caught) in [
         (
             "a walk that counts two for a cell",
-            "count += 1; true",
-            "count += 2; true",
-            "length_list result",
+            "tick(1); count += 1; cursor = &cell.tail;",
+            "tick(1); count += 2; cursor = &cell.tail;",
+            "length_list",
         ),
         (
             "a walk that ticks an extra time for the whole list",
-            "pub fn length(&self) -> u64 {\n        let mut count = 0;",
-            "pub fn length(&self) -> u64 {\n        tick(1);\n        let mut count = 0;",
-            "length_list work",
+            "pub fn length(&self) -> u64 { let mut count = 0;",
+            "pub fn length(&self) -> u64 { tick(1); let mut count = 0;",
+            "length_list",
         ),
         (
             "an append that puts the lists the other way",
@@ -340,27 +301,27 @@ fn differential() {
         ),
         (
             "an index that finds the next position",
-            "if position == i {",
-            "if position == i + 1 {",
+            "if position == i { return Some(cell.head.clone()); }",
+            "if position == i.wrapping_add(1) { return Some(cell.head.clone()); }",
             "index_list",
         ),
         (
             "a slice that is short by one cell and not refused",
-            "if position < end { None }",
-            "if position + 1 < end { None }",
+            "if position < end { None } else {",
+            "if position + 1 < end { None } else {",
             "slice_list",
         ),
         (
             "a comparison that does not count the first unit of work",
             "tick(1 + self.0.len().min(other.0.len()) as u64); self.0.cmp(&other.0)",
             "tick(self.0.len().min(other.0.len()) as u64); self.0.cmp(&other.0)",
-            "compare_bytes work",
+            "compare_bytes",
         ),
         (
             "a join that does not count its delimiters",
-            "if !first { chars(&delimiter.0); out.push_str(&delimiter.0); }",
-            "if !first { out.push_str(&delimiter.0); }",
-            "join work",
+            "tick(1); if !first { chars(&delimiter.0); out.push_str(&delimiter.0); }; first = false; chars(&cell.head.0);",
+            "tick(1); if !first { out.push_str(&delimiter.0); }; first = false; chars(&cell.head.0);",
+            "join",
         ),
         (
             "a split that refuses the maximum itself",
@@ -371,14 +332,20 @@ fn differential() {
         (
             "a decoding that does not count its bytes",
             "pub fn utf8_decode(&self) -> Option<Str> { tick(self.0.len() as u64);",
-            "pub fn utf8_decode(&self) -> Option<Str> {",
-            "utf8_decode work",
+            "pub fn utf8_decode(&self) -> Option<Str> { ",
+            "utf8_decode",
         ),
         (
             "a slice that counts one more",
-            "        tick(count);\n        Some(Bytes::lit(",
-            "        tick(count + 1);\n        Some(Bytes::lit(",
-            "slice_bytes work",
+            "tick(count); Some(Bytes::lit(",
+            "tick(count + 1); Some(Bytes::lit(",
+            "slice_bytes",
+        ),
+        (
+            "a changed byte in the number text",
+            "strip_prefix('-')",
+            "strip_prefix('+')",
+            "parse_",
         ),
         (
             "a signature without its type parameter",
@@ -393,8 +360,12 @@ fn differential() {
             "{what}: the plant site occurs once"
         );
         let planted = generated_std.replacen(from, to, 1);
-        let error = differ_with(&oracle, &format!("{core}{planted}"), harness())
-            .expect_err("a changed runtime disagrees with the oracle");
+        let error = observe(&format!("{core}{planted}"), harness(), GOLDEN)
+            .expect_err(&format!("{what}: a changed runtime has another transcript"));
+        eprintln!(
+            "RB-20: {what}: {}",
+            error.lines().find(|line| !line.trim().is_empty()).unwrap_or_default()
+        );
         assert!(error.contains(caught), "{what}: {error}");
     }
 
@@ -445,6 +416,46 @@ fn differential() {
         assert!(error.contains(message), "{what}: {error}");
     }
 
+    // The module of the types is refused for each rule it breaks: by the
+    // decoder, and by the validator that checks it with the support items.
+    for (what, from, to, message) in [
+        (
+            "no std support crate",
+            "name: stdSupportCrate",
+            "name: otherCrate",
+            "does not define `stdSupportCrate`",
+        ),
+        (
+            "a std support crate of another profile",
+            "(ctor RuntimeSyntax::RtProfile.std)",
+            "(ctor RuntimeSyntax::RtProfile.core)",
+            "is not a std crate",
+        ),
+        (
+            "an expression constructor RuntimeSyntax lacks",
+            "RtExpr.loopE",
+            "RtExpr.loopEs",
+            "is not an expression",
+        ),
+        (
+            "a std path the closed table lacks",
+            "(cons \"str\" (cons \"from_utf8\"",
+            "(cons \"str\" (cons \"from_utf9\"",
+            "call-name",
+        ),
+        (
+            "an associated function the impl does not state",
+            "(cons \"Str\" (cons \"lit\" (nil String)))",
+            "(cons \"Str\" (cons \"lit2\" (nil String)))",
+            "call-name",
+        ),
+    ] {
+        let edited = types_shipped.replace(from, to);
+        assert_ne!(edited, types_shipped, "{what}: the plant site exists");
+        let error = runtime::std_types_from(&edited).expect_err(what);
+        assert!(error.contains(message), "{what}: {error}");
+    }
+
     // A function the differential does not cover is refused by the case,
     // whatever the function is.
     let mut items = krate.items.clone();
@@ -453,6 +464,16 @@ fn differential() {
     }
     let error = covered(&items).expect_err("a function without a differential");
     assert!(error.contains("length_other"), "{error}");
+
+    // The module of the types is accepted by the pinned Lean: its term is
+    // well typed against `RuntimeSyntax`.
+    if support::lean_backed("RB-20") {
+        let project = project_of(
+            &[("RuntimeStd", types.as_str())],
+            &["TargetSyntax", "RuntimeSyntax", "RuntimeStd"],
+        );
+        let _ = support::verify_ok(&project);
+    }
 }
 
 /// Each theorem of the module with the text of its statement.

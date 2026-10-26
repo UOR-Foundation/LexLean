@@ -47,6 +47,10 @@ mod rust_memory;
 mod rust_prims;
 mod rust_refinement;
 mod rust_runtime;
+pub use rust_runtime::{
+    check_golden as check_runtime_transcript, golden_text, parse_golden, GOLDEN_FILE,
+};
+mod rust_runtime_text;
 mod rust_scaffold;
 mod rust_std;
 mod rust_support;

@@ -1,11 +1,12 @@
 //! The core runtime as source (SPEC.md §17.16): `RB-16`.
 //!
-//! The functions of `RustRuntime` are decoded and printed in place of the
-//! handwritten functions of the same name, which are kept as the oracle at
-//! `tests/rust-runtime-oracle/`. One crate holds the oracle as module `old`
-//! and the generated runtime as module `new`; a harness calls both on the
-//! boundary and seeded values of each defined function and compares the
-//! result and the counted work.
+//! The functions of `RustRuntime` are decoded and printed where the
+//! handwritten functions stood. A harness calls the generated runtime on the
+//! boundary and seeded values of each defined function and records what each
+//! call returned and the work it counted; the digests are the golden
+//! transcript in `tests/rust-runtime-golden/transcript.txt`, which was recorded from
+//! the handwritten runtime at the last pass of the differential (see
+//! VERIFICATION.md).
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -18,10 +19,11 @@ use crate::support::repo_root;
 
 const MODULE: &str = "compiler/src/RustRuntime.lex.tex";
 const SHIPPED: &str = "language/rust-runtime-1.2/RustRuntime.lex.tex";
+/// The golden transcript of the harness on the core runtime.
+const GOLDEN: &str = "core";
 
-/// The calls the differential makes of each defined function: the `same!`
-/// of the harness runs the oracle's and the generated function on the same
-/// arguments and compares what they return and the work they count.
+/// The calls the harness makes of each defined function: the `same!` of the
+/// harness runs the function and records what it returns and the work it counts.
 const SCALARS: [(&str, &str); 18] = [
     ("nat_add",
         "for &a in &nats { for &b in &nats { same!(nat_add(a, b)); } }\n    for _ in 0..1000 { let (a, b) = (next(), next()); same!(nat_add(a, b)); same!(nat_add(a >> 1, b >> 1)); }"),
@@ -156,36 +158,40 @@ fn covered(items: &[ItemDef]) -> Result<(), String> {
     Ok(())
 }
 
-/// The prelude of every harness: both runtimes and the `same!` that runs a
-/// call of each and compares what it returns and the work it counts.
-pub(super) const PRELUDE: &str = "use runtime_diff::{new, old};\nmacro_rules! same {\n    ($($f:ident)::+($($a:expr),*)) => {{\n        let (w0, w1) = (old::work(), new::work());\n        let x = old::$($f)::+($($a),*);\n        let y = new::$($f)::+($($a),*);\n        assert_eq!(format!(\"{x:?}\"), format!(\"{y:?}\"), \"{} result\", stringify!($($f)::+));\n        assert_eq!(old::work() - w0, new::work() - w1, \"{} work\", stringify!($($f)::+));\n    }};\n}\nfn main() {\n    let nats = [0u64, 1, 2, 3, 7, u32::MAX as u64, u32::MAX as u64 + 1, u64::MAX / 2, u64::MAX - 2, u64::MAX - 1, u64::MAX];\n    let ints = [i64::MIN, i64::MIN + 1, -3037000500, -2, -1, 0, 1, 2, 3037000500, i64::MAX - 1, i64::MAX];\n    let mut seed = 0x9e37_79b9_7f4a_7c15_u64;\n    let mut next = move || { seed ^= seed << 13; seed ^= seed >> 7; seed ^= seed << 17; seed };\n";
+/// The recorder every harness reports through: each observation (a label, the
+/// debug form of what a call returned, and the work it counted) is folded, in
+/// order, into a 64-bit FNV-1a digest kept per label, and the digests are
+/// printed at the end. The digest of a label is what the golden transcripts of
+/// `tests/rust-runtime-golden/` record.
+pub(super) const RECORDER: &str = "use std::cell::RefCell;\nuse std::collections::BTreeMap;\nthread_local! { static SEEN: RefCell<BTreeMap<String, u64>> = const { RefCell::new(BTreeMap::new()) }; }\nfn seen(label: &str, value: &str, work: u64) {\n    SEEN.with(|seen| {\n        let mut seen = seen.borrow_mut();\n        let digest = seen.entry(label.to_owned()).or_insert(0xcbf2_9ce4_8422_2325);\n        for byte in value.bytes().chain(*b\"/\").chain(work.to_string().into_bytes()).chain(*b\";\") {\n            *digest ^= u64::from(byte);\n            *digest = digest.wrapping_mul(0x0100_0000_01b3);\n        }\n    });\n}\nfn report() {\n    SEEN.with(|seen| {\n        for (label, digest) in seen.borrow().iter() { println!(\"transcript {label} {digest:016x}\"); }\n    });\n}\n";
+
+/// The prelude of every harness of the scalar runtime: the recorder and the
+/// `same!` that runs a call of the runtime and records what it returns and
+/// the work it counts.
+pub(super) fn prelude() -> String {
+    format!(
+        "use runtime_diff::rt as m;\n{RECORDER}macro_rules! same {{\n    ($($f:ident)::+($($a:expr),*)) => {{{{\n        let w0 = m::work();\n        let x = m::$($f)::+($($a),*);\n        seen(&stringify!($($f)::+).replace(' ', \"\"), &format!(\"{{x:?}}\"), m::work() - w0);\n    }}}};\n}}\nfn main() {{\n    let nats = [0u64, 1, 2, 3, 7, u32::MAX as u64, u32::MAX as u64 + 1, u64::MAX / 2, u64::MAX - 2, u64::MAX - 1, u64::MAX];\n    let ints = [i64::MIN, i64::MIN + 1, -3037000500, -2, -1, 0, 1, 2, 3037000500, i64::MAX - 1, i64::MAX];\n    let mut seed = 0x9e37_79b9_7f4a_7c15_u64;\n    let mut next = move || {{ seed ^= seed << 13; seed ^= seed >> 7; seed ^= seed << 17; seed }};\n"
+    )
+}
 
 /// The harness: both runtimes, every function of the differential.
-fn harness() -> String {
-    let mut out = String::from(PRELUDE);
+pub(super) fn harness() -> String {
+    let mut out = prelude();
     for (_, calls) in differential() {
         out.push_str("    {\n    ");
         out.push_str(&calls);
         out.push_str("\n    }\n");
     }
-    out.push_str("    println!(\"runtime\");\n}\n");
+    out.push_str("    report();\n    println!(\"runtime\");\n}\n");
     out
 }
 
-/// Compile the oracle and `generated` as modules of one crate and run the
-/// differential: the output of the harness, or the reason it failed.
-fn differ(oracle: &str, generated: &str) -> Result<String, String> {
-    differ_with(oracle, generated, harness())
-}
-
-/// [`differ`] with the harness `harness`.
-pub(super) fn differ_with(
-    oracle: &str,
-    generated: &str,
-    harness: String,
-) -> Result<String, String> {
+/// Compile `runtime` as the module `rt` of a crate under the pinned rustc with
+/// warnings denied and run `harness` on it: the standard output of the
+/// harness, or the reason it failed.
+pub(super) fn run_harness(runtime: &str, harness: String) -> Result<String, String> {
     let directory = tempfile::tempdir().expect("a directory");
-    let lib = format!("pub mod old {{\n{oracle}\n}}\npub mod new {{\n{generated}\n}}\n");
+    let lib = format!("pub mod rt {{\n{runtime}\n}}\n");
     let files: BTreeMap<String, Vec<u8>> = BTreeMap::from([
         (
             "Cargo.toml".to_owned(),
@@ -216,6 +222,153 @@ pub(super) fn differ_with(
     }
 }
 
+/// The transcript a harness printed: each label with the digest of what the
+/// calls under it returned and counted.
+pub(super) fn transcript_of(output: &str) -> Vec<(String, String)> {
+    output
+        .lines()
+        .filter_map(|line| line.strip_prefix("transcript "))
+        .filter_map(|line| line.rsplit_once(' '))
+        .map(|(label, digest)| (label.to_owned(), digest.to_owned()))
+        .collect()
+}
+
+/// The committed golden transcript: one file, whose first line names its
+/// format and the SHA-256 of the lines after it, and whose other lines are a
+/// section (`core`, `support`, or `std`), a label, and a 64-bit digest.
+pub const GOLDEN_FILE: &str = "tests/rust-runtime-golden/transcript.txt";
+
+const GOLDEN_FORMAT: &str = "lexlean/runtime-transcript/1";
+
+/// The text of a golden file over `lines` (section, label, digest).
+pub fn golden_text(lines: &[(String, String, String)]) -> String {
+    use sha2::{Digest, Sha256};
+    let body: String = lines
+        .iter()
+        .map(|(section, label, digest)| format!("{section} {label} {digest}\n"))
+        .collect();
+    format!(
+        "{GOLDEN_FORMAT} sha256:{:x}\n{body}",
+        Sha256::digest(body.as_bytes())
+    )
+}
+
+/// The lines of a golden file, once its header names the SHA-256 of the rest.
+///
+/// # Errors
+///
+/// The header is not the format, its digest is not that of the lines, or a
+/// line is not a section, a label, and a 16-digit hexadecimal digest.
+pub fn parse_golden(text: &str) -> Result<Vec<(String, String, String)>, String> {
+    let (header, body) = text.split_once('\n').ok_or("the golden file is empty")?;
+    let lines = body
+        .lines()
+        .map(|line| {
+            let (rest, digest) = line.rsplit_once(' ').ok_or("a line has no digest")?;
+            let (section, label) = rest.split_once(' ').ok_or("a line has no label")?;
+            if digest.len() != 16 || !digest.chars().all(|c| c.is_ascii_hexdigit()) {
+                return Err(format!("`{line}` does not end in a 64-bit digest"));
+            }
+            Ok((section.to_owned(), label.to_owned(), digest.to_owned()))
+        })
+        .collect::<Result<Vec<_>, String>>()?;
+    if golden_text(&lines) != format!("{header}\n{body}") || !header.starts_with(GOLDEN_FORMAT) {
+        return Err(
+            "the golden file is not its header's digest of its lines; it is written by `cargo xtask check-golden --write` and never edited"
+                .to_owned(),
+        );
+    }
+    Ok(lines)
+}
+
+/// The golden transcript of `section`, one `label digest` per line.
+pub(super) fn golden(section: &str) -> Vec<(String, String)> {
+    let text = std::fs::read_to_string(repo_root().join(GOLDEN_FILE).as_std_path())
+        .unwrap_or_else(|error| panic!("{GOLDEN_FILE}: {error}"));
+    parse_golden(&text)
+        .unwrap_or_else(|reason| panic!("{GOLDEN_FILE}: {reason}"))
+        .into_iter()
+        .filter(|(held, _, _)| held == section)
+        .map(|(_, label, digest)| (label, digest))
+        .collect()
+}
+
+/// The three transcripts of the printed runtime, as the lines of a golden file.
+///
+/// # Errors
+///
+/// A harness does not compile or run.
+pub fn observed_lines() -> Result<Vec<(String, String, String)>, String> {
+    let core = runtime::core()?;
+    let std = runtime::std()?;
+    let mut out = Vec::new();
+    for (section, text, harness) in [
+        ("core", core.to_owned(), harness()),
+        ("support", core.to_owned(), super::rust_support::harness()),
+        ("std", format!("{core}{std}"), super::rust_std::harness()),
+    ] {
+        let ran = run_harness(&text, harness)?;
+        for (label, digest) in transcript_of(&ran) {
+            out.push((section.to_owned(), label, digest));
+        }
+    }
+    Ok(out)
+}
+
+/// `cargo xtask check-golden`: the committed runtime transcript is the one the
+/// printed runtime gives, or (with `write`) is rewritten from it.
+///
+/// # Errors
+///
+/// A harness fails, or the file differs from the printed runtime's transcript.
+pub fn check_golden(root: &std::path::Path, write: bool) -> Result<usize, String> {
+    let lines = observed_lines()?;
+    let text = golden_text(&lines);
+    let path = root.join(GOLDEN_FILE);
+    if write {
+        std::fs::write(&path, &text).map_err(|error| error.to_string())?;
+    } else if std::fs::read_to_string(&path).map_err(|error| error.to_string())? != text {
+        return Err(format!(
+            "R10: {GOLDEN_FILE} differs from the transcript of the printed runtime; run `cargo xtask check-golden --write` and review the diff"
+        ));
+    }
+    Ok(lines.len())
+}
+
+/// The labels in which two transcripts differ, or `None` when they agree.
+pub(super) fn disagreement(
+    observed: &[(String, String)],
+    expected: &[(String, String)],
+) -> Option<String> {
+    let mut labels: BTreeSet<&str> = BTreeSet::new();
+    for (label, digest) in observed {
+        if !expected.iter().any(|(l, d)| l == label && d == digest) {
+            labels.insert(label);
+        }
+    }
+    for (label, _) in expected {
+        if !observed.iter().any(|(l, _)| l == label) {
+            labels.insert(label);
+        }
+    }
+    (!labels.is_empty()).then(|| {
+        format!(
+            "the transcript differs in: {}",
+            labels.into_iter().collect::<Vec<_>>().join(", ")
+        )
+    })
+}
+
+/// Run `harness` on `runtime` and require its transcript to be the golden
+/// one at `path`: the output of the run, or the reason it failed or differs.
+pub(super) fn observe(runtime: &str, harness: String, path: &str) -> Result<String, String> {
+    let ran = run_harness(runtime, harness)?;
+    match disagreement(&transcript_of(&ran), &golden(path)) {
+        Some(reason) => Err(reason),
+        None => Ok(ran),
+    }
+}
+
 /// Run the case of `RB-16`.
 pub fn run(id: &str) {
     assert_eq!(id, "RB-16");
@@ -229,7 +382,6 @@ pub fn run(id: &str) {
     // The shipped copy is the compiler project's module byte for byte: the
     // proofs are about one, the Rust crate reads the other.
     assert_eq!(module, shipped, "{SHIPPED} differs from {MODULE}");
-    let oracle = read("tests/rust-runtime-oracle/core.rs.txt");
     let support = runtime::support().expect("the embedded support");
     let decoded = source::decode(&shipped).expect("the module decodes");
     assert!(
@@ -242,8 +394,10 @@ pub fn run(id: &str) {
         runtime::assemble(support, &decoded.core.items),
         "the embedded module is the committed one"
     );
-    // The generated functions replace the oracle's: the base holds none of
-    // their names, so no function is declared twice.
+    // The generated functions are the runtime's: the support holds none of
+    // their names, so no function is declared twice, and the golden
+    // transcript has a label for each.
+    let recorded = golden(GOLDEN);
     for name in defined(&decoded.core.items).expect("named functions") {
         let (module, last) = name
             .rsplit_once("::")
@@ -253,56 +407,45 @@ pub fn run(id: &str) {
                 !support.contains(&format!("pub mod {module} {{")),
                 "the base still holds the module `{module}`"
             );
-            assert!(
-                oracle.contains(&format!("fixed!({module}, ")),
-                "the oracle lacks the module `{module}`"
-            );
         } else {
             assert!(
                 !support.contains(&format!("pub fn {last}(")),
                 "the base still holds `{name}`"
             );
-            assert!(
-                oracle.contains(&format!("pub fn {last}(")),
-                "the oracle lacks `{name}`"
-            );
         }
+        assert!(
+            recorded.iter().any(|(label, _)| *label == name),
+            "the golden transcript lacks `{name}`"
+        );
     }
     let generated = runtime::assemble(support, &decoded.core.items);
-    let ran = differ(&oracle, &generated).expect("the generated runtime agrees with the oracle");
-    assert_eq!(ran, "runtime");
+    let ran = observe(&generated, harness(), GOLDEN)
+        .expect("the generated runtime has the golden transcript");
+    assert_eq!(ran.lines().last(), Some("runtime"));
 
     // A function whose body computes another result is caught by the
     // differential, not by the decoder: the checked product for the checked
     // sum, the checked difference for the checked sum of integers, the strict
     // order for the loose one, the remainder for the quotient.
     for (from, to, caught) in [
-        (
-            "Machine.checkedNatAdd",
-            "Machine.checkedNatMul",
-            "nat_add result",
-        ),
-        (
-            "Machine.checkedIntAdd",
-            "Machine.checkedIntSub",
-            "int_add result",
-        ),
-        ("Machine.natLe", "Machine.natLt", "nat_le result"),
-        ("Machine.natQuot", "Machine.natRem", "nat_quot result"),
+        ("Machine.checkedNatAdd", "Machine.checkedNatMul", "nat_add"),
+        ("Machine.checkedIntAdd", "Machine.checkedIntSub", "int_add"),
+        ("Machine.natLe", "Machine.natLt", "nat_le"),
+        ("Machine.natQuot", "Machine.natRem", "nat_quot"),
         (
             "Machine.checkedAdd (ctor TargetSyntax::IntKind.u8)",
             "Machine.checkedSub (ctor TargetSyntax::IntKind.u8)",
-            "fixed_u8::checked_addresult",
+            "fixed_u8::checked_add",
         ),
         (
             "Machine.checkedShl (ctor TargetSyntax::IntKind.i32)",
             "Machine.checkedShr (ctor TargetSyntax::IntKind.i32)",
-            "fixed_i32::shift_leftresult",
+            "fixed_i32::shift_left",
         ),
         (
             "Machine.bitXor (ctor TargetSyntax::IntKind.u16)",
             "Machine.bitOr (ctor TargetSyntax::IntKind.u16)",
-            "fixed_u16::bit_xorresult",
+            "fixed_u16::bit_xor",
         ),
     ] {
         let changed = shipped.replacen(from, to, 1);
@@ -311,8 +454,8 @@ pub fn run(id: &str) {
             .expect("a changed body decodes")
             .core
             .items;
-        let error = differ(&oracle, &runtime::assemble(support, &items))
-            .expect_err("a changed body disagrees with the oracle");
+        let error = observe(&runtime::assemble(support, &items), harness(), GOLDEN)
+            .expect_err("a changed body has another transcript");
         assert!(
             error
                 .replace([' ', '\n'], "")

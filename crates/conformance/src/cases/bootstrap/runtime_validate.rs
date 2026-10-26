@@ -863,6 +863,6 @@ pub(super) fn case() {
 // The counts the specification states, over the committed tree: SPEC.md
 // §17.23, the register statement of BS-09, its scenario, and VERIFICATION.md
 // restate them, and the case fails when the tree no longer gives them.
-const NAMED: usize = 101;
-const REFUSED: usize = 562;
-const WITHIN: usize = 701;
+const NAMED: usize = 103;
+const REFUSED: usize = 564;
+const WITHIN: usize = 703;
