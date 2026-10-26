@@ -11356,3 +11356,32 @@ it.
 stand-in; the rehearsal that follows this change is what shows GitHub runs the
 job as written, with `actions: read` enough for the runs, the jobs, and the
 artifact download.
+
+### The tag's run refused the evidence the rehearsals accepted (`RP-18`, #34)
+
+The first `v0.4.0` tag run (40321415513, on `aa6593e026d92f4696fe970715c81528ad2c37da`)
+passed every job but `publish the release`, which stopped at `release-check`
+with `ci-evidence: release/vv-evidence.txt does not record the gate passing`.
+The criterion (`crates/model/src/release.rs`) reads the line `just vv` prints
+when the whole gate passes, `vv: the acceptance gate passed`; the file the
+release gate writes carried the run, its 34 jobs and the 29 legs' transcripts,
+each of which ends in its own line (`vv part: every recipe passed` or the
+shard's), and never the gate's. The six rehearsals could not show it: `publish`
+runs on a tag only. Nothing was published (no GitHub Release, no crates.io
+upload); the image tags `0.4.0` and `latest` were pushed by the `manifest`
+job and are pushed again by the next run.
+
+The fix: `.github/release-gate.sh` ends the file with `gate: every job of run
+N passed on <commit>` and the line the criterion reads, as the summary of the
+run; the criterion is `repo_model::release::ci_evidence`, used by
+`release-check` and tested on its own (the legs' lines alone are refused, a
+file naming no commit is refused); and `release_gate_decisions` holds the
+script's output to that function, so the file the gate job writes is the file
+`release-check` accepts. Run by hand on `aa6593e02` the script named run
+40292537147 and the file ended with the two lines.
+
+| Case | Command | Observed |
+| --- | --- | --- |
+| the committed tree | `cargo test -p repo-conformance --test conformance conformance_rp_18 -- --exact` | ok |
+| the script no longer writes the gate line | same | `the evidence satisfies the release criterion` failed: `Err(["release/vv-evidence.txt does not record the gate passing"])` |
+| the criterion accepts the legs' lines | `cargo test -p repo-model the_ci_evidence_criterion` | `left: Ok(())` against the refusal |

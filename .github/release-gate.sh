@@ -113,4 +113,12 @@ else
 fi
 rm -rf "$parts_dir"
 
+# The line `just vv` prints when the whole gate passes, which the release
+# criterion reads (§30.3, `release-check`): here it summarises the run, every
+# leg, every Atlas shard and the join, and every host of which passed.
+{
+  echo "gate: every job of run $found passed on $commit"
+  echo "vv: the acceptance gate passed"
+} >> "$out"
+
 echo "release-gate: run $found ($url) was the whole gate on $commit and passed every job"
