@@ -1,0 +1,155 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{Buffer}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{sealed}: \texttt{List (ByteArray)}.\par
+\noindent Field \texttt{pending}: \texttt{ByteArray}.\par
+\noindent Field \texttt{size}: \texttt{Nat}.\par
+\noindent Field \texttt{capacity}: \texttt{Nat}.\par
+\noindent Field \texttt{refused}: \texttt{Bool}.\par
+\subsection*{\texttt{new}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(capacity : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Buffer}.\par
+\noindent Definition: \texttt{(\{ sealed := ([] : List (ByteArray)), pending := ByteArray.mk \#[], size := 0, capacity := capacity, refused := false \} : Buffer)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{length}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(buffer : Buffer)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(buffer).size}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{exceeded}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(buffer : Buffer)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(buffer).refused}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{refuse}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(buffer : Buffer)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Buffer}.\par
+\noindent Definition: \texttt{(\{ sealed := (buffer).sealed, pending := (buffer).pending, size := (buffer).size, capacity := (buffer).capacity, refused := true \} : Buffer)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{seal}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(buffer : Buffer) (joined : ByteArray) (grown : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Buffer}.\par
+\noindent Definition: \texttt{(if (Nat.ble (256) ((LexLeanRuntime.length (joined) : Nat))) then (\{ sealed := (joined :: (buffer).sealed), pending := ByteArray.mk \#[], size := grown, capacity := (buffer).capacity, refused := false \} : Buffer) else (\{ sealed := (buffer).sealed, pending := joined, size := grown, capacity := (buffer).capacity, refused := false \} : Buffer))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{writeBytes}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(buffer : Buffer) (piece : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Buffer}.\par
+\noindent Definition: \texttt{(if (buffer).refused then buffer else (let grown : Nat := ((buffer).size + (LexLeanRuntime.length (piece) : Nat)); (if (Nat.ble (grown) ((buffer).capacity)) then <U+00AB>seal<U+00BB> (buffer) ((LexLeanRuntime.append ((buffer).pending) (piece) : ByteArray)) (grown) else refuse (buffer))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{writeByte}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(buffer : Buffer) (byte : UInt8)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Buffer}.\par
+\noindent Definition: \texttt{writeBytes (buffer) (LexLeanStd.Text.sliceOr (ByteArray.mk \#[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255]) ((toNat (byte) : Nat)) (1))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{pairStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(state : (Prod (Option (ByteArray)) (List (ByteArray)))) (piece : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (Option (ByteArray)) (List (ByteArray)))}.\par
+\noindent Definition: \texttt{(match (state).1 with | Option.none => (Option.some (piece), (state).2) | Option.some held => (Option.none, ((LexLeanRuntime.append (held) (piece) : ByteArray) :: (state).2)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{pairUp}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(pieces : List (ByteArray))}.\par
+\noindent Closure 1: binds \texttt{(state, piece)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (List (ByteArray))}.\par
+\noindent Definition: \texttt{(match pieces with | List.nil => Option.none | List.cons \_ rest => (match rest with | List.nil => Option.none | List.cons \_ \_ => (let folded : (Prod (Option (ByteArray)) (List (ByteArray))) := (LexLeanCollections.listFold ((fun (state : (Prod (Option (ByteArray)) (List (ByteArray)))) (piece : ByteArray) => pairStep (state) (piece))) ((Option.none, ([] : List (ByteArray)))) (pieces) : (Prod (Option (ByteArray)) (List (ByteArray)))); (match (folded).1 with | Option.some held => Option.some (LexLeanStd.Text.reverse ((held :: (folded).2))) | Option.none => Option.some (LexLeanStd.Text.reverse ((folded).2))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{joinAll}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(pieces : List (ByteArray))}.\par
+\noindent Closure 1: binds \texttt{(current)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match ((LexLeanCollections.iterateUntil ((fun (current : List (ByteArray)) => pairUp (current))) ((LexLeanRuntime.length (pieces) : Nat)) (pieces) : (Prod (List (ByteArray)) (Bool)))).1 with | List.nil => ByteArray.mk \#[] | List.cons only \_ => only)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{finish}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(buffer : Buffer)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (ByteArray)}.\par
+\noindent Definition: \texttt{(if (buffer).refused then Except.error ((LexLeanRuntime.utf8Encode ("output exceeds the capacity of the buffer") : ByteArray)) else Except.ok (joinAll (LexLeanStd.Text.reverse (((buffer).pending :: (buffer).sealed)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{digit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(number : Nat) (place : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanStd.Text.sliceOr (ByteArray.mk \#[48, 49, 50, 51, 52, 53, 54, 55, 56, 57]) ((LexLeanRuntime.remainder ((LexLeanRuntime.quotient (number) (place) (0) : Nat)) (10) (0) : Nat)) (1)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{zeroStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(digits : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Nat)}.\par
+\noindent Definition: \texttt{(match LexLeanStd.Text.byteAt (digits) (position) with | Option.some byte => (if (LexLeanRuntime.equal (byte) ((48 : UInt8)) : Bool) then Option.some ((position + 1)) else Option.none) | Option.none => Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{decimal}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(number : Nat)}.\par
+\noindent Closure 1: binds \texttt{(position)}, captures \texttt{(digits)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(let digits : ByteArray := (LexLeanRuntime.append (digit (number) (10000000000000000000)) ((LexLeanRuntime.append (digit (number) (1000000000000000000)) ((LexLeanRuntime.append (digit (number) (100000000000000000)) ((LexLeanRuntime.append (digit (number) (10000000000000000)) ((LexLeanRuntime.append (digit (number) (1000000000000000)) ((LexLeanRuntime.append (digit (number) (100000000000000)) ((LexLeanRuntime.append (digit (number) (10000000000000)) ((LexLeanRuntime.append (digit (number) (1000000000000)) ((LexLeanRuntime.append (digit (number) (100000000000)) ((LexLeanRuntime.append (digit (number) (10000000000)) ((LexLeanRuntime.append (digit (number) (1000000000)) ((LexLeanRuntime.append (digit (number) (100000000)) ((LexLeanRuntime.append (digit (number) (10000000)) ((LexLeanRuntime.append (digit (number) (1000000)) ((LexLeanRuntime.append (digit (number) (100000)) ((LexLeanRuntime.append (digit (number) (10000)) ((LexLeanRuntime.append (digit (number) (1000)) ((LexLeanRuntime.append (digit (number) (100)) ((LexLeanRuntime.append (digit (number) (10)) (digit (number) (1)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray)) : ByteArray); (let zeros : Nat := ((LexLeanCollections.iterateUntil ((fun (position : Nat) => zeroStep (digits) (position))) ((LexLeanRuntime.length (digits) : Nat)) (0) : (Prod (Nat) (Bool)))).1; (if (Nat.beq (number) (0)) then (LexLeanRuntime.utf8Encode ("0") : ByteArray) else LexLeanStd.Text.sliceOr (digits) (zeros) ((LexLeanRuntime.subtract ((LexLeanRuntime.length (digits) : Nat)) (zeros) : Nat)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{writeDecimal}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(buffer : Buffer) (number : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Buffer}.\par
+\noindent Definition: \texttt{writeBytes (buffer) (decimal (number))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{writeAll}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(capacity : Nat) (pieces : List (ByteArray))}.\par
+\noindent Closure 1: binds \texttt{(buffer, piece)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{Except (ByteArray) (ByteArray)}.\par
+\noindent Definition: \texttt{finish ((LexLeanCollections.listFold ((fun (buffer : Buffer) (piece : ByteArray) => writeBytes (buffer) (piece))) (new (capacity)) (pieces) : Buffer))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{byteStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(data : ByteArray) (state : (Prod (Nat) (Buffer)))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option ((Prod (Nat) (Buffer)))}.\par
+\noindent Definition: \texttt{(match LexLeanStd.Text.byteAt (data) ((state).1) with | Option.some byte => Option.some ((((state).1 + 1), writeByte ((state).2) (byte))) | Option.none => Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{writeEach}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(capacity : Nat) (data : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{(data)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{Except (ByteArray) (ByteArray)}.\par
+\noindent Definition: \texttt{finish ((((LexLeanCollections.iterateUntil ((fun (state : (Prod (Nat) (Buffer))) => byteStep (data) (state))) ((LexLeanRuntime.length (data) : Nat)) ((0, new (capacity))) : (Prod ((Prod (Nat) (Buffer))) (Bool)))).1).2)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{writeNumbers}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(capacity : Nat) (numbers : List (Nat))}.\par
+\noindent Closure 1: binds \texttt{(buffer, number)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{Except (ByteArray) (ByteArray)}.\par
+\noindent Definition: \texttt{finish ((LexLeanCollections.listFold ((fun (buffer : Buffer) (number : Nat) => writeBytes (writeDecimal (buffer) (number)) ((LexLeanRuntime.utf8Encode (",") : ByteArray)))) (new (capacity)) (numbers) : Buffer))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\end{document}

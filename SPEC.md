@@ -66,7 +66,7 @@ The root workspace metadata MUST be:
 
 ```toml
 [workspace.package]
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 rust-version = "1.97"
 license = "MIT OR Apache-2.0"
@@ -282,7 +282,7 @@ Every user-visible failure has a registered diagnostic code and a sanctioned exi
 
 ## 7. Repository layout
 
-The completed repository MUST have this layout. Additional files are allowed only when they have a defined role and are included by the repository audits; the tracked tree MUST NOT hold any `CACHEDIR.TAG` file or any path component the repository walkers skip (`target`, `.git`, `.lexlean`, `.lake`, `node_modules`, or `expected` outside the sanctioned `expected/` oracle directories under `bootstrap/`, `compiler/`, `stdlib/`, `examples/<example>/`, `tests/negative/<case>/`, `tests/tooling/<suite>/<case>/`, and `tests/fixtures/<suite>/<case>/`).
+The completed repository MUST have this layout. Additional files are allowed only when they have a defined role and are included by the repository audits; the tracked tree MUST NOT hold any `CACHEDIR.TAG` file or any path component the repository walkers skip (`target`, `.git`, `.lexlean`, `.lake`, `node_modules`, or `expected` outside the sanctioned `expected/` oracle directories under `bootstrap/`, `compiler/`, `std-models/`, `std-reasoning/`, `stdlib/`, `examples/<example>/`, `tests/negative/<case>/`, `tests/tooling/<suite>/<case>/`, and `tests/fixtures/<suite>/<case>/`).
 
 ```text
 .
@@ -2701,6 +2701,40 @@ An `apply` proof names one prior theorem and supplies exactly its ordered,
 type-checked semantic arguments; it lowers to one `exact` application and
 cannot carry a proof-term or tactic string.
 
+A `term_cases` proof (language 1.2, `SM-35`) names a document term and a
+nonempty, strictly sorted, duplicate-free list of prior document definitions.
+The term's type must be an inductive type of the document. It lowers to
+`set_option linter.unusedSimpArgs false in cases llCase : <term> <;> simp (config := {decide := true}) only [<definitions>, llCase, ite_true, ite_false]`:
+the goal is split on every constructor of the term's type, `llCase` is the
+hypothesis that equates the term to the constructor, and the definitions, that
+hypothesis, and the reduction of a conditional on a decided condition are the
+only rewrite rules, with closed propositions decided; the unused-argument linter is off for the one script, because the list of definitions is a superset the unfolding draws on and an unused name is not an error. It is
+admitted because an evaluation that matches on the same term twice, once
+through a wrapper that matches on the result of the first, is a case-of-case
+that conversion does not commute, so such an equation cannot be proved by
+`reflexivity` or by `cases` on a local, which needs a name for the value; the
+runtime profile's refinement statements (§17.17, `SP-22`) are of this shape.
+The proof carries no tactic name, option, or lemma: the definitions are the
+only free choice, and each must be a prior definition of the document, so the
+rewrite set is the document's own text and the hypothesis. It adds no axiom of
+its own: the theorem's policy states the exact set the pinned Lean observes,
+which `simp` with decided propositions draws from `propext` (and from
+`Classical.choice` and `Quot.sound` where the unfolded definitions use them), as
+for `simplify`. The name `llCase` is reserved, so a theorem parameter cannot
+take it. The canonical LaTeX of a semantic module is a catalog of its
+declarations that states a theorem's statement and axiom policy and no proof, for
+every proof form, so the form adds nothing to it.
+
+A `cases` proof (§17.10) may name a local of type `Bool` (language 1.2, `SM-36`): the
+branches are exactly `false` and `true`, each without binders, and the proof lowers to
+`cases` on the local with those two alternatives, as it does for a natural number, a
+list, or a document inductive. A use in language 1.1 is refused, a missing, repeated,
+or non-constructor branch is refused by the exhaustiveness check every `cases` proof has,
+and `induction` on a Boolean is refused because a Boolean has no recursive field to
+bind a hypothesis for. The form exists because a Boolean parameter of a runtime function
+cannot be split by `term_cases`, which splits on a term of an inductive type of the
+document, and the refinement of `bool_and` needs its two values.
+
 Every definition and theorem has an exact axiom policy. An omitted `axioms`
 member means the exact empty set; a present member is a strictly sorted,
 duplicate-free list of Lean names and means exact equality with that set.
@@ -4121,22 +4155,45 @@ All of these failures occur before Lean or LaTeX generation and before any
 child process starts.
 
 Migration is explicit and versioned. A language-1.1 project becomes a
-language-1.2 project only by changing its `language` row, rewriting each
-`semanticdata` discriminator from `/1` to `/2`, changing builtin glossary
-references from `1.1.0` to `1.2.0`, and regenerating the lock with
-`lexlean lock`. Every language-1.1 value is a valid language-1.2 value with
-the same meaning, so the migration changes identities (the compiler-semantics
-ID, the lock, and every source and semantic ID) but not generated Lean
-declarations; the generated text differs only in the portable runtime, which
-a language-1.2 module imports as the runtime module `LexLeanRuntime.Portable`
-with every definition exposed instead of splicing the language-1.1 text
-(rule 6 under *Collections and state threading*, *Runtime modules*), and the
-`reducible` attribute of proposition-valued definitions (rule 11 under
-*Models, contracts, realizations, and evidence*), which change no
-definition, type, or compiled code. No command migrates a project
-implicitly: building an
-unmigrated project under a newer compiler keeps its declared language and its
-historical identities and artifact bytes.
+language-1.2 project only through `lexlean migrate --to 1.2` (§23.4, `CL-24`),
+never implicitly: building an unmigrated project under a newer compiler keeps
+its declared language and its historical identities and artifact bytes. Changing
+the `language` row and the schema tag by hand does not migrate a project,
+because language 1.2 refuses the data form of a module with `LLP2003`
+(`AU-13`, §17.21.1); the command does everything a migration needs in one
+step:
+
+- every module of every source root is rewritten from `\semanticdata{...}` to
+  the authoring notation (§17.21) through `lexlean::sdk::to_notation`, after its
+  schema tag moves from `lexlean/semantic-module/1` to
+  `lexlean/semantic-module/2`; the notation reads back to exactly that module
+  or the module is refused, so the declaration names, theorem statements, and
+  axiom policies are those of the language-1.1 module;
+- each builtin glossary reference moves from `1.1.0` to `1.2.0` in every
+  `\useglossary` of every source and in the `imports` of every path lexicon
+  package, whose manifest `language` becomes `1.2` (the package's own version
+  and its entries are unchanged);
+- the `language` row of `lexlean.toml` becomes `1.2`, in canonical form;
+- the lock is regenerated as `lexlean/lock/2`.
+
+The migrated project is written into a scratch copy first, locked, and checked
+as a language-1.2 project; a project that does not check there is refused, and
+on every refusal no file of the project is written. A project whose language
+is not `1.1` is refused with `LLC0103`, and a module that is not a
+language-1.1 semantic module in the data form (one whose data is not the
+canonical JSON that language 1.1 `check` refuses with `LLT4001` is not, and is
+not canonicalized by the migration), or whose notation does not read
+back to the module (the conversion is checked; no schema-valid module is known
+to fail it), with `LLP2003`. Every language-1.1 value is a valid
+language-1.2 value with the same meaning, so the migration changes identities
+(the compiler-semantics ID, the lock, and every source and semantic ID) but not
+generated Lean declarations; the generated text differs only in the portable
+runtime, which a language-1.2 module imports as the runtime module
+`LexLeanRuntime.Portable` with every definition exposed instead of splicing the
+language-1.1 text (rule 6 under *Collections and state threading*, *Runtime
+modules*), and the `reducible` attribute of proposition-valued definitions
+(rule 11 under *Models, contracts, realizations, and evidence*), which change
+no definition, type, or compiled code.
 
 ### 17.13 Production eligibility
 
@@ -4871,8 +4928,10 @@ over the reverse call and application edges. A function that can overflow
 returns `R<T>` and every call to it ends in `?`, except in tail position,
 where its result is returned as it is; any other function returns its value
 and no call to it propagates. The operand of an `Err` that ends a loop which
-is the value of a function that can overflow is in tail position: the loop
-breaks with it, so it is the value the function returns. The length of a
+is the value of a function that can overflow is in tail position when it is a
+call: the loop breaks with it, so the callee's result is the value the function
+returns. An application of a fallible closure there is refused today, because
+the application check enters the loop with no tail. The length of a
 sequence cannot exceed `2^64 - 1` on any machine that holds it, so `length`
 cannot overflow.
 
@@ -4894,7 +4953,10 @@ cannot overflow.
    in `validate::CORRESPONDENCE`, whose row does not name the element of its
    own origin, whose width (a fixed-width runtime function's or literal's)
    differs from its origin's, or whose origin the program does not use; and
-   a type the crate names whose row names no element the program uses. The
+   a type the crate names whose row names no element the program uses. A
+   machine call (`Callee::Machine`) is a construct with no row, so a lowered
+   crate that holds one is refused; machine calls appear only in the runtime
+   profile (§17.17). The
    pair and result constructs that a loop's state and break carry (`type:pair`,
    `type:result`, `destructure:pair`, `construct:pair`, `construct:ok`,
    `construct:err`) name `expr:call` among their origins, so they are admitted
@@ -5758,10 +5820,20 @@ whose pattern matches; `?` on `Err` raises out of the function, which returns
 `Err(Overflow)` exactly when its result type is `R<T>`; an application
 dispatches through the `apply` arm of the closure's function and capture
 count. A *machine primitive* is a function of the machine's standard library that the
-runtime reaches and cannot state in the AST. `RustSyntax` declares eight
-(`Machine`), each at a width: `checkedAdd`, `checkedSub`, `checkedMul`,
-`checkedQuot`, `checkedNeg`, `checkedShl`, and `checkedShr` of a width, and
-`tryFrom` to a width, and a call names one as the callee `Callee.machine`, beside
+runtime reaches and cannot state in the AST. `RustSyntax` declares twenty-six
+(`Machine`): `checkedAdd`, `checkedSub`, `checkedMul`,
+`checkedQuot`, `checkedNeg`, `checkedShl`, and `checkedShr` of a width,
+`tryFrom` to a width (`SP-18`), and `bitAnd`, `bitOr`, `bitXor`, and `bitNot` of a
+width, `natEq`, `natLe`, and `natLt` of two naturals, and `natRem` and `intRem` of
+a dividend, a divisor, and the value a zero divisor gives (`SP-21`), and the natural and
+integer arithmetic of the runtime's scalar functions (`SP-23`): the checked sum and product of
+naturals and the checked sum, difference, product, negation, and quotient of integers, each the
+calculus primitive's value as `Some`, or `None` when that primitive overflows, so that a body can
+observe the overflow and return `Err(Overflow)`, and the difference and quotient of naturals,
+which cannot overflow. The runtime's width families are written out, one definition per width,
+and not as an `ItemDef` constructor over a kind list, because stating what an instance is would
+need a substitution function over `RustSyntax` and a lemma that evaluation commutes with it
+(#91). A call names one as the callee `Callee.machine`, beside
 `Callee.function` and `Callee.runtime`. Its meaning is the calculus primitive of
 the same name on the same operands, the `Option` value that primitive states
 (`checkedAdd` of two `u8` is `Some` of their sum, or `None` when it exceeds
@@ -5769,8 +5841,278 @@ the same name on the same operands, the `Option` value that primitive states
 excepted; a primitive is not a runtime item, so it does not pass through the
 item tables. The literal `Lit.overflow` is the unit struct `Overflow` of the
 runtime, which the machine represents by the unit value, as an `Err(Overflow)`
-carries it. Neither is yet written by the renderer: the scalar items are
-expressed over them by the stage of #91 that follows (`SP-18`). A *loop*
+carries it. The Rust AST mirrors both (`rust::ast::Machine`, `Callee::Machine`,
+`Lit::Overflow`, `RB-15`): a machine call prints as the Rust operation its primitive
+names (`u8::checked_add(a, b)`, `u32::try_from(a).ok()`, `core::ops::BitAnd::bitand(a, b)`,
+`core::cmp::PartialOrd::lt(&a, &b)`), the validator refuses a call with another number of
+operands than its primitive takes and an overflow value outside the payload of an
+`Err`, and no lowering emits either: they are the constructs the runtime profile of #91 is
+authored in, so they have no row of the correspondence between a rendering and its
+program. The runtime is that authoring (`RB-16`, `SP-22`). The core runtime every package
+carries is a base text and the functions of the language-1.2 module `RustRuntime` of the
+compiler project, which defines `coreCrate`, a `RustSyntax` crate; its shipped copy,
+`language/rust-runtime-1.2/RustRuntime.lex.tex`, is the compiler project's module byte for byte,
+because the compiler-semantics ID hashes the embedded tree and the proofs are about the other
+file. The Rust crate decodes the shipped copy (`rust::source`), never evaluates it, and
+prints each function after the base, where the handwritten function of the same name stood,
+and the text it hashes into `rust_runtime_core` and `rust_runtime_std` is the result. The
+decoder accepts exactly the constructors of `RustSyntax`, each with its arity, and the
+closed reference to another definition of the module, and refuses a module that names
+another constructor, a runtime function or machine primitive `RustSyntax` does not declare,
+a datum with parameters, a reference to a definition it lacks, or no `coreCrate`. The error type of `R<T>`,
+the runtime's own unit struct, is the node `RustType.overflow` (`Type::Overflow`), so a
+failure prints as `Err::<u64, Overflow>(Overflow)`. The decoded crate is checked by the
+validator that checks every rendering (`runtime::core` runs it; `validateCrate` of `BS-05`, the
+normative validator, reads the crate the same way), with the runtime's reading of
+the arithmetic rule: an `Err` whose payload is the overflow value and whose error type is
+`RustType.overflow` is a fallible value, and it is the only way a runtime function fails; an
+`Err` of another value or of another error type is not one, and a heap type in the core
+runtime is the hidden allocation the validator refuses in every `rust-core` crate. A printed
+`match` whose scrutinee begins with a block, which the machine forms of `int_rem` and `int_quot`
+are, binds it first (`{ let value = <block>; match value { … } }`), as a loop's step is bound,
+because Clippy's default lints refuse a block as a scrutinee. The handwritten text of every function the module defines is kept at
+`tests/rust-runtime-oracle/` and read by tests alone; one crate holds it as module `old` and
+the generated runtime as module `new`, and a harness calls both on the boundary and seeded
+values of each defined function and compares the result and the counted work. A function
+the module defines that the differential does not cover is refused by the case. Each
+function has a theorem `refines_<function>` in the module (`SP-22`), where `<function>` is the function's exported path with `::` written `_` (`refines_fixed_u8_checked_add` for `fixed_u8::checked_add`): for all arguments of
+its parameter types, the declared semantics' run of the function in `coreCrate` equals the
+run of the runtime item of the same name, proved by `term_cases` (`SM-35`) and accepted with the
+axioms its policy states; the fuel is fixed in each theorem (12) and only the run of the
+function spends it, so a fuel too small for a body would make that side `exhausted`, and the
+theorem would be unprovable, never a false equation proved; the set of theorems equals the set of defined functions, and a
+theorem that runs another function than its name says is refused. The functions of a width are
+written out, one definition per function and width, and not as a family (#91): an exported name
+that is a path `fixed_u8::checked_add` prints inside `pub mod fixed_u8 { … }` under its last
+segment, so the module's path is the runtime item's path and the printer, which groups the
+consecutive functions of one module, adds no construct to `RustSyntax`. The conversion to a width
+takes `i128`, the node `RustType.i128` (`Type::I128`), and is a call of the machine primitive
+`tryFrom`; its theorem states the run of the item on an `int`.
+
+The base is not handwritten either (`RB-17`, `SP-25`). The core runtime's support items are the
+definitions of a second language-1.2 module of the compiler project, `RuntimeSupport`, shipped byte
+for byte at `language/rust-runtime-1.2/RuntimeSupport.lex.tex`, which defines `supportCrate`, a crate
+of `RuntimeSyntax`. `RuntimeSyntax` is a second closed module beside `RustSyntax`, not a widening of
+it: a generated program holds no trait, impl, or generic, and the calculus that proves a generated
+program is not asked about one. Its set is closed, and an item or construct outside it is refused by
+name. *Items:* a `use`; a unit struct with derives; a type alias with parameters; a static; a trait
+of method signatures; an impl, of a trait or of a type, with bounded generic parameters; a function
+with bounded generic parameters. *Types:* the unit type, `bool`, a natural (`u64`), a fixed width,
+`Ordering`, `Self`, a generic parameter by index, a reference, a pair, and a named struct or alias.
+*Expressions:* a variable, a unit, Boolean, or natural literal, a path, a call of a path, a method
+call, a field of a pair, a borrow, an equality, and a `match` over wildcard, binding, and path
+patterns, whose arms are expressions. A name that is not declared by the crate is one entry of a
+closed table of the standard library (the types `Result` and `AtomicU64`, the call `AtomicU64::new`,
+the methods `fetch_add`, `load`, and `cmp`). The Rust crate decodes the shipped copy
+(`rust::rt_decode`) with the reader of `rust::source`, never evaluates it, checks it with a validator
+of its own (`rust::rt_validate`), and prints it (`rust::rt`) where the handwritten base stood, so
+`runtime::core` holds no handwritten Rust text. The validator names each rule it refuses by:
+`profile-root` (a `use` outside the profile's roots: `core` in the core profile, `core` and `std` in
+the std profile, `alloc` in neither), `duplicate-name`, `type-name` and `type-arity` (a type neither
+declared nor in the table, which in the core profile is the hidden allocation the validator refuses in
+every `rust-core` crate), `type-parameter`, `self-type`, `bound-trait` (a bound on a trait the crate
+does not declare), `impl-trait`, `impl-complete`, `impl-signature`, `impl-extra`, `impl-visibility`
+(an impl states each method of its trait once with the trait's signature, and no more, and none is
+`pub`), `function-visibility`, `function-receiver`, `call-name`, `call-arity`, `method-name`,
+`method-arity`, `method-bound` (a method of a trait called on a parameter whose bounds do not provide
+it), `variable-scope`, `path-name`, `match-arms`, `trait-method` (a trait that declares a method twice), and `use-path`: 24 rules, each planted by `RB-17`, and the case reads the rules from the validator's source, so a rule added there fails until it is planted. The handwritten core runtime kept at
+`tests/rust-runtime-oracle/core.rs.txt` is the oracle: `equal`, `compare`, `tick`, and `work` agree
+with it in result and in counted work on the boundary and seeded values of the core profile. The
+validator of this module is the Rust rule set above and its plants: the evidence for the closed set is
+the differential and the plants, and nothing in the repository yet reads the module through a second
+implementation. The condition on the heap profile (R8: whoever moves the machine moves the normative
+validator) is that a Lean twin of `rust::rt_validate`, a bootstrap root with its own row beside `BS-05` (`BS-09`),
+exists before any function that allocates is source. The meaning of a trait method is
+declared by `RuntimeSemantics`, which evaluates a `RuntimeSyntax` crate over the values of the
+calculus and finds a method by the shape of its receiver among the impls the crate declares;
+`RuntimeSupport` holds, for each value of the core profile's predicate that the calculus types as the
+arguments of `equal` (a Boolean, a natural, a fixed width, an `Ordering`) and of `compare` (a Boolean, a
+natural, an integer, a fixed width, and a pair of two of those), where a natural is a `u64` and an
+integer an `i64` in the generated Rust and so is dispatched to the impl of that width, a
+theorem that the evaluation of `equal` or of `compare` in `supportCrate` equals the calculus
+primitive of the same name on the same values (`SP-25`). `tick` and `work` are effects of a static
+counter that the erased-value semantics does not model; the counted-work gate (`RB-06`, `TC-07`)
+holds them, and `SP-22` states that its refined functions and its support items are the two sets
+that hold every authored item, and refuses an authored item in neither.
+
+The heap constructs (`RB-19`). `RuntimeSyntax` grows by exactly the constructs the functions of the
+`rust-std` runtime are written in, and every one of them is used by the probe module `RuntimeProbe`
+(`probeCrate`, shipped byte for byte at `language/rust-runtime-1.2/RuntimeProbe.lex.tex`) whose
+printed functions the pinned rustc compiles under `warnings = deny` and a harness checks against an
+independent computation. *Items:* a tuple struct, a record struct, and an enum with unit, tuple, and
+record variants, each with generic parameters and derives. *Types:* `u128` and `i128`, `usize`,
+`char`, `str`, a slice `[T]`, and `&mut T`. *Literals:* a character and a string. *Patterns:* a
+`mut` binding, a tuple, a tuple struct, a struct (or a record variant) with named fields, and a
+literal; a `match` arm may carry a guard. *Expressions:* `let` with an optional type, which binds for
+the statements after it, an assignment, `if` with `else`, `while`, `while let`, `loop`, `for`,
+`break`, `return`, a tuple, a struct literal, a binary operation over `+ - * / % && || != < <= > >=`
+(`==` is the equality of `RB-17`), `!`, a cast, an index, a range slice, a dereference, `&mut`, a method
+call with type arguments, a field by name, and a block. There are no closures, no macros, no `dyn`, and
+no lifetimes: the functions that used them are rewritten without them, and the differential holds the
+rewrite to the original. The closed table of the standard library (51 names): `Result`, `Option`, `AtomicU64`, `Rc`, `Vec`, `String`, `AtomicU64::new`, `Rc::new`, `Rc::from`, `Rc::try_unwrap`, `Rc::get_mut`, `Vec::new`, `Vec::with_capacity`, `String::new`, `mem::replace`, `str::from_utf8`, `usize::from`, `usize::try_from`, `Some`, `Ok`, `Err`, `fetch_add`, `load`, `cmp`, `len`, `is_empty`, `chars`, `next`, `min`, `max`, `push`, `pop`, `truncate`, `push_str`, `extend_from_slice`, `iter`, `rev`, `get`, `copied`, `ok`, `clone`, `to_string`, `as_bytes`, `strip_prefix`, `starts_with`, `split`, `collect`, `is_ascii_digit`, `parse`, `Clone`, `Drop`. A call
+of `from` or `try_from` is also admitted for every integer type. The names of the table that allocate
+(`Rc`, `Vec`, `String`, `Rc::new`, `Rc::from`, `Rc::try_unwrap`, `Rc::get_mut`, `Vec::new`,
+`Vec::with_capacity`, `String::new`, `push`, `pop`, `truncate`, `push_str`, `extend_from_slice`,
+`to_string`, `collect`) are refused in the core profile as `hidden-allocation`. Sixteen rules join the
+24 of `RB-17`, 40 in all: `assign-immutable`, `assign-place`, `break-position`, `char-literal`, `derive`,
+`hidden-allocation`, `identifier`, `let-position`, `param-duplicate`, `pattern-duplicate`, `pattern-fields`,
+`struct-fields`, `struct-head`, `tuple-arity`, `type-scope`, and `variant-name`; each is planted, and each site of a
+rule is: the printer writes every name as it is, so every name it writes is an identifier that is not a keyword (an
+item, a generic, a field, a variant, a parameter, a binding, a field by name, a segment of a path or of a `use`, and
+the alias of a `use`), a derive is one of `Clone`, `Copy`, `Debug`, `Eq` and `PartialEq`, a character literal is one
+scalar value, the head of an `if`, a `while`, a `while let`, a `for` or a `match` holds no struct literal outside
+parentheses, and a `let`, a cast and a type argument name no generic parameter, because the printer writes them
+without the generics in scope. A comparison whose left operand ends in a cast is printed with that operand in
+parentheses, so that `rustc` does not read `<` as the arguments of the cast's type. `RtType.wide` takes a Boolean that is true for `u128` and false for `i128`. `RuntimeSemantics` evaluates each of the expression constructs the module grew by as `stuck`, except a block expression, which evaluates its block, and a string literal, which is a string value; a character literal is `stuck`. Of the pattern constructs it grew by, a mutable binding binds as a binding does, and the tuple, tuple-struct, struct, and literal patterns are `stuck`. As the type of a value, `RtType.refMut` is its inner type and the other types it grew by (`RtType.wide`, `size`, `char`, `str`, `slice`) match no value.
+This row declares no meaning for the constructs it leaves `stuck`, and a theorem about a function that uses one is a claim it does not make.
+The memory of a buffer (`SP-26`). `RustMemory`, a module of the compiler project over the calculus's
+values, models what a runtime `Vec` and the slices of it stand on: a buffer (`Buf`) is its slots,
+indexed from zero, whose number is its capacity, and a length, and a window (`Window`) is its base
+slots, an offset, and a count, with `subWindow` taking a window of a window. A write is `put`, which
+replaces the slot at an index and leaves the number of slots as it was (`size_put`); `put` beyond the
+slots is a no-op in the model (`CNil` returns `CNil`) and is not the runtime's behaviour, which
+refuses out-of-bounds access. A slot is read back at the index it was written (`get_put_same`, which
+reads `none` for an index that is no slot), and the slots below (`get_put_below`) and above
+(`get_put_above`) a written index are as they were; the index of a neighbour is given as a sum with a
+gap, because the proof language has no premises (a prior theorem can be a rewrite rule, but a hypothesis cannot be assumed), so that the three laws cover every index. A new buffer
+of a capacity has that number of slots, each the fill (`size_blank`, `get_blank`). A push (`bufPush`)
+is guarded by `lessThan len (size slots)`: a buffer whose length is its capacity has no
+room (`no_room_at_capacity`), and its push is the result `none`, writing nothing (`push_at_capacity`);
+one with a slot at its length has room (`room_before_slot`), the write lands in that slot
+(`push_lands_in_slot`, `put_in_slot`), and its push is the result `some` of the buffer with the item
+in that slot and the length one more (`push_with_room`). Both push theorems are closed by simplifying
+with the prior theorems of the module as rules, which the proof language admits. Truncation
+(`bufTruncate`) lowers the length to the least of the new and the old and so its guarded read
+(`bufGet`) admits the indices below both (`below_truncated`, `get_truncated`), and a window of a window
+adds its offsets (`plus_assoc`, `window_of_window`), and the count of a window of a window is the least of the count asked for and what the parent has left after the skip (`window_count`, `subWindow`, `minusNat`). The claim is the model's. That the runtime's `Vec`
+has this behaviour, that a slice is the view the model reads, and that a push beyond the capacity
+reallocates (the declared effect `allocation`) are the evidence of the differential and of rustc, and
+the growth of a capacity is not part of this row.
+
+The representation of a list (`SP-27`). `RustLists`, a module of the compiler project on the buffers of
+`RustMemory` and over the calculus's values, models the runtime's `List` as a *handle*: the items of the
+cells in front of it (`spine`, the newest first) and a *terminal*, either the empty list or a *run*, the
+first `more + 1` slots of the buffer at an address of a *store*. A store is a chain of `Buf` indexed by
+position; a write at an address beyond it writes nothing and a read beyond it finds no cells, so that no
+operation faults. A handle reads as the list of the calculus (`absHandle`): its spine followed by its
+run's slots in reverse, the newest slot first. The counting of references is derived and not stored: a
+handle holds a buffer when its terminal is a run on the buffer's address (`holds`, the sameness of
+addresses of `RustMemory`, `same_with_itself`, `holder_on_own_buffer`, `holder_without_run`, and for a run on another address, above or below, `apart_above`, `apart_below`, `holds_apart_above`, `holds_apart_below`), and
+`aloneOn` is the test that no handle among the others holds it, the flag `Rc::get_mut` answers; it is
+what `consWorld` consults, so that a holder blocks the in-place write (`own_blocks`, `holder_blocks`) and a
+handle on another buffer, above or below, does not (`others_allow_above`, `others_allow_below`,
+`holder_elsewhere_above`, `holder_elsewhere_below`).
+
+For a buffer with room the law is one theorem, `cons_in_place`: the first buffer of a store, with the run `lead` and `front`, one slot of room after it at `old`, and any length at least the run's (a sum with a gap), cons'd onto through `consWorld` with no other handle, reads as the item before the old list. It is closed by simplifying with the pieces below as rewrite rules (`min_keeps_run`, `room_before_slot`, `put_run_abs`), which is why they are stated apart. The in-place cons of a run on a buffer nobody else holds is `consIn`: it truncates the buffer to the
+run's length (`bufTruncate`) and pushes the item with the push of `RustMemory` (`bufPush`), keeping the
+buffer when the push is refused. The guard of that push is `F = lessThan m (size slots)` with `m` the
+length after truncation, and the model states what follows in separate theorems, because the proof
+language has no premises and `bufPush` is not recursive: where `F` holds the run read back is the item
+before the old list (`push_run_abs` for the cells, `walk_cons` through a store, which states the read as
+a pick between the write and the old run by `F`; `inplace_view` and `cons_view` for the handle, the
+latter choosing the in-place write by `aloneOn`); a refused push is exactly a push at capacity
+(`full_is_capacity`, `isFull`), in which case the outcome of `consWorld` is `Full`, the store is as it
+was, and the caller grows the buffer. Growth (`growBuf`, the declared effect `allocation`) appends
+slots after the buffer's own: the slots read as they did (`append_run_abs`, `grow_run_abs`) and the grown
+buffer has room (`room_after_growth`, `grown_has_room`), so that the cons that was refused lands after
+it. The truncation keeps the whole run of a buffer at least as long as the run (`min_keeps_run`, and `truncate_keeps_run` for `bufTruncate`),
+which is the state of a run that does not outrun its buffer. The first cons onto the empty list allocates a
+buffer of length one and capacity sixteen, the item and fifteen blank slots behind it, as the runtime's
+list reserves (`alloc_capacity`, `alloc_length`), at the end of the store, at `storeLen` and no other address (`walk_alloc`,
+`cons_alloc_view`, `cons_alloc_store`), and the buffers before it are read as they were (`alloc_frame`);
+a cons onto a spine, or onto a run another handle holds, adds a cell and writes no buffer
+(`cons_cell_view`, `cons_cell_store`, `cons_shared_view`, `cons_shared_store`, and `cons_held_store` for a holder among the other handles of `consWorld`). The uncons of a spine takes
+its first item, the uncons of a run reads the slot at its last position and leaves the run one shorter,
+or the empty list when it was the last (`run_uncons_abs`, `run_last_abs`, `walk_uncons`,
+`walk_uncons_last`, `uncons_cell_abs`, `uncons_cell_taken`, `uncons_run_abs`, `uncons_run_taken`,
+`uncons_last_abs`, `uncons_last_taken`). A write to the buffer at one address is read through that
+address and through no other: `cons_frame` states it for every pair of addresses by their sameness, and
+`inplace_frame` for the handle of a run on another buffer, so that the handles that do not hold the
+buffer written read as they did. Releasing a chain of cells one at a time, as the `Drop` of a node does and
+stopping at the first cell another handle holds, ends within as many steps as the chain has cells, needs a
+step for each cell of a chain nobody else holds, and takes one step for each cell (`release_ends`,
+`release_one_short`, `release_needs_fuel`, `release_one_cell`). Every theorem is total, for the reason of
+`SP-26`. The claim is the model's: that the runtime's `Rc`, `Vec`, and `List` behave as the model, that the
+model's reference count is the `Rc`'s, and that the `Drop` loop is the release loop are the evidence of the
+differential and of the pinned rustc. The model does not count the steps of a cons or an uncons.
+
+The meaning of the primitives (`SP-28`). `RustPrims`, a module of the compiler project on `RustMemory` and
+`RustLists`, states what the runtime's buffer, clone, and replace primitives are, for the semantics that reads a
+`Vec` or an `Rc` as the value it holds. A buffer reads as the list of its items in order (`readBuf`: the first
+`len` slots, `firstOf`). The primitives have an erased meaning on that list: `buffer_push` is the calculus
+primitive `append` of the list and the one item (`erasedPush`), `buffer_len` is `length` (`erasedLength`), both
+stated on a list by `prim_append_nil`, `prim_append_cons`, `prim_length_nil` and `prim_length_cons`,
+`buffer_truncate` keeps a prefix (`erasedTruncate`), and `buffer_new` is the empty list. What the runtime does is
+the model's: `bufNew` (`Vec::with_capacity`: the slots of a capacity, none in use), the push of `RustMemory` after a
+growth when the buffer is full (`pushGrow`), `bufTruncate`, and the length field. The growth is the model's
+`len + 1` slots (`growBuf`), which at least doubles a full buffer's capacity; the runtime's `Vec` grows
+by doubling, and the capacity it reaches is compared by the differential and not claimed here. The laws that a
+statement `runExport … = runItem …` of a heap function needs are these: the push reads as the items and the item
+after them for a buffer whose items are in front of its room, whether the room is a slot or the buffer must grow
+(`push_reads`, built from `first_of_snoc`, `append_nothing`, `less_than_itself`,
+`put_into_blank`); a new buffer reads as no items (`new_reads`); a truncation reads as the first items
+(`truncate_reads`, `first_of_take`); the length is the number of items (`length_reads`, built from `first_of_front`, `length_of_items`). A buffer
+is valid when its length is the number of its items in front of its room, which the statements encode as
+`append front back` with length `size front` because the proof language has no premises. A clone of a list's buffer
+is the `clone` of its `Rc` (`cloneHandle`): it reads as the handle it clones, holds the buffer that handle holds,
+and so keeps the buffer from being alone (`clone_reads`, `clone_holds`, `clone_blocks`); `clone_reads`,
+`clone_holds`, `alone_without_others` and the two `replace` laws below restate definitions (an identity and projections) and are checked as
+that and no more. `share_unique` is `aloneOn`, true with no other handle (`alone_without_others`) and false with a
+holder (`holder_blocks` of `SP-27`); `share_release` is the release of `SP-27`; `replace` returns the old value and
+installs the new one (`replaceHandle`, `replace_old_reads`, `replace_now_reads`). `share_copy` of the shipped
+library table is `Rc::from` of a slice or text, a shared buffer holding a copy, not the clone of a list's buffer, and
+is given no meaning here: it belongs to H4b with `Str` and `Bytes`. The claim is the model's. That the runtime's
+`Vec`, `Rc`, and `mem::replace` behave as the model, and that the declared semantics gives these primitives these
+readings (the `Machine` constructors of `RustSyntax` and their evaluation in `RustSemantics`, which move the
+compiler-semantics ID), are not claimed here: the second is the opening of the first function of H4a, measured
+before the others.
+
+The std runtime as source (`RB-20`, `SP-29`). The text of the `rust-std` runtime is the handwritten base
+(`runtime::STD_BASE`) followed by the functions of the language-1.2 module `RustStd` of the compiler project,
+shipped byte for byte at `language/rust-runtime-1.2/RustStd.lex.tex`, which defines `stdCrate`, a crate of
+`RustSyntax` with the std profile. The Rust crate decodes it (`source::decode_std`), never evaluates it, checks it
+with the validator that checks every rendering, and prints each function in place of the handwritten function of the
+same name; the handwritten std runtime is kept at `tests/rust-runtime-oracle/std.rs.txt` as the oracle until the
+last row of the heap half removes it. The functions are the list functions `append_list`, `length_list`, `index_list`, and `slice_list` and the byte and text
+functions `append_bytes`, `length_bytes`, `length_string`, `index_bytes`, `slice_bytes`, `utf8_encode`, `utf8_decode`,
+`compare_bytes`, `split_exact`, and `join`. The body of each is one machine call on its moved parameters,
+`Machine.listAppend`, `listLength`, `listIndex`, `listSlice`, `bytesAppend`, `bytesLength`, `stringLength`,
+`bytesIndex`, `bytesSlice`, `utf8Encode`, `utf8Decode`, `bytesCompare`, `stringSplit`, and `stringJoin`, whose meaning
+`machinePrimitive` states as the calculus primitive of the runtime item of the same function (`append`, `length`,
+`index`, `slice`, `utf8Encode`, `utf8Decode`, `compareBytes`, `splitExact`, `join` of `TargetSyntax.Prim`), as the
+arithmetic items of the core runtime are one machine call each. The signatures are those of the handwritten functions
+with the type parameter `T: Clone` of the list functions (`fn append_list<T: Clone>(a: List<T>, b: List<T>) ->
+List<T>`, and so on; `fn index_bytes(a: Bytes, i: u64) -> Option<u8>`, `fn split_exact(text: Str, delimiter: Str,
+maximum: u32) -> Option<List<Str>>`, `fn join(texts: List<Str>, delimiter: Str) -> Str`), the type parameter being the
+node `RustType.param`, which the syntax carries, `fallibleType` and the semantics erase, and the printer writes as the
+generic list of the function. The calls print as calls of a method of `List`, `Bytes`, or `Str` (`List::append(a, b)`,
+`List::length(&a)`, `Bytes::slice(&a, start, count)`, `Str::split_exact(&text, &delimiter, maximum)`, `Str::join(texts,
+&delimiter)`, and so on), where each is a method of the handwritten base: the walk of the cells or the bytes that ticks
+the work counter as the handwritten function did, moved out of the function it was the body of. The theorems
+`refines_<function>` (`SP-29`) have the shape of those of the core runtime: for every list, byte string, and text (and
+every position, start, count, delimiter, and maximum), the run of the function in `stdCrate` equals the run of the
+runtime item of the same name; the set of the module's theorems equals the set of the functions it defines. That is
+the whole of what is kernel-checked. It does not refine the walks: that each method counts, copies, or reads the cells or
+the bytes of the value the handle abstracts, ticks as the handwritten function did, and touches no buffer it does not own
+is held by the abstraction theorems of `RustLists` and `RustPrims` (`SP-27`, `SP-28`), by the validator twin of `BS-09`,
+and by the differential of `RB-20`, which compiles the oracle and the printed runtime together and compares the result
+and the counted work of the functions on lists of every length from 0 to 70 and of 1,000, 4,096 and 200,000 cells, built
+fresh, after an uncons has made a unique buffer longer than its run, shared by a clone, and with cells in front, on
+byte strings and texts of the empty, the single, the multi-byte, the invalid, and the long, at the positions, counts,
+delimiters, and maxima that include the ends and the largest `u64` and `u32`. The length walk's count overflows where
+the `natResult` of `Prim.length` overflows, at 2^64 cells; the differential cannot construct such a list, so that point
+is declared and not exercised. The functions that remain handwritten are those of the numbers: `parse_int`, which is
+fallible and whose decimal text is the helper of the fixed-width modules, and the `decimal!` modules; they are not in
+this row. The module name `RustStd` is also the suffix of the certificate-B module of a `rust-std` crate
+(`production/rust_cert.rs`); the two are different Lean modules (`LexLeanTarget.RustStd` here, `<certificate A>.RustStd`
+there) and nothing imports one as the other. The shipped crate changes in this row, each with its plant in the case:
+`RustType.param` and the generic list it prints (a signature printed without it does not compile), the fourteen machine
+families 26 to 39 (arity one to three, refused with the wrong number of operands by the validator), and the decoder of
+the std crate (a module without `stdCrate` or of another profile is refused). The bootstrap validator twin of
+`RustValidate` names a machine call by its family and so learns the twenty-seventh to the fortieth; its measurement is
+repeated with this row.
+
+A *loop*
 (`Expr.loop`, `SP-19`) is the one construct of the machine that repeats: it names
 a state, a local the enclosing block has bound, and a body block. The body is
 evaluated in the environment with the state, and its value is a `Result`: `Ok`
@@ -7346,7 +7688,7 @@ bound (§17.16), and a linear chain of sixty-four is past it. Its roots and orac
 | `sha256Hex (message : Bytes) : Bytes` | the FIPS 180-4 example digests, every vector of the NIST CAVP `SHA256ShortMsg` and `SHA256LongMsg` files under `tests/stdlib/sha256/`, and the `sha2` crate on a seeded corpus whose lengths cover every padding boundary |
 
 A disagreement with an oracle fails the case (`SL-02`) and is a defect; it is
-never resolved by adopting the oracle's digest. **The compiler's digest (`SL-05`, #126 stage 2).** Every content identity of
+never resolved by adopting the oracle's digest. **The compiler's digest (`SL-06`, #126 stage 2).** Every content identity of
 §21 is computed by the rendered `rust-std` package of `sha256`, and no other
 implementation of SHA-256 is part of the compiler: the shipped crate links the
 committed export (`tests/production-export/stdlib/packages/rust-std/sha256/src/lib.rs`)
@@ -7359,7 +7701,7 @@ package, its file hashes, program identity, and source identity, are in its
 `provenance.json`, beside it), the compiler is built from the committed file
 and not from a build of the project, and the package is not part of any
 compiler-semantics ID (§21.2), exactly as the `sha2` crate was not. What holds
-the function instead is the case of `SL-05` (the authorities, the oracle, and
+the function instead is the case of `SL-06` (the authorities, the oracle, and
 the planted defects) and the byte-identity of every committed identity.
 Regenerating the export is two steps for that reason: the export is rewritten
 by the compiler, the compiler is rebuilt from the rewritten file, and the
@@ -7374,6 +7716,96 @@ the digest is that text and the framing of §21.1, which is Rust until it is
 authored in LexLean (#92). A message of 2^61 bytes or more is outside the
 domain of FIPS 180-4 and is not allocatable on any supported host, so the
 package's `Overflow` for it is a host impossibility and not a public failure.
+
+#### Source packages of the library
+
+The fourth module of the library, `Buffer`, is the output a root writes into
+(`SL-05`, #92): a buffer of a given capacity that is written in order and
+read back once. `new (capacity)`, `writeBytes (buffer) (piece)`, `writeByte
+(buffer) (byte)`, `writeDecimal (buffer) (number)` (the decimal of a `Nat`; the sign of an
+`Int` is written by the caller, with the decimal of its magnitude), `length`, and
+`finish` are its interface; a write that would pass the capacity leaves the buffer
+refused and every later write a no-op, and `finish` returns the bytes or the
+refusal `output exceeds the capacity of the buffer`, so capacity overflow
+reaches the host as a value of the root's result and never as a failure of the
+run. The realization keeps sealed chunks of at least 256 bytes and one pending
+chunk: a write copies at most the pending chunk and the piece, and `finish`
+joins the chunks once, by pairwise merging. It is not contiguous, because the
+production registry (`language/production-1.2.toml`) has no primitive that
+writes in place: a chain of `append` copies both operands at each call, so n
+writes of one byte cost n squared units of work (the work counter of the
+rendered runtime is 50,005,000 at n = 10,000 and 12,800,080,000 at n =
+160,000), and a contiguous buffer written in place is a registry primitive and
+a change of the language, which belongs to the next rendering work. The
+interface is the one a contiguous realization keeps, so no root changes when
+that realization replaces this one. The chunk size is a measurement
+(VERIFICATION.md, `SL-05`). The roots `writeAll (capacity) (pieces)`,
+`writeEach (capacity) (bytes)`, and `writeNumbers (capacity) (numbers)` are
+production roots over the three writes; a printer or a packager of the
+bootstrap project (§17.23) writes through the same members.
+
+Two further members of the library are projects of their own, `std-models`
+(`LexLeanStdModels`) and `std-reasoning` (`LexLeanStdReasoning`), so that an
+importing project pins and imports each without the other and without `Text`
+or `Sha256` (§10.5). Each declares language 1.2, builtin lexicons only, and no
+source package, artifact, or glossary, and each is a member of the repository's
+workspace. They are not production roots: neither is exported, and an importer
+that names a definition of either in a production root certifies it in its own
+closure (§10.5, *Production*).
+
+Language 1.2 is generic over types and not over predicates or stages, and that
+bounds what a library of models and reasoners can offer. It offers generic
+interfaces (a contract, a realization, evidence, and a model over a type
+parameter), combinators written as ordinary generic definitions with theorems,
+and generic logics, rules, verifiers, and reasoners; it does not offer a
+composite that takes the importer's models, because a composite abstracts over
+a stage. The behavior of both packages is held by theorems the kernel checks
+and by nothing else. The differential of `SL-01` compares a root with a
+function of Rust's standard library, and neither package has such a function
+to be compared with, so no differential is claimed for them.
+
+`std-models` has one module, `Scores`, over `List Int`, the scores a model
+produces:
+
+| Member | Meaning |
+| --- | --- |
+| `best (scores) : Nat` | the index of the first maximal score, as the denotation of a `statistical` realization (§17.12) picks its label |
+| `margin (scores) : Int` | the distance of the greatest score from the greatest of the others, where a duplicated maximum is its own runner-up, and 0 for fewer than two scores |
+| `decideOr (threshold) (scores) : Option Nat` | `best scores` when at least two scores are given and the margin is not below the threshold, and an abstention (`none`) otherwise |
+| `Candidate T`, `Gate T`, `Gating T`, `GateEvidence T`, `GateModel T` | a stateless contract, realization, evidence, and model over a type parameter: the model commits to a value exactly when the candidate was marked confident |
+
+Their laws are theorems of the module. The laws of the score combinators are
+stated at closed instances: the first maximal score is kept on a tie, the
+margin of a tie is zero, and `decideOr` commits on a clear margin and abstains
+on a tie, a single score, and no score. No law over every list is claimed. The
+law of the gate is general over the type parameter: it commits exactly when it
+is confident (`gate_faithful`, the evidence of `GateEvidence`) (`SL-03`).
+
+`std-reasoning` has one module, `Worklist`: the logic `Countdown` over a
+state of a type parameter and a work count, ranked by the count; its rules
+`Tick` (a step while more than two remain) and `Burn` (two, then one); the
+verifier `Drained`; and the reasoner `Drain`, which runs the rules forward
+under a fuel of the count plus one until the count is zero. The bound that
+the ranking is below the fuel is the theorem `drain_bound`, which the reasoner
+declaration requires to state exactly the generated obligation (`LLT4010`
+otherwise), and the runs from a count of three are theorems of the module
+(`SL-04`). A reasoner of the importing project instantiates the logic, rules,
+and verifier at its own type, and calls `Drain` itself at that type.
+
+The `helpdesk` example (`examples/helpdesk`, `EX-09`) is the application of
+both packages and of `Text`. Its production root `dispatch : Bytes -> Bytes`
+trims the request with `Text.trim`, applies an integer feed-forward model
+whose two weight tables are content-addressed artifacts through its required
+precondition check (`LLT4008` when the check is left out), derives the topic
+with `best`, abstains with `decideOr` below a margin of two, commits through
+`GateModel` instantiated at the example's own `Topic`, and plans the reply
+with `Drain` at that type. Its roots `classify` (the model alone) and `plan`
+(the reasoner alone) show each component used without the other. The example
+holds no file of Lean or Rust source, its export is committed under
+`tests/production-export/helpdesk/` and compared by
+`cargo xtask check-production-export` (§24.7), and a changed byte or version
+of a package is `LLC0105`, a module of a package the example does not declare
+`LLR3009`, and a tampered artifact `LLR3007`.
 
 ### 17.23 The bootstrap project
 
@@ -7580,7 +8012,7 @@ The fourth component is the target calculus's checker (§17.14, step 4 of issue 
 
 The roots take a program as calculus data and not as its canonical JSON: reading a program (`Program::parse`, `canonical`, `load`) belongs to the front end (step 7 of the plan) and is not part of the row. `Ty`, `Value`, and `Expr` are three inductives that mirror `Ty`, `Value`, and `Expr` of `calculus/mod.rs`, constructor for constructor and in order, with `Shape`, `Prim`, `IntKind`, and the ordering value; a list of a recursive type is a *chain* of the type's own `Nil` and `Cons` constructors (the `Fn` parameters and the constructors, fields, and parameter types of a declaration are chains of `Ty`; a literal's items and fields chains of `Value`; operands, captures, and arms chains of `Expr`, whose `Arm` is a constructor of it). The chain is the list: `adts` is the chain of the declarations, each the chain of its constructors, each the chain of its field types; `types` the chain of the functions' parameter-type chains, `results` the chain of their result types, `bodies` the chain of their bodies, and `parameters` their parameter names, a `List (List Nat)`. A result is `Result.ok ()` or `Result.error` of the oracle's reason as UTF-8 bytes. The chains are not a style: certificate A (§17.17) cannot take as a root parameter, nor build in a definition, a `List` of a recursive type, and its commands cut a nested recursive group's rows in a large closure (issue 208); the case therefore decodes the arguments of every vector back to the program the oracle read (`list ↔ chain`, on the 175 committed programs and on every vector) and compares it with it. The oracle's reasons are reproduced to the byte, including the `{:?}` spelling of types, shapes, primitives, and literals, and the base-ten spelling of an index, a count, and an integer bound by decimal comparison; the one part they do not reproduce is Rust's `Debug` for a `str`, which escapes by the Unicode tables of `char::is_printable` and `Grapheme_Extend`: a string literal spelled in a reason is escaped as Rust escapes ASCII and `U+0080`..`U+009F` and copied for every other scalar, so a reason that spells a scalar beyond `U+009F` as `\u{…}` (such as `U+00A0` or a combining mark) is outside the claim, and the corpora leave those runs out (the fixed point, step 7, replaces the oracle's escaping by a closed escaping on both sides).
 
-`BS-04` holds both roots to the oracle. The counts here are the case's own report at the change's head on its base (b5871e8b9), and the committed corpus grows with the repository. On every host the rendered `rust-std` packages of both roots, compiled by the pinned rustc, run the 1,756 vectors of `checkProgram` (1,483 refused) and the 303 of `checkArguments` (129 refused): the 175 distinct programs committed in the repository, each read by the oracle's reader (the fixtures of `compiler/fixtures/`, the programs of the committed Rust packages, and the lowered programs a verification record preserves, among them the two roots' own), the refusals of `TC-02` as the edits that test makes, one program for each rule a planted defect removes, and the literal, primitive, and shape corpora at a fixed seed; the arguments are those of the committed fixtures, as stated and mutated. On the normative host the lowered programs of both roots under the calculus evaluator (§17.14) agree on the same vectors and on 4,722 seeded programs (3,933 refused) and 403 seeded argument runs (202 refused), mutations at the level of the data (a retyped operand, a dropped, duplicated, or reshaped arm, a changed binder, an undeclared function or declaration, a closure over every parameter, an operand dropped or added, each primitive at wrong operand types, a literal respelled or out of range, a specification changed), the rendered packages agree on 9,296 more under rustc, in harnesses of at most 1,000 runs, and twelve planted defects in the source are each detected by the same differential. Under the pinned Lean, the production export (§24.7) certifies both roots beside those of the other components under `tests/production-export/bootstrap/`.
+`BS-04` holds both roots to the oracle. The counts here are the case's own report at the change's head on its base (b5871e8b9), and the committed corpus grows with the repository. On every host the rendered `rust-std` packages of both roots, compiled by the pinned rustc, run the 1,756 vectors of `checkProgram` (1,483 refused) and the 303 of `checkArguments` (129 refused): the 175 distinct programs committed in the repository, each read by the oracle's reader (the fixtures of `compiler/fixtures/`, the programs of the committed Rust packages, and the lowered programs a verification record preserves, among them the two roots' own), the refusals of `TC-02` as the edits that test makes, one program for each rule a planted defect removes, and the literal, primitive, and shape corpora at a fixed seed; the arguments are those of the committed fixtures, as stated and mutated. On the normative host the lowered programs of both roots under the calculus evaluator (§17.14) agree on the same vectors and on 4,722 seeded programs (3,933 refused) and 403 seeded argument runs (202 refused), mutations at the level of the data (a retyped operand, a dropped, duplicated, or reshaped arm, a changed binder, an undeclared function or declaration, a closure over every parameter, an operand dropped or added, each primitive at wrong operand types, a literal respelled or out of range, a specification changed), the rendered packages agree on 9,296 more under rustc, in harnesses of at most 1,000 runs, and thirteen planted defects in the source are each detected by the same differential. Under the pinned Lean, the production export (§24.7) certifies both roots beside those of the other components under `tests/production-export/bootstrap/`.
 
 The fifth component is the Rust crate validator (§17.16), the module
 `RustValidate`, with two production roots for `rust-std`:
@@ -7623,20 +8055,24 @@ the claim, and a crate whose exported name or origin element holds a non-ASCII
 or non-printable scalar is outside it.
 
 `BS-05` holds both roots to the oracle. The crates are those the renderer
-lowers (`rust::lower`) from the 164 distinct programs among the 247 committed
+lowers (`rust::lower`) from the 173 distinct programs among the 256 committed
 package manifests of `compiler/rust` and `tests/production-export` and the 122
-fixtures of `compiler/fixtures` (223 distinct crates over both profiles, with
+fixtures of `compiler/fixtures` (232 distinct crates over both profiles, with
 the `elements` the renderer realizes), a rule corpus that reaches each of the
 48 refusals a crate of the closed AST can reach three times (132 `validateCrate`
 runs and 12 `correspondCrate` runs, asserted: the corpus fails if its draws run
-out first; the refusal that a construct has no row of the table cannot be
-reached), 17 crates by hand for the merge of moved sets at an `if` and a
-`match`, and 37 by hand for the loop rules; that is 409 runs of `validateCrate`
-(168 refused) and 272 of `correspondCrate` (49 refused), and the case asserts
+out first), 17 crates by hand for the merge of moved sets at an `if` and a
+`match`, 37 by hand for the loop rules, and 51 by hand for the machine callee and
+the overflow value (a call of each of the 40 families of machine primitives with
+one operand too many, three with the right count, a propagating call, the overflow
+value alone, one in an `Err`, one function that takes the error type of the runtime, one that takes `i128`, and the failure of a runtime function: a fallible function whose tail is `Err::<T, Overflow>(Overflow)`, which both validators accept, and the same `Err` with another payload and with another error type, which both refuse), which reach the three refusals no mutant of a
+committed crate reaches (an operand count, a stray overflow value, and the
+construct `call:machine`, which no row of the table has); that is 469 runs of
+`validateCrate` (212 refused) and 332 of `correspondCrate` (99 refused), and the case asserts
 these counts. On every host, the rendered `rust-std` packages of both
 roots (§17.16), compiled by the pinned rustc, are run on all of them. On the
 normative host, the lowered programs of both roots are run under the calculus
-evaluator (§17.14) on the crates of at most 400 expressions (200 of the 223;
+evaluator (§17.14) on the crates of at most 400 expressions (201 of the 232;
 the larger ones are the compiler's own packages and are held to the oracle by
 the compiled run) with the rule corpus, and on 500 seeded mutants of the
 crates of at most 80 expressions (a node replaced by another of the crate, a
@@ -7645,7 +8081,7 @@ binding or arm dropped, doubled, or swapped, a call's propagation flipped, a
 dispatch arm restated, a block run in a loop, the profile exchanged, and the
 elements of the program changed); the rendered packages are also run on 2,000 further seeded mutants
 per root. The outcome of a run is the result and, for a refusal, the message,
-and one difference fails the case. Seventeen planted defects in the source (a heap
+and one difference fails the case. Twenty-one planted defects in the source (a heap
 type admitted under `rust-core`, a name bound twice accepted, the moves of
 earlier match arms forgotten, a component moved after its whole accepted, an
 undeclared ADT type accepted, a `?` in an infallible function accepted, a
@@ -7654,10 +8090,86 @@ compared with its function's, a correspondence row narrowed, the width of a
 runtime call not compared, a name or a component moved in a loop body accepted,
 the end of a fallible loop not checked, a loop's state not moved into the loop,
 the name a loop's refusal reports not the least, a loop body checked as a
-tail, and the end of a fallible loop not checked as its function's tail) are each detected by the same differential, and
+tail, the end of a fallible loop not checked as its function's tail, the
+operands of a machine call not counted, a stray overflow value accepted, the
+overflow value in an `Err` refused, and a machine call not an instance of the
+correspondence) are each detected by the same differential, and
 under the pinned Lean the production export (§24.7) certifies both roots beside
 the others, whose packages are the committed ones under
 `tests/production-export/bootstrap/`.
+
+The sixth component is the Rust printer (§17.16), the module `RustPrint` over the
+module `RustAst` (`BS-06`), with two production roots for `rust-std`:
+
+| Root | Oracle |
+| --- | --- |
+| `printCrate (capacity : Nat) (header : Bytes) (krate : Crate) : Result Bytes Bytes` | `calculus::rust::ast::print` |
+| `printExpr (capacity : Nat) (expr : Expr) : Result Bytes Bytes` | `calculus::rust::ast::print_expr` |
+
+`RustAst` is the AST of `RustValidate` with the payloads a printer reads and a
+validator does not: the value of a literal (a magnitude and a sign, at most 64
+bits), the text of a string and the octets of a byte string, the ordering a
+pattern matches, and the width of a machine call. It reuses the sorts of
+`RustValidate` that carry them already, and its lists of a recursive sort are
+chains (`#208`). The printer writes sequentially into the `Buffer` of the
+standard library (§17.22): the layout of the oracle's printer (a fixed
+indentation of four spaces, a block, an arm, and an item laid out one way) is
+reproduced by writing each part once, in order, and the few places where the
+oracle decides by the text of a part (an `else` that is an empty block, a
+scrutinee that begins with a brace, a negation of a comparison) are decided by
+the shape of the part. `header` is the attributes of the profile and the
+runtime, which the host reads from semantic modules (`scaffold` and `source`
+of the oracle, step 7); the roots add the items. The result is `Result.ok` of
+the bytes or `Result.error` of the refusal of the buffer, so a capacity that
+the output exceeds is a value of the result and never a failure of the run.
+A crate whose exported name holds a non-ASCII scalar, a literal of more than 64
+bits, and a machine call with fewer operands than its primitive (which the
+oracle indexes past) are outside the claim.
+
+`BS-06` holds both roots to the oracle. The counts here are the case's own
+report: it asserts them, so a tree that no longer gives them fails the case.
+The tree is the one with the packages of the two roots of this component and
+of the three roots of `Buffer` (`SL-05`) committed, so the committed manifests
+are 256; `BS-05` asserts the same corpus. On every host
+the rendered packages, compiled by the pinned rustc, run 2,633 vectors: 622
+of `printCrate` (464 the distinct crates the renderer lowers from the 173
+distinct programs among the 256 committed manifests and 122 fixtures and the
+crates of the 256 committed packages, the hand-built crates of every item and
+profile, the real header of each profile, and 60 runs with a capacity one byte
+short of the output) and 2,011 of `printExpr` (1,460 hand-built expressions of
+every construct, literal, runtime row and machine primitive, and the function
+bodies of the committed crates). The items of each of the 256 committed
+libraries are the oracle's printed items; the header before them is the
+runtime of the committed export, which the regeneration of the records moves
+with the runtime. On the normative host the evaluator agrees on 557 and 2,011
+of those vectors (the crates of at most 6,000 nodes of data) and on 400 and
+399 seeded mutants of the crates of at most 80 expressions, the rendered
+packages agree on 2,984 further mutants, thirteen planted defects in the source
+are each detected, and the production export (§24.7) certifies both roots
+beside the others under `tests/production-export/bootstrap/`.
+
+`BS-09` holds `validateRuntime` of `RuntimeValidate` to `rust::rt_validate::validate`. The module is the
+oracle's rule set, rule for rule, over the crate as module data: the sorts `Ty`, `Pat`, and `Expr` are
+chains (a statement list, an argument list, and a list of arms are each a chain of the sort's own `Nil`
+and `Cons`, and a `let` statement a `LetS` that binds for the rest), a record is the one constructor of
+its structure, and the tables of types, calls, methods, type-argument methods, standard traits, and
+integers are read from the oracle's source by the generator of the module, so the two cannot drift. The
+constructors an encoder names are read by the case from the module's own text. The corpus is 701
+crates: the committed `supportCrate` and `probeCrate` and each in the other profile, the 97 crates
+that break one rule, or one site of a rule, each (the text plants of `RB-17` on the module, its nine plants on the decoded
+crate, the sixteen of `RB-19` on the probe, and its 55 site plants, which are crates of names, derives, literals, heads,
+type scopes, and the five sites of `hidden-allocation`), and 600 seeded mutants of the two committed modules
+(a string, a constructor of the same enum, a mutable flag, a visibility, or a type parameter replaced by another of the module's), 562 of the 701 refused, so that the
+refusals are by each of the 40 rules the oracle names and by no other. The module carries what the five rules added by `RB-19`
+(`identifier`, `derive`, `char-literal`, `struct-head`, `type-scope`) read: a literal its number of scalar values, a binary
+operator its code, an item its derives. The outcome of a run is the
+result and, for a refusal, the message, and one difference fails the case. On every host the rendered
+`rust-std` package, compiled by the pinned rustc, is run on all of them; on the normative host the
+calculus evaluator (§17.14) also runs on all 701 and eight planted defects in the source (a name
+declared twice, a tuple of one, a `break` outside a loop, a private free function, a `std` use under
+`rust-core`, an assignment to an immutable name, a match with no arm, and a heap type under
+`rust-core`, each accepted) are each detected by the differential. Under the pinned Lean the production
+export certifies the root beside the others and its package is the committed one.
 
 ## 18. Lean backend
 
@@ -8861,6 +9373,29 @@ lexlean fmt [--check] [--all | INPUT...]
 ```
 
 Parses and uniquely resolves source, rewrites canonical source, or exact-byte compares under `--check`.
+
+#### `migrate`
+
+```text
+lexlean migrate --to 1.2 [--check]
+```
+
+Migrates a language-1.1 project to language 1.2 (§17.12): it rewrites every
+data-form module to the authoring notation, moves the builtin glossary
+references of the sources and the path lexicon packages to `1.2.0`, rewrites
+the `language` row, and regenerates the lock as `lexlean/lock/2`. `--to` takes
+`1.2` and nothing else. The result is proven in a scratch copy (locked and
+checked as language 1.2) before any file is written, the files are then
+replaced together (a file that changed between the proof and the replacement
+refuses the migration with `LLV7010` and nothing is written, and a replacement
+that fails restores every file already replaced, reporting every restore that
+failed), and a refusal writes nothing and creates no build root:
+`LLC0103` for a project that is not language 1.1, `LLP2003` for a module that is
+not a language-1.1 data-form semantic module (a data form that is not canonical
+JSON included, as language 1.1 `check` refuses it) or whose notation does not
+read back to it, and the diagnostics of the scratch check for a project that does not
+check as language 1.2. With `--check` the same proof runs and nothing is
+written. The command result names the migrated modules.
 
 #### `clean`
 
@@ -10116,6 +10651,8 @@ compiler-semantics <digest>
 lean-toolchain leanprover/lean4:v4.32.1
 ```
 
+The crate package MUST be the crate `cargo publish` would upload: the release workflow packages the crate twice to the same bytes, runs `cargo publish --dry-run`, and refuses a package whose SHA-256 differs from the one `checksums.txt` lists for the crate, from the dry-run package, or from what crates.io requires of an archive (a description, a license, a repository, the readme it names, and at most 10 MiB). It uploads to crates.io only when a `CARGO_REGISTRY_TOKEN` secret or trusted publishing authorises it, and otherwise creates the release without the upload and says so. A commit of a release line `release/vX.Y` is published as the pre-release `X.Y.0-dev.N`, `N` being the number of first-parent commits of the line at that commit, so that a release `X.Y.0` supersedes every one of them; `RP-18` reads the workflows and runs the script that decides each of these.
+
 ### 30.4 Completion criterion
 
 The project is complete, and a release is the completion release of §2.3, only when:
@@ -10173,6 +10710,7 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `RP-15` | `repository` | Every match over a closed semantic enum (the IR, the production realization calculus, and its Rust AST) that names at least five of the enum's variants names all of them, with no wildcard or binding catch-all arm, so that a variant added to the enum is a compile error in each Lean, LaTeX, validation, charge, and calculus consumer and never a silent fallback; the audit rejects a catch-all planted in each consumer group and fails when a consumer it must read has no such match left. | §27.2 |
 | `RP-16` | `repository` | The development container installs, at image build, exactly the Rust toolchain that rust-toolchain.toml pins and exactly the Lean toolchain that lean-toolchain pins and selects no other default, so that nothing is fetched when a session starts, and a Dockerfile that names another version of either, installs a second toolchain, or selects an unpinned default is refused. | §9.3 |
 | `RP-17` | `repository` | `cargo xtask release-check` reads the completion release from §2.3 and the version report from §30.3 as the chapter modules of the specification project state them, and refuses a workspace version §2.3 does not name, a version report or semantics-ID list that is not the §30.3 report for the release version and each language's ID, and a §30.3 report whose languages are not the languages the compiler supports, a plant in either chapter item changing what it refuses. | §2.3, §30.3 |
+| `RP-18` | `repository` | The release workflow packages the lexlean crate twice to the same bytes, runs cargo publish --dry-run, and refuses a crate whose SHA-256 differs from the one release/checksums.txt lists for it or from the bytes cargo would upload, or whose archive lacks the metadata and size crates.io requires, and uploads to crates.io only when a CARGO_REGISTRY_TOKEN secret or trusted publishing authorises it; a commit of a release line release/vX.Y is published as the pre-release X.Y.0-dev.N, N being its number of first-parent commits, and a plant in each of these checks is refused. | §30.3 |
 | `CF-01` | `configuration-lock` | Project configuration accepts exactly the project/1 schema and rejects unknown or missing fields. | §10.1 |
 | `CF-02` | `configuration-lock` | Every operational limit is explicit, positive, parsed with checked arithmetic, and has no hidden default. | §10.2 |
 | `CF-03` | `configuration-lock` | Configured paths resolve within the project under the specified UTF-8 and nonsymlink rules. | §10.1, §25.1 |
@@ -10273,6 +10811,8 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `SM-32` | `semantic-ir` | Language 1.2 widening conversions, to_int from every fixed-width integer type to Int and to_nat from every unsigned fixed-width type to Nat, are total, are rejected under language 1.1, and elaborate in linking to ordinary terms over bit_and, equal, conditionals, and exact integer and natural sums, so that a production root decodes a byte string to integers with no decimal text in its lowered program and is certified like any other root. | §17.12 |
 | `SM-33` | `semantic-ir` | A version 2 core-module row that states its type and value and whose name the pinned Lean reserves is not submitted as data: the decoder runs the pinned Lean's own action for the name and refuses the module when the action does not make the name or makes a constant whose kind, levels, type, or value differ from the row's. | §17.10 |
 | `SM-34` | `semantic-ir` | A version 2 core-module row may be derived, stating its name, kind, and extension state, and for a sparse casesOn its recipe, and no universe parameters, type, or value: the decoder makes the constant with the pinned Lean's own construction at the row's place in the order, and refuses the module when the name is not one the pinned Lean reserves and the row states no sparse casesOn recipe, when the construction does not make the name, or when the constant it makes is not a theorem, definition, or abbreviation as the row says; the notation writes a derived row without a type, the schema and the linker refuse a derived row that states what the construction decides, a stored row is still checked against the construction, the decoder checks that the constructors a recipe names are constructors of the type and are named once, that the module states every sparse casesOn its construction makes, and that every derived sparse casesOn is referred to by the type or value of a row, and the content of a derived row is checked by its uses alone, so that a recipe naming other valid constructors of the type is not distinguished where the use accepts it; and the shipped preservation library states every row that carries a sparse casesOn record or is named like an equation, an unfolding equation, a splitter, or an else equation as a derived row. | §17.10 |
+| `SM-35` | `semantic-ir` | A language-1.2 theorem may be proved by `term_cases`, a split on the value of a document term: the proof names a term and a nonempty, strictly sorted, duplicate-free list of prior document definitions, the term's type is an inductive type of the document, and the backend lowers the proof to a split of the goal on every constructor of that type with the hypothesis that equates the term to the constructor, then `simp only` over the named definitions, that hypothesis, and the reduction of a conditional on a decided condition, with closed propositions decided, which uses exactly the axioms the theorem's policy states; the schema, the linker, the notation, the Lean backend, the canonical LaTeX, and the formatter accept it, and a use in language 1.1, a term whose type is not an inductive type of the document, an empty list, an unsorted or repeated name, a name that is not a prior definition, and a theorem parameter that takes the hypothesis's name are each refused. | §17.10 |
+| `SM-36` | `semantic-ir` | A language-1.2 `cases` proof may split a local of type `Bool` into its two constructors: the proof names the local and gives a branch for `false` and one for `true`, each with no binders, the backend lowers it to `cases` on the local with those two alternatives, the theorem verifies with exactly the axioms its policy states, and the schema, the linker, the notation, the formatter, and the canonical LaTeX accept it; a use in language 1.1, a missing branch, a repeated branch, a branch with a binder, and an `induction` on a Boolean are each refused. | §17.10 |
 | `DF-01` | `declarations` | A valid type-definition sentence emits one nonrecursive sort-valued Lean def linked to its document entry. | §15.7, §18.6 |
 | `DF-02` | `declarations` | A valid term-definition sentence emits one nonrecursive explicitly typed Lean def. | §15.7, §18.6 |
 | `DF-03` | `declarations` | A valid predicate-definition sentence emits one nonrecursive Prop-valued Lean def. | §15.7, §18.6 |
@@ -10399,6 +10939,7 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `CL-21` | `cli-api` | Native diagnostics distinguish package-import cycles and unqualified cross-package term ambiguities without changing diagnostic wire bytes. | §24.5 |
 | `CL-22` | `cli-api` | A host that embeds the library ends every child process group the library started and has not seen exit through the public function `lexlean::verify::end_live_children`, which installs no signal handler, alters no signal disposition, never signals the host's own process or group, reports each group as ended, already gone, or failing with the OS error, and refuses a later child start with LLV7018 until the host re-enables it, and the `lexlean` executable ends its interrupted children through the same function. | §17.17, §24.6 |
 | `CL-23` | `cli-api` | lexlean production targets prints the canonical target-descriptor document in either output mode, production build --request publishes the bundle its request names and reports the bundle and the project's source, semantic, build, and attestation IDs in its command result, production verify-artifact replays a bundle with no project, and each maps a malformed request, a refused request, and a rejected replay to the exact exit code of its registered class. | §24.7 |
+| `CL-24` | `cli-api` | lexlean migrate --to 1.2 migrates a language-1.1 data-form project to language 1.2 in one command: it rewrites every module to the authoring notation through lexlean::sdk::to_notation with the same declarations, names, statements, and axiom policies, moves the builtin glossary references of every source and the imports of every path lexicon package to 1.2.0, rewrites the language row, and regenerates the lock as lexlean/lock/2, so the result checks, has a current lock, and is canonical; --check proves the migration and writes nothing; and a project that is not language 1.1 is refused with LLC0103 and a module that is not a language-1.1 data-form semantic module, a data form that is not canonical JSON included, with LLP2003, each leaving every file of the project unchanged. | §17.12, §23.4 |
 | `SE-01` | `security` | Source, package, workspace, resource, and output paths are confined and symlinks are rejected. | §25.1 |
 | `SE-02` | `security` | Special files, duplicate filesystem identities, and case-fold collisions are rejected before processing. | §25.1 |
 | `SE-03` | `security` | All child processes use direct executable and argv invocation with no shell. | §25.2 |
@@ -10419,6 +10960,7 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `EX-06` | `examples` | Two clean example builds in distinct paths have byte-identical platform-independent artifacts. | §29.6 |
 | `EX-07` | `examples` | The negative fixture suite covers every required rejection class and prescribed diagnostic family. | §28.5 |
 | `EX-08` | `examples` | Every example directory is discovered automatically and must satisfy the full example gate. | §28.6 |
+| `EX-09` | `examples` | The `helpdesk` example is a text application written entirely from language-1.2 source and the three source packages `std`, `std-models`, and `std-reasoning` that its lock pins: its production roots `classify`, `plan`, and `dispatch : Bytes -> Bytes` use the model alone, the reasoner alone, and both together, `dispatch` trimming the request with `LexLeanStd.Text`, scoring it with an integer feed-forward model whose weights are content-addressed artifacts and which is applied through its required precondition check, abstaining with `decideOr`, committing through the generic `GateModel` of `std-models`, and planning the reply with the `Drain` reasoner of `std-reasoning`; the example holds no handwritten Lean or Rust, verifies under the pinned Lean, its roots export through `lexlean production build` with the packages committed under `tests/production-export/helpdesk/`, and a changed byte or version of a package is `LLC0105`, an import of a module of an undeclared package `LLR3009`, a tampered artifact `LLR3007`, and a model applied without its required check `LLT4008`. | §10.5, §17.22, §24.7, §28.6 |
 | `PC-01` | `performance-corpus` | The performance corpus is the language-1.2 project examples/performance-corpus whose manifest corpus.toml (lexlean/performance-corpus/1) fixes the closed kinds integer-kernels, byte-parsing, long-folds, maps-and-sets, recursion, and compiler and one row per member with its identifier <kind>/<name>, its production root, the targets and effects the root declares, and its contract; every member is exactly one production root of the project declared as its row states, every kind but compiler has a member, and compiler states its precondition, that the compiler is itself a production root, and has no member while it does not hold; a manifest with an unknown field, an unregistered kind, a member that is not such a root or is declared otherwise, a kind without a precondition and without a member, or a kind with both fails the check naming the defect. | §28.7 |
 | `PC-02` | `performance-corpus` | No member of the performance corpus is specific to a consumer: the project declares no source package and no lexicon source that is not builtin or a path inside the project, no file of the corpus holds a network address or names a repository, and a planted package, lexicon source, address, or repository name fails the check; and every member exports through lexlean::api::production in every target it declares with status kernel-checked, one output per member and target, and the published bundle replays with status bindings-verified. | §28.7 |
 | `PD-01` | `production` | The closed production registry fixes the language-1.2 targets, effects, and the disposition of every semantic construct kind, and every construct the eligibility analysis can classify has exactly one registry row. | §17.13 |
@@ -10456,7 +10998,12 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `RB-12` | `rust-backend` | The language-1.2 compiler-semantics ID covers the package scaffold: changing a lint row, the edition, or a gate of a copy of the embedded tree changes it, writing the module in its data form or reformatting its notation does not, and the module is outside the identities of languages 1.0 and 1.1. | §17.16, §21.2 |
 | `RB-13` | `rust-backend` | A package states the effects of its realization: `package.json` and `provenance.json` record them, ascending and registered, the production registry says that exhausting the stack aborts the process, and an unregistered or unordered list, or one that states allocation on `rust-core`, is refused. | §17.13, §17.16 |
 | `RB-14` | `rust-backend` | A library template whose self calls are all tail calls is rendered as a loop over its accumulator that breaks with its result, so that the production rows of the primitives it realizes carry no `recursion`, while a template with a call that is not a tail call is rendered as a call and keeps the effect; a rendering that states a self call where a loop is possible, and a row whose `recursion` differs from its rendering, are refused. | §17.13, §17.14, §17.16 |
-| `RB-21` | `rust-backend` | A fallible function rendered as a loop that is its value returns the operand of each `Err` that ends the loop, so a call of another fallible function there, looped or not, is in tail position and returns the callee's result without `?`: the module of issue 279 and a variant whose callee is itself a loop render in `rust-std`, export, and replay, their packages realize the programs the case lowers and agree with the calculus evaluator on every input of the case, an overflow included, and the same call bound before the loop's end without propagating, or left as the loop body's value with the end dropped, is refused because the fallible call does not propagate its overflow. | §17.13, §17.16 |
+| `RB-15` | `rust-backend` | The Rust AST mirrors the machine callee and the overflow literal of RustSyntax: a crate whose functions call each machine primitive at each width is checked, printed, and compiled by the pinned rustc with warnings denied, each call prints as the Rust operation its primitive names, and each function computes on the boundary values of its width exactly what an independent computation over a wider integer states; a machine call with another number of operands than its primitive takes, and an overflow value outside the payload of an `Err`, are refused as LLB6005, and a lowered crate that holds a machine call is refused by the correspondence between a rendering and its program as a construct with no row, because machine calls appear only in the runtime profile. | §17.14, §17.16 |
+| `RB-16` | `rust-backend` | The core runtime every Rust package carries is the text of a base and of the functions the language-1.2 module `RustRuntime` defines: the compiler project's module, shipped byte for byte at `language/rust-runtime-1.2/RustRuntime.lex.tex`, defines `coreCrate`, a crate of `RustSyntax` that the Rust crate decodes, never evaluates, and prints in place of the handwritten function of the same name, and each printed function agrees with that handwritten function in result and in counted work on the boundary and seeded values of its parameters when both are compiled by the pinned rustc with warnings denied, and the decoded crate is checked by the validator that checks every rendering (`validate` and the normative `validateCrate`), with the runtime's reading of its arithmetic rule, so that a function of the core runtime fails only with an `Err` of the overflow value whose error type is the node `RustType.overflow` and allocates nothing; a module that names a constructor `RustSyntax` does not declare, gives a constructor a wrong number of arguments, refers to a definition it lacks, defines a datum with parameters, or lacks `coreCrate`, a function that returns an `Err` of another value or another error type, a heap type in the core runtime, a shipped copy that differs from the compiler project's module, a defined function that no differential covers, and a function whose body is changed to compute another result are each refused. | §17.16 |
+| `RB-17` | `rust-backend` | The core runtime's support items are the definitions of a second closed module: the language-1.2 module `RuntimeSupport` of the compiler project, shipped byte for byte at `language/rust-runtime-1.2/RuntimeSupport.lex.tex`, defines `supportCrate`, a crate of `RuntimeSyntax`, whose items are of a closed set (a `use`, a unit struct with derives, a type alias with parameters, a static atomic counter, a trait of method signatures, an impl of a trait or of a type with bounded parameters, a generic function with bounded parameters), whose expressions are of a closed set (a variable, a literal, a path, a call of a path, a method call, a field of a pair, a borrow, an equality, a match), and whose types, paths, and methods name a declared item or one entry of a closed table of the standard library; the Rust crate decodes it, never evaluates it, checks it with a validator of its own, and prints it where the handwritten text stood, so that the core runtime holds no handwritten Rust text, and `equal`, `compare`, `tick`, and `work` agree with the handwritten ones in result and in counted work on the boundary and seeded values of the core profile, and `compare` on seeded keys that nest pairs to depth two and three, when both are compiled by the pinned rustc with warnings denied; an item or expression outside the set, a name that is neither declared nor in the table, an impl that lacks a method of its trait or states another signature, a bound on a trait that is not declared, a heap type in the core runtime, a shipped copy that differs from the compiler project's module, and a changed body are each refused. | §17.16 |
+| `RB-19` | `rust-backend` | The closed module `RuntimeSyntax` carries the constructs the `rust-std` runtime is written in, and no others: items (a tuple struct, a record struct, and an enum with unit, tuple, and record variants, each generic and with derives, beside those of `RB-17`), types (a 128-bit width, `usize`, `char`, `str`, a slice, and a mutable reference), literals (a character and a string), patterns (a mutable binding, a tuple, a tuple struct, a struct, and a literal), and expressions (a `let` with an optional type, an assignment, an `if` with an `else`, a `while`, a `while let`, a `loop`, a `for`, a `break`, a `return`, a tuple, a struct literal, a binary operation over twelve operators, a negation, a cast, an index, a range slice, a dereference, a mutable borrow, a method call with type arguments, a block, and a `match` arm with a guard); the Rust crate decodes, validates, and prints a crate of them, the language-1.2 module `RuntimeProbe` of the compiler project, which holds one use of each construct and is shipped byte for byte, so that its functions, compiled by the pinned rustc with warnings denied and run on seeded values, return what an independent computation states; the validator names its rule for each refusal (a name that is neither declared nor in the closed table of the standard library, a call or method with another number of arguments, a variable not in scope, a `break` outside a loop, a struct literal that names a field the struct lacks, a tuple of one, a pattern that binds a name twice, an assignment to a name that is not mutable) and refuses in the core profile every type, path, and method of the table (51 names, which SPEC.md §17.16 lists and the case compares with the validator's) that allocates, as the hidden allocation the validator refuses in every `rust-core` crate; a constructor `RuntimeSyntax` lacks, a shipped copy that differs from the compiler project's module, and each refusal above are refused. | §17.16 |
+| `RB-20` | `rust-backend` | The std runtime every `rust-std` package carries is the text of a handwritten base and of the functions the language-1.2 module `RustStd` defines: the compiler project's module, shipped byte for byte at `language/rust-runtime-1.2/RustStd.lex.tex`, defines `stdCrate`, a crate of `RustSyntax` with the std profile that the Rust crate decodes, never evaluates, checks with the validator that checks every rendering, and prints in place of the handwritten function of the same name, and each printed function agrees with that handwritten function in result and in counted work on lists of every length from 0 to 70 and of 1,000, 4,096 and 200,000 cells, and on byte strings and texts of the empty, the single, the multi-byte, the invalid, and the long, built fresh, after an uncons has made a unique buffer longer than its run, shared by a clone, and with cells in front, when both are compiled by the pinned rustc with warnings denied; the changes this makes to the shipped crate are named and each has its plant: a type parameter of a signature (`RustType.param`, printed as the generic list `<T: Clone>`, a call of a function without it fails to compile), the machine primitives `Machine.listAppend`, `listLength`, `listIndex`, `listSlice`, `bytesAppend`, `bytesLength`, `stringLength`, `bytesIndex`, `bytesSlice`, `utf8Encode`, `utf8Decode`, `bytesCompare`, `stringSplit`, and `stringJoin` (families 26 to 39, printed as calls of the methods of `List`, `Bytes`, and `Str` that hold the walks, for example `List::length(&a)` and `Bytes::slice(&a, start, count)`; a call with two operands of the one-operand length is refused by the validator), the decoder of the std crate (`stdCrate` of the std profile, a module without it or with another profile is refused), and the base's methods of `List`, `Bytes`, and `Str` that hold the walks, a miscount and an extra tick of which the differential finds; a defined function that no differential covers, a function of the oracle that the generated runtime lacks, a shipped copy that differs from the compiler project's module, and a function whose body is changed are each refused. | §17.16 |
+| `RB-22` | `rust-backend` | A fallible function rendered as a loop that is its value returns the operand of each `Err` that ends the loop, so a call of another fallible function there, looped or not, is in tail position and returns the callee's result without `?`: the module of issue 279 and a variant whose callee is itself a loop render in `rust-std`, export, and replay, their packages realize the programs the case lowers and agree with the calculus evaluator on every input of the case, an overflow included, and the same call bound before the loop's end without propagating, or left as the loop body's value with the end dropped, is refused because the fallible call does not propagate its overflow. | §17.13, §17.16 |
 | `GN-01` | `gnaf` | Every committed GNAF request and fixture is canonical, validates against the GNAF schemas whose calculus definitions are the target program schema's, and states its components' universe identity; a malformed request, an invalid reference, plan, or realized program, a reference without a value on a domain argument, or a wrong universe identity fails closed with LLB6006, and a machine or request beyond the host's capacity fails closed with LLS8002. | §17.15, §26.3 |
 | `GN-02` | `gnaf` | The GNAF model is a kernel-checked LexLean definition, Lean's kernel reduces the universe, the system statuses, and the answer of every committed request to what the host transcription computes, and a wrong answer, an answer computed from a universe with a system omitted, a tie with a member dropped, and a universe with a system omitted are rejected by Lean. | §17.15 |
 | `GN-03` | `gnaf` | Candidate membership is the grammar's expansion, which a kernel-checked theorem proves equal to the grammar's well-formed selectors for every grammar, independent of evaluation and fixed by a universe identity before any optimizer, and optimizer-defined, discovered, cached, and internal-plan universes and missing, self-referential, or optimizer-citing completeness evidence are rejected. | §17.15 |
@@ -10493,9 +11040,17 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `SP-15` | `preservation` | Certificate A of every production root is kernel-term data: a native core module of schema lexlean/core-module/2 that the compiler builds from the lowered program, the layout, the semantic source of the root's closure, and the recorded types of the preservation library's lemmas, every argument and universe level explicit, so that no Lean text template for certificate A remains in the production compiler; its program literal, encoders, width predicates, relation theorems, validators, and entry are rows of that module, which the one core backend renders to the Lean that verification compiles and whose record is the authoring notation, reading back to the data byte for byte; each theorem states, up to elaboration, the statement the text certificate stated, which an oracle over the committed corpora records, every row pins its axioms exactly, and a wrong lemma application, a changed statement, a forged program literal, or an added axiom is refused. | §17.17 |
 | `SP-16` | `preservation` | Certificate B of every production root is kernel-term data: a native core module of schema lexlean/core-module/2 that the compiler builds from the lowered program, the rendered crate, and the recorded types of the preservation library's correspondence rules, every argument and universe level explicit, so that no Lean text template for certificate B remains in the production compiler; its program and crate literals, flags, per-function derivations, and assembly are rows of that module, which the one core backend renders to the Lean that verification compiles and whose record is the authoring notation, reading back to the data byte for byte; each theorem states, up to elaboration, the statement the text certificate stated, which an oracle over the committed corpora records, every row pins its axioms exactly and the audit module prints and checks them, and a wrong lemma application, a changed statement, a forged program literal, an added axiom, or a row whose policy lies is refused. | §17.17 |
 | `SP-17` | `preservation` | No Lean source text template remains in the production compiler: a lexer-level scan of the Rust sources under crates/lexlean/src/production/ and of the probe and audit-module part of crates/lexlean/src/backend/lean.rs reads every string literal outside test code and finds none that is Lean syntax, which is a literal holding a Lean symbol (`:=`, `=>`, `→`, `∀`, `∃`, `⟨`, `⟩`, `(.`, `«`, `#print`, `#check`, `#eval`, `@[`, a `fun` binder), a Lean command line (`import`, `namespace`, `set_option`, `universe`, `open`), or a declaration (`theorem`, `def`, `example`, `instance`, `structure`, `inductive`, `abbrev`) with a type or a body, apart from a short allow-list of the printouts of kernel terms that developers read and the closed commands of the auxiliary module renderer; the staged audit module is an auxiliary module of typed commands that the backend renders; and a planted template in a production source, in the auxiliary module part of the backend, and in a module the scan sees as test code is each reported, the last not. | §17.17, §22.2 |
-| `SP-18` | `preservation` | The declared Rust machine states a machine primitive as a callee and the overflow value as a literal: RustSyntax declares eight machine primitives (checked add, subtract, multiply, quotient, negation, shift left, and shift right of a width, and try-from to a width), the callee that names one, and the literal Overflow, and RustSemantics evaluates a call of a machine callee as the calculus primitive of the same name, with the Option value the calculus states, stuck on an operand of another width (the amount of a shift excepted), and the literal Overflow as the unit value that an Err(Overflow) carries, which the pinned Lean evaluates on the boundary values of the widths and refuses to evaluate to a wrong value. | §17.14, §17.16 |
+| `SP-18` | `preservation` | The declared Rust machine states a machine primitive as a callee and the overflow value as a literal: RustSyntax declares machine primitives (checked add, subtract, multiply, quotient, negation, shift left, and shift right of a width, and try-from to a width), the callee that names one, and the literal Overflow, and RustSemantics evaluates a call of a machine callee as the calculus primitive of the same name, with the Option value the calculus states, stuck on an operand of another width (the amount of a shift excepted), and the literal Overflow as the unit value that an Err(Overflow) carries, which the pinned Lean evaluates on the boundary values of the widths and refuses to evaluate to a wrong value. | §17.14, §17.16 |
 | `SP-19` | `preservation` | The declared Rust machine states a loop over a state with a break value: RustSyntax declares the expression Loop of a state binding and a body block, and RustSemantics evaluates it by running the body in the environment of the state, rebinding the state to the payload of an Ok result and running the loop again, ending with the payload of an Err result as the value of the loop, stuck on a body whose value is neither, and exhausted rather than wrong when the fuel runs out, which the pinned Lean evaluates on a countdown and refuses to evaluate to a wrong value. | §17.14, §17.16 |
 | `SP-20` | `preservation` | Certificate B certifies a function the renderer writes as a loop: the library's FunOK states a function either by the correspondence for the body the crate holds or by FunLoop, that the crate's body is the loop form of an ordinary recursive body (the library's loopOf, with its Boolean checks of the renamed parameters, the kept parameters, and the freshness of the renamed names decided by evaluation) together with the correspondence for that recursive body, which funSem_of turns into the simulation through funSem_loop with the correspondence, its recursor, and the soundness theorem unchanged, and the aligner recovers the recursive body by inverting the rendering of loops (the renamed parameters, the destructuring of the state, and the Ok and Err wraps), so that for every loop of every renderer fixture in each profile and of every production root of the committed examples in each of its targets the loop form of the recovered body, computed by the library's form transliterated, is the crate's function, certificate B of the fixtures rendered as loops compiles under the pinned Lean with exactly the axioms Classical.choice, Quot.sound, and propext, and a loop that is not the loop form of any recursive body is refused, whether its state has another type, its body does not take the state apart, an end is not an Err, a renamed parameter is read by the body, a pattern rebinds a kept parameter, or the state holds a parameter the function does not have. | §17.16, §17.17 |
+| `SP-21` | `preservation` | The declared Rust machine states the integer operations the runtime's scalar functions use as machine primitives beyond the first eight: RustSyntax declares machine primitives for the bitwise and, or, exclusive or, and not of a width, for the equality, less-or-equal, and less-than of two naturals, and for the remainder of two naturals and of two integers, and RustSemantics evaluates a call of each as the calculus primitive of the same name with the value the calculus states, stuck on an operand of another width, which the pinned Lean evaluates on the boundary values of the widths and refuses to evaluate to a wrong value. | §17.14, §17.16 |
+| `SP-22` | `preservation` | Each authored item of the core runtime is in one of two sets: the refined functions are the functions the language-1.2 module `RustRuntime` defines, each of which names a runtime item, and the module holds for each a theorem `refines_<function>` stating, for all arguments of the function's parameter types, that the declared Rust semantics' run of the function in the module's core crate equals the run of the runtime item of the same name; the support items are the items of the module `RuntimeSupport`, each of a closed kind listed in SPEC.md §17.16 (a `use`, a unit struct, a type alias, a static, a trait, an impl, or a function), where a function is held by the counted-work gate if it is `tick` or `work` and by the theorems of `SP-25` if it is `equal` or `compare`; the pinned Lean accepts each refinement theorem with exactly the axioms its policy states, the set of theorems equals the set of functions the module defines, and a theorem for a function the module does not define, a function without a theorem, a function whose body is changed to another result, an authored function that names no runtime item, and a support function in neither set are each refused. | §17.16 |
+| `SP-23` | `preservation` | The declared Rust machine states the natural and integer arithmetic of the runtime's scalar functions with an overflow a body can observe: RustSyntax declares machine primitives for the checked sum and product of two naturals and the checked sum, difference, product, negation, and quotient of integers, each evaluated by RustSemantics as the calculus primitive of the same name, as `Some` of its value or as `None` when that primitive overflows, and for the difference and quotient of two naturals, which cannot overflow and are the primitive's value, which the pinned Lean evaluates on the boundary values of the widths and refuses to evaluate to a wrong value. | §17.14, §17.16 |
+| `SP-25` | `preservation` | The dispatch of the runtime's trait methods and the meaning of `equal` and `compare` are stated and checked: the declared semantics of `RuntimeSyntax` (`RuntimeSemantics`) evaluates a method call by finding, among the impls a crate declares, the one whose self type the receiver value has, and the module `RuntimeSupport` holds, for each value of the core profile's predicate that the calculus types as the arguments of `equal` (a Boolean, a natural, a fixed width, an `Ordering`) and of `compare` (a Boolean, a natural, an integer, a fixed width, and a pair of two of those), where a natural is a `u64` and an integer an `i64` in the generated Rust and so is dispatched to the impl of that width, a theorem that the evaluation of `equal` or of `compare` in `supportCrate` equals the calculus primitive of the same name on the same values; the theorems are exactly those the predicate calls for, a set the case computes from the predicate and does not read from the module, the pinned Lean accepts each with exactly the axioms its policy states, and an impl that returns another result, an impl that is missing for a value of the predicate, a value of the predicate without a theorem, a theorem for a value outside it, and a theorem that states another primitive are each refused; a pair of pairs, which the calculus's orderable types also admit, is a value of the predicate that this row does not prove, because each pair level spends fuel of the declared semantics and an induction over the depth needs arithmetic on that fuel under a symbolic depth that the proof language does not have, and the evidence for those values is the differential of `RB-17` over seeded nested keys of depth two and three, which is validation and never a proof. | §17.16 |
+| `SP-26` | `preservation` | The memory a runtime buffer lives in is modelled and its laws are kernel-checked: the module `RustMemory` of the compiler project (language 1.2, over the calculus's values) models a buffer as index-addressed slots, whose number is its capacity, and a length, with the write `put`, the guard `lessThan len (size slots)` of a push (`bufPush`), the guarded read `bufGet`, the truncation `bufTruncate`, and a window (`Window`, `subWindow`), and the pinned Lean accepts a theorem, with exactly the axioms its policy states, for each of these laws, the set the case lists and does not read from the module: a write never changes the number of slots (`size_put`); a write is read back at its own index when that index is a slot (`get_put_same`) and leaves every slot below it (`get_put_below`) and above it (`get_put_above`) as it was; a new buffer has the capacity it was asked for, every slot holding the fill (`size_blank`, `get_blank`); a buffer whose length is its capacity has no room, so that its push is refused and writes nothing (`no_room_at_capacity`, `push_at_capacity`), and one with a slot at its length has room and the write lands in that slot with the length one more (`room_before_slot`, `push_lands_in_slot`, `put_in_slot`, `push_with_room`); a truncated length admits the indices below both the new and the old length (`below_truncated`, `get_truncated`); the offsets of a window of a window add, and its count is the least of the count asked for and what its parent has left after the skip (`plus_assoc`, `window_of_window`, `window_count`); a write that lands elsewhere, a write that drops a slot, an order of indices that is reversed, a push that adds two to the length, a theorem for another function, and a missing theorem are each refused; that the runtime's `Vec` and slices behave as the model is the evidence of the differential and of the pinned rustc and is not claimed here. | §17.17 |
+| `SP-27` | `preservation` | The representation of a list in the runtime is modelled and its abstraction theorems are kernel-checked: the module `RustLists` of the compiler project (language 1.2, on the buffers of `RustMemory` and over the calculus's values) models a list as the cells in front of it and a run, the first slots of a buffer in a store addressed by position, and reads it back as the list of the calculus, and the pinned Lean accepts, with exactly the axioms its policy states, a theorem for each of these laws, the set the case lists and does not read from the module: the in-place cons of a buffer with room, which truncates the buffer to the run and pushes through the push of `RustMemory`, reads back as the item before the old list (`cons_in_place`), closed from `min_keeps_run`, `room_before_slot` and `put_run_abs`, the other pieces of it being stated apart, the same read where the slot is there and the choice of the in-place write by the holders (`push_run_abs`, `walk_cons`, `inplace_view`, `cons_view`), a refused push is a push at capacity (`full_is_capacity`), a grown buffer has room and keeps the slots it had (`grow_run_abs`, `room_after_growth`, `grown_has_room`), and the truncation to a run keeps the run of a buffer at least as long (`min_keeps_run`, `truncate_keeps_run`); the first cons onto the empty list writes a buffer of length one and capacity sixteen, the item and fifteen blank slots behind it as the runtime reserves, at the length of the store, and leaves the buffers before it as they were (`alloc_capacity`, `alloc_length`, `walk_alloc`, `alloc_frame`, `cons_alloc_view`, `cons_alloc_store`); a cons onto a cell, or onto a run that another handle holds, reads as the item before the old list and writes no buffer (`cons_cell_view`, `cons_cell_store`, `cons_shared_view`, `cons_shared_store`, and `cons_held_store` for a holder among the other handles); the uncons of a cell, of the last element of a run, and of any other run is the head and the list the rest reads as (`run_uncons_abs`, `run_last_abs`, `walk_uncons`, `walk_uncons_last`, `uncons_cell_abs`, `uncons_cell_taken`, `uncons_run_abs`, `uncons_run_taken`, `uncons_last_abs`, `uncons_last_taken`); a write to the buffer at one address is read through that address and through no other (`cons_frame`, `inplace_frame`); a handle holds a buffer exactly when its run is on the buffer's address, so that a holder blocks the in-place write and a handle on another buffer, above or below, does not hold it and does not block (`same_with_itself`, `holder_on_own_buffer`, `holder_without_run`, `apart_above`, `apart_below`, `holds_apart_above`, `holds_apart_below`, `own_blocks`, `others_allow_above`, `others_allow_below`, `holder_blocks`, `holder_elsewhere_above`, `holder_elsewhere_below`); and releasing a chain of cells one cell at a time ends within as many steps as the chain has cells, needs a step for each cell of a chain nobody else holds, and takes one step for each (`release_ends`, `release_one_short`, `release_needs_fuel`, `release_one_cell`); a cons that writes the wrong slot, an uncons that reads the wrong slot, a shared run written in place, a write that reaches the next buffer, a release given a step too few, a growth that drops the slots, a fresh buffer that is not at the length of the store, a fresh buffer short of the capacity of sixteen, a refusal that is the opposite of the capacity, a holder that does not block the write, a theorem for another function, and a missing theorem are each refused; that the runtime's `Rc`, `Vec`, and `List` behave as the model is the evidence of the differential and of the pinned rustc and is not claimed here. | §17.17 |
+| `SP-28` | `preservation` | The meaning of the runtime's buffer, share, and replace primitives is stated over the model and its laws are kernel-checked: the module `RustPrims` of the compiler project (language 1.2, on `RustMemory` and `RustLists`) reads a buffer as the list of its items in order (`readBuf`), gives the primitives their erased meaning on that list (`erasedPush` and `erasedLength` are the calculus primitives `append` and `length`, stated on a list by `prim_append_nil`, `prim_append_cons`, `prim_length_nil` and `prim_length_cons`; `erasedTruncate` keeps a prefix), and states what the runtime does with a buffer as `bufNew` (`Vec::with_capacity`), `pushGrow` (the push of `RustMemory`, after a growth when the buffer is full), `bufTruncate`, and the length, and the pinned Lean accepts, with exactly the axioms its policy states, a theorem for each of these laws, the set the case lists and does not read from the module: the push of a buffer, grown when it is full, reads as the items and the item after them (`push_reads`, with `first_of_snoc`, `append_nothing`, `less_than_itself`, `put_into_blank`), a new buffer of a capacity reads as no items (`new_reads`), a truncation reads as the first items (`truncate_reads`, `first_of_take`), and its length is the number of its items (`length_reads`, with `first_of_front`, `length_of_items`); a clone of a list's buffer (`cloneHandle`, the `clone` of its `Rc`) reads as the handle it clones, holds the buffer that handle holds, and keeps it from being alone (`clone_reads` (by definition), `clone_holds` (by definition), `clone_blocks`), a buffer with no other handle is alone (`alone_without_others` (by definition)), and a replaced place reads as it did while the place holds the value (`replace_old_reads` (by definition), `replace_now_reads` (by definition)); a push that puts the item in front, a full buffer that is not grown, a truncation that keeps one too many, a clone that does not hold, a replace that returns the new value, a length that counts one more, a new buffer that is not empty, a theorem for another function, and a missing theorem are each refused; that the runtime's `Vec`, `Rc`, and `mem::replace` behave as the model, and that the primitives of the declared semantics are given these readings, are the evidence of the differential and of the pinned rustc and the work of the first function of H4a, and are not claimed here, and `share_copy`, the `Rc::from` of a slice or text, is given no meaning here: it belongs to H4b with `Str` and `Bytes`. | §17.17 |
+| `SP-29` | `preservation` | The functions of the `rust-std` runtime that the language-1.2 module `RustStd` of the compiler project defines, the list functions `append_list`, `length_list`, `index_list`, and `slice_list` and the byte and text functions `append_bytes`, `length_bytes`, `length_string`, `index_bytes`, `slice_bytes`, `utf8_encode`, `utf8_decode`, `compare_bytes`, `split_exact`, and `join`, are each one machine call (`Machine.listAppend`, `listLength`, `listIndex`, `listSlice`, `bytesAppend`, `bytesLength`, `stringLength`, `bytesIndex`, `bytesSlice`, `utf8Encode`, `utf8Decode`, `bytesCompare`, `stringSplit`, `stringJoin`), whose meaning `RustSemantics` states as the existing calculus primitive of the runtime item of the same function (`append`, `length`, `index`, `slice`, `utf8Encode`, `utf8Decode`, `compareBytes`, `splitExact`, `join` of `TargetSyntax.Prim`), and the pinned Lean accepts, with exactly the axioms its policy states, a theorem `refines_<function>` for each, of the shape of those of the core runtime (`SP-22`): for every list, byte string, and text (and every position, start, count, delimiter, and maximum), the declared semantics' run of the function in the std crate of the module equals the run of the runtime item of the same name, the set of theorems equalling the set of the functions the module defines; this is the whole of what is kernel-checked here, and it does not refine the walks of the support impl with their work ticks, which are evidence and not proof: they are held by the abstraction theorems of `RustLists` and `RustPrims` (`SP-27`, `SP-28`), by the validator twin of `BS-09`, and by the differential of `RB-20` with counted work, which cannot construct a list of 2^64 cells, so that the point at which the length walk's count overflows, which is where the `natResult` of `Prim.length` overflows, is declared and not exercised; the type parameter of the signature is carried by the syntax (`RustType.param`) and erased by the semantics; a theorem for another function, a function without a theorem, a theorem that states another runtime item, and a machine call whose primitive is another are each refused. | §17.17 |
 | `MD-01` | `models` | Language 1.2 artifact, contract, realization, evidence, and model declarations, the checked_apply term, the contract_violation type, and the less_than primitive belong to the closed lexlean/semantic-module/2 schema and its snapshot schema, are rejected under language 1.1 before either backend runs, and admit no member outside the closed schema, such as prompt text, a free-form description, or raw model configuration. | §17.12 |
 | `MD-02` | `models` | A model artifact is admitted only from a configured, content-addressed, confined project file whose SHA-256 and byte length equal its declaration and whose bytes decode under its declared closed schema to its declared type and role; a missing artifact or a digest or length mismatch fails with LLR3007, a schema, type, or role violation fails with LLR3008, and the generated Lean embeds the exact bytes with a kernel-checked theorem that the typed value is their decoding. | §17.12, §10.1, §26.3 |
 | `MD-03` | `models` | A contract names typed input, output, and optional state interfaces and prior proposition-valued predicates of exactly those interface signatures, and each runtime validator is an executable Boolean definition of the same signature linked to its predicate by a statement-exact soundness theorem and an optional completeness theorem that Lean restates against the fixed model semantics; any mismatch fails with LLT4006. | §17.12 |
@@ -10575,14 +11130,19 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `RT-04` | `runtime` | No Lean runtime text remains in the language-1.2 compiler: a generated language-1.2 module imports the runtime modules whose constants it names and declares nothing under a runtime namespace, and the only Lean runtime text in the compiler's source outside unit-test items, in one string literal or in several written together, is the decoder of core module 2, which loads native modules and so cannot be one; a runtime text planted in any of its shapes, raw or escaped, with or without a namespace line, split across literals, or after a test module, is found. | §17.12, §18.1 |
 | `SL-01` | `stdlib` | The standard library's `Text` module is language-1.2 source whose seven members over `Bytes` (`startsWith`, `endsWith`, `trim`, `lines`, `splitOn`, `joinWith`, `find`) are production roots eligible for `rust-std` with exactly their declared effects; each member's lowered program under the calculus evaluator and its rendered `rust-std` package under the pinned rustc agree with Rust's `starts_with`, `ends_with`, `trim_ascii`, `lines`, `split`, `join`, and `find` on a seeded corpus; a planted defect in a member is detected; and the certified packages the production export publishes for it are the committed ones. | §17.22 |
 | `SL-02` | `stdlib` | The standard library's `Sha256` module is language-1.2 source stating FIPS 180-4 SHA-256 over `UInt32` bit operations and `iterate` (modular addition by widening to `UInt64`, rotation as two shifts, padding read by position, the message schedule as a sixteen-word window, sixty-four rounds over the round-constant list), whose roots `sha256 : Bytes -> Digest` and `sha256Hex : Bytes -> Bytes` are production roots eligible for `rust-std` with exactly their declared effects; the lowered program under the calculus evaluator and the rendered `rust-std` package under the pinned rustc compute the FIPS 180-4 example digests and every NIST CAVP SHA-256 short- and long-message vector, and agree with the `sha2` crate on a seeded corpus whose lengths cover every padding boundary, a disagreement failing closed and never resolved by adopting the oracle's digest; a planted one-bit error in the round function is detected; and the certified packages the production export publishes for the two roots are the committed ones. | §17.22 |
-| `SL-05` | `stdlib` | The compiler computes its content identities with the standard library's certified `Sha256` package instead of the `sha2` crate: the shipped `lexlean` crate links the committed production export of `LexLeanStd.Sha256` through an in-crate link that resolves to that file and nothing else, its manifest has no `sha2` dependency, and `Sha256Digest::of`, `FramedHasher`, and `tree_digest` compute through the package; through the compiler's own API the digest of every example NIST states (the examples of FIPS 180-4 and the million-`a` message of FIPS 180-2) and every NIST CAVP SHA-256 short- and long-message vector, each cited by a `some-true` row of `model/authorities.toml` that vendors it or states its digest,, of every message length from 0 to 300 bytes and around each power of two up to 4 MiB, and of a seeded corpus agrees with the authority's digest and with the `sha2` crate as an oracle that can falsify and never establish, and the frames and tree rows agree with an independent recomputation of the §21.1 and §11.5 encodings, a disagreement failing closed and never resolved by adopting the oracle's digest; and a planted bit of the first round constant in a built copy of the package, a link that differs from the export by one byte, a `sha2` dependency added to the manifest, a message truncated by one byte, and a frame length written little-endian are each detected. | §17.22 |
-| `SL-06` | `stdlib` | Every content identity the compiler computes is byte-identical under the standard library's `Sha256` package to the identity it computed with the `sha2` crate: every tracked file of the repository digests identically under the compiler's `Sha256Digest::of` and under `sha2`; the compiler-semantics IDs of languages 1.0, 1.1, and 1.2 equal the values pinned in the committed example locks; the frame, tree, source, and semantic identities equal their independent recomputations (`AR-05`, `AR-06`, `SM-10`, `CF-07`, `CF-09`, `TX-10`); every example other than `uor-atlas`, the standard library, the compiler project, and the bootstrap project recompute their locks and pins on `check`; and a bit changed in a tracked file's digest, in a pinned compiler-semantics ID, or in the order of a source-ID recipe's frames is detected. | §21 |
-| `SL-07` | `stdlib` | The compiler running the standard library's `Sha256` package reproduces that package: the digest of every file that the `provenance.json` of every committed production export names equals the digest `sha2` gives its bytes; `lib.rs` of the two SHA-256 packages holds none of the digests their provenance records; and, under the pinned Lean, rebuilding the standard library with the compiler yields packages byte-identical to the committed ones and a `lib.rs` for `sha256` that is the file the compiler links, so that regenerating the export a second time changes nothing; a bit changed in a recorded digest, a digest written into `lib.rs`, and a link that is not the rebuilt `lib.rs` are each detected. | §17.22 |
+| `SL-03` | `stdlib` | The standard library's `std-models` package is the language-1.2 project `std-models` of the workspace under the module prefix `LexLeanStdModels`, whose one module `Scores` states the score combinators `best` (the index of the first maximal score), `margin` (its distance from the runner-up), and `decideOr` (that index, or an abstention when fewer than two scores are given or the margin is below the threshold) over `List Int`, and the contract `Gating`, the realization `Gate`, the evidence `GateEvidence`, and the model `GateModel` generic over a type parameter; its manifest declares no source package, artifact, or glossary, no file of Lean source accompanies it, and its behavior is held by kernel-checked theorems and not by the Rust-std differential of `SL-01`; it verifies by itself under the pinned Lean with exact axiom policies, a planted comparison that picks the last maximal score is refused by the kernel with `LLV7002`, and language 1.2 being generic over types and not over predicates or stages, it offers no composite that takes an importer's models. | §10.5, §17.22 |
+| `SL-04` | `stdlib` | The standard library's `std-reasoning` package is the language-1.2 project `std-reasoning` of the workspace under the module prefix `LexLeanStdReasoning`, whose one module `Worklist` states the logic `Countdown` over a state of a type parameter and a work count ranked by the count, its guarded rules `Tick` and `Burn`, the verifier `Drained`, and the terminating work-list reasoner `Drain`, each generic over the carried type, with the reasoner's termination bound a kernel-checked theorem; its manifest declares no source package, artifact, or glossary, no file of Lean source accompanies it, and its behavior is held by kernel-checked theorems and not by the Rust-std differential of `SL-01`; it verifies by itself under the pinned Lean with exact axiom policies, a planted termination bound that the ranking does not meet is refused at link with `LLT4010`, and a reasoner of an importing project instantiates its logic, rules, and verifier at the importer's own type. | §10.5, §17.22 |
+| `SL-05` | `stdlib` | The standard library's `Buffer` module is language-1.2 source stating an output buffer of a given capacity that is written in order (`writeBytes`, `writeByte`, `writeDecimal`), kept as sealed chunks of at least 256 bytes and one pending chunk so that a write copies at most one chunk and the output is joined once by pairwise merging, whose `finish` returns the bytes or, when a write would pass the capacity, the refusal `output exceeds the capacity of the buffer`; its roots `writeAll`, `writeEach`, and `writeNumbers` are production roots eligible for `rust-std` with exactly their declared effects; the lowered programs under the calculus evaluator and the rendered `rust-std` packages under the pinned rustc agree with the concatenation of the pieces, of the bytes, and of the decimals in Rust, and with the refusal at one byte beyond the capacity, on a seeded corpus whose sizes cross the chunk boundary; the work the rendered package counts for one-byte writes grows in proportion to their number; a planted defect is detected; and the certified packages the production export publishes for the three roots are the committed ones. | §17.22 |
+| `SL-06` | `stdlib` | The compiler computes its content identities with the standard library's certified `Sha256` package instead of the `sha2` crate: the shipped `lexlean` crate links the committed production export of `LexLeanStd.Sha256` through an in-crate link that resolves to that file and nothing else, its manifest has no `sha2` dependency, and `Sha256Digest::of`, `FramedHasher`, and `tree_digest` compute through the package; through the compiler's own API the digest of every example NIST states (the examples of FIPS 180-4 and the million-`a` message of FIPS 180-2) and every NIST CAVP SHA-256 short- and long-message vector, each cited by a `some-true` row of `model/authorities.toml` that vendors it or states its digest,, of every message length from 0 to 300 bytes and around each power of two up to 4 MiB, and of a seeded corpus agrees with the authority's digest and with the `sha2` crate as an oracle that can falsify and never establish, and the frames and tree rows agree with an independent recomputation of the §21.1 and §11.5 encodings, a disagreement failing closed and never resolved by adopting the oracle's digest; and a planted bit of the first round constant in a built copy of the package, a link that differs from the export by one byte, a `sha2` dependency added to the manifest, a message truncated by one byte, and a frame length written little-endian are each detected. | §17.22 |
+| `SL-07` | `stdlib` | Every content identity the compiler computes is byte-identical under the standard library's `Sha256` package to the identity it computed with the `sha2` crate: every tracked file of the repository digests identically under the compiler's `Sha256Digest::of` and under `sha2`; the compiler-semantics IDs of languages 1.0, 1.1, and 1.2 equal the values pinned in the committed example locks; the frame, tree, source, and semantic identities equal their independent recomputations (`AR-05`, `AR-06`, `SM-10`, `CF-07`, `CF-09`, `TX-10`); every example other than `uor-atlas`, the standard library, the compiler project, and the bootstrap project recompute their locks and pins on `check`; and a bit changed in a tracked file's digest, in a pinned compiler-semantics ID, or in the order of a source-ID recipe's frames is detected. | §21 |
+| `SL-08` | `stdlib` | The compiler running the standard library's `Sha256` package reproduces that package: the digest of every file that the `provenance.json` of every committed production export names equals the digest `sha2` gives its bytes; `lib.rs` of the two SHA-256 packages holds none of the digests their provenance records; and, under the pinned Lean, rebuilding the standard library with the compiler yields packages byte-identical to the committed ones and a `lib.rs` for `sha256` that is the file the compiler links, so that regenerating the export a second time changes nothing; a bit changed in a recorded digest, a digest written into `lib.rs`, and a link that is not the rebuilt `lib.rs` are each detected. | §17.22 |
 | `BS-01` | `bootstrap` | The axiom-output parser of SPEC.md §22.5 is language-1.2 source in the `bootstrap/` project: `parseAuditOutput` and the closed Lean-name check `isClosedLeanName` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle on the committed golden vectors and boundary edges; on the normative host, both roots' lowered programs under the calculus evaluator agree with the Rust oracle on every committed golden vector and a seeded corpus, the rendered packages under the pinned rustc agree with the oracle on the large seeded corpus of generated, wrapped, and mutated audit outputs and names with no disagreement, a planted defect in the source is detected, and the certified packages the production export publishes for the project are the committed ones. | §17.23, §22.5 |
 | `BS-02` | `bootstrap` | The preservation lexer and token audit of SPEC.md §17.17 are language-1.2 source in the `bootstrap/` project: `lex` and `auditTokens` of `TokenAudit` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle `production::preserve::{lex, audit_tokens}` on every lexeme, position, and rejection message for the first 1,500 characters of every module of the shipped preservation library and calculus modules, the number-lexing corpus, and every token-audit unit vector; on the normative host, both roots' lowered programs under the calculus evaluator agree with the Rust oracle on those vectors and a seeded corpus, the rendered packages under the pinned rustc agree with the oracle on the large seeded corpus of generated and mutated Lean texts with no disagreement, a planted defect in the source is detected, and the certified packages the production export publishes for the project are the committed ones. | §17.17, §17.23 |
 | `BS-03` | `bootstrap` | The primitive scanner of SPEC.md §12.2 is language-1.2 source in the `bootstrap/` project: `scanSource` and `rejectAtoms` of `PrimitiveScan` are production roots eligible for `rust-std` with exactly their declared effects; on every host of the matrix, both roots' rendered `rust-std` packages under that host's pinned rustc agree with the Rust oracle `source::scan::{scan, reject_forbidden_atoms}` on every atom with its class, text, and byte, line, and column spans and on every rejection with its code, message, span, and help, for the deterministic vectors (the oracle's unit inputs, the atom limit at N and N+1, atom lists with gaps, payload strings, and notation bodies), a 128-byte window and a 2,048-byte prefix of every committed `.lex.tex` source, and the whole of each such source up to 8,192 bytes (up to 1,024 bytes, one source in four, for `rejectAtoms`); on the normative host, both roots' lowered programs under the calculus evaluator agree with the oracle on the vectors and the 128-byte windows and on 80 seeded texts, the packages agree on 2,500 seeded texts, each of ten planted defects in the source is detected, and the certified packages the production export publishes for the project are the committed ones. | §12.2, §17.23 |
 | `BS-04` | `bootstrap` | The target calculus's checker of SPEC.md §17.14 (`lexlean::calculus::check`), for a program given as calculus data, each list of a recursive type carried as a chain of that type's own `Nil` and `Cons` constructors and decoded back to the program on every vector (reading a program from its canonical JSON is not part of this row), is language-1.2 source in the `bootstrap/` project: `checkProgram` and `checkArguments` of `CalculusCheck` are production roots eligible for `rust-std` with exactly their declared effects; on the normative host the lowered programs of both roots under the calculus evaluator agree with the Rust checker on acceptance and on the rejection message to the byte for every committed target program and the refusal edits of `TC-02` and for a seeded corpus of data-level mutations, and each planted defect in the source is detected; on every host the rendered `rust-std` packages of both roots under the pinned rustc agree with the Rust checker on the deterministic vectors, and on the normative host also on a larger seeded corpus with no disagreement; strings whose Rust `Debug` spelling escapes a non-ASCII scalar other than `U+0080`..`U+009F` are outside the claim; and the certified packages the production export publishes for the project are the committed ones. | §17.14, §17.23 |
-| `BS-05` | `bootstrap` | The Rust crate validator of SPEC.md §17.16 is language-1.2 source in the `bootstrap/` project: `validateCrate` and `correspondCrate` of `RustValidate` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle `calculus::rust::validate::{validate, correspond}` on the exact outcome and message for the 223 distinct crates the renderer lowers from the 164 distinct programs among the 247 committed package manifests and 122 fixtures, for 132 `validateCrate` and 12 `correspondCrate` runs that reach each of the 48 reachable refusals three times, for 17 hand-built crates of the merge of moved sets, and for 34 hand-built crates of the loop rules (406 `validateCrate` runs, 165 of them refusals, and 269 `correspondCrate` runs, 46 of them refusals); on the normative host, both roots' lowered programs under the calculus evaluator agree with the oracle on the crates of at most 400 expressions (200) with the rule runs and on 500 seeded mutants of the crates of at most 80 expressions, the rendered packages under the pinned rustc agree on 2,000 further seeded mutants per root, sixteen planted defects in the source are each detected, and the certified packages the production export publishes for the project are the committed ones; lowering, printing, packaging, and crates naming a non-ASCII or non-printable scalar are outside the claim. | §17.16, §17.23 |
+| `BS-05` | `bootstrap` | The Rust crate validator of SPEC.md §17.16 is language-1.2 source in the `bootstrap/` project: `validateCrate` and `correspondCrate` of `RustValidate` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle `calculus::rust::validate::{validate, correspond}` on the exact outcome and message for the 232 distinct crates the renderer lowers from the 173 distinct programs among the 256 committed package manifests and 122 fixtures, for 132 `validateCrate` and 12 `correspondCrate` runs that reach each of the 48 reachable refusals three times, for 17 hand-built crates of the merge of moved sets, for 34 hand-built crates of the loop rules, and for 51 hand-built crates of the machine callee and the overflow value, whose three refusals no mutant reaches (452 `validateCrate` runs, 195 of them refusals, and 315 `correspondCrate` runs, 82 of them refusals); on the normative host, both roots' lowered programs under the calculus evaluator agree with the oracle on the crates of at most 400 expressions (201) with the rule runs and on 500 seeded mutants of the crates of at most 80 expressions, the rendered packages under the pinned rustc agree on 2,000 further seeded mutants per root, twenty planted defects in the source are each detected, and the certified packages the production export publishes for the project are the committed ones; lowering, printing, packaging, and crates naming a non-ASCII or non-printable scalar are outside the claim. | §17.16, §17.23 |
+| `BS-06` | `bootstrap` | The Rust printer of SPEC.md §17.16 (`calculus::rust::ast::{print, print_expr}`) is language-1.2 source in the `bootstrap/` project: `printCrate` and `printExpr` of `RustPrint`, over the closed Rust AST as first-order data with its literal payloads, exported names, runtime rows, and machine primitives (`RustAst`), each list of the AST carried as a chain of its own `Nil` and `Cons` constructors, are production roots eligible for `rust-std` with exactly their declared effects, and write their output into a `Buffer` of a given capacity, the capacity exceeded being the refusal of the buffer; the header of the library (the crate attributes and the runtime) is an argument; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle to the byte on 2,633 vectors, 622 of `printCrate` (60 of them refused for the capacity, 464 the distinct crates the renderer lowers from the 173 distinct programs among the 256 committed package manifests and 122 fixtures and the crates of the 256 committed packages) and 2,011 of `printExpr` (1,460 of them hand-built, the rest the function bodies of those crates), with the items of each of the 256 committed libraries equal to the oracle's printed items; on the normative host, both roots' lowered programs under the calculus evaluator agree with the oracle on 557 and 2,011 of those vectors and on 400 and 399 seeded mutants, the rendered packages agree on 2,984 further seeded mutants, thirteen planted defects in the source are each detected, and the certified packages the production export publishes for the project are the committed ones; a crate naming a non-ASCII or non-printable scalar in an exported name, a literal wider than 64 bits, and a machine call with fewer operands than its primitive, which the oracle indexes past, are outside the claim. | §17.16, §17.23 |
+| `BS-09` | `bootstrap` | The runtime syntax validator of SPEC.md §17.16 is language-1.2 source in the `bootstrap/` project: `validateRuntime` of `RuntimeValidate` is a production root eligible for `rust-std` with exactly its declared effects, and its rendered `rust-std` package under the pinned rustc agrees with the Rust oracle `calculus::rust::rt_validate::validate` on the exact outcome and message for each of 701 crates: the committed `supportCrate` and `probeCrate` and each in the other profile, the 97 crates that break one rule, or one site of a rule, each, built by changing the committed crates and from small crates, and 600 seeded mutants of the two committed modules, 562 of the 701 refused, so that the refusals reach each of the 40 rules the oracle names and no other; the evaluator agrees on all 701; each of eight planted defects in the source is detected, and the certified package the production export publishes for the project is the committed one; lowering, printing, packaging, and crates naming a non-ASCII or non-printable scalar are outside the claim. | §17.16, §17.23 |
 | `PK-01` | `packages` | A language-1.2 project that declares a source package by its identifier, version, kind `path`, and the member directory a `lexlean-workspace.toml` lists locks it by the tree digest of its manifest and source files, its manifest digest, its version, its module prefix, and its own packages, and the configuration and the lock read back to the bytes written; a project without a source package keeps its bytes, and a package of another kind, a source package in another language, a changed byte or version (LLC0105), an undeclared package (LLC0106), a module prefix claimed twice (LLC0107), a project or a package outside the workspace (LLC0108), a path that escapes it, and a symlink (LLS8001) are each refused with the named code. | §10.5, §11.1, §25.1 |
 | `PK-02` | `packages` | A module of a project imports only modules of its own project and modules of the packages the project declares, and a module of a package only modules of itself and of the packages its own manifest declares: a package module is a module of the importing project under its own module prefix, a module of a package the project does not declare fails with LLR3009, and an import cycle through a package fails with LLR3003. | §10.5, §15.1 |
 | `PK-03` | `packages` | An importing project builds and verifies under the pinned Lean offline, and its package modules are generated, elaborated, replayed with `leanchecker`, and audited for their exact axioms under the package's module prefix with the package as their origin in the records; the source ID of the project changes with the pins, and no file of the package is written by `fmt`, `build`, or `verify`. | §10.5, §21.3, §22 |
@@ -10606,7 +11166,7 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `NS-06` | `normative-source` | The hand-edited normative inputs of the repository are the `.lex.tex` modules of the specification project: `model/` holds only the projected files and the copies an authority row vendors, every Markdown file at the root is a projection or is on the closed list of hand-written documents, the projections carry the notice that names their source, and no hand-written document restates a registered statement, a plant of each being refused naming R1. | §27.2, §27.5, §27.10 |
 | `NS-07` | `normative-source` | `cargo xtask spec` changes the chapter modules of the specification project by item: it replaces a block, inserts one after a block, and ports the hunks of a merged SPEC.md that lie outside derived regions, each through the authoring SDK, and it writes nothing unless the regenerated SPEC.md equals the intended text outside derived regions, refusing a first line that matches no block or two and a hunk that spans two blocks. | §24.8, §27.5 |
 
-**Total required capability IDs:** 449.
+**Total required capability IDs:** 472.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

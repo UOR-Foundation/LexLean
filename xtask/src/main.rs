@@ -158,6 +158,15 @@ fn example_dirs(root: &Path) -> Result<Vec<PathBuf>, Fail> {
         return Err("§17.22: the standard library project is missing".into());
     }
     dirs.push(stdlib);
+    // The library's two source packages (§17.22) are projects of their own
+    // under the same gates.
+    for package in ["std-models", "std-reasoning"] {
+        let directory = root.join(package);
+        if !directory.join("lexlean.toml").exists() {
+            return Err(format!("§17.22: the `{package}` project is missing").into());
+        }
+        dirs.push(directory);
+    }
     // The bootstrap project (§17.23) holds the compiler's own components as
     // language-1.2 source under the same gates.
     let bootstrap = root.join("bootstrap");

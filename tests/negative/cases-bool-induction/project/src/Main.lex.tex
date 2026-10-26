@@ -1,0 +1,20 @@
+\begin{lexlean}{Main}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: pick,
+  parameters: [b : Bool],
+  result: Bool,
+  body: (if b then true else false)
+}
+
+theorem{
+  name: pickSame,
+  parameters: [b : Bool],
+  statement: ((pick b) = b),
+  proof: induction{scrutinee: b, branches: [{proof: reflexivity{}, binders: [], constructor: "false"}, {proof: reflexivity{}, binders: [], constructor: "true"}]},
+  axioms: []
+}
+\end{semanticmodule}
+\end{lexlean}

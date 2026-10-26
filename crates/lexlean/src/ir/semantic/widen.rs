@@ -214,6 +214,10 @@ fn proof(
             }
             return Ok(());
         }
+        SemanticProof::TermCases { scrutinee, .. } => {
+            term(scrutinee, locals, env, counter)?;
+            return Ok(());
+        }
         SemanticProof::Constructor { branches } => {
             for branch in branches {
                 self::proof(branch, locals, env, counter)?;

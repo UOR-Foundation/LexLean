@@ -187,5 +187,13 @@ definition{
   body: (record Rows::IdRow {id := "CL-23", level := "build", suite := "cli-api", statement := "lexlean production targets prints the canonical target-descriptor document in either output mode, production build --request publishes the bundle its request names and reports the bundle and the project's source, semantic, build, and attestation IDs in its command result, production verify-artifact replays a bundle with no project, and each maps a malformed request, a refused request, and a rejected replay to the exact exit code of its registered class.", sections := "§24.7"}),
   executable: true
 }
+
+definition{
+  name: cl24,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "CL-24", level := "build", suite := "cli-api", statement := "lexlean migrate --to 1.2 migrates a language-1.1 data-form project to language 1.2 in one command: it rewrites every module to the authoring notation through lexlean::sdk::to_notation with the same declarations, names, statements, and axiom policies, moves the builtin glossary references of every source and the imports of every path lexicon package to 1.2.0, rewrites the language row, and regenerates the lock as lexlean/lock/2, so the result checks, has a current lock, and is canonical; --check proves the migration and writes nothing; and a project that is not language 1.1 is refused with LLC0103 and a module that is not a language-1.1 data-form semantic module, a data form that is not canonical JSON included, with LLP2003, each leaving every file of the project unchanged.", sections := "§17.12, §23.4"}),
+  executable: true
+}
 \end{semanticmodule}
 \end{lexlean}

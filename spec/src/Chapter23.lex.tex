@@ -455,7 +455,7 @@ definition{
   parameters: [],
   result: DocRows::Item,
   body: constructor{
-    arguments: [4, 1, "`clean`"],
+    arguments: [4, 1, "`migrate`"],
     constructor: DocRows::Item.heading,
     type_arguments: []
   },
@@ -467,7 +467,7 @@ definition{
   parameters: [],
   result: DocRows::Item,
   body: constructor{
-    arguments: ["text", (cons "lexlean clean" (nil String))],
+    arguments: ["text", (cons "lexlean migrate --to 1.2 [--check]" (nil String))],
     constructor: DocRows::Item.fence,
     type_arguments: []
   },
@@ -476,6 +476,44 @@ definition{
 
 definition{
   name: i0038,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Migrates a language-1.1 project to language 1.2 (§17.12): it rewrites every" (cons "data-form module to the authoring notation, moves the builtin glossary" (cons "references of the sources and the path lexicon packages to `1.2.0`, rewrites" (cons "the `language` row, and regenerates the lock as `lexlean/lock/2`. `--to` takes" (cons "`1.2` and nothing else. The result is proven in a scratch copy (locked and" (cons "checked as language 1.2) before any file is written, the files are then" (cons "replaced together (a file that changed between the proof and the replacement" (cons "refuses the migration with `LLV7010` and nothing is written, and a replacement" (cons "that fails restores every file already replaced, reporting every restore that" (cons "failed), and a refusal writes nothing and creates no build root:" (cons "`LLC0103` for a project that is not language 1.1, `LLP2003` for a module that is" (cons "not a language-1.1 data-form semantic module (a data form that is not canonical" (cons "JSON included, as language 1.1 `check` refuses it) or whose notation does not" (cons "read back to it, and the diagnostics of the scratch check for a project that does not" (cons "check as language 1.2. With `--check` the same proof runs and nothing is" (cons "written. The command result names the migrated modules." (nil String)))))))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0039,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [4, 1, "`clean`"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0040,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: ["text", (cons "lexlean clean" (nil String))],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0041,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -489,7 +527,7 @@ definition{
 }
 
 definition{
-  name: i0039,
+  name: i0042,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -501,7 +539,7 @@ definition{
 }
 
 definition{
-  name: i0040,
+  name: i0043,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -513,7 +551,7 @@ definition{
 }
 
 definition{
-  name: i0041,
+  name: i0044,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -527,7 +565,7 @@ definition{
 }
 
 definition{
-  name: i0042,
+  name: i0045,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -539,7 +577,7 @@ definition{
 }
 
 definition{
-  name: i0043,
+  name: i0046,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -554,7 +592,7 @@ definition{
 }
 
 definition{
-  name: i0044,
+  name: i0047,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -568,7 +606,7 @@ definition{
 }
 
 definition{
-  name: i0045,
+  name: i0048,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -580,7 +618,7 @@ definition{
 }
 
 definition{
-  name: i0046,
+  name: i0049,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -592,7 +630,7 @@ definition{
 }
 
 definition{
-  name: i0047,
+  name: i0050,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -606,7 +644,7 @@ definition{
 }
 
 definition{
-  name: i0048,
+  name: i0051,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -620,7 +658,7 @@ definition{
 }
 
 definition{
-  name: i0049,
+  name: i0052,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -632,7 +670,7 @@ definition{
 }
 
 definition{
-  name: i0050,
+  name: i0053,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -646,7 +684,7 @@ definition{
 }
 
 definition{
-  name: i0051,
+  name: i0054,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -660,7 +698,7 @@ definition{
 }
 
 definition{
-  name: i0052,
+  name: i0055,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -672,7 +710,7 @@ definition{
 }
 
 definition{
-  name: i0053,
+  name: i0056,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -684,7 +722,7 @@ definition{
 }
 
 definition{
-  name: i0054,
+  name: i0057,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -698,7 +736,7 @@ definition{
 }
 
 definition{
-  name: i0055,
+  name: i0058,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -710,7 +748,7 @@ definition{
 }
 
 definition{
-  name: i0056,
+  name: i0059,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -724,7 +762,7 @@ definition{
 }
 
 definition{
-  name: i0057,
+  name: i0060,
   parameters: [],
   result: DocRows::Item,
   body: constructor{

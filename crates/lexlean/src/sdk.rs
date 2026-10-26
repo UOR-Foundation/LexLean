@@ -161,6 +161,34 @@ pub fn read_module(text: &str) -> Result<Value, AuthoringError> {
     serde_json::from_str(&module).map_err(|failure| error(failure.to_string(), None))
 }
 
+/// Whether the data form of `text` is its own canonical JSON as language 1.1
+/// reads it (`LLT4001`): the structural grammar drops the space and line feed
+/// atoms outside JSON string literals (SPEC.md §15.2), and what remains must
+/// equal its canonical JSON byte for byte. `None` when `text` states no module
+/// written in the data form.
+pub(crate) fn data_is_canonical(text: &str) -> Option<bool> {
+    let (start, end) = locate(text)?.data?;
+    let mut read = String::with_capacity(end - start);
+    let (mut in_string, mut escaped) = (false, false);
+    for character in text[start..end].chars() {
+        if in_string {
+            if escaped {
+                escaped = false;
+            } else if character == '\\' {
+                escaped = true;
+            } else if character == '"' {
+                in_string = false;
+            }
+        } else if character == '"' {
+            in_string = true;
+        } else if matches!(character, ' ' | '\n') {
+            continue;
+        }
+        read.push(character);
+    }
+    Some(Json::parse(read.as_bytes()).is_ok_and(|json| json.to_canonical_string() == read))
+}
+
 /// `text` with its module's data replaced by `data`, written in the form the
 /// module already uses: canonical JSON for the data form, the canonical
 /// notation for the notation. A rewrite never changes which form a source is

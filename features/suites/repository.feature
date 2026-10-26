@@ -128,3 +128,11 @@ Feature: repository
     Then the criterion names the completion releases 0.5.0 and 1.0.0 and a report of the languages 1.0, 1.1 and 1.2, which are the languages the compiler supports, and the committed tree at 0.3.0 is refused naming source-tag and the completion releases
     And the scratch tree is refused for none of source-tag, semantics-id, and version-output
     And a §2.3 plant that names another completion release refuses source-tag, a §30.3 plant that reports another language refuses version-output naming the supported languages, a four-line version report refuses version-output, a semantics-ID list without a language refuses semantics-id, a list giving a language an ID that is not the compiler's refuses semantics-id naming the compiler's ID, and a list and report that agree on such an ID are refused as semantics-id and version-output, each on the scratch tree
+
+  @RP-18 @build
+  Scenario: The release workflow packages the lexlean crate twice to the same bytes, runs cargo publish --dry-run, and refuses a crate whose SHA-256 differs from the one release/checksums.txt lists for it or from the bytes cargo would upload, or whose archive lacks the metadata and size crates.io requires, and uploads to crates.io only when a CARGO_REGISTRY_TOKEN secret or trusted publishing authorises it; a commit of a release line release/vX.Y is published as the pre-release X.Y.0-dev.N, N being its number of first-parent commits, and a plant in each of these checks is refused.
+    Given .github/workflows/release.yml, .github/workflows/crate.yml, and .github/crate-publication.sh
+    When the workflows are read and the script is run against planted release directories, archives, refs, and environments
+    Then the crate is packaged twice to the same bytes and dry-run on every run, and the crate cargo would upload is the crate release/lexlean.crate holds and release/checksums.txt lists
+    And the only step that uploads to crates.io runs after those checks, and only when a token or trusted publishing is present
+    And a commit of a release line is named X.Y.0-dev.N, and a package, checksum, metadata, version, or credential check that is removed or planted is refused
