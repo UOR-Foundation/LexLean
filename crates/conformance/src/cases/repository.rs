@@ -3004,6 +3004,14 @@ fn release_gate_decisions() {
             "the evidence carries `{needed}`:\n{evidence}"
         );
     }
+    // The release job reads the file with the §30.3 criterion: what the
+    // script writes is what `release-check` accepts, or the tag's run would
+    // refuse evidence every rehearsal passed.
+    assert_eq!(
+        repo_model::release::ci_evidence(&evidence),
+        Ok(()),
+        "the evidence satisfies the release criterion"
+    );
     // The merge of a head whose tree it lands unchanged: the head's run.
     let (code, evidence, stderr) = decide(&merge_equal, &[(head.as_str(), run_line("12"))], &green);
     assert_eq!(

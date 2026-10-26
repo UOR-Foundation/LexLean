@@ -52,7 +52,14 @@ of this tree show.
   with the run, its jobs, and the legs' retained transcripts. `conformance_rp_18`
   requires the gate job to run the script and no recipe, and runs the script
   against planted runs: a run with a failed job, a draft run, and no run are
-  refused, and a run on the tree-equal parent is accepted.
+  refused, and a run on the tree-equal parent is accepted. The first tag run
+  (40321415513, on `aa6593e02`) then failed at `release-check`: the §30.3
+  criterion reads the line `just vv` prints when the whole gate passes, and
+  the legs' transcripts never say it. The script now ends the file with that
+  line as the summary of the run, the criterion is one function
+  (`repo_model::release::ci_evidence`) with its own test, and `RP-18` holds
+  the script's output to it, so the publish job, which no rehearsal runs,
+  cannot refuse what the rehearsals accepted.
 - `lexlean migrate --to 1.2 [--check]`, #257 (SPEC.md §17.12, §23.4,
   `CL-24`): the one command that migrates a language-1.1 data-form project to
   language 1.2. It rewrites every module to the authoring notation through
