@@ -237,10 +237,13 @@
 'LexLeanBoot.RuntimeValidate.Ty' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.Var' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.Variant' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.addAssociated' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.addFnMethods' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.addImpl' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.addMethods' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.armsOk' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.RuntimeValidate.assignable' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.associatedArity' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.bEq' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.bindsOf' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.RuntimeValidate.blockOk' depends on axioms: [propext, Quot.sound]
@@ -345,6 +348,7 @@
 'LexLeanBoot.RuntimeValidate.turbofishTypes' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.tyLen' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.tyOk' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.tyOwner' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.tyShow' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.typeArity' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.typeExpected' does not depend on any axioms

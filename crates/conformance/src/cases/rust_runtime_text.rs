@@ -312,7 +312,7 @@ pub fn run(id: &str) {
                 .strip_prefix(root.as_std_path())
                 .expect("under the root")
                 .to_string_lossy()
-                .into_owned();
+                .replace('\\', "/");
             let text = std::fs::read_to_string(path)
                 .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
             (shown, text)
