@@ -31,9 +31,9 @@ exactly the stages the register carries: `BS-01` to `BS-06` and `BS-09`. Of the
 Rust runtime as source (#91), it ships the heap half through H5: `RB-15` to
 `RB-17`, `RB-19` to `RB-21`, `SP-21` to `SP-23`, and `SP-25` to `SP-29`. The Rust
 lowering as source (`BS-07`, `BS-08`, `BS-10` to `BS-14`), the number functions of
-the std runtime as source, and the H7 audit are written and land in `0.4.1` on
-the same line, each with its identity regeneration; the remaining self-hosting
-steps are `0.5.0` material. Also in
+the std runtime as machine calls with their refinement theorems (H6), and the H7
+audit are written and land in `0.4.1` on the same line, each with its identity
+regeneration; the remaining self-hosting steps are `0.5.0` material. Also in
 `0.4.1`, not here: the seven example retitles (#251) and the four negative
 fixtures for `LLB6005`, `LLB6006`, `LLB6007`, and `LLT4016` (#252), so at this tag
 those four refusals are evidenced by inline conformance cases only, and the
