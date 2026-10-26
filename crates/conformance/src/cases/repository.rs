@@ -2279,10 +2279,10 @@ fn crate_publication_workflows(release: &str, crate_workflow: &str) -> Result<()
             "cargo package --locked --no-verify \"${dirty[@]}\" --package lexlean --target-dir \"$b\"",
             "cmp \"$a/package/$crate\" \"$b/package/$crate\"",
             "cargo publish --dry-run --locked \"${dirty[@]}\" --package lexlean --target-dir \"$dry\"",
-            "cmp \"$a/package/$crate\" \"$dry/package/$crate\"",
-            ".github/crate-publication.sh metadata \"$dry/package/$crate\"",
+            "cmp \"$a/package/$crate\" \"$dry_crate\"",
+            ".github/crate-publication.sh metadata \"$dry_crate\"",
             "cargo xtask release-artifacts",
-            ".github/crate-publication.sh identity release \"$dry/package/$crate\"",
+            ".github/crate-publication.sh identity release \"$dry_crate\"",
         ],
     )?;
     if uploads(&readiness) != 0 {
@@ -2733,11 +2733,11 @@ fn rp_18() {
         ),
         (
             "no archive metadata check",
-            replaced(&crate_workflow, ".github/crate-publication.sh metadata \"$dry/package/$crate\"", "true"),
+            replaced(&crate_workflow, ".github/crate-publication.sh metadata \"$dry_crate\"", "true"),
         ),
         (
             "no comparison with the checksum the release lists",
-            replaced(&crate_workflow, ".github/crate-publication.sh identity release \"$dry/package/$crate\"", "true"),
+            replaced(&crate_workflow, ".github/crate-publication.sh identity release \"$dry_crate\"", "true"),
         ),
         (
             "a pre-release uploaded by a call from the release workflow",
@@ -2761,7 +2761,7 @@ fn rp_18() {
         ),
         (
             "the readiness job uploading",
-            replaced(&crate_workflow, "          cmp \"$a/package/$crate\" \"$dry/package/$crate\"\n", "          cmp \"$a/package/$crate\" \"$dry/package/$crate\"\n          cargo publish --locked --package lexlean\n"),
+            replaced(&crate_workflow, "          cmp \"$a/package/$crate\" \"$dry_crate\"\n", "          cmp \"$a/package/$crate\" \"$dry_crate\"\n          cargo publish --locked --package lexlean\n"),
         ),
     ];
     for (why, text) in &crate_plants {
