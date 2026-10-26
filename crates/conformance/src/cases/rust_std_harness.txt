@@ -57,6 +57,7 @@ fn main() {
     let lengths: Vec<usize> = (0..=70).chain([1000, 4096, 200_000]).collect();
     let byte_cases: Vec<Vec<u8>> = vec![vec![], vec![0], vec![1, 2, 3], (0..70u8).collect(), vec![255; 1000], (0..4096u32).map(|i| i as u8).collect(), "h\u{e9}llo".as_bytes().to_vec(), vec![0xff, 0xfe], vec![0xe2, 0x82]];
     let text_cases: Vec<String> = vec![String::new(), "a".into(), "h\u{e9}llo".into(), "a,b,,c".into(), ",".into(), "\u{e9},".repeat(2000), "abc".repeat(1500), "\u{1f600}x".into()];
+    let numerals: Vec<String> = ["", "-", "0", "-0", "00", "007", "+5", "5", "-5", "12", "255", "256", "-128", "-129", "127", "128", "32767", "32768", "65535", "65536", "2147483647", "2147483648", "4294967295", "4294967296", "9223372036854775807", "9223372036854775808", "-9223372036854775808", "-9223372036854775809", "18446744073709551615", "18446744073709551616", "170141183460469231731687303715884105727", "170141183460469231731687303715884105728", "1_0", "1 ", " 1", "\u{661}\u{662}", "\u{e9}", "1e3", "0x10"].iter().map(|t| (*t).to_owned()).chain(["9".repeat(100), format!("-{}", "9".repeat(60))]).collect();
 //@ append_list
     for &n in &lengths {
         for k in [0usize, 1, 5, 70, 1000] {
@@ -210,34 +211,111 @@ fn main() {
             seen!("support equal bytes", w0, x);
         }
     }
-//@ decimal
-    let numerals: Vec<String> = ["", "-", "0", "-0", "00", "007", "+5", "5", "-5", "12", "255", "256", "-128", "-129", "127", "128", "32767", "32768", "65535", "65536", "2147483647", "2147483648", "4294967295", "4294967296", "9223372036854775807", "9223372036854775808", "-9223372036854775808", "-9223372036854775809", "18446744073709551615", "18446744073709551616", "170141183460469231731687303715884105727", "170141183460469231731687303715884105728", "1_0", "1 ", " 1", "\u{661}\u{662}", "\u{e9}", "1e3", "0x10"].iter().map(|t| (*t).to_owned()).chain(["9".repeat(100), format!("-{}", "9".repeat(60))]).collect();
-    macro_rules! decimal_calls {
-        ($($format:ident, $parse:ident, $values:expr;)*) => {$(
-            for v in $values {
-                let w0 = m::work();
-                let x = m::$format(v);
-                seen!(stringify!($format), w0, x.text());
-            }
-            for text in &numerals {
-                let w0 = m::work();
-                let x = m::$parse(m::Str::lit(text));
-                seen!(stringify!($parse), w0, x);
-            }
-        )*};
+//@ format_u8
+    for v in [0u8, 1, 9, 10, 99, 100, 255] {
+        let w0 = m::work();
+        let x = m::format_u8(v);
+        seen!("format_u8", w0, x.text());
     }
-    decimal_calls! {
-        format_u8, parse_u8, [0u8, 1, 9, 10, 99, 100, 255];
-        format_u16, parse_u16, [0u16, 9, 10, 65535];
-        format_u32, parse_u32, [0u32, 10, u32::MAX];
-        format_u64, parse_u64, [0u64, 10, u64::MAX];
-        format_i8, parse_i8, [i8::MIN, -1, 0, i8::MAX];
-        format_i16, parse_i16, [i16::MIN, -1, 0, i16::MAX];
-        format_i32, parse_i32, [i32::MIN, -1, 0, i32::MAX];
-        format_i64, parse_i64, [i64::MIN, -1, 0, i64::MAX];
+//@ parse_u8
+    for text in &numerals {
+        let w0 = m::work();
+        let x = m::parse_u8(m::Str::lit(text));
+        seen!("parse_u8", w0, x);
     }
+//@ format_u16
+    for v in [0u16, 9, 10, 65535] {
+        let w0 = m::work();
+        let x = m::format_u16(v);
+        seen!("format_u16", w0, x.text());
+    }
+//@ parse_u16
+    for text in &numerals {
+        let w0 = m::work();
+        let x = m::parse_u16(m::Str::lit(text));
+        seen!("parse_u16", w0, x);
+    }
+//@ format_u32
+    for v in [0u32, 10, u32::MAX] {
+        let w0 = m::work();
+        let x = m::format_u32(v);
+        seen!("format_u32", w0, x.text());
+    }
+//@ parse_u32
+    for text in &numerals {
+        let w0 = m::work();
+        let x = m::parse_u32(m::Str::lit(text));
+        seen!("parse_u32", w0, x);
+    }
+//@ format_u64
+    for v in [0u64, 10, u64::MAX] {
+        let w0 = m::work();
+        let x = m::format_u64(v);
+        seen!("format_u64", w0, x.text());
+    }
+//@ parse_u64
+    for text in &numerals {
+        let w0 = m::work();
+        let x = m::parse_u64(m::Str::lit(text));
+        seen!("parse_u64", w0, x);
+    }
+//@ format_i8
+    for v in [i8::MIN, -1, 0, i8::MAX] {
+        let w0 = m::work();
+        let x = m::format_i8(v);
+        seen!("format_i8", w0, x.text());
+    }
+//@ parse_i8
+    for text in &numerals {
+        let w0 = m::work();
+        let x = m::parse_i8(m::Str::lit(text));
+        seen!("parse_i8", w0, x);
+    }
+//@ format_i16
+    for v in [i16::MIN, -1, 0, i16::MAX] {
+        let w0 = m::work();
+        let x = m::format_i16(v);
+        seen!("format_i16", w0, x.text());
+    }
+//@ parse_i16
+    for text in &numerals {
+        let w0 = m::work();
+        let x = m::parse_i16(m::Str::lit(text));
+        seen!("parse_i16", w0, x);
+    }
+//@ format_i32
+    for v in [i32::MIN, -1, 0, i32::MAX] {
+        let w0 = m::work();
+        let x = m::format_i32(v);
+        seen!("format_i32", w0, x.text());
+    }
+//@ parse_i32
+    for text in &numerals {
+        let w0 = m::work();
+        let x = m::parse_i32(m::Str::lit(text));
+        seen!("parse_i32", w0, x);
+    }
+//@ format_i64
+    for v in [i64::MIN, -1, 0, i64::MAX] {
+        let w0 = m::work();
+        let x = m::format_i64(v);
+        seen!("format_i64", w0, x.text());
+    }
+//@ parse_i64
+    for text in &numerals {
+        let w0 = m::work();
+        let x = m::parse_i64(m::Str::lit(text));
+        seen!("parse_i64", w0, x);
+    }
+//@ parse_int
     for text in &numerals {
         let w0 = m::work();
         let x = m::parse_int(m::Str::lit(text)).map_err(|_| ());
         seen!("parse_int", w0, x);
+    }
+//@ format_int
+    for v in [i64::MIN, -1, 0, i64::MAX] {
+        let w0 = m::work();
+        let x = m::format_int(v);
+        seen!("format_int", w0, x.text());
     }

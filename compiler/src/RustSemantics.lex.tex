@@ -1233,7 +1233,11 @@ definition{
     | RustSyntax::Machine.utf8Decode => (ctor TargetSyntax::Prim.utf8Decode)
     | RustSyntax::Machine.bytesCompare => (ctor TargetSyntax::Prim.compareBytes)
     | RustSyntax::Machine.stringSplit => (ctor TargetSyntax::Prim.splitExact)
-    | RustSyntax::Machine.stringJoin => (ctor TargetSyntax::Prim.join))
+    | RustSyntax::Machine.stringJoin => (ctor TargetSyntax::Prim.join)
+    | RustSyntax::Machine.formatDecimal ignoredFormatWidth => (ctor TargetSyntax::Prim.formatDecimal)
+    | RustSyntax::Machine.parseDecimal parsed => (ctor TargetSyntax::Prim.parseDecimal (ctor TargetSyntax::Ty.fixed parsed))
+    | RustSyntax::Machine.parseDecimalInt => (ctor TargetSyntax::Prim.parseDecimal (ctor TargetSyntax::Ty.int))
+    | RustSyntax::Machine.formatDecimalInt => (ctor TargetSyntax::Prim.formatDecimal))
 }
 
 definition{
@@ -1280,7 +1284,11 @@ definition{
     | RustSyntax::Machine.utf8Decode => (ctor Option.none [TargetSyntax::IntKind])
     | RustSyntax::Machine.bytesCompare => (ctor Option.none [TargetSyntax::IntKind])
     | RustSyntax::Machine.stringSplit => (ctor Option.none [TargetSyntax::IntKind])
-    | RustSyntax::Machine.stringJoin => (ctor Option.none [TargetSyntax::IntKind]))
+    | RustSyntax::Machine.stringJoin => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.formatDecimal kind => (ctor Option.some [TargetSyntax::IntKind] kind)
+    | RustSyntax::Machine.parseDecimal ignoredParsed => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.parseDecimalInt => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.formatDecimalInt => (ctor Option.none [TargetSyntax::IntKind]))
 }
 
 definition{
@@ -1327,7 +1335,11 @@ definition{
     | RustSyntax::Machine.utf8Decode => false
     | RustSyntax::Machine.bytesCompare => false
     | RustSyntax::Machine.stringSplit => false
-    | RustSyntax::Machine.stringJoin => false)
+    | RustSyntax::Machine.stringJoin => false
+    | RustSyntax::Machine.formatDecimal ignoredFormatWidth => false
+    | RustSyntax::Machine.parseDecimal ignoredParsed => false
+    | RustSyntax::Machine.parseDecimalInt => false
+    | RustSyntax::Machine.formatDecimalInt => false)
 }
 
 definition{
@@ -1374,7 +1386,11 @@ definition{
     | RustSyntax::Machine.utf8Decode => false
     | RustSyntax::Machine.bytesCompare => false
     | RustSyntax::Machine.stringSplit => false
-    | RustSyntax::Machine.stringJoin => false)
+    | RustSyntax::Machine.stringJoin => false
+    | RustSyntax::Machine.formatDecimal ignoredFormatWidth => false
+    | RustSyntax::Machine.parseDecimal ignoredParsed => false
+    | RustSyntax::Machine.parseDecimalInt => true
+    | RustSyntax::Machine.formatDecimalInt => false)
 }
 
 definition{
