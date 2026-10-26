@@ -1,0 +1,243 @@
+//@ prelude
+use runtime_diff::rt as m;
+macro_rules! build {
+    ($n:expr, $shape:expr) => {{
+        let mut list = m::List::nil();
+        for i in 0..$n { list = m::List::cons(i as u64, list); }
+        match $shape {
+            1 => match list.uncons() {
+                Some((head, tail)) => { drop(list); (m::List::cons(head, tail), None) }
+                None => (list, None),
+            },
+            2 => { let shared = list.clone(); (m::List::cons(7u64, shared), Some(list)) }
+            3 => { let shared = list.clone(); (m::List::cons(1u64, m::List::cons(2u64, shared)), Some(list)) }
+            _ => (list, None),
+        }
+    }};
+}
+macro_rules! items {
+    ($l:expr) => {{
+        let mut out = Vec::new();
+        let mut cur = $l;
+        while let Some((head, tail)) = cur.uncons() { out.push(head); cur = tail; }
+        out
+    }};
+}
+macro_rules! texts {
+    ($v:expr) => {{
+        let mut list = m::List::nil();
+        for t in $v.iter().rev() { list = m::List::cons(m::Str::lit(t), list); }
+        list
+    }};
+}
+macro_rules! shaped_texts {
+    ($v:expr, $shape:expr) => {{
+        let list = texts!($v);
+        match $shape {
+            1 => match list.uncons() {
+                Some((head, tail)) => { drop(list); (m::List::cons(head, tail), None) }
+                None => (list, None),
+            },
+            2 => { let shared = list.clone(); (m::List::cons(m::Str::lit("x"), shared), Some(list)) }
+            3 => { let shared = list.clone(); (m::List::cons(m::Str::lit("y"), m::List::cons(m::Str::lit("\u{e9}"), shared)), Some(list)) }
+            _ => (list, None),
+        }
+    }};
+}
+macro_rules! strings {
+    ($l:expr) => {{ items!($l).iter().map(|t| t.text().to_owned()).collect::<Vec<String>>() }};
+}
+macro_rules! seen {
+    ($label:expr, $w0:expr, $value:expr) => {{
+        let value = format!("{:?}", $value);
+        seen($label, &value, m::work() - $w0);
+    }};
+}
+fn main() {
+    let lengths: Vec<usize> = (0..=70).chain([1000, 4096, 200_000]).collect();
+    let byte_cases: Vec<Vec<u8>> = vec![vec![], vec![0], vec![1, 2, 3], (0..70u8).collect(), vec![255; 1000], (0..4096u32).map(|i| i as u8).collect(), "h\u{e9}llo".as_bytes().to_vec(), vec![0xff, 0xfe], vec![0xe2, 0x82]];
+    let text_cases: Vec<String> = vec![String::new(), "a".into(), "h\u{e9}llo".into(), "a,b,,c".into(), ",".into(), "\u{e9},".repeat(2000), "abc".repeat(1500), "\u{1f600}x".into()];
+//@ append_list
+    for &n in &lengths {
+        for k in [0usize, 1, 5, 70, 1000] {
+            for shape in 0..4 {
+                let (a, _keep_a) = build!(n, shape);
+                let (c, _keep_c) = build!(k, 0);
+                let w0 = m::work();
+                let x = m::append_list(a, c);
+                seen!("append_list", w0, items!(x));
+            }
+        }
+    }
+//@ length_list
+    for &n in &lengths {
+        for shape in 0..4 {
+            let (a, _keep_a) = build!(n, shape);
+            let w0 = m::work();
+            let x = m::length_list(a);
+            seen!("length_list", w0, x);
+        }
+    }
+//@ index_list
+    for &n in &lengths {
+        let n = n as u64;
+        for at in [0, 1, n / 2, n.saturating_sub(1), n, n + 1, u64::MAX] {
+            for shape in 0..4 {
+                let (a, _keep_a) = build!(n as usize, shape);
+                let w0 = m::work();
+                let x = m::index_list(a, at);
+                seen!("index_list", w0, x);
+            }
+        }
+    }
+//@ slice_list
+    for &n in &lengths {
+        let n = n as u64;
+        for (start, count) in [(0, 0), (0, n), (1, n), (n / 2, n / 4), (n, 0), (n, 1), (n.saturating_sub(1), 1), (u64::MAX, u64::MAX), (1, u64::MAX)] {
+            for shape in 0..4 {
+                let (a, _keep_a) = build!(n as usize, shape);
+                let w0 = m::work();
+                let x = m::slice_list(a, start, count);
+                seen!("slice_list", w0, x.map(|l| items!(l)));
+            }
+        }
+    }
+//@ append_bytes
+    for a in &byte_cases {
+        for b in &byte_cases {
+            let w0 = m::work();
+            let x = m::append_bytes(m::Bytes::lit(a), m::Bytes::lit(b));
+            seen!("append_bytes", w0, x.octets());
+        }
+    }
+//@ length_bytes
+    for a in &byte_cases {
+        let w0 = m::work();
+        let x = m::length_bytes(m::Bytes::lit(a));
+        seen!("length_bytes", w0, x);
+    }
+//@ length_string
+    for a in &text_cases {
+        let w0 = m::work();
+        let x = m::length_string(m::Str::lit(a));
+        seen!("length_string", w0, x);
+    }
+//@ index_bytes
+    for a in &byte_cases {
+        let n = a.len() as u64;
+        for at in [0, 1, n / 2, n.saturating_sub(1), n, n + 1, u64::MAX] {
+            let w0 = m::work();
+            let x = m::index_bytes(m::Bytes::lit(a), at);
+            seen!("index_bytes", w0, x);
+        }
+    }
+//@ slice_bytes
+    for a in &byte_cases {
+        let n = a.len() as u64;
+        for (start, count) in [(0, 0), (0, n), (1, n), (n / 2, n / 4), (n, 0), (n, 1), (n.saturating_sub(1), 1), (u64::MAX, u64::MAX), (1, u64::MAX)] {
+            let w0 = m::work();
+            let x = m::slice_bytes(m::Bytes::lit(a), start, count);
+            seen!("slice_bytes", w0, x.map(|b| b.octets().to_vec()));
+        }
+    }
+//@ utf8_encode
+    for a in &text_cases {
+        let w0 = m::work();
+        let x = m::utf8_encode(m::Str::lit(a));
+        seen!("utf8_encode", w0, x.octets());
+    }
+//@ utf8_decode
+    for a in &byte_cases {
+        let w0 = m::work();
+        let x = m::utf8_decode(m::Bytes::lit(a));
+        seen!("utf8_decode", w0, x.map(|t| t.text().to_owned()));
+    }
+//@ compare_bytes
+    for a in &byte_cases {
+        for b in &byte_cases {
+            let w0 = m::work();
+            let x = m::compare_bytes(m::Bytes::lit(a), m::Bytes::lit(b));
+            seen!("compare_bytes", w0, x);
+        }
+    }
+//@ split_exact
+    for text in &text_cases {
+        for delimiter in [",", "", "\u{e9}", "ab", ", ", "a"] {
+            for maximum in [0u32, 1, 3, 4001, u32::MAX] {
+                let w0 = m::work();
+                let x = m::split_exact(m::Str::lit(text), m::Str::lit(delimiter), maximum);
+                seen!("split_exact", w0, x.map(|l| strings!(l)));
+            }
+        }
+    }
+//@ join
+    for count in [0usize, 1, 2, 3, 8] {
+        let parts: Vec<String> = text_cases.iter().cycle().take(count).cloned().collect();
+        for shape in 0..4 {
+            for delimiter in ["", ",", "\u{e9}", " and "] {
+                let (a, _keep_a) = shaped_texts!(parts, shape);
+                let w0 = m::work();
+                let x = m::join(a, m::Str::lit(delimiter));
+                seen!("join", w0, x.text());
+            }
+        }
+    }
+//@ support
+    for &n in &lengths {
+        for shape in 0..4 {
+            let w0 = m::work();
+            let (a, _keep_a) = build!(n, shape);
+            seen!("support building", w0, n);
+            let w0 = m::work();
+            let x = items!(a.clone());
+            seen!("support uncons", w0, x);
+        }
+    }
+    for a in &text_cases {
+        for b in &text_cases {
+            let w0 = m::work();
+            let x = m::equal(m::Str::lit(a), m::Str::lit(b));
+            seen!("support equal text", w0, x);
+            let w0 = m::work();
+            let x = m::compare(m::Str::lit(a), m::Str::lit(b));
+            seen!("support compare text", w0, x);
+        }
+    }
+    for a in &byte_cases {
+        for b in &byte_cases {
+            let w0 = m::work();
+            let x = m::equal(m::Bytes::lit(a), m::Bytes::lit(b));
+            seen!("support equal bytes", w0, x);
+        }
+    }
+//@ decimal
+    let numerals: Vec<String> = ["", "-", "0", "-0", "00", "007", "+5", "5", "-5", "12", "255", "256", "-128", "-129", "127", "128", "32767", "32768", "65535", "65536", "2147483647", "2147483648", "4294967295", "4294967296", "9223372036854775807", "9223372036854775808", "-9223372036854775808", "-9223372036854775809", "18446744073709551615", "18446744073709551616", "170141183460469231731687303715884105727", "170141183460469231731687303715884105728", "1_0", "1 ", " 1", "\u{661}\u{662}", "\u{e9}", "1e3", "0x10"].iter().map(|t| (*t).to_owned()).chain(["9".repeat(100), format!("-{}", "9".repeat(60))]).collect();
+    macro_rules! decimal_calls {
+        ($($format:ident, $parse:ident, $values:expr;)*) => {$(
+            for v in $values {
+                let w0 = m::work();
+                let x = m::$format(v);
+                seen!(stringify!($format), w0, x.text());
+            }
+            for text in &numerals {
+                let w0 = m::work();
+                let x = m::$parse(m::Str::lit(text));
+                seen!(stringify!($parse), w0, x);
+            }
+        )*};
+    }
+    decimal_calls! {
+        format_u8, parse_u8, [0u8, 1, 9, 10, 99, 100, 255];
+        format_u16, parse_u16, [0u16, 9, 10, 65535];
+        format_u32, parse_u32, [0u32, 10, u32::MAX];
+        format_u64, parse_u64, [0u64, 10, u64::MAX];
+        format_i8, parse_i8, [i8::MIN, -1, 0, i8::MAX];
+        format_i16, parse_i16, [i16::MIN, -1, 0, i16::MAX];
+        format_i32, parse_i32, [i32::MIN, -1, 0, i32::MAX];
+        format_i64, parse_i64, [i64::MIN, -1, 0, i64::MAX];
+    }
+    for text in &numerals {
+        let w0 = m::work();
+        let x = m::parse_int(m::Str::lit(text)).map_err(|_| ());
+        seen!("parse_int", w0, x);
+    }

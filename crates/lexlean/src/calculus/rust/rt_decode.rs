@@ -14,6 +14,9 @@ use crate::artifact::canonical_json::Json;
 /// Where the module is in the embedded tree.
 pub const MODULE_PATH: &str = "language/rust-runtime-1.2/RuntimeSupport.lex.tex";
 
+/// Where the module of the std runtime's types, impls, and helpers is.
+pub const STD_PATH: &str = "language/rust-runtime-1.2/RuntimeStd.lex.tex";
+
 const SYNTAX: &str = "RuntimeSyntax";
 
 impl<'a> Reader<'a> {
@@ -495,7 +498,20 @@ pub fn decode(source: &str) -> Result<Crate, String> {
 ///
 /// The first rule the module breaks, as for [`decode`].
 pub fn decode_named(source: &str, name: &str) -> Result<Crate, String> {
-    with_reader(MODULE_PATH, source, |reader| {
+    decode_at(MODULE_PATH, source, name)
+}
+
+/// Decode `stdSupportCrate` of a `RuntimeStd` module.
+///
+/// # Errors
+///
+/// The first rule the module breaks, as for [`decode`].
+pub fn decode_std(source: &str) -> Result<Crate, String> {
+    decode_at(STD_PATH, source, "stdSupportCrate")
+}
+
+fn decode_at(path: &str, source: &str, name: &str) -> Result<Crate, String> {
+    with_reader(path, source, |reader| {
         let Some(support) = reader.definitions.get(name) else {
             return fail(format!("does not define `{name}`"));
         };
@@ -510,4 +526,13 @@ pub fn decode_named(source: &str, name: &str) -> Result<Crate, String> {
 /// The module is not in the embedded tree, or is not UTF-8.
 pub fn embedded() -> Result<&'static str, String> {
     embedded_file(MODULE_PATH)
+}
+
+/// The text of the embedded `RuntimeStd` module.
+///
+/// # Errors
+///
+/// The module is not in the embedded tree, or is not UTF-8.
+pub fn embedded_std() -> Result<&'static str, String> {
+    embedded_file(STD_PATH)
 }
