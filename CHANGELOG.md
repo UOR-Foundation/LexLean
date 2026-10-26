@@ -19,19 +19,21 @@ workspace carried at those versions without a tag.
 
 Release `0.4.0` is cut at the downstream boundary (#92, 2026-10-25): what the
 downstream projects need, language 1.2 and the 1.1→1.2 migration (#257), with
-everything else that had landed on `release/v0.4` at `201519a1b`. The register is
-456 IDs; the language-1.2 compiler-semantics ID is
-`fc363733b5a830173c9ace9c16fe1b13cab4faae79f426b95aa32e125fe814cc`, language
-1.1's `373f61338a30d533e9d1a4db10d9c0a7d34ec467b87387e6401144702fbe985c`, and
-language 1.0's `c7a28ab12268c603409fb8c55f6d765c882c8837ff399700b83a3c7bcd601619`.
+everything else that had landed on `release/v0.4` at `201519a1b`, and the
+release-workflow fixes and the one self-hosting landing (#298, H5) that reached
+the line while the tag waited on them. The register is 457 IDs; the language-1.2
+compiler-semantics ID is
+`1427f8b629013648a480454d67202788f2303f5396f1d7c70a7c350ddab6f694`, language
+1.1's `cac35ee3f026aa21a6c8cbc61f3af3c760da0b94555876a4540cc235f461bfdb`, and
+language 1.0's `07859acb5a756221018b7f65e7f725d99b00a694670eecc7cd264832ba1333fb`.
 Of the compiler's own pipeline as language-1.2 source (#92), this release ships
 exactly the stages the register carries: `BS-01` to `BS-06` and `BS-09`. Of the
-Rust runtime as source (#91), it ships the heap half through H4b: `RB-15` to
-`RB-17`, `RB-19`, `RB-20`, `SP-21` to `SP-23`, and `SP-25` to `SP-29`. The Rust
-lowering as source (`BS-07`, `BS-08`, `BS-10` to `BS-14`), the types, impls,
-helpers, and number functions of the std runtime as source, and the H7 audit are
-written and land in `0.4.1` on the same line, each with its identity
-regeneration; the remaining self-hosting steps are `0.5.0` material. Also in
+Rust runtime as source (#91), it ships the heap half through H5: `RB-15` to
+`RB-17`, `RB-19` to `RB-21`, `SP-21` to `SP-23`, and `SP-25` to `SP-29`. The Rust
+lowering as source (`BS-07`, `BS-08`, `BS-10` to `BS-14`), the number functions of
+the std runtime as source, and the H7 audit are written and land in `0.4.1` on
+the same line, each with its identity regeneration; the remaining self-hosting
+steps are `0.5.0` material. Also in
 `0.4.1`, not here: the seven example retitles (#251) and the four negative
 fixtures for `LLB6005`, `LLB6006`, `LLB6007`, and `LLT4016` (#252), so at this tag
 those four refusals are evidenced by inline conformance cases only, and the
