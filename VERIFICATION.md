@@ -11287,7 +11287,7 @@ place is the regeneration of the bootstrap records in this change.
 `.github/workflows/crate.yml`, requires the order of their steps (package twice
 and compare, dry-run, archive metadata, identity, then credential, then the one
 upload), and runs `.github/crate-publication.sh` against planted archives,
-checksum lists, refs and environments. It plants nine changes in `release.yml`
+checksum lists, refs and environments. It planted nine changes in `release.yml`
 and eight in `crate.yml` in memory, and each must be refused. Each case below was
 also planted in the committed tree, one at a time, with the real test, on Linux
 x86-64 (WSL, Rust 1.97.1), and the file restored with `git checkout`
@@ -11327,3 +11327,99 @@ so the call of `crate.yml` from `release.yml`, `cargo xtask release-artifacts`
 in a clean checkout of the called workflow, and the `--allow-dirty` pre-release
 packaging are first exercised by the first rehearsal or dispatch. No upload was
 attempted and no token was requested or stored.
+
+## The release's evidence is the gate run of the tagged commit (`RP-18`, #34)
+
+### The defect
+
+`release.yml` ran `just vv` whole on one `ubuntu-24.04` runner as the §30.3 CI
+evidence. The gate does not fit the runner's six-hour job limit: in rehearsal 3
+(run 40221304393) the `bdd` recipe alone ran from 19:01Z to 23:15Z, 15,222 s,
+before failing on `conformance_rp_18`, with `examples` (UOR Atlas) still to come;
+rehearsal 4 (run 40244034460, at `93fbe7df9`) was cancelled by hand after five
+and a half hours in the same job. A tag would have failed there, and `image`,
+`manifest`, and `publish` all wait for that job. The gate of the line already
+verifies every tree as the parts of one sharded run (§9.4): run 40233071771 on
+`93fbe7df9` passed its 34 jobs in 1 h 36 min.
+
+### The fix
+
+`release.yml`'s `gate` job runs `.github/release-gate.sh` and no recipe. The
+script finds the `ci.yml` run that was the whole gate on the commit's tree under
+the rule `ci-plan.sh` applies to a push (the commit itself, or the second parent
+of a merge whose tree the merge carries unchanged), requires every job of it to
+have concluded `success` with the Atlas join, every host of the matrix, and
+every leg of `.github/vv-rows.json` present, and writes `vv-evidence.txt` with
+the run, its jobs and their times, and the `vv.txt` transcript of every leg the
+run still retains (GitHub keeps the artifacts 14 days; past that the file says
+so and the job records are the evidence). No run: the job fails naming the
+commits it looked at. SPEC.md §9.4 ("The release's evidence") and the §30.3
+bullet say so; the `ci.yml` header no longer says `release.yml` runs the gate
+whole.
+
+Run by hand against the repository on `93fbe7df9` (`REPO=UOR-Foundation/LexLean
+SHA=93fbe7df9… .github/release-gate.sh`): `release-gate: run 40233071771 … was
+the whole gate on 93fbe7df9… and passed every job`, and the file carried the 34
+jobs and 29 transcripts, 15 of them ending in `vv part: every recipe passed`
+(the Atlas shards end in their shard's line).
+
+### The check can fail
+
+`conformance_rp_18` requires the `gate` job to name `.github/release-gate.sh`
+and `actions: read` and to run no `just` recipe, plants both in memory
+(eleven `release.yml` plants now), and runs the script in a scratch repository
+with a stand-in `gh` against planted runs and jobs. Each case below was also
+planted in the committed tree, one at a time, with the real test, on Linux
+x86-64, and the file restored with `git checkout` (§27.9).
+
+| Case | Command | Observed |
+| --- | --- | --- |
+| the committed tree | `cargo test -p repo-conformance --test conformance conformance_rp_18 -- --exact` | ok |
+| the gate job runs `just vv` instead of the script | same | ``release.yml job `gate` has no `.github/release-gate.sh` `` |
+| the gate job loses `actions: read` | same | ``release.yml job `gate` has no `actions: read` `` |
+| the script accepts a run without the Atlas join | same | `no Atlas join: refused` failed, `left: 0` |
+| the script stops reading every job's conclusion | same | `a failed job: refused` failed, `left: 0` |
+| the script stops counting the hosts | same | `a missing host: refused` failed, `left: 0` |
+| the script stops reading every leg | same | `a missing leg: refused` failed, `left: 0` |
+| the script ignores the tree of a merge's parent | same | `a run on a parent whose tree the merge changed is refused` failed, `left: 0` |
+| the script writes evidence and exits 0 with no run | same | `no run: no evidence is written` failed |
+
+Each planted run in the test is caught by one reading and no other: the failed
+job is a host (the join, the hosts' count, and every leg are still there), the
+missing host leaves every leg and the join, and the missing leg leaves every
+host and the join, so a reading that is removed has a case that passes without
+it.
+
+*What the evidence is.* The case reads text and runs the script against a
+stand-in; the rehearsal that follows this change is what shows GitHub runs the
+job as written, with `actions: read` enough for the runs, the jobs, and the
+artifact download.
+
+### The tag's run refused the evidence the rehearsals accepted (`RP-18`, #34)
+
+The first `v0.4.0` tag run (40321415513, on `aa6593e026d92f4696fe970715c81528ad2c37da`)
+passed every job but `publish the release`, which stopped at `release-check`
+with `ci-evidence: release/vv-evidence.txt does not record the gate passing`.
+The criterion (`crates/model/src/release.rs`) reads the line `just vv` prints
+when the whole gate passes, `vv: the acceptance gate passed`; the file the
+release gate writes carried the run, its 34 jobs and the 29 legs' transcripts,
+each of which ends in its own line (`vv part: every recipe passed` or the
+shard's), and never the gate's. The six rehearsals could not show it: `publish`
+runs on a tag only. Nothing was published (no GitHub Release, no crates.io
+upload); the image tags `0.4.0` and `latest` were pushed by the `manifest`
+job and are pushed again by the next run.
+
+The fix: `.github/release-gate.sh` ends the file with `gate: every job of run
+N passed on <commit>` and the line the criterion reads, as the summary of the
+run; the criterion is `repo_model::release::ci_evidence`, used by
+`release-check` and tested on its own (the legs' lines alone are refused, a
+file naming no commit is refused); and `release_gate_decisions` holds the
+script's output to that function, so the file the gate job writes is the file
+`release-check` accepts. Run by hand on `aa6593e02` the script named run
+40292537147 and the file ended with the two lines.
+
+| Case | Command | Observed |
+| --- | --- | --- |
+| the committed tree | `cargo test -p repo-conformance --test conformance conformance_rp_18 -- --exact` | ok |
+| the script no longer writes the gate line | same | `the evidence satisfies the release criterion` failed: `Err(["release/vv-evidence.txt does not record the gate passing"])` |
+| the criterion accepts the legs' lines | `cargo test -p repo-model the_ci_evidence_criterion` | `left: Ok(())` against the refusal |

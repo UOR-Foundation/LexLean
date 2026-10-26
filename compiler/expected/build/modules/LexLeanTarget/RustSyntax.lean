@@ -170,6 +170,10 @@ public inductive Machine where
   | bytesCompare
   | stringSplit
   | stringJoin
+  | formatDecimal (_ : LexLeanTarget.TargetSyntax.IntKind)
+  | parseDecimal (_ : LexLeanTarget.TargetSyntax.IntKind)
+  | parseDecimalInt
+  | formatDecimalInt
 
 public inductive Callee where
   | function (_ : Nat)
