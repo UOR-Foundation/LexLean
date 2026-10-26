@@ -15,6 +15,22 @@ versions. `v0.1.0` is tagged, and `v0.4.0` is tagged at the commit that carries
 this changelog; the sections for `0.1.1`, `0.2.0`, and `0.3.0` record what the
 workspace carried at those versions without a tag.
 
+## Unreleased
+
+- Hexadecimal and decimal in the standard library, the first member the
+  self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-09`). The module
+  `LexLeanStd.Numeral` holds `decimal` and `hexNat` (the digits of a natural
+  number), `hex` (the lowercase digits of bytes), and the canonical readers
+  `parseDecimal` and `parseHex`, each a production root for `rust-std`. Their
+  oracles are the compiler's own readings (`u64` formatting and parsing,
+  `canonical_digits`, `canonical_hex`, `Sha256Digest::to_hex`), so a reader
+  refuses exactly the text the front end refuses, and a canonical decimal past
+  the target width is an overflow as it is for `u64`. The case also checks that
+  each reader reads back its printer's output. `stdlib/lexlean.toml` gains the
+  entrypoint, so the locks of `stdlib`, `bootstrap`, and `examples/helpdesk`
+  move, and the `stdlib` records and production export are regenerated. The
+  register is 459 IDs.
+
 ## 0.4.0
 
 Release `0.4.0` is cut at the downstream boundary (#92, 2026-10-25): what the
