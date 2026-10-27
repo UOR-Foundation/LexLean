@@ -219,6 +219,7 @@
 'LexLeanBoot.PrimitiveScan.stepScan' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.PrimitiveScan.ticks' does not depend on any axioms
 'LexLeanBoot.PrimitiveScan.zeroStep' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.AttrSeen' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.Crate' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.Entry' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.EnumE' does not depend on any axioms
@@ -244,6 +245,9 @@
 'LexLeanBoot.RuntimeValidate.armsOk' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.RuntimeValidate.assignable' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.associatedArity' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.attributeStep' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.attributeStop' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.attributesOk' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.bEq' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.bindsOf' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.RuntimeValidate.blockOk' depends on axioms: [propext, Quot.sound]
@@ -259,6 +263,7 @@
 'LexLeanBoot.RuntimeValidate.countIn' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.countNamed' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.declare' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.definedPathOk' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.derivesErr' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.emptyFr' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.endsInCast' does not depend on any axioms
@@ -278,6 +283,7 @@
 'LexLeanBoot.RuntimeValidate.firstDuplicateSig' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.firstNamed' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.fnOk' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RuntimeValidate.freeFnOk' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.RuntimeValidate.genericsOk' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.RuntimeValidate.hasCount' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.hasSigNamed' does not depend on any axioms
@@ -304,6 +310,7 @@
 'LexLeanBoot.RuntimeValidate.lastName' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.leftParenthesized' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.literalErr' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.memberOk' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.RuntimeValidate.methodArity' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.methodCounts' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.methodHeap' does not depend on any axioms
