@@ -142,6 +142,10 @@ fn plan_decisions() {
     if !cfg!(target_os = "linux") {
         return;
     }
+    // The script inherits this process's `PATH` and `git` runs through it:
+    // held for reading while the decisions run, so that a case that swaps
+    // `PATH` for a wrapper (`with_env`, the writer) cannot do so under them.
+    let _env = support::env_shared();
     let root = support::repo_root();
     let script = root.join(".github/ci-plan.sh");
     let rows_file = root.join(".github/vv-rows.json");
@@ -3033,6 +3037,8 @@ fn release_gate_decisions() {
     if !cfg!(target_os = "linux") {
         return;
     }
+    // As in `plan_decisions`: the script runs on this process's `PATH`.
+    let _env = support::env_shared();
     let root = support::repo_root();
     let script = root.join(".github/release-gate.sh");
     let rows_file = root.join(".github/vv-rows.json");

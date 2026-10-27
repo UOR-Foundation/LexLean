@@ -32,7 +32,11 @@ and Unreleased holds what has landed since.
   H6 (44), 473 runs of `validateCrate` (216 refused) and 336 of
   `correspondCrate` (103 refused). Locks, records, goldens, the production
   exports, the fixtures, the verification records, and the compiler-semantics
-  IDs are regenerated at the landing. The register is 474 IDs.
+  IDs are regenerated at the landing. The register is 474 IDs. The gate found
+  one race in the suite: the `RP-14` and `RP-18` decision cases run their
+  scripts on the process's `PATH` while the `SE` cases swap it for a wrapper,
+  so both now hold the environment's reader lock for the decisions (the
+  `RP-14` failure of #298's arm job was the same race).
 
 - Forward merge of `release/v0.4` (`93fbe7df9`, the `0.4.0` line) into this
   line: every row of the `0.4.0` register below joins the register of this line,
