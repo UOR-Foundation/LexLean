@@ -350,7 +350,7 @@ definition{
   name: plainHigh,
   parameters: [family : Nat],
   result: String,
-  body: (if (family =? 32) then "append_list" else (if (family =? 33) then "append_bytes" else (if (family =? 34) then "length_list" else (if (family =? 35) then "length_bytes" else (if (family =? 36) then "length_string" else (if (family =? 37) then "index_list" else (if (family =? 38) then "index_bytes" else (if (family =? 39) then "slice_list" else (if (family =? 40) then "slice_bytes" else (if (family =? 41) then "utf8_encode" else (if (family =? 42) then "utf8_decode" else (if (family =? 43) then "compare_bytes" else (if (family =? 44) then "split_exact" else (if (family =? 45) then "join" else (if (family =? 46) then "format_i64" else (if (family =? 48) then "parse_int" else "")))))))))))))))),
+  body: (if (family =? 32) then "append_list" else (if (family =? 33) then "append_bytes" else (if (family =? 34) then "length_list" else (if (family =? 35) then "length_bytes" else (if (family =? 36) then "length_string" else (if (family =? 37) then "index_list" else (if (family =? 38) then "index_bytes" else (if (family =? 39) then "slice_list" else (if (family =? 40) then "slice_bytes" else (if (family =? 41) then "utf8_encode" else (if (family =? 42) then "utf8_decode" else (if (family =? 43) then "compare_bytes" else (if (family =? 44) then "split_exact" else (if (family =? 45) then "join" else (if (family =? 46) then "format_int" else (if (family =? 48) then "parse_int" else "")))))))))))))))),
   executable: true
 }
 
@@ -384,7 +384,7 @@ definition{
   name: fixedPre,
   parameters: [family : Nat],
   result: String,
-  body: (if (family =? 30) then "Bytes::append(" else (if (family =? 31) then "Bytes::length(&" else (if (family =? 32) then "Str::length(&" else (if (family =? 33) then "Bytes::index(&" else (if (family =? 34) then "Bytes::slice(&" else (if (family =? 35) then "Str::utf8_encode(&" else (if (family =? 36) then "Bytes::utf8_decode(&" else (if (family =? 37) then "Bytes::compare(&" else (if (family =? 38) then "Str::split_exact(&" else (if (family =? 39) then "Str::join(" else (if (family =? 8) then "core::ops::BitAnd::bitand(" else (if (family =? 9) then "core::ops::BitOr::bitor(" else (if (family =? 10) then "core::ops::BitXor::bitxor(" else (if (family =? 11) then "core::ops::Not::not(" else (if (family =? 12) then "core::cmp::PartialEq::eq(&" else (if (family =? 13) then "core::cmp::PartialOrd::le(&" else (if (family =? 14) then "core::cmp::PartialOrd::lt(&" else (if (family =? 15) then "u64::checked_rem(" else (if (family =? 16) then "{ let (a, b, z): (i64, i64, i64) = (" else (if (family =? 17) then "u64::checked_add(" else (if (family =? 18) then "u64::saturating_sub(" else (if (family =? 19) then "u64::checked_mul(" else (if (family =? 20) then "u64::checked_div(" else (if (family =? 21) then "i64::checked_add(" else (if (family =? 22) then "i64::checked_sub(" else (if (family =? 23) then "i64::checked_mul(" else (if (family =? 24) then "i64::checked_neg(" else (if (family =? 25) then "{ let (a, b, z): (i64, i64, i64) = (" else (if (family =? 26) then "List::length(&" else (if (family =? 27) then "List::append(" else (if (family =? 28) then "List::index(&" else (if (family =? 29) then "List::slice(&" else "")))))))))))))))))))))))))))))))),
+  body: (if (family =? 42) then "Str::parse_int(&" else (if (family =? 43) then "Str::format_i64(" else (if (family =? 30) then "Bytes::append(" else (if (family =? 31) then "Bytes::length(&" else (if (family =? 32) then "Str::length(&" else (if (family =? 33) then "Bytes::index(&" else (if (family =? 34) then "Bytes::slice(&" else (if (family =? 35) then "Str::utf8_encode(&" else (if (family =? 36) then "Bytes::utf8_decode(&" else (if (family =? 37) then "Bytes::compare(&" else (if (family =? 38) then "Str::split_exact(&" else (if (family =? 39) then "Str::join(" else (if (family =? 8) then "core::ops::BitAnd::bitand(" else (if (family =? 9) then "core::ops::BitOr::bitor(" else (if (family =? 10) then "core::ops::BitXor::bitxor(" else (if (family =? 11) then "core::ops::Not::not(" else (if (family =? 12) then "core::cmp::PartialEq::eq(&" else (if (family =? 13) then "core::cmp::PartialOrd::le(&" else (if (family =? 14) then "core::cmp::PartialOrd::lt(&" else (if (family =? 15) then "u64::checked_rem(" else (if (family =? 16) then "{ let (a, b, z): (i64, i64, i64) = (" else (if (family =? 17) then "u64::checked_add(" else (if (family =? 18) then "u64::saturating_sub(" else (if (family =? 19) then "u64::checked_mul(" else (if (family =? 20) then "u64::checked_div(" else (if (family =? 21) then "i64::checked_add(" else (if (family =? 22) then "i64::checked_sub(" else (if (family =? 23) then "i64::checked_mul(" else (if (family =? 24) then "i64::checked_neg(" else (if (family =? 25) then "{ let (a, b, z): (i64, i64, i64) = (" else (if (family =? 26) then "List::length(&" else (if (family =? 27) then "List::append(" else (if (family =? 28) then "List::index(&" else (if (family =? 29) then "List::slice(&" else "")))))))))))))))))))))))))))))))))),
   executable: true
 }
 
@@ -416,7 +416,7 @@ definition{
   name: machineArity,
   parameters: [family : Nat],
   result: Nat,
-  body: (if ((family <? 8) || (40 <=? family)) then 100000 else (if (family =? 11) then 1 else (if ((family =? 24) || ((family =? 26) || ((family =? 31) || ((family =? 32) || ((family =? 35) || (family =? 36)))))) then 1 else (if (family =? 15) then 3 else (if (family =? 16) then 3 else (if (family =? 20) then 3 else (if ((family =? 25) || ((family =? 29) || ((family =? 34) || (family =? 38)))) then 3 else 2))))))),
+  body: (if ((family <? 8) || (44 <=? family)) then 100000 else (if (family =? 11) then 1 else (if ((family =? 24) || ((family =? 26) || ((family =? 31) || ((family =? 32) || ((family =? 35) || ((family =? 36) || ((family =? 40) || ((family =? 41) || ((family =? 42) || (family =? 43)))))))))) then 1 else (if (family =? 15) then 3 else (if (family =? 16) then 3 else (if (family =? 20) then 3 else (if ((family =? 25) || ((family =? 29) || ((family =? 34) || (family =? 38)))) then 3 else 2))))))),
   executable: true
 }
 
@@ -430,7 +430,11 @@ definition{
   result: LexLeanStd.Buffer::Buffer,
   body: (if (family <? 8) then (match width
     | Option.some kind => (putS (putS (putS (putKind out kind) "::") (if (family =? 7) then "try_from" else (joinedMethod family))) "(")
-    | Option.none => out) else (putS out (fixedPre family))),
+    | Option.none => out) else (if (family =? 40) then (match width
+    | Option.some kind => (putS (putKind (putS out "Str::format_") kind) "(")
+    | Option.none => out) else (if (family =? 41) then (match width
+    | Option.some kind => (putS (putKind (putS out "Str::parse_") kind) "(&")
+    | Option.none => out) else (putS out (fixedPre family))))),
   executable: true
 }
 
