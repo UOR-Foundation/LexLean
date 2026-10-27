@@ -96,7 +96,6 @@
       ],
       "version": "1.0.0"
     },
-    },
     {
       "name": "decimal",
       "root": "LexLeanStd.Numeral.decimal",
