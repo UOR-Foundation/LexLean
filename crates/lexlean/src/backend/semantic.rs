@@ -35,6 +35,10 @@ struct Render<'a> {
     /// qualified: a cross-check named `E.thm` would otherwise resolve the
     /// theorem `thm` it restates to itself (§17.12, models).
     qualify: Option<&'a str>,
+    /// Each constructor with a field of an inductive type the module
+    /// declares, as `T.c` in declaration order: `term_cases` names its
+    /// injectivity lemma (§17.10, `SM-35`).
+    injective: &'a [String],
 }
 
 /// The generated name of well-founded hypothesis `index`. Semantic names
@@ -747,6 +751,7 @@ impl Render<'_> {
             hypotheses: std::collections::BTreeMap::new(),
             document: false,
             qualify: Some(module),
+            injective: self.injective,
         };
         let this = &qualified;
         let name = identifier(&check.name);
@@ -1281,11 +1286,18 @@ impl Render<'_> {
                 scrutinee,
                 definitions,
             } => format!(
-                "{pad}set_option linter.unusedSimpArgs false in\n{pad}cases llCase : {} <;>\n{pad}  simp (config := {{decide := true}}) only [{}, llCase, ite_true, ite_false]\n",
+                "{pad}set_option linter.unusedSimpArgs false in\n{pad}cases llCase : {} <;>\n{pad}  simp (config := {{decide := true}}) only [{}]\n",
                 self.term(scrutinee),
                 definitions
                     .iter()
                     .map(|member| self.member(member))
+                    .chain(TERM_CASES_RULES.iter().map(|rule| (*rule).to_owned()))
+                    .chain(self.injective.iter().map(|constructor| {
+                        self.member(&MemberRef {
+                            module: None,
+                            name: format!("{constructor}.injEq"),
+                        })
+                    }))
                     .collect::<Vec<_>>()
                     .join(", ")
             ),
@@ -1387,6 +1399,27 @@ impl Render<'_> {
         }
     }
 }
+
+/// The fixed rules `term_cases` names after the definitions (§17.10,
+/// `SM-35`): the case hypothesis, the conditional on a decided condition,
+/// the pinned Lean's no-confusion procedure for two different constructors,
+/// the units an injectivity equation leaves, and the injectivity lemmas of
+/// the constructors with a field of `Option`, `Result` (`Except`), and
+/// `List`. The injectivity lemmas of the module's own constructors follow.
+const TERM_CASES_RULES: &[&str] = &[
+    "llCase",
+    "ite_true",
+    "ite_false",
+    "reduceCtorEq",
+    "false_implies",
+    "imp_self",
+    "and_true",
+    "true_and",
+    "Option.some.injEq",
+    "Except.error.injEq",
+    "Except.ok.injEq",
+    "List.cons.injEq",
+];
 
 /// The fixed Boolean comparisons `linear_arithmetic` reflects into
 /// propositions, and the runtime definitions it unfolds (§17.12).
@@ -1513,6 +1546,7 @@ fn well_founded_definition(
             .collect(),
         document: false,
         qualify: base.qualify,
+        injective: base.injective,
     };
     // A parameter the measure alone mentions is used: `termination_by`
     // references it.
@@ -1907,12 +1941,31 @@ pub fn render_lean(
     });
     let runtime = elaborated.contains("\"kind\":\"primitive\"") || reasoning;
     let document = &checked.document;
+    // §17.10 (`SM-35`): the constructors whose injectivity lemma
+    // `term_cases` names, those with a field of the module's own inductives.
+    let injective: Vec<String> = module
+        .declarations
+        .iter()
+        .filter_map(|declaration| match declaration {
+            SemanticDeclaration::Inductive {
+                name, constructors, ..
+            } => Some(
+                constructors
+                    .iter()
+                    .filter(|constructor| !constructor.fields.is_empty())
+                    .map(move |constructor| format!("{name}.{}", constructor.name)),
+            ),
+            _ => None,
+        })
+        .flatten()
+        .collect();
     let base_render = Render {
         prefix: module_prefix,
         lean_imports: &document.import_lean,
         hypotheses: std::collections::BTreeMap::new(),
         document: false,
         qualify: None,
+        injective: &injective,
     };
     // A declaration a model elaborates to is named `R.x`, and Lean resolves
     // a name inside it against the namespace `R` first, so every local
@@ -1923,6 +1976,7 @@ pub fn render_lean(
         hypotheses: std::collections::BTreeMap::new(),
         document: false,
         qualify: Some(&document.lean_module),
+        injective: &injective,
     };
     // §17.12: the runtime a module uses. A language-1.2 module imports the
     // runtime modules, native modules of the embedded runtime project; a
@@ -3079,6 +3133,7 @@ pub fn render_latex(
         hypotheses: std::collections::BTreeMap::new(),
         document: true,
         qualify: None,
+        injective: &[],
     };
     let version_2 = module.spec == "lexlean/semantic-module/2";
     let mut text = String::from(
@@ -3317,6 +3372,7 @@ mod byte_literal_tests {
             hypotheses: std::collections::BTreeMap::new(),
             document,
             qualify: None,
+            injective: &[],
         }
         .term(term)
     }

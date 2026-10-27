@@ -2649,28 +2649,115 @@ pub(crate) fn run(id: &str) {
                 serde_json::to_value(&checked.modules["Main"].document.semantic).expect("JSON"),
                 "the formatted source is the same module"
             );
-            let built = accepted.build_ok();
-            let build_dir = accepted.build_dir(&built.build_id.expect("a build id"));
-            let lean = std::fs::read_dir(build_dir.join("modules").as_std_path())
-                .expect("the modules")
-                .flatten()
-                .flat_map(|entry| {
-                    std::fs::read_dir(entry.path())
-                        .into_iter()
-                        .flatten()
-                        .flatten()
-                })
-                .filter(|entry| entry.path().extension().is_some_and(|ext| ext == "lean"))
-                .map(|entry| std::fs::read_to_string(entry.path()).expect("Lean text"))
-                .collect::<String>();
+            let generated_lean = |project: &P| -> String {
+                let built = project.build_ok();
+                let build_dir = project.build_dir(&built.build_id.expect("a build id"));
+                std::fs::read_dir(build_dir.join("modules").as_std_path())
+                    .expect("the modules")
+                    .flatten()
+                    .flat_map(|entry| {
+                        std::fs::read_dir(entry.path())
+                            .into_iter()
+                            .flatten()
+                            .flatten()
+                    })
+                    .filter(|entry| entry.path().extension().is_some_and(|ext| ext == "lean"))
+                    .map(|entry| std::fs::read_to_string(entry.path()).expect("Lean text"))
+                    .collect::<String>()
+            };
+            // The fixed rules after the named definitions (§17.10): the
+            // hypothesis, the conditional, and the constructor rules.
+            let rules = "llCase, ite_true, ite_false, reduceCtorEq, false_implies, imp_self, and_true, true_and, Option.some.injEq, Except.error.injEq, Except.ok.injEq, List.cons.injEq";
+            let lean = generated_lean(&accepted);
+            // `Flag` has no constructor with a field, so the list ends at
+            // the fixed rules.
             assert!(
                 lean.contains("cases llCase : flagOf (n) <;>")
-                    && lean.contains(
-                        "simp (config := {decide := true}) only [direct, wrapped, llCase, ite_true, ite_false]"
-                    ),
+                    && lean.contains(&format!(
+                        "simp (config := {{decide := true}}) only [direct, wrapped, {rules}]\n"
+                    )),
                 "{lean}"
             );
             support::verify_ok_backed("SM-35", &accepted);
+            // #280: the constructor rules decide an equation between
+            // constructors over variables. The first project is the issue's
+            // module; the second needs an `Option` disjointness, the third the
+            // injectivity of a constructor of two fields, and the fourth
+            // states a false theorem, whose case Lean leaves open.
+            let issue = "\\begin{lexlean}{Main}\n\\useglossary{lexlean.std.nat@1.2.0}\n\\title{Natural number addition}\n\\begin{semanticmodule}\ninductive{name: Verdict, type_parameters: [], parameters: [], constructors: [{name: good, fields: []}, {name: bad, fields: [Nat]}]}\n\ndefinition{\n  name: check,\n  parameters: [n : Nat],\n  result: Verdict,\n  body: (if (n =? 0) then (ctor Verdict.good) else (ctor Verdict.bad n))\n}\n\ndefinition{\n  name: report,\n  parameters: [n : Nat],\n  result: (Option Nat),\n  body: (match (check n)\n    | Verdict.good => (ctor Option.none [Nat])\n    | Verdict.bad at => (ctor Option.some [Nat] at))\n}\n\ntheorem{\n  name: report_names_the_bad_value,\n  parameters: [n : Nat, p : Nat],\n  statement: (((check n) = (ctor Verdict.bad p)) -> ((report n) = (ctor Option.some [Nat] p))),\n  proof: term_cases{scrutinee: (check n), definitions: [report]},\n  axioms: [propext]\n}\n\\end{semanticmodule}\n\\end{lexlean}\n".to_owned();
+            let theorem =
+                "(((check n) = (ctor Verdict.bad p)) -> ((report n) = (ctor Option.some [Nat] p)))";
+            let option = issue.replace(
+                theorem,
+                "(((report n) = (ctor Option.none [Nat])) -> ((check n) = (ctor Verdict.good)))",
+            );
+            let pair = issue
+                .replace(
+                    "\ndefinition{\n  name: check,",
+                    "inductive{name: Pair, type_parameters: [], parameters: [], constructors: [{name: mk, fields: [Nat, Nat]}]}\n\ndefinition{\n  name: check,",
+                )
+                .replace(
+                    "\ntheorem{",
+                    "definition{\n  name: paired,\n  parameters: [n : Nat],\n  result: Pair,\n  body: (match (check n)\n    | Verdict.good => (ctor Pair.mk 0 0)\n    | Verdict.bad at => (ctor Pair.mk 0 at))\n}\n\ntheorem{",
+                )
+                .replace(
+                    theorem,
+                    "(((check n) = (ctor Verdict.bad p)) -> ((paired n) = (ctor Pair.mk 0 p)))",
+                )
+                .replace("definitions: [report]", "definitions: [paired]");
+            let false_theorem = issue.replace(
+                theorem,
+                "(((check n) = (ctor Verdict.bad p)) -> ((report n) = (ctor Option.none [Nat])))",
+            );
+            assert!(
+                option != issue && pair != issue && false_theorem != issue,
+                "each variant edits the issue's module"
+            );
+            for (what, text, lowering) in [
+                (
+                    "the issue's module (disjointness and injectivity of `Verdict` and `Option`)",
+                    &issue,
+                    format!("[report, {rules}, Verdict.bad.injEq]"),
+                ),
+                (
+                    "an `Option` disjointness in the hypothesis",
+                    &option,
+                    format!("[report, {rules}, Verdict.bad.injEq]"),
+                ),
+                (
+                    "the injectivity of a constructor of two fields",
+                    &pair,
+                    format!("[paired, {rules}, Verdict.bad.injEq, Pair.mk.injEq]"),
+                ),
+                (
+                    "a false theorem",
+                    &false_theorem,
+                    format!("[report, {rules}, Verdict.bad.injEq]"),
+                ),
+            ] {
+                let project = project_of(text, "1.2");
+                let lean = generated_lean(&project);
+                assert!(
+                    lean.contains(&format!(
+                        "simp (config := {{decide := true}}) only {lowering}\n"
+                    )),
+                    "{what}: the generated Lean names the fixed rules: {lean}"
+                );
+                if !support::lean_backed("SM-35") {
+                    continue;
+                }
+                if *text == false_theorem {
+                    let error = project.verify_fails_with("LLV7002");
+                    let shown = format!("{error:?}");
+                    assert!(
+                        shown.contains("unsolved goals"),
+                        "{what}: Lean leaves the false case open: {shown}"
+                    );
+                } else {
+                    eprintln!("SM-35: verifying {what}");
+                    support::verify_ok(&project);
+                }
+            }
             let tex = support::tex_body(&support::tex_text(&support::rendered(&accepted), "Main"))
                 .to_owned();
             // The canonical LaTeX of a semantic module is a catalog of its
