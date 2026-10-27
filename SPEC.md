@@ -283,6 +283,8 @@ The completed repository MUST have this layout. Additional files are allowed onl
 │       ├── ci.yml
 │       ├── honesty.yml
 │       └── reproducibility.yml
+├── assets/
+│   └── lexlean-logo.svg
 ├── AGENTS.md
 ├── CONFORMANCE.md
 ├── ERRORS.md
