@@ -1,0 +1,160 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{decimalDigits}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{ByteArray.mk \#[48, 49, 50, 51, 52, 53, 54, 55, 56, 57]}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{hexDigits}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{ByteArray.mk \#[48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102]}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{byteValues}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{ByteArray.mk \#[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255]}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{pick}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(table : ByteArray) (value : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match (LexLeanRuntime.slice (table) (value) (1) : Option (ByteArray)) with | Option.some piece => piece | Option.none => ByteArray.mk \#[])}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{digitStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(table : ByteArray) (radix : Nat) (state : (Prod (Nat) (ByteArray)))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option ((Prod (Nat) (ByteArray)))}.\par
+\noindent Definition: \texttt{(let rest : Nat := (state).1; (if (Nat.beq (rest) (0)) then Option.none else Option.some (((LexLeanRuntime.quotient (rest) (radix) (0) : Nat), (LexLeanRuntime.append (pick (table) ((LexLeanRuntime.remainder (rest) (radix) (0) : Nat))) ((state).2) : ByteArray)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{digits}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(table : ByteArray) (radix : Nat) (number : Nat)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{(radix, table)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(if (Nat.beq (number) (0)) then pick (table) (0) else (((LexLeanCollections.iterateUntil ((fun (state : (Prod (Nat) (ByteArray))) => digitStep (table) (radix) (state))) (number) ((number, ByteArray.mk \#[])) : (Prod ((Prod (Nat) (ByteArray))) (Bool)))).1).2)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{decimal}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(number : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{digits (decimalDigits) (10) (number)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{hexNat}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(number : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{digits (hexDigits) (16) (number)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{isDecimal}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(byte : UInt8)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(let value : Nat := (toNat (byte) : Nat); ((Nat.ble (48) (value)) \&\& (Nat.ble (value) (57))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{decimalValue}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(byte : UInt8)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.subtract ((toNat (byte) : Nat)) (48) : Nat)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{decimalEnd}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(position)}, captures \texttt{(subject)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{((LexLeanCollections.iterateUntil ((fun (position : Nat) => (match (LexLeanRuntime.index (subject) (position) : Option (UInt8)) with | Option.some byte => (if isDecimal (byte) then Option.some ((position + 1)) else Option.none) | Option.none => Option.none))) ((LexLeanRuntime.length (subject) : Nat)) (0) : (Prod (Nat) (Bool)))).1}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{canonicalDecimal}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(let total : Nat := (LexLeanRuntime.length (subject) : Nat); (if (Nat.blt (0) (total)) then (if (Nat.beq (decimalEnd (subject)) (total)) then (if (Nat.blt (1) (total)) then (match (LexLeanRuntime.index (subject) (0) : Option (UInt8)) with | Option.some byte => (if (LexLeanRuntime.equal (byte) ((48 : UInt8)) : Bool) then false else true) | Option.none => false) else true) else false) else false))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{accumulate}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (state : (Prod (Nat) (Nat)))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option ((Prod (Nat) (Nat)))}.\par
+\noindent Definition: \texttt{(match (LexLeanRuntime.index (subject) ((state).1) : Option (UInt8)) with | Option.some byte => Option.some ((((state).1 + 1), ((LexLeanRuntime.multiply ((state).2) (10) : Nat) + decimalValue (byte)))) | Option.none => Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{parseDecimal}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{(subject)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{Option (Nat)}.\par
+\noindent Definition: \texttt{(if canonicalDecimal (subject) then Option.some ((((LexLeanCollections.iterateUntil ((fun (state : (Prod (Nat) (Nat))) => accumulate (subject) (state))) ((LexLeanRuntime.length (subject) : Nat)) ((0, 0)) : (Prod ((Prod (Nat) (Nat))) (Bool)))).1).2) else Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{hexByte}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(byte : UInt8)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(let value : Nat := (toNat (byte) : Nat); (LexLeanRuntime.append (pick (hexDigits) ((LexLeanRuntime.quotient (value) (16) (0) : Nat))) (pick (hexDigits) ((LexLeanRuntime.remainder (value) (16) (0) : Nat))) : ByteArray))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{hexStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (state : (Prod (Nat) (ByteArray)))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option ((Prod (Nat) (ByteArray)))}.\par
+\noindent Definition: \texttt{(match (LexLeanRuntime.index (subject) ((state).1) : Option (UInt8)) with | Option.some byte => Option.some ((((state).1 + 1), (LexLeanRuntime.append ((state).2) (hexByte (byte)) : ByteArray))) | Option.none => Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{hex}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{(subject)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(((LexLeanCollections.iterateUntil ((fun (state : (Prod (Nat) (ByteArray))) => hexStep (subject) (state))) ((LexLeanRuntime.length (subject) : Nat)) ((0, ByteArray.mk \#[])) : (Prod ((Prod (Nat) (ByteArray))) (Bool)))).1).2}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{isHex}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(byte : UInt8)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(let value : Nat := (toNat (byte) : Nat); (((Nat.ble (48) (value)) \&\& (Nat.ble (value) (57))) || ((Nat.ble (97) (value)) \&\& (Nat.ble (value) (102)))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{hexValue}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(byte : UInt8)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(let value : Nat := (toNat (byte) : Nat); (if (Nat.ble (value) (57)) then (LexLeanRuntime.subtract (value) (48) : Nat) else (LexLeanRuntime.subtract (value) (87) : Nat)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{pairStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (state : (Prod (Nat) (Option (ByteArray))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option ((Prod (Nat) (Option (ByteArray))))}.\par
+\noindent Definition: \texttt{(let position : Nat := (state).1; (match (state).2 with | Option.none => Option.none | Option.some sofar => (match (LexLeanRuntime.index (subject) (position) : Option (UInt8)) with | Option.none => Option.none | Option.some high => (match (LexLeanRuntime.index (subject) ((position + 1)) : Option (UInt8)) with | Option.none => Option.some ((position, Option.none)) | Option.some low => (if (isHex (high) \&\& isHex (low)) then Option.some (((position + 2), Option.some ((LexLeanRuntime.append (sofar) (pick (byteValues) (((LexLeanRuntime.multiply (hexValue (high)) (16) : Nat) + hexValue (low)))) : ByteArray)))) else Option.some ((position, Option.none)))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{parseHex}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{(subject)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{Option (ByteArray)}.\par
+\noindent Definition: \texttt{(let total : Nat := (LexLeanRuntime.length (subject) : Nat); (if (Nat.beq ((LexLeanRuntime.remainder (total) (2) (0) : Nat)) (0)) then (((LexLeanCollections.iterateUntil ((fun (state : (Prod (Nat) (Option (ByteArray)))) => pairStep (subject) (state))) (total) ((0, Option.some (ByteArray.mk \#[]))) : (Prod ((Prod (Nat) (Option (ByteArray)))) (Bool)))).1).2 else Option.none))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\end{document}
