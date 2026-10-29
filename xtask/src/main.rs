@@ -913,6 +913,11 @@ fn link_lake(from: &Path, to: &Path) -> Result<(), Fail> {
             && std::fs::hard_link(entry.path(), &destination).is_err()
         {
             std::fs::copy(entry.path(), &destination)?;
+        } else if entry.file_type().is_symlink() {
+            // A checked-out library tracks symbolic links; a copy without
+            // them is a checkout with local changes to Git and to Lake.
+            #[cfg(unix)]
+            std::os::unix::fs::symlink(std::fs::read_link(entry.path())?, &destination)?;
         }
     }
     Ok(())
