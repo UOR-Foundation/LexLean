@@ -1,0 +1,6 @@
+name = "specialisation_host"
+version = "0.1.0"
+defaultTargets = ["SpecHost"]
+
+[[lean_lib]]
+name = "SpecHost"

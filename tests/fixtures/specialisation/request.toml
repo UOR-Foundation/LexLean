@@ -1,0 +1,50 @@
+spec = "lexlean/wrappers/1"
+imports = ["Init", "Std"]
+
+[[wrapper]]
+declaration = "Std.Commutative.comm"
+kind = "theorem"
+tag = "Nat"
+arguments = ["Nat", "(@HAdd.hAdd Nat Nat Nat _)", "_"]
+
+[[wrapper]]
+declaration = "Std.Commutative.comm"
+kind = "theorem"
+tag = "Int"
+arguments = ["Int", "(@HAdd.hAdd Int Int Int _)", "_"]
+
+[[wrapper]]
+declaration = "Std.Commutative.comm"
+kind = "theorem"
+tag = "UInt32"
+arguments = ["UInt32", "(@HAdd.hAdd UInt32 UInt32 UInt32 _)", "_"]
+
+[[wrapper]]
+declaration = "Std.Commutative.comm"
+kind = "theorem"
+tag = "BitVec32"
+arguments = ["(BitVec 32)", "(@HAdd.hAdd (BitVec 32) (BitVec 32) (BitVec 32) _)", "_"]
+
+[[wrapper]]
+declaration = "Std.Associative.assoc"
+kind = "theorem"
+tag = "Nat"
+arguments = ["Nat", "(@HAdd.hAdd Nat Nat Nat _)", "_"]
+
+[[wrapper]]
+declaration = "Std.Associative.assoc"
+kind = "theorem"
+tag = "Int"
+arguments = ["Int", "(@HAdd.hAdd Int Int Int _)", "_"]
+
+[[wrapper]]
+declaration = "Std.Associative.assoc"
+kind = "theorem"
+tag = "UInt32"
+arguments = ["UInt32", "(@HAdd.hAdd UInt32 UInt32 UInt32 _)", "_"]
+
+[[wrapper]]
+declaration = "Std.Associative.assoc"
+kind = "theorem"
+tag = "BitVec32"
+arguments = ["(BitVec 32)", "(@HAdd.hAdd (BitVec 32) (BitVec 32) (BitVec 32) _)", "_"]

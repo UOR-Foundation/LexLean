@@ -147,3 +147,11 @@ Feature: lexicon
     And the dependent theorem is refused with the code of the root reason and names the declaration it depends on
     And the report counts sum to the number of requested declarations
     And the strict mode fails with the registered code and its class exit
+
+  @GL-21 @build
+  Scenario: A specialisation request names a class-polymorphic Lean declaration, its kind (`theorem` or `def`), a tag, and the arguments of its application at a concrete type, each a closed term of identifiers, numerals, holes, and applications; the wrapper emitter writes one `public` declaration for each under the reserved root `LexLeanSpec`, whose type is `type_of%` the application and whose value is the application, with every constant `_root_`-qualified and no tactic and no axiom, in sorted order and byte for byte the same on every run, and a request with a duplicate tag, a name outside the conservative grammar, or an argument outside the term grammar is refused with LLT4018.
+    Given the specialisation request of tests/fixtures/specialisation for Std.Commutative.comm at Nat, Int, UInt32 and BitVec 32
+    When the wrapper emitter runs twice on the request
+    Then both runs write the committed host module byte for byte
+    And the host module holds one public declaration per wrapper under LexLeanSpec and no tactic, by, or axiom command
+    And a request with a duplicate tag, a tactic argument, or an invalid name is refused with LLT4018

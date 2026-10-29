@@ -168,3 +168,11 @@ Feature: verification
     Then the join publishes a verified directory byte-identical to the whole verification's, with the same attestation identity
     And a shard whose plan elaborates a module before its imports, and a join that is handed one shard too few, are refused
     And a join reading a replay record whose executable digest is not its own leanchecker's is refused
+
+  @VR-24 @build
+  Scenario: An external entry whose Lean name is under the reserved root `LexLeanSpec` is probed by `example : (<signature>) = (type_of% @<constant>) := rfl`, so that its linked signature is definitionally the Lean type of the wrapper and not merely inhabited by it; an entry whose signature differs from that type is refused with LLT4017 naming the entry, a wrapper that does not exist stays LLT4003, and an entry outside the reserved root is probed exactly as before.
+    Given the specialisation fixture project whose host library is built with lake build
+    When the project is verified with the exact signature, with a planted wrong signature, and with a missing wrapper
+    Then the probe holds the wrapper line type_of% and verification succeeds for the exact signature
+    And the planted wrong signature fails with LLT4017 naming the entry
+    And the missing wrapper fails with LLT4003

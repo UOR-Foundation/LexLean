@@ -484,6 +484,20 @@ title = "Unbounded or unspecified text generation"
 statement = "A text declaration does not state the bound it must: a context window with capacity 0, or a text generator with max_tokens 0."
 
 [[error]]
+code = "LLT4017"
+class = "language"
+exit = 1
+title = "External specialisation signature is not the type of the wrapper"
+statement = "External specialisation signature is not the type of the wrapper."
+
+[[error]]
+code = "LLT4018"
+class = "language"
+exit = 1
+title = "Specialisation request refused"
+statement = "Specialisation request refused."
+
+[[error]]
 code = "LLT4101"
 class = "language"
 exit = 1

@@ -1,0 +1,29 @@
+\begin{lexlean}{Main}
+\useglossary{lexlean.std.int@1.0.0}
+\useglossary{lexlean.std.nat@1.0.0}
+\useglossary{test.spec@1.0.0}
+\title{Natural number addition}
+
+\begin{section}{natural}
+\heading{Natural number}
+\parameters{natural number \(a\); natural number \(b\)}
+  \begin{theorem}{nat-comm}
+  \noaxioms
+  \(a + b = b + a\).
+  \begin{proof}
+  Close the goal with \(natcomm(a, b)\).
+  \end{proof}
+  \end{theorem}
+\end{section}
+
+\begin{section}{integer}
+\heading{Integer}
+  \begin{theorem}{int-comm}
+  \allowaxioms{propext}
+  For every integer \(a\) and integer \(b\), \(a intplus b = b intplus a\).
+  \begin{proof}
+  Close the goal with \(intcomm(a, b)\).
+  \end{proof}
+  \end{theorem}
+\end{section}
+\end{lexlean}

@@ -68,6 +68,8 @@ pub mod surface;
 pub mod text_laws;
 #[doc(hidden)]
 pub mod verify;
+#[doc(hidden)]
+pub mod wrappers;
 
 pub use api::verify_part;
 pub use api::{
