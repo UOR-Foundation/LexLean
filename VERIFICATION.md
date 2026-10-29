@@ -10561,38 +10561,40 @@ escaper, and scaffold records other than the committed one) it is
 packages of `BS-07` to `BS-15` committed the inputs are 291 committed manifests
 (272 accepted), 182 rule manifests, and 2,000 seeded mutants of the fields, and
 the 272 accepted manifests, 133 hand-built inputs, and 272 seeded mutants of the
-render; 237 renders have a library of at most 16,384 bytes. On the normative
-host (12 threads) the evaluator agrees with the oracle on the 2,473 runs of
-`checkManifest` and the 237 renders (925 s). On the tree before those packages
-were committed (275 manifests, 256 accepted) the full case ran to the
-comparison with the committed packages: the evaluator agreed, the rendered
-packages agreed with the oracle on 3,102 runs under the pinned rustc (two
-harness binaries built in 124 s), and the eighteen planted defects were each
-detected, in 3,169 s. The case stops there on this tree: the packages
-`check_manifest` and `render_package`, the lock, and the recount of the earlier
-rows are the maintainer's. The bootstrap export with the two roots passes
-`lexlean verify`; its first attempt was refused (`LLV7005`) for nine
-definitions whose comparison of byte strings observes `propext` and declared no
-axioms, which now declare it.
+render; 237 renders have a library of at most 16,384 bytes. Under rustc a
+render whose library is beyond that bound runs on the first 4,096 bytes of it,
+held to the recipe. On the normative host (12 threads, 4 build jobs) the case
+passes in 4,424 s: the evaluator agrees with the oracle on the 2,473 runs of
+`checkManifest` and the 237 renders (928 s), the eighteen planted defects are
+each detected, the rendered packages agree with the oracle on 3,150 runs under
+the pinned rustc (two harness binaries built in 67 s, run in 85 s), the largest
+certificate part is 592,009 bytes for `checkManifest` and 1,516,084 bytes for
+`renderPackage`, and the exported packages are byte-identical to the committed
+ones and realize the programs the differential ran. That tree holds the
+packages `check_manifest` and `render_package` and the lock, which, with the
+recount of the earlier rows, are the maintainer's at the landing. The bootstrap
+export with the two roots passes `lexlean verify`; its first attempt was
+refused (`LLV7005`) for nine definitions whose comparison of byte strings
+observes `propext` and declared no axioms, which now declare it.
 
 Each of eighteen plants is made on a copy of `bootstrap/src/RustPackage.lex.tex`
 on every run and is caught by the oracle; the run is the index among the runs
-of the root on the tree before the packages were committed (the committed
-manifests, then the rules, then the mutants for `checkManifest`; the renders
-within the evaluator's bound for `renderPackage`):
+of the root (the committed manifests, then the rules, then the mutants for
+`checkManifest`; the renders within the evaluator's bound for
+`renderPackage`):
 
-- **`gen` is not a keyword**, `checkManifest` run 282.
-- **`harness` is an available crate name**, run 292.
+- **`gen` is not a keyword**, `checkManifest` run 298.
+- **`harness` is an available crate name**, run 308.
 - **a part with a leading zero is canonical**, run 17.
 - **a part past u64::MAX fits**, run 18.
-- **equal neighbours are ascending**, run 347.
-- **the order of the effects is not checked**, run 356.
-- **a rust-core package may state allocation**, run 440.
-- **a doubled underscore is snake case**, run 299.
-- **a crate name may have 65 bytes**, run 308.
-- **upper-case hex is an identity**, run 341.
-- **a profile that is neither is accepted**, run 333.
-- **the spec is not checked**, run 276.
+- **equal neighbours are ascending**, run 363.
+- **the order of the effects is not checked**, run 372.
+- **a rust-core package may state allocation**, run 456.
+- **a doubled underscore is snake case**, run 315.
+- **a crate name may have 65 bytes**, run 324.
+- **upper-case hex is an identity**, run 357.
+- **a profile that is neither is accepted**, run 349.
+- **the spec is not checked**, run 292.
 - **a published crate is printed unpublished**, `renderPackage` run 179.
 - **a negative priority loses its sign**, run 0.
 - **the digests of Cargo.toml and lib.rs are swapped**, run 0.
@@ -10607,7 +10609,13 @@ from a package whose library is beyond the evaluator's bound, so three plants
 (`publish = true`, the two escapes) reached no evaluated run; the shaped inputs
 now take the first 4,096 bytes of that library, which the recipe reads only as
 bytes to digest. (3) The counts of the earlier rows move with the packages of
-this row and are recounted by the maintainer at the landing.
+this row and are recounted by the maintainer at the landing. (4) The harness
+writes each byte of an argument as one array element and weighs a byte string
+as one node, so with the packages of `BS-07` to `BS-15` committed the render
+runs put every library in full, twice, into one harness source; three runs
+ended at the start of the rustc stage with the host's 16 GB virtual machine
+reset, and the run with the bound passed that stage in 67 s. A library beyond the evaluator's bound now reaches rustc as
+its first 4,096 bytes, held to the recipe, as the shaped inputs do.
 
 ## The `bdd` recipe as the parts of one run (Issue #131)
 

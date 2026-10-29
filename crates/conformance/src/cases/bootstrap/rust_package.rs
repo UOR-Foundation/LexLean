@@ -811,6 +811,26 @@ pub(super) fn case() {
         .filter(|(render, _)| render.library.len() <= EVALUATOR_LIBRARY)
         .map(|(_, run)| run.clone())
         .collect();
+    // rustc compiles each byte of an argument as one array element, and the
+    // libraries of the committed packages are megabytes together, so a render
+    // whose library is beyond the evaluator's bound runs under rustc on the
+    // first 4,096 bytes of it, held to the recipe, which reads it only as
+    // bytes to digest.
+    let compiled: Vec<Run> = renders
+        .iter()
+        .map(|(render, _)| render)
+        .chain(&shaped)
+        .chain(&render_mutants)
+        .zip(&render_runs)
+        .map(|(render, run)| {
+            if render.library.len() <= EVALUATOR_LIBRARY {
+                return run.clone();
+            }
+            let mut render = render.clone();
+            render.library.truncate(4_096);
+            render_run(&render, files_of(&render))
+        })
+        .collect();
     eprintln!(
         "BS-15: {} manifests ({} accepted), {} and {} rule inputs, {} and {} mutants, {} renders under the evaluator ({:?})",
         manifests.len(),
@@ -872,7 +892,7 @@ pub(super) fn case() {
         "BS-15",
         &[
             ("checkManifest", &check_root, &header),
-            ("renderPackage", &render_root, &render_runs),
+            ("renderPackage", &render_root, &compiled),
         ],
         "oracle",
     );
