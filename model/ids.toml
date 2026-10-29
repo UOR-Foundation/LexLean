@@ -1364,6 +1364,18 @@ suite = "verification"
 statement = "The external-interface probe writes an instance binder that no later binder or the result mentions without a name, so that pinned Lean's unused-variable linter has nothing to report for an entry such as `HXor.hXor`, and ascribes the type a callee declares to a numeral argument only when that type is closed in the caller's scope, with the callee's own binders renamed apart, so that a caller binder named like a callee binder (`a`, the type parameter of `Eq`) is never taken for it; a generated entry with an instance binder and a numeral argument elaborates without output."
 
 [[id]]
+id = "VR-25"
+level = "build"
+suite = "verification"
+statement = "A used external entry whose Lean module is outside the pinned toolchain's own libraries `Init`, `Std`, `Lean` and `Lake` is an imported declaration: the probe module prints its axioms with `#print axioms`, the attestation records its observed set, and an import that depends on `sorryAx` is refused with LLV7023, on `Lean.ofReduceBool` with LLV7024, and on `Lean.trustCompiler` or on an axiom that `native_decide` generated with LLV7025, each naming the entry, unless an axiom policy of the document names that axiom, in which case the import is accepted and every generated declaration is still held to its own policy."
+
+[[id]]
+id = "VR-26"
+level = "build"
+suite = "verification"
+statement = "The status of an imported declaration in the attestation is `replayed in the pinned environment`, and no output about an import says `proved`, `verified` or `kernel-checked`, words that §5.3 reserves for the generated declarations of the document and that §4.2 forbids for an imported library."
+
+[[id]]
 id = "CL-01"
 level = "build"
 suite = "cli-api"

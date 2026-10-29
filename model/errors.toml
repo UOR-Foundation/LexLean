@@ -701,6 +701,27 @@ title = "Replay facts refused"
 statement = "The facts a replay key is computed from repeat a declaration, name a declaration that is neither declared nor anchored by a given key, or do not parse."
 
 [[error]]
+code = "LLV7023"
+class = "language"
+exit = 1
+title = "Imported declaration depends on sorryAx"
+statement = "A Lean declaration that a used entry denotes, from outside the pinned toolchain's own libraries, depends on `sorryAx`, a proof hole, and no axiom policy of the document names `sorryAx`."
+
+[[error]]
+code = "LLV7024"
+class = "language"
+exit = 1
+title = "Imported declaration depends on Lean.ofReduceBool"
+statement = "A Lean declaration that a used entry denotes, from outside the pinned toolchain's own libraries, depends on `Lean.ofReduceBool`, a claim the compiler's evaluator made, and no axiom policy of the document names `Lean.ofReduceBool`."
+
+[[error]]
+code = "LLV7025"
+class = "language"
+exit = 1
+title = "Imported declaration trusts the compiler"
+statement = "A Lean declaration that a used entry denotes, from outside the pinned toolchain's own libraries, depends on `Lean.trustCompiler` or on an axiom that `native_decide` generated, and no axiom policy of the document names that axiom."
+
+[[error]]
 code = "LLV7101"
 class = "language"
 exit = 1

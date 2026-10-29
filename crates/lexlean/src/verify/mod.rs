@@ -22,6 +22,7 @@
 
 pub mod axiom;
 pub mod child;
+pub mod imports;
 pub mod leanchecker;
 pub mod lifeline;
 pub mod operational;
@@ -1180,7 +1181,9 @@ pub fn run_part(
             return Err(fail(internal(format!("`{}`: {reason}", module.name))));
         }
     }
-    if let Err(reason) = generated_source_audit(&probe.text, false) {
+    // The probe prints axioms only for imported declarations (§22.6), and
+    // the audit of generated Lean allows that command exactly then.
+    if let Err(reason) = generated_source_audit(&probe.text, !probe.audited.is_empty()) {
         return Err(fail(internal(format!("probe module: {reason}"))));
     }
     for audit in &audit_modules {
@@ -1420,7 +1423,32 @@ pub fn run_part(
         }
         return Err(fail(diagnostic));
     }
-    require_silent(&probe_record, "the external-interface probe", false).map_err(fail)?;
+    require_silent(
+        &probe_record,
+        "the external-interface probe",
+        !probe.audited.is_empty(),
+    )
+    .map_err(fail)?;
+    // §22.6: the observed axioms of every imported declaration, recorded, and
+    // the forbidden ones refused before any elaboration unless a policy of the
+    // document names them.
+    let mut imported_declarations: Vec<imports::ImportedDeclaration> = Vec::new();
+    if !probe.audited.is_empty() {
+        let observed_imports =
+            axiom::parse_import_audit_output(&probe_record.stdout, &probe.audited)
+                .map_err(|failure| fail(audit_diagnostic(&declaration_spans, failure)))?;
+        for (entry, external) in &externals {
+            if let Some(observed) = observed_imports.get(&external.lean_name) {
+                imported_declarations.push(imports::ImportedDeclaration {
+                    entry: entry.clone(),
+                    module: external.lean_module.clone(),
+                    name: external.lean_name.clone(),
+                    observed: observed.clone(),
+                });
+            }
+        }
+        imports::audit(&imported_declarations, &imports::named_axioms(checked)).map_err(fail)?;
+    }
     write_staged(
         staging.path(),
         "probe/process.json",
@@ -3035,6 +3063,9 @@ pub fn run_part(
     }
     if let Some(row) = compiler_input_row {
         body_fields.push(("compiler_input", row));
+    }
+    if !imported_declarations.is_empty() {
+        body_fields.push(("imports", imports::rows(&imported_declarations)));
     }
     if let Some(row) = preservation_row {
         body_fields.push(("preservation", row));

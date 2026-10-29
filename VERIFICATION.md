@@ -11455,3 +11455,20 @@ Checking `entry_digest` removed (`if recorded != actual` made `if false && recor
 The toolchain and Mathlib revision removed from the key frame: `a_changed_toolchain_or_mathlib_revision_changes_every_key` and `a_changed_toolchain_or_mathlib_revision_reuses_nothing_and_leaves_old_entries_intact` failed, 2 of 25 run (the filter was `replay_cache::tests`).
 
 With both plants removed the 28 `replay_cache` and `digest_set` tests pass. The register rows were red before the cases existed: all six `conformance_rc_0N` tests failed with `no conformance case is wired for RC-0N`.
+
+
+### the axiom audit of imported declarations can fail
+
+Rows `VR-25` and `VR-26` (SPEC.md §5.3, §18.8, §22.6, #339). The fixture `tests/fixtures/import-axioms` has a host library `AxHost` of five theorems that state the commutativity of `Nat` addition and carry no axiom, `sorryAx`, `Lean.ofReduceBool` (with `Lean.trustCompiler`, on which it rests), `Lean.trustCompiler`, and the axiom `native_decide` generates; five entries denote them. The cases build the host with `lake build`, write the document each case needs, and verify. Refused: each planted import under `\noaxioms` and under `\allowaxioms{propext}` with `LLV7023`, `LLV7024`, `LLV7025` and `LLV7025` naming the entry, the Lean name and the axiom; `Lean.ofReduceBool` under a policy that names it but not `Lean.trustCompiler` (`LLV7025`); the `native_decide` axiom under a policy that spells its name without the hygiene mark (`LLV7025`). Accepted: the three nameable axioms under `\allowaxioms{sorryAx}`, `\exactaxioms{Lean.ofReduceBool;Lean.trustCompiler}` and `\allowaxioms{Lean.trustCompiler}`, with each import's observed set in `imports` and the generated theorem's observed `sorryAx` in `declarations`.
+
+Red first, before `imports::audit` was wired: `conformance_vr_25` failed with `expected LLV7023, found ["LLV7005"] (LLV7005: LexLeanExample.Main.use_sorry_comm violates its none axiom policy: observed [sorryAx])`, and `conformance_vr_26` with `§5.3 states the wording`.
+
+Each defect below was planted in the committed tree, one at a time, with the real test, on Linux x86-64 (WSL), and the file restored (§27.9).
+
+| Case | Command | Observed |
+| --- | --- | --- |
+| the committed tree | `cargo test -p repo-conformance --test conformance -- conformance_vr_25 conformance_vr_26` and `cargo test -p lexlean --lib -- verify::imports verify::axiom` | ok, 10 unit tests ok |
+| the call of `imports::audit` removed from `verify` | `conformance_vr_25` | failed: the refusal is the late `LLV7005`, not `LLV7023` |
+| `IMPORTED_STATUS` is `proved by LexLean` | `conformance_vr_26` | failed at `import_axioms.rs:277`, the constant is not the one §5.3 states |
+
+The two plants were run once each. The case also found two things without a plant: the first version of the parser refused the `native_decide` axiom as printed by `lean` (`LLV7004: _private.AxHost.0.AxHost.viaNative._native.native_decide.ax_1_1 is not a Lean name`), which is why the audit of imports reads the `_private.<Module>.0` spelling and the hygiene mark, with unit tests; and a policy that names only `Lean.ofReduceBool` is `LLV7025`, not `LLV7024`, because `Lean.trustCompiler` is left unnamed, which the case now asserts.

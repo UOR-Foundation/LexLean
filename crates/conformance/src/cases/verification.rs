@@ -50,6 +50,13 @@ pub(crate) fn run(id: &str) {
         super::specialisation::probe();
         return;
     }
+    // §18.8, §22.6: the axioms of imported declarations; the cases gate
+    // their own Lean-backed halves.
+    match id {
+        "VR-25" => return super::import_axioms::audit(),
+        "VR-26" => return super::import_axioms::status(),
+        _ => {}
+    }
     if LEAN_BACKED.contains(&id) && !support::lean_backed(id) {
         run_platform_independent(id);
         return;

@@ -2590,6 +2590,10 @@ pub struct ProbeModule {
     /// Entries imported but not probed because their descriptor carries no
     /// signature (a `cases`/`induction` constructor entry without one).
     pub unprobed: Vec<String>,
+    /// The Lean names of the imported declarations (§22.6) whose axioms the
+    /// module prints after its examples, one `#print axioms` each, sorted and
+    /// without repeats.
+    pub audited: Vec<String>,
 }
 
 impl ProbeModule {
@@ -2666,6 +2670,18 @@ pub fn probe_module(
         entries.push((index, entry, signature));
         commands.push(example);
     }
+    // §22.6: the axioms of every imported declaration, printed by the process
+    // that already imports it. A declaration of the pinned toolchain's own
+    // libraries is not one, so a project that imports nothing else probes
+    // exactly the module it always did.
+    let audited: Vec<String> = externals
+        .values()
+        .filter(|external| crate::verify::imports::is_imported_module(&external.lean_module))
+        .map(|external| external.lean_name.clone())
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect();
+    commands.extend(audited.iter().cloned().map(AuxiliaryCommand::PrintAxioms));
     let (text, command_lines) = AuxiliaryModule {
         imports: imports.into_iter().collect(),
         commands,
@@ -2686,6 +2702,7 @@ pub fn probe_module(
         text,
         lines,
         unprobed,
+        audited,
     })
 }
 
