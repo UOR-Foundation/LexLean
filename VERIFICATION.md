@@ -10048,6 +10048,41 @@ exact axiom policy of a definition is read from the construct it reaches
 none), and the verifier reports one definition per run, so the first
 declaration of an axiom set is found by reading the construct, not by running.
 
+`SL-11` holds `LexLeanStd.Json` (#276, member 3) to the compiler's own writer,
+`canonical_json::Json::to_canonical_string` and `to_file_bytes`: the three
+roots `writeJson`, `writeJsonFile`, and `escapeString` under the evaluator
+agree with it byte for byte on a seeded corpus of trees whose keys repeat, are
+prefixes of one another, and hold multibyte and control characters, and the
+rendered `rust-std` packages under the pinned rustc agree on a larger one.
+The oracle's object is a `BTreeMap`, so of a repeated key the last insertion
+stays; the module reaches the same by sorting the members stably and keeping
+the last of a run of equal keys. The plant, made by the case itself on a copy
+of the project on every run, keeps the first (`keepLast` returns `kept` where
+it returns `cons entry rest`):
+
+```text
+the planted writer disagrees on 24 of 300 runs, the first: run 11 on [Adt { constructor: 4, fields: [Adt { constructor: 7, fields: [Bytes { hex: "6b" }, … 1 …
+{"hex":"7b226a223a332c226b223a317d","kind":"bytes"} != {"hex":"7b226a223a332c226b223a347d","kind":"bytes"}
+```
+
+`7b226a223a332c226b223a317d` is `{"j":3,"k":1}` and
+`7b226a223a332c226b223a347d` is `{"j":3,"k":4}`: the tree `k:1, k:2, j:3, k:4`
+as the members were given. The plant still orders every key and escapes every
+byte, so the same writer agrees with the oracle on every tree in which no
+object repeats a key, which the case asserts; only a repeated key catches it.
+
+Removed: the plants are made on copies; the source was not changed.
+Validated on `member2-order` + this member: `check`, `build`, and `fmt --check`
+clean; the eligibility report has all three roots eligible for `rust-std` with
+exactly their declared effects (`escapeString` `[allocation, overflow]`,
+`writeJson` and `writeJsonFile` `[allocation, overflow, recursion]`);
+`conformance_sl_11` passes through the plant, 8.6 s, with the committed-exports
+check of `stack_bounds::observe` and the Lean export bypassed on this host
+(neither the three packages nor their stack-bound rows exist before the wave
+writes them); `cargo clippy -p repo-conformance -p xtask --all-targets
+--all-features -D warnings`, `validate-model` (461 ids), `validate-spec-links`
+(461 rows), `check-test-inventory`, and the five `bdd` meta-gate tests pass.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the
