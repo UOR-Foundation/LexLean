@@ -1,6 +1,6 @@
 # Mathlib import: design
 
-Issue #341, tracking issue #333. Draft for owner acceptance, written 2026-10-29. Normative text is `SPEC.md`; this document explains and asks. The prototype is the integration branch `feat/mathlib-import-integration` (issues #334 to #338 merged locally, nothing pushed). #339 (axiom audit) is a separate branch, `feat/mathlib-axioms`, not yet merged into it: its SPEC text, register rows and codes are in `~/lexlean-mathlib-339` only. Sections marked **PENDING** wait for #340, the acceptance demo.
+Issue #341, tracking issue #333. Draft for owner acceptance, written 2026-10-29. Normative text is `SPEC.md`; this document explains and asks. The prototype is the integration branch `feat/mathlib-import-integration`, with issues #334 to #340 merged locally (nothing pushed). The acceptance demo (#340) is `examples/mathlib-blake3-g`; its results are in section 10.7. Register total on this branch: 476.
 
 ## 1. Summary
 
@@ -13,25 +13,28 @@ A LexLean document can use declarations of an external Lean library, Mathlib fir
 5. `verify` probes every used entry against the real declaration (existing §13.7), imports only the Lean module that defines each used declaration, and audits axioms.
 6. Imported declarations are described as "replayed in the pinned environment". LexLean never says it proved them (§4.2, §5.3).
 
+**Acceptance result.** The demo document (4 modules, language 1.2) verifies end to end, offline, against the pinned Mathlib: `lexlean verify` prints `verified 4 modules`, with Lean elaboration, `leanchecker` replay and the exact axiom audit passing (section 10.7). Verification takes 41 to 74 s and 1.3 GB peak in a debug build on a loaded machine. Three defects of the merged branch were found by running it and are fixed (section 12). What it does not do: it does not check Mathlib's own proofs, it needs one hand-written 13-line Lean lemma in a host library for the rotation fact, and a semantic module cannot cite an external lemma at all.
+
 What is built and checked is listed in section 12. What is not decided is in section 14, with a recommendation on each. The decisions that need the owner first:
 
 | # | Decision | Recommendation |
 | --- | --- | --- |
 | D1 | Toolchain pin | Keep `v4.32.1`. A Mathlib commit matches it, on a release line, not `master` |
 | D2 | Command naming | Keep the generic `lexlean deps <verb>` group |
-| D3 | Which proof forms accept external lemmas in language 1.2 | Extend the existing `apply` proof to take an external entry. Decide together with D4 |
-| D4 | `[[lean_library]]` in language 1.2 only, or in every language | Decide with D3. Today the two choices point at different languages (section 14) |
+| D3 | Which proof forms accept external lemmas in language 1.2 | Prose proofs already do, in 1.2 (the demo). Add one form to semantic modules: `apply` taking an external entry |
+| D4 | `[[lean_library]]` in language 1.2 only, or in every language | Keep 1.2 only. The conflict with D3 seen before the demo is gone |
 | D5 | Replace the stock `leanchecker` step for imports with closure replay | Adopt it, as an additional stage |
 | D6 | Wire the replay cache into `verify` | Not yet. It did not pay off on the two Mathlib modules measured |
-| D7 | Apply the schema change that moves the language-1.2 identity | Apply it once, with the other Mathlib changes, in one regeneration |
+| D7 | Apply the schema changes that move the language-1.2 identity | Apply them once, with the other Mathlib changes, in one regeneration |
+| D16 | How CI verifies an example that needs a 7 GB library | `lexlean deps fetch` before the examples leg, or a separate leg for this example |
 
 ## 2. What the goal asks and where it stands
 
 | Goal in #333 | Mechanism | State |
 | --- | --- | --- |
 | Seamless: a short config entry plus one command | `[[lean_library]]`, `deps fetch`, `deps glossary` | Partly. Fetch is one command. A Lake `require` is still written by hand, and glossary generation needs a module list. Not one command end to end |
-| Fast: Mathlib is never rebuilt | Fetch of prebuilt `.olean` files, targeted imports | Imports measured (section 9). A warm full `verify` of a document using Mathlib is not measured yet: **PENDING #340** |
-| Precise: pinned, signature-checked, axiom-audited, content-addressed | Lock rows, §13.7 probe, strict wrapper probe, axiom audit, replay keys | Pin, lock, probe and keys built. Axiom audit of imports built on the #339 branch (section 13). Content addresses of `.olean` bytes are not in the lock (section 6) |
+| Fast: Mathlib is never rebuilt | Fetch of prebuilt `.olean` files, targeted imports | Imports measured (section 10.2). A full `verify` of the demo takes 40 to 53 s warm and 74 s the first time, with no reuse between runs: an edit anywhere costs a full verification (section 10.7). Seconds, not minutes; "a warm build costs seconds" is not met for a document of this size |
+| Precise: pinned, signature-checked, axiom-audited, content-addressed | Lock rows, §13.7 probe, strict wrapper probe, axiom audit, replay keys | Pin, lock, probe, keys and the axiom audit of imports built (section 13), and exercised by the demo. Content addresses of `.olean` bytes are not in the lock (section 6) |
 
 ## 3. Constraints taken as given
 
@@ -169,6 +172,8 @@ Translation, in short (full rules in §13.12):
 
 Refusals are reported with exit 0 by default. With `--strict` any refusal fails the command, one diagnostic per refusal, and nothing is written.
 
+Gap found by the demo (#340): the extractor imports the modules named by `--modules` and, with none, only `Init`. So `--names` cannot reach a Mathlib declaration without also requesting its whole module (thousands of entries). The demo works around it by wrapping every cited lemma in two small host modules and requesting those (15 declarations). A flag naming the modules to load, or loading the defining module of each name, is needed (D2).
+
 ### 7.4 Specialisation wrappers
 
 SPEC §13.13, §18.8; register rows `GL-21`, `VR-24`. For a class-polymorphic declaration such as `add_comm`, a *wrapper* is a monomorphic constant in the project's host Lean library, `@add_comm Nat _`, that an entry denotes. Today the only caller is `cargo xtask emit-wrappers <request.toml> <host.lean>` and the library function `lexlean::wrappers::emit`. There is no `lexlean` subcommand (decision D2). The emitter:
@@ -191,6 +196,8 @@ The probe of a wrapper entry is stronger than that of any other external entry: 
 
 Not built: `deps add` (step 1), a command that writes wrappers (section 7.4), a command that picks the module list from the document's needs.
 
+How the demo does it: `examples/mathlib-blake3-g/setup-offline.sh` hard-links an already fetched pinned checkout and its packages into the example's `.lake/packages` (no extra disk; a symlink out of the project is refused by path confinement) and runs `lake build Blake3GHost`. The wrappers are emitted by `cargo xtask emit-wrappers` from `wrappers.toml` into `Blake3GSpecs.lean`. The glossary `glossary/lean.mathlib` (38 entries) is generated by `lexlean deps glossary` from the two host modules and committed; `glossary/blake3.g` holds 8 label words and no entry denotes an imported declaration. The lock's `glossary_sha256` equals the tree digest of `lean.mathlib`, so the `lean.<name>` coupling of section 6 works when the package is named that way.
+
 ## 8. Trust statement
 
 This is the text the design asks the owner to accept as the statement of what an imported declaration is.
@@ -200,8 +207,8 @@ This is the text the design asks the owner to accept as the statement of what an
 3. **What is not checked, today.** The imported declarations themselves are not replayed. `import` loads Mathlib's `.olean` files into the environment and the generated modules' `leanchecker` run trusts the imports: it replays the module's own constants into the environment of its imports. Note 337 demonstrates this with a planted defect: module `Evil` adds a false theorem with `debug.skipKernelTC`, module `UsesEvil` imports and uses it. `leanchecker UsesEvil` exits 0. `leanchecker Evil` and closure replay (below) fail. So the imported library is trusted as part of the workspace (§5.1, item 5).
 4. **Environment.** The pinned toolchain `leanprover/lean4:v4.32.1`, the Mathlib commit `520045ab14e2...`, and Mathlib's own locked dependencies (pinned by the SHA-256 of its `lake-manifest.json`). All Lean processes run through `lake env` in the Lake workspace (§22.2). Measurements were taken on x86_64 Linux (WSL2) only.
 5. **Replay proposed (D5).** Closure replay (`tooling/mathlib-speed/closure-replay`, about 120 lines of Lean built with the pinned toolchain) starts from the constants the project's compiled module mentions, collects everything they transitively mention, and replays that set into an empty environment through `Lean.Environment.replay`. A mention that is not found is an error, so an incomplete closure cannot pass. It is the same kernel as `leanchecker`, not an independent checker (§4.2 already forbids calling `leanchecker` independent). If adopted, the status word is still "replayed in the pinned environment".
-6. **Axioms.** The audit is an axiom-dependency audit only (§5.4). Mathlib's standard axioms are `Classical.choice`, `Quot.sound`, `propext`, the same three LexLean certificates depend on. An imported theorem's axioms are not exempt: if they flow into a generated declaration, that declaration's policy must permit them (§22.6). Measured examples from note 336: the `Nat.add_comm` wrapper depends on `[propext]`; the `BitVec 32` wrapper on `[propext, Classical.choice, Quot.sound]`. The imports themselves are audited by `#print axioms` in the probe process, and an import that depends on `sorryAx`, `Lean.ofReduceBool`, `Lean.trustCompiler` or a `native_decide` axiom is refused unless a policy of the document names it (section 13, on the #339 branch).
-7. **Wording.** An import's status is "replayed in the pinned environment". The words "proved", "verified" and "kernel-checked" are reserved for the document's generated declarations (§5.3, as amended on the #339 branch). The word "replayed" is only literally true in the sense that the pinned Lean loaded the compiled module of the locked workspace: §22.4 replays the generated modules only (item 3). It becomes literal if closure replay (D5, item 5) is adopted. Without it, "loaded from the pinned environment" is the more accurate status (D15).
+6. **Axioms.** The audit is an axiom-dependency audit only (§5.4). Mathlib's standard axioms are `Classical.choice`, `Quot.sound`, `propext`, the same three LexLean certificates depend on. An imported theorem's axioms are not exempt: if they flow into a generated declaration, that declaration's policy must permit them (§22.6). Measured examples from note 336: the `Nat.add_comm` wrapper depends on `[propext]`; the `BitVec 32` wrapper on `[propext, Classical.choice, Quot.sound]`. The imports themselves are audited by `#print axioms` in the probe process, and an import that depends on `sorryAx`, `Lean.ofReduceBool`, `Lean.trustCompiler` or a `native_decide` axiom is refused unless a policy of the document names it (section 13).
+7. **Wording.** An import's status is "replayed in the pinned environment". The words "proved", "verified" and "kernel-checked" are reserved for the document's generated declarations (§5.3, as amended by #339). The word "replayed" is only literally true in the sense that the pinned Lean loaded the compiled module of the locked workspace: §22.4 replays the generated modules only (item 3). It becomes literal if closure replay (D5, item 5) is adopted. Without it, "loaded from the pinned environment" is the more accurate status (D15).
 8. **Not covered.** A checkout whose `HEAD` matches the declared commit but whose files or `.olean` files were altered (section 6). That a glossary entry's statement matches the informal mathematics a reader expects. That a wrapper's host library is itself sound: it is a Lean library of the project, in the trusted computing base, and a wrapper adds no axiom of its own.
 9. **Replay cache.** If used, the cache is an untrusted input (§5.2). `entry_digest` detects changed bytes and a mismatch with the key; it is not authentication, since whoever can write the store recomputes it. A reused result is evidence that the unit was replayed once, by the executable the entry names, in the environment its key covers. It is not evidence of a replay by this run.
 
@@ -355,21 +362,95 @@ Against real Mathlib at the pin: `add_comm` at `Nat`, `Int`, `BitVec 32`, `add_a
 
 ### 10.7 Acceptance demo and measurement table
 
-**PENDING #340.** To be filled from `~/lexlean-mathlib-340/docs/proposals/mathlib-import-notes-340.md`:
+Source: note 340 and `examples/mathlib-blake3-g` (README, `lexlean.toml`, `lexlean.lock`, `glossary-report.json`, `expected/verify/`). I cross-checked the theorem names and their `\exactaxioms` against the sources and `expected/verify/audit/output.txt`, the coverage sums against each other, and the register rows against `SPEC.md`. I did not repeat the timings. Environment as in section 10: Lean 4.32.1, Mathlib `520045ab14e2`, WSL2 with 16 GB shared and loaded (load average 5 to 25), debug build of `lexlean`.
 
-| Row | Value |
+**The document.** Four modules (`Main`, `Cancellation`, `Rotation`, `Mixing`), language 1.2, `[[lean_library]] mathlib` pinned. It proves for every 32-bit word what the BLAKE3 work could only test, citing lemmas of Lean core and Mathlib through the generated glossary. `lexlean verify` prints `verified 4 modules`: Lean elaboration, `leanchecker` replay of the four modules, and the exact axiom audit all pass, offline.
+
+| Statement (`BitVec 32`; the first two also `UInt32`) | Theorem | Imported lemmas cited | Axioms (exact, audited) |
+| --- | --- | --- | --- |
+| `(a + b) - b = a` | `Cancellation::add-sub-cancel`, `-u32` | `BitVec.add_sub_cancel`, `UInt32.add_sub_cancel` (core) | `propext` |
+| the same through Mathlib | `add-sub-cancel-group` | `add_sub_cancel_right` at `AddGroup (BitVec 32)` (Mathlib, via a wrapper) | `Classical.choice`, `Quot.sound`, `propext` |
+| `(a ^^^ b) ^^^ b = a` | `xor-cancel`, `-u32` | `xor_assoc`, `xor_self`, `xor_zero` (core), `rewrite` | `Quot.sound`, `propext` |
+| `rotl (rotr a n) n = a`, n in {7, 8, 12, 16} | `Rotation::rotate-left-right` | `Blake3GHost.rotateLeft_rotateRight` (host library, below) | `Quot.sound`, `propext` |
+| the inverse of BLAKE3 G recovers `a b c d` | `Mixing::mixing-inverse` | the four above, `add_right_comm` (Mathlib) | all three |
+
+The Mathlib route costs `Classical.choice` that the core route does not. The probe prints `#print axioms` for 11 imported or host constants (`expected/verify/probe`).
+
+**What is not imported.** `rotateLeft (rotateRight x n) n = x` is in neither Lean core nor Mathlib at this pin (searched `Init`, `Std`, Mathlib and batteries). Its proof needs `BitVec.eq_of_getLsbD_eq`, two `getLsbD_rotate*` lemmas and arithmetic on bit indices (`omega`). No prose or semantic proof form can do index arithmetic, so it is 13 lines of ordinary Lean in the host library, `Blake3GHost.rotateLeft_rotateRight`. It is a lemma of this project's host library, in the trusted base beside the imported libraries, not a lemma of Mathlib or Lean. The audit checks its axioms (`propext`, `Quot.sound`) like any other. It is a candidate to propose upstream to Lean core (D17).
+
+G is not a named definition in the document. A prose definition would need a hand-written glossary entry, and a semantic module cannot call an external constant. The statement is relational: for all 22 words, if the eight forward equations (the BLAKE3 `gcore` as the step machine runs it) and the eight inverse equations hold, with fresh names for the recovered intermediates, the four recovered words are `a`, `b`, `c`, `d`. The equations determine every value, so this is equivalent to `inverse (G ...) = ...`. `BitVec.rotateRight v n` with `0 < n < 32` is the BLAKE3 `rotr`; the document uses the BitVec functions and does not re-prove that identification.
+
+**Hand-written versus generated.** Generated by `lexlean deps glossary`, committed in `glossary/lean.mathlib`: 38 entries, 11 translated declarations and 27 support entries (`HAdd`, `HAdd.hAdd`, `HSub`, `HXor`, `BitVec`, `Nat`, `UInt32` and so on). Hand-written, `glossary/blake3.g`, 8 files: the label words that titles and headings require (`word`, `arithmetic`, `cancellation`, `xor`, `rotation`, `mixing`, `inverse`, `function`; §13.3). They assert nothing and none denotes an imported declaration.
+
+**Proof forms with an external lemma** (the question D3 asks):
+
+| Form | Used with an external lemma? | Result |
+| --- | --- | --- |
+| `Close the goal with \(lemma(args)\)` | yes, in every theorem | works for core, Mathlib wrapper and host lemmas alike |
+| `rewrite` (`\forward`) | yes | works; a lemma with implicit arguments (`xor_self`) is used bare |
+| `have` | yes | works |
+| `constructor` | yes | works; `P and Q and R` is left-folded, `And (And P Q) R`, so branches nest on the left |
+| `Assume` (several names) | yes | works for 16 hypotheses |
+| `simplify` | yes (scratch module, not committed) | `\begin{simplify}{goal}` with three `\rule` terms proves `(a ^^^ b) ^^^ b = a`; verified |
+| `calculate` | yes (scratch module, not committed) | a one-step chain justified by the core lemma verified; steps are whole-term equalities, so a lemma inside a larger term needs `rewrite` |
+| `Apply`, structured `apply`, `cases`, `induction`, `Use ... as the witness` | no | not exercised: the demo has no lemma with premises or an inductive scrutinee. Nothing in §16 treats a proof term differently by origin |
+| language-1.2 semantic-module forms (`reflexivity`, `linear_arithmetic`, `congruence`, `law`, `apply`, `term_cases`, `cases`, `induction`, `simplify`) | no | cannot, by construction: `apply` names a prior document theorem, `law` a registered fold law, `linear_arithmetic` and `simplify` a fixed rewrite set plus prior document definitions (§17.11, §17.12). None names an external glossary entry, and a semantic module has no way to call an external constant |
+
+Consequences, from the note: an external lemma can only be cited from prose; a statement about `BitVec` or `UInt32` bit operations cannot be a semantic-module theorem; issue #316 (document denotations cannot name semantic-module declarations) is not the binding constraint, the missing external-constant access in semantic modules is; and #317 / PR #332 (Nat bitwise primitives) does not help, because the demo is at fixed width where the primitives already exist but the semantic module still cannot prove anything about them without external lemmas. The scratch modules for `simplify` and `calculate` are not committed, so those two rows have no committed evidence.
+
+**Measurements.** Peak memory is `/usr/bin/time -v` maximum resident set.
+
+| Step | Wall | Peak RSS | Note |
+| --- | --- | --- | --- |
+| Fetch (`lake exe cache get`), from the #334 notes | about 5.4 min (file-time bound) | not measured | 7.0 GB on disk, 436 MB download cache. Not run by this demo: the checkout was already there |
+| Lake workspace for the example (`cp -al` of the pinned checkout and 8 packages) | 8.5 s | n/a | hard links, no extra disk |
+| Host library build (`lake build`) | 1 to 6 s | n/a | 2 modules |
+| `deps glossary`, 2 host modules, 15 declarations | 95 s cold, 26 s warm | 3.08 GB, 3.25 GB | 11 translated, 4 excluded (internal proof auxiliaries), 0 refused, 27 support entries |
+| `check` | under 5 s | under a 2 GB cap | 4 modules |
+| `verify`, first run | 74 s | 1.33 GB | before the merge with #339 |
+| `verify`, merged branch | 41 s | 1.36 GB | probe also prints `#print axioms` of imports |
+| `verify`, `.lexlean` removed | 51 s | 1.33 GB | |
+| `verify`, unchanged | 53 s | 1.32 GB | no per-module reuse: `verify` reads no replay cache (§22.13) |
+| `verify`, after a one-line edit (title of the leaf module) | 40 s | 1.31 GB | |
+
+Not measured: `lock` and `build` by themselves (the note gives no time), a cold `deps fetch` run by LexLean, and any per-stage split of `verify`.
+
+Cost structure of `verify`, from the note: each of the four modules is a separate Lean process that imports the closure of `Blake3GSpecs` (Mathlib `Algebra.Group.Basic` and `Data.BitVec`), plus the probe, the axiom-audit module and `leanchecker` per module. There is no incremental behaviour: an edit anywhere costs a full verification. The imported Mathlib declarations are not replayed by `verify` (§22.4 checks only the project's modules). The closure replay of #337 is not wired in. So a verified document says nothing about Mathlib's own proofs, which is what §5.1 and §5.3 say.
+
+**Translation coverage.** The demo's request (the two host modules): 15 requested, 11 translated, 0 refused, 4 excluded, 27 support entries. Every cited declaration translated. The modules the cited lemmas come from, requested whole into an uncommitted scratch directory (`Init.Data.BitVec.Lemmas`, `Init.Data.UInt.Lemmas`, `Init.Data.UInt.Bitwise`, `Mathlib.Algebra.Group.Defs`, `Mathlib.Algebra.Group.Basic`), warm, 15.5 s, 2.82 GB:
+
+| Outcome | Count |
 | --- | --- |
-| Demo document and the Mathlib declarations it uses | PENDING |
-| Entries used / entries in the glossary used | PENDING |
-| Cold `deps fetch` | PENDING |
-| `deps glossary` for the demo's modules | PENDING |
-| `lock` | PENDING |
-| `check`, `build` | PENDING |
-| `verify`, cold and warm: wall, peak RSS, per stage | PENDING |
-| Axioms observed | PENDING |
-| Translation coverage for the demo's modules | PENDING |
+| requested | 7,222 |
+| translated | 3,689 (plus 370 support entries) |
+| refused | 841: apostrophe names 210, entry check 84, `Sort u` 46, strict-implicit binder 8, depends on a `Sort u` declaration 294, on an internal one 141, on an instance 20, on an auxiliary one 24, on a non-grammar name 14 |
+| excluded | 2,692: internal 2,067, instance 239, auxiliary 215, deprecated 111, recursor 60 |
 
-Known gap to close with #340: every measurement above ran with the Mathlib checkout itself as the Lake workspace root (`~/mathlib-pinned`). LexLean's `present` check reads Mathlib as a package below a project workspace, `<workspace>/.lake/packages/mathlib/.lake/build/lib/lean`. The conformance cases for that layout use a stand-in `lake`. `lexlean deps fetch` has not been run against real Mathlib (note 334: the tool call was refused by the permission classifier), and no full `verify` of a document using Mathlib is recorded.
+The rows add up (3,689 + 841 + 2,692 = 7,222; the refusal causes sum to 841; the exclusions to 2,692). 81% of the 4,530 candidates (7,222 minus 2,692) translate. The core lemmas the demo cites are monomorphic and translate directly (`bitVecAddSubCancel`). The two Mathlib lemmas (`add_sub_cancel_right`, `add_right_comm`) translate as class-polymorphic entries that cannot be used until a specialisation wrapper exists, which is why the demo wraps them. It wraps the core ones too only to keep the committed glossary at 38 entries instead of about 4,000.
+
+**Defects the demo found in the merged branch.** Each was fixed, given a register row, a scenario and a case, and shown red by planting the defect and green with the fix. The order of R3 was not followed for the code: the demo found them, the fix came first, then the rows and tests, then the planted defect. That is a process deviation, recorded in the note.
+
+| # | Defect | Effect | Covered by |
+| --- | --- | --- | --- |
+| 1 | The probe named every binder, so an instance binder `[x3 : HAdd ...]` drew the `unusedVariables` linter and the probe failed with `LLV7006` | Any generated entry for a class operator was unverifiable | `VR-27`, `conformance_vr_27`, fixture `tests/fixtures/probe-binders` (`HXor.hXor`) |
+| 2 | The probe substituted the caller's arguments into the callee's binder types by name, so in `Eq (x ^^^ x) 0` inside an entry whose binder is named `a`, the `0` was ascribed `(0 : x0)` and Lean said `type expected` | Entries with a numeral argument and a clashing binder name failed | `VR-27` (same fixture, `UInt32.xor_self`); real Lean elaborates the probe with no output |
+| 3 | `fmt` in write mode checked the project in a scratch copy without the library, so it failed with `LLV7019` for any project that declares one | `fmt` unusable with a library | `ML-05`, `conformance_ml_05` (a CRLF entrypoint of a project with a present library is rewritten) |
+
+Defects 1 and 2 matter most to the design: the §13.7 probe, which the whole approach rests on, could not verify the most common kind of generated entry until the demo ran. Row `VR-25` of the demo branch collided with the #339 row of that number and is `VR-27` after the merge.
+
+Also changed by #340: `xtask` links the example's `.lake` into the clean copy of `verify-examples` (hard links, a copy across devices, symlinks recreated) instead of copying 7 GB; `audit-deferral` skips `.lake` (Mathlib's own sources contain `TODO`); `.gitignore` lists `examples/**/.lake/`.
+
+**What verified and what did not.**
+
+| Verified | Not verified or not run |
+| --- | --- |
+| `verify` of the demo, 4 modules, offline, against the pinned Mathlib, nested layout `<workspace>/.lake/packages/mathlib` (hard-linked) | `lexlean deps fetch` against real Mathlib: the demo hard-links an existing checkout |
+| Exact axiom sets of all nine theorems and lemmas, matching `\exactaxioms` and `expected/verify/audit/output.txt` | `cargo xtask verify-examples` on this example and the full `just vv`: the note records neither |
+| `conformance_vr_27`, `conformance_ml_05` red and green | Mathlib's own proofs: not replayed (§22.4) |
+| The prose forms marked "yes" in the table above, with an external lemma | `Apply`, structured `apply`, `cases`, `induction`, `Use` with an external lemma; any semantic module citing an external lemma |
+| Register total 476 on the merged branch | Another platform, toolchain or Mathlib commit |
+
+Draft issues from the note, not filed: (1) semantic modules cannot cite external lemmas; (2) a prose arithmetic form (`Close the goal by linear arithmetic.`) would let the rotation inverse be a document proof; (3) `deps glossary --names` imports only `Init`; (4) generated surfaces for class operators are unreadable (`HAdd.hAdd` is `hAddHAdd(a, b)`, a wrapper is `lexLeanSpecBitVec32BitVecAddSubCancel(a, b)`), and mapping the core operator classes to infix frames would make statements read as the issue states them; (5) the example needs the library fetched, so CI needs fetch or its own part (D16). They are folded into D2, D3, D16 and D17.
 
 ## 11. Limits and refusal reasons
 
@@ -382,7 +463,7 @@ Known gap to close with #340: every measurement above ran with the Mathlib check
 | memory (not a project limit) | none | Lean import | 0.86 to 1.9 GB targeted, 5.9 GB for `import Mathlib`, 2.9 to 3.4 GB glossary, 2.6 to 2.7 GB facts export |
 | disk (not a project limit) | none | fetch | 7.0 GB library plus 436 MB download cache |
 
-A timeout is `LLS8002` (class `security-limit`, exit 4), even for the fetch.
+A timeout is `LLS8002` (class `security-limit`, exit 4), even for the fetch. The demo's `verify` stayed at 1.3 GB peak and the glossary run at 3.1 to 3.3 GB; neither came near the defaults (section 10.7).
 
 ### 11.2 Refusal reasons
 
@@ -402,9 +483,9 @@ A timeout is `LLS8002` (class `security-limit`, exit 4), even for the fetch.
 | `LLT4018` | wrappers | request has another field, a repeated declaration and tag, a name outside the grammar, an argument outside the term grammar, or no wrapper |
 | `LLT4017` | `verify` | wrapper entry's signature is not definitionally the wrapper's type |
 | `LLT4003` | `verify` | external probe fails, including a wrapper that does not exist |
-| `LLV7023` | `verify` (#339 branch) | an imported declaration depends on `sorryAx` and no axiom policy of the document names it |
-| `LLV7024` | `verify` (#339 branch) | an imported declaration depends on `Lean.ofReduceBool` and no policy names it |
-| `LLV7025` | `verify` (#339 branch) | an imported declaration depends on `Lean.trustCompiler` or on an axiom `native_decide` generated, and no policy names it |
+| `LLV7023` | `verify` | an imported declaration depends on `sorryAx` and no axiom policy of the document names it |
+| `LLV7024` | `verify` | an imported declaration depends on `Lean.ofReduceBool` and no policy names it |
+| `LLV7025` | `verify` | an imported declaration depends on `Lean.trustCompiler` or on an axiom `native_decide` generated, and no policy names it |
 | `LLV7021` | replay cache | entry does not parse, wrong digest, stored under another key, other environment, not a regular file, or records nonzero exit |
 | `LLV7022` | replay cache | facts repeat a declaration, name one neither declared nor anchored, or do not parse; exporter failed |
 
@@ -427,19 +508,20 @@ A refusal never weakens a signature to make an entry fit (§13.12). Dependent de
 | #336 wrappers | `GL-21`, `VR-24` | `LLT4017`, `LLT4018` | `conformance_gl_21`, `_vr_24`, written failing first; seven planted defects each caught |
 | #337 speed | none (no Rust or SPEC change) | none | scripts in `tooling/mathlib-speed/`; planted-defect script |
 | #338 replay cache | `RC-01` to `RC-06` | `LLV7021`, `LLV7022` | 28 unit tests, `conformance_rc_01..06` pass (RC-06 on real Lean); two planted defects caught |
-| #339 axiom audit (branch `feat/mathlib-axioms`, not merged) | `VR-25`, `VR-26` | `LLV7023`, `LLV7024`, `LLV7025` | `conformance_vr_25`, `_vr_26` written failing first, then pass; `conformance_vr_20..24`, 10 unit tests, bdd suite; two planted defects caught. Changes were uncommitted in the working tree when read |
-| #340 demo | **PENDING** | none expected | **PENDING** |
+| #339 axiom audit | `VR-25`, `VR-26` | `LLV7023`, `LLV7024`, `LLV7025` | `conformance_vr_25`, `_vr_26` written failing first, then pass; `conformance_vr_20..24`, 10 unit tests, bdd suite; two planted defects caught |
+| #340 acceptance demo | `VR-27`, `ML-05` (fixes); example `mathlib-blake3-g` (`EX-08`, `VR-23` gates) | none new | `verified 4 modules`; `conformance_vr_27`, `conformance_ml_05`, shown red by planting, written after the fix (R3 order not followed) |
 
 Gaps that the evidence does not cover:
 
-- The full `just vv` of the merged integration branch is not recorded. Each sibling ran a subset (fmt, clippy, `validate-model`, `validate-spec-links`, the named conformance cases, the bdd suite for its own scenarios). #338 states plainly that the examples, golden and repro gates were not run.
+- The full `just vv` of the merged integration branch is not recorded. Each sibling ran a subset (fmt, clippy, `validate-model`, `validate-spec-links`, the named conformance cases, the bdd suite for its own scenarios). #338 and #339 state plainly that the examples, golden and repro gates were not run, and #340's note records no `verify-examples` run.
 - `conformance_rp_11` fails on `main` at `71defb4c6` (the README refresh removed the table it reads). Not caused by this work.
-- #334's cases were not run red before the implementation existed; two defects were planted afterwards and both were caught. #337 made no SPEC change, so no register row applies yet.
-- `lexlean deps fetch` itself has not been run against real Mathlib.
+- #334's cases were not run red before the implementation existed; two defects were planted afterwards and both were caught. #337 made no SPEC change, so no register row applies yet. #340's fixes were written after the code.
+- `lexlean deps fetch` itself has not been run against real Mathlib. The demo exercises the nested `.lake/packages/mathlib` layout, but with a hard-linked checkout (`setup-offline.sh`), not one Lake cloned.
+- The schema files are not updated for either `lean_library` or `imports` (D7).
 
 ## 13. Axiom audit of imports
 
-Source: note 339 (`~/lexlean-mathlib-339/docs/proposals/mathlib-import-notes-339.md`), branch `feat/mathlib-axioms`, rows `VR-25` and `VR-26`, codes `LLV7023` to `LLV7025`, SPEC §5.3, §5.4, §18.8, §22.6, §22.9 and §26.3 amended. This is in `~/lexlean-mathlib-339` and not on the integration branch; its changes were uncommitted when I read them, so the codes below are in that tree's `ERRORS.md` and not in the one this document was checked against (section 17). The measured axiom sets of the demo's imports: **PENDING #340**.
+Source: note 339, merged into the integration branch: rows `VR-25` and `VR-26`, codes `LLV7023` to `LLV7025`, SPEC §5.3, §5.4, §18.8, §22.6, §22.9 and §26.3 amended. The axiom sets the demo observed for its imports are in section 10.7: `propext` for the core `add_sub_cancel` lemmas; `propext`, `Quot.sound` for the xor lemmas and the host rotation lemma; all three standard axioms through the Mathlib route. No import in the demo carries `sorryAx` or a compiler-trust axiom, so no refusal of `LLV7023` to `LLV7025` was exercised by the demo (those have their own fixture, `tests/fixtures/import-axioms`).
 
 An *imported declaration* is the Lean constant a used external entry denotes when its Lean module is outside `Init`, `Std`, `Lean`, `Lake` and the generated runtime root `LexLeanRuntime`. For each one:
 
@@ -483,26 +565,29 @@ Open within the group: whether wrappers become `lexlean deps wrappers`, whether 
 
 ### D3. Which proof forms accept external lemmas in language 1.2
 
-Facts, from the code and SPEC:
+Facts, from the code, SPEC and the demo (section 10.7):
 
-- In prose proofs (§16, the language-1.0 prose-module form), every form that takes a `TERM` can already contain an external `proof-constant` entry: `Close the goal with`, `Apply`, a rewrite rule, a `simp only` rule, a calculation step's proof. This is the mechanism of §13.6 and the `peano-arithmetic` example. All repository examples that use prose proofs are language 1.0.
-- A language-1.2 module is a `semanticmodule` in the authoring notation (§17.21), exclusive with prose blocks inside one module (§17.11). Its closed proof forms (`SemanticProof` in `crates/lexlean/src/ir/semantic.rs`) are: `reflexivity`, `decide`, `linear_arithmetic`, `simplify`, `constructor`, `cases`, `term_cases`, `induction`, `congruence`, `boolean_reflection`, `law`, `apply`. None takes a lexicon entry. `apply` names a prior document theorem (`MemberRef`); `law` names a registered fold law; `simplify` names document definitions.
-- So today no language-1.2 proof form can name a Mathlib lemma. Whether a language-1.2 project may still contain prose-form modules that do, was not tested here; the repository's 1.2 examples are all semantic modules.
+- In prose proofs (§16), every form that takes a `TERM` can contain an external `proof-constant` entry. The demo, a language-1.2 project with `[[lean_library]]`, does this with `Close the goal with`, `rewrite`, `have`, `constructor`, `Assume`, and in scratch modules `simplify` and `calculate`. So the question the issue asks, "which prose proof forms should accept external lemmas in language 1.2", has a first answer: all of those already do, with no change. Not exercised: `Apply`, structured `apply`, `cases`, `induction`, `Use ... as the witness` (the demo has no lemma with premises or an inductive scrutinee). Nothing in §16 treats a term differently by origin.
+- A language-1.2 `semanticmodule` (§17.21), another kind of module in the same project, has closed proof forms (`SemanticProof` in `crates/lexlean/src/ir/semantic.rs`): `reflexivity`, `decide`, `linear_arithmetic`, `simplify`, `constructor`, `cases`, `term_cases`, `induction`, `congruence`, `boolean_reflection`, `law`, `apply`. None takes a lexicon entry: `apply` names a prior document theorem (`MemberRef`), `law` a registered fold law, `simplify` document definitions. A semantic module has no way to call an external constant at all.
+- Consequence: an external lemma can be cited from prose and not from a semantic module. A fixed-width statement that needs Lean or Mathlib lemmas cannot be a semantic-module theorem.
+- Limit of prose: bit-level facts reduce to arithmetic on indices, and no prose form does that. The demo needed 13 lines of Lean in a host library for the rotation inverse (draft issue 2 of note 340).
 
-Options:
+Options for semantic modules:
 
 | Option | Effect | Cost |
 | --- | --- | --- |
-| A. `apply` accepts an external entry | Smallest change. Lowers to `exact @L args` like `law`, and Lean checks the statement | New schema member; SPEC §17.12 text; row, scenario, negative test; moves the language-1.2 identity |
-| B. A new `external` proof form | Same, with its own name | Same cost, more surface |
-| C. `simplify` and `rewrite`-like forms also accept entries | Needed for equational Mathlib use | Larger: simp sets of external lemmas are unrestricted search risk (§16.12 forbids unrestricted simplification) |
-| D. None: use Mathlib only from prose modules | No 1.2 change | Pulls D4 the other way |
+| A. `apply` accepts an external entry | Smallest change. Lowers to `exact @L args` like `law`, validated against the entry's signature by the same probe (§13.7); Lean checks the statement | New schema member; SPEC §17.12 text; row, scenario, `LLT` code, negative test; moves the language-1.2 identity |
+| B. A new `external` proof form (note 340: `external{entry, arguments}`) | Same, with its own name | Same cost, more surface |
+| C. `simplify` and rewrite-like forms also accept entries | Needed for equational Mathlib use | Larger: simp sets of external lemmas are the unrestricted search risk (§16.12 forbids unrestricted simplification) |
+| D. None: Mathlib only from prose modules | No semantic-module change | Fixed-width semantic definitions and Mathlib stay apart |
 
-**Recommendation:** A, with explicit arguments only, no search, to start. C only on demonstrated need. Decide with D4.
+For prose, the second option is a prose arithmetic form, `Close the goal by linear arithmetic.`, lowering to `omega` or to the `linear_arithmetic` of §17.12.
+
+**Recommendation:** A, with explicit arguments only and no search. C only on demonstrated need. The prose arithmetic form is a separate, smaller decision; take it if more bit-level documents are expected.
 
 ### D4. Language scope of `[[lean_library]]` (section 5.1)
 
-It is language 1.2 only, to keep languages 1.0 and 1.1 identities. The cost: a language-1.0 project (the §13.6 example, `examples/peano-arithmetic`) cannot declare a library, and prose proofs, the only place an external lemma can be used today (D3), are language 1.0. The two decisions pull in opposite directions: if D3 is A, 1.2 is consistent. If D3 is D, `lean_library` must reach language 1.0 and 1.1 (identity moves for those). A project of any language can still depend on Mathlib through Lake alone: §10.4 already hashes `lake-manifest.json` for every language. What it lacks is the presence check, `deps fetch`, and the glossary row. **Recommendation:** keep 1.2 only and take D3 = A.
+It is language 1.2 only, to keep languages 1.0 and 1.1 identities. Before the demo this looked like a conflict, because the only proofs that could cite external lemmas were thought to be language-1.0 prose. The demo shows prose modules work in a language-1.2 project that declares a library, so a 1.2 project has both the config and the proof forms (D3). The remaining cost: a language-1.0 or 1.1 project (the §13.6 example, `examples/peano-arithmetic`) cannot declare a library. It can still depend on Mathlib through Lake alone, since §10.4 already hashes `lake-manifest.json` for every language, but it has no presence check, no `deps fetch` support and no glossary row. Whether a prose-only language-1.0 project can reach 1.2 was not tested: `lexlean migrate --to 1.2` accepts language 1.1 only (§23.4). **Recommendation:** keep 1.2 only.
 
 ### D5. Closure replay (section 8, item 5; section 10.3)
 
@@ -514,7 +599,7 @@ Open points: whether `verify` may ever consult a store (§10.5 and §9.4 stay tr
 
 ### D7. Identity-moving schema change (section 6)
 
-Two patches are held back for the same reason: `334-schema-identity-move.patch` (`lean_library` in the project and lock schemas) and `339-schema-imports-member.patch` (`imports` in the two attestation schemas). Apply them now, or batch them with the other Mathlib changes so the language-1.2 regeneration (528 files, the full gate with Lean) happens once. AGENTS.md wants such a change to land alone. **Recommendation:** one change, one regeneration, one full gate, after D3 and D4 are settled, because D3 = A also moves the identity.
+Two patches are held back for the same reason: `334-schema-identity-move.patch` (`lean_library` in the project and lock schemas) and `339-schema-imports-member.patch` (`imports` in the two attestation schemas). Apply them now, or batch them with the other Mathlib changes so the language-1.2 regeneration (528 files, the full gate with Lean) happens once. AGENTS.md wants such a change to land alone. **Recommendation:** one change, one regeneration, one full gate, after D3 is settled, because D3 = A also moves the identity. Note that the demo's committed lock and `expected/` carry the current language-1.2 ID too, so they are among the files that regeneration touches.
 
 ### D8. Reject `import Mathlib` (section 10.2)
 
@@ -530,7 +615,7 @@ By hand now, or `lexlean deps add`. **Recommendation:** by hand for the first re
 
 ### D11. Fetch timeout (sections 5.4, 10.1)
 
-A cold `cache get` took about 5.4 minutes. Options: document that a project declaring Mathlib raises `child_timeout_ms`; give `deps fetch` its own limit. **Recommendation:** document it (for example 900000) and decide on its own limit after #340 gives a measured cold fetch.
+A cold `cache get` took about 5.4 minutes. Options: document that a project declaring Mathlib raises `child_timeout_ms`; give `deps fetch` its own limit. **Recommendation:** document it (for example 900000). The demo did not give a measured cold fetch (it hard-links an existing checkout), so deciding on a separate limit for `deps fetch` still waits for one.
 
 ### D12. Glossary generator (section 10.5)
 
@@ -538,13 +623,15 @@ From note 335:
 
 | # | Decision | Effect |
 | --- | --- | --- |
-| a | Apostrophe in names (`LLT4105`) | 166 of 3,065 requested in the Mathlib sample; widening the §13.6 grammar and the LSE and probe identifier quoting would recover most |
+| a | Apostrophe in names (`LLT4105`) | 166 of 3,065 requested in the Mathlib sample, 210 of 7,222 in the demo's modules; widening the §13.6 grammar and the LSE and probe identifier quoting would recover most |
 | b | Strict-implicit binders (`LLT4102`) | 13 directly in the sample, add a mode to LSE or accept the loss |
 | c | `Sort u` polymorphism (`LLT4101`) | Largest cause: 174 directly, 215 more by dependency. Add a `Sort u` form to LSE, hand-map the few core constants, or accept |
 | d | Rust signature checker rejects some dependent signatures Lean accepts | 76 of about 2,500 translated `Init` declarations; separate decision |
 | e | Existing std entries and a generated `nat` denote the same Lean constant | Map to existing entries or accept cross-package ambiguity |
 | f | A probe pass inside the generator (`backend::lean::probe_module` once over all entries, refusing mismatches with `LLT4003`) | Makes "never weakened" a property of the generator; about a day |
 | g | Eliminator names default to `T.casesOn` and `T.rec`; the backend's emission for indexed families is untested | Check before relying on generated descriptors |
+| h | `--names` loads only `Init` (section 7.3) | Add a flag naming the modules to load, or load the defining module of each name. Recommendation: do it; without it a single Mathlib lemma costs a whole-module request or a host wrapper |
+| i | Generated surfaces for class operators are unreadable: `hAddHAdd(a, b)`, `lexLeanSpecBitVec32BitVecAddSubCancel(a, b)` | Map the core operator classes to infix frames (`+`, `-`, `^^^`) in the generator, so statements read as written |
 
 ### D13. Refusals: report or fail
 
@@ -554,7 +641,7 @@ Refusals are reported with exit 0; `--strict` fails. **Recommendation:** keep th
 
 | # | Decision |
 | --- | --- |
-| a | The `peano-arithmetic` example is not converted. Its host library is empty; converting it changes its probe, closure and lock files, and the host library must be built (`lake build <HostLib>`) before `verify-examples`. Nothing builds a host library today. Document the prerequisite, or add a build stage |
+| a | The `peano-arithmetic` example is not converted. Its host library is empty; converting it changes its probe, closure and lock files, and the host library must be built (`lake build <HostLib>`) before `verify-examples`. Nothing builds a host library today. The Mathlib demo takes the documented-prerequisite route (`setup-offline.sh` runs `lake build Blake3GHost`). Document the prerequisite, or add a build stage |
 | b | Strict probe for all external entries, not only wrappers. Changes every committed probe and `expected/verify`; needs a regeneration |
 | c | The reserved root `LexLeanSpec` and its name scheme. Any project declaring its own `LexLeanSpec.*` outside the emitter gets the strict line too |
 | d | A `lexlean` subcommand for wrappers (changes §23.4 and its rows) |
@@ -574,19 +661,34 @@ From note 339 (section 13):
 | d | Per-use attribution of an import's axioms to the declaration that uses it (built: any policy of the document naming the axiom passes the early check) | Accept the current behaviour; soundness is unchanged |
 | e | A cross-check of replay facts against `#print axioms`, if the cache is ever to report axioms for reused units | Only with D6 |
 
+### D16. Examples that need a library, and the gate (section 10.7)
+
+EX-08 discovers every `examples/*` directory and requires the full example gate. The Mathlib demo fails with `LLV7019` unless `.lake/packages/mathlib` is the pinned checkout with built artifacts. Where Mathlib lives for an example is therefore a decision: the demo hard-links an existing checkout into the example's `.lake/packages` (a symlink out of the project is refused by path confinement, and hard links need one filesystem). CI needs `lexlean deps fetch` (7.0 GB, about 5 minutes) before the examples leg, or this example needs its own CI part. `xtask` now links the example's `.lake` into the clean copy of `verify-examples` instead of copying 7 GB, and `audit-deferral` skips `.lake`. **Recommendation:** a separate CI part for this example that runs `deps fetch` first, so the ordinary examples leg stays offline and small.
+
+### D17. The demo's own choices (section 10.7)
+
+| # | Decision | Recommendation |
+| --- | --- | --- |
+| a | Propose `BitVec.rotateLeft_rotateRight` upstream to Lean core. It is the one hand-written Lean lemma in the demo | Yes |
+| b | Whether the relational encoding of G is acceptable until a semantic module can name external constants | Yes, with D3 = A as the way out |
+| c | Whether `verify` should also replay the imported declarations the document depends on. As it stands a verified document says nothing about Mathlib's own proofs | Same as D5 |
+
 ## 15. Inconsistencies and gaps found
 
 Found while writing; none fixed (the brief limits this change to the document). The first two are in normative text.
 
 1. **Instance binders in entries.** SPEC §13.13 and note 336 say a class-polymorphic declaration cannot be denoted directly because "its signature has instance binders that LSE entries do not state". But §13.8's grammar has the binder mode `instance`, and §13.12 and register row `GL-19` keep instance binders in generated signatures (note 335: "No declaration is refused for having an instance argument"). So the stated reason for wrappers does not hold as written: LSE can express an instance binder. The Rust elaborator also skips implicit and instance binders into metas (`crates/lexlean/src/elaborate/expressions.rs`, around line 1263), so the reason is not obviously that either. The fixture does show that wrappers are useful (a monomorphic constant at `Nat`, with a strict probe). I did not find the real motivation in the code. The author of §13.13 should confirm and restate the premise.
-2. **Status wording.** #333 says the status wording is "replayed in the pinned environment" (§5.3). The integration branch's §5.3 does not contain it; #339's tree adds it. The word is only literally true if closure replay is adopted, because §22.4 replays the generated modules and `leanchecker M` does not re-check M's imports (note 339 says so itself; D15a).
+2. **Status wording.** #333 says the status wording is "replayed in the pinned environment" (§5.3). The text was missing until #339 added it to §5.3. The word is only literally true if closure replay is adopted, because §22.4 replays the generated modules and `leanchecker M` does not re-check M's imports (note 339 says so itself; D15a).
 3. **Glossary package name.** The lock reads the glossary digest from the package named `lean.<name>`, but `deps glossary --package` accepts any ID. A glossary generated under another ID locks the empty-tree digest with no diagnostic.
 4. **Note 337 ratio.** "50x to 700x" cheaper than `--fresh`; the table in the same note gives 50 to 535 times (114/0.3 = 380, 214/0.4 = 535, 302/6.1 = 49.5, 207/2.2 = 94).
 5. **Note 335 file count.** "1,383 entry files in all" for 1,146 translated plus 236 support entries, which is 1,382. The difference of one is probably `lexicon.toml`; not checked.
-6. **Workspace layout.** All measurements ran with the Mathlib checkout as the workspace root; the library path LexLean reads is `<workspace>/.lake/packages/mathlib/...` (section 10.7). #340 should exercise the nested layout.
+6. **Workspace layout.** The #334 to #338 measurements ran with the Mathlib checkout as the workspace root, while the library path LexLean reads is `<workspace>/.lake/packages/mathlib/...`. The demo (#340) exercises the nested layout, with hard links rather than a Lake clone. Closed except for the clone case.
 7. **Classes of the cache codes.** `LLV7021` and `LLV7022` are class `language`, exit 1, like `LLV7003`; `LLV7019` and `LLV7020` are `environment`, exit 3. A rejected cache entry is arguably an environment problem. Owner's call; no test depends on it beyond ERRORS.md.
-8. **Register count.** `SPEC.md` says 472 total required IDs and the table has 472 rows, so the collisions noted in 335 and 336 (460, 459) were resolved at merge. #339 moves it to 474 (VR-25, VR-26); the literal is in four files and each branch bumps it.
-9. **`fmt` needs the library.** `fmt` fails with `LLV7019` for an absent library although it does not use Mathlib. Follows from every command computing the lock. Recorded, not asked.
+8. **Register count.** `SPEC.md` says 476 total required IDs and `model/ids.toml` has 476, so the collisions noted in 335 and 336 (460, 459) and the row collision between #339 and #340 (both `VR-25`; the demo's is now `VR-27`) were resolved at merge. The example's README still lists `VR-25` and `VR-26` and `ML-01` to `ML-04` as the rows whose gates run on it and omits `VR-27` and `ML-05`.
+9. **`fmt` needs the library.** `fmt` fails with `LLV7019` for an absent library although it does not use Mathlib. Follows from every command computing the lock. Recorded, not asked. (The demo's defect 3 was a different bug: `fmt` failed even with the library present.)
+10. **Probe bugs found only by a real document.** Defects 1 and 2 of section 10.7 (instance-binder linter, numeral capture) made the §13.7 probe fail for the most common kind of generated entry, a class operator, and none of the tests of #334 to #339 caught them. The note does not say why; the wrapper fixture of #336 used `Nat` and `Int` commutativity and did not hit them.
+11. **Prose and semantic modules in one project.** Before the demo I read the issue's question (which prose proof forms should accept external lemmas in language 1.2) as possibly meaning that 1.2 had no prose. In a 1.2 project, prose modules and semantic modules coexist; §17.11's "exclusive with prose blocks" applies inside one module. The real gap is semantic modules (D3).
+12. **README wording.** The example's README says the imported proofs are "replayed in the pinned environment". By §22.4 only the project's four modules are replayed (item 2).
 
 ## 16. Review against SPEC.md
 
@@ -596,15 +698,15 @@ Each row says what the design does with that section, and whether the review fou
 | --- | --- | --- |
 | §4.2 | Imports are closed external glossary entries. Generated Lean for wrappers is written by a closed emitter into the project's host library, not into documents. No claim of proof by LexLean. | No conflict. The host library is raw Lean the project owns; it is in the trusted computing base |
 | §5.1 | Item 5 (imported workspace and locked dependencies) already covers Mathlib. Closure replay (D5) would add an executable to hash | No conflict. D5 needs text |
-| §5.3 | Imports are described as "replayed in the pinned environment", not "proved", "verified", "kernel-checked" | Wording missing on the integration branch, added by #339 (section 15, item 2) |
+| §5.3 | Imports are described as "replayed in the pinned environment", not "proved", "verified", "kernel-checked" | Wording added by #339. The word "replayed" is literal only with closure replay (section 15, item 2; D15a) |
 | §5.4 | Audit stays an axiom-dependency audit. Each import's set is read from `#print axioms` in the probe | No conflict with #339's text. Attestation schema not updated (D15c) |
 | §22.6 | An import's axioms are not exempt: policies of generated declarations still apply | Consistent. Early refusal of `sorryAx` and compiler-trust axioms is #339's addition |
 | §10.4 | `[[lean_library]]`, presence rule, lock rows, `LLC0110`, `LLV7019` | Implemented and in SPEC. Schema JSON not updated (D7) |
 | §11.4 | A library is never acquired by `lock`, even with `--allow-network` | Implemented, `ML-04` |
 | §13.6 | Generated entries denote `kind = "lean"` with the defining module and the conservative name | No conflict. The apostrophe is outside the grammar (D12a) |
-| §13.7 | Each used entry probed by Lean. Wrappers get the stronger probe | No conflict. The weakness of the ordinary probe is recorded (D14b) |
+| §13.7 | Each used entry probed by Lean. Wrappers get the stronger probe | No conflict in the text. The ordinary probe is weaker than the wrapper probe (D14b), and the demo found two implementation defects in it (section 10.7, fixed by `VR-27`) |
 | §13.8 | LSE signatures generated from kernel types, `Sort u` and strict-implicit refused | Conflict with the premise of §13.13 (section 15, item 1) |
-| §16 | Prose forms already accept external `proof-constant` entries through `TERM`; language-1.2 forms do not | D3, D4 |
+| §16 | Prose forms accept external `proof-constant` entries through `TERM`, also in a language-1.2 project (demo); language-1.2 semantic-module forms do not | D3 |
 | §16.11 | Generated eliminator descriptors use `T.casesOn`/`T.rec` or custom eliminators | Backend emission for indexed families untested (D12g) |
 | §16.12 | No unrestricted simplification: rules out wide `simplify` over external lemmas | Reason for option A over C in D3 |
 | §22.4 | `leanchecker` replays generated modules only | Basis of the trust statement item 3 |
@@ -614,6 +716,6 @@ This review is a reading of the sections against the design and the code, plus t
 
 ## 17. Checks run on this document
 
-- Every `LL...` code named in this document has an entry in `ERRORS.md`: 19 on the integration branch, and `LLV7023` to `LLV7025` in the `ERRORS.md` of the #339 tree (checked there; they reach the integration branch when #339 merges). Script: a loop over the codes found by `grep -oE 'LL[A-Z][0-9]{4}'`, each looked up as a `## ` heading.
-- Numbers were taken from the five notes files and cross-checked where they add up (section 10.5 sums, section 10.3 ratios). Measurements were not repeated.
-- SPEC section numbers were checked against `SPEC.md` of the integration branch: §13.12 glossary, §13.13 wrappers, §22.13 replay cache.
+- Every `LL...` code named in this document has an entry in `ERRORS.md` of the integration branch (script: a loop over the codes found by `grep -oE 'LL[A-Z][0-9]{4}'`, each looked up as a `## ` heading), and every `AA-NN` register ID named has a row in `model/ids.toml` (second loop, same method). The count of register IDs is 476 in `SPEC.md` and in `model/ids.toml`.
+- Numbers were taken from the seven notes files and cross-checked where they add up (sections 10.5 and 10.7 sums, section 10.3 ratios), and the demo's axiom sets and theorem names against its sources and `expected/verify/audit/output.txt`. Measurements were not repeated.
+- SPEC section numbers were checked against `SPEC.md` of the integration branch: §13.12 glossary, §13.13 wrappers, §22.13 replay cache, §22.9, §26.3.
