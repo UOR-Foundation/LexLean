@@ -1606,7 +1606,7 @@ math = "(seq (operator-name gsucc) (paren (slot 0)))"
                 }
             }
         }
-        // §13.12: the wrapper emitter.
+        // §13.13: the wrapper emitter.
         "GL-21" => super::specialisation::emitter(),
         other => panic!("no lexicon case is wired for {other}"),
     }

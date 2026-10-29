@@ -1,6 +1,6 @@
 # specialisation
 
-The fixture of `GL-21` and `VR-24` (SPEC.md §13.12, §18.8).
+The fixture of `GL-21` and `VR-24` (SPEC.md §13.13, §18.8).
 
 - `request.toml`: a specialisation request for `Std.Commutative.comm` and
   `Std.Associative.assoc` at `Nat`, `Int`, `UInt32` and `BitVec 32`.

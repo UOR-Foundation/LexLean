@@ -1,4 +1,4 @@
-//! Specialisation wrappers (SPEC.md §13.12): the host-library declarations
+//! Specialisation wrappers (SPEC.md §13.13): the host-library declarations
 //! that let a class-polymorphic Lean declaration be denoted by a glossary
 //! entry at a concrete type.
 //!
@@ -182,7 +182,7 @@ fn is_tag(text: &str) -> bool {
     is_plain_name(text) && !text.contains('.')
 }
 
-/// Parse and validate a request (SPEC.md §13.12).
+/// Parse and validate a request (SPEC.md §13.13).
 ///
 /// # Errors
 ///
@@ -399,7 +399,7 @@ pub struct Emitted {
     pub wrappers: Vec<EmittedWrapper>,
 }
 
-/// Write the host module of a request (SPEC.md §13.12). The wrappers are in
+/// Write the host module of a request (SPEC.md §13.13). The wrappers are in
 /// the order of their Lean names, so the bytes do not depend on the order of
 /// the request.
 #[must_use]

@@ -11388,7 +11388,7 @@ script's output to that function, so the file the gate job writes is the file
 
 ## Specialisation wrappers and the signature probe (`GL-21`, `VR-24`, #336)
 
-`conformance_gl_21` runs the wrapper emitter (SPEC.md §13.12) on
+`conformance_gl_21` runs the wrapper emitter (SPEC.md §13.13) on
 `tests/fixtures/specialisation/request.toml` (`Std.Commutative.comm` and
 `Std.Associative.assoc` at `Nat`, `Int`, `UInt32` and `BitVec 32`) twice, in the
 request's order and in the reverse order, and requires the committed host module

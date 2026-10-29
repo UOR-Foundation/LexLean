@@ -1464,7 +1464,7 @@ Loading a package MUST reject:
 - an eliminator descriptor that references absent constructors;
 - a package whose `language` differs from the project's (`LLC0103`).
 
-### 13.12 Specialisation wrappers
+### 13.13 Specialisation wrappers
 
 A class-polymorphic Lean declaration, such as `Std.Commutative.comm` over any `α` with an instance, is not an interface a glossary entry can denote: its signature has instance binders that LSE entries do not state. A *specialisation* instantiates it at a concrete type and is written as a declaration of the project's host Lean library, which an entry then denotes (§13.6). The emitter takes a *specialisation request* and writes the host module's declarations. It is the Rust function `lexlean::wrappers::emit` over `lexlean::wrappers::parse_request`, and it runs no Lean; `cargo xtask emit-wrappers <request.toml> <host-module.lean>` writes the module and prints one tab-separated line per wrapper (Lean name, declaration, tag, line).
 
@@ -8265,7 +8265,7 @@ LexLeanProbe.P<first-32-hex-of-semantic-id>
 
 For every used external Lean entry, sorted by qualified entry ID, it emits an `example` whose declared type is the entry's linked signature and whose value is the external Lean constant. Universe variables are alpha-renamed with an entry-index prefix.
 
-An entry whose Lean name is under the reserved root `LexLeanSpec` (§13.12) is a specialisation wrapper, and its line is stronger: `example : (<signature>) = (type_of% @<constant>) := rfl`, so that the linked signature is definitionally the Lean type of the wrapper, binder for binder with its implicit and instance binders, and not merely a type the wrapper can inhabit after Lean inserts implicit arguments. A failing line of this kind is `LLT4017` and names the entry and Lean's message, unless Lean reports the constant unknown, which is `LLT4003`. A failing line of any other entry is `LLT4003`.
+An entry whose Lean name is under the reserved root `LexLeanSpec` (§13.13) is a specialisation wrapper, and its line is stronger: `example : (<signature>) = (type_of% @<constant>) := rfl`, so that the linked signature is definitionally the Lean type of the wrapper, binder for binder with its implicit and instance binders, and not merely a type the wrapper can inhabit after Lean inserts implicit arguments. A failing line of this kind is `LLT4017` and names the entry and Lean's message, unless Lean reports the constant unknown, which is `LLT4003`. A failing line of any other entry is `LLT4003`.
 
 The probe establishes only that the external constant can inhabit the declared interface in the pinned environment. It is not included in the canonical document, module API, or axiom-policy results.
 
@@ -9877,7 +9877,7 @@ The initial registry MUST include at least these exact codes and meanings:
 | `LLT4015` | Tooling term ill-typed or unlicensed (§17.20). |
 | `LLT4016` | Unbounded or unspecified text generation (§17.12). |
 | `LLT4017` | External specialisation signature is not the type of the wrapper (§18.8). |
-| `LLT4018` | Specialisation request refused (§13.12). |
+| `LLT4018` | Specialisation request refused (§13.13). |
 | `LLF5001` | Invalid definition form, self head, or recursion. |
 | `LLF5002` | Invalid proof step for the current goal. |
 | `LLF5003` | Missing, duplicate, or malformed proof branch. |
@@ -10661,7 +10661,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `GL-16` | `lexicon` | Package and entry bytes participate in lock and semantic closure hashes exactly as specified. | §11, §21 |
 | `GL-17` | `lexicon` | Language 1.2 resolves the exact 1.2 builtin package closure and enforces 1.2 lexicon semantics. | §13.1, §13.11 |
 | `GL-18` | `lexicon` | Cross-version package, lexicon, and lock combinations fail closed before backend execution. | §10.1, §13.11 |
-| `GL-21` | `lexicon` | A specialisation request names a class-polymorphic Lean declaration, its kind (`theorem` or `def`), a tag, and the arguments of its application at a concrete type, each a closed term of identifiers, numerals, holes, and applications; the wrapper emitter writes one `public` declaration for each under the reserved root `LexLeanSpec`, whose type is `type_of%` the application and whose value is the application, with every constant `_root_`-qualified and no tactic and no axiom, in sorted order and byte for byte the same on every run, and a request with a duplicate tag, a name outside the conservative grammar, or an argument outside the term grammar is refused with LLT4018. | §13.12 |
+| `GL-21` | `lexicon` | A specialisation request names a class-polymorphic Lean declaration, its kind (`theorem` or `def`), a tag, and the arguments of its application at a concrete type, each a closed term of identifiers, numerals, holes, and applications; the wrapper emitter writes one `public` declaration for each under the reserved root `LexLeanSpec`, whose type is `type_of%` the application and whose value is the application, with every constant `_root_`-qualified and no tactic and no axiom, in sorted order and byte for byte the same on every run, and a request with a duplicate tag, a name outside the conservative grammar, or an argument outside the term grammar is refused with LLT4018. | §13.13 |
 | `GR-01` | `grammar` | A source module parses only under the exact structural grammar and environment set. | §15.1, §15.2 |
 | `GR-02` | `grammar` | Glossary imports, module imports, title, and blocks obey exact header order and cardinality. | §15.1 |
 | `GR-03` | `grammar` | Sections nest within the configured scope limit and section parameters introduce explicit inherited context. | §15.1, §15.4 |

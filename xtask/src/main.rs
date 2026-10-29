@@ -1354,7 +1354,7 @@ mod examples_part_tests {
 }
 
 /// `cargo xtask emit-wrappers <request.toml> <host-module.lean>` (SPEC.md
-/// §13.12): write the host module of a specialisation request, and print one
+/// §13.13): write the host module of a specialisation request, and print one
 /// line per wrapper, tab-separated `<lean name> <declaration> <tag> <line>`, in the order
 /// of the module.
 fn emit_wrappers(arguments: &[String]) -> Result<(), Fail> {

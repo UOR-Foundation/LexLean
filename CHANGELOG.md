@@ -17,7 +17,7 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
-- Specialisation wrappers (`GL-21`, SPEC.md §13.12). A class-polymorphic Lean
+- Specialisation wrappers (`GL-21`, SPEC.md §13.13). A class-polymorphic Lean
   declaration is written at a concrete type as one `public` declaration of the host
   library, `LexLeanSpec.<tag>.<declaration>`, whose type is `type_of%` the
   application `@declaration arguments` and whose value is that application: a term,

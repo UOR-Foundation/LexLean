@@ -1,4 +1,4 @@
-//! GL-21 and VR-24: specialisation wrappers (SPEC.md §13.12, §18.8).
+//! GL-21 and VR-24: specialisation wrappers (SPEC.md §13.13, §18.8).
 //!
 //! The fixture is `tests/fixtures/specialisation`: a request for
 //! `Std.Commutative.comm` and `Std.Associative.assoc` at `Nat`, `Int`,

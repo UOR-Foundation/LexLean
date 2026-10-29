@@ -1370,7 +1370,7 @@ pub fn run_part(
         // attributed to its entry (S11).
         let combined = format!("{}{}", probe_record.stdout, probe_record.stderr);
         let messages = parse_lean_messages(&combined);
-        // A specialisation wrapper (§13.12) is held to the equality of its
+        // A specialisation wrapper (§13.13) is held to the equality of its
         // signature and its type, and Lean's complaint on that line is the
         // signature differing unless it says the wrapper does not exist: a
         // host library that lacks the wrapper is the interface failure it

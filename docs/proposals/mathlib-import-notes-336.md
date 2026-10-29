@@ -2,7 +2,7 @@
 
 Issue #336, tracking issue #333. Branch `feat/mathlib-wrappers`, local commits only.
 Register rows `GL-21` and `VR-24`; diagnostics `LLT4017` and `LLT4018`;
-SPEC.md §13.12 (new) and §18.8 (amended).
+SPEC.md §13.13 (new) and §18.8 (amended).
 
 ## The problem
 
