@@ -1,6 +1,6 @@
 # Mathlib import: design
 
-Issue #341, tracking issue #333. Draft for owner acceptance, written 2026-10-29. Normative text is `SPEC.md`; this document explains and asks. The prototype is the integration branch `feat/mathlib-import-integration` (issues #334 to #338 merged locally, nothing pushed). Sections marked **PENDING** wait for #339 and #340.
+Issue #341, tracking issue #333. Draft for owner acceptance, written 2026-10-29. Normative text is `SPEC.md`; this document explains and asks. The prototype is the integration branch `feat/mathlib-import-integration` (issues #334 to #338 merged locally, nothing pushed). #339 (axiom audit) is a separate branch, `feat/mathlib-axioms`, not yet merged into it: its SPEC text, register rows and codes are in `~/lexlean-mathlib-339` only. Sections marked **PENDING** wait for #340, the acceptance demo.
 
 ## 1. Summary
 
@@ -31,7 +31,7 @@ What is built and checked is listed in section 12. What is not decided is in sec
 | --- | --- | --- |
 | Seamless: a short config entry plus one command | `[[lean_library]]`, `deps fetch`, `deps glossary` | Partly. Fetch is one command. A Lake `require` is still written by hand, and glossary generation needs a module list. Not one command end to end |
 | Fast: Mathlib is never rebuilt | Fetch of prebuilt `.olean` files, targeted imports | Imports measured (section 9). A warm full `verify` of a document using Mathlib is not measured yet: **PENDING #340** |
-| Precise: pinned, signature-checked, axiom-audited, content-addressed | Lock rows, §13.7 probe, strict wrapper probe, axiom audit, replay keys | Pin, lock, probe and keys built. Axiom audit of imports: **PENDING #339**. Content addresses of `.olean` bytes are not in the lock (section 6) |
+| Precise: pinned, signature-checked, axiom-audited, content-addressed | Lock rows, §13.7 probe, strict wrapper probe, axiom audit, replay keys | Pin, lock, probe and keys built. Axiom audit of imports built on the #339 branch (section 13). Content addresses of `.olean` bytes are not in the lock (section 6) |
 
 ## 3. Constraints taken as given
 
@@ -200,8 +200,8 @@ This is the text the design asks the owner to accept as the statement of what an
 3. **What is not checked, today.** The imported declarations themselves are not replayed. `import` loads Mathlib's `.olean` files into the environment and the generated modules' `leanchecker` run trusts the imports: it replays the module's own constants into the environment of its imports. Note 337 demonstrates this with a planted defect: module `Evil` adds a false theorem with `debug.skipKernelTC`, module `UsesEvil` imports and uses it. `leanchecker UsesEvil` exits 0. `leanchecker Evil` and closure replay (below) fail. So the imported library is trusted as part of the workspace (§5.1, item 5).
 4. **Environment.** The pinned toolchain `leanprover/lean4:v4.32.1`, the Mathlib commit `520045ab14e2...`, and Mathlib's own locked dependencies (pinned by the SHA-256 of its `lake-manifest.json`). All Lean processes run through `lake env` in the Lake workspace (§22.2). Measurements were taken on x86_64 Linux (WSL2) only.
 5. **Replay proposed (D5).** Closure replay (`tooling/mathlib-speed/closure-replay`, about 120 lines of Lean built with the pinned toolchain) starts from the constants the project's compiled module mentions, collects everything they transitively mention, and replays that set into an empty environment through `Lean.Environment.replay`. A mention that is not found is an error, so an incomplete closure cannot pass. It is the same kernel as `leanchecker`, not an independent checker (§4.2 already forbids calling `leanchecker` independent). If adopted, the status word is still "replayed in the pinned environment".
-6. **Axioms.** The audit is an axiom-dependency audit only (§5.4). Mathlib's standard axioms are `Classical.choice`, `Quot.sound`, `propext`, the same three LexLean certificates depend on. An imported theorem's axioms are not exempt: if they flow into a generated declaration, that declaration's policy must permit them (§22.6). Measured examples from note 336: the `Nat.add_comm` wrapper depends on `[propext]`; the `BitVec 32` wrapper on `[propext, Classical.choice, Quot.sound]`. Auditing the imports themselves, and refusing `sorryAx`, `Lean.ofReduceBool`, `Lean.trustCompiler` and `native_decide` axioms: **PENDING #339** (section 13).
-7. **Wording.** An import's status is "replayed in the pinned environment". The words "proved", "verified" and "kernel-checked" are reserved for the document's generated declarations (§5.3). The integration branch's §5.3 does not yet contain the "replayed in the pinned environment" wording; **PENDING #339**.
+6. **Axioms.** The audit is an axiom-dependency audit only (§5.4). Mathlib's standard axioms are `Classical.choice`, `Quot.sound`, `propext`, the same three LexLean certificates depend on. An imported theorem's axioms are not exempt: if they flow into a generated declaration, that declaration's policy must permit them (§22.6). Measured examples from note 336: the `Nat.add_comm` wrapper depends on `[propext]`; the `BitVec 32` wrapper on `[propext, Classical.choice, Quot.sound]`. The imports themselves are audited by `#print axioms` in the probe process, and an import that depends on `sorryAx`, `Lean.ofReduceBool`, `Lean.trustCompiler` or a `native_decide` axiom is refused unless a policy of the document names it (section 13, on the #339 branch).
+7. **Wording.** An import's status is "replayed in the pinned environment". The words "proved", "verified" and "kernel-checked" are reserved for the document's generated declarations (§5.3, as amended on the #339 branch). The word "replayed" is only literally true in the sense that the pinned Lean loaded the compiled module of the locked workspace: §22.4 replays the generated modules only (item 3). It becomes literal if closure replay (D5, item 5) is adopted. Without it, "loaded from the pinned environment" is the more accurate status (D15).
 8. **Not covered.** A checkout whose `HEAD` matches the declared commit but whose files or `.olean` files were altered (section 6). That a glossary entry's statement matches the informal mathematics a reader expects. That a wrapper's host library is itself sound: it is a Lean library of the project, in the trusted computing base, and a wrapper adds no axiom of its own.
 9. **Replay cache.** If used, the cache is an untrusted input (§5.2). `entry_digest` detects changed bytes and a mismatch with the key; it is not authentication, since whoever can write the store recomputes it. A reused result is evidence that the unit was replayed once, by the executable the entry names, in the environment its key covers. It is not evidence of a replay by this run.
 
@@ -402,6 +402,9 @@ A timeout is `LLS8002` (class `security-limit`, exit 4), even for the fetch.
 | `LLT4018` | wrappers | request has another field, a repeated declaration and tag, a name outside the grammar, an argument outside the term grammar, or no wrapper |
 | `LLT4017` | `verify` | wrapper entry's signature is not definitionally the wrapper's type |
 | `LLT4003` | `verify` | external probe fails, including a wrapper that does not exist |
+| `LLV7023` | `verify` (#339 branch) | an imported declaration depends on `sorryAx` and no axiom policy of the document names it |
+| `LLV7024` | `verify` (#339 branch) | an imported declaration depends on `Lean.ofReduceBool` and no policy names it |
+| `LLV7025` | `verify` (#339 branch) | an imported declaration depends on `Lean.trustCompiler` or on an axiom `native_decide` generated, and no policy names it |
 | `LLV7021` | replay cache | entry does not parse, wrong digest, stored under another key, other environment, not a regular file, or records nonzero exit |
 | `LLV7022` | replay cache | facts repeat a declaration, name one neither declared nor anchored, or do not parse; exporter failed |
 
@@ -424,7 +427,7 @@ A refusal never weakens a signature to make an entry fit (§13.12). Dependent de
 | #336 wrappers | `GL-21`, `VR-24` | `LLT4017`, `LLT4018` | `conformance_gl_21`, `_vr_24`, written failing first; seven planted defects each caught |
 | #337 speed | none (no Rust or SPEC change) | none | scripts in `tooling/mathlib-speed/`; planted-defect script |
 | #338 replay cache | `RC-01` to `RC-06` | `LLV7021`, `LLV7022` | 28 unit tests, `conformance_rc_01..06` pass (RC-06 on real Lean); two planted defects caught |
-| #339 axiom audit | **PENDING** | **PENDING** | **PENDING** |
+| #339 axiom audit (branch `feat/mathlib-axioms`, not merged) | `VR-25`, `VR-26` | `LLV7023`, `LLV7024`, `LLV7025` | `conformance_vr_25`, `_vr_26` written failing first, then pass; `conformance_vr_20..24`, 10 unit tests, bdd suite; two planted defects caught. Changes were uncommitted in the working tree when read |
 | #340 demo | **PENDING** | none expected | **PENDING** |
 
 Gaps that the evidence does not cover:
@@ -436,15 +439,29 @@ Gaps that the evidence does not cover:
 
 ## 13. Axiom audit of imports
 
-**PENDING #339.** The notes are not yet written (`~/lexlean-mathlib-339/docs/proposals/mathlib-import-notes-339.md` does not exist at the time of writing). The work is in progress in `~/lexlean-mathlib-339`, uncommitted. What the design needs from it, and what is not yet verifiable here:
+Source: note 339 (`~/lexlean-mathlib-339/docs/proposals/mathlib-import-notes-339.md`), branch `feat/mathlib-axioms`, rows `VR-25` and `VR-26`, codes `LLV7023` to `LLV7025`, SPEC §5.3, §5.4, §18.8, §22.6, §22.9 and §26.3 amended. This is in `~/lexlean-mathlib-339` and not on the integration branch; its changes were uncommitted when I read them, so the codes below are in that tree's `ERRORS.md` and not in the one this document was checked against (section 17). The measured axiom sets of the demo's imports: **PENDING #340**.
 
-- the wording of an import's status in §5.3;
-- whether the probe module prints `#print axioms` for each imported constant and where the observed set is recorded in the attestation;
-- the refusal rules for `sorryAx`, `Lean.ofReduceBool`, `Lean.trustCompiler` and `native_decide` axioms, their codes in ERRORS.md and the negative tests;
-- the measured axiom sets of the demo's imports;
-- decisions that belong to the owner.
+An *imported declaration* is the Lean constant a used external entry denotes when its Lean module is outside `Init`, `Std`, `Lean`, `Lake` and the generated runtime root `LexLeanRuntime`. For each one:
 
-Diagnostics for this section will be added to section 11.2 when they exist in ERRORS.md.
+1. The probe module (§18.8) prints `#print axioms <name>` after its `example` lines, once per distinct Lean name. This is what §5.4 defines the audit to be, and it runs in the probe process that already imports the constant.
+2. `verify::axiom::parse_import_audit_output` reads the output (the §22.5 grammar plus the spellings below).
+3. `verify::imports::audit` refuses, before any elaboration, an import whose observed set holds `sorryAx` (`LLV7023`), `Lean.ofReduceBool` (`LLV7024`), or `Lean.trustCompiler` or a `native_decide` axiom (`LLV7025`), unless an `allow` or `exact` policy of some declaration of the document names that axiom.
+4. The attestation gets an `imports` member (entry, module, name, observed set, status), present only when there is an import, so a project that imports nothing outside the toolchain keeps its attestation. The status is `replayed in the pinned environment`.
+
+Every other axiom of an import (`Classical.choice`, `Quot.sound`, `propext`, anything else) is judged only by the generated declarations that depend on it, as before (`LLV7005`).
+
+Findings from note 339 that change the premise of the issue:
+
+- **`native_decide` is not `Lean.trustCompiler` at 4.32.1.** `theorem t : 2 + 2 = 4 := by native_decide` depends on `[t._native.native_decide.ax_1_1]`, an axiom generated per use. `Lean.ofReduceBool` and `Lean.trustCompiler` appear only when written out, and `Lean.ofReduceBool` rests on `Lean.trustCompiler`. Both are deprecated in 4.32.1. The generated axiom is classified with `Lean.trustCompiler` (`LLV7025`).
+- **That axiom cannot be named by a policy.** Lean prints it with a hygiene mark (U+271D), and from a private declaration under `_private.<Module>.0`; policies take the closed ASCII name grammar. An import that carries it is always refused (D15).
+- **A policy that accepts `Lean.ofReduceBool` must name `Lean.trustCompiler` too.** A half-named policy is `LLV7025`.
+- **Granularity.** The import check asks only that some policy of the document names the axiom. The declaration that uses the import is then held to its own policy by the existing check (`LLV7005`, after elaboration). A document with one declaration `\allowaxioms{sorryAx}` and another using the `sorry` import under `\noaxioms` passes the early check and fails with `LLV7005` later. Soundness is unchanged; only the code and timing of the refusal. Per-use attribution needs a per-declaration use map that the checked project does not have.
+- **Replay facts are not used for axioms.** The #338 facts could carry the axiom set, but §5.4 defines the audit as what `#print axioms` returns, and the facts export walks a whole closure (28 s and 2.6 GB for `Mathlib.Order.Basic`) to answer a question about a few constants.
+- **Existing examples change.** The host modules of `peano-arithmetic` (`Doubling`, `Order`, `Divisibility`) and the Atlas entries in `language/uor` are outside the toolchain, so their probes now print axioms and they are audited imports. Only `peano-arithmetic` was verified there; `check-golden` and `verify-examples` were not run.
+
+Evidence: `conformance_vr_25` and `_vr_26` failed first and then pass; `conformance_vr_20` to `_vr_24` (real projects), 10 unit tests, the bdd suite, `validate-model`, `validate-spec-links` (474 rows), fmt and clippy pass. Two planted defects were caught. Not run: the full `just vv`, `check-golden`, `verify-examples`, `conformance_rp_11` (known failure on `main`).
+
+Held back, as in #334: `schemas/attestation.schema.json` and `schemas/attestation-v2.schema.json` have `additionalProperties: false`, so an attestation with `imports` does not validate against them. Editing them moves the compiler-semantics ID. The change is a patch, `339-schema-imports-member.patch`, in the shared notes folder (D7, D15).
 
 ## 14. Decisions that belong to the owner
 
@@ -497,7 +514,7 @@ Open points: whether `verify` may ever consult a store (§10.5 and §9.4 stay tr
 
 ### D7. Identity-moving schema change (section 6)
 
-Apply `334-schema-identity-move.patch` now, or batch it with the other Mathlib changes so the language-1.2 regeneration (528 files, the full gate with Lean) happens once. AGENTS.md wants such a change to land alone. **Recommendation:** one change, one regeneration, one full gate, after D3 and D4 are settled, because D3 = A also moves the identity.
+Two patches are held back for the same reason: `334-schema-identity-move.patch` (`lean_library` in the project and lock schemas) and `339-schema-imports-member.patch` (`imports` in the two attestation schemas). Apply them now, or batch them with the other Mathlib changes so the language-1.2 regeneration (528 files, the full gate with Lean) happens once. AGENTS.md wants such a change to land alone. **Recommendation:** one change, one regeneration, one full gate, after D3 and D4 are settled, because D3 = A also moves the identity.
 
 ### D8. Reject `import Mathlib` (section 10.2)
 
@@ -547,20 +564,28 @@ Refusals are reported with exit 0; `--strict` fails. **Recommendation:** keep th
 
 ### D15. Axioms and wording
 
-**PENDING #339.** The imported-declaration status wording and refusal rules (section 13).
+From note 339 (section 13):
+
+| # | Decision | Recommendation |
+| --- | --- | --- |
+| a | Status word. "Replayed in the pinned environment" is literal only if closure replay (D5) is adopted. Otherwise "loaded from the pinned environment" is more accurate | Adopt D5 and keep "replayed"; if D5 is declined, change the word |
+| b | The `native_decide` axiom cannot be named by a policy, so an import carrying it is always refused. Leave it, or let a policy name it with a prefix pattern | Leave it refused |
+| c | Identity move for the `imports` attestation member: take the patch, or put the rows in a staged file (`probe/imports.json`) that the attestation does not carry | Take the patch, in the single regeneration of D7 |
+| d | Per-use attribution of an import's axioms to the declaration that uses it (built: any policy of the document naming the axiom passes the early check) | Accept the current behaviour; soundness is unchanged |
+| e | A cross-check of replay facts against `#print axioms`, if the cache is ever to report axioms for reused units | Only with D6 |
 
 ## 15. Inconsistencies and gaps found
 
 Found while writing; none fixed (the brief limits this change to the document). The first two are in normative text.
 
 1. **Instance binders in entries.** SPEC §13.13 and note 336 say a class-polymorphic declaration cannot be denoted directly because "its signature has instance binders that LSE entries do not state". But §13.8's grammar has the binder mode `instance`, and §13.12 and register row `GL-19` keep instance binders in generated signatures (note 335: "No declaration is refused for having an instance argument"). So the stated reason for wrappers does not hold as written: LSE can express an instance binder. The Rust elaborator also skips implicit and instance binders into metas (`crates/lexlean/src/elaborate/expressions.rs`, around line 1263), so the reason is not obviously that either. The fixture does show that wrappers are useful (a monomorphic constant at `Nat`, with a strict probe). I did not find the real motivation in the code. The author of §13.13 should confirm and restate the premise.
-2. **Status wording.** #333 says the status wording is "replayed in the pinned environment" (§5.3). The integration branch's §5.3 does not contain it. It appears only in #339's unfinished working tree.
+2. **Status wording.** #333 says the status wording is "replayed in the pinned environment" (§5.3). The integration branch's §5.3 does not contain it; #339's tree adds it. The word is only literally true if closure replay is adopted, because §22.4 replays the generated modules and `leanchecker M` does not re-check M's imports (note 339 says so itself; D15a).
 3. **Glossary package name.** The lock reads the glossary digest from the package named `lean.<name>`, but `deps glossary --package` accepts any ID. A glossary generated under another ID locks the empty-tree digest with no diagnostic.
 4. **Note 337 ratio.** "50x to 700x" cheaper than `--fresh`; the table in the same note gives 50 to 535 times (114/0.3 = 380, 214/0.4 = 535, 302/6.1 = 49.5, 207/2.2 = 94).
 5. **Note 335 file count.** "1,383 entry files in all" for 1,146 translated plus 236 support entries, which is 1,382. The difference of one is probably `lexicon.toml`; not checked.
 6. **Workspace layout.** All measurements ran with the Mathlib checkout as the workspace root; the library path LexLean reads is `<workspace>/.lake/packages/mathlib/...` (section 10.7). #340 should exercise the nested layout.
 7. **Classes of the cache codes.** `LLV7021` and `LLV7022` are class `language`, exit 1, like `LLV7003`; `LLV7019` and `LLV7020` are `environment`, exit 3. A rejected cache entry is arguably an environment problem. Owner's call; no test depends on it beyond ERRORS.md.
-8. **Register count.** `SPEC.md` says 472 total required IDs and the table has 472 rows, so the collisions noted in 335 and 336 (460, 459) were resolved at merge. #339 will move it (its working tree says 474).
+8. **Register count.** `SPEC.md` says 472 total required IDs and the table has 472 rows, so the collisions noted in 335 and 336 (460, 459) were resolved at merge. #339 moves it to 474 (VR-25, VR-26); the literal is in four files and each branch bumps it.
 9. **`fmt` needs the library.** `fmt` fails with `LLV7019` for an absent library although it does not use Mathlib. Follows from every command computing the lock. Recorded, not asked.
 
 ## 16. Review against SPEC.md
@@ -571,8 +596,9 @@ Each row says what the design does with that section, and whether the review fou
 | --- | --- | --- |
 | §4.2 | Imports are closed external glossary entries. Generated Lean for wrappers is written by a closed emitter into the project's host library, not into documents. No claim of proof by LexLean. | No conflict. The host library is raw Lean the project owns; it is in the trusted computing base |
 | §5.1 | Item 5 (imported workspace and locked dependencies) already covers Mathlib. Closure replay (D5) would add an executable to hash | No conflict. D5 needs text |
-| §5.3 | Imports are described as "replayed in the pinned environment", not "proved", "verified", "kernel-checked" | Wording missing on the integration branch (section 15, item 2). **PENDING #339** |
-| §5.4 | Audit stays an axiom-dependency audit. Imports' sets are audited separately | **PENDING #339** |
+| §5.3 | Imports are described as "replayed in the pinned environment", not "proved", "verified", "kernel-checked" | Wording missing on the integration branch, added by #339 (section 15, item 2) |
+| §5.4 | Audit stays an axiom-dependency audit. Each import's set is read from `#print axioms` in the probe | No conflict with #339's text. Attestation schema not updated (D15c) |
+| §22.6 | An import's axioms are not exempt: policies of generated declarations still apply | Consistent. Early refusal of `sorryAx` and compiler-trust axioms is #339's addition |
 | §10.4 | `[[lean_library]]`, presence rule, lock rows, `LLC0110`, `LLV7019` | Implemented and in SPEC. Schema JSON not updated (D7) |
 | §11.4 | A library is never acquired by `lock`, even with `--allow-network` | Implemented, `ML-04` |
 | §13.6 | Generated entries denote `kind = "lean"` with the defining module and the conservative name | No conflict. The apostrophe is outside the grammar (D12a) |
@@ -588,6 +614,6 @@ This review is a reading of the sections against the design and the code, plus t
 
 ## 17. Checks run on this document
 
-- Every `LL...` code named in this document has an entry in `ERRORS.md` on the integration branch (script output recorded in the commit message). Codes proposed by #339 are not named here for that reason.
+- Every `LL...` code named in this document has an entry in `ERRORS.md`: 19 on the integration branch, and `LLV7023` to `LLV7025` in the `ERRORS.md` of the #339 tree (checked there; they reach the integration branch when #339 merges). Script: a loop over the codes found by `grep -oE 'LL[A-Z][0-9]{4}'`, each looked up as a `## ` heading.
 - Numbers were taken from the five notes files and cross-checked where they add up (section 10.5 sums, section 10.3 ratios). Measurements were not repeated.
 - SPEC section numbers were checked against `SPEC.md` of the integration branch: §13.12 glossary, §13.13 wrappers, §22.13 replay cache.
