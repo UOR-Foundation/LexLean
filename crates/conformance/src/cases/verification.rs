@@ -42,7 +42,7 @@ pub(crate) fn run(id: &str) {
         return;
     }
     // §18.8: the probe of a specialisation wrapper; the case gates itself.
-    if id == "VR-25" {
+    if id == "VR-27" {
         super::probe_binders::probe();
         return;
     }

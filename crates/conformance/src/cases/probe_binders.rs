@@ -1,4 +1,4 @@
-//! VR-25: how the external-interface probe writes a signature (SPEC.md §18.8).
+//! VR-27: how the external-interface probe writes a signature (SPEC.md §18.8).
 //!
 //! The fixture is `tests/fixtures/probe-binders`: a project whose two entries
 //! denote `HXor.hXor`, which has an instance binder, and `UInt32.xor_self`,
@@ -9,10 +9,10 @@ use crate::support::{self, P};
 
 const PROJECT: &str = "fixtures/probe-binders/project";
 
-/// VR-25: the instance binder is anonymous and the numeral is ascribed no
+/// VR-27: the instance binder is anonymous and the numeral is ascribed no
 /// local, so pinned Lean elaborates the probe without output.
 pub(super) fn probe() {
-    if !support::lean_backed("VR-25") {
+    if !support::lean_backed("VR-27") {
         return;
     }
     let project = P::copy_tests_project(PROJECT);

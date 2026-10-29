@@ -1358,7 +1358,7 @@ suite = "verification"
 statement = "An external entry whose Lean name is under the reserved root `LexLeanSpec` is probed by `example : (<signature>) = (type_of% @<constant>) := rfl`, so that its linked signature is definitionally the Lean type of the wrapper and not merely inhabited by it; an entry whose signature differs from that type is refused with LLT4017 naming the entry, a wrapper that does not exist stays LLT4003, and an entry outside the reserved root is probed exactly as before."
 
 [[id]]
-id = "VR-25"
+id = "VR-27"
 level = "build"
 suite = "verification"
 statement = "The external-interface probe writes an instance binder that no later binder or the result mentions without a name, so that pinned Lean's unused-variable linter has nothing to report for an entry such as `HXor.hXor`, and ascribes the type a callee declares to a numeral argument only when that type is closed in the caller's scope, with the callee's own binders renamed apart, so that a caller binder named like a callee binder (`a`, the type parameter of `Eq`) is never taken for it; a generated entry with an instance binder and a numeral argument elaborates without output."
