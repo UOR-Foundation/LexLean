@@ -129,3 +129,21 @@ Feature: lexicon
     Then each package mismatch fails lock with LLC0103 naming both languages
     And the tampered lock fails check and `lock --check` with LLC0102
     And build refuses every project and no build or verification root exists
+
+  @GL-19 @build
+  Scenario: A generated external-Lean glossary is a lexicon package of kind-lean entries that the package loader accepts: each signature is the LSE translation of the Lean type with implicit and instance binders kept as binders and left out of applications, each identifier, surface, category, and render follows the documented naming scheme, an inductive type carries an eliminator descriptor over its constructor entries, and two runs over one extraction produce byte-identical packages and reports.
+    Given the committed extraction of a Lean module holding theorems, definitions, a class, a recursive inductive type, and predicates of each arity, equal to a fresh extraction when the pinned Lean is available
+    When the glossary planner turns it into a package twice and the package loader reads the result
+    Then the loader accepts the package and every entry denotes a Lean constant by module and name
+    And the entry for the theorem about the class keeps its instance binder, applies the class method to its explicit arguments only, and has the identifier `fix.scale-zero`, the surface `fixScaleZero`, and the category its type's shape gives it
+    And the entry for the recursive inductive type carries an eliminator whose constructors are the entries of its two constructors with their fields and induction hypotheses
+    And both runs are byte-identical, package and report
+
+  @GL-20 @build
+  Scenario: A Lean declaration the translation cannot express is refused with the registered diagnostic code of its reason and never emitted with a weakened signature, a declaration that depends on a refused one is refused with the root reason, and the coverage report counts requested declarations as translated, refused by reason, and excluded by kind, with counts that sum to the request.
+    Given the committed extraction, which holds a Sort-polymorphic declaration, a strict-implicit binder, a projection, a string literal, an equation at Sort 0, a name outside the conservative grammar, and a theorem about the Sort-polymorphic declaration, and an extraction whose entry fails the signature check
+    When the glossary planner runs and the strict mode converts the refusals to an error
+    Then each declaration is absent from the package and carries the registered code of its reason in the report
+    And the dependent theorem is refused with the code of the root reason and names the declaration it depends on
+    And the report counts sum to the number of requested declarations
+    And the strict mode fails with the registered code and its class exit

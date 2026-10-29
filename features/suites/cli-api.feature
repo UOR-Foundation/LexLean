@@ -179,3 +179,11 @@ Feature: cli-api
     Given the language-1.1 data-form example with a path lexicon package, the language-1.2 example, and a language-1.1 project whose module the notation cannot express
     When the example is migrated with --check and then without it, and each of the others is migrated
     Then --check writes nothing, the migration leaves a language-1.2 project that checks, locks, and formats canonically with the same modules, and the refused projects are refused with LLC0103 and LLP2003 and left unchanged
+
+  @CL-25 @build
+  Scenario: lexlean deps glossary runs the pinned Lean over the requested modules or declarations and writes a lexicon package of kind-lean entries and a coverage report, takes exactly one of --modules and --names and a valid package identity, needs no project, refuses an empty or doubled selection with LLC0002 and malformed usage with LLC0001, and under --strict exits with the registered class of the first refusal.
+    Given an empty directory with no project and the lexlean executable
+    When deps glossary runs with no selection, with both selections, with a malformed package identity, and with a Lean core request
+    Then the selection errors are LLC0002, the identity error is LLC0001, and nothing is written for any of them
+    And the core request writes a package that loads and a coverage report, twice with identical bytes, when the pinned Lean is available
+    And --strict on a request with a refusal exits with the class of its registered code

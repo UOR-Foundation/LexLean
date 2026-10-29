@@ -144,7 +144,7 @@ enum CommandKind {
         #[command(subcommand)]
         action: ProductionAction,
     },
-    /// Acquire the external Lean libraries the project declares (§10.4).
+    /// Work with Lean dependencies (§10.4, §13.12, §23.4).
     Deps {
         #[command(subcommand)]
         action: DepsAction,
@@ -156,6 +156,39 @@ enum CommandKind {
 enum DepsAction {
     /// Fetch every declared Lean library and its prebuilt `.olean` files.
     Fetch,
+    /// Generate a lexicon package of `kind = "lean"` entries from Lean
+    /// declarations, with a coverage report (§13.12).
+    Glossary {
+        /// The generated package's ID.
+        #[arg(long)]
+        package: String,
+        /// The generated package's exact version.
+        #[arg(long, default_value = "1.0.0")]
+        version: String,
+        /// The language the package is written for.
+        #[arg(long, default_value = "1.0", value_parser = ["1.0", "1.1", "1.2"])]
+        language: String,
+        /// Translate every declaration these Lean modules define.
+        #[arg(long, num_args = 1.., value_name = "MODULE")]
+        modules: Vec<String>,
+        /// Translate these declarations.
+        #[arg(long, num_args = 1.., value_name = "DECLARATION")]
+        names: Vec<String>,
+        /// The Lake workspace whose built libraries hold the modules;
+        /// without it only the toolchain's own libraries are visible.
+        #[arg(long)]
+        workspace: Option<Utf8PathBuf>,
+        /// The package directory to create, absent or empty.
+        #[arg(long)]
+        out: Utf8PathBuf,
+        /// Write the coverage report to this new file.
+        #[arg(long)]
+        report: Option<Utf8PathBuf>,
+        /// Exit with the registered class of the first refusal instead of
+        /// reporting refusals.
+        #[arg(long)]
+        strict: bool,
+    },
 }
 
 /// The production export actions (§24.7), mirroring `api::production`.
@@ -611,6 +644,65 @@ pub fn run(
             outcome.summary = format!("initialized {shown}\n");
             Ok(())
         }
+        // Glossary generation reads a Lean environment, not a project: like
+        // `init` and `production verify-artifact` it needs none (§23.4).
+        CommandKind::Deps {
+            action:
+                DepsAction::Glossary {
+                    package,
+                    version,
+                    language,
+                    modules,
+                    names,
+                    workspace,
+                    out,
+                    report,
+                    strict,
+                },
+        } => {
+            let selection = match (modules.is_empty(), names.is_empty()) {
+                (true, true) => {
+                    return Err(LexLeanError::from_diagnostic(Diagnostic::new(
+                        code!("LLC0002"),
+                        "select declarations with --modules or --names",
+                    )))
+                }
+                (false, false) => {
+                    return Err(LexLeanError::from_diagnostic(Diagnostic::new(
+                        code!("LLC0002"),
+                        "--modules and --names are mutually exclusive",
+                    )))
+                }
+                (false, true) => crate::glossary::extract::Selection::Modules(modules),
+                (true, false) => crate::glossary::extract::Selection::Names(names),
+            };
+            let absolute = |path: &Utf8PathBuf| {
+                if path.is_relative() {
+                    working_directory.join(path)
+                } else {
+                    path.clone()
+                }
+            };
+            let request = crate::glossary::Request {
+                package: crate::glossary::plan::PackageSpec {
+                    package,
+                    version,
+                    language,
+                },
+                selection,
+                workspace: workspace.as_ref().map(absolute),
+                out: absolute(&out),
+                report: report.as_ref().map(absolute),
+                strict,
+            };
+            let generated = crate::glossary::generate(&request)?;
+            outcome.artifacts = vec![out.to_string()];
+            outcome
+                .artifacts
+                .extend(report.map(|path| path.to_string()));
+            outcome.summary = generated.report.summary();
+            Ok(())
+        }
         other => {
             let config_path = match &parsed.project {
                 Some(explicit) => explicit.clone(),
@@ -786,6 +878,7 @@ pub fn run(
                 }
                 CommandKind::Init { .. }
                 | CommandKind::Explain { .. }
+                | CommandKind::Deps { .. }
                 | CommandKind::Production { .. } => {
                     unreachable!("handled above")
                 }
