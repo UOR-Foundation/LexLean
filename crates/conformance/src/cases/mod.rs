@@ -60,6 +60,7 @@ mod semantic_ir;
 mod std_packages;
 mod stdlib;
 mod stdlib_buffer;
+mod stdlib_json;
 mod stdlib_numeral;
 mod stdlib_order;
 mod stdlib_sha256;
