@@ -510,6 +510,11 @@ pub fn run(id: &str) {
         !disagreements.is_empty(),
         "a writer that keeps the first of a repeated key is detected by the differential"
     );
+    eprintln!(
+        "the planted writer disagrees on {} of {EVALUATOR_RUNS} runs, the first: {}",
+        disagreements.len(),
+        disagreements[0]
+    );
     assert!(
         evaluate(&write_json, &corpus("writeJson", EVALUATOR_RUNS, false)).is_empty(),
         "the planted writer still orders every key, so only a repeated key catches it"
