@@ -860,7 +860,10 @@ pub(super) fn site_plants(krate: &Crate) -> Vec<(&'static str, Crate, &'static s
         // the names of the crate header and of a definition (#308)
         (
             "a lint name with a space",
-            unit_item(Item::InnerAttr("forbid".to_owned(), strings(&["not a lint"]))),
+            unit_item(Item::InnerAttr(
+                "forbid".to_owned(),
+                strings(&["not a lint"]),
+            )),
             "identifier",
             "a lint name",
         ),
