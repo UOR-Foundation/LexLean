@@ -10545,6 +10545,70 @@ itself, which the lowering counts as inhabited, and the second a function type
 with no closure. (3) The counts of the earlier rows move with the packages of
 this root and are recounted by the maintainer at the landing.
 
+`BS-15` holds the two production roots of `LexLeanBoot.RustPackage`
+(`bootstrap/src/RustPackage.lex.tex`), the package renderer's checks of a
+manifest's own fields and its two files around the library, to
+`calculus::rust::package`. The oracle of `checkManifest` is `package::lower`
+on the manifest with its program and exports replaced by one function from
+`bool` to `bool` exported as `run`; that oracle's refusal contains the committed
+refusal of every negative manifest that fails on its fields. The oracle of
+`renderPackage` is `package::package` on every committed manifest it accepts;
+for the inputs it refuses (names, exports, sources and effects that reach the
+escaper, and scaffold records other than the committed one) it is
+`cargo_toml_of` and the canonical JSON of §21.7 by the recipe of
+`package::package`, and the case asserts that the recipe gives the files of
+`package::package` on each of the accepted manifests. On the tree with the
+packages of `BS-07` to `BS-15` committed the inputs are 291 committed manifests
+(272 accepted), 182 rule manifests, and 2,000 seeded mutants of the fields, and
+the 272 accepted manifests, 133 hand-built inputs, and 272 seeded mutants of the
+render; 237 renders have a library of at most 16,384 bytes. On the normative
+host (12 threads) the evaluator agrees with the oracle on the 2,473 runs of
+`checkManifest` and the 237 renders (925 s). On the tree before those packages
+were committed (275 manifests, 256 accepted) the full case ran to the
+comparison with the committed packages: the evaluator agreed, the rendered
+packages agreed with the oracle on 3,102 runs under the pinned rustc (two
+harness binaries built in 124 s), and the eighteen planted defects were each
+detected, in 3,169 s. The case stops there on this tree: the packages
+`check_manifest` and `render_package`, the lock, and the recount of the earlier
+rows are the maintainer's. The bootstrap export with the two roots passes
+`lexlean verify`; its first attempt was refused (`LLV7005`) for nine
+definitions whose comparison of byte strings observes `propext` and declared no
+axioms, which now declare it.
+
+Each of eighteen plants is made on a copy of `bootstrap/src/RustPackage.lex.tex`
+on every run and is caught by the oracle; the run is the index among the runs
+of the root on the tree before the packages were committed (the committed
+manifests, then the rules, then the mutants for `checkManifest`; the renders
+within the evaluator's bound for `renderPackage`):
+
+- **`gen` is not a keyword**, `checkManifest` run 282.
+- **`harness` is an available crate name**, run 292.
+- **a part with a leading zero is canonical**, run 17.
+- **a part past u64::MAX fits**, run 18.
+- **equal neighbours are ascending**, run 347.
+- **the order of the effects is not checked**, run 356.
+- **a rust-core package may state allocation**, run 440.
+- **a doubled underscore is snake case**, run 299.
+- **a crate name may have 65 bytes**, run 308.
+- **upper-case hex is an identity**, run 341.
+- **a profile that is neither is accepted**, run 333.
+- **the spec is not checked**, run 276.
+- **a published crate is printed unpublished**, `renderPackage` run 179.
+- **a negative priority loses its sign**, run 0.
+- **the digests of Cargo.toml and lib.rs are swapped**, run 0.
+- **the std runtime's digest leaves out the std part**, run 52.
+- **U+001F is written raw**, run 145.
+- **a quotation mark is not escaped**, run 148.
+
+Findings. (1) The committed `.error` of a negative manifest is the part of the
+message the fixture pins, not all of it, so the case requires the fields'
+refusal to contain it. (2) The first corpus of the render took its shaped inputs
+from a package whose library is beyond the evaluator's bound, so three plants
+(`publish = true`, the two escapes) reached no evaluated run; the shaped inputs
+now take the first 4,096 bytes of that library, which the recipe reads only as
+bytes to digest. (3) The counts of the earlier rows move with the packages of
+this row and are recounted by the maintainer at the landing.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the

@@ -8309,6 +8309,37 @@ The measured largest part of the certificate of `functionShells` is 1,195,444
 bytes (part A; part B is 960,728 and part E 279,092), 19.0% of `max_file_bytes`;
 of `assembleItems` 169,057 bytes (part E; part B is 109,542 and part A 107,569).
 
+The fourteenth component is the package renderer (§17.16) (`BS-15`, the first
+slice of the package, step 4 of issue 92), the module `RustPackage` with two
+production roots for `rust-std`:
+
+| Root | Takes | Returns | Oracle |
+| --- | --- | --- | --- |
+| `LexLeanBoot.RustPackage.checkManifest` | a manifest's spec, crate name, version, profile, sources, and effects, and the registered effects | whether the profile is `rust-std`, or the refusal | the refusals `package::lower` gives before it reads the program |
+| `LexLeanBoot.RustPackage.renderPackage` | the scaffold record, the manifest's name, version, profile, sources, effects, and exports, the program's identity, the compiler-semantics identity, the core and std runtime texts, and the library | the `Cargo.toml` and the `provenance.json` | the two files of `package::package` |
+
+`package::lower` checks a manifest's own fields in a fixed order before it reads
+the program: the spec; the crate name, which is lowercase snake case of at most
+64 bytes, no Rust keyword, and no sysroot crate or `harness`; the version, three
+canonical decimals each at most `u64::MAX`; the profile; each source a lowercase
+SHA-256 hex identity, strictly ascending; and each effect registered, strictly
+ascending, with no `allocation` on `rust-core`. `checkManifest` makes the same
+checks in the same order and refuses with the same text. The case's oracle is
+`package::lower` itself, run on the manifest with its program and exports
+replaced by one function from `bool` to `bool` exported as `run`, which every
+later check accepts on either profile, so a refusal it gives is a refusal of the
+fields alone; that oracle agrees with every committed negative manifest whose
+refusal is one of the fields'. `renderPackage` prints `Cargo.toml` over the
+scaffold record (a lint's priority is a sign and a magnitude, as an `i64` is)
+and writes `provenance.json` in the canonical JSON of §21.7: its eleven keys in
+their byte order, every string escaped minimally, and one final LF. The runtime
+it digests is the core text, followed for `rust-std` by the std text. The
+scaffold record, the runtime texts, the registered effects, the
+compiler-semantics identity, and the program's identity are the host's inputs
+(decision 7 of issue 92), and the library is what `printCrate` (`BS-06`)
+prints. The program's identity, the checks of the program, the export wrappers,
+and the composition with the lowering are the next slices of the package.
+
 The bootstrap project's production export is the first project whose roots
 together approach `max_total_source_bytes` (§10.2): the limit counts the
 programs, the crates, and the certificates of every production root of the

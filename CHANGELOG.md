@@ -472,6 +472,17 @@ and Unreleased holds what has landed since.
   counter of the fresh names, and three hosts that do more are planted. The
   largest certificate part is 1,195,444 bytes (`functionShells`). The register
   is 461 IDs.
+- The package renderer as language-1.2 source, first slice of the package
+  (SPEC.md §17.23, §17.16, `BS-15`, #272; no new diagnostic code, no change to
+  the language-1.2 identity). `checkManifest` and `renderPackage` of
+  `RustPackage` make the checks `package::lower` runs on a manifest's own
+  fields before it reads the program, with the same refusals, and write the
+  `Cargo.toml` and the `provenance.json` of `package::package`, held to the
+  oracle to the byte on the 291 committed manifests, 182 rule manifests, and
+  2,000 seeded mutants, and on the 272 accepted manifests, 133 hand-built
+  inputs of the escaper and the scaffold, and 272 seeded mutants; eighteen
+  planted defects are each detected. No file of the renderer changes. The
+  register is 462 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or
