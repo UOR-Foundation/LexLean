@@ -10744,6 +10744,9 @@ the first panic message, trimmed.
 
 | ID | Planted defect | Expected failure signature |
 | --- | --- | --- |
+| `GL-20` | `glossary/plan.rs`: `code_of("sort-polymorphic")` returns `LLT4102` | `assertion left == right failed: Fix.polyId` (`left: "LLT4102"`, `right: "LLT4101"`) |
+| `GL-19` | `glossary/naming.rs`: `camel_surface` stops capitalizing the words after the first | the `fix.scale-zero` entry text printed, missing `surface = "fixScaleZero"` |
+| `CL-25` | `cli.rs`: the `--modules` and `--names` conflict is reported as `LLC0001` | `both selections: error[LLC0001]: --modules and --names are mutually exclusive` |
 | `GL-18` | `lexicon/package.rs`: the `manifest.language != ctx.language` test made `false &&` | `expected LLC0103, found ["LLR3004"]` (`support.rs`, `expect_code`) |
 | `GL-17` | `lexicon/mod.rs`: `load_bootstrap_for("1.2")` reads `bootstrap-1.1.toml` | `init 1.2: error[LLI9001]: phase language-load: bootstrap schema drift` |
 | `SM-24` | `ir/semantic.rs`: a pair projection of a non-product type returns `Ok(None)` | `check fails` (the mutated project must be refused) |

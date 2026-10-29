@@ -1387,6 +1387,8 @@ math = "(seq (operator-name gsucc) (paren (slot 0)))"
                 "§21.4: entry content flows into the semantic ID"
             );
         }
+        "GL-19" => super::glossary::package(),
+        "GL-20" => super::glossary::refusals(),
         "GL-17" => {
             let dir = tempfile::tempdir().expect("tempdir");
             let root = camino::Utf8Path::from_path(dir.path()).expect("utf8");

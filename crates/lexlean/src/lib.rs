@@ -39,6 +39,8 @@ pub mod elaborate;
 #[doc(hidden)]
 pub mod fmt;
 #[doc(hidden)]
+pub mod glossary;
+#[doc(hidden)]
 pub mod gnaf;
 #[doc(hidden)]
 pub mod grammar;

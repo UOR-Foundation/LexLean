@@ -410,6 +410,18 @@ suite = "lexicon"
 statement = "Cross-version package, lexicon, and lock combinations fail closed before backend execution."
 
 [[id]]
+id = "GL-19"
+level = "build"
+suite = "lexicon"
+statement = "A generated external-Lean glossary is a lexicon package of kind-lean entries that the package loader accepts: each signature is the LSE translation of the Lean type with implicit and instance binders kept as binders and left out of applications, each identifier, surface, category, and render follows the documented naming scheme, an inductive type carries an eliminator descriptor over its constructor entries, and two runs over one extraction produce byte-identical packages and reports."
+
+[[id]]
+id = "GL-20"
+level = "build"
+suite = "lexicon"
+statement = "A Lean declaration the translation cannot express is refused with the registered diagnostic code of its reason and never emitted with a weakened signature, a declaration that depends on a refused one is refused with the root reason, and the coverage report counts requested declarations as translated, refused by reason, and excluded by kind, with counts that sum to the request."
+
+[[id]]
 id = "GR-01"
 level = "build"
 suite = "grammar"
@@ -1476,6 +1488,12 @@ id = "CL-24"
 level = "build"
 suite = "cli-api"
 statement = "lexlean migrate --to 1.2 migrates a language-1.1 data-form project to language 1.2 in one command: it rewrites every module to the authoring notation through lexlean::sdk::to_notation with the same declarations, names, statements, and axiom policies, moves the builtin glossary references of every source and the imports of every path lexicon package to 1.2.0, rewrites the language row, and regenerates the lock as lexlean/lock/2, so the result checks, has a current lock, and is canonical; --check proves the migration and writes nothing; and a project that is not language 1.1 is refused with LLC0103 and a module that is not a language-1.1 data-form semantic module, a data form that is not canonical JSON included, with LLP2003, each leaving every file of the project unchanged."
+
+[[id]]
+id = "CL-25"
+level = "build"
+suite = "cli-api"
+statement = "lexlean deps glossary runs the pinned Lean over the requested modules or declarations and writes a lexicon package of kind-lean entries and a coverage report, takes exactly one of --modules and --names and a valid package identity, needs no project, refuses an empty or doubled selection with LLC0002 and malformed usage with LLC0001, and under --strict exits with the registered class of the first refusal."
 
 [[id]]
 id = "SE-01"

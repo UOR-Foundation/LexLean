@@ -17,6 +17,7 @@ mod declarations;
 mod examples;
 mod extraction;
 pub use extraction::{compare_with_oracle, counter_independence, ne_04_lean_half, oracle_records};
+mod glossary;
 mod gnaf;
 mod grammar;
 mod helpdesk;

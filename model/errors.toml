@@ -470,6 +470,55 @@ title = "Unbounded or unspecified text generation"
 statement = "A text declaration does not state the bound it must: a context window with capacity 0, or a text generator with max_tokens 0."
 
 [[error]]
+code = "LLT4101"
+class = "language"
+exit = 1
+title = "Lean declaration uses a sort LSE cannot express"
+statement = "A Lean declaration's type contains a sort that is neither Prop nor Type u for a universe expression u, such as Sort u for a universe variable u, so the glossary generator refuses it instead of weakening its signature (§13.12)."
+
+[[error]]
+code = "LLT4102"
+class = "language"
+exit = 1
+title = "Lean declaration uses a binder LSE cannot express"
+statement = "A Lean declaration's type contains a strict-implicit binder, which has no LSE binder mode, so the glossary generator refuses it instead of weakening its signature (§13.12)."
+
+[[error]]
+code = "LLT4103"
+class = "language"
+exit = 1
+title = "Lean declaration uses an expression form LSE cannot express"
+statement = "A Lean declaration's type contains a primitive projection, a string literal, or another expression form outside LSE, so the glossary generator refuses it (§13.12)."
+
+[[error]]
+code = "LLT4104"
+class = "language"
+exit = 1
+title = "Core constant at a level the core entry does not cover"
+statement = "A Lean declaration's type applies a constant that a core lexicon entry denotes, such as Eq or Exists, at a universe level the core entry does not cover, so the glossary generator refuses it (§13.12)."
+
+[[error]]
+code = "LLT4105"
+class = "language"
+exit = 1
+title = "Lean name outside the conservative grammar"
+statement = "A Lean declaration's name is outside the conservative ASCII Lean-name grammar of §13.6, so the glossary generator cannot carry it as a denotation (§13.12)."
+
+[[error]]
+code = "LLT4106"
+class = "language"
+exit = 1
+title = "Lean declaration depends on a declaration without an entry"
+statement = "A Lean declaration's type mentions a constant that has no entry because the constant was refused, excluded, or absent, so the glossary generator refuses the dependent declaration with the reason of the root (§13.12)."
+
+[[error]]
+code = "LLT4107"
+class = "language"
+exit = 1
+title = "Generated entry rejected by the entry and signature checks"
+statement = "An entry the glossary generator derived from a Lean declaration fails the entry validation or the conservative signature check of §13.7, so it is refused instead of emitted (§13.12)."
+
+[[error]]
 code = "LLV7001"
 class = "environment"
 exit = 3

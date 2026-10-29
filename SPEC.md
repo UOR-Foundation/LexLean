@@ -1464,6 +1464,37 @@ Loading a package MUST reject:
 - an eliminator descriptor that references absent constructors;
 - a package whose `language` differs from the project's (`LLC0103`).
 
+### 13.12 Generated external-Lean glossaries
+
+`lexlean deps glossary` (§23.4) turns declarations of a Lean environment into a lexicon package whose every entry has `kind = "lean"`. No entry is written by hand. The package is ordinary (§13.1–§13.11): the loader checks it exactly as it checks a hand-written one, and §13.7 applies unchanged, so verification still probes every used entry against the real declaration. A generated entry says nothing about whether LexLean proved the declaration; its guarantees belong to the library it came from (§4.2, §5.3).
+
+**Request.** The selection is `--modules`, every declaration the named Lean modules define, or `--names`, the named declarations. Each requested declaration is *translated* (it has an entry), *refused* (it has none, with a registered code), or *excluded by kind* (it is not a candidate for an entry). The excluded kinds are: internal and private names, macro-scoped names, recursors, quotient primitives, matchers and other auxiliary recursors, `noConfusion`, instances, deprecated declarations, and the constants a core entry already denotes (`Eq`, `And`, `Or`, `Not`, `Iff`, `Exists`, written `core-entry`).
+
+**Signature.** The signature is the LSE translation of the declaration's Lean type:
+
+- `Prop` is `(sort prop)` and `Type u` is `(sort (type u))`, where a sort that is a successor level, or a maximum of successor levels, is a `Type`; any other sort (`Sort u`) is refused (`LLT4101`).
+- A binder keeps its mode: default is `explicit`, implicit is `implicit`, instance-implicit is `instance`. A strict-implicit binder has no mode and is refused (`LLT4102`).
+- An application keeps only the arguments for explicit binders of the function's type, as §17.6 reads an LSE application; Lean infers the rest when the entry is probed. A numeral `OfNat.ofNat _ n _` is `(nat n)`.
+- Universe parameters become identifiers of the grammar of §13.8 and are declared, sorted, in `universes`; a constant's universe arguments are written in the order of its own Lean parameters.
+- The annotations `outParam`, `semiOutParam`, `optParam`, and `autoParam` are erased from the type, because they are the identity on the type; the report counts the entries where that happened.
+- `Eq`, `And`, `Or`, `Not`, `Iff`, and `Exists` are the entries `lexlean.core::eq`, `land`, `lor`, `lnot`, `iff`, and `exists-op`. The two with a universe (`Eq`, `Exists`) are Type-level entries; their application at `Sort 0` or at a level that is not a successor is refused (`LLT4104`).
+- A primitive projection, a string literal, or any other expression form outside §13.8 is refused (`LLT4103`).
+- A name outside the conservative grammar of §13.6 is refused (`LLT4105`). The grammar excludes the apostrophe, so `add_comm'` is refused.
+
+**Dependencies.** Every constant a signature mentions needs an entry in the package. The generator therefore translates the closure of the requested declarations, and the types, classes, functions, and constructors it adds are *support entries*, which the report counts separately from the request. A declaration that mentions a refused, excluded, or absent one is refused with `LLT4106`, and the report names the root declaration and the root reason; the refusal is transitive. An entry that fails the entry validation or the conservative signature check of §13.7 is refused with `LLT4107`, and so is everything that mentions it. A refusal never weakens a signature to make the entry fit.
+
+**Categories.** The category follows the shape of the type, after its leading binders: a proof of a proposition is `proof-constant`; a type former is `type-noun` without explicit arguments and `function` with them; a proposition former is `predicate-constant` without explicit arguments, `adjective-predicate` with one, `transitive-predicate` with two (when its words are letters only, otherwise `function`), and `function` with more; anything else is `term-constant` without explicit arguments and `function` with them. The frame is the one §13.3 fixes, and `surface_arity` is the number of explicit binders of the signature's outer `pi`.
+
+**Naming.** A Lean name is cut into components at `.`, and each component into words: at `_`, before a capital that follows a lowercase letter or digit, and before the last capital of a capital run that a lowercase letter follows; a prime is the word `prime`; digits stay with the word they follow. Words are lowercase.
+
+- The entry ID has one segment per component, its words joined by `-` (`x` is prefixed to a segment that would start with a digit), segments joined by `.`: `Nat.add_comm` is `nat.add-comm`, stored at `entries/nat/add-comm.toml`. Two names that give one ID both take the suffix `-` and the first six hexadecimal digits of the SHA-256 of the Lean name (longer if that collides).
+- The canonical surface is one math form: the words of all components in lower camel case, `natAddComm`, and its render is `(operator-name natAddComm)` for no explicit argument and `(seq (operator-name natAddComm) (paren (seq (slot 0) (token comma) (space) (slot 1))))` in general. Surfaces are not unique across entries; a shared surface is resolved by §14.4 or selected with `\lexeme`, and the report counts entries that share one.
+- An `adjective-predicate` or `transitive-predicate` has instead one text form: the words of the last component, with a leading `is` dropped when other words remain (`Nat.Prime` is `prime`, `IsUnit` is `unit`), with the feature `lower-case`.
+
+**Eliminators.** An inductive type that is neither mutual nor nested carries an eliminator descriptor (§16.11): `cases_lean_name` and `induction_lean_name` are the custom `@[cases_eliminator]` and `@[induction_eliminator]` of the type when it has them (`Nat.casesAuxOn`, `Nat.recAux`) and `T.casesOn` and `T.rec` otherwise; each constructor row names the constructor's entry, its fields (the constructor's binder names after the parameters, made identifiers and unique) and its induction hypotheses (`<field>ih` for each field whose type is the inductive type). If a constructor has no entry, or a binder name cannot be made valid, the type has an entry without a descriptor, and the report counts that.
+
+**Output.** The package is `lexicon.toml` (importing `lexlean.core` at the language's version) and `entries/`. The same Lean environment and request give byte-identical files and a byte-identical report; no time, path, or host reaches either. The coverage report (`lexlean/glossary-report/1`) counts requested declarations as `translated`, `refused` (by reason, and for dependency refusals by root reason), and `excluded` (by kind), with `requested = translated + refused + excluded`.
+
 ---
 
 ## 14. Lexical resolution
@@ -9350,6 +9381,18 @@ lexlean production verify-artifact <BUNDLE>
 
 The production export contract of §24.7. `targets` prints the canonical `lexlean/target-descriptors/1` document in either output mode; like `--version` it is not a project command and emits no command-result object. `build` reads a `lexlean/production-request/1` file, verifies the project by §22, and publishes the bundle; its command result names the bundle directory and the source, semantic, build, and attestation IDs. `verify-artifact` replays a bundle and needs no project. Both report failures through the command result with the exit code of their registered class.
 
+#### `deps glossary`
+
+```text
+lexlean deps glossary --package <ID> [--version <V>] [--language <L>]
+    (--modules <MODULE>... | --names <DECLARATION>...)
+    [--workspace <DIR>] --out <DIR> [--report <FILE>] [--strict]
+```
+
+Generates a lexicon package of `kind = "lean"` entries from Lean declarations (§13.12). It is not a project command: like `init` and `production verify-artifact` it needs no project, and it never fetches or builds (I15). It runs the pinned toolchain's Lean over the modules and declarations named, through the child policy of §25.4, as `lake env lean --run` inside `--workspace` (a Lake workspace whose libraries are already built) or as `lean --run` over the toolchain's own libraries without one. `--modules` and `--names` are mutually exclusive and one is required (`LLC0002`), a name or module that repeats is `LLC0002`, and a malformed package ID, version, language, module, declaration, or output directory is `LLC0001`. `--version` defaults to `1.0.0` and `--language` to `1.0`. `--out` is absent or an empty directory and the package appears in it in one rename; `--report` names a file that is absent.
+
+Refusals are reported, not failed: the command exits `0` with the package for the declarations that translate and the coverage table on stdout. With `--strict` any refusal of a requested declaration fails the command, with one diagnostic per refusal carrying its registered code (`LLT4101`–`LLT4107`), and nothing is written. The toolchain, the extractor, and the limits fail as `LLV7001`, `LLV7002`, and `LLS8002`.
+
 ### 23.5 Formatting
 
 Canonical source formatting:
@@ -9838,6 +9881,13 @@ The initial registry MUST include at least these exact codes and meanings:
 | `LLT4014` | Tooling authority registry invalid (§17.20). |
 | `LLT4015` | Tooling term ill-typed or unlicensed (§17.20). |
 | `LLT4016` | Unbounded or unspecified text generation (§17.12). |
+| `LLT4101` | Lean declaration uses a sort LSE cannot express (§13.12). |
+| `LLT4102` | Lean declaration uses a binder LSE cannot express (§13.12). |
+| `LLT4103` | Lean declaration uses an expression form LSE cannot express (§13.12). |
+| `LLT4104` | Core constant at a level the core entry does not cover (§13.12). |
+| `LLT4105` | Lean name outside the conservative grammar (§13.12). |
+| `LLT4106` | Lean declaration depends on a declaration without an entry (§13.12). |
+| `LLT4107` | Generated entry rejected by the entry and signature checks (§13.12). |
 | `LLF5001` | Invalid definition form, self head, or recursion. |
 | `LLF5002` | Invalid proof step for the current goal. |
 | `LLF5003` | Missing, duplicate, or malformed proof branch. |
@@ -10621,6 +10671,8 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `GL-16` | `lexicon` | Package and entry bytes participate in lock and semantic closure hashes exactly as specified. | §11, §21 |
 | `GL-17` | `lexicon` | Language 1.2 resolves the exact 1.2 builtin package closure and enforces 1.2 lexicon semantics. | §13.1, §13.11 |
 | `GL-18` | `lexicon` | Cross-version package, lexicon, and lock combinations fail closed before backend execution. | §10.1, §13.11 |
+| `GL-19` | `lexicon` | A generated external-Lean glossary is a lexicon package of kind-lean entries that the package loader accepts: each signature is the LSE translation of the Lean type with implicit and instance binders kept as binders and left out of applications, each identifier, surface, category, and render follows the documented naming scheme, an inductive type carries an eliminator descriptor over its constructor entries, and two runs over one extraction produce byte-identical packages and reports. | §13.12 |
+| `GL-20` | `lexicon` | A Lean declaration the translation cannot express is refused with the registered diagnostic code of its reason and never emitted with a weakened signature, a declaration that depends on a refused one is refused with the root reason, and the coverage report counts requested declarations as translated, refused by reason, and excluded by kind, with counts that sum to the request. | §13.12, §26.3 |
 | `GR-01` | `grammar` | A source module parses only under the exact structural grammar and environment set. | §15.1, §15.2 |
 | `GR-02` | `grammar` | Glossary imports, module imports, title, and blocks obey exact header order and cardinality. | §15.1 |
 | `GR-03` | `grammar` | Sections nest within the configured scope limit and section parameters introduce explicit inherited context. | §15.1, §15.4 |
@@ -10799,6 +10851,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `CL-22` | `cli-api` | A host that embeds the library ends every child process group the library started and has not seen exit through the public function `lexlean::verify::end_live_children`, which installs no signal handler, alters no signal disposition, never signals the host's own process or group, reports each group as ended, already gone, or failing with the OS error, and refuses a later child start with LLV7018 until the host re-enables it, and the `lexlean` executable ends its interrupted children through the same function. | §17.17, §24.6 |
 | `CL-23` | `cli-api` | lexlean production targets prints the canonical target-descriptor document in either output mode, production build --request publishes the bundle its request names and reports the bundle and the project's source, semantic, build, and attestation IDs in its command result, production verify-artifact replays a bundle with no project, and each maps a malformed request, a refused request, and a rejected replay to the exact exit code of its registered class. | §24.7 |
 | `CL-24` | `cli-api` | lexlean migrate --to 1.2 migrates a language-1.1 data-form project to language 1.2 in one command: it rewrites every module to the authoring notation through lexlean::sdk::to_notation with the same declarations, names, statements, and axiom policies, moves the builtin glossary references of every source and the imports of every path lexicon package to 1.2.0, rewrites the language row, and regenerates the lock as lexlean/lock/2, so the result checks, has a current lock, and is canonical; --check proves the migration and writes nothing; and a project that is not language 1.1 is refused with LLC0103 and a module that is not a language-1.1 data-form semantic module, a data form that is not canonical JSON included, with LLP2003, each leaving every file of the project unchanged. | §17.12, §23.4 |
+| `CL-25` | `cli-api` | lexlean deps glossary runs the pinned Lean over the requested modules or declarations and writes a lexicon package of kind-lean entries and a coverage report, takes exactly one of --modules and --names and a valid package identity, needs no project, refuses an empty or doubled selection with LLC0002 and malformed usage with LLC0001, and under --strict exits with the registered class of the first refusal. | §13.12, §23.4 |
 | `SE-01` | `security` | Source, package, workspace, resource, and output paths are confined and symlinks are rejected. | §25.1 |
 | `SE-02` | `security` | Special files, duplicate filesystem identities, and case-fold collisions are rejected before processing. | §25.1 |
 | `SE-03` | `security` | All child processes use direct executable and argv invocation with no shell. | §25.2 |
@@ -11013,7 +11066,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-09` | `language-models` | No prompt is code: no member of the closed language maps `string` or `bytes` to a function, a term, or source — every operation of the primitive registry that takes a `string` or `bytes` operand is classified by the audit with a data result, the registry's schema enumeration and the production registry's primitive rows equal one another and equal that classified set, and the text declarations of `lexlean/semantic-module/2` state no `string`-typed member, so a prompt reaches a model only as the tokens `encodeText` makes of it; a planted operation or text member of that shape is caught by the audit with its name. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 457.
+**Total required capability IDs:** 460.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

@@ -406,6 +406,48 @@ A text declaration does not state the bound it must: a context window with capac
 
 Class: `language`. Exit code: 1.
 
+## `LLT4101` --- Lean declaration uses a sort LSE cannot express
+
+A Lean declaration's type contains a sort that is neither Prop nor Type u for a universe expression u, such as Sort u for a universe variable u, so the glossary generator refuses it instead of weakening its signature (§13.12).
+
+Class: `language`. Exit code: 1.
+
+## `LLT4102` --- Lean declaration uses a binder LSE cannot express
+
+A Lean declaration's type contains a strict-implicit binder, which has no LSE binder mode, so the glossary generator refuses it instead of weakening its signature (§13.12).
+
+Class: `language`. Exit code: 1.
+
+## `LLT4103` --- Lean declaration uses an expression form LSE cannot express
+
+A Lean declaration's type contains a primitive projection, a string literal, or another expression form outside LSE, so the glossary generator refuses it (§13.12).
+
+Class: `language`. Exit code: 1.
+
+## `LLT4104` --- Core constant at a level the core entry does not cover
+
+A Lean declaration's type applies a constant that a core lexicon entry denotes, such as Eq or Exists, at a universe level the core entry does not cover, so the glossary generator refuses it (§13.12).
+
+Class: `language`. Exit code: 1.
+
+## `LLT4105` --- Lean name outside the conservative grammar
+
+A Lean declaration's name is outside the conservative ASCII Lean-name grammar of §13.6, so the glossary generator cannot carry it as a denotation (§13.12).
+
+Class: `language`. Exit code: 1.
+
+## `LLT4106` --- Lean declaration depends on a declaration without an entry
+
+A Lean declaration's type mentions a constant that has no entry because the constant was refused, excluded, or absent, so the glossary generator refuses the dependent declaration with the reason of the root (§13.12).
+
+Class: `language`. Exit code: 1.
+
+## `LLT4107` --- Generated entry rejected by the entry and signature checks
+
+An entry the glossary generator derived from a Lean declaration fails the entry validation or the conservative signature check of §13.7, so it is refused instead of emitted (§13.12).
+
+Class: `language`. Exit code: 1.
+
 ## `LLV7001` --- Lean/Lake/leanchecker version or executable mismatch
 
 Lean/Lake/leanchecker version or executable mismatch.

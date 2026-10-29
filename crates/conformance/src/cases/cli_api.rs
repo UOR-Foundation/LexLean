@@ -1235,6 +1235,7 @@ pub(crate) fn run(id: &str) {
         }
         "CL-23" => super::production_export::cli(),
         "CL-24" => super::migration::cli(),
+        "CL-25" => super::glossary::cli(),
         other => panic!("no cli-api case is wired for {other}"),
     }
 }
