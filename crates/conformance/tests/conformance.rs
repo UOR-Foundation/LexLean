@@ -2334,3 +2334,33 @@ fn conformance_ml_03() {
 fn conformance_ml_04() {
     repo_conformance::cases::run("ML-04");
 }
+
+#[test]
+fn conformance_rc_01() {
+    repo_conformance::cases::run("RC-01");
+}
+
+#[test]
+fn conformance_rc_02() {
+    repo_conformance::cases::run("RC-02");
+}
+
+#[test]
+fn conformance_rc_03() {
+    repo_conformance::cases::run("RC-03");
+}
+
+#[test]
+fn conformance_rc_04() {
+    repo_conformance::cases::run("RC-04");
+}
+
+#[test]
+fn conformance_rc_05() {
+    repo_conformance::cases::run("RC-05");
+}
+
+#[test]
+fn conformance_rc_06() {
+    repo_conformance::cases::run("RC-06");
+}

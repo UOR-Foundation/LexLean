@@ -37,6 +37,7 @@ mod production;
 mod production_export;
 mod proofs;
 mod reasoning;
+mod replay_cache;
 mod repository;
 mod runtime;
 mod runtime_semantics;
@@ -147,6 +148,7 @@ pub fn run(id: &str) {
         "BS" => bootstrap::run(id),
         "PK" => packages::run(id),
         "ML" => mathlib::run(id),
+        "RC" => replay_cache::run(id),
         _ => panic!("no conformance case is wired for {id}"),
     }
 }

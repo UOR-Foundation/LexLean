@@ -22,7 +22,9 @@ version = 2
 # A dependency arriving under a licence not below fails this gate. That is the
 # point: it is a decision a reviewer makes at the time, not one a pre-granted
 # allowance made for them in advance.
-allow = ["Apache-2.0", "MIT", "Unicode-3.0"]
+# BSD-2-Clause is `arrayref`, which `blake3` (the replay cache's second digest,
+# SPEC.md section 22.13) depends on.
+allow = ["Apache-2.0", "BSD-2-Clause", "MIT", "Unicode-3.0"]
 confidence-threshold = 0.93
 
 [bans]

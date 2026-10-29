@@ -11445,3 +11445,13 @@ test, on Linux x86-64 (WSL, Rust 1.97.1), and the file restored (§27.9).
 The parenthesised form was found by the fixture and not by reading: the first
 version wrote `example : <signature> = (type_of% ...)`, in which `a -> b = c` is
 `a -> (b = c)`, and Lean refused both exact signatures.
+
+### replay cache can fail
+
+Two defects were planted in the replay cache (`RC-01` to `RC-06`, SPEC.md §22.13), `cargo test -p lexlean --lib -- replay_cache` was run, and each plant was removed.
+
+Checking `entry_digest` removed (`if recorded != actual` made `if false && recorded != actual`): `an_entry_whose_bytes_changed_while_its_key_was_kept_is_rejected` and `an_entry_whose_executable_digest_was_edited_is_rejected_not_missed` failed, 2 of 8 `an_entry` tests; the other six still passed because the key, shape, environment and exit-code checks are independent of it.
+
+The toolchain and Mathlib revision removed from the key frame: `a_changed_toolchain_or_mathlib_revision_changes_every_key` and `a_changed_toolchain_or_mathlib_revision_reuses_nothing_and_leaves_old_entries_intact` failed, 2 of 25 run (the filter was `replay_cache::tests`).
+
+With both plants removed the 28 `replay_cache` and `digest_set` tests pass. The register rows were red before the cases existed: all six `conformance_rc_0N` tests failed with `no conformance case is wired for RC-0N`.

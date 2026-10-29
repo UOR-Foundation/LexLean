@@ -595,6 +595,7 @@ Every dependency the shipped crate declares, for any target and of any kind but 
 
 | Dependency | Role |
 | --- | --- |
+| `blake3` | BLAKE3, the second digest of a DigestSet (§22.13) |
 | `camino` | UTF-8 path handling |
 | `clap` | CLI parsing |
 | `fs4` | file locking |
@@ -9299,6 +9300,24 @@ Wall time, resident-set and swap measurements, scheduling and completion order, 
 
 Telemetry is write-only: no stage reads it, no ID or verified artifact contains any of it, and a failure to write it changes no result. Every key it uses is in a closed vocabulary (`wall_ms`, `started_unix_ms`, `peak_rss_kib`, `peak_swap_kib`, `mem_total_kib`, `mem_available_kib`, `swap_total_kib`, `swap_used_kib`, `host_cpus`, `process_width`, `completion_seq`), and a JSON key of that vocabulary anywhere in a verified directory fails the gate: `cargo xtask verify-examples` checks every example's verified directory for one.
 
+### 22.13 Replay cache
+
+A replay cache lets a caller that names a store directory skip replaying a unit it has already replayed. A *unit* is one declaration or one module; the cache is indifferent to which, and a unit is the set of declaration keys it covers. `lexlean verify` of a project reads and writes no replay cache, and neither does any gate of §9.2 or §9.4: the cache is an opt-in performance device of a caller that names a directory, and §10.5's absence of a cache of a built package is unchanged.
+
+**DigestSet.** Every digest of the cache is a PrismPM ADR-015 DigestSet: the object `{"blake3": H, "sha256": S}`, both lowercase hexadecimal of 64 characters, both computed over the same byte string; `blake3` is BLAKE3 in default hash mode with 256-bit output. No other member is allowed and no other spelling of a member is read. Its label is `blake3:` followed by the 64 digits of `H`.
+
+**The canonical declaration.** One function writes the canonical bytes of a declaration from its facts: a sequence of fields, each a tag, a space, the decimal byte length of the payload, a colon, the payload, and a line feed. The fields are, in order, the format tag `lexlean/replay-declaration/1`, the name, the universe parameters in order, the kind attributes, the type, and either `none` or the DigestSet of the value or proof term. Names, types and values are the texts the Lean exporter of §22.13 writes: a name keeps its structure, and a term is the alpha-equivalence class of the kernel term, written as a node table in which a shared subterm is one node, with no binder name, binder annotation, or metadata. The module that declares a constant is not part of its canonical bytes, so that moving a declaration changes no key.
+
+**Keys.** A declaration's key is the DigestSet of a frame of the format tag `lexlean/replay-key/1`, the Lean toolchain string, the Mathlib revision, the canonical declaration, the group digest, and the sorted, de-duplicated keys of the declarations it names outside its group, each written with both digests. Declarations that name one another, an inductive type with its constructors and recursor, are one group; the group digest is the DigestSet of the canonical bytes of the members in name order, and a declaration that is alone is a group of one. A key therefore covers the declaration and, through the keys it contains, everything it reaches (a Merkle DAG): a change to a declaration changes the key of every declaration above it and of none other. A name that the facts neither declare nor anchor by a given key is `LLV7022`, as is a repeated declaration and a line of facts that does not parse. A unit's key is the DigestSet of a frame of the format tag `lexlean/replay-unit/1`, the granularity (`declaration` or `module`), and the sorted keys of its members.
+
+**The entry.** The store directory holds one canonical JSON file (§21.7) per recorded unit at `entries/<first two digits of the blake3 value>/<blake3 value>.json`, written to a temporary file in the same directory and renamed. Its members are `spec` (`lexlean/replay-cache-entry/1`), `key`, `unit` (`granularity` and `label`), `environment` (`toolchain` and `mathlib_revision`), `executable` (`tool` and the `digest` DigestSet of the executable that produced the result), `result` (`exit_code` zero, `stdout`, `stderr`), and `entry_digest`, the DigestSet of the canonical string of the entry without that member. Only a replay that exited zero is recorded.
+
+**Reuse and refusal.** A lookup finds the entry by the unit's key. No file is a miss. A file whose bytes do not parse as an entry, whose `entry_digest` is not the digest of its other members, whose recorded `key` is not the key it was looked up under, or whose `environment` differs from the caller's, is `LLV7021` and is neither reused nor replaced. An entry that names an executable other than the current one is a miss: its result is not reused, and the replay that follows overwrites it. A changed toolchain or Mathlib revision changes every key, so nothing recorded under the previous environment is found, and its entries are left intact.
+
+**Trust.** The cache is an untrusted input (§5.2). `entry_digest` detects a change of an entry's bytes and a mismatch with its key; it is not an authentication, since whoever can write the store can recompute it. A result reused from the cache is evidence that the unit was replayed once, by the executable the entry names, in the environment its key covers; it is not evidence of a replay by this run.
+
+**Facts.** The pinned Lean exports the facts of a compiled module with the program `replay_facts.lean` that the compiler embeds, run as `lean --run` through `lake env` under the child policy of §25.4: one JSON object per line, for each constant the module declares and each constant those declarations reach, with `name`, `module`, `level_params`, `attrs`, `type`, `value` (a string or `null`), and `deps`. The output is untrusted and is read under the bounds of §25.5.
+
 ---
 
 ## 23. Command-line interface
@@ -9993,6 +10012,8 @@ The initial registry MUST include at least these exact codes and meanings:
 | `LLV7018` | Child start refused after the host ended the live children (§24.6). |
 | `LLV7019` | Lean library not fetched (§10.4). |
 | `LLV7020` | Lean library fetch failed (§10.4). |
+| `LLV7021` | Replay cache entry rejected (§22.13). |
+| `LLV7022` | Replay facts refused (§22.13). |
 | `LLV7101` | Certificate evidence does not certify the root (§24.7). |
 | `LLV7102` | Production artifact replay rejected (§24.7). |
 | `LLS8001` | Path escape, symlink, special file, or filesystem identity conflict. |
@@ -11149,8 +11170,14 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `ML-02` | `mathlib` | The lock pins each declared Lean library by a `[[lean_library]]` row of its name, URL, exact revision, the SHA-256 of the library's own `lake-manifest.json`, and the SHA-256 of its generated glossary, the tree digest of the lexicon package `lean.<name>` of the project or of the empty tree when the project has none; the Lake workspace's `lake-manifest.json` must require the library at the declared URL and revision, rows sort by name, and the lock reads back to the bytes written; a project without a library keeps its lock bytes, and a library, a manifest digest, a glossary, or a workspace requirement that is not the one the lock pins is refused with LLC0110 naming both values. | §10.4, §11.1, §11.2 |
 | `ML-03` | `mathlib` | `lexlean deps fetch` is the only command that acquires a declared Lean library: it checks the declaration against the Lake workspace, runs `lake exe cache get` in the Lake workspace under the pinned toolchain through the checked child runner, and confirms the library is present at the declared revision with its built artifacts; with no library declared it fetches nothing and succeeds, a missing or failing `lake` and a library that is not at the declared revision afterward are LLV7020, and the command writes nothing of the project outside the Lake workspace. | §10.4, §11.4, §23.4 |
 | `ML-04` | `mathlib` | `lock`, `check`, `build`, `fmt`, and `verify` never fetch a declared Lean library: when the library is not present in the Lake workspace at the declared revision with its built artifacts, each fails offline with LLV7019 naming the library and `lexlean deps fetch`, before any Lean process runs and without a network connection. | §10.4, §11.4 |
+| `RC-01` | `replay-cache` | A replay key is a PrismPM ADR-015 DigestSet, a `sha256` and a `blake3` of the same bytes in lowercase hexadecimal, labelled `blake3:` and the 64 digits of the `blake3` value, over the one canonical serialisation of a declaration's name, universe parameters, kind attributes and type, the DigestSet of its value or proof term, the keys of the declarations it names, the Lean toolchain, and the Mathlib revision; equal inputs give equal keys, and a change to any one of those inputs gives a different key. | §22.13 |
+| `RC-02` | `replay-cache` | A declaration changed in a dependency graph changes the key of every declaration above it and of none beside or below it, declarations that name one another, an inductive type with its constructors and recursor, are keyed as one group, and facts that repeat a declaration, name a declaration neither declared nor anchored by a given key, or do not parse are refused (`LLV7022`). | §22.13 |
+| `RC-03` | `replay-cache` | A warm replay reuses the recorded result of every unit whose key is unchanged and replays only the others, whether a unit is one declaration or one module; only a replay that succeeded is recorded, each entry names the digest of the executable that produced it, and an entry that an executable other than the current one produced is not reused. | §22.13 |
+| `RC-04` | `replay-cache` | A cache entry whose bytes changed while its key was kept, an entry stored under a key other than the one it records, and an entry that does not parse as an entry, are each rejected with `LLV7021`, never reused, and not silently replaced. | §22.13 |
+| `RC-05` | `replay-cache` | A changed Lean toolchain or a changed Mathlib revision gives every unit a new key, so no result recorded under the previous environment is reused, and the entries of the previous environment are left unread and intact. | §22.13 |
+| `RC-06` | `replay-cache` | Facts exported by the pinned Lean from compiled modules, keyed and replayed through the pinned `leanchecker` cold and then warm, reuse every module whose key is unchanged: after a one-line edit to one declaration, only the modules whose declarations reach it are replayed again, and the warm verdicts equal the cold ones. | §22.13 |
 
-**Total required capability IDs:** 466.
+**Total required capability IDs:** 472.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

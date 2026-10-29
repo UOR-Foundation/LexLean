@@ -687,6 +687,20 @@ title = "Lean library fetch failed"
 statement = "`lexlean deps fetch` could not acquire a declared Lean library: the `lake` executable could not be resolved or run, `lake exe cache get` failed, or the library is not at the declared revision with its built artifacts afterward."
 
 [[error]]
+code = "LLV7021"
+class = "language"
+exit = 1
+title = "Replay cache entry rejected"
+statement = "A replay cache entry does not parse as an entry, its entry digest is not the digest of its other members, its recorded key is not the key it was looked up under, or its environment is not the caller's, so it is neither reused nor replaced."
+
+[[error]]
+code = "LLV7022"
+class = "language"
+exit = 1
+title = "Replay facts refused"
+statement = "The facts a replay key is computed from repeat a declaration, name a declaration that is neither declared nor anchored by a given key, or do not parse."
+
+[[error]]
 code = "LLV7101"
 class = "language"
 exit = 1

@@ -2802,3 +2802,39 @@ id = "ML-04"
 level = "build"
 suite = "mathlib"
 statement = "`lock`, `check`, `build`, `fmt`, and `verify` never fetch a declared Lean library: when the library is not present in the Lake workspace at the declared revision with its built artifacts, each fails offline with LLV7019 naming the library and `lexlean deps fetch`, before any Lean process runs and without a network connection."
+
+[[id]]
+id = "RC-01"
+level = "build"
+suite = "replay-cache"
+statement = "A replay key is a PrismPM ADR-015 DigestSet, a `sha256` and a `blake3` of the same bytes in lowercase hexadecimal, labelled `blake3:` and the 64 digits of the `blake3` value, over the one canonical serialisation of a declaration's name, universe parameters, kind attributes and type, the DigestSet of its value or proof term, the keys of the declarations it names, the Lean toolchain, and the Mathlib revision; equal inputs give equal keys, and a change to any one of those inputs gives a different key."
+
+[[id]]
+id = "RC-02"
+level = "build"
+suite = "replay-cache"
+statement = "A declaration changed in a dependency graph changes the key of every declaration above it and of none beside or below it, declarations that name one another, an inductive type with its constructors and recursor, are keyed as one group, and facts that repeat a declaration, name a declaration neither declared nor anchored by a given key, or do not parse are refused (`LLV7022`)."
+
+[[id]]
+id = "RC-03"
+level = "build"
+suite = "replay-cache"
+statement = "A warm replay reuses the recorded result of every unit whose key is unchanged and replays only the others, whether a unit is one declaration or one module; only a replay that succeeded is recorded, each entry names the digest of the executable that produced it, and an entry that an executable other than the current one produced is not reused."
+
+[[id]]
+id = "RC-04"
+level = "build"
+suite = "replay-cache"
+statement = "A cache entry whose bytes changed while its key was kept, an entry stored under a key other than the one it records, and an entry that does not parse as an entry, are each rejected with `LLV7021`, never reused, and not silently replaced."
+
+[[id]]
+id = "RC-05"
+level = "build"
+suite = "replay-cache"
+statement = "A changed Lean toolchain or a changed Mathlib revision gives every unit a new key, so no result recorded under the previous environment is reused, and the entries of the previous environment are left unread and intact."
+
+[[id]]
+id = "RC-06"
+level = "build"
+suite = "replay-cache"
+statement = "Facts exported by the pinned Lean from compiled modules, keyed and replayed through the pinned `leanchecker` cold and then warm, reuse every module whose key is unchanged: after a one-line edit to one declaration, only the modules whose declarations reach it are replayed again, and the warm verdicts equal the cold ones."
