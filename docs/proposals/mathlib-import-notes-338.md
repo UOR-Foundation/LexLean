@@ -84,6 +84,15 @@ Timings, two runs on a machine that other sessions were loading (load average 8 
 
 Replay of these modules costs about 0.4 s each; exporting and keying the facts costs about 2 to 5 s per module in this setup (three exports per phase). **For small modules the facts export costs more than the replay it saves.** Core modules measured alone (same loaded machine): `Init.Data.Nat.Basic` closure 878 constants, 0.9 MB, 7 s wall (1.9 s on an idle run); `Init.Data.List.Lemmas` 2,736 constants, 5.6 MB, 3.3 s; `Std.Data.HashMap.Lemmas` 7,246 constants, 24 MB, 8 s. Peak RSS of the exporter is 1.4 to 1.7 GB, mostly Lean loading its own environment. So the cache saves time only where `leanchecker` on a unit costs more than exporting and keying it. That has to be measured on Mathlib modules with #337's numbers before the design commits; the two obvious improvements are running one Lean process that exports many modules (the load cost is paid once), and compiling the exporter instead of interpreting it with `lean --run`.
 
+Mathlib modules (pinned checkout `~/mathlib-pinned`, commit `520045ab14e26149ee970e2e617ca04b09bde5d6`, oleans as built by #334; one run each, machine less loaded than above, the first run with a cold file cache; the exporter and `leanchecker` run by hand under a 5 GB cap, not through the cache driver):
+
+| Module | Constants exported (own) | Facts size | Export wall | Export peak RSS | `leanchecker` wall | `leanchecker` peak RSS |
+| --- | --- | --- | --- | --- | --- | --- |
+| `Mathlib.Order.Basic` | 7,911 (427) | 25 MB | 28.0 s | 2.6 GB | 2.0 s | 0.87 GB |
+| `Mathlib.Algebra.Group.Basic` | 1,993 (548) | 3.3 MB | 11.1 s | 2.7 GB | 4.7 s | 0.94 GB |
+
+Exporting the closure of a Mathlib module is 2.4 to 14 times slower than replaying it, even though `leanchecker` itself is cheap here (2 to 5 s per module). The reachable closure is much larger than the module's own declarations (7,911 constants for 427). Keying every module of Mathlib this way would cost more than replaying it whole. A third module tried, `Mathlib.Data.Nat.Defs`, exported no constants and is not counted. Whether the cache can pay off at all therefore depends on sibling #337's finding that a per-declaration or per-module `leanchecker` run is expensive enough to beat this; on these two modules it is not. The exporter as written (interpreted, one process per module, closure re-walked for every module) is the part to change before the design commits: one process for many modules sharing a closure walk, a compiled exporter, and anchors so a module exports only its own declarations are the options, none measured yet.
+
 Peak memory of the cache itself is small: keys are 64 bytes per declaration plus the facts in memory (24 MB for the largest module here).
 
 ## Open owner decisions
@@ -95,4 +104,4 @@ Peak memory of the cache itself is small: keys are 64 bytes per declaration plus
 5. Executable identity: the record stores a DigestSet of `leanchecker`; the existing preflight hashes only SHA-256 (and reads the whole file into memory). The cache hashes the executable once more, in 64 KiB pieces. Reusing one pass is possible.
 6. Facts size: the facts of `Std.Data.HashMap.Lemmas` are 24 MB, over the default `max_child_output_bytes` (16 MiB), so RC-06 raises the limit to 64 MiB for its own run. For Mathlib, anchors or a per-module facts store are needed.
 7. Alpha-equivalence: keys ignore binder names and annotations, so a rename of a bound variable is not a change. A more conservative key would include them.
-8. Scope not done: no CLI command, no `lexlean verify` wiring, no Mathlib run (the pinned checkout `~/mathlib-pinned` did not exist when this work ran), no per-declaration `leanchecker` mode (#337).
+8. Scope not done: no CLI command, no `lexlean verify` wiring, no run of the cache driver over Mathlib (only the exporter and `leanchecker` were timed on two Mathlib modules, above), no per-declaration `leanchecker` mode (#337).
