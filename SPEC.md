@@ -196,9 +196,11 @@ LexLean distinguishes:
 
 The words “proved”, “verified”, “kernel-checked”, and equivalent status markers MUST NOT be emitted for a merely checked or built result.
 
+An **imported** declaration is the Lean constant a used external entry denotes (§13.6) when its Lean module is outside the pinned toolchain's own libraries `Init`, `Std`, `Lean`, and `Lake`. Its status is the words `replayed in the pinned environment`: the compiled module of the locked workspace (§5.1, item 5) was loaded by the pinned Lean, and the axioms it was observed to depend on were audited (§22.6). The words `proved`, `verified`, and `kernel-checked` are reserved for the generated declarations of the document and are never used for an import, and LexLean never says that an import is proved by LexLean (§4.2): its guarantees belong to its upstream repository. The status does not assert that `leanchecker` re-checked the declaration in this run; §22.4 replays the generated modules only.
+
 ### 5.4 Axiom audit scope
 
-LexLean's axiom audit is specifically an **axiom-dependency** audit. It reports the transitive axioms returned by Lean's `#print axioms`. It is not a general dependency graph, a source provenance proof, or an independent semantic interpretation of imported code.
+LexLean's axiom audit is specifically an **axiom-dependency** audit. It reports the transitive axioms returned by Lean's `#print axioms`. It is not a general dependency graph, a source provenance proof, or an independent semantic interpretation of imported code. For an imported declaration (§5.3) it reports the set `#print axioms` returns for the imported constant itself (§18.8, §22.6), so that the axioms an import brings are recorded where they come from and not only where they surface in a generated declaration.
 
 ---
 
@@ -8325,7 +8327,9 @@ For every used external Lean entry, sorted by qualified entry ID, it emits an `e
 
 An entry whose Lean name is under the reserved root `LexLeanSpec` (§13.13) is a specialisation wrapper, and its line is stronger: `example : (<signature>) = (type_of% @<constant>) := rfl`, so that the linked signature is definitionally the Lean type of the wrapper, binder for binder with its implicit and instance binders, and not merely a type the wrapper can inhabit after Lean inserts implicit arguments. A failing line of this kind is `LLT4017` and names the entry and Lean's message, unless Lean reports the constant unknown, which is `LLT4003`. A failing line of any other entry is `LLT4003`.
 
-The probe establishes only that the external constant can inhabit the declared interface in the pinned environment. It is not included in the canonical document, module API, or axiom-policy results.
+The probe establishes only that the external constant can inhabit the declared interface in the pinned environment. Its `example` lines are not included in the canonical document, module API, or axiom-policy results.
+
+After its examples the probe module prints `#print axioms <lean-name>` for every distinct Lean name of a used external entry whose Lean module is outside `Init`, `Std`, `Lean`, `Lake`, and the runtime root `LexLeanRuntime` (§17.12), in sorted name order, and prints none when there is no such entry. The output is parsed as §22.5 parses it, except that an axiom name may end in the one hygiene mark Lean prints after a name it generated itself and may hold numeric components, as the name of a private declaration does: the axiom that `native_decide` creates for each use is named `<declaration>._native.native_decide.ax_<n>_<m>`, printed under `_private.<Module>.0` for a private declaration. The observed sets are recorded and enforced as §22.6 states.
 
 A preexisting module with the reserved probe name is an environment conflict and causes verification to fail. Before any compilation, LexLean also rejects a preexisting workspace/search-path module whose full name equals any generated document module.
 
@@ -8983,6 +8987,8 @@ The attestation records policy, allowed set, observed set, and result for every 
 
 An imported theorem's axioms are not exempt because the theorem is upstream. If they flow into a generated declaration, the generated declaration's policy must permit them.
 
+**Imported declarations.** The observed set of each imported declaration (§5.3, §18.8) is recorded in the attestation under `imports`: one row per used entry, in qualified entry order, holding the entry, the Lean module, the Lean name, the observed set, and the status of §5.3. The member is present exactly when there is an imported declaration. Before any elaboration, an import whose observed set holds `sorryAx`, `Lean.ofReduceBool`, `Lean.trustCompiler`, or an axiom that `native_decide` generated is refused unless an `allow` or `exact` policy of some declaration of the document names that axiom: `sorryAx` is `LLV7023`, `Lean.ofReduceBool` is `LLV7024`, and `Lean.trustCompiler` and the axioms of `native_decide` are `LLV7025`. `Lean.ofReduceBool` rests on `Lean.trustCompiler`, so a policy that accepts the first names the second too. A policy cannot spell the axiom of `native_decide`, whose printed name ends in a hygiene mark, so an import that carries it is always refused. The refusal is of the import and at the granularity of the document: a policy that names the axiom lets the import through, and each generated declaration that depends on it is then held to its own policy as above (`LLV7005`). Every other axiom of an import, the three of §5.4 among them, is judged only by the policies of the generated declarations that depend on it.
+
 A language-1.2 model declaration (§17.12) is audited through the Lean
 declarations it generates: its elaborated definitions and theorems, its
 cross-checks, and its artifacts' `.bytes` and `.decoded` declarations. Each
@@ -9073,6 +9079,7 @@ The body records:
 - every process record;
 - generated `.olean` hashes;
 - axiom policies and observed sets;
+- the observed axioms and status of each imported declaration (§22.6), as `imports`, when there is one;
 - the canonical compiler input's byte length and SHA-256, when a production root exists;
 - `preservation.json`'s byte length and SHA-256, when a production root exists;
 - optional PDF process and bytes;
@@ -10014,6 +10021,9 @@ The initial registry MUST include at least these exact codes and meanings:
 | `LLV7020` | Lean library fetch failed (§10.4). |
 | `LLV7021` | Replay cache entry rejected (§22.13). |
 | `LLV7022` | Replay facts refused (§22.13). |
+| `LLV7023` | Imported declaration depends on `sorryAx` and no policy names it (§22.6). |
+| `LLV7024` | Imported declaration depends on `Lean.ofReduceBool` and no policy names it (§22.6). |
+| `LLV7025` | Imported declaration depends on `Lean.trustCompiler` or on a `native_decide` axiom and no policy names it (§22.6). |
 | `LLV7101` | Certificate evidence does not certify the root (§24.7). |
 | `LLV7102` | Production artifact replay rejected (§24.7). |
 | `LLS8001` | Path escape, symlink, special file, or filesystem identity conflict. |
@@ -10928,6 +10938,8 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `VR-22` | `verification` | Performance telemetry is written only to the CI evidence directory the environment names, a verification with telemetry on publishes byte-identical artifacts to one without, and telemetry planted in a verified artifact fails the gate. | §22.12 |
 | `VR-23` | `verification` | A project verified as the parts of one run, each shard running the processes its plan names with the oleans of the shards it needs and the join reading every shard's records, publishes a verified directory byte-identical to the whole verification's with the same attestation identity, and a shard whose plan leaves a module without its imports, a join missing a record, or a join reading a record of an executable other than its own, is refused. | §9.4, §22.11 |
 | `VR-24` | `verification` | An external entry whose Lean name is under the reserved root `LexLeanSpec` is probed by `example : (<signature>) = (type_of% @<constant>) := rfl`, so that its linked signature is definitionally the Lean type of the wrapper and not merely inhabited by it; an entry whose signature differs from that type is refused with LLT4017 naming the entry, a wrapper that does not exist stays LLT4003, and an entry outside the reserved root is probed exactly as before. | §18.8 |
+| `VR-25` | `verification` | A used external entry whose Lean module is outside the pinned toolchain's own libraries `Init`, `Std`, `Lean` and `Lake` is an imported declaration: the probe module prints its axioms with `#print axioms`, the attestation records its observed set, and an import that depends on `sorryAx` is refused with LLV7023, on `Lean.ofReduceBool` with LLV7024, and on `Lean.trustCompiler` or on an axiom that `native_decide` generated with LLV7025, each naming the entry, unless an axiom policy of the document names that axiom, in which case the import is accepted and every generated declaration is still held to its own policy. | §5.3, §5.4, §18.8, §22.6 |
+| `VR-26` | `verification` | The status of an imported declaration in the attestation is `replayed in the pinned environment`, and no output about an import says `proved`, `verified` or `kernel-checked`, words that §5.3 reserves for the generated declarations of the document and that §4.2 forbids for an imported library. | §4.2, §5.3 |
 | `CL-01` | `cli-api` | Global options and upward project discovery obey the exact CLI contract. | §23.1, §23.2 |
 | `CL-02` | `cli-api` | Init creates the complete canonical skeleton only in an absent or empty destination and never overwrites. | §23.4 |
 | `CL-03` | `cli-api` | Lock check, local update, and explicit network acquisition obey their exact mutually exclusive behavior. | §23.4 |
@@ -11177,7 +11189,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RC-05` | `replay-cache` | A changed Lean toolchain or a changed Mathlib revision gives every unit a new key, so no result recorded under the previous environment is reused, and the entries of the previous environment are left unread and intact. | §22.13 |
 | `RC-06` | `replay-cache` | Facts exported by the pinned Lean from compiled modules, keyed and replayed through the pinned `leanchecker` cold and then warm, reuse every module whose key is unchanged: after a one-line edit to one declaration, only the modules whose declarations reach it are replayed again, and the warm verdicts equal the cold ones. | §22.13 |
 
-**Total required capability IDs:** 472.
+**Total required capability IDs:** 474.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

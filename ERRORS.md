@@ -604,6 +604,24 @@ The facts a replay key is computed from repeat a declaration, name a declaration
 
 Class: `language`. Exit code: 1.
 
+## `LLV7023` --- Imported declaration depends on sorryAx
+
+A Lean declaration that a used entry denotes, from outside the pinned toolchain's own libraries, depends on `sorryAx`, a proof hole, and no axiom policy of the document names `sorryAx`.
+
+Class: `language`. Exit code: 1.
+
+## `LLV7024` --- Imported declaration depends on Lean.ofReduceBool
+
+A Lean declaration that a used entry denotes, from outside the pinned toolchain's own libraries, depends on `Lean.ofReduceBool`, a claim the compiler's evaluator made, and no axiom policy of the document names `Lean.ofReduceBool`.
+
+Class: `language`. Exit code: 1.
+
+## `LLV7025` --- Imported declaration trusts the compiler
+
+A Lean declaration that a used entry denotes, from outside the pinned toolchain's own libraries, depends on `Lean.trustCompiler` or on an axiom that `native_decide` generated, and no axiom policy of the document names that axiom.
+
+Class: `language`. Exit code: 1.
+
 ## `LLV7101` --- Certificate evidence does not certify the root
 
 Certificate evidence a production request supplies is not the certificate whose identity it pins, earns a refused verdict for its request, or is for a request whose reference program is not the root's lowered program.
