@@ -321,6 +321,15 @@ the error registry does not sanction (R5, `ERRORS.md`).
 | `GL-17` | `build` | Language 1.2 resolves the exact 1.2 builtin package closure and enforces 1.2 lexicon semantics. |
 | `GL-18` | `build` | Cross-version package, lexicon, and lock combinations fail closed before backend execution. |
 
+## mathlib
+
+| ID | Level | Statement |
+| --- | --- | --- |
+| `ML-01` | `build` | A language-1.2 project declares an external Lean library once, as a `[[lean_library]]` table of its `lexlean.toml` with a `name`, an HTTPS `url`, and an exact 40-lowercase-hex `revision`, sorted and unique by `name`, and the configuration reads back to the bytes written; a project without one keeps its bytes, and a URL that is not HTTPS, a revision that is not a 40-lowercase-hex commit, a branch, a tag, or any other field, a name that is not a package identifier, a repeated or unsorted table, and a declaration in another language are each refused with LLC0109. |
+| `ML-02` | `build` | The lock pins each declared Lean library by a `[[lean_library]]` row of its name, URL, exact revision, the SHA-256 of the library's own `lake-manifest.json`, and the SHA-256 of its generated glossary, the tree digest of the lexicon package `lean.<name>` of the project or of the empty tree when the project has none; the Lake workspace's `lake-manifest.json` must require the library at the declared URL and revision, rows sort by name, and the lock reads back to the bytes written; a project without a library keeps its lock bytes, and a library, a manifest digest, a glossary, or a workspace requirement that is not the one the lock pins is refused with LLC0110 naming both values. |
+| `ML-03` | `build` | `lexlean deps fetch` is the only command that acquires a declared Lean library: it checks the declaration against the Lake workspace, runs `lake exe cache get` in the Lake workspace under the pinned toolchain through the checked child runner, and confirms the library is present at the declared revision with its built artifacts; with no library declared it fetches nothing and succeeds, a missing or failing `lake` and a library that is not at the declared revision afterward are LLV7020, and the command writes nothing of the project outside the Lake workspace. |
+| `ML-04` | `build` | `lock`, `check`, `build`, `fmt`, and `verify` never fetch a declared Lean library: when the library is not present in the Lake workspace at the declared revision with its built artifacts, each fails offline with LLV7019 naming the library and `lexlean deps fetch`, before any Lean process runs and without a network connection. |
+
 ## models
 
 | ID | Level | Statement |

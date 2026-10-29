@@ -759,10 +759,11 @@ The parsed project has one canonical TOML serialization used by `project_config_
 2. `lexicon_source` tables sorted by `package`, with keys in the order `package`, `kind`, then kind-specific fields;
 3. language 1.2 only: `artifact_source` tables sorted by `sha256`, with keys in the order `sha256`, `path`, omitted entirely when there are none, so a project without artifacts keeps its bytes;
 4. language 1.2 only: `source_package` tables sorted by `package`, with keys in the order `package`, `version`, `kind`, `path`, omitted entirely when there are none, so a project without source packages keeps its bytes;
-5. `[limits]` with keys in the order shown;
-6. optional `[pdf]` last, with keys in the order shown;
-7. basic quoted strings, decimal integers, arrays with comma-space separators, LF line endings, and one final LF;
-8. no comments, blank leading lines, or trailing spaces.
+5. language 1.2 only: `lean_library` tables sorted by `name`, with keys in the order `name`, `url`, `revision`, omitted entirely when there are none, so a project without a Lean library keeps its bytes;
+6. `[limits]` with keys in the order shown;
+7. optional `[pdf]` last, with keys in the order shown;
+8. basic quoted strings, decimal integers, arrays with comma-space separators, LF line endings, and one final LF;
+9. no comments, blank leading lines, or trailing spaces.
 
 Input whitespace does not affect this canonical serialization. A project may be semantically valid before formatting, but `lexlean lock --check` and repository examples require canonical bytes.
 
@@ -783,6 +784,7 @@ Input whitespace does not affect this canonical serialization. A project may be 
 | `lexicon_source` | Unique by package and sorted by package identifier. |
 | `artifact_source` | Language 1.2 only (another language rejects the field, `LLC0101`): optional `[[artifact_source]]` tables `sha256 = "<64 lowercase hex>"`, `path = "<project-relative file>"`, sorted by `sha256`, unique by digest and by path, never beneath the build root. Each names the content-addressed bytes of one model artifact (§17.12); `check`, `build`, `fmt`, and `verify` read the file, confined (§25.1), and require its SHA-256 to equal the configured digest (`LLR3007`). Artifacts are never fetched. |
 | `source_package` | Language 1.2 only (another language rejects the field, `LLC0101`): optional `[[source_package]]` tables `package = "<identifier>"`, `version = "<reader's string>"`, `kind = "path"`, `path = "<workspace-relative member directory>"`, sorted and unique by `package`, with `package` an identifier of the form of `name` and `version` a string of at most 64 ASCII letters, digits, `.`, `+`, and `-` that begins with a letter or digit. `path` is resolved from the workspace root, not the project's (§10.5); a kind other than `path` is `LLC0101`, and a path that is absolute or has a `..` segment escapes the workspace and is `LLS8001`. |
+| `lean_library` | Language 1.2 only (another language rejects the field, `LLC0109`): optional `[[lean_library]]` tables `name = "<package identifier>"`, `url = "<HTTPS URL>"`, `revision = "<40 lowercase hex>"`, sorted and unique by `name`. The URL is HTTPS, the revision an exact commit; a branch, a tag, any other field, or a malformed value is `LLC0109`. §10.4 gives the rest. |
 | `limits` | Every listed positive integer is required. There are no hidden compiler defaults. |
 
 #### Lexicon-source forms
@@ -859,6 +861,17 @@ The project `lean-toolchain` MUST contain the exact toolchain string. `lexlean l
 - `lake-manifest.json`, when present.
 
 If both Lake configuration forms exist, locking fails. Verification requires the recorded files to match and requires all manifest dependencies to be locally available.
+
+**Lean libraries.** A language-1.2 project may declare an external Lean library, Mathlib being the case this exists for, once, in `lexlean.toml`:
+
+```toml
+[[lean_library]]
+name = "mathlib"
+url = "https://github.com/leanprover-community/mathlib4"
+revision = "520045ab14e26149ee970e2e617ca04b09bde5d6"
+```
+
+The rules are those of a `git` lexicon source (§10.1): HTTPS, an exact 40-lowercase-hex commit, no branch, tag, or other mutable reference. The Lake workspace must require the library at the same place: its `lake-manifest.json` has a `packages` entry of the same `name` whose `url` and `rev` equal the declaration, else `LLC0110` names both. The library is the package Lake puts at `<lean_workspace>/.lake/packages/<name>`. It is *present* when that directory's `.git/HEAD` names the declared revision, it holds a `lake-manifest.json`, and its built artifacts directory `.lake/build/lib/lean` exists. Fetching is a separate, explicit command, `lexlean deps fetch` (§23.4), which runs `lake exe cache get` so that the library's `.olean` files are downloaded and never rebuilt; `lock`, `check`, `build`, `fmt`, and `verify` never fetch (I15, §11.4) and fail with `LLV7019` when a declared library is not present. The lock (§11.1) records the revision, the SHA-256 of the library's own `lake-manifest.json`, which pins its transitive dependencies, and the SHA-256 of its generated glossary, the tree digest (§11.5) of the project's lexicon package `lean.<name>` or the digest of the empty tree when the project has none. The library and its built artifacts belong to the trusted computing base (§5.1); the lock pins the source revision and its manifest, not the bytes of the built artifacts, and LexLean never claims the library is proved by LexLean (§4.2).
 
 ### 10.5 Source packages
 
@@ -945,6 +958,17 @@ manifest_sha256 = "..."
 imports = ["base@1.0.0"]
 ```
 
+Language 1.2 only, a project that declares Lean libraries (§10.4) has, after the `[[source_package]]` rows, one `[[lean_library]]` row per declared library, and a project that declares none has none:
+
+```toml
+[[lean_library]]
+name = "mathlib"
+url = "https://github.com/leanprover-community/mathlib4"
+revision = "520045ab14e26149ee970e2e617ca04b09bde5d6"
+lake_manifest_sha256 = "..."
+glossary_sha256 = "..."
+```
+
 Language-1.2 model artifacts (§10.1, §17.12) have no lock rows: each is pinned
 by its `sha256` in `lexlean.toml`, whose canonical bytes the lock's project
 digest and the source ID cover, and every `check`, `build`, `fmt`, and
@@ -955,6 +979,7 @@ digest and the source ID cover, and every `check`, `build`, `fmt`, and
 - `workspace_file` rows sort by `path`.
 - `package` rows sort by `(id, version)`.
 - `source_package` rows sort by `id`, and their `imports` by `id`.
+- `lean_library` rows sort by `name`.
 - package `imports` sort lexicographically and contain no duplicates.
 - all keys use the order shown by the schema formatter.
 - lowercase hexadecimal is mandatory.
@@ -973,6 +998,7 @@ A source import names an exact package and exact version. Version ranges are not
 - verification fails if a locked package is absent or its digest differs;
 - an acquired Git package is stored at `<build_root>/cache/git/<revision>/<tree_sha256>/` and is revalidated before use;
 - Git submodules, Git LFS indirection, and nested repositories are rejected.
+- a declared Lean library (§10.4) is never acquired by `lock`, even with `--allow-network`: only `lexlean deps fetch` acquires it, and an absent library fails every other command with `LLV7019`.
 
 ### 11.5 Tree digest
 
@@ -9340,6 +9366,14 @@ lexlean explain <DIAGNOSTIC-CODE>
 
 Prints the generated `ERRORS.md` entry for one registered code. Unknown codes exit as CLI misuse.
 
+#### `deps`
+
+```text
+lexlean deps fetch
+```
+
+Acquires the Lean libraries the project declares (§10.4) and nothing else. It checks each declaration against the Lake workspace, runs `lake exe cache get` in the Lake workspace under the pinned toolchain, with the network the cache download needs, and confirms the library is then present at the declared revision. With no library declared it succeeds and fetches nothing. It writes no file outside the Lake workspace, and it is the only command that fetches a Lean library (I15, §11.4). A missing or failing `lake` and a library that is not present afterward are `LLV7020`.
+
 #### `production`
 
 ```text
@@ -9799,6 +9833,8 @@ The initial registry MUST include at least these exact codes and meanings:
 | `LLC0106` | Source package undeclared, or declared with two sources (§10.5). |
 | `LLC0107` | Module prefix claimed by two sources (§10.5). |
 | `LLC0108` | Source package outside the workspace rule (§10.5). |
+| `LLC0109` | Lean library declaration invalid (§10.4). |
+| `LLC0110` | Lean library is not the library the lock pins (§10.4). |
 | `LLC0201` | Production request malformed (§24.7). |
 | `LLC0202` | Requested root is not a production root (§24.7). |
 | `LLC0203` | Unknown or mismatched production target (§24.7). |
@@ -9865,6 +9901,8 @@ The initial registry MUST include at least these exact codes and meanings:
 | `LLV7016` | Certificate E rejected (§17.17). |
 | `LLV7017` | Invalid verification resource profile (§22.11). |
 | `LLV7018` | Child start refused after the host ended the live children (§24.6). |
+| `LLV7019` | Lean library not fetched (§10.4). |
+| `LLV7020` | Lean library fetch failed (§10.4). |
 | `LLV7101` | Certificate evidence does not certify the root (§24.7). |
 | `LLV7102` | Production artifact replay rejected (§24.7). |
 | `LLS8001` | Path escape, symlink, special file, or filesystem identity conflict. |
@@ -11012,8 +11050,12 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-08` | `language-models` | Text components compose and adapt through the model constructs alone, and no new declaration kind exists for it: a stateful model whose state is a context window's `list uint32`, whose step is the window's `push`, and whose contract's postcondition states that the pushed context fits composes under `scan` with its `satisfies_contract` evidence proved by the window's generated `push_bounded`, and an adapter is a model over `string` whose realization applies the elaborated `classify` of a classifier or `generate` of a generator, with `satisfies_contract` evidence proved from the generated laws of that classifier or generator; the closed list of language-1.2 declaration kinds is unchanged by it, an adapter whose realization does not meet its contract fails verification, and an adapter that applies a declaration of another kind is refused (`LLT4006`). | §17.12 |
 | `LM-09` | `language-models` | No prompt is code: no member of the closed language maps `string` or `bytes` to a function, a term, or source — every operation of the primitive registry that takes a `string` or `bytes` operand is classified by the audit with a data result, the registry's schema enumeration and the production registry's primitive rows equal one another and equal that classified set, and the text declarations of `lexlean/semantic-module/2` state no `string`-typed member, so a prompt reaches a model only as the tokens `encodeText` makes of it; a planted operation or text member of that shape is caught by the audit with its name. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
+| `ML-01` | `mathlib` | A language-1.2 project declares an external Lean library once, as a `[[lean_library]]` table of its `lexlean.toml` with a `name`, an HTTPS `url`, and an exact 40-lowercase-hex `revision`, sorted and unique by `name`, and the configuration reads back to the bytes written; a project without one keeps its bytes, and a URL that is not HTTPS, a revision that is not a 40-lowercase-hex commit, a branch, a tag, or any other field, a name that is not a package identifier, a repeated or unsorted table, and a declaration in another language are each refused with LLC0109. | §10.1, §10.4 |
+| `ML-02` | `mathlib` | The lock pins each declared Lean library by a `[[lean_library]]` row of its name, URL, exact revision, the SHA-256 of the library's own `lake-manifest.json`, and the SHA-256 of its generated glossary, the tree digest of the lexicon package `lean.<name>` of the project or of the empty tree when the project has none; the Lake workspace's `lake-manifest.json` must require the library at the declared URL and revision, rows sort by name, and the lock reads back to the bytes written; a project without a library keeps its lock bytes, and a library, a manifest digest, a glossary, or a workspace requirement that is not the one the lock pins is refused with LLC0110 naming both values. | §10.4, §11.1, §11.2 |
+| `ML-03` | `mathlib` | `lexlean deps fetch` is the only command that acquires a declared Lean library: it checks the declaration against the Lake workspace, runs `lake exe cache get` in the Lake workspace under the pinned toolchain through the checked child runner, and confirms the library is present at the declared revision with its built artifacts; with no library declared it fetches nothing and succeeds, a missing or failing `lake` and a library that is not at the declared revision afterward are LLV7020, and the command writes nothing of the project outside the Lake workspace. | §10.4, §11.4, §23.4 |
+| `ML-04` | `mathlib` | `lock`, `check`, `build`, `fmt`, and `verify` never fetch a declared Lean library: when the library is not present in the Lake workspace at the declared revision with its built artifacts, each fails offline with LLV7019 naming the library and `lexlean deps fetch`, before any Lean process runs and without a network connection. | §10.4, §11.4 |
 
-**Total required capability IDs:** 457.
+**Total required capability IDs:** 461.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

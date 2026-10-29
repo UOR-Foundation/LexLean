@@ -58,6 +58,24 @@ pub struct LockSourcePackage {
     pub imports: Vec<String>,
 }
 
+/// One locked Lean library row (§10.4, §11.1): the pin of an external Lean
+/// library by its commit, the digest of its own `lake-manifest.json`, which
+/// pins what it depends on, and the digest of the glossary generated from it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LockLeanLibrary {
+    /// The Lake package name.
+    pub name: String,
+    /// The HTTPS URL of the repository.
+    pub url: String,
+    /// The exact 40-lowercase-hex commit.
+    pub revision: String,
+    /// SHA-256 of the library's own `lake-manifest.json`.
+    pub lake_manifest_sha256: Sha256Digest,
+    /// The tree digest (§11.5) of the project's `lean.<name>` lexicon
+    /// package, or of the empty tree when it has none.
+    pub glossary_sha256: Sha256Digest,
+}
+
 /// A locked PDF provider record (§11.1): it mirrors the configured
 /// provider (program, argument vectors, output pattern, hashes) and records
 /// the hash of every declared resource.
@@ -95,6 +113,8 @@ pub struct Lock {
     /// Language 1.2: source package rows sorted by identifier, the
     /// transitive closure of the project's source packages.
     pub source_packages: Vec<LockSourcePackage>,
+    /// Language 1.2: Lean library rows sorted by name.
+    pub lean_libraries: Vec<LockLeanLibrary>,
     /// The optional PDF record.
     pub pdf: Option<LockPdf>,
 }
@@ -179,6 +199,24 @@ impl Lock {
             ));
             out.push_str(&format!("imports = {}\n", toml_array(&package.imports)));
         }
+        // Written only when the project declares Lean libraries, so every
+        // other lock keeps its bytes.
+        let mut lean_libraries = self.lean_libraries.clone();
+        lean_libraries.sort_by(|a, b| a.name.cmp(&b.name));
+        for library in &lean_libraries {
+            out.push_str("\n[[lean_library]]\n");
+            out.push_str(&format!("name = {}\n", toml_string(&library.name)));
+            out.push_str(&format!("url = {}\n", toml_string(&library.url)));
+            out.push_str(&format!("revision = {}\n", toml_string(&library.revision)));
+            out.push_str(&format!(
+                "lake_manifest_sha256 = {}\n",
+                toml_string(&library.lake_manifest_sha256.to_hex())
+            ));
+            out.push_str(&format!(
+                "glossary_sha256 = {}\n",
+                toml_string(&library.glossary_sha256.to_hex())
+            ));
+        }
         if let Some(pdf) = &self.pdf {
             out.push_str("\n[pdf]\n");
             out.push_str(&format!("program = {}\n", toml_string(&pdf.program)));
@@ -225,6 +263,8 @@ struct RawLock {
     packages: Vec<RawLockPackage>,
     #[serde(rename = "source_package", default)]
     source_packages: Vec<RawLockSourcePackage>,
+    #[serde(rename = "lean_library", default)]
+    lean_libraries: Vec<RawLockLeanLibrary>,
     pdf: Option<RawLockPdf>,
 }
 
@@ -259,6 +299,16 @@ struct RawLockSourcePackage {
     tree_sha256: String,
     manifest_sha256: String,
     imports: Vec<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RawLockLeanLibrary {
+    name: String,
+    url: String,
+    revision: String,
+    lake_manifest_sha256: String,
+    glossary_sha256: String,
 }
 
 #[derive(Deserialize)]
@@ -449,6 +499,34 @@ pub fn parse_lock(path: &str, bytes: &[u8]) -> Result<Lock, Vec<Diagnostic>> {
             imports: row.imports.clone(),
         });
     }
+    if !raw
+        .lean_libraries
+        .windows(2)
+        .all(|pair| pair[0].name < pair[1].name)
+    {
+        diagnostics.push(lock_error(format!(
+            "{path}: lean_library rows must be unique and sorted by name"
+        )));
+    }
+    let lean_libraries: Vec<LockLeanLibrary> = raw
+        .lean_libraries
+        .iter()
+        .map(|row| LockLeanLibrary {
+            name: row.name.clone(),
+            url: row.url.clone(),
+            revision: row.revision.clone(),
+            lake_manifest_sha256: hex(
+                "lean_library.lake_manifest_sha256",
+                &row.lake_manifest_sha256,
+                &mut diagnostics,
+            ),
+            glossary_sha256: hex(
+                "lean_library.glossary_sha256",
+                &row.glossary_sha256,
+                &mut diagnostics,
+            ),
+        })
+        .collect();
     let pdf = raw.pdf.as_ref().map(|raw_pdf| LockPdf {
         program: raw_pdf.program.clone(),
         version_argv: raw_pdf.version_argv.clone(),
@@ -482,6 +560,7 @@ pub fn parse_lock(path: &str, bytes: &[u8]) -> Result<Lock, Vec<Diagnostic>> {
         workspace_files,
         packages,
         source_packages,
+        lean_libraries,
         pdf,
     };
     if diagnostics.is_empty() {
@@ -1248,6 +1327,7 @@ pub fn compute_lock(
 ) -> Result<(Lock, Vec<LexiconPackage>), Vec<Diagnostic>> {
     let resolved = resolve_packages(project, allow_network)?;
     let source_packages = crate::source_package::resolve(project)?;
+    let lean_libraries = crate::lean_library::resolve(project, &resolved.packages)?;
 
     // The closure must include every transitive import exactly once (§11.3);
     // imports of loaded packages must all be loaded.
@@ -1314,6 +1394,7 @@ pub fn compute_lock(
             workspace_files,
             packages: resolved.rows,
             source_packages: source_packages.rows(),
+            lean_libraries,
             pdf,
         },
         resolved.packages,
@@ -1349,6 +1430,7 @@ pub fn read_current_lock(
     // §10.5: a package that is not the one the lock pins is named with both
     // digests before the lock is called stale as a whole.
     crate::source_package::check_pins(&committed.source_packages, &expected.source_packages)?;
+    crate::lean_library::check_pins(&committed.lean_libraries, &expected.lean_libraries)?;
     if expected.canonical_bytes() != bytes {
         let mut mismatch = lock_error(format!(
             "{} is stale or noncanonical; run `lexlean lock`",

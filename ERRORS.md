@@ -112,6 +112,18 @@ A project that declares a source package is outside any workspace or is not a me
 
 Class: `cli-configuration`. Exit code: 2.
 
+## `LLC0109` --- Lean library declaration invalid
+
+A `[[lean_library]]` table is not a closed declaration of a language-1.2 project: a URL that is not HTTPS, a revision that is not an exact 40-lowercase-hex commit, a branch, a tag, or any other field, a name that is not a package identifier, a table repeated or out of order, or a declaration in another language.
+
+Class: `cli-configuration`. Exit code: 2.
+
+## `LLC0110` --- Lean library is not the library the lock pins
+
+A declared Lean library's URL, revision, Lake manifest digest, or glossary digest differs from the lock's row, or the Lake workspace's `lake-manifest.json` does not require the library at the declared URL and revision, naming both values.
+
+Class: `cli-configuration`. Exit code: 2.
+
 ## `LLC0201` --- Production request malformed
 
 A production request is not a closed `lexlean/production-request/1` document: an unknown or missing field, another spec, roots, targets, or evidence that are empty, unsorted, or repeated, a root, package, or path that is not of its form, or a package name used twice for one target.
@@ -511,6 +523,18 @@ Class: `environment`. Exit code: 3.
 ## `LLV7018` --- Child start refused after the host ended the live children
 
 A child process could not be started because the host ended the live children of this process through `lexlean::verify::end_live_children` and has not re-enabled starting children.
+
+Class: `environment`. Exit code: 3.
+
+## `LLV7019` --- Lean library not fetched
+
+A project declares a Lean library that is not present in its Lake workspace at the declared revision with its built artifacts; `lock`, `check`, `build`, `fmt`, and `verify` never fetch, so the library must first be acquired with `lexlean deps fetch`.
+
+Class: `environment`. Exit code: 3.
+
+## `LLV7020` --- Lean library fetch failed
+
+`lexlean deps fetch` could not acquire a declared Lean library: the `lake` executable could not be resolved or run, `lake exe cache get` failed, or the library is not at the declared revision with its built artifacts afterward.
 
 Class: `environment`. Exit code: 3.
 

@@ -45,6 +45,8 @@ pub mod grammar;
 #[doc(hidden)]
 pub mod ir;
 #[doc(hidden)]
+pub mod lean_library;
+#[doc(hidden)]
 pub mod lexicon;
 #[doc(hidden)]
 pub mod link;

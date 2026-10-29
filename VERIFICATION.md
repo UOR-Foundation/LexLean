@@ -10489,6 +10489,23 @@ IDs, and the digests of its lock and its source map); the committed
 language-1.2 records are regenerated in the wave the maintainer names, not by
 this change.
 
+### Lean libraries can fail (`ML-01`..`ML-04`, SPEC.md §10.4, #334)
+
+The cases of the `mathlib` suite were written before the implementation (R3), but
+they were not run red first: the implementation was in place before the first run,
+so there is no observed first failure to quote. Instead, two defects were planted
+in `lean_library.rs`, the named case run with
+`cargo test -p repo-conformance --test conformance <case>`, and the defect removed.
+
+| Planted defect | Case | Observed |
+| --- | --- | --- |
+| a library checked out at another commit is accepted as present | `conformance_ml_04` | `another revision: refused` |
+| the Lake workspace manifest may require another revision than the declaration | `conformance_ml_02` | `another revision is refused` |
+
+Not covered by any case: a real `lake exe cache get` against Mathlib. The cases use a
+stand-in `lake` that leaves the files `cache get` leaves. The real run is a measurement,
+not a conformance case, and is recorded in `docs/proposals/mathlib-import-notes-334.md`.
+
 ### the standard-library source packages and the helpdesk can fail (`SL-03`, `SL-04`, `EX-09`, #32)
 
 The three cases were written before the packages and the example existed (R3).

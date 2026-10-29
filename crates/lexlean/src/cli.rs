@@ -144,6 +144,18 @@ enum CommandKind {
         #[command(subcommand)]
         action: ProductionAction,
     },
+    /// Acquire the external Lean libraries the project declares (§10.4).
+    Deps {
+        #[command(subcommand)]
+        action: DepsAction,
+    },
+}
+
+/// The dependency actions (§23.4).
+#[derive(Subcommand)]
+enum DepsAction {
+    /// Fetch every declared Lean library and its prebuilt `.olean` files.
+    Fetch,
 }
 
 /// The production export actions (§24.7), mirroring `api::production`.
@@ -165,7 +177,7 @@ enum ProductionAction {
 }
 
 /// The command names, in the order of §23.4.
-const COMMAND_NAMES: [&str; 10] = [
+const COMMAND_NAMES: [&str; 11] = [
     "init",
     "lock",
     "check",
@@ -176,6 +188,7 @@ const COMMAND_NAMES: [&str; 10] = [
     "clean",
     "explain",
     "production",
+    "deps",
 ];
 
 /// The embedded diagnostic registry, for `explain` (§23.4). The registry
@@ -549,6 +562,7 @@ pub fn run(
         CommandKind::Clean => "clean",
         CommandKind::Explain { .. } => "explain",
         CommandKind::Production { .. } => "production",
+        CommandKind::Deps { .. } => "deps",
     };
 
     let mut outcome = Outcome::default();
@@ -714,6 +728,17 @@ pub fn run(
                     outcome.modules = result.modules.into_iter().collect();
                     Ok(())
                 }
+                CommandKind::Deps {
+                    action: DepsAction::Fetch,
+                } => {
+                    let fetched = engine.deps_fetch()?;
+                    outcome.summary = if fetched.libraries.is_empty() {
+                        "no Lean library is declared; nothing to fetch\n".to_owned()
+                    } else {
+                        format!("fetched {}\n", fetched.libraries.join(", "))
+                    };
+                    Ok(())
+                }
                 CommandKind::Clean => {
                     let build_root = engine.project().config.build_root.clone();
                     outcome.summary = match engine.clean()? {
@@ -823,6 +848,7 @@ fn init_project(
         }],
         artifact_sources: Vec::new(),
         source_packages: Vec::new(),
+        lean_libraries: Vec::new(),
         limits: INIT_LIMITS,
         pdf: None,
     };

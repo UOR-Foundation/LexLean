@@ -192,6 +192,21 @@ pub struct SourcePackage {
     pub path: String,
 }
 
+/// Language 1.2: one external Lean library a project declares once (§10.4),
+/// Mathlib being the case it exists for. It is pinned by an exact commit and
+/// never by a branch or tag, and acquired only by `lexlean deps fetch`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LeanLibrary {
+    /// The Lake package name, unique in the project; it names the entry of
+    /// the Lake workspace's `lake-manifest.json` and the directory Lake
+    /// puts the library in.
+    pub name: String,
+    /// The HTTPS URL of the repository.
+    pub url: String,
+    /// The exact 40-lowercase-hex commit.
+    pub revision: String,
+}
+
 /// The validated project configuration.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProjectConfig {
@@ -217,6 +232,8 @@ pub struct ProjectConfig {
     pub artifact_sources: Vec<ArtifactSource>,
     /// Language 1.2: source packages, sorted by package.
     pub source_packages: Vec<SourcePackage>,
+    /// Language 1.2: external Lean libraries, sorted by name.
+    pub lean_libraries: Vec<LeanLibrary>,
     /// The explicit resource policy.
     pub limits: Limits,
     /// The optional PDF provider.
@@ -242,6 +259,8 @@ struct RawProject {
     artifact_sources: Option<Vec<RawArtifactSource>>,
     #[serde(default, rename = "source_package")]
     source_packages: Option<Vec<RawSourcePackage>>,
+    #[serde(default, rename = "lean_library")]
+    lean_libraries: Option<Vec<RawLeanLibrary>>,
     limits: Limits,
     pdf: Option<RawPdf>,
 }
@@ -273,6 +292,19 @@ struct RawSourcePackage {
     path: String,
 }
 
+/// A `[[lean_library]]` table. Every field is optional here and any further
+/// key is collected, so that a missing field, a `branch`, or a `tag` is
+/// refused as `LLC0109` naming the library rather than as a generic parse
+/// failure.
+#[derive(Deserialize)]
+struct RawLeanLibrary {
+    name: Option<String>,
+    url: Option<String>,
+    revision: Option<String>,
+    #[serde(flatten)]
+    other: std::collections::BTreeMap<String, toml::Value>,
+}
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct RawPdf {
@@ -288,6 +320,18 @@ struct RawPdf {
 
 fn config_error(path: &str, message: impl Into<String>) -> Diagnostic {
     Diagnostic::new(code!("LLC0101"), message).with_span(Span::whole_file(path))
+}
+
+fn library_error(path: &str, message: impl Into<String>) -> Diagnostic {
+    Diagnostic::new(code!("LLC0109"), message).with_span(Span::whole_file(path))
+}
+
+/// Is `revision` an exact commit: 40 lowercase hexadecimal digits.
+fn is_exact_commit(revision: &str) -> bool {
+    revision.len() == 40
+        && revision
+            .bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
 }
 
 /// The Lean roots this compiler ships or generates beside a project's own:
@@ -902,6 +946,78 @@ pub fn parse_project(path: &str, bytes: &[u8]) -> Result<ProjectConfig, Vec<Diag
         }
     }
 
+    // Language 1.2 Lean libraries: closed declarations, an HTTPS URL and an
+    // exact commit, unique and strictly sorted by name (§10.4). A branch or a
+    // tag is named in the refusal: the pin is the commit and nothing mutable.
+    let mut lean_libraries = Vec::new();
+    if let Some(raw_libraries) = &raw.lean_libraries {
+        if raw.language != crate::LANGUAGE_1_2 {
+            diagnostics.push(library_error(
+                path,
+                format!(
+                    "lean_library is a language-1.2 field; language {} has no Lean libraries",
+                    raw.language
+                ),
+            ));
+        }
+        for raw_library in raw_libraries {
+            let label = raw_library.name.clone().unwrap_or_default();
+            for key in raw_library.other.keys() {
+                let message = if matches!(key.as_str(), "branch" | "tag" | "rev" | "ref") {
+                    format!(
+                        "lean_library `{label}`: `{key}` is a mutable reference; a library is pinned by an exact `revision` commit alone"
+                    )
+                } else {
+                    format!("lean_library `{label}`: unknown field `{key}`")
+                };
+                diagnostics.push(library_error(path, message));
+            }
+            let (Some(name), Some(url), Some(revision)) =
+                (&raw_library.name, &raw_library.url, &raw_library.revision)
+            else {
+                diagnostics.push(library_error(
+                    path,
+                    format!("lean_library `{label}` requires name, url, and revision"),
+                ));
+                continue;
+            };
+            if !is_project_name(name) {
+                diagnostics.push(library_error(
+                    path,
+                    format!("lean_library `{name}` is not a valid package identifier"),
+                ));
+            }
+            if !url.starts_with("https://") {
+                diagnostics.push(library_error(
+                    path,
+                    format!("lean_library `{name}`: URL `{url}` is not HTTPS"),
+                ));
+            }
+            if !is_exact_commit(revision) {
+                diagnostics.push(library_error(
+                    path,
+                    format!(
+                        "lean_library `{name}`: revision `{revision}` is not an exact 40-lowercase-hex commit"
+                    ),
+                ));
+            }
+            lean_libraries.push(LeanLibrary {
+                name: name.clone(),
+                url: url.clone(),
+                revision: revision.clone(),
+            });
+        }
+        if !lean_libraries
+            .windows(2)
+            .all(|pair| pair[0].name < pair[1].name)
+        {
+            diagnostics.push(library_error(
+                path,
+                "lean_library tables must be unique and sorted by name",
+            ));
+        }
+    }
+
     // The optional PDF provider (§10.3, §19.7).
     let pdf = match &raw.pdf {
         None => None,
@@ -1031,6 +1147,7 @@ pub fn parse_project(path: &str, bytes: &[u8]) -> Result<ProjectConfig, Vec<Diag
             lexicon_sources: sources,
             artifact_sources,
             source_packages,
+            lean_libraries,
             limits: raw.limits,
             pdf,
         })
@@ -1153,6 +1270,14 @@ impl ProjectConfig {
             out.push_str(&format!("version = {}\n", toml_string(&package.version)));
             out.push_str("kind = \"path\"\n");
             out.push_str(&format!("path = {}\n", toml_string(&package.path)));
+        }
+        // Written only when present, so a project without a Lean library
+        // keeps its canonical bytes and configuration digest.
+        for library in &self.lean_libraries {
+            out.push_str("\n[[lean_library]]\n");
+            out.push_str(&format!("name = {}\n", toml_string(&library.name)));
+            out.push_str(&format!("url = {}\n", toml_string(&library.url)));
+            out.push_str(&format!("revision = {}\n", toml_string(&library.revision)));
         }
         out.push_str("\n[limits]\n");
         for (name, value) in self.limits.rows() {

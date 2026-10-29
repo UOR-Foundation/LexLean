@@ -25,6 +25,7 @@ mod latex_pdf;
 mod lean_backend;
 mod lexical_closure;
 mod lexicon;
+mod mathlib;
 mod migration;
 mod models;
 mod operational;
@@ -143,6 +144,7 @@ pub fn run(id: &str) {
         "SL" => stdlib::run(id),
         "BS" => bootstrap::run(id),
         "PK" => packages::run(id),
+        "ML" => mathlib::run(id),
         _ => panic!("no conformance case is wired for {id}"),
     }
 }
