@@ -1047,8 +1047,8 @@ fn reproducibility_dirs(root: &Path, dirs: &[PathBuf]) -> Result<(), Fail> {
             .unwrap_or_default()
             .to_string_lossy()
             .to_string();
-        let (temp_a, files_a) = published_build(root, &dir, false)?;
-        let (temp_b, files_b) = published_build(root, &dir, false)?;
+        let (temp_a, files_a) = published_build(root, dir, false)?;
+        let (temp_b, files_b) = published_build(root, dir, false)?;
         if temp_a.path() == temp_b.path() {
             return Err("the two build directories must be distinct".into());
         }
