@@ -1,0 +1,21 @@
+spec = "lexlean/entry/1"
+id = "bit-vec.of-nat"
+category = "function"
+signature = "(pi ((explicit n (const lean.mathlib::nat)) (explicit i (const lean.mathlib::nat))) (app (const lean.mathlib::bit-vec) (local n)))"
+surface_arity = 2
+frame = "call"
+
+[denotation]
+kind = "lean"
+module = "Init.Prelude"
+name = "BitVec.ofNat"
+
+[[form]]
+id = "of-nat"
+channel = "math"
+surface = "bitVecOfNat"
+canonical_source = true
+features = []
+
+[render]
+math = "(seq (operator-name bitVecOfNat) (paren (seq (slot 0) (token comma) (space) (slot 1))))"

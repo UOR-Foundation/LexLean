@@ -1,0 +1,129 @@
+\begin{lexlean}{Mixing}
+\useglossary{blake3.g@1.0.0}
+\useglossary{lean.mathlib@1.0.0}
+\importmodule{Cancellation}
+\importmodule{Rotation}
+\title{Mixing function inverse}
+
+\begin{section}{inverse}
+\heading{Mixing function inverse}
+  \begin{theorem}{mixing-inverse}
+  \exactaxioms{Classical.choice;Quot.sound;propext}
+  For every \(bitVec(32)\) \(a\) and \(bitVec(32)\) \(b\) and \(bitVec(32)\) \(c\) and \(bitVec(32)\) \(d\) and \(bitVec(32)\) \(x\) and \(bitVec(32)\) \(y\) and \(bitVec(32)\) \(a1\) and \(bitVec(32)\) \(b1\) and \(bitVec(32)\) \(c1\) and \(bitVec(32)\) \(d1\) and \(bitVec(32)\) \(a2\) and \(bitVec(32)\) \(b2\) and \(bitVec(32)\) \(c2\) and \(bitVec(32)\) \(d2\) and \(bitVec(32)\) \(ib1\) and \(bitVec(32)\) \(ic1\) and \(bitVec(32)\) \(id1\) and \(bitVec(32)\) \(ia1\) and \(bitVec(32)\) \(ra\) and \(bitVec(32)\) \(rb\) and \(bitVec(32)\) \(rc\) and \(bitVec(32)\) \(rd\), if \(a1 = hAddHAdd(hAddHAdd(a, b), x)\), then if \(d1 = bitVecRotateRight(hXorHXor(d, a1), 16)\), then if \(c1 = hAddHAdd(c, d1)\), then if \(b1 = bitVecRotateRight(hXorHXor(b, c1), 12)\), then if \(a2 = hAddHAdd(hAddHAdd(a1, b1), y)\), then if \(d2 = bitVecRotateRight(hXorHXor(d1, a2), 8)\), then if \(c2 = hAddHAdd(c1, d2)\), then if \(b2 = bitVecRotateRight(hXorHXor(b1, c2), 7)\), then if \(ib1 = hXorHXor(bitVecRotateLeft(b2, 7), c2)\), then if \(ic1 = hSubHSub(c2, d2)\), then if \(id1 = hXorHXor(bitVecRotateLeft(d2, 8), a2)\), then if \(ia1 = hSubHSub(hSubHSub(a2, ib1), y)\), then if \(rb = hXorHXor(bitVecRotateLeft(ib1, 12), ic1)\), then if \(rc = hSubHSub(ic1, id1)\), then if \(rd = hXorHXor(bitVecRotateLeft(id1, 16), ia1)\), then if \(ra = hSubHSub(hSubHSub(ia1, rb), x)\), then \(ra = a\) and \(rb = b\) and \(rc = c\) and \(rd = d\).
+  \begin{proof}
+  Assume \(e1\), \(e2\), \(e3\), \(e4\), \(e5\), \(e6\), \(e7\), \(e8\), \(f1\), \(f2\), \(f3\), \(f4\), \(f5\), \(f6\), \(f7\), \(f8\).
+  \begin{have}{hb1}
+  \(ib1 = b1\).
+  \begin{proof}
+  \begin{rewrite}{goal}
+  \forward{f1}
+  \forward{e8}
+  \end{rewrite}
+  Close the goal with \(\reference{Rotation::unmix}(b1, c2, 7)\).
+  \end{proof}
+  \end{have}
+  \begin{have}{hc1}
+  \(ic1 = c1\).
+  \begin{proof}
+  \begin{rewrite}{goal}
+  \forward{f2}
+  \forward{e7}
+  \end{rewrite}
+  Close the goal with \(\reference{Cancellation::add-sub-cancel}(c1, d2)\).
+  \end{proof}
+  \end{have}
+  \begin{have}{hd1}
+  \(id1 = d1\).
+  \begin{proof}
+  \begin{rewrite}{goal}
+  \forward{f3}
+  \forward{e6}
+  \end{rewrite}
+  Close the goal with \(\reference{Rotation::unmix}(d1, a2, 8)\).
+  \end{proof}
+  \end{have}
+  \begin{have}{ha1}
+  \(ia1 = a1\).
+  \begin{proof}
+  \begin{rewrite}{goal}
+  \forward{f4}
+  \forward{hb1}
+  \forward{e5}
+  \end{rewrite}
+  Close the goal with \(\reference{Cancellation::add-sub-sub-cancel}(a1, b1, y)\).
+  \end{proof}
+  \end{have}
+  \begin{have}{hb}
+  \(rb = b\).
+  \begin{proof}
+  \begin{rewrite}{goal}
+  \forward{f5}
+  \forward{hb1}
+  \forward{hc1}
+  \forward{e4}
+  \end{rewrite}
+  Close the goal with \(\reference{Rotation::unmix}(b, c1, 12)\).
+  \end{proof}
+  \end{have}
+  \begin{have}{hc}
+  \(rc = c\).
+  \begin{proof}
+  \begin{rewrite}{goal}
+  \forward{f6}
+  \forward{hc1}
+  \forward{hd1}
+  \forward{e3}
+  \end{rewrite}
+  Close the goal with \(\reference{Cancellation::add-sub-cancel}(c, d1)\).
+  \end{proof}
+  \end{have}
+  \begin{have}{hd}
+  \(rd = d\).
+  \begin{proof}
+  \begin{rewrite}{goal}
+  \forward{f7}
+  \forward{hd1}
+  \forward{ha1}
+  \forward{e2}
+  \end{rewrite}
+  Close the goal with \(\reference{Rotation::unmix}(d, a1, 16)\).
+  \end{proof}
+  \end{have}
+  \begin{have}{ha}
+  \(ra = a\).
+  \begin{proof}
+  \begin{rewrite}{goal}
+  \forward{f8}
+  \forward{ha1}
+  \forward{hb}
+  \forward{e1}
+  \end{rewrite}
+  Close the goal with \(\reference{Cancellation::add-sub-sub-cancel}(a, b, x)\).
+  \end{proof}
+  \end{have}
+  \begin{constructor}
+  \begin{branch}{1}
+  \begin{constructor}
+  \begin{branch}{1}
+  \begin{constructor}
+  \begin{branch}{1}
+  Close the goal with \(ha\).
+  \end{branch}
+  \begin{branch}{2}
+  Close the goal with \(hb\).
+  \end{branch}
+  \end{constructor}
+  \end{branch}
+  \begin{branch}{2}
+  Close the goal with \(hc\).
+  \end{branch}
+  \end{constructor}
+  \end{branch}
+  \begin{branch}{2}
+  Close the goal with \(hd\).
+  \end{branch}
+  \end{constructor}
+  \end{proof}
+  \end{theorem}
+\end{section}
+\end{lexlean}

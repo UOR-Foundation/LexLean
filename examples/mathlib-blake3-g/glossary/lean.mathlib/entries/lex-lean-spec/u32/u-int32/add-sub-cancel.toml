@@ -1,0 +1,21 @@
+spec = "lexlean/entry/1"
+id = "lex-lean-spec.u32.u-int32.add-sub-cancel"
+category = "proof-constant"
+signature = "(pi ((explicit a (const lean.mathlib::u-int32)) (explicit b (const lean.mathlib::u-int32))) (app (const lexlean.core::eq) (app (const lean.mathlib::h-sub.h-sub (0 0 0)) (app (const lean.mathlib::h-add.h-add (0 0 0)) (local a) (local b)) (local b)) (local a)))"
+surface_arity = 2
+frame = "call"
+
+[denotation]
+kind = "lean"
+module = "Blake3GSpecs"
+name = "LexLeanSpec.U32.UInt32.add_sub_cancel"
+
+[[form]]
+id = "add-sub-cancel"
+channel = "math"
+surface = "lexLeanSpecU32UInt32AddSubCancel"
+canonical_source = true
+features = []
+
+[render]
+math = "(seq (operator-name lexLeanSpecU32UInt32AddSubCancel) (paren (seq (slot 0) (token comma) (space) (slot 1))))"

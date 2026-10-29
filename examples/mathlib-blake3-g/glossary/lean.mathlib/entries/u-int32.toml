@@ -1,0 +1,31 @@
+spec = "lexlean/entry/1"
+id = "u-int32"
+category = "type-noun"
+signature = "(sort (type 0))"
+surface_arity = 0
+frame = "atom"
+
+[denotation]
+kind = "lean"
+module = "Init.Prelude"
+name = "UInt32"
+
+[[form]]
+id = "u-int32"
+channel = "math"
+surface = "uInt32"
+canonical_source = true
+features = []
+
+[render]
+math = "(operator-name uInt32)"
+
+[eliminator]
+cases_lean_name = "UInt32.casesOn"
+induction_lean_name = "UInt32.rec"
+
+[[eliminator.constructor]]
+entry = "lean.mathlib::u-int32.of-bit-vec"
+lean_name = "UInt32.ofBitVec"
+fields = ["toBitVec"]
+induction_hypotheses = []

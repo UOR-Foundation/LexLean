@@ -1,0 +1,31 @@
+spec = "lexlean/entry/1"
+id = "bit-vec"
+category = "function"
+signature = "(pi ((explicit w (const lean.mathlib::nat))) (sort (type 0)))"
+surface_arity = 1
+frame = "call"
+
+[denotation]
+kind = "lean"
+module = "Init.Prelude"
+name = "BitVec"
+
+[[form]]
+id = "bit-vec"
+channel = "math"
+surface = "bitVec"
+canonical_source = true
+features = []
+
+[render]
+math = "(seq (operator-name bitVec) (paren (slot 0)))"
+
+[eliminator]
+cases_lean_name = "BitVec.casesOn"
+induction_lean_name = "BitVec.cons_induction"
+
+[[eliminator.constructor]]
+entry = "lean.mathlib::bit-vec.of-fin"
+lean_name = "BitVec.ofFin"
+fields = ["toFin"]
+induction_hypotheses = []

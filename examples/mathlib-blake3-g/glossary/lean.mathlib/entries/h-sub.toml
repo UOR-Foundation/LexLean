@@ -1,0 +1,32 @@
+spec = "lexlean/entry/1"
+id = "h-sub"
+category = "function"
+signature = "(pi ((explicit a (sort (type u))) (explicit b (sort (type v))) (explicit g (sort (type w)))) (sort (type (max (max u v) w))))"
+universes = ["u", "v", "w"]
+surface_arity = 3
+frame = "call"
+
+[denotation]
+kind = "lean"
+module = "Init.Prelude"
+name = "HSub"
+
+[[form]]
+id = "h-sub"
+channel = "math"
+surface = "hSub"
+canonical_source = true
+features = []
+
+[render]
+math = "(seq (operator-name hSub) (paren (seq (slot 0) (token comma) (space) (slot 1) (token comma) (space) (slot 2))))"
+
+[eliminator]
+cases_lean_name = "HSub.casesOn"
+induction_lean_name = "HSub.rec"
+
+[[eliminator.constructor]]
+entry = "lean.mathlib::h-sub.mk"
+lean_name = "HSub.mk"
+fields = ["hSub"]
+induction_hypotheses = []

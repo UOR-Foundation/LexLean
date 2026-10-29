@@ -1,0 +1,31 @@
+spec = "lexlean/entry/1"
+id = "fin"
+category = "function"
+signature = "(pi ((explicit n (const lean.mathlib::nat))) (sort (type 0)))"
+surface_arity = 1
+frame = "call"
+
+[denotation]
+kind = "lean"
+module = "Init.Prelude"
+name = "Fin"
+
+[[form]]
+id = "fin"
+channel = "math"
+surface = "fin"
+canonical_source = true
+features = []
+
+[render]
+math = "(seq (operator-name fin) (paren (slot 0)))"
+
+[eliminator]
+cases_lean_name = "Fin.casesOn"
+induction_lean_name = "Fin.rec"
+
+[[eliminator.constructor]]
+entry = "lean.mathlib::fin.mk"
+lean_name = "Fin.mk"
+fields = ["val", "isLt"]
+induction_hypotheses = []

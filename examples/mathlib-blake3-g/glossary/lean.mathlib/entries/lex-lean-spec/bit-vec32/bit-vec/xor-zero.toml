@@ -1,0 +1,21 @@
+spec = "lexlean/entry/1"
+id = "lex-lean-spec.bit-vec32.bit-vec.xor-zero"
+category = "proof-constant"
+signature = "(pi ((implicit x (app (const lean.mathlib::bit-vec) (nat 32)))) (app (const lexlean.core::eq) (app (const lean.mathlib::h-xor.h-xor (0 0 0)) (local x) (app (const lean.mathlib::bit-vec.of-nat) (nat 32) (nat 0))) (local x)))"
+surface_arity = 0
+frame = "atom"
+
+[denotation]
+kind = "lean"
+module = "Blake3GSpecs"
+name = "LexLeanSpec.BitVec32.BitVec.xor_zero"
+
+[[form]]
+id = "xor-zero"
+channel = "math"
+surface = "lexLeanSpecBitVec32BitVecXorZero"
+canonical_source = true
+features = []
+
+[render]
+math = "(operator-name lexLeanSpecBitVec32BitVecXorZero)"

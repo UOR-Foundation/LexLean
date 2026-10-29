@@ -1,0 +1,37 @@
+spec = "lexlean/entry/1"
+id = "nat"
+category = "type-noun"
+signature = "(sort (type 0))"
+surface_arity = 0
+frame = "atom"
+
+[denotation]
+kind = "lean"
+module = "Init.Prelude"
+name = "Nat"
+
+[[form]]
+id = "nat"
+channel = "math"
+surface = "nat"
+canonical_source = true
+features = []
+
+[render]
+math = "(operator-name nat)"
+
+[eliminator]
+cases_lean_name = "Nat.casesAuxOn"
+induction_lean_name = "Nat.recAux"
+
+[[eliminator.constructor]]
+entry = "lean.mathlib::nat.zero"
+lean_name = "Nat.zero"
+fields = []
+induction_hypotheses = []
+
+[[eliminator.constructor]]
+entry = "lean.mathlib::nat.succ"
+lean_name = "Nat.succ"
+fields = ["n"]
+induction_hypotheses = ["nih"]

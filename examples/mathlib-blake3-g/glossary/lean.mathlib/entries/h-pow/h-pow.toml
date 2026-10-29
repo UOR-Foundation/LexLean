@@ -1,0 +1,22 @@
+spec = "lexlean/entry/1"
+id = "h-pow.h-pow"
+category = "function"
+signature = "(pi ((implicit a (sort (type u))) (implicit b (sort (type v))) (implicit g (sort (type w))) (instance self (app (const lean.mathlib::h-pow (u v w)) (local a) (local b) (local g))) (explicit x (local a)) (explicit x1 (local b))) (local g))"
+universes = ["u", "v", "w"]
+surface_arity = 2
+frame = "call"
+
+[denotation]
+kind = "lean"
+module = "Init.Prelude"
+name = "HPow.hPow"
+
+[[form]]
+id = "h-pow"
+channel = "math"
+surface = "hPowHPow"
+canonical_source = true
+features = []
+
+[render]
+math = "(seq (operator-name hPowHPow) (paren (seq (slot 0) (token comma) (space) (slot 1))))"

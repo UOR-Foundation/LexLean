@@ -1,0 +1,10 @@
+'MathlibBlake3G.Cancellation.add_sub_cancel' depends on axioms: [propext]
+'MathlibBlake3G.Cancellation.add_sub_cancel_group' depends on axioms: [propext, Classical.choice, Quot.sound]
+'MathlibBlake3G.Cancellation.add_sub_cancel_u32' depends on axioms: [propext]
+'MathlibBlake3G.Cancellation.add_sub_sub_cancel' depends on axioms: [propext, Classical.choice, Quot.sound]
+'MathlibBlake3G.Cancellation.xor_cancel' depends on axioms: [propext, Quot.sound]
+'MathlibBlake3G.Cancellation.xor_cancel_u32' depends on axioms: [propext, Quot.sound]
+
+'MathlibBlake3G.Mixing.mixing_inverse' depends on axioms: [propext, Classical.choice, Quot.sound]
+'MathlibBlake3G.Rotation.rotate_left_right' depends on axioms: [propext, Quot.sound]
+'MathlibBlake3G.Rotation.unmix' depends on axioms: [propext, Quot.sound]

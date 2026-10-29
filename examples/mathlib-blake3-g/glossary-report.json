@@ -1,0 +1,53 @@
+{
+  "spec": "lexlean/glossary-report/1",
+  "package": "lean.mathlib",
+  "version": "1.0.0",
+  "language": "1.2",
+  "requested": 15,
+  "translated": 11,
+  "refused": 0,
+  "excluded": 4,
+  "excluded_by_kind": {
+    "internal": 4
+  },
+  "refused_by_reason": {},
+  "refused_by_dependency": {},
+  "support_entries": 27,
+  "eliminators": {
+    "emitted": 9,
+    "omitted": {}
+  },
+  "entries_with_erased_annotations": 12,
+  "id_collisions": 0,
+  "surface_collisions": 0,
+  "refusals": [
+    {
+      "name": "_private.Blake3GHost.0.Blake3GHost.rotateLeft_rotateRight._proof_1_1",
+      "requested": false,
+      "reason": "excluded-internal",
+      "code": "LLT4106",
+      "detail": "a internal declaration is not exposed as an entry"
+    },
+    {
+      "name": "_private.Blake3GHost.0.Blake3GHost.rotateLeft_rotateRight._proof_1_2",
+      "requested": false,
+      "reason": "excluded-internal",
+      "code": "LLT4106",
+      "detail": "a internal declaration is not exposed as an entry"
+    },
+    {
+      "name": "_private.Blake3GHost.0.Blake3GHost.rotateLeft_rotateRight._proof_1_3",
+      "requested": false,
+      "reason": "excluded-internal",
+      "code": "LLT4106",
+      "detail": "a internal declaration is not exposed as an entry"
+    },
+    {
+      "name": "_private.Blake3GHost.0.Blake3GHost.rotateLeft_rotateRight._proof_1_4",
+      "requested": false,
+      "reason": "excluded-internal",
+      "code": "LLT4106",
+      "detail": "a internal declaration is not exposed as an entry"
+    }
+  ]
+}

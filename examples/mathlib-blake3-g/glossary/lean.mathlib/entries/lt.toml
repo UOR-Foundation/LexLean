@@ -1,0 +1,32 @@
+spec = "lexlean/entry/1"
+id = "lt"
+category = "function"
+signature = "(pi ((explicit a (sort (type u)))) (sort (type u)))"
+universes = ["u"]
+surface_arity = 1
+frame = "call"
+
+[denotation]
+kind = "lean"
+module = "Init.Prelude"
+name = "LT"
+
+[[form]]
+id = "lt"
+channel = "math"
+surface = "lt"
+canonical_source = true
+features = []
+
+[render]
+math = "(seq (operator-name lt) (paren (slot 0)))"
+
+[eliminator]
+cases_lean_name = "LT.casesOn"
+induction_lean_name = "LT.rec"
+
+[[eliminator.constructor]]
+entry = "lean.mathlib::lt.mk"
+lean_name = "LT.mk"
+fields = ["lt"]
+induction_hypotheses = []

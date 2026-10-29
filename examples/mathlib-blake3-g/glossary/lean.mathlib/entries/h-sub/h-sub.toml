@@ -1,0 +1,22 @@
+spec = "lexlean/entry/1"
+id = "h-sub.h-sub"
+category = "function"
+signature = "(pi ((implicit a (sort (type u))) (implicit b (sort (type v))) (implicit g (sort (type w))) (instance self (app (const lean.mathlib::h-sub (u v w)) (local a) (local b) (local g))) (explicit x (local a)) (explicit x1 (local b))) (local g))"
+universes = ["u", "v", "w"]
+surface_arity = 2
+frame = "call"
+
+[denotation]
+kind = "lean"
+module = "Init.Prelude"
+name = "HSub.hSub"
+
+[[form]]
+id = "h-sub"
+channel = "math"
+surface = "hSubHSub"
+canonical_source = true
+features = []
+
+[render]
+math = "(seq (operator-name hSubHSub) (paren (seq (slot 0) (token comma) (space) (slot 1))))"

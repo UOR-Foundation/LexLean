@@ -1,0 +1,21 @@
+spec = "lexlean/entry/1"
+id = "bit-vec.of-fin"
+category = "function"
+signature = "(pi ((implicit w (const lean.mathlib::nat)) (explicit toFin (app (const lean.mathlib::fin) (app (const lean.mathlib::h-pow.h-pow (0 0 0)) (nat 2) (local w))))) (app (const lean.mathlib::bit-vec) (local w)))"
+surface_arity = 1
+frame = "call"
+
+[denotation]
+kind = "lean"
+module = "Init.Prelude"
+name = "BitVec.ofFin"
+
+[[form]]
+id = "of-fin"
+channel = "math"
+surface = "bitVecOfFin"
+canonical_source = true
+features = []
+
+[render]
+math = "(seq (operator-name bitVecOfFin) (paren (slot 0)))"

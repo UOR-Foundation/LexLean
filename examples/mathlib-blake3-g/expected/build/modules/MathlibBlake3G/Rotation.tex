@@ -1,0 +1,54 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage[hidelinks]{hyperref}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\begin{document}
+\begin{center}
+{\LARGE Rotation}
+\end{center}
+\section{Rotation}
+\label{ll:rotation:rotation}
+\begin{theorem}
+\label{ll:rotation:rotate-left-right}
+For every \(\operatorname{bitVec}(32)\) \(a\), \(\operatorname{bitVecRotateLeft}(\operatorname{bitVecRotateRight}(a, 7), 7) = a\) and \(\operatorname{bitVecRotateLeft}(\operatorname{bitVecRotateRight}(a, 8), 8) = a\) and \(\operatorname{bitVecRotateLeft}(\operatorname{bitVecRotateRight}(a, 12), 12) = a\) and \(\operatorname{bitVecRotateLeft}(\operatorname{bitVecRotateRight}(a, 16), 16) = a\).
+\end{theorem}
+\begin{proof}
+Branch \(1\):
+\begin{quote}
+Branch \(1\):
+\begin{quote}
+Branch \(1\):
+\begin{quote}
+The goal follows from \(\operatorname{blake3GHostRotateLeftRotateRight}(a, 7)\).
+\end{quote}
+Branch \(2\):
+\begin{quote}
+The goal follows from \(\operatorname{blake3GHostRotateLeftRotateRight}(a, 8)\).
+\end{quote}
+\end{quote}
+Branch \(2\):
+\begin{quote}
+The goal follows from \(\operatorname{blake3GHostRotateLeftRotateRight}(a, 12)\).
+\end{quote}
+\end{quote}
+Branch \(2\):
+\begin{quote}
+The goal follows from \(\operatorname{blake3GHostRotateLeftRotateRight}(a, 16)\).
+\end{quote}
+\end{proof}
+\begin{lemma}
+\label{ll:rotation:unmix}
+For every \(\operatorname{bitVec}(32)\) \(p\) and \(\operatorname{bitVec}(32)\) \(q\) and \(\operatorname{nat}\) \(n\), \(\operatorname{hXorHXor}(\operatorname{bitVecRotateLeft}(\operatorname{bitVecRotateRight}(\operatorname{hXorHXor}(p, q), n), n), q) = p\).
+\end{lemma}
+\begin{proof}
+Rewrite the goal using \(\rightarrow \operatorname{blake3GHostRotateLeftRotateRight}(\operatorname{hXorHXor}(p, q), n)\).
+The goal follows from \(\texttt{Cancellation::xor-cancel}(p, q)\).
+\end{proof}
+\end{document}

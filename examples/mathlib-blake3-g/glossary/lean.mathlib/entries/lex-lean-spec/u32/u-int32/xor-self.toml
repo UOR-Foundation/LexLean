@@ -1,0 +1,21 @@
+spec = "lexlean/entry/1"
+id = "lex-lean-spec.u32.u-int32.xor-self"
+category = "proof-constant"
+signature = "(pi ((implicit a (const lean.mathlib::u-int32))) (app (const lexlean.core::eq) (app (const lean.mathlib::h-xor.h-xor (0 0 0)) (local a) (local a)) (nat 0)))"
+surface_arity = 0
+frame = "atom"
+
+[denotation]
+kind = "lean"
+module = "Blake3GSpecs"
+name = "LexLeanSpec.U32.UInt32.xor_self"
+
+[[form]]
+id = "xor-self"
+channel = "math"
+surface = "lexLeanSpecU32UInt32XorSelf"
+canonical_source = true
+features = []
+
+[render]
+math = "(operator-name lexLeanSpecU32UInt32XorSelf)"

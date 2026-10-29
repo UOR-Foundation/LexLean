@@ -1,0 +1,49 @@
+\begin{lexlean}{Rotation}
+\useglossary{blake3.g@1.0.0}
+\useglossary{lean.mathlib@1.0.0}
+\importmodule{Cancellation}
+\title{Rotation}
+
+\begin{section}{rotation}
+\heading{Rotation}
+  \begin{theorem}{rotate-left-right}
+  \exactaxioms{Quot.sound;propext}
+  For every \(bitVec(32)\) \(a\), \(bitVecRotateLeft(bitVecRotateRight(a, 7), 7) = a\) and \(bitVecRotateLeft(bitVecRotateRight(a, 8), 8) = a\) and \(bitVecRotateLeft(bitVecRotateRight(a, 12), 12) = a\) and \(bitVecRotateLeft(bitVecRotateRight(a, 16), 16) = a\).
+  \begin{proof}
+  \begin{constructor}
+  \begin{branch}{1}
+  \begin{constructor}
+  \begin{branch}{1}
+  \begin{constructor}
+  \begin{branch}{1}
+  Close the goal with \(blake3GHostRotateLeftRotateRight(a, 7)\).
+  \end{branch}
+  \begin{branch}{2}
+  Close the goal with \(blake3GHostRotateLeftRotateRight(a, 8)\).
+  \end{branch}
+  \end{constructor}
+  \end{branch}
+  \begin{branch}{2}
+  Close the goal with \(blake3GHostRotateLeftRotateRight(a, 12)\).
+  \end{branch}
+  \end{constructor}
+  \end{branch}
+  \begin{branch}{2}
+  Close the goal with \(blake3GHostRotateLeftRotateRight(a, 16)\).
+  \end{branch}
+  \end{constructor}
+  \end{proof}
+  \end{theorem}
+
+  \begin{lemma}{unmix}
+  \exactaxioms{Quot.sound;propext}
+  For every \(bitVec(32)\) \(p\) and \(bitVec(32)\) \(q\) and \(nat\) \(n\), \(hXorHXor(bitVecRotateLeft(bitVecRotateRight(hXorHXor(p, q), n), n), q) = p\).
+  \begin{proof}
+  \begin{rewrite}{goal}
+  \forward{blake3GHostRotateLeftRotateRight(hXorHXor(p, q), n)}
+  \end{rewrite}
+  Close the goal with \(\reference{Cancellation::xor-cancel}(p, q)\).
+  \end{proof}
+  \end{lemma}
+\end{section}
+\end{lexlean}

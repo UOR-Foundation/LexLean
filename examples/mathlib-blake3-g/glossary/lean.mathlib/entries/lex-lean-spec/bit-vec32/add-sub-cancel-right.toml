@@ -1,0 +1,21 @@
+spec = "lexlean/entry/1"
+id = "lex-lean-spec.bit-vec32.add-sub-cancel-right"
+category = "proof-constant"
+signature = "(pi ((explicit a (app (const lean.mathlib::bit-vec) (nat 32))) (explicit b (app (const lean.mathlib::bit-vec) (nat 32)))) (app (const lexlean.core::eq) (app (const lean.mathlib::h-sub.h-sub (0 0 0)) (app (const lean.mathlib::h-add.h-add (0 0 0)) (local a) (local b)) (local b)) (local a)))"
+surface_arity = 2
+frame = "call"
+
+[denotation]
+kind = "lean"
+module = "Blake3GSpecs"
+name = "LexLeanSpec.BitVec32.add_sub_cancel_right"
+
+[[form]]
+id = "add-sub-cancel-right"
+channel = "math"
+surface = "lexLeanSpecBitVec32AddSubCancelRight"
+canonical_source = true
+features = []
+
+[render]
+math = "(seq (operator-name lexLeanSpecBitVec32AddSubCancelRight) (paren (seq (slot 0) (token comma) (space) (slot 1))))"

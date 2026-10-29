@@ -1,0 +1,42 @@
+spec = "lexlean/project/1"
+name = "mathlib-blake3-g"
+language = "1.2"
+module_prefix = "MathlibBlake3G"
+source_roots = ["src"]
+entrypoints = ["src/Main.lex.tex"]
+build_root = ".lexlean"
+lockfile = "lexlean.lock"
+lean_workspace = "."
+lean_toolchain = "leanprover/lean4:v4.32.1"
+
+[[lexicon_source]]
+package = "blake3.g"
+kind = "path"
+path = "glossary/blake3.g"
+
+[[lexicon_source]]
+package = "lean.mathlib"
+kind = "path"
+path = "glossary/lean.mathlib"
+
+[[lexicon_source]]
+package = "lexlean.std.nat"
+kind = "builtin"
+
+[[lean_library]]
+name = "mathlib"
+url = "https://github.com/leanprover-community/mathlib4"
+revision = "520045ab14e26149ee970e2e617ca04b09bde5d6"
+
+[limits]
+max_file_bytes = 4194304
+max_total_source_bytes = 67108864
+max_primitive_atoms = 2000000
+max_token_lattice_edges = 4000000
+max_parse_states = 4000000
+max_ir_nodes = 2000000
+max_scope_depth = 1024
+max_import_depth = 128
+max_diagnostics = 256
+max_child_output_bytes = 16777216
+child_timeout_ms = 300000

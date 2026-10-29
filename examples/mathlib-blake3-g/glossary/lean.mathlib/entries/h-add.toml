@@ -1,0 +1,32 @@
+spec = "lexlean/entry/1"
+id = "h-add"
+category = "function"
+signature = "(pi ((explicit a (sort (type u))) (explicit b (sort (type v))) (explicit g (sort (type w)))) (sort (type (max (max u v) w))))"
+universes = ["u", "v", "w"]
+surface_arity = 3
+frame = "call"
+
+[denotation]
+kind = "lean"
+module = "Init.Prelude"
+name = "HAdd"
+
+[[form]]
+id = "h-add"
+channel = "math"
+surface = "hAdd"
+canonical_source = true
+features = []
+
+[render]
+math = "(seq (operator-name hAdd) (paren (seq (slot 0) (token comma) (space) (slot 1) (token comma) (space) (slot 2))))"
+
+[eliminator]
+cases_lean_name = "HAdd.casesOn"
+induction_lean_name = "HAdd.rec"
+
+[[eliminator.constructor]]
+entry = "lean.mathlib::h-add.mk"
+lean_name = "HAdd.mk"
+fields = ["hAdd"]
+induction_hypotheses = []

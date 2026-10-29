@@ -1,0 +1,71 @@
+\begin{lexlean}{Cancellation}
+\useglossary{blake3.g@1.0.0}
+\useglossary{lean.mathlib@1.0.0}
+\title{Cancellation}
+
+\begin{section}{addition}
+\heading{Cancellation}
+  \begin{theorem}{add-sub-cancel}
+  \exactaxioms{propext}
+  For every \(bitVec(32)\) \(a\) and \(bitVec(32)\) \(b\), \(hSubHSub(hAddHAdd(a, b), b) = a\).
+  \begin{proof}
+  Close the goal with \(lexLeanSpecBitVec32BitVecAddSubCancel(a, b)\).
+  \end{proof}
+  \end{theorem}
+
+  \begin{theorem}{add-sub-cancel-group}
+  \exactaxioms{Classical.choice;Quot.sound;propext}
+  For every \(bitVec(32)\) \(a\) and \(bitVec(32)\) \(b\), \(hSubHSub(hAddHAdd(a, b), b) = a\).
+  \begin{proof}
+  Close the goal with \(lexLeanSpecBitVec32AddSubCancelRight(a, b)\).
+  \end{proof}
+  \end{theorem}
+
+  \begin{theorem}{add-sub-cancel-u32}
+  \exactaxioms{propext}
+  For every \(uInt32\) \(a\) and \(uInt32\) \(b\), \(hSubHSub(hAddHAdd(a, b), b) = a\).
+  \begin{proof}
+  Close the goal with \(lexLeanSpecU32UInt32AddSubCancel(a, b)\).
+  \end{proof}
+  \end{theorem}
+
+  \begin{lemma}{add-sub-sub-cancel}
+  \exactaxioms{Classical.choice;Quot.sound;propext}
+  For every \(bitVec(32)\) \(p\) and \(bitVec(32)\) \(q\) and \(bitVec(32)\) \(r\), \(hSubHSub(hSubHSub(hAddHAdd(hAddHAdd(p, q), r), q), r) = p\).
+  \begin{proof}
+  \begin{rewrite}{goal}
+  \forward{lexLeanSpecBitVec32AddRightComm(p, q, r)}
+  \forward{lexLeanSpecBitVec32AddSubCancelRight(hAddHAdd(p, r), q)}
+  \forward{lexLeanSpecBitVec32AddSubCancelRight(p, r)}
+  \end{rewrite}
+  \end{proof}
+  \end{lemma}
+\end{section}
+
+\begin{section}{exclusive}
+\heading{Cancellation}
+  \begin{theorem}{xor-cancel}
+  \exactaxioms{Quot.sound;propext}
+  For every \(bitVec(32)\) \(a\) and \(bitVec(32)\) \(b\), \(hXorHXor(hXorHXor(a, b), b) = a\).
+  \begin{proof}
+  \begin{rewrite}{goal}
+  \forward{lexLeanSpecBitVec32BitVecXorAssoc(a, b, b)}
+  \forward{lexLeanSpecBitVec32BitVecXorSelf}
+  \forward{lexLeanSpecBitVec32BitVecXorZero}
+  \end{rewrite}
+  \end{proof}
+  \end{theorem}
+
+  \begin{theorem}{xor-cancel-u32}
+  \exactaxioms{Quot.sound;propext}
+  For every \(uInt32\) \(a\) and \(uInt32\) \(b\), \(hXorHXor(hXorHXor(a, b), b) = a\).
+  \begin{proof}
+  \begin{rewrite}{goal}
+  \forward{lexLeanSpecU32UInt32XorAssoc(a, b, b)}
+  \forward{lexLeanSpecU32UInt32XorSelf}
+  \forward{lexLeanSpecU32UInt32XorZero}
+  \end{rewrite}
+  \end{proof}
+  \end{theorem}
+\end{section}
+\end{lexlean}

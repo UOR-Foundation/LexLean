@@ -1,0 +1,74 @@
+spec = "lexlean/lock/2"
+language = "1.2"
+compiler_semantics = "1427f8b629013648a480454d67202788f2303f5396f1d7c70a7c350ddab6f694"
+project_config_sha256 = "022d802bf44e1eb308d670e0353feb1626fdf180212e5c6f365dfb5e7b74823f"
+lean_toolchain = "leanprover/lean4:v4.32.1"
+
+[[workspace_file]]
+path = "lake-manifest.json"
+sha256 = "de143ea8cd43911506a474e8933ba7f9394e99304f7a9f7f65d50bed03e76d2c"
+
+[[workspace_file]]
+path = "lakefile.toml"
+sha256 = "acd8d54aa20b69c86cef9af477bc214edb282db909464b86b57af5ec68ad7044"
+
+[[workspace_file]]
+path = "lean-toolchain"
+sha256 = "8e3538e0ab5f81a3ee04927d8838c8c674e0e112838b4b3ce87ec218143276af"
+
+[[package]]
+id = "blake3.g"
+version = "1.0.0"
+kind = "path"
+source = "glossary/blake3.g"
+revision = "none"
+tree_sha256 = "2c3540b8390722fb229212b60f4a4930e5a9b0bbea3a11d327484c5804c80546"
+manifest_sha256 = "d35dcc6762613da08688086b3378cb0099b1b6da4c9cabdd809396bacc6fd196"
+imports = ["lean.mathlib@1.0.0", "lexlean.core@1.2.0"]
+
+[[package]]
+id = "lean.mathlib"
+version = "1.0.0"
+kind = "path"
+source = "glossary/lean.mathlib"
+revision = "none"
+tree_sha256 = "62069b4dd8ba1e164384095b9dd931f1689274a22500b5e8693374471bf94547"
+manifest_sha256 = "5fef012739e28a5bff0b8f40825d9813776d8ab87ba5b715f654d1f36ce17f28"
+imports = ["lexlean.core@1.2.0"]
+
+[[package]]
+id = "lexlean.core"
+version = "1.2.0"
+kind = "builtin"
+source = "embedded"
+revision = "compiler-semantics"
+tree_sha256 = "827317cae68c162f3a96c8a8de4e53ab348e7d3724fd2b834fa85ecde1a1b392"
+manifest_sha256 = "271079763d269cc873531f515e56da960cd6321393b9460ff0e617666fa01d71"
+imports = []
+
+[[package]]
+id = "lexlean.std.bool"
+version = "1.2.0"
+kind = "builtin"
+source = "embedded"
+revision = "compiler-semantics"
+tree_sha256 = "3bc0fb09d706ffa7d5a1363302ea87c049acc7c7dcafde63c62682620c11be9b"
+manifest_sha256 = "de58de2cf18a7a5a62d8c20649139d6dfe1f7b16b3130c75f150fbac5440a71e"
+imports = ["lexlean.core@1.2.0"]
+
+[[package]]
+id = "lexlean.std.nat"
+version = "1.2.0"
+kind = "builtin"
+source = "embedded"
+revision = "compiler-semantics"
+tree_sha256 = "e0db021e01b91d651c43921d66f6b0023c8efbf17cac2ec53192ce5305e4e1ac"
+manifest_sha256 = "6fb446b39e3c1c18a5f10cfa1f7aa2bd431837719eb0eb7489aadf452c9420a7"
+imports = ["lexlean.core@1.2.0", "lexlean.std.bool@1.2.0"]
+
+[[lean_library]]
+name = "mathlib"
+url = "https://github.com/leanprover-community/mathlib4"
+revision = "520045ab14e26149ee970e2e617ca04b09bde5d6"
+lake_manifest_sha256 = "015c7e00ead0f05f2a72b32d9bdef782d4689d05a6297f0ceb0ab5d196c164bd"
+glossary_sha256 = "62069b4dd8ba1e164384095b9dd931f1689274a22500b5e8693374471bf94547"

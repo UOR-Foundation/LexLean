@@ -1,0 +1,21 @@
+spec = "lexlean/entry/1"
+id = "u-int32.of-bit-vec"
+category = "function"
+signature = "(pi ((explicit toBitVec (app (const lean.mathlib::bit-vec) (nat 32)))) (const lean.mathlib::u-int32))"
+surface_arity = 1
+frame = "call"
+
+[denotation]
+kind = "lean"
+module = "Init.Prelude"
+name = "UInt32.ofBitVec"
+
+[[form]]
+id = "of-bit-vec"
+channel = "math"
+surface = "uInt32OfBitVec"
+canonical_source = true
+features = []
+
+[render]
+math = "(seq (operator-name uInt32OfBitVec) (paren (slot 0)))"
