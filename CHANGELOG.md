@@ -17,6 +17,15 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- Canonical JSON writing in the standard library, the third member the
+  self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-11`). The module
+  `LexLeanStd.Json` holds the recursive value of §21.7 and the production
+  roots `writeJson`, `writeJsonFile`, and `escapeString` for `rust-std`, held
+  to `canonical_json::Json::to_canonical_string` and `to_file_bytes`: keys in
+  UTF-8 byte order with the last of a repeated key kept, shortest integers,
+  the required escapes, no whitespace. `stdlib/lexlean.toml` gains the
+  entrypoint, so the locks of `stdlib` and its consumers move. The register is
+  461 IDs.
 - Sorting and order in the standard library, the second member the
   self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-10`). The module
   `LexLeanStd.Order` holds the byte order of `Ord for [u8]` and one bottom-up
@@ -24,8 +33,7 @@ workspace carried at those versions without a tag.
   `sortBytes`, `sortEntries` (stable on the key), `sortedSet`,
   `insertSorted`, and `isAscending` for `rust-std`, held to `slice::sort`,
   `slice::sort_by`, `BTreeSet`, and `windows(2)`. `stdlib/lexlean.toml` gains
-  the entrypoint, so the locks of `stdlib` and its consumers move. The
-  register is 460 IDs.
+  the entrypoint, so the locks of `stdlib` and its consumers move.
 - Hexadecimal and decimal in the standard library, the first member the
   self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-09`). The module
   `LexLeanStd.Numeral` holds `decimal` and `hexNat` (the digits of a natural
