@@ -33,6 +33,14 @@
       "version": "1.0.0"
     },
     {
+      "name": "check_manifest",
+      "root": "LexLeanBoot.RustPackage.checkManifest",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "check_program",
       "root": "LexLeanBoot.CalculusCheck.checkProgram",
       "targets": [
@@ -163,6 +171,14 @@
     {
       "name": "reject_atoms",
       "root": "LexLeanBoot.PrimitiveScan.rejectAtoms",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "render_package",
+      "root": "LexLeanBoot.RustPackage.renderPackage",
       "targets": [
         "rust-std"
       ],
