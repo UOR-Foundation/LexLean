@@ -13,6 +13,9 @@
     "bootstrap-assemble": [
       "BS-14"
     ],
+    "bootstrap-package": [
+      "BS-15"
+    ],
     "bootstrap-check": [
       "BS-04"
     ],

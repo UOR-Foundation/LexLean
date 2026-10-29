@@ -26,6 +26,7 @@ mod rust_bodies;
 mod rust_loops;
 mod rust_lower;
 mod rust_moves;
+mod rust_package;
 mod rust_print;
 mod rust_succeed;
 mod rust_terms;
@@ -2449,6 +2450,7 @@ fn case(id: &str) {
         "BS-12" => rust_succeed::case(),
         "BS-13" => rust_loops::case(),
         "BS-14" => rust_assemble::case(),
+        "BS-15" => rust_package::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }
