@@ -2485,6 +2485,19 @@ fn language_1_2_construct(term: &SemanticTerm) -> Option<&'static str> {
         SemanticTerm::Primitive { operation, .. } if operation.language_1_2() => {
             Some(operation.language_1_2_construct())
         }
+        SemanticTerm::Primitive {
+            operation, result, ..
+        } if matches!(
+            operation,
+            SemanticPrimitive::BitAnd
+                | SemanticPrimitive::BitOr
+                | SemanticPrimitive::BitXor
+                | SemanticPrimitive::ShiftLeft
+                | SemanticPrimitive::ShiftRight
+        ) && *result == SemanticType::Nat =>
+        {
+            Some("bitwise primitive on Nat")
+        }
         SemanticTerm::Call { type_arguments, .. } if !type_arguments.is_empty() => {
             Some("call type arguments")
         }
@@ -7253,9 +7266,9 @@ fn infer_primitive(
             })
         }
         P::BitAnd | P::BitOr | P::BitXor => {
-            if !fixed_integer(&first) {
+            if first != SemanticType::Nat && !fixed_integer(&first) {
                 return Err(format!(
-                    "primitive {operation:?} requires fixed-width operands"
+                    "primitive {operation:?} requires Nat or fixed-width operands"
                 ));
             }
             require_observed(arguments, &[first.clone(), first.clone()], operation)?;
@@ -7269,15 +7282,23 @@ fn infer_primitive(
             exact_result(first)
         }
         P::ShiftLeft | P::ShiftRight => {
-            if !fixed_integer(&first) {
-                return Err(format!(
-                    "primitive {operation:?} requires a fixed-width operand"
-                ));
+            if first == SemanticType::Nat {
+                require_observed(
+                    arguments,
+                    &[SemanticType::Nat, SemanticType::Nat],
+                    operation,
+                )?;
+                exact_result(SemanticType::Nat)
+            } else if fixed_integer(&first) {
+                require_observed(arguments, &[first.clone(), SemanticType::UInt32], operation)?;
+                exact_result(SemanticType::Option {
+                    value: Box::new(first),
+                })
+            } else {
+                Err(format!(
+                    "primitive {operation:?} requires a Nat or fixed-width operand"
+                ))
             }
-            require_observed(arguments, &[first.clone(), SemanticType::UInt32], operation)?;
-            exact_result(SemanticType::Option {
-                value: Box::new(first),
-            })
         }
         P::Append => {
             if !matches!(first, SemanticType::List { .. } | SemanticType::Bytes) {
@@ -9954,10 +9975,12 @@ mod tests {
         accepts(P::CheckedConvert, &[T::Int], option(T::UInt64));
         for operation in [P::BitAnd, P::BitOr, P::BitXor] {
             accepts(operation, &[T::UInt64, T::UInt64], T::UInt64);
+            accepts(operation, &[T::Nat, T::Nat], T::Nat);
         }
         accepts(P::BitNot, &[T::UInt64], T::UInt64);
         for operation in [P::ShiftLeft, P::ShiftRight] {
             accepts(operation, &[T::UInt64, T::UInt32], option(T::UInt64));
+            accepts(operation, &[T::Nat, T::Nat], T::Nat);
         }
         accepts(P::Append, &[T::Bytes, T::Bytes], T::Bytes);
         accepts(P::Length, &[T::String], T::Nat);

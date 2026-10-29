@@ -113,48 +113,94 @@ parameters = [
   { kind = "list", element = { kind = "parameter", name = "A" } },
 ]
 
-# The runtime bounds (#263): what a law proof cites to show that a guard of the
-# split, the decoder, or checked addition never fails. Each conclusion is an
-# implication from a bound n on the input, and each closed side condition is a
-# premise a prior theorem discharges.
-
-# split_exact of a string whose UTF-8 byte length is at most n, on a separator
-# that is not empty, under a maximum above n, is some: a split has at most its
-# byte length plus one pieces.
+# Bit k of (a and b) is (bit k of a) and (bit k of b).
 [[law]]
-name = "split_exact_fits"
-lean = "LexLeanLaws.splitExact_fits"
-type_parameters = []
-premises = 2
-parameters = [
-  { kind = "string" },
-  { kind = "string" },
-  { kind = "uint32" },
-  { kind = "nat" },
-]
-
-# A string utf8_decode reads from bytes of length at most n has a UTF-8 byte
-# length of at most n.
-[[law]]
-name = "utf8_decode_length"
-lean = "LexLeanLaws.utf8Decode_length"
+name = "nat_bit_and"
+lean = "LexLeanLaws.nat_bit_and"
 type_parameters = []
 premises = 0
 parameters = [
-  { kind = "bytes" },
-  { kind = "string" },
+  { kind = "nat" },
+  { kind = "nat" },
   { kind = "nat" },
 ]
 
-# UInt32 checked_add of a value at most n and b is some when n plus b is below
-# 2^32.
+# Bit k of (a or b) is (bit k of a) or (bit k of b).
 [[law]]
-name = "checked_add_fits"
-lean = "LexLeanLaws.checkedAdd_fits"
+name = "nat_bit_or"
+lean = "LexLeanLaws.nat_bit_or"
+type_parameters = []
+premises = 0
+parameters = [
+  { kind = "nat" },
+  { kind = "nat" },
+  { kind = "nat" },
+]
+
+# Bit k of (a xor b) is (bit k of a) xor (bit k of b).
+[[law]]
+name = "nat_bit_xor"
+lean = "LexLeanLaws.nat_bit_xor"
+type_parameters = []
+premises = 0
+parameters = [
+  { kind = "nat" },
+  { kind = "nat" },
+  { kind = "nat" },
+]
+
+# Bit k of (a >>> m) is bit (m + k) of a.
+[[law]]
+name = "nat_bit_shift_right"
+lean = "LexLeanLaws.nat_bit_shift_right"
+type_parameters = []
+premises = 0
+parameters = [
+  { kind = "nat" },
+  { kind = "nat" },
+  { kind = "nat" },
+]
+
+# Bit (m + k) of (a <<< m) is bit k of a.
+[[law]]
+name = "nat_bit_shift_left"
+lean = "LexLeanLaws.nat_bit_shift_left"
+type_parameters = []
+premises = 0
+parameters = [
+  { kind = "nat" },
+  { kind = "nat" },
+  { kind = "nat" },
+]
+
+# Witt split of bitwise OR into XOR and AND on Nat.
+[[law]]
+name = "nat_or_xor_and"
+lean = "LexLeanLaws.nat_or_xor_and"
+type_parameters = []
+premises = 0
+parameters = [
+  { kind = "nat" },
+  { kind = "nat" },
+]
+
+# Witt split of the Rule 30 row step into linear part XOR shifted carry.
+[[law]]
+name = "nat_witt_step"
+lean = "LexLeanLaws.nat_witt_step"
+type_parameters = []
+premises = 0
+parameters = [
+  { kind = "nat" },
+]
+
+# Bitwise extensionality over Nat via shift_right and remainder by 2.
+[[law]]
+name = "nat_bit_ext"
+lean = "LexLeanLaws.nat_bit_ext"
 type_parameters = []
 premises = 1
 parameters = [
-  { kind = "uint32" },
-  { kind = "uint32" },
-  { kind = "uint32" },
+  { kind = "nat" },
+  { kind = "nat" },
 ]

@@ -1842,6 +1842,24 @@ impl<'a> Walk<'a> {
                         "a widening conversion is realized only through its elaboration".to_owned(),
                     );
                 }
+                if matches!(
+                    operation,
+                    SemanticPrimitive::BitAnd
+                        | SemanticPrimitive::BitOr
+                        | SemanticPrimitive::BitXor
+                        | SemanticPrimitive::ShiftLeft
+                        | SemanticPrimitive::ShiftRight
+                ) && substituted == SemanticType::Nat
+                {
+                    self.violation(
+                        site,
+                        primitive_key(*operation),
+                        format!(
+                            "primitive `{}` on `Nat` has no bounded-width production realization",
+                            primitive_key(*operation)
+                        ),
+                    );
+                }
                 self.ty(result, site);
                 self.terms(arguments, site);
             }
