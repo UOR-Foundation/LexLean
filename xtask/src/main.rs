@@ -30,6 +30,7 @@ fn main() -> ExitCode {
         "validate-model" => codegen::check_model(&root, write),
         "validate-spec-links" => spec_links::validate(&root),
         "verify-examples" => verify_examples(&root, write),
+        "verify-demos" => verify_demos(&root, write),
         "check-golden" => check_golden(&root, write),
         "check-reproducibility" => check_reproducibility(&root),
         "check-fixtures" => check_fixtures(&root, write),
@@ -202,6 +203,45 @@ fn verify_examples(root: &Path, write: bool) -> Result<(), Fail> {
         )
         .into());
     }
+    verify_dirs(root, dirs, write, &part, "examples")
+}
+
+/// The demos (SPEC.md §28.6): projects that need a fetched Lean library, so
+/// the default sweeps of `examples/` do not run them. They are verified by
+/// `cargo xtask verify-demos`, the same gate as an example, plus the golden
+/// build outputs and the reproducibility check, in the job that fetches the
+/// library (`.github/workflows/mathlib.yml`).
+fn verify_demos(root: &Path, write: bool) -> Result<(), Fail> {
+    let dirs = demo_dirs(root)?;
+    verify_dirs(root, dirs.clone(), write, &ExamplesPart::All, "demos")?;
+    golden_dirs(root, &dirs, write)?;
+    reproducibility_dirs(root, &dirs)
+}
+
+fn demo_dirs(root: &Path) -> Result<Vec<PathBuf>, Fail> {
+    let mut dirs = Vec::new();
+    for entry in std::fs::read_dir(root.join("demos"))? {
+        let path = entry?.path();
+        if path.is_dir() {
+            dirs.push(path);
+        }
+    }
+    dirs.sort();
+    if dirs.is_empty() {
+        return Err(
+            "EX-10: the demos directory is empty; the demo gate has nothing to verify".into(),
+        );
+    }
+    Ok(dirs)
+}
+
+fn verify_dirs(
+    root: &Path,
+    dirs: Vec<PathBuf>,
+    write: bool,
+    part: &ExamplesPart,
+    tree: &str,
+) -> Result<(), Fail> {
     for dir in dirs {
         let started = std::time::Instant::now();
         let name = dir
@@ -222,7 +262,7 @@ fn verify_examples(root: &Path, write: bool) -> Result<(), Fail> {
             root,
             &dir,
             scratch.path(),
-            &scratch.path().join("examples").join(&name),
+            &scratch.path().join(tree).join(&name),
         )?;
         for required in example_path_requirements(&dir, root)? {
             let destination = scratch.path().join(&required);
@@ -752,13 +792,27 @@ fn check_golden(root: &Path, write: bool) -> Result<(), Fail> {
     } else {
         println!("check-golden: the runtime transcript ({transcript} labels) equals the printed runtime's (R10)");
     }
-    for dir in example_dirs(root)? {
+    golden_dirs(root, &example_dirs(root)?, write)?;
+    // The tooling fixtures cannot be built through the command line: a
+    // tooling module is accepted only in a project the compiler embeds.
+    let tooling = repo_conformance::tooling::check_golden(root, write)?;
+    if write {
+        println!("check-golden: wrote {tooling} tooling oracle files");
+    } else {
+        println!("check-golden: {tooling} tooling artifacts equal their oracles (R10)");
+    }
+    Ok(())
+}
+
+/// The golden build outputs of the projects in `dirs` (§28.3).
+fn golden_dirs(root: &Path, dirs: &[PathBuf], write: bool) -> Result<(), Fail> {
+    for dir in dirs {
         let name = dir
             .file_name()
             .unwrap_or_default()
             .to_string_lossy()
             .to_string();
-        let (_temp, files) = published_build(root, &dir, false)?;
+        let (_temp, files) = published_build(root, dir, false)?;
         let expected_root = dir.join("expected").join("build");
         if write {
             if expected_root.exists() {
@@ -782,14 +836,6 @@ fn check_golden(root: &Path, write: bool) -> Result<(), Fail> {
             "check-golden: {name}: {} published artifacts equal their oracles (R10)",
             files.len()
         );
-    }
-    // The tooling fixtures cannot be built through the command line: a
-    // tooling module is accepted only in a project the compiler embeds.
-    let tooling = repo_conformance::tooling::check_golden(root, write)?;
-    if write {
-        println!("check-golden: wrote {tooling} tooling oracle files");
-    } else {
-        println!("check-golden: {tooling} tooling artifacts equal their oracles (R10)");
     }
     Ok(())
 }
@@ -950,40 +996,7 @@ fn copy_example(from: &Path, to: &Path) -> Result<(), Fail> {
 /// §28.4, AR-13: two clean `build`s in distinct absolute directories
 /// publish byte-identical platform-independent trees.
 fn check_reproducibility(root: &Path) -> Result<(), Fail> {
-    for dir in example_dirs(root)? {
-        let name = dir
-            .file_name()
-            .unwrap_or_default()
-            .to_string_lossy()
-            .to_string();
-        let (temp_a, files_a) = published_build(root, &dir, false)?;
-        let (temp_b, files_b) = published_build(root, &dir, false)?;
-        if temp_a.path() == temp_b.path() {
-            return Err("the two build directories must be distinct".into());
-        }
-        let names_a: Vec<&String> = files_a.iter().map(|(path, _)| path).collect();
-        let names_b: Vec<&String> = files_b.iter().map(|(path, _)| path).collect();
-        if names_a != names_b {
-            return Err(format!(
-                "R10: {name}: the two builds publish different file sets: {names_a:?} vs {names_b:?}"
-            )
-            .into());
-        }
-        for ((path_a, bytes_a), (_, bytes_b)) in files_a.iter().zip(&files_b) {
-            if bytes_a != bytes_b {
-                return Err(format!(
-                    "R10: {name}: {path_a} differs between two clean builds in distinct directories (AR-13)"
-                )
-                .into());
-            }
-        }
-        println!(
-            "check-reproducibility: {name}: {} published artifacts byte-identical across {} and {} (R10)",
-            files_a.len(),
-            temp_a.path().display(),
-            temp_b.path().display()
-        );
-    }
+    reproducibility_dirs(root, &example_dirs(root)?)?;
     // The proof libraries' own projects (§17.17, §17.18) are built twice as
     // well; they are not examples, and a lock is made in each copy.
     for (label, directory) in [
@@ -1024,6 +1037,44 @@ fn check_reproducibility(root: &Path) -> Result<(), Fail> {
     println!(
         "check-reproducibility: {tooling} tooling artifacts byte-identical across two directories (R10)"
     );
+    Ok(())
+}
+
+fn reproducibility_dirs(root: &Path, dirs: &[PathBuf]) -> Result<(), Fail> {
+    for dir in dirs {
+        let name = dir
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
+        let (temp_a, files_a) = published_build(root, &dir, false)?;
+        let (temp_b, files_b) = published_build(root, &dir, false)?;
+        if temp_a.path() == temp_b.path() {
+            return Err("the two build directories must be distinct".into());
+        }
+        let names_a: Vec<&String> = files_a.iter().map(|(path, _)| path).collect();
+        let names_b: Vec<&String> = files_b.iter().map(|(path, _)| path).collect();
+        if names_a != names_b {
+            return Err(format!(
+                "R10: {name}: the two builds publish different file sets: {names_a:?} vs {names_b:?}"
+            )
+            .into());
+        }
+        for ((path_a, bytes_a), (_, bytes_b)) in files_a.iter().zip(&files_b) {
+            if bytes_a != bytes_b {
+                return Err(format!(
+                    "R10: {name}: {path_a} differs between two clean builds in distinct directories (AR-13)"
+                )
+                .into());
+            }
+        }
+        println!(
+            "check-reproducibility: {name}: {} published artifacts byte-identical across {} and {} (R10)",
+            files_a.len(),
+            temp_a.path().display(),
+            temp_b.path().display()
+        );
+    }
     Ok(())
 }
 

@@ -543,7 +543,7 @@ pub(crate) fn run(id: &str) {
                         parts[0],
                         "bootstrap" | "compiler" | "std-models" | "std-reasoning" | "stdlib"
                     ))
-                    || (index == 2 && parts[0] == "examples")
+                    || (index == 2 && matches!(parts[0], "examples" | "demos"))
                     || (index == 3
                         && parts[0] == "tests"
                         && matches!(parts[1], "negative" | "tooling"))
@@ -760,7 +760,7 @@ pub(crate) fn run(id: &str) {
             let model = repo_model::Model::load(&root.join("model").into_std_path_buf())
                 .expect("the model loads");
             let table = spec_table();
-            assert_eq!(table.len(), 476, "§31 has 476 rows");
+            assert_eq!(table.len(), 477, "§31 has 477 rows");
             assert_eq!(model.ids.id.len(), table.len(), "register row count");
             for ((spec_id, spec_suite, spec_statement), row) in
                 table.iter().zip(model.ids.id.iter())

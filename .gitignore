@@ -7,6 +7,8 @@
 examples/**/.lexlean/
 # Fetched Lean libraries and Lake build products of an example (SPEC.md §10.4).
 examples/**/.lake/
+demos/**/.lake/
+demos/**/.lexlean/
 tests/**/.lexlean/
 compiler/.lexlean/
 

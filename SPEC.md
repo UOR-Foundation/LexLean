@@ -10458,6 +10458,8 @@ Tests MUST establish that LexLean rejects, at minimum:
 
 ### 28.6 Example verification
 
+A project that needs a Lean library fetched with `lexlean deps fetch` (§10.4, §23.4) is a *demo*, not an example. It lives under `demos/`, no directory under `examples/` declares a `[[lean_library]]`, and the default gates therefore need no network and no library. `cargo xtask verify-demos [--write]` gives every directory under `demos/` the gate of an example below (`fmt --check`, `lock --check`, `check`, `build`, `verify`, its `expected/verify` records), compares the published build with `expected/build`, and builds it twice to the same bytes. It runs in `.github/workflows/mathlib.yml`, a workflow of its own that fetches the library in a clean checkout, uses no build cache, and is not part of the acceptance gate of §9.4: a demo's evidence is that workflow's run, and no document says the gate verified it.
+
 Every directory under `examples/` is discovered rather than listed. Each example MUST include its lock and expected platform-independent build outputs. `cargo xtask verify-examples` runs `fmt --check`, `lock --check`, `check`, `build`, and `verify`. The `compiler/` project (§17.14, §17.15) and the `stdlib/` project (§17.22) pass the same gates as an example.
 
 ---
@@ -10991,6 +10993,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `EX-07` | `examples` | The negative fixture suite covers every required rejection class and prescribed diagnostic family. | §28.5 |
 | `EX-08` | `examples` | Every example directory is discovered automatically and must satisfy the full example gate. | §28.6 |
 | `EX-09` | `examples` | The `helpdesk` example is a text application written entirely from language-1.2 source and the three source packages `std`, `std-models`, and `std-reasoning` that its lock pins: its production roots `classify`, `plan`, and `dispatch : Bytes -> Bytes` use the model alone, the reasoner alone, and both together, `dispatch` trimming the request with `LexLeanStd.Text`, scoring it with an integer feed-forward model whose weights are content-addressed artifacts and which is applied through its required precondition check, abstaining with `decideOr`, committing through the generic `GateModel` of `std-models`, and planning the reply with the `Drain` reasoner of `std-reasoning`; the example holds no handwritten Lean or Rust, verifies under the pinned Lean, its roots export through `lexlean production build` with the packages committed under `tests/production-export/helpdesk/`, and a changed byte or version of a package is `LLC0105`, an import of a module of an undeclared package `LLR3009`, a tampered artifact `LLR3007`, and a model applied without its required check `LLT4008`. | §10.5, §17.22, §24.7, §28.6 |
+| `EX-10` | `examples` | A project that needs a fetched Lean library is a demo, not an example: it lives under `demos/` and no directory under `examples/` declares a `[[lean_library]]`, so that the sweeps of `examples/` (`verify-examples`, `check-golden`, `check-reproducibility`, the formatter property test) need no network and no library; `cargo xtask verify-demos` formats, locks, checks, builds, and verifies every demo against its `expected/` records and golden build, and builds it twice to the same bytes, and `.github/workflows/mathlib.yml` runs it after `lexlean deps fetch` in a job of its own, outside the acceptance gate, with no build cache. | §28.6, §9.4 |
 | `PD-01` | `production` | The closed production registry fixes the language-1.2 targets, effects, and the disposition of every semantic construct kind, and every construct the eligibility analysis can classify has exactly one registry row. | §17.13 |
 | `PD-02` | `production` | Formal-only theorems, propositions, and non-executable definitions coexist with eligible executable production roots, and a module that declares no production root is never analysed for production. | §17.13 |
 | `PD-03` | `production` | A production root's runtime closure contains exactly its transitive computational dependencies across modules at their type instantiations, and its termination evidence is recorded as erased and never realized. | §17.13 |
@@ -11195,7 +11198,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RC-05` | `replay-cache` | A changed Lean toolchain or a changed Mathlib revision gives every unit a new key, so no result recorded under the previous environment is reused, and the entries of the previous environment are left unread and intact. | §22.13 |
 | `RC-06` | `replay-cache` | Facts exported by the pinned Lean from compiled modules, keyed and replayed through the pinned `leanchecker` cold and then warm, reuse every module whose key is unchanged: after a one-line edit to one declaration, only the modules whose declarations reach it are replayed again, and the warm verdicts equal the cold ones. | §22.13 |
 
-**Total required capability IDs:** 476.
+**Total required capability IDs:** 477.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

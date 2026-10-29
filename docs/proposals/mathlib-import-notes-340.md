@@ -5,7 +5,7 @@ Branch `feat/mathlib-demo` in `~/lexlean-mathlib-340`, cut from the merged `feat
 
 ## Result
 
-The document in `examples/mathlib-blake3-g` verifies end to end, offline, against the pinned Mathlib
+The document in `demos/mathlib-blake3-g` verifies end to end, offline, against the pinned Mathlib
 (`520045ab14e2`, toolchain `v4.32.1`): `lexlean verify` prints `verified 4 modules`, with the Lean
 elaboration, `leanchecker` replay and the exact axiom audit of SPEC section 22 all passing. Statements, all for
 `BitVec 32` (and the first two also for `UInt32`):
@@ -27,7 +27,7 @@ Every theorem states its axiom set with `\exactaxioms` and the audit confirms it
 Mathlib, batteries for any lemma relating `rotateLeft` and `rotateRight`: there is none). Proving it needs
 `BitVec.eq_of_getLsbD_eq`, the two `getLsbD_rotate*` lemmas, and arithmetic on bit indices (`omega`). No prose or
 semantic-module proof form can do index arithmetic, so the proof is ordinary Lean (13 lines) in the host library
-`examples/mathlib-blake3-g/Blake3GHost.lean`, as `Blake3GHost.rotateLeft_rotateRight`. It is a lemma of this
+`demos/mathlib-blake3-g/Blake3GHost.lean`, as `Blake3GHost.rotateLeft_rotateRight`. It is a lemma of this
 project's host library, in the trusted base next to the imported libraries, not a lemma of Mathlib or Lean. The
 LexLean audit checks its axioms (`propext`, `Quot.sound`) like any other. It is the one hand-written Lean in the
 demo. It is a good candidate for upstreaming to Lean core.
