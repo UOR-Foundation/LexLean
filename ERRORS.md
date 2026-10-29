@@ -418,6 +418,18 @@ A text declaration does not state the bound it must: a context window with capac
 
 Class: `language`. Exit code: 1.
 
+## `LLT4017` --- External specialisation signature is not the type of the wrapper
+
+External specialisation signature is not the type of the wrapper.
+
+Class: `language`. Exit code: 1.
+
+## `LLT4018` --- Specialisation request refused
+
+Specialisation request refused.
+
+Class: `language`. Exit code: 1.
+
 ## `LLT4101` --- Lean declaration uses a sort LSE cannot express
 
 A Lean declaration's type contains a sort that is neither Prop nor Type u for a universe expression u, such as Sort u for a universe variable u, so the glossary generator refuses it instead of weakening its signature (§13.12).
@@ -579,6 +591,18 @@ Class: `environment`. Exit code: 3.
 `lexlean deps fetch` could not acquire a declared Lean library: the `lake` executable could not be resolved or run, `lake exe cache get` failed, or the library is not at the declared revision with its built artifacts afterward.
 
 Class: `environment`. Exit code: 3.
+
+## `LLV7021` --- Replay cache entry rejected
+
+A replay cache entry does not parse as an entry, its entry digest is not the digest of its other members, its recorded key is not the key it was looked up under, or its environment is not the caller's, so it is neither reused nor replaced.
+
+Class: `language`. Exit code: 1.
+
+## `LLV7022` --- Replay facts refused
+
+The facts a replay key is computed from repeat a declaration, name a declaration that is neither declared nor anchored by a given key, or do not parse.
+
+Class: `language`. Exit code: 1.
 
 ## `LLV7101` --- Certificate evidence does not certify the root
 
