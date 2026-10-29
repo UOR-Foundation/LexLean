@@ -17,6 +17,15 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- Sorting and order in the standard library, the second member the
+  self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-10`). The module
+  `LexLeanStd.Order` holds the byte order of `Ord for [u8]` and one bottom-up
+  merge sort generic over an entry's value, with the production roots
+  `sortBytes`, `sortEntries` (stable on the key), `sortedSet`,
+  `insertSorted`, and `isAscending` for `rust-std`, held to `slice::sort`,
+  `slice::sort_by`, `BTreeSet`, and `windows(2)`. `stdlib/lexlean.toml` gains
+  the entrypoint, so the locks of `stdlib` and its consumers move. The
+  register is 460 IDs.
 - Hexadecimal and decimal in the standard library, the first member the
   self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-09`). The module
   `LexLeanStd.Numeral` holds `decimal` and `hexNat` (the digits of a natural
@@ -28,8 +37,7 @@ workspace carried at those versions without a tag.
   the target width is an overflow as it is for `u64`. The case also checks that
   each reader reads back its printer's output. `stdlib/lexlean.toml` gains the
   entrypoint, so the locks of `stdlib`, `bootstrap`, and `examples/helpdesk`
-  move, and the `stdlib` records and production export are regenerated. The
-  register is 459 IDs.
+  move, and the `stdlib` records and production export are regenerated.
 
 ## 0.4.0
 

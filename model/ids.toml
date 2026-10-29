@@ -2628,6 +2628,12 @@ level = "build"
 suite = "stdlib"
 statement = "The standard library's `Numeral` module is language-1.2 source whose five members over `Nat` and `Bytes` (`decimal`, `hexNat`, `parseDecimal`, `hex`, `parseHex`) are production roots eligible for `rust-std` with exactly their declared effects; each member's lowered program under the calculus evaluator and its rendered `rust-std` package under the pinned rustc agree with the compiler's own reading on a seeded corpus: the shortest decimal and lowercase hexadecimal of a `u64`, the lowercase hexadecimal of bytes, and the canonical decimal and hexadecimal readers, which take exactly the text `canonical_digits` and `canonical_hex` accept, a decimal past the target width being an overflow as it is for `u64` parsing, and refuse every other text; each reader reads back what its printer prints; a planted defect in a member is detected; and the certified packages the production export publishes for it are the committed ones."
 
+[[id]]
+id = "SL-10"
+level = "build"
+suite = "stdlib"
+statement = "The standard library's `Order` module is language-1.2 source whose five members over the byte order of `Bytes` (`sortBytes`, `sortEntries`, `sortedSet`, `insertSorted`, `isAscending`) are production roots eligible for `rust-std` with exactly their declared effects, the sorts a bottom-up merge sort generic over the value an entry carries; each member's lowered program under the calculus evaluator and its rendered `rust-std` package under the pinned rustc agree with the Rust the compiler sorts with on a seeded corpus of keys that repeat and are prefixes of one another: `slice::sort`, the stable `slice::sort_by` on the key (entries of one key keep their input order), a `BTreeSet` for the deduplicated set and the sorted insert, and a strict `windows(2)` comparison for the ascending test; a merge planted to take the later entry on equal keys is detected, and every exported package is byte-identical to its committed package and realizes the member's lowered program."
+
 
 [[id]]
 id = "BS-01"
