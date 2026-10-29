@@ -130,7 +130,7 @@ Feature: lexicon
     And the tampered lock fails check and `lock --check` with LLC0102
     And build refuses every project and no build or verification root exists
 
-  @GL-19 @build
+  @GL-21 @build
   Scenario: A specialisation request names a class-polymorphic Lean declaration, its kind (`theorem` or `def`), a tag, and the arguments of its application at a concrete type, each a closed term of identifiers, numerals, holes, and applications; the wrapper emitter writes one `public` declaration for each under the reserved root `LexLeanSpec`, whose type is `type_of%` the application and whose value is the application, with every constant `_root_`-qualified and no tactic and no axiom, in sorted order and byte for byte the same on every run, and a request with a duplicate tag, a name outside the conservative grammar, or an argument outside the term grammar is refused with LLT4018.
     Given the specialisation request of tests/fixtures/specialisation for Std.Commutative.comm at Nat, Int, UInt32 and BitVec 32
     When the wrapper emitter runs twice on the request

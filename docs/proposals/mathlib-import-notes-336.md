@@ -1,7 +1,7 @@
 # Mathlib import: specialisation wrappers and the signature probe (notes for #341)
 
 Issue #336, tracking issue #333. Branch `feat/mathlib-wrappers`, local commits only.
-Register rows `GL-19` and `VR-24`; diagnostics `LLT4017` and `LLT4018`;
+Register rows `GL-21` and `VR-24`; diagnostics `LLT4017` and `LLT4018`;
 SPEC.md §13.12 (new) and §18.8 (amended).
 
 ## The problem
@@ -83,8 +83,8 @@ Fixture `tests/fixtures/specialisation`: request for `Std.Commutative.comm` and
 elaborate under v4.32.1); a project whose entries denote the `Nat` and `Int`
 commutativity wrappers.
 
-- `conformance_gl_19`, `conformance_vr_24`: written failing first (`no lexicon
-  case is wired for GL-19`), then pass.
+- `conformance_gl_21`, `conformance_vr_24`: written failing first (`no lexicon
+  case is wired for GL-21`), then pass.
 - Positive: `verified 1 module`; the probe holds `example : ((x0 : Nat) -> (x1 :
   Nat) -> Eq (Nat.add x0 x1) (Nat.add x1 x0)) = (type_of%
   @LexLeanSpec.Nat.Std.Commutative.comm) := rfl`. The LSE writes `Nat.add`, the
@@ -173,6 +173,6 @@ session); say if they should be committed.
 7. **Axioms.** A wrapper adds none, but the declaration it applies brings its own
    (the `Int` fixture theorem needs `\allowaxioms{propext}`). The document's axiom
    audit sees them; the host library itself is not audited.
-8. **Register collisions.** Rows `GL-19`, `VR-24`, codes `LLT4017`, `LLT4018`, and the
+8. **Register collisions.** Rows `GL-21`, `VR-24`, codes `LLT4017`, `LLT4018`, and the
    register total (459) in `SPEC.md`, `README.md`, `xtask/src/spec_links.rs`,
    `crates/conformance/src/cases/repository.rs` will conflict with the siblings'.

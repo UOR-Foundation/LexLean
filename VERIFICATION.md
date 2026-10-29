@@ -11386,9 +11386,9 @@ script's output to that function, so the file the gate job writes is the file
 | the script no longer writes the gate line | same | `the evidence satisfies the release criterion` failed: `Err(["release/vv-evidence.txt does not record the gate passing"])` |
 | the criterion accepts the legs' lines | `cargo test -p repo-model the_ci_evidence_criterion` | `left: Ok(())` against the refusal |
 
-## Specialisation wrappers and the signature probe (`GL-19`, `VR-24`, #336)
+## Specialisation wrappers and the signature probe (`GL-21`, `VR-24`, #336)
 
-`conformance_gl_19` runs the wrapper emitter (SPEC.md §13.12) on
+`conformance_gl_21` runs the wrapper emitter (SPEC.md §13.12) on
 `tests/fixtures/specialisation/request.toml` (`Std.Commutative.comm` and
 `Std.Associative.assoc` at `Nat`, `Int`, `UInt32` and `BitVec 32`) twice, in the
 request's order and in the reverse order, and requires the committed host module
@@ -11413,10 +11413,10 @@ test, on Linux x86-64 (WSL, Rust 1.97.1), and the file restored (§27.9).
 
 | Case | Command | Observed |
 | --- | --- | --- |
-| the committed tree | `cargo test -p repo-conformance --test conformance -- conformance_gl_19 conformance_vr_24` | ok |
-| the printer drops the `_root_.` prefix of argument names | `conformance_gl_19` | `the committed host module is the emitter's output` failed |
-| a tactic word (`by`) is accepted as a name | `conformance_gl_19` | `specialisation.rs:25`: `(by simp)` is not refused |
-| the emitter does not sort by Lean name | `conformance_gl_19` | `the committed host module is the emitter's output` failed |
+| the committed tree | `cargo test -p repo-conformance --test conformance -- conformance_gl_21 conformance_vr_24` | ok |
+| the printer drops the `_root_.` prefix of argument names | `conformance_gl_21` | `the committed host module is the emitter's output` failed |
+| a tactic word (`by`) is accepted as a name | `conformance_gl_21` | `specialisation.rs:25`: `(by simp)` is not refused |
+| the emitter does not sort by Lean name | `conformance_gl_21` | `the committed host module is the emitter's output` failed |
 | no name is a wrapper name | `conformance_vr_24` | `specialisation.rs:161`: the probe has no `type_of%` line |
 | the signature is not parenthesised in the probe line | `conformance_vr_24` | `the exact signatures verify` failed: `unexpected token ')'` |
 | a signature mismatch is reported as the interface failure | `conformance_vr_24` | `expected LLT4017, found ["LLT4003"]` |

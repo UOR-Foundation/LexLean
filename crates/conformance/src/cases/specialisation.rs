@@ -1,4 +1,4 @@
-//! GL-19 and VR-24: specialisation wrappers (SPEC.md §13.12, §18.8).
+//! GL-21 and VR-24: specialisation wrappers (SPEC.md §13.12, §18.8).
 //!
 //! The fixture is `tests/fixtures/specialisation`: a request for
 //! `Std.Commutative.comm` and `Std.Associative.assoc` at `Nat`, `Int`,
@@ -27,7 +27,7 @@ fn refused(request: &str) -> String {
     error.message
 }
 
-/// GL-19: the emitter writes terms, deterministically, and refuses the rest.
+/// GL-21: the emitter writes terms, deterministically, and refuses the rest.
 pub(super) fn emitter() {
     let request_text = read(REQUEST);
     let request = parse_request(&request_text).expect("the fixture request is valid");

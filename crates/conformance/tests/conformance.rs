@@ -341,8 +341,8 @@ fn conformance_gl_18() {
 }
 
 #[test]
-fn conformance_gl_19() {
-    repo_conformance::cases::run("GL-19");
+fn conformance_gl_21() {
+    repo_conformance::cases::run("GL-21");
 }
 
 #[test]
