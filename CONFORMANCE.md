@@ -320,6 +320,7 @@ the error registry does not sanction (R5, `ERRORS.md`).
 | `GL-16` | `build` | Package and entry bytes participate in lock and semantic closure hashes exactly as specified. |
 | `GL-17` | `build` | Language 1.2 resolves the exact 1.2 builtin package closure and enforces 1.2 lexicon semantics. |
 | `GL-18` | `build` | Cross-version package, lexicon, and lock combinations fail closed before backend execution. |
+| `GL-19` | `build` | A specialisation request names a class-polymorphic Lean declaration, its kind (`theorem` or `def`), a tag, and the arguments of its application at a concrete type, each a closed term of identifiers, numerals, holes, and applications; the wrapper emitter writes one `public` declaration for each under the reserved root `LexLeanSpec`, whose type is `type_of%` the application and whose value is the application, with every constant `_root_`-qualified and no tactic and no axiom, in sorted order and byte for byte the same on every run, and a request with a duplicate tag, a name outside the conservative grammar, or an argument outside the term grammar is refused with LLT4018. |
 
 ## models
 
@@ -640,6 +641,7 @@ the error registry does not sanction (R5, `ERRORS.md`).
 | `VR-21` | `build` | A multi-module project whose imports form nontrivial frontiers verifies at width 1 and at a larger width to byte-identical verified directories and the same attestation identity, observed axiom sets, and policy rows, and no completion order orders a record or changes which failure is reported. |
 | `VR-22` | `build` | Performance telemetry is written only to the CI evidence directory the environment names, a verification with telemetry on publishes byte-identical artifacts to one without, and telemetry planted in a verified artifact fails the gate. |
 | `VR-23` | `build` | A project verified as the parts of one run, each shard running the processes its plan names with the oleans of the shards it needs and the join reading every shard's records, publishes a verified directory byte-identical to the whole verification's with the same attestation identity, and a shard whose plan leaves a module without its imports, a join missing a record, or a join reading a record of an executable other than its own, is refused. |
+| `VR-24` | `build` | An external entry whose Lean name is under the reserved root `LexLeanSpec` is probed by `example : (<signature>) = (type_of% @<constant>) := rfl`, so that its linked signature is definitionally the Lean type of the wrapper and not merely inhabited by it; an entry whose signature differs from that type is refused with LLT4017 naming the entry, a wrapper that does not exist stays LLT4003, and an entry outside the reserved root is probed exactly as before. |
 
 ## Cited authorities
 

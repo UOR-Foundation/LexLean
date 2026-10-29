@@ -43,6 +43,7 @@ fn main() -> ExitCode {
         "ci-shards" => ci::ci_shards(&root),
         "release-artifacts" => release_artifacts(&root),
         "release-check" => release_check(&root),
+        "emit-wrappers" => emit_wrappers(&std::env::args().skip(2).collect::<Vec<_>>()),
         "validate" => codegen::check_model(&root, false).and_then(|()| spec_links::validate(&root)),
         _ => {
             eprintln!(
@@ -1350,4 +1351,26 @@ mod examples_part_tests {
         assert!(ExamplesPart::Without("uor-atlas".to_owned()).includes("compiler"));
         assert_eq!(shard.describe(), "shard:uor-atlas:prefix");
     }
+}
+
+/// `cargo xtask emit-wrappers <request.toml> <host-module.lean>` (SPEC.md
+/// §13.12): write the host module of a specialisation request, and print one
+/// line per wrapper, tab-separated `<lean name> <declaration> <tag> <line>`, in the order
+/// of the module.
+fn emit_wrappers(arguments: &[String]) -> Result<(), Fail> {
+    let [request_path, module_path] = arguments else {
+        return Err("usage: cargo xtask emit-wrappers <request.toml> <host-module.lean>".into());
+    };
+    let text = std::fs::read_to_string(request_path)?;
+    let request = lexlean::wrappers::parse_request(&text)
+        .map_err(|diagnostic| format!("{}: {}", diagnostic.code.as_str(), diagnostic.message))?;
+    let emitted = lexlean::wrappers::emit(&request);
+    std::fs::write(module_path, emitted.module_text.as_bytes())?;
+    for wrapper in &emitted.wrappers {
+        println!(
+            "{}\t{}\t{}\t{}",
+            wrapper.lean_name, wrapper.declaration, wrapper.tag, wrapper.line
+        );
+    }
+    Ok(())
 }

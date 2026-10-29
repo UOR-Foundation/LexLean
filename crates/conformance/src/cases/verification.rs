@@ -41,6 +41,11 @@ pub(crate) fn run(id: &str) {
         super::operational::run(id);
         return;
     }
+    // §18.8: the probe of a specialisation wrapper; the case gates itself.
+    if id == "VR-24" {
+        super::specialisation::probe();
+        return;
+    }
     if LEAN_BACKED.contains(&id) && !support::lean_backed(id) {
         run_platform_independent(id);
         return;

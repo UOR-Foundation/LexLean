@@ -242,6 +242,16 @@ pub fn parse_lean_messages(output: &str) -> Vec<LeanMessage> {
     messages
 }
 
+/// Whether a Lean message says that a name does not exist, which is the
+/// answer to a probe line whose constant is absent from the host library
+/// and not the answer to a signature that differs from its type.
+fn lean_message_is_unknown_name(message: &str) -> bool {
+    message.contains("lean.unknownIdentifier")
+        || message.contains("lean.unknownConstant")
+        || message.contains("Unknown constant")
+        || message.contains("Unknown identifier")
+}
+
 /// The non-blank output lines preceding the first located message: text
 /// no message accounts for (a wrapper's stray line, an unlocated warning).
 #[must_use]
@@ -1359,15 +1369,45 @@ pub fn run_part(
         // normalized streams are reported, and every failing line is
         // attributed to its entry (S11).
         let combined = format!("{}{}", probe_record.stdout, probe_record.stderr);
-        let mut diagnostic = Diagnostic::new(
-            code!("LLT4003"),
-            format!(
-                "an external-interface probe failed to elaborate: {}",
-                combined.trim_end()
-            ),
-        );
+        let messages = parse_lean_messages(&combined);
+        // A specialisation wrapper (§13.12) is held to the equality of its
+        // signature and its type, and Lean's complaint on that line is the
+        // signature differing unless it says the wrapper does not exist: a
+        // host library that lacks the wrapper is the interface failure it
+        // always was (§18.8).
+        let mismatched: Vec<&str> = messages
+            .iter()
+            .filter_map(|message| {
+                let row = probe.entry_at_line(message.line)?;
+                (row.signature && !lean_message_is_unknown_name(&message.message))
+                    .then_some(row.entry.as_str())
+            })
+            .collect();
+        let mut diagnostic = if mismatched.is_empty() {
+            Diagnostic::new(
+                code!("LLT4003"),
+                format!(
+                    "an external-interface probe failed to elaborate: {}",
+                    combined.trim_end()
+                ),
+            )
+        } else {
+            let entries: BTreeSet<&str> = mismatched.into_iter().collect();
+            Diagnostic::new(
+                code!("LLT4017"),
+                format!(
+                    "the signature of {} is not definitionally the Lean type of the specialisation wrapper it denotes: {}",
+                    entries
+                        .iter()
+                        .map(|entry| format!("`{entry}`"))
+                        .collect::<Vec<_>>()
+                        .join(", "),
+                    combined.trim_end()
+                ),
+            )
+        };
         let mut noted: BTreeSet<String> = BTreeSet::new();
-        for message in parse_lean_messages(&combined) {
+        for message in messages {
             if let Some(row) = probe.entry_at_line(message.line) {
                 if noted.insert(row.entry.clone()) {
                     diagnostic = diagnostic.with_note(format!(

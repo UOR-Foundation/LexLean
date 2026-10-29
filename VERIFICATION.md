@@ -11385,3 +11385,43 @@ script's output to that function, so the file the gate job writes is the file
 | the committed tree | `cargo test -p repo-conformance --test conformance conformance_rp_18 -- --exact` | ok |
 | the script no longer writes the gate line | same | `the evidence satisfies the release criterion` failed: `Err(["release/vv-evidence.txt does not record the gate passing"])` |
 | the criterion accepts the legs' lines | `cargo test -p repo-model the_ci_evidence_criterion` | `left: Ok(())` against the refusal |
+
+## Specialisation wrappers and the signature probe (`GL-19`, `VR-24`, #336)
+
+`conformance_gl_19` runs the wrapper emitter (SPEC.md §13.12) on
+`tests/fixtures/specialisation/request.toml` (`Std.Commutative.comm` and
+`Std.Associative.assoc` at `Nat`, `Int`, `UInt32` and `BitVec 32`) twice, in the
+request's order and in the reverse order, and requires the committed host module
+`tests/fixtures/specialisation/project/SpecHost.lean` byte for byte, one `public
+theorem` per wrapper under `LexLeanSpec`, and none of `by`, `sorry`, `axiom`, `fun`
+or `calc` in a declaration. It then refuses, with `LLT4018`, a tactic argument, a
+`fun` argument, a string, a comment, an unclosed parenthesis, a declaration name with
+a space, a tag with a dot, and a duplicate wrapper.
+
+`conformance_vr_24` builds the fixture's host library with `lake build SpecHost`
+(offline: the library has no dependency), locks and verifies the project whose two
+entries denote `LexLeanSpec.Nat.Std.Commutative.comm` and
+`LexLeanSpec.Int.Std.Commutative.comm` with their exact signatures, reads the probe
+for `(...) = (type_of% @<wrapper>) := rfl`, and requires that an entry outside the
+reserved root keeps its `example : <signature> := <constant>` line. It then plants a
+signature whose right-hand side is `a + b` and not `b + a` (`LLT4017`, naming
+`test.spec::nat-comm` and not the exact entry), and a denotation of a wrapper the host
+library does not have (`LLT4003`).
+
+Each defect below was planted in the committed tree, one at a time, with the real
+test, on Linux x86-64 (WSL, Rust 1.97.1), and the file restored (§27.9).
+
+| Case | Command | Observed |
+| --- | --- | --- |
+| the committed tree | `cargo test -p repo-conformance --test conformance -- conformance_gl_19 conformance_vr_24` | ok |
+| the printer drops the `_root_.` prefix of argument names | `conformance_gl_19` | `the committed host module is the emitter's output` failed |
+| a tactic word (`by`) is accepted as a name | `conformance_gl_19` | `specialisation.rs:25`: `(by simp)` is not refused |
+| the emitter does not sort by Lean name | `conformance_gl_19` | `the committed host module is the emitter's output` failed |
+| no name is a wrapper name | `conformance_vr_24` | `specialisation.rs:161`: the probe has no `type_of%` line |
+| the signature is not parenthesised in the probe line | `conformance_vr_24` | `the exact signatures verify` failed: `unexpected token ')'` |
+| a signature mismatch is reported as the interface failure | `conformance_vr_24` | `expected LLT4017, found ["LLT4003"]` |
+| a missing wrapper is reported as a signature mismatch | `conformance_vr_24` | `expected LLT4003, found ["LLT4017"]` |
+
+The parenthesised form was found by the fixture and not by reading: the first
+version wrote `example : <signature> = (type_of% ...)`, in which `a -> b = c` is
+`a -> (b = c)`, and Lean refused both exact signatures.

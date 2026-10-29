@@ -1,0 +1,21 @@
+spec = "lexlean/entry/1"
+id = "int-comm"
+category = "proof-constant"
+signature = "(pi ((explicit a (const lexlean.std.int::int)) (explicit b (const lexlean.std.int::int))) (app (const lexlean.core::eq) (app (const lexlean.std.int::add) (local a) (local b)) (app (const lexlean.std.int::add) (local b) (local a))))"
+surface_arity = 2
+frame = "call"
+
+[denotation]
+kind = "lean"
+module = "SpecHost"
+name = "LexLeanSpec.Int.Std.Commutative.comm"
+
+[[form]]
+id = "int-comm"
+channel = "math"
+surface = "intcomm"
+canonical_source = true
+features = []
+
+[render]
+math = "(seq (operator-name intcomm) (paren (seq (slot 0) (token comma) (space) (slot 1))))"

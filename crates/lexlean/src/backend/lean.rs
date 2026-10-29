@@ -2427,6 +2427,16 @@ pub enum AuxiliaryCommand {
         /// The constant that inhabits it.
         constant: String,
     },
+    /// `example : (<type>) = (type_of% @<constant>) := rfl`: the printed type is
+    /// definitionally the type of the constant, binder for binder, and not
+    /// merely a type the constant inhabits once Lean has inserted implicit
+    /// arguments (SPEC.md §18.8, specialisation wrappers).
+    SignatureExample {
+        /// The printed type.
+        ty: String,
+        /// The constant whose type it must equal.
+        constant: String,
+    },
     /// `#print axioms` and a fully qualified declaration name, quoted as
     /// the module that declares it quotes it.
     PrintAxioms(String),
@@ -2485,6 +2495,15 @@ impl AuxiliaryModule {
                     text.push_str(" := ");
                     text.push_str(constant);
                 }
+                AuxiliaryCommand::SignatureExample { ty, constant } => {
+                    // Parenthesised: the arrows of a signature bind looser
+                    // than the `=` that compares it.
+                    text.push_str("example : (");
+                    text.push_str(ty);
+                    text.push_str(") = (type_of% @");
+                    text.push_str(constant);
+                    text.push_str(") := rfl");
+                }
                 AuxiliaryCommand::PrintAxioms(declaration) => {
                     text.push_str("#print axioms ");
                     text.push_str(&super::semantic::identifier(declaration));
@@ -2517,6 +2536,10 @@ pub struct ProbeLine {
     pub index: usize,
     /// The qualified entry ID.
     pub entry: String,
+    /// Whether the line is the strict signature equality of a
+    /// specialisation wrapper (§18.8) and not the `example` of an
+    /// interface.
+    pub signature: bool,
 }
 
 /// The generated probe module (§18.8).
@@ -2560,7 +2583,7 @@ pub fn probe_module(
     for external in externals.values() {
         imports.insert(external.lean_module.clone());
     }
-    let mut examples: Vec<(usize, String, AuxiliaryCommand)> = Vec::new();
+    let mut examples: Vec<(usize, String, bool, AuxiliaryCommand)> = Vec::new();
     let mut universes: Vec<String> = Vec::new();
     let mut unprobed = Vec::new();
     for (index, (entry_id, external)) in externals.iter().enumerate() {
@@ -2581,12 +2604,19 @@ pub fn probe_module(
         }
         collect_universe_vars(signature, &prefix, &mut universes);
         let ty = print_lse_type(signature, closure, &prefix)?;
+        let constant = external.lean_name.clone();
+        // A wrapper is held to the definitional equality of its signature
+        // and its type, which no other external is: the probe of the other
+        // entries is the published text of every verified example.
+        let strict = crate::wrappers::is_wrapper_name(&constant);
         examples.push((
             index,
             entry_id.clone(),
-            AuxiliaryCommand::Example {
-                ty,
-                constant: external.lean_name.clone(),
+            strict,
+            if strict {
+                AuxiliaryCommand::SignatureExample { ty, constant }
+            } else {
+                AuxiliaryCommand::Example { ty, constant }
             },
         ));
     }
@@ -2596,8 +2626,8 @@ pub fn probe_module(
     }
     let first_example = commands.len();
     let mut entries = Vec::with_capacity(examples.len());
-    for (index, entry, example) in examples {
-        entries.push((index, entry));
+    for (index, entry, signature, example) in examples {
+        entries.push((index, entry, signature));
         commands.push(example);
     }
     let (text, command_lines) = AuxiliaryModule {
@@ -2608,10 +2638,11 @@ pub fn probe_module(
     let lines = entries
         .into_iter()
         .zip(&command_lines[first_example..])
-        .map(|((index, entry), line)| ProbeLine {
+        .map(|((index, entry, signature), line)| ProbeLine {
             line: *line,
             index,
             entry,
+            signature,
         })
         .collect();
     Ok(ProbeModule {

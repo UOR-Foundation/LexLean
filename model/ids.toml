@@ -410,6 +410,12 @@ suite = "lexicon"
 statement = "Cross-version package, lexicon, and lock combinations fail closed before backend execution."
 
 [[id]]
+id = "GL-19"
+level = "build"
+suite = "lexicon"
+statement = "A specialisation request names a class-polymorphic Lean declaration, its kind (`theorem` or `def`), a tag, and the arguments of its application at a concrete type, each a closed term of identifiers, numerals, holes, and applications; the wrapper emitter writes one `public` declaration for each under the reserved root `LexLeanSpec`, whose type is `type_of%` the application and whose value is the application, with every constant `_root_`-qualified and no tactic and no axiom, in sorted order and byte for byte the same on every run, and a request with a duplicate tag, a name outside the conservative grammar, or an argument outside the term grammar is refused with LLT4018."
+
+[[id]]
 id = "GR-01"
 level = "build"
 suite = "grammar"
@@ -1332,6 +1338,12 @@ id = "VR-23"
 level = "build"
 suite = "verification"
 statement = "A project verified as the parts of one run, each shard running the processes its plan names with the oleans of the shards it needs and the join reading every shard's records, publishes a verified directory byte-identical to the whole verification's with the same attestation identity, and a shard whose plan leaves a module without its imports, a join missing a record, or a join reading a record of an executable other than its own, is refused."
+
+[[id]]
+id = "VR-24"
+level = "build"
+suite = "verification"
+statement = "An external entry whose Lean name is under the reserved root `LexLeanSpec` is probed by `example : (<signature>) = (type_of% @<constant>) := rfl`, so that its linked signature is definitionally the Lean type of the wrapper and not merely inhabited by it; an entry whose signature differs from that type is refused with LLT4017 naming the entry, a wrapper that does not exist stays LLT4003, and an entry outside the reserved root is probed exactly as before."
 
 [[id]]
 id = "CL-01"

@@ -406,6 +406,18 @@ A text declaration does not state the bound it must: a context window with capac
 
 Class: `language`. Exit code: 1.
 
+## `LLT4017` --- External specialisation signature is not the type of the wrapper
+
+External specialisation signature is not the type of the wrapper.
+
+Class: `language`. Exit code: 1.
+
+## `LLT4018` --- Specialisation request refused
+
+Specialisation request refused.
+
+Class: `language`. Exit code: 1.
+
 ## `LLV7001` --- Lean/Lake/leanchecker version or executable mismatch
 
 Lean/Lake/leanchecker version or executable mismatch.

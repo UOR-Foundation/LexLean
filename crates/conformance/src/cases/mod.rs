@@ -56,6 +56,7 @@ mod rust_std;
 mod rust_support;
 mod security;
 mod semantic_ir;
+mod specialisation;
 mod std_packages;
 mod stdlib;
 mod stdlib_buffer;
