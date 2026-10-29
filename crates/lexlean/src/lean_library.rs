@@ -52,6 +52,11 @@ fn not_fetched(library: &LeanLibrary, detail: impl std::fmt::Display) -> Diagnos
     )
 }
 
+/// A copy that cannot be written is an environment failure, not a failed fetch.
+fn host_failure(detail: impl std::fmt::Display) -> Diagnostic {
+    Diagnostic::new(code!("LLV7010"), detail.to_string())
+}
+
 fn fetch_failure(detail: impl std::fmt::Display) -> Diagnostic {
     Diagnostic::new(
         code!("LLV7020"),
@@ -264,6 +269,53 @@ pub fn check_pins(
                 )));
             }
             Some(_) => {}
+        }
+    }
+    if diagnostics.is_empty() {
+        Ok(())
+    } else {
+        Err(diagnostics)
+    }
+}
+
+/// Give a scratch copy of the project the three things `present` reads of each
+/// declared library (the checkout's `HEAD`, its own manifest, and the
+/// directory of built artifacts), not the library. `lexlean fmt` re-checks the
+/// project in such a copy (§23.5); the copy never runs Lean, so it needs the
+/// library to be recognised as fetched and not its seven gigabytes.
+///
+/// # Errors
+///
+/// `LLC0110` for a Lake workspace that does not require a library as declared,
+/// `LLV7019` for a library that is not available, and an environment failure
+/// when the copy cannot be written.
+pub fn stub_for_scratch(
+    project: &Project,
+    scratch: &camino::Utf8Path,
+) -> Result<(), Vec<Diagnostic>> {
+    let mut diagnostics = Vec::new();
+    for library in &project.config.lean_libraries {
+        let outcome = required_dir(project, library).and_then(|directory| {
+            present(project, library, &directory)?;
+            let copy = |relative: String| -> Result<(), Diagnostic> {
+                let source = project.confined_file(&relative)?;
+                let destination = scratch.join(&relative);
+                if let Some(parent) = destination.parent() {
+                    std::fs::create_dir_all(parent.as_std_path())
+                        .map_err(|io_error| host_failure(format!("{relative}: {io_error}")))?;
+                }
+                std::fs::copy(source.as_std_path(), destination.as_std_path())
+                    .map_err(|io_error| host_failure(format!("{relative}: {io_error}")))?;
+                Ok(())
+            };
+            copy(format!("{directory}/.git/HEAD"))?;
+            copy(format!("{directory}/{LAKE_MANIFEST}"))?;
+            let built = scratch.join(format!("{directory}/{BUILT_ARTIFACTS}"));
+            std::fs::create_dir_all(built.as_std_path())
+                .map_err(|io_error| host_failure(format!("{built}: {io_error}")))
+        });
+        if let Err(diagnostic) = outcome {
+            diagnostics.push(diagnostic);
         }
     }
     if diagnostics.is_empty() {

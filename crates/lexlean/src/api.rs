@@ -1333,6 +1333,8 @@ impl Engine {
         ] {
             copy_file(&workspace(pin))?;
         }
+        crate::lean_library::stub_for_scratch(&self.project, scratch)
+            .map_err(LexLeanError::from_diagnostics)?;
         for root in &config.source_roots {
             copy_dir(root)?;
         }

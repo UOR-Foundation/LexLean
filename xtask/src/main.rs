@@ -876,6 +876,7 @@ fn stage_project(root: &Path, dir: &Path, scratch: &Path, flat: &Path) -> Result
     let Some(members) = workspace_members_of(root, dir)? else {
         std::fs::create_dir_all(flat)?;
         copy_example(dir, flat)?;
+        link_lake(dir, flat)?;
         return Ok(flat.to_path_buf());
     };
     std::fs::copy(
@@ -890,11 +891,42 @@ fn stage_project(root: &Path, dir: &Path, scratch: &Path, flat: &Path) -> Result
     Ok(scratch.join(&members[0]))
 }
 
+/// The Lake workspace of an example (`.lake`: fetched libraries and build
+/// products, never source, SPEC.md §10.4) goes into the clean copy as links to
+/// the checkout's files, not as a copy: a fetched Mathlib is seven gigabytes.
+/// A hard link where the copy is on the same device, a copy where it is not;
+/// an example with no `.lake` has nothing to link, and one that declares a
+/// library the checkout has not fetched fails in its own `lock --check` with
+/// the registered diagnostic.
+fn link_lake(from: &Path, to: &Path) -> Result<(), Fail> {
+    let source = from.join(".lake");
+    for entry in walkdir::WalkDir::new(&source)
+        .follow_links(false)
+        .into_iter()
+        .flatten()
+    {
+        let relative = entry.path().strip_prefix(from).unwrap_or(entry.path());
+        let destination = to.join(relative);
+        if entry.file_type().is_dir() {
+            std::fs::create_dir_all(&destination)?;
+        } else if entry.file_type().is_file()
+            && std::fs::hard_link(entry.path(), &destination).is_err()
+        {
+            std::fs::copy(entry.path(), &destination)?;
+        }
+    }
+    Ok(())
+}
+
 fn copy_example(from: &Path, to: &Path) -> Result<(), Fail> {
     for entry in walkdir::WalkDir::new(from).into_iter().flatten() {
         let relative = entry.path().strip_prefix(from).unwrap_or(entry.path());
         let text = relative.to_string_lossy();
-        if text.starts_with(".lexlean") || text.starts_with("expected") || text.is_empty() {
+        if text.starts_with(".lexlean")
+            || text.starts_with(".lake")
+            || text.starts_with("expected")
+            || text.is_empty()
+        {
             continue;
         }
         let destination = to.join(relative);

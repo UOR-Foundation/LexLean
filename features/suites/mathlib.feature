@@ -29,3 +29,10 @@ Feature: mathlib
     When `lock`, `check`, `build`, `fmt`, and `verify` each run with a `lake` on the path that would fetch
     Then each fails with LLV7019 naming the library and `lexlean deps fetch`
     And no backend output is published and the `lake` was never run
+
+  @ML-05 @build
+  Scenario: `fmt` rewrites the sources of a project that declares a Lean library: the scratch copy in which the formatter proves preservation of the linked IR holds the library's presence markers (the checkout's `HEAD`, its manifest, and the directory of built artifacts) and not the library, so a present library is recognised without being copied and an absent one is still LLV7019.
+    Given a language-1.2 project that declares a Lean library, present in its Lake workspace, whose entrypoint has CRLF line ends
+    When fmt runs
+    Then it rewrites the entrypoint to its canonical LF form and fails nothing
+    And the project directory gains no library

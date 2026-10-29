@@ -563,6 +563,16 @@ fn lse_is_closed(lse: &Lse, bound: &[String]) -> bool {
     }
 }
 
+/// Does `text` mention the generated local `name` as a whole identifier?
+fn mentions_name(text: &str, name: &str) -> bool {
+    text.match_indices(name).any(|(start, _)| {
+        let before = text[..start].chars().next_back();
+        let after = text[start + name.len()..].chars().next();
+        !before.is_some_and(|c| c.is_alphanumeric() || c == '_' || c == '.')
+            && !after.is_some_and(|c| c.is_alphanumeric() || c == '_' || c == '\'')
+    })
+}
+
 impl LsePrinter<'_> {
     fn binder_delims(mode: BinderMode) -> (char, char) {
         match mode {
@@ -623,6 +633,16 @@ impl LsePrinter<'_> {
         // argument at position `index` instantiates the `index`-th explicit
         // binder; earlier non-explicit binders stay unsubstituted (their
         // types are then not closed and yield no ascription).
+        //
+        // The callee's own binder names are renamed apart (`~name` is no
+        // identifier of the grammar) before the arguments go in: an argument
+        // is a term of the caller's scope, and a caller local with the name of
+        // a callee binder that has no argument would otherwise be taken for
+        // it, ascribing a numeral the type of a variable.
+        let rename: BTreeMap<String, Lse> = binders
+            .iter()
+            .map(|binder| (binder.name.clone(), Lse::Local(format!("~{}", binder.name))))
+            .collect();
         let mut map: BTreeMap<String, Lse> = BTreeMap::new();
         let mut index = 0usize;
         for binder in binders {
@@ -632,12 +652,12 @@ impl LsePrinter<'_> {
             let Some(argument) = arguments.get(index) else {
                 break;
             };
-            let ty = lse_subst(&binder.ty, &map);
+            let ty = lse_subst(&lse_subst(&binder.ty, &rename), &map);
             let bound: Vec<String> = self.scope.iter().map(|(name, ..)| name.clone()).collect();
             if lse_is_closed(&ty, &bound) {
                 out[index] = Some(ty);
             }
-            map.insert(binder.name.clone(), argument.clone());
+            map.insert(format!("~{}", binder.name), argument.clone());
             index += 1;
         }
         out
@@ -711,19 +731,35 @@ impl LsePrinter<'_> {
             }
             Lse::Pi(binders, body) => {
                 let depth = self.scope.len();
-                let mut text = String::new();
+                let mut printed = Vec::with_capacity(binders.len());
                 for binder in binders {
                     let (open, close) = Self::binder_delims(binder.mode);
                     let ty = self.walk(&binder.ty, false, None)?;
                     let name = self.bind(&binder.name, &binder.ty);
-                    text.push(open);
-                    text.push_str(&name);
-                    text.push_str(" : ");
-                    text.push_str(&ty);
-                    text.push(close);
+                    printed.push((open, close, name, ty));
+                }
+                let tail = self.walk(body, false, None)?;
+                let mut text = String::new();
+                for (index, (open, close, name, ty)) in printed.iter().enumerate() {
+                    text.push(*open);
+                    // An instance binder that nothing after it mentions is
+                    // written without a name: pinned Lean's `unusedVariables`
+                    // linter warns on a named one, and a warning fails
+                    // verification (§20.2).
+                    let named = *open != '['
+                        || printed[index + 1..]
+                            .iter()
+                            .any(|(_, _, _, later)| mentions_name(later, name))
+                        || mentions_name(&tail, name);
+                    if named {
+                        text.push_str(name);
+                        text.push_str(" : ");
+                    }
+                    text.push_str(ty);
+                    text.push(*close);
                     text.push_str(" → ");
                 }
-                text.push_str(&self.walk(body, false, None)?);
+                text.push_str(&tail);
                 self.scope.truncate(depth);
                 if parens {
                     format!("({text})")

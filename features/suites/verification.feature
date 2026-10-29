@@ -176,3 +176,10 @@ Feature: verification
     Then the probe holds the wrapper line type_of% and verification succeeds for the exact signature
     And the planted wrong signature fails with LLT4017 naming the entry
     And the missing wrapper fails with LLT4003
+
+  @VR-25 @build
+  Scenario: The external-interface probe writes an instance binder that no later binder or the result mentions without a name, so that pinned Lean's unused-variable linter has nothing to report for an entry such as `HXor.hXor`, and ascribes the type a callee declares to a numeral argument only when that type is closed in the caller's scope, with the callee's own binders renamed apart, so that a caller binder named like a callee binder (`a`, the type parameter of `Eq`) is never taken for it; a generated entry with an instance binder and a numeral argument elaborates without output.
+    Given a project whose entries denote HXor.hXor, which has an instance binder, and UInt32.xor_self, whose signature has a numeral and a binder named like the type parameter of Eq
+    When the external-interface probe of the two entries is generated and elaborated with the pinned Lean
+    Then the instance binder is written without a name and no numeral is ascribed the type of a local
+    And Lean elaborates the probe with no output

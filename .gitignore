@@ -5,6 +5,8 @@
 # LexLean build roots inside examples and fixture projects. The committed
 # artifacts are the expected/ oracles, never a live build directory.
 examples/**/.lexlean/
+# Fetched Lean libraries and Lake build products of an example (SPEC.md §10.4).
+examples/**/.lake/
 tests/**/.lexlean/
 compiler/.lexlean/
 

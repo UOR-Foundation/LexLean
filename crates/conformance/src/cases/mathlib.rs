@@ -25,6 +25,7 @@ pub fn run(id: &str) {
         "ML-02" => ml_02(),
         "ML-03" => ml_03(),
         "ML-04" => ml_04(),
+        "ML-05" => ml_05(),
         _ => panic!("no mathlib case is wired for {id}"),
     }
 }
@@ -561,6 +562,35 @@ fn ml_03() {
 }
 
 /// ML-04: every other command stays offline and says what to run.
+/// ML-05: `fmt` of a project that declares a library is a rewrite, not a fetch.
+fn ml_05() {
+    let project = library_project(&["mathlib"], true);
+    project.relock();
+    let canonical = project.read_raw("src/Main.lex.tex");
+    project.write_raw("src/Main.lex.tex", &canonical.replace('\n', "\r\n"));
+    let format = |check_only| FormatRequest {
+        selection: Selection::Entrypoints,
+        check_only,
+    };
+    assert!(
+        project.engine().format(format(true)).is_err(),
+        "a CRLF entrypoint is not canonical"
+    );
+    project
+        .engine()
+        .format(format(false))
+        .expect("fmt rewrites a project that declares a library");
+    assert_eq!(
+        project.read_raw("src/Main.lex.tex"),
+        canonical,
+        "the entrypoint is rewritten to its canonical form"
+    );
+    project
+        .engine()
+        .format(format(true))
+        .expect("and it is canonical now");
+}
+
 fn ml_04() {
     // Declared and required, never fetched.
     let unfetched = library_project(&["mathlib"], false);

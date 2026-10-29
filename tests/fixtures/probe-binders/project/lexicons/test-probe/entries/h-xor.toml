@@ -1,0 +1,22 @@
+spec = "lexlean/entry/1"
+id = "h-xor"
+category = "function"
+signature = "(pi ((explicit a (sort (type u))) (explicit b (sort (type v))) (explicit g (sort (type w)))) (sort (type (max (max u v) w))))"
+universes = ["u", "v", "w"]
+surface_arity = 3
+frame = "call"
+
+[denotation]
+kind = "lean"
+module = "Init.Prelude"
+name = "HXor"
+
+[[form]]
+id = "h-xor"
+channel = "math"
+surface = "hXor"
+canonical_source = true
+features = []
+
+[render]
+math = "(seq (operator-name hXor) (paren (seq (slot 0) (token comma) (space) (slot 1) (token comma) (space) (slot 2))))"

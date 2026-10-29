@@ -7,7 +7,14 @@ use std::path::{Path, PathBuf};
 
 use crate::Fail;
 
-const SKIP_DIRS: [&str; 5] = ["target", ".git", ".lexlean", "expected", "node_modules"];
+const SKIP_DIRS: [&str; 6] = [
+    "target",
+    ".git",
+    ".lake",
+    ".lexlean",
+    "expected",
+    "node_modules",
+];
 
 #[cfg(test)]
 mod tests;
