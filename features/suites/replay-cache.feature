@@ -9,10 +9,10 @@ Feature: replay-cache
     Then the key is a DigestSet whose two digests cover the same bytes, its label is `blake3:` and the blake3 digits, equal inputs give equal keys, and each changed input gives a different key
 
   @RC-02 @build
-  Scenario: A declaration changed in a dependency graph changes the key of every declaration above it and of none beside or below it, declarations that name one another, an inductive type with its constructors and recursor, are keyed as one group, and facts that repeat a declaration, name a declaration neither declared nor anchored by a given key, or do not parse are refused (`LLV7020`).
+  Scenario: A declaration changed in a dependency graph changes the key of every declaration above it and of none beside or below it, declarations that name one another, an inductive type with its constructors and recursor, are keyed as one group, and facts that repeat a declaration, name a declaration neither declared nor anchored by a given key, or do not parse are refused (`LLV7022`).
     Given a dependency graph of declarations with a shared base, two branches, and a mutual group
     When one declaration is changed and the keys are computed again, and facts that repeat, dangle, or do not parse are read
-    Then exactly the declarations above the changed one have new keys, the members of the group have one group digest, and each malformed set of facts is refused with `LLV7020`
+    Then exactly the declarations above the changed one have new keys, the members of the group have one group digest, and each malformed set of facts is refused with `LLV7022`
 
   @RC-03 @build
   Scenario: A warm replay reuses the recorded result of every unit whose key is unchanged and replays only the others, whether a unit is one declaration or one module; only a replay that succeeded is recorded, each entry names the digest of the executable that produced it, and an entry that an executable other than the current one produced is not reused.
@@ -21,10 +21,10 @@ Feature: replay-cache
     Then the unchanged run replays nothing, the changed run replays only the changed unit, a failed replay leaves no entry, every entry names its executable, and the other executable replays every unit
 
   @RC-04 @build
-  Scenario: A cache entry whose bytes changed while its key was kept, an entry stored under a key other than the one it records, and an entry that does not parse as an entry, are each rejected with `LLV7019`, never reused, and not silently replaced.
+  Scenario: A cache entry whose bytes changed while its key was kept, an entry stored under a key other than the one it records, and an entry that does not parse as an entry, are each rejected with `LLV7021`, never reused, and not silently replaced.
     Given a cache directory holding an entry for a key
     When the entry's result is edited without its key, the entry is copied under another key, and the entry is truncated
-    Then each lookup is refused with `LLV7019`, the replayer is not called, and the entry file is left as found
+    Then each lookup is refused with `LLV7021`, the replayer is not called, and the entry file is left as found
 
   @RC-05 @build
   Scenario: A changed Lean toolchain or a changed Mathlib revision gives every unit a new key, so no result recorded under the previous environment is reused, and the entries of the previous environment are left unread and intact.

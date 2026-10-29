@@ -94,7 +94,7 @@ pub enum Lookup {
 
 fn rejected(path: &Utf8Path, reason: impl std::fmt::Display) -> Diagnostic {
     Diagnostic::new(
-        code!("LLV7019"),
+        code!("LLV7021"),
         format!("replay cache entry `{path}` is rejected: {reason}"),
     )
 }
@@ -285,7 +285,7 @@ impl ReplayCache {
     }
 
     /// Look a unit up. No file is a miss. A file that is not a valid entry for
-    /// this key and this environment is `LLV7019`: it is neither reused nor
+    /// this key and this environment is `LLV7021`: it is neither reused nor
     /// replaced, so a store that was edited fails loudly. An entry another
     /// executable produced is a miss.
     pub fn lookup(

@@ -61,7 +61,7 @@ pub fn result_of(record: &ChildRecord) -> ReplayResult {
 /// cache holds for this executable and replaying the rest with `replay`. A
 /// replay that fails, or whose result does not exit zero, ends the run and
 /// records nothing, so a failure is never reused. A cache entry that is
-/// rejected (`LLV7019`) ends the run too: a store that was tampered with is
+/// rejected (`LLV7021`) ends the run too: a store that was tampered with is
 /// not quietly repaired.
 pub fn replay_units<F>(
     cache: &ReplayCache,

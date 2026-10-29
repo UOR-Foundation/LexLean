@@ -2759,7 +2759,7 @@ statement = "A replay key is a PrismPM ADR-015 DigestSet, a `sha256` and a `blak
 id = "RC-02"
 level = "build"
 suite = "replay-cache"
-statement = "A declaration changed in a dependency graph changes the key of every declaration above it and of none beside or below it, declarations that name one another, an inductive type with its constructors and recursor, are keyed as one group, and facts that repeat a declaration, name a declaration neither declared nor anchored by a given key, or do not parse are refused (`LLV7020`)."
+statement = "A declaration changed in a dependency graph changes the key of every declaration above it and of none beside or below it, declarations that name one another, an inductive type with its constructors and recursor, are keyed as one group, and facts that repeat a declaration, name a declaration neither declared nor anchored by a given key, or do not parse are refused (`LLV7022`)."
 
 [[id]]
 id = "RC-03"
@@ -2771,7 +2771,7 @@ statement = "A warm replay reuses the recorded result of every unit whose key is
 id = "RC-04"
 level = "build"
 suite = "replay-cache"
-statement = "A cache entry whose bytes changed while its key was kept, an entry stored under a key other than the one it records, and an entry that does not parse as an entry, are each rejected with `LLV7019`, never reused, and not silently replaced."
+statement = "A cache entry whose bytes changed while its key was kept, an entry stored under a key other than the one it records, and an entry that does not parse as an entry, are each rejected with `LLV7021`, never reused, and not silently replaced."
 
 [[id]]
 id = "RC-05"

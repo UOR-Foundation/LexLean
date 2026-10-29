@@ -514,13 +514,13 @@ A child process could not be started because the host ended the live children of
 
 Class: `environment`. Exit code: 3.
 
-## `LLV7019` --- Replay cache entry rejected
+## `LLV7021` --- Replay cache entry rejected
 
 A replay cache entry does not parse as an entry, its entry digest is not the digest of its other members, its recorded key is not the key it was looked up under, or its environment is not the caller's, so it is neither reused nor replaced.
 
 Class: `language`. Exit code: 1.
 
-## `LLV7020` --- Replay facts refused
+## `LLV7022` --- Replay facts refused
 
 The facts a replay key is computed from repeat a declaration, name a declaration that is neither declared nor anchored by a given key, or do not parse.
 

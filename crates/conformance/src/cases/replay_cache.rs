@@ -213,7 +213,7 @@ fn keys_form_a_merkle_dag() {
     for diagnostic in [repeated, dangling, unparsed] {
         assert_eq!(
             diagnostic.code.as_str(),
-            "LLV7020",
+            "LLV7022",
             "{}",
             diagnostic.message
         );
@@ -405,12 +405,12 @@ fn tampered_entries_are_rejected() {
             .expect_err(what);
         assert_eq!(
             refused.code.as_str(),
-            "LLV7019",
+            "LLV7021",
             "{what}: {}",
             refused.message
         );
         let (outcome, called) = replay(store, &pinned(), &exe, std::slice::from_ref(key));
-        assert_eq!(outcome.expect_err(what).code.as_str(), "LLV7019", "{what}");
+        assert_eq!(outcome.expect_err(what).code.as_str(), "LLV7021", "{what}");
         assert!(called.is_empty(), "{what}: the replayer ran");
         assert_eq!(
             std::fs::read(path).ok(),

@@ -36,7 +36,7 @@ pub struct DeclarationFacts {
 
 /// Read one JSON object per line. The exporter's output is untrusted: a line
 /// that does not parse, or that has a member the exporter does not write, is
-/// `LLV7020`.
+/// `LLV7022`.
 pub fn parse_facts(text: &str) -> Result<Vec<DeclarationFacts>, Diagnostic> {
     let mut facts = Vec::new();
     for (number, line) in text.lines().enumerate() {
@@ -45,7 +45,7 @@ pub fn parse_facts(text: &str) -> Result<Vec<DeclarationFacts>, Diagnostic> {
         }
         let declaration: DeclarationFacts = serde_json::from_str(line).map_err(|error| {
             Diagnostic::new(
-                code!("LLV7020"),
+                code!("LLV7022"),
                 format!("replay facts line {} does not parse: {error}", number + 1),
             )
         })?;
@@ -105,7 +105,7 @@ pub fn export_facts(
     )?;
     if record.exit_code != 0 {
         return Err(Diagnostic::new(
-            code!("LLV7020"),
+            code!("LLV7022"),
             format!(
                 "the replay facts of `{module}` could not be exported (exit {}): {}",
                 record.exit_code,

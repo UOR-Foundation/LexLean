@@ -204,7 +204,7 @@ fn facts_that_repeat_dangle_or_do_not_parse_are_refused_with_llv7020() {
     for diagnostic in [&repeated, &dangling, &both, &unparsed, &unknown_member] {
         assert_eq!(
             diagnostic.code.as_str(),
-            "LLV7020",
+            "LLV7022",
             "{}",
             diagnostic.message
         );
@@ -274,7 +274,7 @@ fn a_unit_key_covers_its_granularity_and_its_members_without_their_order() {
             .expect_err("refused")
             .code
             .as_str(),
-        "LLV7020"
+        "LLV7022"
     );
 }
 
@@ -513,13 +513,13 @@ fn assert_rejected_and_untouched(
         .expect_err("rejected");
     assert_eq!(
         diagnostic.code.as_str(),
-        "LLV7019",
+        "LLV7021",
         "{}",
         diagnostic.message
     );
     // The replay that would follow does not run, and the file is as found.
     let (outcome, called) = run(store, &base_env(), exe, std::slice::from_ref(unit));
-    assert_eq!(outcome.expect_err("rejected").code.as_str(), "LLV7019");
+    assert_eq!(outcome.expect_err("rejected").code.as_str(), "LLV7021");
     assert!(called.is_empty());
     assert_eq!(std::fs::read(path).expect("entry"), before);
 }
@@ -557,7 +557,7 @@ fn an_entry_stored_under_another_key_is_rejected() {
         .cache
         .lookup(&other.key, &base_env(), &exe)
         .expect_err("rejected");
-    assert_eq!(diagnostic.code.as_str(), "LLV7019");
+    assert_eq!(diagnostic.code.as_str(), "LLV7021");
     assert!(
         diagnostic.message.contains(&unit.key.label()),
         "{}",
@@ -592,7 +592,7 @@ fn an_entry_that_does_not_parse_or_has_the_wrong_shape_is_rejected() {
             .expect_err(what);
         assert_eq!(
             diagnostic.code.as_str(),
-            "LLV7019",
+            "LLV7021",
             "{what}: {}",
             diagnostic.message
         );
@@ -608,7 +608,7 @@ fn an_entry_that_is_not_a_regular_file_is_rejected() {
         .cache
         .lookup(&unit.key, &base_env(), &exe)
         .expect_err("rejected");
-    assert_eq!(diagnostic.code.as_str(), "LLV7019");
+    assert_eq!(diagnostic.code.as_str(), "LLV7021");
 }
 
 #[test]
@@ -635,7 +635,7 @@ fn an_entry_whose_environment_is_not_the_one_its_key_covers_is_rejected() {
         .cache
         .lookup(&unit.key, &base_env(), &exe)
         .expect_err("rejected");
-    assert_eq!(diagnostic.code.as_str(), "LLV7019");
+    assert_eq!(diagnostic.code.as_str(), "LLV7021");
     assert!(
         diagnostic.message.contains("environment"),
         "{}",
@@ -663,7 +663,7 @@ fn an_entry_records_a_zero_exit_only() {
         .cache
         .lookup(&unit.key, &base_env(), &exe)
         .expect_err("rejected");
-    assert_eq!(diagnostic.code.as_str(), "LLV7019");
+    assert_eq!(diagnostic.code.as_str(), "LLV7021");
 }
 
 #[test]

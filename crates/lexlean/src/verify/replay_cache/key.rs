@@ -164,7 +164,7 @@ pub fn unit_key(granularity: Granularity, members: &[DigestSet]) -> DigestSet {
 }
 
 fn refused(message: String) -> Diagnostic {
-    Diagnostic::new(code!("LLV7020"), message)
+    Diagnostic::new(code!("LLV7022"), message)
 }
 
 /// The keys of a set of declarations.
@@ -177,7 +177,7 @@ pub struct ReplayGraph {
 impl ReplayGraph {
     /// Key every declaration of `facts`. A name the facts do not declare must
     /// be in `anchors`, the keys of declarations an earlier run keyed (the
-    /// imported modules); one that is neither is `LLV7020`, as is a name that
+    /// imported modules); one that is neither is `LLV7022`, as is a name that
     /// is declared twice or both declared and anchored.
     pub fn build(
         environment: &ReplayEnvironment,

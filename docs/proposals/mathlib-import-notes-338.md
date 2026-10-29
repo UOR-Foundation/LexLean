@@ -48,7 +48,7 @@ Only a replay that exited zero is recorded. An entry produced by another executa
 
 ## Diagnostics
 
-`LLV7019` replay cache entry rejected: does not parse or has the wrong members, `entry_digest` mismatch (bytes changed), recorded key is not the key looked up (stored under another key), environment differs from the caller's, not a regular file, or records a nonzero exit. The run stops; the file is left as found and the replayer is not called. `LLV7020` replay facts refused: a line does not parse, a declaration repeats, a name is neither declared nor anchored, or the exporter failed. Both are in `model/errors.toml`, SPEC §26.3, and have negative tests. `LLV7010`, `LLV7003` and `LLS8002` are reused.
+`LLV7021` replay cache entry rejected: does not parse or has the wrong members, `entry_digest` mismatch (bytes changed), recorded key is not the key looked up (stored under another key), environment differs from the caller's, not a regular file, or records a nonzero exit. The run stops; the file is left as found and the replayer is not called. `LLV7022` replay facts refused: a line does not parse, a declaration repeats, a name is neither declared nor anchored, or the exporter failed. Both are in `model/errors.toml`, SPEC §26.3, and have negative tests. `LLV7010`, `LLV7003` and `LLS8002` are reused.
 
 ## Test evidence
 
