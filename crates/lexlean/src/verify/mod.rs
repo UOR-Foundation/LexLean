@@ -27,6 +27,7 @@ pub mod lifeline;
 pub mod operational;
 pub mod partition;
 pub mod pool;
+pub mod replay_cache;
 pub mod source_audit;
 pub mod telemetry;
 pub mod toolchain;

@@ -11385,3 +11385,13 @@ script's output to that function, so the file the gate job writes is the file
 | the committed tree | `cargo test -p repo-conformance --test conformance conformance_rp_18 -- --exact` | ok |
 | the script no longer writes the gate line | same | `the evidence satisfies the release criterion` failed: `Err(["release/vv-evidence.txt does not record the gate passing"])` |
 | the criterion accepts the legs' lines | `cargo test -p repo-model the_ci_evidence_criterion` | `left: Ok(())` against the refusal |
+
+### replay cache can fail
+
+Two defects were planted in the replay cache (`RC-01` to `RC-06`, SPEC.md §22.13), `cargo test -p lexlean --lib -- replay_cache` was run, and each plant was removed.
+
+Checking `entry_digest` removed (`if recorded != actual` made `if false && recorded != actual`): `an_entry_whose_bytes_changed_while_its_key_was_kept_is_rejected` and `an_entry_whose_executable_digest_was_edited_is_rejected_not_missed` failed, 2 of 8 `an_entry` tests; the other six still passed because the key, shape, environment and exit-code checks are independent of it.
+
+The toolchain and Mathlib revision removed from the key frame: `a_changed_toolchain_or_mathlib_revision_changes_every_key` and `a_changed_toolchain_or_mathlib_revision_reuses_nothing_and_leaves_old_entries_intact` failed, 2 of 25 run (the filter was `replay_cache::tests`).
+
+With both plants removed the 28 `replay_cache` and `digest_set` tests pass. The register rows were red before the cases existed: all six `conformance_rc_0N` tests failed with `no conformance case is wired for RC-0N`.

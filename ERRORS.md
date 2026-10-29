@@ -514,6 +514,18 @@ A child process could not be started because the host ended the live children of
 
 Class: `environment`. Exit code: 3.
 
+## `LLV7019` --- Replay cache entry rejected
+
+A replay cache entry does not parse as an entry, its entry digest is not the digest of its other members, its recorded key is not the key it was looked up under, or its environment is not the caller's, so it is neither reused nor replaced.
+
+Class: `language`. Exit code: 1.
+
+## `LLV7020` --- Replay facts refused
+
+The facts a replay key is computed from repeat a declaration, name a declaration that is neither declared nor anchored by a given key, or do not parse.
+
+Class: `language`. Exit code: 1.
+
 ## `LLV7101` --- Certificate evidence does not certify the root
 
 Certificate evidence a production request supplies is not the certificate whose identity it pins, earns a refused verdict for its request, or is for a request whose reference program is not the root's lowered program.

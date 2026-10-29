@@ -30,6 +30,7 @@ same-file = "1.0"
 semver = "1.0"
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["unbounded_depth"] }
+blake3 = { version = "=1.5.5", default-features = false, features = ["std", "pure"] }
 sha2 = "0.10"
 signal-hook = { version = "0.3", default-features = false, features = ["iterator"] }
 tempfile = "3"
@@ -58,6 +59,11 @@ codegen-units = 1
 # of each verification in the test suite and the example gate. Optimizing this
 # one dependency in the dev profile changes no value it computes.
 [profile.dev.package.sha2]
+opt-level = 3
+
+# The replay cache hashes with BLAKE3 beside SHA-256 (ADR-015), and the `pure`
+# build has no SIMD; unoptimized it would be the slower of the two by far.
+[profile.dev.package.blake3]
 opt-level = 3
 
 # Backtraces keep their file and line, which is all a failing gate needs from

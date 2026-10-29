@@ -596,6 +596,20 @@ title = "Child start refused after the host ended the live children"
 statement = "A child process could not be started because the host ended the live children of this process through `lexlean::verify::end_live_children` and has not re-enabled starting children."
 
 [[error]]
+code = "LLV7019"
+class = "language"
+exit = 1
+title = "Replay cache entry rejected"
+statement = "A replay cache entry does not parse as an entry, its entry digest is not the digest of its other members, its recorded key is not the key it was looked up under, or its environment is not the caller's, so it is neither reused nor replaced."
+
+[[error]]
+code = "LLV7020"
+class = "language"
+exit = 1
+title = "Replay facts refused"
+statement = "The facts a replay key is computed from repeat a declaration, name a declaration that is neither declared nor anchored by a given key, or do not parse."
+
+[[error]]
 code = "LLV7101"
 class = "language"
 exit = 1
