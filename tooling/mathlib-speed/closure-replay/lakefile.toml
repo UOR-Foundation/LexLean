@@ -1,0 +1,7 @@
+name = "closure_replay"
+version = "0.1.0"
+defaultTargets = ["closure-replay"]
+
+[[lean_exe]]
+name = "closure-replay"
+root = "ClosureReplay"
