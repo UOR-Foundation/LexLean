@@ -7704,7 +7704,7 @@ value is one recursive type, `Json`: a boolean, an integer as a sign and a
 magnitude (an `i64` is in range), a string of bytes, an array, and an object;
 the elements of an array and the members of an object are spines of the same
 type (a nil and a cons, a member holding its key), the shape the bootstrap's
-`Expr` has, since a mutual group of types has no structural recursion. The
+`Expr` has. The
 writer is mutually recursive over that type, so its roots admit `recursion` and
 carry a measured stack bound (`PD-08`). An object is written with its members
 in the byte order of `Order` (§17.22, `SL-10`), and of members that repeat a
