@@ -404,7 +404,7 @@ fn rb_10() {
         "is not a record",
     );
     refused(
-        scaffold::decode(&plant(&text, ", {name: library, type: String}", "")),
+        scaffold::decode(&plant(&text, ",\n    {name: library, type: String}", "")),
         "`Scaffold` has the fields",
     );
     refused(
