@@ -112,6 +112,18 @@ A project that declares a source package is outside any workspace or is not a me
 
 Class: `cli-configuration`. Exit code: 2.
 
+## `LLC0109` --- Lean library declaration invalid
+
+A `[[lean_library]]` table is not a closed declaration of a language-1.2 project: a URL that is not HTTPS, a revision that is not an exact 40-lowercase-hex commit, a branch, a tag, or any other field, a name that is not a package identifier, a table repeated or out of order, or a declaration in another language.
+
+Class: `cli-configuration`. Exit code: 2.
+
+## `LLC0110` --- Lean library is not the library the lock pins
+
+A declared Lean library's URL, revision, Lake manifest digest, or glossary digest differs from the lock's row, or the Lake workspace's `lake-manifest.json` does not require the library at the declared URL and revision, naming both values.
+
+Class: `cli-configuration`. Exit code: 2.
+
 ## `LLC0201` --- Production request malformed
 
 A production request is not a closed `lexlean/production-request/1` document: an unknown or missing field, another spec, roots, targets, or evidence that are empty, unsorted, or repeated, a root, package, or path that is not of its form, or a package name used twice for one target.
@@ -406,6 +418,60 @@ A text declaration does not state the bound it must: a context window with capac
 
 Class: `language`. Exit code: 1.
 
+## `LLT4017` --- External specialisation signature is not the type of the wrapper
+
+External specialisation signature is not the type of the wrapper.
+
+Class: `language`. Exit code: 1.
+
+## `LLT4018` --- Specialisation request refused
+
+Specialisation request refused.
+
+Class: `language`. Exit code: 1.
+
+## `LLT4101` --- Lean declaration uses a sort LSE cannot express
+
+A Lean declaration's type contains a sort that is neither Prop nor Type u for a universe expression u, such as Sort u for a universe variable u, so the glossary generator refuses it instead of weakening its signature (§13.12).
+
+Class: `language`. Exit code: 1.
+
+## `LLT4102` --- Lean declaration uses a binder LSE cannot express
+
+A Lean declaration's type contains a strict-implicit binder, which has no LSE binder mode, so the glossary generator refuses it instead of weakening its signature (§13.12).
+
+Class: `language`. Exit code: 1.
+
+## `LLT4103` --- Lean declaration uses an expression form LSE cannot express
+
+A Lean declaration's type contains a primitive projection, a string literal, or another expression form outside LSE, so the glossary generator refuses it (§13.12).
+
+Class: `language`. Exit code: 1.
+
+## `LLT4104` --- Core constant at a level the core entry does not cover
+
+A Lean declaration's type applies a constant that a core lexicon entry denotes, such as Eq or Exists, at a universe level the core entry does not cover, so the glossary generator refuses it (§13.12).
+
+Class: `language`. Exit code: 1.
+
+## `LLT4105` --- Lean name outside the conservative grammar
+
+A Lean declaration's name is outside the conservative ASCII Lean-name grammar of §13.6, so the glossary generator cannot carry it as a denotation (§13.12).
+
+Class: `language`. Exit code: 1.
+
+## `LLT4106` --- Lean declaration depends on a declaration without an entry
+
+A Lean declaration's type mentions a constant that has no entry because the constant was refused, excluded, or absent, so the glossary generator refuses the dependent declaration with the reason of the root (§13.12).
+
+Class: `language`. Exit code: 1.
+
+## `LLT4107` --- Generated entry rejected by the entry and signature checks
+
+An entry the glossary generator derived from a Lean declaration fails the entry validation or the conservative signature check of §13.7, so it is refused instead of emitted (§13.12).
+
+Class: `language`. Exit code: 1.
+
 ## `LLV7001` --- Lean/Lake/leanchecker version or executable mismatch
 
 Lean/Lake/leanchecker version or executable mismatch.
@@ -513,6 +579,48 @@ Class: `environment`. Exit code: 3.
 A child process could not be started because the host ended the live children of this process through `lexlean::verify::end_live_children` and has not re-enabled starting children.
 
 Class: `environment`. Exit code: 3.
+
+## `LLV7019` --- Lean library not fetched
+
+A project declares a Lean library that is not present in its Lake workspace at the declared revision with its built artifacts; `lock`, `check`, `build`, `fmt`, and `verify` never fetch, so the library must first be acquired with `lexlean deps fetch`.
+
+Class: `environment`. Exit code: 3.
+
+## `LLV7020` --- Lean library fetch failed
+
+`lexlean deps fetch` could not acquire a declared Lean library: the `lake` executable could not be resolved or run, `lake exe cache get` failed, or the library is not at the declared revision with its built artifacts afterward.
+
+Class: `environment`. Exit code: 3.
+
+## `LLV7021` --- Replay cache entry rejected
+
+A replay cache entry does not parse as an entry, its entry digest is not the digest of its other members, its recorded key is not the key it was looked up under, or its environment is not the caller's, so it is neither reused nor replaced.
+
+Class: `language`. Exit code: 1.
+
+## `LLV7022` --- Replay facts refused
+
+The facts a replay key is computed from repeat a declaration, name a declaration that is neither declared nor anchored by a given key, or do not parse.
+
+Class: `language`. Exit code: 1.
+
+## `LLV7023` --- Imported declaration depends on sorryAx
+
+A Lean declaration that a used entry denotes, from outside the pinned toolchain's own libraries, depends on `sorryAx`, a proof hole, and no axiom policy of the document names `sorryAx`.
+
+Class: `language`. Exit code: 1.
+
+## `LLV7024` --- Imported declaration depends on Lean.ofReduceBool
+
+A Lean declaration that a used entry denotes, from outside the pinned toolchain's own libraries, depends on `Lean.ofReduceBool`, a claim the compiler's evaluator made, and no axiom policy of the document names `Lean.ofReduceBool`.
+
+Class: `language`. Exit code: 1.
+
+## `LLV7025` --- Imported declaration trusts the compiler
+
+A Lean declaration that a used entry denotes, from outside the pinned toolchain's own libraries, depends on `Lean.trustCompiler` or on an axiom that `native_decide` generated, and no axiom policy of the document names that axiom.
+
+Class: `language`. Exit code: 1.
 
 ## `LLV7101` --- Certificate evidence does not certify the root
 

@@ -1,0 +1,21 @@
+spec = "lexlean/entry/1"
+id = "nat.zero"
+category = "term-constant"
+signature = "(const lean.mathlib::nat)"
+surface_arity = 0
+frame = "atom"
+
+[denotation]
+kind = "lean"
+module = "Init.Prelude"
+name = "Nat.zero"
+
+[[form]]
+id = "zero"
+channel = "math"
+surface = "natZero"
+canonical_source = true
+features = []
+
+[render]
+math = "(operator-name natZero)"

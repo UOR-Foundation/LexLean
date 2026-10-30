@@ -196,9 +196,11 @@ LexLean distinguishes:
 
 The words “proved”, “verified”, “kernel-checked”, and equivalent status markers MUST NOT be emitted for a merely checked or built result.
 
+An **imported** declaration is the Lean constant a used external entry denotes (§13.6) when its Lean module is outside the pinned toolchain's own libraries `Init`, `Std`, `Lean`, and `Lake`. Its status is the words `replayed in the pinned environment`: the compiled module of the locked workspace (§5.1, item 5) was loaded by the pinned Lean, and the axioms it was observed to depend on were audited (§22.6). The words `proved`, `verified`, and `kernel-checked` are reserved for the generated declarations of the document and are never used for an import, and LexLean never says that an import is proved by LexLean (§4.2): its guarantees belong to its upstream repository. The status does not assert that `leanchecker` re-checked the declaration in this run; §22.4 replays the generated modules only.
+
 ### 5.4 Axiom audit scope
 
-LexLean's axiom audit is specifically an **axiom-dependency** audit. It reports the transitive axioms returned by Lean's `#print axioms`. It is not a general dependency graph, a source provenance proof, or an independent semantic interpretation of imported code.
+LexLean's axiom audit is specifically an **axiom-dependency** audit. It reports the transitive axioms returned by Lean's `#print axioms`. It is not a general dependency graph, a source provenance proof, or an independent semantic interpretation of imported code. For an imported declaration (§5.3) it reports the set `#print axioms` returns for the imported constant itself (§18.8, §22.6), so that the axioms an import brings are recorded where they come from and not only where they surface in a generated declaration.
 
 ---
 
@@ -595,6 +597,7 @@ Every dependency the shipped crate declares, for any target and of any kind but 
 
 | Dependency | Role |
 | --- | --- |
+| `blake3` | BLAKE3, the second digest of a DigestSet (§22.13) |
 | `camino` | UTF-8 path handling |
 | `clap` | CLI parsing |
 | `fs4` | file locking |
@@ -759,10 +762,11 @@ The parsed project has one canonical TOML serialization used by `project_config_
 2. `lexicon_source` tables sorted by `package`, with keys in the order `package`, `kind`, then kind-specific fields;
 3. language 1.2 only: `artifact_source` tables sorted by `sha256`, with keys in the order `sha256`, `path`, omitted entirely when there are none, so a project without artifacts keeps its bytes;
 4. language 1.2 only: `source_package` tables sorted by `package`, with keys in the order `package`, `version`, `kind`, `path`, omitted entirely when there are none, so a project without source packages keeps its bytes;
-5. `[limits]` with keys in the order shown;
-6. optional `[pdf]` last, with keys in the order shown;
-7. basic quoted strings, decimal integers, arrays with comma-space separators, LF line endings, and one final LF;
-8. no comments, blank leading lines, or trailing spaces.
+5. language 1.2 only: `lean_library` tables sorted by `name`, with keys in the order `name`, `url`, `revision`, omitted entirely when there are none, so a project without a Lean library keeps its bytes;
+6. `[limits]` with keys in the order shown;
+7. optional `[pdf]` last, with keys in the order shown;
+8. basic quoted strings, decimal integers, arrays with comma-space separators, LF line endings, and one final LF;
+9. no comments, blank leading lines, or trailing spaces.
 
 Input whitespace does not affect this canonical serialization. A project may be semantically valid before formatting, but `lexlean lock --check` and repository examples require canonical bytes.
 
@@ -783,6 +787,7 @@ Input whitespace does not affect this canonical serialization. A project may be 
 | `lexicon_source` | Unique by package and sorted by package identifier. |
 | `artifact_source` | Language 1.2 only (another language rejects the field, `LLC0101`): optional `[[artifact_source]]` tables `sha256 = "<64 lowercase hex>"`, `path = "<project-relative file>"`, sorted by `sha256`, unique by digest and by path, never beneath the build root. Each names the content-addressed bytes of one model artifact (§17.12); `check`, `build`, `fmt`, and `verify` read the file, confined (§25.1), and require its SHA-256 to equal the configured digest (`LLR3007`). Artifacts are never fetched. |
 | `source_package` | Language 1.2 only (another language rejects the field, `LLC0101`): optional `[[source_package]]` tables `package = "<identifier>"`, `version = "<reader's string>"`, `kind = "path"`, `path = "<workspace-relative member directory>"`, sorted and unique by `package`, with `package` an identifier of the form of `name` and `version` a string of at most 64 ASCII letters, digits, `.`, `+`, and `-` that begins with a letter or digit. `path` is resolved from the workspace root, not the project's (§10.5); a kind other than `path` is `LLC0101`, and a path that is absolute or has a `..` segment escapes the workspace and is `LLS8001`. |
+| `lean_library` | Language 1.2 only (another language rejects the field, `LLC0109`): optional `[[lean_library]]` tables `name = "<package identifier>"`, `url = "<HTTPS URL>"`, `revision = "<40 lowercase hex>"`, sorted and unique by `name`. The URL is HTTPS, the revision an exact commit; a branch, a tag, any other field, or a malformed value is `LLC0109`. §10.4 gives the rest. |
 | `limits` | Every listed positive integer is required. There are no hidden compiler defaults. |
 
 #### Lexicon-source forms
@@ -859,6 +864,17 @@ The project `lean-toolchain` MUST contain the exact toolchain string. `lexlean l
 - `lake-manifest.json`, when present.
 
 If both Lake configuration forms exist, locking fails. Verification requires the recorded files to match and requires all manifest dependencies to be locally available.
+
+**Lean libraries.** A language-1.2 project may declare an external Lean library, Mathlib being the case this exists for, once, in `lexlean.toml`:
+
+```toml
+[[lean_library]]
+name = "mathlib"
+url = "https://github.com/leanprover-community/mathlib4"
+revision = "520045ab14e26149ee970e2e617ca04b09bde5d6"
+```
+
+The rules are those of a `git` lexicon source (§10.1): HTTPS, an exact 40-lowercase-hex commit, no branch, tag, or other mutable reference. The Lake workspace must require the library at the same place: its `lake-manifest.json` has a `packages` entry of the same `name` whose `url` and `rev` equal the declaration, else `LLC0110` names both. The library is the package Lake puts at `<lean_workspace>/.lake/packages/<name>`. It is *present* when that directory's `.git/HEAD` names the declared revision, it holds a `lake-manifest.json`, and its built artifacts directory `.lake/build/lib/lean` exists. Fetching is a separate, explicit command, `lexlean deps fetch` (§23.4), which runs `lake exe cache get` so that the library's `.olean` files are downloaded and never rebuilt; `lock`, `check`, `build`, `fmt`, and `verify` never fetch (I15, §11.4) and fail with `LLV7019` when a declared library is not present. The lock (§11.1) records the revision, the SHA-256 of the library's own `lake-manifest.json`, which pins its transitive dependencies, and the SHA-256 of its generated glossary, the tree digest (§11.5) of the project's lexicon package `lean.<name>` or the digest of the empty tree when the project has none. The library and its built artifacts belong to the trusted computing base (§5.1); the lock pins the source revision and its manifest, not the bytes of the built artifacts, and LexLean never claims the library is proved by LexLean (§4.2).
 
 ### 10.5 Source packages
 
@@ -945,6 +961,17 @@ manifest_sha256 = "..."
 imports = ["base@1.0.0"]
 ```
 
+Language 1.2 only, a project that declares Lean libraries (§10.4) has, after the `[[source_package]]` rows, one `[[lean_library]]` row per declared library, and a project that declares none has none:
+
+```toml
+[[lean_library]]
+name = "mathlib"
+url = "https://github.com/leanprover-community/mathlib4"
+revision = "520045ab14e26149ee970e2e617ca04b09bde5d6"
+lake_manifest_sha256 = "..."
+glossary_sha256 = "..."
+```
+
 Language-1.2 model artifacts (§10.1, §17.12) have no lock rows: each is pinned
 by its `sha256` in `lexlean.toml`, whose canonical bytes the lock's project
 digest and the source ID cover, and every `check`, `build`, `fmt`, and
@@ -955,6 +982,7 @@ digest and the source ID cover, and every `check`, `build`, `fmt`, and
 - `workspace_file` rows sort by `path`.
 - `package` rows sort by `(id, version)`.
 - `source_package` rows sort by `id`, and their `imports` by `id`.
+- `lean_library` rows sort by `name`.
 - package `imports` sort lexicographically and contain no duplicates.
 - all keys use the order shown by the schema formatter.
 - lowercase hexadecimal is mandatory.
@@ -973,6 +1001,7 @@ A source import names an exact package and exact version. Version ranges are not
 - verification fails if a locked package is absent or its digest differs;
 - an acquired Git package is stored at `<build_root>/cache/git/<revision>/<tree_sha256>/` and is revalidated before use;
 - Git submodules, Git LFS indirection, and nested repositories are rejected.
+- a declared Lean library (§10.4) is never acquired by `lock`, even with `--allow-network`: only `lexlean deps fetch` acquires it, and an absent library fails every other command with `LLV7019`.
 
 ### 11.5 Tree digest
 
@@ -1463,6 +1492,73 @@ Loading a package MUST reject:
 - a document denotation whose declaration is unavailable;
 - an eliminator descriptor that references absent constructors;
 - a package whose `language` differs from the project's (`LLC0103`).
+
+### 13.12 Generated external-Lean glossaries
+
+`lexlean deps glossary` (§23.4) turns declarations of a Lean environment into a lexicon package whose every entry has `kind = "lean"`. No entry is written by hand. The package is ordinary (§13.1–§13.11): the loader checks it exactly as it checks a hand-written one, and §13.7 applies unchanged, so verification still probes every used entry against the real declaration. A generated entry says nothing about whether LexLean proved the declaration; its guarantees belong to the library it came from (§4.2, §5.3).
+
+**Request.** The selection is `--modules`, every declaration the named Lean modules define, or `--names`, the named declarations. Each requested declaration is *translated* (it has an entry), *refused* (it has none, with a registered code), or *excluded by kind* (it is not a candidate for an entry). The excluded kinds are: internal and private names, macro-scoped names, recursors, quotient primitives, matchers and other auxiliary recursors, `noConfusion`, instances, deprecated declarations, and the constants a core entry already denotes (`Eq`, `And`, `Or`, `Not`, `Iff`, `Exists`, written `core-entry`).
+
+**Signature.** The signature is the LSE translation of the declaration's Lean type:
+
+- `Prop` is `(sort prop)` and `Type u` is `(sort (type u))`, where a sort that is a successor level, or a maximum of successor levels, is a `Type`; any other sort (`Sort u`) is refused (`LLT4101`).
+- A binder keeps its mode: default is `explicit`, implicit is `implicit`, instance-implicit is `instance`. A strict-implicit binder has no mode and is refused (`LLT4102`).
+- An application keeps only the arguments for explicit binders of the function's type, as §17.6 reads an LSE application; Lean infers the rest when the entry is probed. A numeral `OfNat.ofNat _ n _` is `(nat n)`.
+- Universe parameters become identifiers of the grammar of §13.8 and are declared, sorted, in `universes`; a constant's universe arguments are written in the order of its own Lean parameters.
+- The annotations `outParam`, `semiOutParam`, `optParam`, and `autoParam` are erased from the type, because they are the identity on the type; the report counts the entries where that happened.
+- `Eq`, `And`, `Or`, `Not`, `Iff`, and `Exists` are the entries `lexlean.core::eq`, `land`, `lor`, `lnot`, `iff`, and `exists-op`. The two with a universe (`Eq`, `Exists`) are Type-level entries; their application at `Sort 0` or at a level that is not a successor is refused (`LLT4104`).
+- A primitive projection, a string literal, or any other expression form outside §13.8 is refused (`LLT4103`).
+- A name outside the conservative grammar of §13.6 is refused (`LLT4105`). The grammar excludes the apostrophe, so `add_comm'` is refused.
+
+**Dependencies.** Every constant a signature mentions needs an entry in the package. The generator therefore translates the closure of the requested declarations, and the types, classes, functions, and constructors it adds are *support entries*, which the report counts separately from the request. A declaration that mentions a refused, excluded, or absent one is refused with `LLT4106`, and the report names the root declaration and the root reason; the refusal is transitive. An entry that fails the entry validation or the conservative signature check of §13.7 is refused with `LLT4107`, and so is everything that mentions it. A refusal never weakens a signature to make the entry fit.
+
+**Categories.** The category follows the shape of the type, after its leading binders: a proof of a proposition is `proof-constant`; a type former is `type-noun` without explicit arguments and `function` with them; a proposition former is `predicate-constant` without explicit arguments, `adjective-predicate` with one, `transitive-predicate` with two (when its words are letters only, otherwise `function`), and `function` with more; anything else is `term-constant` without explicit arguments and `function` with them. The frame is the one §13.3 fixes, and `surface_arity` is the number of explicit binders of the signature's outer `pi`.
+
+**Naming.** A Lean name is cut into components at `.`, and each component into words: at `_`, before a capital that follows a lowercase letter or digit, and before the last capital of a capital run that a lowercase letter follows; a prime is the word `prime`; digits stay with the word they follow. Words are lowercase.
+
+- The entry ID has one segment per component, its words joined by `-` (`x` is prefixed to a segment that would start with a digit), segments joined by `.`: `Nat.add_comm` is `nat.add-comm`, stored at `entries/nat/add-comm.toml`. Two names that give one ID both take the suffix `-` and the first six hexadecimal digits of the SHA-256 of the Lean name (longer if that collides).
+- The canonical surface is one math form: the words of all components in lower camel case, `natAddComm`, and its render is `(operator-name natAddComm)` for no explicit argument and `(seq (operator-name natAddComm) (paren (seq (slot 0) (token comma) (space) (slot 1))))` in general. Surfaces are not unique across entries; a shared surface is resolved by §14.4 or selected with `\lexeme`, and the report counts entries that share one.
+- An `adjective-predicate` or `transitive-predicate` has instead one text form: the words of the last component, with a leading `is` dropped when other words remain (`Nat.Prime` is `prime`, `IsUnit` is `unit`), with the feature `lower-case`.
+
+**Eliminators.** An inductive type that is neither mutual nor nested carries an eliminator descriptor (§16.11): `cases_lean_name` and `induction_lean_name` are the custom `@[cases_eliminator]` and `@[induction_eliminator]` of the type when it has them (`Nat.casesAuxOn`, `Nat.recAux`) and `T.casesOn` and `T.rec` otherwise; each constructor row names the constructor's entry, its fields (the constructor's binder names after the parameters, made identifiers and unique) and its induction hypotheses (`<field>ih` for each field whose type is the inductive type). If a constructor has no entry, or a binder name cannot be made valid, the type has an entry without a descriptor, and the report counts that.
+
+**Output.** The package is `lexicon.toml` (importing `lexlean.core` at the language's version) and `entries/`. The same Lean environment and request give byte-identical files and a byte-identical report; no time, path, or host reaches either. The coverage report (`lexlean/glossary-report/1`) counts requested declarations as `translated`, `refused` (by reason, and for dependency refusals by root reason), and `excluded` (by kind), with `requested = translated + refused + excluded`.
+
+### 13.13 Specialisation wrappers
+
+A class-polymorphic Lean declaration, such as `Std.Commutative.comm` over any `α` with an instance, is not an interface a glossary entry can denote: its signature has instance binders that LSE entries do not state. A *specialisation* instantiates it at a concrete type and is written as a declaration of the project's host Lean library, which an entry then denotes (§13.6). The emitter takes a *specialisation request* and writes the host module's declarations. It is the Rust function `lexlean::wrappers::emit` over `lexlean::wrappers::parse_request`, and it runs no Lean; `cargo xtask emit-wrappers <request.toml> <host-module.lean>` writes the module and prints one tab-separated line per wrapper (Lean name, declaration, tag, line).
+
+A request is a TOML file:
+
+```toml
+spec = "lexlean/wrappers/1"
+imports = ["Init", "Std"]
+
+[[wrapper]]
+declaration = "Std.Commutative.comm"
+kind = "theorem"
+tag = "Nat"
+arguments = ["Nat", "(@HAdd.hAdd Nat Nat Nat _)", "_"]
+```
+
+`imports` are the Lean modules the host module imports; each is a conservative ASCII Lean module name, and the list is sorted and unique. `declaration` is a conservative ASCII Lean name. `kind` is `theorem` or `def`. `tag` is an ASCII identifier. `arguments` are the explicit arguments of `@declaration`, in order, each a *term* of the grammar
+
+```ebnf
+term  = "_" | name | "@" name | decimal | "(" term {term} ")" ;
+name  = identifier {"." identifier} ;
+```
+
+and nothing else: no tactic, no `by`, no `fun`, no string, no type ascription and no comment. A request is refused with `LLT4018` when it has any other field, a duplicate `declaration` and `tag` pair, a name outside the grammar, an argument outside the term grammar, or no wrapper.
+
+For each wrapper the emitter writes, in the order of the wrapper's Lean name, exactly one declaration
+
+```lean
+public theorem LexLeanSpec.<tag>.<declaration> : type_of% (@<declaration> <arguments>) := @<declaration> <arguments>
+```
+
+(`def` for the kind `def`), after the header `module`, one `public import` per import, and `set_option autoImplicit false`. Every name in a declaration, the declaration and the names in the arguments, is written with the prefix `_root_.`, so that no wrapper declared earlier in the reserved root can capture a name of a later one. The wrapper's type is therefore whatever Lean elaborates for the application, instances found by instance resolution at the holes, and its value is that application: a term, never a tactic block, and it adds no axiom beyond those of the declaration it applies. The emitter also returns, for each wrapper, the Lean name and the `[denotation]` table an entry that denotes it carries. Two runs on one request write the same bytes.
+
+The root `LexLeanSpec` is reserved for wrappers. An entry's LSE signature is not produced by the emitter: whoever writes the entry (by hand or by a generator) states it, and verification decides whether it is the wrapper's type (§18.8). The host library is built with `lake build` before verification, as any library the entries denote is; verification never builds it.
 
 ---
 
@@ -8229,7 +8325,13 @@ LexLeanProbe.P<first-32-hex-of-semantic-id>
 
 For every used external Lean entry, sorted by qualified entry ID, it emits an `example` whose declared type is the entry's linked signature and whose value is the external Lean constant. Universe variables are alpha-renamed with an entry-index prefix.
 
-The probe establishes only that the external constant can inhabit the declared interface in the pinned environment. It is not included in the canonical document, module API, or axiom-policy results.
+An entry whose Lean name is under the reserved root `LexLeanSpec` (§13.13) is a specialisation wrapper, and its line is stronger: `example : (<signature>) = (type_of% @<constant>) := rfl`, so that the linked signature is definitionally the Lean type of the wrapper, binder for binder with its implicit and instance binders, and not merely a type the wrapper can inhabit after Lean inserts implicit arguments. A failing line of this kind is `LLT4017` and names the entry and Lean's message, unless Lean reports the constant unknown, which is `LLT4003`. A failing line of any other entry is `LLT4003`.
+
+A signature is written as Lean's `unusedVariables` linter reads it, because a warning fails verification (§20.2): an instance binder that no later binder or the result mentions is written without a name, and a numeral argument is ascribed the type its callee declares for it only when that type is closed in the scope of the call, the callee's own binders renamed apart from the caller's locals.
+
+The probe establishes only that the external constant can inhabit the declared interface in the pinned environment. Its `example` lines are not included in the canonical document, module API, or axiom-policy results.
+
+After its examples the probe module prints `#print axioms <lean-name>` for every distinct Lean name of a used external entry whose Lean module is outside `Init`, `Std`, `Lean`, `Lake`, and the runtime root `LexLeanRuntime` (§17.12), in sorted name order, and prints none when there is no such entry. The output is parsed as §22.5 parses it, except that an axiom name may end in the one hygiene mark Lean prints after a name it generated itself and may hold numeric components, as the name of a private declaration does: the axiom that `native_decide` creates for each use is named `<declaration>._native.native_decide.ax_<n>_<m>`, printed under `_private.<Module>.0` for a private declaration. The observed sets are recorded and enforced as §22.6 states.
 
 A preexisting module with the reserved probe name is an environment conflict and causes verification to fail. Before any compilation, LexLean also rejects a preexisting workspace/search-path module whose full name equals any generated document module.
 
@@ -8887,6 +8989,8 @@ The attestation records policy, allowed set, observed set, and result for every 
 
 An imported theorem's axioms are not exempt because the theorem is upstream. If they flow into a generated declaration, the generated declaration's policy must permit them.
 
+**Imported declarations.** The observed set of each imported declaration (§5.3, §18.8) is recorded in the attestation under `imports`: one row per used entry, in qualified entry order, holding the entry, the Lean module, the Lean name, the observed set, and the status of §5.3. The member is present exactly when there is an imported declaration. Before any elaboration, an import whose observed set holds `sorryAx`, `Lean.ofReduceBool`, `Lean.trustCompiler`, or an axiom that `native_decide` generated is refused unless an `allow` or `exact` policy of some declaration of the document names that axiom: `sorryAx` is `LLV7023`, `Lean.ofReduceBool` is `LLV7024`, and `Lean.trustCompiler` and the axioms of `native_decide` are `LLV7025`. `Lean.ofReduceBool` rests on `Lean.trustCompiler`, so a policy that accepts the first names the second too. A policy cannot spell the axiom of `native_decide`, whose printed name ends in a hygiene mark, so an import that carries it is always refused. The refusal is of the import and at the granularity of the document: a policy that names the axiom lets the import through, and each generated declaration that depends on it is then held to its own policy as above (`LLV7005`). Every other axiom of an import, the three of §5.4 among them, is judged only by the policies of the generated declarations that depend on it.
+
 A language-1.2 model declaration (§17.12) is audited through the Lean
 declarations it generates: its elaborated definitions and theorems, its
 cross-checks, and its artifacts' `.bytes` and `.decoded` declarations. Each
@@ -8977,6 +9081,7 @@ The body records:
 - every process record;
 - generated `.olean` hashes;
 - axiom policies and observed sets;
+- the observed axioms and status of each imported declaration (§22.6), as `imports`, when there is one;
 - the canonical compiler input's byte length and SHA-256, when a production root exists;
 - `preservation.json`'s byte length and SHA-256, when a production root exists;
 - optional PDF process and bytes;
@@ -9204,6 +9309,24 @@ Wall time, resident-set and swap measurements, scheduling and completion order, 
 
 Telemetry is write-only: no stage reads it, no ID or verified artifact contains any of it, and a failure to write it changes no result. Every key it uses is in a closed vocabulary (`wall_ms`, `started_unix_ms`, `peak_rss_kib`, `peak_swap_kib`, `mem_total_kib`, `mem_available_kib`, `swap_total_kib`, `swap_used_kib`, `host_cpus`, `process_width`, `completion_seq`), and a JSON key of that vocabulary anywhere in a verified directory fails the gate: `cargo xtask verify-examples` checks every example's verified directory for one.
 
+### 22.13 Replay cache
+
+A replay cache lets a caller that names a store directory skip replaying a unit it has already replayed. A *unit* is one declaration or one module; the cache is indifferent to which, and a unit is the set of declaration keys it covers. `lexlean verify` of a project reads and writes no replay cache, and neither does any gate of §9.2 or §9.4: the cache is an opt-in performance device of a caller that names a directory, and §10.5's absence of a cache of a built package is unchanged.
+
+**DigestSet.** Every digest of the cache is a PrismPM ADR-015 DigestSet: the object `{"blake3": H, "sha256": S}`, both lowercase hexadecimal of 64 characters, both computed over the same byte string; `blake3` is BLAKE3 in default hash mode with 256-bit output. No other member is allowed and no other spelling of a member is read. Its label is `blake3:` followed by the 64 digits of `H`.
+
+**The canonical declaration.** One function writes the canonical bytes of a declaration from its facts: a sequence of fields, each a tag, a space, the decimal byte length of the payload, a colon, the payload, and a line feed. The fields are, in order, the format tag `lexlean/replay-declaration/1`, the name, the universe parameters in order, the kind attributes, the type, and either `none` or the DigestSet of the value or proof term. Names, types and values are the texts the Lean exporter of §22.13 writes: a name keeps its structure, and a term is the alpha-equivalence class of the kernel term, written as a node table in which a shared subterm is one node, with no binder name, binder annotation, or metadata. The module that declares a constant is not part of its canonical bytes, so that moving a declaration changes no key.
+
+**Keys.** A declaration's key is the DigestSet of a frame of the format tag `lexlean/replay-key/1`, the Lean toolchain string, the Mathlib revision, the canonical declaration, the group digest, and the sorted, de-duplicated keys of the declarations it names outside its group, each written with both digests. Declarations that name one another, an inductive type with its constructors and recursor, are one group; the group digest is the DigestSet of the canonical bytes of the members in name order, and a declaration that is alone is a group of one. A key therefore covers the declaration and, through the keys it contains, everything it reaches (a Merkle DAG): a change to a declaration changes the key of every declaration above it and of none other. A name that the facts neither declare nor anchor by a given key is `LLV7022`, as is a repeated declaration and a line of facts that does not parse. A unit's key is the DigestSet of a frame of the format tag `lexlean/replay-unit/1`, the granularity (`declaration` or `module`), and the sorted keys of its members.
+
+**The entry.** The store directory holds one canonical JSON file (§21.7) per recorded unit at `entries/<first two digits of the blake3 value>/<blake3 value>.json`, written to a temporary file in the same directory and renamed. Its members are `spec` (`lexlean/replay-cache-entry/1`), `key`, `unit` (`granularity` and `label`), `environment` (`toolchain` and `mathlib_revision`), `executable` (`tool` and the `digest` DigestSet of the executable that produced the result), `result` (`exit_code` zero, `stdout`, `stderr`), and `entry_digest`, the DigestSet of the canonical string of the entry without that member. Only a replay that exited zero is recorded.
+
+**Reuse and refusal.** A lookup finds the entry by the unit's key. No file is a miss. A file whose bytes do not parse as an entry, whose `entry_digest` is not the digest of its other members, whose recorded `key` is not the key it was looked up under, or whose `environment` differs from the caller's, is `LLV7021` and is neither reused nor replaced. An entry that names an executable other than the current one is a miss: its result is not reused, and the replay that follows overwrites it. A changed toolchain or Mathlib revision changes every key, so nothing recorded under the previous environment is found, and its entries are left intact.
+
+**Trust.** The cache is an untrusted input (§5.2). `entry_digest` detects a change of an entry's bytes and a mismatch with its key; it is not an authentication, since whoever can write the store can recompute it. A result reused from the cache is evidence that the unit was replayed once, by the executable the entry names, in the environment its key covers; it is not evidence of a replay by this run.
+
+**Facts.** The pinned Lean exports the facts of a compiled module with the program `replay_facts.lean` that the compiler embeds, run as `lean --run` through `lake env` under the child policy of §25.4: one JSON object per line, for each constant the module declares and each constant those declarations reach, with `name`, `module`, `level_params`, `attrs`, `type`, `value` (a string or `null`), and `deps`. The output is untrusted and is read under the bounds of §25.5.
+
 ---
 
 ## 23. Command-line interface
@@ -9340,6 +9463,14 @@ lexlean explain <DIAGNOSTIC-CODE>
 
 Prints the generated `ERRORS.md` entry for one registered code. Unknown codes exit as CLI misuse.
 
+#### `deps`
+
+```text
+lexlean deps fetch
+```
+
+Acquires the Lean libraries the project declares (§10.4) and nothing else. It checks each declaration against the Lake workspace, runs `lake exe cache get` in the Lake workspace under the pinned toolchain, with the network the cache download needs, and confirms the library is then present at the declared revision. With no library declared it succeeds and fetches nothing. It writes no file outside the Lake workspace, and it is the only command that fetches a Lean library (I15, §11.4). A missing or failing `lake` and a library that is not present afterward are `LLV7020`.
+
 #### `production`
 
 ```text
@@ -9350,7 +9481,21 @@ lexlean production verify-artifact <BUNDLE>
 
 The production export contract of §24.7. `targets` prints the canonical `lexlean/target-descriptors/1` document in either output mode; like `--version` it is not a project command and emits no command-result object. `build` reads a `lexlean/production-request/1` file, verifies the project by §22, and publishes the bundle; its command result names the bundle directory and the source, semantic, build, and attestation IDs. `verify-artifact` replays a bundle and needs no project. Both report failures through the command result with the exit code of their registered class.
 
+#### `deps glossary`
+
+```text
+lexlean deps glossary --package <ID> [--version <V>] [--language <L>]
+    (--modules <MODULE>... | --names <DECLARATION>...)
+    [--workspace <DIR>] --out <DIR> [--report <FILE>] [--strict]
+```
+
+Generates a lexicon package of `kind = "lean"` entries from Lean declarations (§13.12). It is not a project command: like `init` and `production verify-artifact` it needs no project, and it never fetches or builds (I15). It runs the pinned toolchain's Lean over the modules and declarations named, through the child policy of §25.4, as `lake env lean --run` inside `--workspace` (a Lake workspace whose libraries are already built) or as `lean --run` over the toolchain's own libraries without one. `--modules` and `--names` are mutually exclusive and one is required (`LLC0002`), a name or module that repeats is `LLC0002`, and a malformed package ID, version, language, module, declaration, or output directory is `LLC0001`. `--version` defaults to `1.0.0` and `--language` to `1.0`. `--out` is absent or an empty directory and the package appears in it in one rename; `--report` names a file that is absent.
+
+Refusals are reported, not failed: the command exits `0` with the package for the declarations that translate and the coverage table on stdout. With `--strict` any refusal of a requested declaration fails the command, with one diagnostic per refusal carrying its registered code (`LLT4101`–`LLT4107`), and nothing is written. The toolchain, the extractor, and the limits fail as `LLV7001`, `LLV7002`, and `LLS8002`.
+
 ### 23.5 Formatting
+
+Canonical source formatting runs in a scratch copy of the project that carries, for each declared Lean library (§10.4), the library's presence markers and not the library, so `fmt` of a project that declares a library is not a fetch and does not copy it.
 
 Canonical source formatting:
 
@@ -9799,6 +9944,8 @@ The initial registry MUST include at least these exact codes and meanings:
 | `LLC0106` | Source package undeclared, or declared with two sources (§10.5). |
 | `LLC0107` | Module prefix claimed by two sources (§10.5). |
 | `LLC0108` | Source package outside the workspace rule (§10.5). |
+| `LLC0109` | Lean library declaration invalid (§10.4). |
+| `LLC0110` | Lean library is not the library the lock pins (§10.4). |
 | `LLC0201` | Production request malformed (§24.7). |
 | `LLC0202` | Requested root is not a production root (§24.7). |
 | `LLC0203` | Unknown or mismatched production target (§24.7). |
@@ -9838,6 +9985,15 @@ The initial registry MUST include at least these exact codes and meanings:
 | `LLT4014` | Tooling authority registry invalid (§17.20). |
 | `LLT4015` | Tooling term ill-typed or unlicensed (§17.20). |
 | `LLT4016` | Unbounded or unspecified text generation (§17.12). |
+| `LLT4017` | External specialisation signature is not the type of the wrapper (§18.8). |
+| `LLT4018` | Specialisation request refused (§13.13). |
+| `LLT4101` | Lean declaration uses a sort LSE cannot express (§13.12). |
+| `LLT4102` | Lean declaration uses a binder LSE cannot express (§13.12). |
+| `LLT4103` | Lean declaration uses an expression form LSE cannot express (§13.12). |
+| `LLT4104` | Core constant at a level the core entry does not cover (§13.12). |
+| `LLT4105` | Lean name outside the conservative grammar (§13.12). |
+| `LLT4106` | Lean declaration depends on a declaration without an entry (§13.12). |
+| `LLT4107` | Generated entry rejected by the entry and signature checks (§13.12). |
 | `LLF5001` | Invalid definition form, self head, or recursion. |
 | `LLF5002` | Invalid proof step for the current goal. |
 | `LLF5003` | Missing, duplicate, or malformed proof branch. |
@@ -9865,6 +10021,13 @@ The initial registry MUST include at least these exact codes and meanings:
 | `LLV7016` | Certificate E rejected (§17.17). |
 | `LLV7017` | Invalid verification resource profile (§22.11). |
 | `LLV7018` | Child start refused after the host ended the live children (§24.6). |
+| `LLV7019` | Lean library not fetched (§10.4). |
+| `LLV7020` | Lean library fetch failed (§10.4). |
+| `LLV7021` | Replay cache entry rejected (§22.13). |
+| `LLV7022` | Replay facts refused (§22.13). |
+| `LLV7023` | Imported declaration depends on `sorryAx` and no policy names it (§22.6). |
+| `LLV7024` | Imported declaration depends on `Lean.ofReduceBool` and no policy names it (§22.6). |
+| `LLV7025` | Imported declaration depends on `Lean.trustCompiler` or on a `native_decide` axiom and no policy names it (§22.6). |
 | `LLV7101` | Certificate evidence does not certify the root (§24.7). |
 | `LLV7102` | Production artifact replay rejected (§24.7). |
 | `LLS8001` | Path escape, symlink, special file, or filesystem identity conflict. |
@@ -10295,6 +10458,8 @@ Tests MUST establish that LexLean rejects, at minimum:
 
 ### 28.6 Example verification
 
+A project that needs a Lean library fetched with `lexlean deps fetch` (§10.4, §23.4) is a *demo*, not an example. It lives under `demos/`, no directory under `examples/` declares a `[[lean_library]]`, and the default gates therefore need no network and no library. `cargo xtask verify-demos [--write]` gives every directory under `demos/` the gate of an example below (`fmt --check`, `lock --check`, `check`, `build`, `verify`, its `expected/verify` records), compares the published build with `expected/build`, and builds it twice to the same bytes. It runs in `.github/workflows/mathlib.yml`, a workflow of its own that fetches the library in a clean checkout, uses no build cache, and is not part of the acceptance gate of §9.4: a demo's evidence is that workflow's run, and no document says the gate verified it.
+
 Every directory under `examples/` is discovered rather than listed. Each example MUST include its lock and expected platform-independent build outputs. `cargo xtask verify-examples` runs `fmt --check`, `lock --check`, `check`, `build`, and `verify`. The `compiler/` project (§17.14, §17.15) and the `stdlib/` project (§17.22) pass the same gates as an example.
 
 ---
@@ -10621,6 +10786,9 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `GL-16` | `lexicon` | Package and entry bytes participate in lock and semantic closure hashes exactly as specified. | §11, §21 |
 | `GL-17` | `lexicon` | Language 1.2 resolves the exact 1.2 builtin package closure and enforces 1.2 lexicon semantics. | §13.1, §13.11 |
 | `GL-18` | `lexicon` | Cross-version package, lexicon, and lock combinations fail closed before backend execution. | §10.1, §13.11 |
+| `GL-19` | `lexicon` | A generated external-Lean glossary is a lexicon package of kind-lean entries that the package loader accepts: each signature is the LSE translation of the Lean type with implicit and instance binders kept as binders and left out of applications, each identifier, surface, category, and render follows the documented naming scheme, an inductive type carries an eliminator descriptor over its constructor entries, and two runs over one extraction produce byte-identical packages and reports. | §13.12 |
+| `GL-20` | `lexicon` | A Lean declaration the translation cannot express is refused with the registered diagnostic code of its reason and never emitted with a weakened signature, a declaration that depends on a refused one is refused with the root reason, and the coverage report counts requested declarations as translated, refused by reason, and excluded by kind, with counts that sum to the request. | §13.12, §26.3 |
+| `GL-21` | `lexicon` | A specialisation request names a class-polymorphic Lean declaration, its kind (`theorem` or `def`), a tag, and the arguments of its application at a concrete type, each a closed term of identifiers, numerals, holes, and applications; the wrapper emitter writes one `public` declaration for each under the reserved root `LexLeanSpec`, whose type is `type_of%` the application and whose value is the application, with every constant `_root_`-qualified and no tactic and no axiom, in sorted order and byte for byte the same on every run, and a request with a duplicate tag, a name outside the conservative grammar, or an argument outside the term grammar is refused with LLT4018. | §13.13 |
 | `GR-01` | `grammar` | A source module parses only under the exact structural grammar and environment set. | §15.1, §15.2 |
 | `GR-02` | `grammar` | Glossary imports, module imports, title, and blocks obey exact header order and cardinality. | §15.1 |
 | `GR-03` | `grammar` | Sections nest within the configured scope limit and section parameters introduce explicit inherited context. | §15.1, §15.4 |
@@ -10775,6 +10943,10 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `VR-21` | `verification` | A multi-module project whose imports form nontrivial frontiers verifies at width 1 and at a larger width to byte-identical verified directories and the same attestation identity, observed axiom sets, and policy rows, and no completion order orders a record or changes which failure is reported. | §22.3, §22.4, §22.11 |
 | `VR-22` | `verification` | Performance telemetry is written only to the CI evidence directory the environment names, a verification with telemetry on publishes byte-identical artifacts to one without, and telemetry planted in a verified artifact fails the gate. | §22.12 |
 | `VR-23` | `verification` | A project verified as the parts of one run, each shard running the processes its plan names with the oleans of the shards it needs and the join reading every shard's records, publishes a verified directory byte-identical to the whole verification's with the same attestation identity, and a shard whose plan leaves a module without its imports, a join missing a record, or a join reading a record of an executable other than its own, is refused. | §9.4, §22.11 |
+| `VR-24` | `verification` | An external entry whose Lean name is under the reserved root `LexLeanSpec` is probed by `example : (<signature>) = (type_of% @<constant>) := rfl`, so that its linked signature is definitionally the Lean type of the wrapper and not merely inhabited by it; an entry whose signature differs from that type is refused with LLT4017 naming the entry, a wrapper that does not exist stays LLT4003, and an entry outside the reserved root is probed exactly as before. | §18.8 |
+| `VR-27` | `verification` | The external-interface probe writes an instance binder that no later binder or the result mentions without a name, so that pinned Lean's unused-variable linter has nothing to report for an entry such as `HXor.hXor`, and ascribes the type a callee declares to a numeral argument only when that type is closed in the caller's scope, with the callee's own binders renamed apart, so that a caller binder named like a callee binder (`a`, the type parameter of `Eq`) is never taken for it; a generated entry with an instance binder and a numeral argument elaborates without output. | §18.8 |
+| `VR-25` | `verification` | A used external entry whose Lean module is outside the pinned toolchain's own libraries `Init`, `Std`, `Lean` and `Lake` is an imported declaration: the probe module prints its axioms with `#print axioms`, the attestation records its observed set, and an import that depends on `sorryAx` is refused with LLV7023, on `Lean.ofReduceBool` with LLV7024, and on `Lean.trustCompiler` or on an axiom that `native_decide` generated with LLV7025, each naming the entry, unless an axiom policy of the document names that axiom, in which case the import is accepted and every generated declaration is still held to its own policy. | §5.3, §5.4, §18.8, §22.6 |
+| `VR-26` | `verification` | The status of an imported declaration in the attestation is `replayed in the pinned environment`, and no output about an import says `proved`, `verified` or `kernel-checked`, words that §5.3 reserves for the generated declarations of the document and that §4.2 forbids for an imported library. | §4.2, §5.3 |
 | `CL-01` | `cli-api` | Global options and upward project discovery obey the exact CLI contract. | §23.1, §23.2 |
 | `CL-02` | `cli-api` | Init creates the complete canonical skeleton only in an absent or empty destination and never overwrites. | §23.4 |
 | `CL-03` | `cli-api` | Lock check, local update, and explicit network acquisition obey their exact mutually exclusive behavior. | §23.4 |
@@ -10799,6 +10971,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `CL-22` | `cli-api` | A host that embeds the library ends every child process group the library started and has not seen exit through the public function `lexlean::verify::end_live_children`, which installs no signal handler, alters no signal disposition, never signals the host's own process or group, reports each group as ended, already gone, or failing with the OS error, and refuses a later child start with LLV7018 until the host re-enables it, and the `lexlean` executable ends its interrupted children through the same function. | §17.17, §24.6 |
 | `CL-23` | `cli-api` | lexlean production targets prints the canonical target-descriptor document in either output mode, production build --request publishes the bundle its request names and reports the bundle and the project's source, semantic, build, and attestation IDs in its command result, production verify-artifact replays a bundle with no project, and each maps a malformed request, a refused request, and a rejected replay to the exact exit code of its registered class. | §24.7 |
 | `CL-24` | `cli-api` | lexlean migrate --to 1.2 migrates a language-1.1 data-form project to language 1.2 in one command: it rewrites every module to the authoring notation through lexlean::sdk::to_notation with the same declarations, names, statements, and axiom policies, moves the builtin glossary references of every source and the imports of every path lexicon package to 1.2.0, rewrites the language row, and regenerates the lock as lexlean/lock/2, so the result checks, has a current lock, and is canonical; --check proves the migration and writes nothing; and a project that is not language 1.1 is refused with LLC0103 and a module that is not a language-1.1 data-form semantic module, a data form that is not canonical JSON included, with LLP2003, each leaving every file of the project unchanged. | §17.12, §23.4 |
+| `CL-25` | `cli-api` | lexlean deps glossary runs the pinned Lean over the requested modules or declarations and writes a lexicon package of kind-lean entries and a coverage report, takes exactly one of --modules and --names and a valid package identity, needs no project, refuses an empty or doubled selection with LLC0002 and malformed usage with LLC0001, and under --strict exits with the registered class of the first refusal. | §13.12, §23.4 |
 | `SE-01` | `security` | Source, package, workspace, resource, and output paths are confined and symlinks are rejected. | §25.1 |
 | `SE-02` | `security` | Special files, duplicate filesystem identities, and case-fold collisions are rejected before processing. | §25.1 |
 | `SE-03` | `security` | All child processes use direct executable and argv invocation with no shell. | §25.2 |
@@ -10820,6 +10993,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `EX-07` | `examples` | The negative fixture suite covers every required rejection class and prescribed diagnostic family. | §28.5 |
 | `EX-08` | `examples` | Every example directory is discovered automatically and must satisfy the full example gate. | §28.6 |
 | `EX-09` | `examples` | The `helpdesk` example is a text application written entirely from language-1.2 source and the three source packages `std`, `std-models`, and `std-reasoning` that its lock pins: its production roots `classify`, `plan`, and `dispatch : Bytes -> Bytes` use the model alone, the reasoner alone, and both together, `dispatch` trimming the request with `LexLeanStd.Text`, scoring it with an integer feed-forward model whose weights are content-addressed artifacts and which is applied through its required precondition check, abstaining with `decideOr`, committing through the generic `GateModel` of `std-models`, and planning the reply with the `Drain` reasoner of `std-reasoning`; the example holds no handwritten Lean or Rust, verifies under the pinned Lean, its roots export through `lexlean production build` with the packages committed under `tests/production-export/helpdesk/`, and a changed byte or version of a package is `LLC0105`, an import of a module of an undeclared package `LLR3009`, a tampered artifact `LLR3007`, and a model applied without its required check `LLT4008`. | §10.5, §17.22, §24.7, §28.6 |
+| `EX-10` | `examples` | A project that needs a fetched Lean library is a demo, not an example: it lives under `demos/` and no directory under `examples/` declares a `[[lean_library]]`, so that the sweeps of `examples/` (`verify-examples`, `check-golden`, `check-reproducibility`, the formatter property test) need no network and no library; `cargo xtask verify-demos` formats, locks, checks, builds, and verifies every demo against its `expected/` records and golden build, and builds it twice to the same bytes, and `.github/workflows/mathlib.yml` runs it after `lexlean deps fetch` in a job of its own, outside the acceptance gate, with no build cache. | §28.6, §9.4 |
 | `PD-01` | `production` | The closed production registry fixes the language-1.2 targets, effects, and the disposition of every semantic construct kind, and every construct the eligibility analysis can classify has exactly one registry row. | §17.13 |
 | `PD-02` | `production` | Formal-only theorems, propositions, and non-executable definitions coexist with eligible executable production roots, and a module that declares no production root is never analysed for production. | §17.13 |
 | `PD-03` | `production` | A production root's runtime closure contains exactly its transitive computational dependencies across modules at their type instantiations, and its termination evidence is recorded as erased and never realized. | §17.13 |
@@ -11012,8 +11186,19 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-08` | `language-models` | Text components compose and adapt through the model constructs alone, and no new declaration kind exists for it: a stateful model whose state is a context window's `list uint32`, whose step is the window's `push`, and whose contract's postcondition states that the pushed context fits composes under `scan` with its `satisfies_contract` evidence proved by the window's generated `push_bounded`, and an adapter is a model over `string` whose realization applies the elaborated `classify` of a classifier or `generate` of a generator, with `satisfies_contract` evidence proved from the generated laws of that classifier or generator; the closed list of language-1.2 declaration kinds is unchanged by it, an adapter whose realization does not meet its contract fails verification, and an adapter that applies a declaration of another kind is refused (`LLT4006`). | §17.12 |
 | `LM-09` | `language-models` | No prompt is code: no member of the closed language maps `string` or `bytes` to a function, a term, or source — every operation of the primitive registry that takes a `string` or `bytes` operand is classified by the audit with a data result, the registry's schema enumeration and the production registry's primitive rows equal one another and equal that classified set, and the text declarations of `lexlean/semantic-module/2` state no `string`-typed member, so a prompt reaches a model only as the tokens `encodeText` makes of it; a planted operation or text member of that shape is caught by the audit with its name. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
+| `ML-01` | `mathlib` | A language-1.2 project declares an external Lean library once, as a `[[lean_library]]` table of its `lexlean.toml` with a `name`, an HTTPS `url`, and an exact 40-lowercase-hex `revision`, sorted and unique by `name`, and the configuration reads back to the bytes written; a project without one keeps its bytes, and a URL that is not HTTPS, a revision that is not a 40-lowercase-hex commit, a branch, a tag, or any other field, a name that is not a package identifier, a repeated or unsorted table, and a declaration in another language are each refused with LLC0109. | §10.1, §10.4 |
+| `ML-02` | `mathlib` | The lock pins each declared Lean library by a `[[lean_library]]` row of its name, URL, exact revision, the SHA-256 of the library's own `lake-manifest.json`, and the SHA-256 of its generated glossary, the tree digest of the lexicon package `lean.<name>` of the project or of the empty tree when the project has none; the Lake workspace's `lake-manifest.json` must require the library at the declared URL and revision, rows sort by name, and the lock reads back to the bytes written; a project without a library keeps its lock bytes, and a library, a manifest digest, a glossary, or a workspace requirement that is not the one the lock pins is refused with LLC0110 naming both values. | §10.4, §11.1, §11.2 |
+| `ML-03` | `mathlib` | `lexlean deps fetch` is the only command that acquires a declared Lean library: it checks the declaration against the Lake workspace, runs `lake exe cache get` in the Lake workspace under the pinned toolchain through the checked child runner, and confirms the library is present at the declared revision with its built artifacts; with no library declared it fetches nothing and succeeds, a missing or failing `lake` and a library that is not at the declared revision afterward are LLV7020, and the command writes nothing of the project outside the Lake workspace. | §10.4, §11.4, §23.4 |
+| `ML-04` | `mathlib` | `lock`, `check`, `build`, `fmt`, and `verify` never fetch a declared Lean library: when the library is not present in the Lake workspace at the declared revision with its built artifacts, each fails offline with LLV7019 naming the library and `lexlean deps fetch`, before any Lean process runs and without a network connection. | §10.4, §11.4 |
+| `ML-05` | `mathlib` | `fmt` rewrites the sources of a project that declares a Lean library: the scratch copy in which the formatter proves preservation of the linked IR holds the library's presence markers (the checkout's `HEAD`, its manifest, and the directory of built artifacts) and not the library, so a present library is recognised without being copied and an absent one is still LLV7019. | §23.5, §10.4 |
+| `RC-01` | `replay-cache` | A replay key is a PrismPM ADR-015 DigestSet, a `sha256` and a `blake3` of the same bytes in lowercase hexadecimal, labelled `blake3:` and the 64 digits of the `blake3` value, over the one canonical serialisation of a declaration's name, universe parameters, kind attributes and type, the DigestSet of its value or proof term, the keys of the declarations it names, the Lean toolchain, and the Mathlib revision; equal inputs give equal keys, and a change to any one of those inputs gives a different key. | §22.13 |
+| `RC-02` | `replay-cache` | A declaration changed in a dependency graph changes the key of every declaration above it and of none beside or below it, declarations that name one another, an inductive type with its constructors and recursor, are keyed as one group, and facts that repeat a declaration, name a declaration neither declared nor anchored by a given key, or do not parse are refused (`LLV7022`). | §22.13 |
+| `RC-03` | `replay-cache` | A warm replay reuses the recorded result of every unit whose key is unchanged and replays only the others, whether a unit is one declaration or one module; only a replay that succeeded is recorded, each entry names the digest of the executable that produced it, and an entry that an executable other than the current one produced is not reused. | §22.13 |
+| `RC-04` | `replay-cache` | A cache entry whose bytes changed while its key was kept, an entry stored under a key other than the one it records, and an entry that does not parse as an entry, are each rejected with `LLV7021`, never reused, and not silently replaced. | §22.13 |
+| `RC-05` | `replay-cache` | A changed Lean toolchain or a changed Mathlib revision gives every unit a new key, so no result recorded under the previous environment is reused, and the entries of the previous environment are left unread and intact. | §22.13 |
+| `RC-06` | `replay-cache` | Facts exported by the pinned Lean from compiled modules, keyed and replayed through the pinned `leanchecker` cold and then warm, reuse every module whose key is unchanged: after a one-line edit to one declaration, only the modules whose declarations reach it are replayed again, and the warm verdicts equal the cold ones. | §22.13 |
 
-**Total required capability IDs:** 457.
+**Total required capability IDs:** 477.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

@@ -1,0 +1,62 @@
+spec = "lexlean/wrappers/1"
+imports = ["Mathlib.Algebra.Group.Basic", "Mathlib.Data.BitVec"]
+
+[[wrapper]]
+declaration = "add_sub_cancel_right"
+kind = "theorem"
+tag = "BitVec32"
+arguments = ["(BitVec 32)", "_"]
+
+[[wrapper]]
+declaration = "add_right_comm"
+kind = "theorem"
+tag = "BitVec32"
+arguments = ["(BitVec 32)", "_"]
+
+[[wrapper]]
+declaration = "BitVec.add_sub_cancel"
+kind = "theorem"
+tag = "BitVec32"
+arguments = ["32"]
+
+[[wrapper]]
+declaration = "BitVec.xor_assoc"
+kind = "theorem"
+tag = "BitVec32"
+arguments = ["32"]
+
+[[wrapper]]
+declaration = "BitVec.xor_self"
+kind = "theorem"
+tag = "BitVec32"
+arguments = ["32"]
+
+[[wrapper]]
+declaration = "BitVec.xor_zero"
+kind = "theorem"
+tag = "BitVec32"
+arguments = ["32"]
+
+[[wrapper]]
+declaration = "UInt32.add_sub_cancel"
+kind = "theorem"
+tag = "U32"
+arguments = []
+
+[[wrapper]]
+declaration = "UInt32.xor_assoc"
+kind = "theorem"
+tag = "U32"
+arguments = []
+
+[[wrapper]]
+declaration = "UInt32.xor_self"
+kind = "theorem"
+tag = "U32"
+arguments = []
+
+[[wrapper]]
+declaration = "UInt32.xor_zero"
+kind = "theorem"
+tag = "U32"
+arguments = []

@@ -39,11 +39,15 @@ pub mod elaborate;
 #[doc(hidden)]
 pub mod fmt;
 #[doc(hidden)]
+pub mod glossary;
+#[doc(hidden)]
 pub mod gnaf;
 #[doc(hidden)]
 pub mod grammar;
 #[doc(hidden)]
 pub mod ir;
+#[doc(hidden)]
+pub mod lean_library;
 #[doc(hidden)]
 pub mod lexicon;
 #[doc(hidden)]
@@ -64,6 +68,8 @@ pub mod surface;
 pub mod text_laws;
 #[doc(hidden)]
 pub mod verify;
+#[doc(hidden)]
+pub mod wrappers;
 
 pub use api::verify_part;
 pub use api::{

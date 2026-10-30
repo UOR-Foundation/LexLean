@@ -10489,6 +10489,23 @@ IDs, and the digests of its lock and its source map); the committed
 language-1.2 records are regenerated in the wave the maintainer names, not by
 this change.
 
+### Lean libraries can fail (`ML-01`..`ML-04`, SPEC.md §10.4, #334)
+
+The cases of the `mathlib` suite were written before the implementation (R3), but
+they were not run red first: the implementation was in place before the first run,
+so there is no observed first failure to quote. Instead, two defects were planted
+in `lean_library.rs`, the named case run with
+`cargo test -p repo-conformance --test conformance <case>`, and the defect removed.
+
+| Planted defect | Case | Observed |
+| --- | --- | --- |
+| a library checked out at another commit is accepted as present | `conformance_ml_04` | `another revision: refused` |
+| the Lake workspace manifest may require another revision than the declaration | `conformance_ml_02` | `another revision is refused` |
+
+Not covered by any case: a real `lake exe cache get` against Mathlib. The cases use a
+stand-in `lake` that leaves the files `cache get` leaves. The real run is a measurement,
+not a conformance case, and is recorded in `docs/proposals/mathlib-import-notes-334.md`.
+
 ### the standard-library source packages and the helpdesk can fail (`SL-03`, `SL-04`, `EX-09`, #32)
 
 The three cases were written before the packages and the example existed (R3).
@@ -10744,6 +10761,9 @@ the first panic message, trimmed.
 
 | ID | Planted defect | Expected failure signature |
 | --- | --- | --- |
+| `GL-20` | `glossary/plan.rs`: `code_of("sort-polymorphic")` returns `LLT4102` | `assertion left == right failed: Fix.polyId` (`left: "LLT4102"`, `right: "LLT4101"`) |
+| `GL-19` | `glossary/naming.rs`: `camel_surface` stops capitalizing the words after the first | the `fix.scale-zero` entry text printed, missing `surface = "fixScaleZero"` |
+| `CL-25` | `cli.rs`: the `--modules` and `--names` conflict is reported as `LLC0001` | `both selections: error[LLC0001]: --modules and --names are mutually exclusive` |
 | `GL-18` | `lexicon/package.rs`: the `manifest.language != ctx.language` test made `false &&` | `expected LLC0103, found ["LLR3004"]` (`support.rs`, `expect_code`) |
 | `GL-17` | `lexicon/mod.rs`: `load_bootstrap_for("1.2")` reads `bootstrap-1.1.toml` | `init 1.2: error[LLI9001]: phase language-load: bootstrap schema drift` |
 | `SM-24` | `ir/semantic.rs`: a pair projection of a non-product type returns `Ok(None)` | `check fails` (the mutated project must be refused) |
@@ -11385,3 +11405,70 @@ script's output to that function, so the file the gate job writes is the file
 | the committed tree | `cargo test -p repo-conformance --test conformance conformance_rp_18 -- --exact` | ok |
 | the script no longer writes the gate line | same | `the evidence satisfies the release criterion` failed: `Err(["release/vv-evidence.txt does not record the gate passing"])` |
 | the criterion accepts the legs' lines | `cargo test -p repo-model the_ci_evidence_criterion` | `left: Ok(())` against the refusal |
+
+## Specialisation wrappers and the signature probe (`GL-21`, `VR-24`, #336)
+
+`conformance_gl_21` runs the wrapper emitter (SPEC.md §13.13) on
+`tests/fixtures/specialisation/request.toml` (`Std.Commutative.comm` and
+`Std.Associative.assoc` at `Nat`, `Int`, `UInt32` and `BitVec 32`) twice, in the
+request's order and in the reverse order, and requires the committed host module
+`tests/fixtures/specialisation/project/SpecHost.lean` byte for byte, one `public
+theorem` per wrapper under `LexLeanSpec`, and none of `by`, `sorry`, `axiom`, `fun`
+or `calc` in a declaration. It then refuses, with `LLT4018`, a tactic argument, a
+`fun` argument, a string, a comment, an unclosed parenthesis, a declaration name with
+a space, a tag with a dot, and a duplicate wrapper.
+
+`conformance_vr_24` builds the fixture's host library with `lake build SpecHost`
+(offline: the library has no dependency), locks and verifies the project whose two
+entries denote `LexLeanSpec.Nat.Std.Commutative.comm` and
+`LexLeanSpec.Int.Std.Commutative.comm` with their exact signatures, reads the probe
+for `(...) = (type_of% @<wrapper>) := rfl`, and requires that an entry outside the
+reserved root keeps its `example : <signature> := <constant>` line. It then plants a
+signature whose right-hand side is `a + b` and not `b + a` (`LLT4017`, naming
+`test.spec::nat-comm` and not the exact entry), and a denotation of a wrapper the host
+library does not have (`LLT4003`).
+
+Each defect below was planted in the committed tree, one at a time, with the real
+test, on Linux x86-64 (WSL, Rust 1.97.1), and the file restored (§27.9).
+
+| Case | Command | Observed |
+| --- | --- | --- |
+| the committed tree | `cargo test -p repo-conformance --test conformance -- conformance_gl_21 conformance_vr_24` | ok |
+| the printer drops the `_root_.` prefix of argument names | `conformance_gl_21` | `the committed host module is the emitter's output` failed |
+| a tactic word (`by`) is accepted as a name | `conformance_gl_21` | `specialisation.rs:25`: `(by simp)` is not refused |
+| the emitter does not sort by Lean name | `conformance_gl_21` | `the committed host module is the emitter's output` failed |
+| no name is a wrapper name | `conformance_vr_24` | `specialisation.rs:161`: the probe has no `type_of%` line |
+| the signature is not parenthesised in the probe line | `conformance_vr_24` | `the exact signatures verify` failed: `unexpected token ')'` |
+| a signature mismatch is reported as the interface failure | `conformance_vr_24` | `expected LLT4017, found ["LLT4003"]` |
+| a missing wrapper is reported as a signature mismatch | `conformance_vr_24` | `expected LLT4003, found ["LLT4017"]` |
+
+The parenthesised form was found by the fixture and not by reading: the first
+version wrote `example : <signature> = (type_of% ...)`, in which `a -> b = c` is
+`a -> (b = c)`, and Lean refused both exact signatures.
+
+### replay cache can fail
+
+Two defects were planted in the replay cache (`RC-01` to `RC-06`, SPEC.md §22.13), `cargo test -p lexlean --lib -- replay_cache` was run, and each plant was removed.
+
+Checking `entry_digest` removed (`if recorded != actual` made `if false && recorded != actual`): `an_entry_whose_bytes_changed_while_its_key_was_kept_is_rejected` and `an_entry_whose_executable_digest_was_edited_is_rejected_not_missed` failed, 2 of 8 `an_entry` tests; the other six still passed because the key, shape, environment and exit-code checks are independent of it.
+
+The toolchain and Mathlib revision removed from the key frame: `a_changed_toolchain_or_mathlib_revision_changes_every_key` and `a_changed_toolchain_or_mathlib_revision_reuses_nothing_and_leaves_old_entries_intact` failed, 2 of 25 run (the filter was `replay_cache::tests`).
+
+With both plants removed the 28 `replay_cache` and `digest_set` tests pass. The register rows were red before the cases existed: all six `conformance_rc_0N` tests failed with `no conformance case is wired for RC-0N`.
+
+
+### the axiom audit of imported declarations can fail
+
+Rows `VR-25` and `VR-26` (SPEC.md §5.3, §18.8, §22.6, #339). The fixture `tests/fixtures/import-axioms` has a host library `AxHost` of five theorems that state the commutativity of `Nat` addition and carry no axiom, `sorryAx`, `Lean.ofReduceBool` (with `Lean.trustCompiler`, on which it rests), `Lean.trustCompiler`, and the axiom `native_decide` generates; five entries denote them. The cases build the host with `lake build`, write the document each case needs, and verify. Refused: each planted import under `\noaxioms` and under `\allowaxioms{propext}` with `LLV7023`, `LLV7024`, `LLV7025` and `LLV7025` naming the entry, the Lean name and the axiom; `Lean.ofReduceBool` under a policy that names it but not `Lean.trustCompiler` (`LLV7025`); the `native_decide` axiom under a policy that spells its name without the hygiene mark (`LLV7025`). Accepted: the three nameable axioms under `\allowaxioms{sorryAx}`, `\exactaxioms{Lean.ofReduceBool;Lean.trustCompiler}` and `\allowaxioms{Lean.trustCompiler}`, with each import's observed set in `imports` and the generated theorem's observed `sorryAx` in `declarations`.
+
+Red first, before `imports::audit` was wired: `conformance_vr_25` failed with `expected LLV7023, found ["LLV7005"] (LLV7005: LexLeanExample.Main.use_sorry_comm violates its none axiom policy: observed [sorryAx])`, and `conformance_vr_26` with `§5.3 states the wording`.
+
+Each defect below was planted in the committed tree, one at a time, with the real test, on Linux x86-64 (WSL), and the file restored (§27.9).
+
+| Case | Command | Observed |
+| --- | --- | --- |
+| the committed tree | `cargo test -p repo-conformance --test conformance -- conformance_vr_25 conformance_vr_26` and `cargo test -p lexlean --lib -- verify::imports verify::axiom` | ok, 10 unit tests ok |
+| the call of `imports::audit` removed from `verify` | `conformance_vr_25` | failed: the refusal is the late `LLV7005`, not `LLV7023` |
+| `IMPORTED_STATUS` is `proved by LexLean` | `conformance_vr_26` | failed at `import_axioms.rs:277`, the constant is not the one §5.3 states |
+
+The two plants were run once each. The case also found two things without a plant: the first version of the parser refused the `native_decide` axiom as printed by `lean` (`LLV7004: _private.AxHost.0.AxHost.viaNative._native.native_decide.ax_1_1 is not a Lean name`), which is why the audit of imports reads the `_private.<Module>.0` spelling and the hygiene mark, with unit tests; and a policy that names only `Lean.ofReduceBool` is `LLV7025`, not `LLV7024`, because `Lean.trustCompiler` is left unnamed, which the case now asserts.

@@ -1,0 +1,6 @@
+name = "import_axioms_host"
+version = "0.1.0"
+defaultTargets = ["AxHost"]
+
+[[lean_lib]]
+name = "AxHost"

@@ -783,6 +783,21 @@ impl Engine {
         })
     }
 
+    /// Acquire the project's declared Lean libraries (§10.4, §23.4): the one
+    /// operation that reaches the network for them. It is reached through the
+    /// command line alone, so the seven entry points of §24.1 stay seven.
+    ///
+    /// # Errors
+    ///
+    /// `LLC0110`, `LLV7020`, or `LLS8002` as [`crate::lean_library::fetch`]
+    /// states.
+    pub(crate) fn deps_fetch(&self) -> Result<crate::lean_library::Fetched, LexLeanError> {
+        self.bound(
+            "deps",
+            crate::lean_library::fetch(&self.project).map_err(LexLeanError::from_diagnostics),
+        )
+    }
+
     /// Update or check the lock (§23.4).
     pub fn lock(&self, request: LockRequest) -> Result<LockResult, LexLeanError> {
         self.bound("lock", self.lock_inner(request))
@@ -822,6 +837,11 @@ impl Engine {
                     crate::source_package::check_pins(
                         &committed.source_packages,
                         &lock.source_packages,
+                    )
+                    .map_err(LexLeanError::from_diagnostics)?;
+                    crate::lean_library::check_pins(
+                        &committed.lean_libraries,
+                        &lock.lean_libraries,
                     )
                     .map_err(LexLeanError::from_diagnostics)?;
                 }
@@ -1313,6 +1333,8 @@ impl Engine {
         ] {
             copy_file(&workspace(pin))?;
         }
+        crate::lean_library::stub_for_scratch(&self.project, scratch)
+            .map_err(LexLeanError::from_diagnostics)?;
         for root in &config.source_roots {
             copy_dir(root)?;
         }

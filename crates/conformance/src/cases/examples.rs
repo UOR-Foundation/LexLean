@@ -693,6 +693,7 @@ pub(crate) fn run(id: &str) {
         // §28.6: every example directory is discovered and gate-complete.
         // §10.5, §17.22: the helpdesk text application.
         "EX-09" => super::helpdesk::run(id),
+        "EX-10" => ex_10(),
         "EX-08" => {
             let examples = support::repo_root().join("examples");
             let mut found = 0usize;
@@ -748,3 +749,81 @@ features = []
 [render]
 math = "(operator-name z)"
 "#;
+
+/// Every project directory under `parent` that declares a Lean library.
+fn declaring_a_library(parent: &str) -> (Vec<String>, Vec<String>) {
+    let (mut declaring, mut plain) = (Vec::new(), Vec::new());
+    let base = support::repo_root().join(parent);
+    let Ok(entries) = std::fs::read_dir(base.as_std_path()) else {
+        return (declaring, plain);
+    };
+    for entry in entries.flatten() {
+        let config = entry.path().join("lexlean.toml");
+        let Ok(text) = std::fs::read_to_string(&config) else {
+            continue;
+        };
+        let name = entry.file_name().to_string_lossy().into_owned();
+        if text.contains("[[lean_library]]") {
+            declaring.push(name);
+        } else {
+            plain.push(name);
+        }
+    }
+    declaring.sort();
+    plain.sort();
+    (declaring, plain)
+}
+
+/// EX-10: demos are kept out of the sweeps of `examples/`, and their own
+/// workflow fetches the library and runs them. Nothing here needs the library,
+/// so the case runs wherever the default gates do; `verify-demos` is what the
+/// workflow runs with it.
+fn ex_10() {
+    let (declaring, _) = declaring_a_library("examples");
+    assert!(
+        declaring.is_empty(),
+        "EX-10: {declaring:?} declare a Lean library and are swept by the default example gates; move them under demos/"
+    );
+    let (demos, undeclared) = declaring_a_library("demos");
+    assert!(
+        !demos.is_empty(),
+        "EX-10: demos/ holds a project that declares a library"
+    );
+    assert!(
+        undeclared.is_empty(),
+        "EX-10: {undeclared:?} under demos/ declare no Lean library; a project that needs none is an example"
+    );
+    let root = support::repo_root();
+    let read = |relative: &str| {
+        std::fs::read_to_string(root.join(relative).as_std_path())
+            .unwrap_or_else(|error| panic!("{relative}: {error}"))
+    };
+    let workflow = read(".github/workflows/mathlib.yml");
+    for needed in [
+        "deps fetch",
+        "lake build",
+        "cargo xtask verify-demos",
+        "timeout-minutes:",
+    ] {
+        assert!(
+            workflow.contains(needed),
+            "EX-10: mathlib.yml runs `{needed}`"
+        );
+    }
+    for forbidden in ["actions/cache", "restore-keys", "continue-on-error"] {
+        assert!(
+            !workflow.contains(forbidden),
+            "EX-10: mathlib.yml has no `{forbidden}`"
+        );
+    }
+    let ci = read(".github/workflows/ci.yml");
+    assert!(
+        !ci.contains("demos") && !ci.contains("verify-demos"),
+        "EX-10: the acceptance gate does not run the demos"
+    );
+    let gitignore = read(".gitignore");
+    assert!(
+        gitignore.contains("demos/**/.lake/"),
+        "EX-10: a demo's fetched library is not tracked"
+    );
+}

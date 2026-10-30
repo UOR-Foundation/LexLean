@@ -1,0 +1,16 @@
+spec = "lexlean/entry/1"
+id = "cancellation"
+category = "label-word"
+surface_arity = 0
+frame = "atom"
+
+[denotation]
+kind = "defined"
+value = "(const lean.mathlib::h-sub.h-sub)"
+
+[[form]]
+id = "cancellation"
+channel = "text"
+surface = "Cancellation"
+canonical_source = true
+features = ["sentence-case", "singular"]

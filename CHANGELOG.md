@@ -15,6 +15,21 @@ versions. `v0.1.0` is tagged, and `v0.4.0` is tagged at the commit that carries
 this changelog; the sections for `0.1.1`, `0.2.0`, and `0.3.0` record what the
 workspace carried at those versions without a tag.
 
+## Unreleased
+
+- Specialisation wrappers (`GL-21`, SPEC.md §13.13). A class-polymorphic Lean
+  declaration is written at a concrete type as one `public` declaration of the host
+  library, `LexLeanSpec.<tag>.<declaration>`, whose type is `type_of%` the
+  application `@declaration arguments` and whose value is that application: a term,
+  with every name qualified from the root. `lexlean::wrappers::{parse_request, emit}`
+  and `cargo xtask emit-wrappers` take a `lexlean/wrappers/1` request and write the
+  host module; a request outside the closed term grammar is `LLT4018`.
+- The external-interface probe (`VR-24`, §18.8) holds an entry that denotes a
+  wrapper to `example : (<signature>) = (type_of% @<wrapper>) := rfl`, so that its
+  signature is definitionally the type of the wrapper. A signature that differs is
+  `LLT4017`; a wrapper that is absent stays `LLT4003`. Every other entry's probe line
+  is unchanged. The register is 459 IDs.
+
 ## 0.4.0
 
 Release `0.4.0` is cut at the downstream boundary (#92, 2026-10-25): what the

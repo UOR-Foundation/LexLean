@@ -127,6 +127,20 @@ title = "Source package outside the workspace rule"
 statement = "A project that declares a source package is outside any workspace or is not a member of it, a package is not a member of the workspace, or the workspace file or a package is malformed."
 
 [[error]]
+code = "LLC0109"
+class = "cli-configuration"
+exit = 2
+title = "Lean library declaration invalid"
+statement = "A `[[lean_library]]` table is not a closed declaration of a language-1.2 project: a URL that is not HTTPS, a revision that is not an exact 40-lowercase-hex commit, a branch, a tag, or any other field, a name that is not a package identifier, a table repeated or out of order, or a declaration in another language."
+
+[[error]]
+code = "LLC0110"
+class = "cli-configuration"
+exit = 2
+title = "Lean library is not the library the lock pins"
+statement = "A declared Lean library's URL, revision, Lake manifest digest, or glossary digest differs from the lock's row, or the Lake workspace's `lake-manifest.json` does not require the library at the declared URL and revision, naming both values."
+
+[[error]]
 code = "LLC0201"
 class = "cli-configuration"
 exit = 2
@@ -470,6 +484,69 @@ title = "Unbounded or unspecified text generation"
 statement = "A text declaration does not state the bound it must: a context window with capacity 0, or a text generator with max_tokens 0."
 
 [[error]]
+code = "LLT4017"
+class = "language"
+exit = 1
+title = "External specialisation signature is not the type of the wrapper"
+statement = "External specialisation signature is not the type of the wrapper."
+
+[[error]]
+code = "LLT4018"
+class = "language"
+exit = 1
+title = "Specialisation request refused"
+statement = "Specialisation request refused."
+
+[[error]]
+code = "LLT4101"
+class = "language"
+exit = 1
+title = "Lean declaration uses a sort LSE cannot express"
+statement = "A Lean declaration's type contains a sort that is neither Prop nor Type u for a universe expression u, such as Sort u for a universe variable u, so the glossary generator refuses it instead of weakening its signature (§13.12)."
+
+[[error]]
+code = "LLT4102"
+class = "language"
+exit = 1
+title = "Lean declaration uses a binder LSE cannot express"
+statement = "A Lean declaration's type contains a strict-implicit binder, which has no LSE binder mode, so the glossary generator refuses it instead of weakening its signature (§13.12)."
+
+[[error]]
+code = "LLT4103"
+class = "language"
+exit = 1
+title = "Lean declaration uses an expression form LSE cannot express"
+statement = "A Lean declaration's type contains a primitive projection, a string literal, or another expression form outside LSE, so the glossary generator refuses it (§13.12)."
+
+[[error]]
+code = "LLT4104"
+class = "language"
+exit = 1
+title = "Core constant at a level the core entry does not cover"
+statement = "A Lean declaration's type applies a constant that a core lexicon entry denotes, such as Eq or Exists, at a universe level the core entry does not cover, so the glossary generator refuses it (§13.12)."
+
+[[error]]
+code = "LLT4105"
+class = "language"
+exit = 1
+title = "Lean name outside the conservative grammar"
+statement = "A Lean declaration's name is outside the conservative ASCII Lean-name grammar of §13.6, so the glossary generator cannot carry it as a denotation (§13.12)."
+
+[[error]]
+code = "LLT4106"
+class = "language"
+exit = 1
+title = "Lean declaration depends on a declaration without an entry"
+statement = "A Lean declaration's type mentions a constant that has no entry because the constant was refused, excluded, or absent, so the glossary generator refuses the dependent declaration with the reason of the root (§13.12)."
+
+[[error]]
+code = "LLT4107"
+class = "language"
+exit = 1
+title = "Generated entry rejected by the entry and signature checks"
+statement = "An entry the glossary generator derived from a Lean declaration fails the entry validation or the conservative signature check of §13.7, so it is refused instead of emitted (§13.12)."
+
+[[error]]
 code = "LLV7001"
 class = "environment"
 exit = 3
@@ -594,6 +671,55 @@ class = "environment"
 exit = 3
 title = "Child start refused after the host ended the live children"
 statement = "A child process could not be started because the host ended the live children of this process through `lexlean::verify::end_live_children` and has not re-enabled starting children."
+
+[[error]]
+code = "LLV7019"
+class = "environment"
+exit = 3
+title = "Lean library not fetched"
+statement = "A project declares a Lean library that is not present in its Lake workspace at the declared revision with its built artifacts; `lock`, `check`, `build`, `fmt`, and `verify` never fetch, so the library must first be acquired with `lexlean deps fetch`."
+
+[[error]]
+code = "LLV7020"
+class = "environment"
+exit = 3
+title = "Lean library fetch failed"
+statement = "`lexlean deps fetch` could not acquire a declared Lean library: the `lake` executable could not be resolved or run, `lake exe cache get` failed, or the library is not at the declared revision with its built artifacts afterward."
+
+[[error]]
+code = "LLV7021"
+class = "language"
+exit = 1
+title = "Replay cache entry rejected"
+statement = "A replay cache entry does not parse as an entry, its entry digest is not the digest of its other members, its recorded key is not the key it was looked up under, or its environment is not the caller's, so it is neither reused nor replaced."
+
+[[error]]
+code = "LLV7022"
+class = "language"
+exit = 1
+title = "Replay facts refused"
+statement = "The facts a replay key is computed from repeat a declaration, name a declaration that is neither declared nor anchored by a given key, or do not parse."
+
+[[error]]
+code = "LLV7023"
+class = "language"
+exit = 1
+title = "Imported declaration depends on sorryAx"
+statement = "A Lean declaration that a used entry denotes, from outside the pinned toolchain's own libraries, depends on `sorryAx`, a proof hole, and no axiom policy of the document names `sorryAx`."
+
+[[error]]
+code = "LLV7024"
+class = "language"
+exit = 1
+title = "Imported declaration depends on Lean.ofReduceBool"
+statement = "A Lean declaration that a used entry denotes, from outside the pinned toolchain's own libraries, depends on `Lean.ofReduceBool`, a claim the compiler's evaluator made, and no axiom policy of the document names `Lean.ofReduceBool`."
+
+[[error]]
+code = "LLV7025"
+class = "language"
+exit = 1
+title = "Imported declaration trusts the compiler"
+statement = "A Lean declaration that a used entry denotes, from outside the pinned toolchain's own libraries, depends on `Lean.trustCompiler` or on an axiom that `native_decide` generated, and no axiom policy of the document names that axiom."
 
 [[error]]
 code = "LLV7101"

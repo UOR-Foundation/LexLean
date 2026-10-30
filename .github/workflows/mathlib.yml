@@ -1,0 +1,77 @@
+# The Mathlib demos (SPEC.md §28.6), in a workflow of their own.
+#
+# A demo is a project that needs a Lean library fetched with `lexlean deps
+# fetch` (§10.4). Fetching is the one operation that reaches the network, so no
+# default gate runs a demo: the acceptance gate of ci.yml (§9.4) is a clean
+# checkout with only Rust and the pinned Lean toolchain, and its sweeps of
+# `examples/` discover nothing that needs a library (EX-10). This workflow is
+# where a demo is verified, and it is not part of that gate: the gate's
+# evidence says nothing about it, and this run's says nothing about the gate.
+#
+# Like the gate it starts from a clean checkout with no build cache (§9.4): the
+# library is fetched on every run (about five minutes and seven gigabytes, of
+# the fourteen the runner has free), so a stale cache cannot stand in for the
+# pinned revision.
+name: mathlib
+
+on:
+  push: { branches: [main, "release/**"] }
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mathlib-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  mathlib:
+    name: mathlib demos
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install
+      - name: Install elan and the pinned Lean toolchain
+        run: |
+          set -euo pipefail
+          curl https://elan.lean-lang.org/elan-init.sh -sSf | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
+      - name: Build the executable
+        run: cargo build --locked -p lexlean --bin lexlean
+      # The only step that reaches the network (I15): `lexlean deps fetch` runs
+      # `lake exe cache get` in each demo's Lake workspace, which clones the
+      # library at the revision pinned in `lexlean.toml` and downloads its
+      # built `.olean` files. Nothing is rebuilt. The host library of the demo
+      # is built after it, because `verify` never builds one (§13.13).
+      - name: Fetch the pinned Mathlib and build the host library
+        shell: bash
+        run: |
+          set -euo pipefail
+          df -h "$GITHUB_WORKSPACE"
+          for demo in demos/*/; do
+            (cd "$demo" && "$GITHUB_WORKSPACE/target/debug/lexlean" deps fetch)
+            (cd "$demo" && lake build)
+          done
+          df -h "$GITHUB_WORKSPACE"
+      - name: Verify the demos
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-evidence
+          cargo xtask verify-demos 2>&1 | tee ci-evidence/verify-demos.txt
+          grep -F "verify-examples: mathlib-blake3-g verified (attestation " ci-evidence/verify-demos.txt
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: mathlib-demos-evidence
+          path: ci-evidence
+          if-no-files-found: error
+          retention-days: 14

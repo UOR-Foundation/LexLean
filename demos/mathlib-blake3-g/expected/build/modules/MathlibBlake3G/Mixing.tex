@@ -1,0 +1,71 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage[hidelinks]{hyperref}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\begin{document}
+\begin{center}
+{\LARGE Mixing function inverse}
+\end{center}
+\section{Mixing function inverse}
+\label{ll:mixing:inverse}
+\begin{theorem}
+\label{ll:mixing:mixing-inverse}
+For every \(\operatorname{bitVec}(32)\) \(a\) and \(\operatorname{bitVec}(32)\) \(b\) and \(\operatorname{bitVec}(32)\) \(c\) and \(\operatorname{bitVec}(32)\) \(d\) and \(\operatorname{bitVec}(32)\) \(x\) and \(\operatorname{bitVec}(32)\) \(y\) and \(\operatorname{bitVec}(32)\) \(a1\) and \(\operatorname{bitVec}(32)\) \(b1\) and \(\operatorname{bitVec}(32)\) \(c1\) and \(\operatorname{bitVec}(32)\) \(d1\) and \(\operatorname{bitVec}(32)\) \(a2\) and \(\operatorname{bitVec}(32)\) \(b2\) and \(\operatorname{bitVec}(32)\) \(c2\) and \(\operatorname{bitVec}(32)\) \(d2\) and \(\operatorname{bitVec}(32)\) \(ib1\) and \(\operatorname{bitVec}(32)\) \(ic1\) and \(\operatorname{bitVec}(32)\) \(id1\) and \(\operatorname{bitVec}(32)\) \(ia1\) and \(\operatorname{bitVec}(32)\) \(ra\) and \(\operatorname{bitVec}(32)\) \(rb\) and \(\operatorname{bitVec}(32)\) \(rc\) and \(\operatorname{bitVec}(32)\) \(rd\), if \(a1 = \operatorname{hAddHAdd}(\operatorname{hAddHAdd}(a, b), x)\), then if \(d1 = \operatorname{bitVecRotateRight}(\operatorname{hXorHXor}(d, a1), 16)\), then if \(c1 = \operatorname{hAddHAdd}(c, d1)\), then if \(b1 = \operatorname{bitVecRotateRight}(\operatorname{hXorHXor}(b, c1), 12)\), then if \(a2 = \operatorname{hAddHAdd}(\operatorname{hAddHAdd}(a1, b1), y)\), then if \(d2 = \operatorname{bitVecRotateRight}(\operatorname{hXorHXor}(d1, a2), 8)\), then if \(c2 = \operatorname{hAddHAdd}(c1, d2)\), then if \(b2 = \operatorname{bitVecRotateRight}(\operatorname{hXorHXor}(b1, c2), 7)\), then if \(ib1 = \operatorname{hXorHXor}(\operatorname{bitVecRotateLeft}(b2, 7), c2)\), then if \(ic1 = \operatorname{hSubHSub}(c2, d2)\), then if \(id1 = \operatorname{hXorHXor}(\operatorname{bitVecRotateLeft}(d2, 8), a2)\), then if \(ia1 = \operatorname{hSubHSub}(\operatorname{hSubHSub}(a2, ib1), y)\), then if \(rb = \operatorname{hXorHXor}(\operatorname{bitVecRotateLeft}(ib1, 12), ic1)\), then if \(rc = \operatorname{hSubHSub}(ic1, id1)\), then if \(rd = \operatorname{hXorHXor}(\operatorname{bitVecRotateLeft}(id1, 16), ia1)\), then if \(ra = \operatorname{hSubHSub}(\operatorname{hSubHSub}(ia1, rb), x)\), then \(ra = a\) and \(rb = b\) and \(rc = c\) and \(rd = d\).
+\end{theorem}
+\begin{proof}
+Assume \(e1\), \(e2\), \(e3\), \(e4\), \(e5\), \(e6\), \(e7\), \(e8\), \(f1\), \(f2\), \(f3\), \(f4\), \(f5\), \(f6\), \(f7\), \(f8\).
+We first establish \(ib1 = b1\).
+Rewrite the goal using \(\rightarrow f1\), \(\rightarrow e8\).
+The goal follows from \(\texttt{Rotation::unmix}(b1, c2, 7)\).
+We first establish \(ic1 = c1\).
+Rewrite the goal using \(\rightarrow f2\), \(\rightarrow e7\).
+The goal follows from \(\texttt{Cancellation::add-sub-cancel}(c1, d2)\).
+We first establish \(id1 = d1\).
+Rewrite the goal using \(\rightarrow f3\), \(\rightarrow e6\).
+The goal follows from \(\texttt{Rotation::unmix}(d1, a2, 8)\).
+We first establish \(ia1 = a1\).
+Rewrite the goal using \(\rightarrow f4\), \(\rightarrow hb1\), \(\rightarrow e5\).
+The goal follows from \(\texttt{Cancellation::add-sub-sub-cancel}(a1, b1, y)\).
+We first establish \(rb = b\).
+Rewrite the goal using \(\rightarrow f5\), \(\rightarrow hb1\), \(\rightarrow hc1\), \(\rightarrow e4\).
+The goal follows from \(\texttt{Rotation::unmix}(b, c1, 12)\).
+We first establish \(rc = c\).
+Rewrite the goal using \(\rightarrow f6\), \(\rightarrow hc1\), \(\rightarrow hd1\), \(\rightarrow e3\).
+The goal follows from \(\texttt{Cancellation::add-sub-cancel}(c, d1)\).
+We first establish \(rd = d\).
+Rewrite the goal using \(\rightarrow f7\), \(\rightarrow hd1\), \(\rightarrow ha1\), \(\rightarrow e2\).
+The goal follows from \(\texttt{Rotation::unmix}(d, a1, 16)\).
+We first establish \(ra = a\).
+Rewrite the goal using \(\rightarrow f8\), \(\rightarrow ha1\), \(\rightarrow hb\), \(\rightarrow e1\).
+The goal follows from \(\texttt{Cancellation::add-sub-sub-cancel}(a, b, x)\).
+Branch \(1\):
+\begin{quote}
+Branch \(1\):
+\begin{quote}
+Branch \(1\):
+\begin{quote}
+The goal follows from \(ha\).
+\end{quote}
+Branch \(2\):
+\begin{quote}
+The goal follows from \(hb\).
+\end{quote}
+\end{quote}
+Branch \(2\):
+\begin{quote}
+The goal follows from \(hc\).
+\end{quote}
+\end{quote}
+Branch \(2\):
+\begin{quote}
+The goal follows from \(hd\).
+\end{quote}
+\end{proof}
+\end{document}

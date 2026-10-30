@@ -341,6 +341,21 @@ fn conformance_gl_18() {
 }
 
 #[test]
+fn conformance_gl_19() {
+    repo_conformance::cases::run("GL-19");
+}
+
+#[test]
+fn conformance_gl_20() {
+    repo_conformance::cases::run("GL-20");
+}
+
+#[test]
+fn conformance_gl_21() {
+    repo_conformance::cases::run("GL-21");
+}
+
+#[test]
 fn conformance_gr_01() {
     repo_conformance::cases::run("GR-01");
 }
@@ -1111,6 +1126,26 @@ fn conformance_vr_23() {
 }
 
 #[test]
+fn conformance_vr_24() {
+    repo_conformance::cases::run("VR-24");
+}
+
+#[test]
+fn conformance_vr_25() {
+    repo_conformance::cases::run("VR-25");
+}
+
+#[test]
+fn conformance_vr_26() {
+    repo_conformance::cases::run("VR-26");
+}
+
+#[test]
+fn conformance_vr_27() {
+    repo_conformance::cases::run("VR-27");
+}
+
+#[test]
 fn conformance_cl_01() {
     repo_conformance::cases::run("CL-01");
 }
@@ -1231,6 +1266,11 @@ fn conformance_cl_24() {
 }
 
 #[test]
+fn conformance_cl_25() {
+    repo_conformance::cases::run("CL-25");
+}
+
+#[test]
 fn conformance_se_01() {
     repo_conformance::cases::run("SE-01");
 }
@@ -1333,6 +1373,11 @@ fn conformance_ex_08() {
 #[test]
 fn conformance_ex_09() {
     repo_conformance::cases::run("EX-09");
+}
+
+#[test]
+fn conformance_ex_10() {
+    repo_conformance::cases::run("EX-10");
 }
 
 #[test]
@@ -2288,4 +2333,59 @@ fn conformance_lm_09() {
 #[test]
 fn conformance_lm_13() {
     repo_conformance::cases::run("LM-13");
+}
+
+#[test]
+fn conformance_ml_01() {
+    repo_conformance::cases::run("ML-01");
+}
+
+#[test]
+fn conformance_ml_02() {
+    repo_conformance::cases::run("ML-02");
+}
+
+#[test]
+fn conformance_ml_03() {
+    repo_conformance::cases::run("ML-03");
+}
+
+#[test]
+fn conformance_ml_04() {
+    repo_conformance::cases::run("ML-04");
+}
+
+#[test]
+fn conformance_ml_05() {
+    repo_conformance::cases::run("ML-05");
+}
+
+#[test]
+fn conformance_rc_01() {
+    repo_conformance::cases::run("RC-01");
+}
+
+#[test]
+fn conformance_rc_02() {
+    repo_conformance::cases::run("RC-02");
+}
+
+#[test]
+fn conformance_rc_03() {
+    repo_conformance::cases::run("RC-03");
+}
+
+#[test]
+fn conformance_rc_04() {
+    repo_conformance::cases::run("RC-04");
+}
+
+#[test]
+fn conformance_rc_05() {
+    repo_conformance::cases::run("RC-05");
+}
+
+#[test]
+fn conformance_rc_06() {
+    repo_conformance::cases::run("RC-06");
 }

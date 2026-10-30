@@ -1,0 +1,21 @@
+spec = "lexlean/entry/1"
+id = "reduce-comm"
+category = "proof-constant"
+signature = "(pi ((explicit a (const lexlean.std.nat::nat)) (explicit b (const lexlean.std.nat::nat))) (app (const lexlean.core::eq) (app (const lexlean.std.nat::add) (local a) (local b)) (app (const lexlean.std.nat::add) (local b) (local a))))"
+surface_arity = 2
+frame = "call"
+
+[denotation]
+kind = "lean"
+module = "AxHost"
+name = "AxHost.viaReduce"
+
+[[form]]
+id = "reduce-comm"
+channel = "math"
+surface = "reducecomm"
+canonical_source = true
+features = []
+
+[render]
+math = "(seq (operator-name reducecomm) (paren (seq (slot 0) (token comma) (space) (slot 1))))"

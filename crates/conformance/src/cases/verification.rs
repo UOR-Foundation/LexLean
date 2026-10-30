@@ -41,6 +41,22 @@ pub(crate) fn run(id: &str) {
         super::operational::run(id);
         return;
     }
+    // §18.8: the probe of a specialisation wrapper; the case gates itself.
+    if id == "VR-27" {
+        super::probe_binders::probe();
+        return;
+    }
+    if id == "VR-24" {
+        super::specialisation::probe();
+        return;
+    }
+    // §18.8, §22.6: the axioms of imported declarations; the cases gate
+    // their own Lean-backed halves.
+    match id {
+        "VR-25" => return super::import_axioms::audit(),
+        "VR-26" => return super::import_axioms::status(),
+        _ => {}
+    }
     if LEAN_BACKED.contains(&id) && !support::lean_backed(id) {
         run_platform_independent(id);
         return;

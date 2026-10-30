@@ -563,6 +563,16 @@ fn lse_is_closed(lse: &Lse, bound: &[String]) -> bool {
     }
 }
 
+/// Does `text` mention the generated local `name` as a whole identifier?
+fn mentions_name(text: &str, name: &str) -> bool {
+    text.match_indices(name).any(|(start, _)| {
+        let before = text[..start].chars().next_back();
+        let after = text[start + name.len()..].chars().next();
+        !before.is_some_and(|c| c.is_alphanumeric() || c == '_' || c == '.')
+            && !after.is_some_and(|c| c.is_alphanumeric() || c == '_' || c == '\'')
+    })
+}
+
 impl LsePrinter<'_> {
     fn binder_delims(mode: BinderMode) -> (char, char) {
         match mode {
@@ -623,6 +633,16 @@ impl LsePrinter<'_> {
         // argument at position `index` instantiates the `index`-th explicit
         // binder; earlier non-explicit binders stay unsubstituted (their
         // types are then not closed and yield no ascription).
+        //
+        // The callee's own binder names are renamed apart (`~name` is no
+        // identifier of the grammar) before the arguments go in: an argument
+        // is a term of the caller's scope, and a caller local with the name of
+        // a callee binder that has no argument would otherwise be taken for
+        // it, ascribing a numeral the type of a variable.
+        let rename: BTreeMap<String, Lse> = binders
+            .iter()
+            .map(|binder| (binder.name.clone(), Lse::Local(format!("~{}", binder.name))))
+            .collect();
         let mut map: BTreeMap<String, Lse> = BTreeMap::new();
         let mut index = 0usize;
         for binder in binders {
@@ -632,12 +652,12 @@ impl LsePrinter<'_> {
             let Some(argument) = arguments.get(index) else {
                 break;
             };
-            let ty = lse_subst(&binder.ty, &map);
+            let ty = lse_subst(&lse_subst(&binder.ty, &rename), &map);
             let bound: Vec<String> = self.scope.iter().map(|(name, ..)| name.clone()).collect();
             if lse_is_closed(&ty, &bound) {
                 out[index] = Some(ty);
             }
-            map.insert(binder.name.clone(), argument.clone());
+            map.insert(format!("~{}", binder.name), argument.clone());
             index += 1;
         }
         out
@@ -711,19 +731,35 @@ impl LsePrinter<'_> {
             }
             Lse::Pi(binders, body) => {
                 let depth = self.scope.len();
-                let mut text = String::new();
+                let mut printed = Vec::with_capacity(binders.len());
                 for binder in binders {
                     let (open, close) = Self::binder_delims(binder.mode);
                     let ty = self.walk(&binder.ty, false, None)?;
                     let name = self.bind(&binder.name, &binder.ty);
-                    text.push(open);
-                    text.push_str(&name);
-                    text.push_str(" : ");
-                    text.push_str(&ty);
-                    text.push(close);
+                    printed.push((open, close, name, ty));
+                }
+                let tail = self.walk(body, false, None)?;
+                let mut text = String::new();
+                for (index, (open, close, name, ty)) in printed.iter().enumerate() {
+                    text.push(*open);
+                    // An instance binder that nothing after it mentions is
+                    // written without a name: pinned Lean's `unusedVariables`
+                    // linter warns on a named one, and a warning fails
+                    // verification (§20.2).
+                    let named = *open != '['
+                        || printed[index + 1..]
+                            .iter()
+                            .any(|(_, _, _, later)| mentions_name(later, name))
+                        || mentions_name(&tail, name);
+                    if named {
+                        text.push_str(name);
+                        text.push_str(" : ");
+                    }
+                    text.push_str(ty);
+                    text.push(*close);
                     text.push_str(" → ");
                 }
-                text.push_str(&self.walk(body, false, None)?);
+                text.push_str(&tail);
                 self.scope.truncate(depth);
                 if parens {
                     format!("({text})")
@@ -2427,6 +2463,16 @@ pub enum AuxiliaryCommand {
         /// The constant that inhabits it.
         constant: String,
     },
+    /// `example : (<type>) = (type_of% @<constant>) := rfl`: the printed type is
+    /// definitionally the type of the constant, binder for binder, and not
+    /// merely a type the constant inhabits once Lean has inserted implicit
+    /// arguments (SPEC.md §18.8, specialisation wrappers).
+    SignatureExample {
+        /// The printed type.
+        ty: String,
+        /// The constant whose type it must equal.
+        constant: String,
+    },
     /// `#print axioms` and a fully qualified declaration name, quoted as
     /// the module that declares it quotes it.
     PrintAxioms(String),
@@ -2485,6 +2531,15 @@ impl AuxiliaryModule {
                     text.push_str(" := ");
                     text.push_str(constant);
                 }
+                AuxiliaryCommand::SignatureExample { ty, constant } => {
+                    // Parenthesised: the arrows of a signature bind looser
+                    // than the `=` that compares it.
+                    text.push_str("example : (");
+                    text.push_str(ty);
+                    text.push_str(") = (type_of% @");
+                    text.push_str(constant);
+                    text.push_str(") := rfl");
+                }
                 AuxiliaryCommand::PrintAxioms(declaration) => {
                     text.push_str("#print axioms ");
                     text.push_str(&super::semantic::identifier(declaration));
@@ -2517,6 +2572,10 @@ pub struct ProbeLine {
     pub index: usize,
     /// The qualified entry ID.
     pub entry: String,
+    /// Whether the line is the strict signature equality of a
+    /// specialisation wrapper (§18.8) and not the `example` of an
+    /// interface.
+    pub signature: bool,
 }
 
 /// The generated probe module (§18.8).
@@ -2531,6 +2590,10 @@ pub struct ProbeModule {
     /// Entries imported but not probed because their descriptor carries no
     /// signature (a `cases`/`induction` constructor entry without one).
     pub unprobed: Vec<String>,
+    /// The Lean names of the imported declarations (§22.6) whose axioms the
+    /// module prints after its examples, one `#print axioms` each, sorted and
+    /// without repeats.
+    pub audited: Vec<String>,
 }
 
 impl ProbeModule {
@@ -2560,7 +2623,7 @@ pub fn probe_module(
     for external in externals.values() {
         imports.insert(external.lean_module.clone());
     }
-    let mut examples: Vec<(usize, String, AuxiliaryCommand)> = Vec::new();
+    let mut examples: Vec<(usize, String, bool, AuxiliaryCommand)> = Vec::new();
     let mut universes: Vec<String> = Vec::new();
     let mut unprobed = Vec::new();
     for (index, (entry_id, external)) in externals.iter().enumerate() {
@@ -2581,12 +2644,19 @@ pub fn probe_module(
         }
         collect_universe_vars(signature, &prefix, &mut universes);
         let ty = print_lse_type(signature, closure, &prefix)?;
+        let constant = external.lean_name.clone();
+        // A wrapper is held to the definitional equality of its signature
+        // and its type, which no other external is: the probe of the other
+        // entries is the published text of every verified example.
+        let strict = crate::wrappers::is_wrapper_name(&constant);
         examples.push((
             index,
             entry_id.clone(),
-            AuxiliaryCommand::Example {
-                ty,
-                constant: external.lean_name.clone(),
+            strict,
+            if strict {
+                AuxiliaryCommand::SignatureExample { ty, constant }
+            } else {
+                AuxiliaryCommand::Example { ty, constant }
             },
         ));
     }
@@ -2596,10 +2666,22 @@ pub fn probe_module(
     }
     let first_example = commands.len();
     let mut entries = Vec::with_capacity(examples.len());
-    for (index, entry, example) in examples {
-        entries.push((index, entry));
+    for (index, entry, signature, example) in examples {
+        entries.push((index, entry, signature));
         commands.push(example);
     }
+    // §22.6: the axioms of every imported declaration, printed by the process
+    // that already imports it. A declaration of the pinned toolchain's own
+    // libraries is not one, so a project that imports nothing else probes
+    // exactly the module it always did.
+    let audited: Vec<String> = externals
+        .values()
+        .filter(|external| crate::verify::imports::is_imported_module(&external.lean_module))
+        .map(|external| external.lean_name.clone())
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect();
+    commands.extend(audited.iter().cloned().map(AuxiliaryCommand::PrintAxioms));
     let (text, command_lines) = AuxiliaryModule {
         imports: imports.into_iter().collect(),
         commands,
@@ -2608,10 +2690,11 @@ pub fn probe_module(
     let lines = entries
         .into_iter()
         .zip(&command_lines[first_example..])
-        .map(|((index, entry), line)| ProbeLine {
+        .map(|((index, entry, signature), line)| ProbeLine {
             line: *line,
             index,
             entry,
+            signature,
         })
         .collect();
     Ok(ProbeModule {
@@ -2619,6 +2702,7 @@ pub fn probe_module(
         text,
         lines,
         unprobed,
+        audited,
     })
 }
 

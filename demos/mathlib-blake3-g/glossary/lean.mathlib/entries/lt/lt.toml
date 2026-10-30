@@ -1,0 +1,19 @@
+spec = "lexlean/entry/1"
+id = "lt.lt"
+category = "transitive-predicate"
+signature = "(pi ((implicit a (sort (type u))) (instance self (app (const lean.mathlib::lt (u)) (local a))) (explicit x (local a)) (explicit x1 (local a))) (sort prop))"
+universes = ["u"]
+surface_arity = 2
+frame = "transitive"
+
+[denotation]
+kind = "lean"
+module = "Init.Prelude"
+name = "LT.lt"
+
+[[form]]
+id = "lt"
+channel = "text"
+surface = "lt"
+canonical_source = true
+features = ["lower-case"]

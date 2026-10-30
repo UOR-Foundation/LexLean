@@ -1,0 +1,22 @@
+spec = "lexlean/entry/1"
+id = "h-xor.mk"
+category = "function"
+signature = "(pi ((implicit a (sort (type u))) (implicit b (sort (type v))) (implicit g (sort (type w))) (explicit hXor (pi ((explicit x (local a)) (explicit x1 (local b))) (local g)))) (app (const lean.mathlib::h-xor (u v w)) (local a) (local b) (local g)))"
+universes = ["u", "v", "w"]
+surface_arity = 1
+frame = "call"
+
+[denotation]
+kind = "lean"
+module = "Init.Prelude"
+name = "HXor.mk"
+
+[[form]]
+id = "mk"
+channel = "math"
+surface = "hXorMk"
+canonical_source = true
+features = []
+
+[render]
+math = "(seq (operator-name hXorMk) (paren (slot 0)))"

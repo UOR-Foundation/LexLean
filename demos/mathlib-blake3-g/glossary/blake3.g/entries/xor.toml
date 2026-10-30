@@ -1,0 +1,16 @@
+spec = "lexlean/entry/1"
+id = "xor"
+category = "label-word"
+surface_arity = 0
+frame = "atom"
+
+[denotation]
+kind = "defined"
+value = "(const lean.mathlib::h-xor.h-xor)"
+
+[[form]]
+id = "xor"
+channel = "text"
+surface = "Exclusive"
+canonical_source = true
+features = ["sentence-case", "singular"]

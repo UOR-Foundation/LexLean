@@ -1,0 +1,21 @@
+spec = "lexlean/entry/1"
+id = "lex-lean-spec.bit-vec32.add-right-comm"
+category = "proof-constant"
+signature = "(pi ((explicit a (app (const lean.mathlib::bit-vec) (nat 32))) (explicit b (app (const lean.mathlib::bit-vec) (nat 32))) (explicit c (app (const lean.mathlib::bit-vec) (nat 32)))) (app (const lexlean.core::eq) (app (const lean.mathlib::h-add.h-add (0 0 0)) (app (const lean.mathlib::h-add.h-add (0 0 0)) (local a) (local b)) (local c)) (app (const lean.mathlib::h-add.h-add (0 0 0)) (app (const lean.mathlib::h-add.h-add (0 0 0)) (local a) (local c)) (local b))))"
+surface_arity = 3
+frame = "call"
+
+[denotation]
+kind = "lean"
+module = "Blake3GSpecs"
+name = "LexLeanSpec.BitVec32.add_right_comm"
+
+[[form]]
+id = "add-right-comm"
+channel = "math"
+surface = "lexLeanSpecBitVec32AddRightComm"
+canonical_source = true
+features = []
+
+[render]
+math = "(seq (operator-name lexLeanSpecBitVec32AddRightComm) (paren (seq (slot 0) (token comma) (space) (slot 1) (token comma) (space) (slot 2))))"

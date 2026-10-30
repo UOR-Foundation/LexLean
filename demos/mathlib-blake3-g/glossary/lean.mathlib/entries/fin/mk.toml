@@ -1,0 +1,21 @@
+spec = "lexlean/entry/1"
+id = "fin.mk"
+category = "function"
+signature = "(pi ((implicit n (const lean.mathlib::nat)) (explicit val (const lean.mathlib::nat)) (explicit isLt (app (const lean.mathlib::lt.lt (0)) (local val) (local n)))) (app (const lean.mathlib::fin) (local n)))"
+surface_arity = 2
+frame = "call"
+
+[denotation]
+kind = "lean"
+module = "Init.Prelude"
+name = "Fin.mk"
+
+[[form]]
+id = "mk"
+channel = "math"
+surface = "finMk"
+canonical_source = true
+features = []
+
+[render]
+math = "(seq (operator-name finMk) (paren (seq (slot 0) (token comma) (space) (slot 1))))"

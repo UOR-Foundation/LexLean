@@ -1,0 +1,16 @@
+spec = "lexlean/entry/1"
+id = "mixing"
+category = "label-word"
+surface_arity = 0
+frame = "atom"
+
+[denotation]
+kind = "defined"
+value = "(const lean.mathlib::h-add.h-add)"
+
+[[form]]
+id = "mixing"
+channel = "text"
+surface = "Mixing"
+canonical_source = true
+features = ["sentence-case", "singular"]

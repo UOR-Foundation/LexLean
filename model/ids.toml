@@ -410,6 +410,24 @@ suite = "lexicon"
 statement = "Cross-version package, lexicon, and lock combinations fail closed before backend execution."
 
 [[id]]
+id = "GL-19"
+level = "build"
+suite = "lexicon"
+statement = "A generated external-Lean glossary is a lexicon package of kind-lean entries that the package loader accepts: each signature is the LSE translation of the Lean type with implicit and instance binders kept as binders and left out of applications, each identifier, surface, category, and render follows the documented naming scheme, an inductive type carries an eliminator descriptor over its constructor entries, and two runs over one extraction produce byte-identical packages and reports."
+
+[[id]]
+id = "GL-20"
+level = "build"
+suite = "lexicon"
+statement = "A Lean declaration the translation cannot express is refused with the registered diagnostic code of its reason and never emitted with a weakened signature, a declaration that depends on a refused one is refused with the root reason, and the coverage report counts requested declarations as translated, refused by reason, and excluded by kind, with counts that sum to the request."
+
+[[id]]
+id = "GL-21"
+level = "build"
+suite = "lexicon"
+statement = "A specialisation request names a class-polymorphic Lean declaration, its kind (`theorem` or `def`), a tag, and the arguments of its application at a concrete type, each a closed term of identifiers, numerals, holes, and applications; the wrapper emitter writes one `public` declaration for each under the reserved root `LexLeanSpec`, whose type is `type_of%` the application and whose value is the application, with every constant `_root_`-qualified and no tactic and no axiom, in sorted order and byte for byte the same on every run, and a request with a duplicate tag, a name outside the conservative grammar, or an argument outside the term grammar is refused with LLT4018."
+
+[[id]]
 id = "GR-01"
 level = "build"
 suite = "grammar"
@@ -1334,6 +1352,30 @@ suite = "verification"
 statement = "A project verified as the parts of one run, each shard running the processes its plan names with the oleans of the shards it needs and the join reading every shard's records, publishes a verified directory byte-identical to the whole verification's with the same attestation identity, and a shard whose plan leaves a module without its imports, a join missing a record, or a join reading a record of an executable other than its own, is refused."
 
 [[id]]
+id = "VR-24"
+level = "build"
+suite = "verification"
+statement = "An external entry whose Lean name is under the reserved root `LexLeanSpec` is probed by `example : (<signature>) = (type_of% @<constant>) := rfl`, so that its linked signature is definitionally the Lean type of the wrapper and not merely inhabited by it; an entry whose signature differs from that type is refused with LLT4017 naming the entry, a wrapper that does not exist stays LLT4003, and an entry outside the reserved root is probed exactly as before."
+
+[[id]]
+id = "VR-27"
+level = "build"
+suite = "verification"
+statement = "The external-interface probe writes an instance binder that no later binder or the result mentions without a name, so that pinned Lean's unused-variable linter has nothing to report for an entry such as `HXor.hXor`, and ascribes the type a callee declares to a numeral argument only when that type is closed in the caller's scope, with the callee's own binders renamed apart, so that a caller binder named like a callee binder (`a`, the type parameter of `Eq`) is never taken for it; a generated entry with an instance binder and a numeral argument elaborates without output."
+
+[[id]]
+id = "VR-25"
+level = "build"
+suite = "verification"
+statement = "A used external entry whose Lean module is outside the pinned toolchain's own libraries `Init`, `Std`, `Lean` and `Lake` is an imported declaration: the probe module prints its axioms with `#print axioms`, the attestation records its observed set, and an import that depends on `sorryAx` is refused with LLV7023, on `Lean.ofReduceBool` with LLV7024, and on `Lean.trustCompiler` or on an axiom that `native_decide` generated with LLV7025, each naming the entry, unless an axiom policy of the document names that axiom, in which case the import is accepted and every generated declaration is still held to its own policy."
+
+[[id]]
+id = "VR-26"
+level = "build"
+suite = "verification"
+statement = "The status of an imported declaration in the attestation is `replayed in the pinned environment`, and no output about an import says `proved`, `verified` or `kernel-checked`, words that §5.3 reserves for the generated declarations of the document and that §4.2 forbids for an imported library."
+
+[[id]]
 id = "CL-01"
 level = "build"
 suite = "cli-api"
@@ -1478,6 +1520,12 @@ suite = "cli-api"
 statement = "lexlean migrate --to 1.2 migrates a language-1.1 data-form project to language 1.2 in one command: it rewrites every module to the authoring notation through lexlean::sdk::to_notation with the same declarations, names, statements, and axiom policies, moves the builtin glossary references of every source and the imports of every path lexicon package to 1.2.0, rewrites the language row, and regenerates the lock as lexlean/lock/2, so the result checks, has a current lock, and is canonical; --check proves the migration and writes nothing; and a project that is not language 1.1 is refused with LLC0103 and a module that is not a language-1.1 data-form semantic module, a data form that is not canonical JSON included, with LLP2003, each leaving every file of the project unchanged."
 
 [[id]]
+id = "CL-25"
+level = "build"
+suite = "cli-api"
+statement = "lexlean deps glossary runs the pinned Lean over the requested modules or declarations and writes a lexicon package of kind-lean entries and a coverage report, takes exactly one of --modules and --names and a valid package identity, needs no project, refuses an empty or doubled selection with LLC0002 and malformed usage with LLC0001, and under --strict exits with the registered class of the first refusal."
+
+[[id]]
 id = "SE-01"
 level = "build"
 suite = "security"
@@ -1602,6 +1650,12 @@ id = "EX-09"
 level = "build"
 suite = "examples"
 statement = "The `helpdesk` example is a text application written entirely from language-1.2 source and the three source packages `std`, `std-models`, and `std-reasoning` that its lock pins: its production roots `classify`, `plan`, and `dispatch : Bytes -> Bytes` use the model alone, the reasoner alone, and both together, `dispatch` trimming the request with `LexLeanStd.Text`, scoring it with an integer feed-forward model whose weights are content-addressed artifacts and which is applied through its required precondition check, abstaining with `decideOr`, committing through the generic `GateModel` of `std-models`, and planning the reply with the `Drain` reasoner of `std-reasoning`; the example holds no handwritten Lean or Rust, verifies under the pinned Lean, its roots export through `lexlean production build` with the packages committed under `tests/production-export/helpdesk/`, and a changed byte or version of a package is `LLC0105`, an import of a module of an undeclared package `LLR3009`, a tampered artifact `LLR3007`, and a model applied without its required check `LLT4008`."
+
+[[id]]
+id = "EX-10"
+level = "build"
+suite = "examples"
+statement = "A project that needs a fetched Lean library is a demo, not an example: it lives under `demos/` and no directory under `examples/` declares a `[[lean_library]]`, so that the sweeps of `examples/` (`verify-examples`, `check-golden`, `check-reproducibility`, the formatter property test) need no network and no library; `cargo xtask verify-demos` formats, locks, checks, builds, and verifies every demo against its `expected/` records and golden build, and builds it twice to the same bytes, and `.github/workflows/mathlib.yml` runs it after `lexlean deps fetch` in a job of its own, outside the acceptance gate, with no build cache."
 
 [[id]]
 id = "PD-01"
@@ -2748,3 +2802,69 @@ id = "LM-13"
 level = "build"
 suite = "language-models"
 statement = "The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text."
+
+[[id]]
+id = "ML-01"
+level = "build"
+suite = "mathlib"
+statement = "A language-1.2 project declares an external Lean library once, as a `[[lean_library]]` table of its `lexlean.toml` with a `name`, an HTTPS `url`, and an exact 40-lowercase-hex `revision`, sorted and unique by `name`, and the configuration reads back to the bytes written; a project without one keeps its bytes, and a URL that is not HTTPS, a revision that is not a 40-lowercase-hex commit, a branch, a tag, or any other field, a name that is not a package identifier, a repeated or unsorted table, and a declaration in another language are each refused with LLC0109."
+
+[[id]]
+id = "ML-02"
+level = "build"
+suite = "mathlib"
+statement = "The lock pins each declared Lean library by a `[[lean_library]]` row of its name, URL, exact revision, the SHA-256 of the library's own `lake-manifest.json`, and the SHA-256 of its generated glossary, the tree digest of the lexicon package `lean.<name>` of the project or of the empty tree when the project has none; the Lake workspace's `lake-manifest.json` must require the library at the declared URL and revision, rows sort by name, and the lock reads back to the bytes written; a project without a library keeps its lock bytes, and a library, a manifest digest, a glossary, or a workspace requirement that is not the one the lock pins is refused with LLC0110 naming both values."
+
+[[id]]
+id = "ML-03"
+level = "build"
+suite = "mathlib"
+statement = "`lexlean deps fetch` is the only command that acquires a declared Lean library: it checks the declaration against the Lake workspace, runs `lake exe cache get` in the Lake workspace under the pinned toolchain through the checked child runner, and confirms the library is present at the declared revision with its built artifacts; with no library declared it fetches nothing and succeeds, a missing or failing `lake` and a library that is not at the declared revision afterward are LLV7020, and the command writes nothing of the project outside the Lake workspace."
+
+[[id]]
+id = "ML-04"
+level = "build"
+suite = "mathlib"
+statement = "`lock`, `check`, `build`, `fmt`, and `verify` never fetch a declared Lean library: when the library is not present in the Lake workspace at the declared revision with its built artifacts, each fails offline with LLV7019 naming the library and `lexlean deps fetch`, before any Lean process runs and without a network connection."
+
+[[id]]
+id = "ML-05"
+level = "build"
+suite = "mathlib"
+statement = "`fmt` rewrites the sources of a project that declares a Lean library: the scratch copy in which the formatter proves preservation of the linked IR holds the library's presence markers (the checkout's `HEAD`, its manifest, and the directory of built artifacts) and not the library, so a present library is recognised without being copied and an absent one is still LLV7019."
+
+[[id]]
+id = "RC-01"
+level = "build"
+suite = "replay-cache"
+statement = "A replay key is a PrismPM ADR-015 DigestSet, a `sha256` and a `blake3` of the same bytes in lowercase hexadecimal, labelled `blake3:` and the 64 digits of the `blake3` value, over the one canonical serialisation of a declaration's name, universe parameters, kind attributes and type, the DigestSet of its value or proof term, the keys of the declarations it names, the Lean toolchain, and the Mathlib revision; equal inputs give equal keys, and a change to any one of those inputs gives a different key."
+
+[[id]]
+id = "RC-02"
+level = "build"
+suite = "replay-cache"
+statement = "A declaration changed in a dependency graph changes the key of every declaration above it and of none beside or below it, declarations that name one another, an inductive type with its constructors and recursor, are keyed as one group, and facts that repeat a declaration, name a declaration neither declared nor anchored by a given key, or do not parse are refused (`LLV7022`)."
+
+[[id]]
+id = "RC-03"
+level = "build"
+suite = "replay-cache"
+statement = "A warm replay reuses the recorded result of every unit whose key is unchanged and replays only the others, whether a unit is one declaration or one module; only a replay that succeeded is recorded, each entry names the digest of the executable that produced it, and an entry that an executable other than the current one produced is not reused."
+
+[[id]]
+id = "RC-04"
+level = "build"
+suite = "replay-cache"
+statement = "A cache entry whose bytes changed while its key was kept, an entry stored under a key other than the one it records, and an entry that does not parse as an entry, are each rejected with `LLV7021`, never reused, and not silently replaced."
+
+[[id]]
+id = "RC-05"
+level = "build"
+suite = "replay-cache"
+statement = "A changed Lean toolchain or a changed Mathlib revision gives every unit a new key, so no result recorded under the previous environment is reused, and the entries of the previous environment are left unread and intact."
+
+[[id]]
+id = "RC-06"
+level = "build"
+suite = "replay-cache"
+statement = "Facts exported by the pinned Lean from compiled modules, keyed and replayed through the pinned `leanchecker` cold and then warm, reuse every module whose key is unchanged: after a one-line edit to one declaration, only the modules whose declarations reach it are replayed again, and the warm verdicts equal the cold ones."

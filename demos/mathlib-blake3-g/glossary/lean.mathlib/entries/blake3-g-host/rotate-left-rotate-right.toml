@@ -1,0 +1,21 @@
+spec = "lexlean/entry/1"
+id = "blake3-g-host.rotate-left-rotate-right"
+category = "proof-constant"
+signature = "(pi ((explicit x (app (const lean.mathlib::bit-vec) (nat 32))) (explicit n (const lean.mathlib::nat))) (app (const lexlean.core::eq) (app (const lean.mathlib::bit-vec.rotate-left) (app (const lean.mathlib::bit-vec.rotate-right) (local x) (local n)) (local n)) (local x)))"
+surface_arity = 2
+frame = "call"
+
+[denotation]
+kind = "lean"
+module = "Blake3GHost"
+name = "Blake3GHost.rotateLeft_rotateRight"
+
+[[form]]
+id = "rotate-left-rotate-right"
+channel = "math"
+surface = "blake3GHostRotateLeftRotateRight"
+canonical_source = true
+features = []
+
+[render]
+math = "(seq (operator-name blake3GHostRotateLeftRotateRight) (paren (seq (slot 0) (token comma) (space) (slot 1))))"

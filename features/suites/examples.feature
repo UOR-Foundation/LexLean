@@ -66,3 +66,11 @@ Feature: examples
     Then its lock pins the three packages, it holds no file of Lean or Rust source, and its roots `classify`, `plan`, and `dispatch` agree with the evaluator and with their rendered packages
     And every exported package is byte-identical to its committed package
     And each plant is refused with exactly its prescribed diagnostic code before any backend output
+
+  @EX-10 @build
+  Scenario: A project that needs a fetched Lean library is a demo, not an example: it lives under `demos/` and no directory under `examples/` declares a `[[lean_library]]`, so that the sweeps of `examples/` (`verify-examples`, `check-golden`, `check-reproducibility`, the formatter property test) need no network and no library; `cargo xtask verify-demos` formats, locks, checks, builds, and verifies every demo against its `expected/` records and golden build, and builds it twice to the same bytes, and `.github/workflows/mathlib.yml` runs it after `lexlean deps fetch` in a job of its own, outside the acceptance gate, with no build cache.
+    Given the repository tree
+    When the directories under examples and demos are read
+    Then no directory under examples declares a lean_library and every directory under demos does
+    And the Mathlib workflow fetches the library, runs verify-demos, and uses no build cache, and ci.yml names no demo
+

@@ -17,6 +17,7 @@ mod declarations;
 mod examples;
 mod extraction;
 pub use extraction::{compare_with_oracle, counter_independence, ne_04_lean_half, oracle_records};
+mod glossary;
 mod gnaf;
 mod grammar;
 mod helpdesk;
@@ -25,6 +26,7 @@ mod latex_pdf;
 mod lean_backend;
 mod lexical_closure;
 mod lexicon;
+mod mathlib;
 mod migration;
 mod models;
 mod operational;
@@ -35,6 +37,7 @@ mod production;
 mod production_export;
 mod proofs;
 mod reasoning;
+mod replay_cache;
 mod repository;
 mod runtime;
 mod runtime_semantics;
@@ -50,12 +53,15 @@ mod rust_runtime;
 pub use rust_runtime::{
     check_golden as check_runtime_transcript, golden_text, parse_golden, GOLDEN_FILE,
 };
+mod import_axioms;
+mod probe_binders;
 mod rust_runtime_text;
 mod rust_scaffold;
 mod rust_std;
 mod rust_support;
 mod security;
 mod semantic_ir;
+mod specialisation;
 mod std_packages;
 mod stdlib;
 mod stdlib_buffer;
@@ -143,6 +149,8 @@ pub fn run(id: &str) {
         "SL" => stdlib::run(id),
         "BS" => bootstrap::run(id),
         "PK" => packages::run(id),
+        "ML" => mathlib::run(id),
+        "RC" => replay_cache::run(id),
         _ => panic!("no conformance case is wired for {id}"),
     }
 }

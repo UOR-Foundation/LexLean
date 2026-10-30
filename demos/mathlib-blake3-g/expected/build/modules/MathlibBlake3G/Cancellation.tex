@@ -1,0 +1,62 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage[hidelinks]{hyperref}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\begin{document}
+\begin{center}
+{\LARGE Cancellation}
+\end{center}
+\section{Cancellation}
+\label{ll:cancellation:addition}
+\begin{theorem}
+\label{ll:cancellation:add-sub-cancel}
+For every \(\operatorname{bitVec}(32)\) \(a\) and \(\operatorname{bitVec}(32)\) \(b\), \(\operatorname{hSubHSub}(\operatorname{hAddHAdd}(a, b), b) = a\).
+\end{theorem}
+\begin{proof}
+The goal follows from \(\operatorname{lexLeanSpecBitVec32BitVecAddSubCancel}(a, b)\).
+\end{proof}
+\begin{theorem}
+\label{ll:cancellation:add-sub-cancel-group}
+For every \(\operatorname{bitVec}(32)\) \(a\) and \(\operatorname{bitVec}(32)\) \(b\), \(\operatorname{hSubHSub}(\operatorname{hAddHAdd}(a, b), b) = a\).
+\end{theorem}
+\begin{proof}
+The goal follows from \(\operatorname{lexLeanSpecBitVec32AddSubCancelRight}(a, b)\).
+\end{proof}
+\begin{theorem}
+\label{ll:cancellation:add-sub-cancel-u32}
+For every \(\operatorname{uInt32}\) \(a\) and \(\operatorname{uInt32}\) \(b\), \(\operatorname{hSubHSub}(\operatorname{hAddHAdd}(a, b), b) = a\).
+\end{theorem}
+\begin{proof}
+The goal follows from \(\operatorname{lexLeanSpecU32UInt32AddSubCancel}(a, b)\).
+\end{proof}
+\begin{lemma}
+\label{ll:cancellation:add-sub-sub-cancel}
+For every \(\operatorname{bitVec}(32)\) \(p\) and \(\operatorname{bitVec}(32)\) \(q\) and \(\operatorname{bitVec}(32)\) \(r\), \(\operatorname{hSubHSub}(\operatorname{hSubHSub}(\operatorname{hAddHAdd}(\operatorname{hAddHAdd}(p, q), r), q), r) = p\).
+\end{lemma}
+\begin{proof}
+Rewrite the goal using \(\rightarrow \operatorname{lexLeanSpecBitVec32AddRightComm}(p, q, r)\), \(\rightarrow \operatorname{lexLeanSpecBitVec32AddSubCancelRight}(\operatorname{hAddHAdd}(p, r), q)\), \(\rightarrow \operatorname{lexLeanSpecBitVec32AddSubCancelRight}(p, r)\).
+\end{proof}
+\section{Cancellation}
+\label{ll:cancellation:exclusive}
+\begin{theorem}
+\label{ll:cancellation:xor-cancel}
+For every \(\operatorname{bitVec}(32)\) \(a\) and \(\operatorname{bitVec}(32)\) \(b\), \(\operatorname{hXorHXor}(\operatorname{hXorHXor}(a, b), b) = a\).
+\end{theorem}
+\begin{proof}
+Rewrite the goal using \(\rightarrow \operatorname{lexLeanSpecBitVec32BitVecXorAssoc}(a, b, b)\), \(\rightarrow \operatorname{lexLeanSpecBitVec32BitVecXorSelf}\), \(\rightarrow \operatorname{lexLeanSpecBitVec32BitVecXorZero}\).
+\end{proof}
+\begin{theorem}
+\label{ll:cancellation:xor-cancel-u32}
+For every \(\operatorname{uInt32}\) \(a\) and \(\operatorname{uInt32}\) \(b\), \(\operatorname{hXorHXor}(\operatorname{hXorHXor}(a, b), b) = a\).
+\end{theorem}
+\begin{proof}
+Rewrite the goal using \(\rightarrow \operatorname{lexLeanSpecU32UInt32XorAssoc}(a, b, b)\), \(\rightarrow \operatorname{lexLeanSpecU32UInt32XorSelf}\), \(\rightarrow \operatorname{lexLeanSpecU32UInt32XorZero}\).
+\end{proof}
+\end{document}

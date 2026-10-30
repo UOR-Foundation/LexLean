@@ -22,11 +22,13 @@
 
 pub mod axiom;
 pub mod child;
+pub mod imports;
 pub mod leanchecker;
 pub mod lifeline;
 pub mod operational;
 pub mod partition;
 pub mod pool;
+pub mod replay_cache;
 pub mod source_audit;
 pub mod telemetry;
 pub mod toolchain;
@@ -240,6 +242,16 @@ pub fn parse_lean_messages(output: &str) -> Vec<LeanMessage> {
         }
     }
     messages
+}
+
+/// Whether a Lean message says that a name does not exist, which is the
+/// answer to a probe line whose constant is absent from the host library
+/// and not the answer to a signature that differs from its type.
+fn lean_message_is_unknown_name(message: &str) -> bool {
+    message.contains("lean.unknownIdentifier")
+        || message.contains("lean.unknownConstant")
+        || message.contains("Unknown constant")
+        || message.contains("Unknown identifier")
 }
 
 /// The non-blank output lines preceding the first located message: text
@@ -1169,7 +1181,9 @@ pub fn run_part(
             return Err(fail(internal(format!("`{}`: {reason}", module.name))));
         }
     }
-    if let Err(reason) = generated_source_audit(&probe.text, false) {
+    // The probe prints axioms only for imported declarations (§22.6), and
+    // the audit of generated Lean allows that command exactly then.
+    if let Err(reason) = generated_source_audit(&probe.text, !probe.audited.is_empty()) {
         return Err(fail(internal(format!("probe module: {reason}"))));
     }
     for audit in &audit_modules {
@@ -1359,15 +1373,45 @@ pub fn run_part(
         // normalized streams are reported, and every failing line is
         // attributed to its entry (S11).
         let combined = format!("{}{}", probe_record.stdout, probe_record.stderr);
-        let mut diagnostic = Diagnostic::new(
-            code!("LLT4003"),
-            format!(
-                "an external-interface probe failed to elaborate: {}",
-                combined.trim_end()
-            ),
-        );
+        let messages = parse_lean_messages(&combined);
+        // A specialisation wrapper (§13.13) is held to the equality of its
+        // signature and its type, and Lean's complaint on that line is the
+        // signature differing unless it says the wrapper does not exist: a
+        // host library that lacks the wrapper is the interface failure it
+        // always was (§18.8).
+        let mismatched: Vec<&str> = messages
+            .iter()
+            .filter_map(|message| {
+                let row = probe.entry_at_line(message.line)?;
+                (row.signature && !lean_message_is_unknown_name(&message.message))
+                    .then_some(row.entry.as_str())
+            })
+            .collect();
+        let mut diagnostic = if mismatched.is_empty() {
+            Diagnostic::new(
+                code!("LLT4003"),
+                format!(
+                    "an external-interface probe failed to elaborate: {}",
+                    combined.trim_end()
+                ),
+            )
+        } else {
+            let entries: BTreeSet<&str> = mismatched.into_iter().collect();
+            Diagnostic::new(
+                code!("LLT4017"),
+                format!(
+                    "the signature of {} is not definitionally the Lean type of the specialisation wrapper it denotes: {}",
+                    entries
+                        .iter()
+                        .map(|entry| format!("`{entry}`"))
+                        .collect::<Vec<_>>()
+                        .join(", "),
+                    combined.trim_end()
+                ),
+            )
+        };
         let mut noted: BTreeSet<String> = BTreeSet::new();
-        for message in parse_lean_messages(&combined) {
+        for message in messages {
             if let Some(row) = probe.entry_at_line(message.line) {
                 if noted.insert(row.entry.clone()) {
                     diagnostic = diagnostic.with_note(format!(
@@ -1379,7 +1423,32 @@ pub fn run_part(
         }
         return Err(fail(diagnostic));
     }
-    require_silent(&probe_record, "the external-interface probe", false).map_err(fail)?;
+    require_silent(
+        &probe_record,
+        "the external-interface probe",
+        !probe.audited.is_empty(),
+    )
+    .map_err(fail)?;
+    // §22.6: the observed axioms of every imported declaration, recorded, and
+    // the forbidden ones refused before any elaboration unless a policy of the
+    // document names them.
+    let mut imported_declarations: Vec<imports::ImportedDeclaration> = Vec::new();
+    if !probe.audited.is_empty() {
+        let observed_imports =
+            axiom::parse_import_audit_output(&probe_record.stdout, &probe.audited)
+                .map_err(|failure| fail(audit_diagnostic(&declaration_spans, failure)))?;
+        for (entry, external) in &externals {
+            if let Some(observed) = observed_imports.get(&external.lean_name) {
+                imported_declarations.push(imports::ImportedDeclaration {
+                    entry: entry.clone(),
+                    module: external.lean_module.clone(),
+                    name: external.lean_name.clone(),
+                    observed: observed.clone(),
+                });
+            }
+        }
+        imports::audit(&imported_declarations, &imports::named_axioms(checked)).map_err(fail)?;
+    }
     write_staged(
         staging.path(),
         "probe/process.json",
@@ -2994,6 +3063,9 @@ pub fn run_part(
     }
     if let Some(row) = compiler_input_row {
         body_fields.push(("compiler_input", row));
+    }
+    if !imported_declarations.is_empty() {
+        body_fields.push(("imports", imports::rows(&imported_declarations)));
     }
     if let Some(row) = preservation_row {
         body_fields.push(("preservation", row));

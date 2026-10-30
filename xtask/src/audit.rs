@@ -7,7 +7,14 @@ use std::path::{Path, PathBuf};
 
 use crate::Fail;
 
-const SKIP_DIRS: [&str; 5] = ["target", ".git", ".lexlean", "expected", "node_modules"];
+const SKIP_DIRS: [&str; 6] = [
+    "target",
+    ".git",
+    ".lake",
+    ".lexlean",
+    "expected",
+    "node_modules",
+];
 
 #[cfg(test)]
 mod tests;
@@ -900,6 +907,7 @@ pub fn audit_deferral(root: &Path, model: &repo_model::Model) -> Result<(), Fail
             "schemas",
             "features",
             "examples",
+            "demos",
             "model",
             "tests",
             "lean",
@@ -1140,6 +1148,7 @@ pub fn audit_errors(root: &Path, model: &repo_model::Model) -> Result<(), Fail> 
             "tests",
             "features",
             "examples",
+            "demos",
             "model",
             "compiler",
             "stdlib",

@@ -58,7 +58,10 @@ fn payload_terminates(payload: &str) -> bool {
 /// Parse one payload line, already stripped of its envelope: exactly
 /// `'<name>' does not depend on any axioms` or
 /// `'<name>' depends on axioms: [<comma-separated Lean names>]`.
-fn parse_payload(payload: &str) -> Result<(String, Vec<String>), AuditFailure> {
+fn parse_payload(
+    payload: &str,
+    hygiene_marks: bool,
+) -> Result<(String, Vec<String>), AuditFailure> {
     let rest = payload
         .strip_prefix('\'')
         .ok_or_else(|| malformed(format!("unrecognized axiom payload: {payload}")))?;
@@ -80,7 +83,16 @@ fn parse_payload(payload: &str) -> Result<(String, Vec<String>), AuditFailure> {
     let mut axioms = Vec::new();
     for piece in list.split(',') {
         let axiom = piece.trim();
-        if !is_closed_lean_name(axiom) {
+        // The axiom `native_decide` generates is printed as Lean names it
+        // itself: under the `_private.<Module>.0` prefix of a private
+        // declaration, and with the hygiene mark (U+271D) after it. The audit
+        // of imports reads those spellings and keeps the name as printed.
+        let spelled = if hygiene_marks {
+            axiom.strip_suffix(HYGIENE_MARK).unwrap_or(axiom)
+        } else {
+            axiom
+        };
+        if !(is_closed_lean_name(spelled) || (hygiene_marks && is_generated_name(spelled))) {
             return Err(malformed(format!("`{axiom}` is not a Lean name")));
         }
         if axioms.contains(&axiom.to_owned()) {
@@ -143,6 +155,43 @@ pub fn parse_audit_output(
     stdout: &str,
     expected: &[String],
 ) -> Result<BTreeMap<String, Vec<String>>, AuditFailure> {
+    parse_records(stdout, expected, false)
+}
+
+/// The mark Lean 4.32.1 prints after a name whose last component carries a
+/// macro scope, such as the axiom `native_decide` generates (§22.5).
+const HYGIENE_MARK: char = '\u{271d}';
+
+/// A name Lean generated: dot-separated, nonempty components of ASCII
+/// letters, digits, `_`, `'`, `!` and `?`, where the closed grammar of
+/// declared names also refuses a numeric component (`_private.M.0.x`).
+fn is_generated_name(name: &str) -> bool {
+    !name.is_empty()
+        && name.split('.').all(|component| {
+            !component.is_empty()
+                && component
+                    .chars()
+                    .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '\'' | '!' | '?'))
+        })
+}
+
+/// [`parse_audit_output`] for the probe module's `#print axioms` of imported
+/// declarations (§22.6): the same payload grammar, except that an axiom's
+/// name may end in one hygiene mark. A declaration of the project cannot
+/// depend on such an axiom, so the audit of the project's own declarations
+/// keeps refusing the mark.
+pub fn parse_import_audit_output(
+    stdout: &str,
+    expected: &[String],
+) -> Result<BTreeMap<String, Vec<String>>, AuditFailure> {
+    parse_records(stdout, expected, true)
+}
+
+fn parse_records(
+    stdout: &str,
+    expected: &[String],
+    hygiene_marks: bool,
+) -> Result<BTreeMap<String, Vec<String>>, AuditFailure> {
     let mut records: Vec<(String, Vec<String>)> = Vec::new();
     let mut lines = stdout.lines();
     while let Some(line) = lines.next() {
@@ -183,7 +232,8 @@ pub fn parse_audit_output(
             payload.push(' ');
             payload.push_str(continuation);
         }
-        records.push(parse_payload(&payload).map_err(|failure| failure.about(about))?);
+        records
+            .push(parse_payload(&payload, hygiene_marks).map_err(|failure| failure.about(about))?);
     }
     if records.len() != expected.len() {
         return Err(malformed(format!(
@@ -207,4 +257,61 @@ pub fn parse_audit_output(
         }
     }
     Ok(observed)
+}
+
+#[cfg(test)]
+mod import_audit_tests {
+    use super::{parse_audit_output, parse_import_audit_output};
+
+    /// What Lean 4.32.1 prints for a theorem that rests on `native_decide`
+    /// (captured from the pinned toolchain): the axiom is named after the
+    /// declaration, and the name ends in a hygiene mark.
+    const NATIVE: &str =
+        "'AxHost.viaNative' depends on axioms: [AxHost.viaNative._native.native_decide.ax_1_1\u{271d}]\n";
+
+    fn expected() -> Vec<String> {
+        vec!["AxHost.viaNative".to_owned()]
+    }
+
+    #[test]
+    fn the_audit_of_imports_keeps_the_axiom_native_decide_generated() {
+        let observed = parse_import_audit_output(NATIVE, &expected()).expect("parses");
+        assert_eq!(
+            observed["AxHost.viaNative"],
+            ["AxHost.viaNative._native.native_decide.ax_1_1\u{271d}"]
+        );
+    }
+
+    /// The same axiom as the pinned `lean` prints it for a module whose
+    /// declarations are private: under `_private.<Module>.0`, as the fixture
+    /// verification printed it.
+    #[test]
+    fn the_audit_of_imports_keeps_the_private_spelling_of_that_axiom() {
+        let payload = "'AxHost.viaNative' depends on axioms: [_private.AxHost.0.AxHost.viaNative._native.native_decide.ax_1_1]\n";
+        let observed = parse_import_audit_output(payload, &expected()).expect("parses");
+        assert_eq!(
+            observed["AxHost.viaNative"],
+            ["_private.AxHost.0.AxHost.viaNative._native.native_decide.ax_1_1"]
+        );
+        parse_audit_output(payload, &expected()).expect_err("the project's own audit refuses it");
+    }
+
+    #[test]
+    fn the_audit_of_the_projects_own_declarations_still_refuses_the_mark() {
+        let failure = parse_audit_output(NATIVE, &expected()).expect_err("refused");
+        assert_eq!(failure.diagnostic.code.as_str(), "LLV7004");
+    }
+
+    #[test]
+    fn the_audit_of_imports_accepts_only_the_one_trailing_mark() {
+        for payload in [
+            "'AxHost.t' depends on axioms: [a\u{271d}b]\n",
+            "'AxHost.t' depends on axioms: [a\u{271d}\u{271d}]\n",
+            "'AxHost.t' depends on axioms: [\u{271d}]\n",
+        ] {
+            let failure =
+                parse_import_audit_output(payload, &["AxHost.t".to_owned()]).expect_err(payload);
+            assert_eq!(failure.diagnostic.code.as_str(), "LLV7004", "{payload}");
+        }
+    }
 }

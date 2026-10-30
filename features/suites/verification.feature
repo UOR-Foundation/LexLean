@@ -168,3 +168,32 @@ Feature: verification
     Then the join publishes a verified directory byte-identical to the whole verification's, with the same attestation identity
     And a shard whose plan elaborates a module before its imports, and a join that is handed one shard too few, are refused
     And a join reading a replay record whose executable digest is not its own leanchecker's is refused
+
+  @VR-24 @build
+  Scenario: An external entry whose Lean name is under the reserved root `LexLeanSpec` is probed by `example : (<signature>) = (type_of% @<constant>) := rfl`, so that its linked signature is definitionally the Lean type of the wrapper and not merely inhabited by it; an entry whose signature differs from that type is refused with LLT4017 naming the entry, a wrapper that does not exist stays LLT4003, and an entry outside the reserved root is probed exactly as before.
+    Given the specialisation fixture project whose host library is built with lake build
+    When the project is verified with the exact signature, with a planted wrong signature, and with a missing wrapper
+    Then the probe holds the wrapper line type_of% and verification succeeds for the exact signature
+    And the planted wrong signature fails with LLT4017 naming the entry
+    And the missing wrapper fails with LLT4003
+
+  @VR-27 @build
+  Scenario: The external-interface probe writes an instance binder that no later binder or the result mentions without a name, so that pinned Lean's unused-variable linter has nothing to report for an entry such as `HXor.hXor`, and ascribes the type a callee declares to a numeral argument only when that type is closed in the caller's scope, with the callee's own binders renamed apart, so that a caller binder named like a callee binder (`a`, the type parameter of `Eq`) is never taken for it; a generated entry with an instance binder and a numeral argument elaborates without output.
+    Given a project whose entries denote HXor.hXor, which has an instance binder, and UInt32.xor_self, whose signature has a numeral and a binder named like the type parameter of Eq
+    When the external-interface probe of the two entries is generated and elaborated with the pinned Lean
+    Then the instance binder is written without a name and no numeral is ascribed the type of a local
+    And Lean elaborates the probe with no output
+
+  @VR-25 @build
+  Scenario: A used external entry whose Lean module is outside the pinned toolchain's own libraries `Init`, `Std`, `Lean` and `Lake` is an imported declaration: the probe module prints its axioms with `#print axioms`, the attestation records its observed set, and an import that depends on `sorryAx` is refused with LLV7023, on `Lean.ofReduceBool` with LLV7024, and on `Lean.trustCompiler` or on an axiom that `native_decide` generated with LLV7025, each naming the entry, unless an axiom policy of the document names that axiom, in which case the import is accepted and every generated declaration is still held to its own policy.
+    Given the import-axioms fixture project whose host library plants sorryAx, Lean.ofReduceBool, Lean.trustCompiler and a native_decide axiom in four theorems that four entries denote
+    When the project is verified using each planted entry under a policy that does not name its axiom, and under a policy that does
+    Then each planted import is refused with its code LLV7023, LLV7024 or LLV7025 naming the entry
+    And the same imports are accepted when a policy of the document names the axioms, and the attestation records each import's observed set
+
+  @VR-26 @build
+  Scenario: The status of an imported declaration in the attestation is `replayed in the pinned environment`, and no output about an import says `proved`, `verified` or `kernel-checked`, words that §5.3 reserves for the generated declarations of the document and that §4.2 forbids for an imported library.
+    Given the attestation of the accepted import-axioms project
+    When the status of each imported declaration is read
+    Then it is exactly replayed in the pinned environment
+    And no output about an import says proved, verified or kernel-checked

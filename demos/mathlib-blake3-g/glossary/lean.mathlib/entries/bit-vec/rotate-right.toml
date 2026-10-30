@@ -1,0 +1,21 @@
+spec = "lexlean/entry/1"
+id = "bit-vec.rotate-right"
+category = "function"
+signature = "(pi ((implicit w (const lean.mathlib::nat)) (explicit x (app (const lean.mathlib::bit-vec) (local w))) (explicit n (const lean.mathlib::nat))) (app (const lean.mathlib::bit-vec) (local w)))"
+surface_arity = 2
+frame = "call"
+
+[denotation]
+kind = "lean"
+module = "Init.Data.BitVec.Basic"
+name = "BitVec.rotateRight"
+
+[[form]]
+id = "rotate-right"
+channel = "math"
+surface = "bitVecRotateRight"
+canonical_source = true
+features = []
+
+[render]
+math = "(seq (operator-name bitVecRotateRight) (paren (seq (slot 0) (token comma) (space) (slot 1))))"

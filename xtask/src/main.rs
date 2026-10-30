@@ -30,6 +30,7 @@ fn main() -> ExitCode {
         "validate-model" => codegen::check_model(&root, write),
         "validate-spec-links" => spec_links::validate(&root),
         "verify-examples" => verify_examples(&root, write),
+        "verify-demos" => verify_demos(&root, write),
         "check-golden" => check_golden(&root, write),
         "check-reproducibility" => check_reproducibility(&root),
         "check-fixtures" => check_fixtures(&root, write),
@@ -43,6 +44,7 @@ fn main() -> ExitCode {
         "ci-shards" => ci::ci_shards(&root),
         "release-artifacts" => release_artifacts(&root),
         "release-check" => release_check(&root),
+        "emit-wrappers" => emit_wrappers(&std::env::args().skip(2).collect::<Vec<_>>()),
         "validate" => codegen::check_model(&root, false).and_then(|()| spec_links::validate(&root)),
         _ => {
             eprintln!(
@@ -201,6 +203,45 @@ fn verify_examples(root: &Path, write: bool) -> Result<(), Fail> {
         )
         .into());
     }
+    verify_dirs(root, dirs, write, &part, "examples")
+}
+
+/// The demos (SPEC.md §28.6): projects that need a fetched Lean library, so
+/// the default sweeps of `examples/` do not run them. They are verified by
+/// `cargo xtask verify-demos`, the same gate as an example, plus the golden
+/// build outputs and the reproducibility check, in the job that fetches the
+/// library (`.github/workflows/mathlib.yml`).
+fn verify_demos(root: &Path, write: bool) -> Result<(), Fail> {
+    let dirs = demo_dirs(root)?;
+    verify_dirs(root, dirs.clone(), write, &ExamplesPart::All, "demos")?;
+    golden_dirs(root, &dirs, write)?;
+    reproducibility_dirs(root, &dirs)
+}
+
+fn demo_dirs(root: &Path) -> Result<Vec<PathBuf>, Fail> {
+    let mut dirs = Vec::new();
+    for entry in std::fs::read_dir(root.join("demos"))? {
+        let path = entry?.path();
+        if path.is_dir() {
+            dirs.push(path);
+        }
+    }
+    dirs.sort();
+    if dirs.is_empty() {
+        return Err(
+            "EX-10: the demos directory is empty; the demo gate has nothing to verify".into(),
+        );
+    }
+    Ok(dirs)
+}
+
+fn verify_dirs(
+    root: &Path,
+    dirs: Vec<PathBuf>,
+    write: bool,
+    part: &ExamplesPart,
+    tree: &str,
+) -> Result<(), Fail> {
     for dir in dirs {
         let started = std::time::Instant::now();
         let name = dir
@@ -221,7 +262,7 @@ fn verify_examples(root: &Path, write: bool) -> Result<(), Fail> {
             root,
             &dir,
             scratch.path(),
-            &scratch.path().join("examples").join(&name),
+            &scratch.path().join(tree).join(&name),
         )?;
         for required in example_path_requirements(&dir, root)? {
             let destination = scratch.path().join(&required);
@@ -751,13 +792,27 @@ fn check_golden(root: &Path, write: bool) -> Result<(), Fail> {
     } else {
         println!("check-golden: the runtime transcript ({transcript} labels) equals the printed runtime's (R10)");
     }
-    for dir in example_dirs(root)? {
+    golden_dirs(root, &example_dirs(root)?, write)?;
+    // The tooling fixtures cannot be built through the command line: a
+    // tooling module is accepted only in a project the compiler embeds.
+    let tooling = repo_conformance::tooling::check_golden(root, write)?;
+    if write {
+        println!("check-golden: wrote {tooling} tooling oracle files");
+    } else {
+        println!("check-golden: {tooling} tooling artifacts equal their oracles (R10)");
+    }
+    Ok(())
+}
+
+/// The golden build outputs of the projects in `dirs` (§28.3).
+fn golden_dirs(root: &Path, dirs: &[PathBuf], write: bool) -> Result<(), Fail> {
+    for dir in dirs {
         let name = dir
             .file_name()
             .unwrap_or_default()
             .to_string_lossy()
             .to_string();
-        let (_temp, files) = published_build(root, &dir, false)?;
+        let (_temp, files) = published_build(root, dir, false)?;
         let expected_root = dir.join("expected").join("build");
         if write {
             if expected_root.exists() {
@@ -781,14 +836,6 @@ fn check_golden(root: &Path, write: bool) -> Result<(), Fail> {
             "check-golden: {name}: {} published artifacts equal their oracles (R10)",
             files.len()
         );
-    }
-    // The tooling fixtures cannot be built through the command line: a
-    // tooling module is accepted only in a project the compiler embeds.
-    let tooling = repo_conformance::tooling::check_golden(root, write)?;
-    if write {
-        println!("check-golden: wrote {tooling} tooling oracle files");
-    } else {
-        println!("check-golden: {tooling} tooling artifacts equal their oracles (R10)");
     }
     Ok(())
 }
@@ -875,6 +922,7 @@ fn stage_project(root: &Path, dir: &Path, scratch: &Path, flat: &Path) -> Result
     let Some(members) = workspace_members_of(root, dir)? else {
         std::fs::create_dir_all(flat)?;
         copy_example(dir, flat)?;
+        link_lake(dir, flat)?;
         return Ok(flat.to_path_buf());
     };
     std::fs::copy(
@@ -889,11 +937,47 @@ fn stage_project(root: &Path, dir: &Path, scratch: &Path, flat: &Path) -> Result
     Ok(scratch.join(&members[0]))
 }
 
+/// The Lake workspace of an example (`.lake`: fetched libraries and build
+/// products, never source, SPEC.md §10.4) goes into the clean copy as links to
+/// the checkout's files, not as a copy: a fetched Mathlib is seven gigabytes.
+/// A hard link where the copy is on the same device, a copy where it is not;
+/// an example with no `.lake` has nothing to link, and one that declares a
+/// library the checkout has not fetched fails in its own `lock --check` with
+/// the registered diagnostic.
+fn link_lake(from: &Path, to: &Path) -> Result<(), Fail> {
+    let source = from.join(".lake");
+    for entry in walkdir::WalkDir::new(&source)
+        .follow_links(false)
+        .into_iter()
+        .flatten()
+    {
+        let relative = entry.path().strip_prefix(from).unwrap_or(entry.path());
+        let destination = to.join(relative);
+        if entry.file_type().is_dir() {
+            std::fs::create_dir_all(&destination)?;
+        } else if entry.file_type().is_file()
+            && std::fs::hard_link(entry.path(), &destination).is_err()
+        {
+            std::fs::copy(entry.path(), &destination)?;
+        } else if entry.file_type().is_symlink() {
+            // A checked-out library tracks symbolic links; a copy without
+            // them is a checkout with local changes to Git and to Lake.
+            #[cfg(unix)]
+            std::os::unix::fs::symlink(std::fs::read_link(entry.path())?, &destination)?;
+        }
+    }
+    Ok(())
+}
+
 fn copy_example(from: &Path, to: &Path) -> Result<(), Fail> {
     for entry in walkdir::WalkDir::new(from).into_iter().flatten() {
         let relative = entry.path().strip_prefix(from).unwrap_or(entry.path());
         let text = relative.to_string_lossy();
-        if text.starts_with(".lexlean") || text.starts_with("expected") || text.is_empty() {
+        if text.starts_with(".lexlean")
+            || text.starts_with(".lake")
+            || text.starts_with("expected")
+            || text.is_empty()
+        {
             continue;
         }
         let destination = to.join(relative);
@@ -912,40 +996,7 @@ fn copy_example(from: &Path, to: &Path) -> Result<(), Fail> {
 /// §28.4, AR-13: two clean `build`s in distinct absolute directories
 /// publish byte-identical platform-independent trees.
 fn check_reproducibility(root: &Path) -> Result<(), Fail> {
-    for dir in example_dirs(root)? {
-        let name = dir
-            .file_name()
-            .unwrap_or_default()
-            .to_string_lossy()
-            .to_string();
-        let (temp_a, files_a) = published_build(root, &dir, false)?;
-        let (temp_b, files_b) = published_build(root, &dir, false)?;
-        if temp_a.path() == temp_b.path() {
-            return Err("the two build directories must be distinct".into());
-        }
-        let names_a: Vec<&String> = files_a.iter().map(|(path, _)| path).collect();
-        let names_b: Vec<&String> = files_b.iter().map(|(path, _)| path).collect();
-        if names_a != names_b {
-            return Err(format!(
-                "R10: {name}: the two builds publish different file sets: {names_a:?} vs {names_b:?}"
-            )
-            .into());
-        }
-        for ((path_a, bytes_a), (_, bytes_b)) in files_a.iter().zip(&files_b) {
-            if bytes_a != bytes_b {
-                return Err(format!(
-                    "R10: {name}: {path_a} differs between two clean builds in distinct directories (AR-13)"
-                )
-                .into());
-            }
-        }
-        println!(
-            "check-reproducibility: {name}: {} published artifacts byte-identical across {} and {} (R10)",
-            files_a.len(),
-            temp_a.path().display(),
-            temp_b.path().display()
-        );
-    }
+    reproducibility_dirs(root, &example_dirs(root)?)?;
     // The proof libraries' own projects (§17.17, §17.18) are built twice as
     // well; they are not examples, and a lock is made in each copy.
     for (label, directory) in [
@@ -986,6 +1037,44 @@ fn check_reproducibility(root: &Path) -> Result<(), Fail> {
     println!(
         "check-reproducibility: {tooling} tooling artifacts byte-identical across two directories (R10)"
     );
+    Ok(())
+}
+
+fn reproducibility_dirs(root: &Path, dirs: &[PathBuf]) -> Result<(), Fail> {
+    for dir in dirs {
+        let name = dir
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
+        let (temp_a, files_a) = published_build(root, dir, false)?;
+        let (temp_b, files_b) = published_build(root, dir, false)?;
+        if temp_a.path() == temp_b.path() {
+            return Err("the two build directories must be distinct".into());
+        }
+        let names_a: Vec<&String> = files_a.iter().map(|(path, _)| path).collect();
+        let names_b: Vec<&String> = files_b.iter().map(|(path, _)| path).collect();
+        if names_a != names_b {
+            return Err(format!(
+                "R10: {name}: the two builds publish different file sets: {names_a:?} vs {names_b:?}"
+            )
+            .into());
+        }
+        for ((path_a, bytes_a), (_, bytes_b)) in files_a.iter().zip(&files_b) {
+            if bytes_a != bytes_b {
+                return Err(format!(
+                    "R10: {name}: {path_a} differs between two clean builds in distinct directories (AR-13)"
+                )
+                .into());
+            }
+        }
+        println!(
+            "check-reproducibility: {name}: {} published artifacts byte-identical across {} and {} (R10)",
+            files_a.len(),
+            temp_a.path().display(),
+            temp_b.path().display()
+        );
+    }
     Ok(())
 }
 
@@ -1350,4 +1439,26 @@ mod examples_part_tests {
         assert!(ExamplesPart::Without("uor-atlas".to_owned()).includes("compiler"));
         assert_eq!(shard.describe(), "shard:uor-atlas:prefix");
     }
+}
+
+/// `cargo xtask emit-wrappers <request.toml> <host-module.lean>` (SPEC.md
+/// §13.13): write the host module of a specialisation request, and print one
+/// line per wrapper, tab-separated `<lean name> <declaration> <tag> <line>`, in the order
+/// of the module.
+fn emit_wrappers(arguments: &[String]) -> Result<(), Fail> {
+    let [request_path, module_path] = arguments else {
+        return Err("usage: cargo xtask emit-wrappers <request.toml> <host-module.lean>".into());
+    };
+    let text = std::fs::read_to_string(request_path)?;
+    let request = lexlean::wrappers::parse_request(&text)
+        .map_err(|diagnostic| format!("{}: {}", diagnostic.code.as_str(), diagnostic.message))?;
+    let emitted = lexlean::wrappers::emit(&request);
+    std::fs::write(module_path, emitted.module_text.as_bytes())?;
+    for wrapper in &emitted.wrappers {
+        println!(
+            "{}\t{}\t{}\t{}",
+            wrapper.lean_name, wrapper.declaration, wrapper.tag, wrapper.line
+        );
+    }
+    Ok(())
 }

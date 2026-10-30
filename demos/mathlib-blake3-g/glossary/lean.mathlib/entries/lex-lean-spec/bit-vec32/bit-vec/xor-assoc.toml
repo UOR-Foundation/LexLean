@@ -1,0 +1,21 @@
+spec = "lexlean/entry/1"
+id = "lex-lean-spec.bit-vec32.bit-vec.xor-assoc"
+category = "proof-constant"
+signature = "(pi ((explicit x (app (const lean.mathlib::bit-vec) (nat 32))) (explicit y (app (const lean.mathlib::bit-vec) (nat 32))) (explicit z (app (const lean.mathlib::bit-vec) (nat 32)))) (app (const lexlean.core::eq) (app (const lean.mathlib::h-xor.h-xor (0 0 0)) (app (const lean.mathlib::h-xor.h-xor (0 0 0)) (local x) (local y)) (local z)) (app (const lean.mathlib::h-xor.h-xor (0 0 0)) (local x) (app (const lean.mathlib::h-xor.h-xor (0 0 0)) (local y) (local z)))))"
+surface_arity = 3
+frame = "call"
+
+[denotation]
+kind = "lean"
+module = "Blake3GSpecs"
+name = "LexLeanSpec.BitVec32.BitVec.xor_assoc"
+
+[[form]]
+id = "xor-assoc"
+channel = "math"
+surface = "lexLeanSpecBitVec32BitVecXorAssoc"
+canonical_source = true
+features = []
+
+[render]
+math = "(seq (operator-name lexLeanSpecBitVec32BitVecXorAssoc) (paren (seq (slot 0) (token comma) (space) (slot 1) (token comma) (space) (slot 2))))"

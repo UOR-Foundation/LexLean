@@ -1,0 +1,16 @@
+spec = "lexlean/entry/1"
+id = "arithmetic"
+category = "label-word"
+surface_arity = 0
+frame = "atom"
+
+[denotation]
+kind = "defined"
+value = "(const lean.mathlib::h-add.h-add)"
+
+[[form]]
+id = "arithmetic"
+channel = "text"
+surface = "arithmetic"
+canonical_source = true
+features = ["lower-case", "singular"]

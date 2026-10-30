@@ -1,0 +1,22 @@
+spec = "lexlean/entry/1"
+id = "lt.mk"
+category = "function"
+signature = "(pi ((implicit a (sort (type u))) (explicit lt (pi ((explicit x (local a)) (explicit x1 (local a))) (sort prop)))) (app (const lean.mathlib::lt (u)) (local a)))"
+universes = ["u"]
+surface_arity = 1
+frame = "call"
+
+[denotation]
+kind = "lean"
+module = "Init.Prelude"
+name = "LT.mk"
+
+[[form]]
+id = "mk"
+channel = "math"
+surface = "ltMk"
+canonical_source = true
+features = []
+
+[render]
+math = "(seq (operator-name ltMk) (paren (slot 0)))"

@@ -1,0 +1,21 @@
+spec = "lexlean/entry/1"
+id = "u-int32"
+category = "type-noun"
+signature = "(sort (type 0))"
+surface_arity = 0
+frame = "atom"
+
+[denotation]
+kind = "lean"
+module = "Init.Prelude"
+name = "UInt32"
+
+[[form]]
+id = "u-int32"
+channel = "math"
+surface = "uInt32"
+canonical_source = true
+features = []
+
+[render]
+math = "(operator-name uInt32)"

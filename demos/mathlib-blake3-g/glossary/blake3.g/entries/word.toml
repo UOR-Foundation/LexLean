@@ -1,0 +1,16 @@
+spec = "lexlean/entry/1"
+id = "word"
+category = "label-word"
+surface_arity = 0
+frame = "atom"
+
+[denotation]
+kind = "defined"
+value = "(const lean.mathlib::bit-vec)"
+
+[[form]]
+id = "word"
+channel = "text"
+surface = "Word"
+canonical_source = true
+features = ["sentence-case", "singular"]

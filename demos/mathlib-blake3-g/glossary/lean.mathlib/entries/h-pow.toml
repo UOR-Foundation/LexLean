@@ -1,0 +1,32 @@
+spec = "lexlean/entry/1"
+id = "h-pow"
+category = "function"
+signature = "(pi ((explicit a (sort (type u))) (explicit b (sort (type v))) (explicit g (sort (type w)))) (sort (type (max (max u v) w))))"
+universes = ["u", "v", "w"]
+surface_arity = 3
+frame = "call"
+
+[denotation]
+kind = "lean"
+module = "Init.Prelude"
+name = "HPow"
+
+[[form]]
+id = "h-pow"
+channel = "math"
+surface = "hPow"
+canonical_source = true
+features = []
+
+[render]
+math = "(seq (operator-name hPow) (paren (seq (slot 0) (token comma) (space) (slot 1) (token comma) (space) (slot 2))))"
+
+[eliminator]
+cases_lean_name = "HPow.casesOn"
+induction_lean_name = "HPow.rec"
+
+[[eliminator.constructor]]
+entry = "lean.mathlib::h-pow.mk"
+lean_name = "HPow.mk"
+fields = ["hPow"]
+induction_hypotheses = []

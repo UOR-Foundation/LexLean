@@ -1387,6 +1387,8 @@ math = "(seq (operator-name gsucc) (paren (slot 0)))"
                 "§21.4: entry content flows into the semantic ID"
             );
         }
+        "GL-19" => super::glossary::package(),
+        "GL-20" => super::glossary::refusals(),
         "GL-17" => {
             let dir = tempfile::tempdir().expect("tempdir");
             let root = camino::Utf8Path::from_path(dir.path()).expect("utf8");
@@ -1606,6 +1608,8 @@ math = "(seq (operator-name gsucc) (paren (slot 0)))"
                 }
             }
         }
+        // §13.13: the wrapper emitter.
+        "GL-21" => super::specialisation::emitter(),
         other => panic!("no lexicon case is wired for {other}"),
     }
 }
