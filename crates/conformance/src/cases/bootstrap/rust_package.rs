@@ -201,6 +201,7 @@ fn scaffold_value(scaffold: &Scaffold) -> Value {
     record(vec![
         text(&scaffold.edition),
         boolean(scaffold.publish),
+        text(&scaffold.library),
         list(scaffold.rustc.iter().map(gate).collect()),
         list(scaffold.clippy.iter().map(gate).collect()),
         list(scaffold.allowed.iter().map(|row| text(&row.lint)).collect()),
@@ -260,7 +261,7 @@ fn files_of(render: &Render) -> (Vec<u8>, Vec<u8>) {
         })).collect::<Vec<_>>(),
         "files": {
             "Cargo.toml": sha256(&cargo),
-            (oracle::LIBRARY_PATH): sha256(&render.library),
+            (render.scaffold.library.as_str()): sha256(&render.library),
         },
     });
     let provenance = Canonical::parse(provenance.to_string().as_bytes())
@@ -321,7 +322,7 @@ fn accepted(manifest: &Manifest) -> Option<(Render, (Vec<u8>, Vec<u8>))> {
             .iter()
             .map(|export| (export.name.clone(), export.function))
             .collect(),
-        library: package.files[oracle::LIBRARY_PATH].clone(),
+        library: package.files[&scaffold::get().expect("the scaffold").library].clone(),
     };
     let files = (
         package.files["Cargo.toml"].clone(),
@@ -535,6 +536,11 @@ fn render_rules(base: &Render) -> Vec<Render> {
     let reshaped: Vec<Box<dyn Fn(&mut Scaffold)>> = vec![
         Box::new(|s| s.publish = true),
         Box::new(|s| s.edition = "2024".to_owned()),
+        // The path is a key of `files`, whose order is the bytes of its keys.
+        Box::new(|s| s.library = "lib/main.rs".to_owned()),
+        Box::new(|s| s.library = "A.rs".to_owned()),
+        Box::new(|s| s.library = "Cargo.toml".to_owned()),
+        Box::new(|s| s.library = "a\"b.rs".to_owned()),
         Box::new(|s| s.rustc.clear()),
         Box::new(|s| s.clippy.clear()),
         Box::new(|s| s.allowed.clear()),
@@ -562,7 +568,7 @@ struct Plant {
     replacement: &'static str,
 }
 
-const PLANTS: [Plant; 18] = [
+const PLANTS: [Plant; 21] = [
     Plant {
         label: "`gen` is not a keyword",
         root: 0,
@@ -650,8 +656,26 @@ const PLANTS: [Plant; 18] = [
     Plant {
         label: "the digests of Cargo.toml and lib.rs are swapped",
         root: 1,
-        site: "(LexLeanStd.Sha256::sha256Hex cargo)) \",\\\"src/lib.rs\\\":\") (LexLeanStd.Sha256::sha256Hex library))",
-        replacement: "(LexLeanStd.Sha256::sha256Hex library)) \",\\\"src/lib.rs\\\":\") (LexLeanStd.Sha256::sha256Hex cargo))",
+        site: "(putEntry (put (putEntry opened (text \"Cargo.toml\") (LexLeanStd.Sha256::sha256Hex cargo)) \",\") path (LexLeanStd.Sha256::sha256Hex library))",
+        replacement: "(putEntry (put (putEntry opened (text \"Cargo.toml\") (LexLeanStd.Sha256::sha256Hex library)) \",\") path (LexLeanStd.Sha256::sha256Hex cargo))",
+    },
+    Plant {
+        label: "the library path is always src/lib.rs in Cargo.toml",
+        root: 1,
+        site: "(project scaffold library)) \"\\\"\\n\\n[lints.rust]",
+        replacement: "(text \"src/lib.rs\")) \"\\\"\\n\\n[lints.rust]",
+    },
+    Plant {
+        label: "a path that sorts before Cargo.toml is written after it",
+        root: 1,
+        site: "(before path (text \"Cargo.toml\"))",
+        replacement: "false",
+    },
+    Plant {
+        label: "a library named Cargo.toml is written as two keys",
+        root: 1,
+        site: "(same path (text \"Cargo.toml\"))",
+        replacement: "false",
     },
     Plant {
         label: "the std runtime's digest leaves out the std part",

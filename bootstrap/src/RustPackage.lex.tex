@@ -36,6 +36,7 @@ structure{
   fields: [
     {name: edition, type: Bytes},
     {name: publish, type: Bool},
+    {name: library, type: Bytes},
     {name: rustc, type: (List Gate)},
     {name: clippy, type: (List Gate)},
     {name: allowed, type: (List Bytes)}
@@ -331,7 +332,7 @@ definition{
   name: cargoToml,
   parameters: [capacity : Nat, scaffold : Scaffold, name : Bytes, version : Bytes],
   result: (Result Bytes Bytes),
-  body: (let head : LexLeanStd.Buffer::Buffer := (put (if (project scaffold publish) then (put (LexLeanStd.Buffer::writeBytes (put (LexLeanStd.Buffer::writeBytes (put (LexLeanStd.Buffer::writeBytes (put (LexLeanStd.Buffer::new capacity) "[package]\nname = \"") name) "\"\nversion = \"") version) "\"\nedition = \"") (project scaffold edition)) "\"\npublish = true") else (put (LexLeanStd.Buffer::writeBytes (put (LexLeanStd.Buffer::writeBytes (put (LexLeanStd.Buffer::writeBytes (put (LexLeanStd.Buffer::new capacity) "[package]\nname = \"") name) "\"\nversion = \"") version) "\"\nedition = \"") (project scaffold edition)) "\"\npublish = false")) "\n\n[lib]\npath = \"src/lib.rs\"\n\n[lints.rust]\n"); (let rust : LexLeanStd.Buffer::Buffer := (prim list_fold (fun (out : LexLeanStd.Buffer::Buffer) (gate : Gate) => (putGate out gate)) head (project scaffold rustc) : LexLeanStd.Buffer::Buffer); (let clippy : LexLeanStd.Buffer::Buffer := (prim list_fold (fun (out : LexLeanStd.Buffer::Buffer) (gate : Gate) => (putGate out gate)) (put rust "\n[lints.clippy]\n") (project scaffold clippy) : LexLeanStd.Buffer::Buffer); (LexLeanStd.Buffer::finish (prim list_fold (fun (out : LexLeanStd.Buffer::Buffer) (lint : Bytes) => (putAllowed out lint)) clippy (project scaffold allowed) : LexLeanStd.Buffer::Buffer))))),
+  body: (let head : LexLeanStd.Buffer::Buffer := (put (LexLeanStd.Buffer::writeBytes (put (if (project scaffold publish) then (put (LexLeanStd.Buffer::writeBytes (put (LexLeanStd.Buffer::writeBytes (put (LexLeanStd.Buffer::writeBytes (put (LexLeanStd.Buffer::new capacity) "[package]\nname = \"") name) "\"\nversion = \"") version) "\"\nedition = \"") (project scaffold edition)) "\"\npublish = true") else (put (LexLeanStd.Buffer::writeBytes (put (LexLeanStd.Buffer::writeBytes (put (LexLeanStd.Buffer::writeBytes (put (LexLeanStd.Buffer::new capacity) "[package]\nname = \"") name) "\"\nversion = \"") version) "\"\nedition = \"") (project scaffold edition)) "\"\npublish = false")) "\n\n[lib]\npath = \"") (project scaffold library)) "\"\n\n[lints.rust]\n"); (let rust : LexLeanStd.Buffer::Buffer := (prim list_fold (fun (out : LexLeanStd.Buffer::Buffer) (gate : Gate) => (putGate out gate)) head (project scaffold rustc) : LexLeanStd.Buffer::Buffer); (let clippy : LexLeanStd.Buffer::Buffer := (prim list_fold (fun (out : LexLeanStd.Buffer::Buffer) (gate : Gate) => (putGate out gate)) (put rust "\n[lints.clippy]\n") (project scaffold clippy) : LexLeanStd.Buffer::Buffer); (LexLeanStd.Buffer::finish (prim list_fold (fun (out : LexLeanStd.Buffer::Buffer) (lint : Bytes) => (putAllowed out lint)) clippy (project scaffold allowed) : LexLeanStd.Buffer::Buffer))))),
   executable: true
 }
 
@@ -409,6 +410,24 @@ definition{
 }
 
 definition{
+  name: putEntry,
+  parameters: [out : LexLeanStd.Buffer::Buffer, key : Bytes, digest : Bytes],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (putString (put (putString out key) ":") digest),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: putFiles,
+  parameters: [out : LexLeanStd.Buffer::Buffer, path : Bytes, cargo : Bytes, library : Bytes],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (let opened : LexLeanStd.Buffer::Buffer := (put out ",\"files\":{"); (put (if (same path (text "Cargo.toml")) then (putEntry opened path (LexLeanStd.Sha256::sha256Hex library)) else (if (before path (text "Cargo.toml")) then (putEntry (put (putEntry opened path (LexLeanStd.Sha256::sha256Hex library)) ",") (text "Cargo.toml") (LexLeanStd.Sha256::sha256Hex cargo)) else (putEntry (put (putEntry opened (text "Cargo.toml") (LexLeanStd.Sha256::sha256Hex cargo)) ",") path (LexLeanStd.Sha256::sha256Hex library)))) "}")),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
   name: provenance,
   parameters: [
     capacity : Nat,
@@ -421,11 +440,12 @@ definition{
     sources : (List Bytes),
     effects : (List Bytes),
     exports : (List Export),
+    path : Bytes,
     cargo : Bytes,
     library : Bytes
   ],
   result: (Result Bytes Bytes),
-  body: (let opened : LexLeanStd.Buffer::Buffer := (putExports (put (putStrings (put (putString (put (LexLeanStd.Buffer::new capacity) "{\"compiler_semantics\":") semantics) ",\"effects\":") effects) ",\"exports\":") exports); (let files : LexLeanStd.Buffer::Buffer := (put (putString (put (putString (put opened ",\"files\":{\"Cargo.toml\":") (LexLeanStd.Sha256::sha256Hex cargo)) ",\"src/lib.rs\":") (LexLeanStd.Sha256::sha256Hex library)) "}"); (let named : LexLeanStd.Buffer::Buffer := (putString (put (putString (put files ",\"name\":") name) ",\"profile\":") (if std then (text "rust-std") else (text "rust-core"))); (LexLeanStd.Buffer::finish (put (putString (put (putStrings (put (putString (put (putString (put named ",\"program\":") program) ",\"runtime\":") (LexLeanStd.Sha256::sha256Hex runtime)) ",\"sources\":") sources) ",\"spec\":\"lexlean/rust-provenance/1\",\"version\":") version) "}\n"))))),
+  body: (let opened : LexLeanStd.Buffer::Buffer := (putExports (put (putStrings (put (putString (put (LexLeanStd.Buffer::new capacity) "{\"compiler_semantics\":") semantics) ",\"effects\":") effects) ",\"exports\":") exports); (let files : LexLeanStd.Buffer::Buffer := (putFiles opened path cargo library); (let named : LexLeanStd.Buffer::Buffer := (putString (put (putString (put files ",\"name\":") name) ",\"profile\":") (if std then (text "rust-std") else (text "rust-core"))); (LexLeanStd.Buffer::finish (put (putString (put (putStrings (put (putString (put (putString (put named ",\"program\":") program) ",\"runtime\":") (LexLeanStd.Sha256::sha256Hex runtime)) ",\"sources\":") sources) ",\"spec\":\"lexlean/rust-provenance/1\",\"version\":") version) "}\n"))))),
   axioms: [Quot.sound, propext],
   executable: true
 }
@@ -450,7 +470,7 @@ definition{
   result: (Result (Bytes * Bytes) Bytes),
   body: (match (cargoToml capacity scaffold name version)
     | Result.error refusal => (ctor Result.error [(Bytes * Bytes), Bytes] refusal)
-    | Result.ok cargo => (match (provenance capacity name version std program semantics (if std then (cat core stdRuntime) else core) sources effects exports cargo library)
+    | Result.ok cargo => (match (provenance capacity name version std program semantics (if std then (cat core stdRuntime) else core) sources effects exports (project scaffold library) cargo library)
       | Result.error refusal => (ctor Result.error [(Bytes * Bytes), Bytes] refusal)
       | Result.ok written => (ctor Result.ok [(Bytes * Bytes), Bytes] (cargo, written)))),
   axioms: [Quot.sound, propext],
