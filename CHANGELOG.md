@@ -41,6 +41,20 @@ negative-fixture bullet of #34 is not met for them. The language-model rows are
 `LM-01` to `LM-09` and `LM-13`. Nothing below claims more than the certificates
 of this tree show.
 
+- The LaTeX backend of the tooling modules is language-1.2 source (SPEC.md
+  §17.23, §17.20; `BS-20`, #270). `renderToolingLatex` of `ToolingLatex`, over
+  the closed schema of the tooling module as data (`ToolingAst`, each recursive
+  list a chain of its own `Nil` and `Cons`), the typings the checker infers and
+  the reserved tokens of the toolchain as arguments, writes line by line through
+  the standard library's `Buffer` with an explicit capacity, and is held to
+  `backend::tooling::latex_text` to the byte on the three committed tooling
+  modules, on modules made from them to stress the escaper, the quoting of a
+  name and a character, and the trimming of a line, and on seeded mutants,
+  with seventeen planted defects. `render_latex` now takes its text from
+  `latex_text`, so the oracle the case holds the module to is the text the
+  backend emits. The checker, the decoder of the module, the source map, the
+  Lean backend, and the verification driver stay in the host. The register is
+  459 IDs.
 - The release workflow's evidence is the gate run of the tagged commit (SPEC.md
   §9.4, §30.3; `RP-18`). `release.yml` no longer runs `just vv` on one runner:
   rehearsals 3 and 4 showed the `bdd` recipe alone takes over four hours there

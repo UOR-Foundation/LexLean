@@ -627,6 +627,17 @@ fn constructor_line(constructor: &ToolConstructor, lean: &Lean<'_>) -> String {
     format!("{} {fields}{requires}", constructor.name)
 }
 
+/// The LaTeX text of a tooling module and where each declaration's entry
+/// starts in it.
+pub struct LatexText {
+    /// The module's text.
+    pub text: String,
+    /// The byte offset at which each declaration's entry starts.
+    pub starts: Vec<usize>,
+    /// The byte offset at which the last declaration's entry ends.
+    pub end: usize,
+}
+
 /// Render a tooling module as canonical LaTeX: one entry per declaration,
 /// stating its kind and everything the Lean rendering is made from (the same
 /// types, signatures, and terms, spelled by the same printer).
@@ -638,6 +649,24 @@ pub fn render_latex(
     checked: &CheckedModule,
     module: &ToolingModule,
 ) -> Result<Emitter, Diagnostic> {
+    let rendered = latex_text(module)?;
+    emit_declarations_for(
+        checked,
+        &rendered.text,
+        "tooling-latex-module",
+        &rendered.starts,
+        rendered.end,
+        &SOURCE,
+    )
+}
+
+/// The canonical LaTeX text of a tooling module (SPEC.md §17.20) and where
+/// each declaration's entry starts in it.
+///
+/// # Errors
+///
+/// `LLI9001` when the module is not well typed.
+pub fn latex_text(module: &ToolingModule) -> Result<LatexText, Diagnostic> {
     let lean = Lean::new(module)?;
     let mut text = String::from(
         "\\documentclass[11pt]{article}\n\\usepackage[T1]{fontenc}\n\\usepackage{amsmath,amssymb}\n\\begin{document}\n\\section*{Tooling declarations}\n",
@@ -745,12 +774,5 @@ pub fn render_latex(
     }
     let end = text.len();
     text.push_str("\\end{document}\n");
-    emit_declarations_for(
-        checked,
-        &text,
-        "tooling-latex-module",
-        &starts,
-        end,
-        &SOURCE,
-    )
+    Ok(LatexText { text, starts, end })
 }

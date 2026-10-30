@@ -1,0 +1,784 @@
+\begin{lexlean}{ToolingLatex}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.Buffer}
+\importmodule{LexLeanStd.Text}
+\importmodule{ToolingAst}
+\title{Natural number addition}
+\begin{semanticmodule}
+structure{
+  name: TyEntry,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: owner, type: Bytes}, {name: params, type: (List Bytes)}]
+}
+
+structure{
+  name: Ctx,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: reserved, type: (List Bytes)},
+    {name: typings, type: (List ToolingAst::Typing)},
+    {name: calls, type: (List Bytes)},
+    {name: tys, type: (List TyEntry)},
+    {name: decls, type: (List ToolingAst::Decl)}
+  ]
+}
+
+definition{
+  name: putS,
+  parameters: [out : LexLeanStd.Buffer::Buffer, literal : String],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (LexLeanStd.Buffer::writeBytes out (prim utf8_encode literal : Bytes)),
+  executable: true
+}
+
+definition{
+  name: putB,
+  parameters: [out : LexLeanStd.Buffer::Buffer, piece : Bytes],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (LexLeanStd.Buffer::writeBytes out piece),
+  executable: true
+}
+
+definition{
+  name: putArrow,
+  parameters: [out : LexLeanStd.Buffer::Buffer],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (putB out 0x20e2869220),
+  executable: true
+}
+
+definition{
+  name: byteNat,
+  parameters: [subject : Bytes, position : Nat],
+  result: Nat,
+  body: (match (LexLeanStd.Text::byteAt subject position)
+    | Option.some byte => (prim to_nat byte : Nat)
+    | Option.none => 256),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: continuation,
+  parameters: [subject : Bytes, position : Nat],
+  result: Nat,
+  body: (match (LexLeanStd.Text::byteAt subject position)
+    | Option.some byte => (prim remainder (prim to_nat byte : Nat) 64 0 : Nat)
+    | Option.none => 0),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: scalarAt,
+  parameters: [subject : Bytes, position : Nat],
+  result: (Nat * Nat),
+  body: (match (LexLeanStd.Text::byteAt subject position)
+    | Option.some lead => (let code0 : Nat := (prim to_nat lead : Nat); (if (code0 <? 128) then (code0, 1) else (if (code0 <? 224) then (((prim multiply (prim remainder code0 32 0 : Nat) 64 : Nat) + (continuation subject (position + 1))), 2) else (if (code0 <? 240) then (((prim multiply (prim remainder code0 16 0 : Nat) 4096 : Nat) + ((prim multiply (continuation subject (position + 1)) 64 : Nat) + (continuation subject (position + 2)))), 3) else (((prim multiply (prim remainder code0 8 0 : Nat) 262144 : Nat) + ((prim multiply (continuation subject (position + 1)) 4096 : Nat) + ((prim multiply (continuation subject (position + 2)) 64 : Nat) + (continuation subject (position + 3))))), 4)))))
+    | Option.none => (0, 1)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: hexDigit,
+  parameters: [table : Bytes, number : Nat, place : Nat],
+  result: Bytes,
+  body: (LexLeanStd.Text::sliceOr table (prim remainder (prim quotient number place 0 : Nat) 16 0 : Nat) 1),
+  executable: true
+}
+
+definition{
+  name: leadingZero,
+  parameters: [digits : Bytes, position : Nat],
+  result: (Option Nat),
+  body: (match (LexLeanStd.Text::byteAt digits position)
+    | Option.some byte => (if (prim equal byte (48 : UInt8) : Bool) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat]))
+    | Option.none => (ctor Option.none [Nat])),
+  executable: true
+}
+
+definition{
+  name: putHex,
+  parameters: [out : LexLeanStd.Buffer::Buffer, table : Bytes, number : Nat],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (let digits : Bytes := (prim append (hexDigit table number 268435456) (prim append (hexDigit table number 16777216) (prim append (hexDigit table number 1048576) (prim append (hexDigit table number 65536) (prim append (hexDigit table number 4096) (prim append (hexDigit table number 256) (prim append (hexDigit table number 16) (hexDigit table number 1) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes); (let zeros : Nat := (first (prim iterate_until (fun [digits] (position : Nat) => (leadingZero digits position)) 4 0 : (Nat * Bool))); (LexLeanStd.Buffer::writeBytes out (LexLeanStd.Text::sliceOr digits zeros (prim subtract 8 zeros : Nat))))),
+  executable: true
+}
+
+definition{
+  name: byteOf,
+  parameters: [code : Nat],
+  result: Bytes,
+  body: (LexLeanStd.Text::sliceOr 0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f code 1),
+  executable: true
+}
+
+definition{
+  name: contains,
+  parameters: [items : (List Bytes), item : Bytes],
+  result: Bool,
+  body: (prim list_fold (fun [item] (found : Bool) (entry : Bytes) => (found || (prim equal entry item : Bool))) false items : Bool),
+  executable: true
+}
+
+definition{
+  name: putSeg,
+  parameters: [out : LexLeanStd.Buffer::Buffer, reserved : (List Bytes), segment : Bytes],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (if (contains reserved segment) then (putB (putB (putB out 0xc2ab) segment) 0xc2bb) else (putB out segment)),
+  executable: true
+}
+
+definition{
+  name: putName,
+  parameters: [out : LexLeanStd.Buffer::Buffer, reserved : (List Bytes), full : Bytes],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (second (prim list_fold (fun [reserved] (state : (Bool * LexLeanStd.Buffer::Buffer)) (segment : Bytes) => (false, (putSeg (if (first state) then (second state) else (putS (second state) ".")) reserved segment))) (true, out) (LexLeanStd.Text::splitOn full (46 : UInt8)) : (Bool * LexLeanStd.Buffer::Buffer))),
+  executable: true
+}
+
+definition{
+  name: lastDotStep,
+  parameters: [subject : Bytes, end : Nat],
+  result: (Option Nat),
+  body: (if (0 <? end) then (match (LexLeanStd.Text::byteAt subject (prim subtract end 1 : Nat))
+    | Option.some byte => (if (prim equal byte (46 : UInt8) : Bool) then (ctor Option.none [Nat]) else (ctor Option.some [Nat] (prim subtract end 1 : Nat)))
+    | Option.none => (ctor Option.none [Nat])) else (ctor Option.none [Nat])),
+  executable: true
+}
+
+definition{
+  name: afterDot,
+  parameters: [subject : Bytes],
+  result: Nat,
+  body: (first (prim iterate_until (fun [subject] (end : Nat) => (lastDotStep subject end)) (prim length subject : Nat) (prim length subject : Nat) : (Nat * Bool))),
+  executable: true
+}
+
+definition{
+  name: shortName,
+  parameters: [full : Bytes],
+  result: Bytes,
+  body: (let start : Nat := (afterDot full); (if (0 <? start) then (LexLeanStd.Text::sliceOr full start (prim subtract (prim length full : Nat) start : Nat)) else full)),
+  executable: true
+}
+
+definition{
+  name: ownerName,
+  parameters: [full : Bytes],
+  result: Bytes,
+  body: (let start : Nat := (afterDot full); (if (0 <? start) then (LexLeanStd.Text::sliceOr full 0 (prim subtract start 1 : Nat)) else 0x)),
+  executable: true
+}
+
+definition{
+  name: putChar,
+  parameters: [out : LexLeanStd.Buffer::Buffer, code : Nat],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (if (code =? 39) then (putS out "'\\''") else (if (code =? 92) then (putS out "'\\\\'") else (if (code =? 10) then (putS out "'\\n'") else (if (code =? 13) then (putS out "'\\r'") else (if (code =? 9) then (putS out "'\\t'") else (if ((32 <=? code) && (code <=? 126)) then (putS (putB (putS out "'") (byteOf code)) "'") else (putS (putHex (putS out "'\\u") 0x30313233343536373839616263646566 code) "'"))))))),
+  executable: true
+}
+
+definition{
+  name: litStep,
+  parameters: [subject : Bytes, state : (Nat * LexLeanStd.Buffer::Buffer)],
+  result: (Option (Nat * LexLeanStd.Buffer::Buffer)),
+  body: (if ((first state) <? (prim length subject : Nat)) then (let scalar : (Nat * Nat) := (scalarAt subject (first state)); (let code : Nat := (first scalar); (ctor Option.some [(Nat * LexLeanStd.Buffer::Buffer)] (((first state) + (second scalar)), (if (code =? 92) then (putS (second state) "\\\\") else (if (code =? 34) then (putS (second state) "\\\"") else (if (code =? 10) then (putS (second state) "\\n") else (if (code =? 13) then (putS (second state) "\\r") else (if (code =? 9) then (putS (second state) "\\t") else (if ((code <? 32) || ((127 <=? code) && (code <=? 159))) then (putHex (putS (second state) "\\u") 0x30313233343536373839616263646566 code) else (putB (second state) (LexLeanStd.Text::sliceOr subject (first state) (second scalar))))))))))))) else (ctor Option.none [(Nat * LexLeanStd.Buffer::Buffer)])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: putLit,
+  parameters: [out : LexLeanStd.Buffer::Buffer, subject : Bytes],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (putS (second (first (prim iterate_until (fun [subject] (state : (Nat * LexLeanStd.Buffer::Buffer)) => (litStep subject state)) (prim length subject : Nat) (0, (putS out "\"")) : ((Nat * LexLeanStd.Buffer::Buffer) * Bool)))) "\""),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: texStep,
+  parameters: [subject : Bytes, flat : Bool, end : Nat, state : (Nat * LexLeanStd.Buffer::Buffer)],
+  result: (Option (Nat * LexLeanStd.Buffer::Buffer)),
+  body: (if ((first state) <? end) then (let scalar : (Nat * Nat) := (scalarAt subject (first state)); (let code : Nat := (first scalar); (ctor Option.some [(Nat * LexLeanStd.Buffer::Buffer)] (((first state) + (second scalar)), (if (code =? 92) then (putS (second state) "\\textbackslash{}") else (if (code =? 123) then (putS (second state) "\\{") else (if (code =? 125) then (putS (second state) "\\}") else (if (code =? 35) then (putS (second state) "\\#") else (if (code =? 36) then (putS (second state) "\\$") else (if (code =? 37) then (putB (second state) 0x5c25) else (if (code =? 38) then (putS (second state) "\\&") else (if (code =? 95) then (putS (second state) "\\_") else (if (code =? 94) then (putS (second state) "\\^{}") else (if (code =? 126) then (putS (second state) "\\~{}") else (if (code <? 128) then (if (flat && (code =? 10)) then (putS (second state) " ") else (putB (second state) (LexLeanStd.Text::sliceOr subject (first state) 1))) else (putS (putHex (putS (second state) "<U+") 0x30313233343536373839414243444546 code) ">")))))))))))))))) else (ctor Option.none [(Nat * LexLeanStd.Buffer::Buffer)])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: putEscaped,
+  parameters: [out : LexLeanStd.Buffer::Buffer, subject : Bytes, end : Nat, flat : Bool],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (second (first (prim iterate_until (fun [end, flat, subject] (state : (Nat * LexLeanStd.Buffer::Buffer)) => (texStep subject flat end state)) end (0, out) : ((Nat * LexLeanStd.Buffer::Buffer) * Bool)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: spaceLength,
+  parameters: [subject : Bytes, end : Nat],
+  result: Nat,
+  body: (let c1 : Nat := (byteNat subject (prim subtract end 1 : Nat)); (let c2 : Nat := (byteNat subject (prim subtract end 2 : Nat)); (let c3 : Nat := (byteNat subject (prim subtract end 3 : Nat)); (if ((c1 =? 32) || ((9 <=? c1) && (c1 <=? 13))) then 1 else (if ((2 <=? end) && ((c2 =? 194) && ((c1 =? 133) || (c1 =? 160)))) then 2 else (if ((3 <=? end) && (((c3 =? 225) && ((c2 =? 154) && (c1 =? 128))) || (((c3 =? 226) && ((c2 =? 128) && (((128 <=? c1) && (c1 <=? 138)) || ((c1 =? 168) || ((c1 =? 169) || (c1 =? 175)))))) || (((c3 =? 226) && ((c2 =? 129) && (c1 =? 159))) || ((c3 =? 227) && ((c2 =? 128) && (c1 =? 128))))))) then 3 else 0)))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: trimStep,
+  parameters: [subject : Bytes, end : Nat],
+  result: (Option Nat),
+  body: (if (0 <? end) then (let size : Nat := (spaceLength subject end); (if (0 <? size) then (ctor Option.some [Nat] (prim subtract end size : Nat)) else (ctor Option.none [Nat]))) else (ctor Option.none [Nat])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: trimmedEnd,
+  parameters: [subject : Bytes],
+  result: Nat,
+  body: (first (prim iterate_until (fun [subject] (end : Nat) => (trimStep subject end)) (prim length subject : Nat) (prim length subject : Nat) : (Nat * Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: writeLine,
+  parameters: [out : LexLeanStd.Buffer::Buffer, raw : Bytes, shouldTrim : Bool, flat : Bool],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (putS (putEscaped (putS out "\\noindent \\texttt{") raw (if shouldTrim then (trimmedEnd raw) else (prim length raw : Nat)) flat) "}\\par\n"),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: emitLine,
+  parameters: [out : LexLeanStd.Buffer::Buffer, built : LexLeanStd.Buffer::Buffer, shouldTrim : Bool, flat : Bool],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (match (LexLeanStd.Buffer::finish built)
+    | Result.ok raw => (writeLine out raw shouldTrim flat)
+    | Result.error message => (LexLeanStd.Buffer::refuse out)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: lineBuffer,
+  parameters: [out : LexLeanStd.Buffer::Buffer],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (LexLeanStd.Buffer::new (project out capacity)),
+  executable: true
+}
+
+definition{
+  name: namesOf,
+  parameters: [list : (List ToolingAst::TypeParam)],
+  result: (List Bytes),
+  body: (LexLeanStd.Text::reverse (prim list_fold (fun (names : (List Bytes)) (item : ToolingAst::TypeParam) => (cons (project item name) names)) (nil Bytes) list : (List Bytes))),
+  executable: true
+}
+
+definition{
+  name: callsOf,
+  parameters: [declarations : (List ToolingAst::Decl)],
+  result: (List Bytes),
+  body: (prim list_fold (fun (names : (List Bytes)) (declaration : ToolingAst::Decl) => (match declaration
+    | ToolingAst::Decl.DType d0 d1 d2 d3 d4 d5 => names
+    | ToolingAst::Decl.DCall title d1 d2 d3 => (cons title names)
+    | ToolingAst::Decl.DPlumbing d0 => names
+    | ToolingAst::Decl.DFunction d0 d1 d2 d3 d4 d5 d6 d7 => names
+    | ToolingAst::Decl.DCommand d0 d1 d2 => names
+    | ToolingAst::Decl.DInvoke d0 d1 => names
+    | ToolingAst::Decl.DEvaluate d0 d1 => names)) (nil Bytes) declarations : (List Bytes)),
+  executable: true
+}
+
+definition{
+  name: tysOf,
+  parameters: [declarations : (List ToolingAst::Decl)],
+  result: (List TyEntry),
+  body: (prim list_fold (fun (entries : (List TyEntry)) (declaration : ToolingAst::Decl) => (match declaration
+    | ToolingAst::Decl.DType title params d2 d3 d4 d5 => (cons record{
+      type: TyEntry,
+      fields: [{field: owner, value: title}, {field: params, value: (namesOf params)}],
+      type_arguments: []
+    } entries)
+    | ToolingAst::Decl.DCall d0 d1 d2 d3 => entries
+    | ToolingAst::Decl.DPlumbing d0 => entries
+    | ToolingAst::Decl.DFunction d0 d1 d2 d3 d4 d5 d6 d7 => entries
+    | ToolingAst::Decl.DCommand d0 d1 d2 => entries
+    | ToolingAst::Decl.DInvoke d0 d1 => entries
+    | ToolingAst::Decl.DEvaluate d0 d1 => entries)) (nil TyEntry) declarations : (List TyEntry)),
+  executable: true
+}
+
+definition{
+  name: mkCtx,
+  parameters: [reserved : (List Bytes), typings : (List ToolingAst::Typing), declarations : (List ToolingAst::Decl)],
+  result: Ctx,
+  body: record{
+    type: Ctx,
+    fields: [
+      {field: reserved, value: reserved},
+      {field: typings, value: typings},
+      {field: calls, value: (callsOf declarations)},
+      {field: tys, value: (tysOf declarations)},
+      {field: decls, value: declarations}
+    ],
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: findEntry,
+  parameters: [entries : (List TyEntry), wanted : Bytes],
+  result: (Option (List Bytes)),
+  body: (prim list_fold (fun [wanted] (found : (Option (List Bytes))) (entry : TyEntry) => (match found
+    | Option.some known => found
+    | Option.none => (if (prim equal (project entry owner) wanted : Bool) then (ctor Option.some [(List Bytes)] (project entry params)) else found))) (ctor Option.none [(List Bytes)]) entries : (Option (List Bytes))),
+  executable: true
+}
+
+definition{
+  name: paramNames,
+  parameters: [entries : (List TyEntry), wanted : Bytes],
+  result: (List Bytes),
+  body: (match (findEntry entries wanted)
+    | Option.some known => known
+    | Option.none => (nil Bytes)),
+  executable: true
+}
+
+definition{
+  name: typingOf,
+  parameters: [typings : (List ToolingAst::Typing), wanted : Bytes],
+  result: (List Bytes),
+  body: (prim list_fold (fun [wanted] (found : (List Bytes)) (typing : ToolingAst::Typing) => (if (prim equal (project typing callee) wanted : Bool) then (project typing params) else found)) (nil Bytes) typings : (List Bytes)),
+  executable: true
+}
+
+definition{
+  name: commandFound,
+  parameters: [declarations : (List ToolingAst::Decl), wanted : Bytes],
+  result: (Option (List ToolingAst::Atom)),
+  body: (prim list_fold (fun [wanted] (found : (Option (List ToolingAst::Atom))) (declaration : ToolingAst::Decl) => (match found
+    | Option.some known => found
+    | Option.none => (match declaration
+      | ToolingAst::Decl.DType d0 d1 d2 d3 d4 d5 => found
+      | ToolingAst::Decl.DCall d0 d1 d2 d3 => found
+      | ToolingAst::Decl.DPlumbing d0 => found
+      | ToolingAst::Decl.DFunction d0 d1 d2 d3 d4 d5 d6 d7 => found
+      | ToolingAst::Decl.DCommand title atoms d2 => (if (prim equal title wanted : Bool) then (ctor Option.some [(List ToolingAst::Atom)] atoms) else found)
+      | ToolingAst::Decl.DInvoke d0 d1 => found
+      | ToolingAst::Decl.DEvaluate d0 d1 => found))) (ctor Option.none [(List ToolingAst::Atom)]) declarations : (Option (List ToolingAst::Atom))),
+  executable: true
+}
+
+definition{
+  name: commandAtoms,
+  parameters: [declarations : (List ToolingAst::Decl), wanted : Bytes],
+  result: (List ToolingAst::Atom),
+  body: (match (commandFound declarations wanted)
+    | Option.some known => known
+    | Option.none => (nil ToolingAst::Atom)),
+  executable: true
+}
+
+definition{
+  name: tyEmpty,
+  parameters: [ty : ToolingAst::Ty],
+  result: Bool,
+  body: (match ty
+    | ToolingAst::Ty.TyConst d0 d1 => false
+    | ToolingAst::Ty.TyParam d0 d1 => false
+    | ToolingAst::Ty.TyFn d0 d1 => false
+    | ToolingAst::Ty.TyIndex d0 => false
+    | ToolingAst::Ty.TyNil => true
+    | ToolingAst::Ty.TyCons d0 d1 => false),
+  executable: true
+}
+
+definition{
+  name: consSplit,
+  parameters: [ty : ToolingAst::Ty],
+  result: (Option (ToolingAst::Ty * ToolingAst::Ty)),
+  body: (match ty
+    | ToolingAst::Ty.TyConst d0 d1 => (ctor Option.none [(ToolingAst::Ty * ToolingAst::Ty)])
+    | ToolingAst::Ty.TyParam d0 d1 => (ctor Option.none [(ToolingAst::Ty * ToolingAst::Ty)])
+    | ToolingAst::Ty.TyFn d0 d1 => (ctor Option.none [(ToolingAst::Ty * ToolingAst::Ty)])
+    | ToolingAst::Ty.TyIndex d0 => (ctor Option.none [(ToolingAst::Ty * ToolingAst::Ty)])
+    | ToolingAst::Ty.TyNil => (ctor Option.none [(ToolingAst::Ty * ToolingAst::Ty)])
+    | ToolingAst::Ty.TyCons head tail => (ctor Option.some [(ToolingAst::Ty * ToolingAst::Ty)] (head, tail))),
+  executable: true
+}
+
+definition{
+  name: putTy,
+  parameters: [out : LexLeanStd.Buffer::Buffer, reserved : (List Bytes), ty : ToolingAst::Ty, mode : Nat, lead : Bool],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (match ty
+    | ToolingAst::Ty.TyConst head args => (if (tyEmpty args) then (putName out reserved head) else (putS (putTy (putS (putName (putS out "(") reserved head) " ") reserved args 1 true) ")"))
+    | ToolingAst::Ty.TyParam head args => (if (tyEmpty args) then (putName out reserved head) else (putS (putTy (putS (putName (putS out "(") reserved head) " ") reserved args 1 true) ")"))
+    | ToolingAst::Ty.TyFn params result => (putS (putTy (putArrow (putTy (putS out "(") reserved params 2 true)) reserved result 0 true) ")")
+    | ToolingAst::Ty.TyIndex owner => (putName out reserved owner)
+    | ToolingAst::Ty.TyNil => out
+    | ToolingAst::Ty.TyCons head tail => (putTy (putTy (if lead then out else (if (mode =? 2) then (putArrow out) else (putS out " "))) reserved head 0 true) reserved tail mode false)),
+  executable: true,
+  recursive_argument: ty
+}
+
+definition{
+  name: sigLength,
+  parameters: [sig : ToolingAst::Sig],
+  result: Nat,
+  body: (match sig
+    | ToolingAst::Sig.SgConst d0 => 0
+    | ToolingAst::Sig.SgVar d0 => 0
+    | ToolingAst::Sig.SgApp d0 d1 => 0
+    | ToolingAst::Sig.SgArrow d0 d1 => 0
+    | ToolingAst::Sig.SgPi d0 d1 d2 d3 => 0
+    | ToolingAst::Sig.SgType d0 => 0
+    | ToolingAst::Sig.SgOpt d0 d1 => 0
+    | ToolingAst::Sig.SgEmpty => 0
+    | ToolingAst::Sig.SgNat d0 => 0
+    | ToolingAst::Sig.SgNil => 0
+    | ToolingAst::Sig.SgCons head tail => ((sigLength tail) + 1)),
+  executable: true,
+  recursive_argument: sig
+}
+
+definition{
+  name: explicitApp,
+  parameters: [ctx : Ctx, head : ToolingAst::Sig, count : Nat],
+  result: Bool,
+  body: (match head
+    | ToolingAst::Sig.SgConst title => ((contains (project ctx calls) title) || (match (findEntry (project ctx tys) title)
+      | Option.some known => ((prim length known : Nat) <? count)
+      | Option.none => false))
+    | ToolingAst::Sig.SgVar d0 => false
+    | ToolingAst::Sig.SgApp d0 d1 => false
+    | ToolingAst::Sig.SgArrow d0 d1 => false
+    | ToolingAst::Sig.SgPi d0 d1 d2 d3 => false
+    | ToolingAst::Sig.SgType d0 => false
+    | ToolingAst::Sig.SgOpt d0 d1 => false
+    | ToolingAst::Sig.SgEmpty => false
+    | ToolingAst::Sig.SgNat d0 => false
+    | ToolingAst::Sig.SgNil => false
+    | ToolingAst::Sig.SgCons d0 d1 => false),
+  executable: true
+}
+
+definition{
+  name: putSig,
+  parameters: [out : LexLeanStd.Buffer::Buffer, ctx : Ctx, sig : ToolingAst::Sig, lead : Bool],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (match sig
+    | ToolingAst::Sig.SgConst title => (putName out (project ctx reserved) title)
+    | ToolingAst::Sig.SgVar title => (putName out (project ctx reserved) title)
+    | ToolingAst::Sig.SgApp callee args => (let o1 : LexLeanStd.Buffer::Buffer := (if (explicitApp ctx callee (sigLength args)) then (putS out "(@") else (putS out "(")); (putS (putSig (putS (putSig o1 ctx callee true) " ") ctx args true) ")"))
+    | ToolingAst::Sig.SgArrow domain codomain => (putS (putSig (putArrow (putSig (putS out "(") ctx domain true)) ctx codomain true) ")")
+    | ToolingAst::Sig.SgPi label info domain codomain => (let o1 : LexLeanStd.Buffer::Buffer := (putS out "("); (putS (putSig (putArrow (match label
+      | Option.some title => (match info
+        | ToolingAst::BinderKind.BkExplicit => (putS (putSig (putS (putName (putS o1 "(") (project ctx reserved) title) " : ") ctx domain true) ")")
+        | ToolingAst::BinderKind.BkImplicit => (putS (putSig (putS (putName (putS o1 "{") (project ctx reserved) title) " : ") ctx domain true) "}")
+        | ToolingAst::BinderKind.BkInstance => (putS (putSig (putS (putName (putS o1 "[") (project ctx reserved) title) " : ") ctx domain true) "]"))
+      | Option.none => (putS (putSig (putS o1 "[") ctx domain true) "]"))) ctx codomain true) ")"))
+    | ToolingAst::Sig.SgType level => (match level
+      | Option.some title => (putS (putB (putS out "(Type ") title) ")")
+      | Option.none => (putS out "Type"))
+    | ToolingAst::Sig.SgOpt domain fallback => (putS (putSig (putS (putSig (putS out "(optParam ") ctx domain true) " ") ctx fallback true) ")")
+    | ToolingAst::Sig.SgEmpty => (putS out "{ }")
+    | ToolingAst::Sig.SgNat digits => (putB out digits)
+    | ToolingAst::Sig.SgNil => out
+    | ToolingAst::Sig.SgCons head tail => (putSig (putSig (if lead then out else (putS out " ")) ctx head true) ctx tail false)),
+  executable: true,
+  recursive_argument: sig
+}
+
+definition{
+  name: putPars,
+  parameters: [out : LexLeanStd.Buffer::Buffer, reserved : (List Bytes), pars : ToolingAst::Pars, pre : Bool, lead : Bool],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (match pars
+    | ToolingAst::Pars.PrNil => out
+    | ToolingAst::Pars.PrCons title ty rest => (putPars (putS (putTy (putS (putName (putS (if lead then (if pre then (putS out " ") else out) else (putS out " ")) "(") reserved title) " : ") reserved ty 0 true) ")") reserved rest pre false)),
+  executable: true,
+  recursive_argument: pars
+}
+
+definition{
+  name: putFields,
+  parameters: [out : LexLeanStd.Buffer::Buffer, reserved : (List Bytes), pars : ToolingAst::Pars, lead : Bool],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (match pars
+    | ToolingAst::Pars.PrNil => out
+    | ToolingAst::Pars.PrCons title ty rest => (putFields (putS (putTy (putS (putB (putS (if lead then out else (putS out " ")) "(") title) " : ") reserved ty 0 true) ")") reserved rest false)),
+  executable: true,
+  recursive_argument: pars
+}
+
+definition{
+  name: putNamed,
+  parameters: [out : LexLeanStd.Buffer::Buffer, reserved : (List Bytes), names : (List Bytes), targs : ToolingAst::Ty],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (match names
+    | List.nil => out
+    | List.cons label rest => (match (consSplit targs)
+      | Option.some parts => (putNamed (putS (putTy (putS (putName (putS out " (") reserved label) " := ") reserved (first parts) 0 true) ")") reserved rest (second parts))
+      | Option.none => out)),
+  executable: true,
+  recursive_argument: names
+}
+
+definition{
+  name: putBinders,
+  parameters: [out : LexLeanStd.Buffer::Buffer, reserved : (List Bytes), binders : (List Bytes)],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (prim list_fold (fun [reserved] (written : LexLeanStd.Buffer::Buffer) (binder : Bytes) => (putName (putS written " ") reserved binder)) out binders : LexLeanStd.Buffer::Buffer),
+  executable: true
+}
+
+definition{
+  name: putTerm,
+  parameters: [out : LexLeanStd.Buffer::Buffer, ctx : Ctx, term : ToolingAst::Term, mode : Nat, lead : Bool],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (match term
+    | ToolingAst::Term.TmVar title => (putName out (project ctx reserved) title)
+    | ToolingAst::Term.TmNat digits => (putB out digits)
+    | ToolingAst::Term.TmStr payload => (putLit out payload)
+    | ToolingAst::Term.TmChar code => (putChar out code)
+    | ToolingAst::Term.TmName title => (putName (putS out "``") (project ctx reserved) title)
+    | ToolingAst::Term.TmCall callee targs args => (putS (putTerm (putNamed (putName (putS out "(") (project ctx reserved) callee) (project ctx reserved) (typingOf (project ctx typings) callee) targs) ctx args 1 true) ")")
+    | ToolingAst::Term.TmConstruct callee targs args => (putS (putTerm (putNamed (putName (putS out "(") (project ctx reserved) callee) (project ctx reserved) (paramNames (project ctx tys) (ownerName callee)) targs) ctx args 1 true) ")")
+    | ToolingAst::Term.TmField subject label => (putName (putS (putTerm (putS out "(") ctx subject 0 true) ").") (project ctx reserved) label)
+    | ToolingAst::Term.TmList element elements => (putS (putTy (putS (putTerm (putS out "(([") ctx elements 2 true) "] : List ") (project ctx reserved) element 0 true) "))")
+    | ToolingAst::Term.TmArray element elements => (putS (putTy (putS (putTerm (putS out "((#[") ctx elements 2 true) "] : Array ") (project ctx reserved) element 0 true) "))")
+    | ToolingAst::Term.TmLet label ty bound body => (putS (putTerm (putS (putTerm (putS (putTy (putS (putName (putS out "(let ") (project ctx reserved) label) " : ") (project ctx reserved) ty 0 true) " := ") ctx bound 0 true) "; ") ctx body 0 true) ")")
+    | ToolingAst::Term.TmLambda params body => (putS (putTerm (putS (putPars (putS out "(fun ") (project ctx reserved) params false true) " => ") ctx body 0 true) ")")
+    | ToolingAst::Term.TmApply callee args => (putS (putTerm (putTerm (putS out "(") ctx callee 0 true) ctx args 1 true) ")")
+    | ToolingAst::Term.TmIf condition thenTerm elseTerm => (putS (putTerm (putS (putTerm (putS (putTerm (putS out "(if ") ctx condition 0 true) " then ") ctx thenTerm 0 true) " else ") ctx elseTerm 0 true) ")")
+    | ToolingAst::Term.TmMatch scrutinee branches => (putS (putTerm (putS (putTerm (putS out "(match ") ctx scrutinee 0 true) " with") ctx branches 0 true) ")")
+    | ToolingAst::Term.TmNil => out
+    | ToolingAst::Term.TmCons head tail => (putTerm (putTerm (if (mode =? 1) then (putS out " ") else (if lead then out else (putS out ", "))) ctx head 0 true) ctx tail mode false)
+    | ToolingAst::Term.TmBranchNil => out
+    | ToolingAst::Term.TmBranch label binders body tail => (putTerm (putTerm (putS (match label
+      | Option.some full => (putBinders (putName (putS (putS out " | ") ".") (project ctx reserved) (shortName full)) (project ctx reserved) binders)
+      | Option.none => (putS out " | _")) " => ") ctx body 0 true) ctx tail 0 true)),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: term
+}
+
+definition{
+  name: putSyntax,
+  parameters: [out : LexLeanStd.Buffer::Buffer, atoms : (List ToolingAst::Atom)],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (prim list_fold (fun (written : LexLeanStd.Buffer::Buffer) (atom : ToolingAst::Atom) => (putS (match atom
+    | ToolingAst::Atom.AtToken text => (putLit written text)
+    | ToolingAst::Atom.AtIdent => (putS written "ident")
+    | ToolingAst::Atom.AtType => (putS written "term")) " ")) out atoms : LexLeanStd.Buffer::Buffer),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: nextArgument,
+  parameters: [ctx : Ctx, state : ((List ToolingAst::InvokeArg) * LexLeanStd.Buffer::Buffer)],
+  result: ((List ToolingAst::InvokeArg) * LexLeanStd.Buffer::Buffer),
+  body: (match (first state)
+    | List.nil => state
+    | List.cons argument rest => (rest, (match argument
+      | ToolingAst::InvokeArg.IaIdent title => (putName (second state) (project ctx reserved) title)
+      | ToolingAst::InvokeArg.IaType sig => (putSig (second state) ctx sig true)))),
+  executable: true
+}
+
+definition{
+  name: invokeStep,
+  parameters: [ctx : Ctx, state : ((List ToolingAst::InvokeArg) * LexLeanStd.Buffer::Buffer), atom : ToolingAst::Atom],
+  result: ((List ToolingAst::InvokeArg) * LexLeanStd.Buffer::Buffer),
+  body: (match atom
+    | ToolingAst::Atom.AtToken text => ((first state), (putB (second state) text))
+    | ToolingAst::Atom.AtIdent => (nextArgument ctx state)
+    | ToolingAst::Atom.AtType => (nextArgument ctx state)),
+  executable: true
+}
+
+definition{
+  name: putTypeParams,
+  parameters: [out : LexLeanStd.Buffer::Buffer, reserved : (List Bytes), names : (List Bytes)],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (prim list_fold (fun [reserved] (written : LexLeanStd.Buffer::Buffer) (item : Bytes) => (putS (putName (putS written " {") reserved item) " : Type}")) out names : LexLeanStd.Buffer::Buffer),
+  executable: true
+}
+
+definition{
+  name: leanDecl,
+  parameters: [out : LexLeanStd.Buffer::Buffer, ctx : Ctx, declaration : ToolingAst::Decl],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (let reserved : (List Bytes) := (project ctx reserved); (match declaration
+    | ToolingAst::Decl.DType d0 d1 d2 d3 d4 d5 => out
+    | ToolingAst::Decl.DCall d0 d1 d2 d3 => out
+    | ToolingAst::Decl.DPlumbing d0 => out
+    | ToolingAst::Decl.DFunction title isPublic isPartial label typeNames params resultTy bodyTerm => (let o1 : LexLeanStd.Buffer::Buffer := (if isPublic then (putS out "public ") else out); (let o2 : LexLeanStd.Buffer::Buffer := (putS o1 (if isPartial then "meta partial def " else "meta def ")); (let o3 : LexLeanStd.Buffer::Buffer := (putTypeParams (putName o2 reserved title) reserved typeNames); (let o4 : LexLeanStd.Buffer::Buffer := (putS (putTy (putS (putPars o3 reserved params true true) " : ") reserved resultTy 0 true) " :=\n  "); (putS (putTerm o4 ctx bodyTerm 0 true) "\n")))))
+    | ToolingAst::Decl.DCommand title atoms elaborator => (putS (putName (putS (putName (putS (putSyntax (putS (putName (putS out "syntax (name := ") reserved title) ") ") atoms) ": command\nattribute [command_elab ") reserved title) "] ") reserved elaborator) "\n")
+    | ToolingAst::Decl.DInvoke title args => (putS (second (prim list_fold (fun [ctx] (state : ((List ToolingAst::InvokeArg) * LexLeanStd.Buffer::Buffer)) (atom : ToolingAst::Atom) => (invokeStep ctx state atom)) (args, out) (commandAtoms (project ctx decls) title) : ((List ToolingAst::InvokeArg) * LexLeanStd.Buffer::Buffer))) "\n")
+    | ToolingAst::Decl.DEvaluate title args => (putS (putTerm (putName (putS out "#eval ") reserved title) ctx args 1 true) "\n"))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: putJoin,
+  parameters: [out : LexLeanStd.Buffer::Buffer, items : (List Bytes), separator : String],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (second (prim list_fold (fun [separator] (state : (Bool * LexLeanStd.Buffer::Buffer)) (item : Bytes) => (false, (putB (if (first state) then (second state) else (putS (second state) separator)) item))) (true, out) items : (Bool * LexLeanStd.Buffer::Buffer))),
+  executable: true
+}
+
+definition{
+  name: writeHead,
+  parameters: [out : LexLeanStd.Buffer::Buffer, title : Bytes, kind : String],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (putS (putS (putS (putEscaped (putS out "\\subsection*{\\texttt{") title (prim length title : Nat) false) "}}\n\\noindent Kind: \\texttt{") kind) "}.\\par\n"),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: plainLine,
+  parameters: [out : LexLeanStd.Buffer::Buffer, built : LexLeanStd.Buffer::Buffer],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (emitLine out built false false),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: sourceLine,
+  parameters: [out : LexLeanStd.Buffer::Buffer, pin : ToolingAst::Pin],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (plainLine out (putS (putB (putS (putB (putS (lineBuffer out) "Source: ") (project pin file)) " (") (project pin sha256)) ")")),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: putKind,
+  parameters: [out : LexLeanStd.Buffer::Buffer, item : ToolingAst::TypeParam],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (match (project item kind)
+    | ToolingAst::ParamKind.KdType => (putS (putB out (project item name)) " : Type")
+    | ToolingAst::ParamKind.KdConstructor => (putS (putB out (project item name)) " : Type -> Type")
+    | ToolingAst::ParamKind.KdIndex owner => (putB (putS (putB out (project item name)) " : ") owner)),
+  executable: true
+}
+
+definition{
+  name: putKinds,
+  parameters: [out : LexLeanStd.Buffer::Buffer, list : (List ToolingAst::TypeParam)],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (second (prim list_fold (fun (state : (Bool * LexLeanStd.Buffer::Buffer)) (item : ToolingAst::TypeParam) => (false, (putKind (if (first state) then (second state) else (putS (second state) ", ")) item))) (true, out) list : (Bool * LexLeanStd.Buffer::Buffer))),
+  executable: true
+}
+
+definition{
+  name: putCtor,
+  parameters: [out : LexLeanStd.Buffer::Buffer, reserved : (List Bytes), item : ToolingAst::Constructor],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (match (project item requires)
+    | Option.some need => (putS (putB (putS (putB (putS (putFields (putS (putB out (project item name)) " ") reserved (project item members) true) " [only at ") (project need parameter)) " = ") (project need target)) "]")
+    | Option.none => (putFields (putS (putB out (project item name)) " ") reserved (project item members) true)),
+  executable: true
+}
+
+definition{
+  name: putCtors,
+  parameters: [out : LexLeanStd.Buffer::Buffer, reserved : (List Bytes), list : (List ToolingAst::Constructor)],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (prim list_fold (fun [reserved] (written : LexLeanStd.Buffer::Buffer) (item : ToolingAst::Constructor) => (plainLine written (putCtor (putS (lineBuffer written) "Constructor: ") reserved item))) out list : LexLeanStd.Buffer::Buffer),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: typeLines,
+  parameters: [out : LexLeanStd.Buffer::Buffer, ctx : Ctx, params : (List ToolingAst::TypeParam), ctors : (List ToolingAst::Constructor), isOpaque : Bool, alias : (Option ToolingAst::Ty), pin : ToolingAst::Pin],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (let reserved : (List Bytes) := (project ctx reserved); (let o1 : LexLeanStd.Buffer::Buffer := (sourceLine out pin); (let o2 : LexLeanStd.Buffer::Buffer := (if isOpaque then (plainLine o1 (putS (lineBuffer o1) "Constructors are not pinned (opaque)")) else o1); (let o3 : LexLeanStd.Buffer::Buffer := (match alias
+      | Option.some ty => (plainLine o2 (putTy (putS (lineBuffer o2) "Abbreviation of: ") reserved ty 0 true))
+      | Option.none => o2); (let o4 : LexLeanStd.Buffer::Buffer := (if (0 <? (prim length params : Nat)) then (plainLine o3 (putKinds (putS (lineBuffer o3) "Parameters: ") params)) else o3); (putCtors o4 reserved ctors)))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: plumbingLines,
+  parameters: [out : LexLeanStd.Buffer::Buffer, names : (List Bytes)],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (plainLine out (putJoin (putS (lineBuffer out) "Names: ") names ", ")),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: visibilityLine,
+  parameters: [out : LexLeanStd.Buffer::Buffer, isPublic : Bool, isPartial : Bool, label : (Option Bytes)],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (let base : LexLeanStd.Buffer::Buffer := (putS (putS (putS (putS (lineBuffer out) "Visibility: ") (if isPublic then "public" else "private")) "; recursion: ") (if isPartial then "partial" else "total")); (plainLine out (match label
+    | Option.some group => (putB (putS base "; mutual group ") group)
+    | Option.none => base))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: leanLine,
+  parameters: [out : LexLeanStd.Buffer::Buffer, ctx : Ctx, declaration : ToolingAst::Decl, flat : Bool],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (emitLine out (leanDecl (lineBuffer out) ctx declaration) true flat),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: callLines,
+  parameters: [out : LexLeanStd.Buffer::Buffer, ctx : Ctx, sig : ToolingAst::Sig, role : Bytes, pin : ToolingAst::Pin],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (sourceLine (plainLine (plainLine out (putSig (putS (lineBuffer out) "Signature: ") ctx sig true)) (putB (putS (lineBuffer out) "Role: ") role)) pin),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: putDecl,
+  parameters: [out : LexLeanStd.Buffer::Buffer, ctx : Ctx, declaration : ToolingAst::Decl],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (match declaration
+    | ToolingAst::Decl.DType title params ctors isOpaque alias pin => (typeLines (writeHead out title "type") ctx params ctors isOpaque alias pin)
+    | ToolingAst::Decl.DCall title sig role pin => (callLines (writeHead out title "call") ctx sig role pin)
+    | ToolingAst::Decl.DPlumbing names => (plumbingLines (writeHead out (prim utf8_encode "plumbing" : Bytes) "plumbing") names)
+    | ToolingAst::Decl.DFunction title isPublic isPartial label typeNames params resultTy bodyTerm => (leanLine (visibilityLine (writeHead out title "function") isPublic isPartial label) ctx declaration true)
+    | ToolingAst::Decl.DCommand title atoms elaborator => (leanLine (writeHead out title "command") ctx declaration true)
+    | ToolingAst::Decl.DInvoke title args => (leanLine (writeHead out title "invoke") ctx declaration true)
+    | ToolingAst::Decl.DEvaluate title args => (leanLine (writeHead out title "evaluate") ctx declaration false)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: renderToolingLatex,
+  parameters: [capacity : Nat, reserved : (List Bytes), typings : (List ToolingAst::Typing), declarations : (List ToolingAst::Decl)],
+  result: (Result Bytes Bytes),
+  body: (let ctx : Ctx := (mkCtx reserved typings declarations); (LexLeanStd.Buffer::finish (putS (prim list_fold (fun [ctx] (written : LexLeanStd.Buffer::Buffer) (declaration : ToolingAst::Decl) => (putDecl written ctx declaration)) (putS (LexLeanStd.Buffer::new capacity) "\\documentclass[11pt]{article}\n\\usepackage[T1]{fontenc}\n\\usepackage{amsmath,amssymb}\n\\begin{document}\n\\section*{Tooling declarations}\n") declarations : LexLeanStd.Buffer::Buffer) "\\end{document}\n"))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+\end{semanticmodule}
+\end{lexlean}

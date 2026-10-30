@@ -7,6 +7,9 @@
     "bootstrap-print": [
       "BS-06"
     ],
+    "bootstrap-tooling-latex": [
+      "BS-20"
+    ],
     "bootstrap-validate": [
       "BS-05"
     ],
