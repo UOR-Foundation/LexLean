@@ -2634,6 +2634,12 @@ level = "build"
 suite = "stdlib"
 statement = "The standard library's `Order` module is language-1.2 source whose five members over the byte order of `Bytes` (`sortBytes`, `sortEntries`, `sortedSet`, `insertSorted`, `isAscending`) are production roots eligible for `rust-std` with exactly their declared effects, the sorts a bottom-up merge sort generic over the value an entry carries; each member's lowered program under the calculus evaluator and its rendered `rust-std` package under the pinned rustc agree with the Rust the compiler sorts with on a seeded corpus of keys that repeat and are prefixes of one another: `slice::sort`, the stable `slice::sort_by` on the key (entries of one key keep their input order), a `BTreeSet` for the deduplicated set and the sorted insert, and a strict `windows(2)` comparison for the ascending test; a merge planted to take the later entry on equal keys is detected, and every exported package is byte-identical to its committed package and realizes the member's lowered program."
 
+[[id]]
+id = "SL-11"
+level = "build"
+suite = "stdlib"
+statement = "The standard library's `Json` module is language-1.2 source stating the canonical JSON value `Json` of SPEC.md §21.7 (a boolean, an integer as a sign and a magnitude, a string of bytes, an array, and an object, the arrays and objects spines of the one recursive type) and three members, `writeJson`, `writeJsonFile`, and `escapeString`, that are production roots eligible for `rust-std` with exactly their declared effects, `recursion` among them; each member's lowered program under the calculus evaluator and its rendered `rust-std` package under the pinned rustc agree byte for byte with the compiler's own writer (`canonical_json::Json::to_canonical_string`, `to_file_bytes`, and the string escape) on a seeded corpus of trees whose keys repeat, are prefixes of one another, and hold multibyte and control characters: an object is written with its keys in UTF-8 byte order and the last of a repeated key kept, as the oracle's `BTreeMap` keeps it, an integer in its shortest decimal form, and a string with the required escapes and otherwise raw; a writer planted to keep the first of a repeated key is detected while every key stays ordered; the recursive packages have a measured stack bound; and every exported package is byte-identical to its committed package and realizes the member's lowered program."
+
 
 [[id]]
 id = "BS-01"
