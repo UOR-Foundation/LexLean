@@ -8102,6 +8102,46 @@ declared twice, a tuple of one, a `break` outside a loop, a private free functio
 `rust-core`, each accepted) are each detected by the differential. Under the pinned Lean the production
 export certifies the root beside the others and its package is the committed one.
 
+`BS-20` holds the LaTeX backend of the tooling modules (§17.20) to its oracle, `backend::tooling::latex_text`
+(the text `render_latex` emits), with one production root for `rust-std`, `renderToolingLatex` of
+`LexLeanBoot.ToolingLatex`:
+
+| Root | Oracle |
+| --- | --- |
+| `renderToolingLatex (capacity : Nat) (reserved : List Bytes) (typings : List Typing) (declarations : List Decl) : Result Bytes Bytes` | `backend::tooling::latex_text` |
+
+`ToolingAst` is the closed schema of the tooling module as first-order data: the declarations (`type`,
+`call`, `plumbing`, `function`, `command`, `invoke`, `evaluate`), the signatures, the types, and the terms,
+each list of a recursive sort a chain of the sort's own `Nil` and `Cons` constructors (`#208`, `#278`), so
+that the data holds no nested inductive. `typings` is what the checker infers for each call and function
+(the type parameters in order, which the printer reads to decide where a type argument is written and
+which application is explicit), and `reserved` is the table of reserved tokens of the pinned toolchain
+(`LEAN_RESERVED_TOKENS`), which decides whether a segment of a name is written in guillemets; both are
+arguments, so that the module reads no table the host does not give it. The text is written line by line:
+each line is built in a `Buffer` of its own (§17.22) with the capacity of the output, trimmed as the oracle
+trims it (the lines of a function, a command, an invoke, and an evaluate lose their trailing white space,
+as Rust's `char::is_whitespace` defines it, and those of a function, a command, and an invoke have each
+newline made a space; the lines of a type, a call, and a plumbing are not trimmed), escaped by the escaper of the oracle (`tex_escape`: the ten LaTeX specials, and `<U+XXXX>` in
+upper case at four hexadecimal digits at least for a scalar outside ASCII), and appended to the output. A line or an output
+that exceeds the capacity is `Result.error` of the refusal of the buffer, never a failure of the run. The
+checker, the decoder of the module, the source map of the emitted pieces, and the
+verification driver stay in the host; a module that the checker refuses has no typings and is outside the
+claim.
+
+`BS-20` holds the root to the oracle on the three committed tooling modules (`ToolingCommands`,
+`ToolingCore`, `ToolingTraversal`, whose committed `.tex` is equal to the oracle's text), on modules made
+from them by renaming a declaration, and a token of a command, to the strings that stress the quoting of
+a name, the literal of a string, the escaper, and the trimming of a line, on modules with a `Char` term at
+the scalars that stress its quoting, and on seeded mutants of the three; each at the exact capacity, one
+byte short, and with room to spare. On every host the rendered `rust-std` package, compiled by the pinned
+rustc, is run on the vectors; on the normative host the calculus evaluator (§17.14) also runs on them and on the seeded
+mutants, the rendered package on a larger seeded corpus, and seventeen planted defects in the source
+(an escape, the case and the width of the hexadecimal, the brackets of an implicit and an instance binder,
+the explicit application, the separator of a named argument, the indentation and the end of a function,
+the public marker and the visibility line, and the trimming of a line) are each detected. Under the
+pinned Lean the production export (§24.7) certifies the root beside the others and its package is the
+committed one.
+
 ## 18. Lean backend
 
 ### 18.1 Output contract

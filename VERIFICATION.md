@@ -11413,3 +11413,57 @@ script's output to that function, so the file the gate job writes is the file
 | the committed tree | `cargo test -p repo-conformance --test conformance conformance_rp_18 -- --exact` | ok |
 | the script no longer writes the gate line | same | `the evidence satisfies the release criterion` failed: `Err(["release/vv-evidence.txt does not record the gate passing"])` |
 | the criterion accepts the legs' lines | `cargo test -p repo-model the_ci_evidence_criterion` | `left: Ok(())` against the refusal |
+
+## The canonical LaTeX of a tooling module is language-1.2 source (`BS-20`, #270)
+
+`bootstrap/src/ToolingAst.lex.tex` holds the closed schema of the tooling module
+as data, and `bootstrap/src/ToolingLatex.lex.tex` the production root
+`renderToolingLatex` (68 definitions, generated from the oracle's rules and not
+written by hand), held to `backend::tooling::latex_text`, the text
+`render_latex` emits (the function was split so that the case and the backend
+share one text). The case is `conformance_bs_20`
+(`crates/conformance/src/cases/bootstrap/tooling_latex.rs`); its first commit
+was the failing test (R3), `no bootstrap case is wired for BS-20`.
+
+This entry records what ran and what did not. The case is not green on this
+tree.
+
+| Step | Command | Observed |
+| --- | --- | --- |
+| the two modules check | `lexlean check` in a relocked copy of the project | `checked 12 modules` |
+| the two modules alone are kernel-verified | `lexlean lock && lexlean verify` in a copy whose entrypoints are the two modules | `verified 4 modules` (under 5 minutes) |
+| the root is eligible for `rust-std` with `allocation`, `overflow`, `recursion` | `conformance_bs_20`, `eligibility` | passed |
+| the oracle's text is the committed LaTeX of the three tooling modules | same, `committed` | passed |
+| the rendered package under the pinned rustc agrees with the oracle | same, `rustc_differential` | 90 vectors agree (before the `Char` modules were added, 156 now) |
+| the evaluator, the seeded corpora, the 17 planted defects | same | not run to the end: see below |
+| the committed package is the exported one | same | not run: the package and the stack row of the root are not committed |
+
+*The compiler's rejection found while writing the module.* The first full
+verification of the project failed certificate A (`LLV7013`,
+`__rel_81`, `application type mismatch`) on a recursive definition whose
+top-level `match` has an arm with binders it does not use and a body that is a
+bare parameter (`| TyConst d0 d1 => out`). The same shape with a constant body
+(`false`, `0`) is accepted, and `explicitApp` and `sigLength` rely on it. The
+module avoids the shape (`putNamed` recurses on the list of names and takes the
+type chain apart in `consSplit`); the rejection is not minimised and not filed.
+
+*What could not run.* The Ubuntu distribution of this host restarted every few
+minutes to every half hour while the case ran (the journal of the distribution
+shows several boots within one minute, and `/tmp`, with the build lock, is empty
+after each), which killed `check-production-export --write` three times (after
+9, about 45, and about 30 minutes; one run is about 30 minutes without the
+restarts) and `conformance_bs_20` five times, each between the first corpus
+line and the end of the rustc leg. So the evaluator leg, the seeded corpora, the
+planted defects, and the regeneration of the committed export have not run on
+this tree. The seventeen plants are written and their sites each occur once in
+the module (counted by script), but none has been observed to be detected, and
+no claim is made here that it is.
+
+*To finish the row* on a stable host: add the root to
+`tests/production-export/bootstrap/roots.json`
+(`render_tooling_latex`, root `LexLeanBoot.ToolingLatex.renderToolingLatex`,
+`rust-std`, version `1.0.0`), relock `bootstrap/lexlean.lock`, run
+`just production-export-write`, measure the stack row with the measuring
+mode of `crates/conformance/src/stack_bounds.rs`, run `conformance_bs_20`, and
+state the counts it reports in the row of `model/ids.toml` and SPEC.md §31
+(the statement is count-free now) before `just vv`.

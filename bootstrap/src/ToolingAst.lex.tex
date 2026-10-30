@@ -1,0 +1,174 @@
+\begin{lexlean}{ToolingAst}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: BinderKind,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: BkExplicit, fields: []},
+    {name: BkImplicit, fields: []},
+    {name: BkInstance, fields: []}
+  ]
+}
+
+inductive{
+  name: Sig,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: SgConst, fields: [Bytes]},
+    {name: SgVar, fields: [Bytes]},
+    {name: SgApp, fields: [Sig, Sig]},
+    {name: SgArrow, fields: [Sig, Sig]},
+    {name: SgPi, fields: [(Option Bytes), BinderKind, Sig, Sig]},
+    {name: SgType, fields: [(Option Bytes)]},
+    {name: SgOpt, fields: [Sig, Sig]},
+    {name: SgEmpty, fields: []},
+    {name: SgNat, fields: [Bytes]},
+    {name: SgNil, fields: []},
+    {name: SgCons, fields: [Sig, Sig]}
+  ]
+}
+
+inductive{
+  name: Ty,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: TyConst, fields: [Bytes, Ty]},
+    {name: TyParam, fields: [Bytes, Ty]},
+    {name: TyFn, fields: [Ty, Ty]},
+    {name: TyIndex, fields: [Bytes]},
+    {name: TyNil, fields: []},
+    {name: TyCons, fields: [Ty, Ty]}
+  ]
+}
+
+inductive{
+  name: Pars,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: PrNil, fields: []},
+    {name: PrCons, fields: [Bytes, Ty, Pars]}
+  ]
+}
+
+inductive{
+  name: Term,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: TmVar, fields: [Bytes]},
+    {name: TmNat, fields: [Bytes]},
+    {name: TmStr, fields: [Bytes]},
+    {name: TmChar, fields: [Nat]},
+    {name: TmName, fields: [Bytes]},
+    {name: TmCall, fields: [Bytes, Ty, Term]},
+    {name: TmConstruct, fields: [Bytes, Ty, Term]},
+    {name: TmField, fields: [Term, Bytes]},
+    {name: TmList, fields: [Ty, Term]},
+    {name: TmArray, fields: [Ty, Term]},
+    {name: TmLet, fields: [Bytes, Ty, Term, Term]},
+    {name: TmLambda, fields: [Pars, Term]},
+    {name: TmApply, fields: [Term, Term]},
+    {name: TmIf, fields: [Term, Term, Term]},
+    {name: TmMatch, fields: [Term, Term]},
+    {name: TmNil, fields: []},
+    {name: TmCons, fields: [Term, Term]},
+    {name: TmBranchNil, fields: []},
+    {name: TmBranch, fields: [(Option Bytes), (List Bytes), Term, Term]}
+  ]
+}
+
+inductive{
+  name: ParamKind,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: KdType, fields: []},
+    {name: KdConstructor, fields: []},
+    {name: KdIndex, fields: [Bytes]}
+  ]
+}
+
+inductive{
+  name: Atom,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: AtToken, fields: [Bytes]},
+    {name: AtIdent, fields: []},
+    {name: AtType, fields: []}
+  ]
+}
+
+inductive{
+  name: InvokeArg,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: IaIdent, fields: [Bytes]},
+    {name: IaType, fields: [Sig]}
+  ]
+}
+
+structure{
+  name: TypeParam,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: name, type: Bytes}, {name: kind, type: ParamKind}]
+}
+
+structure{
+  name: Requires,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: parameter, type: Bytes}, {name: target, type: Bytes}]
+}
+
+structure{
+  name: Constructor,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: name, type: Bytes}, {name: members, type: Pars}, {name: requires, type: (Option Requires)}]
+}
+
+structure{
+  name: Typing,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: callee, type: Bytes}, {name: params, type: (List Bytes)}]
+}
+
+structure{
+  name: Pin,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: file, type: Bytes}, {name: sha256, type: Bytes}]
+}
+
+inductive{
+  name: Decl,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {
+      name: DType,
+      fields: [Bytes, (List TypeParam), (List Constructor), Bool, (Option Ty), Pin]
+    },
+    {name: DCall, fields: [Bytes, Sig, Bytes, Pin]},
+    {name: DPlumbing, fields: [(List Bytes)]},
+    {
+      name: DFunction,
+      fields: [Bytes, Bool, Bool, (Option Bytes), (List Bytes), Pars, Ty, Term]
+    },
+    {name: DCommand, fields: [Bytes, (List Atom), Bytes]},
+    {name: DInvoke, fields: [Bytes, (List InvokeArg)]},
+    {name: DEvaluate, fields: [Bytes, Term]}
+  ]
+}
+\end{semanticmodule}
+\end{lexlean}

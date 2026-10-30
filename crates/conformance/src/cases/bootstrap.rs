@@ -24,6 +24,7 @@ mod runtime_validate;
 mod rust_print;
 mod rust_validate;
 mod scan;
+mod tooling_latex;
 
 /// The module the first component lives in.
 const MODULE: &str = "LexLeanBoot.AxiomOutput";
@@ -2428,6 +2429,8 @@ fn case(id: &str) {
         "BS-06" => rust_print::case(),
         // §17.23, §17.16: the runtime syntax validator.
         "BS-09" => runtime_validate::case(),
+        // §17.23, §17.20: the canonical LaTeX of a tooling module.
+        "BS-20" => tooling_latex::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }
