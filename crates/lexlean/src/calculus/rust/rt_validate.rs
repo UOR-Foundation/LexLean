@@ -181,6 +181,9 @@ struct Scope<'a> {
     /// Every method an impl or a trait states, with its number of arguments.
     methods: BTreeMap<&'a str, Vec<usize>>,
     imported: Vec<String>,
+    /// The associated functions of the declared types: `(type, name)` to the
+    /// number of arguments, for an impl function with no receiver.
+    associated: BTreeMap<(&'a str, &'a str), usize>,
 }
 
 fn rule<T>(rule: &str, what: impl std::fmt::Display) -> Result<T, String> {
@@ -329,10 +332,14 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
         functions: BTreeMap::new(),
         methods: BTreeMap::new(),
         imported: Vec::new(),
+        associated: BTreeMap::new(),
     };
+    attributes(&krate.items)?;
     let mut declared = Vec::<&str>::new();
     for item in &krate.items {
         match item {
+            Item::InnerAttr(..) | Item::Defined(_) => {}
+            Item::Mod(name, _) => once(&mut declared, "a module name", name)?,
             Item::Use(path, alias) => {
                 let Some(root) = path.first() else {
                     return rule("use-path", "empty");
@@ -426,7 +433,17 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
                     .functions
                     .insert(&function.sig.name, function.sig.params.len());
             }
-            Item::Impl(_, _, _, functions) => {
+            Item::Impl(_, _, ty, functions) => {
+                if let Type::Named(owner, _) = ty {
+                    for function in functions.iter().filter(|function| !function.sig.receiver) {
+                        // The first impl function of a name stands for it, as the
+                        // Lean twin's list lookup finds the first.
+                        scope
+                            .associated
+                            .entry((owner, &function.sig.name))
+                            .or_insert(function.sig.params.len());
+                    }
+                }
                 for function in functions {
                     scope
                         .methods
@@ -439,7 +456,24 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
     }
     for item in &krate.items {
         match item {
-            Item::Use(..) | Item::UnitStruct(..) => {}
+            Item::Use(..) | Item::UnitStruct(..) | Item::InnerAttr(..) => {}
+            Item::Defined(path) => defined_path(path)?,
+            Item::Mod(name, members) => {
+                for member in members {
+                    match member {
+                        Item::Defined(path) => defined_path(path)?,
+                        Item::Fn(function) => scope.free(function)?,
+                        _ => {
+                            return rule(
+                                "module-member",
+                                format!(
+                                    "`{name}` holds an item that is neither a defined function nor a function"
+                                ),
+                            )
+                        }
+                    }
+                }
+            }
             Item::Alias(_, parameters, ty) => {
                 scope.ty(ty, parameters.len(), false)?;
             }
@@ -477,24 +511,7 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
                     }
                 }
             }
-            Item::Fn(function) => {
-                if !function.public {
-                    return rule(
-                        "function-visibility",
-                        format!(
-                            "`{}` is a free function that is not public",
-                            function.sig.name
-                        ),
-                    );
-                }
-                if function.sig.receiver {
-                    return rule(
-                        "function-receiver",
-                        format!("free function `{}` takes `&self`", function.sig.name),
-                    );
-                }
-                scope.function(function, &[], None)?;
-            }
+            Item::Fn(function) => scope.free(function)?,
             Item::Impl(generics, tr, ty, functions) => {
                 scope.generics(generics)?;
                 scope.ty(ty, generics.len(), false)?;
@@ -510,6 +527,51 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
         }
     }
     Ok(())
+}
+
+/// The inner attributes of a crate: the closed set (`no_std` with no
+/// arguments, `forbid` with the lints it forbids), before every other item.
+/// A crate is checked for them before anything else.
+fn attributes(items: &[Item]) -> Result<(), String> {
+    let mut over = false;
+    for item in items {
+        let Item::InnerAttr(name, args) = item else {
+            over = true;
+            continue;
+        };
+        if over {
+            return rule(
+                "attribute-position",
+                format!("`#![{name}]` follows an item"),
+            );
+        }
+        match (name.as_str(), args.as_slice()) {
+            ("no_std", []) => {}
+            ("no_std", _) => return rule("attribute-args", "`no_std` takes no arguments"),
+            ("forbid", []) => return rule("attribute-args", "`forbid` takes a lint"),
+            ("forbid", lints) => {
+                if lints.iter().any(String::is_empty) {
+                    return rule("attribute-args", "`forbid` takes a lint with a name");
+                }
+            }
+            (other, _) => {
+                return rule(
+                    "attribute-name",
+                    format!("`{other}` is not an inner attribute of the closed set"),
+                )
+            }
+        }
+    }
+    Ok(())
+}
+
+/// The path of a `defined` item names something: it is not empty.
+fn defined_path(path: &str) -> Result<(), String> {
+    if path.is_empty() {
+        rule("defined-path", "empty")
+    } else {
+        Ok(())
+    }
 }
 
 impl Variant {
@@ -597,6 +659,26 @@ fn binds(pattern: &Pat, out: &mut Vec<(String, bool)>) -> Result<(), String> {
 }
 
 impl<'a> Scope<'a> {
+    /// A free function: public, with no receiver, and a valid body.
+    fn free(&self, function: &'a Function) -> Result<(), String> {
+        if !function.public {
+            return rule(
+                "function-visibility",
+                format!(
+                    "`{}` is a free function that is not public",
+                    function.sig.name
+                ),
+            );
+        }
+        if function.sig.receiver {
+            return rule(
+                "function-receiver",
+                format!("free function `{}` takes `&self`", function.sig.name),
+            );
+        }
+        self.function(function, &[], None)
+    }
+
     fn generics(&self, generics: &[Generic]) -> Result<(), String> {
         for generic in generics {
             ident("a generic parameter", &generic.name)?;
@@ -1096,7 +1178,11 @@ impl<'a> Scope<'a> {
                             }
                             Some(*count)
                         } else {
-                            self.variant_arity(owner, name)
+                            self.variant_arity(owner, name).or_else(|| {
+                                self.associated
+                                    .get(&(owner.as_str(), name.as_str()))
+                                    .copied()
+                            })
                         }
                     }
                     _ => None,

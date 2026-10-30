@@ -132,6 +132,7 @@ pub(super) fn enc_type(ty: &Type) -> Value {
         Type::Pair(left, right) => binary(1, left, right),
         Type::Adt(n) => named(0, *n),
         Type::Fn(n) => named(1, *n),
+        Type::Param(n) => named(2, *n),
     }
 }
 
@@ -2970,7 +2971,7 @@ const RULE_VALIDATE_RUNS: usize = 132;
 const RULE_CORRESPOND_RUNS: usize = 12;
 const BRANCH_CRATES: usize = 17;
 const LOOP_CRATES: usize = 34;
-const MACHINE_CRATES: usize = 26 + 3 + 1 + 2 + 2 + 3;
+const MACHINE_CRATES: usize = 44 + 3 + 1 + 2 + 2 + 3;
 const VECTORS_VALIDATE: usize = 466;
 const REFUSED_VALIDATE: usize = 195;
 const VECTORS_CORRESPOND: usize = 329;

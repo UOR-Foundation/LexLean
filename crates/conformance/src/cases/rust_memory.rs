@@ -1,4 +1,4 @@
-//! The memory a runtime buffer lives in (SPEC.md §17.16): `SP-26`.
+//! The memory a runtime buffer lives in (SPEC.md §17.17): `SP-26`.
 //!
 //! `RustMemory` models a buffer as index-addressed slots, whose number is its
 //! capacity, and a length. The laws of its writes, its guard, and its

@@ -4808,6 +4808,9 @@ pub fn run(id: &str) {
         // §17.16: the representation of a list.
         "SP-27" => super::rust_lists::run(id),
         "SP-28" => super::rust_prims::run(id),
+        "SP-29" => super::rust_std::run(id),
+        // §17.16, §17.17: every runtime item has its refinement statement.
+        "SP-30" => super::rust_items::run(id),
         "SP-23" => {
             let syntax = support::module_json(
                 &std::fs::read_to_string(
@@ -4834,7 +4837,7 @@ pub fn run(id: &str) {
                     )
                 })
                 .collect();
-            let declared: Vec<(&str, usize)> = machine[17..]
+            let declared: Vec<(&str, usize)> = machine[17..26]
                 .iter()
                 .map(|(name, fields)| (name.as_str(), *fields))
                 .collect();
@@ -4853,7 +4856,39 @@ pub fn run(id: &str) {
                 ],
                 "the natural and integer primitives"
             );
-            assert_eq!(machine.len(), 26, "the first seventeen and these nine");
+            let std: Vec<&str> = machine[26..]
+                .iter()
+                .map(|(name, _)| name.as_str())
+                .collect();
+            assert_eq!(
+                std,
+                [
+                    "listLength",
+                    "listAppend",
+                    "listIndex",
+                    "listSlice",
+                    "bytesAppend",
+                    "bytesLength",
+                    "stringLength",
+                    "bytesIndex",
+                    "bytesSlice",
+                    "utf8Encode",
+                    "utf8Decode",
+                    "bytesCompare",
+                    "stringSplit",
+                    "stringJoin",
+                    "formatDecimal",
+                    "parseDecimal",
+                    "parseDecimalInt",
+                    "formatDecimalInt"
+                ],
+                "the list, byte, text, and number primitives of the std runtime (SP-29)"
+            );
+            assert_eq!(
+                machine.len(),
+                44,
+                "the first seventeen, the nine, and the eighteen std primitives"
+            );
             if !support::lean_backed("SP-23") {
                 return;
             }

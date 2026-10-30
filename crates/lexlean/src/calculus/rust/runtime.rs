@@ -3,11 +3,14 @@
 //! `rust-std`, shared strings, byte strings, persistent lists, and the
 //! primitives over them.
 //!
-//! The runtime is not generated: it is a closed, reviewed text whose
-//! SHA-256 every package's provenance records, and generated code reaches it
-//! only through [`Item`], so no rendering can name a runtime function that
-//! does not exist or call one with the wrong failure mode.
+//! The runtime is printed from four language-1.2 modules (`RuntimeSupport`,
+//! `RustRuntime`, `RuntimeStd`, and `RustStd`) and held nowhere as a string;
+//! the SHA-256 of the printed text is what every package's provenance records,
+//! and generated code reaches it only through [`Item`], so no rendering can
+//! name a runtime function that does not exist or call one with the wrong
+//! failure mode.
 
+use std::collections::BTreeMap;
 use std::sync::OnceLock;
 
 use super::super::IntKind;
@@ -17,51 +20,66 @@ use super::{ast, rt, rt_decode, rt_validate, source, validate};
 /// An item whose exported name is a path `module::name` is printed inside
 /// `pub mod module { … }` under its last segment, with the consecutive items
 /// of one module in one block, so the module's path in the exported name is
-/// the runtime item's path (`fixed_u8::checked_add`).
-#[must_use]
-pub fn assemble(support: &str, items: &[ast::ItemDef]) -> String {
-    let mut text = support.to_owned();
+/// the runtime item's path (`fixed_u8::checked_add`). The blocks are
+/// `RuntimeSyntax` nodes, a [`rt::Item::Mod`] of [`rt::Item::Defined`] paths,
+/// checked by the validator of `RuntimeSyntax` and printed by `rt`, which is
+/// given the text of each definition.
+///
+/// # Errors
+///
+/// An item that is not a function with an exported name, or the nodes of the
+/// blocks are not valid.
+pub fn assemble(support: &str, items: &[ast::ItemDef]) -> Result<String, String> {
+    let mut texts: BTreeMap<String, String> = BTreeMap::new();
+    let mut nodes: Vec<rt::Item> = Vec::new();
+    let mut members: Vec<rt::Item> = Vec::new();
     let mut open: Option<String> = None;
     for item in items {
-        let (module, shown) = match item {
-            ast::ItemDef::Function {
-                name: ast::Ident::Export(name),
-                ..
-            } if name.contains("::") => {
-                let (module, last) = name.rsplit_once("::").expect("a path");
+        let ast::ItemDef::Function {
+            name: ast::Ident::Export(path),
+            ..
+        } = item
+        else {
+            return Err("a runtime item that is not a function with an exported name".to_owned());
+        };
+        let (module, shown) = match path.rsplit_once("::") {
+            Some((module, last)) => {
                 let mut shown = item.clone();
                 if let ast::ItemDef::Function { name, .. } = &mut shown {
                     *name = ast::Ident::Export(last.to_owned());
                 }
                 (Some(module.to_owned()), shown)
             }
-            _ => (None, item.clone()),
+            None => (None, item.clone()),
         };
+        texts.insert(path.clone(), ast::print_item(&shown));
         if module != open {
-            if open.is_some() {
-                text.push_str("}\n");
-            }
-            if let Some(module) = &module {
-                text.push_str(&format!("\npub mod {module} {{"));
+            if let Some(closed) = open.take() {
+                nodes.push(rt::Item::Mod(closed, std::mem::take(&mut members)));
             }
             open = module;
         }
-        text.push('\n');
-        let printed = ast::print_item(&shown);
+        let defined = rt::Item::Defined(path.clone());
         if open.is_some() {
-            for line in printed.lines() {
-                text.push_str("    ");
-                text.push_str(line);
-                text.push('\n');
-            }
+            members.push(defined);
         } else {
-            text.push_str(&printed);
+            nodes.push(defined);
         }
     }
-    if open.is_some() {
-        text.push_str("}\n");
+    if let Some(closed) = open {
+        nodes.push(rt::Item::Mod(closed, members));
     }
-    text
+    let krate = rt::Crate {
+        profile: rt::Profile::Std,
+        items: nodes,
+    };
+    rt_validate::validate(&krate)?;
+    let mut text = support.to_owned();
+    if !krate.items.is_empty() {
+        text.push('\n');
+        text.push_str(&rt::print_with(&krate, &|path| texts.get(path).cloned())?);
+    }
+    Ok(text)
 }
 
 /// The text of a `RuntimeSupport` module: its crate decoded, checked by the
@@ -73,7 +91,7 @@ pub fn assemble(support: &str, items: &[ast::ItemDef]) -> String {
 pub fn support_from(module: &str) -> Result<String, String> {
     let krate = rt_decode::decode(module)?;
     rt_validate::validate(&krate)?;
-    Ok(rt::print(&krate))
+    rt::print(&krate)
 }
 
 /// The core runtime text of a `RustRuntime` module over the support text
@@ -91,7 +109,7 @@ pub fn core_over(support: &str, module: &str) -> Result<String, String> {
     let source = source::decode(module)?;
     validate::validate(&source.core)
         .map_err(|error| format!("the core runtime is not a valid crate: {error}"))?;
-    Ok(assemble(support, &source.core.items))
+    assemble(support, &source.core.items)
 }
 
 /// The core runtime text of a `RustRuntime` module over the embedded support.
@@ -130,230 +148,80 @@ pub fn core() -> Result<&'static str, String> {
         .map_err(Clone::clone)
 }
 
-/// The runtime only `rust-std` carries. Every loop ticks the work counter
-/// once per iteration and a bulk copy ticks its length, except the release
-/// of a list, whose cells were each counted when built.
-pub const STD: &str = r#"
-#[derive(Clone)]
-pub struct Str(std::rc::Rc<str>);
-impl Str {
-    pub fn lit(text: &str) -> Str { Str(std::rc::Rc::from(text)) }
-    pub fn text(&self) -> &str { &self.0 }
-}
-#[derive(Clone)]
-pub struct Bytes(std::rc::Rc<[u8]>);
-impl Bytes {
-    pub fn lit(octets: &[u8]) -> Bytes { Bytes(std::rc::Rc::from(octets)) }
-    pub fn octets(&self) -> &[u8] { &self.0 }
+/// The types, impls, helpers, and number text of the std runtime: the crate of a
+/// `RuntimeStd` module decoded, checked by the validator of `RuntimeSyntax`
+/// together with the support items it stands on, and printed. The support
+/// items are checked with it and not printed: the core runtime already
+/// carries them.
+///
+/// # Errors
+///
+/// Returns the reason either module cannot be decoded, the module is not of
+/// the std profile, or the crate is not valid.
+pub fn std_types_from(module: &str) -> Result<String, String> {
+    let mut support = rt_decode::decode(rt_decode::embedded()?)?;
+    let krate = rt_decode::decode_std(module)?;
+    if krate.profile != rt::Profile::Std {
+        return Err("the crate of RuntimeStd is not a std crate".to_owned());
+    }
+    support.profile = rt::Profile::Std;
+    support.items.extend(krate.items.iter().cloned());
+    rt_validate::validate(&support)?;
+    rt::print(&krate)
 }
 
-pub struct Node<T> { head: T, tail: List<T> }
-/// A list is a run of cells laid out contiguously, from the newest at the end of a buffer
-/// to the oldest at its start, or a cell in front of another list. A `cons` onto a run that
-/// owns its buffer alone pushes in place; a `cons` onto any other list is one cell, so
-/// building and taking apart a cell is constant work whatever the sharing, and no buffer is
-/// written while another list can see it.
-pub enum Repr<T> { Nil, Run { buffer: std::rc::Rc<Vec<T>>, len: usize }, Cell(std::rc::Rc<Node<T>>) }
-pub struct List<T>(Repr<T>);
-impl<T> Clone for List<T> {
-    fn clone(&self) -> Self {
-        List(match &self.0 {
-            Repr::Nil => Repr::Nil,
-            Repr::Run { buffer, len } => Repr::Run { buffer: buffer.clone(), len: *len },
-            Repr::Cell(cell) => Repr::Cell(cell.clone()),
-        })
-    }
-}
-impl<T> List<T> {
-    fn take(&mut self) -> Repr<T> { std::mem::replace(&mut self.0, Repr::Nil) }
-}
-impl<T> Drop for Node<T> {
-    fn drop(&mut self) {
-        let mut next = match self.tail.take() { Repr::Cell(cell) => Some(cell), _ => None };
-        while let Some(cell) = next { // release
-            match std::rc::Rc::try_unwrap(cell) {
-                Ok(mut node) => next = match node.tail.take() { Repr::Cell(cell) => Some(cell), _ => None },
-                Err(_) => break,
-            }
-        }
-    }
-}
-impl<T: Clone> List<T> {
-    pub fn nil() -> Self { List(Repr::Nil) }
-    pub fn cons(head: T, mut tail: List<T>) -> Self {
-        List(match tail.take() {
-            Repr::Nil => {
-                let mut buffer = Vec::with_capacity(16);
-                buffer.push(head);
-                Repr::Run { buffer: std::rc::Rc::new(buffer), len: 1 }
-            }
-            Repr::Run { mut buffer, len } => {
-                if let Some(cells) = std::rc::Rc::get_mut(&mut buffer) {
-                    cells.truncate(len);
-                    cells.push(head);
-                    Repr::Run { buffer, len: len + 1 }
-                } else {
-                    Repr::Cell(std::rc::Rc::new(Node { head, tail: List(Repr::Run { buffer, len }) }))
-                }
-            }
-            rest => Repr::Cell(std::rc::Rc::new(Node { head, tail: List(rest) })),
-        })
-    }
-    pub fn uncons(&self) -> Option<(T, List<T>)> {
-        match &self.0 {
-            Repr::Nil => None,
-            Repr::Run { buffer, len } => {
-                let head = buffer[len - 1].clone();
-                Some((head, List(if *len == 1 { Repr::Nil } else { Repr::Run { buffer: buffer.clone(), len: len - 1 } })))
-            }
-            Repr::Cell(cell) => Some((cell.head.clone(), cell.tail.clone())),
-        }
-    }
-    /// Walk the items in order, ticking one per item, until `each` says to stop: the cells
-    /// in front, then the run they end in.
-    fn walk(&self, each: &mut dyn FnMut(&T) -> bool) {
-        let mut cursor = self;
-        while let Repr::Cell(cell) = &cursor.0 { tick(1); if !each(&cell.head) { return; } cursor = &cell.tail; }
-        if let Repr::Run { buffer, len } = &cursor.0 {
-            for item in buffer[..*len].iter().rev() { tick(1); if !each(item) { return; } }
-        }
-    }
-    fn items(&self) -> Vec<T> {
-        let mut out = Vec::new();
-        self.walk(&mut |item| { out.push(item.clone()); true });
-        out
-    }
-    fn onto(items: Vec<T>, tail: List<T>) -> List<T> {
-        let mut out = tail;
-        for item in items.into_iter().rev() { tick(1); out = List::cons(item, out); }
-        out
-    }
+/// The base the functions of `RustStd` are printed after: [`std_types_from`]
+/// the embedded module.
+///
+/// # Errors
+///
+/// Returns the reason the module cannot be read, or its crate is not valid.
+pub fn std_base() -> Result<&'static str, String> {
+    static BASE: OnceLock<Result<String, String>> = OnceLock::new();
+    BASE.get_or_init(|| std_types_from(rt_decode::embedded_std()?))
+        .as_ref()
+        .map(String::as_str)
+        .map_err(Clone::clone)
 }
 
-fn chars(text: &str) -> u64 {
-    let mut count = 0;
-    for _ in text.chars() { tick(1); count += 1; }
-    count
+/// The std runtime text of a `RustStd` module over `base`: its functions
+/// decoded, the crate they make checked by the validator that checks every
+/// rendering, and each printed after `base`.
+///
+/// # Errors
+///
+/// Returns the reason the module cannot be decoded, or its crate is not valid.
+pub fn std_over(base: &str, module: &str) -> Result<String, String> {
+    let krate = source::decode_std(module)?;
+    validate::validate(&krate)
+        .map_err(|error| format!("the std runtime is not a valid crate: {error}"))?;
+    assemble(base, &krate.items)
 }
 
-impl Same for Str {
-    fn same(&self, other: &Self) -> bool {
-        let mut left = self.0.chars();
-        let mut right = other.0.chars();
-        loop {
-            tick(1);
-            match (left.next(), right.next()) { (None, None) => return true, (a, b) if a != b => return false, _ => {} }
-        }
-    }
-}
-impl Same for Bytes {
-    fn same(&self, other: &Self) -> bool { tick(1 + self.0.len().min(other.0.len()) as u64); self.0 == other.0 }
-}
-impl Key for Str {
-    fn key(&self, other: &Self) -> Ordering {
-        let mut left = self.0.chars();
-        let mut right = other.0.chars();
-        loop {
-            tick(1);
-            match (left.next(), right.next()) {
-                (None, None) => return Ordering::Equal,
-                (None, Some(_)) => return Ordering::Less,
-                (Some(_), None) => return Ordering::Greater,
-                (Some(a), Some(b)) => match a.cmp(&b) { Ordering::Equal => {} decided => return decided },
-            }
-        }
-    }
+/// The std runtime text of a `RustStd` module over [`std_base`].
+///
+/// # Errors
+///
+/// Returns the reason the module cannot be read, or its crate is not valid.
+pub fn std_from(module: &str) -> Result<String, String> {
+    std_over(std_base()?, module)
 }
 
-pub fn append_list<T: Clone>(a: List<T>, b: List<T>) -> List<T> { List::onto(a.items(), b) }
-pub fn append_bytes(a: Bytes, b: Bytes) -> Bytes {
-    tick((a.0.len() + b.0.len()) as u64);
-    let mut out = Vec::with_capacity(a.0.len() + b.0.len());
-    out.extend_from_slice(&a.0);
-    out.extend_from_slice(&b.0);
-    Bytes(std::rc::Rc::from(out))
+/// The runtime only `rust-std` carries: [`std_base`] and the functions of the
+/// embedded `RustStd` module. Every loop ticks the work counter once per
+/// iteration and a bulk copy ticks its length, except the release of a list,
+/// whose cells were each counted when built.
+///
+/// # Errors
+///
+/// Returns the reason the module cannot be read, or its crate is not valid.
+pub fn std() -> Result<&'static str, String> {
+    static STD: OnceLock<Result<String, String>> = OnceLock::new();
+    STD.get_or_init(|| std_from(source::embedded_std()?))
+        .as_ref()
+        .map(String::as_str)
+        .map_err(Clone::clone)
 }
-pub fn length_list<T: Clone>(a: List<T>) -> u64 {
-    let mut count = 0;
-    a.walk(&mut |_| { count += 1; true });
-    count
-}
-pub fn length_bytes(a: Bytes) -> u64 { a.0.len() as u64 }
-pub fn length_string(a: Str) -> u64 { chars(&a.0) }
-pub fn index_list<T: Clone>(a: List<T>, i: u64) -> Option<T> {
-    let mut position = 0;
-    let mut found = None;
-    a.walk(&mut |item| { if position == i { found = Some(item.clone()); return false; } position += 1; true });
-    found
-}
-pub fn index_bytes(a: Bytes, i: u64) -> Option<u8> { usize::try_from(i).ok().and_then(|i| a.0.get(i)).copied() }
-pub fn slice_list<T: Clone>(a: List<T>, start: u64, count: u64) -> Option<List<T>> {
-    let end = u128::from(start) + u128::from(count);
-    let mut part = Vec::new();
-    let mut position: u128 = 0;
-    a.walk(&mut |item| {
-        if position >= end { return false; }
-        if position >= u128::from(start) { part.push(item.clone()); }
-        position += 1;
-        true
-    });
-    if position < end { None } else { Some(List::onto(part, List::nil())) }
-}
-pub fn slice_bytes(a: Bytes, start: u64, count: u64) -> Option<Bytes> {
-    let end = u128::from(start) + u128::from(count);
-    if end > a.0.len() as u128 { return None; }
-    tick(count);
-    Some(Bytes::lit(&a.0[start as usize..end as usize]))
-}
-pub fn utf8_encode(a: Str) -> Bytes { tick(a.0.len() as u64); Bytes::lit(a.0.as_bytes()) }
-pub fn utf8_decode(a: Bytes) -> Option<Str> { tick(a.0.len() as u64); core::str::from_utf8(&a.0).ok().map(Str::lit) }
-pub fn compare_bytes(a: Bytes, b: Bytes) -> Ordering { tick(1 + a.0.len().min(b.0.len()) as u64); a.0.cmp(&b.0) }
-pub fn split_exact(text: Str, delimiter: Str, maximum: u32) -> Option<List<Str>> {
-    if delimiter.0.is_empty() { return None; }
-    chars(&text.0);
-    let fields: Vec<Str> = text.0.split(&*delimiter.0).map(Str::lit).collect();
-    if fields.len() as u128 > u128::from(maximum) { return None; }
-    Some(List::onto(fields, List::nil()))
-}
-pub fn join(texts: List<Str>, delimiter: Str) -> Str {
-    let mut out = String::new();
-    let mut first = true;
-    texts.walk(&mut |text| {
-        if !first { chars(&delimiter.0); out.push_str(&delimiter.0); }
-        first = false;
-        chars(&text.0);
-        out.push_str(&text.0);
-        true
-    });
-    Str::lit(&out)
-}
-fn canonical_decimal(text: &str) -> Option<Option<i128>> {
-    let digits = text.strip_prefix('-').unwrap_or(text);
-    let mut canonical = !digits.is_empty() && (digits == "0" || !digits.starts_with('0')) && text != "-0";
-    for c in digits.chars() { tick(1); canonical = canonical && c.is_ascii_digit(); }
-    if !canonical { return None; }
-    Some(text.parse::<i128>().ok())
-}
-pub fn parse_int(text: Str) -> R<Option<i64>> {
-    match canonical_decimal(&text.0) {
-        None => Ok(None),
-        Some(Some(n)) => i64::try_from(n).map(Some).map_err(|_| Overflow),
-        Some(None) => Err(Overflow),
-    }
-}
-macro_rules! decimal {
-    ($t:ident, $format:ident, $parse:ident) => {
-        pub fn $format(a: $t) -> Str { let text = a.to_string(); tick(text.len() as u64); Str::lit(&text) }
-        pub fn $parse(text: Str) -> Option<$t> {
-            match canonical_decimal(&text.0) { Some(Some(n)) => $t::try_from(n).ok(), _ => None }
-        }
-    };
-}
-decimal!(u8, format_u8, parse_u8); decimal!(u16, format_u16, parse_u16);
-decimal!(u32, format_u32, parse_u32); decimal!(u64, format_u64, parse_u64);
-decimal!(i8, format_i8, parse_i8); decimal!(i16, format_i16, parse_i16);
-decimal!(i32, format_i32, parse_i32); decimal!(i64, format_i64, parse_i64);
-"#;
 
 /// A runtime function generated code may call.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -462,7 +330,7 @@ impl Item {
             Self::CompareBytes => "compare_bytes".to_owned(),
             Self::SplitExact => "split_exact".to_owned(),
             Self::Join => "join".to_owned(),
-            Self::FormatInt => "format_i64".to_owned(),
+            Self::FormatInt => "format_int".to_owned(),
             Self::FormatFixed(kind) => format!("format_{}", kind.name()),
             Self::ParseInt => "parse_int".to_owned(),
             Self::ParseFixed(kind) => format!("parse_{}", kind.name()),
@@ -627,16 +495,17 @@ pub const ROOT_NAMES: &[&str] = &[
 
 #[cfg(test)]
 mod tests {
-    use super::{core, Item, STD};
+    use super::{core, std, Item};
 
     /// Every item exists in the runtime of every profile that can call it,
     /// with exactly the failure mode the item declares.
     #[test]
     fn every_item_exists_with_its_failure_mode() {
         let core = core().expect("the core runtime");
+        let std = std().expect("the std runtime");
         for item in Item::all() {
             let path = item.path();
-            let text = if item.heap() { STD } else { core };
+            let text = if item.heap() { std } else { core };
             if let Some((module, name)) = path.split_once("::") {
                 let at = core
                     .find(&format!("pub mod {module} {{"))
@@ -648,21 +517,14 @@ mod tests {
                     .find(|line| line.contains(&format!("pub fn {name}(")))
                     .unwrap_or_else(|| panic!("{path} is not declared"));
                 assert!(!declaration.contains("-> R<") && !item.fallible(), "{path}");
-            } else if let Some(line) = text.lines().find(|line| {
-                line.starts_with("decimal!(")
-                    && (line.contains(&format!(", {path},"))
-                        || line.contains(&format!(", {path})")))
-            }) {
-                assert!(!item.fallible(), "{path}: {line}");
-                let macro_body = &STD[STD.find("macro_rules! decimal").expect("decimal")..];
-                let macro_body = &macro_body[..macro_body.find("\n}\n").expect("end")];
-                assert!(!macro_body.contains("-> R<"), "{path}");
             } else {
+                // The free function, not a method of the same name (the
+                // number text has `Str::parse_int` beside `parse_int`).
                 let declaration = text
                     .lines()
                     .find(|line| {
-                        line.contains(&format!("pub fn {path}("))
-                            || line.contains(&format!("pub fn {path}<"))
+                        line.starts_with(&format!("pub fn {path}("))
+                            || line.starts_with(&format!("pub fn {path}<"))
                     })
                     .unwrap_or_else(|| panic!("{path} is not declared"));
                 assert_eq!(
@@ -694,7 +556,11 @@ mod tests {
             ),
             (
                 "rust_runtime_std",
-                format!("{}{STD}", core().expect("the core runtime")),
+                format!(
+                    "{}{}",
+                    core().expect("the core runtime"),
+                    std().expect("the std runtime")
+                ),
             ),
         ] {
             let digest = crate::artifact::content_id::Sha256Digest::of(text.as_bytes()).to_hex();
@@ -717,7 +583,10 @@ mod tests {
     /// of a list, whose cells were counted when built.
     #[test]
     fn every_runtime_loop_ticks() {
-        for runtime in [core().expect("the core runtime"), STD] {
+        for runtime in [
+            core().expect("the core runtime"),
+            std().expect("the std runtime"),
+        ] {
             let lines: Vec<&str> = runtime.lines().collect();
             for (number, line) in lines.iter().enumerate() {
                 let trimmed = line.trim_start();

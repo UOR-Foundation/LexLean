@@ -19,12 +19,17 @@ use crate::rust_build::{cargo_in, workspace, Built};
 use crate::support::repo_root;
 
 /// The rules of the validator that this case plants and `RB-17`'s does not:
-/// those of the constructs the module grew by (the eleventh new rule,
-/// `hidden-allocation`, is planted by `RB-17`'s text plants and here on the probe). `RB-17` requires the rules in
+/// those of the constructs the module grew by (`hidden-allocation`, which joins them, is
+/// planted by `RB-17`'s text plants and here on the probe). `RB-17` requires the rules in
 /// the validator's source to be its own planted rules and these.
-pub(super) const RULES: [&str; 15] = [
+pub(super) const RULES: [&str; 20] = [
     "assign-immutable",
     "assign-place",
+    "attribute-args",
+    "attribute-name",
+    "attribute-position",
+    "defined-path",
+    "module-member",
     "break-position",
     "char-literal",
     "derive",
@@ -84,6 +89,8 @@ fn main() {
         }
     }
     assert_eq!(p::twin_total(3, 4), 7);
+    assert_eq!(p::inner::seven(), 7);
+    assert_eq!(p::defined_probe(), 9);
     let before = p::drops();
     p::make_and_drop();
     p::make_and_drop();
@@ -155,6 +162,40 @@ fn with_param(krate: &Crate, name: &str, param: rt::Param) -> Crate {
     out
 }
 
+/// `krate` with a unit struct `Gauge` and an inherent impl whose one
+/// function `fresh` takes one parameter and no receiver, which a statement of
+/// `flip` can then call by the path `Gauge::fresh`.
+fn with_associated(krate: &Crate) -> Crate {
+    let mut out = krate.clone();
+    let unit = Expr::Lit(Lit::Unit);
+    out.items.push(Item::UnitStruct("Gauge".to_owned(), vec![]));
+    out.items.push(Item::Impl(
+        vec![],
+        None,
+        Type::Named("Gauge".to_owned(), vec![]),
+        vec![rt::Function {
+            sig: rt::Sig {
+                name: "fresh".to_owned(),
+                receiver: false,
+                exclusive: false,
+                params: vec![rt::Param {
+                    name: "n".to_owned(),
+                    mutable: false,
+                    ty: Type::Nat,
+                }],
+                result: Type::Unit,
+            },
+            generics: vec![],
+            public: true,
+            body: Block {
+                statements: vec![],
+                tail: unit,
+            },
+        }],
+    ));
+    out
+}
+
 /// A crate of the std profile holding `items`.
 fn tiny(items: Vec<Item>) -> Crate {
     Crate {
@@ -205,7 +246,10 @@ fn var(name: &str) -> Box<Expr> {
 
 /// The constructors of `RuntimeSyntax` that the heap runtime added, each
 /// with the enum it belongs to.
-const GROWN: [&str; 53] = [
+const GROWN: [&str; 56] = [
+    "RtItem.defined",
+    "RtItem.moduleItem",
+    "RtItem.innerAttribute",
     "RtItem.tupleStruct",
     "RtItem.recordStruct",
     "RtItem.enumItem",
@@ -279,7 +323,64 @@ fn constructors_absent(module: &str) -> Vec<String> {
 /// the description, the crate, and the rule that refuses it.
 pub(super) fn probe_plants(krate: &Crate) -> Vec<(&'static str, Crate, &'static str)> {
     let unit = Expr::Lit(Lit::Unit);
+    let with_item = |item: Item| {
+        let mut out = krate.clone();
+        out.items.push(item);
+        out
+    };
     vec![
+        (
+            "an inner attribute after an item",
+            with_item(Item::InnerAttr("no_std".to_owned(), vec![])),
+            "attribute-position",
+        ),
+        (
+            "an inner attribute outside the closed set",
+            {
+                let mut out = krate.clone();
+                out.items.insert(
+                    0,
+                    Item::InnerAttr("allow".to_owned(), vec!["dead_code".to_owned()]),
+                );
+                out
+            },
+            "attribute-name",
+        ),
+        (
+            "a forbid that names no lint",
+            {
+                let mut out = krate.clone();
+                out.items
+                    .insert(0, Item::InnerAttr("forbid".to_owned(), vec![]));
+                out
+            },
+            "attribute-args",
+        ),
+        (
+            "a no_std that is given arguments",
+            {
+                let mut out = krate.clone();
+                out.items.insert(
+                    0,
+                    Item::InnerAttr("no_std".to_owned(), vec!["x".to_owned()]),
+                );
+                out
+            },
+            "attribute-args",
+        ),
+        (
+            "a module that holds an item other than a function",
+            with_item(Item::Mod(
+                "holder".to_owned(),
+                vec![Item::Use(vec!["std".to_owned(), "fmt".to_owned()], None)],
+            )),
+            "module-member",
+        ),
+        (
+            "a definition with an empty path",
+            with_item(Item::Defined(String::new())),
+            "defined-path",
+        ),
         (
             "a break outside a loop",
             with_statement(krate, "flip", Expr::Break),
@@ -302,6 +403,27 @@ pub(super) fn probe_plants(krate: &Crate) -> Vec<(&'static str, Crate, &'static 
         (
             "a call that is neither declared nor in the table",
             with_statement(krate, "flip", Expr::Call(vec!["frob".to_owned()], vec![])),
+            "call-name",
+        ),
+        (
+            "an associated function called with another number of arguments",
+            with_statement(
+                &with_associated(krate),
+                "flip",
+                Expr::Call(vec!["Gauge".to_owned(), "fresh".to_owned()], vec![]),
+            ),
+            "call-arity",
+        ),
+        (
+            "an associated function the impl does not state",
+            with_statement(
+                &with_associated(krate),
+                "flip",
+                Expr::Call(
+                    vec!["Gauge".to_owned(), "absent".to_owned()],
+                    vec![unit.clone()],
+                ),
+            ),
             "call-name",
         ),
         (
@@ -1043,7 +1165,13 @@ pub fn run(id: &str) {
         "the probe holds an item of each construct"
     );
     rt_validate::validate(&krate).expect("the probe is valid");
-    let text = rt::print(&krate);
+    // `defined_probe` stands for a definition the crate's `RustSyntax` module
+    // gives: the printer is handed its text, as `runtime.rs` hands it the
+    // definitions it prints.
+    let text = rt::print_with(&krate, &|path| {
+        (path == "defined_probe").then(|| "pub fn defined_probe() -> u64 { 9 }\n".to_owned())
+    })
+    .expect("the probe prints");
     let ran = compile_and_run(&text).expect("the printed probe computes what the harness states");
     assert_eq!(ran, "probe");
 
@@ -1195,7 +1323,7 @@ pub fn run(id: &str) {
         },
     })]);
     rt_validate::validate(&compare).expect("the comparison is valid");
-    let printed = rt::print(&compare);
+    let printed = rt::print(&compare).expect("the comparison prints");
     assert!(
         printed.contains("(x + y as u8) < z"),
         "the cast is closed by a parenthesis: {printed}"

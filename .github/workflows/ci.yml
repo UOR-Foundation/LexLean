@@ -42,7 +42,8 @@
 # to `main` runs none: a merge whose tree is the tree of its second parent, a
 # pull request head that already contained `main`, when the whole gate passed
 # on that head as a pull request run; the tree is the one that run verified,
-# and the plan records the run. `release.yml` runs `just vv` whole regardless.
+# and the plan records the run. `release.yml` runs no recipe: its evidence is
+# the run of this workflow that verified the tagged commit's tree (§30.3).
 #
 # The gate runs on the standard GitHub-hosted runner (SPEC.md §9.4); no larger
 # runner is part of it. The `examples` leg and every Atlas shard verify at the
