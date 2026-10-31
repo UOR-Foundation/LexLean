@@ -7,14 +7,30 @@ inductive{
   name: ActionKind,
   type_parameters: [],
   parameters: [],
-  constructors: [{name: Observation, fields: []}, {name: Preprocessing, fields: []}, {name: Advice, fields: []}, {name: RetainedState, fields: []}, {name: Dispatch, fields: []}, {name: Fallback, fields: []}, {name: Communication, fields: []}, {name: Randomness, fields: []}, {name: Scheduling, fields: []}, {name: Execution, fields: []}]
+  constructors: [
+    {name: Observation, fields: []},
+    {name: Preprocessing, fields: []},
+    {name: Advice, fields: []},
+    {name: RetainedState, fields: []},
+    {name: Dispatch, fields: []},
+    {name: Fallback, fields: []},
+    {name: Communication, fields: []},
+    {name: Randomness, fields: []},
+    {name: Scheduling, fields: []},
+    {name: Execution, fields: []}
+  ]
 }
 
 inductive{
   name: Charge,
   type_parameters: [],
   parameters: [],
-  constructors: [{name: ChSteps, fields: []}, {name: ChConstant, fields: [Nat]}, {name: ChFree, fields: []}, {name: ChUndeclared, fields: []}]
+  constructors: [
+    {name: ChSteps, fields: []},
+    {name: ChConstant, fields: [Nat]},
+    {name: ChFree, fields: []},
+    {name: ChUndeclared, fields: []}
+  ]
 }
 
 structure{
@@ -28,7 +44,11 @@ inductive{
   name: Boundary,
   type_parameters: [],
   parameters: [],
-  constructors: [{name: BdComplete, fields: []}, {name: BdPreparedState, fields: []}, {name: BdPreparedPlan, fields: []}]
+  constructors: [
+    {name: BdComplete, fields: []},
+    {name: BdPreparedState, fields: []},
+    {name: BdPreparedPlan, fields: []}
+  ]
 }
 
 inductive{
@@ -42,28 +62,51 @@ structure{
   name: Capacity,
   type_parameters: [],
   parameters: [],
-  fields: [{name: fuel, type: Nat}, {name: domain, type: Nat}, {name: systems, type: Nat}, {name: charge, type: Nat}]
+  fields: [
+    {name: fuel, type: Nat},
+    {name: domain, type: Nat},
+    {name: systems, type: Nat},
+    {name: charge, type: Nat}
+  ]
 }
 
 structure{
   name: Machine,
   type_parameters: [],
   parameters: [],
-  fields: [{name: fuel, type: Nat}, {name: capacity, type: Capacity}, {name: operandSize, type: OperandSize}, {name: actions, type: (List Action)}, {name: boundary, type: Boundary}, {name: prepared, type: (List ActionKind)}]
+  fields: [
+    {name: fuel, type: Nat},
+    {name: capacity, type: Capacity},
+    {name: operandSize, type: OperandSize},
+    {name: actions, type: (List Action)},
+    {name: boundary, type: Boundary},
+    {name: prepared, type: (List ActionKind)}
+  ]
 }
 
 inductive{
   name: Carrier,
   type_parameters: [],
   parameters: [],
-  constructors: [{name: CaGrammar, fields: [Nat, (List ActionKind), Nat]}, {name: CaInternalPlans, fields: []}, {name: CaOptimizerOutput, fields: []}, {name: CaDiscovered, fields: []}, {name: CaCached, fields: []}]
+  constructors: [
+    {name: CaGrammar, fields: [Nat, (List ActionKind), Nat]},
+    {name: CaInternalPlans, fields: []},
+    {name: CaOptimizerOutput, fields: []},
+    {name: CaDiscovered, fields: []},
+    {name: CaCached, fields: []}
+  ]
 }
 
 inductive{
   name: Completeness,
   type_parameters: [],
   parameters: [],
-  constructors: [{name: CoGrammarEquality, fields: []}, {name: CoMissing, fields: []}, {name: CoCitesUniverseId, fields: []}, {name: CoCitesOptimizer, fields: []}]
+  constructors: [
+    {name: CoGrammarEquality, fields: []},
+    {name: CoMissing, fields: []},
+    {name: CoCitesUniverseId, fields: []},
+    {name: CoCitesOptimizer, fields: []}
+  ]
 }
 
 inductive{
@@ -77,28 +120,94 @@ inductive{
   name: ClaimClass,
   type_parameters: [],
   parameters: [],
-  constructors: [{name: ClExact, fields: []}, {name: ClNormalForm, fields: []}, {name: ClCanonical, fields: []}, {name: ClRepresentationMinimal, fields: []}, {name: ClComparisonTheorem, fields: []}, {name: ClProfileDefinedComparison, fields: []}, {name: ClInputTotal, fields: []}, {name: ClGlobalOptimal, fields: []}, {name: ClArgminComplete, fields: []}, {name: ClParetoOptimal, fields: []}, {name: ClFrontierComplete, fields: []}, {name: ClPointwiseEnvelopeComplete, fields: []}, {name: ClQueryFamilyAnswerComplete, fields: []}, {name: ClUseCaseGlobalOptimal, fields: []}, {name: ClWorkloadArgminComplete, fields: []}, {name: ClWorkloadParetoOptimal, fields: []}, {name: ClWorkloadFrontierComplete, fields: []}, {name: ClFamilyOptimal, fields: []}, {name: ClCompetitiveBound, fields: []}, {name: ClCompetitiveOptimal, fields: []}, {name: ClAsymptoticBound, fields: []}, {name: ClAsymptoticOptimal, fields: []}, {name: ClUseCaseClassComplete, fields: []}, {name: ClUseCaseClassAnswerComplete, fields: []}, {name: ClMaintainedUseCaseClass, fields: []}, {name: ClRestrictedUniverseOptimal, fields: []}, {name: ClRevisionPreserved, fields: []}, {name: ClBestKnown, fields: []}, {name: ClMeasuredBestAmongTested, fields: []}, {name: ClHeuristicSelected, fields: []}, {name: ClInstanceOptimal, fields: []}]
+  constructors: [
+    {name: ClExact, fields: []},
+    {name: ClNormalForm, fields: []},
+    {name: ClCanonical, fields: []},
+    {name: ClRepresentationMinimal, fields: []},
+    {name: ClComparisonTheorem, fields: []},
+    {name: ClProfileDefinedComparison, fields: []},
+    {name: ClInputTotal, fields: []},
+    {name: ClGlobalOptimal, fields: []},
+    {name: ClArgminComplete, fields: []},
+    {name: ClParetoOptimal, fields: []},
+    {name: ClFrontierComplete, fields: []},
+    {name: ClPointwiseEnvelopeComplete, fields: []},
+    {name: ClQueryFamilyAnswerComplete, fields: []},
+    {name: ClUseCaseGlobalOptimal, fields: []},
+    {name: ClWorkloadArgminComplete, fields: []},
+    {name: ClWorkloadParetoOptimal, fields: []},
+    {name: ClWorkloadFrontierComplete, fields: []},
+    {name: ClFamilyOptimal, fields: []},
+    {name: ClCompetitiveBound, fields: []},
+    {name: ClCompetitiveOptimal, fields: []},
+    {name: ClAsymptoticBound, fields: []},
+    {name: ClAsymptoticOptimal, fields: []},
+    {name: ClUseCaseClassComplete, fields: []},
+    {name: ClUseCaseClassAnswerComplete, fields: []},
+    {name: ClMaintainedUseCaseClass, fields: []},
+    {name: ClRestrictedUniverseOptimal, fields: []},
+    {name: ClRevisionPreserved, fields: []},
+    {name: ClBestKnown, fields: []},
+    {name: ClMeasuredBestAmongTested, fields: []},
+    {name: ClHeuristicSelected, fields: []},
+    {name: ClInstanceOptimal, fields: []}
+  ]
 }
 
 inductive{
   name: Scope,
   type_parameters: [],
   parameters: [],
-  constructors: [{name: ScGrammarUniverse, fields: []}, {name: ScCalculusPrograms, fields: []}, {name: ScRustPrograms, fields: []}]
+  constructors: [
+    {name: ScGrammarUniverse, fields: []},
+    {name: ScCalculusPrograms, fields: []},
+    {name: ScRustPrograms, fields: []}
+  ]
 }
 
 structure{
   name: Request,
   type_parameters: [],
   parameters: [],
-  fields: [{name: domainLength, type: Nat}, {name: machine, type: Machine}, {name: carrier, type: Carrier}, {name: completeness, type: Completeness}, {name: objective, type: Objective}, {name: claim, type: ClaimClass}, {name: scope, type: Scope}]
+  fields: [
+    {name: domainLength, type: Nat},
+    {name: machine, type: Machine},
+    {name: carrier, type: Carrier},
+    {name: completeness, type: Completeness},
+    {name: objective, type: Objective},
+    {name: claim, type: ClaimClass},
+    {name: scope, type: Scope}
+  ]
 }
 
 inductive{
   name: Rejection,
   type_parameters: [],
   parameters: [],
-  constructors: [{name: RjEmptyDomain, fields: []}, {name: RjInternalPlanUniverse, fields: []}, {name: RjOptimizerDefinedUniverse, fields: []}, {name: RjDiscoveredUniverse, fields: []}, {name: RjCachedUniverse, fields: []}, {name: RjMissingCompleteness, fields: []}, {name: RjSelfReferentialCompleteness, fields: []}, {name: RjOptimizerCompleteness, fields: []}, {name: RjBeyondCapacity, fields: []}, {name: RjUnitCostOperands, fields: []}, {name: RjDuplicateAction, fields: [ActionKind]}, {name: RjUnaccountedAction, fields: [ActionKind]}, {name: RjHiddenCost, fields: [ActionKind]}, {name: RjUnrealizableAction, fields: [ActionKind]}, {name: RjUnboundPreparation, fields: [ActionKind]}, {name: RjStrayPreparedArtifact, fields: [ActionKind]}, {name: RjClaimAlias, fields: []}, {name: RjScalarClaimOverPartialOrder, fields: []}, {name: RjVectorClaimOverTotalOrder, fields: []}, {name: RjUncoveredScope, fields: []}, {name: RjUnsupportedClaim, fields: []}]
+  constructors: [
+    {name: RjEmptyDomain, fields: []},
+    {name: RjInternalPlanUniverse, fields: []},
+    {name: RjOptimizerDefinedUniverse, fields: []},
+    {name: RjDiscoveredUniverse, fields: []},
+    {name: RjCachedUniverse, fields: []},
+    {name: RjMissingCompleteness, fields: []},
+    {name: RjSelfReferentialCompleteness, fields: []},
+    {name: RjOptimizerCompleteness, fields: []},
+    {name: RjBeyondCapacity, fields: []},
+    {name: RjUnitCostOperands, fields: []},
+    {name: RjDuplicateAction, fields: [ActionKind]},
+    {name: RjUnaccountedAction, fields: [ActionKind]},
+    {name: RjHiddenCost, fields: [ActionKind]},
+    {name: RjUnrealizableAction, fields: [ActionKind]},
+    {name: RjUnboundPreparation, fields: [ActionKind]},
+    {name: RjStrayPreparedArtifact, fields: [ActionKind]},
+    {name: RjClaimAlias, fields: []},
+    {name: RjScalarClaimOverPartialOrder, fields: []},
+    {name: RjVectorClaimOverTotalOrder, fields: []},
+    {name: RjUncoveredScope, fields: []},
+    {name: RjUnsupportedClaim, fields: []}
+  ]
 }
 
 definition{
@@ -278,10 +387,10 @@ definition{
   body: (match (checkPerformedOne machine (ctor ActionKind.Observation))
     | Option.some held => (ctor Option.some [Rejection] held)
     | Option.none => (match (checkPerformedOne machine (ctor ActionKind.Dispatch))
-    | Option.some held => (ctor Option.some [Rejection] held)
-    | Option.none => (match (checkPerformedOne machine (ctor ActionKind.Fallback))
-    | Option.some held => (ctor Option.some [Rejection] held)
-    | Option.none => (checkPerformedOne machine (ctor ActionKind.Execution))))),
+      | Option.some held => (ctor Option.some [Rejection] held)
+      | Option.none => (match (checkPerformedOne machine (ctor ActionKind.Fallback))
+        | Option.some held => (ctor Option.some [Rejection] held)
+        | Option.none => (checkPerformedOne machine (ctor ActionKind.Execution))))),
   axioms: [Quot.sound, propext],
   executable: true
 }
@@ -581,6 +690,5 @@ definition{
   executable: true,
   production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
 }
-
 \end{semanticmodule}
 \end{lexlean}
