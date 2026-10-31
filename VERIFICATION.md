@@ -10638,8 +10638,9 @@ Removed: both edits were restored; `conformance_sm_32` and the unit tests of
 ## The plan of a CI run can fail (RP-14, #131)
 
 `.github/ci-plan.sh` decides what a run of `ci.yml` is: the `rest` leg for a
-draft pull request, the whole gate for a ready pull request, a request, and a
-push, and nothing for a push that merges a head whose tree it equals when the
+draft pull request and for a ready one whose base is neither `main` nor
+`release/*` (a stacked pull request), the whole gate for a ready pull request
+into `main` or a release line, a request, and a push, and nothing for a push that merges a head whose tree it equals when the
 whole gate passed on that head. A decision that skips jobs is a gate that can
 pass without evidence, so `RP-14` runs the script in a scratch repository with a
 stand-in for `gh` against planted events (a draft, a ready pull request, a
@@ -10656,6 +10657,8 @@ run, and the defect removed. The observed lines are the case's own.
 | the join of Atlas is not required of the run | `§9.4: no Atlas join is not the whole gate passing` |
 | the number of hosts is not compared with the host matrix | `§9.4: no host is not the whole gate passing` |
 | a draft pull request runs the whole gate | `repository.rs:322`, the draft is not the `rest` leg alone |
+| a ready pull request into a feature branch runs the whole gate (the `*)` arm of the base `case` in `ci-plan.sh` made the whole gate) | `repository.rs:371`, `§9.4: a ready pull request into a feature branch` (left: `true` and every leg, right: `false` and `rest`) |
+| `ci.yml` does not pass the base branch to the plan | `§9.4: the plan runs the script on the event and the base branch, and may read the runs of the repository` |
 | a failed query of the runs is read as a pass | `repository.rs:336`, a failed call is not the whole gate |
 | the `rest` row of `.github/vv-rows.json` is renamed | `§9.4: the leg a draft pull request runs is the one named `rest`` |
 | the host matrix does not wait for the plan | `repository.rs:1792`, `§8.3: the hosts are checked when the plan says the run is the whole gate` |
