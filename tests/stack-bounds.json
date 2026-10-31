@@ -48,6 +48,9 @@
     "bootstrap/print_expr": {
       "debug": 4259840
     },
+    "bootstrap/render_tooling_latex": {
+      "debug": 3342336
+    },
     "bootstrap/validate_crate": {
       "debug": 5046272
     },

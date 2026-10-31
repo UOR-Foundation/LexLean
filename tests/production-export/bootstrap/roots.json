@@ -81,6 +81,14 @@
       "version": "1.0.0"
     },
     {
+      "name": "render_tooling_latex",
+      "root": "LexLeanBoot.ToolingLatex.renderToolingLatex",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "scan_source",
       "root": "LexLeanBoot.PrimitiveScan.scanSource",
       "targets": [
