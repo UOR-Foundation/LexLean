@@ -857,6 +857,64 @@ pub(super) fn site_plants(krate: &Crate) -> Vec<(&'static str, Crate, &'static s
             "identifier",
             "a pattern field name",
         ),
+        // the names of the crate header and of a definition (#308)
+        (
+            "a lint name with a space",
+            unit_item(Item::InnerAttr(
+                "forbid".to_owned(),
+                strings(&["not a lint"]),
+            )),
+            "identifier",
+            "a lint name",
+        ),
+        (
+            "a lint name that is a keyword",
+            unit_item(Item::InnerAttr(
+                "forbid".to_owned(),
+                strings(&["unsafe_code", "fn"]),
+            )),
+            "identifier",
+            "a lint name",
+        ),
+        (
+            "a defined path that is not an identifier",
+            unit_item(Item::Defined("not a path".to_owned())),
+            "identifier",
+            "a defined path segment",
+        ),
+        (
+            "a module segment of a defined path",
+            unit_item(Item::Defined("fixed u8::checked_add".to_owned())),
+            "identifier",
+            "a defined path segment",
+        ),
+        (
+            "a name segment of a defined path in a module",
+            unit_item(Item::Mod(
+                "holder".to_owned(),
+                vec![Item::Defined("holder::x }; pub fn g() {".to_owned())],
+            )),
+            "identifier",
+            "a defined path segment",
+        ),
+        (
+            "an empty segment of a defined path",
+            unit_item(Item::Defined("fixed_u8::".to_owned())),
+            "identifier",
+            "a defined path segment",
+        ),
+        (
+            "a defined path that starts with the separator",
+            unit_item(Item::Defined("::checked_add".to_owned())),
+            "identifier",
+            "a defined path segment",
+        ),
+        (
+            "a keyword segment of a defined path",
+            unit_item(Item::Defined("fixed_u8::fn".to_owned())),
+            "identifier",
+            "a defined path segment",
+        ),
         // derives, one site each
         (
             "a derive of a unit struct",

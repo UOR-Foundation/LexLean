@@ -245,9 +245,9 @@
 'LexLeanBoot.RuntimeValidate.armsOk' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.RuntimeValidate.assignable' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.associatedArity' does not depend on any axioms
-'LexLeanBoot.RuntimeValidate.attributeStep' does not depend on any axioms
-'LexLeanBoot.RuntimeValidate.attributeStop' does not depend on any axioms
-'LexLeanBoot.RuntimeValidate.attributesOk' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.attributeStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RuntimeValidate.attributeStop' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RuntimeValidate.attributesOk' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.RuntimeValidate.bEq' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.bindsOf' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.RuntimeValidate.blockOk' depends on axioms: [propext, Quot.sound]
@@ -259,11 +259,13 @@
 'LexLeanBoot.RuntimeValidate.callDirectHeap' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.callExpected' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.callHeap' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.colonPieces' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.colonStep' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.completes' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.RuntimeValidate.countIn' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.countNamed' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.declare' does not depend on any axioms
-'LexLeanBoot.RuntimeValidate.definedPathOk' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.definedPathOk' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.RuntimeValidate.derivesErr' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.emptyFr' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.endsInCast' does not depend on any axioms

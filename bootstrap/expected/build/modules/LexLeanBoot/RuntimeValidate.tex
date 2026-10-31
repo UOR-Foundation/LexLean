@@ -1089,13 +1089,28 @@
 \noindent Type: \texttt{Option (ByteArray)}.\par
 \noindent Definition: \texttt{(if (!(f).<U+00AB>public<U+00BB>) then Option.some (rcat (rtext ("runtime support: function-visibility: ")) (rcat (rtick (((f).sig).name)) (rtext (" is a free function that is not public")))) else (if ((f).sig).receiver then Option.some (rcat (rtext ("runtime support: function-receiver: ")) (rcat (rtext ("free function ")) (rcat (rtick (((f).sig).name)) (rtext (" takes `\&self`"))))) else fnOk (sc) (([] : List (Generic))) (Ty.TyAbsent) (f)))}.\par
 \noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{colonStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(path : ByteArray) (state : (Prod (Nat) ((Prod (Nat) (List (ByteArray))))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option ((Prod (Nat) ((Prod (Nat) (List (ByteArray))))))}.\par
+\noindent Definition: \texttt{(let position : Nat := (state).1; (let start : Nat := ((state).2).1; (let pieces : List (ByteArray) := ((state).2).2; (match LexLeanStd.Text.byteAt (path) (position) with | Option.some byte => (if (LexLeanRuntime.equal (byte) ((58 : UInt8)) : Bool) then (match LexLeanStd.Text.byteAt (path) ((position + 1)) with | Option.some next => (if (LexLeanRuntime.equal (next) ((58 : UInt8)) : Bool) then Option.some (((position + 2), ((position + 2), (LexLeanStd.Text.sliceOr (path) (start) ((LexLeanRuntime.subtract (position) (start) : Nat)) :: pieces)))) else Option.some (((position + 1), (start, pieces)))) | Option.none => Option.some (((position + 1), (start, pieces)))) else Option.some (((position + 1), (start, pieces)))) | Option.none => Option.none))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{colonPieces}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(path : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{(path)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (ByteArray)}.\par
+\noindent Definition: \texttt{(let total : Nat := (LexLeanRuntime.length (path) : Nat); (let final : (Prod (Nat) ((Prod (Nat) (List (ByteArray))))) := ((LexLeanCollections.iterateUntil ((fun (state : (Prod (Nat) ((Prod (Nat) (List (ByteArray)))))) => colonStep (path) (state))) (total) ((0, (0, ([] : List (ByteArray))))) : (Prod ((Prod (Nat) ((Prod (Nat) (List (ByteArray)))))) (Bool)))).1; (let start : Nat := ((final).2).1; LexLeanStd.Text.reverse ((LexLeanStd.Text.sliceOr (path) (start) ((LexLeanRuntime.subtract (total) (start) : Nat)) :: ((final).2).2)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
 \subsection*{\texttt{definedPathOk}}
 \noindent Kind: \texttt{definition}.\par
 \noindent Parameters: \texttt{(path : ByteArray)}.\par
 \noindent Execution: executable, non-escaping closures only.\par
 \noindent Type: \texttt{Option (ByteArray)}.\par
-\noindent Definition: \texttt{(if (Nat.beq ((LexLeanRuntime.length (path) : Nat)) (0)) then Option.some (rtext ("runtime support: defined-path: empty")) else Option.none)}.\par
-\noindent Axiom policy: \texttt{none}.\par
+\noindent Definition: \texttt{(if (Nat.beq ((LexLeanRuntime.length (path) : Nat)) (0)) then Option.some (rtext ("runtime support: defined-path: empty")) else identsErr ("a defined path segment") (colonPieces (path)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
 \subsection*{\texttt{memberOk}}
 \noindent Kind: \texttt{definition}.\par
 \noindent Parameters: \texttt{(sc : Sc) (owner : ByteArray) (member : Item)}.\par
@@ -1113,15 +1128,15 @@
 \noindent Closure 1: binds \texttt{(empty, arg)}, captures \texttt{()}.\par
 \noindent Execution: executable, non-escaping closures only.\par
 \noindent Type: \texttt{Option (ByteArray)}.\par
-\noindent Definition: \texttt{(if bEq (name) (rtext ("no\_std")) then (match args with | List.nil => Option.none | List.cons \_ \_ => Option.some (rcat (rtext ("runtime support: attribute-args: ")) (rcat (rtick (name)) (rtext (" takes no arguments"))))) else (if bEq (name) (rtext ("forbid")) then (match args with | List.nil => Option.some (rcat (rtext ("runtime support: attribute-args: ")) (rcat (rtick (name)) (rtext (" takes a lint")))) | List.cons \_ \_ => (if (LexLeanCollections.listFold ((fun (empty : Bool) (arg : ByteArray) => (if empty then true else (Nat.beq ((LexLeanRuntime.length (arg) : Nat)) (0))))) (false) (args) : Bool) then Option.some (rcat (rtext ("runtime support: attribute-args: ")) (rcat (rtick (name)) (rtext (" takes a lint with a name")))) else Option.none)) else Option.some (rcat (rtext ("runtime support: attribute-name: ")) (rcat (rtick (name)) (rtext (" is not an inner attribute of the closed set"))))))}.\par
-\noindent Axiom policy: \texttt{none}.\par
+\noindent Definition: \texttt{(if bEq (name) (rtext ("no\_std")) then (match args with | List.nil => Option.none | List.cons \_ \_ => Option.some (rcat (rtext ("runtime support: attribute-args: ")) (rcat (rtick (name)) (rtext (" takes no arguments"))))) else (if bEq (name) (rtext ("forbid")) then (match args with | List.nil => Option.some (rcat (rtext ("runtime support: attribute-args: ")) (rcat (rtick (name)) (rtext (" takes a lint")))) | List.cons \_ \_ => (if (LexLeanCollections.listFold ((fun (empty : Bool) (arg : ByteArray) => (if empty then true else (Nat.beq ((LexLeanRuntime.length (arg) : Nat)) (0))))) (false) (args) : Bool) then Option.some (rcat (rtext ("runtime support: attribute-args: ")) (rcat (rtick (name)) (rtext (" takes a lint with a name")))) else identsErr ("a lint name") (args))) else Option.some (rcat (rtext ("runtime support: attribute-name: ")) (rcat (rtick (name)) (rtext (" is not an inner attribute of the closed set"))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
 \subsection*{\texttt{attributeStep}}
 \noindent Kind: \texttt{definition}.\par
 \noindent Parameters: \texttt{(state : AttrSeen) (item : Item)}.\par
 \noindent Execution: executable, non-escaping closures only.\par
 \noindent Type: \texttt{AttrSeen}.\par
 \noindent Definition: \texttt{(match item with | Item.IUse \_ \_ => (\{ over := true, stop := Option.none \} : AttrSeen) | Item.IUnit \_ \_ => (\{ over := true, stop := Option.none \} : AttrSeen) | Item.IAlias \_ \_ \_ => (\{ over := true, stop := Option.none \} : AttrSeen) | Item.IStatic \_ \_ \_ => (\{ over := true, stop := Option.none \} : AttrSeen) | Item.ITrait \_ \_ => (\{ over := true, stop := Option.none \} : AttrSeen) | Item.IImpl \_ \_ \_ \_ => (\{ over := true, stop := Option.none \} : AttrSeen) | Item.IFn \_ => (\{ over := true, stop := Option.none \} : AttrSeen) | Item.ITuple \_ \_ \_ \_ => (\{ over := true, stop := Option.none \} : AttrSeen) | Item.IRecord \_ \_ \_ \_ \_ => (\{ over := true, stop := Option.none \} : AttrSeen) | Item.IEnum \_ \_ \_ \_ => (\{ over := true, stop := Option.none \} : AttrSeen) | Item.IDefined \_ => (\{ over := true, stop := Option.none \} : AttrSeen) | Item.IMod \_ \_ => (\{ over := true, stop := Option.none \} : AttrSeen) | Item.IAttr name args => (if (state).over then (\{ over := true, stop := Option.some (rcat (rtext ("runtime support: attribute-position: `\#![")) (rcat (name) (rtext ("]` follows an item")))) \} : AttrSeen) else (\{ over := false, stop := attributeStop (name) (args) \} : AttrSeen)))}.\par
-\noindent Axiom policy: \texttt{none}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
 \subsection*{\texttt{attributesOk}}
 \noindent Kind: \texttt{definition}.\par
 \noindent Parameters: \texttt{(items : List (Item))}.\par
@@ -1129,7 +1144,7 @@
 \noindent Execution: executable, non-escaping closures only.\par
 \noindent Type: \texttt{Option (ByteArray)}.\par
 \noindent Definition: \texttt{((LexLeanCollections.listFold ((fun (state : AttrSeen) (item : Item) => (match (state).stop with | Option.some \_ => state | Option.none => attributeStep (state) (item)))) ((\{ over := false, stop := Option.none \} : AttrSeen)) (items) : AttrSeen)).stop}.\par
-\noindent Axiom policy: \texttt{none}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
 \subsection*{\texttt{pass2Item}}
 \noindent Kind: \texttt{definition}.\par
 \noindent Parameters: \texttt{(sc : Sc) (item : Item)}.\par
