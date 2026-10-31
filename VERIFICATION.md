@@ -2016,10 +2016,12 @@ fixture under `tests/negative/nat-bitwise-*`.
 The runtime-bound laws of `PF-24` (`split_exact_fits`, `utf8_decode_length`, `checked_add_fits`) stay
 registered beside the eight `nat_*` laws; the native `LexLeanRuntime.Laws` module holds both.
 
-Plants, each restored: the `Nat` arm of the bitwise and shift signature removed (`requires
-fixed-width operands` at the accepted project); the `nat_bitwise` test removed from the production
-eligibility walk (the production-root project is accepted and the case fails at `check fails`); the
-language gate removed (the language-1.1 project is accepted).
+Plants, each restored and observed with the pinned Lean 4.32.1: the `Nat` arm of `bit_and`, `bit_or` and
+`bit_xor` removed from `infer_primitive` (the accepted project is refused, `primitive BitOr requires Nat
+or fixed-width operands`, at `check_project`); the refusal removed from the production eligibility walk
+(`a production root over a Nat form checks`); the language gate of `language_1_2_construct` removed
+(the language-1.1 project is refused for another construct, `executable definition`, so the case
+fails at `language 1.1`).
 
 ### the machine callee and the overflow value are printed and computed (RB-15)
 
