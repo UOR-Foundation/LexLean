@@ -1,0 +1,3 @@
+'LanguageTwelve.Main.doubledSuccessor' does not depend on any axioms
+'LanguageTwelve.Main.doubled_successor_two' does not depend on any axioms
+'LanguageTwelve.Main.let_statement_unfolds' does not depend on any axioms

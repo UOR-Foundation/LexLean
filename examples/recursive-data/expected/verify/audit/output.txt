@@ -1,0 +1,24 @@
+'RecursiveData.Main.block_is_not_literal' does not depend on any axioms
+'RecursiveData.Main.isLiteral' does not depend on any axioms
+'RecursiveData.Main.located_row' does not depend on any axioms
+'RecursiveData.Main.mirror' does not depend on any axioms
+'RecursiveData.Main.mirror_involutive' depends on axioms: [propext]
+'RecursiveData.Main.outcomeOrZero' does not depend on any axioms
+'RecursiveData.Main.roseLabel' does not depend on any axioms
+'RecursiveData.Main.rose_label' does not depend on any axioms
+'RecursiveData.Main.sampleTree' does not depend on any axioms
+'RecursiveData.Main.sample_tree_size' does not depend on any axioms
+'RecursiveData.Main.success_value' does not depend on any axioms
+'RecursiveData.Main.sumPair' does not depend on any axioms
+'RecursiveData.Main.sum_pair' does not depend on any axioms
+'RecursiveData.Main.swap' does not depend on any axioms
+'RecursiveData.Main.swap_twice_first' does not depend on any axioms
+'RecursiveData.Main.treeSize' does not depend on any axioms
+'RecursiveData.Types.Branches' does not depend on any axioms
+'RecursiveData.Types.Expr' does not depend on any axioms
+'RecursiveData.Types.Located' does not depend on any axioms
+'RecursiveData.Types.Node' does not depend on any axioms
+'RecursiveData.Types.Outcome' does not depend on any axioms
+'RecursiveData.Types.Rose' does not depend on any axioms
+'RecursiveData.Types.Stmt' does not depend on any axioms
+'RecursiveData.Types.Tree' does not depend on any axioms

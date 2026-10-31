@@ -1,0 +1,20 @@
+'HigherOrder.Combinators.Arith' does not depend on any axioms
+'HigherOrder.Combinators.Visitor' does not depend on any axioms
+'HigherOrder.Combinators.compose' does not depend on any axioms
+'HigherOrder.Combinators.evaluate' does not depend on any axioms
+'HigherOrder.Combinators.foldList' does not depend on any axioms
+'HigherOrder.Combinators.increment' does not depend on any axioms
+'HigherOrder.Combinators.mapList' does not depend on any axioms
+'HigherOrder.Combinators.visit' does not depend on any axioms
+'HigherOrder.Main.addAll' does not depend on any axioms
+'HigherOrder.Main.addThenDouble' does not depend on any axioms
+'HigherOrder.Main.add_all' does not depend on any axioms
+'HigherOrder.Main.bumpAll' does not depend on any axioms
+'HigherOrder.Main.bump_all' does not depend on any axioms
+'HigherOrder.Main.composed' does not depend on any axioms
+'HigherOrder.Main.evaluator' does not depend on any axioms
+'HigherOrder.Main.map_identity' depends on axioms: [propext]
+'HigherOrder.Main.map_identity_numbers' depends on axioms: [propext]
+'HigherOrder.Main.total' does not depend on any axioms
+'HigherOrder.Main.total_sum' does not depend on any axioms
+'HigherOrder.Main.visitor_agrees' does not depend on any axioms
