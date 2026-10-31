@@ -41,6 +41,18 @@ workspace carried at those versions without a tag.
   per-example title glossary (`glossary/<package>.titles`, one label word per
   module), as `fold-laws` does.
 
+- CI cost (SPEC.md §9.4, `RP-14`): a ready pull request whose base branch is
+  neither `main` nor `release/*` runs the `rest` leg only, as a draft does,
+  and says why in its step summary. Stacked pull requests (a feature branch
+  into another feature branch) ran the whole gate, about 500 runner-minutes,
+  on every push though they cannot land on a line; the pull request that
+  carries the stack into `main` or a release line runs the whole gate on the
+  tree that lands. `ci.yml` passes `BASE` to the plan, and `RP-14` plants a
+  ready pull request into a feature branch, into a release line, and into
+  `main`, and a draft into a feature branch. A base the event does not name
+  is the whole gate. The register is unchanged: the statement of `RP-14` is
+  extended.
+
 ## 0.4.0
 
 Release `0.4.0` is cut at the downstream boundary (#92, 2026-10-25): what the
