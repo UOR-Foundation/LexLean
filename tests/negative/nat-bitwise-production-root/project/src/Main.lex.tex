@@ -1,0 +1,14 @@
+\begin{lexlean}{Main}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: probe,
+  parameters: [y : Nat, z : Nat],
+  result: Nat,
+  body: (prim bit_xor y z : Nat),
+  executable: true,
+  production: {effects: [], targets: [rust-core]}
+}
+\end{semanticmodule}
+\end{lexlean}
