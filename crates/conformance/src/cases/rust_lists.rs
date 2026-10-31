@@ -327,7 +327,9 @@ const PLANTS: [Plant; 10] = [
         "a refusal that is the opposite of the capacity",
         &["full_is_capacity", "cons_in_place"],
         "unsolved goals",
-        "⊢ RustMemory.Flag.yes = RustMemory.Flag.no",
+        // `term_cases` refutes `Flag.yes = Flag.no` (SM-35), so the case of
+        // the capacity check that answers `yes` is left at `False`.
+        "(RustMemory.size buf.slots) = RustMemory.Flag.yes\\n⊢ False",
         "    | Option.none => (ctor RustMemory::Flag.yes)\n    | Option.some got => (ctor RustMemory::Flag.no))",
         "    | Option.none => (ctor RustMemory::Flag.no)\n    | Option.some got => (ctor RustMemory::Flag.yes))",
     ),
