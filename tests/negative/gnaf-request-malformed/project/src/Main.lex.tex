@@ -1,0 +1,71 @@
+\begin{lexlean}{Main}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{Kernel}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: checkedSum,
+  parameters: [left : UInt32, right : UInt32],
+  result: (Option UInt32),
+  body: (prim checked_add left right : (Option UInt32)),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [], targets: [rust-core, rust-std]}
+}
+
+definition{
+  name: shapeArea,
+  parameters: [width : Nat, height : Nat],
+  result: Nat,
+  body: (Kernel::area (ctor Kernel::Shape.rectangle width height)),
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core, rust-std]}
+}
+
+definition{
+  name: quadruple,
+  parameters: [value : Nat],
+  result: Nat,
+  body: (Kernel::applyTwice (fun (number : Nat) => (number + number)) value),
+  executable: true,
+  production: {effects: [overflow], targets: [rust-core, rust-std]}
+}
+
+definition{
+  name: halvings,
+  parameters: [number : Nat],
+  result: Nat,
+  body: (Kernel::countdown number 0),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [overflow, recursion], targets: [rust-core, rust-std]}
+}
+
+definition{
+  name: sumAll,
+  parameters: [values : (List Nat)],
+  result: Nat,
+  body: (Kernel::total values),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: headOr,
+  parameters: [values : (List Nat)],
+  result: Nat,
+  body: (Kernel::firstOr [Nat] values 0),
+  executable: true,
+  production: {effects: [allocation], targets: [rust-std]}
+}
+
+theorem{name: quadruple_three, parameters: [], statement: ((quadruple 3) = 12), proof: decide{}}
+
+theorem{
+  name: sum_three,
+  parameters: [],
+  statement: ((sumAll (cons 1 (cons 2 (cons 3 (nil Nat))))) = 6),
+  proof: decide{}
+}
+\end{semanticmodule}
+\end{lexlean}
