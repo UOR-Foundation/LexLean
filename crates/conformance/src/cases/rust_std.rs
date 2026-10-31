@@ -528,6 +528,24 @@ fn differential() {
             "call-name",
         ),
         (
+            "a write through a shared holder: Rc::make_mut for Rc::get_mut",
+            "(cons \"Rc\" (cons \"get_mut\" (nil String)))",
+            "(cons \"Rc\" (cons \"make_mut\" (nil String)))",
+            "call-name",
+        ),
+        (
+            "interior mutability: RefCell for Rc",
+            "RtType.named \"Rc\"",
+            "RtType.named \"RefCell\"",
+            "type-name",
+        ),
+        (
+            "interior mutability: Cell for Rc",
+            "RtType.named \"Rc\"",
+            "RtType.named \"Cell\"",
+            "type-name",
+        ),
+        (
             "an associated function the impl does not state",
             "(cons \"Str\" (cons \"lit\" (nil String)))",
             "(cons \"Str\" (cons \"lit2\" (nil String)))",
@@ -537,6 +555,7 @@ fn differential() {
         let edited = types_shipped.replace(from, to);
         assert_ne!(edited, types_shipped, "{what}: the plant site exists");
         let error = runtime::std_types_from(&edited).expect_err(what);
+        eprintln!("RB-20: {what}: {error}");
         assert!(error.contains(message), "{what}: {error}");
     }
 
