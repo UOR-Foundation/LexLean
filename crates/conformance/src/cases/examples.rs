@@ -171,7 +171,7 @@ pub(crate) fn run(id: &str) {
         // exactly the one prescribed diagnostic code.
         "EX-07" => {
             let root = support::repo_root();
-            let prescribed: [(&str, &str); 298] = [
+            let prescribed: [(&str, &str); 302] = [
                 ("unknown-word", "LLL1004"),
                 ("unknown-symbol", "LLL1004"),
                 ("unknown-control", "LLL1004"),
@@ -492,6 +492,11 @@ pub(crate) fn run(id: &str) {
                 ("production-target-unregistered", "LLC0203"),
                 ("source-package-outside-workspace", "LLC0108"),
                 ("tooling-module-in-user-project", "LLT4013"),
+                // Public refusals whose only evidence was an inline plant (#252).
+                ("production-package-name-keyword", "LLB6005"),
+                ("gnaf-request-malformed", "LLB6006"),
+                ("gnaf-certificate-malformed", "LLB6007"),
+                ("text-window-zero-capacity", "LLT4016"),
             ];
             let negative_root = root.join("tests/negative");
             let mut classes: Vec<String> = std::fs::read_dir(negative_root.as_std_path())

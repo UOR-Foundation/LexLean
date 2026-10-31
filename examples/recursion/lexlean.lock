@@ -1,7 +1,7 @@
 spec = "lexlean/lock/2"
 language = "1.2"
 compiler_semantics = "aac30cb0bda069a55aca6ce2417be48726fd578218b3e8fbaf31634694695b64"
-project_config_sha256 = "b8201330ef8609d8f53e24e2fa367697675b98d69ba844d6a75adffe84a88319"
+project_config_sha256 = "92ff94a2dc1a550b8d47ebdd8b8e9b9d89371435ef550e661022fe74cf51594d"
 lean_toolchain = "leanprover/lean4:v4.32.1"
 
 [[workspace_file]]
@@ -45,3 +45,13 @@ revision = "compiler-semantics"
 tree_sha256 = "e0db021e01b91d651c43921d66f6b0023c8efbf17cac2ec53192ce5305e4e1ac"
 manifest_sha256 = "6fb446b39e3c1c18a5f10cfa1f7aa2bd431837719eb0eb7489aadf452c9420a7"
 imports = ["lexlean.core@1.2.0", "lexlean.std.bool@1.2.0"]
+
+[[package]]
+id = "recursion.titles"
+version = "1.0.0"
+kind = "path"
+source = "glossary/recursion.titles"
+revision = "none"
+tree_sha256 = "8be19aa3c5155d0b1b2c0f0e5080d6e7dea87ff10993927bbc0ee84aa7438863"
+manifest_sha256 = "970d6988c0e1164aaede77cdab497fc169e6e54150c66da6cff7632c58ffd71d"
+imports = ["lexlean.core@1.2.0", "lexlean.std.nat@1.2.0"]

@@ -1,0 +1,75 @@
+\begin{lexlean}{Kernel}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: Shape,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: circle, fields: [Nat]}, {name: rectangle, fields: [Nat, Nat]}]
+}
+
+definition{
+  name: area,
+  parameters: [shape : Shape],
+  result: Nat,
+  body: (match shape
+    | Shape.circle radius => (prim multiply (prim multiply radius radius : Nat) 3 : Nat)
+    | Shape.rectangle width height => (prim multiply width height : Nat)),
+  executable: true
+}
+
+definition{
+  name: applyTwice,
+  parameters: [step : (Fn (Nat) Nat), value : Nat],
+  result: Nat,
+  body: (apply step (apply step value)),
+  executable: true
+}
+
+definition{
+  name: total,
+  parameters: [values : (List Nat)],
+  result: Nat,
+  body: (match values | List.nil => 0 | List.cons head tail => (head + (total tail))),
+  executable: true,
+  recursive_argument: values
+}
+
+definition{
+  name: firstOr,
+  type_parameters: [Item],
+  parameters: [values : (List 'Item), fallback : 'Item],
+  result: 'Item,
+  body: (match values | List.nil => fallback | List.cons head tail => head),
+  executable: true
+}
+
+theorem{
+  name: countdown_decreases,
+  parameters: [number : Nat, steps : Nat],
+  statement: (((number <? 2) = false) -> ((prim subtract number 2 : Nat) < number)),
+  proof: linear_arithmetic{},
+  axioms: [Quot.sound, propext]
+}
+
+definition{
+  name: countdown,
+  parameters: [number : Nat, steps : Nat],
+  result: Nat,
+  body: (if (number <? 2) then steps else (countdown (prim subtract number 2 : Nat) (steps + 1))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  termination: {evidence: [countdown_decreases], measure: number}
+}
+
+definition{name: positive, parameters: [value : Nat], result: Prop, body: (0 < value)}
+
+theorem{
+  name: area_square,
+  parameters: [],
+  statement: ((area (ctor Shape.rectangle 3 3)) = 9),
+  proof: decide{}
+}
+\end{semanticmodule}
+\end{lexlean}

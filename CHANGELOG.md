@@ -17,6 +17,30 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The #34 closure pass (documentation and evidence; no register row, language
+  datum, schema, or compiler source moves). Sixteen examples carry a `README.md`
+  that names the register rows whose gates run on them, what
+  `cargo xtask verify-examples` establishes, and what is not claimed
+  (`nat-add-zero` has none: `SE-07` holds the literal example's root to a closed
+  file set). Four README capability sentences and one SPEC prose paragraph each
+  are bound to what their certificates establish: the GNAF universe is the
+  request's declared grammar (§17.15), certificate E is end to end on the
+  declared Rust machine (§17.17), the neural realizations are exact integer
+  kernels (`MD-04`), and the reasoning GNAF requests are over the clinical rule
+  base's plans (`RS-13`); SPEC.md §4.2 states that its non-goals bound language
+  1.0 only.
+- Four negative fixtures under `tests/negative/` for the public language-class
+  refusals that had only an inline plant, #252 (`EX-07`'s prescribed table goes
+  from 298 to 302 classes): `production-package-name-keyword` (`LLB6005`),
+  `gnaf-request-malformed` (`LLB6006`), `gnaf-certificate-malformed`
+  (`LLB6007`), and `text-window-zero-capacity` (`LLT4016`). The inline plants
+  stay.
+- The seven examples whose modules carried the literal example's title,
+  #251 (`collections`, `higher-order`, `language-1.2`, `production`,
+  `production-coverage`, `recursion`, `recursive-data`), are retitled with a
+  per-example title glossary (`glossary/<package>.titles`, one label word per
+  module), as `fold-laws` does.
+
 - CI cost (SPEC.md §9.4, `RP-14`): a ready pull request whose base branch is
   neither `main` nor `release/*` runs the `rest` leg only, as a draft does,
   and says why in its step summary. Stacked pull requests (a feature branch
