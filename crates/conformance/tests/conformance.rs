@@ -601,6 +601,11 @@ fn conformance_sm_36() {
 }
 
 #[test]
+fn conformance_sm_38() {
+    repo_conformance::cases::run("SM-38");
+}
+
+#[test]
 fn conformance_sm_32() {
     repo_conformance::cases::run("SM-32");
 }

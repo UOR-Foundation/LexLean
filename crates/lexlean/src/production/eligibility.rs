@@ -1842,15 +1842,7 @@ impl<'a> Walk<'a> {
                         "a widening conversion is realized only through its elaboration".to_owned(),
                     );
                 }
-                if matches!(
-                    operation,
-                    SemanticPrimitive::BitAnd
-                        | SemanticPrimitive::BitOr
-                        | SemanticPrimitive::BitXor
-                        | SemanticPrimitive::ShiftLeft
-                        | SemanticPrimitive::ShiftRight
-                ) && substituted == SemanticType::Nat
-                {
+                if operation.nat_bitwise(&substituted) {
                     self.violation(
                         site,
                         primitive_key(*operation),

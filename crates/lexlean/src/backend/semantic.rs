@@ -862,14 +862,7 @@ impl Render<'_> {
     ) -> String {
         let int64_result =
             matches!(result, SemanticType::Option { value } if **value == SemanticType::Int64);
-        let nat_head = match operation {
-            SemanticPrimitive::BitAnd if *result == SemanticType::Nat => Some("Nat.land"),
-            SemanticPrimitive::BitOr if *result == SemanticType::Nat => Some("Nat.lor"),
-            SemanticPrimitive::BitXor if *result == SemanticType::Nat => Some("Nat.xor"),
-            SemanticPrimitive::ShiftLeft if *result == SemanticType::Nat => Some("Nat.shiftLeft"),
-            SemanticPrimitive::ShiftRight if *result == SemanticType::Nat => Some("Nat.shiftRight"),
-            _ => None,
-        };
+        let nat_head = operation.nat_bitwise_function(result);
         let (head, ascription) = if let Some(nat_fn) = nat_head {
             (nat_fn.to_owned(), self.ty(result))
         } else {

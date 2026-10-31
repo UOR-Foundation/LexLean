@@ -1998,6 +1998,29 @@ Nat, List, or a document inductive` at the accepted project); the language gate 
 language-1.1 project is accepted and the case fails at `check fails`); the induction refusal removed
 (the same).
 
+### a bitwise primitive on an unbounded Nat can fail (SM-38)
+
+A language-1.2 definition may apply `bit_and`, `bit_or` and `bit_xor` to two `Nat` operands and
+`shift_left` and `shift_right` to a `Nat` operand and a `Nat` amount (`SM-38`, §17.11, §17.12, #317).
+The case (`cases/semantic_ir/nat_bitwise.rs`) builds a project whose `step` is the Rule 30 row map
+`y xor (2y or y)`-shaped term of the issue and whose `lifted` mixes the three binary forms and both
+shifts; it requires `semantic-module-v2`, the formatter's fixed point, and generated Lean that holds
+`Nat.xor`, `Nat.lor`, `Nat.land`, `Nat.shiftLeft` and `Nat.shiftRight` and neither fixed-width runtime
+helper. With the pinned Lean it verifies a theorem that applies the registered law `nat_bit_xor` and
+the evaluation `step 1 = 7` by reflexivity, and requires Lean to reject `step 1 = 6` and a bit
+equation whose right side uses `or` for `xor`. Four misuses are refused by the linker (language 1.1,
+`bit_not` of a `Nat`, a `Nat` and an `Int` operand, a `UInt32` shift amount on a `Nat`) and a
+production root over a `Nat` form by the eligibility analysis (`LLT4005`), each with a negative
+fixture under `tests/negative/nat-bitwise-*`.
+
+The runtime-bound laws of `PF-24` (`split_exact_fits`, `utf8_decode_length`, `checked_add_fits`) stay
+registered beside the eight `nat_*` laws; the native `LexLeanRuntime.Laws` module holds both.
+
+Plants, each restored: the `Nat` arm of the bitwise and shift signature removed (`requires
+fixed-width operands` at the accepted project); the `nat_bitwise` test removed from the production
+eligibility walk (the production-root project is accepted and the case fails at `check fails`); the
+language gate removed (the language-1.1 project is accepted).
+
 ### the machine callee and the overflow value are printed and computed (RB-15)
 
 `rust::ast::Callee::Machine` and `Lit::Overflow` mirror the Lean constructors

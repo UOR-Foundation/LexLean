@@ -163,6 +163,85 @@ impl SemanticPrimitive {
         matches!(self, Self::ToInt | Self::ToNat)
     }
 
+    /// Whether the operation is a bitwise primitive or shift read over
+    /// unbounded `Nat` (language 1.2, #317): `bit_and`, `bit_or`, `bit_xor`,
+    /// `shift_left` and `shift_right` with result `Nat`. A fixed-width form
+    /// of the same operation is not one, so the predicate takes the result.
+    #[must_use]
+    pub fn nat_bitwise(self, result: &SemanticType) -> bool {
+        matches!(
+            self,
+            Self::BitAnd | Self::BitOr | Self::BitXor | Self::ShiftLeft | Self::ShiftRight
+        ) && *result == SemanticType::Nat
+    }
+
+    /// The Lean function an unbounded-`Nat` bitwise primitive lowers to, so
+    /// that `rfl` and `decide` evaluate it inside a verified module.
+    #[must_use]
+    pub fn nat_bitwise_function(self, result: &SemanticType) -> Option<&'static str> {
+        if !self.nat_bitwise(result) {
+            return None;
+        }
+        match self {
+            Self::BitAnd => Some("Nat.land"),
+            Self::BitOr => Some("Nat.lor"),
+            Self::BitXor => Some("Nat.xor"),
+            Self::ShiftLeft => Some("Nat.shiftLeft"),
+            Self::ShiftRight => Some("Nat.shiftRight"),
+            Self::MapFold
+            | Self::SetFold
+            | Self::ListFold
+            | Self::Iterate
+            | Self::IterateUntil
+            | Self::Subtract
+            | Self::Multiply
+            | Self::Quotient
+            | Self::Remainder
+            | Self::Negate
+            | Self::CheckedConvert
+            | Self::CheckedAdd
+            | Self::CheckedSubtract
+            | Self::CheckedMultiply
+            | Self::CheckedNegate
+            | Self::CheckedQuotient
+            | Self::BitNot
+            | Self::Append
+            | Self::Length
+            | Self::Index
+            | Self::Slice
+            | Self::Utf8Encode
+            | Self::Utf8Decode
+            | Self::CompareBytes
+            | Self::Equal
+            | Self::SplitExact
+            | Self::Join
+            | Self::ParseDecimal
+            | Self::FormatDecimal
+            | Self::MapInsert
+            | Self::MapRemove
+            | Self::MapLookup
+            | Self::MapContains
+            | Self::MapSize
+            | Self::MapKeys
+            | Self::MapValues
+            | Self::MapEntries
+            | Self::SetInsert
+            | Self::SetRemove
+            | Self::SetContains
+            | Self::SetSize
+            | Self::SetElements
+            | Self::SetUnion
+            | Self::SetIntersection
+            | Self::SetDifference
+            | Self::GraphSuccessors
+            | Self::GraphReachable
+            | Self::GraphTopological
+            | Self::LessThan
+            | Self::ToInt
+            | Self::ToNat => None,
+        }
+    }
+
     /// The construct a language-1.1 module is refused for when it applies
     /// the operation.
     const fn language_1_2_construct(self) -> &'static str {
@@ -2487,17 +2566,7 @@ fn language_1_2_construct(term: &SemanticTerm) -> Option<&'static str> {
         }
         SemanticTerm::Primitive {
             operation, result, ..
-        } if matches!(
-            operation,
-            SemanticPrimitive::BitAnd
-                | SemanticPrimitive::BitOr
-                | SemanticPrimitive::BitXor
-                | SemanticPrimitive::ShiftLeft
-                | SemanticPrimitive::ShiftRight
-        ) && *result == SemanticType::Nat =>
-        {
-            Some("bitwise primitive on Nat")
-        }
+        } if operation.nat_bitwise(result) => Some("bitwise primitive on Nat"),
         SemanticTerm::Call { type_arguments, .. } if !type_arguments.is_empty() => {
             Some("call type arguments")
         }

@@ -3397,7 +3397,7 @@ impl Lowerer<'_> {
             | SemanticPrimitive::BitXor
             | SemanticPrimitive::ShiftLeft
             | SemanticPrimitive::ShiftRight
-                if result == SemanticType::Nat =>
+                if operation.nat_bitwise(&result) =>
             {
                 return Err(format!(
                     "{operation:?} on `Nat` has no bounded-width production realization"
