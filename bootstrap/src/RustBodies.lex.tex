@@ -1069,7 +1069,8 @@ definition{
       | RustValidate::BinaryKind.BkPair => 1))))
     | RustValidate::Ty.TyNamed kind number => (push (push state 34 (match kind
       | RustValidate::NameKind.NkAdt => 0
-      | RustValidate::NameKind.NkFn => 1)) 35 number)
+      | RustValidate::NameKind.NkFn => 1
+      | RustValidate::NameKind.NkParam => 2)) 35 number)
     | RustValidate::Ty.TyNil => (push state 36 0)
     | RustValidate::Ty.TyCons head tail => (flatTy tail (flatTy head (push state 37 0)))),
   executable: true,

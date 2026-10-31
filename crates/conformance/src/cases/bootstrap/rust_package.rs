@@ -233,7 +233,7 @@ fn semantics() -> String {
 fn runtime_text(std: bool) -> String {
     let core = runtime::core().expect("the core runtime");
     if std {
-        format!("{core}{}", runtime::STD)
+        format!("{core}{}", runtime::std().expect("the std runtime"))
     } else {
         core.to_owned()
     }
@@ -295,7 +295,7 @@ fn render_run(render: &Render, expected: (Vec<u8>, Vec<u8>)) -> Run {
             text(&render.program),
             text(&semantics()),
             text(runtime::core().expect("the core runtime")),
-            text(runtime::STD),
+            text(runtime::std().expect("the std runtime")),
             texts(&render.sources),
             texts(&render.effects),
             list(exports),
@@ -339,9 +339,34 @@ fn accepted(manifest: &Manifest) -> Option<(Render, (Vec<u8>, Vec<u8>))> {
 
 /// The fields of a manifest a mutation changes.
 const NAMES: &[&str] = &[
-    "", "a", "run", "gen", "raw", "safe", "Self", "self", "std", "core", "alloc", "proc_macro",
-    "test", "harness", "harness2", "Ab", "aB", "1a", "_a", "a_", "a__b", "a_b", "a-b", "a.b", "é",
-    "a\u{e9}", "a b", "sum_to_std",
+    "",
+    "a",
+    "run",
+    "gen",
+    "raw",
+    "safe",
+    "Self",
+    "self",
+    "std",
+    "core",
+    "alloc",
+    "proc_macro",
+    "test",
+    "harness",
+    "harness2",
+    "Ab",
+    "aB",
+    "1a",
+    "_a",
+    "a_",
+    "a__b",
+    "a_b",
+    "a-b",
+    "a.b",
+    "é",
+    "a\u{e9}",
+    "a b",
+    "sum_to_std",
 ];
 const VERSIONS: &[&str] = &[
     "",
@@ -501,9 +526,19 @@ fn render_rules(base: &Render) -> Vec<Render> {
     let awkward: Vec<String> = (0u8..0x20)
         .map(|byte| format!("a{}b", char::from(byte)))
         .chain(
-            ["\"", "\\", "\u{7f}", "\u{e9}", "\u{65e5}", "\u{1f600}", "/", "'", "a\"b\\c"]
-                .iter()
-                .map(|piece| format!("x{piece}y")),
+            [
+                "\"",
+                "\\",
+                "\u{7f}",
+                "\u{e9}",
+                "\u{65e5}",
+                "\u{1f600}",
+                "/",
+                "'",
+                "a\"b\\c",
+            ]
+            .iter()
+            .map(|piece| format!("x{piece}y")),
         )
         .collect();
     let mut out = Vec::new();
@@ -754,11 +789,15 @@ pub(super) fn case() {
     let negative = support::repo_root().join("compiler/rust/negative");
     for entry in std::fs::read_dir(negative.as_std_path()).expect("the negative manifests") {
         let path = entry.expect("an entry").path();
-        if path.extension().is_some_and(|extension| extension == "json") {
+        if path
+            .extension()
+            .is_some_and(|extension| extension == "json")
+        {
             let Ok(manifest) = Manifest::parse(&std::fs::read(&path).expect("a manifest")) else {
                 continue;
             };
-            let refusal = std::fs::read_to_string(path.with_extension("error")).expect("its refusal");
+            let refusal =
+                std::fs::read_to_string(path.with_extension("error")).expect("its refusal");
             // A committed refusal is the part of the message the fixture
             // pins, so the fields' refusal contains it.
             if let Err(message) = oracle::lower(&probe(&manifest)) {
@@ -770,7 +809,8 @@ pub(super) fn case() {
             }
         }
     }
-    let renders: Vec<(Render, (Vec<u8>, Vec<u8>))> = manifests.iter().filter_map(accepted).collect();
+    let renders: Vec<(Render, (Vec<u8>, Vec<u8>))> =
+        manifests.iter().filter_map(accepted).collect();
     let std_base = manifests
         .iter()
         .find(|manifest| manifest.profile == "rust-std" && oracle::package(manifest).is_ok())
@@ -824,7 +864,12 @@ pub(super) fn case() {
     let render_runs: Vec<Run> = renders
         .iter()
         .map(|(render, files)| render_run(render, files.clone()))
-        .chain(shaped.iter().chain(&render_mutants).map(|render| render_run(render, files_of(render))))
+        .chain(
+            shaped
+                .iter()
+                .chain(&render_mutants)
+                .map(|render| render_run(render, files_of(render))),
+        )
         .collect();
     let within: Vec<Run> = renders
         .iter()
