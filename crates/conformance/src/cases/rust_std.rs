@@ -680,7 +680,9 @@ fn refinement() {
             "a theorem that states another runtime item",
             "(ctor RustSyntax::Item.lengthList)",
             "(ctor RustSyntax::Item.lengthBytes)",
-            "= RustSemantics.ROutcome.stuck",
+            // `term_cases` refutes the equation of two outcome constructors
+            // (SM-35), so the open goal is the outcome of `length` on a list.
+            "TargetSemantics.primitive TargetSyntax.Prim.length [TargetSyntax.Value.list items]",
         ),
     ] {
         assert_eq!(
