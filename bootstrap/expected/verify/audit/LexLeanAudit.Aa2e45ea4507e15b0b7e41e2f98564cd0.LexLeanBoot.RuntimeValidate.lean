@@ -40,6 +40,8 @@ import LexLeanBoot.RuntimeValidate
 #print axioms LexLeanBoot.RuntimeValidate.callDirectHeap
 #print axioms LexLeanBoot.RuntimeValidate.callExpected
 #print axioms LexLeanBoot.RuntimeValidate.callHeap
+#print axioms LexLeanBoot.RuntimeValidate.colonPieces
+#print axioms LexLeanBoot.RuntimeValidate.colonStep
 #print axioms LexLeanBoot.RuntimeValidate.completes
 #print axioms LexLeanBoot.RuntimeValidate.countIn
 #print axioms LexLeanBoot.RuntimeValidate.countNamed

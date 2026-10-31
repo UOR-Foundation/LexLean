@@ -2512,11 +2512,33 @@ definition{
 }
 
 definition{
+  name: colonStep,
+  parameters: [path : Bytes, state : (Nat * (Nat * (List Bytes)))],
+  result: (Option (Nat * (Nat * (List Bytes)))),
+  body: (let position : Nat := (first state); (let start : Nat := (first (second state)); (let pieces : (List Bytes) := (second (second state)); (match (LexLeanStd.Text::byteAt path position)
+    | Option.some byte => (if (prim equal byte (58 : UInt8) : Bool) then (match (LexLeanStd.Text::byteAt path (position + 1))
+      | Option.some next => (if (prim equal next (58 : UInt8) : Bool) then (ctor Option.some [(Nat * (Nat * (List Bytes)))] ((position + 2), ((position + 2), (cons (LexLeanStd.Text::sliceOr path start (prim subtract position start : Nat)) pieces)))) else (ctor Option.some [(Nat * (Nat * (List Bytes)))] ((position + 1), (start, pieces))))
+      | Option.none => (ctor Option.some [(Nat * (Nat * (List Bytes)))] ((position + 1), (start, pieces)))) else (ctor Option.some [(Nat * (Nat * (List Bytes)))] ((position + 1), (start, pieces))))
+    | Option.none => (ctor Option.none [(Nat * (Nat * (List Bytes)))]))))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: colonPieces,
+  parameters: [path : Bytes],
+  result: (List Bytes),
+  body: (let total : Nat := (prim length path : Nat); (let final : (Nat * (Nat * (List Bytes))) := (first (prim iterate_until (fun [path] (state : (Nat * (Nat * (List Bytes)))) => (colonStep path state)) total (0, (0, (nil Bytes))) : ((Nat * (Nat * (List Bytes))) * Bool))); (let start : Nat := (first (second final)); (LexLeanStd.Text::reverse (cons (LexLeanStd.Text::sliceOr path start (prim subtract total start : Nat)) (second (second final))))))),
+  axioms: [],
+  executable: true
+}
+
+definition{
   name: definedPathOk,
   parameters: [path : Bytes],
   result: (Option Bytes),
-  body: (if ((prim length path : Nat) =? 0) then (ctor Option.some [Bytes] (rtext "runtime support: defined-path: empty")) else (ctor Option.none [Bytes])),
-  axioms: [],
+  body: (if ((prim length path : Nat) =? 0) then (ctor Option.some [Bytes] (rtext "runtime support: defined-path: empty")) else (identsErr "a defined path segment" (colonPieces path))),
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -2557,8 +2579,8 @@ definition{
     | List.nil => (ctor Option.none [Bytes])
     | List.cons lead others => (ctor Option.some [Bytes] (rcat (rtext "runtime support: attribute-args: ") (rcat (rtick name) (rtext " takes no arguments"))))) else (if (bEq name (rtext "forbid")) then (match args
     | List.nil => (ctor Option.some [Bytes] (rcat (rtext "runtime support: attribute-args: ") (rcat (rtick name) (rtext " takes a lint"))))
-    | List.cons lead others => (if (prim list_fold (fun (empty : Bool) (arg : Bytes) => (if empty then true else ((prim length arg : Nat) =? 0))) false args : Bool) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: attribute-args: ") (rcat (rtick name) (rtext " takes a lint with a name")))) else (ctor Option.none [Bytes]))) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: attribute-name: ") (rcat (rtick name) (rtext " is not an inner attribute of the closed set")))))),
-  axioms: [],
+    | List.cons lead others => (if (prim list_fold (fun (empty : Bool) (arg : Bytes) => (if empty then true else ((prim length arg : Nat) =? 0))) false args : Bool) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: attribute-args: ") (rcat (rtick name) (rtext " takes a lint with a name")))) else (identsErr "a lint name" args))) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: attribute-name: ") (rcat (rtick name) (rtext " is not an inner attribute of the closed set")))))),
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -2580,7 +2602,7 @@ definition{
     | Item.IDefined x0 => (record AttrSeen {over := true, stop := (ctor Option.none [Bytes])})
     | Item.IMod x0 x1 => (record AttrSeen {over := true, stop := (ctor Option.none [Bytes])})
     | Item.IAttr name args => (if (project state over) then (record AttrSeen {over := true, stop := (ctor Option.some [Bytes] (rcat (rtext "runtime support: attribute-position: `#![") (rcat name (rtext "]` follows an item"))))}) else (record AttrSeen {over := false, stop := (attributeStop name args)}))),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -2591,7 +2613,7 @@ definition{
   body: (project (prim list_fold (fun (state : AttrSeen) (item : Item) => (match (project state stop)
     | Option.some held => state
     | Option.none => (attributeStep state item))) (record AttrSeen {over := false, stop := (ctor Option.none [Bytes])}) items : AttrSeen) stop),
-  axioms: [],
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
