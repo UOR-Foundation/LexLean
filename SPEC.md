@@ -4356,7 +4356,7 @@ reproducibility gates of §28.6. No meaning is read from rendered Rust text.
 `.lex.tex` modules `TargetSyntax`, `TargetSemantics`, `TargetOracle`,
 `RustSyntax`, `RustSemantics`, the reasoning oracles, and `Main`, and the
 project's configuration (which is the production example's under its own name,
-checked against it), are written and edited as `.lex.tex` (§17.21). No program
+without the example's titles glossary, checked against it), are written and edited as `.lex.tex` (§17.21). No program
 generates or compares them with its own output. What is generated from them,
 and compared byte for byte by `cargo xtask check-calculus`, are the fixtures and
 the modules that state them, the Rust packages, and the shipped copies of the
