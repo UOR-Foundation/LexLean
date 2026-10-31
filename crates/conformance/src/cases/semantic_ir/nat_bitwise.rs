@@ -12,7 +12,7 @@ fn source(extra: &str, production: bool) -> String {
         ""
     };
     format!(
-        "\\begin{{lexlean}}{{Main}}\n\\useglossary{{lexlean.std.nat@1.2.0}}\n\\title{{Natural number addition}}\n\\begin{{semanticmodule}}\ndefinition{{\n  name: step,\n  parameters: [y : Nat],\n  result: Nat,\n  body: (prim bit_xor (y + (y + (y + y))) (prim bit_or (y + y) y : Nat) : Nat),\n  executable: true{production}\n}}\n\ndefinition{{\n  name: lifted,\n  parameters: [y : Nat, m : Nat],\n  result: Nat,\n  body: (prim bit_and (prim shift_left y m : Nat) (prim shift_right y m : Nat) : Nat)\n}}\n\n{extra}\\end{{semanticmodule}}\n\\end{{lexlean}}\n"
+        "\\begin{{lexlean}}{{Main}}\n\\useglossary{{lexlean.std.nat@1.2.0}}\n\\title{{Natural number addition}}\n\\begin{{semanticmodule}}\ndefinition{{\n  name: step,\n  parameters: [y : Nat],\n  result: Nat,\n  body: (prim bit_xor (y + (y + (y + y))) (prim bit_or (y + y) y : Nat) : Nat),\n  axioms: [propext],\n  executable: true{production}\n}}\n\ndefinition{{\n  name: lifted,\n  parameters: [y : Nat, m : Nat],\n  result: Nat,\n  body: (prim bit_and (prim shift_left y m : Nat) (prim shift_right y m : Nat) : Nat),\n  axioms: [propext]\n}}\n\n{extra}\\end{{semanticmodule}}\n\\end{{lexlean}}\n"
     )
 }
 
@@ -129,7 +129,7 @@ pub fn run() {
     // The registered laws and the evaluation of the step verify under the
     // exact axioms their policies state, and a false bit equation is refused.
     let evaluated = format!(
-        "{THEOREM_XOR}\ntheorem{{\n  name: stepOne,\n  parameters: [],\n  statement: ((step 1) = 7),\n  proof: reflexivity{{}},\n  axioms: []\n}}\n\n"
+        "{THEOREM_XOR}\ntheorem{{\n  name: stepOne,\n  parameters: [],\n  statement: ((step 1) = 7),\n  proof: reflexivity{{}},\n  axioms: [propext]\n}}\n\n"
     );
     let evaluated = project_of(&source(&evaluated, false), "1.2");
     support::verify_ok_backed("SM-38", &evaluated);
