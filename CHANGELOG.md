@@ -18,6 +18,13 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- κ-addressing in LexLean (#127, `KA-01`..`KA-03`; decision D7 of #110): the `kappa` project, a member of
+  the workspace beside `stdlib`, outside `language/` and `schemas/` (no compiler-semantics ID moves). Its module
+  `Label` writes the sha256 axis of the κ-label and the data handle of decision D3 (`kind@label`); its module
+  `Json` writes the JSON canonical form of uor-addr (RFC 8785 with NFC over ASCII, Latin-1 and the combining
+  marks that compose with Latin-1 letters; anything else, a non-integer number and a repeated member name are
+  refused). uor-addr 0.2.0 is the oracle of the cases (a dependency of `repo-conformance`, never of a shipped
+  crate). The GGUF and ONNX forms, the other hash axes and composition are outside the package.
 - Language 1.2 applies the bitwise primitives and shifts to unbounded `Nat` (#317, `SM-38`):
   `bit_and`, `bit_or` and `bit_xor` over two `Nat` operands and `shift_left` and `shift_right` over a
   `Nat` operand and a `Nat` amount, each with result `Nat` and no `Option`, lowered to `Nat.land`,
