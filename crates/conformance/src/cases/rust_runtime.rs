@@ -410,7 +410,7 @@ pub fn run(id: &str) {
     covered(&decoded.core.items).expect("the differential covers the module");
     assert_eq!(
         runtime::core().expect("the embedded module"),
-        runtime::assemble(support, &decoded.core.items),
+        runtime::assemble(support, &decoded.core.items).expect("the items assemble"),
         "the embedded module is the committed one"
     );
     // The generated functions are the runtime's: the support holds none of
@@ -437,7 +437,7 @@ pub fn run(id: &str) {
             "the golden transcript lacks `{name}`"
         );
     }
-    let generated = runtime::assemble(support, &decoded.core.items);
+    let generated = runtime::assemble(support, &decoded.core.items).expect("the items assemble");
     let ran = observe(&generated, harness(), GOLDEN)
         .expect("the generated runtime has the golden transcript");
     assert_eq!(ran.lines().last(), Some("runtime"));
@@ -473,8 +473,12 @@ pub fn run(id: &str) {
             .expect("a changed body decodes")
             .core
             .items;
-        let error = observe(&runtime::assemble(support, &items), harness(), GOLDEN)
-            .expect_err("a changed body has another transcript");
+        let error = observe(
+            &runtime::assemble(support, &items).expect("the items assemble"),
+            harness(),
+            GOLDEN,
+        )
+        .expect_err("a changed body has another transcript");
         assert!(
             error
                 .replace([' ', '\n'], "")

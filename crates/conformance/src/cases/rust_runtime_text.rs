@@ -12,10 +12,10 @@ use std::path::{Path, PathBuf};
 use crate::support::repo_root;
 
 /// The string literals of the Rust source `text`, each with the line it starts
-/// on. Comments, character literals, and lifetimes are skipped; the escapes of
+/// on and whether it is the format argument of a formatting macro. Comments, character literals, and lifetimes are skipped; the escapes of
 /// a string are read as the compiler reads them where they bear on the shape
 /// of the text (a newline, a quote, a backslash, a continuation).
-fn literals(text: &str) -> Vec<(usize, String)> {
+fn literals(text: &str) -> Vec<(usize, String, bool)> {
     let chars: Vec<char> = text.chars().collect();
     let mut out = Vec::new();
     let (mut at, mut line) = (0, 1);
@@ -54,6 +54,7 @@ fn literals(text: &str) -> Vec<(usize, String)> {
             'r' if matches!(chars.get(at + 1), Some('"' | '#'))
                 && (at == 0 || !(chars[at - 1].is_alphanumeric() || chars[at - 1] == '_')) =>
             {
+                let start_at = at;
                 let mut hashes = 0;
                 let mut cursor = at + 1;
                 while chars.get(cursor) == Some(&'#') {
@@ -78,10 +79,11 @@ fn literals(text: &str) -> Vec<(usize, String)> {
                     body.push(d);
                     cursor += 1;
                 }
-                out.push((start_line, body));
+                out.push((start_line, body, format_argument(&chars, start_at)));
                 at = cursor;
             }
             '"' => {
+                let start_at = at;
                 let start_line = line;
                 let mut body = String::new();
                 at += 1;
@@ -118,7 +120,7 @@ fn literals(text: &str) -> Vec<(usize, String)> {
                         other => body.push(other),
                     }
                 }
-                out.push((start_line, body));
+                out.push((start_line, body, format_argument(&chars, start_at)));
             }
             '\'' => {
                 // A character literal, or a lifetime.
@@ -140,6 +142,67 @@ fn literals(text: &str) -> Vec<(usize, String)> {
     out
 }
 
+/// Whether the literal that starts at `at` is the format argument of a
+/// formatting macro: the text before it, back to the macro's opening
+/// parenthesis, is `format!(`, `print!(`, `write!(sink,` and the like.
+fn format_argument(chars: &[char], at: usize) -> bool {
+    let from = at.saturating_sub(60);
+    let before: String = chars[from..at].iter().collect();
+    let before = before.trim_end();
+    const MACROS: [&str; 9] = [
+        "format",
+        "format_args",
+        "print",
+        "println",
+        "eprint",
+        "eprintln",
+        "panic",
+        "write",
+        "writeln",
+    ];
+    MACROS.iter().any(|name| {
+        let Some(open) = before.rfind(&format!("{name}!(")) else {
+            return false;
+        };
+        let after = &before[open + name.len() + 2..];
+        // Nothing but the macro's sink, if it has one, stands between its
+        // opening and the literal.
+        after.is_empty()
+            || (matches!(*name, "write" | "writeln")
+                && after
+                    .strip_suffix(',')
+                    .is_some_and(|sink| !sink.contains(['(', ')', ';', '"'])))
+    })
+}
+
+/// Whether `line` holds a substitution of a format string: `{}`, `{name}`,
+/// or `{0}`, as against the doubled braces that write a brace.
+fn has_placeholder(line: &str) -> bool {
+    let chars: Vec<char> = line.chars().collect();
+    let mut at = 0;
+    while at < chars.len() {
+        match chars[at] {
+            '{' if chars.get(at + 1) == Some(&'{') => at += 2,
+            '}' if chars.get(at + 1) == Some(&'}') => at += 2,
+            '{' => {
+                let mut end = at + 1;
+                while chars
+                    .get(end)
+                    .is_some_and(|c| c.is_alphanumeric() || *c == '_' || *c == ':' || *c == '?')
+                {
+                    end += 1;
+                }
+                if chars.get(end) == Some(&'}') {
+                    return true;
+                }
+                at += 1;
+            }
+            _ => at += 1,
+        }
+    }
+    false
+}
+
 /// Whether `rest` starts with a name followed by one of `after`.
 fn named_then(rest: &str, after: &[char]) -> bool {
     let name: String = rest
@@ -158,7 +221,7 @@ fn named_then(rest: &str, after: &[char]) -> bool {
 /// printer writes it: a function, a struct, an enum, a trait, an impl, or a
 /// macro definition, with a name and not a placeholder in the name's place,
 /// and not the head of a format string.
-fn item_head(literal: &str) -> Option<String> {
+fn item_head(literal: &str, format: bool) -> Option<String> {
     literal.lines().map(str::trim_start).find_map(|line| {
         let line = line.strip_prefix("pub ").unwrap_or(line);
         let held = if let Some(rest) = line.strip_prefix("fn ") {
@@ -171,6 +234,19 @@ fn item_head(literal: &str) -> Option<String> {
             named_then(rest, &[' ', '(', '<', '{', ';'])
         } else if let Some(rest) = line.strip_prefix("macro_rules! ") {
             named_then(rest, &[' ', '{'])
+        } else if let Some(rest) = line.strip_prefix("use ") {
+            // A path of at least two segments, closed by `;` or opening a group.
+            rest.contains("::") && named_then(rest, &[':'])
+        } else if let Some(rest) = line
+            .strip_prefix("static ")
+            .or_else(|| line.strip_prefix("const "))
+        {
+            let rest = rest.strip_prefix("mut ").unwrap_or(rest);
+            named_then(rest, &[':'])
+        } else if let Some(rest) = line.strip_prefix("type ") {
+            named_then(rest, &[' ', '<', '='])
+        } else if let Some(rest) = line.strip_prefix("mod ") {
+            named_then(rest, &[' ', '{', ';'])
         } else if let Some(rest) = line.strip_prefix("impl") {
             let rest = rest.trim_start();
             let rest = rest.strip_prefix('<').map_or(rest, |generics| {
@@ -182,10 +258,11 @@ fn item_head(literal: &str) -> Option<String> {
         } else {
             false
         };
-        // A head with doubled braces is the head of a format string, a
-        // printer's template with substitutions, not text that is a runtime
-        // item as it stands.
-        (held && !line.contains("{{")).then(|| line.trim_end().to_owned())
+        // A head with a substitution in the format argument of a formatting
+        // macro is a printer's template, not text that is a runtime item as it
+        // stands; a head with a literal name there, or doubled braces and no
+        // substitution, or a head anywhere else, is text.
+        (held && !(format && has_placeholder(line))).then(|| line.trim_end().to_owned())
     })
 }
 
@@ -212,9 +289,9 @@ fn scan(texts: &[(String, String)]) -> (Vec<String>, usize) {
     let mut found = Vec::new();
     let mut examined = 0;
     for (path, text) in texts {
-        for (line, literal) in literals(text) {
+        for (line, literal, format) in literals(text) {
             examined += 1;
-            if let Some(head) = item_head(&literal) {
+            if let Some(head) = item_head(&literal, format) {
                 found.push(format!("{path}:{line}: `{head}`"));
             }
         }
@@ -345,6 +422,26 @@ pub fn run(id: &str) {
             "const NODE: &str = \"\\n#[derive(Clone)]\\npub struct Node<T> { head: T }\\n\";\n",
         ),
         (
+            "a whole item in a format string with a literal name",
+            "fn show() -> String { format!(\"pub fn tick(units: u64) {{{{ WORK.fetch_add(units); }}}}\") }\n",
+        ),
+        (
+            "a use of the standard library as a constant",
+            "const USES: &str = \"use std::rc::Rc;\\nuse std::mem;\\n\";\n",
+        ),
+        (
+            "a static as a constant",
+            "const WORK: &str = \"static WORK: AtomicU64 = AtomicU64::new(0);\";\n",
+        ),
+        (
+            "a type alias as a constant",
+            "const ALIAS: &str = \"pub type R<T> = Result<T, Overflow>;\";\n",
+        ),
+        (
+            "a module as a constant",
+            "const MODULE: &str = \"pub mod fixed_u8 {\\n}\\n\";\n",
+        ),
+        (
             "a generic function on a line of a longer text",
             "const MORE: &str = \"use std::rc::Rc;\\nfn walk<T>(items: &[T]) {}\\n\";\n",
         ),
@@ -361,7 +458,7 @@ pub fn run(id: &str) {
     // keyword, are not found.
     let mut clean = texts.clone();
     clean[at].1.push_str(
-        "const T: &str = \"pub fn {name}({params}) -> {result} {{ {body} }}\";\nconst U: &str = \"the impl of a trait; fn is a keyword\";\n",
+        "const T: &str = \"pub fn {name}({params}) -> {result} {{ {body} }}\";\nconst U: &str = \"the impl of a trait; fn is a keyword\";\nfn f() -> String { format!(\"impl Fn{kind} {{{{\") }\nfn g() -> String { format!(\"fn apply(&self, {}){} {{{{\", a, b) }\n",
     );
     assert!(scan(&clean).0.is_empty(), "templates are not runtime text");
 }

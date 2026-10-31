@@ -277,79 +277,129 @@ fn plan_decisions() {
     }
     let path = format!("{}:{}", bin.display(), std::env::var("PATH").expect("PATH"));
     // (full, rows' parts) for one planted event.
-    let decide =
-        |event: &str, draft: &str, commit: &str, runs: &str, jobs: &[String], fail: bool| {
-            git(&["checkout", "-q", "--detach", commit]);
-            let out = dir.join("out");
-            let _ = std::fs::remove_file(&out);
-            let mut command = Command::new("bash");
-            command
-                .current_dir(dir)
-                .arg(script.as_std_path())
-                .env("PATH", &path)
-                .env("EVENT", event)
-                .env("DRAFT", draft)
-                .env("REPO", "owner/repo")
-                .env("LEXLEAN_CI_ROWS", rows_file.as_std_path())
-                .env("LEXLEAN_CI_WORKFLOW", workflow.as_std_path())
-                .env("GITHUB_OUTPUT", &out)
-                .env("GITHUB_STEP_SUMMARY", dir.join("summary"))
-                .env("STUB_RUNS", runs)
-                .env("STUB_JOBS", jobs.join("\n"));
-            if fail {
-                command.env("STUB_FAIL", "1");
-            }
-            let output = command.output().expect("the plan script runs");
-            assert!(
-                output.status.success(),
-                "the plan script fails closed to the whole gate and never itself: {}",
-                String::from_utf8_lossy(&output.stderr)
-            );
-            let text = std::fs::read_to_string(&out).expect("outputs");
-            let value = |name: &str| -> String {
-                text.lines()
-                    .find_map(|line| line.strip_prefix(&format!("{name}=")))
-                    .unwrap_or_else(|| panic!("the plan writes `{name}`: {text}"))
-                    .to_owned()
-            };
-            let planned: Vec<serde_json::Value> =
-                serde_json::from_str(&value("rows")).expect("rows are JSON");
-            (
-                value("full"),
-                planned
-                    .iter()
-                    .map(|row| row["part"].as_str().expect("a part").to_owned())
-                    .collect::<Vec<_>>(),
-            )
+    let decide = |event: &str,
+                  draft: &str,
+                  base: &str,
+                  commit: &str,
+                  runs: &str,
+                  jobs: &[String],
+                  fail: bool| {
+        git(&["checkout", "-q", "--detach", commit]);
+        let out = dir.join("out");
+        let _ = std::fs::remove_file(&out);
+        let mut command = Command::new("bash");
+        command
+            .current_dir(dir)
+            .arg(script.as_std_path())
+            .env("PATH", &path)
+            .env("EVENT", event)
+            .env("DRAFT", draft)
+            .env("BASE", base)
+            .env("REPO", "owner/repo")
+            .env("LEXLEAN_CI_ROWS", rows_file.as_std_path())
+            .env("LEXLEAN_CI_WORKFLOW", workflow.as_std_path())
+            .env("GITHUB_OUTPUT", &out)
+            .env("GITHUB_STEP_SUMMARY", dir.join("summary"))
+            .env("STUB_RUNS", runs)
+            .env("STUB_JOBS", jobs.join("\n"));
+        if fail {
+            command.env("STUB_FAIL", "1");
+        }
+        let output = command.output().expect("the plan script runs");
+        assert!(
+            output.status.success(),
+            "the plan script fails closed to the whole gate and never itself: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let text = std::fs::read_to_string(&out).expect("outputs");
+        let value = |name: &str| -> String {
+            text.lines()
+                .find_map(|line| line.strip_prefix(&format!("{name}=")))
+                .unwrap_or_else(|| panic!("the plan writes `{name}`: {text}"))
+                .to_owned()
         };
+        let planned: Vec<serde_json::Value> =
+            serde_json::from_str(&value("rows")).expect("rows are JSON");
+        (
+            value("full"),
+            planned
+                .iter()
+                .map(|row| row["part"].as_str().expect("a part").to_owned())
+                .collect::<Vec<_>>(),
+        )
+    };
     let whole = ("true".to_owned(), parts.clone());
     let draft = ("false".to_owned(), vec!["rest".to_owned()]);
     let nothing = ("false".to_owned(), Vec::<String>::new());
-    // A draft pull request is the `rest` leg; a ready one, a request, and a
-    // push are the whole gate when no run is known.
+    // A draft pull request is the `rest` leg, and so is a ready one stacked on
+    // a feature branch, which cannot land on a line; a ready one into `main`
+    // or a release line, a request, and a push are the whole gate when no run
+    // is known. A base the event does not name is not known to be stacked.
+    for (what, draft_flag, base, expected) in [
+        (
+            "a draft into a feature branch",
+            "true",
+            "claude/issue-91-h6",
+            &draft,
+        ),
+        (
+            "a ready pull request into a feature branch",
+            "false",
+            "claude/issue-91-h6",
+            &draft,
+        ),
+        (
+            "a ready pull request into a release line",
+            "false",
+            "release/v0.5",
+            &whole,
+        ),
+        ("a ready pull request into main", "false", "main", &whole),
+        (
+            "a ready pull request with no base named",
+            "false",
+            "",
+            &whole,
+        ),
+        (
+            "a ready pull request into a branch that only starts like main",
+            "false",
+            "main-2",
+            &draft,
+        ),
+    ] {
+        assert_eq!(
+            &decide("pull_request", draft_flag, base, &direct, "", &[], false),
+            expected,
+            "§9.4: {what}"
+        );
+    }
     assert_eq!(
-        decide("pull_request", "true", &direct, "", &[], false),
+        decide("pull_request", "true", "main", &direct, "", &[], false),
         draft
     );
     assert_eq!(
-        decide("pull_request", "false", &direct, "", &[], false),
+        decide("pull_request", "false", "main", &direct, "", &[], false),
         whole
     );
     assert_eq!(
-        decide("workflow_dispatch", "", &direct, "", &[], false),
+        decide("workflow_dispatch", "", "main", &direct, "", &[], false),
         whole
     );
-    assert_eq!(decide("push", "", &direct, "", &[], false), whole);
+    assert_eq!(decide("push", "", "main", &direct, "", &[], false), whole);
     // A merge of its head's tree whose whole gate passed runs nothing.
     assert_eq!(
-        decide("push", "", &merge_equal, "4242", &green, false),
+        decide("push", "", "main", &merge_equal, "4242", &green, false),
         nothing
     );
     // Every way the evidence can fall short runs the whole gate: no run, a
     // run that skipped or failed a job, a run without the Atlas join, one
     // host or one leg missing, the gate unreadable, and a merge that changed
     // the tree, however good the run of its head.
-    assert_eq!(decide("push", "", &merge_equal, "", &green, false), whole);
+    assert_eq!(
+        decide("push", "", "main", &merge_equal, "", &green, false),
+        whole
+    );
     let without = |name: &str| -> Vec<String> {
         green
             .iter()
@@ -377,20 +427,23 @@ fn plan_decisions() {
         ),
     ] {
         assert_eq!(
-            decide("push", "", &merge_equal, "4242", &jobs, false),
+            decide("push", "", "main", &merge_equal, "4242", &jobs, false),
             whole,
             "§9.4: {what} is not the whole gate passing"
         );
     }
     assert_eq!(
-        decide("push", "", &merge_equal, "4242", &green, true),
+        decide("push", "", "main", &merge_equal, "4242", &green, true),
         whole
     );
     assert_eq!(
-        decide("push", "", &merge_different, "4242", &green, false),
+        decide("push", "", "main", &merge_different, "4242", &green, false),
         whole
     );
-    assert_eq!(decide("push", "", &direct, "4242", &green, false), whole);
+    assert_eq!(
+        decide("push", "", "main", &direct, "4242", &green, false),
+        whole
+    );
     // A run of another repository's pull request is not one of this one's.
     let script_text = root_file(".github/ci-plan.sh");
     assert!(
@@ -1911,8 +1964,9 @@ pub(crate) fn run(id: &str) {
                     && plan_job.contains("          fetch-depth: 2\n")
                     && plan_job.contains("        run: .github/ci-plan.sh\n")
                     && plan_job.contains("          DRAFT: ${{ github.event.pull_request.draft }}\n")
+                    && plan_job.contains("          BASE: ${{ github.event.pull_request.base.ref }}\n")
                     && plan_job.contains("          EVENT: ${{ github.event_name }}\n"),
-                "§9.4: the plan runs the script on the event and may read the runs of the repository"
+                "§9.4: the plan runs the script on the event and the base branch, and may read the runs of the repository"
             );
             // The workflow runs the file as a command: a mode that is not
             // executable fails the plan, and with it every job that needs it.
