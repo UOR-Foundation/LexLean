@@ -18,6 +18,16 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- Language 1.2 applies the bitwise primitives and shifts to unbounded `Nat` (#317, `SM-38`):
+  `bit_and`, `bit_or` and `bit_xor` over two `Nat` operands and `shift_left` and `shift_right` over a
+  `Nat` operand and a `Nat` amount, each with result `Nat` and no `Option`, lowered to `Nat.land`,
+  `Nat.lor`, `Nat.xor`, `Nat.shiftLeft` and `Nat.shiftRight`. `LexLeanRuntime.Laws` gains the bit laws
+  `nat_bit_and`, `nat_bit_or`, `nat_bit_xor`, `nat_bit_shift_left`, `nat_bit_shift_right`,
+  `nat_or_xor_and`, `nat_witt_step` and `nat_bit_ext`, registered in `laws.toml` beside the runtime
+  bounds of `PF-24`. A production root over a `Nat` form is refused (`LLT4005`). This moves the
+  language-1.2 compiler-semantics ID. The same change moves the `SM-35` text that #299 edited in
+  `SPEC.md` and `model/ids.toml` into the chapter and register modules of `spec/`, where it belongs
+  (`NS-03`).
 - Forward merge of `release/v0.4` at `a1b925dc6` (the `v0.4.0` tag commit
   `e0b74b81e` and the first post-tag landing) into this line: the heap half's
   H5 (#298) and H6 (#304) of #91 stage 4 and the release-workflow fixes (#320,

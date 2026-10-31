@@ -161,6 +161,7 @@
 'LexLeanCollections.lessThan.eq_1' depends on axioms: [propext]
 'LexLeanCollections.listFold.eq_1' does not depend on any axioms
 'LexLeanLaws.append_list' does not depend on any axioms
+'LexLeanLaws.bit_eq_testBit' depends on axioms: [propext, Quot.sound]
 'LexLeanLaws.checkedAdd_fits' depends on axioms: [propext, Quot.sound]
 'LexLeanLaws.checkedAdd_fits.match_1' does not depend on any axioms
 'LexLeanLaws.length_list' does not depend on any axioms
@@ -191,6 +192,14 @@
 'LexLeanLaws.mapEntries_self' does not depend on any axioms
 'LexLeanLaws.mapFold_listFold' does not depend on any axioms
 'LexLeanLaws.mapSize_length' does not depend on any axioms
+'LexLeanLaws.nat_bit_and' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.nat_bit_ext' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.nat_bit_or' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.nat_bit_shift_left' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.nat_bit_shift_right' depends on axioms: [propext]
+'LexLeanLaws.nat_bit_xor' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.nat_or_xor_and' depends on axioms: [propext, Quot.sound]
+'LexLeanLaws.nat_witt_step' depends on axioms: [propext, Quot.sound]
 'LexLeanLaws.quotient_int' depends on axioms: [propext, Quot.sound]
 'LexLeanLaws.quotient_nat' depends on axioms: [propext, Quot.sound]
 'LexLeanLaws.remainder_int' depends on axioms: [propext, Quot.sound]

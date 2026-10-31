@@ -862,17 +862,26 @@ impl Render<'_> {
     ) -> String {
         let int64_result =
             matches!(result, SemanticType::Option { value } if **value == SemanticType::Int64);
-        let (head, ascription) = match spelling(operation) {
-            Spelling::Runtime {
-                int64: Some(specialized),
-                ..
-            } if int64_result => (
-                format!("LexLeanRuntime.{specialized}"),
-                "Option (Int64)".to_owned(),
-            ),
-            Spelling::Runtime { name, .. } => (format!("LexLeanRuntime.{name}"), self.ty(result)),
-            Spelling::Widening(name) => (name.to_owned(), self.ty(result)),
-            Spelling::Collection(name) => (format!("LexLeanCollections.{name}"), self.ty(result)),
+        let nat_head = operation.nat_bitwise_function(result);
+        let (head, ascription) = if let Some(nat_fn) = nat_head {
+            (nat_fn.to_owned(), self.ty(result))
+        } else {
+            match spelling(operation) {
+                Spelling::Runtime {
+                    int64: Some(specialized),
+                    ..
+                } if int64_result => (
+                    format!("LexLeanRuntime.{specialized}"),
+                    "Option (Int64)".to_owned(),
+                ),
+                Spelling::Runtime { name, .. } => {
+                    (format!("LexLeanRuntime.{name}"), self.ty(result))
+                }
+                Spelling::Widening(name) => (name.to_owned(), self.ty(result)),
+                Spelling::Collection(name) => {
+                    (format!("LexLeanCollections.{name}"), self.ty(result))
+                }
+            }
         };
         let mut out = format!("({head}");
         for argument in arguments {

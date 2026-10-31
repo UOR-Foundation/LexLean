@@ -259,3 +259,11 @@ Feature: semantic-ir
     When the project is linked, built, and verified by the pinned Lean, its formatted source and its LaTeX are read back, and each planted project is linked
     Then the theorem verifies with exactly the axioms its policy states and the formatter writes the proof unchanged
     And each planted project is refused naming the misuse
+
+  @SM-38 @build
+  Scenario: A language-1.2 definition may apply bit_and, bit_or and bit_xor to two Nat operands and shift_left and shift_right to a Nat operand and a Nat amount, each with result Nat and no Option, and the backend lowers them to Nat.land, Nat.lor, Nat.xor, Nat.shiftLeft and Nat.shiftRight, so that reflexivity evaluates them inside a verified module; the registered laws nat_bit_and, nat_bit_or, nat_bit_xor, nat_bit_shift_left, nat_bit_shift_right, nat_or_xor_and, nat_witt_step and nat_bit_ext state the bit read of each under an exact axiom policy, and a theorem that applies one verifies while a false bit equation is rejected; a use in language 1.1, bit_not of a Nat, a Nat operand mixed with an integer of another type, and a production root over a Nat form are each refused.
+    Given a language-1.2 project whose definitions apply bit_and, bit_or, bit_xor, shift_left and shift_right to Nat, whose theorems apply the registered bit laws, and the planted projects that misuse the forms
+    When the projects are linked, built, and verified by the pinned Lean, the formatted source and the generated Lean are read back, and each planted project is linked
+    Then the generated Lean names Nat.land, Nat.lor, Nat.xor, Nat.shiftLeft and Nat.shiftRight and no fixed-width runtime helper
+    And the definitions and the theorems verify with exactly the axioms their policies state, and the false equation is rejected by Lean
+    And each planted project is refused naming the misuse

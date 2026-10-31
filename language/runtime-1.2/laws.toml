@@ -113,6 +113,98 @@ parameters = [
   { kind = "list", element = { kind = "parameter", name = "A" } },
 ]
 
+# Bit k of (a and b) is (bit k of a) and (bit k of b).
+[[law]]
+name = "nat_bit_and"
+lean = "LexLeanLaws.nat_bit_and"
+type_parameters = []
+premises = 0
+parameters = [
+  { kind = "nat" },
+  { kind = "nat" },
+  { kind = "nat" },
+]
+
+# Bit k of (a or b) is (bit k of a) or (bit k of b).
+[[law]]
+name = "nat_bit_or"
+lean = "LexLeanLaws.nat_bit_or"
+type_parameters = []
+premises = 0
+parameters = [
+  { kind = "nat" },
+  { kind = "nat" },
+  { kind = "nat" },
+]
+
+# Bit k of (a xor b) is (bit k of a) xor (bit k of b).
+[[law]]
+name = "nat_bit_xor"
+lean = "LexLeanLaws.nat_bit_xor"
+type_parameters = []
+premises = 0
+parameters = [
+  { kind = "nat" },
+  { kind = "nat" },
+  { kind = "nat" },
+]
+
+# Bit k of (a >>> m) is bit (m + k) of a.
+[[law]]
+name = "nat_bit_shift_right"
+lean = "LexLeanLaws.nat_bit_shift_right"
+type_parameters = []
+premises = 0
+parameters = [
+  { kind = "nat" },
+  { kind = "nat" },
+  { kind = "nat" },
+]
+
+# Bit (m + k) of (a <<< m) is bit k of a.
+[[law]]
+name = "nat_bit_shift_left"
+lean = "LexLeanLaws.nat_bit_shift_left"
+type_parameters = []
+premises = 0
+parameters = [
+  { kind = "nat" },
+  { kind = "nat" },
+  { kind = "nat" },
+]
+
+# Witt split of bitwise OR into XOR and AND on Nat.
+[[law]]
+name = "nat_or_xor_and"
+lean = "LexLeanLaws.nat_or_xor_and"
+type_parameters = []
+premises = 0
+parameters = [
+  { kind = "nat" },
+  { kind = "nat" },
+]
+
+# Witt split of the Rule 30 row step into linear part XOR shifted carry.
+[[law]]
+name = "nat_witt_step"
+lean = "LexLeanLaws.nat_witt_step"
+type_parameters = []
+premises = 0
+parameters = [
+  { kind = "nat" },
+]
+
+# Bitwise extensionality over Nat via shift_right and remainder by 2.
+[[law]]
+name = "nat_bit_ext"
+lean = "LexLeanLaws.nat_bit_ext"
+type_parameters = []
+premises = 1
+parameters = [
+  { kind = "nat" },
+  { kind = "nat" },
+]
+
 # The runtime bounds (#263): what a law proof cites to show that a guard of the
 # split, the decoder, or checked addition never fails. Each conclusion is an
 # implication from a bound n on the input, and each closed side condition is a

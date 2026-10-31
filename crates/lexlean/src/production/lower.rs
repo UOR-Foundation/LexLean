@@ -3392,6 +3392,17 @@ impl Lowerer<'_> {
             SemanticPrimitive::CheckedMultiply => Prim::CheckedMul,
             SemanticPrimitive::CheckedNegate => Prim::CheckedNeg,
             SemanticPrimitive::CheckedQuotient => Prim::CheckedQuot,
+            SemanticPrimitive::BitAnd
+            | SemanticPrimitive::BitOr
+            | SemanticPrimitive::BitXor
+            | SemanticPrimitive::ShiftLeft
+            | SemanticPrimitive::ShiftRight
+                if operation.nat_bitwise(&result) =>
+            {
+                return Err(format!(
+                    "{operation:?} on `Nat` has no bounded-width production realization"
+                ));
+            }
             SemanticPrimitive::BitAnd => Prim::BitAnd,
             SemanticPrimitive::BitOr => Prim::BitOr,
             SemanticPrimitive::BitXor => Prim::BitXor,
