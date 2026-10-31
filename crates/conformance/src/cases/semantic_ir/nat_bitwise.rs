@@ -7,12 +7,12 @@ const THEOREM_XOR: &str = "theorem{\n  name: bitOfXor,\n  parameters: [a : Nat, 
 
 fn source(extra: &str, production: bool) -> String {
     let production = if production {
-        ",\n  production: {effects: [], targets: [rust-core]}"
+        "definition{\n  name: probe,\n  parameters: [y : Nat],\n  result: Nat,\n  body: (prim bit_xor y y : Nat),\n  axioms: [propext],\n  executable: true,\n  production: {effects: [], targets: [rust-core]}\n}\n\n"
     } else {
         ""
     };
     format!(
-        "\\begin{{lexlean}}{{Main}}\n\\useglossary{{lexlean.std.nat@1.2.0}}\n\\title{{Natural number addition}}\n\\begin{{semanticmodule}}\ndefinition{{\n  name: step,\n  parameters: [y : Nat],\n  result: Nat,\n  body: (prim bit_xor (y + (y + (y + y))) (prim bit_or (y + y) y : Nat) : Nat),\n  axioms: [propext],\n  executable: true{production}\n}}\n\ndefinition{{\n  name: lifted,\n  parameters: [y : Nat, m : Nat],\n  result: Nat,\n  body: (prim bit_and (prim shift_left y m : Nat) (prim shift_right y m : Nat) : Nat),\n  axioms: [propext]\n}}\n\n{extra}\\end{{semanticmodule}}\n\\end{{lexlean}}\n"
+        "\\begin{{lexlean}}{{Main}}\n\\useglossary{{lexlean.std.nat@1.2.0}}\n\\title{{Natural number addition}}\n\\begin{{semanticmodule}}\ndefinition{{\n  name: step,\n  parameters: [y : Nat],\n  result: Nat,\n  body: (prim bit_xor (y + (y + (y + y))) (prim bit_or (y + y) y : Nat) : Nat),\n  axioms: [propext],\n  executable: true\n}}\n\ndefinition{{\n  name: lifted,\n  parameters: [y : Nat, m : Nat],\n  result: Nat,\n  body: (prim bit_and (prim shift_left y m : Nat) (prim shift_right y m : Nat) : Nat),\n  axioms: [propext]\n}}\n\n{extra}{production}\\end{{semanticmodule}}\n\\end{{lexlean}}\n"
     )
 }
 
