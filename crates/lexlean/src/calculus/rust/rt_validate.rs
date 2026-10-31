@@ -553,6 +553,7 @@ fn attributes(items: &[Item]) -> Result<(), String> {
                 if lints.iter().any(String::is_empty) {
                     return rule("attribute-args", "`forbid` takes a lint with a name");
                 }
+                idents("a lint name", lints)?;
             }
             (other, _) => {
                 return rule(
@@ -565,13 +566,16 @@ fn attributes(items: &[Item]) -> Result<(), String> {
     Ok(())
 }
 
-/// The path of a `defined` item names something: it is not empty.
+/// The path of a `defined` item names something: it is not empty, and it is
+/// the names `module::name` that `runtime.rs` splits an exported name into,
+/// each an identifier (`Self`, `crate` and `super` mean nothing in the path
+/// of a definition).
 fn defined_path(path: &str) -> Result<(), String> {
     if path.is_empty() {
-        rule("defined-path", "empty")
-    } else {
-        Ok(())
+        return rule("defined-path", "empty");
     }
+    path.split("::")
+        .try_for_each(|segment| ident("a defined path segment", segment))
 }
 
 impl Variant {

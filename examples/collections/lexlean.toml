@@ -10,6 +10,11 @@ lean_workspace = "."
 lean_toolchain = "leanprover/lean4:v4.32.1"
 
 [[lexicon_source]]
+package = "collections.titles"
+kind = "path"
+path = "glossary/collections.titles"
+
+[[lexicon_source]]
 package = "lexlean.std.nat"
 kind = "builtin"
 
