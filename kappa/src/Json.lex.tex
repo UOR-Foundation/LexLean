@@ -1,0 +1,435 @@
+\begin{lexlean}{Json}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.Text}
+\importmodule{Label}
+\title{Natural number addition}
+\begin{semanticmodule}
+structure{
+  name: Frame,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: object, type: Bool},
+    {name: phase, type: Nat},
+    {name: items, type: (List (Bytes * Bytes))},
+    {name: key, type: Bytes}
+  ]
+}
+
+structure{
+  name: Machine,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: position, type: Nat},
+    {name: stack, type: (List Frame)},
+    {name: result, type: (Option Bytes)},
+    {name: failure, type: Bytes}
+  ]
+}
+
+structure{
+  name: Scan,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: position, type: Nat},
+    {name: text, type: Bytes},
+    {name: failure, type: Bytes},
+    {name: finished, type: Bool}
+  ]
+}
+
+structure{
+  name: Insertion,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: done, type: Bool},
+    {name: duplicate, type: Bool},
+    {name: acc, type: (List (Bytes * Bytes))}
+  ]
+}
+
+definition{
+  name: byteOf,
+  parameters: [n : Nat],
+  result: Bytes,
+  body: (LexLeanStd.Text::sliceOr 0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff n 1),
+  executable: true
+}
+
+definition{
+  name: isSpaceNat,
+  parameters: [n : Nat],
+  result: Bool,
+  body: (if (n =? 32) then true else (if (n =? 10) then true else (if (n =? 13) then true else (n =? 9)))),
+  executable: true
+}
+
+definition{
+  name: skipSpace,
+  parameters: [subject : Bytes, from : Nat],
+  result: Nat,
+  body: (first (prim iterate_until (fun [subject] (position : Nat) => (if (isSpaceNat (Label::byteNat subject position)) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat]))) (prim length subject : Nat) from : (Nat * Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: hexValue,
+  parameters: [n : Nat],
+  result: Nat,
+  body: (if (47 <? n) then (if (n <? 58) then (prim subtract n 48 : Nat) else (if (64 <? n) then (if (n <? 71) then (prim subtract n 55 : Nat) else (if (96 <? n) then (if (n <? 103) then (prim subtract n 87 : Nat) else 16) else 16)) else 16)) else 16),
+  executable: true
+}
+
+definition{
+  name: hexFour,
+  parameters: [subject : Bytes, position : Nat],
+  result: Nat,
+  body: (let a : Nat := (hexValue (Label::byteNat subject position)); (let b : Nat := (hexValue (Label::byteNat subject (position + 1))); (let c : Nat := (hexValue (Label::byteNat subject (position + 2))); (let d : Nat := (hexValue (Label::byteNat subject (position + 3))); (if (a <? 16) then (if (b <? 16) then (if (c <? 16) then (if (d <? 16) then ((((prim multiply a 4096 : Nat) + (prim multiply b 256 : Nat)) + (prim multiply c 16 : Nat)) + d) else 65536) else 65536) else 65536) else 65536))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: composeFrom,
+  parameters: [mark : Nat, base : Nat],
+  result: Nat,
+  body: (first (prim iterate_until (fun [base, mark] (entry : Nat) => (let table : Bytes := 0x0041c00045c80049cc004fd20055d90061e00065e80069ec006ff20075f90141c10145c90149cd014fd30155da0159dd0161e10165e90169ed016ff30175fa0179fd0241c20245ca0249ce024fd40255db0261e20265ea0269ee026ff40275fb0341c3034ed1034fd50361e3036ef1036ff50841c40845cb0849cf084fd60855dc0861e40865eb0869ef086ff60875fc0879ff0a41c50a61e52743c72763e7; (if (entry <? 53) then (if ((Label::byteNat table (prim multiply entry 3 : Nat)) =? mark) then (if ((Label::byteNat table ((prim multiply entry 3 : Nat) + 1)) =? base) then (ctor Option.none [Nat]) else (ctor Option.some [Nat] (entry + 1))) else (ctor Option.some [Nat] (entry + 1))) else (ctor Option.none [Nat])))) 54 0 : (Nat * Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: composed,
+  parameters: [mark : Nat, base : Nat],
+  result: Nat,
+  body: (let entry : Nat := (composeFrom mark base); (if (entry <? 53) then (Label::byteNat 0x0041c00045c80049cc004fd20055d90061e00065e80069ec006ff20075f90141c10145c90149cd014fd30155da0159dd0161e10165e90169ed016ff30175fa0179fd0241c20245ca0249ce024fd40255db0261e20265ea0269ee026ff40275fb0341c3034ed1034fd50361e3036ef1036ff50841c40845cb0849cf084fd60855dc0861e40865eb0869ef086ff60875fc0879ff0a41c50a61e52743c72763e7 ((prim multiply entry 3 : Nat) + 2)) else 0)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: encodeHigh,
+  parameters: [scalar : Nat],
+  result: Bytes,
+  body: (prim append (byteOf (192 + (prim quotient scalar 64 0 : Nat))) (byteOf (128 + (prim remainder scalar 64 0 : Nat))) : Bytes),
+  executable: true
+}
+
+definition{
+  name: pushScalar,
+  parameters: [text : Bytes, scalar : Nat],
+  result: (Option Bytes),
+  body: (if (scalar <? 128) then (ctor Option.some [Bytes] (prim append text (byteOf scalar) : Bytes)) else (if (scalar <? 256) then (ctor Option.some [Bytes] (prim append text (encodeHigh scalar) : Bytes)) else (if (767 <? scalar) then (if (scalar <? 808) then (let size : Nat := (prim length text : Nat); (let base : Nat := (if (0 <? size) then (Label::byteNat text (prim subtract size 1 : Nat)) else 256); (let replacement : Nat := (if (base <? 128) then (composed (prim subtract scalar 768 : Nat) base) else 0); (if (0 <? replacement) then (ctor Option.some [Bytes] (prim append (LexLeanStd.Text::sliceOr text 0 (prim subtract size 1 : Nat)) (encodeHigh replacement) : Bytes)) else (ctor Option.none [Bytes]))))) else (ctor Option.none [Bytes])) else (ctor Option.none [Bytes])))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: failScan,
+  parameters: [scan : Scan, message : Bytes],
+  result: (Option Scan),
+  body: (ctor Option.some [Scan] (record Scan {position := (project scan position), text := (project scan text), failure := message, finished := false})),
+  executable: true
+}
+
+definition{
+  name: takeScalar,
+  parameters: [scan : Scan, scalar : Nat, width : Nat],
+  result: (Option Scan),
+  body: (match (pushScalar (project scan text) scalar)
+    | Option.some text => (ctor Option.some [Scan] (record Scan {position := ((project scan position) + width), text := text, failure := 0x, finished := false}))
+    | Option.none => (failScan scan (Label::text "string outside the NFC subset"))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: simpleEscape,
+  parameters: [e : Nat],
+  result: Nat,
+  body: (if (e =? 34) then 34 else (if (e =? 92) then 92 else (if (e =? 47) then 47 else (if (e =? 98) then 8 else (if (e =? 102) then 12 else (if (e =? 110) then 10 else (if (e =? 114) then 13 else (if (e =? 116) then 9 else 256)))))))),
+  executable: true
+}
+
+definition{
+  name: escapeScalar,
+  parameters: [subject : Bytes, scan : Scan],
+  result: (Option Scan),
+  body: (let position : Nat := (project scan position); (let e : Nat := (Label::byteNat subject (position + 1)); (let simple : Nat := (simpleEscape e); (if (simple <? 256) then (takeScalar scan simple 2) else (if (e =? 117) then (let scalar : Nat := (hexFour subject (position + 2)); (if (scalar <? 65536) then (takeScalar scan scalar 6) else (failScan scan (Label::text "bad unicode escape")))) else (failScan scan (Label::text "bad escape"))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: utf8Scalar,
+  parameters: [subject : Bytes, scan : Scan, lead : Nat],
+  result: (Option Scan),
+  body: (let follow : Nat := (Label::byteNat subject ((project scan position) + 1)); (if (127 <? follow) then (if (follow <? 192) then (if (lead =? 204) then (takeScalar scan (768 + (prim subtract follow 128 : Nat)) 2) else (if (lead =? 194) then (takeScalar scan ((prim multiply 2 64 : Nat) + (prim subtract follow 128 : Nat)) 2) else (if (lead =? 195) then (takeScalar scan ((prim multiply 3 64 : Nat) + (prim subtract follow 128 : Nat)) 2) else (failScan scan (Label::text "string outside the NFC subset"))))) else (failScan scan (Label::text "invalid UTF-8"))) else (failScan scan (Label::text "invalid UTF-8")))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: stringStep,
+  parameters: [subject : Bytes, scan : Scan],
+  result: (Option Scan),
+  body: (if (project scan finished) then (ctor Option.none [Scan]) else (if (0 <? (prim length (project scan failure) : Nat)) then (ctor Option.none [Scan]) else (let b : Nat := (Label::byteNat subject (project scan position)); (if (b =? 256) then (failScan scan (Label::text "unterminated string")) else (if (b =? 34) then (ctor Option.some [Scan] (record Scan {position := ((project scan position) + 1), text := (project scan text), failure := 0x, finished := true})) else (if (b =? 92) then (escapeScalar subject scan) else (if (b <? 32) then (failScan scan (Label::text "control character in string")) else (if (b <? 128) then (takeScalar scan b 1) else (utf8Scalar subject scan b))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: readString,
+  parameters: [subject : Bytes, quote : Nat],
+  result: Scan,
+  body: (first (prim iterate_until (fun [subject] (scan : Scan) => (stringStep subject scan)) ((prim length subject : Nat) + 2) (record Scan {position := (quote + 1), text := 0x, failure := 0x, finished := false}) : (Scan * Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: escapeStep,
+  parameters: [raw : Bytes, state : (Nat * Bytes)],
+  result: (Option (Nat * Bytes)),
+  body: (let position : Nat := (first state); (let b : Nat := (Label::byteNat raw position); (if (b =? 256) then (ctor Option.none [(Nat * Bytes)]) else (ctor Option.some [(Nat * Bytes)] ((position + 1), (prim append (second state) (if (b =? 34) then 0x5c22 else (if (b =? 92) then 0x5c5c else (if (b =? 8) then 0x5c62 else (if (b =? 9) then 0x5c74 else (if (b =? 10) then 0x5c6e else (if (b =? 12) then 0x5c66 else (if (b =? 13) then 0x5c72 else (if (b <? 32) then (prim append 0x5c753030 (prim append (LexLeanStd.Text::sliceOr 0x30313233343536373839616263646566 (prim quotient b 16 0 : Nat) 1) (LexLeanStd.Text::sliceOr 0x30313233343536373839616263646566 (prim remainder b 16 0 : Nat) 1) : Bytes) : Bytes) else (byteOf b))))))))) : Bytes)))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: quoted,
+  parameters: [raw : Bytes],
+  result: Bytes,
+  body: (prim append 0x22 (prim append (second (first (prim iterate_until (fun [raw] (state : (Nat * Bytes)) => (escapeStep raw state)) ((prim length raw : Nat) + 1) (0, 0x) : ((Nat * Bytes) * Bool)))) 0x22 : Bytes) : Bytes),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: reverseItems,
+  parameters: [items : (List (Bytes * Bytes))],
+  result: (List (Bytes * Bytes)),
+  body: (prim list_fold (fun (reversed : (List (Bytes * Bytes))) (item : (Bytes * Bytes)) => (cons item reversed)) (nil (Bytes * Bytes)) items : (List (Bytes * Bytes))),
+  executable: true
+}
+
+definition{
+  name: lessKey,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bool,
+  body: (prim equal (prim compare_bytes left right : Ordering) (prim compare_bytes 0x 0x01 : Ordering) : Bool),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: insertSorted,
+  parameters: [key : Bytes, value : Bytes, items : (List (Bytes * Bytes))],
+  result: (Option (List (Bytes * Bytes))),
+  body: (let state : Insertion := (prim list_fold (fun [key, value] (state : Insertion) (item : (Bytes * Bytes)) => (if (project state done) then (record Insertion {done := true, duplicate := (project state duplicate), acc := (cons item (project state acc))}) else (if (prim equal key (first item) : Bool) then (record Insertion {done := true, duplicate := true, acc := (cons item (project state acc))}) else (if (lessKey key (first item)) then (record Insertion {done := true, duplicate := false, acc := (cons item (cons (key, value) (project state acc)))}) else (record Insertion {done := false, duplicate := false, acc := (cons item (project state acc))}))))) (record Insertion {done := false, duplicate := false, acc := (nil (Bytes * Bytes))}) items : Insertion); (if (project state duplicate) then (ctor Option.none [(List (Bytes * Bytes))]) else (if (project state done) then (ctor Option.some [(List (Bytes * Bytes))] (reverseItems (project state acc))) else (ctor Option.some [(List (Bytes * Bytes))] (reverseItems (cons (key, value) (project state acc))))))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: arrayText,
+  parameters: [items : (List (Bytes * Bytes))],
+  result: Bytes,
+  body: (match (prim list_fold (fun (joined : (Option Bytes)) (item : (Bytes * Bytes)) => (match joined
+      | Option.none => (ctor Option.some [Bytes] (second item))
+      | Option.some rest => (ctor Option.some [Bytes] (prim append (second item) (prim append 0x2c rest : Bytes) : Bytes)))) (ctor Option.none [Bytes]) items : (Option Bytes))
+    | Option.some joined => joined
+    | Option.none => 0x),
+  executable: true
+}
+
+definition{
+  name: objectText,
+  parameters: [items : (List (Bytes * Bytes))],
+  result: Bytes,
+  body: (match (prim list_fold (fun (joined : (Option Bytes)) (item : (Bytes * Bytes)) => (let member : Bytes := (prim append (quoted (first item)) (prim append 0x3a (second item) : Bytes) : Bytes); (match joined
+      | Option.none => (ctor Option.some [Bytes] member)
+      | Option.some sofar => (ctor Option.some [Bytes] (prim append sofar (prim append 0x2c member : Bytes) : Bytes))))) (ctor Option.none [Bytes]) items : (Option Bytes))
+    | Option.some joined => joined
+    | Option.none => 0x),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: failed,
+  parameters: [machine : Machine, message : Bytes],
+  result: Machine,
+  body: (record Machine {position := (project machine position), stack := (project machine stack), result := (ctor Option.none [Bytes]), failure := message}),
+  executable: true
+}
+
+definition{
+  name: deliver,
+  parameters: [machine : Machine, stack : (List Frame), text : Bytes, position : Nat],
+  result: Machine,
+  body: (match stack
+    | List.nil => (record Machine {position := position, stack := (nil Frame), result := (ctor Option.some [Bytes] text), failure := 0x})
+    | List.cons top rest => (if (project top object) then (match (insertSorted (project top key) text (project top items))
+      | Option.some items => (record Machine {position := position, stack := (cons (record Frame {object := true, phase := 3, items := items, key := 0x}) rest), result := (ctor Option.none [Bytes]), failure := 0x})
+      | Option.none => (failed machine (Label::text "duplicate member name"))) else (record Machine {position := position, stack := (cons (record Frame {object := false, phase := 1, items := (cons (0x, text) (project top items)), key := 0x}) rest), result := (ctor Option.none [Bytes]), failure := 0x}))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: closeFrame,
+  parameters: [machine : Machine, top : Frame, rest : (List Frame), position : Nat],
+  result: Machine,
+  body: (if (project top object) then (deliver machine rest (prim append 0x7b (prim append (objectText (project top items)) 0x7d : Bytes) : Bytes) position) else (deliver machine rest (prim append 0x5b (prim append (arrayText (project top items)) 0x5d : Bytes) : Bytes) position)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: pushFrame,
+  parameters: [machine : Machine, object : Bool, position : Nat],
+  result: Machine,
+  body: (record Machine {position := position, stack := (cons (record Frame {object := object, phase := 0, items := (nil (Bytes * Bytes)), key := 0x}) (project machine stack)), result := (ctor Option.none [Bytes]), failure := 0x}),
+  executable: true
+}
+
+definition{
+  name: digitEnd,
+  parameters: [subject : Bytes, from : Nat],
+  result: Nat,
+  body: (first (prim iterate_until (fun [subject] (position : Nat) => (let n : Nat := (Label::byteNat subject position); (if (47 <? n) then (if (n <? 58) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat])) else (ctor Option.none [Nat])))) (prim length subject : Nat) from : (Nat * Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: finishNumber,
+  parameters: [machine : Machine, subject : Bytes, start : Nat, after : Nat, zero : Bool],
+  result: Machine,
+  body: (let next : Nat := (Label::byteNat subject after); (if (next =? 46) then (failed machine (Label::text "number outside the integer subset")) else (if (next =? 101) then (failed machine (Label::text "number outside the integer subset")) else (if (next =? 69) then (failed machine (Label::text "number outside the integer subset")) else (if zero then (failed machine (Label::text "number outside the integer subset")) else (deliver machine (project machine stack) (LexLeanStd.Text::sliceOr subject start (prim subtract after start : Nat)) after)))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: numberAt,
+  parameters: [machine : Machine, subject : Bytes, start : Nat],
+  result: Machine,
+  body: (let negative : Bool := ((Label::byteNat subject start) =? 45); (let lead0 : Nat := (if negative then (start + 1) else start); (let lead : Nat := (Label::byteNat subject lead0); (if (lead =? 48) then (let after : Nat := (lead0 + 1); (finishNumber machine subject start after negative)) else (if (48 <? lead) then (if (lead <? 58) then (finishNumber machine subject start (digitEnd subject (lead0 + 1)) false) else (failed machine (Label::text "bad number"))) else (failed machine (Label::text "bad number"))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: literalAt,
+  parameters: [machine : Machine, subject : Bytes, start : Nat, word : Bytes, rendered : Bytes],
+  result: Machine,
+  body: (if (LexLeanStd.Text::matchAt subject word start) then (deliver machine (project machine stack) rendered (start + (prim length word : Nat))) else (failed machine (Label::text "bad literal"))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: valueAt,
+  parameters: [machine : Machine, subject : Bytes, p : Nat, b : Nat],
+  result: Machine,
+  body: (if (b =? 123) then (pushFrame machine true (p + 1)) else (if (b =? 91) then (pushFrame machine false (p + 1)) else (if (b =? 34) then (let scan : Scan := (readString subject p); (if (project scan finished) then (deliver machine (project machine stack) (quoted (project scan text)) (project scan position)) else (failed machine (project scan failure)))) else (if (b =? 116) then (literalAt machine subject p 0x74727565 0x74727565) else (if (b =? 102) then (literalAt machine subject p 0x66616c7365 0x66616c7365) else (if (b =? 110) then (literalAt machine subject p 0x6e756c6c 0x6e756c6c) else (if (b =? 45) then (numberAt machine subject p) else (if (47 <? b) then (if (b <? 58) then (numberAt machine subject p) else (failed machine (Label::text "unexpected input"))) else (failed machine (Label::text "unexpected input")))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: withTop,
+  parameters: [machine : Machine, top : Frame, rest : (List Frame), position : Nat],
+  result: Machine,
+  body: (record Machine {position := position, stack := (cons top rest), result := (ctor Option.none [Bytes]), failure := 0x}),
+  executable: true
+}
+
+definition{
+  name: retag,
+  parameters: [top : Frame, phase : Nat, key : Bytes],
+  result: Frame,
+  body: (record Frame {object := (project top object), phase := phase, items := (project top items), key := key}),
+  executable: true
+}
+
+definition{
+  name: objectKey,
+  parameters: [machine : Machine, subject : Bytes, top : Frame, rest : (List Frame), p : Nat],
+  result: Machine,
+  body: (let scan : Scan := (readString subject p); (if (project scan finished) then (withTop machine (retag top 1 (project scan text)) rest (project scan position)) else (failed machine (project scan failure)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: structural,
+  parameters: [
+    machine : Machine,
+    subject : Bytes,
+    top : Frame,
+    rest : (List Frame),
+    p : Nat,
+    b : Nat
+  ],
+  result: Machine,
+  body: (let phase : Nat := (project top phase); (if (project top object) then (if (b =? 125) then (if (phase =? 0) then (closeFrame machine top rest (p + 1)) else (if (phase =? 3) then (closeFrame machine top rest (p + 1)) else (failed machine (Label::text "unexpected input")))) else (if (b =? 34) then (if (phase =? 0) then (objectKey machine subject top rest p) else (if (phase =? 4) then (objectKey machine subject top rest p) else (failed machine (Label::text "unexpected input")))) else (if (b =? 58) then (if (phase =? 1) then (withTop machine (retag top 2 (project top key)) rest (p + 1)) else (failed machine (Label::text "unexpected input"))) else (if (b =? 44) then (if (phase =? 3) then (withTop machine (retag top 4 0x) rest (p + 1)) else (failed machine (Label::text "unexpected input"))) else (failed machine (Label::text "unexpected input")))))) else (if (b =? 93) then (closeFrame machine top rest (p + 1)) else (if (b =? 44) then (if (phase =? 1) then (withTop machine (retag top 2 0x) rest (p + 1)) else (failed machine (Label::text "unexpected input"))) else (failed machine (Label::text "unexpected input")))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: step,
+  parameters: [subject : Bytes, machine : Machine],
+  result: (Option Machine),
+  body: (if (0 <? (prim length (project machine failure) : Nat)) then (ctor Option.none [Machine]) else (match (project machine result)
+    | Option.some done => (ctor Option.none [Machine])
+    | Option.none => (let p : Nat := (skipSpace subject (project machine position)); (let b : Nat := (Label::byteNat subject p); (match (project machine stack)
+      | List.nil => (ctor Option.some [Machine] (valueAt machine subject p b))
+      | List.cons top rest => (let phase : Nat := (project top phase); (let wants : Bool := (if (project top object) then (phase =? 2) else (if (phase =? 2) then true else (if (phase =? 0) then (not (b =? 93)) else false))); (if wants then (ctor Option.some [Machine] (valueAt machine subject p b)) else (ctor Option.some [Machine] (structural machine subject top rest p b)))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: canonicalResult,
+  parameters: [subject : Bytes],
+  result: (Result Bytes Bytes),
+  body: (let final : Machine := (first (prim iterate_until (fun [subject] (machine : Machine) => (step subject machine)) ((prim length subject : Nat) + 2) (record Machine {position := 0, stack := (nil Frame), result := (ctor Option.none [Bytes]), failure := 0x}) : (Machine * Bool))); (if (0 <? (prim length (project final failure) : Nat)) then (ctor Result.error [Bytes, Bytes] (project final failure)) else (match (project final result)
+    | Option.some canonical => (if ((skipSpace subject (project final position)) =? (prim length subject : Nat)) then (ctor Result.ok [Bytes, Bytes] canonical) else (ctor Result.error [Bytes, Bytes] (Label::text "trailing input")))
+    | Option.none => (ctor Result.error [Bytes, Bytes] (Label::text "unexpected end of input"))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: canonicalJson,
+  parameters: [input : Bytes],
+  result: (Option Bytes),
+  body: (match (canonicalResult input)
+    | Result.ok canonical => (ctor Option.some [Bytes] canonical)
+    | Result.error message => (ctor Option.none [Bytes])),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: jsonLabel,
+  parameters: [input : Bytes],
+  result: (Option Bytes),
+  body: (match (canonicalResult input)
+    | Result.ok canonical => (ctor Option.some [Bytes] (Label::kappaLabel canonical))
+    | Result.error message => (ctor Option.none [Bytes])),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}
