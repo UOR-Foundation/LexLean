@@ -1,0 +1,2661 @@
+\begin{lexlean}{RuntimeValidate}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.Text}
+\importmodule{RustValidate}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: Ty,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: TyUnit, fields: []},
+    {name: TyBool, fields: []},
+    {name: TyNat, fields: []},
+    {name: TyFixed, fields: []},
+    {name: TyOrdering, fields: []},
+    {name: TySelf, fields: []},
+    {name: TyParam, fields: [Nat]},
+    {name: TyRef, fields: [Ty]},
+    {name: TyRefMut, fields: [Ty]},
+    {name: TyPair, fields: [Ty, Ty]},
+    {name: TyNamed, fields: [Bytes, Ty]},
+    {name: TyWide, fields: []},
+    {name: TySize, fields: []},
+    {name: TyChar, fields: []},
+    {name: TyStr, fields: []},
+    {name: TySlice, fields: [Ty]},
+    {name: TyUnknown, fields: []},
+    {name: TyAbsent, fields: []},
+    {name: TyNil, fields: []},
+    {name: TyCons, fields: [Ty, Ty]}
+  ]
+}
+
+inductive{
+  name: Pat,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: PWild, fields: []},
+    {name: PBind, fields: [Bytes]},
+    {name: PBindMut, fields: [Bytes]},
+    {name: PPath, fields: [(List Bytes)]},
+    {name: PTuple, fields: [Pat]},
+    {name: PTupleStruct, fields: [(List Bytes), Pat]},
+    {name: PStruct, fields: [(List Bytes), (List Bytes), Pat]},
+    {name: PLit, fields: [Nat]},
+    {name: PNil, fields: []},
+    {name: PCons, fields: [Pat, Pat]}
+  ]
+}
+
+inductive{
+  name: Expr,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: EVar, fields: [Bytes]},
+    {name: ELit, fields: [Nat]},
+    {name: EPath, fields: [(List Bytes)]},
+    {name: ECall, fields: [(List Bytes), Expr]},
+    {name: EMethod, fields: [Expr, Bytes, Expr]},
+    {name: EField, fields: [Expr, Nat]},
+    {name: EFieldNamed, fields: [Expr, Bytes]},
+    {name: EBorrow, fields: [Expr]},
+    {name: EEquals, fields: [Expr, Expr]},
+    {name: EMatch, fields: [Expr, Expr]},
+    {name: ELet, fields: [Pat, Ty, Expr]},
+    {name: EAssign, fields: [Expr, Expr]},
+    {name: EIf, fields: [Expr, Expr, Expr]},
+    {name: EWhile, fields: [Expr, Expr]},
+    {name: EWhileLet, fields: [Pat, Expr, Expr]},
+    {name: ELoop, fields: [Expr]},
+    {name: EFor, fields: [Pat, Expr, Expr]},
+    {name: EBreak, fields: []},
+    {name: EReturn, fields: [Expr]},
+    {name: ETuple, fields: [Expr]},
+    {name: EStructLit, fields: [(List Bytes), (List Bytes), Expr]},
+    {name: EBinary, fields: [Nat, Expr, Expr]},
+    {name: ENot, fields: [Expr]},
+    {name: ECast, fields: [Expr, Ty]},
+    {name: EIndex, fields: [Expr, Expr]},
+    {name: ERange, fields: [Expr, Expr, Expr]},
+    {name: EDeref, fields: [Expr]},
+    {name: EBorrowMut, fields: [Expr]},
+    {name: EMethodOf, fields: [Expr, Bytes, Ty, Expr]},
+    {name: EBlock, fields: [Expr, Expr]},
+    {name: ENone, fields: []},
+    {name: ENil, fields: []},
+    {name: ECons, fields: [Expr, Expr]},
+    {name: ELetS, fields: [Pat, Ty, Expr, Expr]},
+    {name: EArm, fields: [Pat, Expr, Expr, Expr]}
+  ]
+}
+
+structure{
+  name: Generic,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: name, type: Bytes}, {name: bounds, type: (List Bytes)}]
+}
+
+structure{
+  name: Param,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: name, type: Bytes}, {name: mutable, type: Bool}, {name: ty, type: Ty}]
+}
+
+structure{
+  name: Sig,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: name, type: Bytes},
+    {name: receiver, type: Bool},
+    {name: exclusive, type: Bool},
+    {name: params, type: (List Param)},
+    {name: result, type: Ty}
+  ]
+}
+
+structure{
+  name: FnDef,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: sig, type: Sig},
+    {name: generics, type: (List Generic)},
+    {name: public, type: Bool},
+    {name: body, type: Expr}
+  ]
+}
+
+inductive{
+  name: Variant,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: VUnit, fields: [Bytes]},
+    {name: VTuple, fields: [Bytes, Ty]},
+    {name: VRecord, fields: [Bytes, (List Bytes), Ty]}
+  ]
+}
+
+inductive{
+  name: Item,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: IUse, fields: [(List Bytes), (List Bytes)]},
+    {name: IUnit, fields: [Bytes, (List Bytes)]},
+    {name: IAlias, fields: [Bytes, (List Bytes), Ty]},
+    {name: IStatic, fields: [Bytes, Ty, Expr]},
+    {name: ITrait, fields: [Bytes, (List Sig)]},
+    {name: IImpl, fields: [(List Generic), (List Bytes), Ty, (List FnDef)]},
+    {name: IFn, fields: [FnDef]},
+    {name: ITuple, fields: [Bytes, (List Bytes), (List Bytes), Ty]},
+    {name: IRecord, fields: [Bytes, (List Bytes), (List Bytes), (List Bytes), Ty]},
+    {name: IEnum, fields: [Bytes, (List Bytes), (List Bytes), (List Variant)]},
+    {name: IDefined, fields: [Bytes]},
+    {name: IMod, fields: [Bytes, (List Item)]},
+    {name: IAttr, fields: [Bytes, (List Bytes)]}
+  ]
+}
+
+structure{
+  name: Crate,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: core, type: Bool}, {name: items, type: (List Item)}]
+}
+
+structure{
+  name: Entry,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: name, type: Bytes}, {name: n, type: Nat}]
+}
+
+structure{
+  name: TraitE,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: name, type: Bytes}, {name: sigs, type: (List Sig)}]
+}
+
+structure{
+  name: StructE,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: name, type: Bytes}, {name: fields, type: (List Bytes)}, {name: gcount, type: Nat}]
+}
+
+structure{
+  name: EnumE,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: name, type: Bytes},
+    {name: variants, type: (List Variant)},
+    {name: gcount, type: Nat}
+  ]
+}
+
+structure{
+  name: Sc,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: core, type: Bool},
+    {name: declared, type: (List Bytes)},
+    {name: traits, type: (List TraitE)},
+    {name: structs, type: (List StructE)},
+    {name: enums, type: (List EnumE)},
+    {name: aliases, type: (List Entry)},
+    {name: statics, type: (List Bytes)},
+    {name: functions, type: (List Entry)},
+    {name: methods, type: (List Entry)},
+    {name: imported, type: (List Bytes)}
+  ]
+}
+
+structure{
+  name: Var,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: name, type: Bytes}, {name: mutable, type: Bool}, {name: ty, type: Ty}]
+}
+
+structure{
+  name: Fr,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: generics, type: (List Generic)},
+    {name: vars, type: (List Var)},
+    {name: selfTy, type: Ty},
+    {name: inLoop, type: Bool}
+  ]
+}
+
+definition{
+  name: rtext,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: rcat,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bytes,
+  body: (prim append left right : Bytes),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: rtick,
+  parameters: [name : Bytes],
+  result: Bytes,
+  body: (rcat (rtext "`") (rcat name (rtext "`"))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: rdec,
+  parameters: [number : Nat],
+  result: Bytes,
+  body: (RustValidate::decimal number),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: bEq,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bool,
+  body: (prim equal left right : Bool),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: inList,
+  parameters: [names : (List Bytes), wanted : Bytes],
+  result: Bool,
+  body: (prim list_fold (fun [wanted] (found : Bool) (name : Bytes) => (if found then true else (bEq name wanted))) false names : Bool),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: joinWith,
+  parameters: [names : (List Bytes), glue : String],
+  result: Bytes,
+  body: (LexLeanStd.Text::joinWith names (rtext glue)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: lastName,
+  parameters: [names : (List Bytes)],
+  result: Bytes,
+  body: (prim list_fold (fun (last : Bytes) (name : Bytes) => name) (rtext "") names : Bytes),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: headName,
+  parameters: [names : (List Bytes)],
+  result: Bytes,
+  body: (match names | List.nil => (rtext "") | List.cons head rest => head),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: nthName,
+  parameters: [names : (List Bytes), at : Nat],
+  result: (Option Bytes),
+  body: (match names
+    | List.nil => (ctor Option.none [Bytes])
+    | List.cons head rest => (match at
+      | Nat.zero => (ctor Option.some [Bytes] head)
+      | Nat.succ below => (nthName rest below))),
+  axioms: [],
+  executable: true,
+  recursive_argument: names
+}
+
+definition{
+  name: orElse,
+  parameters: [lead : (Option Bytes), other : (Option Bytes)],
+  result: (Option Bytes),
+  body: (match lead | Option.some stop => (ctor Option.some [Bytes] stop) | Option.none => other),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: inRangeB,
+  parameters: [byte : UInt8, low : UInt8, high : UInt8],
+  result: Bool,
+  body: (match (prim checked_subtract byte low : (Option UInt8))
+    | Option.some above => (match (prim checked_subtract high byte : (Option UInt8))
+      | Option.some below => true
+      | Option.none => false)
+    | Option.none => false),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: identByte,
+  parameters: [raw : Bytes, at : Nat],
+  result: Bool,
+  body: (match (LexLeanStd.Text::byteAt raw at)
+    | Option.some byte => (if (inRangeB byte (97 : UInt8) (122 : UInt8)) then true else (if (inRangeB byte (65 : UInt8) (90 : UInt8)) then true else (if (prim equal byte (95 : UInt8) : Bool) then true else (if (0 <? at) then (inRangeB byte (48 : UInt8) (57 : UInt8)) else false))))
+    | Option.none => false),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: identShape,
+  parameters: [raw : Bytes],
+  result: Bool,
+  body: (if (0 <? (prim length raw : Nat)) then ((first (prim iterate_until (fun [raw] (at : Nat) => (if (identByte raw at) then (ctor Option.some [Nat] (at + 1)) else (ctor Option.none [Nat]))) (prim length raw : Nat) 0 : (Nat * Bool))) =? (prim length raw : Nat)) else false),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: keywords,
+  parameters: [],
+  result: (List Bytes),
+  body: (cons (rtext "abstract") (cons (rtext "as") (cons (rtext "async") (cons (rtext "await") (cons (rtext "become") (cons (rtext "box") (cons (rtext "break") (cons (rtext "const") (cons (rtext "continue") (cons (rtext "crate") (cons (rtext "do") (cons (rtext "dyn") (cons (rtext "else") (cons (rtext "enum") (cons (rtext "extern") (cons (rtext "false") (cons (rtext "final") (cons (rtext "fn") (cons (rtext "for") (cons (rtext "if") (cons (rtext "impl") (cons (rtext "in") (cons (rtext "let") (cons (rtext "loop") (cons (rtext "macro") (cons (rtext "match") (cons (rtext "mod") (cons (rtext "move") (cons (rtext "mut") (cons (rtext "override") (cons (rtext "priv") (cons (rtext "pub") (cons (rtext "ref") (cons (rtext "return") (cons (rtext "self") (cons (rtext "Self") (cons (rtext "static") (cons (rtext "struct") (cons (rtext "super") (cons (rtext "trait") (cons (rtext "true") (cons (rtext "try") (cons (rtext "type") (cons (rtext "typeof") (cons (rtext "unsafe") (cons (rtext "unsized") (cons (rtext "use") (cons (rtext "virtual") (cons (rtext "where") (cons (rtext "while") (cons (rtext "yield") (cons (rtext "_") (nil Bytes))))))))))))))))))))))))))))))))))))))))))))))))))))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: identErr,
+  parameters: [what : String, name : Bytes],
+  result: (Option Bytes),
+  body: (if (if (identShape name) then (not (inList (keywords) name)) else false) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: identifier: ") (rcat (rtext what) (rcat (rtext " ") (rcat (rtick name) (rtext " is not an identifier"))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: identsErr,
+  parameters: [what : String, names : (List Bytes)],
+  result: (Option Bytes),
+  body: (prim list_fold (fun [what] (found : (Option Bytes)) (name : Bytes) => (match found
+    | Option.some stop => (ctor Option.some [Bytes] stop)
+    | Option.none => (identErr what name))) (ctor Option.none [Bytes]) names : (Option Bytes)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: segmentsErr,
+  parameters: [what : String, path : (List Bytes)],
+  result: (Option Bytes),
+  body: (prim list_fold (fun [what] (found : (Option Bytes)) (segment : Bytes) => (match found
+    | Option.some stop => (ctor Option.some [Bytes] stop)
+    | Option.none => (if (if (bEq segment (rtext "Self")) then true else (if (bEq segment (rtext "self")) then true else (if (bEq segment (rtext "crate")) then true else (bEq segment (rtext "super"))))) then (ctor Option.none [Bytes]) else (identErr what segment)))) (ctor Option.none [Bytes]) path : (Option Bytes)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: derivesErr,
+  parameters: [what : String, names : (List Bytes)],
+  result: (Option Bytes),
+  body: (prim list_fold (fun [what] (found : (Option Bytes)) (name : Bytes) => (match found
+    | Option.some stop => (ctor Option.some [Bytes] stop)
+    | Option.none => (if (if (bEq name (rtext "Clone")) then true else (if (bEq name (rtext "Copy")) then true else (if (bEq name (rtext "Debug")) then true else (if (bEq name (rtext "Eq")) then true else (bEq name (rtext "PartialEq")))))) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: derive: ") (rcat (rtext what) (rcat (rtext " derives ") (rcat (rtick name) (rtext ", which is not in the closed table"))))))))) (ctor Option.none [Bytes]) names : (Option Bytes)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: literalErr,
+  parameters: [scalars : Nat],
+  result: (Option Bytes),
+  body: (if (scalars =? 1) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: char-literal: ") (rcat (rtext "a character literal of ") (rcat (rdec scalars) (rtext " scalar values")))))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: opPrec,
+  parameters: [op : Nat],
+  result: Nat,
+  body: (if (op =? 6) then 3 else (if (op =? 5) then 4 else (if (op =? 7) then 5 else (if (op =? 8) then 5 else (if (op =? 9) then 5 else (if (op =? 10) then 5 else (if (op =? 11) then 5 else (if (op =? 0) then 9 else (if (op =? 1) then 9 else 10))))))))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: exprPrec,
+  parameters: [e : Expr],
+  result: Nat,
+  body: (match e
+    | Expr.EVar x0 => 14
+    | Expr.ELit x0 => 14
+    | Expr.EPath x0 => 14
+    | Expr.ECall x0 x1 => 13
+    | Expr.EMethod x0 x1 x2 => 13
+    | Expr.EField x0 x1 => 13
+    | Expr.EFieldNamed x0 x1 => 13
+    | Expr.EBorrow x0 => 12
+    | Expr.EEquals x0 x1 => 5
+    | Expr.EMatch x0 x1 => 14
+    | Expr.ELet x0 x1 x2 => 1
+    | Expr.EAssign x0 x1 => 1
+    | Expr.EIf x0 x1 x2 => 14
+    | Expr.EWhile x0 x1 => 14
+    | Expr.EWhileLet x0 x1 x2 => 14
+    | Expr.ELoop x0 => 14
+    | Expr.EFor x0 x1 x2 => 14
+    | Expr.EBreak => 1
+    | Expr.EReturn x0 => 1
+    | Expr.ETuple x0 => 14
+    | Expr.EStructLit x0 x1 x2 => 14
+    | Expr.EBinary op x1 x2 => (opPrec op)
+    | Expr.ENot x0 => 12
+    | Expr.ECast x0 x1 => 11
+    | Expr.EIndex x0 x1 => 13
+    | Expr.ERange x0 x1 x2 => 14
+    | Expr.EDeref x0 => 12
+    | Expr.EBorrowMut x0 => 12
+    | Expr.EMethodOf x0 x1 x2 x3 => 13
+    | Expr.EBlock x0 x1 => 14
+    | Expr.ENone => 14
+    | Expr.ENil => 14
+    | Expr.ECons x0 x1 => 14
+    | Expr.ELetS x0 x1 x2 x3 => 14
+    | Expr.EArm x0 x1 x2 x3 => 14),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: endsInCast,
+  parameters: [e : Expr],
+  result: Bool,
+  body: (match e
+    | Expr.EVar x0 => false
+    | Expr.ELit x0 => false
+    | Expr.EPath x0 => false
+    | Expr.ECall x0 x1 => false
+    | Expr.EMethod x0 x1 x2 => false
+    | Expr.EField x0 x1 => false
+    | Expr.EFieldNamed x0 x1 => false
+    | Expr.EBorrow x0 => false
+    | Expr.EEquals x0 x1 => false
+    | Expr.EMatch x0 x1 => false
+    | Expr.ELet x0 x1 x2 => false
+    | Expr.EAssign x0 x1 => false
+    | Expr.EIf x0 x1 x2 => false
+    | Expr.EWhile x0 x1 => false
+    | Expr.EWhileLet x0 x1 x2 => false
+    | Expr.ELoop x0 => false
+    | Expr.EFor x0 x1 x2 => false
+    | Expr.EBreak => false
+    | Expr.EReturn x0 => false
+    | Expr.ETuple x0 => false
+    | Expr.EStructLit x0 x1 x2 => false
+    | Expr.EBinary op x1 right => (if ((opPrec op) <? (exprPrec right)) then (endsInCast right) else false)
+    | Expr.ENot x0 => false
+    | Expr.ECast x0 x1 => true
+    | Expr.EIndex x0 x1 => false
+    | Expr.ERange x0 x1 x2 => false
+    | Expr.EDeref x0 => false
+    | Expr.EBorrowMut x0 => false
+    | Expr.EMethodOf x0 x1 x2 x3 => false
+    | Expr.EBlock x0 x1 => false
+    | Expr.ENone => false
+    | Expr.ENil => false
+    | Expr.ECons x0 x1 => false
+    | Expr.ELetS x0 x1 x2 x3 => false
+    | Expr.EArm x0 x1 x2 x3 => false),
+  axioms: [],
+  executable: true,
+  recursive_argument: e
+}
+
+definition{
+  name: leftParenthesized,
+  parameters: [op : Nat, left : Expr],
+  result: Bool,
+  body: (if (if (op =? 8) then (endsInCast left) else false) then true else ((exprPrec left) <? (if ((opPrec op) =? 5) then 6 else (opPrec op)))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: exposed,
+  parameters: [e : Expr],
+  result: Bool,
+  body: (match e
+    | Expr.EVar x0 => false
+    | Expr.ELit x0 => false
+    | Expr.EPath x0 => false
+    | Expr.ECall x0 x1 => false
+    | Expr.EMethod receiver x1 x2 => (if (13 <=? (exprPrec receiver)) then (exposed receiver) else false)
+    | Expr.EField receiver x1 => (if (13 <=? (exprPrec receiver)) then (exposed receiver) else false)
+    | Expr.EFieldNamed receiver x1 => (if (13 <=? (exprPrec receiver)) then (exposed receiver) else false)
+    | Expr.EBorrow inner => (if (12 <=? (exprPrec inner)) then (exposed inner) else false)
+    | Expr.EEquals a b => (if (if (6 <=? (exprPrec a)) then (exposed a) else false) then true else (if (6 <=? (exprPrec b)) then (exposed b) else false))
+    | Expr.EMatch x0 x1 => false
+    | Expr.ELet x0 x1 x2 => false
+    | Expr.EAssign place value => (if (exposed place) then true else (exposed value))
+    | Expr.EIf x0 x1 x2 => false
+    | Expr.EWhile x0 x1 => false
+    | Expr.EWhileLet x0 x1 x2 => false
+    | Expr.ELoop x0 => false
+    | Expr.EFor x0 x1 x2 => false
+    | Expr.EBreak => false
+    | Expr.EReturn value => (exposed value)
+    | Expr.ETuple x0 => false
+    | Expr.EStructLit x0 x1 x2 => true
+    | Expr.EBinary op a b => (if (if (leftParenthesized op a) then false else (exposed a)) then true else (if (((opPrec op) + 1) <=? (exprPrec b)) then (exposed b) else false))
+    | Expr.ENot inner => (if (12 <=? (exprPrec inner)) then (exposed inner) else false)
+    | Expr.ECast inner x1 => (if (11 <=? (exprPrec inner)) then (exposed inner) else false)
+    | Expr.EIndex receiver x1 => (if (13 <=? (exprPrec receiver)) then (exposed receiver) else false)
+    | Expr.ERange receiver x1 x2 => (if (13 <=? (exprPrec receiver)) then (exposed receiver) else false)
+    | Expr.EDeref inner => (if (12 <=? (exprPrec inner)) then (exposed inner) else false)
+    | Expr.EBorrowMut inner => (if (12 <=? (exprPrec inner)) then (exposed inner) else false)
+    | Expr.EMethodOf receiver x1 x2 x3 => (if (13 <=? (exprPrec receiver)) then (exposed receiver) else false)
+    | Expr.EBlock x0 x1 => false
+    | Expr.ENone => false
+    | Expr.ENil => false
+    | Expr.ECons x0 x1 => false
+    | Expr.ELetS x0 x1 x2 x3 => false
+    | Expr.EArm x0 x1 x2 x3 => false),
+  axioms: [],
+  executable: true,
+  recursive_argument: e
+}
+
+definition{
+  name: headErr,
+  parameters: [e : Expr],
+  result: (Option Bytes),
+  body: (if (exposed e) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: struct-head: ") (rtext "a struct literal outside parentheses in the head of a condition, a loop, or a match"))) else (ctor Option.none [Bytes])),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: unscopedErr,
+  parameters: [what : String, ty : Ty],
+  result: (Option Bytes),
+  body: (match ty
+    | Ty.TyUnit => (ctor Option.none [Bytes])
+    | Ty.TyBool => (ctor Option.none [Bytes])
+    | Ty.TyNat => (ctor Option.none [Bytes])
+    | Ty.TyFixed => (ctor Option.none [Bytes])
+    | Ty.TyOrdering => (ctor Option.none [Bytes])
+    | Ty.TySelf => (ctor Option.none [Bytes])
+    | Ty.TyParam x0 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: type-scope: ") (rcat (rtext what) (rtext " names a generic parameter, which the printer writes without the generics in scope"))))
+    | Ty.TyRef inner => (unscopedErr what inner)
+    | Ty.TyRefMut inner => (unscopedErr what inner)
+    | Ty.TyPair a b => (match (unscopedErr what a)
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (unscopedErr what b))
+    | Ty.TyNamed x0 arguments => (unscopedErr what arguments)
+    | Ty.TyWide => (ctor Option.none [Bytes])
+    | Ty.TySize => (ctor Option.none [Bytes])
+    | Ty.TyChar => (ctor Option.none [Bytes])
+    | Ty.TyStr => (ctor Option.none [Bytes])
+    | Ty.TySlice inner => (unscopedErr what inner)
+    | Ty.TyUnknown => (ctor Option.none [Bytes])
+    | Ty.TyAbsent => (ctor Option.none [Bytes])
+    | Ty.TyNil => (ctor Option.none [Bytes])
+    | Ty.TyCons head tail => (match (unscopedErr what head)
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (unscopedErr what tail))),
+  axioms: [],
+  executable: true,
+  recursive_argument: ty
+}
+
+definition{
+  name: tyLen,
+  parameters: [chain : Ty],
+  result: Nat,
+  body: (match chain
+    | Ty.TyUnit => 0
+    | Ty.TyBool => 0
+    | Ty.TyNat => 0
+    | Ty.TyFixed => 0
+    | Ty.TyOrdering => 0
+    | Ty.TySelf => 0
+    | Ty.TyParam x0 => 0
+    | Ty.TyRef x0 => 0
+    | Ty.TyRefMut x0 => 0
+    | Ty.TyPair x0 x1 => 0
+    | Ty.TyNamed x0 x1 => 0
+    | Ty.TyWide => 0
+    | Ty.TySize => 0
+    | Ty.TyChar => 0
+    | Ty.TyStr => 0
+    | Ty.TySlice x0 => 0
+    | Ty.TyUnknown => 0
+    | Ty.TyAbsent => 0
+    | Ty.TyNil => 0
+    | Ty.TyCons head tail => ((tyLen tail) + 1)),
+  axioms: [],
+  executable: true,
+  recursive_argument: chain
+}
+
+definition{
+  name: patLen,
+  parameters: [chain : Pat],
+  result: Nat,
+  body: (match chain
+    | Pat.PWild => 0
+    | Pat.PBind x0 => 0
+    | Pat.PBindMut x0 => 0
+    | Pat.PPath x0 => 0
+    | Pat.PTuple x0 => 0
+    | Pat.PTupleStruct x0 x1 => 0
+    | Pat.PStruct x0 x1 x2 => 0
+    | Pat.PLit d0lit => 0
+    | Pat.PNil => 0
+    | Pat.PCons head tail => ((patLen tail) + 1)),
+  axioms: [],
+  executable: true,
+  recursive_argument: chain
+}
+
+definition{
+  name: exprLen,
+  parameters: [chain : Expr],
+  result: Nat,
+  body: (match chain
+    | Expr.EVar x0 => 0
+    | Expr.ELit d0lit => 0
+    | Expr.EPath x0 => 0
+    | Expr.ECall x0 x1 => 0
+    | Expr.EMethod x0 x1 x2 => 0
+    | Expr.EField x0 x1 => 0
+    | Expr.EFieldNamed x0 x1 => 0
+    | Expr.EBorrow x0 => 0
+    | Expr.EEquals x0 x1 => 0
+    | Expr.EMatch x0 x1 => 0
+    | Expr.ELet x0 x1 x2 => 0
+    | Expr.EAssign x0 x1 => 0
+    | Expr.EIf x0 x1 x2 => 0
+    | Expr.EWhile x0 x1 => 0
+    | Expr.EWhileLet x0 x1 x2 => 0
+    | Expr.ELoop x0 => 0
+    | Expr.EFor x0 x1 x2 => 0
+    | Expr.EBreak => 0
+    | Expr.EReturn x0 => 0
+    | Expr.ETuple x0 => 0
+    | Expr.EStructLit x0 x1 x2 => 0
+    | Expr.EBinary x0 x1 x2 => 0
+    | Expr.ENot x0 => 0
+    | Expr.ECast x0 x1 => 0
+    | Expr.EIndex x0 x1 => 0
+    | Expr.ERange x0 x1 x2 => 0
+    | Expr.EDeref x0 => 0
+    | Expr.EBorrowMut x0 => 0
+    | Expr.EMethodOf x0 x1 x2 x3 => 0
+    | Expr.EBlock x0 x1 => 0
+    | Expr.ENone => 0
+    | Expr.ENil => 0
+    | Expr.ECons head tail => ((exprLen tail) + 1)
+    | Expr.ELetS x0 x1 x2 x3 => 0
+    | Expr.EArm x0 x1 x2 x3 => 0),
+  axioms: [],
+  executable: true,
+  recursive_argument: chain
+}
+
+definition{
+  name: typeArity,
+  parameters: [name : Bytes],
+  result: (Option Nat),
+  body: (if (prim equal name (rtext "Result") : Bool) then (ctor Option.some [Nat] 2) else (if (prim equal name (rtext "Option") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "AtomicU64") : Bool) then (ctor Option.some [Nat] 0) else (if (prim equal name (rtext "Rc") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "Vec") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "String") : Bool) then (ctor Option.some [Nat] 0) else (ctor Option.none [Nat]))))))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: typeHeap,
+  parameters: [name : Bytes],
+  result: Bool,
+  body: (if (prim equal name (rtext "Rc") : Bool) then true else (if (prim equal name (rtext "Vec") : Bool) then true else (if (prim equal name (rtext "String") : Bool) then true else false))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: isInteger,
+  parameters: [name : Bytes],
+  result: Bool,
+  body: (if (prim equal name (rtext "u8") : Bool) then true else (if (prim equal name (rtext "u16") : Bool) then true else (if (prim equal name (rtext "u32") : Bool) then true else (if (prim equal name (rtext "u64") : Bool) then true else (if (prim equal name (rtext "u128") : Bool) then true else (if (prim equal name (rtext "i8") : Bool) then true else (if (prim equal name (rtext "i16") : Bool) then true else (if (prim equal name (rtext "i32") : Bool) then true else (if (prim equal name (rtext "i64") : Bool) then true else (if (prim equal name (rtext "i128") : Bool) then true else false)))))))))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: callDirectArity,
+  parameters: [owner : Bytes, name : Bytes],
+  result: (Option Nat),
+  body: (if (if (prim equal owner (rtext "AtomicU64") : Bool) then (prim equal name (rtext "new") : Bool) else false) then (ctor Option.some [Nat] 1) else (if (if (prim equal owner (rtext "Rc") : Bool) then (prim equal name (rtext "new") : Bool) else false) then (ctor Option.some [Nat] 1) else (if (if (prim equal owner (rtext "Rc") : Bool) then (prim equal name (rtext "from") : Bool) else false) then (ctor Option.some [Nat] 1) else (if (if (prim equal owner (rtext "Rc") : Bool) then (prim equal name (rtext "try_unwrap") : Bool) else false) then (ctor Option.some [Nat] 1) else (if (if (prim equal owner (rtext "Rc") : Bool) then (prim equal name (rtext "get_mut") : Bool) else false) then (ctor Option.some [Nat] 1) else (if (if (prim equal owner (rtext "Vec") : Bool) then (prim equal name (rtext "new") : Bool) else false) then (ctor Option.some [Nat] 0) else (if (if (prim equal owner (rtext "Vec") : Bool) then (prim equal name (rtext "with_capacity") : Bool) else false) then (ctor Option.some [Nat] 1) else (if (if (prim equal owner (rtext "String") : Bool) then (prim equal name (rtext "new") : Bool) else false) then (ctor Option.some [Nat] 0) else (if (if (prim equal owner (rtext "mem") : Bool) then (prim equal name (rtext "replace") : Bool) else false) then (ctor Option.some [Nat] 2) else (if (if (prim equal owner (rtext "str") : Bool) then (prim equal name (rtext "from_utf8") : Bool) else false) then (ctor Option.some [Nat] 1) else (if (if (prim equal owner (rtext "usize") : Bool) then (prim equal name (rtext "from") : Bool) else false) then (ctor Option.some [Nat] 1) else (if (if (prim equal owner (rtext "usize") : Bool) then (prim equal name (rtext "try_from") : Bool) else false) then (ctor Option.some [Nat] 1) else (ctor Option.none [Nat]))))))))))))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: callDirectHeap,
+  parameters: [owner : Bytes, name : Bytes],
+  result: Bool,
+  body: (if (if (prim equal owner (rtext "AtomicU64") : Bool) then (prim equal name (rtext "new") : Bool) else false) then false else (if (if (prim equal owner (rtext "Rc") : Bool) then (prim equal name (rtext "new") : Bool) else false) then true else (if (if (prim equal owner (rtext "Rc") : Bool) then (prim equal name (rtext "from") : Bool) else false) then true else (if (if (prim equal owner (rtext "Rc") : Bool) then (prim equal name (rtext "try_unwrap") : Bool) else false) then true else (if (if (prim equal owner (rtext "Rc") : Bool) then (prim equal name (rtext "get_mut") : Bool) else false) then true else (if (if (prim equal owner (rtext "Vec") : Bool) then (prim equal name (rtext "new") : Bool) else false) then true else (if (if (prim equal owner (rtext "Vec") : Bool) then (prim equal name (rtext "with_capacity") : Bool) else false) then true else (if (if (prim equal owner (rtext "String") : Bool) then (prim equal name (rtext "new") : Bool) else false) then true else (if (if (prim equal owner (rtext "mem") : Bool) then (prim equal name (rtext "replace") : Bool) else false) then false else (if (if (prim equal owner (rtext "str") : Bool) then (prim equal name (rtext "from_utf8") : Bool) else false) then false else (if (if (prim equal owner (rtext "usize") : Bool) then (prim equal name (rtext "from") : Bool) else false) then false else (if (if (prim equal owner (rtext "usize") : Bool) then (prim equal name (rtext "try_from") : Bool) else false) then false else false)))))))))))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: callArity,
+  parameters: [owner : Bytes, name : Bytes],
+  result: (Option Nat),
+  body: (match (callDirectArity owner name)
+    | Option.some count => (ctor Option.some [Nat] count)
+    | Option.none => (if (isInteger owner) then (callDirectArity (rtext "usize") name) else (ctor Option.none [Nat]))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: callHeap,
+  parameters: [owner : Bytes, name : Bytes],
+  result: Bool,
+  body: (match (callDirectArity owner name)
+    | Option.some count => (callDirectHeap owner name)
+    | Option.none => (if (isInteger owner) then (callDirectHeap (rtext "usize") name) else false)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: wrapperArity,
+  parameters: [name : Bytes],
+  result: (Option Nat),
+  body: (if (prim equal name (rtext "Some") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "Ok") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "Err") : Bool) then (ctor Option.some [Nat] 1) else (ctor Option.none [Nat])))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: methodArity,
+  parameters: [name : Bytes],
+  result: (Option Nat),
+  body: (if (prim equal name (rtext "fetch_add") : Bool) then (ctor Option.some [Nat] 2) else (if (prim equal name (rtext "load") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "cmp") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "len") : Bool) then (ctor Option.some [Nat] 0) else (if (prim equal name (rtext "is_empty") : Bool) then (ctor Option.some [Nat] 0) else (if (prim equal name (rtext "chars") : Bool) then (ctor Option.some [Nat] 0) else (if (prim equal name (rtext "next") : Bool) then (ctor Option.some [Nat] 0) else (if (prim equal name (rtext "min") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "max") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "push") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "pop") : Bool) then (ctor Option.some [Nat] 0) else (if (prim equal name (rtext "truncate") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "push_str") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "extend_from_slice") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "iter") : Bool) then (ctor Option.some [Nat] 0) else (if (prim equal name (rtext "rev") : Bool) then (ctor Option.some [Nat] 0) else (if (prim equal name (rtext "get") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "copied") : Bool) then (ctor Option.some [Nat] 0) else (if (prim equal name (rtext "ok") : Bool) then (ctor Option.some [Nat] 0) else (if (prim equal name (rtext "clone") : Bool) then (ctor Option.some [Nat] 0) else (if (prim equal name (rtext "to_string") : Bool) then (ctor Option.some [Nat] 0) else (if (prim equal name (rtext "as_bytes") : Bool) then (ctor Option.some [Nat] 0) else (if (prim equal name (rtext "strip_prefix") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "starts_with") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "split") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "collect") : Bool) then (ctor Option.some [Nat] 0) else (if (prim equal name (rtext "is_ascii_digit") : Bool) then (ctor Option.some [Nat] 0) else (ctor Option.none [Nat])))))))))))))))))))))))))))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: methodHeap,
+  parameters: [name : Bytes],
+  result: Bool,
+  body: (if (prim equal name (rtext "push") : Bool) then true else (if (prim equal name (rtext "pop") : Bool) then true else (if (prim equal name (rtext "truncate") : Bool) then true else (if (prim equal name (rtext "push_str") : Bool) then true else (if (prim equal name (rtext "extend_from_slice") : Bool) then true else (if (prim equal name (rtext "to_string") : Bool) then true else (if (prim equal name (rtext "collect") : Bool) then true else false))))))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: turbofishTypes,
+  parameters: [name : Bytes],
+  result: (Option Nat),
+  body: (if (prim equal name (rtext "parse") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (rtext "collect") : Bool) then (ctor Option.some [Nat] 1) else (ctor Option.none [Nat]))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: turbofishArgs,
+  parameters: [name : Bytes],
+  result: Nat,
+  body: (if (prim equal name (rtext "parse") : Bool) then 0 else (if (prim equal name (rtext "collect") : Bool) then 0 else 0)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: stdTraitMethod,
+  parameters: [name : Bytes],
+  result: (Option Bytes),
+  body: (if (prim equal name (rtext "Clone") : Bool) then (ctor Option.some [Bytes] (rtext "clone")) else (if (prim equal name (rtext "Drop") : Bool) then (ctor Option.some [Bytes] (rtext "drop")) else (ctor Option.none [Bytes]))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: stdTraitExclusive,
+  parameters: [name : Bytes],
+  result: Bool,
+  body: (if (prim equal name (rtext "Clone") : Bool) then false else (if (prim equal name (rtext "Drop") : Bool) then true else false)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: isWrapperName,
+  parameters: [name : Bytes],
+  result: Bool,
+  body: (if (prim equal name (rtext "Some") : Bool) then true else (if (prim equal name (rtext "Ok") : Bool) then true else (if (prim equal name (rtext "Err") : Bool) then true else false))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: findTrait,
+  parameters: [sc : Sc, wanted : Bytes],
+  result: (Option TraitE),
+  body: (prim list_fold (fun [wanted] (found : (Option TraitE)) (entry : TraitE) => (match found
+    | Option.some held => (ctor Option.some [TraitE] held)
+    | Option.none => (if (bEq (project entry name) wanted) then (ctor Option.some [TraitE] entry) else (ctor Option.none [TraitE])))) (ctor Option.none [TraitE]) (project sc traits) : (Option TraitE)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: findStruct,
+  parameters: [sc : Sc, wanted : Bytes],
+  result: (Option StructE),
+  body: (prim list_fold (fun [wanted] (found : (Option StructE)) (entry : StructE) => (match found
+    | Option.some held => (ctor Option.some [StructE] held)
+    | Option.none => (if (bEq (project entry name) wanted) then (ctor Option.some [StructE] entry) else (ctor Option.none [StructE])))) (ctor Option.none [StructE]) (project sc structs) : (Option StructE)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: findEnum,
+  parameters: [sc : Sc, wanted : Bytes],
+  result: (Option EnumE),
+  body: (prim list_fold (fun [wanted] (found : (Option EnumE)) (entry : EnumE) => (match found
+    | Option.some held => (ctor Option.some [EnumE] held)
+    | Option.none => (if (bEq (project entry name) wanted) then (ctor Option.some [EnumE] entry) else (ctor Option.none [EnumE])))) (ctor Option.none [EnumE]) (project sc enums) : (Option EnumE)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: findAlias,
+  parameters: [sc : Sc, wanted : Bytes],
+  result: (Option Entry),
+  body: (prim list_fold (fun [wanted] (found : (Option Entry)) (entry : Entry) => (match found
+    | Option.some held => (ctor Option.some [Entry] held)
+    | Option.none => (if (bEq (project entry name) wanted) then (ctor Option.some [Entry] entry) else (ctor Option.none [Entry])))) (ctor Option.none [Entry]) (project sc aliases) : (Option Entry)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: findFunction,
+  parameters: [sc : Sc, wanted : Bytes],
+  result: (Option Entry),
+  body: (prim list_fold (fun [wanted] (found : (Option Entry)) (entry : Entry) => (match found
+    | Option.some held => (ctor Option.some [Entry] held)
+    | Option.none => (if (bEq (project entry name) wanted) then (ctor Option.some [Entry] entry) else (ctor Option.none [Entry])))) (ctor Option.none [Entry]) (project sc functions) : (Option Entry)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: methodCounts,
+  parameters: [sc : Sc, wanted : Bytes],
+  result: (List Nat),
+  body: (prim list_fold (fun [wanted] (counts : (List Nat)) (entry : Entry) => (if (bEq (project entry name) wanted) then (prim append counts (cons (project entry n) (nil Nat)) : (List Nat)) else counts)) (nil Nat) (project sc methods) : (List Nat)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: hasCount,
+  parameters: [counts : (List Nat), given : Nat],
+  result: Bool,
+  body: (prim list_fold (fun [given] (found : Bool) (count : Nat) => (if found then true else (count =? given))) false counts : Bool),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: joinCounts,
+  parameters: [counts : (List Nat)],
+  result: Bytes,
+  body: (prim list_fold (fun (text : Bytes) (count : Nat) => (if (prim equal text (rtext "") : Bool) then (rdec count) else (rcat text (rcat (rtext "/") (rdec count))))) (rtext "") counts : Bytes),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: variantName,
+  parameters: [v : Variant],
+  result: Bytes,
+  body: (match v | Variant.VUnit n => n | Variant.VTuple n ts => n | Variant.VRecord n fs ts => n),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: variantTypes,
+  parameters: [v : Variant],
+  result: Nat,
+  body: (match v
+    | Variant.VUnit n => 0
+    | Variant.VTuple n ts => (tyLen ts)
+    | Variant.VRecord n fs ts => (tyLen ts)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: findVariant,
+  parameters: [variants : (List Variant), wanted : Bytes],
+  result: (Option Variant),
+  body: (prim list_fold (fun [wanted] (found : (Option Variant)) (entry : Variant) => (match found
+    | Option.some held => (ctor Option.some [Variant] held)
+    | Option.none => (if (bEq (variantName entry) wanted) then (ctor Option.some [Variant] entry) else (ctor Option.none [Variant])))) (ctor Option.none [Variant]) variants : (Option Variant)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: variantTuple,
+  parameters: [variants : (List Variant), wanted : Bytes],
+  result: (Option Nat),
+  body: (match (findVariant variants wanted)
+    | Option.none => (ctor Option.none [Nat])
+    | Option.some held => (match held
+      | Variant.VUnit n => (ctor Option.none [Nat])
+      | Variant.VTuple n ts => (ctor Option.some [Nat] (tyLen ts))
+      | Variant.VRecord n fs ts => (ctor Option.none [Nat]))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: variantRecord,
+  parameters: [variants : (List Variant), wanted : Bytes],
+  result: (Option (List Bytes)),
+  body: (match (findVariant variants wanted)
+    | Option.none => (ctor Option.none [(List Bytes)])
+    | Option.some held => (match held
+      | Variant.VUnit n => (ctor Option.none [(List Bytes)])
+      | Variant.VTuple n ts => (ctor Option.none [(List Bytes)])
+      | Variant.VRecord n fs ts => (ctor Option.some [(List Bytes)] fs))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: recordFields,
+  parameters: [sc : Sc, path : (List Bytes)],
+  result: (Option (List Bytes)),
+  body: (match path
+    | List.nil => (ctor Option.none [(List Bytes)])
+    | List.cons head rest => (match rest
+      | List.nil => (match (findStruct sc head)
+        | Option.some held => (ctor Option.some [(List Bytes)] (project held fields))
+        | Option.none => (ctor Option.none [(List Bytes)]))
+      | List.cons middle more => (match more
+        | List.nil => (match (findEnum sc head)
+          | Option.some held => (variantRecord (project held variants) middle)
+          | Option.none => (ctor Option.none [(List Bytes)]))
+        | List.cons last others => (ctor Option.none [(List Bytes)])))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: tupleStructArity,
+  parameters: [sc : Sc, name : Bytes],
+  result: (Option Nat),
+  body: (match (findStruct sc name)
+    | Option.some held => (ctor Option.some [Nat] (prim length (project held fields) : Nat))
+    | Option.none => (ctor Option.none [Nat])),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: variantArity,
+  parameters: [sc : Sc, owner : Bytes, name : Bytes],
+  result: (Option Nat),
+  body: (match (findEnum sc owner)
+    | Option.some held => (variantTuple (project held variants) name)
+    | Option.none => (ctor Option.none [Nat])),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: indexNames,
+  parameters: [tys : Ty, at : Nat],
+  result: (List Bytes),
+  body: (match tys
+    | Ty.TyUnit => (nil Bytes)
+    | Ty.TyBool => (nil Bytes)
+    | Ty.TyNat => (nil Bytes)
+    | Ty.TyFixed => (nil Bytes)
+    | Ty.TyOrdering => (nil Bytes)
+    | Ty.TySelf => (nil Bytes)
+    | Ty.TyParam x0 => (nil Bytes)
+    | Ty.TyRef x0 => (nil Bytes)
+    | Ty.TyRefMut x0 => (nil Bytes)
+    | Ty.TyPair x0 x1 => (nil Bytes)
+    | Ty.TyNamed x0 x1 => (nil Bytes)
+    | Ty.TyWide => (nil Bytes)
+    | Ty.TySize => (nil Bytes)
+    | Ty.TyChar => (nil Bytes)
+    | Ty.TyStr => (nil Bytes)
+    | Ty.TySlice x0 => (nil Bytes)
+    | Ty.TyUnknown => (nil Bytes)
+    | Ty.TyAbsent => (nil Bytes)
+    | Ty.TyNil => (nil Bytes)
+    | Ty.TyCons head tail => (cons (rdec at) (indexNames tail (at + 1)))),
+  axioms: [],
+  executable: true,
+  recursive_argument: tys
+}
+
+definition{
+  name: findVar,
+  parameters: [vars : (List Var), wanted : Bytes],
+  result: (Option Var),
+  body: (prim list_fold (fun [wanted] (found : (Option Var)) (entry : Var) => (match found
+    | Option.some held => (ctor Option.some [Var] held)
+    | Option.none => (if (bEq (project entry name) wanted) then (ctor Option.some [Var] entry) else (ctor Option.none [Var])))) (ctor Option.none [Var]) vars : (Option Var)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: nthBounds,
+  parameters: [gs : (List Generic), at : Nat],
+  result: (List Bytes),
+  body: (match gs
+    | List.nil => (nil Bytes)
+    | List.cons head rest => (match at
+      | Nat.zero => (project head bounds)
+      | Nat.succ below => (nthBounds rest below))),
+  axioms: [],
+  executable: true,
+  recursive_argument: gs
+}
+
+definition{
+  name: tyShow,
+  parameters: [subject : Ty],
+  result: Bytes,
+  body: (match subject
+    | Ty.TyUnit => (rtext "U")
+    | Ty.TyBool => (rtext "B")
+    | Ty.TyNat => (rtext "N")
+    | Ty.TyFixed => (rtext "F")
+    | Ty.TyOrdering => (rtext "O")
+    | Ty.TySelf => (rtext "S")
+    | Ty.TyParam n => (rcat (rtext "P") (rcat (rdec n) (rtext ";")))
+    | Ty.TyRef t => (rcat (rtext "R(") (rcat (tyShow t) (rtext ")")))
+    | Ty.TyRefMut t => (rcat (rtext "M(") (rcat (tyShow t) (rtext ")")))
+    | Ty.TyPair a b => (rcat (rtext "T(") (rcat (tyShow a) (rcat (rtext ",") (rcat (tyShow b) (rtext ")")))))
+    | Ty.TyNamed name args => (rcat (rtext "D") (rcat (rtick name) (rcat (rtext "(") (rcat (tyShow args) (rtext ")")))))
+    | Ty.TyWide => (rtext "W")
+    | Ty.TySize => (rtext "Z")
+    | Ty.TyChar => (rtext "C")
+    | Ty.TyStr => (rtext "Q")
+    | Ty.TySlice t => (rcat (rtext "L(") (rcat (tyShow t) (rtext ")")))
+    | Ty.TyUnknown => (rtext "?")
+    | Ty.TyAbsent => (rtext "-")
+    | Ty.TyNil => (rtext "")
+    | Ty.TyCons head tail => (rcat (tyShow head) (rcat (rtext ";") (tyShow tail)))),
+  axioms: [],
+  executable: true,
+  recursive_argument: subject
+}
+
+definition{
+  name: sigShow,
+  parameters: [sig : Sig],
+  result: Bytes,
+  body: (rcat (project sig name) (rcat (rtext "|") (rcat (if (project sig receiver) then (rtext "r") else (rtext "-")) (rcat (if (project sig exclusive) then (rtext "x") else (rtext "-")) (rcat (rtext "|") (rcat (prim list_fold (fun (text : Bytes) (param : Param) => (rcat text (rcat (project param name) (rcat (if (project param mutable) then (rtext ":m:") else (rtext ":-:")) (rcat (tyShow (project param ty)) (rtext ",")))))) (rtext "") (project sig params) : Bytes) (rcat (rtext "|") (tyShow (project sig result))))))))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: bindsOf,
+  parameters: [acc : (List Var), p : Pat],
+  result: (Result (List Var) Bytes),
+  body: (match p
+    | Pat.PWild => (ctor Result.ok [(List Var), Bytes] acc)
+    | Pat.PBind name => (match (identErr "a pattern binding" name)
+      | Option.some bad => (ctor Result.error [(List Var), Bytes] bad)
+      | Option.none => (match (findVar acc name)
+        | Option.some held => (ctor Result.error [(List Var), Bytes] (rcat (rtext "runtime support: pattern-duplicate: ") (rcat (rtick name) (rtext " is bound twice in one pattern"))))
+        | Option.none => (ctor Result.ok [(List Var), Bytes] (cons (record Var {name := name, mutable := false, ty := (ctor Ty.TyUnknown)}) acc))))
+    | Pat.PBindMut name => (match (identErr "a pattern binding" name)
+      | Option.some bad => (ctor Result.error [(List Var), Bytes] bad)
+      | Option.none => (match (findVar acc name)
+        | Option.some held => (ctor Result.error [(List Var), Bytes] (rcat (rtext "runtime support: pattern-duplicate: ") (rcat (rtick name) (rtext " is bound twice in one pattern"))))
+        | Option.none => (ctor Result.ok [(List Var), Bytes] (cons (record Var {name := name, mutable := true, ty := (ctor Ty.TyUnknown)}) acc))))
+    | Pat.PPath d0 => (ctor Result.ok [(List Var), Bytes] acc)
+    | Pat.PTuple items => (bindsOf acc items)
+    | Pat.PTupleStruct path items => (bindsOf acc items)
+    | Pat.PStruct path names items => (bindsOf acc items)
+    | Pat.PLit d0lit => (ctor Result.ok [(List Var), Bytes] acc)
+    | Pat.PNil => (ctor Result.ok [(List Var), Bytes] acc)
+    | Pat.PCons head tail => (match (bindsOf acc head)
+      | Result.ok next => (bindsOf next tail)
+      | Result.error problem => (ctor Result.error [(List Var), Bytes] problem))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: p
+}
+
+definition{
+  name: typeExpected,
+  parameters: [sc : Sc, name : Bytes],
+  result: (Option Nat),
+  body: (match (findStruct sc name)
+    | Option.some held => (ctor Option.some [Nat] (project held gcount))
+    | Option.none => (match (findEnum sc name)
+      | Option.some held2 => (ctor Option.some [Nat] (project held2 gcount))
+      | Option.none => (match (findAlias sc name)
+        | Option.some held3 => (ctor Option.some [Nat] (project held3 n))
+        | Option.none => (typeArity name)))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: isTableHeap,
+  parameters: [sc : Sc, name : Bytes],
+  result: Bool,
+  body: (match (findStruct sc name)
+    | Option.some held => false
+    | Option.none => (match (findEnum sc name)
+      | Option.some held2 => false
+      | Option.none => (match (findAlias sc name)
+        | Option.some held3 => false
+        | Option.none => (typeHeap name)))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: tyOk,
+  parameters: [sc : Sc, subject : Ty, params : Nat, hasSelf : Bool],
+  result: (Option Bytes),
+  body: (match subject
+    | Ty.TyUnit => (ctor Option.none [Bytes])
+    | Ty.TyBool => (ctor Option.none [Bytes])
+    | Ty.TyNat => (ctor Option.none [Bytes])
+    | Ty.TyFixed => (ctor Option.none [Bytes])
+    | Ty.TyOrdering => (ctor Option.none [Bytes])
+    | Ty.TySelf => (if hasSelf then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: self-type: ") (rtext "`Self` outside a trait or an impl"))))
+    | Ty.TyParam at => (if (at <? params) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: type-parameter: ") (rcat (rtext "parameter ") (rcat (rdec at) (rcat (rtext " of ") (rcat (rdec params) (rtext " in scope"))))))))
+    | Ty.TyRef t => (tyOk sc t params hasSelf)
+    | Ty.TyRefMut t => (tyOk sc t params hasSelf)
+    | Ty.TyPair a b => (match (tyOk sc a params hasSelf)
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (tyOk sc b params hasSelf))
+    | Ty.TyNamed name args => (match (typeExpected sc name)
+      | Option.none => (ctor Option.some [Bytes] (rcat (rtext "runtime support: type-name: ") (rcat (rtick name) (rtext " is neither declared nor in the closed table"))))
+      | Option.some expected => (if (if (project sc core) then (isTableHeap sc name) else false) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: hidden-allocation: ") (rcat (rtext "rust-core renders ") (rcat (rtick name) (rtext ", which requires heap allocation"))))) else (if (expected =? (tyLen args)) then (tyOk sc args params hasSelf) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: type-arity: ") (rcat (rtick name) (rcat (rtext " takes ") (rcat (rdec expected) (rcat (rtext " arguments, given ") (rdec (tyLen args)))))))))))
+    | Ty.TyWide => (ctor Option.none [Bytes])
+    | Ty.TySize => (ctor Option.none [Bytes])
+    | Ty.TyChar => (ctor Option.none [Bytes])
+    | Ty.TyStr => (ctor Option.none [Bytes])
+    | Ty.TySlice t => (tyOk sc t params hasSelf)
+    | Ty.TyUnknown => (ctor Option.none [Bytes])
+    | Ty.TyAbsent => (ctor Option.none [Bytes])
+    | Ty.TyNil => (ctor Option.none [Bytes])
+    | Ty.TyCons head tail => (match (tyOk sc head params hasSelf)
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (tyOk sc tail params hasSelf))),
+  axioms: [],
+  executable: true,
+  recursive_argument: subject
+}
+
+definition{
+  name: genericsOk,
+  parameters: [sc : Sc, gs : (List Generic)],
+  result: (Option Bytes),
+  body: (prim list_fold (fun [sc] (found : (Option Bytes)) (g : Generic) => (match found
+    | Option.some stop => (ctor Option.some [Bytes] stop)
+    | Option.none => (match (identErr "a generic parameter" (project g name))
+      | Option.some bad => (ctor Option.some [Bytes] bad)
+      | Option.none => (prim list_fold (fun [g, sc] (foundBound : (Option Bytes)) (bound : Bytes) => (match foundBound
+        | Option.some stop => (ctor Option.some [Bytes] stop)
+        | Option.none => (if (match (findTrait sc bound)
+          | Option.some held => true
+          | Option.none => (match (stdTraitMethod bound)
+            | Option.some m => true
+            | Option.none => false)) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: bound-trait: ") (rcat (rtick (rcat (project g name) (rcat (rtext ": ") bound))) (rtext " names no declared trait"))))))) (ctor Option.none [Bytes]) (project g bounds) : (Option Bytes))))) (ctor Option.none [Bytes]) gs : (Option Bytes)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: paramsOk,
+  parameters: [sc : Sc, ps : (List Param), params : Nat, hasSelf : Bool],
+  result: (Option Bytes),
+  body: (prim list_fold (fun [hasSelf, params, sc] (found : (Option Bytes)) (p : Param) => (match found
+    | Option.some stop => (ctor Option.some [Bytes] stop)
+    | Option.none => (match (identErr "a parameter name" (project p name))
+      | Option.some bad => (ctor Option.some [Bytes] bad)
+      | Option.none => (tyOk sc (project p ty) params hasSelf)))) (ctor Option.none [Bytes]) ps : (Option Bytes)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: sigOk,
+  parameters: [sc : Sc, sig : Sig, params : Nat, hasSelf : Bool],
+  result: (Option Bytes),
+  body: (match (identErr "a method name" (project sig name))
+    | Option.some bad => (ctor Option.some [Bytes] bad)
+    | Option.none => (if (if (project sig exclusive) then (not (project sig receiver)) else false) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: function-receiver: ") (rcat (rtick (project sig name)) (rtext " is exclusive without a receiver")))) else (match (paramsOk sc (project sig params) params hasSelf)
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (tyOk sc (project sig result) params hasSelf)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: provided,
+  parameters: [sc : Sc, bounds : (List Bytes), method : Bytes],
+  result: Bool,
+  body: (prim list_fold (fun [method, sc] (found : Bool) (bound : Bytes) => (if found then true else (match (findTrait sc bound)
+    | Option.some held => (prim list_fold (fun [method] (has : Bool) (sig : Sig) => (if has then true else (bEq (project sig name) method))) false (project held sigs) : Bool)
+    | Option.none => (match (stdTraitMethod bound)
+      | Option.some m => (bEq m method)
+      | Option.none => false)))) false bounds : Bool),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: pathCore,
+  parameters: [sc : Sc, path : (List Bytes)],
+  result: (Option Bytes),
+  body: (let head : Bytes := (headName path); (match (findEnum sc head)
+    | Option.some held => (match (nthName path 1)
+      | Option.some variant => (match (findVariant (project held variants) variant)
+        | Option.some found => (ctor Option.none [Bytes])
+        | Option.none => (ctor Option.some [Bytes] (rcat (rtext "runtime support: variant-name: ") (rcat (rtick (joinWith path "::")) (rcat (rtext " is not a variant of ") (rtick head))))))
+      | Option.none => (ctor Option.some [Bytes] (rcat (rtext "runtime support: variant-name: ") (rcat (rtick (joinWith path "::")) (rcat (rtext " is not a variant of ") (rtick head))))))
+    | Option.none => (if (if (inList (project sc imported) head) then true else (if (match (findStruct sc head)
+      | Option.some held2 => true
+      | Option.none => false) then true else (if (inList (project sc statics) head) then true else (if (isInteger head) then true else (if (bEq head (rtext "None")) then true else (if (bEq head (rtext "Self")) then true else (bEq head (rtext "usize")))))))) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: path-name: ") (rcat (rtick (joinWith path "::")) (rcat (rtext " starts at ") (rcat (rtick head) (rtext ", which no `use` or item declares"))))))))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: pathOk,
+  parameters: [sc : Sc, path : (List Bytes)],
+  result: (Option Bytes),
+  body: (match (segmentsErr "a path segment" path)
+    | Option.some bad => (ctor Option.some [Bytes] bad)
+    | Option.none => (pathCore sc path)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: patWrapperPath,
+  parameters: [path : (List Bytes)],
+  result: Bool,
+  body: (match path
+    | List.nil => false
+    | List.cons head rest => (match rest
+      | List.nil => (match (wrapperArity head) | Option.some count => true | Option.none => false)
+      | List.cons middle more => false)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: patArity,
+  parameters: [sc : Sc, path : (List Bytes), items : Pat],
+  result: (Option Bytes),
+  body: (match (nthName path 1)
+    | Option.none => (ctor Option.none [Bytes])
+    | Option.some variant => (match (findEnum sc (headName path))
+      | Option.none => (ctor Option.none [Bytes])
+      | Option.some held => (match (findVariant (project held variants) variant)
+        | Option.some found => (if ((variantTypes found) =? (patLen items)) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: pattern-fields: ") (rcat (rtick (joinWith path "::")) (rcat (rtext " is matched with ") (rcat (rdec (patLen items)) (rtext " patterns")))))))
+        | Option.none => (ctor Option.some [Bytes] (rcat (rtext "runtime support: pattern-fields: ") (rcat (rtick (joinWith path "::")) (rcat (rtext " is matched with ") (rcat (rdec (patLen items)) (rtext " patterns"))))))))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: patFields,
+  parameters: [sc : Sc, path : (List Bytes), names : (List Bytes)],
+  result: (Option Bytes),
+  body: (match (recordFields sc path)
+    | Option.none => (ctor Option.none [Bytes])
+    | Option.some held => (prim list_fold (fun [held, path] (found : (Option Bytes)) (name : Bytes) => (match found
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (if (inList held name) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: pattern-fields: ") (rcat (rtick (joinWith path "::")) (rcat (rtext " has no field ") (rtick name)))))))) (ctor Option.none [Bytes]) names : (Option Bytes))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: patOk,
+  parameters: [sc : Sc, p : Pat],
+  result: (Option Bytes),
+  body: (match p
+    | Pat.PWild => (ctor Option.none [Bytes])
+    | Pat.PBind d0 => (ctor Option.none [Bytes])
+    | Pat.PBindMut d0 => (ctor Option.none [Bytes])
+    | Pat.PPath path => (pathOk sc path)
+    | Pat.PTuple items => (patOk sc items)
+    | Pat.PTupleStruct path items => (if (if (patWrapperPath path) then true else false) then (patOk sc items) else (match (pathOk sc path)
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (match (patArity sc path items)
+        | Option.some stop => (ctor Option.some [Bytes] stop)
+        | Option.none => (patOk sc items))))
+    | Pat.PStruct path names items => (match (pathOk sc path)
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (match (identsErr "a pattern field name" names)
+        | Option.some bad => (ctor Option.some [Bytes] bad)
+        | Option.none => (if ((prim length names : Nat) =? (patLen items)) then (match (patFields sc path names)
+          | Option.some stop => (ctor Option.some [Bytes] stop)
+          | Option.none => (patOk sc items)) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: pattern-fields: ") (rtext "a struct pattern with unequal names and patterns"))))))
+    | Pat.PLit scalars => (literalErr scalars)
+    | Pat.PNil => (ctor Option.none [Bytes])
+    | Pat.PCons head tail => (match (patOk sc head)
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (patOk sc tail))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: p
+}
+
+definition{
+  name: isAbsent,
+  parameters: [t : Ty],
+  result: Bool,
+  body: (match t
+    | Ty.TyUnit => false
+    | Ty.TyBool => false
+    | Ty.TyNat => false
+    | Ty.TyFixed => false
+    | Ty.TyOrdering => false
+    | Ty.TySelf => false
+    | Ty.TyParam d0 => false
+    | Ty.TyRef d0 => false
+    | Ty.TyRefMut d0 => false
+    | Ty.TyPair d0 d1 => false
+    | Ty.TyNamed d0 d1 => false
+    | Ty.TyWide => false
+    | Ty.TySize => false
+    | Ty.TyChar => false
+    | Ty.TyStr => false
+    | Ty.TySlice d0 => false
+    | Ty.TyUnknown => false
+    | Ty.TyAbsent => true
+    | Ty.TyNil => false
+    | Ty.TyCons d0 d1 => false),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: isUnknown,
+  parameters: [t : Ty],
+  result: Bool,
+  body: (match t
+    | Ty.TyUnit => false
+    | Ty.TyBool => false
+    | Ty.TyNat => false
+    | Ty.TyFixed => false
+    | Ty.TyOrdering => false
+    | Ty.TySelf => false
+    | Ty.TyParam d0 => false
+    | Ty.TyRef d0 => false
+    | Ty.TyRefMut d0 => false
+    | Ty.TyPair d0 d1 => false
+    | Ty.TyNamed d0 d1 => false
+    | Ty.TyWide => false
+    | Ty.TySize => false
+    | Ty.TyChar => false
+    | Ty.TyStr => false
+    | Ty.TySlice d0 => false
+    | Ty.TyUnknown => true
+    | Ty.TyAbsent => false
+    | Ty.TyNil => false
+    | Ty.TyCons d0 d1 => false),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: stripRefs,
+  parameters: [t : Ty],
+  result: Ty,
+  body: (match t
+    | Ty.TyUnit => (ctor Ty.TyUnit)
+    | Ty.TyBool => (ctor Ty.TyBool)
+    | Ty.TyNat => (ctor Ty.TyNat)
+    | Ty.TyFixed => (ctor Ty.TyFixed)
+    | Ty.TyOrdering => (ctor Ty.TyOrdering)
+    | Ty.TySelf => (ctor Ty.TySelf)
+    | Ty.TyParam d0 => (ctor Ty.TyParam d0)
+    | Ty.TyRef inner => (stripRefs inner)
+    | Ty.TyRefMut inner => (stripRefs inner)
+    | Ty.TyPair d0 d1 => (ctor Ty.TyPair d0 d1)
+    | Ty.TyNamed d0 d1 => (ctor Ty.TyNamed d0 d1)
+    | Ty.TyWide => (ctor Ty.TyWide)
+    | Ty.TySize => (ctor Ty.TySize)
+    | Ty.TyChar => (ctor Ty.TyChar)
+    | Ty.TyStr => (ctor Ty.TyStr)
+    | Ty.TySlice d0 => (ctor Ty.TySlice d0)
+    | Ty.TyUnknown => (ctor Ty.TyUnknown)
+    | Ty.TyAbsent => (ctor Ty.TyAbsent)
+    | Ty.TyNil => (ctor Ty.TyNil)
+    | Ty.TyCons d0 d1 => (ctor Ty.TyCons d0 d1)),
+  axioms: [],
+  executable: true,
+  recursive_argument: t
+}
+
+definition{
+  name: withBound,
+  parameters: [fr : Fr, bound : (List Var), loop : Bool],
+  result: Fr,
+  body: (record Fr {generics := (project fr generics), vars := (prim append bound (project fr vars) : (List Var)), selfTy := (project fr selfTy), inLoop := (if (project fr inLoop) then true else loop)}),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: emptyFr,
+  parameters: [unit : Unit],
+  result: Fr,
+  body: (record Fr {generics := (nil Generic), vars := (nil Var), selfTy := (ctor Ty.TyAbsent), inLoop := false}),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: isRefMut,
+  parameters: [t : Ty],
+  result: Bool,
+  body: (match t
+    | Ty.TyUnit => false
+    | Ty.TyBool => false
+    | Ty.TyNat => false
+    | Ty.TyFixed => false
+    | Ty.TyOrdering => false
+    | Ty.TySelf => false
+    | Ty.TyParam d0 => false
+    | Ty.TyRef d0 => false
+    | Ty.TyRefMut inner => true
+    | Ty.TyPair d0 d1 => false
+    | Ty.TyNamed d0 d1 => false
+    | Ty.TyWide => false
+    | Ty.TySize => false
+    | Ty.TyChar => false
+    | Ty.TyStr => false
+    | Ty.TySlice d0 => false
+    | Ty.TyUnknown => false
+    | Ty.TyAbsent => false
+    | Ty.TyNil => false
+    | Ty.TyCons d0 d1 => false),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: resolveSelf,
+  parameters: [fr : Fr, t : Ty],
+  result: Ty,
+  body: (match t
+    | Ty.TyUnit => t
+    | Ty.TyBool => t
+    | Ty.TyNat => t
+    | Ty.TyFixed => t
+    | Ty.TyOrdering => t
+    | Ty.TySelf => (project fr selfTy)
+    | Ty.TyParam d0 => t
+    | Ty.TyRef d0 => t
+    | Ty.TyRefMut d0 => t
+    | Ty.TyPair d0 d1 => t
+    | Ty.TyNamed d0 d1 => t
+    | Ty.TyWide => t
+    | Ty.TySize => t
+    | Ty.TyChar => t
+    | Ty.TyStr => t
+    | Ty.TySlice d0 => t
+    | Ty.TyUnknown => t
+    | Ty.TyAbsent => t
+    | Ty.TyNil => t
+    | Ty.TyCons d0 d1 => t),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: pairPart,
+  parameters: [t : Ty, at : Nat],
+  result: Ty,
+  body: (match t
+    | Ty.TyUnit => (ctor Ty.TyUnknown)
+    | Ty.TyBool => (ctor Ty.TyUnknown)
+    | Ty.TyNat => (ctor Ty.TyUnknown)
+    | Ty.TyFixed => (ctor Ty.TyUnknown)
+    | Ty.TyOrdering => (ctor Ty.TyUnknown)
+    | Ty.TySelf => (ctor Ty.TyUnknown)
+    | Ty.TyParam d0 => (ctor Ty.TyUnknown)
+    | Ty.TyRef d0 => (ctor Ty.TyUnknown)
+    | Ty.TyRefMut d0 => (ctor Ty.TyUnknown)
+    | Ty.TyPair a b => (if (at =? 0) then a else (if (at =? 1) then b else (ctor Ty.TyUnknown)))
+    | Ty.TyNamed d0 d1 => (ctor Ty.TyUnknown)
+    | Ty.TyWide => (ctor Ty.TyUnknown)
+    | Ty.TySize => (ctor Ty.TyUnknown)
+    | Ty.TyChar => (ctor Ty.TyUnknown)
+    | Ty.TyStr => (ctor Ty.TyUnknown)
+    | Ty.TySlice d0 => (ctor Ty.TyUnknown)
+    | Ty.TyUnknown => (ctor Ty.TyUnknown)
+    | Ty.TyAbsent => (ctor Ty.TyUnknown)
+    | Ty.TyNil => (ctor Ty.TyUnknown)
+    | Ty.TyCons d0 d1 => (ctor Ty.TyUnknown)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: typeOf,
+  parameters: [fr : Fr, e : Expr],
+  result: Ty,
+  body: (match e
+    | Expr.EVar name => (match (findVar (project fr vars) name)
+      | Option.some held => (project held ty)
+      | Option.none => (ctor Ty.TyUnknown))
+    | Expr.ELit d0lit => (ctor Ty.TyUnknown)
+    | Expr.EPath d0 => (ctor Ty.TyUnknown)
+    | Expr.ECall d0 d1 => (ctor Ty.TyUnknown)
+    | Expr.EMethod d0 d1 d2 => (ctor Ty.TyUnknown)
+    | Expr.EField inner at => (pairPart (resolveSelf fr (stripRefs (typeOf fr inner))) at)
+    | Expr.EFieldNamed d0 d1 => (ctor Ty.TyUnknown)
+    | Expr.EBorrow inner => (let t : Ty := (typeOf fr inner); (if (isUnknown t) then (ctor Ty.TyUnknown) else (ctor Ty.TyRef t)))
+    | Expr.EEquals d0 d1 => (ctor Ty.TyUnknown)
+    | Expr.EMatch d0 d1 => (ctor Ty.TyUnknown)
+    | Expr.ELet d0 d1 d2 => (ctor Ty.TyUnknown)
+    | Expr.EAssign d0 d1 => (ctor Ty.TyUnknown)
+    | Expr.EIf d0 d1 d2 => (ctor Ty.TyUnknown)
+    | Expr.EWhile d0 d1 => (ctor Ty.TyUnknown)
+    | Expr.EWhileLet d0 d1 d2 => (ctor Ty.TyUnknown)
+    | Expr.ELoop d0 => (ctor Ty.TyUnknown)
+    | Expr.EFor d0 d1 d2 => (ctor Ty.TyUnknown)
+    | Expr.EBreak => (ctor Ty.TyUnknown)
+    | Expr.EReturn d0 => (ctor Ty.TyUnknown)
+    | Expr.ETuple d0 => (ctor Ty.TyUnknown)
+    | Expr.EStructLit d0 d1 d2 => (ctor Ty.TyUnknown)
+    | Expr.EBinary d0 d1 d2 => (ctor Ty.TyUnknown)
+    | Expr.ENot d0 => (ctor Ty.TyUnknown)
+    | Expr.ECast d0 d1 => (ctor Ty.TyUnknown)
+    | Expr.EIndex d0 d1 => (ctor Ty.TyUnknown)
+    | Expr.ERange d0 d1 d2 => (ctor Ty.TyUnknown)
+    | Expr.EDeref d0 => (ctor Ty.TyUnknown)
+    | Expr.EBorrowMut d0 => (ctor Ty.TyUnknown)
+    | Expr.EMethodOf d0 d1 d2 d3 => (ctor Ty.TyUnknown)
+    | Expr.EBlock d0 d1 => (ctor Ty.TyUnknown)
+    | Expr.ENone => (ctor Ty.TyUnknown)
+    | Expr.ENil => (ctor Ty.TyUnknown)
+    | Expr.ECons d0 d1 => (ctor Ty.TyUnknown)
+    | Expr.ELetS d0 d1 d2 d3 => (ctor Ty.TyUnknown)
+    | Expr.EArm d0 d1 d2 d3 => (ctor Ty.TyUnknown)),
+  axioms: [],
+  executable: true,
+  recursive_argument: e
+}
+
+definition{
+  name: assignable,
+  parameters: [fr : Fr, place : Expr],
+  result: (Option Bytes),
+  body: (match place
+    | Expr.EVar name => (match (findVar (project fr vars) name)
+      | Option.none => (ctor Option.some [Bytes] (rcat (rtext "runtime support: variable-scope: ") (rcat (rtick name) (rtext " is not in scope"))))
+      | Option.some held => (if (project held mutable) then (ctor Option.none [Bytes]) else (if (isRefMut (project held ty)) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-immutable: ") (rcat (rtick name) (rtext " is assigned and is not `mut` or `&mut`")))))))
+    | Expr.ELit d0lit => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
+    | Expr.EPath d0 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
+    | Expr.ECall d0 d1 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
+    | Expr.EMethod d0 d1 d2 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
+    | Expr.EField inner at => (assignable fr inner)
+    | Expr.EFieldNamed inner name => (assignable fr inner)
+    | Expr.EBorrow d0 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
+    | Expr.EEquals d0 d1 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
+    | Expr.EMatch d0 d1 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
+    | Expr.ELet d0 d1 d2 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
+    | Expr.EAssign d0 d1 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
+    | Expr.EIf d0 d1 d2 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
+    | Expr.EWhile d0 d1 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
+    | Expr.EWhileLet d0 d1 d2 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
+    | Expr.ELoop d0 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
+    | Expr.EFor d0 d1 d2 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
+    | Expr.EBreak => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
+    | Expr.EReturn d0 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
+    | Expr.ETuple d0 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
+    | Expr.EStructLit d0 d1 d2 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
+    | Expr.EBinary d0 d1 d2 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
+    | Expr.ENot d0 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
+    | Expr.ECast d0 d1 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
+    | Expr.EIndex inner at => (assignable fr inner)
+    | Expr.ERange d0 d1 d2 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
+    | Expr.EDeref inner => (assignable fr inner)
+    | Expr.EBorrowMut d0 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
+    | Expr.EMethodOf d0 d1 d2 d3 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
+    | Expr.EBlock d0 d1 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
+    | Expr.ENone => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
+    | Expr.ENil => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
+    | Expr.ECons d0 d1 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
+    | Expr.ELetS d0 d1 d2 d3 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))
+    | Expr.EArm d0 d1 d2 d3 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: assign-place: ") (rtext "an assignment to a value that is no place")))),
+  axioms: [],
+  executable: true,
+  recursive_argument: place
+}
+
+definition{
+  name: callAllocates,
+  parameters: [sc : Sc, path : (List Bytes)],
+  result: Bool,
+  body: (if (project sc core) then (match path
+    | List.nil => false
+    | List.cons owner rest => (match rest
+      | List.nil => false
+      | List.cons name more => (match more
+        | List.nil => (callHeap owner name)
+        | List.cons extra others => false))) else false),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: tyOwner,
+  parameters: [ty : Ty],
+  result: (Option Bytes),
+  body: (match ty
+    | Ty.TyUnit => (ctor Option.none [Bytes])
+    | Ty.TyBool => (ctor Option.none [Bytes])
+    | Ty.TyNat => (ctor Option.none [Bytes])
+    | Ty.TyFixed => (ctor Option.none [Bytes])
+    | Ty.TyOrdering => (ctor Option.none [Bytes])
+    | Ty.TySelf => (ctor Option.none [Bytes])
+    | Ty.TyParam x0 => (ctor Option.none [Bytes])
+    | Ty.TyRef x0 => (ctor Option.none [Bytes])
+    | Ty.TyRefMut x0 => (ctor Option.none [Bytes])
+    | Ty.TyPair x0 x1 => (ctor Option.none [Bytes])
+    | Ty.TyNamed name args => (ctor Option.some [Bytes] name)
+    | Ty.TyWide => (ctor Option.none [Bytes])
+    | Ty.TySize => (ctor Option.none [Bytes])
+    | Ty.TyChar => (ctor Option.none [Bytes])
+    | Ty.TyStr => (ctor Option.none [Bytes])
+    | Ty.TySlice x0 => (ctor Option.none [Bytes])
+    | Ty.TyUnknown => (ctor Option.none [Bytes])
+    | Ty.TyAbsent => (ctor Option.none [Bytes])
+    | Ty.TyNil => (ctor Option.none [Bytes])
+    | Ty.TyCons x0 x1 => (ctor Option.none [Bytes])),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: associatedArity,
+  parameters: [sc : Sc, owner : Bytes, name : Bytes],
+  result: (Option Nat),
+  body: (match (findFunction sc (rcat owner (rcat (rtext "::") name)))
+    | Option.some held => (ctor Option.some [Nat] (project held n))
+    | Option.none => (ctor Option.none [Nat])),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: callExpected,
+  parameters: [sc : Sc, path : (List Bytes)],
+  result: (Option Nat),
+  body: (match path
+    | List.nil => (ctor Option.none [Nat])
+    | List.cons owner rest => (match rest
+      | List.nil => (match (findFunction sc owner)
+        | Option.some held => (ctor Option.some [Nat] (project held n))
+        | Option.none => (match (wrapperArity owner)
+          | Option.some count => (ctor Option.some [Nat] count)
+          | Option.none => (tupleStructArity sc owner)))
+      | List.cons name more => (match more
+        | List.nil => (match (callArity owner name)
+          | Option.some count => (ctor Option.some [Nat] count)
+          | Option.none => (match (variantArity sc owner name)
+            | Option.some count => (ctor Option.some [Nat] count)
+            | Option.none => (associatedArity sc owner name)))
+        | List.cons extra others => (ctor Option.none [Nat])))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: callCheck,
+  parameters: [sc : Sc, path : (List Bytes), given : Nat],
+  result: (Option Bytes),
+  body: (if (callAllocates sc path) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: hidden-allocation: ") (rcat (rtext "rust-core renders ") (rcat (rtick (joinWith path "::")) (rtext ", which requires heap allocation"))))) else (match (callExpected sc path)
+    | Option.none => (ctor Option.some [Bytes] (rcat (rtext "runtime support: call-name: ") (rcat (rtick (joinWith path "::")) (rtext " is neither declared nor in the closed table"))))
+    | Option.some expected => (if (expected =? given) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: call-arity: ") (rcat (rtick (joinWith path "::")) (rcat (rtext " takes ") (rcat (rdec expected) (rcat (rtext " arguments, given ") (rdec given)))))))))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: boundCheck,
+  parameters: [sc : Sc, fr : Fr, recv : Expr, name : Bytes],
+  result: (Option Bytes),
+  body: (match (stripRefs (typeOf fr recv))
+    | Ty.TyParam at => (if (provided sc (nthBounds (project fr generics) at) name) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: method-bound: ") (rcat (rtick name) (rtext " is called on a parameter whose bounds do not provide it")))))
+    | Ty.TyUnit => (ctor Option.none [Bytes])
+    | Ty.TyBool => (ctor Option.none [Bytes])
+    | Ty.TyNat => (ctor Option.none [Bytes])
+    | Ty.TyFixed => (ctor Option.none [Bytes])
+    | Ty.TyOrdering => (ctor Option.none [Bytes])
+    | Ty.TySelf => (ctor Option.none [Bytes])
+    | Ty.TyRef d => (ctor Option.none [Bytes])
+    | Ty.TyRefMut d => (ctor Option.none [Bytes])
+    | Ty.TyPair d0 d1 => (ctor Option.none [Bytes])
+    | Ty.TyNamed d0 d1 => (ctor Option.none [Bytes])
+    | Ty.TyWide => (ctor Option.none [Bytes])
+    | Ty.TySize => (ctor Option.none [Bytes])
+    | Ty.TyChar => (ctor Option.none [Bytes])
+    | Ty.TyStr => (ctor Option.none [Bytes])
+    | Ty.TySlice d => (ctor Option.none [Bytes])
+    | Ty.TyUnknown => (ctor Option.none [Bytes])
+    | Ty.TyAbsent => (ctor Option.none [Bytes])
+    | Ty.TyNil => (ctor Option.none [Bytes])
+    | Ty.TyCons d0 d1 => (ctor Option.none [Bytes])),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: methodOk,
+  parameters: [sc : Sc, fr : Fr, recv : Expr, name : Bytes, given : Nat],
+  result: (Option Bytes),
+  body: (match (methodArity name)
+    | Option.some count => (if (if (methodHeap name) then (project sc core) else false) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: hidden-allocation: ") (rcat (rtext "rust-core renders ") (rcat (rtick name) (rtext ", which requires heap allocation"))))) else (if (count =? given) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: method-arity: ") (rcat (rtick name) (rcat (rtext " takes ") (rcat (rdec count) (rcat (rtext " arguments, given ") (rdec given)))))))))
+    | Option.none => (let counts : (List Nat) := (methodCounts sc name); (match counts
+      | List.nil => (ctor Option.some [Bytes] (rcat (rtext "runtime support: method-name: ") (rcat (rtick name) (rtext " is a method of no declared trait or impl and not in the closed table"))))
+      | List.cons head rest => (if (hasCount counts given) then (boundCheck sc fr recv name) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: method-arity: ") (rcat (rtick name) (rcat (rtext " takes ") (rcat (joinCounts counts) (rcat (rtext " arguments, given ") (rdec given))))))))))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: isNone,
+  parameters: [e : Expr],
+  result: Bool,
+  body: (match e
+    | Expr.EVar d0 => false
+    | Expr.ELit d0lit => false
+    | Expr.EPath d0 => false
+    | Expr.ECall d0 d1 => false
+    | Expr.EMethod d0 d1 d2 => false
+    | Expr.EField d0 d1 => false
+    | Expr.EFieldNamed d0 d1 => false
+    | Expr.EBorrow d0 => false
+    | Expr.EEquals d0 d1 => false
+    | Expr.EMatch d0 d1 => false
+    | Expr.ELet d0 d1 d2 => false
+    | Expr.EAssign d0 d1 => false
+    | Expr.EIf d0 d1 d2 => false
+    | Expr.EWhile d0 d1 => false
+    | Expr.EWhileLet d0 d1 d2 => false
+    | Expr.ELoop d0 => false
+    | Expr.EFor d0 d1 d2 => false
+    | Expr.EBreak => false
+    | Expr.EReturn d0 => false
+    | Expr.ETuple d0 => false
+    | Expr.EStructLit d0 d1 d2 => false
+    | Expr.EBinary d0 d1 d2 => false
+    | Expr.ENot d0 => false
+    | Expr.ECast d0 d1 => false
+    | Expr.EIndex d0 d1 => false
+    | Expr.ERange d0 d1 d2 => false
+    | Expr.EDeref d0 => false
+    | Expr.EBorrowMut d0 => false
+    | Expr.EMethodOf d0 d1 d2 d3 => false
+    | Expr.EBlock d0 d1 => false
+    | Expr.ENone => true
+    | Expr.ENil => false
+    | Expr.ECons d0 d1 => false
+    | Expr.ELetS d0 d1 d2 d3 => false
+    | Expr.EArm d0 d1 d2 d3 => false),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: isEmptyChain,
+  parameters: [e : Expr],
+  result: Bool,
+  body: (match e
+    | Expr.EVar d0 => false
+    | Expr.ELit d0lit => false
+    | Expr.EPath d0 => false
+    | Expr.ECall d0 d1 => false
+    | Expr.EMethod d0 d1 d2 => false
+    | Expr.EField d0 d1 => false
+    | Expr.EFieldNamed d0 d1 => false
+    | Expr.EBorrow d0 => false
+    | Expr.EEquals d0 d1 => false
+    | Expr.EMatch d0 d1 => false
+    | Expr.ELet d0 d1 d2 => false
+    | Expr.EAssign d0 d1 => false
+    | Expr.EIf d0 d1 d2 => false
+    | Expr.EWhile d0 d1 => false
+    | Expr.EWhileLet d0 d1 d2 => false
+    | Expr.ELoop d0 => false
+    | Expr.EFor d0 d1 d2 => false
+    | Expr.EBreak => false
+    | Expr.EReturn d0 => false
+    | Expr.ETuple d0 => false
+    | Expr.EStructLit d0 d1 d2 => false
+    | Expr.EBinary d0 d1 d2 => false
+    | Expr.ENot d0 => false
+    | Expr.ECast d0 d1 => false
+    | Expr.EIndex d0 d1 => false
+    | Expr.ERange d0 d1 d2 => false
+    | Expr.EDeref d0 => false
+    | Expr.EBorrowMut d0 => false
+    | Expr.EMethodOf d0 d1 d2 d3 => false
+    | Expr.EBlock d0 d1 => false
+    | Expr.ENone => false
+    | Expr.ENil => true
+    | Expr.ECons d0 d1 => false
+    | Expr.ELetS d0 d1 d2 d3 => false
+    | Expr.EArm d0 d1 d2 d3 => false),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: countIn,
+  parameters: [names : (List Bytes), wanted : Bytes],
+  result: Nat,
+  body: (prim list_fold (fun [wanted] (count : Nat) (name : Bytes) => (if (bEq name wanted) then (count + 1) else count)) 0 names : Nat),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: sameFields,
+  parameters: [names : (List Bytes), held : (List Bytes), values : Nat],
+  result: Bool,
+  body: (if ((prim length names : Nat) =? (prim length held : Nat)) then (if ((prim length names : Nat) =? values) then (prim list_fold (fun [held, names] (all : Bool) (name : Bytes) => (if all then ((countIn names name) =? (countIn held name)) else false)) true held : Bool) else false) else false),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: exprOk,
+  parameters: [sc : Sc, fr : Fr, e : Expr],
+  result: (Option Bytes),
+  body: (match e
+    | Expr.EVar name => (match (findVar (project fr vars) name)
+      | Option.some held => (ctor Option.none [Bytes])
+      | Option.none => (if (inList (project sc statics) name) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: variable-scope: ") (rcat (rtick name) (rtext " is not in scope"))))))
+    | Expr.ELit scalars => (literalErr scalars)
+    | Expr.EPath path => (pathOk sc path)
+    | Expr.ECall path args => (match (callCheck sc path (exprLen args))
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (exprsOk sc fr args))
+    | Expr.EMethod recv name args => (match (exprOk sc fr recv)
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (match (methodOk sc fr recv name (exprLen args))
+        | Option.some stop => (ctor Option.some [Bytes] stop)
+        | Option.none => (exprsOk sc fr args)))
+    | Expr.EField inner at => (exprOk sc fr inner)
+    | Expr.EFieldNamed inner name => (match (identErr "a field access" name)
+      | Option.some bad => (ctor Option.some [Bytes] bad)
+      | Option.none => (exprOk sc fr inner))
+    | Expr.EBorrow inner => (exprOk sc fr inner)
+    | Expr.EEquals a b => (match (exprOk sc fr a)
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (exprOk sc fr b))
+    | Expr.EMatch scrutinee arms => (match (orElse (headErr scrutinee) (exprOk sc fr scrutinee))
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (if (isEmptyChain arms) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: match-arms: ") (rtext "a match with no arm"))) else (armsOk sc fr arms)))
+    | Expr.ELet pat ty value => (ctor Option.some [Bytes] (rcat (rtext "runtime support: let-position: ") (rtext "a `let` that is not a statement of a block")))
+    | Expr.EAssign place value => (match (assignable fr place)
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (match (exprOk sc fr place)
+        | Option.some stop => (ctor Option.some [Bytes] stop)
+        | Option.none => (exprOk sc fr value)))
+    | Expr.EIf cond thenBlock elseBlock => (match (orElse (headErr cond) (exprOk sc fr cond))
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (match (blockOk sc fr thenBlock)
+        | Option.some stop => (ctor Option.some [Bytes] stop)
+        | Option.none => (blockOk sc fr elseBlock)))
+    | Expr.EWhile cond body => (match (orElse (headErr cond) (exprOk sc fr cond))
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (blockOk sc (withBound fr (nil Var) true) body))
+    | Expr.EWhileLet pat value body => (match (orElse (headErr value) (exprOk sc fr value))
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (match (patOk sc pat)
+        | Option.some stop => (ctor Option.some [Bytes] stop)
+        | Option.none => (match (bindsOf (nil Var) pat)
+          | Result.error problem => (ctor Option.some [Bytes] problem)
+          | Result.ok bound => (blockOk sc (withBound fr bound true) body))))
+    | Expr.ELoop body => (blockOk sc (withBound fr (nil Var) true) body)
+    | Expr.EFor pat value body => (match (orElse (headErr value) (exprOk sc fr value))
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (match (patOk sc pat)
+        | Option.some stop => (ctor Option.some [Bytes] stop)
+        | Option.none => (match (bindsOf (nil Var) pat)
+          | Result.error problem => (ctor Option.some [Bytes] problem)
+          | Result.ok bound => (blockOk sc (withBound fr bound true) body))))
+    | Expr.EBreak => (if (project fr inLoop) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: break-position: ") (rtext "a `break` outside a loop"))))
+    | Expr.EReturn value => (if (isNone value) then (ctor Option.none [Bytes]) else (exprOk sc fr value))
+    | Expr.ETuple items => (if ((exprLen items) <? 2) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: tuple-arity: ") (rcat (rtext "a tuple of ") (rdec (exprLen items))))) else (exprsOk sc fr items))
+    | Expr.EStructLit path names values => (match (pathOk sc path)
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (match (recordFields sc path)
+        | Option.none => (ctor Option.some [Bytes] (rcat (rtext "runtime support: struct-fields: ") (rcat (rtick (joinWith path "::")) (rtext " is no record struct or record variant"))))
+        | Option.some held => (if (sameFields names held (exprLen values)) then (exprsOk sc fr values) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: struct-fields: ") (rcat (rtick (joinWith path "::")) (rcat (rtext " is given ") (rcat (joinWith names ", ") (rcat (rtext ", not ") (joinWith held ", "))))))))))
+    | Expr.EBinary op a b => (match (exprOk sc fr a)
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (exprOk sc fr b))
+    | Expr.ENot inner => (exprOk sc fr inner)
+    | Expr.ECast inner ty => (match (orElse (tyOk sc ty (prim length (project fr generics) : Nat) (not (isAbsent (project fr selfTy)))) (unscopedErr "a cast type" ty))
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (exprOk sc fr inner))
+    | Expr.EIndex a b => (match (exprOk sc fr a)
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (exprOk sc fr b))
+    | Expr.ERange inner lower upper => (match (exprOk sc fr inner)
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (match (if (isNone lower) then (ctor Option.none [Bytes]) else (exprOk sc fr lower))
+        | Option.some stop => (ctor Option.some [Bytes] stop)
+        | Option.none => (if (isNone upper) then (ctor Option.none [Bytes]) else (exprOk sc fr upper))))
+    | Expr.EDeref inner => (exprOk sc fr inner)
+    | Expr.EBorrowMut inner => (exprOk sc fr inner)
+    | Expr.EMethodOf recv name tys args => (match (exprOk sc fr recv)
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (match (turbofishTypes name)
+        | Option.none => (ctor Option.some [Bytes] (rcat (rtext "runtime support: method-name: ") (rcat (rtick name) (rtext " takes no type arguments in the closed table"))))
+        | Option.some count => (if (if (count =? (tyLen tys)) then ((turbofishArgs name) =? (exprLen args)) else false) then (if (if (project sc core) then (bEq name (rtext "collect")) else false) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: hidden-allocation: ") (rcat (rtext "rust-core renders ") (rcat (rtick name) (rtext ", which requires heap allocation"))))) else (match (orElse (tyOk sc tys (prim length (project fr generics) : Nat) (not (isAbsent (project fr selfTy)))) (unscopedErr "a type argument" tys))
+          | Option.some stop => (ctor Option.some [Bytes] stop)
+          | Option.none => (exprsOk sc fr args))) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: method-arity: ") (rcat (rtick name) (rcat (rtext " takes ") (rcat (rdec count) (rcat (rtext " type arguments and ") (rcat (rdec (turbofishArgs name)) (rtext " arguments")))))))))))
+    | Expr.EBlock stmts tail => (match (stmtsOk sc fr stmts)
+      | Result.error problem => (ctor Option.some [Bytes] problem)
+      | Result.ok inner => (exprOk sc inner tail))
+    | Expr.ENone => (ctor Option.none [Bytes])
+    | Expr.ENil => (ctor Option.none [Bytes])
+    | Expr.ECons d0 d1 => (ctor Option.none [Bytes])
+    | Expr.ELetS d0 d1 d2 d3 => (ctor Option.none [Bytes])
+    | Expr.EArm d0 d1 d2 d3 => (ctor Option.none [Bytes])),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  mutual: CheckRt,
+  recursive_argument: e
+}
+
+definition{
+  name: exprsOk,
+  parameters: [sc : Sc, fr : Fr, es : Expr],
+  result: (Option Bytes),
+  body: (match es
+    | Expr.EVar d0 => (ctor Option.none [Bytes])
+    | Expr.ELit d0lit => (ctor Option.none [Bytes])
+    | Expr.EPath d0 => (ctor Option.none [Bytes])
+    | Expr.ECall d0 d1 => (ctor Option.none [Bytes])
+    | Expr.EMethod d0 d1 d2 => (ctor Option.none [Bytes])
+    | Expr.EField d0 d1 => (ctor Option.none [Bytes])
+    | Expr.EFieldNamed d0 d1 => (ctor Option.none [Bytes])
+    | Expr.EBorrow d0 => (ctor Option.none [Bytes])
+    | Expr.EEquals d0 d1 => (ctor Option.none [Bytes])
+    | Expr.EMatch d0 d1 => (ctor Option.none [Bytes])
+    | Expr.ELet d0 d1 d2 => (ctor Option.none [Bytes])
+    | Expr.EAssign d0 d1 => (ctor Option.none [Bytes])
+    | Expr.EIf d0 d1 d2 => (ctor Option.none [Bytes])
+    | Expr.EWhile d0 d1 => (ctor Option.none [Bytes])
+    | Expr.EWhileLet d0 d1 d2 => (ctor Option.none [Bytes])
+    | Expr.ELoop d0 => (ctor Option.none [Bytes])
+    | Expr.EFor d0 d1 d2 => (ctor Option.none [Bytes])
+    | Expr.EBreak => (ctor Option.none [Bytes])
+    | Expr.EReturn d0 => (ctor Option.none [Bytes])
+    | Expr.ETuple d0 => (ctor Option.none [Bytes])
+    | Expr.EStructLit d0 d1 d2 => (ctor Option.none [Bytes])
+    | Expr.EBinary d0 d1 d2 => (ctor Option.none [Bytes])
+    | Expr.ENot d0 => (ctor Option.none [Bytes])
+    | Expr.ECast d0 d1 => (ctor Option.none [Bytes])
+    | Expr.EIndex d0 d1 => (ctor Option.none [Bytes])
+    | Expr.ERange d0 d1 d2 => (ctor Option.none [Bytes])
+    | Expr.EDeref d0 => (ctor Option.none [Bytes])
+    | Expr.EBorrowMut d0 => (ctor Option.none [Bytes])
+    | Expr.EMethodOf d0 d1 d2 d3 => (ctor Option.none [Bytes])
+    | Expr.EBlock d0 d1 => (ctor Option.none [Bytes])
+    | Expr.ENone => (ctor Option.none [Bytes])
+    | Expr.ENil => (ctor Option.none [Bytes])
+    | Expr.ECons head tail => (match (exprOk sc fr head)
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (exprsOk sc fr tail))
+    | Expr.ELetS d0 d1 d2 d3 => (ctor Option.none [Bytes])
+    | Expr.EArm d0 d1 d2 d3 => (ctor Option.none [Bytes])),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  mutual: CheckRt,
+  recursive_argument: es
+}
+
+definition{
+  name: blockOk,
+  parameters: [sc : Sc, fr : Fr, b : Expr],
+  result: (Option Bytes),
+  body: (match b
+    | Expr.EVar d0 => (ctor Option.none [Bytes])
+    | Expr.ELit d0lit => (ctor Option.none [Bytes])
+    | Expr.EPath d0 => (ctor Option.none [Bytes])
+    | Expr.ECall d0 d1 => (ctor Option.none [Bytes])
+    | Expr.EMethod d0 d1 d2 => (ctor Option.none [Bytes])
+    | Expr.EField d0 d1 => (ctor Option.none [Bytes])
+    | Expr.EFieldNamed d0 d1 => (ctor Option.none [Bytes])
+    | Expr.EBorrow d0 => (ctor Option.none [Bytes])
+    | Expr.EEquals d0 d1 => (ctor Option.none [Bytes])
+    | Expr.EMatch d0 d1 => (ctor Option.none [Bytes])
+    | Expr.ELet d0 d1 d2 => (ctor Option.none [Bytes])
+    | Expr.EAssign d0 d1 => (ctor Option.none [Bytes])
+    | Expr.EIf d0 d1 d2 => (ctor Option.none [Bytes])
+    | Expr.EWhile d0 d1 => (ctor Option.none [Bytes])
+    | Expr.EWhileLet d0 d1 d2 => (ctor Option.none [Bytes])
+    | Expr.ELoop d0 => (ctor Option.none [Bytes])
+    | Expr.EFor d0 d1 d2 => (ctor Option.none [Bytes])
+    | Expr.EBreak => (ctor Option.none [Bytes])
+    | Expr.EReturn d0 => (ctor Option.none [Bytes])
+    | Expr.ETuple d0 => (ctor Option.none [Bytes])
+    | Expr.EStructLit d0 d1 d2 => (ctor Option.none [Bytes])
+    | Expr.EBinary d0 d1 d2 => (ctor Option.none [Bytes])
+    | Expr.ENot d0 => (ctor Option.none [Bytes])
+    | Expr.ECast d0 d1 => (ctor Option.none [Bytes])
+    | Expr.EIndex d0 d1 => (ctor Option.none [Bytes])
+    | Expr.ERange d0 d1 d2 => (ctor Option.none [Bytes])
+    | Expr.EDeref d0 => (ctor Option.none [Bytes])
+    | Expr.EBorrowMut d0 => (ctor Option.none [Bytes])
+    | Expr.EMethodOf d0 d1 d2 d3 => (ctor Option.none [Bytes])
+    | Expr.EBlock stmts tail => (match (stmtsOk sc fr stmts)
+      | Result.error problem => (ctor Option.some [Bytes] problem)
+      | Result.ok inner => (exprOk sc inner tail))
+    | Expr.ENone => (ctor Option.none [Bytes])
+    | Expr.ENil => (ctor Option.none [Bytes])
+    | Expr.ECons d0 d1 => (ctor Option.none [Bytes])
+    | Expr.ELetS d0 d1 d2 d3 => (ctor Option.none [Bytes])
+    | Expr.EArm d0 d1 d2 d3 => (ctor Option.none [Bytes])),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  mutual: CheckRt,
+  recursive_argument: b
+}
+
+definition{
+  name: stmtsOk,
+  parameters: [sc : Sc, fr : Fr, stmts : Expr],
+  result: (Result Fr Bytes),
+  body: (match stmts
+    | Expr.EVar d0 => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.ELit d0lit => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.EPath d0 => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.ECall d0 d1 => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.EMethod d0 d1 d2 => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.EField d0 d1 => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.EFieldNamed d0 d1 => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.EBorrow d0 => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.EEquals d0 d1 => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.EMatch d0 d1 => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.ELet d0 d1 d2 => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.EAssign d0 d1 => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.EIf d0 d1 d2 => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.EWhile d0 d1 => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.EWhileLet d0 d1 d2 => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.ELoop d0 => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.EFor d0 d1 d2 => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.EBreak => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.EReturn d0 => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.ETuple d0 => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.EStructLit d0 d1 d2 => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.EBinary d0 d1 d2 => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.ENot d0 => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.ECast d0 d1 => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.EIndex d0 d1 => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.ERange d0 d1 d2 => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.EDeref d0 => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.EBorrowMut d0 => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.EMethodOf d0 d1 d2 d3 => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.EBlock d0 d1 => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.ENone => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.ENil => (ctor Result.ok [Fr, Bytes] fr)
+    | Expr.ECons stmt rest => (match (exprOk sc fr stmt)
+      | Option.some problem => (ctor Result.error [Fr, Bytes] problem)
+      | Option.none => (stmtsOk sc fr rest))
+    | Expr.ELetS pat ty value rest => (match (if (isAbsent ty) then (ctor Option.none [Bytes]) else (orElse (tyOk sc ty (prim length (project fr generics) : Nat) (not (isAbsent (project fr selfTy)))) (unscopedErr "a `let` type" ty)))
+      | Option.some problem => (ctor Result.error [Fr, Bytes] problem)
+      | Option.none => (match (exprOk sc fr value)
+        | Option.some problem2 => (ctor Result.error [Fr, Bytes] problem2)
+        | Option.none => (match (bindsOf (nil Var) pat)
+          | Result.error problem3 => (ctor Result.error [Fr, Bytes] problem3)
+          | Result.ok bound => (match (patOk sc pat)
+            | Option.some problem4 => (ctor Result.error [Fr, Bytes] problem4)
+            | Option.none => (stmtsOk sc (withBound fr bound false) rest)))))
+    | Expr.EArm d0 d1 d2 d3 => (ctor Result.ok [Fr, Bytes] fr)),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  mutual: CheckRt,
+  recursive_argument: stmts
+}
+
+definition{
+  name: armsOk,
+  parameters: [sc : Sc, fr : Fr, arms : Expr],
+  result: (Option Bytes),
+  body: (match arms
+    | Expr.EVar d0 => (ctor Option.none [Bytes])
+    | Expr.ELit d0lit => (ctor Option.none [Bytes])
+    | Expr.EPath d0 => (ctor Option.none [Bytes])
+    | Expr.ECall d0 d1 => (ctor Option.none [Bytes])
+    | Expr.EMethod d0 d1 d2 => (ctor Option.none [Bytes])
+    | Expr.EField d0 d1 => (ctor Option.none [Bytes])
+    | Expr.EFieldNamed d0 d1 => (ctor Option.none [Bytes])
+    | Expr.EBorrow d0 => (ctor Option.none [Bytes])
+    | Expr.EEquals d0 d1 => (ctor Option.none [Bytes])
+    | Expr.EMatch d0 d1 => (ctor Option.none [Bytes])
+    | Expr.ELet d0 d1 d2 => (ctor Option.none [Bytes])
+    | Expr.EAssign d0 d1 => (ctor Option.none [Bytes])
+    | Expr.EIf d0 d1 d2 => (ctor Option.none [Bytes])
+    | Expr.EWhile d0 d1 => (ctor Option.none [Bytes])
+    | Expr.EWhileLet d0 d1 d2 => (ctor Option.none [Bytes])
+    | Expr.ELoop d0 => (ctor Option.none [Bytes])
+    | Expr.EFor d0 d1 d2 => (ctor Option.none [Bytes])
+    | Expr.EBreak => (ctor Option.none [Bytes])
+    | Expr.EReturn d0 => (ctor Option.none [Bytes])
+    | Expr.ETuple d0 => (ctor Option.none [Bytes])
+    | Expr.EStructLit d0 d1 d2 => (ctor Option.none [Bytes])
+    | Expr.EBinary d0 d1 d2 => (ctor Option.none [Bytes])
+    | Expr.ENot d0 => (ctor Option.none [Bytes])
+    | Expr.ECast d0 d1 => (ctor Option.none [Bytes])
+    | Expr.EIndex d0 d1 => (ctor Option.none [Bytes])
+    | Expr.ERange d0 d1 d2 => (ctor Option.none [Bytes])
+    | Expr.EDeref d0 => (ctor Option.none [Bytes])
+    | Expr.EBorrowMut d0 => (ctor Option.none [Bytes])
+    | Expr.EMethodOf d0 d1 d2 d3 => (ctor Option.none [Bytes])
+    | Expr.EBlock d0 d1 => (ctor Option.none [Bytes])
+    | Expr.ENone => (ctor Option.none [Bytes])
+    | Expr.ENil => (ctor Option.none [Bytes])
+    | Expr.ECons d0 d1 => (ctor Option.none [Bytes])
+    | Expr.ELetS d0 d1 d2 d3 => (ctor Option.none [Bytes])
+    | Expr.EArm pat guard body rest => (match (patOk sc pat)
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (match (bindsOf (nil Var) pat)
+        | Result.error problem => (ctor Option.some [Bytes] problem)
+        | Result.ok bound => (let inner : Fr := (withBound fr bound false); (match (if (isNone guard) then (ctor Option.none [Bytes]) else (exprOk sc inner guard))
+          | Option.some stop => (ctor Option.some [Bytes] stop)
+          | Option.none => (match (exprOk sc inner body)
+            | Option.some stop => (ctor Option.some [Bytes] stop)
+            | Option.none => (armsOk sc fr rest))))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  mutual: CheckRt,
+  recursive_argument: arms
+}
+
+definition{
+  name: paramVars,
+  parameters: [acc : (Result (List Var) Bytes), ps : (List Param), fname : Bytes],
+  result: (Result (List Var) Bytes),
+  body: (prim list_fold (fun [fname] (state : (Result (List Var) Bytes)) (param : Param) => (match state
+    | Result.error problem => (ctor Result.error [(List Var), Bytes] problem)
+    | Result.ok vars => (match (findVar vars (project param name))
+      | Option.some held => (ctor Result.error [(List Var), Bytes] (rcat (rtext "runtime support: param-duplicate: ") (rcat (rtick (project param name)) (rcat (rtext " names two parameters of ") (rtick fname)))))
+      | Option.none => (ctor Result.ok [(List Var), Bytes] (cons (record Var {name := (project param name), mutable := (project param mutable), ty := (project param ty)}) vars))))) acc ps : (Result (List Var) Bytes)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: fnOk,
+  parameters: [sc : Sc, outer : (List Generic), selfTy : Ty, f : FnDef],
+  result: (Option Bytes),
+  body: (match (genericsOk sc (project f generics))
+    | Option.some stop => (ctor Option.some [Bytes] stop)
+    | Option.none => (let gens : (List Generic) := (prim append outer (project f generics) : (List Generic)); (let count : Nat := (prim length gens : Nat); (let sg : Sig := (project f sig); (match (sigOk sc sg count (not (isAbsent selfTy)))
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (match (if (project sg receiver) then (if (isAbsent selfTy) then (ctor Result.error [(List Var), Bytes] (rcat (rtext "runtime support: function-receiver: ") (rcat (rtick (project sg name)) (rtext " takes `&self` outside an impl")))) else (ctor Result.ok [(List Var), Bytes] (cons (record Var {name := (rtext "self"), mutable := (project sg exclusive), ty := (if (project sg exclusive) then (ctor Ty.TyRefMut selfTy) else (ctor Ty.TyRef selfTy))}) (nil Var)))) else (ctor Result.ok [(List Var), Bytes] (nil Var)))
+        | Result.error problem => (ctor Option.some [Bytes] problem)
+        | Result.ok start => (match (paramVars (ctor Result.ok [(List Var), Bytes] start) (project sg params) (project sg name))
+          | Result.error problem2 => (ctor Option.some [Bytes] problem2)
+          | Result.ok vars => (blockOk sc (record Fr {generics := gens, vars := vars, selfTy := selfTy, inLoop := false}) (project f body))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: sigsOfTrait,
+  parameters: [sc : Sc, tr : Bytes],
+  result: (Option (List Sig)),
+  body: (match (findTrait sc tr)
+    | Option.some held => (ctor Option.some [(List Sig)] (project held sigs))
+    | Option.none => (match (stdTraitMethod tr)
+      | Option.some method => (ctor Option.some [(List Sig)] (cons (record Sig {name := method, receiver := true, exclusive := (stdTraitExclusive tr), params := (nil Param), result := (if (stdTraitExclusive tr) then (ctor Ty.TyUnit) else (ctor Ty.TySelf))}) (nil Sig)))
+      | Option.none => (ctor Option.none [(List Sig)]))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: countNamed,
+  parameters: [fns : (List FnDef), wanted : Bytes],
+  result: Nat,
+  body: (prim list_fold (fun [wanted] (count : Nat) (f : FnDef) => (if (bEq (project (project f sig) name) wanted) then (count + 1) else count)) 0 fns : Nat),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: firstNamed,
+  parameters: [fns : (List FnDef), wanted : Bytes],
+  result: (Option FnDef),
+  body: (prim list_fold (fun [wanted] (found : (Option FnDef)) (f : FnDef) => (match found
+    | Option.some held => (ctor Option.some [FnDef] held)
+    | Option.none => (if (bEq (project (project f sig) name) wanted) then (ctor Option.some [FnDef] f) else (ctor Option.none [FnDef])))) (ctor Option.none [FnDef]) fns : (Option FnDef)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: hasSigNamed,
+  parameters: [sigs : (List Sig), wanted : Bytes],
+  result: Bool,
+  body: (prim list_fold (fun [wanted] (found : Bool) (sig : Sig) => (if found then true else (bEq (project sig name) wanted))) false sigs : Bool),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: completes,
+  parameters: [sc : Sc, tr : Bytes, generics : (List Generic), ty : Ty, fns : (List FnDef)],
+  result: (Option Bytes),
+  body: (match (genericsOk sc generics)
+    | Option.some stop => (ctor Option.some [Bytes] stop)
+    | Option.none => (match (sigsOfTrait sc tr)
+      | Option.none => (ctor Option.some [Bytes] (rcat (rtext "runtime support: impl-trait: ") (rcat (rtext "`impl ") (rcat tr (rtext "` names no declared trait")))))
+      | Option.some sigs => (match (prim list_fold (fun [fns, tr] (found : (Option Bytes)) (sig : Sig) => (match found
+          | Option.some stop => (ctor Option.some [Bytes] stop)
+          | Option.none => (let count : Nat := (countNamed fns (project sig name)); (if (count =? 0) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: impl-complete: ") (rcat (rtext "`impl ") (rcat tr (rcat (rtext "` does not state ") (rtick (project sig name))))))) else (if (count =? 1) then (match (firstNamed fns (project sig name))
+            | Option.some held => (if (prim equal (sigShow (project held sig)) (sigShow sig) : Bool) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: impl-signature: ") (rcat (rtext "`impl ") (rcat tr (rcat (rtext "` states ") (rcat (rtick (project sig name)) (rtext " with a signature other than the trait's"))))))))
+            | Option.none => (ctor Option.none [Bytes])) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: impl-complete: ") (rcat (rtext "`impl ") (rcat tr (rcat (rtext "` states ") (rcat (rtick (project sig name)) (rtext " twice")))))))))))) (ctor Option.none [Bytes]) sigs : (Option Bytes))
+        | Option.some stop => (ctor Option.some [Bytes] stop)
+        | Option.none => (prim list_fold (fun [generics, sc, sigs, tr, ty] (foundFn : (Option Bytes)) (f : FnDef) => (match foundFn
+          | Option.some stop => (ctor Option.some [Bytes] stop)
+          | Option.none => (if (not (hasSigNamed sigs (project (project f sig) name))) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: impl-extra: ") (rcat (rtext "`impl ") (rcat tr (rcat (rtext "` states ") (rcat (rtick (project (project f sig) name)) (rtext ", which the trait does not"))))))) else (if (project f public) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: impl-visibility: ") (rcat (rtick (project (project f sig) name)) (rcat (rtext " of `impl ") (rcat tr (rtext "` is public; a trait method has the trait's visibility")))))) else (fnOk sc generics ty f))))) (ctor Option.none [Bytes]) fns : (Option Bytes))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: declare,
+  parameters: [sc : Sc, name : Bytes],
+  result: (Result Sc Bytes),
+  body: (if (inList (project sc declared) name) then (ctor Result.error [Sc, Bytes] (rcat (rtext "runtime support: duplicate-name: ") (rcat (rtick name) (rtext " is declared twice")))) else (ctor Result.ok [Sc, Bytes] (record Sc {core := (project sc core), declared := (prim append (project sc declared) (cons name (nil Bytes)) : (List Bytes)), traits := (project sc traits), structs := (project sc structs), enums := (project sc enums), aliases := (project sc aliases), statics := (project sc statics), functions := (project sc functions), methods := (project sc methods), imported := (project sc imported)}))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: addMethods,
+  parameters: [sc : Sc, sigs : (List Sig)],
+  result: Sc,
+  body: (prim list_fold (fun (scope : Sc) (sig : Sig) => (record Sc {core := (project scope core), declared := (project scope declared), traits := (project scope traits), structs := (project scope structs), enums := (project scope enums), aliases := (project scope aliases), statics := (project scope statics), functions := (project scope functions), methods := (prim append (project scope methods) (cons (record Entry {name := (project sig name), n := (prim length (project sig params) : Nat)}) (nil Entry)) : (List Entry)), imported := (project scope imported)})) sc sigs : Sc),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: addFnMethods,
+  parameters: [sc : Sc, fns : (List FnDef)],
+  result: Sc,
+  body: (prim list_fold (fun (scope : Sc) (f : FnDef) => (record Sc {core := (project scope core), declared := (project scope declared), traits := (project scope traits), structs := (project scope structs), enums := (project scope enums), aliases := (project scope aliases), statics := (project scope statics), functions := (project scope functions), methods := (prim append (project scope methods) (cons (record Entry {name := (project (project f sig) name), n := (prim length (project (project f sig) params) : Nat)}) (nil Entry)) : (List Entry)), imported := (project scope imported)})) sc fns : Sc),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: addAssociated,
+  parameters: [sc : Sc, owner : Bytes, fns : (List FnDef)],
+  result: Sc,
+  body: (prim list_fold (fun [owner] (scope : Sc) (f : FnDef) => (if (project (project f sig) receiver) then scope else (record Sc {core := (project scope core), declared := (project scope declared), traits := (project scope traits), structs := (project scope structs), enums := (project scope enums), aliases := (project scope aliases), statics := (project scope statics), functions := (prim append (project scope functions) (cons (record Entry {name := (rcat owner (rcat (rtext "::") (project (project f sig) name))), n := (prim length (project (project f sig) params) : Nat)}) (nil Entry)) : (List Entry)), methods := (project scope methods), imported := (project scope imported)}))) sc fns : Sc),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: addImpl,
+  parameters: [sc : Sc, ty : Ty, fns : (List FnDef)],
+  result: Sc,
+  body: (match (tyOwner ty)
+    | Option.some owner => (addAssociated sc owner fns)
+    | Option.none => sc),
+  axioms: [],
+  executable: true
+}
+
+structure{
+  name: Seen,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: names, type: (List Bytes)}, {name: dup, type: (Option Bytes)}]
+}
+
+definition{
+  name: firstDuplicate,
+  parameters: [variants : (List Variant)],
+  result: (Option Bytes),
+  body: (project (prim list_fold (fun (seen : Seen) (variant : Variant) => (match (project seen dup)
+    | Option.some held => seen
+    | Option.none => (if (inList (project seen names) (variantName variant)) then (record Seen {names := (project seen names), dup := (ctor Option.some [Bytes] (variantName variant))}) else (record Seen {names := (cons (variantName variant) (project seen names)), dup := (ctor Option.none [Bytes])})))) (record Seen {names := (nil Bytes), dup := (ctor Option.none [Bytes])}) variants : Seen) dup),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: firstDuplicateSig,
+  parameters: [sigs : (List Sig)],
+  result: (Option Bytes),
+  body: (project (prim list_fold (fun (seen : Seen) (sig : Sig) => (match (project seen dup)
+    | Option.some held => seen
+    | Option.none => (if (inList (project seen names) (project sig name)) then (record Seen {names := (project seen names), dup := (ctor Option.some [Bytes] (project sig name))}) else (record Seen {names := (cons (project sig name) (project seen names)), dup := (ctor Option.none [Bytes])})))) (record Seen {names := (nil Bytes), dup := (ctor Option.none [Bytes])}) sigs : Seen) dup),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: preCheck,
+  parameters: [check : (Option Bytes), after : (Result Sc Bytes)],
+  result: (Result Sc Bytes),
+  body: (match check
+    | Option.some problem => (ctor Result.error [Sc, Bytes] problem)
+    | Option.none => after),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: postCheck,
+  parameters: [done : (Result Sc Bytes), check : (Option Bytes)],
+  result: (Result Sc Bytes),
+  body: (match done
+    | Result.error problem => (ctor Result.error [Sc, Bytes] problem)
+    | Result.ok held => (match check
+      | Option.some stop => (ctor Result.error [Sc, Bytes] stop)
+      | Option.none => done)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: variantProblem,
+  parameters: [enumName : Bytes, variants : (List Variant)],
+  result: (Option Bytes),
+  body: (project (prim list_fold (fun [enumName] (seen : Seen) (variant : Variant) => (match (project seen dup)
+    | Option.some held => seen
+    | Option.none => (match (identErr "a variant name" (variantName variant))
+      | Option.some bad => (record Seen {names := (project seen names), dup := (ctor Option.some [Bytes] bad)})
+      | Option.none => (match (match variant
+          | Variant.VUnit n => (ctor Option.none [Bytes])
+          | Variant.VTuple n tys => (ctor Option.none [Bytes])
+          | Variant.VRecord n fs tys => (identsErr "a record variant field name" fs))
+        | Option.some bad2 => (record Seen {names := (project seen names), dup := (ctor Option.some [Bytes] bad2)})
+        | Option.none => (if (inList (project seen names) (variantName variant)) then (record Seen {names := (project seen names), dup := (ctor Option.some [Bytes] (rcat (rtext "runtime support: variant-name: ") (rcat (rtick enumName) (rcat (rtext " declares ") (rcat (rtick (variantName variant)) (rtext " twice"))))))}) else (record Seen {names := (cons (variantName variant) (project seen names)), dup := (ctor Option.none [Bytes])})))))) (record Seen {names := (nil Bytes), dup := (ctor Option.none [Bytes])}) variants : Seen) dup),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: pass1Item,
+  parameters: [sc : Sc, item : Item],
+  result: (Result Sc Bytes),
+  body: (match item
+    | Item.IUse path alias => (postCheck (match path
+      | List.nil => (ctor Result.error [Sc, Bytes] (rtext "runtime support: use-path: empty"))
+      | List.cons root more => (if (if (bEq root (rtext "core")) then true else (if (project sc core) then false else (bEq root (rtext "std")))) then (ctor Result.ok [Sc, Bytes] (record Sc {core := (project sc core), declared := (project sc declared), traits := (project sc traits), structs := (project sc structs), enums := (project sc enums), aliases := (project sc aliases), statics := (project sc statics), functions := (project sc functions), methods := (project sc methods), imported := (prim append (project sc imported) (cons (match alias
+        | List.nil => (lastName path)
+        | List.cons renamed rest => renamed) (nil Bytes)) : (List Bytes))})) else (ctor Result.error [Sc, Bytes] (rcat (rtext "runtime support: profile-root: ") (rcat (rtick (rcat (rtext "use ") (joinWith path "::"))) (rcat (rtext " starts at ") (rcat (rtick root) (rtext ", which the profile does not carry")))))))) (orElse (segmentsErr "a `use` segment" path) (identsErr "a `use` alias" alias)))
+    | Item.IUnit name derived => (preCheck (identErr "a unit struct name" name) (postCheck (match (declare sc name)
+      | Result.error problem => (ctor Result.error [Sc, Bytes] problem)
+      | Result.ok s2 => (ctor Result.ok [Sc, Bytes] (record Sc {core := (project s2 core), declared := (project s2 declared), traits := (project s2 traits), structs := (prim append (project s2 structs) (cons (record StructE {name := name, fields := (nil Bytes), gcount := 0}) (nil StructE)) : (List StructE)), enums := (project s2 enums), aliases := (project s2 aliases), statics := (project s2 statics), functions := (project s2 functions), methods := (project s2 methods), imported := (project s2 imported)}))) (derivesErr "a unit struct" derived)))
+    | Item.IAlias name params ty => (preCheck (identErr "an alias name" name) (postCheck (match (declare sc name)
+      | Result.error problem => (ctor Result.error [Sc, Bytes] problem)
+      | Result.ok s2 => (ctor Result.ok [Sc, Bytes] (record Sc {core := (project s2 core), declared := (project s2 declared), traits := (project s2 traits), structs := (project s2 structs), enums := (project s2 enums), aliases := (prim append (project s2 aliases) (cons (record Entry {name := name, n := (prim length params : Nat)}) (nil Entry)) : (List Entry)), statics := (project s2 statics), functions := (project s2 functions), methods := (project s2 methods), imported := (project s2 imported)}))) (identsErr "an alias parameter" params)))
+    | Item.IStatic name ty init => (preCheck (identErr "a static name" name) (match (declare sc name)
+      | Result.error problem => (ctor Result.error [Sc, Bytes] problem)
+      | Result.ok s2 => (ctor Result.ok [Sc, Bytes] (record Sc {core := (project s2 core), declared := (project s2 declared), traits := (project s2 traits), structs := (project s2 structs), enums := (project s2 enums), aliases := (project s2 aliases), statics := (prim append (project s2 statics) (cons name (nil Bytes)) : (List Bytes)), functions := (project s2 functions), methods := (project s2 methods), imported := (project s2 imported)}))))
+    | Item.ITrait name sigs => (preCheck (identErr "a trait name" name) (match (declare sc name)
+      | Result.error problem => (ctor Result.error [Sc, Bytes] problem)
+      | Result.ok s2 => (ctor Result.ok [Sc, Bytes] (addMethods (record Sc {core := (project s2 core), declared := (project s2 declared), traits := (prim append (project s2 traits) (cons (record TraitE {name := name, sigs := sigs}) (nil TraitE)) : (List TraitE)), structs := (project s2 structs), enums := (project s2 enums), aliases := (project s2 aliases), statics := (project s2 statics), functions := (project s2 functions), methods := (project s2 methods), imported := (project s2 imported)}) sigs))))
+    | Item.IImpl generics tr ty fns => (ctor Result.ok [Sc, Bytes] (addImpl (addFnMethods sc fns) ty fns))
+    | Item.IFn f => (preCheck (identErr "a function name" (project (project f sig) name)) (match (declare sc (project (project f sig) name))
+      | Result.error problem => (ctor Result.error [Sc, Bytes] problem)
+      | Result.ok s2 => (ctor Result.ok [Sc, Bytes] (record Sc {core := (project s2 core), declared := (project s2 declared), traits := (project s2 traits), structs := (project s2 structs), enums := (project s2 enums), aliases := (project s2 aliases), statics := (project s2 statics), functions := (prim append (project s2 functions) (cons (record Entry {name := (project (project f sig) name), n := (prim length (project (project f sig) params) : Nat)}) (nil Entry)) : (List Entry)), methods := (project s2 methods), imported := (project s2 imported)}))))
+    | Item.ITuple name generics derived tys => (preCheck (identErr "a tuple struct name" name) (postCheck (match (declare sc name)
+      | Result.error problem => (ctor Result.error [Sc, Bytes] problem)
+      | Result.ok s2 => (ctor Result.ok [Sc, Bytes] (record Sc {core := (project s2 core), declared := (project s2 declared), traits := (project s2 traits), structs := (prim append (project s2 structs) (cons (record StructE {name := name, fields := (indexNames tys 0), gcount := (prim length generics : Nat)}) (nil StructE)) : (List StructE)), enums := (project s2 enums), aliases := (project s2 aliases), statics := (project s2 statics), functions := (project s2 functions), methods := (project s2 methods), imported := (project s2 imported)}))) (orElse (identsErr "a tuple struct generic" generics) (derivesErr "a tuple struct" derived))))
+    | Item.IRecord name generics derived fields tys => (preCheck (identErr "a record struct name" name) (match (declare sc name)
+      | Result.error problem => (ctor Result.error [Sc, Bytes] problem)
+      | Result.ok s2 => (match (orElse (identsErr "a record struct generic" generics) (orElse (derivesErr "a record struct" derived) (identsErr "a record field name" fields)))
+        | Option.some stop => (ctor Result.error [Sc, Bytes] stop)
+        | Option.none => (if ((prim length fields : Nat) =? (tyLen tys)) then (ctor Result.ok [Sc, Bytes] (record Sc {core := (project s2 core), declared := (project s2 declared), traits := (project s2 traits), structs := (prim append (project s2 structs) (cons (record StructE {name := name, fields := fields, gcount := (prim length generics : Nat)}) (nil StructE)) : (List StructE)), enums := (project s2 enums), aliases := (project s2 aliases), statics := (project s2 statics), functions := (project s2 functions), methods := (project s2 methods), imported := (project s2 imported)})) else (ctor Result.error [Sc, Bytes] (rcat (rtext "runtime support: struct-fields: ") (rcat (rtick name) (rcat (rtext " has ") (rcat (rdec (prim length fields : Nat)) (rcat (rtext " field names and ") (rcat (rdec (tyLen tys)) (rtext " types"))))))))))))
+    | Item.IDefined path => (ctor Result.ok [Sc, Bytes] sc)
+    | Item.IMod name members => (preCheck (identErr "a module name" name) (declare sc name))
+    | Item.IAttr name args => (ctor Result.ok [Sc, Bytes] sc)
+    | Item.IEnum name generics derived variants => (preCheck (identErr "an enum name" name) (match (declare sc name)
+      | Result.error problem => (ctor Result.error [Sc, Bytes] problem)
+      | Result.ok s2 => (match (orElse (identsErr "an enum generic" generics) (orElse (derivesErr "an enum" derived) (variantProblem name variants)))
+        | Option.some stop => (ctor Result.error [Sc, Bytes] stop)
+        | Option.none => (match (firstDuplicate variants)
+          | Option.some twice => (ctor Result.error [Sc, Bytes] (rcat (rtext "runtime support: variant-name: ") (rcat (rtick name) (rcat (rtext " declares ") (rcat (rtick twice) (rtext " twice"))))))
+          | Option.none => (ctor Result.ok [Sc, Bytes] (record Sc {core := (project s2 core), declared := (project s2 declared), traits := (project s2 traits), structs := (project s2 structs), enums := (prim append (project s2 enums) (cons (record EnumE {name := name, variants := variants, gcount := (prim length generics : Nat)}) (nil EnumE)) : (List EnumE)), aliases := (project s2 aliases), statics := (project s2 statics), functions := (project s2 functions), methods := (project s2 methods), imported := (project s2 imported)}))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: pass1,
+  parameters: [sc : Sc, items : (List Item)],
+  result: (Result Sc Bytes),
+  body: (prim list_fold (fun (state : (Result Sc Bytes)) (item : Item) => (match state
+    | Result.error problem => (ctor Result.error [Sc, Bytes] problem)
+    | Result.ok held => (pass1Item held item))) (ctor Result.ok [Sc, Bytes] sc) items : (Result Sc Bytes)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: freeFnOk,
+  parameters: [sc : Sc, f : FnDef],
+  result: (Option Bytes),
+  body: (if (not (project f public)) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: function-visibility: ") (rcat (rtick (project (project f sig) name)) (rtext " is a free function that is not public")))) else (if (project (project f sig) receiver) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: function-receiver: ") (rcat (rtext "free function ") (rcat (rtick (project (project f sig) name)) (rtext " takes `&self`"))))) else (fnOk sc (nil Generic) (ctor Ty.TyAbsent) f))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: definedPathOk,
+  parameters: [path : Bytes],
+  result: (Option Bytes),
+  body: (if ((prim length path : Nat) =? 0) then (ctor Option.some [Bytes] (rtext "runtime support: defined-path: empty")) else (ctor Option.none [Bytes])),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: memberOk,
+  parameters: [sc : Sc, owner : Bytes, member : Item],
+  result: (Option Bytes),
+  body: (match member
+    | Item.IDefined path => (definedPathOk path)
+    | Item.IFn f => (freeFnOk sc f)
+    | Item.IUse x0 x1 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: module-member: ") (rcat (rtick owner) (rtext " holds an item that is neither a defined function nor a function"))))
+    | Item.IUnit x0 x1 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: module-member: ") (rcat (rtick owner) (rtext " holds an item that is neither a defined function nor a function"))))
+    | Item.IAlias x0 x1 x2 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: module-member: ") (rcat (rtick owner) (rtext " holds an item that is neither a defined function nor a function"))))
+    | Item.IStatic x0 x1 x2 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: module-member: ") (rcat (rtick owner) (rtext " holds an item that is neither a defined function nor a function"))))
+    | Item.ITrait x0 x1 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: module-member: ") (rcat (rtick owner) (rtext " holds an item that is neither a defined function nor a function"))))
+    | Item.IImpl x0 x1 x2 x3 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: module-member: ") (rcat (rtick owner) (rtext " holds an item that is neither a defined function nor a function"))))
+    | Item.ITuple x0 x1 x2 x3 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: module-member: ") (rcat (rtick owner) (rtext " holds an item that is neither a defined function nor a function"))))
+    | Item.IRecord x0 x1 x2 x3 x4 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: module-member: ") (rcat (rtick owner) (rtext " holds an item that is neither a defined function nor a function"))))
+    | Item.IEnum x0 x1 x2 x3 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: module-member: ") (rcat (rtick owner) (rtext " holds an item that is neither a defined function nor a function"))))
+    | Item.IMod x0 x1 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: module-member: ") (rcat (rtick owner) (rtext " holds an item that is neither a defined function nor a function"))))
+    | Item.IAttr x0 x1 => (ctor Option.some [Bytes] (rcat (rtext "runtime support: module-member: ") (rcat (rtick owner) (rtext " holds an item that is neither a defined function nor a function"))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+structure{
+  name: AttrSeen,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: over, type: Bool}, {name: stop, type: (Option Bytes)}]
+}
+
+definition{
+  name: attributeStop,
+  parameters: [name : Bytes, args : (List Bytes)],
+  result: (Option Bytes),
+  body: (if (bEq name (rtext "no_std")) then (match args
+    | List.nil => (ctor Option.none [Bytes])
+    | List.cons lead others => (ctor Option.some [Bytes] (rcat (rtext "runtime support: attribute-args: ") (rcat (rtick name) (rtext " takes no arguments"))))) else (if (bEq name (rtext "forbid")) then (match args
+    | List.nil => (ctor Option.some [Bytes] (rcat (rtext "runtime support: attribute-args: ") (rcat (rtick name) (rtext " takes a lint"))))
+    | List.cons lead others => (if (prim list_fold (fun (empty : Bool) (arg : Bytes) => (if empty then true else ((prim length arg : Nat) =? 0))) false args : Bool) then (ctor Option.some [Bytes] (rcat (rtext "runtime support: attribute-args: ") (rcat (rtick name) (rtext " takes a lint with a name")))) else (ctor Option.none [Bytes]))) else (ctor Option.some [Bytes] (rcat (rtext "runtime support: attribute-name: ") (rcat (rtick name) (rtext " is not an inner attribute of the closed set")))))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: attributeStep,
+  parameters: [state : AttrSeen, item : Item],
+  result: AttrSeen,
+  body: (match item
+    | Item.IUse x0 x1 => (record AttrSeen {over := true, stop := (ctor Option.none [Bytes])})
+    | Item.IUnit x0 x1 => (record AttrSeen {over := true, stop := (ctor Option.none [Bytes])})
+    | Item.IAlias x0 x1 x2 => (record AttrSeen {over := true, stop := (ctor Option.none [Bytes])})
+    | Item.IStatic x0 x1 x2 => (record AttrSeen {over := true, stop := (ctor Option.none [Bytes])})
+    | Item.ITrait x0 x1 => (record AttrSeen {over := true, stop := (ctor Option.none [Bytes])})
+    | Item.IImpl x0 x1 x2 x3 => (record AttrSeen {over := true, stop := (ctor Option.none [Bytes])})
+    | Item.IFn x0 => (record AttrSeen {over := true, stop := (ctor Option.none [Bytes])})
+    | Item.ITuple x0 x1 x2 x3 => (record AttrSeen {over := true, stop := (ctor Option.none [Bytes])})
+    | Item.IRecord x0 x1 x2 x3 x4 => (record AttrSeen {over := true, stop := (ctor Option.none [Bytes])})
+    | Item.IEnum x0 x1 x2 x3 => (record AttrSeen {over := true, stop := (ctor Option.none [Bytes])})
+    | Item.IDefined x0 => (record AttrSeen {over := true, stop := (ctor Option.none [Bytes])})
+    | Item.IMod x0 x1 => (record AttrSeen {over := true, stop := (ctor Option.none [Bytes])})
+    | Item.IAttr name args => (if (project state over) then (record AttrSeen {over := true, stop := (ctor Option.some [Bytes] (rcat (rtext "runtime support: attribute-position: `#![") (rcat name (rtext "]` follows an item"))))}) else (record AttrSeen {over := false, stop := (attributeStop name args)}))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: attributesOk,
+  parameters: [items : (List Item)],
+  result: (Option Bytes),
+  body: (project (prim list_fold (fun (state : AttrSeen) (item : Item) => (match (project state stop)
+    | Option.some held => state
+    | Option.none => (attributeStep state item))) (record AttrSeen {over := false, stop := (ctor Option.none [Bytes])}) items : AttrSeen) stop),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: pass2Item,
+  parameters: [sc : Sc, item : Item],
+  result: (Option Bytes),
+  body: (match item
+    | Item.IUse path alias => (ctor Option.none [Bytes])
+    | Item.IUnit name derived => (ctor Option.none [Bytes])
+    | Item.IAlias name params ty => (tyOk sc ty (prim length params : Nat) false)
+    | Item.IStatic name ty init => (match (tyOk sc ty 0 false)
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (exprOk sc (emptyFr ()) init))
+    | Item.ITrait name sigs => (match (match (firstDuplicateSig sigs)
+        | Option.some twice => (ctor Option.some [Bytes] (rcat (rtext "runtime support: trait-method: ") (rcat (rtick name) (rcat (rtext " declares ") (rcat (rtick twice) (rtext " twice"))))))
+        | Option.none => (ctor Option.none [Bytes]))
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (prim list_fold (fun [sc] (found : (Option Bytes)) (sig : Sig) => (match found
+        | Option.some stop => (ctor Option.some [Bytes] stop)
+        | Option.none => (sigOk sc sig 0 true))) (ctor Option.none [Bytes]) sigs : (Option Bytes)))
+    | Item.IImpl generics tr ty fns => (match (genericsOk sc generics)
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (match (tyOk sc ty (prim length generics : Nat) false)
+        | Option.some stop => (ctor Option.some [Bytes] stop)
+        | Option.none => (match tr
+          | List.cons named more => (completes sc named generics ty fns)
+          | List.nil => (prim list_fold (fun [generics, sc, ty] (found : (Option Bytes)) (f : FnDef) => (match found
+            | Option.some stop => (ctor Option.some [Bytes] stop)
+            | Option.none => (fnOk sc generics ty f))) (ctor Option.none [Bytes]) fns : (Option Bytes)))))
+    | Item.IFn f => (freeFnOk sc f)
+    | Item.ITuple name generics derived tys => (tyOk sc tys (prim length generics : Nat) false)
+    | Item.IRecord name generics derived fields tys => (tyOk sc tys (prim length generics : Nat) false)
+    | Item.IEnum name generics derived variants => (prim list_fold (fun [generics, sc] (found : (Option Bytes)) (variant : Variant) => (match found
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (match variant
+        | Variant.VUnit n => (ctor Option.none [Bytes])
+        | Variant.VTuple n tys => (tyOk sc tys (prim length generics : Nat) false)
+        | Variant.VRecord n fs tys => (tyOk sc tys (prim length generics : Nat) false)))) (ctor Option.none [Bytes]) variants : (Option Bytes))
+    | Item.IDefined path => (definedPathOk path)
+    | Item.IMod name members => (prim list_fold (fun [name, sc] (found : (Option Bytes)) (member : Item) => (match found
+      | Option.some stop => (ctor Option.some [Bytes] stop)
+      | Option.none => (memberOk sc name member))) (ctor Option.none [Bytes]) members : (Option Bytes))
+    | Item.IAttr name args => (ctor Option.none [Bytes])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: validateRuntime,
+  parameters: [krate : Crate],
+  result: (Result Unit Bytes),
+  body: (match (attributesOk (project krate items))
+    | Option.some attributeProblem => (ctor Result.error [Unit, Bytes] attributeProblem)
+    | Option.none => (match (pass1 (record Sc {core := (project krate core), declared := (nil Bytes), traits := (nil TraitE), structs := (nil StructE), enums := (nil EnumE), aliases := (nil Entry), statics := (nil Bytes), functions := (nil Entry), methods := (nil Entry), imported := (nil Bytes)}) (project krate items))
+      | Result.error problem => (ctor Result.error [Unit, Bytes] problem)
+      | Result.ok sc => (match (prim list_fold (fun [sc] (found : (Option Bytes)) (item : Item) => (match found
+          | Option.some stop => (ctor Option.some [Bytes] stop)
+          | Option.none => (pass2Item sc item))) (ctor Option.none [Bytes]) (project krate items) : (Option Bytes))
+        | Option.some problem2 => (ctor Result.error [Unit, Bytes] problem2)
+        | Option.none => (ctor Result.ok [Unit, Bytes] ())))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

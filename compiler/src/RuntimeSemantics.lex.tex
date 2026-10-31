@@ -1,0 +1,488 @@
+\begin{lexlean}{RuntimeSemantics}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{TargetSyntax}
+\importmodule{TargetSemantics}
+\importmodule{RuntimeSyntax}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: RtOutcome,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: value, fields: [TargetSyntax::Value]},
+    {name: stuck, fields: []},
+    {name: exhausted, fields: []}
+  ]
+}
+
+inductive{
+  name: RtOutcomes,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: values, fields: [(List TargetSyntax::Value)]},
+    {name: stuck, fields: []},
+    {name: exhausted, fields: []}
+  ]
+}
+
+definition{
+  name: tagOf,
+  parameters: [value : TargetSyntax::Value],
+  result: Nat,
+  body: (match value
+    | TargetSyntax::Value.unit => 0
+    | TargetSyntax::Value.bool ignored1 => 1
+    | TargetSyntax::Value.nat ignored2 => 2
+    | TargetSyntax::Value.int ignored3 => 3
+    | TargetSyntax::Value.u8 ignored4 => 4
+    | TargetSyntax::Value.u16 ignored5 => 5
+    | TargetSyntax::Value.u32 ignored6 => 6
+    | TargetSyntax::Value.u64 ignored7 => 7
+    | TargetSyntax::Value.i8 ignored8 => 8
+    | TargetSyntax::Value.i16 ignored9 => 9
+    | TargetSyntax::Value.i32 ignored10 => 10
+    | TargetSyntax::Value.i64 ignored11 => 11
+    | TargetSyntax::Value.string ignored12 => 12
+    | TargetSyntax::Value.bytes ignored13 => 13
+    | TargetSyntax::Value.ordering ignored14 => 14
+    | TargetSyntax::Value.none => 15
+    | TargetSyntax::Value.some ignored15 => 16
+    | TargetSyntax::Value.ok ignored16 => 17
+    | TargetSyntax::Value.error ignored17 => 18
+    | TargetSyntax::Value.list ignored18 => 19
+    | TargetSyntax::Value.pair ignored19 ignored20 => 20
+    | TargetSyntax::Value.adt ignored21 ignored22 => 21
+    | TargetSyntax::Value.closure ignored23 ignored24 => 22)
+}
+
+definition{
+  name: aliasTag,
+  parameters: [kind : TargetSyntax::IntKind],
+  result: Nat,
+  body: (match kind
+    | TargetSyntax::IntKind.u8 => 99
+    | TargetSyntax::IntKind.u16 => 99
+    | TargetSyntax::IntKind.u32 => 99
+    | TargetSyntax::IntKind.u64 => 2
+    | TargetSyntax::IntKind.i8 => 99
+    | TargetSyntax::IntKind.i16 => 99
+    | TargetSyntax::IntKind.i32 => 99
+    | TargetSyntax::IntKind.i64 => 3)
+}
+
+definition{
+  name: kindIndex,
+  parameters: [kind : TargetSyntax::IntKind],
+  result: Nat,
+  body: (match kind
+    | TargetSyntax::IntKind.u8 => 4
+    | TargetSyntax::IntKind.u16 => 5
+    | TargetSyntax::IntKind.u32 => 6
+    | TargetSyntax::IntKind.u64 => 7
+    | TargetSyntax::IntKind.i8 => 8
+    | TargetSyntax::IntKind.i16 => 9
+    | TargetSyntax::IntKind.i32 => 10
+    | TargetSyntax::IntKind.i64 => 11)
+}
+
+definition{
+  name: pairParts,
+  parameters: [value : TargetSyntax::Value],
+  result: (Option (TargetSyntax::Value * TargetSyntax::Value)),
+  body: (match value
+    | TargetSyntax::Value.unit => (ctor Option.none [(TargetSyntax::Value * TargetSyntax::Value)])
+    | TargetSyntax::Value.bool ignored25 => (ctor Option.none [(TargetSyntax::Value * TargetSyntax::Value)])
+    | TargetSyntax::Value.nat ignored26 => (ctor Option.none [(TargetSyntax::Value * TargetSyntax::Value)])
+    | TargetSyntax::Value.int ignored27 => (ctor Option.none [(TargetSyntax::Value * TargetSyntax::Value)])
+    | TargetSyntax::Value.u8 ignored28 => (ctor Option.none [(TargetSyntax::Value * TargetSyntax::Value)])
+    | TargetSyntax::Value.u16 ignored29 => (ctor Option.none [(TargetSyntax::Value * TargetSyntax::Value)])
+    | TargetSyntax::Value.u32 ignored30 => (ctor Option.none [(TargetSyntax::Value * TargetSyntax::Value)])
+    | TargetSyntax::Value.u64 ignored31 => (ctor Option.none [(TargetSyntax::Value * TargetSyntax::Value)])
+    | TargetSyntax::Value.i8 ignored32 => (ctor Option.none [(TargetSyntax::Value * TargetSyntax::Value)])
+    | TargetSyntax::Value.i16 ignored33 => (ctor Option.none [(TargetSyntax::Value * TargetSyntax::Value)])
+    | TargetSyntax::Value.i32 ignored34 => (ctor Option.none [(TargetSyntax::Value * TargetSyntax::Value)])
+    | TargetSyntax::Value.i64 ignored35 => (ctor Option.none [(TargetSyntax::Value * TargetSyntax::Value)])
+    | TargetSyntax::Value.string ignored36 => (ctor Option.none [(TargetSyntax::Value * TargetSyntax::Value)])
+    | TargetSyntax::Value.bytes ignored37 => (ctor Option.none [(TargetSyntax::Value * TargetSyntax::Value)])
+    | TargetSyntax::Value.ordering ignored38 => (ctor Option.none [(TargetSyntax::Value * TargetSyntax::Value)])
+    | TargetSyntax::Value.none => (ctor Option.none [(TargetSyntax::Value * TargetSyntax::Value)])
+    | TargetSyntax::Value.some ignored39 => (ctor Option.none [(TargetSyntax::Value * TargetSyntax::Value)])
+    | TargetSyntax::Value.ok ignored40 => (ctor Option.none [(TargetSyntax::Value * TargetSyntax::Value)])
+    | TargetSyntax::Value.error ignored41 => (ctor Option.none [(TargetSyntax::Value * TargetSyntax::Value)])
+    | TargetSyntax::Value.list ignored42 => (ctor Option.none [(TargetSyntax::Value * TargetSyntax::Value)])
+    | TargetSyntax::Value.pair ignored43 ignored44 => (ctor Option.some [(TargetSyntax::Value * TargetSyntax::Value)] (ignored43, ignored44))
+    | TargetSyntax::Value.adt ignored45 ignored46 => (ctor Option.none [(TargetSyntax::Value * TargetSyntax::Value)])
+    | TargetSyntax::Value.closure ignored47 ignored48 => (ctor Option.none [(TargetSyntax::Value * TargetSyntax::Value)]))
+}
+
+definition{
+  name: matchesTy,
+  parameters: [fuel : Nat, shape : RuntimeSyntax::RtType, value : TargetSyntax::Value],
+  result: Bool,
+  body: (match fuel
+    | Nat.zero => false
+    | Nat.succ remaining => (match shape
+      | RuntimeSyntax::RtType.unit => ((tagOf value) =? 0)
+      | RuntimeSyntax::RtType.bool => ((tagOf value) =? 1)
+      | RuntimeSyntax::RtType.nat => ((tagOf value) =? 2)
+      | RuntimeSyntax::RtType.fixed kind => (((tagOf value) =? (kindIndex kind)) || ((tagOf value) =? (aliasTag kind)))
+      | RuntimeSyntax::RtType.ordering => ((tagOf value) =? 14)
+      | RuntimeSyntax::RtType.selfType => true
+      | RuntimeSyntax::RtType.param ignoredIndex => true
+      | RuntimeSyntax::RtType.ref inner => (matchesTy remaining inner value)
+      | RuntimeSyntax::RtType.pair leftShape rightShape => (match (pairParts value)
+        | Option.none => false
+        | Option.some parts => ((matchesTy remaining leftShape (first parts)) && (matchesTy remaining rightShape (second parts))))
+      | RuntimeSyntax::RtType.named ignoredName ignoredArguments => false
+      | RuntimeSyntax::RtType.wide ignoredSigned => false
+      | RuntimeSyntax::RtType.size => false
+      | RuntimeSyntax::RtType.char => false
+      | RuntimeSyntax::RtType.str => false
+      | RuntimeSyntax::RtType.slice ignoredElement => false
+      | RuntimeSyntax::RtType.refMut innerMut => (matchesTy remaining innerMut value))),
+  recursive_argument: fuel
+}
+
+definition{
+  name: findIn,
+  parameters: [functions : (List RuntimeSyntax::RtFn), wanted : String],
+  result: (Option RuntimeSyntax::RtFn),
+  body: (match functions
+    | List.nil => (ctor Option.none [RuntimeSyntax::RtFn])
+    | List.cons function rest => (if (prim equal (project (project function signature) name) wanted : Bool) then (ctor Option.some [RuntimeSyntax::RtFn] function) else (findIn rest wanted))),
+  recursive_argument: functions
+}
+
+definition{
+  name: findFree,
+  parameters: [items : (List RuntimeSyntax::RtItem), wanted : String],
+  result: (Option RuntimeSyntax::RtFn),
+  body: (match items
+    | List.nil => (ctor Option.none [RuntimeSyntax::RtFn])
+    | List.cons item rest => (match item
+      | RuntimeSyntax::RtItem.useItem ignoredPath ignoredAlias => (findFree rest wanted)
+      | RuntimeSyntax::RtItem.unitStruct ignoredStruct ignoredDerives => (findFree rest wanted)
+      | RuntimeSyntax::RtItem.alias ignoredAlias2 ignoredParameters ignoredTarget => (findFree rest wanted)
+      | RuntimeSyntax::RtItem.staticItem ignoredStatic ignoredType ignoredInit => (findFree rest wanted)
+      | RuntimeSyntax::RtItem.traitItem ignoredTrait ignoredSigs => (findFree rest wanted)
+      | RuntimeSyntax::RtItem.implItem generics trait selfType functions => (findFree rest wanted)
+      | RuntimeSyntax::RtItem.fnItem function => (if (prim equal (project (project function signature) name) wanted : Bool) then (ctor Option.some [RuntimeSyntax::RtFn] function) else (findFree rest wanted))
+      | RuntimeSyntax::RtItem.tupleStruct ignoredTupleName ignoredTupleGenerics ignoredTupleDerives ignoredTupleTypes => (findFree rest wanted)
+      | RuntimeSyntax::RtItem.recordStruct ignoredRecordName ignoredRecordGenerics ignoredRecordDerives ignoredRecordFields ignoredRecordTypes => (findFree rest wanted)
+      | RuntimeSyntax::RtItem.enumItem ignoredEnumName ignoredEnumGenerics ignoredEnumDerives ignoredEnumVariants => (findFree rest wanted)
+      | RuntimeSyntax::RtItem.defined ignoredDefinedPath => (findFree rest wanted)
+      | RuntimeSyntax::RtItem.moduleItem ignoredModuleName ignoredModuleItems => (findFree rest wanted)
+      | RuntimeSyntax::RtItem.innerAttribute ignoredAttributeName ignoredAttributeArgs => (findFree rest wanted))),
+  recursive_argument: items
+}
+
+definition{
+  name: findMethod,
+  parameters: [
+    fuel : Nat,
+    items : (List RuntimeSyntax::RtItem),
+    wanted : String,
+    value : TargetSyntax::Value
+  ],
+  result: (Option RuntimeSyntax::RtFn),
+  body: (match items
+    | List.nil => (ctor Option.none [RuntimeSyntax::RtFn])
+    | List.cons item rest => (match item
+      | RuntimeSyntax::RtItem.useItem ignoredPath ignoredAlias => (findMethod fuel rest wanted value)
+      | RuntimeSyntax::RtItem.unitStruct ignoredStruct ignoredDerives => (findMethod fuel rest wanted value)
+      | RuntimeSyntax::RtItem.alias ignoredAlias2 ignoredParameters ignoredTarget => (findMethod fuel rest wanted value)
+      | RuntimeSyntax::RtItem.staticItem ignoredStatic ignoredType ignoredInit => (findMethod fuel rest wanted value)
+      | RuntimeSyntax::RtItem.traitItem ignoredTrait ignoredSigs => (findMethod fuel rest wanted value)
+      | RuntimeSyntax::RtItem.implItem generics trait selfType functions => (if (matchesTy fuel selfType value) then (match (findIn functions wanted)
+        | Option.none => (findMethod fuel rest wanted value)
+        | Option.some found => (ctor Option.some [RuntimeSyntax::RtFn] found)) else (findMethod fuel rest wanted value))
+      | RuntimeSyntax::RtItem.fnItem function => (findMethod fuel rest wanted value)
+      | RuntimeSyntax::RtItem.tupleStruct ignoredTupleName ignoredTupleGenerics ignoredTupleDerives ignoredTupleTypes => (findMethod fuel rest wanted value)
+      | RuntimeSyntax::RtItem.recordStruct ignoredRecordName ignoredRecordGenerics ignoredRecordDerives ignoredRecordFields ignoredRecordTypes => (findMethod fuel rest wanted value)
+      | RuntimeSyntax::RtItem.enumItem ignoredEnumName ignoredEnumGenerics ignoredEnumDerives ignoredEnumVariants => (findMethod fuel rest wanted value)
+      | RuntimeSyntax::RtItem.defined ignoredDefinedPath => (findMethod fuel rest wanted value)
+      | RuntimeSyntax::RtItem.moduleItem ignoredModuleName ignoredModuleItems => (findMethod fuel rest wanted value)
+      | RuntimeSyntax::RtItem.innerAttribute ignoredAttributeName ignoredAttributeArgs => (findMethod fuel rest wanted value))),
+  recursive_argument: items
+}
+
+definition{
+  name: lookupVar,
+  parameters: [environment : (List (String * TargetSyntax::Value)), wanted : String],
+  result: (Option TargetSyntax::Value),
+  body: (match environment
+    | List.nil => (ctor Option.none [TargetSyntax::Value])
+    | List.cons entry rest => (if (prim equal (first entry) wanted : Bool) then (ctor Option.some [TargetSyntax::Value] (second entry)) else (lookupVar rest wanted))),
+  recursive_argument: environment
+}
+
+definition{
+  name: bindParams,
+  parameters: [
+    parameters : (List RuntimeSyntax::RtParam),
+    values : (List TargetSyntax::Value),
+    environment : (List (String * TargetSyntax::Value))
+  ],
+  result: (Option (List (String * TargetSyntax::Value))),
+  body: (match parameters
+    | List.nil => (match values
+      | List.nil => (ctor Option.some [(List (String * TargetSyntax::Value))] environment)
+      | List.cons ignoredValue ignoredValues => (ctor Option.none [(List (String * TargetSyntax::Value))]))
+    | List.cons parameter rest => (match values
+      | List.nil => (ctor Option.none [(List (String * TargetSyntax::Value))])
+      | List.cons value others => (bindParams rest others (cons ((project parameter name), value) environment)))),
+  recursive_argument: parameters
+}
+
+definition{
+  name: orderOfPath,
+  parameters: [path : (List String)],
+  result: (Option TargetSyntax::Order),
+  body: (match path
+    | List.nil => (ctor Option.none [TargetSyntax::Order])
+    | List.cons head tail => (match tail
+      | List.nil => (ctor Option.none [TargetSyntax::Order])
+      | List.cons last more => (match more
+        | List.cons ignoredMore ignoredRest => (ctor Option.none [TargetSyntax::Order])
+        | List.nil => (if (prim equal head "Ordering" : Bool) then (if (prim equal last "Less" : Bool) then (ctor Option.some [TargetSyntax::Order] (ctor TargetSyntax::Order.less)) else (if (prim equal last "Equal" : Bool) then (ctor Option.some [TargetSyntax::Order] (ctor TargetSyntax::Order.same)) else (if (prim equal last "Greater" : Bool) then (ctor Option.some [TargetSyntax::Order] (ctor TargetSyntax::Order.more)) else (ctor Option.none [TargetSyntax::Order])))) else (ctor Option.none [TargetSyntax::Order]))))),
+  recursive_argument: path
+}
+
+definition{
+  name: fromPrimitive,
+  parameters: [outcome : TargetSemantics::Outcome],
+  result: RtOutcome,
+  body: (match outcome
+    | TargetSemantics::Outcome.value computed ignoredSteps => (ctor RtOutcome.value computed)
+    | TargetSemantics::Outcome.overflow ignoredOverflow => (ctor RtOutcome.stuck)
+    | TargetSemantics::Outcome.stuck => (ctor RtOutcome.stuck)
+    | TargetSemantics::Outcome.exhausted => (ctor RtOutcome.stuck))
+}
+
+definition{
+  name: rtEval,
+  parameters: [
+    fuel : Nat,
+    crate : RuntimeSyntax::RtCrate,
+    environment : (List (String * TargetSyntax::Value)),
+    expression : RuntimeSyntax::RtExpr
+  ],
+  result: RtOutcome,
+  body: (match fuel
+    | Nat.zero => (ctor RtOutcome.exhausted)
+    | Nat.succ remaining => (match expression
+      | RuntimeSyntax::RtExpr.var name => (match (lookupVar environment name)
+        | Option.none => (ctor RtOutcome.stuck)
+        | Option.some found => (ctor RtOutcome.value found))
+      | RuntimeSyntax::RtExpr.lit written => (match written
+        | RuntimeSyntax::RtLit.unit => (ctor RtOutcome.value (ctor TargetSyntax::Value.unit))
+        | RuntimeSyntax::RtLit.bool flag => (ctor RtOutcome.value (ctor TargetSyntax::Value.bool flag))
+        | RuntimeSyntax::RtLit.nat number => (ctor RtOutcome.value (ctor TargetSyntax::Value.nat number))
+        | RuntimeSyntax::RtLit.char ignoredChar => (ctor RtOutcome.stuck)
+        | RuntimeSyntax::RtLit.str text => (ctor RtOutcome.value (ctor TargetSyntax::Value.string text)))
+      | RuntimeSyntax::RtExpr.path segments => (match (orderOfPath segments)
+        | Option.none => (ctor RtOutcome.stuck)
+        | Option.some order => (ctor RtOutcome.value (ctor TargetSyntax::Value.ordering order)))
+      | RuntimeSyntax::RtExpr.call segments arguments => (match segments
+        | List.nil => (ctor RtOutcome.stuck)
+        | List.cons callee rest => (match rest
+          | List.cons ignoredSegment ignoredSegments => (ctor RtOutcome.stuck)
+          | List.nil => (match (findFree (project crate items) callee)
+            | Option.none => (ctor RtOutcome.stuck)
+            | Option.some function => (match (rtEvalList remaining crate environment arguments)
+              | RtOutcomes.values given => (rtApply remaining crate function given)
+              | RtOutcomes.stuck => (ctor RtOutcome.stuck)
+              | RtOutcomes.exhausted => (ctor RtOutcome.exhausted)))))
+      | RuntimeSyntax::RtExpr.method receiver name arguments => (match (rtEval remaining crate environment receiver)
+        | RtOutcome.value held => (match (rtEvalList remaining crate environment arguments)
+          | RtOutcomes.values given => (if (prim equal name "cmp" : Bool) then (fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons held given))) else (match (findMethod remaining (project crate items) name held)
+            | Option.none => (ctor RtOutcome.stuck)
+            | Option.some function => (rtApply remaining crate function (cons held given))))
+          | RtOutcomes.stuck => (ctor RtOutcome.stuck)
+          | RtOutcomes.exhausted => (ctor RtOutcome.exhausted))
+        | RtOutcome.stuck => (ctor RtOutcome.stuck)
+        | RtOutcome.exhausted => (ctor RtOutcome.exhausted))
+      | RuntimeSyntax::RtExpr.field inner position => (match (rtEval remaining crate environment inner)
+        | RtOutcome.value held => (match (pairParts held)
+          | Option.none => (ctor RtOutcome.stuck)
+          | Option.some parts => (if (position =? 0) then (ctor RtOutcome.value (first parts)) else (if (position =? 1) then (ctor RtOutcome.value (second parts)) else (ctor RtOutcome.stuck))))
+        | RtOutcome.stuck => (ctor RtOutcome.stuck)
+        | RtOutcome.exhausted => (ctor RtOutcome.exhausted))
+      | RuntimeSyntax::RtExpr.borrow inner => (rtEval remaining crate environment inner)
+      | RuntimeSyntax::RtExpr.equals left right => (match (rtEval remaining crate environment left)
+        | RtOutcome.value leftHeld => (match (rtEval remaining crate environment right)
+          | RtOutcome.value rightHeld => (fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.equal) (cons leftHeld (cons rightHeld (nil TargetSyntax::Value)))))
+          | RtOutcome.stuck => (ctor RtOutcome.stuck)
+          | RtOutcome.exhausted => (ctor RtOutcome.exhausted))
+        | RtOutcome.stuck => (ctor RtOutcome.stuck)
+        | RtOutcome.exhausted => (ctor RtOutcome.exhausted))
+      | RuntimeSyntax::RtExpr.matchOn scrutinee arms => (match (rtEval remaining crate environment scrutinee)
+        | RtOutcome.value held => (rtEvalArms remaining crate environment held arms)
+        | RtOutcome.stuck => (ctor RtOutcome.stuck)
+        | RtOutcome.exhausted => (ctor RtOutcome.exhausted))
+      | RuntimeSyntax::RtExpr.letE ignoredLetPattern ignoredLetType ignoredLetValue => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.assign ignoredPlace ignoredAssigned => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.ifElse ignoredCondition ignoredThen ignoredElse => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.whileLoop ignoredWhileCondition ignoredWhileBody => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.whileLet ignoredWhileLetPattern ignoredWhileLetValue ignoredWhileLetBody => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.loopE ignoredLoopBody => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.forIn ignoredForPattern ignoredForIterator ignoredForBody => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.breakE => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.returnE ignoredReturned => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.tuple ignoredElements => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.structLit ignoredStructPath ignoredStructNames ignoredStructValues => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.binary ignoredOperator ignoredLeftOperand ignoredRightOperand => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.notE ignoredNegated => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.cast ignoredCasted ignoredCastType => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.index ignoredIndexed ignoredPosition => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.rangeSlice ignoredSliced ignoredFrom ignoredTo => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.deref ignoredDereferenced => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.borrowMut ignoredMutBorrowed => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.methodOf ignoredTurbofishReceiver ignoredTurbofishName ignoredTurbofishTypes ignoredTurbofishArguments => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.fieldNamed ignoredNamedInner ignoredFieldName => (ctor RtOutcome.stuck)
+      | RuntimeSyntax::RtExpr.blockE inside => (rtEvalBlock remaining crate environment inside))),
+  axioms: [Classical.choice, Quot.sound, propext],
+  mutual: RtMachine,
+  recursive_argument: fuel
+}
+
+definition{
+  name: rtEvalList,
+  parameters: [
+    fuel : Nat,
+    crate : RuntimeSyntax::RtCrate,
+    environment : (List (String * TargetSyntax::Value)),
+    expressions : (List RuntimeSyntax::RtExpr)
+  ],
+  result: RtOutcomes,
+  body: (match fuel
+    | Nat.zero => (ctor RtOutcomes.exhausted)
+    | Nat.succ remaining => (match expressions
+      | List.nil => (ctor RtOutcomes.values (nil TargetSyntax::Value))
+      | List.cons head rest => (match (rtEval remaining crate environment head)
+        | RtOutcome.value headValue => (match (rtEvalList remaining crate environment rest)
+          | RtOutcomes.values restValues => (ctor RtOutcomes.values (cons headValue restValues))
+          | RtOutcomes.stuck => (ctor RtOutcomes.stuck)
+          | RtOutcomes.exhausted => (ctor RtOutcomes.exhausted))
+        | RtOutcome.stuck => (ctor RtOutcomes.stuck)
+        | RtOutcome.exhausted => (ctor RtOutcomes.exhausted)))),
+  axioms: [Classical.choice, Quot.sound, propext],
+  mutual: RtMachine,
+  recursive_argument: fuel
+}
+
+definition{
+  name: rtEvalArms,
+  parameters: [
+    fuel : Nat,
+    crate : RuntimeSyntax::RtCrate,
+    environment : (List (String * TargetSyntax::Value)),
+    scrutinee : TargetSyntax::Value,
+    arms : (List RuntimeSyntax::RtArm)
+  ],
+  result: RtOutcome,
+  body: (match fuel
+    | Nat.zero => (ctor RtOutcome.exhausted)
+    | Nat.succ remaining => (match arms
+      | List.nil => (ctor RtOutcome.stuck)
+      | List.cons arm rest => (match arm
+        | RuntimeSyntax::RtArm.guarded ignoredGuardedPattern ignoredGuard ignoredGuardedBody => (ctor RtOutcome.stuck)
+        | RuntimeSyntax::RtArm.mk pattern body => (match pattern
+          | RuntimeSyntax::RtPat.wild => (rtEval remaining crate environment body)
+          | RuntimeSyntax::RtPat.bind name => (rtEval remaining crate (cons (name, scrutinee) environment) body)
+          | RuntimeSyntax::RtPat.bindMut mutName => (rtEval remaining crate (cons (mutName, scrutinee) environment) body)
+          | RuntimeSyntax::RtPat.tuple ignoredTuplePatterns => (ctor RtOutcome.stuck)
+          | RuntimeSyntax::RtPat.tupleStruct ignoredTupleStructPath ignoredTupleStructPatterns => (ctor RtOutcome.stuck)
+          | RuntimeSyntax::RtPat.structPat ignoredStructPatPath ignoredStructPatNames ignoredStructPatPatterns => (ctor RtOutcome.stuck)
+          | RuntimeSyntax::RtPat.lit ignoredLiteralPattern => (ctor RtOutcome.stuck)
+          | RuntimeSyntax::RtPat.path segments => (match (orderOfPath segments)
+            | Option.none => (rtEvalArms remaining crate environment scrutinee rest)
+            | Option.some wanted => (match scrutinee
+              | TargetSyntax::Value.ordering held => (if (TargetSemantics::sameOrder wanted held) then (rtEval remaining crate environment body) else (rtEvalArms remaining crate environment scrutinee rest))
+              | TargetSyntax::Value.unit => (rtEvalArms remaining crate environment scrutinee rest)
+              | TargetSyntax::Value.bool ignoredBool => (rtEvalArms remaining crate environment scrutinee rest)
+              | TargetSyntax::Value.nat ignoredNat => (rtEvalArms remaining crate environment scrutinee rest)
+              | TargetSyntax::Value.int ignoredInt => (rtEvalArms remaining crate environment scrutinee rest)
+              | TargetSyntax::Value.u8 ignoredU8 => (rtEvalArms remaining crate environment scrutinee rest)
+              | TargetSyntax::Value.u16 ignoredU16 => (rtEvalArms remaining crate environment scrutinee rest)
+              | TargetSyntax::Value.u32 ignoredU32 => (rtEvalArms remaining crate environment scrutinee rest)
+              | TargetSyntax::Value.u64 ignoredU64 => (rtEvalArms remaining crate environment scrutinee rest)
+              | TargetSyntax::Value.i8 ignoredI8 => (rtEvalArms remaining crate environment scrutinee rest)
+              | TargetSyntax::Value.i16 ignoredI16 => (rtEvalArms remaining crate environment scrutinee rest)
+              | TargetSyntax::Value.i32 ignoredI32 => (rtEvalArms remaining crate environment scrutinee rest)
+              | TargetSyntax::Value.i64 ignoredI64 => (rtEvalArms remaining crate environment scrutinee rest)
+              | TargetSyntax::Value.string ignoredString => (rtEvalArms remaining crate environment scrutinee rest)
+              | TargetSyntax::Value.bytes ignoredBytes => (rtEvalArms remaining crate environment scrutinee rest)
+              | TargetSyntax::Value.none => (rtEvalArms remaining crate environment scrutinee rest)
+              | TargetSyntax::Value.some ignoredSome => (rtEvalArms remaining crate environment scrutinee rest)
+              | TargetSyntax::Value.ok ignoredOk => (rtEvalArms remaining crate environment scrutinee rest)
+              | TargetSyntax::Value.error ignoredError => (rtEvalArms remaining crate environment scrutinee rest)
+              | TargetSyntax::Value.list ignoredList => (rtEvalArms remaining crate environment scrutinee rest)
+              | TargetSyntax::Value.pair ignoredFirst ignoredSecond => (rtEvalArms remaining crate environment scrutinee rest)
+              | TargetSyntax::Value.adt ignoredAdt ignoredFields => (rtEvalArms remaining crate environment scrutinee rest)
+              | TargetSyntax::Value.closure ignoredClosure ignoredCaptures => (rtEvalArms remaining crate environment scrutinee rest))))))),
+  axioms: [Classical.choice, Quot.sound, propext],
+  mutual: RtMachine,
+  recursive_argument: fuel
+}
+
+definition{
+  name: rtApply,
+  parameters: [
+    fuel : Nat,
+    crate : RuntimeSyntax::RtCrate,
+    function : RuntimeSyntax::RtFn,
+    values : (List TargetSyntax::Value)
+  ],
+  result: RtOutcome,
+  body: (match fuel
+    | Nat.zero => (ctor RtOutcome.exhausted)
+    | Nat.succ remaining => (match (if (project (project function signature) receiver) then (match values
+        | List.nil => (ctor Option.none [(List (String * TargetSyntax::Value))])
+        | List.cons held others => (bindParams (project (project function signature) parameters) others (cons ("self", held) (nil (String * TargetSyntax::Value))))) else (bindParams (project (project function signature) parameters) values (nil (String * TargetSyntax::Value))))
+      | Option.none => (ctor RtOutcome.stuck)
+      | Option.some bound => (rtEvalBlock remaining crate bound (project function body)))),
+  axioms: [Classical.choice, Quot.sound, propext],
+  mutual: RtMachine,
+  recursive_argument: fuel
+}
+
+definition{
+  name: rtEvalBlock,
+  parameters: [
+    fuel : Nat,
+    crate : RuntimeSyntax::RtCrate,
+    environment : (List (String * TargetSyntax::Value)),
+    block : RuntimeSyntax::RtBlock
+  ],
+  result: RtOutcome,
+  body: (match fuel
+    | Nat.zero => (ctor RtOutcome.exhausted)
+    | Nat.succ remaining => (match block
+      | RuntimeSyntax::RtBlock.mk statements tail => (match (rtEvalList remaining crate environment statements)
+        | RtOutcomes.values ignoredValues => (rtEval remaining crate environment tail)
+        | RtOutcomes.stuck => (ctor RtOutcome.stuck)
+        | RtOutcomes.exhausted => (ctor RtOutcome.exhausted)))),
+  axioms: [Classical.choice, Quot.sound, propext],
+  mutual: RtMachine,
+  recursive_argument: fuel
+}
+
+definition{
+  name: rtRun,
+  parameters: [
+    fuel : Nat,
+    crate : RuntimeSyntax::RtCrate,
+    wanted : String,
+    values : (List TargetSyntax::Value)
+  ],
+  result: RtOutcome,
+  body: (match (findFree (project crate items) wanted)
+    | Option.none => (ctor RtOutcome.stuck)
+    | Option.some function => (rtApply fuel crate function values)),
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+\end{semanticmodule}
+\end{lexlean}

@@ -1739,6 +1739,622 @@ after 20 min 17 s, with certificates A, B, and E of every root replayed and audi
 The decoder fix #212 makes (a compiled mutual group is never split across commands) is needed by the new library and is not part of this change: with the #212 branch merged
 in, all 13 modules compile; without it `patBinders`/`patBindersList` are compiled in two commands and Lean rejects them.
 
+### the machine's bitwise, order, and remainder primitives can fail (SP-21)
+
+`RustSyntax.Machine` gains nine constructors (`bitAnd`, `bitOr`, `bitXor`, `bitNot`
+at a width; `natEq`, `natLe`, `natLt`, `natRem`, `intRem`), each evaluated by
+`RustSemantics` as the calculus primitive of the same name (`SP-21`, §17.14, §17.16,
+#91 stage 4, PR 1). The case reads the constructors from the committed
+`compiler/src` module (the first eight of `SP-18`, then these nine, seventeen in all)
+and has the pinned Lean 4.32.1 evaluate fifteen claims over the shipped copies
+(bitwise results at `u8` and `i8`, an operand of another width, the three orders
+at equal operands, the remainders including a zero divisor, and one call through
+`eval`) and refuse four wrong statements of the same calls. The shipped
+`RustSyntax.lean` and `RustSemantics.lean` were regenerated from `compiler/src` with
+`lexlean build`; the other two machine modules are unchanged. Growing `Machine`
+cost no library repair: `conformance_sp_13` (every library module, compiled by the
+pinned Lean over the regenerated modules) passes unchanged, 390 s on this host.
+Plants were run on the branch head with `cargo test -p repo-conformance --test
+conformance -- conformance_sp_21`; files restored with `git checkout` after each.
+
+Planted (a): `natLt` evaluated as the primitive `natLe` in `machinePrimitive` (the
+module regenerated into the shipped copy). Expected: the claim that `4 < 4` is
+false fails.
+
+```text
+the machine does not evaluate as stated:
+…/Machine.lean:14:101: error: Type mismatch
+  rfl
+```
+
+Planted (b): `intRem` removed from `Machine` in `compiler/src/RustSyntax.lex.tex`.
+Expected: the nine declared constructors differ.
+
+```text
+assertion `left == right` failed: the bitwise primitives at a width, the order of naturals, and the remainders
+  left: [("bitAnd", 1), …, ("natRem", 0)]
+ right: [("bitAnd", 1), …, ("natRem", 0), ("intRem", 0)]
+```
+
+Not planted: the arms of `machineWidth`, `machineShifts` and `machinePrimitive` for
+`bitXor`, `bitOr` and `natEq`, `natLe`, `natRem`, `intRem` individually; each
+claim exercises its constructor once, so a swapped arm is caught only where a
+claim distinguishes the two results. `SP-18` now checks that the first eight
+constructors are its eight; its register statement no longer says "eight".
+
+### a theorem proved by a split on a document term can fail (SM-35)
+
+`term_cases` is a language-1.2 proof form: a document term and a nonempty sorted unique
+list of prior document definitions, lowered to `set_option linter.unusedSimpArgs false in cases llCase : <term> <;> simp (config :=
+{decide := true}) only [<definitions>, llCase, ite_true, ite_false]` (`SM-35`, §17.10, #91 stage 4). It exists
+because the unbounded refinement of a runtime item, `runExport … = runItem …`, is true and
+provable only by that script (measured on the `nat_add` slice: six seconds, the axioms
+`propext`, `Classical.choice`, `Quot.sound`), and `simplify` (plain `simp only`), `cases` on
+a local, and `reflexivity` cannot state it (the two sides are a case-of-case). The case
+builds a language-1.2 project whose theorem equates a direct match on `flagOf n` with the same
+match wrapped in a second match, proves it by `term_cases{scrutinee: (flagOf n), definitions:
+[direct, wrapped]}`, checks that the module satisfies `semantic-module-v2`, that the
+formatter keeps the proof and its fixed point links to the same module, that the notation
+reads back to the same module, that the generated Lean has the stated lowering, that the
+pinned Lean verifies the module with exactly `[propext]` (where the toolchain is installed),
+and that the LaTeX catalog carries the theorem's statement and policy. The first lowering named the definitions and `llCase` alone; the runtime's `nat_add` refinement, tried against it, ran out of heartbeats at `isDefEq` because the unfolded `itemFallible item` leaves a conditional on a decided condition that `simp only` without `ite_true` and `ite_false` does not reduce, so the lowering names those two lemmas and, because they are unused in a proof with no conditional, turns the unused-argument linter off for its one script; with them the same statement is proved in six seconds. Seven misuses are
+refused as `LLT4001` naming the misuse (the planted projects of the case): language 1.1 (data form, schema 1: "a language-1.2
+construct"), an empty list, definitions out of order, a repeated definition, a definition that
+is absent, a term of type `Nat`, and a theorem parameter named `llCase`. Each of the seven misuses is also a committed fixture under `tests/negative/`
+(`term-cases-language-11`, `-empty-definitions`, `-definitions-unsorted`,
+`-definition-repeated`, `-definition-absent`, `-scrutinee-not-inductive`,
+`-reserved-name`: seven, each `LLT4001` with the message of the case), listed in `EX-07`'s prescribed
+classes (285 to 292). Their locks are current for the head they were written at and are
+relocked, with every other fixture's, by the regeneration wave; on this head `EX-07` fails
+for the 220 existing fixtures whose lock is stale (`LLC0102`) and for none of the seven. The neighbouring
+suites (`semantic-ir`, `proofs`, `declarations`, 76 cases): 54 pass and 22 fail with
+`LLC0102`, the lock bound to the compiler-semantics ID, as every case that copies a
+committed project does on this stack since `SP-18`; none fails on the schema, the
+proof forms, or the snapshot.
+
+Each plant was run with `cargo test -p repo-conformance --test conformance -- conformance_sm_35`
+and restored with `git checkout`.
+
+Planted (a): the hypothesis left out of the `simp only` list in the lowering. Expected: the
+lowering assertion of the case fails. Observed: it does (the generated module shows
+`simp … only [direct, wrapped]`). Not shown: that the pinned Lean then also rejects this
+module; the toy theorem may not need the hypothesis, and the `nat_add` slice did not
+test it.
+
+Planted (b): the language gate removed. Observed: the language-1.1 project is accepted and
+the case fails at the expected refusal (`check fails`).
+
+Planted (c): the sortedness and uniqueness check replaced by acceptance. Observed: the same.
+
+Not planted: the check that the term's type is an inductive of the document, the empty list,
+the absent definition, and the reserved name, each of which the case exercises with its own
+misuse; their checks were not removed one by one.
+
+### the machine's natural and integer arithmetic can fail (SP-23)
+
+`RustSyntax.Machine` gains nine constructors (`checkedNatAdd`, `natSub`, `checkedNatMul`,
+`natQuot`, `checkedIntAdd`, `checkedIntSub`, `checkedIntMul`, `checkedIntNeg`,
+`checkedIntQuot`) and `RustSemantics` a definition `machineOptional` that `runMachine`
+reads: the seven checked ones return `Some` of the primitive's value, or `None` where the
+primitive overflows (the runtime's `nat_add` and the others return `Err(Overflow)` there, and
+a body cannot observe `abort`); `natSub` and `natQuot` cannot overflow and are the value
+(`SP-23`, §17.14, §17.16, #91 stage 4, PR 2). Found while setting up the `nat_add` slice:
+`Machine.checkedAdd u64` accepts only `Value.u64`, and the runtime's `nat_*` and `int_*`
+compute on `Value.nat` and `Value.int`, so those nine functions were not expressible over
+the first seventeen primitives (corrected on #91). The case reads the constructors from
+`compiler/src` and has the pinned Lean 4.32.1 evaluate eighteen claims over the shipped
+copies (sums and products at the width of a natural, differences below zero, quotients by
+zero, `MIN / -1`, `-MIN`, and an operand of another width, which is stuck) and refuse four
+wrong statements. The library compiles over the regenerated modules, with the new body of
+`runMachine`, unchanged: `conformance_sp_13` passes in 400 s, so 0 library repairs. The
+RB-15 case covers the nine in the same harness (106 functions).
+
+Planted (a): `machineOptional` of `checkedIntNeg` made `false` (regenerated into the shipped
+copy). Expected: the claim that `-MIN` is `None` fails.
+
+```text
+the machine does not evaluate as stated:
+…/Machine.lean:18:109: error: Type mismatch
+  rfl
+```
+
+Planted (b): `natSub` removed from `Machine` in `compiler/src/RustSyntax.lex.tex`. Expected:
+the nine declared constructors differ.
+
+```text
+  left: [("checkedNatAdd", 0), ("checkedNatMul", 0), ("natQuot", 0), …]
+ right: [("checkedNatAdd", 0), ("natSub", 0), ("checkedNatMul", 0), …]
+```
+
+A first run of plant (b) removed the `natSub` of `Item` instead and the case passed, which
+is the correct answer to that edit and not a plant of this case.
+
+### the width families of the core runtime are source (RB-16, SP-22, widths branch)
+
+`claude/issue-91-stage4-widths-2` writes out the 92 functions of the eight widths in `RustRuntime`:
+`fixed_<w>::checked_add`, `checked_sub`, `checked_mul`, `checked_quot`, `bit_and`, `bit_or`, `bit_xor`,
+`bit_not`, `shift_left`, `shift_right`, and `convert` (88), and `checked_neg_<w>` for the four signed
+widths (4), each a call of a machine primitive, with a `refines_<path with _>` theorem each. The
+runtime is then 110 functions and 110 theorems. `RustType.i128` is a node across the machine for
+`convert`'s operand (the `Type::I128` of the AST and the decoder, the Lean constructor, the certificate
+B encoder, the leaf `LkI128` of `RustValidate`, one more hand-built crate: BS-05 counts 443/195/306/82,
+749 in all). The printer groups the consecutive functions of one module by the path in the exported
+name. `rb_16` compiles the oracle and the generated runtime together and runs every one of the 110
+functions on 9 boundary values of its width (all pairs, six shift amounts, nine conversion inputs)
+and 200 seeded calls: 27 s; three plants of width bodies (`checked_add` of `u8` for `checked_sub`,
+`shift_left` of `i32` for `shift_right`, `bit_xor` of `u16` for `bit_or`) fail at their function.
+`sp_22` verifies the module of 110 theorems in 8 min 1 s (13 min 51 s of CPU) and its plant on one
+theorem in about a minute; the case is 566 s with `rb_16` and `rb_09`, runs on a stack of 64 MiB
+(`lexlean::READER_STACK`) and allows its project an hour (`child_timeout_ms`), so `SP-22` is the one case of the part `preservation-runtime` of `bdd`
+(`bdd-preservation-runtime` in `.github/vv-rows.json`). The proofs of the width theorems need
+`allWidth` and `hasWidth` in their definitions: a head without them did not terminate.
+
+The reader stack is a measured need, not a workaround. The runtime module reads (`sdk::read_module`)
+to 1.14 MB of data nested 119 levels, because a list of n elements nests n levels, and the reader
+recurses once per level in frames of about 17 KB each in a debug build, which the tests and `vv` are:
+run on threads of 2, 4, 8, 16, 32, and 64 MiB, the read aborts with a stack overflow at 2 MiB, which
+is what a default or test thread has, and succeeds at 4 MiB. Three places read it on a thread the
+caller does not size: `sp_22` before it had its own (`has overflowed its stack`), `rp_10`, which
+recomputes the compiler-semantics ID through `identity_bytes` on the test thread (the same), and
+the decoder in `runtime::core`. Each now spawns one of `READER_STACK`, 64 MiB, sixteen times the
+measured need, so the module can grow with the runtime (each function adds about one level; the
+stack is virtual memory the thread touches only as deep as the recursion goes). A release build
+needs far less; the 64 MiB is for the debug builds that run the gate.
+
+The identity-bound records (`rust_renderer`, `rust_runtime_core`, `rust_runtime_std` in
+`language/semantics-1.2.toml`, the example and fixture locks, the compiler goldens, the packages of
+the production export) are regenerated once, by the maintainer at the end of the stack when it is
+green on the line, not by each PR: this branch moves the compiler-semantics ID again, on top of
+#243's move (`RustSyntax` gains `RustType.i128`), and leaves every such record as it found it.
+
+### a theorem proved by a split on a Boolean local can fail (SM-36)
+
+A language-1.2 `cases` proof may name a local of type `Bool` (`SM-36`, §17.10, #91 stage 4). The
+case (`cases/semantic_ir/boolean.rs`) builds a project whose theorem `pickSame` states
+`pick b = b` for `pick b := if b then true else false`, proved by `cases{scrutinee: b, branches:
+[false, true]}` with `reflexivity` in each; it requires the module to satisfy `semantic-module-v2`,
+the formatter to keep the proof and its fixed point to link to the same module, the notation to read
+back to the same module, the generated Lean to hold `cases b with`, `| false =>`, and `| true =>`, and
+the pinned Lean to verify the module with an empty axiom policy. Five misuses are refused: language
+1.1, a missing branch, a repeated branch, a branch with a binder, and `induction` on a Boolean.
+
+Plants, each restored: the `Bool` arm of `elimination_binder_types` disabled (`proof scrutinee `b` is not
+Nat, List, or a document inductive` at the accepted project); the language gate removed (the
+language-1.1 project is accepted and the case fails at `check fails`); the induction refusal removed
+(the same).
+
+### the machine callee and the overflow value are printed and computed (RB-15)
+
+`rust::ast::Callee::Machine` and `Lit::Overflow` mirror the Lean constructors
+(`RB-15`, §17.14, §17.16, #91 stage 4, PR 1). The case (`cases/rust_machine.rs`)
+builds one crate with a function per machine primitive and width (`Machine::all()`,
+97 functions: 5 without a width, 11 at each of 8 widths, and the negation at the 4
+signed widths), validates and prints it, requires the printed text to contain eight
+named forms, and compiles it with the pinned rustc 1.97.1 under `warnings = "deny"`;
+the harness calls every function on the boundary values of its width (minimum,
+minimum plus one, minus one, zero, one, maximum minus one, maximum) and compares with
+an `i128` computation, including 17 conversion inputs per width, 6 shift amounts per
+width, and the `MIN % -1` case of `int_rem`. Two crates are refused (a call with one
+operand of two; a stray overflow value), and an `Err(Overflow)` is accepted. The
+lowering emits neither construct, so no rendering changes: `rb_07` and the
+`lexlean` unit test of the renderer digest fail on this branch only on the records
+bound to the compiler-semantics ID (`rust_renderer` in `language/semantics-1.2.toml`
+and the `compiler_semantics` field of `provenance.json`), which are left to the
+regeneration wave; with the `rust_renderer` digest set locally, all 208 `lexlean`
+unit tests pass.
+
+Plants were run with `cargo test -p repo-conformance --test conformance --
+conformance_rb_15`, each restored with `git checkout`.
+
+Planted (a): `natLt` printed as `PartialOrd::le`. Expected: the comparison of equal
+operands differs. Observed: `assertion left == right failed, left: true, right: false`
+at the harness.
+
+Planted (b): `bitXor` printed as `BitOr::bitor`. Expected: `xor u8 1 1` differs.
+Observed: `assertion left == right failed: xor u8 1 1, left: 1, right: 0`.
+
+Planted (c): the arity check of the validator removed. Expected: the crate with one
+operand of two is accepted, and the case fails because the plant is not refused.
+Observed: `the planted crate is refused` panicked.
+
+Planted (d): the stray-overflow refusal removed. Observed: the same panic.
+
+Planted (e): a machine call in a lowered crate (the `sum-to` fixture, the callee of its
+first runtime call replaced by `Machine::NatEq`). Expected: `correspond` refuses it as a
+construct with no row. Observed with the construct recorded as `call:machine`:
+`the construct `call:machine` has no target-semantics correspondence`. With the gate
+removed (the construct recorded as nothing), the plant is accepted and the case fails:
+`a machine call has no row: ()` at the `expect_err`.
+
+An earlier head printed the operators infix (`(a & b)`); rustc with warnings denied
+refused it for redundant parentheses as a block value, which is why the primitives
+print as fully qualified trait calls.
+
+### the core runtime is the definitions of RustRuntime (RB-16)
+
+`rust::source` decodes the shipped `RustRuntime` module and `runtime::core()` prints its
+functions after the base text (`RB-16`, §17.16, #91 stage 4, PR 2). The module defines
+eighteen of the 144 functions: the natural functions `nat_add`, `nat_sub`, `nat_mul`, `nat_quot`,
+`nat_rem`, `nat_eq`, `nat_le`, `nat_lt`, and `nat_succ`, and the integer functions `int_add`,
+`int_sub`, `int_mul`, `int_neg`, `int_quot`, and `int_rem`, each a call of a machine primitive, and the Boolean functions `bool_not`, `bool_and`, and `bool_or`, a negation and two conditionals (`if p0 { p1 } else { false }`, `if p0 { true } else { p1 }`)
+(the fallible ones return `R<T>`; `nat_add` is `match u64::checked_add(p0, p1) { Some(v0) => Ok(v0), None => Err(Overflow) }`, and
+the other fallible ones have its shape; the plain ones are the call alone); the handwritten text of the whole runtime is kept at
+`tests/rust-runtime-oracle/{core,std}.rs.txt` (its SHA-256 is the `rust_runtime_core` the
+language data recorded before this change). The case (`cases/rust_runtime.rs`) requires the shipped
+copy to be the compiler project's module byte for byte; requires the module to define at
+least one function and the differential to cover exactly the functions it defines; requires
+the embedded module to print as `assemble` of the decoded items; compiles the oracle as
+module `old` and the generated runtime as module `new` of one crate under the pinned rustc with
+warnings denied; and runs every defined function on all pairs (triples with a zero-divisor value
+for the quotients and remainders) of 11 boundary values of its type and on 1,000 to 2,000 seeded
+calls each, comparing the debug form of the result and the counted work (`work()`, the same for
+both: zero). Four bodies changed to another primitive (the checked product for the checked sum of
+naturals, the checked difference for the checked sum of integers, the strict order for the loose
+one, the remainder for the quotient) are each caught at the function's own `result` assertion.
+Six decoder refusals are asserted by the message they give (no `coreCrate`, a definition
+with a parameter, a reference to a definition the module lacks, a machine primitive and a
+runtime function `RustSyntax` does not declare, a constructor with an extra argument).
+
+The tree-wide gates that read the runtime were run: `rb_01`, `rb_04`, `rb_05`, `rb_06`,
+`rb_08`, `rb_09`, `tc_07` pass. `rb_09` needed the library table to list the path forms the generated text uses where
+the handwritten text used methods (`<int>::checked_add`, `checked_sub`, `checked_mul`, `checked_div`,
+`checked_neg`, `checked_rem`, `saturating_sub`, and `core::cmp::PartialEq::eq`, `PartialOrd::le`,
+`PartialOrd::lt`) and to drop the three method rows nothing uses any more (`checked_rem`, `ok_or`,
+`saturating_sub`); its plant of a role citing a name that is not a primitive now names the path row
+`<int>::saturating_sub`; `tc_07`'s plant of a wrapping addition named the handwritten text and now names the
+generated one (`u64::checked_add(p0, p1)` for `Some(u64::wrapping_add(p0, p1))`) and is still
+detected. `rb_07` and the `lexlean` unit tests of the renderer and runtime digests fail only on
+the records bound to the compiler-semantics ID (`rust_renderer`, `rust_runtime_core`,
+`rust_runtime_std` in `language/semantics-1.2.toml`), which are left to the regeneration wave.
+
+`rb_06` found one more break of the generated text: the machine primitives `int_rem` and `int_quot` print as block expressions, and Clippy's default lints refuse a block as a `match` scrutinee (`blocks_in_conditions`) in the package that carries `int_quot`. The printer binds a scrutinee that begins with a block, `{ let value = <block>; match value { … } }`, as it binds a loop's step; with it `rb_06` passes on every committed package.
+
+The runtime crate is checked by `validate` (`runtime::core` runs it on the decoded crate), which
+refused the first decoded `nat_add`: `arithmetic: the value a fallible function returns,
+construct:err, is not a fallible value`. The arithmetic rule now reads an `Err` whose error type is
+`RustType.overflow` and whose one payload is the overflow value as a fallible value, the dual of
+`RB-15`'s overflow literal, and nothing else the runtime builds as one. The error type, which the
+first head stood in for with `unit` and printed without type arguments, is the node
+`RustType.overflow` (`Type::Overflow`, the Lean constructor `RustType.overflow`, the leaf
+`LkOverflow` of `RustValidate`'s `Ty`), and the printer states `Err::<u64, Overflow>(Overflow)`.
+Three plants of the module are refused by `validate` in the case: an `Err` of the natural zero,
+an `Err` whose error type is `nat`, and a parameter of type `str` in the core runtime
+(`hidden allocation`). The case also requires `tests/rust-runtime-oracle/std.rs.txt` to be the
+text `runtime::STD` holds.
+
+The case routes its plants through `runtime::core_from`, the function `core()` is `core_from` of the
+embedded module, so they are refused where `core()` refuses them; the first head validated
+`decoded.core` in the case itself, and with the `validate` call removed from `core()` the case
+still passed (review of `b4b1eaf4c`). With the call removed from `core_from`, `conformance_rb_16`
+fails at the first plant: `an Err of a value that is not the overflow value` is accepted and printed.
+A fourth module plant is a bare `Ok` of an arithmetic result (the `succeed` of the `Some` arm that every checked function shares, `someArm`, replaced by
+`Expr.construct (Ctor.ok …)`, so the module is refused wherever any function uses it): `construct:ok, is not a fallible value`.
+
+The module's `\title{Natural number addition}` stays: a title is a phrase concept of the module's
+glossary (`lexlean.std.nat`), and all eighteen modules of the compiler project carry that one; a title
+of the module's own (tried: `The core runtime profile`) is refused as `LLL1004`, ``The` is not a phrase
+concept`, by `sp_22` when it builds the project.
+
+The normative validator moved with the Rust one (`BS-05`): `returnsResult` and the tail rule of
+`EConstruct` in `RustValidate.lex.tex` read an `Err` whose error type is the `LkOverflow` leaf and
+whose one payload is `LitOverflow` as a fallible value (`isOverflowTy`, `isOverflowArgs`,
+`isOverflowErr`). Before it, `validateCrate` refused `Function{params: [(p0, Nat)], result:
+Fallible(Nat), body: Construct{Err(Nat, Overflow), [Lit::Overflow]}}` that `validate` accepted, and
+the corpus held no crate of that shape. It holds three now, in `machine_crates()`: that crate
+(accepted by both), the same with the payload `Nat 0`, and the same with the error type `nat` (refused
+by both as `arithmetic: … is not a fallible value`); the counts are 442 `validateCrate` vectors (195
+refused) and 305 `correspondCrate` vectors (81 refused). Planted: the tail rule of `EConstruct`
+refusing every `Err` at a fallible tail again. Observed: `run_boot_validate_crate_std_14: the
+rendering and the Rust oracle disagree on 1 of 126 runs: run 123 … arithmetic: the value a fallible
+function returns, construct:err, is not a fallible value != ok`, the first of the three crates. The
+same reading in `returnsResult`, which only the ends of a loop use, is not observable by a crate of
+this shape and was not planted. `conformance_bs_05` passes every leg through the certified export
+(2,127 s) and fails only at the comparison with the committed packages, the record bound to the
+compiler-semantics ID.
+
+Plants were run with `cargo test -p repo-conformance --test conformance conformance_rb_16`,
+each restored with `git checkout` or the saved file.
+
+Planted (a): one byte added to the shipped copy. Observed: `language/rust-runtime-1.2/RustRuntime.lex.tex
+differs from compiler/src/RustRuntime.lex.tex`.
+
+Planted (b): `Machine.checkedNatAdd` replaced by `Machine.checkedNatMul` in the module (part of
+the case). Observed: the harness fails at `nat_add result`.
+
+Planted (c): the arity check of the decoder removed. Observed: the extra-argument module is
+accepted and the case fails at `a constructor with another number of arguments`.
+
+Planted (d): `runtime::core()` assembling the base alone. Observed: `the embedded module is the
+committed one`.
+
+Planted (e): the differential table emptied. Observed: `the module defines {"nat_add"}, the
+differential covers {}`.
+
+### each core runtime function has its refinement theorem (SP-22)
+
+`refines_nat_add` states, for all `x y : Nat`, `runExport 12 coreCrate "nat_add" [nat x, nat y]
+= runItem core natAdd [nat x, nat y]` and is proved by `term_cases` over the primitive's outcome
+with the definitions the unfolding draws on (`SP-22`, §17.16, #91 stage 4, PR 2); the other thirteen
+natural and integer functions have a theorem of the same form over their primitive, the module's own data definitions
+(parameters, argument reads, the two arms of a checked call) listed with the `RustSemantics`
+ones. the three Boolean functions are proved by `cases` on each Boolean parameter (`SM-36`) with `reflexivity` in each of the two or four branches, because a Boolean has no document inductive for `term_cases` to split on and the two sides agree only on the values. `nat_succ`'s run adds the operand one to the item's list, and `itemOperands` stated that with
+`prim append`, which the proof cannot unfold; its arm now matches the list of one operand and
+states the list of two directly, keeping `prim append` for any other length, so the item's meaning
+is unchanged and the shipped `RustSemantics.lean` is regenerated. The case (`cases/rust_refinement.rs`)
+lists the functions with the decoder and the theorems from the module's data, requires one
+theorem per function with a statement that runs the function it is named for, builds the
+project of the five modules the runtime module imports, and has the pinned Lean verify it
+(about 100 s: 60 for the project, 40 for the planted one). The proof reached the
+conditional of `itemFallible` only through `ite_true` and `ite_false`, which the lowering of
+`term_cases` therefore names (see `SM-35`).
+
+Command and host: `cargo test -p repo-conformance --test conformance -- conformance_sp_22`, in the
+`preservation-runtime` part of `bdd` (`.github/bdd-parts.json`, `bdd-preservation-runtime` in `.github/vv-rows.json`). The theorem-list assertions and their
+plants run on every host; the elaboration of the module and its plants run where
+`leanprover/lean4:v4.32.1` is installed (`lean_backed("SP-22")`), and on the normative host
+(Linux x86-64, §8.3) the case panics rather than skip. Cost of the 18-function record (before the width families) on a 4-core container: 142 s for the
+case, of which about 60 s is the project of the five modules and about 70 s the planted one; the
+18 theorems add under ten seconds to the module (71 s with them, 80 s with none, on the same
+machine, so the difference is inside the noise): under half a second a theorem. The width
+families (92 more functions of the same form, on branch `claude/issue-91-stage4-widths-2`) put 110
+theorems in one module and one crate of 110 functions: it verifies in 8 min 1 s on this host
+(13 min 51 s of CPU), about 4 s a theorem, 11 theorems (one width) in 39 s over the base. An earlier
+record here said that verification did not end in an hour and blamed `findFunction` unfolding
+through the crate; that was wrong. That run's proofs lacked `allWidth` and `hasWidth` in their
+definition lists, so `simp` could not close the goals and kept searching, and a later run was killed
+by rebuilding the binary under it. The width families need `SP-22` in a part of `bdd` of their own
+for the time, not for the crate's length.
+
+Memory (the review of #248): the pinned Lean's peak resident set while `conformance_sp_22` runs the 110-theorem module, sampled every three seconds (`ps -C lean -o rss=`, the largest), is 10,389,084 KiB (10.39 GB) over a case of 442 s (7 min 22 s; 13 min 33 s of CPU) on this 16 GB host, one `lean` process at a time. The harness (cargo, rustc, the lexlean process) adds about 1 GB, so a 16 GB runner has more than 4 GB beyond it, past the two-gigabyte bar the review set for splitting the module, and the module is not split. The leg is not given a memory budget: `RP-14` (§9.4) requires a leg that does not run examples to name no profile, so a `memory_kib` on the `bdd-preservation-runtime` row is refused (`a leg that does not run examples names no profile and no part`, observed with 12582912), and the kernel's OOM kill (this host's cgroup killed a `lean` at 13.6 GB when two large elaborations ran together; a run of one is not near it) stays the failure mode. Giving a `bdd` leg a profile is a change of §9.4 and of `RP-14`, which is the maintainer's.
+
+Plants, each restored: a theorem renamed to `refines_nat_other` (`the module defines` the eighteen names,
+`its refinement theorems are for` the seventeen and `nat_other`); the theorem removed (the same message); the theorem
+run on `"nat_sub"` (`refines_nat_add states the run of nat_sub`); the body changed to the checked
+product (`LLV7002` with `unsolved goals`); the axiom policy changed to `[propext]` (`LLV7005`,
+`violates its exact axiom policy: observed [Classical.choice, Quot.sound, propext]`).
+
+### the core runtime's support items are the definitions of RuntimeSupport (RB-17)
+
+`rust::rt_decode` reads the shipped `RuntimeSupport` module, `rust::rt_validate` checks the crate it
+defines, and `rust::rt` prints it, where `CORE_BASE` stood (`RB-17`, §17.16, #91 stage 4, PR 5). The
+module's one definition `supportCrate` is a crate of `RuntimeSyntax` of 32 items: three `use`s, the
+unit struct `Overflow` with its derives, the alias `R<T>`, the static `WORK`, `tick` and `work`, the
+traits `Same` and `Key`, nine `impl Same` (the Boolean, the eight widths) and ten `impl Key` (the Boolean, the eight widths, and the pair `(A, B)`
+with `A: Key, B: Key`), an `impl Same` for `Ordering`, and the generic `equal` and `compare`. `CORE_BASE` is gone from
+`runtime.rs`; `runtime::support()` is `support_from` of the embedded module and `runtime::core()` assembles it before the
+`RustRuntime` functions (`core_over`). The `source` reader was made shared (`with_reader`, the module named at the entry point), so the two
+modules read through the same closed tables and a refusal says which module it is.
+
+The printed text differs from the base it replaces in form, not in meaning: the macro `scalar!` is
+nine impls, the two atomic imports are one braced `use` (the library table lists them so), a unit tail after a statement is
+not spelled (`warnings = deny` and Clippy refuse `; ()`), and `tick` and `work` are one-line functions as before. `rb_09`
+(the library table), `rb_06` (the lint gate on every committed package), `rb_16`, `rb_17` pass on this tree (170 s together).
+
+Command and host: `cargo test -p repo-conformance --test conformance -- conformance_rb_17 --nocapture` (`RB-17`), in the `rest` part of `bdd`, on a 4-core 15 GB Linux x86-64 container with rustc 1.97.1: 9.6 s for the case once built (the rustc run of the harness is most of it). The case (`cases/rust_support.rs`) requires the shipped copy to be the compiler project's module byte for byte;
+decodes, validates and prints it; requires the embedded support to be that print and to hold no macro, no `alloc`, and no
+`std::`; compiles the handwritten core runtime as module `old` and the printed support with the `RustRuntime` functions as
+module `new` of one crate under the pinned rustc with warnings denied; and runs `equal` and `compare` on every pair of nine boundary values of each
+scalar and 200 seeded pairs, `equal` of every pair of orderings, `compare` of pairs of a scalar with a Boolean in both positions, `tick` on five
+amounts and `work` after each, comparing the debug form of the result and the counted work. Nested keys, which `SP-25` does not prove, are
+validated here: 500 seeded rounds of four comparisons each, two of depth two and two of depth three, with components from a domain of three values so
+that the first components tie and the comparison falls through; the 1,000 depth-three comparisons decided 491 less, 26 equal, 483 greater
+(the case requires every order to occur).
+
+Plants of the module, each refused by the validator by the rule it breaks (`runtime support: <rule>: …`): a `use` of `alloc`
+and a `use` of `std` in the core profile (`profile-root`); a type that is neither declared nor in the table (`type-name`); a type with another
+number of arguments (`type-arity`); a bound on a trait the crate does not declare (`bound-trait`); a method the bound does not provide
+(`method-bound`); an impl that lacks a method of its trait (`impl-complete`), that states another signature (`impl-signature`), of a trait that is not
+declared (`impl-trait`), or whose method is `pub` (`impl-visibility`); a free function that is not public (`function-visibility`); a variable
+not in scope (`variable-scope`); a method of no trait and not in the table (`method-name`); a path no `use` declares (`path-name`); a call outside the
+table (`call-name`); a parameter beyond the generics in scope (`type-parameter`). Five decoder refusals are asserted by message (no
+`supportCrate`; an expression constructor and an item constructor `RuntimeSyntax` lacks; a constructor with another number of arguments; a
+constructor of the other module). Two bodies changed to another result are caught by the differential, not the validator: the counter
+starting at one (`work result`) and the key of a scalar reversed (`compare result`); a third plant, `tick` adding one in place of its argument, was
+refused by rustc (`unused variable`) before it could be caught, and was replaced.
+
+All 24 rules of the validator are planted, and none can be deleted without the case failing: fifteen by a change of the module's text (above) and nine on the decoded crate: a call of `AtomicU64::new` with no argument (`call-arity`), `work` declared twice (`duplicate-name`), `work` taking `&self` (`function-receiver`), an `impl Same` stating a method `extra` (`impl-extra`), the `match` of the pair's `key` with no arm (`match-arms`), `units.cmp()` with no argument (`method-arity`), a parameter of type `Self` in a free function (`self-type`), the trait `Same` declaring its method twice (`trait-method`), and a `use` with no path (`use-path`). The case reads the rule names from the validator's source (the first string literal after each `rule(`) and requires the set of planted rules to equal it, so a rule added to the validator without a plant is a failure of the case. Gate plant: the `match-arms` check removed from `rt_validate.rs` (the case fails at `a match with no arm: ()`, the nine-rule plant having found the crate accepted), restored. The nested-key tally is checked slot by slot (each of the three orders occurs and the three sum to the 1,000 comparisons).
+
+`i128` plant: a `Crate` of `RustSyntax` holding a function with a parameter of `Type::I128` is passed to `correspond`, which refuses it as `type:i128` with `no target-semantics correspondence`; a row added to `CORRESPONDENCE` for it makes this case fail.
+
+Plants of the gate, each restored: `rt_validate::validate` removed from `support_from` (the case fails at its first refusal plant, `a use outside the
+profile`, the print of which shows `use alloc::cmp::Ordering`); `support_from` returning the empty text (the differential fails to compile,
+`cannot find type R in this scope`). `i128`: `RustType.i128` is accepted by the validator and printed, and is the node of `convert`'s parameter; no
+lowering emits it, and `correspond` refuses `type:i128` in a lowered crate as a construct with no target-semantics correspondence (`row()`), so a
+program lowered from the calculus cannot name it; only the runtime profile does.
+
+### the constructs of the heap runtime decode, validate, print, and compute (RB-19)
+
+`RuntimeSyntax` grows by the constructs the `rust-std` runtime's functions are written in (`RB-19`, §17.16, #91 stage 4, H1): three item
+kinds (a tuple struct, a record struct, an enum with unit, tuple, and record variants), six types (`u128`/`i128`, `usize`, `char`, `str`, a slice, `&mut`),
+two literals (a character, a string), five patterns (a `mut` binding, a tuple, a tuple struct, a struct, a literal) and a guard on an arm, and twenty-one expressions (`let` with an optional
+type, an assignment, `if`/`else`, `while`, `while let`, `loop`, `for`, `break`, `return`, a tuple, a struct literal, a binary operation over twelve operators, `!`, a cast, an
+index, a range slice, a dereference, `&mut`, a method call with type arguments, a field by name, a block), with the twelve operators and the three kinds of enum variant: 53 constructors in all beside the 36 of `RB-17`. `RtParam` gains `mutable`, `RtSig` gains
+`exclusive` (`&mut self`), and every record of `RuntimeSupport` is regenerated with the two fields.
+
+Command and host: `cargo test -p repo-conformance --test conformance -- conformance_rb_19` (`RB-19`, in the `rest` part of `bdd`), on the 4-core 15 GB Linux x86-64 container with
+rustc 1.97.1 and the pinned Lean 4.32.1: 22.8 s with `conformance_rb_17`, of which the rustc run of the probe and the Lean check of the module are most.
+
+The probe `RuntimeProbe` (`compiler/src/RuntimeProbe.lex.tex`, shipped byte for byte; 41 items, `std` profile) holds one use of each construct. The case
+requires the shipped copy to be the compiler project's module; decodes, validates, and prints it; requires every constructor (by the identifiers of the decoded crate's debug form,
+each with whether an argument list follows, so that the type `Char` and the literal `Char(` are two) and every operator to occur in it; compiles the printed crate under
+the pinned rustc with warnings denied and runs a harness of 31 assertions (several in loops over seeded or gridded values) against independent computations (`sum_to` against `n(n+1)/2`, `ops` against a
+twelve-by-twelve grid computed in the harness, `collatz_steps` on 1, 6, and 27, a `Drop` impl counted through a static, and so on); has the pinned Lean accept the module as a project of `TargetSyntax`, `RuntimeSyntax`, and itself; and compares SPEC.md §17.16's closed
+table of the standard library (51 names: 6 types, 12 qualified calls, `Some`/`Ok`/`Err`, 27 methods, `parse`, and the traits `Clone` and `Drop`) and its list of the names that allocate with the validator's own (`rt_validate::table`,
+`rt_validate::allocating`), and requires the register to state the 51.
+
+Refusals: the validator has 40 rules (the identifier fix below adds five to the 35 of the heap constructs, eleven of which were new): ten are planted on the decoded crate (`break-position`, `assign-immutable`, `assign-place`, `let-position`, `tuple-arity`, `struct-fields`,
+`pattern-duplicate`, `pattern-fields`, `param-duplicate`, `variant-name`), with `variable-scope`, `call-arity`, `call-name`, `method-name`, `method-arity`, and `type-name` on the new constructs. `RB-17` reads the rule names from the validator's
+source and requires its planted rules and these fifteen (the ten and `char-literal`, `derive`, `identifier`, `struct-head` and `type-scope`) to be exactly them, with `hidden-allocation` planted by its own text plant and by the core profile's refusal of the probe, so a rule added without a plant fails whichever case should have planted it. The core profile refuses the probe as `hidden-allocation` (the eleventh new rule) (the `std` uses removed first, which are
+`profile-root` otherwise). The decoder refuses a constructor `RuntimeSyntax` lacks (`RtExpr.whileLoops`, `RtPat.bindMutt`, `RtOp.remm`) and a constructor with another number of arguments (`breakE` with one).
+
+Names, derives, literals and heads (the read of `021879e4d` on #255, items 1 to 6). `RB-19` plants each site of a refusal and not only its rule name, on the decoded crate, and asserts the rule and the site in the message: the name of a unit struct, a tuple struct, a record struct, an enum, an alias, a static, a trait and a function; the generics of a tuple struct, a record struct, an enum, an alias and a function; a record field, a variant, a record variant's field, a trait method, a parameter, a `use` segment and a `use` alias; a binding and a mutable binding; a field by name; a path tail after a struct, an integer, an enum variant and an imported head; the field name of a struct pattern (as identifiers); the derives of a unit struct, a tuple struct, a record struct and an enum; a character literal of two characters, of none, and in a pattern; a struct literal as the condition of an `if`, the condition of a `while`, the value of a `while let`, the iterator of a `for`, the scrutinee of a `match`, at the left of a comparison, and behind a field; a generic parameter in a `let` type, a cast and a type argument; a variant declared twice; a record struct of unequal names and types; a struct literal of a path that is no record; a tuple variant matched with the wrong number of patterns; a struct pattern of unequal names and patterns; and the five sites of `hidden-allocation` in the core profile (a heap type, `String`, a call, a method, a method with type arguments). The printer's parenthesis on `x + y as u8 < z` is planted by compiling the printed comparison and then the same text without the parenthesis, which `rustc` refuses (`generic arguments`). Each of seven sites was also disabled alone in the validator (the cast-type scope, the field-access name, the pattern-field names, the enum derives, the match head, the character-literal length, the tuple-variant arity) and each failed the case; a control edit that changes nothing left it green. `rt_validate.rs`, `rt_decode.rs` and `rt.rs` are not files of the renderer digest, so no record and no identity moves. Command and host: `cargo test -p repo-conformance --test conformance -- conformance_rb_19 conformance_rb_17`, on the 4-core 15 GB container: 11 s after the build.
+
+Plants of the gate, each restored: the printer writing `-` for `Op::Add` (the harness fails, `attempt to subtract with overflow` in `sum_to`); the `break-position` check of the validator disabled
+(the case fails at `a break outside a loop: ()`). `RuntimeSemantics` gains an arm for each new constructor that is `stuck` (a `blockE` evaluates its block), so the meaning of the constructs is declared only when the heap model gives it one.
+
+Re-verification of `SP-25` after the module grew and its records were regenerated: Command and host: `cargo test -p repo-conformance --test conformance -- conformance_sp_25`, on the 4-core 15 GB Linux x86-64 container with the pinned Lean 4.32.1 and rustc 1.97.1, `lean` sampled every three seconds: 1,450.8 s (24 min 13 s wall, 38 min 32 s user CPU, 19 min 16 s system CPU), peak `lean` 5.98 GB. This figure of the head replaces the 1,440 s and 5.90 GB measured on `59b93d3cc` in the record of `SP-25` that precedes this paragraph.
+The 143 theorems verify with the same axioms and no proof changed.
+
+### each trait method of the support has its meaning checked (SP-25)
+
+`RuntimeSemantics` (`compiler/src/RuntimeSemantics.lex.tex`, 22 KB, generated by the same pass that writes the module, two inductives `RtOutcome` and
+`RtOutcomes` and twelve definitions) evaluates a `RuntimeSyntax` crate over `TargetSyntax.Value` with fuel: `rtEval`, `rtEvalList`, `rtEvalArms`, `rtApply`, `rtEvalBlock`
+are one mutual group, and a method call finds, among the impls of the crate, the first whose self type the receiver has (`findMethod`, `matchesTy`, which
+tags a value by its constructor, takes a `u64` impl for a `Value.nat` and an `i64` impl for a `Value.int`, as the generated Rust does, and lets a parameter and `Self` match any value). `cmp` and `==` are the
+calculus primitives `Prim.compare` and `Prim.equal`. `tick` and `work`, an effect of a static counter, are `stuck` here and held by the work gate
+(`RB-06`, `TC-07`).
+
+`RuntimeSupport` holds 22 theorems and eleven modules `RuntimeKeys<scalar>` hold 121: for each value of the predicate the calculus types as the arguments of `equal`
+(a Boolean, a natural, a width, an `Ordering`: 11) and of `compare` (a Boolean, a natural, an integer, a width: 11, and a pair of two of those: 121), `rtRun 24 supportCrate "<f>" args =
+fromPrimitive (primitive <f> args)`. The scalar theorems are `term_cases` on the primitive's outcome; a pair theorem is `term_cases` on the order of the first
+components (`orderU8 x1 y1`...), with `compareValue`, `primitive`, and `sameOrder` among the named definitions. All 143 verify with exactly `[Classical.choice, Quot.sound, propext]`, the first guess for each.
+The 121 pair theorems are in eleven modules, one per first scalar, because the Lean process that elaborates a module keeps its theorems' terms: 100
+theorems in one module were OOM-killed twice on this 16 GB host (a `lean` at 13.6 GB anon-RSS, once with a second elaboration running, once alone).
+
+Measured (this host, pinned Lean 4.32.1, `ps -C lean -o rss=` every second): `lexlean verify` of all 16 modules, 12 min 28 s, peak 5.86 GB; each `RuntimeKeys` module verified alone (its closure is six
+modules), 127 to 140 s and 5.82 to 5.92 GB (Bool 135 s 5.89 GB, Nat 139 s 5.82, Int 135 s 5.86, U8 132 s 5.86, U16 140 s 5.84, U32 134 s 5.89, U64 135 s 5.89, I8 127 s 5.92, I16 130 s 5.86, I32 129 s 5.83,
+I64 131 s 5.88); `RuntimeSupport` alone 61 s, 0.74 GB. Command and host: `cargo test -p repo-conformance --test conformance -- conformance_sp_25` (`SP-25`, in the `preservation-support` part of `bdd`, a row of `.github/vv-rows.json`), on a 4-core 15 GB Linux x86-64 container with the pinned Lean 4.32.1 and rustc 1.97.1, `lean` sampled every three seconds. Measured on the head `59b93d3cc` (the merge of #248's `ea1026785`, the Runtime modules canonical): 1,440 s (24 min 0 s wall, 39 min of user CPU, 16 min of system CPU) with its two plants, peak `lean` 5.90 GB on the earlier, pre-canonical run of the same tree; the same case measured 815 s (13 min 35 s wall, 22 min 45 s CPU, 8 min system) on the tree before the merge, and 1,442 s on the merged tree before canonicalization. The spread is the host's, not the case's: the system CPU doubles with the wall time, and the module and its theorems are the same. The figure for the head is the 1,440 s.
+
+The case computes the 143 names from the predicate (the scalars from `IntKind::ALL`, `nat`, `int`, `bool`) and compares them with the theorems of the twelve modules; a theorem for a value outside it (`equal_unit`), a
+value without a theorem (a pair theorem removed), and a theorem that states another primitive (`Prim.compare` replaced by `Prim.equal` in a pair theorem) are each refused by name. In Lean, with one theorem kept: the key of a scalar reversed
+(`compare_bool`) and the impl for `u8` made an impl for `bool` (`compare_u8`) each leave `unsolved goals` (`LLV7002`).
+
+What this does not prove. The calculus admits pairs of pairs for `compare` (`orderable` in `calculus/check.rs`), and the 121 theorems stop at a pair of two scalars: each pair level spends a constant of `rtRun` fuel, so the induction over the depth
+needs arithmetic on the fuel under a symbolic depth that the closed proof language does not have (a Nat-arithmetic rewrite step or a fuel-free evaluator, filed for v0.5 as #249). For nested keys the evidence is the differential of `RB-17`, validation and never a proof. The first
+version of the row proved the 81 pairs of nine scalars and left out the natural and the integer, which the calculus types and the generated Rust dispatches to the `u64` and `i64` impls; it was corrected before review.
+
+`SP-22` now asserts that every authored item is in one of two sets (`held` in `cases/rust_refinement.rs`): the functions of `RustRuntime` each name a runtime item (`Item::all()` paths) and have their refinement theorem, and the items of `RuntimeSupport` are of the closed kinds the decoder admits,
+a function of which is `tick` or `work` (held by the work gate) or `equal` or `compare` (held by `SP-25`'s theorems). Planted: `nat_add` renamed `nat_addd` in `RustRuntime` (`` `nat_addd` is an authored function that is not a runtime item``); `tick` renamed `frobnicate`
+(`` `frobnicate` is an authored item in neither the refined functions nor the closed support kinds``); the `equal_` theorems renamed (`` `equal` is an authored item in neither…``).
+
+Order of the register: the row was `SP-24` until the maintainer renumbered it (`SP-24` is #115's on release/v0.5); it is `SP-25`.
+
+### the runtime syntax validator is source and agrees with the oracle (BS-09)
+
+`RuntimeValidate` (`bootstrap/src/RuntimeValidate.lex.tex`, 123 `definition` blocks, 13 `structure` blocks, and 5 `inductive` blocks after the port of the five rules of `RB-19` (before it, 102 `definition` blocks, all with `axioms: []`); the generated part was written by a script that reads the oracle's tables from `rt_validate.rs`, and the port of the five rules is written by hand, in the compiler's canonical form). The axiom audit of the pinned Lean: 24 of the 123 definitions declare `[Quot.sound, propext]` (the seven that compare bytes (`inRangeB`, `identByte`, `identShape`, `identErr`, `identsErr`, `segmentsErr`, `variantProblem`) and the seventeen that reach them (`pathOk`, `genericsOk`, `paramsOk`, `sigOk`, `bindsOf`, `patOk`, `exprOk`, `exprsOk`, `blockOk`, `stmtsOk`, `armsOk`, `fnOk`, `completes`, `pass1Item`, `pass1`, `pass2Item`, `validateRuntime`)), the other 99 declare none, and the audit finds exactly these. The post-port `lexlean verify src/RuntimeValidate.lex.tex` of the twin (the debug binary, the 4-core 15 GB container, nothing else running): 561 s wall, peak resident set of the pinned Lean 1,861,016 KiB, `verified 3 modules`, with every child under `child_timeout_ms` (300 s); under load, with three other `lean` processes, one child passed it (300,011 ms), so a slower host may need that limit raised with the landing regeneration is the twin of `rust::rt_validate::validate`, rule for rule. Its one production root `validateRuntime` is eligible for `rust-std` with the effects `allocation`, `overflow`, `recursion`. Two refusal message formats of the Rust oracle (`crates/lexlean/src/calculus/rust/rt_validate.rs`) are aligned with the twin's byte formatting: `struct-fields` joins the given and declared field lists with `", "` in declaration order (after comparing the sorted multisets of field names), and `method-arity` joins the allowed argument counts with `"/"` instead of Rust's `Debug` slice formatting; `RB-17` and `RB-19` match only the rule prefix and pass unchanged. Lean: `lexlean verify src/RuntimeValidate.lex.tex` on the debug binary, 4-core 15 GB Linux x86-64 container, pinned Lean 4.32.1: 2 min 35 s to 2 min 49 s a run (verified 3 modules); all 102 definitions observe no axiom, read from the staged audit (`#print axioms`), and the module declares `axioms: []` on each.
+
+Command and host: `cargo test -p repo-conformance --test conformance -- conformance_bs_09 --nocapture`, same host (CI part `bdd-bootstrap-runtime`, `LEXLEAN_BDD_PART=bootstrap-runtime`). Measured on the head of this branch, merged with `RB-19`'s identifier, derive, character-literal, struct-head and type-scope rules (#294): the 701-crate corpus (101 named crates, the 46 of before and the 55 site plants of `RB-19` (which include the 5 sites of `hidden-allocation`), and 600 seeded mutants, 562 of the 701 refused, by each of the 40 rules the oracle names and by none other) passes the case's count assertions; the evaluator agrees with the oracle on all 701 vectors, each of the eight planted defects is detected, and the rustc differential of the rendered package agrees on all of them, all within the 252 s run of the case, which then stops at the committed export, `bootstrap/validate_runtime is no package of the committed exports`, which the landing regeneration clears; the per-step figures that follow are those of the 646-crate corpus before the five rules: built in 51 s, the evaluator on all 646 at 139 s; each of the eight planted defects is detected (`duplicate names accepted` at vector 22, `one-element tuple accepted` at 37, `break outside a loop accepted` at 30, `private free function accepted` at 15, `std use accepted in core` at 3, `assignment to an immutable name accepted` at 39, `match with no arm accepted` at 25, `heap type accepted in core` at 7); the rendered `rust-std` package builds with 12 harness binaries in 161 s and 646 rustc runs agree with the oracle.
+
+The certificate of the twin outgrew the default limit: the root certificate `R0` of `validateRuntime` is 4,048,982 bytes at `heap-validate` (96.5% of `max_file_bytes`, 4,194,304) and 4,824,562 bytes with the five rules ported, because every rule over the expression syntax is a match of 35 arms (`exprPrec`, `endsInCast` and `exposed` are three more). `bootstrap/lexlean.toml` therefore sets `max_file_bytes = 6291456` (6 MiB); the bootstrap project's `project_config_sha256` and lock move with the landing regeneration. This is the known limit of the twin: if a part of the certificate passes 6 MiB, the expression syntax is encoded as a shape table instead of matched arm by arm.
+
+`BS-09` is not re-measured by H4a: it cannot run until the landing regeneration produces the `bootstrap/validate_runtime` export package (`conformance_bs_09` stops with `bootstrap/validate_runtime is no package of the committed exports`), and its twin gains the same four families and the parameter as `BS-05`'s, so its measurement follows the regeneration.
+
+At landing regeneration: `tests/production-export/bootstrap/roots.json` adds `validate_runtime`, so the landing regeneration produces the `bootstrap/validate_runtime` export package, measures its `PD-08` stack bound with `LEXLEAN_MEASURE_STACK`, writes the `bootstrap/expected/build` and `bootstrap/expected/verify` records for `RuntimeValidate` (`check-golden` and `verify-examples`), relocks `bootstrap/lexlean.lock` (updating `project_config_sha256` so `lexlean fmt --check` passes), and updates `BS-05`'s corpus counts (which read every manifest under `tests/production-export/`, moving the manifest count by 1 along with the dependent program, crate, run, and refusal counts in `BS-05`'s register statement, SPEC.md §31 row, scenario, and VERIFICATION.md).
+
+The stack bound is now taken after every outcome of the differential is compared, so a package without a recorded bound cannot hide a disagreement. The plants of `RB-17` and `RB-19` are functions (`text_plants`, `ast_plants`, `probe_plants`) that both cases and this one use.
+
+### the memory of a buffer has its laws kernel-checked (SP-26)
+
+`RustMemory` (`compiler/src/RustMemory.lex.tex`, 16 KB, generated and written in the compiler's canonical form; two inductives `Flag` and `Cells`, two structures `Buf` and `Window`, and sixteen definitions) holds seventeen theorems: `size_put`, `get_put_same`, `get_put_below`, `get_put_above`, `size_blank`, `get_blank`, `no_room_at_capacity`, `room_before_slot`, `push_lands_in_slot`, `below_truncated`, `plus_assoc`, `push_at_capacity`, `put_in_slot`, `push_with_room`, `get_truncated`, `window_of_window`, and `window_count` (the count of `subWindow` is `minNat keep (minusNat count skip)`, by `simplify` over `subWindow`). Every statement is total, because the proof language has no hypothesis to assume (a prior theorem can be a rewrite rule, but a premise cannot): a fact about an index below a length is stated for a sum with a gap, or as the result of a guard (`guardGet`, `lessThan`, `both`). `push_at_capacity` states `none` and `push_with_room` states `some` of the buffer with the item in its slot and the length one more. `put` beyond the slots (`CNil`) is a no-op in the model and is not the runtime's behaviour, which refuses out-of-bounds access. Each proof is an induction (generalizing the indices it moves) with a `cases` on the index it consumes and a `simplify` over the definitions it unfolds, `below_truncated` using `term_cases` on `(lessThan at (less + 1))` with `[both, lessThan, minNat]`, `push_at_capacity` and `push_with_room` unfolding `bufPush` and simplifying with the prior theorems `no_room_at_capacity`, and `put_in_slot` and `room_before_slot` as rules, `get_truncated` unfolding `bufGet`/`bufTruncate`, and `window_of_window` applying `plus_assoc`; the lists of definitions were pruned to those the pinned Lean uses, because an unused argument is a verification error. Every definition observes no axiom and every theorem exactly `[propext]`.
+
+Command and host: `cargo test -p repo-conformance --test conformance -- conformance_sp_26`, in the `rest` part of `bdd`, on the 4-core 15 GB Linux x86-64 container with the pinned Lean 4.32.1: 43.9 s wall with the elaboration of the accepted module and of the five planted modules. The proofs were the first of the heap half, and the cost of a theorem was seconds, not the 15 to 40 minutes the plan estimated for a module family.
+
+Plants of the gate, each applied alone to the finished module and restored: a write that lands elsewhere (`put` replaces the slot with the old one, leaving `⊢ some head = some item` unproved in `get_put_same`), a write that drops a slot (`put` returns the tail, leaving `⊢ size tail = size tail + 1` unproved in `size_put`), an order of indices that is reversed (`lessThan` says no for index zero, leaving `⊢ some item = none` unproved in `get_put_same`), and a truncation that keeps one too many (`minNat` adds one, leaving `⊢ lessThan lower (minNat less oldLess + 1)` unproved in `below_truncated`), and a push that adds two to the length (`bufPush`, leaving the length one too large in `push_with_room`) are each refused by Lean as `unsolved goals`; a theorem renamed for another function, a law without a theorem, and a theorem that states another function (`plus_assoc` does not state `plus`) are each refused by the listing before Lean runs.
+
+### the representation of a list has its abstraction theorems kernel-checked (SP-27)
+
+`RustLists` (`compiler/src/RustLists.lex.tex`, 46 KB, generated and written in the compiler's canonical form; the inductives `Store`, `Terminal`, `Landing`, `Out`, the structures `Handle`, `Taken`, `World`, and thirty-one definitions) holds the 53 theorems the case lists: ten on cells (the push of a run, the two unconses, growth and its room, the truncation of a run), seven on the walk of a store (`walk_cons`, `cons_frame`, `full_is_capacity`, `walk_alloc`, `alloc_frame`, `walk_uncons`, `walk_uncons_last`), nine on the cons of a handle (`cons_in_place`, the law for a buffer with room, closed by simplifying with `min_keeps_run`, `room_before_slot` and `put_run_abs` as rewrite rules; views and stores, the in-place choice by `aloneOn`, the frame of other handles), six on its uncons, nine on who holds a buffer, four on the release of a chain, and the allocation, the holder and the held-store laws among them (`alloc_capacity`, `alloc_length`, `cons_held_store`, `apart_*`, `holds_apart_*`). The room of the in-place cons is the guard `F = lessThan m (size slots)` of `bufPush` with `m = minNat n len`, and the theorems state what follows from it as separate premise-free laws, because `bufPush` is not recursive and a hypothesis cannot be assumed: `walk_cons` reads the cons back as a pick by `F` between the pushed run and the old run, `push_run_abs` shows that where `F` holds the pushed run is the item before the old one, `full_is_capacity` shows that a refused push is `F` failing, and `min_keeps_run` and `truncate_keeps_run` (on `bufTruncate`) that `m` is the run when the buffer is at least as long. The proofs are inductions on the store, the cells, or the length, with `term_cases` on the one flag a case-of-case needs (the guard, the holder test, `isFull`) and `apply` of the theorem a handle-level statement instantiates; the lists of definitions of the five `term_cases` were pruned to what the pinned Lean uses. Every definition observes no axiom, and every theorem exactly `[propext]` except `uncons_run_taken` and `uncons_last_taken`, which are reflexivity and observe none.
+
+Command and host: `cargo test -p repo-conformance --test conformance -- conformance_sp_27`, in the `rest` part of `bdd`, on the 4-core 15 GB Linux x86-64 container with the pinned Lean 4.32.1: 83.9 s wall with the elaboration of the accepted module and of the ten planted modules. `lexlean verify` of the module alone, with `RustMemory` and `TargetSyntax`, is 18 s on the debug binary. The estimate was 15 to 40 minutes a module family.
+
+Plants of the gate, each applied alone to the finished module and restored, and each asserted by the theorems Lean refuses and the diagnostic it gives (ten plants): a cons that writes the wrong slot (the buffer not truncated to the run: `walk_cons` and `cons_in_place`, unsolved goals), an uncons that reads the wrong slot (`walk_uncons`, `walk_uncons_last`, type mismatch), a shared run written in place (`cons_view` and `cons_held_store`, unsolved goals), a write that reaches the next buffer (`cons_frame`, unsolved goals), a release given a step too few, a chain counted one short (`release_ends`, unsolved goals), a growth that drops the slots it grows (`grow_run_abs`, `grown_has_room`, type mismatch), a fresh buffer that is not at the length of the store (`cons_alloc_view`, type mismatch), a refusal that is the opposite of the capacity (`full_is_capacity` and `cons_in_place`, unsolved goals), a fresh buffer one slot short of the capacity of sixteen (`alloc_capacity`, `rfl` failed), and a holder that does not block the write (`own_blocks`, unsolved goals); a theorem renamed for another function, a law without a theorem, and a theorem that states another function are each refused by the listing before Lean runs.
+
+### the meaning of the buffer, clone, and replace primitives has its laws kernel-checked (SP-28)
+
+`RustPrims` (`compiler/src/RustPrims.lex.tex`, 14 KB, generated and written in the compiler's canonical form; the structure `Replaced` and twelve definitions) holds the 21 theorems the case lists: four that state the calculus primitives `append` and `length` on a list (`prim_append_nil`, `prim_append_cons`, `prim_length_nil`, `prim_length_cons`, reflexivity), seven on the reading of cells (`first_of_front`, `first_of_snoc`, `first_of_take`, `length_of_items`, `less_than_itself`, `append_nothing`, `put_into_blank`), four on a buffer (`new_reads` about `bufNew`, `push_reads`, `truncate_reads`, `length_reads`), and six on the clone, alone, and replace primitives (`clone_reads`, `clone_holds`, `clone_blocks`, `alone_without_others`, `replace_old_reads`, `replace_now_reads`). Of these `clone_reads`, `clone_holds`, `alone_without_others`, `replace_old_reads` and `replace_now_reads` restate definitions (an identity, a projection) and are checked as that and no more. The statements are total, a valid buffer being `append front back` with length `size front`. `push_reads` is `cases` on the room: with a slot it simplifies with `push_with_room` of `RustMemory` and `first_of_snoc` as rules; full, with `append_nothing`, `less_than_itself`, `room_after_growth` of `RustLists`, `put_into_blank`, and `first_of_snoc`. The others are inductions and `simplify` with the prior theorems of this and the imported modules as rules (`holder_on_own_buffer`, `holder_blocks`). Every definition observes no axiom, and every theorem exactly `[propext]` except the reflexivities (`clone_reads` and the four primitive laws), which observe none.
+
+Command and host: `cargo test -p repo-conformance --test conformance -- conformance_sp_28`, in its own part of `bdd` (`preservation-prims`, the row `bdd-preservation-prims`), on the 4-core 15 GB Linux x86-64 container with the pinned Lean 4.32.1: 120.9 s wall with the elaboration of the accepted module and of the seven planted modules, peak resident set of the pinned Lean 750,180 KiB (0.75 GB) (one `lean` at a time, sampled every three seconds); `lexlean verify` of the module alone, with `RustLists`, `RustMemory` and `TargetSyntax`, is 24.4 s on the debug binary.
+
+Plants of the gate, each applied alone to the finished module and restored, and each asserted by the theorems Lean refuses and the goal it leaves: a push that puts the item in front (`push_reads`), a full buffer that is not grown (`push_reads`), a truncation that keeps one too many (`truncate_reads`), a clone that does not hold (`clone_reads`, `clone_holds`, `clone_blocks`), a replace that returns the new value (`replace_old_reads`, `replace_now_reads`), a length that counts one more (`length_reads`), and a new buffer that is not empty (`new_reads`) are each refused by Lean; a theorem renamed for another function, a law without a theorem, and a theorem that states another function are each refused by the listing before Lean runs.
+
+### the list, byte, and text functions of the std runtime are source, and their refinement is kernel-checked (SP-29, RB-20)
+
+`RustStd` (`compiler/src/RustStd.lex.tex`, shipped byte-identically as `language/rust-runtime-1.2/RustStd.lex.tex`) defines fourteen functions and `stdCrate` (profile `std`): `append_list`, `length_list`, `index_list`, `slice_list` (the list functions, generic in a parameter `list(param 0)`) and `append_bytes`, `length_bytes`, `length_string`, `index_bytes`, `slice_bytes`, `utf8_encode`, `utf8_decode`, `compare_bytes`, `split_exact`, `join` (the byte and text functions, over `bytes`, `str`, `fixed u32`, `list(str)`). The body of each is one machine call on its moved parameters (`Machine.listAppend`, `listLength`, `listIndex`, `listSlice`, `bytesAppend`, `bytesLength`, `stringLength`, `bytesIndex`, `bytesSlice`, `utf8Encode`, `utf8Decode`, `bytesCompare`, `stringSplit`, `stringJoin`; families 26 to 39), and each of the fourteen theorems `refines_<function>` says: for every value of its parameters, `runExport 12 stdCrate "<function>" args` equals `runItem std Item.<item> args`, by `term_cases` on `TargetSemantics::primitive Prim.<primitive>`. The definitions list of each is the same 40 of the 51 names of the unpruned list, pruned as a set (each name was dropped alone against the 14-theorem module, and the eleven that Lean still accepted were dropped together); their axioms are exactly `[Classical.choice, Quot.sound, propext]`. This is the whole of what is kernel-checked: the walks with their work ticks live in the methods of `List`, `Bytes`, and `Str` of the `std` text, and they are evidence, held by the abstraction theorems of `SP-27` and `SP-28`, by the validator twin of `BS-09`, and by the differential of `RB-20`. `parse_int` (fallible, over the decimal helper) and the `decimal!` modules are not in this row. The length walk's count uses `checkedNatAdd` and overflows where the `natResult` of `Prim.length` overflows, which the differential cannot reach (it cannot build 2^64 cells), so that point is declared and not exercised.
+
+`conformance_sp_23`, which holds the declared machine to its constructors, asserts `machine[17..26]` the nine natural and integer primitives, `machine[26..]` the fourteen std ones in order, and the length 40; it passes with the pinned Lean.
+
+Command and host: `cargo test -p repo-conformance --test conformance -- conformance_sp_29` (164.8 s, peak resident set of the pinned Lean 717,500 KiB, one `lean` at a time, sampled every three seconds, on the 4-core 15 GB container) and `conformance_rb_20` (passes in about 40 s after the build). `lexlean verify` of the scratch project with the five modules: 63 s, against 52 s for the four without the module and 48 s with the fourteen machine arms and no module (the arms cost nothing measurable; the fourteen theorems about 15 s, a second each). Measured on a host that was busier than the one of the figures for the first four functions (39 s, 39 s, 46 s), so the ratios and not the seconds compare.
+
+Plants of the gate, each applied alone to the finished module or to the generated text and restored: a theorem for another function, a function without a theorem, and a theorem that runs another function are each refused by the listing before Lean runs; a machine call whose primitive is another (`Prim.natEq` in the open goal), and a theorem that states another runtime item (the goal `= RustSemantics.ROutcome.stuck` left open), are each left unproved by Lean, the diagnostic pointing at the declaration of `refines_length_list`; a function of the oracle taken out of the generated text (`length_bytes`) is refused by the check that none is lost; a machine call with two operands of a one-operand primitive is refused by the validator that checks every rendering; a walk that counts two for a cell (`length_list result`), a walk that ticks an extra time (`length_list work`), an append with the lists the other way (`append_list`), an index at the next position (`index_list`), a slice short by one cell (`slice_list`), a comparison that does not count its first unit (`compare_bytes work`), a join that does not count its delimiters (`join work`), a split that refuses the maximum itself (`split_exact`), a decoding that does not count its bytes (`utf8_decode work`), a slice of bytes that counts one more (`slice_bytes work`), and a signature without its type parameter (the pinned rustc: `cannot find type `T``) are each refused by the differential; and a module with no std crate, a std crate of another profile, a machine primitive or a type the syntax lacks is refused by the decoder for the rule it breaks.
+
+The differential compares the result and the counted work of the fourteen functions on lists of every length from 0 to 70 and of 1,000, 4,096 and 200,000 cells (four shapes each), on nine byte strings (empty, one byte, three, seventy, a thousand and 4,096 bytes, valid UTF-8 with a two-byte scalar, invalid, truncated) and eight texts (empty, one letter, multi-byte, with empty fields, a separator, 2,000 two-byte fields, 4,500 bytes, a four-byte scalar), at the positions, counts, delimiters and maxima that include the ends and the largest `u64` and `u32`.
+
+The bootstrap project: the twin of `RustValidate` names a machine call by its family and learns the thirty-first to fortieth (`bytes_append` to `string_join`); `BS-05`'s hand-built machine crates become 51 (`MACHINE_CRATES = 40 + 3 + 1 + 2 + 2 + 3`: forty families, three, and the loop, branch, and parameter crates), its vectors 460 `validateCrate` (209 refused) and 323 `correspondCrate` (96 refused), the evaluator's 434 and 297 (`EVALUATOR_CORRESPOND = 297`). The case ran with `bootstrap/lexlean.lock` relocked locally (not committed): 2,183 s on the 4-core 15 GB container, every count assertion passes, and it stops at its last assertion, "the exported package files are the committed ones", which clears with the landing regeneration. The certificate of `RustValidate` is 4,221,900 bytes with the ten families, 27,596 bytes over the 4,194,304 default (its first run stopped with `LLS8002`), so the bootstrap project's `max_file_bytes` is 6 MiB here as at `BS-09` (the same line of `bootstrap/lexlean.toml`, which merges without a conflict).
+
+### the types, impls, and helpers of the std runtime are source (RB-20, RB-19, BS-09; H5a)
+
+`RuntimeStd` (`compiler/src/RuntimeStd.lex.tex`, 80,160 bytes, shipped byte-identically as `language/rust-runtime-1.2/RuntimeStd.lex.tex`) defines `stdSupportCrate`, a `std` crate of `RuntimeSyntax` of 18 items: the types `Str`, `Bytes`, `Node`, `Repr`, and `List` with their impls (including the cursor loops that replace the handwritten closure `walk`), `chars`, and the `Same` and `Key` impls of texts and byte strings. `runtime::std_types_from` decodes it, validates it with `RuntimeSupport`'s items under the std profile, and prints it; `std()` is that text, the decimal text (`STD_DECIMAL`, still handwritten here), and the `RustStd` functions. The validator learns the associated function of a declared type (`Str::lit`): a call `[Owner, name]` that is not in the closed table or a variant is checked against the impl functions without a receiver of the declared type (the first of a name stands for it). Its Lean twin follows (`tyOwner`, `associatedArity`, `addAssociated`, `addImpl` in `RuntimeValidate`; the associated functions are kept in the scope's function list under `Owner::name`). Two plants in `probe_plants` (`Gauge::fresh()` with another number of arguments, `Gauge::absent`) are refused by both. The printer writes `x = x + e` as `x += e`, because the package's Clippy gate refuses the first (`assign_op_pattern`; `rb_06`, `rb_07`, and `rb_09` failed on it).
+
+Measured: `conformance_rb_20` with the Lean check of `RuntimeStd` and `conformance_rb_19` together 66.5 s; `lexlean verify` of the scratch project with `TargetSyntax`, `RuntimeSyntax`, and `RuntimeStd`: 12 s, peak lean 295,564 KiB, against 12 s and 93,176 KiB with `RuntimeProbe` in its place (the term is an inhabitant of `RtCrate`, no theorem, so there is no kernel work beyond elaboration; far from the 300 s `child_timeout_ms`). `conformance_bs_09` with `bootstrap/lexlean.lock` relocked locally (not committed): 648 vectors (48 named, 600 mutants, 495 refused), the evaluator agrees on all 648, the rendered `rust-std` package builds with 12 harness binaries and 648 rustc runs agree, each of the eight planted defects is detected; it stops where it stopped before, "`bootstrap/validate_runtime` is no package of the committed exports", which clears with the regeneration. No certificate of a root changes size by construction except `RuntimeValidate` (three small definitions), whose certificate is produced by the regeneration; `RustValidate` and `BS-05` are untouched.
+
+The differential of `RB-20` now covers the types too: `lost` checks every public function, struct, enum, and impl head of the oracle against the generated text (a private helper is not part of the surface), the lists of texts of `join` are built in the four shapes (a first plant, a join that did not count its delimiters on the cells in front, was not found while only fresh lists were built), and the building and taking apart of lists and the equality and order of texts and byte strings are compared in result and counted work.
+
+### the runtime text is printed and never held (RB-21; H5b)
+
+`RuntimeStd` now holds the number text too (`canonical_decimal`, `parse_int`, and the sixteen `format_` and `parse_` functions): 36 items, 110,004 bytes, shipped byte-identically. `STD_BASE` (H5a: `STD_DECIMAL`) is gone from `runtime.rs`; `std()` is the printed `RuntimeStd` followed by the `RustStd` functions, and the library table lost the rows nothing uses (`map`, `map_err`, `macro_rules`).
+
+The last pass of the differential is commit `5668466ab`: the harnesses of `RB-16`, `RB-17`, and `RB-20` were made single-module (every call goes through a recorder that folds, per label, the debug form of what the call returned and the work it counted into a 64-bit FNV-1a digest), run once on the handwritten runtime (`tests/rust-runtime-oracle/{core,std}.rs.txt`) and once on the printed one, and the two transcripts agreed on every label: `conformance_rb_16`, `conformance_rb_17`, `conformance_rb_20` passed with `LEXLEAN_WRITE_GOLDEN=1`, which wrote `tests/rust-runtime-golden/{core,support,std}.txt` (110, 4, and 36 labels) from the agreeing run, and without it. The decimal functions were compared there for the first time: all sixteen `format_`/`parse_` and `parse_int` on 41 numerals (canonical and not, at the bounds of every width, 100 and 60 digits past `i128`) and on the bounds of each width. The next commit removes the oracle and the writing switch; the cases then compile the printed runtime alone and require its transcript to be the golden one. Evidence, not proof: a 64-bit digest per label, over the calls the harness makes; the golden transcript is what the handwritten runtime did, and says nothing about calls the harness does not make. Plants (each applied alone to the printed text and restored, caught by a label naming the function): a walk that counts two for a cell (`length_list`), an extra tick (`length_list`), an append the other way, an index of the next position, a slice short by one, a comparison without its first unit, a join without its delimiter ticks on the cells in front (found only after the lists of texts were built in four shapes), a split refusing the maximum, a decode without its ticks, a slice that counts one more, and a function renamed out of the generated text (the harness does not compile).
+
+`RB-21` is the planted-constant gate in the manner of `VR-19`. `cases/rust_runtime_text.rs` reads every string literal of `crates/lexlean/src/**/*.rs` with a reader of its own (comments, character literals and lifetimes, strings with the escapes that bear on lines, raw strings) and refuses a literal with a line that starts, after an optional `pub`, with `fn`, `struct`, `enum`, `trait`, `macro_rules!`, or `impl` and a name; a head with a placeholder where the name stands, or with doubled braces (the heads of format strings: `impl Fn{fn_type} {{` and `fn apply(&self, {}){} {{` of the closure printer in `ast.rs` were the two it found first), is a template. There is no list of literals it lets pass. It must read `runtime.rs`, `rt.rs`, and `ast.rs` and more than a thousand literals. Falsified three ways: (1) the five planted constants of the case (a `const` string with a function, a raw string with an impl, a macro definition, a type in a longer text, a generic function on a line of a longer text), each appended to a copy of `runtime.rs`, are found in it and only there; (2) the removed text itself: the `STD_BASE` of `8b2218975` appended to `runtime.rs` is refused (`crates/lexlean/src/calculus/rust/runtime.rs:595: struct Str(std::rc::Rc<str>);`) and the file restored; (3) before the removal commit the case is red on the oracle directory (`tests/rust-runtime-oracle is gone`). Limit, named: a head written with doubled braces passes as a template, so the gate keeps out a runtime text as it stands, and a format string that prints one is the printers' business (`RB-08`, `RB-09`).
+
+Two repository records were stale and are fixed here: `model/ids.toml` listed `RB-20` after `SP-29` while the §31 table lists it after `RB-19` (`conformance_rp_07`), and the README ranges `RB-01`..`RB-19` and `SP-01`..`SP-28` (`conformance_rp_11`). `conformance_rp_10` fails on the 1.0 ID the compiler-semantics ID moves, which is left to the regeneration.
+
+### the first failing lines of the H5b plants, the decimal text, and the largest module (H5b)
+
+`STD_DECIMAL` left `runtime.rs` in `5668466ab`, with the decimal functions in `RuntimeStd`; the comparison at that commit was against the oracle in `tests/rust-runtime-oracle/` (the decimal functions were compared there for the first time), and the golden was written from the agreeing run. First failing line of each plant of `conformance_rb_20` (the case prints it with `--nocapture`): a walk that counts two for a cell, ``the transcript differs in: length_list``; an extra tick for the whole list, ``the transcript differs in: length_list``; an append the other way, ``…: append_list``; an index of the next position, no transcript, the harness panics (``thread 'main' panicked at p/runtime_diff/src/lib.rs:684``: the walk indexes past the cell); a slice short by one, ``…: slice_list``; a comparison without its first unit, ``…: compare_bytes``; a join without its delimiter ticks, ``…: join``; a split refusing the maximum, ``…: split_exact``; a decode without its ticks, ``…: utf8_decode``; a slice that counts one more, ``…: slice_bytes``; a changed byte in the number text (`strip_prefix('-')` for `strip_prefix('+')`), ``…: parse_i16, parse_i32, parse_i64, parse_i8, parse_int, parse_u16, parse_u32, parse_u64, parse_u8``; a signature without its type parameter, ``error[E0425]: cannot find type `T` in this scope``.
+
+Lean time of the largest module of the changes next to the 1,040 s of the bootstrap verify: `RuntimeStd` (110,004 bytes, 36 items) in the scratch project of `TargetSyntax`, `RuntimeSyntax`, and itself, `lexlean verify`: 12 s wall and peak lean 238,260 KiB (a first run: 15 s), against 12 s for `RuntimeProbe`; the bootstrap verify's 1,040 s is dominated by the certificates of `RustValidate` and `RuntimeValidate`.
+
+### the certificate of `RuntimeValidate` against the limit (BS-09; H5a)
+
+`lexlean verify` of the `bootstrap` project on the head `99f9556d9`, run in a scratch copy of the workspace with `bootstrap/lexlean.lock` relocked there (not in the tree): 1,040 s wall, `verified 7 modules`. The certificate of `RuntimeValidate` (`R6.lex.tex`) is 4,124,964 bytes, under the default `max_file_bytes` of 4,194,304 and far under the bootstrap project's 6,291,456; the certificate of `RustValidate` (`R7.lex.tex`) is 4,221,900 bytes, the figure of H4b, unchanged, as `RustValidate` is untouched. The four definitions the associated-call rule adds to the twin (`tyOwner`, `associatedArity`, `addAssociated`, `addImpl`) are small against it. The others: `R2` 3,192,773 (`CalculusCheck`), `R8` 1,337,418 (`RustValidate`), `R10` 1,278,716 (`TokenAudit`).
+
+### the crate header, the module wrapper, and the compound templates are nodes or declared printer grammar (RB-19, RB-20, RB-21, RB-10, BS-09; H7-audit)
+
+`RuntimeSyntax` gains three `RtItem` constructors, `defined` (a path), `moduleItem` (a name and its members) and `innerAttribute` (a name and its arguments), and `Item::Defined`, `Item::Mod`, and `Item::InnerAttr` are the Rust side of them, one for one. The crate header (`#![no_std]`, `#![forbid(..)]`) is printed by `rt.rs` from `innerAttribute` nodes built from the `Scaffold` record, and `assemble` of `runtime.rs` builds each `pub mod fixed_<w>` as a `moduleItem` of `defined` members whose text the printer is handed; the printed runtime text is byte-identical before and after. The validator names five new rules, `attribute-position`, `attribute-name`, `attribute-args`, `defined-path` and `module-member`; the Lean twin `RuntimeValidate` follows with emptiness-only checks of the path and argument texts, since it has no character-level primitive, and the Rust validator mirrors exactly those checks. A module member is a function or a definition so that the twin has no recursion through a nested inductive.
+
+`IntRem` and `CheckedIntQuot` stay printer grammar, ruled option (c): their text is a compound of two calls of the closed machine primitives, they are declared in SPEC.md §17.16 beside the other one-call templates, and the tuple type that building them from `Let` and `If` nodes would need is not added. The Cargo keys and the shapes of the gate lines are declared there too. `library` is a field of the `Scaffold` record of `RustPackage`.
+
+Plants, each alone and restored. `RB-21`: a format string whose literal text holds an item head (a `fn` item, a `use`, a `static`, a type alias, a module) is refused where its `{{` was exempt before, and only the format argument is exempt now. `RB-10`: a runtime item, a `use`, or a Cargo key written as a literal in `rt.rs`, `rt_decode.rs`, `rt_validate.rs`, or `package.rs` is refused, and the scan reads every `.rs` file of `calculus/rust/`. The first red lines (the plants are appended to the file named, alone, and the case prints what the gate found): `RB-21`, a whole item in a format string with a literal name, appended to `runtime.rs`: `crates/lexlean/src/calculus/rust/runtime.rs:606: `fn tick(units: u64) {{{{ WORK.fetch_add(units); }}}}``; `RB-10`, the `forbid` header parked as a constant in `rt.rs`: `the renderer holds the package scaffolding as text beside its module: rt.rs: the literal "#![forbid(unsafe_code)] " states `unsafe_code``. `RB-19`: an attribute after an item, an attribute outside the closed set, a `forbid` that names no lint, a `no_std` with arguments, a module that holds a `use`, and a definition with an empty path are each refused naming their rule. The shared-write plant, the validator half: a `RuntimeStd` that names `Rc::make_mut` is refused by the closed table (`runtime support: call-name: `Rc::make_mut` is neither declared nor in the closed table`), and one that names `RefCell` or `Cell` the same (`runtime support: type-name: `RefCell` is neither declared nor in the closed table`, likewise `Cell`); `conformance_rb_20` prints the three lines. The model half is `SP-27` (a shared run written in place refuses `cons_view` and `cons_held_store`).
+
+`BS-09` is 709 crates: the 105 that break one rule each (six of them for the nodes of this change) and 600 seeded mutants of the two committed modules, 568 refused, over the 45 rules the oracle names (on the merge of `heap-h6`, whose 703 crates, 99 one-rule crates, 564 refused and 40 rules the six crates and five rules extend).
+
+### the golden transcript: its oracle, its writer, and the red lines of the plants (H5a, H5b)
+
+The oracle the golden transcript was recorded from is the handwritten runtime of `tests/rust-runtime-oracle/` as of commit `5668466ab` (the files are unchanged between `8b2218975` and `5668466ab`): `core.rs.txt` SHA-256 `7f18f40838cbf5b74494efecbd3553c16cd6b0fb42445bdff4c8036b5f0e2a95`, `std.rs.txt` `b1f04395f17fbe6ca8545c14b9e9602163b710195570474e9130d9759194b243`. The differential run that produced it is `conformance_rb_16`, `conformance_rb_17`, and `conformance_rb_20` at `5668466ab`, each of which compiled the oracle and the printed runtime with the same single-module harness under the pinned rustc with warnings denied and required their transcripts to agree on every label before the golden was written (150 labels: 110 `core`, 4 `support`, 36 `std`). The file is now one, `tests/rust-runtime-golden/transcript.txt`, whose header names the format and the SHA-256 of its lines (`lexlean/runtime-transcript/1 sha256:…`); it is written only by `cargo xtask check-golden --write` from the printed runtime (the reviewed rewrite of §28.3; the first file was assembled from the three that the differential wrote, and `cargo xtask check-golden` then found it equal to the printed runtime's transcript, 150 labels, in 10 s). The step runs first in `check-golden`, before the examples, which stop on the stale locks until the regeneration. The comparison is against a recorded transcript of the removed oracle, not against the oracle.
+
+Plants of the comparison, each alone and restored: a changed byte in the generated text (`strip_prefix('-')` for `strip_prefix('+')` in `canonical_decimal`) turns `parse_` labels red, and a changed work count (an extra `tick(1)` in `List::length`, a slice that counts one more) turns `length_list` and `slice_bytes` red, in `conformance_rb_20`; a changed digest, a dropped label, an added label, and a rewritten header of the golden file are each refused by `conformance_rb_21`.
+
+First failing output of the R3 tests of H5a at `ab3ebed03` (before any implementation): `conformance_rb_20`: `compiler/src/RuntimeStd.lex.tex: No such file or directory (os error 2)` at `rust_std.rs:265`; `conformance_rb_19`: `an associated function called with another number of arguments: runtime support: call-name: `Gauge::fresh` is neither declared nor in the closed table` (the validator knew no associated function); `conformance_bs_09` was not run at `ab3ebed03`; its first failure on the working tree that had the twin and the plants and the old counts was `the named crates, the seeded mutants, the vectors, and the refused among them` with left `(48, 600, 648, 495)` and right `(46, 600, 646, 493)`. After the change: `Gauge::fresh()` is refused as ``runtime support: call-arity: `Gauge::fresh` takes 1 arguments, given 0``, `Gauge::absent(())` as ``runtime support: call-name: `Gauge::absent` is neither declared nor in the closed table``, and a `Str::lit` renamed `Str::lit2` in `RuntimeStd` as `call-name` for `Str::lit2` through `std_types_from`.
+
+### the number functions of the std runtime are kernel-checked, and every runtime item has its refinement statement (SP-29, SP-30, RB-20; H6)
+
+`RustStd` defines 32 functions: the fourteen list, byte, and text functions of H4 and eighteen number functions, `parse_int`, `format_int`, and the `format_` and `parse_` function of each of the eight widths. The body of each number function is one machine call: `Machine.formatDecimal w` and `parseDecimal w` (families 40 and 41, at the width), `parseDecimalInt` (42, optional: the overflow of an integer is `None`, which `parse_int` turns into `Err(Overflow)`), and `formatDecimalInt` (43). `machinePrimitive` gives each the existing calculus primitive of the runtime item of the same function: `Prim.formatDecimal`, and `Prim.parseDecimal` at the fixed type or at `Ty.int`. No new primitive meaning is introduced. Each of the 32 theorems `refines_<function>` states `runExport 12 stdCrate "<function>" args = runItem std Item.<item> args` for every value of the parameters, by `term_cases` on the primitive's outcome, with exactly the axioms `[Classical.choice, Quot.sound, propext]`.
+
+`format_int` is new. The runtime item `formatInt` (the decimal text of an integer, `lower.rs` for `Prim.FormatDecimal` at `Ty::Int`) had no function of its own: the generated code called `format_i64`, and no theorem stated the item; `refines_format_i64` states `formatFixed i64` on `Value.i64`, and `RustSemantics` refuses `Value.int` at width `i64` (`machineAccepts`), so no statement about `format_i64` can be one about `formatInt`. `format_int(a: Int) -> Str` is one call of `formatDecimalInt`, whose meaning is `formatDecimal` at the integers, printed `Str::format_i64(a)` because the printed runtime holds the integers as `i64`; `Item::FormatInt` is called as `format_int`, and the bootstrap twin's item row says so. The golden transcript, recorded from the removed oracle, has no label `format_int`: the harness calls `format_int` on the values of `format_i64`'s section, and `HELD_AS` (`cases/rust_runtime.rs`) folds its digest into `format_i64`'s when they are equal and keeps it, so that the transcript differs, when they are not. `transcript.txt` is unchanged (150 labels).
+
+The definitions list is one for all 32 theorems, 63 of the 73 names of the unpruned list, pruned as H4b's: the 40 names H4b and H5 kept and the eighteen number-function definitions (58 names) prove every theorem but the eight `format_<w>` and `parse_int`; against `refines_format_i16` alone each of the other 15 names was dropped alone (`allWidth` and `hasWidth` are needed, the 13 others were then dropped together), and against `refines_parse_int` alone the same (`constructValue`, `evalArms`, and `literal` are needed: its body is a `match` on the optional result); the 63 prove all 32.
+
+Measured, SP-22 protocol (summed peak resident set of the `lean` processes under the run, sampled every three seconds, one `lean` at a time), on the WSL host (Ubuntu 26.04, a memory-capped lane of 4.5 GB of a 16 GB VM shared with other jobs, so the seconds vary between runs and the resident sets do not); `lexlean verify` of the scratch project, the release `lexlean` of the head:
+
+| `lexlean verify` of the scratch project | modules | wall (two runs) | peak lean RSS (two runs) |
+| --- | --- | --- | --- |
+| H5's `RustSyntax`/`RustSemantics` (`45f2f07ef`) | 4 | 33 s, 61 s | 706,124, 719,496 KiB |
+| + the four machine constructors (40 to 43) and their arms | 4 | 30 s, 70 s | 703,224, 744,868 KiB |
+| + `RustStd`, 32 theorems, the unpruned list of 73 names | 5 | 64 s, 100 s | 2,160,296, 2,198,860 KiB |
+| + `RustStd`, 32 theorems, the pruned list of 63 names | 5 | 91 s, 91 s | 1,631,380, 1,649,204 KiB |
+
+- The arms cost nothing measurable, as at H4a and H4b. The 18 number theorems cost about 0.9 GB of peak over H4b's 717 MB: In the warm scratch project, with only `RustStd` re-verified, `refines_parse_int` alone takes 52 to 68 s and `refines_format_i16` alone 27 to 53 s.
+- `conformance_sp_29`: 258.5 s wall, peak lean 1,399,332 KiB, passes (the theorems of the 32 functions and the plants: a theorem for another function, a function without a theorem, a theorem that runs another function, a machine call of another primitive, a theorem that states another item).
+- `conformance_rb_20`: 96.9 s, passes. `conformance_sp_23` (44 machine constructors): 227 s, passes. `conformance_rb_15`, `rb_19`, `rb_21`, `sp_30` pass.
+- Not run here: `conformance_bs_05` (another job's run of it was killed by the 4.5 GB lane at 4.3 GB on this host; it runs in CI on the draft) and the `bootstrap` verify that sizes `RustValidate`'s certificate against the 6,291,456-byte `max_file_bytes`. Its twin grows by two branches of `machineName` and `machineArity` and one changed item row, against the 27,596 bytes over the 4,194,304 default that H4b's ten families made it. The counts of `BS-05` are raised by one per family, as H4a's four and H4b's ten raised them: 55 hand-built machine crates, 464 `validateCrate` vectors (213 refused), 327 `correspondCrate` vectors (100 refused), the evaluator's 438 and 301. On the merge of `heap-h5` (the corpus of `release/v0.4` with the `validate_runtime` package) the case reports 470 `validateCrate` vectors (213 refused) and 333 `correspondCrate` vectors (100 refused), the evaluator's 439 and 302, 803 rustc runs; with both locks relocked locally every count assertion passed, the evaluator agreed on the vectors and the seeded mutants, every plant was detected, and it stopped at "the exported package files are the committed ones" (2,495 s). `BS-06` on the same tree: the twin follows the four decimal families (40 `format_decimal` and 41 `parse_decimal` at the width, 42 `parse_decimal_int`, 43 `format_decimal_int`, printed `Str::format_<w>(`, `Str::parse_<w>(&`, `Str::parse_int(&`, `Str::format_i64(`) and the name `format_int` of the item `Item::FormatInt` (the first run of the rustc differential found `format_i64(a1)` where the oracle prints `format_int(a1)`); 627 `printCrate` vectors (61 refused), 2,083 `printExpr` (1,532 hand-built), 562 evaluator crates; it passed the evaluator, the 2,984 rustc runs, and every plant, and stops at the committed-package assertions (the committed libraries still call `format_i64`; the regeneration rewrites them).
+
+`SP-30` holds every runtime item to its refinement statement. The case (`cases/rust_items.rs`) reads the items from `runtime::Item::all()` (every width: 144 items) and the statements from the theorems `refines_` of `RustRuntime` and `RustStd`, each for the function its statement runs and the item and profile it states, and requires each item but `equal` and `compare` (held by `SP-25`'s theorems) to be stated by exactly one theorem, at its profile, in the module of that profile, on the function `Item::path` gives it. It runs no Lean: that the statements are accepted is `SP-22`'s and `SP-29`'s. First failing line of the R3 commit `113070614`, before `format_int`: ``every runtime item is held: "`formatInt` is a runtime item with no refinement statement"``. Plants, each on a copy and each refused naming the item: `refines_parse_u8` left out (``` `parseFixed u8` is a runtime item with no refinement statement```), `refines_nat_add` left out (`natAdd`), `refines_format_u8` stating `formatFixed u16` (``` `formatFixed u8` … no refinement statement``` and ``` `formatFixed u16` has 2 refinement statements```), `refines_join` stating the core profile (``` `refines_join` states `join` at the `core` profile in the `std` module; the item is of `std` ```), the integer formatting called as `format_i64` as before this row (``` `refines_format_int` states `formatInt` on `format_int`, but the generated code calls `format_i64` for it```), and `SP-25`'s theorems renamed (``` `equal` is a trait item without the theorems of SP-25```).
+
+`RB-20` plants added or changed: a `format_int` that formats another value (`Str::format_i64(-1 - a)`), ``the transcript differs in: format_int``. The plant "an index that finds the next position" wrote `i + 1`, which overflows at the harness's index `u64::MAX` and panicked without naming `index_list`; the case failed for that reason on the accepted H5 head `45f2f07ef` as on this branch (``thread 'main' panicked at p/runtime_diff/src/lib.rs:684:158: attempt to add with overflow``). With `i.wrapping_add(1)` the planted index returns the next item and the first failing line is ``the transcript differs in: index_list``.
+
+The unit test `every_item_exists_with_its_failure_mode` looked a function up as the first line containing `pub fn <path>(`, which is the method `Str::parse_int` of the number text since H5b; it looks up the free function at the start of a line. `the_compiler_semantics_records_the_runtime` fails on the `rust_runtime_core` record, as on the H5 head, until the regeneration.
+
 ### a list of any length is a term Lean elaborates without binders
 
 Lean's `[…]` macro writes a literal of more than 32 elements under `let`
@@ -9310,6 +9926,138 @@ Removed: the source was restored; `conformance_sl_02` passes, in 305 s with
 the production export of both roots under the pinned Lean (`conformance_sl_01`
 in 206 s on the same tree).
 
+`SL-05` holds `LexLeanStd.Buffer` (#92) to Rust's concatenation: the three roots
+`writeAll`, `writeEach`, and `writeNumbers` under the evaluator and under the
+pinned rustc agree with the concatenation of the pieces, the bytes, and the
+decimals on a seeded corpus whose sizes cross the chunk boundary, and with the
+refusal at one byte beyond the capacity. Why the member is chunked: a chain of
+`append_bytes` of one byte copies both operands at each call, so the work the
+rendered runtime counts quadruples as n doubles. Measured with the generated
+runtime of `is_closed_lean_name`, release build, n one-byte appends:
+
+| n | work | time |
+| --- | --- | --- |
+| 10,000 | 50,005,000 | 2 ms |
+| 20,000 | 200,010,000 | 6 ms |
+| 40,000 | 800,020,000 | 37 ms |
+| 80,000 | 3,200,040,000 | 184 ms |
+| 160,000 | 12,800,080,000 | 963 ms |
+
+At the size of the largest committed library (256,713 bytes) the chain costs
+about 3.3e10 units (n squared over two). The chunk size is the measurement of
+the same bytes written as pieces of twelve bytes (`writeAll`, what a printer
+writes) and one by one (`writeEach`), in work units, the time being flat at
+about 50 ms and 350 ms at every size:
+
+| chunk | `writeAll`, 12-byte pieces | `writeEach`, 1-byte writes |
+| --- | --- | --- |
+| 128 | 4,359,112 | 19,634,868 |
+| 256 | 5,512,876 | 35,803,264 |
+| 512 | 7,953,561 | 68,379,787 |
+| 1,024 | 13,210,575 | 133,761,735 |
+| 2,048 | 23,855,901 | 264,577,610 |
+| 4,096 | 45,391,365 | 525,826,906 |
+
+A write copies at most the pending chunk, so its work is proportional to the
+chunk; the join at the end (pairwise merging) adds n log k. The module seals
+at 256 bytes. A chunk of 128 would save 21 percent of 256's work on writes of a
+dozen bytes and 45 percent on one-byte writes, and costs twice the chunks to
+join; the time is flat across the sizes, and the work at 256 is a thousandth
+of the chain's at this size, so the choice between 128 and 256 is not
+material. One-byte writes then cost 551,000 units for 4,096
+bytes, 2,236,000 for 16,384 and 9,077,000 for 65,536 (about 135 units a
+byte at the larger sizes, linear). The contiguous realization the next rendering work can give
+the interface (a registry primitive that writes in place) replaces the chunks
+without touching a root. The case holds the proportion of those three work
+counts within a factor of two of linear.
+
+- **a boundary that refuses at the capacity itself.** `(grown <=? (project
+  buffer capacity))` becomes `(grown <? (project buffer capacity))`: a buffer
+  of exactly its capacity is refused. Run 5 of `writeEach`: the program gives
+  the refusal, the oracle the byte `00`.
+- **a buffer that never seals.** `(256 <=? (prim length joined : Nat))`
+  becomes `(256 <=? 0)`: the bytes are the same, the pending chunk grows by
+  one append per write, which is the chain this member replaces. Under rustc
+  the work of 4,096 and 16,384 one-byte writes is 8,394,753 and 134,242,305, a
+  ratio of 16 for a ratio of 4 in size, and the case fails its proportion.
+
+Certification: `LexLeanStd.Buffer` verifies under the pinned Lean with exact
+axiom policies; only `writeByte`, `byteStep`, and `writeEach`, which reach
+`to_nat`, state `[Quot.sound, propext]`, and no other definition states an
+axiom. The three roots are eligible for `rust-std` with `allocation` and
+`overflow`. `conformance_sl_05` passes up to the comparison with the committed
+packages (the records are regenerated at landing).
+
+`BS-06` holds the two production roots of `LexLeanBoot.RustPrint`
+(`bootstrap/src/RustPrint.lex.tex`, over `RustAst.lex.tex`) to the oracle,
+`calculus::rust::ast::{print, print_expr}`. The case runs 627 vectors of
+`printCrate` (464 the distinct committed crates: 232 lowered by the renderer
+from 173 programs, and the crates of 256 packages; the hand-built crates; the
+real header of each profile; five functions with type parameters; 61 refused for a capacity one byte short) and
+2,083 of `printExpr` (1,532 hand-built: every literal at the edge of each
+width and sign, the 128 ASCII scalars and the edges of UTF-8 in strings, byte
+strings, every runtime row and machine primitive with its operands and with
+one too many, every constructor, pattern, block, conditional, match with a
+scrutinee that begins with a brace, and loop) under the pinned rustc on
+every host (42 harness binaries, 504 s: the part the host matrix runs), and on
+the normative host the evaluator on 562 + 2,083 of them (the crates of at most
+6,000 nodes of data), 400 + 399 seeded mutants of the crates of at most 80
+expressions, 2,984 more mutants under rustc (67 s), thirteen planted defects, and
+the production export of the project (the whole case: 1,658 s on this host,
+4 cores). The two roots certify in 15 min 57 s (`production build` of the
+two roots), and the packages the export publishes are the files the
+regeneration commits. Each root's rendered package recurses with the depth of
+its input; the stack the harness needs, measured by bisecting the stack of the
+built binary on the case's own corpus in a debug build, is 7,077,888 bytes for
+`print_crate` and 4,259,840 for `print_expr` (the rows of `tests/stack-bounds.json`
+that the landing regeneration records). The committed libraries pin the printed
+items; the header before them is the runtime of the committed export, which
+moves with the runtime (#248), so the case holds the header to the vectors that
+give the roots the oracle's own header and holds the committed libraries to the
+items after it.
+
+Each of these thirteen plants is made on a copy of
+`bootstrap/src/RustPrint.lex.tex` on every run (the first disagreement, from
+the case; run numbers index the vectors of the root, the hand-built ones
+before the committed):
+
+- **the quote is not escaped**, `printExpr`, run 80: the program gives
+  `Str::lit("""`, the oracle `Str::lit("\"")`.
+- **the hexadecimal of a scalar is in upper case**, `printExpr`, run 20: the
+  program gives `Bytes::lit(&[0xFF, 0x00, 0x10])`, the oracle the lower case.
+- **the delete character is printed as it is**, `printExpr`, run 83, the
+  string of the 128 ASCII scalars.
+- **the least i64 is spelled as a negative literal**, `printExpr`, run 12: the
+  program gives the refusal of the buffer (the text is one byte longer), the
+  oracle `i64::MIN`.
+- **a width's least value is spelled as a literal**, `printExpr`, run 54:
+  `-128i8` for `i8::MIN`.
+- **the byte string separator has no space**, `printExpr`, run 20:
+  `[0xff,0x00,0x10]`.
+- **a unit result is printed as an arrow**, `printCrate`, run 58.
+- **the indentation is three spaces**, `printExpr`, run 1336.
+- **a comparison under a negation is not parenthesized**, `printExpr`, run
+  232: `!v0 - 1` for `!(v0 - 1)`.
+- **an empty else is written out**, `printExpr`, run 1339.
+- **the blank line between items is dropped**, `printCrate`, run 0.
+- **the empty dispatch is matched with arms**, `printCrate`, run 16.
+- **a type parameter is written `P<n>`**, `printCrate`, run 512: the program gives `pub fn generic<P3: Clone>(p0: P3) {}`, the oracle `pub fn generic<T3: Clone>(p0: T3) {}` (the hand-built function whose parameter is at index 3).
+
+The case's first failure, before the module existed (R3), was `no bootstrap
+case is wired for BS-06`, and `no stdlib case is wired for SL-05` for the
+member. Removed: the source was not changed (the plants are made on copies).
+
+Findings while writing the module, for the next components. Certificate A
+cannot name the variable a `match` is on inside one of its branches (`local
+`node` is unbound`): the module passes the fields of a pattern instead. A
+`bit_and` on a `Nat` is refused (it needs fixed-width operands): the
+module takes a remainder. The names `id` and `first` are reserved by the
+language and by Lean, and the captures of a function are sorted. The
+exact axiom policy of a definition is read from the construct it reaches
+(`to_nat` states both axioms; the other constructs of this module state
+none), and the verifier reports one definition per run, so the first
+declaration of an axiom set is found by reading the construct, not by running.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the
@@ -9688,7 +10436,9 @@ Authoring found four shapes certificate A and certificate B do not accept, each 
 
 ### the bootstrap Rust crate validator can fail its oracle (SPEC.md §17.23, §17.16)
 
-`BS-05` holds the two production roots of `LexLeanBoot.RustValidate` (`bootstrap/src/RustValidate.lex.tex`) to the stage-0 oracle they replace, `calculus::rust::validate::{validate, correspond}`. The 167 distinct programs among the 250 committed package manifests and 122 fixtures lower to 226 distinct crates over both profiles; with 132 `validateCrate` and 12 `correspondCrate` rule runs (each of the 48 reachable refusals three times, found by a seeded mutation search at a fixed seed, which asserts that it reached the target and does not stop short of it), 17 hand-built crates of the merge of moved sets, and 34 hand-built crates of the loop rules, that is 409 `validateCrate` vectors (165 refused) and 272 `correspondCrate` vectors (46 refused), 681 in all. On every host both roots' rendered `rust-std` packages, compiled by the pinned rustc, agree with the oracle on all 681. On the normative host the evaluator agrees on the 200 crates of at most 400 expressions, the rule runs, and the hand-built crates (383 + 246 vectors), and on 500 seeded mutants (271 and 244 refused), and the rendered packages agree on 2,000 further seeded mutants per root. The case passed on the branch merged with `main` after wave 6 (#220), with the production export under the pinned Lean 4.32.1. Every one of these counts is an assertion of the case (`COMMITTED_*`, `RULE_*`, `VECTORS_*`, `EVALUATOR_*`, `SEEDED_*`), so a tree that no longer gives them fails the case instead of leaving this paragraph stale.
+`BS-05` holds the two production roots of `LexLeanBoot.RustValidate` (`bootstrap/src/RustValidate.lex.tex`) to the stage-0 oracle they replace, `calculus::rust::validate::{validate, correspond}`. The 173 distinct programs among the 256 committed package manifests and 122 fixtures lower to 232 distinct crates over both profiles; with 132 `validateCrate` and 12 `correspondCrate` rule runs (each of the 48 reachable refusals three times, found by a seeded mutation search at a fixed seed, which asserts that it reached the target and does not stop short of it), 17 hand-built crates of the merge of moved sets, 34 hand-built crates of the loop rules, and 51 hand-built crates of the machine callee and the overflow value (#91 stage 4, `SP-18`, `RB-15`, `SP-29`), that is 466 `validateCrate` vectors (209 refused) and 329 `correspondCrate` vectors (96 refused), 795 in all. On every host both roots' rendered `rust-std` packages, compiled by the pinned rustc, agree with the oracle on all 795. On the normative host the evaluator agrees on the 201 crates of at most 400 expressions, the rule runs, and the hand-built crates (435 + 298 vectors), and on 500 seeded mutants (271 and 244 refused), and the rendered packages agree on 2,000 further seeded mutants per root. The case passed on the branch merged with `main` after wave 6 (#220), with the production export under the pinned Lean 4.32.1. Every one of these counts is an assertion of the case (`COMMITTED_*`, `RULE_*`, `VECTORS_*`, `EVALUATOR_*`, `SEEDED_*`), so a tree that no longer gives them fails the case instead of leaving this paragraph stale. The figures of this paragraph were measured on the head with `bootstrap/lexlean.lock` relocked locally, because every committed lock is stale under the head's compiler (the compiler-semantics ID has moved); the lock is not committed on a branch, and the regeneration at landing commits the relock.
+
+Measured on the merge of `release/v0.4` (b8ff7bef6) into the stage 4 stack, #248's head `63bd949a3` (this host, `bootstrap/lexlean.lock` and `compiler/lexlean.lock` relocked locally with a freshly built `lexlean` and restored): the counts the case asserts held without a second edit (226 distinct crates from 167 programs among 250 committed manifests; 446 `validateCrate` vectors, 195 refused; 309 `correspondCrate` vectors, 82 refused), every plant was detected, the production export of the module certified under certificate A with `close_forward_references` removed (release/v0.4's union pin, #221, replaces it), and the case failed only at the comparison with the committed packages (`packages/rust-std/audit_tokens/package.json differs from the committed package`), the record bound to the compiler-semantics ID. 1,995 s for the case, 33 min 16 s wall.
 
 The loop rules (the oracle's `Expr::Loop`, SP-19 and RB-14) are `ELoop [Id, Expr]` of the module: ownership of the state across a body that runs again (two refusals, for a name and for a component, naming the least offender in the oracle's order of names), the fallible-tail rule, `apply_types` with `tail = false` for the body, and the correspondence traversal treating the body as a block. The correspondence table was re-diffed against the oracle's `CORRESPONDENCE` after SP-19: 97 rows, and the six that gained `expr:call` (`destructure:pair`, `type:result`, `type:pair`, `construct:ok`, `construct:err`, `construct:pair`) are the only difference from the table first transcribed; the module's table and the oracle's are equal row for row and element for element.
 
@@ -9715,7 +10465,15 @@ Each of these sixteen plants is made on a copy of `bootstrap/src/RustValidate.le
 - **the name a loop's refusal reports not the least** (`(match (idLess who seen)` -> `(match true`), run 164, a hand-built loop crate that moves several outer names: the oracle `ownership: `v1` is moved in the body of a loop that runs again`.
 - **a loop body checked as a tail** (`(applyBlock types decl body false)` -> `(applyBlock types decl body tail)`), run 70: the oracle `arithmetic: an application of Fn0 drops a failure its apply can have`.
 
+The machine callee and the overflow value (#91 stage 4, PR 1b, on `RB-15`): the module has a node for each (`Callee.CalMachine` over a family index, `Lit.LitOverflow`), a table of the 26 families of `RustSyntax.Machine` (name and arity, in the module, as the 50 runtime items are), and the three rules of `validate.rs` that follow from them: the number of operands of a machine call against its primitive's (`machine: `p` receives n operands of a`), the overflow value outside the payload of an `Err` (`overflow: …`), and the construct `call:machine`, which no row of the correspondence has, so `correspondCrate` refuses a crate that holds one as a construct with no row (the refusal that was unreachable from the closed AST before). The encoder encodes both nodes instead of refusing them. `machine_crates()` is the corpus: a call of each of the 26 families with one operand too many (the whole table: a wrong name or arity in it is a different message), a call of three families with the right count (accepted by `validateCrate`), a propagating machine call, the overflow value alone (refused by `validateCrate`, accepted by `correspondCrate`, which has no instance for it), and `Err(Overflow)` (accepted by both): 23 crates, 19 refused by `validateCrate` and 22 by `correspondCrate`. Their three refusals (`machine-arity`, `overflow-stray`, `no-row`) are listed beside the 48 reachable ones as `HAND_BUILT`, because no mutant of a committed crate holds a machine call. A first export of the extended module failed at certificate A, `the certificate row … R6.__fits_78._unsafe_rec depends on ["propext"], its policy pins []`: the scrutinee of the new `argsC` arm was an `if` and its recursive call sat under it; binding the test with `let`, as the module's other recursive arms do, made the export succeed (929 s). Four plants, each detected: the arity not compared (`machine arity not checked`), the stray overflow value accepted, the overflow value in an `Err` refused, and a machine call not an instance of correspondence (the last is detected by `correspondCrate`, the others by `validateCrate`). The case on this head passes through the 20 plants and the certified export of the module and fails at its last leg, the comparison of the exported packages with `tests/production-export/bootstrap/packages` (`audit_tokens/package.json` differs: the committed records are bound to the compiler-semantics ID, and the module's own packages changed), which the maintainer's regeneration wave rewrites. This tree's `bootstrap/lexlean.lock` was relocked locally to run it and is not committed.
+
+Certificate A closes the pinned axioms over the rows it names (found on the nine natural and integer families): a row pinned the axioms of the rows pushed before it, so `__fits_78._unsafe_rec`, which calls `__fits_111._unsafe_rec` of its mutual group, pinned `[]` where Lean prints `propext`, and which of the two came first was an accident of the group's order that the shipped `Machine` change moved. `close_forward_references` takes the pins to a fixpoint over the references among the rows at `finish`. Without it the export of `bootstrap` on this head fails with `LLV7013` at that row; with it the export passes (1,223 s).
+
+H4a (#91 stage 4, `SP-29`, `RB-20`) re-measurement of `BS-05`: the machine grows by four families (26 `list_length`, 27 `list_append`, 28 `list_index`, 29 `list_slice`, arity one, two, two, three) and the type by the parameter (`named` kind 2, `NkParam` of the twin), so the hand-built machine crates are 41 (30 families and eleven) and the counts of the case, on the merge of `release/v0.4` `b06423eaf` (the `validate_runtime` package of the corpus), are 456 `validateCrate` vectors (199 refused) and 319 `correspondCrate` vectors (86 refused), the evaluator's 425 and 288 (the figures before that merge were 450 and 313, 424 and 287). On the merged tree the case ran again on `75db66a07` with both locks relocked locally: every count assertion passed, 775 rustc runs agreed with the oracle, the evaluator agreed on the vectors and the seeded mutants, every plant was detected, and it stopped at the same last assertion (2,405 s). The case ran with `bootstrap/lexlean.lock` relocked locally (not committed): 1,554 s on the 4-core 15 GB container, every count assertion passes, and it stops at its last assertion, "the exported package files are the committed ones", which is bound to the compiler-semantics ID and clears with the maintainer's regeneration.
+
 The case's first failure, before the module existed (R3), was `no bootstrap case is wired for BS-05`; its first failure on the loop work was the conformance crate not compiling against `Expr::Loop`. Removed: the source was not changed (the plants are made on copies). The case no longer has switches that skip a leg (`BS05_QUICK`, `BS05_PLANTS`, `BS05_STOP`): every leg runs on every run.
+
+H4b (#91 stage 4, `SP-29`, `RB-20`) re-measurement of `BS-05`: the machine grows by ten families (30 `bytes_append` to 39 `string_join`), so the hand-built machine crates are 51, the counts of the case, on the merge of `release/v0.4` (the `validate_runtime` package of the corpus), are 466 `validateCrate` vectors (209 refused) and 329 `correspondCrate` vectors (96 refused), the evaluator's 435 and 298 (before that merge: 460, 323, 434 and 297), and the certificate of `RustValidate` is 4,221,900 bytes against the bootstrap project's `max_file_bytes` of 6 MiB (6,291,456). The case ran with `bootstrap/lexlean.lock` relocked locally (not committed): 2,183 s on the 4-core 15 GB container, and it stops at its last assertion, "the exported package files are the committed ones", which clears with the maintainer's regeneration.
 
 ### source packages can fail
 
@@ -10522,3 +11280,146 @@ pins []
 
 The plant was restored with `git checkout`. The same verification with the fix in
 place is the regeneration of the bootstrap records in this change.
+
+## Planted defects for the crate that goes to crates.io (`RP-18`, #260)
+
+`conformance_rp_18` reads `.github/workflows/release.yml` and
+`.github/workflows/crate.yml`, requires the order of their steps (package twice
+and compare, dry-run, archive metadata, identity, then credential, then the one
+upload), and runs `.github/crate-publication.sh` against planted archives,
+checksum lists, refs and environments. It planted nine changes in `release.yml`
+and eight in `crate.yml` in memory, and each must be refused. Each case below was
+also planted in the committed tree, one at a time, with the real test, on Linux
+x86-64 (WSL, Rust 1.97.1), and the file restored with `git checkout`
+(§27.9). The skeleton commit, with the workflows and script set aside, fails:
+`.github/workflows/crate.yml: No such file or directory`.
+
+| Case | Command | Observed |
+| --- | --- | --- |
+| the committed tree | `cargo test -p repo-conformance --test conformance conformance_rp_18 -- --exact` | ok |
+| the upload step loses its `if: steps.upload.outputs.mode != 'none'` | same | ``release.yml job `publish` has no `if: steps.upload.outputs.mode != 'none'` `` |
+| the tag does not run `cargo publish --dry-run` | same | ``release.yml job `publish` has no `cargo publish --dry-run --locked --package lexlean` `` |
+| the readiness job does not compare its two packagings | same | ``crate.yml job `readiness` has no `cmp "$a/package/$crate" "$b/package/$crate"` `` |
+| `identity` ignores the digest `checksums.txt` lists | same | `a checksum line of another digest is refused` failed |
+| `mode` answers `token` when no credential exists | same | `mode for [("HAS_CARGO_REGISTRY_TOKEN", "false"), ("TRUSTED_PUBLISHING", "false")]` failed |
+| a pre-release named `X.Y.0-rc.N` | same | `left: "0.4.0-rc.242"` |
+| the 10 MiB limit lifted | same | `more than 10 MiB is refused` failed |
+
+The script, run by hand on the crate of PrismPM's vendored copy: a package one
+byte from the released one gives `identity: cargo would upload a05cb178…, and
+the release attaches lexlean.crate 6d235250…` (exit 1); a checksum list naming
+another digest gives `identity: … checksums.txt lists 0d235250… for
+lexlean.crate` (exit 1); `prerelease main 242` gives `prerelease: main is not a
+release line (release/vX.Y)`; `stamp 0.4` gives `stamp: 0.4 is not a SemVer
+version`.
+
+The pre-release path was rehearsed on a throwaway worktree of this branch:
+`crate-publication.sh prepare true` on `release/v0.4` printed `0.4.0-dev.243`
+and rewrote the four versions of the root `Cargo.toml` and the matching lock
+entries; two `cargo package --locked --allow-dirty` runs gave byte-identical
+5.0 MiB archives, `cargo publish --dry-run` ended with "aborting upload due to
+dry run", the metadata check passed, and `.cargo_vcs_info.json` named the commit
+with `"dirty": true`.
+
+*What the evidence is.* The case reads text and runs a script; it cannot show
+that GitHub runs the workflows as written. Neither workflow has run on GitHub,
+so the call of `crate.yml` from `release.yml`, `cargo xtask release-artifacts`
+in a clean checkout of the called workflow, and the `--allow-dirty` pre-release
+packaging are first exercised by the first rehearsal or dispatch. No upload was
+attempted and no token was requested or stored.
+
+## The release's evidence is the gate run of the tagged commit (`RP-18`, #34)
+
+### The defect
+
+`release.yml` ran `just vv` whole on one `ubuntu-24.04` runner as the §30.3 CI
+evidence. The gate does not fit the runner's six-hour job limit: in rehearsal 3
+(run 40221304393) the `bdd` recipe alone ran from 19:01Z to 23:15Z, 15,222 s,
+before failing on `conformance_rp_18`, with `examples` (UOR Atlas) still to come;
+rehearsal 4 (run 40244034460, at `93fbe7df9`) was cancelled by hand after five
+and a half hours in the same job. A tag would have failed there, and `image`,
+`manifest`, and `publish` all wait for that job. The gate of the line already
+verifies every tree as the parts of one sharded run (§9.4): run 40233071771 on
+`93fbe7df9` passed its 34 jobs in 1 h 36 min.
+
+### The fix
+
+`release.yml`'s `gate` job runs `.github/release-gate.sh` and no recipe. The
+script finds the `ci.yml` run that was the whole gate on the commit's tree under
+the rule `ci-plan.sh` applies to a push (the commit itself, or the second parent
+of a merge whose tree the merge carries unchanged), requires every job of it to
+have concluded `success` with the Atlas join, every host of the matrix, and
+every leg of `.github/vv-rows.json` present, and writes `vv-evidence.txt` with
+the run, its jobs and their times, and the `vv.txt` transcript of every leg the
+run still retains (GitHub keeps the artifacts 14 days; past that the file says
+so and the job records are the evidence). No run: the job fails naming the
+commits it looked at. SPEC.md §9.4 ("The release's evidence") and the §30.3
+bullet say so; the `ci.yml` header no longer says `release.yml` runs the gate
+whole.
+
+Run by hand against the repository on `93fbe7df9` (`REPO=UOR-Foundation/LexLean
+SHA=93fbe7df9… .github/release-gate.sh`): `release-gate: run 40233071771 … was
+the whole gate on 93fbe7df9… and passed every job`, and the file carried the 34
+jobs and 29 transcripts, 15 of them ending in `vv part: every recipe passed`
+(the Atlas shards end in their shard's line).
+
+### The check can fail
+
+`conformance_rp_18` requires the `gate` job to name `.github/release-gate.sh`
+and `actions: read` and to run no `just` recipe, plants both in memory
+(eleven `release.yml` plants now), and runs the script in a scratch repository
+with a stand-in `gh` against planted runs and jobs. Each case below was also
+planted in the committed tree, one at a time, with the real test, on Linux
+x86-64, and the file restored with `git checkout` (§27.9).
+
+| Case | Command | Observed |
+| --- | --- | --- |
+| the committed tree | `cargo test -p repo-conformance --test conformance conformance_rp_18 -- --exact` | ok |
+| the gate job runs `just vv` instead of the script | same | ``release.yml job `gate` has no `.github/release-gate.sh` `` |
+| the gate job loses `actions: read` | same | ``release.yml job `gate` has no `actions: read` `` |
+| the script accepts a run without the Atlas join | same | `no Atlas join: refused` failed, `left: 0` |
+| the script stops reading every job's conclusion | same | `a failed job: refused` failed, `left: 0` |
+| the script stops counting the hosts | same | `a missing host: refused` failed, `left: 0` |
+| the script stops reading every leg | same | `a missing leg: refused` failed, `left: 0` |
+| the script ignores the tree of a merge's parent | same | `a run on a parent whose tree the merge changed is refused` failed, `left: 0` |
+| the script writes evidence and exits 0 with no run | same | `no run: no evidence is written` failed |
+
+Each planted run in the test is caught by one reading and no other: the failed
+job is a host (the join, the hosts' count, and every leg are still there), the
+missing host leaves every leg and the join, and the missing leg leaves every
+host and the join, so a reading that is removed has a case that passes without
+it.
+
+*What the evidence is.* The case reads text and runs the script against a
+stand-in; the rehearsal that follows this change is what shows GitHub runs the
+job as written, with `actions: read` enough for the runs, the jobs, and the
+artifact download.
+
+### The tag's run refused the evidence the rehearsals accepted (`RP-18`, #34)
+
+The first `v0.4.0` tag run (40321415513, on `aa6593e026d92f4696fe970715c81528ad2c37da`)
+passed every job but `publish the release`, which stopped at `release-check`
+with `ci-evidence: release/vv-evidence.txt does not record the gate passing`.
+The criterion (`crates/model/src/release.rs`) reads the line `just vv` prints
+when the whole gate passes, `vv: the acceptance gate passed`; the file the
+release gate writes carried the run, its 34 jobs and the 29 legs' transcripts,
+each of which ends in its own line (`vv part: every recipe passed` or the
+shard's), and never the gate's. The six rehearsals could not show it: `publish`
+runs on a tag only. Nothing was published (no GitHub Release, no crates.io
+upload); the image tags `0.4.0` and `latest` were pushed by the `manifest`
+job and are pushed again by the next run.
+
+The fix: `.github/release-gate.sh` ends the file with `gate: every job of run
+N passed on <commit>` and the line the criterion reads, as the summary of the
+run; the criterion is `repo_model::release::ci_evidence`, used by
+`release-check` and tested on its own (the legs' lines alone are refused, a
+file naming no commit is refused); and `release_gate_decisions` holds the
+script's output to that function, so the file the gate job writes is the file
+`release-check` accepts. Run by hand on `aa6593e02` the script named run
+40292537147 and the file ended with the two lines.
+
+| Case | Command | Observed |
+| --- | --- | --- |
+| the committed tree | `cargo test -p repo-conformance --test conformance conformance_rp_18 -- --exact` | ok |
+| the script no longer writes the gate line | same | `the evidence satisfies the release criterion` failed: `Err(["release/vv-evidence.txt does not record the gate passing"])` |
+| the criterion accepts the legs' lines | `cargo test -p repo-model the_ci_evidence_criterion` | `left: Ok(())` against the refusal |

@@ -27,7 +27,7 @@ fn schema(name: &str) -> Json {
 }
 
 /// Apply `edit` to the first expression, depth first, it accepts.
-fn edit_first(krate: &mut Crate, edit: &mut dyn FnMut(&mut Expr) -> bool) -> bool {
+pub(super) fn edit_first(krate: &mut Crate, edit: &mut dyn FnMut(&mut Expr) -> bool) -> bool {
     fn block(block: &mut Block, edit: &mut dyn FnMut(&mut Expr) -> bool) -> bool {
         block
             .lets
@@ -988,14 +988,15 @@ pub fn run(id: &str) {
                 .extend_from_slice(b"\npub fn planted(a: u64) -> u64 {\n    a.clone()\n}\n");
             let mut wrong_files = committed_files(&committed);
             let library = String::from_utf8(wrong_files["src/lib.rs"].clone()).expect("utf8");
-            let from = "pub fn nat_sub(a: u64, b: u64) -> u64 { a.saturating_sub(b) }";
+            let from =
+                "pub fn nat_sub(p0: u64, p1: u64) -> u64 {\n    u64::saturating_sub(p0, p1)\n}";
             assert!(library.contains(from), "the plant site exists");
             wrong_files.insert(
                 "src/lib.rs".to_owned(),
                 library
                     .replacen(
                         from,
-                        "pub fn nat_sub(a: u64, b: u64) -> u64 { a.wrapping_sub(b) }",
+                        "pub fn nat_sub(p0: u64, p1: u64) -> u64 {\n    u64::wrapping_sub(p0, p1)\n}",
                         1,
                     )
                     .into_bytes(),
@@ -1503,8 +1504,20 @@ pub fn run(id: &str) {
         "RB-10" | "RB-11" | "RB-12" | "RB-13" => super::rust_scaffold::run(id),
         // §17.13, §17.16: a tail-recursive template renders as a loop.
         "RB-14" => super::rust_loops::run(id),
+        // §17.14, §17.16: the machine callee and the overflow value.
+        "RB-15" => super::rust_machine::run(id),
+        // §17.16: the core runtime is the definitions of `RustRuntime`.
+        "RB-16" => super::rust_runtime::run(id),
+        // §17.16: the core runtime's support items are the definitions of `RuntimeSupport`.
+        "RB-17" => super::rust_support::run(id),
+        // §17.16: the constructs of the heap runtime.
+        "RB-19" => super::rust_heap_syntax::run(id),
+        // §17.17: the std runtime is the base and the definitions of `RustStd`.
+        "RB-20" => super::rust_std::run(id),
+        // §17.17: the runtime text is printed from the modules, never held.
+        "RB-21" => super::rust_runtime_text::run(id),
         "RB-09" => {
-            use lexlean::calculus::rust::runtime::{CORE, STD};
+            use lexlean::calculus::rust::runtime::{core, std};
             use lexlean::calculus::rust_library::{
                 audit, audit_runtime, Kind, Primitive, Role, LIBRARY, PRIMITIVES,
             };
@@ -1517,7 +1530,11 @@ pub fn run(id: &str) {
                 primitives > 0 && LIBRARY.len() > primitives && PRIMITIVES.len() > 1,
                 "an empty table refuses nothing"
             );
-            let runtime = format!("{CORE}{STD}");
+            let runtime = format!(
+                "{}{}",
+                core().expect("the core runtime"),
+                std().expect("the std runtime")
+            );
             let refused = |text: &str,
                            library: &[(Kind, &str, Role)],
                            primitives: &[Primitive],
@@ -1577,14 +1594,14 @@ pub fn run(id: &str) {
             let mut stated = LIBRARY.to_vec();
             let row = stated
                 .iter_mut()
-                .find(|(_, name, _)| *name == "saturating_sub")
+                .find(|(_, name, _)| *name == "<int>::saturating_sub")
                 .expect("the row exists");
             row.2 = Role::Stated(&["wrapping_sub"]);
             refused(
                 &runtime,
                 &stated,
                 PRIMITIVES,
-                "the method row `saturating_sub` cites `wrapping_sub`, which is not a primitive",
+                "the path row `<int>::saturating_sub` cites `wrapping_sub`, which is not a primitive",
             );
             // A primitive no row cites.
             let mut unused = PRIMITIVES.to_vec();

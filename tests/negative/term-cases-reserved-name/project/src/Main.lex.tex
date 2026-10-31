@@ -1,0 +1,42 @@
+\begin{lexlean}{Main}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{name: Flag, type_parameters: [], parameters: [], constructors: [{name: up, fields: []}, {name: down, fields: []}]}
+
+definition{
+  name: flagOf,
+  parameters: [llCase : Nat],
+  result: Flag,
+  body: (if (llCase =? 0) then (ctor Flag.up) else (ctor Flag.down))
+}
+
+definition{
+  name: direct,
+  parameters: [llCase : Nat],
+  result: Nat,
+  body: (match (flagOf llCase)
+    | Flag.up => 1
+    | Flag.down => 2)
+}
+
+definition{
+  name: wrapped,
+  parameters: [llCase : Nat],
+  result: Nat,
+  body: (match (match (flagOf llCase)
+    | Flag.up => (ctor Option.some [Nat] 1)
+    | Flag.down => (ctor Option.some [Nat] 2))
+    | Option.none => 0
+    | Option.some found => found)
+}
+
+theorem{
+  name: agree,
+  parameters: [llCase : Nat],
+  statement: ((direct llCase) = (wrapped llCase)),
+  proof: term_cases{scrutinee: (flagOf llCase), definitions: [direct, wrapped]},
+  axioms: [propext]
+}
+\end{semanticmodule}
+\end{lexlean}

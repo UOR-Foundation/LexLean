@@ -710,6 +710,16 @@ pub enum SemanticProof {
         scrutinee: String,
         branches: Vec<SemanticProofBranch>,
     },
+    /// Language 1.2: a split on the value of a document term. It names a term
+    /// of an inductive type of the document and a nonempty set of prior
+    /// document definitions, and lowers to a split of the goal on every
+    /// constructor of the term's type, with the hypothesis that equates the
+    /// term to the constructor, then `simp only` over the definitions and that
+    /// hypothesis with closed propositions decided (§17.10, `SM-35`).
+    TermCases {
+        scrutinee: SemanticTerm,
+        definitions: Vec<MemberRef>,
+    },
     Induction {
         scrutinee: String,
         /// Other theorem parameters generalized before structural induction.
@@ -2273,6 +2283,7 @@ fn proof_node_count(proof: &SemanticProof) -> u64 {
         SemanticProof::Apply { arguments, .. } | SemanticProof::Law { arguments, .. } => {
             arguments.iter().map(term_node_count).sum()
         }
+        SemanticProof::TermCases { scrutinee, .. } => term_node_count(scrutinee),
     }
 }
 
@@ -3039,6 +3050,7 @@ fn proof_terms(proof: &SemanticProof, visit: &mut impl FnMut(&SemanticTerm)) {
                 visit_terms(argument, visit);
             }
         }
+        SemanticProof::TermCases { scrutinee, .. } => visit_terms(scrutinee, visit),
     }
 }
 
@@ -3065,6 +3077,7 @@ fn proof_terms_mut(proof: &mut SemanticProof, visit: &mut impl FnMut(&mut Semant
                 visit_terms_mut(argument, visit);
             }
         }
+        SemanticProof::TermCases { scrutinee, .. } => visit_terms_mut(scrutinee, visit),
     }
 }
 
@@ -3193,6 +3206,7 @@ fn proof_binders(proof: &SemanticProof, visit: &mut impl FnMut(&str)) {
         | SemanticProof::Congruence
         | SemanticProof::BooleanReflection { .. }
         | SemanticProof::LinearArithmetic { .. }
+        | SemanticProof::TermCases { .. }
         | SemanticProof::Law { .. }
         | SemanticProof::Apply { .. } => {}
         SemanticProof::Constructor { branches } => {
@@ -3479,6 +3493,7 @@ fn proof_type_arguments(proof: &SemanticProof, visit: &mut impl FnMut(&SemanticT
         | SemanticProof::LinearArithmetic { .. }
         | SemanticProof::Decide
         | SemanticProof::Simplify { .. }
+        | SemanticProof::TermCases { .. }
         | SemanticProof::Congruence
         | SemanticProof::BooleanReflection { .. } => {}
         SemanticProof::Constructor { branches } => {
@@ -8289,6 +8304,10 @@ fn check_proof(
             }
             Ok(())
         }
+        SemanticProof::TermCases {
+            scrutinee,
+            definitions,
+        } => check_term_cases(scrutinee, definitions, locals, env),
         SemanticProof::BooleanReflection { reflection } => {
             check_boolean_reflection(reflection, locals, env)
         }
@@ -8479,6 +8498,55 @@ fn check_proof(
             check_elimination_proof(scrutinee, branches, true, locals, env)
         }
     }
+}
+
+/// The hypothesis name `term_cases` introduces (§17.10, `SM-35`).
+const TERM_CASES_HYPOTHESIS: &str = "llCase";
+
+fn check_term_cases(
+    scrutinee: &SemanticTerm,
+    definitions: &[MemberRef],
+    locals: &BTreeMap<String, SemanticType>,
+    env: &Environment<'_>,
+) -> Result<(), String> {
+    require_language_1_2(env, "term_cases proof")?;
+    if locals.contains_key(TERM_CASES_HYPOTHESIS) {
+        return Err(format!(
+            "term_cases reserves internal binder `{TERM_CASES_HYPOTHESIS}`"
+        ));
+    }
+    if definitions.is_empty() {
+        return Err("term_cases requires at least one named definition".to_owned());
+    }
+    if definitions
+        .windows(2)
+        .any(|pair| member_key(&pair[0]) >= member_key(&pair[1]))
+    {
+        return Err("term_cases definitions are not sorted and unique".to_owned());
+    }
+    for definition in definitions {
+        check_member(definition, env)?;
+        if function_info(definition, env).is_none() {
+            return Err(format!(
+                "term_cases unfolds `{}`, which is not a prior document definition",
+                member_key(definition)
+            ));
+        }
+    }
+    let local_names = locals.keys().cloned().collect();
+    check_term(scrutinee, &local_names, env, None, &BTreeSet::new())?;
+    let Some(SemanticType::Named { member, .. }) = infer_term(scrutinee, locals, env)? else {
+        return Err("term_cases splits a term that is not of a document inductive type".to_owned());
+    };
+    let inductive = type_info(&member, env)
+        .is_some_and(|info| !info.class && info.fields.is_empty() && !info.constructors.is_empty());
+    if !inductive {
+        return Err(format!(
+            "term_cases splits a term of `{}`, which is not an inductive type of the document",
+            member_key(&member)
+        ));
+    }
+    Ok(())
 }
 
 fn check_reflection_definition(
@@ -8676,6 +8744,21 @@ fn elimination_binder_types(
             ),
             ("zero".to_owned(), Vec::new()),
         ]),
+        // Language 1.2: a Boolean local splits into its two constructors.
+        // `Bool` is no inductive of the document, so `induction` has no
+        // recursor of its own to name here.
+        SemanticType::Bool => {
+            require_language_1_2(env, "cases on a Boolean local")?;
+            if induction {
+                return Err(format!(
+                    "induction on the Boolean `{scrutinee}` has no hypothesis to bind; use cases"
+                ));
+            }
+            BTreeMap::from([
+                ("false".to_owned(), Vec::new()),
+                ("true".to_owned(), Vec::new()),
+            ])
+        }
         SemanticType::Named { member, arguments } => {
             let info = type_info(member, env).ok_or_else(|| {
                 format!("proof scrutinee `{scrutinee}` has an unavailable inductive type")

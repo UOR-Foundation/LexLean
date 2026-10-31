@@ -22,12 +22,6 @@ use crate::artifact::content_id::Sha256Digest;
 /// The schema tag of a package manifest.
 pub const MANIFEST_SPEC: &str = "lexlean/rust-package/1";
 
-/// Where a package keeps its library: the path its `Cargo.toml` names and
-/// the file the renderer writes, one fact of the package's layout and not a
-/// free parameter of the scaffold (a path that differed would be a crate
-/// that does not build).
-pub const LIBRARY_PATH: &str = "src/lib.rs";
-
 /// The schema tag of a package's provenance.
 pub const PROVENANCE_SPEC: &str = "lexlean/rust-provenance/1";
 
@@ -552,7 +546,7 @@ pub fn cargo_toml_of(scaffold: &super::scaffold::Scaffold, name: &str, version: 
     };
     let mut out = format!(
         "[package]\nname = \"{}\"\nversion = \"{}\"\nedition = \"{}\"\npublish = {}\n\n[lib]\npath = \"{}\"\n\n[lints.rust]\n",
-        name, version, scaffold.edition, scaffold.publish, LIBRARY_PATH
+        name, version, scaffold.edition, scaffold.publish, scaffold.library
     );
     for rustc in &scaffold.rustc {
         out.push_str(&gate(rustc));
@@ -669,10 +663,11 @@ pub fn lower(manifest: &Manifest) -> Result<(ast::Crate, Program, Profile), Stri
 pub fn package(manifest: &Manifest) -> Result<Package, String> {
     let (krate, program, profile) = lower(manifest)?;
     let library = ast::print(&krate)?.into_bytes();
+    let library_path = super::scaffold::get()?.library.as_str();
     let cargo = cargo_toml(manifest)?.into_bytes();
     let runtime = match profile {
-        Profile::Core => runtime::CORE.to_owned(),
-        Profile::Std => format!("{}{}", runtime::CORE, runtime::STD),
+        Profile::Core => runtime::core()?.to_owned(),
+        Profile::Std => format!("{}{}", runtime::core()?, runtime::std()?),
     };
     let provenance = serde_json::json!({
         "spec": PROVENANCE_SPEC,
@@ -690,7 +685,7 @@ pub fn package(manifest: &Manifest) -> Result<Package, String> {
         })).collect::<Vec<_>>(),
         "files": {
             "Cargo.toml": sha256(&cargo),
-            (LIBRARY_PATH): sha256(&library),
+            (library_path): sha256(&library),
         },
     });
     let provenance =
@@ -699,7 +694,7 @@ pub fn package(manifest: &Manifest) -> Result<Package, String> {
             .to_file_bytes();
     let mut files = BTreeMap::new();
     files.insert("Cargo.toml".to_owned(), cargo);
-    files.insert(LIBRARY_PATH.to_owned(), library);
+    files.insert(library_path.to_owned(), library);
     files.insert("provenance.json".to_owned(), provenance);
     Ok(Package { files })
 }

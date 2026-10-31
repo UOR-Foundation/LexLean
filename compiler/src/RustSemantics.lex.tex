@@ -628,7 +628,11 @@ definition{
     | RustSyntax::Item.natEq => values
     | RustSyntax::Item.natLe => values
     | RustSyntax::Item.natLt => values
-    | RustSyntax::Item.natSucc => (prim append values (cons (ctor TargetSyntax::Value.nat 1) (nil TargetSyntax::Value)) : (List TargetSyntax::Value))
+    | RustSyntax::Item.natSucc => (match values
+      | List.nil => (cons (ctor TargetSyntax::Value.nat 1) (nil TargetSyntax::Value))
+      | List.cons head rest => (match rest
+        | List.nil => (cons head (cons (ctor TargetSyntax::Value.nat 1) (nil TargetSyntax::Value)))
+        | List.cons ignoredSecond ignoredMore => (prim append values (cons (ctor TargetSyntax::Value.nat 1) (nil TargetSyntax::Value)) : (List TargetSyntax::Value))))
     | RustSyntax::Item.intAdd => values
     | RustSyntax::Item.intSub => values
     | RustSyntax::Item.intMul => values
@@ -1197,7 +1201,43 @@ definition{
     | RustSyntax::Machine.checkedNeg ignoredWidth => (ctor TargetSyntax::Prim.checkedNeg)
     | RustSyntax::Machine.checkedShl ignoredWidth => (ctor TargetSyntax::Prim.shiftLeft)
     | RustSyntax::Machine.checkedShr ignoredWidth => (ctor TargetSyntax::Prim.shiftRight)
-    | RustSyntax::Machine.tryFrom target => (ctor TargetSyntax::Prim.convert target))
+    | RustSyntax::Machine.tryFrom target => (ctor TargetSyntax::Prim.convert target)
+    | RustSyntax::Machine.bitAnd ignoredWidth => (ctor TargetSyntax::Prim.bitAnd)
+    | RustSyntax::Machine.bitOr ignoredWidth => (ctor TargetSyntax::Prim.bitOr)
+    | RustSyntax::Machine.bitXor ignoredWidth => (ctor TargetSyntax::Prim.bitXor)
+    | RustSyntax::Machine.bitNot ignoredWidth => (ctor TargetSyntax::Prim.bitNot)
+    | RustSyntax::Machine.natEq => (ctor TargetSyntax::Prim.natEq)
+    | RustSyntax::Machine.natLe => (ctor TargetSyntax::Prim.natLe)
+    | RustSyntax::Machine.natLt => (ctor TargetSyntax::Prim.natLt)
+    | RustSyntax::Machine.natRem => (ctor TargetSyntax::Prim.natRem)
+    | RustSyntax::Machine.intRem => (ctor TargetSyntax::Prim.intRem)
+    | RustSyntax::Machine.checkedNatAdd => (ctor TargetSyntax::Prim.natAdd)
+    | RustSyntax::Machine.natSub => (ctor TargetSyntax::Prim.natSub)
+    | RustSyntax::Machine.checkedNatMul => (ctor TargetSyntax::Prim.natMul)
+    | RustSyntax::Machine.natQuot => (ctor TargetSyntax::Prim.natQuot)
+    | RustSyntax::Machine.checkedIntAdd => (ctor TargetSyntax::Prim.intAdd)
+    | RustSyntax::Machine.checkedIntSub => (ctor TargetSyntax::Prim.intSub)
+    | RustSyntax::Machine.checkedIntMul => (ctor TargetSyntax::Prim.intMul)
+    | RustSyntax::Machine.checkedIntNeg => (ctor TargetSyntax::Prim.intNeg)
+    | RustSyntax::Machine.checkedIntQuot => (ctor TargetSyntax::Prim.intQuot)
+    | RustSyntax::Machine.listLength => (ctor TargetSyntax::Prim.length)
+    | RustSyntax::Machine.listAppend => (ctor TargetSyntax::Prim.append)
+    | RustSyntax::Machine.listIndex => (ctor TargetSyntax::Prim.index)
+    | RustSyntax::Machine.listSlice => (ctor TargetSyntax::Prim.slice)
+    | RustSyntax::Machine.bytesAppend => (ctor TargetSyntax::Prim.append)
+    | RustSyntax::Machine.bytesLength => (ctor TargetSyntax::Prim.length)
+    | RustSyntax::Machine.stringLength => (ctor TargetSyntax::Prim.length)
+    | RustSyntax::Machine.bytesIndex => (ctor TargetSyntax::Prim.index)
+    | RustSyntax::Machine.bytesSlice => (ctor TargetSyntax::Prim.slice)
+    | RustSyntax::Machine.utf8Encode => (ctor TargetSyntax::Prim.utf8Encode)
+    | RustSyntax::Machine.utf8Decode => (ctor TargetSyntax::Prim.utf8Decode)
+    | RustSyntax::Machine.bytesCompare => (ctor TargetSyntax::Prim.compareBytes)
+    | RustSyntax::Machine.stringSplit => (ctor TargetSyntax::Prim.splitExact)
+    | RustSyntax::Machine.stringJoin => (ctor TargetSyntax::Prim.join)
+    | RustSyntax::Machine.formatDecimal ignoredFormatWidth => (ctor TargetSyntax::Prim.formatDecimal)
+    | RustSyntax::Machine.parseDecimal parsed => (ctor TargetSyntax::Prim.parseDecimal (ctor TargetSyntax::Ty.fixed parsed))
+    | RustSyntax::Machine.parseDecimalInt => (ctor TargetSyntax::Prim.parseDecimal (ctor TargetSyntax::Ty.int))
+    | RustSyntax::Machine.formatDecimalInt => (ctor TargetSyntax::Prim.formatDecimal))
 }
 
 definition{
@@ -1212,7 +1252,43 @@ definition{
     | RustSyntax::Machine.checkedNeg kind => (ctor Option.some [TargetSyntax::IntKind] kind)
     | RustSyntax::Machine.checkedShl kind => (ctor Option.some [TargetSyntax::IntKind] kind)
     | RustSyntax::Machine.checkedShr kind => (ctor Option.some [TargetSyntax::IntKind] kind)
-    | RustSyntax::Machine.tryFrom ignoredTarget => (ctor Option.none [TargetSyntax::IntKind]))
+    | RustSyntax::Machine.tryFrom ignoredTarget => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.bitAnd kind => (ctor Option.some [TargetSyntax::IntKind] kind)
+    | RustSyntax::Machine.bitOr kind => (ctor Option.some [TargetSyntax::IntKind] kind)
+    | RustSyntax::Machine.bitXor kind => (ctor Option.some [TargetSyntax::IntKind] kind)
+    | RustSyntax::Machine.bitNot kind => (ctor Option.some [TargetSyntax::IntKind] kind)
+    | RustSyntax::Machine.natEq => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.natLe => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.natLt => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.natRem => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.intRem => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.checkedNatAdd => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.natSub => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.checkedNatMul => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.natQuot => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.checkedIntAdd => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.checkedIntSub => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.checkedIntMul => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.checkedIntNeg => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.checkedIntQuot => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.listLength => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.listAppend => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.listIndex => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.listSlice => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.bytesAppend => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.bytesLength => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.stringLength => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.bytesIndex => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.bytesSlice => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.utf8Encode => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.utf8Decode => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.bytesCompare => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.stringSplit => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.stringJoin => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.formatDecimal kind => (ctor Option.some [TargetSyntax::IntKind] kind)
+    | RustSyntax::Machine.parseDecimal ignoredParsed => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.parseDecimalInt => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.formatDecimalInt => (ctor Option.none [TargetSyntax::IntKind]))
 }
 
 definition{
@@ -1227,7 +1303,94 @@ definition{
     | RustSyntax::Machine.checkedNeg ignoredWidth => false
     | RustSyntax::Machine.checkedShl ignoredWidth => true
     | RustSyntax::Machine.checkedShr ignoredWidth => true
-    | RustSyntax::Machine.tryFrom ignoredTarget => false)
+    | RustSyntax::Machine.tryFrom ignoredTarget => false
+    | RustSyntax::Machine.bitAnd ignoredWidth => false
+    | RustSyntax::Machine.bitOr ignoredWidth => false
+    | RustSyntax::Machine.bitXor ignoredWidth => false
+    | RustSyntax::Machine.bitNot ignoredWidth => false
+    | RustSyntax::Machine.natEq => false
+    | RustSyntax::Machine.natLe => false
+    | RustSyntax::Machine.natLt => false
+    | RustSyntax::Machine.natRem => false
+    | RustSyntax::Machine.intRem => false
+    | RustSyntax::Machine.checkedNatAdd => false
+    | RustSyntax::Machine.natSub => false
+    | RustSyntax::Machine.checkedNatMul => false
+    | RustSyntax::Machine.natQuot => false
+    | RustSyntax::Machine.checkedIntAdd => false
+    | RustSyntax::Machine.checkedIntSub => false
+    | RustSyntax::Machine.checkedIntMul => false
+    | RustSyntax::Machine.checkedIntNeg => false
+    | RustSyntax::Machine.checkedIntQuot => false
+    | RustSyntax::Machine.listLength => false
+    | RustSyntax::Machine.listAppend => false
+    | RustSyntax::Machine.listIndex => false
+    | RustSyntax::Machine.listSlice => false
+    | RustSyntax::Machine.bytesAppend => false
+    | RustSyntax::Machine.bytesLength => false
+    | RustSyntax::Machine.stringLength => false
+    | RustSyntax::Machine.bytesIndex => false
+    | RustSyntax::Machine.bytesSlice => false
+    | RustSyntax::Machine.utf8Encode => false
+    | RustSyntax::Machine.utf8Decode => false
+    | RustSyntax::Machine.bytesCompare => false
+    | RustSyntax::Machine.stringSplit => false
+    | RustSyntax::Machine.stringJoin => false
+    | RustSyntax::Machine.formatDecimal ignoredFormatWidth => false
+    | RustSyntax::Machine.parseDecimal ignoredParsed => false
+    | RustSyntax::Machine.parseDecimalInt => false
+    | RustSyntax::Machine.formatDecimalInt => false)
+}
+
+definition{
+  name: machineOptional,
+  parameters: [machine : RustSyntax::Machine],
+  result: Bool,
+  body: (match machine
+    | RustSyntax::Machine.checkedAdd ignoredWidth => false
+    | RustSyntax::Machine.checkedSub ignoredWidth => false
+    | RustSyntax::Machine.checkedMul ignoredWidth => false
+    | RustSyntax::Machine.checkedQuot ignoredWidth => false
+    | RustSyntax::Machine.checkedNeg ignoredWidth => false
+    | RustSyntax::Machine.checkedShl ignoredWidth => false
+    | RustSyntax::Machine.checkedShr ignoredWidth => false
+    | RustSyntax::Machine.tryFrom ignoredTarget => false
+    | RustSyntax::Machine.bitAnd ignoredWidth => false
+    | RustSyntax::Machine.bitOr ignoredWidth => false
+    | RustSyntax::Machine.bitXor ignoredWidth => false
+    | RustSyntax::Machine.bitNot ignoredWidth => false
+    | RustSyntax::Machine.natEq => false
+    | RustSyntax::Machine.natLe => false
+    | RustSyntax::Machine.natLt => false
+    | RustSyntax::Machine.natRem => false
+    | RustSyntax::Machine.intRem => false
+    | RustSyntax::Machine.checkedNatAdd => true
+    | RustSyntax::Machine.natSub => false
+    | RustSyntax::Machine.checkedNatMul => true
+    | RustSyntax::Machine.natQuot => false
+    | RustSyntax::Machine.checkedIntAdd => true
+    | RustSyntax::Machine.checkedIntSub => true
+    | RustSyntax::Machine.checkedIntMul => true
+    | RustSyntax::Machine.checkedIntNeg => true
+    | RustSyntax::Machine.checkedIntQuot => true
+    | RustSyntax::Machine.listLength => false
+    | RustSyntax::Machine.listAppend => false
+    | RustSyntax::Machine.listIndex => false
+    | RustSyntax::Machine.listSlice => false
+    | RustSyntax::Machine.bytesAppend => false
+    | RustSyntax::Machine.bytesLength => false
+    | RustSyntax::Machine.stringLength => false
+    | RustSyntax::Machine.bytesIndex => false
+    | RustSyntax::Machine.bytesSlice => false
+    | RustSyntax::Machine.utf8Encode => false
+    | RustSyntax::Machine.utf8Decode => false
+    | RustSyntax::Machine.bytesCompare => false
+    | RustSyntax::Machine.stringSplit => false
+    | RustSyntax::Machine.stringJoin => false
+    | RustSyntax::Machine.formatDecimal ignoredFormatWidth => false
+    | RustSyntax::Machine.parseDecimal ignoredParsed => false
+    | RustSyntax::Machine.parseDecimalInt => true
+    | RustSyntax::Machine.formatDecimalInt => false)
 }
 
 definition{
@@ -1246,8 +1409,8 @@ definition{
   parameters: [machine : RustSyntax::Machine, values : (List TargetSyntax::Value)],
   result: ROutcome,
   body: (if (machineAccepts machine values) then (match (TargetSemantics::primitive (machinePrimitive machine) values)
-    | TargetSemantics::Outcome.value computed ignoredSteps => (ctor ROutcome.value computed)
-    | TargetSemantics::Outcome.overflow ignoredOverflow => (ctor ROutcome.abort)
+    | TargetSemantics::Outcome.value computed ignoredSteps => (if (machineOptional machine) then (ctor ROutcome.value (ctor TargetSyntax::Value.some computed)) else (ctor ROutcome.value computed))
+    | TargetSemantics::Outcome.overflow ignoredOverflow => (if (machineOptional machine) then (ctor ROutcome.value (ctor TargetSyntax::Value.none)) else (ctor ROutcome.abort))
     | TargetSemantics::Outcome.stuck => (ctor ROutcome.stuck)
     | TargetSemantics::Outcome.exhausted => (ctor ROutcome.stuck)) else (ctor ROutcome.stuck)),
   axioms: [Classical.choice, Quot.sound, propext]
@@ -1366,7 +1529,10 @@ definition{
     | RustSyntax::RustType.fn ignored554 => false
     | RustSyntax::RustType.rc ignored555 => false
     | RustSyntax::RustType.fallible ignoredInner => true
-    | RustSyntax::RustType.ref ignored556 => false)
+    | RustSyntax::RustType.ref ignored556 => false
+    | RustSyntax::RustType.overflow => false
+    | RustSyntax::RustType.i128 => false
+    | RustSyntax::RustType.param ignoredParameter => false)
 }
 
 definition{

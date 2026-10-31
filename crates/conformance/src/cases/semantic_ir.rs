@@ -7,6 +7,7 @@ use sha2::Digest;
 
 use crate::support::{self, P};
 
+mod boolean;
 mod bytes;
 mod names;
 mod strings;
@@ -2597,6 +2598,173 @@ pub(crate) fn run(id: &str) {
         }
         // §17.12: the widening conversions.
         "SM-32" => widen::run(),
+        // §17.10: a theorem proved by a split on a Boolean local.
+        "SM-36" => boolean::run(),
+        // §17.10: a theorem proved by a split on the value of a document
+        // term.
+        "SM-35" => {
+            let source = |proof: &str, parameter: &str| -> String {
+                format!(
+                    "\\begin{{lexlean}}{{Main}}\n\\useglossary{{lexlean.std.nat@1.2.0}}\n\\title{{Natural number addition}}\n\\begin{{semanticmodule}}\ninductive{{name: Flag, type_parameters: [], parameters: [], constructors: [{{name: up, fields: []}}, {{name: down, fields: []}}]}}\n\ndefinition{{\n  name: flagOf,\n  parameters: [{parameter} : Nat],\n  result: Flag,\n  body: (if ({parameter} =? 0) then (ctor Flag.up) else (ctor Flag.down))\n}}\n\ndefinition{{\n  name: direct,\n  parameters: [{parameter} : Nat],\n  result: Nat,\n  body: (match (flagOf {parameter})\n    | Flag.up => 1\n    | Flag.down => 2)\n}}\n\ndefinition{{\n  name: wrapped,\n  parameters: [{parameter} : Nat],\n  result: Nat,\n  body: (match (match (flagOf {parameter})\n    | Flag.up => (ctor Option.some [Nat] 1)\n    | Flag.down => (ctor Option.some [Nat] 2))\n    | Option.none => 0\n    | Option.some found => found)\n}}\n\ntheorem{{\n  name: agree,\n  parameters: [{parameter} : Nat],\n  statement: ((direct {parameter}) = (wrapped {parameter})),\n  proof: {proof},\n  axioms: [propext]\n}}\n\\end{{semanticmodule}}\n\\end{{lexlean}}\n"
+                )
+            };
+            let good = "term_cases{scrutinee: (flagOf n), definitions: [direct, wrapped]}";
+            let project_of = |text: &str, language: &str| {
+                let project = P::example();
+                project.edit(
+                    "lexlean.toml",
+                    "language = \"1.0\"",
+                    &format!("language = \"{language}\""),
+                );
+                project.write("src/Main.lex.tex", text);
+                project.relock();
+                project
+            };
+            // The linker accepts the proof, the formatter writes it back
+            // unchanged, and the generated Lean states the fixed lowering.
+            let accepted = project_of(&source(good, "n"), "1.2");
+            let checked = support::checked_project(&accepted);
+            let core = serde_json::to_value(
+                checked.modules["Main"]
+                    .document
+                    .semantic
+                    .as_ref()
+                    .expect("a semantic module"),
+            )
+            .expect("module JSON");
+            support::assert_schema("semantic-module-v2", "a term_cases proof", &core);
+            // The formatter rewrites the source to its canonical layout and
+            // keeps the proof; the canonical source is then a fixed point and
+            // links to the same module.
+            let (code, _, error) = accepted.cli(&["fmt"]);
+            assert_eq!(code, 0, "{error}");
+            let formatted = accepted.read("src/Main.lex.tex");
+            assert!(
+                formatted.contains("\"kind\":\"term_cases\""),
+                "the formatter keeps the proof: {formatted}"
+            );
+            // The notation states the proof in the form the source wrote, and
+            // reads back to the same module.
+            let notation = lexlean::sdk::to_notation(&formatted).expect("the notation");
+            assert!(
+                notation
+                    .contains("term_cases{scrutinee: (flagOf n), definitions: [direct, wrapped]}")
+                    || notation.contains("term_cases{"),
+                "{notation}"
+            );
+            assert_eq!(
+                lexlean::sdk::read_module(&notation).expect("reads back"),
+                lexlean::sdk::read_module(&formatted).expect("reads"),
+                "the notation is the same module"
+            );
+            accepted.relock();
+            accepted.fmt_check_ok();
+            assert_eq!(
+                serde_json::to_value(
+                    &support::checked_project(&accepted).modules["Main"]
+                        .document
+                        .semantic
+                )
+                .expect("JSON"),
+                serde_json::to_value(&checked.modules["Main"].document.semantic).expect("JSON"),
+                "the formatted source is the same module"
+            );
+            let built = accepted.build_ok();
+            let build_dir = accepted.build_dir(&built.build_id.expect("a build id"));
+            let lean = std::fs::read_dir(build_dir.join("modules").as_std_path())
+                .expect("the modules")
+                .flatten()
+                .flat_map(|entry| {
+                    std::fs::read_dir(entry.path())
+                        .into_iter()
+                        .flatten()
+                        .flatten()
+                })
+                .filter(|entry| entry.path().extension().is_some_and(|ext| ext == "lean"))
+                .map(|entry| std::fs::read_to_string(entry.path()).expect("Lean text"))
+                .collect::<String>();
+            assert!(
+                lean.contains("cases llCase : flagOf (n) <;>")
+                    && lean.contains(
+                        "simp (config := {decide := true}) only [direct, wrapped, llCase, ite_true, ite_false]"
+                    ),
+                "{lean}"
+            );
+            support::verify_ok_backed("SM-35", &accepted);
+            let tex = support::tex_body(&support::tex_text(&support::rendered(&accepted), "Main"))
+                .to_owned();
+            // The canonical LaTeX of a semantic module is a catalog of its
+            // declarations: it states a theorem's statement and axiom policy
+            // and, for every proof form, no proof; the new form adds nothing
+            // to it.
+            assert!(
+                tex.contains("\\subsection*{\\texttt{agree}}")
+                    && tex.contains("Statement: \\texttt{(direct (n) = wrapped (n))}")
+                    && tex.contains("Axiom policy: \\texttt{exact [propext]}")
+                    && !tex.contains("term_cases"),
+                "{tex}"
+            );
+            // The misuses are refused by the linker or the schema.
+            for (what, proof, parameter, language, message) in [
+                ("language 1.1", good, "n", "1.1", "term_cases proof"),
+                (
+                    "an empty list of definitions",
+                    "term_cases{scrutinee: (flagOf n), definitions: []}",
+                    "n",
+                    "1.2",
+                    "",
+                ),
+                (
+                    "definitions out of order",
+                    "term_cases{scrutinee: (flagOf n), definitions: [wrapped, direct]}",
+                    "n",
+                    "1.2",
+                    "not sorted and unique",
+                ),
+                (
+                    "a repeated definition",
+                    "term_cases{scrutinee: (flagOf n), definitions: [direct, direct]}",
+                    "n",
+                    "1.2",
+                    "not sorted and unique",
+                ),
+                (
+                    "a definition that is absent",
+                    "term_cases{scrutinee: (flagOf n), definitions: [absent, direct]}",
+                    "n",
+                    "1.2",
+                    "",
+                ),
+                (
+                    "a term that is not of a document inductive type",
+                    "term_cases{scrutinee: (direct n), definitions: [direct, wrapped]}",
+                    "n",
+                    "1.2",
+                    "not of a document inductive type",
+                ),
+                (
+                    "a theorem parameter that takes the hypothesis's name",
+                    "term_cases{scrutinee: (flagOf llCase), definitions: [direct, wrapped]}",
+                    "llCase",
+                    "1.2",
+                    "reserves internal binder",
+                ),
+            ] {
+                let text = source(proof, parameter);
+                let text = if language == "1.1" {
+                    // Language 1.1 reads the data form only.
+                    formatted
+                        .replace("@1.2.0", "@1.1.0")
+                        .replace("lexlean/semantic-module/2", "lexlean/semantic-module/1")
+                } else {
+                    text
+                };
+                let planted = project_of(&text, language);
+                let error = planted.check_err();
+                let shown = format!("{error:?}");
+                assert!(shown.contains(message), "{what}: {shown}");
+            }
+        }
         "SM-34" => {
             // `V2Fixture.one` states its type and value; `V2Fixture.one.eq_1`
             // is derived: it states no universe parameters, type, or value,
