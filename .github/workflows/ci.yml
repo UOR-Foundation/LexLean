@@ -37,8 +37,11 @@
 # A pull request that is a draft runs the `rest` leg and nothing else, because
 # a head pushed again before it is final should cost one job and not the whole
 # gate; it is a development signal and the pull request is not mergeable on it.
-# Marking it ready, which the `pull_request` types below include, a push to a
-# ready pull request, a request, and a push to `main` run every job. One push
+# So does a ready pull request whose base is neither `main` nor `release/*`: a
+# stacked pull request cannot land on a line, and the pull request that carries
+# the stack into one runs the whole gate. Marking a draft ready, which the
+# `pull_request` types below include, a push to a ready pull request into
+# `main` or a release line, a request, and a push to `main` run every job. One push
 # to `main` runs none: a merge whose tree is the tree of its second parent, a
 # pull request head that already contained `main`, when the whole gate passed
 # on that head as a pull request run; the tree is the one that run verified,
@@ -90,8 +93,9 @@ env:
 
 jobs:
   # What this run is (SPEC.md §9.4), decided from the event before any job that
-  # costs a runner starts: a draft pull request runs the `rest` leg and nothing
-  # else; a ready pull request, a request, and a push to `main` run the whole
+  # costs a runner starts: a draft pull request, or a ready one whose base is
+  # neither `main` nor `release/*`, runs the `rest` leg and nothing else; a ready
+  # pull request into one of those, a request, and a push to `main` run the whole
   # gate, except a push that merges a head whose tree it equals and whose whole
   # gate passed (it runs nothing and names the run). `.github/ci-plan.sh` is the
   # decision, and RP-14 runs it against planted events.
@@ -116,6 +120,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           EVENT: ${{ github.event_name }}
           DRAFT: ${{ github.event.pull_request.draft }}
+          BASE: ${{ github.event.pull_request.base.ref }}
           REPO: ${{ github.repository }}
         run: .github/ci-plan.sh
 
