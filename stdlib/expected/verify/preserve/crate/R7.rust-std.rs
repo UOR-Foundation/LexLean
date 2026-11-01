@@ -855,182 +855,81 @@ pub fn format_int(p0: i64) -> Str {
     Str::format_i64(p0)
 }
 
-#[derive(Clone)]
-pub enum Fn0 {
-    F5(Bytes),
-    F6(u64, Bytes),
+pub fn f0(v0: List<i64>, v1: List<i64>) -> R<List<i64>> {
+    f1(v0, v1)
 }
 
-impl Fn0 {
-    pub fn apply(&self, p0: u64) -> R<Option<u64>> {
-        match self {
-            Fn0::F5(k0) => Ok(f5(k0.clone(), p0)),
-            Fn0::F6(k0, k1) => f6(*k0, k1.clone(), p0),
-        }
-    }
-}
-
-pub fn f0(v0: Bytes) -> R<Bytes> {
-    let v1: u64 = f1(v0.clone())?;
-    let v2: u64 = f2(v0.clone(), v1)?;
-    Ok(f3(v0, v2, {
-        let a1 = v1;
-        let a2 = v2;
-        nat_sub(a1, a2)
-    }))
-}
-
-pub fn f1(v0: Bytes) -> R<u64> {
-    let (h3, _) = f4(Fn0::F5(v0.clone()), {
-        let a4 = v0.clone();
-        length_bytes(a4)
-    }, {
-        let a5 = v0;
-        length_bytes(a5)
-    })?;
-    Ok(h3)
-}
-
-pub fn f2(v0: Bytes, v1: u64) -> R<u64> {
-    let (h6, _) = f4(Fn0::F6(v1, v0), v1, 0u64)?;
-    Ok(h6)
-}
-
-pub fn f3(v0: Bytes, v1: u64, v2: u64) -> Bytes {
-    let m10 = {
-        let a7 = v0;
-        let a8 = v1;
-        let a9 = v2;
-        slice_bytes(a7, a8, a9)
-    };
-    match m10 {
+pub fn f1(v0: List<i64>, v1: List<i64>) -> R<List<i64>> {
+    let m1 = v0;
+    match m1.uncons() {
         None => {
-            Bytes::lit(&[])
+            Ok(List::<i64>::nil())
         }
-        Some(v3) => {
-            v3
-        }
-    }
-}
-
-pub fn f4(v0: Fn0, p15: u64, p16: u64) -> R<(u64, bool)> {
-    let m14 = (p15, p16);
-    {
-        let mut m14 = m14;
-        loop {
-            let step = {
-                let (v1, v2) = m14;
-                let m11 = v1;
-                if m11 == 0 {
-                    Err::<(u64, u64), R<(u64, bool)>>(Ok((v2, false)))
-                } else {
-                    let v3 = m11 - 1;
-                    let m13 = {
-                        let c12: Fn0 = v0.clone();
-                        c12.apply(v2)?
-                    };
-                    match m13 {
-                        None => {
-                            Err::<(u64, u64), R<(u64, bool)>>(Ok((v2, true)))
-                        }
-                        Some(v4) => {
-                            Ok::<(u64, u64), R<(u64, bool)>>((v3, v4))
-                        }
-                    }
+        Some((v2, v3)) => {
+            let m2 = v1;
+            match m2.uncons() {
+                None => {
+                    Ok(List::<i64>::nil())
                 }
-            };
-            match step {
-                Ok(next) => { m14 = next; }
-                Err(done) => break done,
+                Some((v4, v5)) => {
+                    Ok(List::cons(f2(f3(v2, v4)?)?, f1(v3, v5)?))
+                }
             }
         }
     }
 }
 
-pub fn f5(v0: Bytes, v1: u64) -> Option<u64> {
-    let a17 = 0u64;
-    let a18 = v1;
-    if nat_lt(a17, a18) {
-        if f7(v0, {
-            let a19 = v1;
-            let a20 = 1u64;
-            nat_sub(a19, a20)
-        }) {
-            Some({
-                let a21 = v1;
-                let a22 = 1u64;
-                nat_sub(a21, a22)
-            })
-        } else {
-            None::<u64>
+pub fn f2(v0: i64) -> R<i64> {
+    let m6 = {
+        let a4 = v0;
+        let a5 = {
+            let a3 = 32768i64;
+            int_neg(a3)?
+        };
+        compare(a4, a5)
+    };
+    if match m6 {
+        Ordering::Less => {
+            true
         }
-    } else {
-        None::<u64>
-    }
-}
-
-pub fn f6(v0: u64, v1: Bytes, v2: u64) -> R<Option<u64>> {
-    let a23 = v2;
-    let a24 = v0;
-    if nat_lt(a23, a24) {
-        if f7(v1, v2) {
-            Ok(Some({
-                let a25 = v2;
-                let a26 = 1u64;
-                nat_add(a25, a26)?
-            }))
-        } else {
-            Ok(None::<u64>)
-        }
-    } else {
-        Ok(None::<u64>)
-    }
-}
-
-pub fn f7(v0: Bytes, v1: u64) -> bool {
-    let m27 = f8(v0, v1);
-    match m27 {
-        None => {
+        Ordering::Equal => {
             false
         }
-        Some(v2) => {
-            f9(v2)
+        Ordering::Greater => {
+            false
         }
-    }
-}
-
-pub fn f8(v0: Bytes, v1: u64) -> Option<u8> {
-    let a28 = v0;
-    let a29 = v1;
-    index_bytes(a28, a29)
-}
-
-pub fn f9(v0: u8) -> bool {
-    let a30 = v0;
-    let a31 = 32u8;
-    if if if equal(a30, a31) {
-        true
-    } else {
-        let a32 = v0;
-        let a33 = 9u8;
-        equal(a32, a33)
     } {
-        true
+        let a7 = 32768i64;
+        int_neg(a7)
     } else {
-        let a34 = v0;
-        let a35 = 10u8;
-        equal(a34, a35)
-    } {
-        true
-    } else {
-        let a36 = v0;
-        let a37 = 12u8;
-        if equal(a36, a37) {
-            true
+        let m10 = {
+            let a8 = 32767i64;
+            let a9 = v0;
+            compare(a8, a9)
+        };
+        if match m10 {
+            Ordering::Less => {
+                true
+            }
+            Ordering::Equal => {
+                false
+            }
+            Ordering::Greater => {
+                false
+            }
+        } {
+            Ok(32767i64)
         } else {
-            let a38 = v0;
-            let a39 = 13u8;
-            equal(a38, a39)
+            Ok(v0)
         }
     }
+}
+
+pub fn f3(v0: i64, v1: i64) -> R<i64> {
+    let a12 = v0;
+    let a13 = {
+        let a11 = v1;
+        int_neg(a11)?
+    };
+    int_sub(a12, a13)
 }

@@ -7861,6 +7861,46 @@ holds no file of Lean or Rust source, its export is committed under
 of a package is `LLC0105`, a module of a package the example does not declare
 `LLR3009`, and a tampered artifact `LLR3007`.
 
+The `Target` module (`GN-09`, #119) is the machine contract of §17.15 taken
+from weighted calculus steps to the production targets decided in D4:
+`x86_64-unknown-linux-gnu` with `avx2`, `aarch64-unknown-linux-gnu` with
+`neon`, and `wasm32-unknown-unknown` with `simd128`. `thumbv7em-none-eabihf`
+with `dsp` is not modeled, because its intrinsics are neither stable nor safe
+on the pinned Rust. Each target has three integer SIMD instructions, written
+over `List Int` lanes, whose semantics is exact in the lane width, the
+widening, and the saturation or wrap: a multiply-add of adjacent lane pairs
+(`_mm256_maddubs_epi16`, which saturates a signed sixteen-bit lane, and
+`_mm256_madd_epi16`, which wraps a signed thirty-two-bit lane), a widening
+product (`vmull_s8`, `i16x8_extmul_low_i8x16`), a pairwise widening add
+(`vpaddlq_s16`), a dot product (`i32x4_dot_i16x8`), and a saturating add
+(`_mm256_adds_epi16`, `vqaddq_s16`, `i16x8_add_sat`). The operands are in
+the lane range of their type; a lane outside it has no meaning to the
+instruction, and the model does not say what it would. The nine roots are
+production roots eligible for `rust-std`, so the evaluator and the rendered
+Rust run the same program, and the edge cases are kernel-checked theorems.
+
+A cost is a step vector, not a number: `Cost` holds the operations `c` and the
+bytes read `b` of a kernel, where `price` of an instruction for a number of
+lanes is the whole instructions that cover the lanes and the bytes of the
+operands they read. The objective over a declared domain of lane counts is
+the worst case (D2, UOR-GNAF §9.5): `worstCase` is the price of the lane
+count that reads the most bytes, with the first of equal ones, and the theorem
+`worst_case_bounded_by_operations` states that its `b` is at most its `c`
+times the bytes one instruction reads, for every instruction, on the
+committed domain. The model prices; it measures nothing on hardware (C5).
+
+The differential is against the instruction, not against a second model
+(C9). The pinned rustc compiles each instruction under `#[target_feature]` in
+safe Rust, and the lanes it computes are compared with the evaluator's on a
+seeded corpus that fixes every lane at each edge of its range. A host runs
+what it can execute: AVX2 in process on an x86-64 host that has it,
+WebAssembly SIMD128 as a module under Node.js, and NEON on an aarch64 host.
+The harness of a target the host cannot execute is built for it and the case
+reports that it was not executed; on the normative host AVX2 and SIMD128 are
+always executed. The worst-case objective as a GNAF `Objective` and the
+rendering of `#[target_feature]` into exported packages belong to the
+realization grammar of #120, which these contracts price.
+
 ### 17.23 The bootstrap project
 
 The bootstrap project, `bootstrap/` beside `compiler/` and `stdlib/`, holds the
@@ -11068,6 +11108,7 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `GN-06` | `gnaf` | Complete-system cost includes selection and counts only the code a system can run, the system argmin differs from the best internal plan and from the per-input plan envelope that no system attains, an inadmissible system is excluded, and an unresolved system makes the answer incomplete rather than being removed. | §17.15 |
 | `GN-07` | `gnaf` | The authority's GNAF-VEC-01, GNAF-VEC-02, GNAF-VEC-04, GNAF-VEC-17, GNAF-REJ-14, and GNAF-REJ-29 vectors are kernel-checked theorems over the argmin and frontier the answers are computed by, stated with the authority's numbers, and the authority is vendored with a recomputed SHA-256, cited by revision, and claimed some-true. | §17.15, §27.4 |
 | `GN-08` | `gnaf` | The GNAF dependency manifest names the authority's revision and SHA-256, every kind, operation, machine, cost, proof, interchange, and address profile with its role, every restriction of the admitted universe, and exactly the claim classes the model answers, and equals its generator. | §17.15, §27.4 |
+| `GN-09` | `gnaf` | The standard library's `Target` module is language-1.2 source stating the machine contract of the production targets decided in D4 (`x86_64-unknown-linux-gnu` with `avx2`, `aarch64-unknown-linux-gnu` with `neon`, `wasm32-unknown-unknown` with `simd128`; `thumbv7em-none-eabihf` with `dsp` is not modeled): three integer SIMD instructions per target over `List Int` lanes, each with its exact semantics including lane widths, widening, wrapping and signed saturation (`_mm256_maddubs_epi16`, `_mm256_madd_epi16`, `_mm256_adds_epi16`; `vmull_s8`, `vpaddlq_s16`, `vqaddq_s16`; `i16x8_extmul_low_i8x16`, `i32x4_dot_i16x8`, `i16x8_add_sat`), and for each a cost as a step vector of operations `c` and bytes read `b`, so that a kernel over a declared domain of lane counts is priced by the worst case of `b`, which kernel-checked theorems bound by `c` times the bytes one instruction reads; the nine instruction roots are production roots eligible for `rust-std` with exactly their declared effects, and each root's lowered program under the calculus evaluator agrees, on a seeded corpus that includes the saturation and wrap edges, with the instruction itself run by the pinned rustc under `#[target_feature]` in safe Rust: in process for AVX2 on an x86-64 host that has it, as a WebAssembly module under Node.js for SIMD128, in process for NEON on an aarch64 host, and otherwise built for the target and reported as not executed; a planted wrong saturation bound is detected by the differential, and a planted false theorem is refused by the kernel with LLV7002. | §17.15, §17.22 |
 | `GC-01` | `gnaf-certification` | Every committed GNAF certificate and certificate fixture is canonical, validates against the certificate schemas, states the framed SHA-256 identity of its certificate and the universe identity of the request it names, and is read back with its committed verdict; a malformed certificate or a certificate fixture stating another identity fails closed with LLB6007, and a certificate beyond the host's capacity fails closed with LLS8002. | §17.18, §26.3 |
 | `GC-02` | `gnaf-certification` | The certification checker is a kernel-checked LexLean definition, Lean's kernel reduces the verdict of every committed certificate and its request to what the host transcription computes, and a copy stating a certified verdict for a certificate that omits one competitor's premise, for a lower bound its attainer does not meet, or for a locally normal system is rejected by Lean. | §17.18 |
 | `GC-03` | `gnaf-certification` | A universal lower-bound certificate proves a nontrivial global optimum or argmin from a premise for every system of the universe: the attainers meet the bound, and every other system is excluded, reduced, or shown to pay at least the bound from a prefix of the domain, so a system whose cost is unknown at the request's fuel is bounded without being evaluated in full; ties are all attainers, and an undercut, unattained, non-strict, omitted, weakened, extra, diverging, or inadmissible-attainer certificate leaves an honest non-global status naming the first open obligation. | §17.18 |
@@ -11223,7 +11264,7 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `NS-06` | `normative-source` | The hand-edited normative inputs of the repository are the `.lex.tex` modules of the specification project: `model/` holds only the projected files and the copies an authority row vendors, every Markdown file at the root is a projection or is on the closed list of hand-written documents, the projections carry the notice that names their source, and no hand-written document restates a registered statement, a plant of each being refused naming R1. | §27.2, §27.5, §27.10 |
 | `NS-07` | `normative-source` | `cargo xtask spec` changes the chapter modules of the specification project by item: it replaces a block, inserts one after a block, and ports the hunks of a merged SPEC.md that lie outside derived regions, each through the authoring SDK, and it writes nothing unless the regenerated SPEC.md equals the intended text outside derived regions, refusing a first line that matches no block or two and a hunk that spans two blocks. | §24.8, §27.5 |
 
-**Total required capability IDs:** 475.
+**Total required capability IDs:** 476.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

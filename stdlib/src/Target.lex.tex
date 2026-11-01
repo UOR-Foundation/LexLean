@@ -1,0 +1,420 @@
+\begin{lexlean}{Target}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: plus,
+  parameters: [left : Int, right : Int],
+  result: Int,
+  body: (prim subtract left (prim negate right : Int) : Int),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: saturate16,
+  parameters: [value : Int],
+  result: Int,
+  body: (if (prim less_than value (prim negate (32768 : Int) : Int) : Bool) then (prim negate (32768 : Int) : Int) else (if (prim less_than (32767 : Int) value : Bool) then (32767 : Int) else value)),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: wrap32,
+  parameters: [value : Int],
+  result: Int,
+  body: (if (prim less_than value (prim negate (2147483648 : Int) : Int) : Bool) then (plus value (4294967296 : Int)) else (if (prim less_than (2147483647 : Int) value : Bool) then (prim subtract value (4294967296 : Int) : Int) else value)),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: finishPair,
+  parameters: [mode : Nat, value : Int],
+  result: Int,
+  body: (if (mode =? 0) then (saturate16 value) else (if (mode =? 1) then (wrap32 value) else value)),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: products,
+  parameters: [count : Nat, left : (List Int), right : (List Int)],
+  result: (List Int),
+  body: (match left
+    | List.nil => (nil Int)
+    | List.cons l lrest => (match right
+      | List.nil => (nil Int)
+      | List.cons r rrest => (if (count =? 0) then (nil Int) else (cons (prim multiply l r : Int) (products (prim subtract count 1 : Nat) lrest rrest))))),
+  axioms: [],
+  executable: true,
+  recursive_argument: left
+}
+
+definition{
+  name: pairSums,
+  parameters: [mode : Nat, phase : Nat, held : Int, values : (List Int)],
+  result: (List Int),
+  body: (match values
+    | List.nil => (nil Int)
+    | List.cons v rest => (if (phase =? 0) then (pairSums mode 1 v rest) else (cons (finishPair mode (plus held v)) (pairSums mode 0 (0 : Int) rest)))),
+  axioms: [propext],
+  executable: true,
+  recursive_argument: values
+}
+
+definition{
+  name: saturatingAdd,
+  parameters: [left : (List Int), right : (List Int)],
+  result: (List Int),
+  body: (match left
+    | List.nil => (nil Int)
+    | List.cons l lrest => (match right
+      | List.nil => (nil Int)
+      | List.cons r rrest => (cons (saturate16 (plus l r)) (saturatingAdd lrest rrest)))),
+  axioms: [propext],
+  executable: true,
+  recursive_argument: left
+}
+
+definition{
+  name: avx2MaddubsEpi16,
+  parameters: [left : (List Int), right : (List Int)],
+  result: (List Int),
+  body: (pairSums 0 0 (0 : Int) (products 64 left right)),
+  axioms: [propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: avx2MaddEpi16,
+  parameters: [left : (List Int), right : (List Int)],
+  result: (List Int),
+  body: (pairSums 1 0 (0 : Int) (products 64 left right)),
+  axioms: [propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: avx2AddsEpi16,
+  parameters: [left : (List Int), right : (List Int)],
+  result: (List Int),
+  body: (saturatingAdd left right),
+  axioms: [propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: neonMullS8,
+  parameters: [left : (List Int), right : (List Int)],
+  result: (List Int),
+  body: (products 8 left right),
+  axioms: [],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: neonPaddlqS16,
+  parameters: [left : (List Int)],
+  result: (List Int),
+  body: (pairSums 2 0 (0 : Int) left),
+  axioms: [propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: neonQaddqS16,
+  parameters: [left : (List Int), right : (List Int)],
+  result: (List Int),
+  body: (saturatingAdd left right),
+  axioms: [propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: wasmExtmulLowI8x16,
+  parameters: [left : (List Int), right : (List Int)],
+  result: (List Int),
+  body: (products 8 left right),
+  axioms: [],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: wasmDotI16x8,
+  parameters: [left : (List Int), right : (List Int)],
+  result: (List Int),
+  body: (pairSums 1 0 (0 : Int) (products 64 left right)),
+  axioms: [propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: wasmAddSatI16x8,
+  parameters: [left : (List Int), right : (List Int)],
+  result: (List Int),
+  body: (saturatingAdd left right),
+  axioms: [propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+inductive{
+  name: Op,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: avx2Maddubs, fields: []},
+    {name: avx2Madd, fields: []},
+    {name: avx2Adds, fields: []},
+    {name: neonMull, fields: []},
+    {name: neonPaddl, fields: []},
+    {name: neonQadd, fields: []},
+    {name: wasmExtmul, fields: []},
+    {name: wasmDot, fields: []},
+    {name: wasmAddSat, fields: []}
+  ]
+}
+
+structure{
+  name: Cost,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: ops, type: Nat}, {name: bytes, type: Nat}]
+}
+
+definition{
+  name: blockLanes,
+  parameters: [op : Op],
+  result: Nat,
+  body: (match op
+    | Op.avx2Maddubs => 32
+    | Op.avx2Madd => 16
+    | Op.avx2Adds => 16
+    | Op.neonMull => 8
+    | Op.neonPaddl => 8
+    | Op.neonQadd => 8
+    | Op.wasmExtmul => 16
+    | Op.wasmDot => 8
+    | Op.wasmAddSat => 8),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: readBytes,
+  parameters: [op : Op],
+  result: Nat,
+  body: (match op
+    | Op.avx2Maddubs => 64
+    | Op.avx2Madd => 64
+    | Op.avx2Adds => 64
+    | Op.neonMull => 16
+    | Op.neonPaddl => 16
+    | Op.neonQadd => 32
+    | Op.wasmExtmul => 32
+    | Op.wasmDot => 32
+    | Op.wasmAddSat => 32),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: price,
+  parameters: [op : Op, lanes : Nat],
+  result: Cost,
+  body: (let blocks : Nat := (prim quotient (lanes + (prim subtract (blockLanes op) 1 : Nat)) (blockLanes op) 0 : Nat); (record Cost {ops := blocks, bytes := (prim multiply blocks (readBytes op) : Nat)})),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: heavier,
+  parameters: [state : Cost, candidate : Cost],
+  result: Cost,
+  body: (if ((project state bytes) <? (project candidate bytes)) then candidate else state),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: worstCase,
+  parameters: [op : Op, domain : (List Nat)],
+  result: Cost,
+  body: (prim list_fold (fun [op] (state : Cost) (lanes : Nat) => (heavier state (price op lanes))) (record Cost {ops := 0, bytes := 0}) domain : Cost),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: bounded,
+  parameters: [op : Op, domain : (List Nat)],
+  result: Bool,
+  body: ((project (worstCase op domain) bytes) <=? (prim multiply (project (worstCase op domain) ops) (readBytes op) : Nat)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: allBounded,
+  parameters: [domain : (List Nat)],
+  result: Bool,
+  body: (if (bounded (ctor Op.avx2Maddubs) domain) then (if (bounded (ctor Op.avx2Madd) domain) then (if (bounded (ctor Op.avx2Adds) domain) then (if (bounded (ctor Op.neonMull) domain) then (if (bounded (ctor Op.neonPaddl) domain) then (if (bounded (ctor Op.neonQadd) domain) then (if (bounded (ctor Op.wasmExtmul) domain) then (if (bounded (ctor Op.wasmDot) domain) then (bounded (ctor Op.wasmAddSat) domain) else false) else false) else false) else false) else false) else false) else false) else false),
+  axioms: [],
+  executable: true
+}
+
+theorem{
+  name: maddubs_saturates_high,
+  parameters: [],
+  statement: ((avx2MaddubsEpi16 (cons (255 : Int) (cons (255 : Int) (nil Int))) (cons (127 : Int) (cons (127 : Int) (nil Int)))) = (cons (32767 : Int) (nil Int))),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: maddubs_saturates_low,
+  parameters: [],
+  statement: ((avx2MaddubsEpi16 (cons (255 : Int) (cons (255 : Int) (nil Int))) (cons (prim negate (128 : Int) : Int) (cons (prim negate (128 : Int) : Int) (nil Int)))) = (cons (prim negate (32768 : Int) : Int) (nil Int))),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: maddubs_exact,
+  parameters: [],
+  statement: ((avx2MaddubsEpi16 (cons (3 : Int) (cons (4 : Int) (nil Int))) (cons (5 : Int) (cons (prim negate (6 : Int) : Int) (nil Int)))) = (cons (prim negate (9 : Int) : Int) (nil Int))),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: madd_wraps,
+  parameters: [],
+  statement: ((avx2MaddEpi16 (cons (prim negate (32768 : Int) : Int) (cons (prim negate (32768 : Int) : Int) (nil Int))) (cons (prim negate (32768 : Int) : Int) (cons (prim negate (32768 : Int) : Int) (nil Int)))) = (cons (prim negate (2147483648 : Int) : Int) (nil Int))),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: madd_exact,
+  parameters: [],
+  statement: ((avx2MaddEpi16 (cons (1 : Int) (cons (2 : Int) (cons (3 : Int) (cons (4 : Int) (nil Int))))) (cons (5 : Int) (cons (6 : Int) (cons (7 : Int) (cons (8 : Int) (nil Int)))))) = (cons (17 : Int) (cons (53 : Int) (nil Int)))),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: adds_saturates,
+  parameters: [],
+  statement: ((avx2AddsEpi16 (cons (32767 : Int) (cons (prim negate (32768 : Int) : Int) (nil Int))) (cons (1 : Int) (cons (prim negate (1 : Int) : Int) (nil Int)))) = (cons (32767 : Int) (cons (prim negate (32768 : Int) : Int) (nil Int)))),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: mull_widens,
+  parameters: [],
+  statement: ((neonMullS8 (cons (prim negate (128 : Int) : Int) (cons (127 : Int) (nil Int))) (cons (prim negate (128 : Int) : Int) (cons (127 : Int) (nil Int)))) = (cons (16384 : Int) (cons (16129 : Int) (nil Int)))),
+  proof: decide{},
+  axioms: []
+}
+
+theorem{
+  name: mull_takes_eight,
+  parameters: [],
+  statement: ((neonMullS8 (cons (3 : Int) (cons (3 : Int) (cons (3 : Int) (cons (3 : Int) (cons (3 : Int) (cons (3 : Int) (cons (3 : Int) (cons (3 : Int) (nil Int))))))))) (cons (5 : Int) (cons (5 : Int) (cons (5 : Int) (cons (5 : Int) (cons (5 : Int) (cons (5 : Int) (cons (5 : Int) (cons (5 : Int) (nil Int)))))))))) = (cons (15 : Int) (cons (15 : Int) (cons (15 : Int) (cons (15 : Int) (cons (15 : Int) (cons (15 : Int) (cons (15 : Int) (cons (15 : Int) (nil Int)))))))))),
+  proof: decide{},
+  axioms: []
+}
+
+theorem{
+  name: paddl_widens,
+  parameters: [],
+  statement: ((neonPaddlqS16 (cons (32767 : Int) (cons (32767 : Int) (cons (prim negate (32768 : Int) : Int) (cons (prim negate (32768 : Int) : Int) (nil Int)))))) = (cons (65534 : Int) (cons (prim negate (65536 : Int) : Int) (nil Int)))),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: qadd_saturates,
+  parameters: [],
+  statement: ((neonQaddqS16 (cons (32767 : Int) (cons (prim negate (32768 : Int) : Int) (nil Int))) (cons (1 : Int) (cons (prim negate (1 : Int) : Int) (nil Int)))) = (cons (32767 : Int) (cons (prim negate (32768 : Int) : Int) (nil Int)))),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: extmul_takes_low_eight,
+  parameters: [],
+  statement: ((wasmExtmulLowI8x16 (cons (3 : Int) (cons (3 : Int) (cons (3 : Int) (cons (3 : Int) (cons (3 : Int) (cons (3 : Int) (cons (3 : Int) (cons (3 : Int) (cons (3 : Int) (cons (3 : Int) (cons (3 : Int) (cons (3 : Int) (cons (3 : Int) (cons (3 : Int) (cons (3 : Int) (cons (3 : Int) (nil Int))))))))))))))))) (cons (5 : Int) (cons (5 : Int) (cons (5 : Int) (cons (5 : Int) (cons (5 : Int) (cons (5 : Int) (cons (5 : Int) (cons (5 : Int) (cons (5 : Int) (cons (5 : Int) (cons (5 : Int) (cons (5 : Int) (cons (5 : Int) (cons (5 : Int) (cons (5 : Int) (cons (5 : Int) (nil Int)))))))))))))))))) = (cons (15 : Int) (cons (15 : Int) (cons (15 : Int) (cons (15 : Int) (cons (15 : Int) (cons (15 : Int) (cons (15 : Int) (cons (15 : Int) (nil Int)))))))))),
+  proof: decide{},
+  axioms: []
+}
+
+theorem{
+  name: dot_wraps,
+  parameters: [],
+  statement: ((wasmDotI16x8 (cons (prim negate (32768 : Int) : Int) (cons (prim negate (32768 : Int) : Int) (nil Int))) (cons (prim negate (32768 : Int) : Int) (cons (prim negate (32768 : Int) : Int) (nil Int)))) = (cons (prim negate (2147483648 : Int) : Int) (nil Int))),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: add_sat_saturates,
+  parameters: [],
+  statement: ((wasmAddSatI16x8 (cons (32767 : Int) (cons (prim negate (32768 : Int) : Int) (nil Int))) (cons (1 : Int) (cons (prim negate (1 : Int) : Int) (nil Int)))) = (cons (32767 : Int) (cons (prim negate (32768 : Int) : Int) (nil Int)))),
+  proof: decide{},
+  axioms: [propext]
+}
+
+theorem{
+  name: price_reads_whole_instructions,
+  parameters: [],
+  statement: ((project (price (ctor Op.avx2Maddubs) 33) ops) = 2),
+  proof: decide{},
+  axioms: []
+}
+
+theorem{
+  name: price_bytes,
+  parameters: [],
+  statement: ((project (price (ctor Op.avx2Maddubs) 33) bytes) = 128),
+  proof: decide{},
+  axioms: []
+}
+
+theorem{
+  name: price_empty,
+  parameters: [],
+  statement: ((project (price (ctor Op.neonQadd) 0) bytes) = 0),
+  proof: decide{},
+  axioms: []
+}
+
+theorem{
+  name: worst_case_is_largest,
+  parameters: [],
+  statement: ((project (worstCase (ctor Op.avx2Maddubs) (cons 0 (cons 31 (cons 1024 (cons 33 (nil Nat)))))) bytes) = 2048),
+  proof: decide{},
+  axioms: []
+}
+
+theorem{
+  name: worst_case_bounded_by_operations,
+  parameters: [],
+  statement: ((allBounded (cons 0 (cons 1 (cons 7 (cons 8 (cons 9 (cons 31 (cons 32 (cons 33 (cons 1024 (nil Nat))))))))))) = true),
+  proof: decide{},
+  axioms: []
+}
+\end{semanticmodule}
+\end{lexlean}

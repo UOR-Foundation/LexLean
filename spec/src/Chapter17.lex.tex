@@ -5057,8 +5057,10 @@ definition{
   parameters: [],
   result: DocRows::Item,
   body: constructor{
-    arguments: [3, 1, "17.23 The bootstrap project"],
-    constructor: DocRows::Item.heading,
+    arguments: [
+      (cons "The `Target` module (`GN-09`, #119) is the machine contract of §17.15 taken" (cons "from weighted calculus steps to the production targets decided in D4:" (cons "`x86_64-unknown-linux-gnu` with `avx2`, `aarch64-unknown-linux-gnu` with" (cons "`neon`, and `wasm32-unknown-unknown` with `simd128`. `thumbv7em-none-eabihf`" (cons "with `dsp` is not modeled, because its intrinsics are neither stable nor safe" (cons "on the pinned Rust. Each target has three integer SIMD instructions, written" (cons "over `List Int` lanes, whose semantics is exact in the lane width, the" (cons "widening, and the saturation or wrap: a multiply-add of adjacent lane pairs" (cons "(`_mm256_maddubs_epi16`, which saturates a signed sixteen-bit lane, and" (cons "`_mm256_madd_epi16`, which wraps a signed thirty-two-bit lane), a widening" (cons "product (`vmull_s8`, `i16x8_extmul_low_i8x16`), a pairwise widening add" (cons "(`vpaddlq_s16`), a dot product (`i32x4_dot_i16x8`), and a saturating add" (cons "(`_mm256_adds_epi16`, `vqaddq_s16`, `i16x8_add_sat`). The operands are in" (cons "the lane range of their type; a lane outside it has no meaning to the" (cons "instruction, and the model does not say what it would. The nine roots are" (cons "production roots eligible for `rust-std`, so the evaluator and the rendered" (cons "Rust run the same program, and the edge cases are kernel-checked theorems." (nil String))))))))))))))))))
+    ],
+    constructor: DocRows::Item.para,
     type_arguments: []
   },
   executable: true
@@ -5070,7 +5072,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "The bootstrap project, `bootstrap/` beside `compiler/` and `stdlib/`, holds the" (cons "components of LexLean's own pipeline that are authored as language-1.2 source" (cons "and compiled by LexLean's production pipeline to certified Rust packages, so" (cons "that the compiler's logic moves into `.lex.tex` component by component (the" (cons "self-hosting plan of issue 92). It is written in the authoring notation (§17.21) under the" (cons "module prefix `LexLeanBoot`, and passes the gates of §28.6 as the standard" (cons "library does. The Rust it replaces stays in the tree as the *stage-0 oracle*" (cons "until the fixed point of that plan; a component is added only with a" (cons "differential against that Rust, and is never a source of the Rust." (nil String))))))))))
+      (cons "A cost is a step vector, not a number: `Cost` holds the operations `c` and the" (cons "bytes read `b` of a kernel, where `price` of an instruction for a number of" (cons "lanes is the whole instructions that cover the lanes and the bytes of the" (cons "operands they read. The objective over a declared domain of lane counts is" (cons "the worst case (D2, UOR-GNAF §9.5): `worstCase` is the price of the lane" (cons "count that reads the most bytes, with the first of equal ones, and the theorem" (cons "`worst_case_bounded_by_operations` states that its `b` is at most its `c`" (cons "times the bytes one instruction reads, for every instruction, on the" (cons "committed domain. The model prices; it measures nothing on hardware (C5)." (nil String))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -5084,7 +5086,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "The project imports the module `Text` of the standard library (§17.22) as a" (cons "source package (§10.5): `bootstrap/lexlean.toml` declares `stdlib` beside it in" (cons "the workspace, `AxiomOutput` and `TokenAudit` import `LexLeanStd.Text`, and the module is" (cons "linked, verified, and replayed with the project under the standard library's" (cons "own prefix. Its definitions are ordinary definitions of the project, so the" (cons "project republishes none of the standard library's production roots, and no" (cons "copy of the module is kept (`PK-05`)." (nil String))))))))
+      (cons "The differential is against the instruction, not against a second model" (cons "(C9). The pinned rustc compiles each instruction under `#[target_feature]` in" (cons "safe Rust, and the lanes it computes are compared with the evaluator's on a" (cons "seeded corpus that fixes every lane at each edge of its range. A host runs" (cons "what it can execute: AVX2 in process on an x86-64 host that has it," (cons "WebAssembly SIMD128 as a module under Node.js, and NEON on an aarch64 host." (cons "The harness of a target the host cannot execute is built for it and the case" (cons "reports that it was not executed; on the normative host AVX2 and SIMD128 are" (cons "always executed. The worst-case objective as a GNAF `Objective` and the" (cons "rendering of `#[target_feature]` into exported packages belong to the" (cons "realization grammar of #120, which these contracts price." (nil String))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -5097,10 +5099,8 @@ definition{
   parameters: [],
   result: DocRows::Item,
   body: constructor{
-    arguments: [
-      (cons "The first component is the axiom-output parser (§22.5), the module" (cons "`AxiomOutput`, with two production roots for `rust-std`:" (nil String)))
-    ],
-    constructor: DocRows::Item.para,
+    arguments: [3, 1, "17.23 The bootstrap project"],
+    constructor: DocRows::Item.heading,
     type_arguments: []
   },
   executable: true
@@ -5112,9 +5112,9 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "| Root | Oracle |" (cons "| --- | --- |" (cons "| `parseAuditOutput (stdout : Bytes) (expected : List Bytes) : Result (List (Bytes * List Bytes)) Rejection` | `verify::axiom::parse_audit_output` |" (cons "| `isClosedLeanName (raw : Bytes) : Bool` | `ir::core::is_closed_lean_name` |" (nil String)))))
+      (cons "The bootstrap project, `bootstrap/` beside `compiler/` and `stdlib/`, holds the" (cons "components of LexLean's own pipeline that are authored as language-1.2 source" (cons "and compiled by LexLean's production pipeline to certified Rust packages, so" (cons "that the compiler's logic moves into `.lex.tex` component by component (the" (cons "self-hosting plan of issue 92). It is written in the authoring notation (§17.21) under the" (cons "module prefix `LexLeanBoot`, and passes the gates of §28.6 as the standard" (cons "library does. The Rust it replaces stays in the tree as the *stage-0 oracle*" (cons "until the fixed point of that plan; a component is added only with a" (cons "differential against that Rust, and is never a source of the Rust." (nil String))))))))))
     ],
-    constructor: DocRows::Item.table,
+    constructor: DocRows::Item.para,
     type_arguments: []
   },
   executable: true
@@ -5126,7 +5126,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "The parser is the function of §22.5 on the bytes of valid UTF-8 text: the" (cons "lines of `stdout` (`str::lines`), white space as Unicode `White_Space`" (cons "(`str::trim`, `char::is_whitespace`) and not the ASCII white space of" (cons "`Text.trim`, the optional information envelope, the reassembly of a record" (cons "wrapped at the format width, the payload grammar with a duplicate-free axiom" (cons "list sorted bytewise, and the rejection of a missing, duplicate, extra," (cons "reordered, or malformed record. The result is first-order data (§17.13 rule 1):" (cons "`Result.ok` of the observed axioms per declaration, as an association list" (cons "ascending by the declaration's bytes (the order of a `BTreeMap`), or" (cons "`Result.error` of a `Rejection`, a structure of the diagnostic's `message` and" (cons "the `declaration` it is about when the parser attributes it to exactly one" (cons "expected declaration, as the oracle's `AuditFailure` does. The one diagnostic" (cons "of the parser is `LLV7004`, the code of every `Rejection`; it is registered" (cons "in the oracle and not carried in the data, so a host raises it from the" (cons "rejection. The root takes no capability: it is the pure function whose host" (cons "entry is the boundary of issue 92, and its input is the audit output the" (cons "driver has read." (nil String))))))))))))))))))
+      (cons "The project imports the module `Text` of the standard library (§17.22) as a" (cons "source package (§10.5): `bootstrap/lexlean.toml` declares `stdlib` beside it in" (cons "the workspace, `AxiomOutput` and `TokenAudit` import `LexLeanStd.Text`, and the module is" (cons "linked, verified, and replayed with the project under the standard library's" (cons "own prefix. Its definitions are ordinary definitions of the project, so the" (cons "project republishes none of the standard library's production roots, and no" (cons "copy of the module is kept (`PK-05`)." (nil String))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -5140,7 +5140,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "A message is the oracle's message to the byte; a count in a message is written" (cons "in base ten by the module, which has no formatting of a `Nat`. The" (cons "association list is in the order of the sorted declaration names, so that a" (cons "duplicated expected name is the rejection `duplicate record for` as it is for" (cons "the oracle's map." (nil String))))))
+      (cons "The first component is the axiom-output parser (§22.5), the module" (cons "`AxiomOutput`, with two production roots for `rust-std`:" (nil String)))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -5154,9 +5154,9 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "`BS-01` holds both roots to the oracle. On every host, the rendered `rust-std`" (cons "packages of both roots (§17.16), compiled by the pinned rustc, are run on every" (cons "committed golden vector of `tests/golden/axiom-parser/` (each line of" (cons "`accepted.txt` and `rejected.txt`, each blank-line separated record of" (cons "`accepted-wrapped.txt`, and each file whole against its declarations) and the" (cons "boundary edges of the audit-output and Lean-name grammars. On the normative" (cons "host, the lowered programs of both roots are run under the calculus evaluator" (cons "(§17.14) on the committed vectors and a seeded corpus, and the rendered" (cons "`rust-std` packages are also run on the large seeded corpus: records built from" (cons "the payload grammar and its boundaries (names at the edges of the closed" (cons "grammar, axiom lists of every length, every envelope shape and every malformed" (cons "one, every Unicode white space), wrapped at every width, and mutated (a record" (cons "dropped, duplicated, reordered, added, truncated, oversized, or given a stray" (cons "byte). The outcome of a run is the result, the rejection's message, and its" (cons "declaration, and one difference fails the case. Planted defects in the source" (cons "are each detected by the same differential on the normative host, and under the" (cons "pinned Lean the production export (§24.7) certifies both roots, whose packages" (cons "are the committed ones under `tests/production-export/bootstrap/`." (nil String)))))))))))))))))))
+      (cons "| Root | Oracle |" (cons "| --- | --- |" (cons "| `parseAuditOutput (stdout : Bytes) (expected : List Bytes) : Result (List (Bytes * List Bytes)) Rejection` | `verify::axiom::parse_audit_output` |" (cons "| `isClosedLeanName (raw : Bytes) : Bool` | `ir::core::is_closed_lean_name` |" (nil String)))))
     ],
-    constructor: DocRows::Item.para,
+    constructor: DocRows::Item.table,
     type_arguments: []
   },
   executable: true
@@ -5168,7 +5168,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "The second component is the preservation lexer and token audit (§17.17), the" (cons "module `TokenAudit`, with two production roots for `rust-std`:" (nil String)))
+      (cons "The parser is the function of §22.5 on the bytes of valid UTF-8 text: the" (cons "lines of `stdout` (`str::lines`), white space as Unicode `White_Space`" (cons "(`str::trim`, `char::is_whitespace`) and not the ASCII white space of" (cons "`Text.trim`, the optional information envelope, the reassembly of a record" (cons "wrapped at the format width, the payload grammar with a duplicate-free axiom" (cons "list sorted bytewise, and the rejection of a missing, duplicate, extra," (cons "reordered, or malformed record. The result is first-order data (§17.13 rule 1):" (cons "`Result.ok` of the observed axioms per declaration, as an association list" (cons "ascending by the declaration's bytes (the order of a `BTreeMap`), or" (cons "`Result.error` of a `Rejection`, a structure of the diagnostic's `message` and" (cons "the `declaration` it is about when the parser attributes it to exactly one" (cons "expected declaration, as the oracle's `AuditFailure` does. The one diagnostic" (cons "of the parser is `LLV7004`, the code of every `Rejection`; it is registered" (cons "in the oracle and not carried in the data, so a host raises it from the" (cons "rejection. The root takes no capability: it is the pure function whose host" (cons "entry is the boundary of issue 92, and its input is the audit output the" (cons "driver has read." (nil String))))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -5182,9 +5182,9 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "| Root | Oracle |" (cons "| --- | --- |" (cons "| `lex (text : Bytes) : Result (List Lexeme) Bytes` | `production::preserve::lex` |" (cons "| `auditTokens (text : Bytes) (imports : List Bytes) : Result Unit Bytes` | `production::preserve::audit_tokens` |" (nil String)))))
+      (cons "A message is the oracle's message to the byte; a count in a message is written" (cons "in base ten by the module, which has no formatting of a `Nat`. The" (cons "association list is in the order of the sorted declaration names, so that a" (cons "duplicated expected name is the rejection `duplicate record for` as it is for" (cons "the oracle's map." (nil String))))))
     ],
-    constructor: DocRows::Item.table,
+    constructor: DocRows::Item.para,
     type_arguments: []
   },
   executable: true
@@ -5196,7 +5196,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "`lex` reads the bytes of valid UTF-8 Lean source into a list of `Lexeme`" (cons "structures, each carrying its `kind` (`Ident` of a list of `Segment`s with" (cons "their unquoted `text` and whether each was written `«…»`, `Number`, `Literal`," (cons "`Command` of its `#`-prefixed word, or `Symbol` of the UTF-8 bytes of its" (cons "character), its zero-based `line`, whether it is `firstOnLine`, and its `start`" (cons "offset in Unicode scalars of the text: line and nested block comments are" (cons "dropped; string, raw string (`r\"…\"`, `r#\"…\"#`), and character literals are read" (cons "as `Literal`; numbers are read as the pinned Lean's `numberFnAux` reads them," (cons "with `0x`, `0b`, and `0o` radices, decimal fractions, exponents, `_` digit" (cons "separators, and tuple field projections after `.`, refusing ambiguous field" (cons "continuations (`p.1_0`, `p.1e5`) and bare dots before identifiers (`1.foo`);" (cons " identifiers are bounded by `isIdFirst` and `isIdRest` (`Lean.isLetterLike` and" (cons "subscripts included) and joined across `.` only when the next component begins" (cons "with `isIdFirst` or `«`; and an unclosed comment, string, raw string, character" (cons "literal, or quoted name, a quoted name whose body is empty or contains a" (cons "character outside `isIdRest` and `.`, an interpolated string (`s!\"…\"`), or a" (cons "control character (`U+0000`..`U+001F`, `U+007F`, `U+0080`..`U+009F`) is" (cons "refused with the oracle's exact message. `auditTokens` runs `lex` and checks" (cons "the token stream against the certificate environment: any `Command` is refused;" (cons "any identifier component equal to a forbidden constant (`ofReduceBool`," (cons "`ofReduceNat`, `sorryAx`), quoted or not, is refused with its dotted name; any" (cons "single-segment identifier equal to one of the 27 forbidden tokens is refused" (cons "unless it is quoted outside an `@[…]` or `attribute […]` bracket list; every" (cons "`set_option` must name one of the six allowed options as a dotted identifier;" (cons "and every `import` must name a dotted identifier present in `imports`." (nil String))))))))))))))))))))))))))
+      (cons "`BS-01` holds both roots to the oracle. On every host, the rendered `rust-std`" (cons "packages of both roots (§17.16), compiled by the pinned rustc, are run on every" (cons "committed golden vector of `tests/golden/axiom-parser/` (each line of" (cons "`accepted.txt` and `rejected.txt`, each blank-line separated record of" (cons "`accepted-wrapped.txt`, and each file whole against its declarations) and the" (cons "boundary edges of the audit-output and Lean-name grammars. On the normative" (cons "host, the lowered programs of both roots are run under the calculus evaluator" (cons "(§17.14) on the committed vectors and a seeded corpus, and the rendered" (cons "`rust-std` packages are also run on the large seeded corpus: records built from" (cons "the payload grammar and its boundaries (names at the edges of the closed" (cons "grammar, axiom lists of every length, every envelope shape and every malformed" (cons "one, every Unicode white space), wrapped at every width, and mutated (a record" (cons "dropped, duplicated, reordered, added, truncated, oversized, or given a stray" (cons "byte). The outcome of a run is the result, the rejection's message, and its" (cons "declaration, and one difference fails the case. Planted defects in the source" (cons "are each detected by the same differential on the normative host, and under the" (cons "pinned Lean the production export (§24.7) certifies both roots, whose packages" (cons "are the committed ones under `tests/production-export/bootstrap/`." (nil String)))))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -5210,7 +5210,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "`BS-02` holds both roots of `TokenAudit` to the oracle. On every host, the" (cons "rendered `rust-std` packages of both roots (§17.16), compiled by the pinned" (cons "rustc, are run on the deterministic vector corpus: the first 1,500 characters of" (cons "every module of the shipped preservation library and calculus modules, every" (cons "prefix of the number-lexing corpus of `SP-09`, and every positive and negative" (cons "vector of the token-audit unit tests. On the normative host, both roots'" (cons "lowered programs are run under the calculus evaluator (§17.14) on that vector" (cons "corpus and a seeded corpus (the evaluator interprets the lowered program, so" (cons "the gate reads a prefix of each module), the rendered `rust-std` packages are" (cons "also run on the large seeded corpus of generated and mutated Lean texts" (cons "covering comments, literals, radices, scientific numbers, quoted and Greek" (cons "identifiers, attributes, options, imports, commands, and control characters," (cons "planted defects in the source are each detected by the same differential, and" (cons "the production export (§24.7) certifies both roots beside `AxiomOutput` under" (cons "`tests/production-export/bootstrap/`." (nil String))))))))))))))))
+      (cons "The second component is the preservation lexer and token audit (§17.17), the" (cons "module `TokenAudit`, with two production roots for `rust-std`:" (nil String)))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -5224,9 +5224,9 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "The third component is the primitive scanner (§12.2), the module" (cons "`PrimitiveScan`, with two production roots for `rust-std`:" (nil String)))
+      (cons "| Root | Oracle |" (cons "| --- | --- |" (cons "| `lex (text : Bytes) : Result (List Lexeme) Bytes` | `production::preserve::lex` |" (cons "| `auditTokens (text : Bytes) (imports : List Bytes) : Result Unit Bytes` | `production::preserve::audit_tokens` |" (nil String)))))
     ],
-    constructor: DocRows::Item.para,
+    constructor: DocRows::Item.table,
     type_arguments: []
   },
   executable: true
@@ -5238,9 +5238,9 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "| Root | Oracle |" (cons "| --- | --- |" (cons "| `scanSource (path text : Bytes) (maxAtoms : Nat) : Result (List Atom) Rejection` | `source::scan::scan` |" (cons "| `rejectAtoms (path : Bytes) (atoms : List Atom) (forbidden : List Bytes) : Option Rejection` | `source::scan::reject_forbidden_atoms` |" (nil String)))))
+      (cons "`lex` reads the bytes of valid UTF-8 Lean source into a list of `Lexeme`" (cons "structures, each carrying its `kind` (`Ident` of a list of `Segment`s with" (cons "their unquoted `text` and whether each was written `«…»`, `Number`, `Literal`," (cons "`Command` of its `#`-prefixed word, or `Symbol` of the UTF-8 bytes of its" (cons "character), its zero-based `line`, whether it is `firstOnLine`, and its `start`" (cons "offset in Unicode scalars of the text: line and nested block comments are" (cons "dropped; string, raw string (`r\"…\"`, `r#\"…\"#`), and character literals are read" (cons "as `Literal`; numbers are read as the pinned Lean's `numberFnAux` reads them," (cons "with `0x`, `0b`, and `0o` radices, decimal fractions, exponents, `_` digit" (cons "separators, and tuple field projections after `.`, refusing ambiguous field" (cons "continuations (`p.1_0`, `p.1e5`) and bare dots before identifiers (`1.foo`);" (cons " identifiers are bounded by `isIdFirst` and `isIdRest` (`Lean.isLetterLike` and" (cons "subscripts included) and joined across `.` only when the next component begins" (cons "with `isIdFirst` or `«`; and an unclosed comment, string, raw string, character" (cons "literal, or quoted name, a quoted name whose body is empty or contains a" (cons "character outside `isIdRest` and `.`, an interpolated string (`s!\"…\"`), or a" (cons "control character (`U+0000`..`U+001F`, `U+007F`, `U+0080`..`U+009F`) is" (cons "refused with the oracle's exact message. `auditTokens` runs `lex` and checks" (cons "the token stream against the certificate environment: any `Command` is refused;" (cons "any identifier component equal to a forbidden constant (`ofReduceBool`," (cons "`ofReduceNat`, `sorryAx`), quoted or not, is refused with its dotted name; any" (cons "single-segment identifier equal to one of the 27 forbidden tokens is refused" (cons "unless it is quoted outside an `@[…]` or `attribute […]` bracket list; every" (cons "`set_option` must name one of the six allowed options as a dotted identifier;" (cons "and every `import` must name a dotted identifier present in `imports`." (nil String))))))))))))))))))))))))))
     ],
-    constructor: DocRows::Item.table,
+    constructor: DocRows::Item.para,
     type_arguments: []
   },
   executable: true
@@ -5252,7 +5252,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "`scanSource` reads the bytes of normalized, valid UTF-8 source (§12.1) into the" (cons "`Atom`s of the eight classes of §12.2 (`AtomClass`: `Control`, `Word`," (cons "`Numeral`, `Delimiter`, `AsciiSymbol`, `UnicodeSymbol`, `Whitespace`), each with" (cons "its class, its text, its byte span, and its one-based line and column spans," (cons "columns counting scalars; the width of a scalar is read from its lead byte, and" (cons "the module has no dependency on host Unicode character classes. It refuses with" (cons "`LLL1004` a backslash that is followed by a non-ASCII scalar or by the end of the" (cons "text, with `LLL1001` an ASCII control that no class covers, and with `LLS8002`" (cons "the atom that exceeds `maxAtoms`. `rejectAtoms` transcribes" (cons "`reject_forbidden_atoms` and its payload tracking one to one: an always-forbidden" (cons "control (`LLL1002`), and a numeral with a redundant leading zero (`LLL1003`, with" (cons "its help) that does not continue identifier material and is not inside a payload" (cons "string, where the payload of a `\\semanticdata`, `\\toolingdata`, or `\\coredata`" (cons "argument and the body of a `semanticmodule`, `toolingmodule`, or `coremodule`" (cons "environment are tracked by their quotes, escapes, and braces. A `Rejection` is" (cons "first-order data (§17.13 rule 1): the diagnostic's `code`, its `message` to the" (cons "byte, its `place` (the span, when it has one), and its `help` (when it has" (cons "one). A count in a message is written in base ten by the module, as" (cons "`AxiomOutput` does. The roots take no capability." (nil String))))))))))))))))))))
+      (cons "`BS-02` holds both roots of `TokenAudit` to the oracle. On every host, the" (cons "rendered `rust-std` packages of both roots (§17.16), compiled by the pinned" (cons "rustc, are run on the deterministic vector corpus: the first 1,500 characters of" (cons "every module of the shipped preservation library and calculus modules, every" (cons "prefix of the number-lexing corpus of `SP-09`, and every positive and negative" (cons "vector of the token-audit unit tests. On the normative host, both roots'" (cons "lowered programs are run under the calculus evaluator (§17.14) on that vector" (cons "corpus and a seeded corpus (the evaluator interprets the lowered program, so" (cons "the gate reads a prefix of each module), the rendered `rust-std` packages are" (cons "also run on the large seeded corpus of generated and mutated Lean texts" (cons "covering comments, literals, radices, scientific numbers, quoted and Greek" (cons "identifiers, attributes, options, imports, commands, and control characters," (cons "planted defects in the source are each detected by the same differential, and" (cons "the production export (§24.7) certifies both roots beside `AxiomOutput` under" (cons "`tests/production-export/bootstrap/`." (nil String))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -5266,7 +5266,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "`iterate` is still a self-recursive function of the rendered Rust (issue 105), so" (cons "the depth of a scan is the number of its atoms and the module does not chunk the" (cons "text; the whole sources of the rustc differential are bounded by that depth and" (cons "by the size of the harness, not by the oracle." (nil String)))))
+      (cons "The third component is the primitive scanner (§12.2), the module" (cons "`PrimitiveScan`, with two production roots for `rust-std`:" (nil String)))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -5280,9 +5280,9 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "`BS-03` holds both roots to the oracle, and says where each part runs. On every" (cons "host of the matrix the rendered `rust-std` packages (§17.16), compiled by that" (cons "host's pinned rustc, are run on the deterministic vectors (the unit inputs of" (cons "`source::scan`, the atom limit at N and N+1 and at the extremes of the limit," (cons "atom lists with gaps, which a scan never produces, and every shape of payload" (cons "string and notation body), on a 128-byte window and a 2,048-byte prefix of" (cons "every committed `.lex.tex` source, and on the whole of each such source up to" (cons "8,192 bytes (for `rejectAtoms`, up to 1,024 bytes and one source in four," (cons "because its argument is the whole atom list, which the harness spells out and" (cons "which does not compile at the size of the whole tree). On the normative host" (cons "the lowered programs are in addition run under the calculus evaluator (§17.14)" (cons "on the vectors, the windows, and 80 seeded texts; the packages are run on 2,500" (cons "seeded texts and on 500 of their atom lists; each of ten planted defects in the" (cons "source is detected; and the production export (§24.7) certifies both roots" (cons "beside the others under `tests/production-export/bootstrap/`. The outcome of a" (cons "run is the atoms or the rejection with its code, message, span, and help, and" (cons "one difference fails the case. The evaluator reads windows because it" (cons "interprets the lowered program (issue 190); the whole sources are left to the" (cons "rendered package." (nil String))))))))))))))))))))
+      (cons "| Root | Oracle |" (cons "| --- | --- |" (cons "| `scanSource (path text : Bytes) (maxAtoms : Nat) : Result (List Atom) Rejection` | `source::scan::scan` |" (cons "| `rejectAtoms (path : Bytes) (atoms : List Atom) (forbidden : List Bytes) : Option Rejection` | `source::scan::reject_forbidden_atoms` |" (nil String)))))
     ],
-    constructor: DocRows::Item.para,
+    constructor: DocRows::Item.table,
     type_arguments: []
   },
   executable: true
@@ -5294,7 +5294,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "`PD-08` states what the recursion of these roots asks of the host that runs" (cons "them (§17.13, §17.16). The host here is a conformance harness, and the stack it" (cons "gives a root is a recorded fact, not a size picked by habit." (cons "`tests/stack-bounds.json` holds one row for each package of the committed" (cons "`bootstrap` and `stdlib` exports whose provenance states `recursion`, and no" (cons "other: the least stack, in 64 KiB steps, on which the harness the cases run" (cons "finishes, found by bisecting the stack of one built binary on the cases' own" (cons "corpus, in its debug build (the build the cases run, which the check reads) and" (cons "its release build (the build the issue's table measures). One more row is the" (cons "thread the `BS` cases give the calculus evaluator, which recurses with the" (cons "depth of the program it runs. The stack of the harness thread" (cons "(`rust_harness::HARNESS_STACK`) and of the evaluator thread is at least the" (cons "largest recorded bound times the stated headroom of 4, because the bound is the" (cons "least stack that finished on one host and an unoptimized frame differs between" (cons "hosts; a stack below that product, or a root with no row, is refused, and the" (cons "harness of `isClosedLeanName` is run on the stack its bound allows and on a" (cons "quarter of its bound, on which it aborts. The record measures these inputs on" (cons "the host that wrote it. It is evidence at level `build` for the stacks the" (cons "suite gives, and it is not a stack bound for any program, input, or host: a" (cons "package states `recursion` and no more (§17.16), and the host that runs it" (cons "still gives the call a stack its depth fits." (nil String))))))))))))))))))))))
+      (cons "`scanSource` reads the bytes of normalized, valid UTF-8 source (§12.1) into the" (cons "`Atom`s of the eight classes of §12.2 (`AtomClass`: `Control`, `Word`," (cons "`Numeral`, `Delimiter`, `AsciiSymbol`, `UnicodeSymbol`, `Whitespace`), each with" (cons "its class, its text, its byte span, and its one-based line and column spans," (cons "columns counting scalars; the width of a scalar is read from its lead byte, and" (cons "the module has no dependency on host Unicode character classes. It refuses with" (cons "`LLL1004` a backslash that is followed by a non-ASCII scalar or by the end of the" (cons "text, with `LLL1001` an ASCII control that no class covers, and with `LLS8002`" (cons "the atom that exceeds `maxAtoms`. `rejectAtoms` transcribes" (cons "`reject_forbidden_atoms` and its payload tracking one to one: an always-forbidden" (cons "control (`LLL1002`), and a numeral with a redundant leading zero (`LLL1003`, with" (cons "its help) that does not continue identifier material and is not inside a payload" (cons "string, where the payload of a `\\semanticdata`, `\\toolingdata`, or `\\coredata`" (cons "argument and the body of a `semanticmodule`, `toolingmodule`, or `coremodule`" (cons "environment are tracked by their quotes, escapes, and braces. A `Rejection` is" (cons "first-order data (§17.13 rule 1): the diagnostic's `code`, its `message` to the" (cons "byte, its `place` (the span, when it has one), and its `help` (when it has" (cons "one). A count in a message is written in base ten by the module, as" (cons "`AxiomOutput` does. The roots take no capability." (nil String))))))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -5308,7 +5308,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "The fourth component is the target calculus's checker (§17.14, step 4 of issue 92), the module `CalculusCheck` (`BS-04`), with two production roots for `rust-std`:" (nil String))
+      (cons "`iterate` is still a self-recursive function of the rendered Rust (issue 105), so" (cons "the depth of a scan is the number of its atoms and the module does not chunk the" (cons "text; the whole sources of the rustc differential are bounded by that depth and" (cons "by the size of the harness, not by the oracle." (nil String)))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -5322,9 +5322,9 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "| Root | Oracle |" (cons "| --- | --- |" (cons "| `checkProgram (spec : Bytes) (adts : Ty) (parameters : List (List Nat)) (types : Ty) (results : Ty) (bodies : Expr) : Result Unit Bytes` | `calculus::check::check` |" (cons "| `checkArguments (…the same six…, entry : Nat) (arguments : Value) : Result Unit Bytes` | `calculus::check::check_arguments` |" (nil String)))))
+      (cons "`BS-03` holds both roots to the oracle, and says where each part runs. On every" (cons "host of the matrix the rendered `rust-std` packages (§17.16), compiled by that" (cons "host's pinned rustc, are run on the deterministic vectors (the unit inputs of" (cons "`source::scan`, the atom limit at N and N+1 and at the extremes of the limit," (cons "atom lists with gaps, which a scan never produces, and every shape of payload" (cons "string and notation body), on a 128-byte window and a 2,048-byte prefix of" (cons "every committed `.lex.tex` source, and on the whole of each such source up to" (cons "8,192 bytes (for `rejectAtoms`, up to 1,024 bytes and one source in four," (cons "because its argument is the whole atom list, which the harness spells out and" (cons "which does not compile at the size of the whole tree). On the normative host" (cons "the lowered programs are in addition run under the calculus evaluator (§17.14)" (cons "on the vectors, the windows, and 80 seeded texts; the packages are run on 2,500" (cons "seeded texts and on 500 of their atom lists; each of ten planted defects in the" (cons "source is detected; and the production export (§24.7) certifies both roots" (cons "beside the others under `tests/production-export/bootstrap/`. The outcome of a" (cons "run is the atoms or the rejection with its code, message, span, and help, and" (cons "one difference fails the case. The evaluator reads windows because it" (cons "interprets the lowered program (issue 190); the whole sources are left to the" (cons "rendered package." (nil String))))))))))))))))))))
     ],
-    constructor: DocRows::Item.table,
+    constructor: DocRows::Item.para,
     type_arguments: []
   },
   executable: true
@@ -5336,7 +5336,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "The roots take a program as calculus data and not as its canonical JSON: reading a program (`Program::parse`, `canonical`, `load`) belongs to the front end (step 7 of the plan) and is not part of the row. `Ty`, `Value`, and `Expr` are three inductives that mirror `Ty`, `Value`, and `Expr` of `calculus/mod.rs`, constructor for constructor and in order, with `Shape`, `Prim`, `IntKind`, and the ordering value; a list of a recursive type is a *chain* of the type's own `Nil` and `Cons` constructors (the `Fn` parameters and the constructors, fields, and parameter types of a declaration are chains of `Ty`; a literal's items and fields chains of `Value`; operands, captures, and arms chains of `Expr`, whose `Arm` is a constructor of it). The chain is the list: `adts` is the chain of the declarations, each the chain of its constructors, each the chain of its field types; `types` the chain of the functions' parameter-type chains, `results` the chain of their result types, `bodies` the chain of their bodies, and `parameters` their parameter names, a `List (List Nat)`. A result is `Result.ok ()` or `Result.error` of the oracle's reason as UTF-8 bytes. The chains are not a style: certificate A (§17.17) cannot take as a root parameter, nor build in a definition, a `List` of a recursive type, and its commands cut a nested recursive group's rows in a large closure (issue 208); the case therefore decodes the arguments of every vector back to the program the oracle read (`list ↔ chain`, on the 175 committed programs and on every vector) and compares it with it. The oracle's reasons are reproduced to the byte, including the `{:?}` spelling of types, shapes, primitives, and literals, and the base-ten spelling of an index, a count, and an integer bound by decimal comparison; the one part they do not reproduce is Rust's `Debug` for a `str`, which escapes by the Unicode tables of `char::is_printable` and `Grapheme_Extend`: a string literal spelled in a reason is escaped as Rust escapes ASCII and `U+0080`..`U+009F` and copied for every other scalar, so a reason that spells a scalar beyond `U+009F` as `\\u{…}` (such as `U+00A0` or a combining mark) is outside the claim, and the corpora leave those runs out (the fixed point, step 7, replaces the oracle's escaping by a closed escaping on both sides)." (nil String))
+      (cons "`PD-08` states what the recursion of these roots asks of the host that runs" (cons "them (§17.13, §17.16). The host here is a conformance harness, and the stack it" (cons "gives a root is a recorded fact, not a size picked by habit." (cons "`tests/stack-bounds.json` holds one row for each package of the committed" (cons "`bootstrap` and `stdlib` exports whose provenance states `recursion`, and no" (cons "other: the least stack, in 64 KiB steps, on which the harness the cases run" (cons "finishes, found by bisecting the stack of one built binary on the cases' own" (cons "corpus, in its debug build (the build the cases run, which the check reads) and" (cons "its release build (the build the issue's table measures). One more row is the" (cons "thread the `BS` cases give the calculus evaluator, which recurses with the" (cons "depth of the program it runs. The stack of the harness thread" (cons "(`rust_harness::HARNESS_STACK`) and of the evaluator thread is at least the" (cons "largest recorded bound times the stated headroom of 4, because the bound is the" (cons "least stack that finished on one host and an unoptimized frame differs between" (cons "hosts; a stack below that product, or a root with no row, is refused, and the" (cons "harness of `isClosedLeanName` is run on the stack its bound allows and on a" (cons "quarter of its bound, on which it aborts. The record measures these inputs on" (cons "the host that wrote it. It is evidence at level `build` for the stacks the" (cons "suite gives, and it is not a stack bound for any program, input, or host: a" (cons "package states `recursion` and no more (§17.16), and the host that runs it" (cons "still gives the call a stack its depth fits." (nil String))))))))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -5350,7 +5350,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "`BS-04` holds both roots to the oracle. The counts here are the case's own report at the change's head on its base (b5871e8b9), and the committed corpus grows with the repository. On every host the rendered `rust-std` packages of both roots, compiled by the pinned rustc, run the 1,756 vectors of `checkProgram` (1,483 refused) and the 303 of `checkArguments` (129 refused): the 175 distinct programs committed in the repository, each read by the oracle's reader (the fixtures of `compiler/fixtures/`, the programs of the committed Rust packages, and the lowered programs a verification record preserves, among them the two roots' own), the refusals of `TC-02` as the edits that test makes, one program for each rule a planted defect removes, and the literal, primitive, and shape corpora at a fixed seed; the arguments are those of the committed fixtures, as stated and mutated. On the normative host the lowered programs of both roots under the calculus evaluator (§17.14) agree on the same vectors and on 4,722 seeded programs (3,933 refused) and 403 seeded argument runs (202 refused), mutations at the level of the data (a retyped operand, a dropped, duplicated, or reshaped arm, a changed binder, an undeclared function or declaration, a closure over every parameter, an operand dropped or added, each primitive at wrong operand types, a literal respelled or out of range, a specification changed), the rendered packages agree on 9,296 more under rustc, in harnesses of at most 1,000 runs, and thirteen planted defects in the source are each detected by the same differential. Under the pinned Lean, the production export (§24.7) certifies both roots beside those of the other components under `tests/production-export/bootstrap/`." (nil String))
+      (cons "The fourth component is the target calculus's checker (§17.14, step 4 of issue 92), the module `CalculusCheck` (`BS-04`), with two production roots for `rust-std`:" (nil String))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -5364,9 +5364,9 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "The fifth component is the Rust crate validator (§17.16), the module" (cons "`RustValidate`, with two production roots for `rust-std`:" (nil String)))
+      (cons "| Root | Oracle |" (cons "| --- | --- |" (cons "| `checkProgram (spec : Bytes) (adts : Ty) (parameters : List (List Nat)) (types : Ty) (results : Ty) (bodies : Expr) : Result Unit Bytes` | `calculus::check::check` |" (cons "| `checkArguments (…the same six…, entry : Nat) (arguments : Value) : Result Unit Bytes` | `calculus::check::check_arguments` |" (nil String)))))
     ],
-    constructor: DocRows::Item.para,
+    constructor: DocRows::Item.table,
     type_arguments: []
   },
   executable: true
@@ -5378,9 +5378,9 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "| Root | Oracle |" (cons "| --- | --- |" (cons "| `validateCrate (krate : Crate) : Result Unit Bytes` | `calculus::rust::validate::validate` |" (cons "| `correspondCrate (krate : Crate) (elements : List Bytes) : Result Unit Bytes` | `calculus::rust::validate::correspond` |" (nil String)))))
+      (cons "The roots take a program as calculus data and not as its canonical JSON: reading a program (`Program::parse`, `canonical`, `load`) belongs to the front end (step 7 of the plan) and is not part of the row. `Ty`, `Value`, and `Expr` are three inductives that mirror `Ty`, `Value`, and `Expr` of `calculus/mod.rs`, constructor for constructor and in order, with `Shape`, `Prim`, `IntKind`, and the ordering value; a list of a recursive type is a *chain* of the type's own `Nil` and `Cons` constructors (the `Fn` parameters and the constructors, fields, and parameter types of a declaration are chains of `Ty`; a literal's items and fields chains of `Value`; operands, captures, and arms chains of `Expr`, whose `Arm` is a constructor of it). The chain is the list: `adts` is the chain of the declarations, each the chain of its constructors, each the chain of its field types; `types` the chain of the functions' parameter-type chains, `results` the chain of their result types, `bodies` the chain of their bodies, and `parameters` their parameter names, a `List (List Nat)`. A result is `Result.ok ()` or `Result.error` of the oracle's reason as UTF-8 bytes. The chains are not a style: certificate A (§17.17) cannot take as a root parameter, nor build in a definition, a `List` of a recursive type, and its commands cut a nested recursive group's rows in a large closure (issue 208); the case therefore decodes the arguments of every vector back to the program the oracle read (`list ↔ chain`, on the 175 committed programs and on every vector) and compares it with it. The oracle's reasons are reproduced to the byte, including the `{:?}` spelling of types, shapes, primitives, and literals, and the base-ten spelling of an index, a count, and an integer bound by decimal comparison; the one part they do not reproduce is Rust's `Debug` for a `str`, which escapes by the Unicode tables of `char::is_printable` and `Grapheme_Extend`: a string literal spelled in a reason is escaped as Rust escapes ASCII and `U+0080`..`U+009F` and copied for every other scalar, so a reason that spells a scalar beyond `U+009F` as `\\u{…}` (such as `U+00A0` or a combining mark) is outside the claim, and the corpora leave those runs out (the fixed point, step 7, replaces the oracle's escaping by a closed escaping on both sides)." (nil String))
     ],
-    constructor: DocRows::Item.table,
+    constructor: DocRows::Item.para,
     type_arguments: []
   },
   executable: true
@@ -5392,7 +5392,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "A `Crate` is the closed Rust AST (`calculus::rust::ast`) as first-order data" (cons "(§17.13 rule 1): whether the profile is `rust-core`, and the items as a chain," (cons "each sort carrying its lists as its own `Nil`/`Cons` chain. A literal is" (cons "read for its kind and width and a runtime function for its row of the table" (cons "the module transcribes from `runtime::Item` (path, failure, heap use, width)," (cons "so the payload of a literal is not data. `Result.error` carries the oracle's" (cons "message to the byte, including the `{:?}` of a `Type`, of an `Option<IntKind>`," (cons "and of a slice of strings. `validateCrate` checks, in the order of the oracle," (cons "that each enum, `apply`, and function is declared once, that every type a crate" (cons "names is declared and, in `rust-core`, has no heap component (and no heap" (cons "construct or runtime function appears), that every name is bound once per" (cons "function and in scope, that a value is moved at most once on every path" (cons "(including the components of a pair, and the alternatives of an `if` and a" (cons "`match`), that a fallible call propagates exactly where its function is" (cons "fallible, and that each `apply` arm states the failure of the function it calls." (cons "A loop over a state (`Loop`, the constructor `ELoop` of the module) moves its" (cons "state into the loop's own binding and runs its body again after each `Ok`, so a" (cons "body that moves a name outside it, or a component of one, is refused with the" (cons "least such name in the oracle's order of names, and the value a fallible loop" (cons "ends with, at each `Err` of its body, must be a fallible value; the body is" (cons "checked as a block that is not a tail, for its applications as for its moves," (cons "except that the operand of each `Err` that ends a loop which is the value of a" (cons "fallible function is that function's tail, and the correspondence traversal" (cons "treats it as a block." (cons "`correspondCrate` lists the constructs a crate emits instance by instance and" (cons "checks each against the 97 rows of the correspondence table, the element it was" (cons "lowered from, its width, and the elements the program uses; a repeated" (cons "instance is kept once, which does not change which one the oracle reports" (cons "first. Lowering, printing, packaging, and the choice of profile are not part of" (cons "the claim, and a crate whose exported name or origin element holds a non-ASCII" (cons "or non-printable scalar is outside it." (nil String))))))))))))))))))))))))))))))))
+      (cons "`BS-04` holds both roots to the oracle. The counts here are the case's own report at the change's head on its base (b5871e8b9), and the committed corpus grows with the repository. On every host the rendered `rust-std` packages of both roots, compiled by the pinned rustc, run the 1,756 vectors of `checkProgram` (1,483 refused) and the 303 of `checkArguments` (129 refused): the 175 distinct programs committed in the repository, each read by the oracle's reader (the fixtures of `compiler/fixtures/`, the programs of the committed Rust packages, and the lowered programs a verification record preserves, among them the two roots' own), the refusals of `TC-02` as the edits that test makes, one program for each rule a planted defect removes, and the literal, primitive, and shape corpora at a fixed seed; the arguments are those of the committed fixtures, as stated and mutated. On the normative host the lowered programs of both roots under the calculus evaluator (§17.14) agree on the same vectors and on 4,722 seeded programs (3,933 refused) and 403 seeded argument runs (202 refused), mutations at the level of the data (a retyped operand, a dropped, duplicated, or reshaped arm, a changed binder, an undeclared function or declaration, a closure over every parameter, an operand dropped or added, each primitive at wrong operand types, a literal respelled or out of range, a specification changed), the rendered packages agree on 9,296 more under rustc, in harnesses of at most 1,000 runs, and thirteen planted defects in the source are each detected by the same differential. Under the pinned Lean, the production export (§24.7) certifies both roots beside those of the other components under `tests/production-export/bootstrap/`." (nil String))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -5406,7 +5406,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "`BS-05` holds both roots to the oracle. The crates are those the renderer" (cons "lowers (`rust::lower`) from the 173 distinct programs among the 256 committed" (cons "package manifests of `compiler/rust` and `tests/production-export` and the 122" (cons "fixtures of `compiler/fixtures` (232 distinct crates over both profiles, with" (cons "the `elements` the renderer realizes), a rule corpus that reaches each of the" (cons "48 refusals a crate of the closed AST can reach three times (132 `validateCrate`" (cons "runs and 12 `correspondCrate` runs, asserted: the corpus fails if its draws run" (cons "out first), 17 crates by hand for the merge of moved sets at an `if` and a" (cons "`match`, 37 by hand for the loop rules, and 55 by hand for the machine callee and" (cons "the overflow value (a call of each of the 44 families of machine primitives with" (cons "one operand too many, three with the right count, a propagating call, the overflow" (cons "value alone, one in an `Err`, one function that takes the error type of the runtime, one that takes `i128`, and the failure of a runtime function: a fallible function whose tail is `Err::<T, Overflow>(Overflow)`, which both validators accept, and the same `Err` with another payload and with another error type, which both refuse), which reach the three refusals no mutant of a" (cons "committed crate reaches (an operand count, a stray overflow value, and the" (cons "construct `call:machine`, which no row of the table has); that is 473 runs of" (cons "`validateCrate` (216 refused) and 336 of `correspondCrate` (103 refused), and the case asserts" (cons "these counts. On every host, the rendered `rust-std` packages of both" (cons "roots (§17.16), compiled by the pinned rustc, are run on all of them. On the" (cons "normative host, the lowered programs of both roots are run under the calculus" (cons "evaluator (§17.14) on the crates of at most 400 expressions (201 of the 232;" (cons "the larger ones are the compiler's own packages and are held to the oracle by" (cons "the compiled run) with the rule corpus, and on 500 seeded mutants of the" (cons "crates of at most 80 expressions (a node replaced by another of the crate, a" (cons "name, type, pattern, constructor, callee, origin, or width changed, an item or" (cons "binding or arm dropped, doubled, or swapped, a call's propagation flipped, a" (cons "dispatch arm restated, a block run in a loop, the profile exchanged, and the" (cons "elements of the program changed); the rendered packages are also run on 2,000 further seeded mutants" (cons "per root. The outcome of a run is the result and, for a refusal, the message," (cons "and one difference fails the case. Twenty-one planted defects in the source (a heap" (cons "type admitted under `rust-core`, a name bound twice accepted, the moves of" (cons "earlier match arms forgotten, a component moved after its whole accepted, an" (cons "undeclared ADT type accepted, a `?` in an infallible function accepted, a" (cons "fallible call without propagation accepted, an `apply` arm's failure not" (cons "compared with its function's, a correspondence row narrowed, the width of a" (cons "runtime call not compared, a name or a component moved in a loop body accepted," (cons "the end of a fallible loop not checked, a loop's state not moved into the loop," (cons "the name a loop's refusal reports not the least, a loop body checked as a" (cons "tail, the end of a fallible loop not checked as its function's tail, the" (cons "operands of a machine call not counted, a stray overflow value accepted, the" (cons "overflow value in an `Err` refused, and a machine call not an instance of the" (cons "correspondence) are each detected by the same differential, and" (cons "under the pinned Lean the production export (§24.7) certifies both roots beside" (cons "the others, whose packages are the committed ones under" (cons "`tests/production-export/bootstrap/`." (nil String))))))))))))))))))))))))))))))))))))))))))))
+      (cons "The fifth component is the Rust crate validator (§17.16), the module" (cons "`RustValidate`, with two production roots for `rust-std`:" (nil String)))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -5420,9 +5420,9 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "The sixth component is the Rust printer (§17.16), the module `RustPrint` over the" (cons "module `RustAst` (`BS-06`), with two production roots for `rust-std`:" (nil String)))
+      (cons "| Root | Oracle |" (cons "| --- | --- |" (cons "| `validateCrate (krate : Crate) : Result Unit Bytes` | `calculus::rust::validate::validate` |" (cons "| `correspondCrate (krate : Crate) (elements : List Bytes) : Result Unit Bytes` | `calculus::rust::validate::correspond` |" (nil String)))))
     ],
-    constructor: DocRows::Item.para,
+    constructor: DocRows::Item.table,
     type_arguments: []
   },
   executable: true
@@ -5434,9 +5434,9 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "| Root | Oracle |" (cons "| --- | --- |" (cons "| `printCrate (capacity : Nat) (header : Bytes) (krate : Crate) : Result Bytes Bytes` | `calculus::rust::ast::print` |" (cons "| `printExpr (capacity : Nat) (expr : Expr) : Result Bytes Bytes` | `calculus::rust::ast::print_expr` |" (nil String)))))
+      (cons "A `Crate` is the closed Rust AST (`calculus::rust::ast`) as first-order data" (cons "(§17.13 rule 1): whether the profile is `rust-core`, and the items as a chain," (cons "each sort carrying its lists as its own `Nil`/`Cons` chain. A literal is" (cons "read for its kind and width and a runtime function for its row of the table" (cons "the module transcribes from `runtime::Item` (path, failure, heap use, width)," (cons "so the payload of a literal is not data. `Result.error` carries the oracle's" (cons "message to the byte, including the `{:?}` of a `Type`, of an `Option<IntKind>`," (cons "and of a slice of strings. `validateCrate` checks, in the order of the oracle," (cons "that each enum, `apply`, and function is declared once, that every type a crate" (cons "names is declared and, in `rust-core`, has no heap component (and no heap" (cons "construct or runtime function appears), that every name is bound once per" (cons "function and in scope, that a value is moved at most once on every path" (cons "(including the components of a pair, and the alternatives of an `if` and a" (cons "`match`), that a fallible call propagates exactly where its function is" (cons "fallible, and that each `apply` arm states the failure of the function it calls." (cons "A loop over a state (`Loop`, the constructor `ELoop` of the module) moves its" (cons "state into the loop's own binding and runs its body again after each `Ok`, so a" (cons "body that moves a name outside it, or a component of one, is refused with the" (cons "least such name in the oracle's order of names, and the value a fallible loop" (cons "ends with, at each `Err` of its body, must be a fallible value; the body is" (cons "checked as a block that is not a tail, for its applications as for its moves," (cons "except that the operand of each `Err` that ends a loop which is the value of a" (cons "fallible function is that function's tail, and the correspondence traversal" (cons "treats it as a block." (cons "`correspondCrate` lists the constructs a crate emits instance by instance and" (cons "checks each against the 97 rows of the correspondence table, the element it was" (cons "lowered from, its width, and the elements the program uses; a repeated" (cons "instance is kept once, which does not change which one the oracle reports" (cons "first. Lowering, printing, packaging, and the choice of profile are not part of" (cons "the claim, and a crate whose exported name or origin element holds a non-ASCII" (cons "or non-printable scalar is outside it." (nil String))))))))))))))))))))))))))))))))
     ],
-    constructor: DocRows::Item.table,
+    constructor: DocRows::Item.para,
     type_arguments: []
   },
   executable: true
@@ -5448,7 +5448,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "`RustAst` is the AST of `RustValidate` with the payloads a printer reads and a" (cons "validator does not: the value of a literal (a magnitude and a sign, at most 64" (cons "bits), the text of a string and the octets of a byte string, the ordering a" (cons "pattern matches, and the width of a machine call. It reuses the sorts of" (cons "`RustValidate` that carry them already, and its lists of a recursive sort are" (cons "chains (`#208`). The printer writes sequentially into the `Buffer` of the" (cons "standard library (§17.22): the layout of the oracle's printer (a fixed" (cons "indentation of four spaces, a block, an arm, and an item laid out one way) is" (cons "reproduced by writing each part once, in order, and the few places where the" (cons "oracle decides by the text of a part (an `else` that is an empty block, a" (cons "scrutinee that begins with a brace, a negation of a comparison) are decided by" (cons "the shape of the part. `header` is the attributes of the profile and the" (cons "runtime, which the host reads from semantic modules (`scaffold` and `source`" (cons "of the oracle, step 7); the roots add the items. The result is `Result.ok` of" (cons "the bytes or `Result.error` of the refusal of the buffer, so a capacity that" (cons "the output exceeds is a value of the result and never a failure of the run." (cons "A crate whose exported name holds a non-ASCII scalar, a literal of more than 64" (cons "bits, and a machine call with fewer operands than its primitive (which the" (cons "oracle indexes past) are outside the claim." (nil String))))))))))))))))))))
+      (cons "`BS-05` holds both roots to the oracle. The crates are those the renderer" (cons "lowers (`rust::lower`) from the 173 distinct programs among the 256 committed" (cons "package manifests of `compiler/rust` and `tests/production-export` and the 122" (cons "fixtures of `compiler/fixtures` (232 distinct crates over both profiles, with" (cons "the `elements` the renderer realizes), a rule corpus that reaches each of the" (cons "48 refusals a crate of the closed AST can reach three times (132 `validateCrate`" (cons "runs and 12 `correspondCrate` runs, asserted: the corpus fails if its draws run" (cons "out first), 17 crates by hand for the merge of moved sets at an `if` and a" (cons "`match`, 37 by hand for the loop rules, and 55 by hand for the machine callee and" (cons "the overflow value (a call of each of the 44 families of machine primitives with" (cons "one operand too many, three with the right count, a propagating call, the overflow" (cons "value alone, one in an `Err`, one function that takes the error type of the runtime, one that takes `i128`, and the failure of a runtime function: a fallible function whose tail is `Err::<T, Overflow>(Overflow)`, which both validators accept, and the same `Err` with another payload and with another error type, which both refuse), which reach the three refusals no mutant of a" (cons "committed crate reaches (an operand count, a stray overflow value, and the" (cons "construct `call:machine`, which no row of the table has); that is 473 runs of" (cons "`validateCrate` (216 refused) and 336 of `correspondCrate` (103 refused), and the case asserts" (cons "these counts. On every host, the rendered `rust-std` packages of both" (cons "roots (§17.16), compiled by the pinned rustc, are run on all of them. On the" (cons "normative host, the lowered programs of both roots are run under the calculus" (cons "evaluator (§17.14) on the crates of at most 400 expressions (201 of the 232;" (cons "the larger ones are the compiler's own packages and are held to the oracle by" (cons "the compiled run) with the rule corpus, and on 500 seeded mutants of the" (cons "crates of at most 80 expressions (a node replaced by another of the crate, a" (cons "name, type, pattern, constructor, callee, origin, or width changed, an item or" (cons "binding or arm dropped, doubled, or swapped, a call's propagation flipped, a" (cons "dispatch arm restated, a block run in a loop, the profile exchanged, and the" (cons "elements of the program changed); the rendered packages are also run on 2,000 further seeded mutants" (cons "per root. The outcome of a run is the result and, for a refusal, the message," (cons "and one difference fails the case. Twenty-one planted defects in the source (a heap" (cons "type admitted under `rust-core`, a name bound twice accepted, the moves of" (cons "earlier match arms forgotten, a component moved after its whole accepted, an" (cons "undeclared ADT type accepted, a `?` in an infallible function accepted, a" (cons "fallible call without propagation accepted, an `apply` arm's failure not" (cons "compared with its function's, a correspondence row narrowed, the width of a" (cons "runtime call not compared, a name or a component moved in a loop body accepted," (cons "the end of a fallible loop not checked, a loop's state not moved into the loop," (cons "the name a loop's refusal reports not the least, a loop body checked as a" (cons "tail, the end of a fallible loop not checked as its function's tail, the" (cons "operands of a machine call not counted, a stray overflow value accepted, the" (cons "overflow value in an `Err` refused, and a machine call not an instance of the" (cons "correspondence) are each detected by the same differential, and" (cons "under the pinned Lean the production export (§24.7) certifies both roots beside" (cons "the others, whose packages are the committed ones under" (cons "`tests/production-export/bootstrap/`." (nil String))))))))))))))))))))))))))))))))))))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -5462,7 +5462,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "`BS-06` holds both roots to the oracle. The counts here are the case's own" (cons "report: it asserts them, so a tree that no longer gives them fails the case." (cons "The tree is the one with the packages of the two roots of this component and" (cons "of the three roots of `Buffer` (`SL-05`) committed, so the committed manifests" (cons "are 256; `BS-05` asserts the same corpus. On every host" (cons "the rendered packages, compiled by the pinned rustc, run 2,710 vectors: 627" (cons "of `printCrate` (464 the distinct crates the renderer lowers from the 173" (cons "distinct programs among the 256 committed manifests and 122 fixtures and the" (cons "crates of the 256 committed packages, the hand-built crates of every item and" (cons "profile, the real header of each profile, and 61 runs with a capacity one byte" (cons "short of the output) and 2,083 of `printExpr` (1,532 hand-built expressions of" (cons "every construct, literal, runtime row and machine primitive, and the function" (cons "bodies of the committed crates). The items of each of the 256 committed" (cons "libraries are the oracle's printed items; the header before them is the" (cons "runtime of the committed export, which the regeneration of the records moves" (cons "with the runtime. On the normative host the evaluator agrees on 562 and 2,083" (cons "of those vectors (the crates of at most 6,000 nodes of data) and on 400 and" (cons "399 seeded mutants of the crates of at most 80 expressions, the rendered" (cons "packages agree on 2,984 further mutants, thirteen planted defects in the source" (cons "are each detected, and the production export (§24.7) certifies both roots" (cons "beside the others under `tests/production-export/bootstrap/`." (nil String))))))))))))))))))))))
+      (cons "The sixth component is the Rust printer (§17.16), the module `RustPrint` over the" (cons "module `RustAst` (`BS-06`), with two production roots for `rust-std`:" (nil String)))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -5472,6 +5472,48 @@ definition{
 
 definition{
   name: i0398,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "| Root | Oracle |" (cons "| --- | --- |" (cons "| `printCrate (capacity : Nat) (header : Bytes) (krate : Crate) : Result Bytes Bytes` | `calculus::rust::ast::print` |" (cons "| `printExpr (capacity : Nat) (expr : Expr) : Result Bytes Bytes` | `calculus::rust::ast::print_expr` |" (nil String)))))
+    ],
+    constructor: DocRows::Item.table,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0399,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "`RustAst` is the AST of `RustValidate` with the payloads a printer reads and a" (cons "validator does not: the value of a literal (a magnitude and a sign, at most 64" (cons "bits), the text of a string and the octets of a byte string, the ordering a" (cons "pattern matches, and the width of a machine call. It reuses the sorts of" (cons "`RustValidate` that carry them already, and its lists of a recursive sort are" (cons "chains (`#208`). The printer writes sequentially into the `Buffer` of the" (cons "standard library (§17.22): the layout of the oracle's printer (a fixed" (cons "indentation of four spaces, a block, an arm, and an item laid out one way) is" (cons "reproduced by writing each part once, in order, and the few places where the" (cons "oracle decides by the text of a part (an `else` that is an empty block, a" (cons "scrutinee that begins with a brace, a negation of a comparison) are decided by" (cons "the shape of the part. `header` is the attributes of the profile and the" (cons "runtime, which the host reads from semantic modules (`scaffold` and `source`" (cons "of the oracle, step 7); the roots add the items. The result is `Result.ok` of" (cons "the bytes or `Result.error` of the refusal of the buffer, so a capacity that" (cons "the output exceeds is a value of the result and never a failure of the run." (cons "A crate whose exported name holds a non-ASCII scalar, a literal of more than 64" (cons "bits, and a machine call with fewer operands than its primitive (which the" (cons "oracle indexes past) are outside the claim." (nil String))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0400,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "`BS-06` holds both roots to the oracle. The counts here are the case's own" (cons "report: it asserts them, so a tree that no longer gives them fails the case." (cons "The tree is the one with the packages of the two roots of this component and" (cons "of the three roots of `Buffer` (`SL-05`) committed, so the committed manifests" (cons "are 256; `BS-05` asserts the same corpus. On every host" (cons "the rendered packages, compiled by the pinned rustc, run 2,710 vectors: 627" (cons "of `printCrate` (464 the distinct crates the renderer lowers from the 173" (cons "distinct programs among the 256 committed manifests and 122 fixtures and the" (cons "crates of the 256 committed packages, the hand-built crates of every item and" (cons "profile, the real header of each profile, and 61 runs with a capacity one byte" (cons "short of the output) and 2,083 of `printExpr` (1,532 hand-built expressions of" (cons "every construct, literal, runtime row and machine primitive, and the function" (cons "bodies of the committed crates). The items of each of the 256 committed" (cons "libraries are the oracle's printed items; the header before them is the" (cons "runtime of the committed export, which the regeneration of the records moves" (cons "with the runtime. On the normative host the evaluator agrees on 562 and 2,083" (cons "of those vectors (the crates of at most 6,000 nodes of data) and on 400 and" (cons "399 seeded mutants of the crates of at most 80 expressions, the rendered" (cons "packages agree on 2,984 further mutants, thirteen planted defects in the source" (cons "are each detected, and the production export (§24.7) certifies both roots" (cons "beside the others under `tests/production-export/bootstrap/`." (nil String))))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0401,
   parameters: [],
   result: DocRows::Item,
   body: constructor{

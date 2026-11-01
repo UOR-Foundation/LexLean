@@ -1,4 +1,4 @@
-//! The `gnaf` suite: GN-01..GN-08, GNAF requests over the production
+//! The `gnaf` suite: GN-01..GN-09, GNAF requests over the production
 //! realization calculus (SPEC.md §17.15).
 
 use std::collections::BTreeSet;
@@ -518,6 +518,7 @@ pub fn run(id: &str) {
         "GN-06" => gn_06(),
         "GN-07" => gn_07(),
         "GN-08" => gn_08(),
+        "GN-09" => super::target_machine::run(id),
         _ => panic!("no GNAF case {id}"),
     }
 }

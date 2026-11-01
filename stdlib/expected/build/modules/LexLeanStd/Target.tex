@@ -1,0 +1,260 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{plus}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : Int) (right : Int)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Int}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.subtract (left) ((LexLeanRuntime.negate (right) : Int)) : Int)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{saturate16}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : Int)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Int}.\par
+\noindent Definition: \texttt{(if (LexLeanCollections.lessThan (value) ((LexLeanRuntime.negate ((32768 : Int)) : Int)) : Bool) then (LexLeanRuntime.negate ((32768 : Int)) : Int) else (if (LexLeanCollections.lessThan ((32767 : Int)) (value) : Bool) then (32767 : Int) else value))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{wrap32}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : Int)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Int}.\par
+\noindent Definition: \texttt{(if (LexLeanCollections.lessThan (value) ((LexLeanRuntime.negate ((2147483648 : Int)) : Int)) : Bool) then plus (value) ((4294967296 : Int)) else (if (LexLeanCollections.lessThan ((2147483647 : Int)) (value) : Bool) then (LexLeanRuntime.subtract (value) ((4294967296 : Int)) : Int) else value))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{finishPair}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(mode : Nat) (value : Int)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Int}.\par
+\noindent Definition: \texttt{(if (Nat.beq (mode) (0)) then saturate16 (value) else (if (Nat.beq (mode) (1)) then wrap32 (value) else value))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{products}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(count : Nat) (left : List (Int)) (right : List (Int))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (Int)}.\par
+\noindent Definition: \texttt{(match left with | List.nil => ([] : List (Int)) | List.cons l lrest => (match right with | List.nil => ([] : List (Int)) | List.cons r rrest => (if (Nat.beq (count) (0)) then ([] : List (Int)) else ((LexLeanRuntime.multiply (l) (r) : Int) :: products ((LexLeanRuntime.subtract (count) (1) : Nat)) (lrest) (rrest)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{pairSums}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(mode : Nat) (phase : Nat) (held : Int) (values : List (Int))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (Int)}.\par
+\noindent Definition: \texttt{(match values with | List.nil => ([] : List (Int)) | List.cons v rest => (if (Nat.beq (phase) (0)) then pairSums (mode) (1) (v) (rest) else (finishPair (mode) (plus (held) (v)) :: pairSums (mode) (0) ((0 : Int)) (rest))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{saturatingAdd}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : List (Int)) (right : List (Int))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (Int)}.\par
+\noindent Definition: \texttt{(match left with | List.nil => ([] : List (Int)) | List.cons l lrest => (match right with | List.nil => ([] : List (Int)) | List.cons r rrest => (saturate16 (plus (l) (r)) :: saturatingAdd (lrest) (rrest))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{avx2MaddubsEpi16}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : List (Int)) (right : List (Int))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{List (Int)}.\par
+\noindent Definition: \texttt{pairSums (0) (0) ((0 : Int)) (products (64) (left) (right))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{avx2MaddEpi16}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : List (Int)) (right : List (Int))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{List (Int)}.\par
+\noindent Definition: \texttt{pairSums (1) (0) ((0 : Int)) (products (64) (left) (right))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{avx2AddsEpi16}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : List (Int)) (right : List (Int))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{List (Int)}.\par
+\noindent Definition: \texttt{saturatingAdd (left) (right)}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{neonMullS8}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : List (Int)) (right : List (Int))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{List (Int)}.\par
+\noindent Definition: \texttt{products (8) (left) (right)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{neonPaddlqS16}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : List (Int))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{List (Int)}.\par
+\noindent Definition: \texttt{pairSums (2) (0) ((0 : Int)) (left)}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{neonQaddqS16}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : List (Int)) (right : List (Int))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{List (Int)}.\par
+\noindent Definition: \texttt{saturatingAdd (left) (right)}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{wasmExtmulLowI8x16}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : List (Int)) (right : List (Int))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{List (Int)}.\par
+\noindent Definition: \texttt{products (8) (left) (right)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{wasmDotI16x8}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : List (Int)) (right : List (Int))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{List (Int)}.\par
+\noindent Definition: \texttt{pairSums (1) (0) ((0 : Int)) (products (64) (left) (right))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{wasmAddSatI16x8}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : List (Int)) (right : List (Int))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{List (Int)}.\par
+\noindent Definition: \texttt{saturatingAdd (left) (right)}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{Op}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{avx2Maddubs}: \texttt{()}.\par
+\noindent Constructor \texttt{avx2Madd}: \texttt{()}.\par
+\noindent Constructor \texttt{avx2Adds}: \texttt{()}.\par
+\noindent Constructor \texttt{neonMull}: \texttt{()}.\par
+\noindent Constructor \texttt{neonPaddl}: \texttt{()}.\par
+\noindent Constructor \texttt{neonQadd}: \texttt{()}.\par
+\noindent Constructor \texttt{wasmExtmul}: \texttt{()}.\par
+\noindent Constructor \texttt{wasmDot}: \texttt{()}.\par
+\noindent Constructor \texttt{wasmAddSat}: \texttt{()}.\par
+\subsection*{\texttt{Cost}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{ops}: \texttt{Nat}.\par
+\noindent Field \texttt{bytes}: \texttt{Nat}.\par
+\subsection*{\texttt{blockLanes}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(op : Op)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match op with | Op.avx2Maddubs => 32 | Op.avx2Madd => 16 | Op.avx2Adds => 16 | Op.neonMull => 8 | Op.neonPaddl => 8 | Op.neonQadd => 8 | Op.wasmExtmul => 16 | Op.wasmDot => 8 | Op.wasmAddSat => 8)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{readBytes}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(op : Op)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match op with | Op.avx2Maddubs => 64 | Op.avx2Madd => 64 | Op.avx2Adds => 64 | Op.neonMull => 16 | Op.neonPaddl => 16 | Op.neonQadd => 32 | Op.wasmExtmul => 32 | Op.wasmDot => 32 | Op.wasmAddSat => 32)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{price}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(op : Op) (lanes : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Cost}.\par
+\noindent Definition: \texttt{(let blocks : Nat := (LexLeanRuntime.quotient ((lanes + (LexLeanRuntime.subtract (blockLanes (op)) (1) : Nat))) (blockLanes (op)) (0) : Nat); (\{ ops := blocks, bytes := (LexLeanRuntime.multiply (blocks) (readBytes (op)) : Nat) \} : Cost))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{heavier}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(state : Cost) (candidate : Cost)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Cost}.\par
+\noindent Definition: \texttt{(if (Nat.blt ((state).bytes) ((candidate).bytes)) then candidate else state)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{worstCase}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(op : Op) (domain : List (Nat))}.\par
+\noindent Closure 1: binds \texttt{(state, lanes)}, captures \texttt{(op)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Cost}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (state : Cost) (lanes : Nat) => heavier (state) (price (op) (lanes)))) ((\{ ops := 0, bytes := 0 \} : Cost)) (domain) : Cost)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{bounded}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(op : Op) (domain : List (Nat))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(Nat.ble ((worstCase (op) (domain)).bytes) ((LexLeanRuntime.multiply ((worstCase (op) (domain)).ops) (readBytes (op)) : Nat)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{allBounded}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(domain : List (Nat))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(if bounded (Op.avx2Maddubs) (domain) then (if bounded (Op.avx2Madd) (domain) then (if bounded (Op.avx2Adds) (domain) then (if bounded (Op.neonMull) (domain) then (if bounded (Op.neonPaddl) (domain) then (if bounded (Op.neonQadd) (domain) then (if bounded (Op.wasmExtmul) (domain) then (if bounded (Op.wasmDot) (domain) then bounded (Op.wasmAddSat) (domain) else false) else false) else false) else false) else false) else false) else false) else false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{maddubs\_saturates\_high}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(avx2MaddubsEpi16 (((255 : Int) :: ((255 : Int) :: ([] : List (Int))))) (((127 : Int) :: ((127 : Int) :: ([] : List (Int))))) = ((32767 : Int) :: ([] : List (Int))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{maddubs\_saturates\_low}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(avx2MaddubsEpi16 (((255 : Int) :: ((255 : Int) :: ([] : List (Int))))) (((LexLeanRuntime.negate ((128 : Int)) : Int) :: ((LexLeanRuntime.negate ((128 : Int)) : Int) :: ([] : List (Int))))) = ((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ([] : List (Int))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{maddubs\_exact}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(avx2MaddubsEpi16 (((3 : Int) :: ((4 : Int) :: ([] : List (Int))))) (((5 : Int) :: ((LexLeanRuntime.negate ((6 : Int)) : Int) :: ([] : List (Int))))) = ((LexLeanRuntime.negate ((9 : Int)) : Int) :: ([] : List (Int))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{madd\_wraps}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(avx2MaddEpi16 (((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ([] : List (Int))))) (((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ([] : List (Int))))) = ((LexLeanRuntime.negate ((2147483648 : Int)) : Int) :: ([] : List (Int))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{madd\_exact}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(avx2MaddEpi16 (((1 : Int) :: ((2 : Int) :: ((3 : Int) :: ((4 : Int) :: ([] : List (Int))))))) (((5 : Int) :: ((6 : Int) :: ((7 : Int) :: ((8 : Int) :: ([] : List (Int))))))) = ((17 : Int) :: ((53 : Int) :: ([] : List (Int)))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{adds\_saturates}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(avx2AddsEpi16 (((32767 : Int) :: ((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ([] : List (Int))))) (((1 : Int) :: ((LexLeanRuntime.negate ((1 : Int)) : Int) :: ([] : List (Int))))) = ((32767 : Int) :: ((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ([] : List (Int)))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{mull\_widens}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(neonMullS8 (((LexLeanRuntime.negate ((128 : Int)) : Int) :: ((127 : Int) :: ([] : List (Int))))) (((LexLeanRuntime.negate ((128 : Int)) : Int) :: ((127 : Int) :: ([] : List (Int))))) = ((16384 : Int) :: ((16129 : Int) :: ([] : List (Int)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{paddl\_widens}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(neonPaddlqS16 (((32767 : Int) :: ((32767 : Int) :: ((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ([] : List (Int))))))) = ((65534 : Int) :: ((LexLeanRuntime.negate ((65536 : Int)) : Int) :: ([] : List (Int)))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{qadd\_saturates}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(neonQaddqS16 (((32767 : Int) :: ((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ([] : List (Int))))) (((1 : Int) :: ((LexLeanRuntime.negate ((1 : Int)) : Int) :: ([] : List (Int))))) = ((32767 : Int) :: ((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ([] : List (Int)))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{extmul\_takes\_low\_eight}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(wasmExtmulLowI8x16 (((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ([] : List (Int))))))))))))))))))) (((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ([] : List (Int))))))))))))))))))) = ((15 : Int) :: ((15 : Int) :: ((15 : Int) :: ((15 : Int) :: ((15 : Int) :: ((15 : Int) :: ((15 : Int) :: ((15 : Int) :: ([] : List (Int)))))))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{dot\_wraps}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(wasmDotI16x8 (((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ([] : List (Int))))) (((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ([] : List (Int))))) = ((LexLeanRuntime.negate ((2147483648 : Int)) : Int) :: ([] : List (Int))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{add\_sat\_saturates}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(wasmAddSatI16x8 (((32767 : Int) :: ((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ([] : List (Int))))) (((1 : Int) :: ((LexLeanRuntime.negate ((1 : Int)) : Int) :: ([] : List (Int))))) = ((32767 : Int) :: ((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ([] : List (Int)))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{price\_reads\_whole\_instructions}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{((price (Op.avx2Maddubs) (33)).ops = 2)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{price\_bytes}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{((price (Op.avx2Maddubs) (33)).bytes = 128)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{price\_empty}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{((price (Op.neonQadd) (0)).bytes = 0)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{worst\_case\_is\_largest}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{((worstCase (Op.avx2Maddubs) ((0 :: (31 :: (1024 :: (33 :: ([] : List (Nat)))))))).bytes = 2048)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{worst\_case\_bounded\_by\_operations}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(allBounded ((0 :: (1 :: (7 :: (8 :: (9 :: (31 :: (32 :: (33 :: (1024 :: ([] : List (Nat)))))))))))) = true)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\end{document}

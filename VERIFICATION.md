@@ -17845,6 +17845,80 @@ with the one feature named above, thumbv7em with the DSP extension only. Which
 targets and feature sets are modeled first stays the decision of #109, and the
 rest of #119 waits on it.
 
+## Target machine contracts and the instruction differential (`GN-09`, #119)
+
+`LexLeanStd.Target` (`stdlib/src/Target.lex.tex`, SPEC.md §17.22) states, for
+the three production targets decided in #109 (D4), the machine contract of
+§17.15 taken to the target: three integer SIMD instructions each, over `List
+Int` lanes, with their widths, widening, wrapping and signed saturation, and
+a cost per instruction as a step vector (operations `c`, bytes read `b`) whose
+worst case over a declared domain of lane counts is bounded by `c` (D2, #107).
+`conformance_gn_09` holds each of the nine roots to the instruction itself.
+The first failure of the case, before the module verified, was `LLC0102`
+(`lexlean.lock` stale); the case was then run against each defect below.
+
+*The differential.* Every root is lowered and run by the calculus evaluator on
+325 cases per instruction, 975 per target (25 cases that put every lane at one
+edge of its range, at the other, alternating, or zero, then 300 seeded cases
+that pick an edge half the time). The same cases are compiled into a harness
+and run by the instruction, with the pinned `rustc 1.97.1` and `#[target_feature]`
+in safe Rust (the `transmute` between lane arrays and vectors is the harness's
+only `unsafe`, and the harness is not a shipped crate). Where each target ran
+on the machine that produced this record:
+
+| Target, feature | Instructions | Result |
+| --- | --- | --- |
+| `x86_64-unknown-linux-gnu`, `avx2` | `_mm256_maddubs_epi16`, `_mm256_madd_epi16`, `_mm256_adds_epi16` | executed in process on an AVX2 x86-64 host: 975 cases, the model and the instruction agree on all |
+| `wasm32-unknown-unknown`, `simd128` | `i16x8_extmul_low_i8x16`, `i32x4_dot_i16x8`, `i16x8_add_sat` | executed as a WebAssembly module under Node.js 22.23.4: 975 cases, agree on all |
+| `aarch64-unknown-linux-gnu`, `neon` | `vmull_s8`, `vpaddlq_s16`, `vqaddq_s16` | built for the target by the pinned `rustc` (it compiles under `#[target_feature(enable = "neon")]`), **not executed**: the host is x86-64 and has no emulator |
+
+The NEON semantics is therefore held by the kernel-checked theorems of the
+module (`mull_widens`, `mull_takes_eight`, `paddl_widens`, `qadd_saturates`)
+and by the two other targets' agreement on the same helper functions
+(`products`, `pairSums`, `saturatingAdd`), and not by a run of `vmull_s8`,
+`vpaddlq_s16` or `vqaddq_s16`. The case executes NEON on an aarch64 host; on a
+Linux x86-64 host it requires AVX2 and Node.js and fails without them, so
+the two executed targets never pass vacuously (§8.3). `ci.yml` adds the two
+non-host targets with `rustup target add`. `thumbv7em-none-eabihf` with `dsp`
+is not modeled (D4, and the probe record above).
+
+*The kernel.* The module verifies under Lean 4.32.1 with an exact axiom policy
+for each of its 23 definitions and 18 theorems; `price`, `worstCase` and the
+edge theorems (`maddubs_saturates_high`, `madd_wraps`, `paddl_widens` and the
+rest) are `decide`-checked, and `verify` checks the certificates of the nine
+roots. The roots are not in `tests/production-export/stdlib/roots.json`: a
+published package adds a committed manifest, and `BS-05` and `BS-06` state the
+counts of committed manifests, programs and crates in their register
+statements, so exporting them is a separate change to those rows. A
+first form of the multiply-add pairs (one recursion over both lists with a
+phase, a held product and a mode) was refused by the kernel in certificate A
+(`LLV7013`, "deep recursion detected"); the form committed splits it into
+`products` and `pairSums`, which verify.
+
+### the target machine contracts can fail
+
+Each case plants the defect, runs `cargo test -p repo-conformance --test
+conformance conformance_gn_09`, and restores the file.
+
+| Planted defect | Observed |
+| --- | --- |
+| `saturate16`'s upper bound `32767` as `32768` in `Target.lex.tex` | the differential fails on x86-64: `avx2MaddubsEpi16 on x86_64-unknown-linux-gnu (+avx2): the model and the instruction disagree on 95 of 325 cases` |
+| the same plant inside the case, on a copy of the project | the case asserts that the corpus detects it, and does |
+| `finishPair` without the 32-bit wrap (`value` for `wrap32 value` in mode 1) | the differential fails on x86-64: `avx2MaddEpi16 … disagree on 1 of 325 cases`; the one case is the all `-32768` operands, the only wrap in the corpus the edge patterns reach, so the edge patterns are what detects it |
+| `avx2MaddubsEpi16` in the wrapping mode (`pairSums 1`) instead of the saturating one | the differential fails on x86-64: `avx2MaddubsEpi16 … disagree on 155 of 325 cases` |
+| SIMD128's `wasmExtmulLowI8x16` over seven lanes (`products 7`) | the differential fails under Node.js: `wasmExtmulLowI8x16 on wasm32-unknown-unknown (+simd128): the model and the instruction disagree on 325 of 325 cases` |
+| NEON's `neonMullS8` over seven lanes (`products 7`) | the differential does **not** fail, because NEON is not executed on this host; the kernel does: `mull_takes_eight` is refused with `LLV7002` |
+| the harness calls `_mm256_add_epi16` where the case names `_mm256_adds_epi16` | the differential fails: `avx2AddsEpi16 … disagree on 311 of 325 cases` |
+| the false theorem `maddubs_saturates_high` (the saturated lane stated as `32766`) | the case asserts `verify` fails, and it fails with `LLV7002` |
+
+*What the record does not cover.* No instruction of NEON ran. The corpus is
+lanes at the edges of the type and seeded values, not an exhaustive
+enumeration. Costs are a model: the bytes an instruction reads and one
+operation per instruction, not a measured latency or throughput (C5). The
+worst-case objective as a GNAF `Objective`, and `#[target_feature]` on the
+exported packages, are not part of `GN-09`; they belong to the realization
+grammar of #120, which the contracts price.
+
 ## Planted defects for the release criterion read from the specification (`RP-17`, `CL-18`, #113)
 
 Each case below was run on Linux x86-64 and the tree restored with `git

@@ -18,6 +18,17 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- The standard library gains `LexLeanStd.Target` (#119, `GN-09`), the machine contracts of the production
+  targets decided in #109: for `x86_64-unknown-linux-gnu` with `avx2`, `aarch64-unknown-linux-gnu` with
+  `neon` and `wasm32-unknown-unknown` with `simd128`, three integer SIMD instructions each over `List Int`
+  lanes with their exact widths, widening, wrapping and signed saturation, nine production roots for
+  `rust-std`, and a cost per instruction as a step vector of operations `c` and bytes read `b`, whose
+  worst case over a declared domain of lane counts is bounded by `c` (#107, D2). The case holds each
+  root to the instruction itself, compiled by the pinned rustc under `#[target_feature]`: AVX2 in process,
+  SIMD128 as a WebAssembly module under Node.js, NEON built for its target and executed only on an
+  aarch64 host. `ci.yml` adds the two non-host targets with `rustup target add`. No language or schema
+  data changes, so no compiler-semantics ID moves. The worst-case objective of a GNAF request and the
+  `#[target_feature]` attribute on exported packages belong to #120.
 - Language 1.2 applies the bitwise primitives and shifts to unbounded `Nat` (#317, `SM-38`):
   `bit_and`, `bit_or` and `bit_xor` over two `Nat` operands and `shift_left` and `shift_right` over a
   `Nat` operand and a `Nat` amount, each with result `Nat` and no `Option`, lowered to `Nat.land`,
