@@ -65,7 +65,8 @@ workspace carried at those versions without a tag.
   each reader reads back its printer's output. `stdlib/lexlean.toml` gains the
   entrypoint, so the locks of `stdlib`, `bootstrap`, and `examples/helpdesk`
   move, and the `stdlib` records and production export are regenerated. The
-  register is 459 IDs.
+  five new packages move the counts `BS-05` and `BS-06` assert. The register is
+  459 IDs.
 
 ## 0.4.0
 
