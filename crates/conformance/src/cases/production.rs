@@ -172,7 +172,7 @@ fn host_effects() {
             "request.read",
         ),
         (
-            "body: (cons (ctor LexLeanStd.Host::Request.spawn child) (cons (ctor LexLeanStd.Host::Request.wait (nil Nat) 1) (cons (ctor LexLeanStd.Host::Request.stop 0) (nil LexLeanStd.Host::Request))))",
+            "body: (cons (ctor LexLeanStd.Host::Request.spawn (child \"a\")) (cons (ctor LexLeanStd.Host::Request.wait (nil Nat) 1) (cons (ctor LexLeanStd.Host::Request.stop 0) (nil LexLeanStd.Host::Request))))",
             "allocation, process",
             "allocation, files",
             "processRequests",

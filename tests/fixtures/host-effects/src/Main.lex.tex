@@ -24,12 +24,12 @@ definition{
 
 definition{
   name: child,
-  parameters: [],
+  parameters: [program : String],
   result: LexLeanStd.Host::Child,
   body: record{
     type: LexLeanStd.Host::Child,
     fields: [
-      {field: program, value: "a"},
+      {field: program, value: program},
       {field: arguments, value: (nil String)},
       {field: directory, value: "."},
       {field: environment, value: (nil (String * String))},
@@ -44,7 +44,7 @@ definition{
   name: processRequests,
   parameters: [],
   result: (List LexLeanStd.Host::Request),
-  body: (cons (ctor LexLeanStd.Host::Request.spawn child) (cons (ctor LexLeanStd.Host::Request.wait (nil Nat) 1) (cons (ctor LexLeanStd.Host::Request.stop 0) (nil LexLeanStd.Host::Request)))),
+  body: (cons (ctor LexLeanStd.Host::Request.spawn (child "a")) (cons (ctor LexLeanStd.Host::Request.wait (nil Nat) 1) (cons (ctor LexLeanStd.Host::Request.stop 0) (nil LexLeanStd.Host::Request)))),
   executable: true,
   production: {effects: [allocation, process], targets: [rust-std]}
 }
