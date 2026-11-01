@@ -17677,6 +17677,24 @@ each with `policy: exact{axioms: [Classical.choice, Quot.sound, propext]}`, and
 `preserve/audit.txt` prints `'….R0.bounded' depends on axioms: [propext,
 Classical.choice, Quot.sound]` and the same for `root_value`; the eligibility
 report of the module names the bound and requires no effect on either target.
+*The forward merge of `release/v0.5` at `fd14c6252`.* The line's `SP-29`, `SP-30` and
+`RB-20` to `RB-22` (the std runtime, the refinement statements, the loop ends)
+took the numbers this branch had used, so its rows are now `SP-31` and `RB-23`
+(`PD-09` and `LLT4017` are free on the line and keep theirs); the register is
+481. Run after the merge, Linux x86-64, Lean 4.32.1: `validate-model`,
+`validate-spec-links`, `check-calculus`, `check-production-export`,
+`check-golden`, `check-test-inventory`, `cargo fmt --check`, `cargo clippy
+--workspace --all-targets --all-features -- -D warnings`, and
+`conformance_rp_11`, `conformance_pc_01`, `conformance_pd_09`,
+`conformance_sp_31` (280 s) and `conformance_ex_07` (the 309 prescribed
+negatives) pass; `conformance_rb_23` is red as stated above. `RB-23` is not
+implemented: on this line the preservation library is a kernel-DAG export
+(`language/preservation-1.2/library/src/*.lex.tex`, `RustLemmas` 295,000
+lines), so the new `Item` and `Machine` constructors the ruling on #116 asks
+for need the library re-elaborated from Lean sources that predate the line's
+later grafts, with an exporter that is not in the tree. The records of
+`uor-atlas` are not regenerated.
+
 ## A toolchain fetch is retried three times and no more (#242)
 
 Every step of `ci.yml`, `honesty.yml` and `reproducibility.yml` that fetches a
