@@ -47,6 +47,14 @@ fn host_project() -> P {
     project
 }
 
+/// Replace one occurrence in the fixture's `Main` as its notation writes it:
+/// [`P::edit`] reads a module's canonical JSON.
+fn edit_raw(project: &P, from: &str, to: &str) {
+    let text = project.read_raw(MAIN);
+    assert!(text.contains(from), "{MAIN} does not contain {from:?}");
+    project.write_raw(MAIN, &text.replacen(from, to, 1));
+}
+
 /// The effects `root` of the fixture realizes on `rust-std`, each with the
 /// constructs that are its sources.
 fn host_effects_of(project: &P, root: &str) -> Vec<(String, Vec<String>)> {
@@ -182,7 +190,7 @@ fn host_effects() {
     ] {
         let mutated = host_project();
         let (before, after) = root_of(body, from, to);
-        mutated.edit(MAIN, &before, &after);
+        edit_raw(&mutated, &before, &after);
         mutated.relock();
         let text = mutated.check_fails_with("LLT4005").to_string();
         assert!(
@@ -203,8 +211,8 @@ fn host_effects() {
         "allocation",
     );
     assert_eq!(before, after);
-    core.edit(
-        MAIN,
+    edit_raw(
+        &core,
         &before,
         &before.replace("targets: [rust-std]", "targets: [rust-core, rust-std]"),
     );
@@ -223,8 +231,8 @@ fn host_effects() {
         "src/Reader.lex.tex",
         "\\begin{lexlean}{Reader}\n\\useglossary{lexlean.std.nat@1.2.0}\n\\title{Natural number addition}\n\\begin{semanticmodule}\ninductive{\n  name: Request,\n  type_parameters: [],\n  parameters: [],\n  constructors: [\n    {name: read, fields: [String]}\n  ]\n}\n\ndefinition{\n  name: reader,\n  parameters: [path : String],\n  result: Request,\n  body: (ctor Request.read path),\n  executable: true\n}\n\\end{semanticmodule}\n\\end{lexlean}\n",
     );
-    elsewhere.edit(
-        MAIN,
+    edit_raw(
+        &elsewhere,
         "name: reads,\n  parameters: [state : (Option Nat), event : LexLeanStd.Host::Event],\n  result: (Nat * LexLeanStd.Host::Request),\n  body: (0, (Reader::reader \"source\")),\n  executable: true,\n  production: {effects: [allocation, files], targets: [rust-std]}",
         "name: reads,\n  parameters: [state : (Option Nat), event : LexLeanStd.Host::Event],\n  result: (Nat * Reader::Request),\n  body: (0, (Reader::reader \"source\")),\n  executable: true,\n  production: {effects: [allocation], targets: [rust-std]}",
     );
