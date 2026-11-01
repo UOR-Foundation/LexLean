@@ -97,6 +97,14 @@
       "version": "1.0.0"
     },
     {
+      "name": "validate_request",
+      "root": "LexLeanBoot.GnafValidate.validateRequest",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "validate_runtime",
       "root": "LexLeanBoot.RuntimeValidate.validateRuntime",
       "targets": [

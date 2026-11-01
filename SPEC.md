@@ -8143,6 +8143,30 @@ declared twice, a tuple of one, a `break` outside a loop, a private free functio
 `rust-core`, each accepted) are each detected by the differential. Under the pinned Lean the production
 export certifies the root beside the others and its package is the committed one.
 
+`BS-16` holds `validateRequest` of `GnafValidate` to `gnaf::validate` (§17.15). The root takes the projection
+of a request that validation reads, as first-order data: the length of the domain, the machine (its capacity,
+its steps, and its operand size), the carrier's kind with each plan's preparations and the thresholds, the
+completeness evidence, the objective, the claim's class, and the scope. It checks the oracle's rules in the oracle's order
+(the domain, the completeness, the capacity, the operands, the distinct actions, the performed kinds, the declared
+kinds, the prepared artifacts, the plans, the claim, and the scope) and returns the first rejection as the oracle's
+`serde_json` bytes (the 21 rejections), or nothing; `universe_size` is the module's `n + |T| * n * n`. The module is 33
+`definition` blocks, 4 `structure` blocks, and 10 `inductive` blocks (the ten action kinds, the claim classes, and the
+sorts of the projection); the pinned Lean observes no axiom in any definition, which each declares as `axioms: []`.
+Its one production root is eligible for `rust-std` with the effects `allocation` and `overflow`. The corpus is 3,862
+requests: the 60 committed under `compiler/gnaf/` (and the requests the committed certificate fixtures name), 802 hand-built
+requests that reach each of the 21 rejections, and 3,000 seeded mutants of the committed requests, 3,522 of them refused,
+so that every one of the 21 rejections is reached and 43 pairs of a rule and an action kind. The outcome of a run is the
+acceptance or the rejection bytes, and one difference fails the case. On every host the rendered `rust-std` package,
+compiled by the pinned rustc, is run on all of them; on the normative host the calculus evaluator (§17.14) also runs on
+all 3,862 and twelve planted defects in the source (an empty domain, a constant charge of zero, a free preparation under
+the complete boundary, a prepared artifact matched against steps, a duplicate counted at one occurrence, the fallback
+kind not performed, the domain capacity compared with at-least, a universe size without the square, the legacy alias
+refused as unsupported, the scalar and vector claim checks swapped, a scope over Rust programs admitted, and the operand
+size checked before the capacity, each accepted or reordered) are each detected by the differential. Under the pinned Lean the
+production export certifies the root beside the others and its package is the committed one. Loading a request
+(`gnaf::load`), the universe identity, the answer, and certification are outside the claim, and are the later parts of the
+GNAF requests and certification (#275).
+
 ## 18. Lean backend
 
 ### 18.1 Output contract
@@ -11056,7 +11080,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-09` | `language-models` | No prompt is code: no member of the closed language maps `string` or `bytes` to a function, a term, or source — every operation of the primitive registry that takes a `string` or `bytes` operand is classified by the audit with a data result, the registry's schema enumeration and the production registry's primitive rows equal one another and equal that classified set, and the text declarations of `lexlean/semantic-module/2` state no `string`-typed member, so a prompt reaches a model only as the tokens `encodeText` makes of it; a planted operation or text member of that shape is caught by the audit with its name. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 459.
+**Total required capability IDs:** 460.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 
