@@ -36,6 +36,11 @@ and Unreleased holds what has landed since.
   marks that compose with Latin-1 letters; anything else, a non-integer number and a repeated member name are
   refused). uor-addr 0.2.0 is the oracle of the cases (a dependency of `repo-conformance`, never of a shipped
   crate). The GGUF and ONNX forms, the other hash axes and composition are outside the package.
+- κ-label composition in LexLean (#127, `KA-04`): the module `Compose` of the `kappa` project writes the five
+  categorical compositions of uor-addr on the sha256 axis (`composeG2`, `composeF4`, `composeE6`, `composeE7`,
+  `composeE8`), each a production root held to `uor_addr::composition::compose_*` by a seeded differential of
+  the evaluator and rustc realizations; an operand that is not a sha256 label is refused. The GGUF and ONNX
+  forms and the blake3, sha3-256, keccak256 and sha512 axes remain outside the package.
 - Language 1.2 applies the bitwise primitives and shifts to unbounded `Nat` (#317, `SM-38`):
   `bit_and`, `bit_or` and `bit_xor` over two `Nat` operands and `shift_left` and `shift_right` over a
   `Nat` operand and a `Nat` amount, each with result `Nat` and no `Option`, lowered to `Nat.land`,
