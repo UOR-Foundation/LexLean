@@ -11438,18 +11438,56 @@ share one text). The case is `conformance_bs_20`
 (`crates/conformance/src/cases/bootstrap/tooling_latex.rs`); its first commit
 was the failing test (R3), `no bootstrap case is wired for BS-20`.
 
-This entry records what ran and what did not. The case is not green on this
-tree.
+What ran, on the normative host (Ubuntu under WSL, Rust 1.97.1, Lean 4.32.1):
 
-| Step | Command | Observed |
-| --- | --- | --- |
-| the two modules check | `lexlean check` in a relocked copy of the project | `checked 12 modules` |
-| the two modules alone are kernel-verified | `lexlean lock && lexlean verify` in a copy whose entrypoints are the two modules | `verified 4 modules` (under 5 minutes) |
-| the root is eligible for `rust-std` with `allocation`, `overflow`, `recursion` | `conformance_bs_20`, `eligibility` | passed |
-| the oracle's text is the committed LaTeX of the three tooling modules | same, `committed` | passed |
-| the rendered package under the pinned rustc agrees with the oracle | same, `rustc_differential` | 90 vectors agree (before the `Char` modules were added, 156 now) |
-| the evaluator, the seeded corpora, the 17 planted defects | same | not run to the end: see below |
-| the committed package is the exported one | same | not run: the package and the stack row of the root are not committed |
+| Step | Observed |
+| --- | --- |
+| the two modules check and are kernel-verified | `lexlean check` (12 modules) and `lexlean verify` (4 modules) passed |
+| the root is eligible for `rust-std` with `allocation`, `overflow`, `recursion` | passed |
+| the oracle's text is the committed LaTeX of the three tooling modules | passed |
+| the 264 vectors (3 committed modules, 85 targeted, 88 refused by the oracle) | the rustc leg agrees on all 264, and so does the evaluator |
+| 180 evaluator mutant runs (seed `0x0B55_0020`) | agree |
+| 600 rustc mutant runs (seed `0x0B55_0021`) | agree |
+| the 17 planted defects | each detected, at the vector given below |
+| the committed package is the exported one | passed; `check-production-export --write` regenerated all 14 packages in about 45 minutes, and the root's stack row is 3,342,336 bytes (debug) |
+
+The case takes about 78 minutes in all on this host (the legs 58 minutes, the
+plants and the export comparison the rest).
+
+The planted defects and the first vector (by position) that detects each:
+
+| Plant | Vector |
+| --- | --- |
+| a backslash is escaped as a bare command | 36 |
+| a brace is not escaped | 0 |
+| a tilde loses its empty group | 45 |
+| a caret loses its empty group | 48 |
+| an ampersand is not escaped | 51 |
+| the hexadecimal of a non-ASCII scalar is in lower case | 0 |
+| the hexadecimal of a scalar has three digits at least | 0 |
+| a character is quoted as a bare quote | 96 |
+| an application of a registered call is not explicit | 135 |
+| an implicit binder is bracketed as an explicit one | 0 |
+| an instance binder is bracketed as an explicit one | 0 |
+| a named type argument has no space before its value | 0 |
+| the body of a function is indented by one space | 0 |
+| a function line keeps the newlines of its body | 0 |
+| a public function is not marked public | 0 |
+| the visibility line swaps public and private | 0 |
+| a trimmed line loses one byte of its trailing white space | 153 |
+
+Three plants escaped the first full run and were fixed in the corpus, not in the
+module. A tilde, a caret and an ampersand reached no vector because no token
+carried them (tokens with `~`, `a^b`, `&` were added). A plant that removed the
+newline after a function body is an equivalent mutant (the oracle's `trim_end`
+removes it either way) and was replaced by one that keeps the newlines of a
+function line. The trim plant needed a line that ends in white space of two or
+three bytes; a name cannot (the checker requires a Lean identifier), so the
+vectors end a command in a token such as `x` followed by U+00A0, U+2003, U+0085 or
+U+3000, which the invocation of the command then ends with. The explicit
+application needed a signature that applies a constant to arguments; the vectors
+wrap a constant of a signature in an application of itself, and the checker
+accepts 20 of the modules that result.
 
 *The compiler's rejection found while writing the module.* The first full
 verification of the project failed certificate A (`LLV7013`,
@@ -11460,23 +11498,9 @@ bare parameter (`| TyConst d0 d1 => out`). The same shape with a constant body
 module avoids the shape (`putNamed` recurses on the list of names and takes the
 type chain apart in `consSplit`); the rejection is not minimised and not filed.
 
-*What could not run.* The Ubuntu distribution of this host restarted every few
-minutes to every half hour while the case ran (the journal of the distribution
-shows several boots within one minute, and `/tmp`, with the build lock, is empty
-after each), which killed `check-production-export --write` three times (after
-9, about 45, and about 30 minutes; one run is about 30 minutes without the
-restarts) and `conformance_bs_20` five times, each between the first corpus
-line and the end of the rustc leg. So the evaluator leg, the seeded corpora, the
-planted defects, and the regeneration of the committed export have not run on
-this tree. The seventeen plants are written and their sites each occur once in
-the module (counted by script), but none has been observed to be detected, and
-no claim is made here that it is.
-
-*To finish the row* on a stable host: add the root to
-`tests/production-export/bootstrap/roots.json`
-(`render_tooling_latex`, root `LexLeanBoot.ToolingLatex.renderToolingLatex`,
-`rust-std`, version `1.0.0`), relock `bootstrap/lexlean.lock`, run
-`just production-export-write`, measure the stack row with the measuring
-mode of `crates/conformance/src/stack_bounds.rs`, run `conformance_bs_20`, and
-state the counts it reports in the row of `model/ids.toml` and SPEC.md §31
-(the statement is count-free now) before `just vv`.
+*What remains of #270.* The Lean backend and the verification driver are
+separate rows. The tooling module reaches this root as already-decoded data; a
+decoder from the JSON of a tooling module to `ToolingAst` that does not use
+serde is not written (the case builds its inputs with `serde_json` in the test
+only). The reserved-token list is an argument of the root; whether it should be
+an inline table is the maintainer's call.

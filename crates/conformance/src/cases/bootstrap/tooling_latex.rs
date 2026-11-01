@@ -72,7 +72,11 @@ fn enc_sig(sig: &Sig) -> Value {
         ),
         Sig::Type { level } => adt(
             5,
-            vec![option(level.as_ref().map(|SigLevel::Parameter { name }| text(name)))],
+            vec![option(
+                level
+                    .as_ref()
+                    .map(|SigLevel::Parameter { name }| text(name)),
+            )],
         ),
         Sig::OptParam { domain, default } => adt(6, vec![enc_sig(domain), enc_sig(default)]),
         Sig::EmptyStructure => adt(7, Vec::new()),
@@ -130,7 +134,11 @@ fn enc_term(term: &ToolTerm) -> Value {
             arguments,
         } => adt(
             5,
-            vec![text(function), enc_tys(type_arguments), enc_terms(arguments)],
+            vec![
+                text(function),
+                enc_tys(type_arguments),
+                enc_terms(arguments),
+            ],
         ),
         ToolTerm::Construct {
             constructor,
@@ -337,7 +345,12 @@ fn enc_decl(declaration: &ToolDeclaration) -> Value {
 
 /// The reserved tokens of the pinned toolchain, as the argument of the root.
 fn reserved() -> Value {
-    list(LEAN_RESERVED_TOKENS.iter().map(|token| text(token)).collect())
+    list(
+        LEAN_RESERVED_TOKENS
+            .iter()
+            .map(|token| text(token))
+            .collect(),
+    )
 }
 
 /// The typings the checker infers: the type parameters of each call and
@@ -398,10 +411,14 @@ fn runs_of(module: &ToolingModule) -> Vec<Run> {
         return Vec::new();
     };
     let length = text_out.len();
-    [Some(length), Some(length.saturating_sub(1)), Some(length + 4096)]
-        .into_iter()
-        .filter_map(|capacity| run_of(module, capacity))
-        .collect()
+    [
+        Some(length),
+        Some(length.saturating_sub(1)),
+        Some(length + 4096),
+    ]
+    .into_iter()
+    .filter_map(|capacity| run_of(module, capacity))
+    .collect()
 }
 
 // -------------------------------------------------------------- committed
@@ -457,11 +474,43 @@ fn committed() -> Vec<(String, ToolingModule, String)> {
 /// string literal.
 fn specials() -> Vec<String> {
     [
-        "a\\b", "{x}", "50%", "a_b", "x^2", "~", "#", "$", "&", "\u{e9}", "\u{2192}",
-        "\u{1d538}", "\u{ab}x\u{bb}", "a\nb", "tab\there", "\u{7f}", "\u{85}", "\u{a0}", "say \"hi\"",
-        "ends with a space ", "\u{2003}", "\u{3000}", "\r", "\u{0}", "\u{9f}", "",
-        "A.B.C", ".x", "x.", "..", "throwError", "do", "A.throwError.B", "fun", "match",
-        "0", "1000000000000000000000",
+        "a\\b",
+        "{x}",
+        "50%",
+        "a_b",
+        "x^2",
+        "~",
+        "#",
+        "$",
+        "&",
+        "\u{e9}",
+        "\u{2192}",
+        "\u{1d538}",
+        "\u{ab}x\u{bb}",
+        "a\nb",
+        "tab\there",
+        "\u{7f}",
+        "\u{85}",
+        "\u{a0}",
+        "say \"hi\"",
+        "ends with a space ",
+        "\u{2003}",
+        "\u{3000}",
+        "\r",
+        "\u{0}",
+        "\u{9f}",
+        "",
+        "A.B.C",
+        ".x",
+        "x.",
+        "..",
+        "throwError",
+        "do",
+        "A.throwError.B",
+        "fun",
+        "match",
+        "0",
+        "1000000000000000000000",
     ]
     .iter()
     .map(|s| (*s).to_owned())
@@ -470,7 +519,9 @@ fn specials() -> Vec<String> {
 
 /// A scalar the checker accepts, from every width class of UTF-8.
 fn scalars() -> [u32; 14] {
-    [0, 9, 10, 13, 32, 39, 92, 126, 127, 233, 8364, 0x10ffff, 0x1d538, 34]
+    [
+        0, 9, 10, 13, 32, 39, 92, 126, 127, 233, 8364, 0x10ffff, 0x1d538, 34,
+    ]
 }
 
 enum Seg {
@@ -503,11 +554,9 @@ fn leaves(json: &Json, path: &mut Vec<Seg>, out: &mut Vec<Vec<String>>, strings:
                 path.pop();
             }
         }
-        Json::String(value) => {
-            if !matches!(path.last(), Some(Seg::Key(key)) if key == "kind") {
-                out.push(encode(path));
-                strings.push(value.clone());
-            }
+        Json::String(value) if !matches!(path.last(), Some(Seg::Key(key)) if key == "kind") => {
+            out.push(encode(path));
+            strings.push(value.clone());
         }
         _ => {}
     }
@@ -687,7 +736,92 @@ fn targeted(base: &ToolingModule, names: &[&str], tokens: &[&str]) -> Vec<Toolin
     // function that returns one of the scalars that stress the quoting of a
     // character are added to each module that has a string type and a function.
     out.extend(characters(&json));
+    out.extend(applications(&json));
+    out.extend(closings(&json));
     out
+}
+
+/// The modules made from `json` by ending a command with a token that ends in
+/// white space of two and of three bytes, so that the invocation of the
+/// command is a line the trimming must cut through a multi-byte scalar.
+fn closings(json: &Json) -> Vec<ToolingModule> {
+    let mut out = Vec::new();
+    let declarations = json["declarations"].as_array().map_or(0, Vec::len);
+    for index in 0..declarations {
+        if json["declarations"][index]["kind"] != "command" {
+            continue;
+        }
+        for text in ["x\u{a0}", "x\u{2003}", "x\u{85}", "x\u{3000}"] {
+            let mut changed = json.clone();
+            let atoms = changed["declarations"][index]["atoms"]
+                .as_array_mut()
+                .expect("the atoms of a command");
+            atoms.push(serde_json::json!({"kind": "token", "text": text}));
+            out.extend(accepted(&changed).filter(|module| printed(module).is_some()));
+        }
+    }
+    out
+}
+
+/// The modules made from `json` by applying one constant of a signature to
+/// one or two copies of itself, which the checker accepts when the constant
+/// is a type that takes the arguments or a registered call; the application
+/// of such a head is written with an explicit `@`.
+fn applications(json: &Json) -> Vec<ToolingModule> {
+    let mut count = 0;
+    wrap(&mut json.clone(), &mut count, usize::MAX, 1);
+    let mut out = Vec::new();
+    for extra in [1, 2] {
+        let mut kept = 0;
+        for target in 0..count {
+            let mut changed = json.clone();
+            wrap(&mut changed, &mut 0, target, extra);
+            if let Some(module) = accepted(&changed).filter(|module| printed(module).is_some()) {
+                out.push(module);
+                kept += 1;
+                if kept == 4 {
+                    break;
+                }
+            }
+        }
+    }
+    out
+}
+
+/// Number the constants of `json` in order; the one numbered `target` becomes
+/// an application of itself to `extra` copies of itself.
+fn wrap(json: &mut Json, seen: &mut usize, target: usize, extra: usize) {
+    let constant = matches!(
+        json,
+        Json::Object(map) if map.len() == 2
+            && map.get("kind") == Some(&Json::String("const".to_owned()))
+            && map.contains_key("name")
+    );
+    if constant {
+        if *seen == target {
+            let head = json.clone();
+            *json = serde_json::json!({
+                "kind": "app",
+                "function": head.clone(),
+                "arguments": vec![head; extra],
+            });
+        }
+        *seen += 1;
+        return;
+    }
+    match json {
+        Json::Object(map) => {
+            for (key, value) in map.iter_mut() {
+                if key != "kind" {
+                    wrap(value, seen, target, extra);
+                }
+            }
+        }
+        Json::Array(items) => items
+            .iter_mut()
+            .for_each(|item| wrap(item, seen, target, extra)),
+        _ => {}
+    }
 }
 
 /// The scalars of the character terms of the targeted vectors: the quote and
@@ -727,7 +861,9 @@ fn characters(json: &Json) -> Vec<ToolingModule> {
         glyph["result"] = serde_json::json!({"kind": "const", "name": "Char", "arguments": []});
         glyph["body"] = serde_json::json!({"kind": "char", "value": code});
         let mut changed = json.clone();
-        let list = changed["declarations"].as_array_mut().expect("declarations");
+        let list = changed["declarations"]
+            .as_array_mut()
+            .expect("declarations");
         list.insert(string_type + 1, char_type.clone());
         list.push(glyph);
         out.extend(accepted(&changed).filter(|module| printed(module).is_some()));
@@ -806,8 +942,8 @@ pub(super) const PLANTS: [super::Plant; 17] = [
     },
     super::Plant {
         label: "a named type argument has no space before its value",
-        site: r##"" := ") reserved head 0 true)"##,
-        replacement: r##"" :=") reserved head 0 true)"##,
+        site: r##"" := ") reserved (first parts) 0 true)"##,
+        replacement: r##"" :=") reserved (first parts) 0 true)"##,
         root: ROOT,
     },
     super::Plant {
@@ -817,9 +953,9 @@ pub(super) const PLANTS: [super::Plant; 17] = [
         root: ROOT,
     },
     super::Plant {
-        label: "a function has no newline after its body",
-        site: r##"(putS (putTerm o4 ctx bodyTerm 0 true) "\n")"##,
-        replacement: r##"(putS (putTerm o4 ctx bodyTerm 0 true) "")"##,
+        label: "a function line keeps the newlines of its body",
+        site: r##"(leanLine (visibilityLine (writeHead out title "function") isPublic isPartial label) ctx declaration true)"##,
+        replacement: r##"(leanLine (visibilityLine (writeHead out title "function") isPublic isPartial label) ctx declaration false)"##,
         root: ROOT,
     },
     super::Plant {
@@ -850,6 +986,13 @@ const EFFECTS: [&str; 3] = ["allocation", "overflow", "recursion"];
 
 const EVALUATOR_MUTANTS: usize = 60;
 const RUSTC_MUTANTS: usize = 200;
+
+const COMMITTED_MODULES: usize = 3;
+const HAND_MODULES: usize = 85;
+const VECTORS: usize = 264;
+const REFUSED: usize = 88;
+const EVALUATOR_RUNS: usize = 180;
+const RUSTC_RUNS: usize = 600;
 
 fn eligibility(project: &support::P) {
     let built = project.build_ok();
@@ -914,7 +1057,10 @@ fn forms(module: &ToolingModule, into: &mut std::collections::BTreeSet<String>) 
             _ => {}
         }
     }
-    walk(&serde_json::to_value(module).expect("a module is JSON"), into);
+    walk(
+        &serde_json::to_value(module).expect("a module is JSON"),
+        into,
+    );
 }
 
 /// Seeded mutants of `bases`, each at the exact capacity and one byte short.
@@ -942,6 +1088,15 @@ pub(super) fn case() {
         "ToolingLatex, ToolingAst, and LexLeanStd.Buffer are linked modules of the project"
     );
     eligibility(&project);
+    let source = project.read_raw("src/ToolingLatex.lex.tex");
+    for plant in &PLANTS {
+        assert_eq!(
+            source.matches(plant.site).count(),
+            1,
+            "{}: the plant site occurs once",
+            plant.label
+        );
+    }
 
     let committed = committed();
     for (fixture, module, golden) in &committed {
@@ -970,15 +1125,8 @@ pub(super) fn case() {
         "\u{ab}\u{bb}",
     ];
     let tokens = [
-        "tok ",
-        "\t",
-        "a\"b\\c",
-        "\u{85}",
-        "\u{2028}",
-        "\u{9f}x",
-        "\u{7f}",
-        "x\u{a0}",
-        "\n",
+        "tok ", "\t", "a\"b\\c", "\u{85}", "\u{2028}", "\u{9f}x", "\u{7f}", "x\u{a0}", "\n", "~",
+        "a^b", "&", "50%_#$", "{x}",
     ];
     let mut modules: Vec<ToolingModule> = bases.iter().map(|module| (*module).clone()).collect();
     let committed_count = modules.len();
@@ -1000,6 +1148,10 @@ pub(super) fn case() {
         vectors.len(),
         started.elapsed()
     );
+    assert_eq!(committed_count, COMMITTED_MODULES, "the committed modules");
+    assert_eq!(hand, HAND_MODULES, "the targeted modules");
+    assert_eq!(vectors.len(), VECTORS, "the vectors");
+    assert_eq!(refused, REFUSED, "the vectors the oracle refuses");
     // The corpora of the normative host are made here, so that every count the
     // row states is asserted before the first leg runs.
     let mut seeded = super::Seeded(0x0B55_0020);
@@ -1012,6 +1164,12 @@ pub(super) fn case() {
         rustc_mutants.len(),
         started.elapsed()
     );
+    assert_eq!(
+        evaluator_mutants.len(),
+        EVALUATOR_RUNS,
+        "the evaluator mutant runs"
+    );
+    assert_eq!(rustc_mutants.len(), RUSTC_RUNS, "the rustc mutant runs");
 
     let checked = support::checked_project(&project);
     let root = super::lower(&checked, &project, MODULE, ROOT);
@@ -1030,11 +1188,10 @@ pub(super) fn case() {
         disagreements.is_empty(),
         "the evaluator and the oracle disagree on the seeded mutants: {disagreements:?}"
     );
-    super::rust_validate::rustc_differential("BS-20", &[(ROOT, &root, &rustc_mutants)], "seeded");
-    eprintln!("BS-20: the legs agree ({:?})", started.elapsed());
-
     // The gate is armed: each defect planted in the source of the module is
-    // caught by the differential on the vectors.
+    // caught by the differential on the vectors. Every plant is tried before
+    // the verdict, so that one run names all that escape.
+    let mut escaped = Vec::new();
     for plant in &PLANTS {
         let planted = support::P::bootstrap();
         let source = planted.read_raw("src/ToolingLatex.lex.tex");
@@ -1051,16 +1208,21 @@ pub(super) fn case() {
         let checked = support::checked_project(&planted);
         let low = super::lower(&checked, &planted, MODULE, plant.root);
         let disagreements = super::evaluate(&low, &vectors, 1);
-        assert!(
-            !disagreements.is_empty(),
-            "{}: the planted defect is detected by the differential",
-            plant.label
-        );
-        eprintln!(
-            "BS-20: plant detected: {}: {}",
-            plant.label, disagreements[0]
-        );
+        match disagreements.first() {
+            Some(first) => {
+                let first: String = first.to_string().chars().take(120).collect();
+                eprintln!("BS-20: plant detected: {}: {first}", plant.label);
+            }
+            None => escaped.push(plant.label),
+        }
     }
+    assert!(
+        escaped.is_empty(),
+        "the planted defects the differential does not detect: {escaped:?}"
+    );
+
+    super::rust_validate::rustc_differential("BS-20", &[(ROOT, &root, &rustc_mutants)], "seeded");
+    eprintln!("BS-20: the legs agree ({:?})", started.elapsed());
 
     // Under the pinned Lean, the production export certifies the root; its
     // package is the committed one and realizes the program the differential
