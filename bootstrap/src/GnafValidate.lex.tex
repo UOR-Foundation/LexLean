@@ -225,7 +225,7 @@ definition{
     | ActionKind.Randomness => 7
     | ActionKind.Scheduling => 8
     | ActionKind.Execution => 9),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -244,7 +244,7 @@ definition{
     | ActionKind.Randomness => (prim utf8_encode "randomness" : Bytes)
     | ActionKind.Scheduling => (prim utf8_encode "scheduling" : Bytes)
     | ActionKind.Execution => (prim utf8_encode "execution" : Bytes)),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -263,7 +263,7 @@ definition{
     | ActionKind.Randomness => false
     | ActionKind.Scheduling => false
     | ActionKind.Execution => true),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -282,7 +282,7 @@ definition{
     | ActionKind.Randomness => false
     | ActionKind.Scheduling => false
     | ActionKind.Execution => false),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -291,7 +291,7 @@ definition{
   parameters: [left : ActionKind, right : ActionKind],
   result: Bool,
   body: ((kindIndex left) =? (kindIndex right)),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -321,7 +321,7 @@ definition{
     | Rejection.RjVectorClaimOverTotalOrder => (LexLeanStd.Buffer::finish (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::new 256) (prim utf8_encode "{\"kind\":\"vector_claim_over_total_order\"" : Bytes)) (prim utf8_encode "}" : Bytes)))
     | Rejection.RjUncoveredScope => (LexLeanStd.Buffer::finish (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::new 256) (prim utf8_encode "{\"kind\":\"uncovered_scope\"" : Bytes)) (prim utf8_encode "}" : Bytes)))
     | Rejection.RjUnsupportedClaim => (LexLeanStd.Buffer::finish (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::new 256) (prim utf8_encode "{\"kind\":\"unsupported_claim\"" : Bytes)) (prim utf8_encode "}" : Bytes)))),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -332,7 +332,7 @@ definition{
   body: (prim list_fold (fun [wanted] (found : (Option Charge)) (action : Action) => (match found
     | Option.some held => (ctor Option.some [Charge] held)
     | Option.none => (if (kindEq (project action kind) wanted) then (ctor Option.some [Charge] (project action charge)) else (ctor Option.none [Charge])))) (ctor Option.none [Charge]) actions : (Option Charge)),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -341,7 +341,7 @@ definition{
   parameters: [actions : (List Action), wanted : ActionKind],
   result: Nat,
   body: (prim list_fold (fun [wanted] (count : Nat) (action : Action) => (if (kindEq (project action kind) wanted) then (count + 1) else count)) 0 actions : Nat),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -350,7 +350,7 @@ definition{
   parameters: [kinds : (List ActionKind), wanted : ActionKind],
   result: Bool,
   body: (prim list_fold (fun [wanted] (found : Bool) (kind : ActionKind) => (if found then true else (kindEq kind wanted))) false kinds : Bool),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -361,7 +361,7 @@ definition{
   body: (prim list_fold (fun [actions] (found : (Option Rejection)) (action : Action) => (match found
     | Option.some held => (ctor Option.some [Rejection] held)
     | Option.none => (if (1 <? (countKind actions (project action kind))) then (ctor Option.some [Rejection] (ctor Rejection.RjDuplicateAction (project action kind))) else (ctor Option.none [Rejection])))) (ctor Option.none [Rejection]) actions : (Option Rejection)),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -376,7 +376,7 @@ definition{
       | Charge.ChConstant cost => (ctor Option.some [Rejection] (ctor Rejection.RjHiddenCost wanted))
       | Charge.ChFree => (ctor Option.some [Rejection] (ctor Rejection.RjHiddenCost wanted))
       | Charge.ChUndeclared => (ctor Option.some [Rejection] (ctor Rejection.RjHiddenCost wanted)))),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -391,7 +391,7 @@ definition{
       | Option.none => (match (checkPerformedOne machine (ctor ActionKind.Fallback))
         | Option.some held => (ctor Option.some [Rejection] held)
         | Option.none => (checkPerformedOne machine (ctor ActionKind.Execution))))),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -407,7 +407,7 @@ definition{
       | Boundary.BdPreparedPlan => (if (hasKind (project machine prepared) kind) then (ctor Option.none [Rejection]) else (ctor Option.some [Rejection] (ctor Rejection.RjUnboundPreparation kind))))
     | Charge.ChSteps => (ctor Option.some [Rejection] (ctor Rejection.RjHiddenCost kind))
     | Charge.ChUndeclared => (ctor Option.some [Rejection] (ctor Rejection.RjHiddenCost kind))) else (ctor Option.some [Rejection] (ctor Rejection.RjUnrealizableAction kind))))),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -418,7 +418,7 @@ definition{
   body: (prim list_fold (fun [machine] (found : (Option Rejection)) (action : Action) => (match found
     | Option.some held => (ctor Option.some [Rejection] held)
     | Option.none => (checkDeclared machine action))) (ctor Option.none [Rejection]) (project machine actions) : (Option Rejection)),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -435,7 +435,7 @@ definition{
         | Charge.ChSteps => (ctor Option.some [Rejection] (ctor Rejection.RjStrayPreparedArtifact kind))
         | Charge.ChConstant cost => (ctor Option.some [Rejection] (ctor Rejection.RjStrayPreparedArtifact kind))
         | Charge.ChUndeclared => (ctor Option.some [Rejection] (ctor Rejection.RjStrayPreparedArtifact kind)))))) (ctor Option.none [Rejection]) (project machine prepared) : (Option Rejection)),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -453,7 +453,7 @@ definition{
     | Carrier.CaOptimizerOutput => (ctor Option.none [Rejection])
     | Carrier.CaDiscovered => (ctor Option.none [Rejection])
     | Carrier.CaCached => (ctor Option.none [Rejection])),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -462,7 +462,7 @@ definition{
   parameters: [plans : Nat, thresholds : Nat],
   result: Nat,
   body: (plans + (prim multiply thresholds (prim multiply plans plans : Nat) : Nat)),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -475,7 +475,7 @@ definition{
     | Charge.ChSteps => false
     | Charge.ChFree => false
     | Charge.ChUndeclared => false))) false (project machine actions) : Bool),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -489,7 +489,7 @@ definition{
     | Carrier.CaOptimizerOutput => false
     | Carrier.CaDiscovered => false
     | Carrier.CaCached => false); (if (if ((project capacity fuel) <? (project machine fuel)) then true else (if ((project capacity domain) <? (project request domainLength)) then true else (if systems then true else (chargeBeyond machine)))) then (ctor Option.some [Rejection] (ctor Rejection.RjBeyondCapacity)) else (ctor Option.none [Rejection]))))),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -537,7 +537,7 @@ definition{
     | ClaimClass.ClMeasuredBestAmongTested => (ctor Option.some [Rejection] (ctor Rejection.RjUnsupportedClaim))
     | ClaimClass.ClHeuristicSelected => (ctor Option.some [Rejection] (ctor Rejection.RjUnsupportedClaim))
     | ClaimClass.ClInstanceOptimal => (ctor Option.some [Rejection] (ctor Rejection.RjUnsupportedClaim))),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -549,7 +549,7 @@ definition{
     | Scope.ScGrammarUniverse => (ctor Option.none [Rejection])
     | Scope.ScCalculusPrograms => (ctor Option.some [Rejection] (ctor Rejection.RjUncoveredScope))
     | Scope.ScRustPrograms => (ctor Option.some [Rejection] (ctor Rejection.RjUncoveredScope))),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -560,7 +560,7 @@ definition{
   body: (match (checkClaim request)
     | Option.some held => (ctor Option.some [Rejection] held)
     | Option.none => (checkScope request)),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -571,7 +571,7 @@ definition{
   body: (match (checkPlanPreparation request)
     | Option.some held => (ctor Option.some [Rejection] held)
     | Option.none => (afterClaim request)),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -582,7 +582,7 @@ definition{
   body: (match (checkPrepared (project request machine))
     | Option.some held => (ctor Option.some [Rejection] held)
     | Option.none => (afterPlans request)),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -593,7 +593,7 @@ definition{
   body: (match (checkDeclaredAll (project request machine))
     | Option.some held => (ctor Option.some [Rejection] held)
     | Option.none => (afterPrepared request)),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -604,7 +604,7 @@ definition{
   body: (match (checkPerformed (project request machine))
     | Option.some held => (ctor Option.some [Rejection] held)
     | Option.none => (afterDeclared request)),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -615,7 +615,7 @@ definition{
   body: (match (checkDistinct (project (project request machine) actions))
     | Option.some held => (ctor Option.some [Rejection] held)
     | Option.none => (afterPerformed request)),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -626,7 +626,7 @@ definition{
   body: (match (project (project request machine) operandSize)
     | OperandSize.OsUnit => (ctor Option.some [Rejection] (ctor Rejection.RjUnitCostOperands))
     | OperandSize.OsWeighted => (afterDistinct request)),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -637,7 +637,7 @@ definition{
   body: (match (checkCapacity request)
     | Option.some held => (ctor Option.some [Rejection] held)
     | Option.none => (afterOperands request)),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -650,7 +650,7 @@ definition{
     | Completeness.CoMissing => (ctor Option.some [Rejection] (ctor Rejection.RjMissingCompleteness))
     | Completeness.CoCitesUniverseId => (ctor Option.some [Rejection] (ctor Rejection.RjSelfReferentialCompleteness))
     | Completeness.CoCitesOptimizer => (ctor Option.some [Rejection] (ctor Rejection.RjOptimizerCompleteness))),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -664,7 +664,7 @@ definition{
     | Carrier.CaOptimizerOutput => (ctor Option.some [Rejection] (ctor Rejection.RjOptimizerDefinedUniverse))
     | Carrier.CaDiscovered => (ctor Option.some [Rejection] (ctor Rejection.RjDiscoveredUniverse))
     | Carrier.CaCached => (ctor Option.some [Rejection] (ctor Rejection.RjCachedUniverse))),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -673,7 +673,7 @@ definition{
   parameters: [request : Request],
   result: (Option Rejection),
   body: (if ((project request domainLength) =? 0) then (ctor Option.some [Rejection] (ctor Rejection.RjEmptyDomain)) else (afterDomain request)),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true
 }
 
@@ -686,7 +686,7 @@ definition{
     | Option.some rejection => (match (render rejection)
       | Result.ok text => (ctor Result.ok [(Option Bytes), Bytes] (ctor Option.some [Bytes] text))
       | Result.error problem => (ctor Result.error [(Option Bytes), Bytes] problem))),
-  axioms: [Quot.sound, propext],
+  axioms: [],
   executable: true,
   production: {effects: [allocation, overflow], targets: [rust-std]}
 }
