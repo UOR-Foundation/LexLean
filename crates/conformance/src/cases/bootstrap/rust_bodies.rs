@@ -58,7 +58,7 @@ const BASE_NODES: usize = 150;
 const MUTANT_DRAWS: usize = 3_000;
 const VECTORS: usize = 156;
 const VECTORS_WITHIN: usize = 155;
-const EVALUATOR_MUTANTS: usize = 320;
+const EVALUATOR_MUTANTS: usize = 323;
 
 /// A program with what the roots are given and the oracle's items.
 pub(super) struct Vector {

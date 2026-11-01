@@ -488,7 +488,7 @@ of this tree show.
   type as a `RustAst.Def` chain, given the typing tree and the dead and failing
   functions of the first slice, and numbers the function types as the oracle
   does. Its largest certificate part is 1,535,849 bytes (the budget is
-  3,145,728; the typing root is unchanged). `BS-07` runs 1,284 vectors under
+  3,145,728; the typing root is unchanged). `BS-07` runs 1,292 vectors under
   `rustc` on every host and 6,000 seeded runs, the evaluator on 273 vectors
   and 150 mutants per root, twenty planted defects. The register is 446 IDs.
 - The last-use moves of the Rust lowering as language-1.2 source, first pass of
@@ -496,7 +496,7 @@ of this tree show.
   code, no change to the language-1.2 identity). `applyMoves` of `RustMoves`
   rewrites the function bodies of a `RustAst` crate as
   `calculus::rust::moves::apply` does, held to the public oracle to the byte
-  on 362 crates and on seeded mutants of the smaller ones. Its certificate
+  on 382 crates and on seeded mutants of the smaller ones. Its certificate
   part is 565,927 bytes, 13.5% of `max_file_bytes`. The register is 447 IDs.
 - The literal values of the Rust lowering as language-1.2 source, first pass of
   the lowering of terms (SPEC.md §17.23, §17.16, `BS-10`, #92; no new diagnostic
@@ -528,7 +528,7 @@ of this tree show.
   `RustSucceed` pushes `Ok` into every tail of the bodies of the functions that
   can overflow as `succeed` does, held to the Function items of `rust::lower`
   by composition with the roots of `BS-11` and `applyMoves`, to the byte, on 76
-  vectors and 166 seeded mutants; no file of the renderer changes. Its
+  vectors and 179 seeded mutants; no file of the renderer changes. Its
   certificate part is 648,077 bytes, 10.3% of `max_file_bytes`. The register is
   459 IDs.
 - A function whose self calls are all tail calls, rendered as a loop, as
@@ -536,8 +536,8 @@ of this tree show.
   code, no change to the language-1.2 identity). `loopFunction` of `RustLoops`
   ports `tail::looped`, held to the Function items of `rust::lower` by
   composition with the roots of `BS-11` and `BS-12` and `applyMoves`, function
-  by function with the counter of the fresh names, to the byte, on 88 vectors
-  and 107 seeded mutants; `lowerBodies` takes that counter and returns the one
+  by function with the counter of the fresh names, to the byte, on 92 vectors
+  and 79 seeded mutants; `lowerBodies` takes that counter and returns the one
   after its bodies. No file of the renderer changes. The certificate part of
   `loopFunction` is 744,534 bytes, 11.8% of `max_file_bytes`. The register is
   460 IDs.
@@ -548,8 +548,8 @@ of this tree show.
   and the body of a function with an uninhabited parameter, and put the items
   of the types, those shells, and what the loop pass returned into one chain,
   held to the whole chain of items of `rust::lower`'s crate (the types' too) by
-  composition with the earlier roots and `applyMoves`, to the byte, on 324
-  vectors and 537 seeded mutants; what the Rust host still does is thread the
+  composition with the earlier roots and `applyMoves`, to the byte, on 326
+  vectors and 564 seeded mutants; what the Rust host still does is thread the
   counter of the fresh names, and three hosts that do more are planted. The
   largest certificate part is 1,195,444 bytes (`functionShells`). The register
   is 461 IDs.
@@ -560,8 +560,8 @@ of this tree show.
   fields before it reads the program, with the same refusals, and write the
   `Cargo.toml` and the `provenance.json` of `package::package`, held to the
   oracle to the byte on the 291 committed manifests, 182 rule manifests, and
-  2,000 seeded mutants, and on the 272 accepted manifests, 133 hand-built
-  inputs of the escaper and the scaffold, and 272 seeded mutants; eighteen
+  2,000 seeded mutants, and on the 272 accepted manifests, 137 hand-built
+  inputs of the escaper and the scaffold, and 272 seeded mutants; twenty-one
   planted defects are each detected. No file of the renderer changes. The
   register is 462 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):

@@ -222,6 +222,12 @@ struct Render {
     library: Vec<u8>,
 }
 
+/// The two files `renderPackage` writes: the Cargo manifest and the provenance.
+type Files = (Vec<u8>, Vec<u8>);
+
+/// One change to the scaffold, for a render rule.
+type Reshape = Box<dyn Fn(&mut Scaffold)>;
+
 fn sha256(data: &[u8]) -> String {
     lexlean::Sha256Digest::of(data).to_hex()
 }
@@ -243,7 +249,7 @@ fn runtime_text(std: bool) -> String {
 /// the scaffold, and the provenance by the recipe of `package::package`,
 /// read back as canonical JSON. The case holds this to `package::package` on
 /// every manifest the oracle accepts, and uses it for the inputs it refuses.
-fn files_of(render: &Render) -> (Vec<u8>, Vec<u8>) {
+fn files_of(render: &Render) -> Files {
     let cargo = oracle::cargo_toml_of(&render.scaffold, &render.name, &render.version).into_bytes();
     let provenance = serde_json::json!({
         "spec": oracle::PROVENANCE_SPEC,
@@ -270,7 +276,7 @@ fn files_of(render: &Render) -> (Vec<u8>, Vec<u8>) {
     (cargo, provenance)
 }
 
-fn render_run(render: &Render, expected: (Vec<u8>, Vec<u8>)) -> Run {
+fn render_run(render: &Render, expected: Files) -> Run {
     let exports = render
         .exports
         .iter()
@@ -307,7 +313,7 @@ fn render_run(render: &Render, expected: (Vec<u8>, Vec<u8>)) -> Run {
 
 /// A manifest the oracle accepts, what `renderPackage` is given for it, and
 /// the two files `package::package` wrote.
-fn accepted(manifest: &Manifest) -> Option<(Render, (Vec<u8>, Vec<u8>))> {
+fn accepted(manifest: &Manifest) -> Option<(Render, Files)> {
     let package = oracle::package(manifest).ok()?;
     let render = Render {
         scaffold: scaffold::get().expect("the scaffold").clone(),
@@ -568,7 +574,7 @@ fn render_rules(base: &Render) -> Vec<Render> {
     let mut render = base.clone();
     render.library = (0u8..=255).collect();
     out.push(render);
-    let reshaped: Vec<Box<dyn Fn(&mut Scaffold)>> = vec![
+    let reshaped: Vec<Reshape> = vec![
         Box::new(|s| s.publish = true),
         Box::new(|s| s.edition = "2024".to_owned()),
         // The path is a key of `files`, whose order is the bytes of its keys.
@@ -809,8 +815,7 @@ pub(super) fn case() {
             }
         }
     }
-    let renders: Vec<(Render, (Vec<u8>, Vec<u8>))> =
-        manifests.iter().filter_map(accepted).collect();
+    let renders: Vec<(Render, Files)> = manifests.iter().filter_map(accepted).collect();
     let std_base = manifests
         .iter()
         .find(|manifest| manifest.profile == "rust-std" && oracle::package(manifest).is_ok())
