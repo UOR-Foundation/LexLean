@@ -281,6 +281,27 @@
 'LexLeanStd.Buffer.writeEach' depends on axioms: [propext, Quot.sound]
 'LexLeanStd.Buffer.writeNumbers' does not depend on any axioms
 'LexLeanStd.Buffer.zeroStep' does not depend on any axioms
+'LexLeanStd.Numeral.accumulate' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.byteValues' does not depend on any axioms
+'LexLeanStd.Numeral.canonicalDecimal' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.decimal' does not depend on any axioms
+'LexLeanStd.Numeral.decimalDigits' does not depend on any axioms
+'LexLeanStd.Numeral.decimalEnd' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.decimalValue' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.digitStep' does not depend on any axioms
+'LexLeanStd.Numeral.digits' does not depend on any axioms
+'LexLeanStd.Numeral.hex' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.hexByte' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.hexDigits' does not depend on any axioms
+'LexLeanStd.Numeral.hexNat' does not depend on any axioms
+'LexLeanStd.Numeral.hexStep' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.hexValue' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.isDecimal' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.isHex' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.pairStep' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.parseDecimal' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.parseHex' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.pick' does not depend on any axioms
 'LexLeanStd.Sha256.Digest' does not depend on any axioms
 'LexLeanStd.Sha256.Schedule' does not depend on any axioms
 'LexLeanStd.Sha256.Working' does not depend on any axioms

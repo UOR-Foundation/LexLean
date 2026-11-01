@@ -2309,6 +2309,16 @@ Lean time of the largest module of the changes next to the 1,040 s of the bootst
 
 `lexlean verify` of the `bootstrap` project on the head `99f9556d9`, run in a scratch copy of the workspace with `bootstrap/lexlean.lock` relocked there (not in the tree): 1,040 s wall, `verified 7 modules`. The certificate of `RuntimeValidate` (`R6.lex.tex`) is 4,124,964 bytes, under the default `max_file_bytes` of 4,194,304 and far under the bootstrap project's 6,291,456; the certificate of `RustValidate` (`R7.lex.tex`) is 4,221,900 bytes, the figure of H4b, unchanged, as `RustValidate` is untouched. The four definitions the associated-call rule adds to the twin (`tyOwner`, `associatedArity`, `addAssociated`, `addImpl`) are small against it. The others: `R2` 3,192,773 (`CalculusCheck`), `R8` 1,337,418 (`RustValidate`), `R10` 1,278,716 (`TokenAudit`).
 
+### the crate header, the module wrapper, and the compound templates are nodes or declared printer grammar (RB-19, RB-20, RB-21, RB-10, BS-09; H7-audit)
+
+`RuntimeSyntax` gains three `RtItem` constructors, `defined` (a path), `moduleItem` (a name and its members) and `innerAttribute` (a name and its arguments), and `Item::Defined`, `Item::Mod`, and `Item::InnerAttr` are the Rust side of them, one for one. The crate header (`#![no_std]`, `#![forbid(..)]`) is printed by `rt.rs` from `innerAttribute` nodes built from the `Scaffold` record, and `assemble` of `runtime.rs` builds each `pub mod fixed_<w>` as a `moduleItem` of `defined` members whose text the printer is handed; the printed runtime text is byte-identical before and after. The validator names five new rules, `attribute-position`, `attribute-name`, `attribute-args`, `defined-path` and `module-member`; the Lean twin `RuntimeValidate` follows with emptiness checks of the path and argument texts, and the Rust validator mirrors exactly those checks. A `defined` path is several names, split at `::`, each an identifier (#308: `assemble` of `runtime.rs` splits an exported name at `::` into the module name and the function name, and every path is `fixed_<w>::op`), and each lint name of a `forbid` is an identifier; both validators refuse a non-identifier under `RB-19` through the `identifier` rule, the twin by `identErr` over `byteAt` and a split of its own at `::`. A module member is a function or a definition so that the twin has no recursion through a nested inductive.
+
+`IntRem` and `CheckedIntQuot` stay printer grammar, ruled option (c): their text is a compound of two calls of the closed machine primitives, they are declared in SPEC.md §17.16 beside the other one-call templates, and the tuple type that building them from `Let` and `If` nodes would need is not added. The Cargo keys and the shapes of the gate lines are declared there too. `library` is a field of the `Scaffold` record of `RustPackage`.
+
+Plants, each alone and restored. `RB-21`: a format string whose literal text holds an item head (a `fn` item, a `use`, a `static`, a type alias, a module) is refused where its `{{` was exempt before, and only the format argument is exempt now. `RB-10`: a runtime item, a `use`, or a Cargo key written as a literal in `rt.rs`, `rt_decode.rs`, `rt_validate.rs`, or `package.rs` is refused, and the scan reads every `.rs` file of `calculus/rust/`. The first red lines (the plants are appended to the file named, alone, and the case prints what the gate found): `RB-21`, a whole item in a format string with a literal name, appended to `runtime.rs`: `crates/lexlean/src/calculus/rust/runtime.rs:606: `fn tick(units: u64) {{{{ WORK.fetch_add(units); }}}}``; `RB-10`, the `forbid` header parked as a constant in `rt.rs`: `the renderer holds the package scaffolding as text beside its module: rt.rs: the literal "#![forbid(unsafe_code)] " states `unsafe_code``. `RB-19`: an attribute after an item, an attribute outside the closed set, a `forbid` that names no lint, a `no_std` with arguments, a module that holds a `use`, and a definition with an empty path are each refused naming their rule. #308 adds eight plants under the `identifier` rule: a lint name that is not an identifier (`not a lint`) or a keyword (`fn`), and a definition path with a segment that is not an identifier, that is a keyword, or that is empty (`not a path`, `fixed u8::checked_add`, `holder::x }; pub fn g() {` inside a module, `fixed_u8::`, `::checked_add`, `fixed_u8::fn`). With the lint-name check removed from `rt_validate.rs`, `conformance_rb_19` fails (`test conformance_rb_19 ... FAILED`); with the path-segment check removed it fails at `rust_heap_syntax.rs:1337:53` (`a defined path that is not an identifier: ()`); both restored. The shared-write plant, the validator half: a `RuntimeStd` that names `Rc::make_mut` is refused by the closed table (`runtime support: call-name: `Rc::make_mut` is neither declared nor in the closed table`), and one that names `RefCell` or `Cell` the same (`runtime support: type-name: `RefCell` is neither declared nor in the closed table`, likewise `Cell`); `conformance_rb_20` prints the three lines. The model half is `SP-27` (a shared run written in place refuses `cons_view` and `cons_held_store`).
+
+`BS-09` is 717 crates: the 113 that break one rule each (fourteen of them for the nodes of this change and #308) and 600 seeded mutants of the two committed modules, 576 refused, over the 45 rules the oracle names (on the merge of `heap-h6`, whose 703 crates, 99 one-rule crates, 564 refused and 40 rules the six crates and five rules extend).
+
 ### the golden transcript: its oracle, its writer, and the red lines of the plants (H5a, H5b)
 
 The oracle the golden transcript was recorded from is the handwritten runtime of `tests/rust-runtime-oracle/` as of commit `5668466ab` (the files are unchanged between `8b2218975` and `5668466ab`): `core.rs.txt` SHA-256 `7f18f40838cbf5b74494efecbd3553c16cd6b0fb42445bdff4c8036b5f0e2a95`, `std.rs.txt` `b1f04395f17fbe6ca8545c14b9e9602163b710195570474e9130d9759194b243`. The differential run that produced it is `conformance_rb_16`, `conformance_rb_17`, and `conformance_rb_20` at `5668466ab`, each of which compiled the oracle and the printed runtime with the same single-module harness under the pinned rustc with warnings denied and required their transcripts to agree on every label before the golden was written (150 labels: 110 `core`, 4 `support`, 36 `std`). The file is now one, `tests/rust-runtime-golden/transcript.txt`, whose header names the format and the SHA-256 of its lines (`lexlean/runtime-transcript/1 sha256:…`); it is written only by `cargo xtask check-golden --write` from the printed runtime (the reviewed rewrite of §28.3; the first file was assembled from the three that the differential wrote, and `cargo xtask check-golden` then found it equal to the printed runtime's transcript, 150 labels, in 10 s). The step runs first in `check-golden`, before the examples, which stop on the stale locks until the regeneration. The comparison is against a recorded transcript of the removed oracle, not against the oracle.
@@ -10628,8 +10638,9 @@ Removed: both edits were restored; `conformance_sm_32` and the unit tests of
 ## The plan of a CI run can fail (RP-14, #131)
 
 `.github/ci-plan.sh` decides what a run of `ci.yml` is: the `rest` leg for a
-draft pull request, the whole gate for a ready pull request, a request, and a
-push, and nothing for a push that merges a head whose tree it equals when the
+draft pull request and for a ready one whose base is neither `main` nor
+`release/*` (a stacked pull request), the whole gate for a ready pull request
+into `main` or a release line, a request, and a push, and nothing for a push that merges a head whose tree it equals when the
 whole gate passed on that head. A decision that skips jobs is a gate that can
 pass without evidence, so `RP-14` runs the script in a scratch repository with a
 stand-in for `gh` against planted events (a draft, a ready pull request, a
@@ -10646,6 +10657,8 @@ run, and the defect removed. The observed lines are the case's own.
 | the join of Atlas is not required of the run | `§9.4: no Atlas join is not the whole gate passing` |
 | the number of hosts is not compared with the host matrix | `§9.4: no host is not the whole gate passing` |
 | a draft pull request runs the whole gate | `repository.rs:322`, the draft is not the `rest` leg alone |
+| a ready pull request into a feature branch runs the whole gate (the `*)` arm of the base `case` in `ci-plan.sh` made the whole gate) | `repository.rs:371`, `§9.4: a ready pull request into a feature branch` (left: `true` and every leg, right: `false` and `rest`) |
+| `ci.yml` does not pass the base branch to the plan | `§9.4: the plan runs the script on the event and the base branch, and may read the runs of the repository` |
 | a failed query of the runs is read as a pass | `repository.rs:336`, a failed call is not the whole gate |
 | the `rest` row of `.github/vv-rows.json` is renamed | `§9.4: the leg a draft pull request runs is the one named `rest`` |
 | the host matrix does not wait for the plan | `repository.rs:1792`, `§8.3: the hosts are checked when the plan says the run is the whole gate` |
@@ -11413,3 +11426,44 @@ script's output to that function, so the file the gate job writes is the file
 | the committed tree | `cargo test -p repo-conformance --test conformance conformance_rp_18 -- --exact` | ok |
 | the script no longer writes the gate line | same | `the evidence satisfies the release criterion` failed: `Err(["release/vv-evidence.txt does not record the gate passing"])` |
 | the criterion accepts the legs' lines | `cargo test -p repo-model the_ci_evidence_criterion` | `left: Ok(())` against the refusal |
+
+## The five `Numeral` packages move the counts of `BS-05` and `BS-06` (`SL-09`, #276)
+
+The five roots of `LexLeanStd.Numeral` (`SL-09`) add five committed packages,
+and both cases assert their corpus, so both failed on the counts when the member
+was merged with `release/v0.4` at `ccbf03843`. `BS-05` rose by 5 crates and by 3
+evaluator runs; `BS-06` rose by 10 vectors of `printCrate` and by 12 evaluator
+runs, which is more than the vectors added. Each number was explained before it
+was moved: a throwaway edit, reverted, ran `BS-06`'s corpus code over the member's
+tree and over `compiler/rust`, `compiler/fixtures` and `tests/production-export`
+of `ccbf03843`, hashing each crate.
+
+| Count | `ccbf03843` | member |
+| --- | --- | --- |
+| distinct lowered crates | 232 | 237 |
+| crates of at most 400 expressions | 201 | 204 |
+| `printCrate` vectors | 627 | 637 |
+| committed distinct crates | 464 | 474 |
+| committed distinct crates in the evaluator's limit | 404 | 414 |
+| runs with a tight capacity | 34 | 34 |
+| runs with a tight capacity in the evaluator's limit | 29 | 31 |
+| `printCrate` vectors in the evaluator's limit | 562 | 574 |
+
+The crates that differ are the five new ones, of 105, 105, 256, 485 and 499
+expressions, so three fall under `BS-05`'s cap of 400: that is its +3, on the
+same rule runs. All ten new committed vectors are in the evaluator's limit, which
+is ten of `BS-06`'s +12. The other two come from the tight runs, which sample
+every seventh crate: the new crates move the sample, which loses crates of 549 and
+1,343 expressions and gains one of 105 (new) and one of 178. The number of tight
+runs stays 34, and two more of them are in the limit.
+
+On the merged member, regenerated, on one WSL host with 4 build jobs:
+
+| Case | Command | Observed |
+| --- | --- | --- |
+| `BS-05` | `cargo test -p repo-conformance --test conformance -- conformance_bs_05 --exact --nocapture` | ok, 1,528 s: 813 rustc runs, the evaluator on the vectors and the seeded mutants, 4,000 seeded rustc runs, every plant detected |
+| `BS-06` | `cargo test -p repo-conformance --test conformance -- conformance_bs_06 --exact --nocapture` | ok, 1,409 s: 2,741 rustc runs, the evaluator on 574 + 2,104 vectors and 400 + 399 mutants, 2,984 seeded rustc runs |
+| `SL-01`, `SL-02`, `SL-05`, `SL-09`, `PX-01`, `PD-08`, `PK-05`, `GN-01` | `cargo test -p repo-conformance --test conformance -- <each> --test-threads=1` | 8 passed, 1,580 s |
+
+The figures of the `BS-06` record above are that record's own run and stay as
+measured.
