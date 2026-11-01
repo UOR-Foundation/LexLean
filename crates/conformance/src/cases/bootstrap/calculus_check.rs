@@ -18,15 +18,10 @@ use serde_json::{json, Value as Json};
 
 use std::collections::BTreeMap;
 
-use lexlean::calculus::rust::package::Passing;
-use lexlean::calculus::rust::Profile;
 use lexlean::production::lower::Lowered;
 
-use super::{list, snake, text, Run, Seeded};
+use super::{list, text, Run, Seeded};
 use crate::production_export as harness;
-use crate::rust_build::{cargo_in, workspace, Built};
-use crate::rust_harness::{self, Calls};
-use crate::rust_packages;
 use crate::support;
 
 /// `kindIndex` of the module: the declaration order of `IntKind`.
@@ -2126,121 +2121,6 @@ fn outside_claim(verdict: &Json) -> bool {
     false
 }
 
-/// The rendered `rust-std` packages of the roots, compiled by the pinned
-/// rustc, run on `runs` of each root: one outcome per run, each equal to the
-/// oracle's. Returns the number of runs.
-fn rustc_differential(roots: &[(&str, &Lowered, &[Run])], label: &str) -> usize {
-    let started = std::time::Instant::now();
-    let dir = tempfile::Builder::new()
-        .prefix("lexlean-bootstrap-calculus-")
-        .tempdir()
-        .expect("tempdir");
-    let mut crates = Vec::new();
-    let mut expected: BTreeMap<String, Vec<Json>> = BTreeMap::new();
-    for (root, low, runs) in roots {
-        let manifest = rust_packages::manifest(
-            &format!("boot_{}", snake(root)),
-            &low.program,
-            low.entry(),
-            Profile::Std,
-        );
-        let package = target::package(&manifest.to_file_bytes().expect("canonical manifest"))
-            .unwrap_or_else(|failure| panic!("{root}: {failure:?}"));
-        let arguments: Vec<Vec<Value>> = runs
-            .iter()
-            .map(|(arguments, _)| arguments.clone())
-            .collect();
-        let arity = low.program.functions[usize::try_from(low.entry()).expect("entry")]
-            .types
-            .len();
-        let passing = vec![Passing::Own; arity];
-        let harness_source = rust_harness::render_calls(
-            &low.program,
-            Profile::Std,
-            &manifest.name,
-            &[Calls {
-                entry: low.entry(),
-                function: "run",
-                passing: &passing,
-                arguments: &arguments,
-            }],
-        )
-        .expect("the differential harness");
-        expected.insert(
-            manifest.name.clone(),
-            runs.iter().map(|(_, expected)| expected.clone()).collect(),
-        );
-        crates.push(Built {
-            name: manifest.name,
-            files: package.files,
-            harness: harness_source,
-        });
-    }
-    workspace(dir.path(), &crates);
-    let build = cargo_in(
-        dir.path(),
-        &["build", "--offline", "--workspace", "--quiet"],
-    );
-    assert!(
-        build.status.success(),
-        "a root's package does not build:\n{}",
-        String::from_utf8_lossy(&build.stderr)
-    );
-    eprintln!(
-        "BS-04: {label}: rustc built the packages ({:?})",
-        started.elapsed()
-    );
-    let mut total = 0;
-    for (name, outcomes) in &expected {
-        let binary = dir
-            .path()
-            .join("target/debug")
-            .join(format!("run_{name}{}", std::env::consts::EXE_SUFFIX));
-        let ran = std::process::Command::new(&binary)
-            .output()
-            .expect("the differential runs");
-        assert!(
-            ran.status.success(),
-            "{name}: {}",
-            String::from_utf8_lossy(&ran.stderr)
-        );
-        // PD-08: both roots recurse with the depth of the program, so the
-        // harness that ran them records (measuring) or demands (otherwise)
-        // their stack bound; the row keeps the largest need of the corpora.
-        crate::stack_bounds::observe(&crate::stack_bounds::subject("bootstrap", name), &binary);
-        let stdout = String::from_utf8(ran.stdout).expect("utf8");
-        let printed: Vec<Json> = stdout
-            .lines()
-            .filter(|line| !line.starts_with("work "))
-            .map(|line| {
-                serde_json::from_str(line).unwrap_or_else(|error| panic!("{name}: {error}: {line}"))
-            })
-            .collect();
-        assert_eq!(printed.len(), outcomes.len(), "{name}: one outcome per run");
-        let disagreements: Vec<String> = printed
-            .iter()
-            .zip(outcomes)
-            .enumerate()
-            .filter(|(_, (printed, expected))| printed != expected)
-            .map(|(run, (printed, expected))| format!("run {run}: {printed} != {expected}"))
-            .collect();
-        assert!(
-            disagreements.is_empty(),
-            "{name}: the rendering and the Rust oracle disagree on {} of {} runs: {:?}",
-            disagreements.len(),
-            outcomes.len(),
-            &disagreements[..disagreements.len().min(3)]
-        );
-        eprintln!(
-            "BS-04: {label}: {name}: {} rustc runs agree with the oracle ({:?})",
-            outcomes.len(),
-            started.elapsed()
-        );
-        total += outcomes.len();
-    }
-    total
-}
-
 const MODULE: &str = "LexLeanBoot.CalculusCheck";
 
 /// Mutants of the smaller committed programs: the mutation corpus.
@@ -2638,7 +2518,8 @@ pub(super) fn case() {
     );
     // On every host: the rendered rust-std packages of both roots, compiled
     // by that host's pinned rustc, agree with the oracle on the vectors.
-    rustc_differential(
+    super::rust_validate::rustc_differential(
+        "BS-04",
         &[
             ("checkProgram", &lowered["checkProgram"], &vector_programs),
             (
@@ -2710,13 +2591,15 @@ pub(super) fn case() {
     );
     let mut total = 0;
     for (at, programs) in large_programs.chunks(RUSTC_CHUNK).enumerate() {
-        total += rustc_differential(
+        total += super::rust_validate::rustc_differential(
+            "BS-04",
             &[("checkProgram", &lowered["checkProgram"], programs)],
             &format!("seeded program chunk {at}"),
         );
     }
     for (at, arguments) in large_arguments.chunks(RUSTC_ARGUMENT_CHUNK).enumerate() {
-        total += rustc_differential(
+        total += super::rust_validate::rustc_differential(
+            "BS-04",
             &[("checkArguments", &lowered["checkArguments"], arguments)],
             &format!("seeded argument chunk {at}"),
         );
