@@ -1,0 +1,5 @@
+spec = "lexlean/test-case/1"
+command = "production"
+args = ["build", "--request", "request.json"]
+expected_exit = 1
+expect_artifacts = false
