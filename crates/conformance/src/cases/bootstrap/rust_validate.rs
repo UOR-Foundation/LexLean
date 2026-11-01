@@ -537,12 +537,12 @@ pub(super) fn verdict(outcome: Result<(), String>) -> Json {
 }
 
 /// A run of `validateCrate`.
-fn validate_run(krate: &Crate) -> Run {
+pub(super) fn validate_run(krate: &Crate) -> Run {
     (vec![enc_crate(krate)], verdict(validate::validate(krate)))
 }
 
 /// A run of `correspondCrate`: the crate and the elements the program uses.
-fn correspond_run(krate: &Crate, elements: &BTreeSet<String>) -> Run {
+pub(super) fn correspond_run(krate: &Crate, elements: &BTreeSet<String>) -> Run {
     (
         vec![
             enc_crate(krate),

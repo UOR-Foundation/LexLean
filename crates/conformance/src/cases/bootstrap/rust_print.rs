@@ -1022,14 +1022,14 @@ use crate::support;
 
 /// A committed package: its crate as the package renderer lowers it (the
 /// exports included), and the library it committed.
-struct Packaged {
-    krate: Crate,
+pub(super) struct Packaged {
+    pub(super) krate: Crate,
     library: String,
 }
 
 /// The crate and the committed `src/lib.rs` of every committed package
 /// manifest under `compiler/rust` and `tests/production-export`.
-fn packaged() -> Vec<Packaged> {
+pub(super) fn packaged() -> Vec<Packaged> {
     let root = support::repo_root();
     let mut files = Vec::new();
     super::rust_validate::walk(root.as_std_path(), &mut files);
@@ -1059,7 +1059,7 @@ fn packaged() -> Vec<Packaged> {
 
 /// The header a profile's library begins with: the attributes and the
 /// runtime, as `ast::print` writes them before any item.
-fn header(profile: Profile) -> String {
+pub(super) fn header(profile: Profile) -> String {
     ast::print(&Crate {
         profile,
         items: Vec::new(),
@@ -1074,13 +1074,13 @@ fn tight(krate: &Crate, header: &str) -> Option<Run> {
 }
 
 /// A run of `printCrate` with a capacity of exactly the output.
-fn exact(krate: &Crate, header: &str) -> Option<Run> {
+pub(super) fn exact(krate: &Crate, header: &str) -> Option<Run> {
     let printed = catch(|| format!("{header}{}", print_body(krate)))?;
     print_run(krate, header, printed.len())
 }
 
 /// The function bodies of a crate as expressions: the block of each.
-fn bodies(krate: &Crate) -> Vec<Expr> {
+pub(super) fn bodies(krate: &Crate) -> Vec<Expr> {
     krate
         .items
         .iter()
@@ -1092,7 +1092,7 @@ fn bodies(krate: &Crate) -> Vec<Expr> {
 }
 
 /// `printExpr` with a capacity of exactly the output.
-fn exact_expr(expr: &Expr) -> Option<Run> {
+pub(super) fn exact_expr(expr: &Expr) -> Option<Run> {
     let printed = catch(|| ast::print_expr(expr))?;
     expr_run(expr, printed.len())
 }

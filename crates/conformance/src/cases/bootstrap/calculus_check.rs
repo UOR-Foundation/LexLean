@@ -672,12 +672,12 @@ fn verdict(outcome: Result<(), String>) -> Json {
 }
 
 /// A run of `checkProgram`.
-fn program_run(program: &Program) -> Run {
+pub(super) fn program_run(program: &Program) -> Run {
     (program_arguments(program), verdict(check::check(program)))
 }
 
 /// A run of `checkArguments`.
-fn arguments_run(program: &Program, entry: u64, arguments: &[Value]) -> Run {
+pub(super) fn arguments_run(program: &Program, entry: u64, arguments: &[Value]) -> Run {
     let mut all = program_arguments(program);
     all.push(nat(entry));
     all.push(enc_values(arguments));
