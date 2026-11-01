@@ -432,7 +432,7 @@ fn enc_crate(krate: &Crate) -> Value {
 
 /// A run of `validateRuntime`: the crate and what the Rust validator makes
 /// of it.
-fn run_of(krate: &Crate) -> Run {
+pub(super) fn run_of(krate: &Crate) -> Run {
     (
         vec![enc_crate(krate)],
         verdict(rt_validate::validate(krate)),
@@ -449,7 +449,7 @@ fn read(path: &str) -> String {
 /// A named crate for each refusal and acceptance the runtime's own cases
 /// state: the two shipped crates, the profiles they are valid in, and every
 /// plant of `RB-17` and `RB-19`.
-fn named() -> Vec<(String, Crate)> {
+pub(super) fn named() -> Vec<(String, Crate)> {
     let support = read(SUPPORT);
     let probe = read(PROBE);
     let base = rt_decode::decode(&support).expect("the support crate decodes");
