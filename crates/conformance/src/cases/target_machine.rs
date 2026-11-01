@@ -511,7 +511,9 @@ fn run_target(directory: &Path, target: usize, cases: &[Case]) -> Ran {
     let source = directory.join(format!("harness_{target}.rs"));
     std::fs::write(&source, harness(cases)).expect("the harness");
     let source = source.to_str().expect("a path");
-    let output = directory.join(format!("harness_{target}"));
+    // The executable carries the host's suffix (`.exe` on Windows), or the
+    // host would not find it to run.
+    let output = directory.join(format!("harness_{target}{}", std::env::consts::EXE_SUFFIX));
     let output = output.to_str().expect("a path");
     // A target the host executes natively is compiled for the host (no
     // `--target`, so it needs no extra standard library and runs on every
