@@ -761,6 +761,7 @@ fn pk_05() {
         [
             "bootstrap",
             "examples/helpdesk",
+            "kappa",
             "spec",
             "std-models",
             "std-reasoning",

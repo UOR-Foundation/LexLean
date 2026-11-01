@@ -18300,3 +18300,57 @@ script's output to that function, so the file the gate job writes is the file
 | the committed tree | `cargo test -p repo-conformance --test conformance conformance_rp_18 -- --exact` | ok |
 | the script no longer writes the gate line | same | `the evidence satisfies the release criterion` failed: `Err(["release/vv-evidence.txt does not record the gate passing"])` |
 | the criterion accepts the legs' lines | `cargo test -p repo-model the_ci_evidence_criterion` | `left: Ok(())` against the refusal |
+
+## κ-addressing in LexLean (`KA-01`..`KA-03`, #127)
+
+The `kappa` project (decision D7 of #110) writes the sha256 axis of uor-addr's
+κ-label, the data handle of decision D3 (`kind@label`), and uor-addr's JSON
+canonical form. uor-addr 0.2.0 is the oracle of the cases: a dependency of
+`repo-conformance` that can falsify the package and never establishes it, and
+a disagreement fails the case and is not resolved by adopting the oracle's
+output. `conformance_ka_01` holds the project, its roots, and the identities
+it does not move; `conformance_ka_02` holds the label, the handle and the
+twelve committed JSON fixtures under the evaluator and under the pinned
+rustc; `conformance_ka_03` holds `canonicalJson` to `uor_addr::json::canonicalize`
+on a seeded corpus under both. What the package does not do is stated in the
+rows: the GGUF and ONNX forms, the other hash axes and composition are not
+written, so the acceptance sentence of #127 (every committed fixture yields the
+same label) holds for the twelve JSON fixtures and, for the five GGUF and
+ONNX `.kappa-label` files, only for the label form (`isLabel`).
+
+### the kappa differentials can fail
+
+Each plant below is made on a copy of the project by the case itself, on every
+run, and the case fails when a plant is not detected. The lines are the case's
+own report on this host (`cargo test -p repo-conformance --test conformance
+conformance_ka_0 -- --nocapture --test-threads=1`); no committed file was edited.
+
+| Plant | Case | Observed |
+| --- | --- | --- |
+| the project's `[[source_package]]` removed | `KA-01` | the project does not check |
+| `kappaLabel` writes `sha512:` for `sha256:` | `KA-02` | 23 of 23 runs disagree, the first `sha512:7a38bf81…` against `sha256:7a38bf81…` |
+| `isLabel` admits uppercase hex (`64 <? n` for `96 <? n`) | `KA-02` | 7 of 127 runs disagree, the first `sha256:7A38bf81…` accepted and refused by the oracle's form |
+| `handleWire` writes the label for the kind | `KA-02` | 7 of 15 runs disagree, the first `sha256:7a38…@sha256:7a38…` against `json@sha256:7a38…` |
+| members kept in reverse key order (`lessKey (first item) key`) | `KA-03` | 3 of 120 runs disagree, the first `{"b":1,"a":2}` against `{"a":2,"b":1}` |
+| `\n` written raw, not as `\n` escaped (`b =? 10` to `0x0a`) | `KA-03` | 1 of 120 runs disagree, a document with a newline in a key |
+| the combining mark dropped from a composition (`byteOf base` for the composite) | `KA-03` | 6 of 120 runs disagree, the first `{"name": "cafe` plus U+0301 against `café` |
+
+The corpus of `KA-03` holds 78 refusals and 42 accepted documents of 120
+(malformed texts and the proper prefixes and extensions of documents, which
+the oracle refuses too, and repeated member names, non-integer numbers and
+strings outside the NFC subset, which the oracle accepts and the package
+refuses by design) and the case fails if either kind is missing. A repeated member name is refused by the package and
+kept by uor-addr 0.2.0 (`uor-addr` `main` refuses it, `953fb68`); the corpus
+states that as a design divergence and does not count it a disagreement.
+
+Under the pinned Lean 4.32.1 `lexlean verify` accepts the project (attestation
+35dad8e3e7e63587c4afc863f8f2d2f508f4e499af03c058713233d2701d5269, verified
+digest 9cc7831051860f1144aaea5dc23a95496884728dc0ed08b4f5e9272eeb7819d3),
+with exact axiom policies (`[propext]` or `[Quot.sound, propext]`, or none, for
+each definition). `kappa/expected/` holds the 23 build oracles and 105
+normalized verification records, written by `check-golden --write` and
+`verify-examples --write` restricted to the new project; no other example's
+record changed. The definitions carry no theorem: a `reflexivity` theorem on
+`kappaLabel` of a literal is refused by the kernel (`LLV7002`, `rfl` failed on
+the right-hand literal), as the probe of #110 found for the `compare_bytes`
+family, so the label is held by the differential and not by a proof.

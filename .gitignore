@@ -30,4 +30,5 @@ spec/.lexlean/
 stdlib/.lexlean/
 std-models/.lexlean/
 std-reasoning/.lexlean/
+kappa/.lexlean/
 bootstrap/.lexlean/

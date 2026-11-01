@@ -1,0 +1,119 @@
+\begin{lexlean}{Label}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.Sha256}
+\importmodule{LexLeanStd.Text}
+\title{Natural number addition}
+\begin{semanticmodule}
+structure{
+  name: Handle,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: kind, type: Bytes}, {name: label, type: Bytes}]
+}
+
+definition{
+  name: text,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: byteNat,
+  parameters: [subject : Bytes, position : Nat],
+  result: Nat,
+  body: (match (prim index subject position : (Option UInt8))
+    | Option.some byte => (prim to_nat byte : Nat)
+    | Option.none => 256),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: kappaLabel,
+  parameters: [canonical : Bytes],
+  result: Bytes,
+  body: (prim append (text "sha256:") (LexLeanStd.Sha256::sha256Hex canonical) : Bytes),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: lowerHexAt,
+  parameters: [subject : Bytes, position : Nat],
+  result: Bool,
+  body: (let n : Nat := (byteNat subject position); (if (47 <? n) then (if (n <? 58) then true else (if (96 <? n) then (n <? 103) else false)) else false)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: lowerHexRun,
+  parameters: [subject : Bytes, from : Nat],
+  result: Nat,
+  body: (first (prim iterate_until (fun [subject] (position : Nat) => (if (lowerHexAt subject position) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat]))) (prim length subject : Nat) from : (Nat * Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isLabel,
+  parameters: [candidate : Bytes],
+  result: Bool,
+  body: (if ((prim length candidate : Nat) =? 71) then (if (LexLeanStd.Text::startsWith candidate (text "sha256:")) then ((lowerHexRun candidate 7) =? 71) else false) else false),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: kindByteAt,
+  parameters: [subject : Bytes, position : Nat],
+  result: Bool,
+  body: (let n : Nat := (byteNat subject position); (if (96 <? n) then (n <? 123) else (if (47 <? n) then (n <? 58) else (n =? 45)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: kindRun,
+  parameters: [subject : Bytes],
+  result: Nat,
+  body: (first (prim iterate_until (fun [subject] (position : Nat) => (if (kindByteAt subject position) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat]))) (prim length subject : Nat) 0 : (Nat * Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isKind,
+  parameters: [kind : Bytes],
+  result: Bool,
+  body: (if (0 <? (prim length kind : Nat)) then ((kindRun kind) =? (prim length kind : Nat)) else false),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: handleOf,
+  parameters: [kind : Bytes, canonical : Bytes],
+  result: (Option Handle),
+  body: (if (isKind kind) then (ctor Option.some [Handle] (record Handle {kind := kind, label := (kappaLabel canonical)})) else (ctor Option.none [Handle])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: handleWire,
+  parameters: [kind : Bytes, canonical : Bytes],
+  result: (Option Bytes),
+  body: (match (handleOf kind canonical)
+    | Option.some handle => (ctor Option.some [Bytes] (prim append (project handle kind) (prim append (text "@") (project handle label) : Bytes) : Bytes))
+    | Option.none => (ctor Option.none [Bytes])),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

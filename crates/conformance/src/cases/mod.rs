@@ -20,6 +20,7 @@ pub use extraction::{compare_with_oracle, counter_independence, ne_04_lean_half,
 mod gnaf;
 mod grammar;
 mod helpdesk;
+mod kappa_addressing;
 mod language_models;
 mod latex_pdf;
 mod lean_backend;
@@ -150,6 +151,7 @@ pub fn run(id: &str) {
         "TL" => tooling::run(id),
         "AU" => authoring::run(id),
         "SL" => stdlib::run(id),
+        "KA" => kappa_addressing::run(id),
         "BS" => bootstrap::run(id),
         "PK" => packages::run(id),
         "NS" => normative_source::run(id),

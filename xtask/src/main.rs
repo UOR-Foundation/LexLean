@@ -167,6 +167,13 @@ fn example_dirs(root: &Path) -> Result<Vec<PathBuf>, Fail> {
         }
         dirs.push(directory);
     }
+    // The κ-addressing package (§17.22, `KA-01`) is a project of the
+    // workspace beside the standard library, under the same gates.
+    let kappa = root.join("kappa");
+    if !kappa.join("lexlean.toml").exists() {
+        return Err("§17.22: the `kappa` project is missing".into());
+    }
+    dirs.push(kappa);
     // The bootstrap project (§17.23) holds the compiler's own components as
     // language-1.2 source under the same gates.
     let bootstrap = root.join("bootstrap");
