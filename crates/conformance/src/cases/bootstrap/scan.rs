@@ -278,7 +278,7 @@ fn rejection_value(diagnostic: &Diagnostic) -> Value {
 /// What each corpus contains of each outcome, so that a differential which
 /// never saw a rejection cannot pass for one that did (R2).
 #[derive(Default)]
-struct Tally(BTreeMap<String, usize>);
+pub(super) struct Tally(BTreeMap<String, usize>);
 
 impl Tally {
     fn note(&mut self, outcome: &str) {
@@ -286,7 +286,7 @@ impl Tally {
     }
 }
 
-fn scan_run(tally: &mut Tally, path: &str, source: &str, max: u64) -> Run {
+pub(super) fn scan_run(tally: &mut Tally, path: &str, source: &str, max: u64) -> Run {
     let value = match lexlean::source::scan::scan(path, source, max) {
         Ok(atoms) => {
             tally.note("scan accepted");
@@ -313,7 +313,12 @@ fn nat_val_u64(n: u64) -> Value {
     }
 }
 
-fn reject_run(tally: &mut Tally, path: &str, atoms: &[Atom], forbidden: &[String]) -> Run {
+pub(super) fn reject_run(
+    tally: &mut Tally,
+    path: &str,
+    atoms: &[Atom],
+    forbidden: &[String],
+) -> Run {
     let value = match lexlean::source::scan::reject_forbidden_atoms(path, atoms, forbidden) {
         Ok(()) => {
             tally.note("reject accepted");
@@ -402,7 +407,7 @@ impl From<Run> for Heavy {
 }
 
 /// The forbidden controls the compiler passes, from the language data.
-fn forbidden_controls() -> Vec<String> {
+pub(super) fn forbidden_controls() -> Vec<String> {
     lexlean::lexicon::load_bootstrap()
         .expect("the bootstrap data")
         .structural
@@ -412,7 +417,7 @@ fn forbidden_controls() -> Vec<String> {
 
 /// Every committed `.lex.tex` source of the checkout that §12.1 accepts, as
 /// `link.rs` reads it (normalized), with its repository-relative path.
-fn sources() -> Vec<(String, String)> {
+pub(super) fn sources() -> Vec<(String, String)> {
     let root = support::repo_root();
     let walker = walkdir::WalkDir::new(root.as_std_path())
         .sort_by_file_name()

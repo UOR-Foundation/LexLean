@@ -13,6 +13,7 @@ use lexlean::production::lower::{linked_modules, lower_root, roots, Lowered};
 use serde_json::Value as Json;
 
 mod calculus_check;
+pub mod perf;
 
 use crate::production_export as harness;
 use crate::rust_build::{cargo_in, workspace, Built};
