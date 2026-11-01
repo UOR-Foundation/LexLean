@@ -598,7 +598,12 @@ pub(crate) fn run(id: &str) {
                 (index == 1
                     && matches!(
                         parts[0],
-                        "bootstrap" | "compiler" | "std-models" | "std-reasoning" | "stdlib"
+                        "bootstrap"
+                            | "compiler"
+                            | "kappa"
+                            | "std-models"
+                            | "std-reasoning"
+                            | "stdlib"
                     ))
                     || (index == 2 && parts[0] == "examples")
                     || (index == 3

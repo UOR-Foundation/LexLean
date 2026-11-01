@@ -16,6 +16,7 @@ serde_json = { workspace = true }
 sha2 = { workspace = true }
 tempfile = { workspace = true }
 toml = { workspace = true }
+uor-addr = { workspace = true }
 walkdir = { workspace = true }
 
 # A timeout ends the process group of the oracle's tools (`lake` starts
