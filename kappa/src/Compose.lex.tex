@@ -1,0 +1,128 @@
+\begin{lexlean}{Compose}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.Text}
+\importmodule{Label}
+\importmodule{Json}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: hexChar,
+  parameters: [n : Nat],
+  result: Bytes,
+  body: (Json::byteOf (if (n <? 10) then (48 + n) else (87 + n))),
+  executable: true
+}
+
+definition{
+  name: digestOf,
+  parameters: [operand : Bytes],
+  result: Bytes,
+  body: (LexLeanStd.Text::sliceOr operand 7 64),
+  executable: true
+}
+
+definition{
+  name: mirrorStep,
+  parameters: [digest : Bytes, state : (Nat * Bytes)],
+  result: (Option (Nat * Bytes)),
+  body: (if ((first state) <? 64) then (ctor Option.some [(Nat * Bytes)] (((first state) + 1), (prim append (second state) (hexChar (prim subtract 15 (Json::hexValue (Label::byteNat digest (first state))) : Nat)) : Bytes))) else (ctor Option.none [(Nat * Bytes)])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: mirror,
+  parameters: [operand : Bytes],
+  result: Bytes,
+  body: (let digest : Bytes := (digestOf operand); (second (first (prim iterate_until (fun [digest] (state : (Nat * Bytes)) => (mirrorStep digest state)) 65 (0, 0x) : ((Nat * Bytes) * Bool))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: lower,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bytes,
+  body: (if (Json::lessKey right left) then right else left),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: upper,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bytes,
+  body: (if (Json::lessKey right left) then left else right),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: sortedQuarters,
+  parameters: [operand : Bytes],
+  result: Bytes,
+  body: (let a0 : Bytes := (LexLeanStd.Text::sliceOr operand 7 16); (let b0 : Bytes := (LexLeanStd.Text::sliceOr operand 23 16); (let c0 : Bytes := (LexLeanStd.Text::sliceOr operand 39 16); (let d0 : Bytes := (LexLeanStd.Text::sliceOr operand 55 16); (let a1 : Bytes := (lower a0 b0); (let b1 : Bytes := (upper a0 b0); (let c1 : Bytes := (lower c0 d0); (let d1 : Bytes := (upper c0 d0); (let a2 : Bytes := (lower a1 c1); (let c2 : Bytes := (upper a1 c1); (let b2 : Bytes := (lower b1 d1); (let d2 : Bytes := (upper b1 d1); (let b3 : Bytes := (lower b2 c2); (let c3 : Bytes := (upper b2 c2); (prim append a2 (prim append b3 (prim append c3 d2 : Bytes) : Bytes) : Bytes))))))))))))))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: degreeTag,
+  parameters: [operand : Bytes],
+  result: Bytes,
+  body: (let high : Nat := (Json::hexValue (Label::byteNat operand 7)); (let low : Nat := (Json::hexValue (Label::byteNat operand 8)); (if ((prim remainder ((prim multiply high 16 : Nat) + low) 9 0 : Nat) =? 8) then 0x06 else 0x05))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: composeG2,
+  parameters: [left : Bytes, right : Bytes],
+  result: (Option Bytes),
+  body: (if (Label::isLabel left) then (if (Label::isLabel right) then (ctor Option.some [Bytes] (Label::kappaLabel (prim append (lower left right) (upper left right) : Bytes))) else (ctor Option.none [Bytes])) else (ctor Option.none [Bytes])),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: composeF4,
+  parameters: [operand : Bytes],
+  result: (Option Bytes),
+  body: (if (Label::isLabel operand) then (ctor Option.some [Bytes] (Label::kappaLabel (prim append (Label::text "sha256:") (lower (digestOf operand) (mirror operand)) : Bytes))) else (ctor Option.none [Bytes])),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: composeE6,
+  parameters: [operand : Bytes],
+  result: (Option Bytes),
+  body: (if (Label::isLabel operand) then (ctor Option.some [Bytes] (Label::kappaLabel (prim append (degreeTag operand) operand : Bytes))) else (ctor Option.none [Bytes])),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: composeE7,
+  parameters: [operand : Bytes],
+  result: (Option Bytes),
+  body: (if (Label::isLabel operand) then (ctor Option.some [Bytes] (Label::kappaLabel (prim append (Label::text "sha256:") (sortedQuarters operand) : Bytes))) else (ctor Option.none [Bytes])),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: composeE8,
+  parameters: [operand : Bytes],
+  result: (Option Bytes),
+  body: (if (Label::isLabel operand) then (ctor Option.some [Bytes] (Label::kappaLabel operand)) else (ctor Option.none [Bytes])),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}
