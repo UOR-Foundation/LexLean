@@ -688,7 +688,7 @@ definition{
       | Result.error problem => (ctor Result.error [(Option Bytes), Bytes] problem))),
   axioms: [Quot.sound, propext],
   executable: true,
-  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+  production: {effects: [allocation, overflow], targets: [rust-std]}
 }
 \end{semanticmodule}
 \end{lexlean}

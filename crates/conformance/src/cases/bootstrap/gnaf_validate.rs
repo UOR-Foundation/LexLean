@@ -27,7 +27,7 @@ use crate::support::{self, repo_root};
 
 const MODULE: &str = "LexLeanBoot.GnafValidate";
 const SOURCE: &str = "bootstrap/src/GnafValidate.lex.tex";
-const ROOTS: [(&str, &[&str]); 1] = [("validateRequest", &["allocation", "overflow", "recursion"])];
+const ROOTS: [(&str, &[&str]); 1] = [("validateRequest", &["allocation", "overflow"])];
 
 // ---------------------------------------------------------------- the sorts
 
@@ -351,15 +351,6 @@ fn action(kind: ActionKind, charge: Charge) -> Action {
     Action { kind, charge }
 }
 
-/// The actions of a machine that accounts for every performed kind by steps.
-fn performing() -> Vec<Action> {
-    ActionKind::ALL
-        .into_iter()
-        .filter(|kind| kind.performed())
-        .map(|kind| action(kind, Charge::Steps))
-        .collect()
-}
-
 /// The machines the rules read: each of the 21 rejections, and each of the
 /// ten action kinds for the six that carry one, three times each, built by
 /// hand from an accepted request.
@@ -644,15 +635,15 @@ const PLANTS: [super::Plant; 12] = [
     // A free preparation is accepted under the complete boundary.
     super::Plant {
         label: "free preparation accepted under the complete boundary",
-        site: "| Boundary.BdComplete => (ctor Option.some [Rejection] (Rejection.RjUnboundPreparation kind))",
+        site: "| Boundary.BdComplete => (ctor Option.some [Rejection] (ctor Rejection.RjUnboundPreparation kind))",
         replacement: "| Boundary.BdComplete => (ctor Option.none [Rejection])",
         root: "validateRequest",
     },
     // A prepared artifact is matched against steps instead of free.
     super::Plant {
         label: "prepared artifact matched against steps",
-        site: "| Charge.ChFree => (ctor Option.none [Rejection])\n        | Charge.ChSteps => (ctor Option.some [Rejection] (Rejection.RjStrayPreparedArtifact kind))",
-        replacement: "| Charge.ChFree => (ctor Option.some [Rejection] (Rejection.RjStrayPreparedArtifact kind))\n        | Charge.ChSteps => (ctor Option.none [Rejection])",
+        site: "| Charge.ChFree => (ctor Option.none [Rejection])\n        | Charge.ChSteps => (ctor Option.some [Rejection] (ctor Rejection.RjStrayPreparedArtifact kind))",
+        replacement: "| Charge.ChFree => (ctor Option.some [Rejection] (ctor Rejection.RjStrayPreparedArtifact kind))\n        | Charge.ChSteps => (ctor Option.none [Rejection])",
         root: "validateRequest",
     },
     // A duplicate is counted at one occurrence.
@@ -679,28 +670,28 @@ const PLANTS: [super::Plant; 12] = [
     // The universe size is n + |T| * n for n + |T| * n * n.
     super::Plant {
         label: "universe size without the square",
-        site: "(plans + (thresholds * (plans * plans)))",
-        replacement: "(plans + (thresholds * plans))",
+        site: "(plans + (prim multiply thresholds (prim multiply plans plans : Nat) : Nat))",
+        replacement: "(plans + (prim multiply thresholds plans : Nat))",
         root: "validateRequest",
     },
     // The legacy alias is refused as unsupported.
     super::Plant {
         label: "alias refused as unsupported",
-        site: "| ClaimClass.ClRestrictedUniverseOptimal => (ctor Option.some [Rejection] Rejection.RjClaimAlias)",
-        replacement: "| ClaimClass.ClRestrictedUniverseOptimal => (ctor Option.some [Rejection] Rejection.RjUnsupportedClaim)",
+        site: "| ClaimClass.ClRestrictedUniverseOptimal => (ctor Option.some [Rejection] (ctor Rejection.RjClaimAlias))",
+        replacement: "| ClaimClass.ClRestrictedUniverseOptimal => (ctor Option.some [Rejection] (ctor Rejection.RjUnsupportedClaim))",
         root: "validateRequest",
     },
     // The scalar and vector claim checks are swapped.
     super::Plant {
         label: "scalar and vector claim checks swapped",
-        site: "| ClaimClass.ClGlobalOptimal => (match (project request objective)\n      | Objective.ObVector =>",
-        replacement: "| ClaimClass.ClGlobalOptimal => (match (project request objective)\n      | Objective.ObScalar =>",
+        site: "| ClaimClass.ClGlobalOptimal => (match (project request objective)\n      | Objective.ObVector => (ctor Option.some [Rejection] (ctor Rejection.RjScalarClaimOverPartialOrder))\n      | Objective.ObScalar => (ctor Option.none [Rejection]))",
+        replacement: "| ClaimClass.ClGlobalOptimal => (match (project request objective)\n      | Objective.ObVector => (ctor Option.none [Rejection])\n      | Objective.ObScalar => (ctor Option.some [Rejection] (ctor Rejection.RjScalarClaimOverPartialOrder)))",
         root: "validateRequest",
     },
     // A scope over Rust programs is admitted.
     super::Plant {
         label: "rust programs scope admitted",
-        site: "| Scope.ScRustPrograms => (ctor Option.some [Rejection] Rejection.RjUncoveredScope)",
+        site: "| Scope.ScRustPrograms => (ctor Option.some [Rejection] (ctor Rejection.RjUncoveredScope))",
         replacement: "| Scope.ScRustPrograms => (ctor Option.none [Rejection])",
         root: "validateRequest",
     },
@@ -908,7 +899,7 @@ pub(super) fn case() {
 // §17.23, the register statement of BS-16, its scenario, and VERIFICATION.md
 // restate them, and the case fails when the tree no longer gives them. They
 // are written when the case first measures them.
-const COMMITTED: usize = 0;
-const HAND_BUILT: usize = 0;
-const REFUSED: usize = 0;
-const WITHIN: usize = 0;
+const COMMITTED: usize = 60;
+const HAND_BUILT: usize = 802;
+const REFUSED: usize = 3522;
+const WITHIN: usize = 3862;
