@@ -797,8 +797,12 @@ pub(super) fn run(id: &str) {
     let (code, oracle) = oracles
         .iter()
         .find(|(code, _)| {
-            INSTRUCTIONS[**code].root.contains("Adds")
-                || INSTRUCTIONS[**code].root.contains("AddSat")
+            // Each host executes at least one of the three saturating adds
+            // (AVX2 `adds`, NEON `qaddq`, SIMD128 `add_sat`), all over
+            // `saturate16`, the plant's site.
+            ["Adds", "Qadd", "AddSat"]
+                .iter()
+                .any(|name| INSTRUCTIONS[**code].root.contains(name))
         })
         .map(|(code, oracle)| (*code, oracle.clone()))
         .expect("a saturating instruction ran");
