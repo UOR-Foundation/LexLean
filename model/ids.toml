@@ -1685,6 +1685,12 @@ suite = "production"
 statement = "Every root that a conformance harness runs on a corpus and that admits `recursion` has a measured stack bound in `tests/stack-bounds.json`, whose rows are exactly the recursive packages of the committed `bootstrap` and `stdlib` exports, and the stack of the harness thread (`rust_harness::HARNESS_STACK`) and of the evaluator thread is at least the largest recorded bound times the stated headroom of 4, so that a harness stack below that bound is refused and a harness binary run on a quarter of its bound aborts instead of finishing; the bounds are measurements of the cases' own inputs on one host, evidence and not a guarantee for another host or input."
 
 [[id]]
+id = "PD-09"
+level = "build"
+suite = "production"
+statement = "A production root may name a bound, a prior theorem of its module whose statement is exactly the obligation linking generates from the root: under the hypothesis that every `nat` and `int` parameter lies in the target width, each operation of the root's own body whose registry row names its result representation stays in that width, in evaluation order; with the bound, eligibility discharges `overflow` from the effects it requires of the root and records the bound in the report, removing the bound restores the effect, and a bound that does not cover an operation, because its theorem states another obligation, the operation lies under a match, an `if`, or a lambda or in a callee, or its primitive is not one the rule covers, is refused with LLT4017 naming the operation; nothing is inferred by an optimizer or checked at run time."
+
+[[id]]
 id = "NE-01"
 level = "build"
 suite = "extraction"
@@ -1887,6 +1893,12 @@ id = "RB-22"
 level = "build"
 suite = "rust-backend"
 statement = "A fallible function rendered as a loop that is its value returns the operand of each `Err` that ends the loop, so a call of another fallible function there, looped or not, is in tail position and returns the callee's result without `?`: the module of issue 279 and a variant whose callee is itself a loop render in `rust-std`, export, and replay, their packages realize the programs the case lowers and agree with the calculus evaluator on every input of the case, an overflow included, and the same call bound before the loop's end without propagating, or left as the loop body's value with the end dropped, is refused because the fallible call does not propagate its overflow."
+
+[[id]]
+id = "RB-23"
+level = "build"
+suite = "rust-backend"
+statement = "The rendering of a production root whose bound discharges `overflow` carries no overflow check: every operation the bound covers is rendered as the plain operation of its width, the root's function returns its value and no call to it propagates, so that a package exporting it declares no failure and the differential against the pinned rustc agrees with the denotation on the seeded and boundary inputs; a rendering that keeps a checked operation or a fallible signature for a covered operation is detected."
 
 [[id]]
 id = "GN-01"
@@ -2175,6 +2187,12 @@ id = "SP-30"
 level = "build"
 suite = "preservation"
 statement = "Every runtime item the generated code calls has its refinement statement: each item of the compiler's table of runtime items, every fixed width included, is stated by exactly one theorem `refines_<function>` of the language-1.2 module `RustRuntime` of the compiler project if the item is of the core profile, or of the module `RustStd` if it is of `rust-std`, whose statement runs, in that module's crate, the function the generated code calls for the item and equates it with the run of the item itself at the item's profile, or is `equal` or `compare`, whose meaning `SP-25` states per type; the items are listed from the compiler's table and the statements from the modules' theorems, neither from the other, and a runtime item with no refinement statement, a statement of another item than the one its function is called for, a statement at the other profile, an item the generated code calls another function for than the one its statement runs, and a trait item without the theorems of `SP-25` are each refused naming the item."
+
+[[id]]
+id = "SP-31"
+level = "build"
+suite = "preservation"
+statement = "Certificate A of a production root with a bound states, and the kernel checks from the bound's theorem, that the root's width predicate holds on every argument in the target width (`bounded`) and that the lowered program converges to the encoded value of the root on every such argument (`root_value`), each with its axioms pinned exactly within the certificate axioms; a bound theorem whose conclusions do not match the width predicate's checks in evaluation order, a forged bound without a kernel proof, and a bound narrowed to miss an operation fail verification or linking rather than certify the root."
 
 [[id]]
 id = "MD-01"

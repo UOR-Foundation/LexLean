@@ -627,29 +627,21 @@ pub fn checked_neg_i64(p0: i64) -> Option<i64> {
     i64::checked_neg(p0)
 }
 
-pub fn f0(v0: i64, v1: i64, v2: u64) -> (Option<i64>, (Option<i64>, (Option<i64>, (Option<i64>, (Option<i64>, Option<u64>))))) {
+pub fn f0(v0: i16, v1: i32) -> (Option<i16>, (Option<i32>, (Option<i32>, bool))) {
     ({
         let a1 = v0;
-        let a2 = v1;
-        fixed_i64::checked_add(a1, a2)
+        let a2 = v0;
+        fixed_i16::checked_mul(a1, a2)
     }, ({
-        let a3 = v0;
-        let a4 = v1;
-        fixed_i64::checked_sub(a3, a4)
+        let a3 = v1;
+        let a4 = -7i32;
+        fixed_i32::checked_add(a3, a4)
     }, ({
         let a5 = v0;
-        let a6 = v1;
-        fixed_i64::checked_mul(a5, a6)
-    }, ({
-        let a7 = v0;
-        let a8 = v1;
-        fixed_i64::checked_quot(a7, a8)
-    }, ({
-        let a9 = v0;
-        checked_neg_i64(a9)
+        fixed_i32::convert(i128::from(a5))
     }, {
-        let a10 = v2;
-        let a11 = 1u64;
-        fixed_u64::checked_add(a10, a11)
-    })))))
+        let a6 = v1;
+        let a7 = 3i32;
+        equal(a6, a7)
+    })))
 }

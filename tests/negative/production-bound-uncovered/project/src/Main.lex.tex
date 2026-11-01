@@ -1,0 +1,22 @@
+\begin{lexlean}{Main}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+theorem{
+  name: clampDouble_bound,
+  parameters: [value : Nat],
+  statement: ((value < 18446744073709551616) -> ((value + value) < 18446744073709551616)),
+  proof: linear_arithmetic{},
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+definition{
+  name: clampDouble,
+  parameters: [value : Nat],
+  result: Nat,
+  body: (if (value <? 10) then (value + value) else value),
+  executable: true,
+  production: {bound: clampDouble_bound, effects: [], targets: [rust-core, rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

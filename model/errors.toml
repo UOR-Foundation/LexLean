@@ -470,6 +470,13 @@ title = "Unbounded or unspecified text generation"
 statement = "A text declaration does not state the bound it must: a context window with capacity 0, or a text generator with max_tokens 0."
 
 [[error]]
+code = "LLT4017"
+class = "language"
+exit = 1
+title = "Overflow bound does not cover an operation"
+statement = "A production root's bound is not a prior theorem of its module stating exactly the generated obligation, or an operation of the root's closure that can overflow lies outside what the bound covers: under a match, a conditional, or a lambda, in a callee, or a primitive the rule does not cover."
+
+[[error]]
 code = "LLV7001"
 class = "environment"
 exit = 3

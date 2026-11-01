@@ -855,12 +855,14 @@ pub fn format_int(p0: i64) -> Str {
     Str::format_i64(p0)
 }
 
-pub fn f0(v0: (u64, bool)) -> (bool, u64) {
-    ({
-        let (_, h1) = v0;
-        h1
-    }, {
-        let (h2, _) = v0;
-        h2
-    })
+pub fn f0(v0: u64) -> R<(Option<u64>, Result<u64, ()>)> {
+    Ok((Some(nat_succ(v0)?), {
+        let a1 = v0;
+        let a2 = 3u64;
+        if nat_lt(a1, a2) {
+            Ok::<u64, ()>(0u64)
+        } else {
+            Err::<u64, ()>(())
+        }
+    }))
 }

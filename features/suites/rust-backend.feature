@@ -142,3 +142,10 @@ Feature: rust-backend
     Given the committed project `tests/rust-backend/loop-ends`, whose `Main` is the module of issue 279 and whose `Looped` ends its loop with a call of a function that is itself a loop
     When each root is lowered and rendered in `rust-std`, its loop's ending call is bound before the end or left as the body's value, its package is compiled by the pinned rustc and run beside the calculus evaluator, and both roots are exported and replayed
     Then each rendering ends its loop with the callee's result as it is and is valid, each planted crate is refused because the fallible call does not propagate its overflow, every run agrees with the evaluator, an overflow included, and the exported packages realize the lowered programs
+
+  @RB-23 @build
+  Scenario: The rendering of a production root whose bound discharges `overflow` carries no overflow check: every operation the bound covers is rendered as the plain operation of its width, the root's function returns its value and no call to it propagates, so that a package exporting it declares no failure and the differential against the pinned rustc agrees with the denotation on the seeded and boundary inputs; a rendering that keeps a checked operation or a fallible signature for a covered operation is detected.
+    Given the committed bounded root of the production-coverage corpus and a copy of its rendering that keeps a checked operation
+    When it is rendered in each of its targets, built under the pinned rustc, and run on the seeded and boundary inputs of the differential
+    Then the rendering has no checked operation, no `R<T>` result, and no `?`, its package declares no failure, every run agrees with the denotation, and the copy is detected
+

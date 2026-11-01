@@ -57,3 +57,9 @@ Feature: production
     When every recursive package of those exports is matched to its row, each harness stack is compared with the largest bound times the headroom, and the rendered harness of `isClosedLeanName` is run on a stack at that product and on a quarter of its own bound
     Then every recursive package has a row, no row is stale, and every harness stack covers its bound with the headroom
     And a harness stack below a bound is refused, and the harness on a quarter of its bound aborts
+
+  @PD-09 @build
+  Scenario: A production root may name a bound, a prior theorem of its module whose statement is exactly the obligation linking generates from the root: under the hypothesis that every `nat` and `int` parameter lies in the target width, each operation of the root's own body whose registry row names its result representation stays in that width, in evaluation order; with the bound, eligibility discharges `overflow` from the effects it requires of the root and records the bound in the report, removing the bound restores the effect, and a bound that does not cover an operation, because its theorem states another obligation, the operation lies under a match, an `if`, or a lambda or in a callee, or its primitive is not one the rule covers, is refused with LLT4017 naming the operation; nothing is inferred by an optimizer or checked at run time.
+    Given a general production root whose body adds and multiplies naturals, with a prior theorem stating the generated bound, and copies that remove the bound, narrow it to miss one operation, place an operation under an `if`, and state another obligation
+    When each is checked and its eligibility report read
+    Then the bounded root is admitted without `overflow` and the report names its bound, the copy without the bound requires `overflow` again, and each other copy is refused with LLT4017 naming the operation

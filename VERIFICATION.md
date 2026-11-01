@@ -17639,6 +17639,62 @@ fence, or touches no block) is refused rather than split; that edit is made
 with `replace-block` and `insert-after` one block at a time, or by hand.
 `Ids*` rows stay hand-edited, as decided on #244.
 
+## Planted defects for the overflow bound (`PD-09`, `SP-31`, #116)
+
+Each plant below was made on a copy of `examples/production-coverage`, the
+command run with the pinned toolchain where it runs Lean, the output recorded,
+and the copy discarded (§27.9). `conformance_pd_09` repeats the first five on
+scratch copies and on the two negative fixtures, and `conformance_sp_31` the
+forged bound. Linux x86-64, Lean 4.32.1.
+
+| Plant | Command | Observed |
+| --- | --- | --- |
+| the bound removed from `Coverage.Bounds.maxOfThree` (`effects` left empty) | `lexlean check` | ``error[LLT4005]: phase production: production root `Coverage.Bounds.maxOfThree` is not eligible for target `rust-core`: effect mismatch: construct `term.add` realizes effect `overflow`, which the root does not admit (in `Coverage.Bounds.maxOfThree`, reached by Coverage.Bounds.maxOfThree; 1 violation(s) in total)`` |
+| the bound narrowed to the first addition (the second conjunct of `maxOfThree_bound` dropped) | `lexlean check` | ``error[LLT4017]: phase link: production bound of `maxOfThree`: `maxOfThree_bound` does not state exactly the generated obligation over (a : Nat, b : Nat, c : Nat): {"kind":"implies","premise":{"kind":"lt","left":{"kind":"var","name":"a"},…},"conclusion":{…"kind":"prop_and",…}}``; the message carries the generated statement, both additions in it |
+| the two conjuncts of the bound in the other order | `lexlean check` | `error[LLT4017]`, the same refusal: the obligation is a conjunction in evaluation order |
+| an integer multiplication added to the body under a `let` the root never reads | `lexlean check` | ``error[LLT4017]: … the primitive `primitive.multiply` at `Int` is not covered: a bound covers the additions and multiplications of naturals of the root's own body …`` |
+| a theorem stating another obligation (`tests/negative/production-bound-inexact`: the sum below 2^65) | `lexlean check` | ``error[LLT4017]: phase link: production bound of `double`: `double_bound` does not state exactly the generated obligation over (value : Nat): {"kind":"implies",…}`` |
+| an addition under an `if` (`tests/negative/production-bound-uncovered`) | `lexlean check` | ``error[LLT4017]: phase link: production bound of `clampDouble`: the construct `term.if` is not covered: a bound covers the additions and multiplications of naturals of the root's own body, read through `let`, parameters, literals, and the total subtraction, quotient, and remainder of naturals, so an operation under this construct keeps `overflow` `` |
+| the bound forged: the exact statement kept, its proof replaced by `reflexivity{}` | `lexlean check`, then `lexlean verify src/Bounds.lex.tex` | `check` passes (the statement is the obligation); `verify` fails: ``error[LLV7002]: Lean rejected `Coverage.Bounds` (error): Tactic `rfl` failed: Expected the goal to be a binary relation … ⊢ a < 18446744073709551616 → b < 18446744073709551616 → c < 18446744073709551616 → a + LexLeanRuntime.subtract b a < 18446744073709551616 ∧ …``; nothing is published |
+| the generator naming the conjunction's head `and` where the pinned Lean writes `Bool.and` (found while building) | `lexlean verify src/Bounds.lex.tex` | ``error[LLI9001]: phase preservation: the width predicate has a form the bound rule does not cover: (Bool.and (Bool.and (Bool.and Bool.true …) (Nat.blt (HAdd.hAdd Nat Nat Nat (instHAdd Nat instAddNat) $56 (LexLeanRuntime.subtract Nat instSubNat $57 $56)) (OfNat.ofNat Nat 18446744073709551616 (instOfNatNat 18446744073709551616)))) (Bool.and … (Nat.blt … )))``: the refused predicate is the conjunction of the two checks in evaluation order with the `let` already substituted, and no certificate is written |
+| the theorem's axiom policy short of what `omega` uses (`[Quot.sound, propext]`) | `lexlean verify src/Bounds.lex.tex` | ``error[LLV7005]: `Coverage.Bounds.maxOfThree_bound` violates its exact axiom policy: observed [Classical.choice, Quot.sound, propext]``; the committed module declares all three |
+
+*What the evidence is.* Linking's generator and eligibility's coverage check
+are Rust and can only refuse (C9); what admits the discharge is the theorem the
+pinned Lean checks, and the rows `bounded` and `root_value` of certificate A,
+whose proof terms the kernel checks against the width predicate (`SP-31`): a
+statement linking accepted whose conjuncts do not match the predicate's checks
+leaves `bounded` ill-typed and the certificate refused (`LLV7013`). The
+rendering of a bounded root still carries its checks: `RB-23` is registered
+and open, because the machine of §17.16 has no plain operation that
+certificate B's correspondence covers.
+
+*The positive run.* With the bound in place, `lexlean verify src/Bounds.lex.tex`
+on the same copy: `verified 1 module; attestation c021ffec…`; the published
+record `preserve/LexLeanPreserve/C5e728a3a292bb4abef3239a2bf88995d/R0.lex.tex`
+states `theorem ….R0.root`, `theorem ….R0.bounded`, and `theorem ….R0.root_value`,
+each with `policy: exact{axioms: [Classical.choice, Quot.sound, propext]}`, and
+`preserve/audit.txt` prints `'….R0.bounded' depends on axioms: [propext,
+Classical.choice, Quot.sound]` and the same for `root_value`; the eligibility
+report of the module names the bound and requires no effect on either target.
+*The forward merge of `release/v0.5` at `fd14c6252`.* The line's `SP-29`, `SP-30` and
+`RB-20` to `RB-22` (the std runtime, the refinement statements, the loop ends)
+took the numbers this branch had used, so its rows are now `SP-31` and `RB-23`
+(`PD-09` and `LLT4017` are free on the line and keep theirs); the register is
+481. Run after the merge, Linux x86-64, Lean 4.32.1: `validate-model`,
+`validate-spec-links`, `check-calculus`, `check-production-export`,
+`check-golden`, `check-test-inventory`, `cargo fmt --check`, `cargo clippy
+--workspace --all-targets --all-features -- -D warnings`, and
+`conformance_rp_11`, `conformance_pc_01`, `conformance_pd_09`,
+`conformance_sp_31` (280 s) and `conformance_ex_07` (the 309 prescribed
+negatives) pass; `conformance_rb_23` is red as stated above. `RB-23` is not
+implemented: on this line the preservation library is a kernel-DAG export
+(`language/preservation-1.2/library/src/*.lex.tex`, `RustLemmas` 295,000
+lines), so the new `Item` and `Machine` constructors the ruling on #116 asks
+for need the library re-elaborated from Lean sources that predate the line's
+later grafts, with an exporter that is not in the tree. The records of
+`uor-atlas` are not regenerated.
+
 ## A toolchain fetch is retried three times and no more (#242)
 
 Every step of `ci.yml`, `honesty.yml` and `reproducibility.yml` that fetches a

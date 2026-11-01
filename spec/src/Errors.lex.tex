@@ -533,6 +533,14 @@ definition{
 }
 
 definition{
+  name: llt4017,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLT4017", class := "language", exit := 1, title := "Overflow bound does not cover an operation", statement := "A production root's bound is not a prior theorem of its module stating exactly the generated obligation, or an operation of the root's closure that can overflow lies outside what the bound covers: under a match, a conditional, or a lambda, in a callee, or a primitive the rule does not cover."}),
+  executable: true
+}
+
+definition{
   name: llv7001,
   parameters: [],
   result: Rows::ErrorRow,

@@ -306,6 +306,7 @@ fn probe_host(
         roots: vec![lexlean::production::RootReport {
             root: roots[0].clone(),
             declared_effects: Vec::new(),
+            bound: None,
             runtime: members
                 .iter()
                 .map(|member| lexlean::production::ClosureMember {

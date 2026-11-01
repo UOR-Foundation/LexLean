@@ -416,6 +416,9 @@ pub struct RootReport {
     /// The qualified Lean name of the root.
     pub root: String,
     pub declared_effects: Vec<String>,
+    /// §17.13: the qualified Lean name of the bound the root names, whose
+    /// theorem discharges `overflow`; absent for a root without one.
+    pub bound: Option<String>,
     /// Runtime closure members in instance order.
     pub runtime: Vec<ClosureMember>,
     /// Data types realized by the closure, with their construct keys.
@@ -526,6 +529,9 @@ impl RootReport {
                 })).collect::<Vec<_>>(),
             })).collect::<Vec<_>>(),
         });
+        if let Some(bound) = &root.bound {
+            value["bound"] = serde_json::Value::String(bound.clone());
+        }
         if !root.reasoning.is_empty() {
             value["reasoning"] = root
                 .reasoning

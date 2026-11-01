@@ -206,3 +206,10 @@ Feature: preservation
     When each theorem `refines_<function>` of RustRuntime and RustStd is read for the function it runs and the runtime item it states
     Then every runtime item is stated by exactly one theorem, at its profile, on the function the generated code calls for it, or is a trait item with the theorems of SP-25
     And a theorem left out, a statement of another item, a statement at the other profile, an item called as another function, and a trait item without its theorems are each refused naming the item
+
+  @SP-31 @build
+  Scenario: Certificate A of a production root with a bound states, and the kernel checks from the bound's theorem, that the root's width predicate holds on every argument in the target width (`bounded`) and that the lowered program converges to the encoded value of the root on every such argument (`root_value`), each with its axioms pinned exactly within the certificate axioms; a bound theorem whose conclusions do not match the width predicate's checks in evaluation order, a forged bound without a kernel proof, and a bound narrowed to miss an operation fail verification or linking rather than certify the root.
+    Given the committed bounded root of the production-coverage corpus and copies whose bound theorem is forged, narrowed, or stated out of order
+    When certificate A is generated and checked by the pinned Lean
+    Then the certificate states `bounded` and `root_value` with exactly the certificate axioms, and each copy fails verification or linking
+
