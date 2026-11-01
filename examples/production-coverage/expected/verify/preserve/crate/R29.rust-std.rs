@@ -858,7 +858,7 @@ pub fn format_int(p0: i64) -> Str {
 pub fn f0(v0: i64, v1: i8) -> (Str, Str) {
     ({
         let a1 = v0;
-        format_i64(a1)
+        format_int(a1)
     }, {
         let a2 = v1;
         format_i8(a2)
