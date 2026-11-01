@@ -95,6 +95,46 @@
         "rust-std"
       ],
       "version": "1.0.0"
+    },
+    {
+      "name": "decimal",
+      "root": "LexLeanStd.Numeral.decimal",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "hex_nat",
+      "root": "LexLeanStd.Numeral.hexNat",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "parse_decimal",
+      "root": "LexLeanStd.Numeral.parseDecimal",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "hex",
+      "root": "LexLeanStd.Numeral.hex",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "parse_hex",
+      "root": "LexLeanStd.Numeral.parseHex",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
     }
   ]
 }
