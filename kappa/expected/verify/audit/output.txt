@@ -1,3 +1,16 @@
+'LexLeanKappa.Compose.composeE6' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Compose.composeE7' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Compose.composeE8' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Compose.composeF4' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Compose.composeG2' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Compose.degreeTag' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Compose.digestOf' does not depend on any axioms
+'LexLeanKappa.Compose.hexChar' does not depend on any axioms
+'LexLeanKappa.Compose.lower' depends on axioms: [propext]
+'LexLeanKappa.Compose.mirror' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Compose.mirrorStep' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Compose.sortedQuarters' depends on axioms: [propext]
+'LexLeanKappa.Compose.upper' depends on axioms: [propext]
 'LexLeanKappa.Json.Frame' does not depend on any axioms
 'LexLeanKappa.Json.Insertion' does not depend on any axioms
 'LexLeanKappa.Json.Machine' does not depend on any axioms
