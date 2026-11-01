@@ -1,0 +1,103 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{hexChar}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(n : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanKappa.Json.byteOf ((if (Nat.blt (n) (10)) then (48 + n) else (87 + n)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{digestOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(operand : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanStd.Text.sliceOr (operand) (7) (64)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{mirrorStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(digest : ByteArray) (state : (Prod (Nat) (ByteArray)))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option ((Prod (Nat) (ByteArray)))}.\par
+\noindent Definition: \texttt{(if (Nat.blt ((state).1) (64)) then Option.some ((((state).1 + 1), (LexLeanRuntime.append ((state).2) (hexChar ((LexLeanRuntime.subtract (15) (LexLeanKappa.Json.hexValue (LexLeanKappa.Label.byteNat (digest) ((state).1))) : Nat))) : ByteArray))) else Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{mirror}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(operand : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{(digest)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(let digest : ByteArray := digestOf (operand); (((LexLeanCollections.iterateUntil ((fun (state : (Prod (Nat) (ByteArray))) => mirrorStep (digest) (state))) (65) ((0, ByteArray.mk \#[])) : (Prod ((Prod (Nat) (ByteArray))) (Bool)))).1).2)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{lower}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : ByteArray) (right : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(if LexLeanKappa.Json.lessKey (right) (left) then right else left)}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{upper}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : ByteArray) (right : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(if LexLeanKappa.Json.lessKey (right) (left) then left else right)}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{sortedQuarters}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(operand : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(let a0 : ByteArray := LexLeanStd.Text.sliceOr (operand) (7) (16); (let b0 : ByteArray := LexLeanStd.Text.sliceOr (operand) (23) (16); (let c0 : ByteArray := LexLeanStd.Text.sliceOr (operand) (39) (16); (let d0 : ByteArray := LexLeanStd.Text.sliceOr (operand) (55) (16); (let a1 : ByteArray := lower (a0) (b0); (let b1 : ByteArray := upper (a0) (b0); (let c1 : ByteArray := lower (c0) (d0); (let d1 : ByteArray := upper (c0) (d0); (let a2 : ByteArray := lower (a1) (c1); (let c2 : ByteArray := upper (a1) (c1); (let b2 : ByteArray := lower (b1) (d1); (let d2 : ByteArray := upper (b1) (d1); (let b3 : ByteArray := lower (b2) (c2); (let c3 : ByteArray := upper (b2) (c2); (LexLeanRuntime.append (a2) ((LexLeanRuntime.append (b3) ((LexLeanRuntime.append (c3) (d2) : ByteArray)) : ByteArray)) : ByteArray)))))))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{degreeTag}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(operand : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(let high : Nat := LexLeanKappa.Json.hexValue (LexLeanKappa.Label.byteNat (operand) (7)); (let low : Nat := LexLeanKappa.Json.hexValue (LexLeanKappa.Label.byteNat (operand) (8)); (if (Nat.beq ((LexLeanRuntime.remainder (((LexLeanRuntime.multiply (high) (16) : Nat) + low)) (9) (0) : Nat)) (8)) then ByteArray.mk \#[6] else ByteArray.mk \#[5])))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{composeG2}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : ByteArray) (right : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{Option (ByteArray)}.\par
+\noindent Definition: \texttt{(if LexLeanKappa.Label.isLabel (left) then (if LexLeanKappa.Label.isLabel (right) then Option.some (LexLeanKappa.Label.kappaLabel ((LexLeanRuntime.append (lower (left) (right)) (upper (left) (right)) : ByteArray))) else Option.none) else Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{composeF4}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(operand : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{Option (ByteArray)}.\par
+\noindent Definition: \texttt{(if LexLeanKappa.Label.isLabel (operand) then Option.some (LexLeanKappa.Label.kappaLabel ((LexLeanRuntime.append (LexLeanKappa.Label.text ("sha256:")) (lower (digestOf (operand)) (mirror (operand))) : ByteArray))) else Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{composeE6}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(operand : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{Option (ByteArray)}.\par
+\noindent Definition: \texttt{(if LexLeanKappa.Label.isLabel (operand) then Option.some (LexLeanKappa.Label.kappaLabel ((LexLeanRuntime.append (degreeTag (operand)) (operand) : ByteArray))) else Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{composeE7}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(operand : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{Option (ByteArray)}.\par
+\noindent Definition: \texttt{(if LexLeanKappa.Label.isLabel (operand) then Option.some (LexLeanKappa.Label.kappaLabel ((LexLeanRuntime.append (LexLeanKappa.Label.text ("sha256:")) (sortedQuarters (operand)) : ByteArray))) else Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{composeE8}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(operand : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{Option (ByteArray)}.\par
+\noindent Definition: \texttt{(if LexLeanKappa.Label.isLabel (operand) then Option.some (LexLeanKappa.Label.kappaLabel (operand)) else Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\end{document}

@@ -6,10 +6,10 @@
 //! nothing here adopts the oracle's output.
 //!
 //! What is held, and what is not: the package writes the sha256 axis of the
-//! κ-label and the JSON realization. The GGUF and ONNX realizations of
-//! uor-addr, its other hash axes, and the composition operations are not
-//! written; `KA-02` and `KA-03` say so in their statements by naming only what
-//! they hold.
+//! κ-label, the JSON realization, and the five categorical compositions on
+//! the sha256 axis. The GGUF and ONNX realizations of uor-addr and its four
+//! other hash axes are not written; `KA-02`, `KA-03` and `KA-04` say so in
+//! their statements by naming only what they hold.
 
 use std::collections::BTreeMap;
 
@@ -27,25 +27,33 @@ use crate::support::{self, repo_root, P};
 
 /// The members of the workspace the project needs.
 const MEMBERS: [&str; 2] = ["kappa", "stdlib"];
-/// The two modules of the package.
+/// The three modules of the package.
 const LABEL: &str = "LexLeanKappa.Label";
 const JSON: &str = "LexLeanKappa.Json";
+const COMPOSE: &str = "LexLeanKappa.Compose";
 
 /// The roots in the order their modules declare them, each with the effects
 /// its declaration admits, which are exactly the effects its closure
 /// realizes.
-const ROOTS: [(&str, &str, &[&str]); 5] = [
+const ROOTS: [(&str, &str, &[&str]); 10] = [
     (LABEL, "kappaLabel", &["allocation", "overflow"]),
     (LABEL, "isLabel", &["allocation", "overflow"]),
     (LABEL, "handleWire", &["allocation", "overflow"]),
     (JSON, "canonicalJson", &["allocation", "overflow"]),
     (JSON, "jsonLabel", &["allocation", "overflow"]),
+    (COMPOSE, "composeG2", &["allocation", "overflow"]),
+    (COMPOSE, "composeF4", &["allocation", "overflow"]),
+    (COMPOSE, "composeE6", &["allocation", "overflow"]),
+    (COMPOSE, "composeE7", &["allocation", "overflow"]),
+    (COMPOSE, "composeE8", &["allocation", "overflow"]),
 ];
 
 /// Seeded documents under the evaluator.
 const EVALUATOR_RUNS: usize = 120;
 /// Seeded documents under rustc.
 const RUSTC_RUNS: usize = 600;
+/// Seeded operands of each composition, beside the fixed ones.
+const COMPOSE_RUNS: usize = 40;
 /// The evaluator's fuel; a root that exhausts it fails the case.
 const FUEL: u64 = 400_000_000;
 
@@ -524,6 +532,136 @@ fn handle_corpus() -> Vec<Run> {
     out
 }
 
+/// The oracle's composition of the operands: the label it mints, or `None`
+/// for any error (an operand of another axis, a malformed one, or one of the
+/// wrong width).
+fn oracle_compose(member: &str, operands: &[Vec<u8>]) -> Option<String> {
+    use uor_addr::composition as c;
+    use uor_addr::KappaLabel;
+    let operand = |index: usize| KappaLabel::<71>::from_bytes(&operands[index]).ok();
+    let outcome = match member {
+        "composeG2" => c::compose_g2_product(&operand(0)?, &operand(1)?),
+        "composeF4" => c::compose_f4_quotient(&operand(0)?),
+        "composeE6" => c::compose_e6_filtration(&operand(0)?),
+        "composeE7" => c::compose_e7_augmentation(&operand(0)?),
+        "composeE8" => c::compose_e8_embedding(&operand(0)?),
+        other => panic!("`{other}` is not a composition"),
+    };
+    outcome
+        .ok()
+        .map(|outcome| outcome.address.as_str().to_owned())
+}
+
+/// Operand labels of the sha256 axis: the extremes, digests whose first byte
+/// modulo nine is eight (the degree-6 class of E6), a digest and its mirror,
+/// digests whose quarters are in every order, and seeded digests.
+fn valid_operands(seeded: &mut Seeded, random: usize) -> Vec<Vec<u8>> {
+    let mut digests: Vec<Vec<u8>> = vec![vec![0; 32], vec![0xff; 32], (1..=32).collect()];
+    for first in [0x08, 0x11, 0x1a, 0xf8, 0xfb, 0x00, 0x07, 0x09] {
+        let mut digest: Vec<u8> = (0..32).map(|_| seeded.below(256) as u8).collect();
+        digest[0] = first;
+        digests.push(digest);
+    }
+    // Quarters in every one of the 24 orders of four distinct blocks.
+    let quarters: Vec<Vec<u8>> = (0..4u8)
+        .map(|quarter| vec![0x10 * (quarter + 1) + 3; 8])
+        .collect();
+    for a in 0..4usize {
+        for b in (0..4usize).filter(|b| *b != a) {
+            for c in (0..4usize).filter(|c| *c != a && *c != b) {
+                let d = 6 - a - b - c;
+                digests.push(
+                    [a, b, c, d]
+                        .iter()
+                        .flat_map(|index| quarters[*index].clone())
+                        .collect(),
+                );
+            }
+        }
+    }
+    // Equal leading quarters, so that the order is decided late.
+    digests.push([[7u8; 8].as_slice(), &[7; 8], &[3; 8], &[9; 8]].concat());
+    for _ in 0..random {
+        digests.push((0..32).map(|_| seeded.below(256) as u8).collect());
+    }
+    let mirrors: Vec<Vec<u8>> = digests
+        .iter()
+        .take(12)
+        .map(|digest| digest.iter().map(|byte| !byte).collect())
+        .collect();
+    digests.extend(mirrors);
+    digests
+        .iter()
+        .map(|digest| format!("sha256:{}", hex(digest)).into_bytes())
+        .collect()
+}
+
+/// Operands the package refuses: another axis, the case of the prefix, a
+/// digest of the wrong width, upper case, and characters that are not digits.
+fn invalid_operands(valid: &[u8]) -> Vec<Vec<u8>> {
+    let text = String::from_utf8(valid.to_vec()).expect("a label");
+    let digits = &text[7..];
+    let mut out: Vec<Vec<u8>> = vec![
+        format!("blake3:{digits}").into_bytes(),
+        format!("sha3-256:{digits}00").into_bytes(),
+        format!("SHA256:{digits}").into_bytes(),
+        format!("sha256:{}", &digits[1..]).into_bytes(),
+        format!("sha256:{digits}0").into_bytes(),
+        format!("sha256:{}", digits.to_uppercase()).into_bytes(),
+        format!("sha256:g{}", &digits[1..]).into_bytes(),
+        format!("sha256;{digits}").into_bytes(),
+        format!("sha256:{digits}\n").into_bytes(),
+        format!("sha512:{digits}{digits}").into_bytes(),
+        Vec::new(),
+        b"sha256:".to_vec(),
+    ];
+    // A label with a non-ASCII byte in a digit position.
+    let mut high = valid.to_vec();
+    high[10] = 0xe9;
+    out.push(high);
+    out
+}
+
+/// The runs of one composition: valid operands (the pairs in both orders for
+/// the product) and the refused ones, with the oracle's label.
+fn compose_corpus(member: &str, runs: usize) -> Vec<Run> {
+    let mut seeded = Seeded(0x6b61_0004_0000_0001);
+    let valid = valid_operands(&mut seeded, runs);
+    let mut out = Vec::new();
+    let mut run = |operands: Vec<Vec<u8>>| {
+        let expected = option_bytes(
+            oracle_compose(member, &operands)
+                .as_deref()
+                .map(str::as_bytes),
+        );
+        record(
+            &mut out,
+            operands.iter().map(|operand| bytes(operand)).collect(),
+            &expected,
+        );
+    };
+    if member == "composeG2" {
+        for (index, left) in valid.iter().enumerate() {
+            let right = &valid[(index * 7 + 3) % valid.len()];
+            run(vec![left.clone(), right.clone()]);
+            run(vec![right.clone(), left.clone()]);
+            run(vec![left.clone(), left.clone()]);
+        }
+        for bad in invalid_operands(&valid[3]) {
+            run(vec![bad.clone(), valid[3].clone()]);
+            run(vec![valid[3].clone(), bad]);
+        }
+    } else {
+        for operand in &valid {
+            run(vec![operand.clone()]);
+        }
+        for bad in invalid_operands(&valid[3]) {
+            run(vec![bad]);
+        }
+    }
+    out
+}
+
 /// The corpus of one root, `runs` documents long where it is seeded.
 fn corpus(member: &str, runs: usize) -> Vec<Run> {
     match member {
@@ -532,6 +670,9 @@ fn corpus(member: &str, runs: usize) -> Vec<Run> {
         "handleWire" => handle_corpus(),
         "canonicalJson" => json_corpus(runs, 0x4b41_0003, false),
         "jsonLabel" => json_corpus(runs, 0x4b41_0002, true),
+        "composeG2" | "composeF4" | "composeE6" | "composeE7" | "composeE8" => {
+            compose_corpus(member, runs)
+        }
         other => panic!("`{other}` is not a root of the package"),
     }
 }
@@ -708,6 +849,7 @@ pub fn run(id: &str) {
         "KA-01" => package(id),
         "KA-02" => labels(id),
         "KA-03" => canonical_json(),
+        "KA-04" => composition(),
         other => panic!("no kappa-addressing case is wired for {other}"),
     }
 }
@@ -743,7 +885,7 @@ fn package(id: &str) {
     project.check_ok();
     let built = project.build_ok();
     let build_id = built.build_id.expect("built");
-    for module in ["Label", "Json"] {
+    for module in ["Label", "Json", "Compose"] {
         let report: Json = serde_json::from_slice(
             &std::fs::read(
                 project
@@ -982,6 +1124,111 @@ fn canonical_json() {
         );
         eprintln!(
             "KA-03: plant `{to}`: {} of {} runs disagree, the first {}",
+            disagreements.len(),
+            runs.len(),
+            disagreements[0]
+        );
+    }
+}
+
+/// The observable of one root on the given operands.
+fn observe(low: &Lowered, operands: &[&[u8]]) -> Json {
+    let arguments: Vec<Value> = operands.iter().map(|operand| bytes(operand)).collect();
+    let outcome = interp::run(&low.program, FUEL, low.entry(), &arguments);
+    rust::observable(&outcome).unwrap_or_else(|| panic!("{outcome:?}"))
+}
+
+/// `KA-04`: the five compositions of the sha256 axis.
+fn composition() {
+    let project = P::workspace_project("kappa", &MEMBERS);
+    project.check_ok();
+    let lowered = lowered_roots(&project);
+    let members = [
+        "composeG2",
+        "composeF4",
+        "composeE6",
+        "composeE7",
+        "composeE8",
+    ];
+    let refusal = serde_json::to_value(Value::None).expect("a value is JSON");
+    for member in members {
+        let runs = corpus(member, COMPOSE_RUNS);
+        assert!(
+            runs.iter().any(|(_, expected)| *expected == refusal)
+                && runs.iter().any(|(_, expected)| *expected != refusal),
+            "KA-04: {member}: the corpus holds both labels and refusals"
+        );
+        let disagreements = evaluate(&lowered[member], &runs);
+        assert!(
+            disagreements.is_empty(),
+            "KA-04: {member}: the evaluator and uor-addr disagree on {} of {} runs: {:?}",
+            disagreements.len(),
+            runs.len(),
+            &disagreements[..disagreements.len().min(5)]
+        );
+    }
+    // The laws, read from the evaluator: the product is commutative and a
+    // label and its mirror compose alike, as the oracle's own tests state.
+    let operands = valid_operands(&mut Seeded(0x6b61_0004_0000_0001), COMPOSE_RUNS);
+    for (index, left) in operands.iter().enumerate().take(24) {
+        let right = &operands[(index * 5 + 1) % operands.len()];
+        assert_eq!(
+            observe(&lowered["composeG2"], &[left, right]),
+            observe(&lowered["composeG2"], &[right, left]),
+            "KA-04: the product is commutative"
+        );
+    }
+    for operand in operands.iter().take(12) {
+        let mirror: Vec<u8> = format!(
+            "sha256:{}",
+            String::from_utf8_lossy(&operand[7..])
+                .chars()
+                .map(|digit| {
+                    let value = digit.to_digit(16).expect("a hexadecimal digit");
+                    char::from_digit(15 - value, 16).expect("a digit")
+                })
+                .collect::<String>()
+        )
+        .into_bytes();
+        assert_eq!(
+            observe(&lowered["composeF4"], &[operand]),
+            observe(&lowered["composeF4"], &[&mirror]),
+            "KA-04: a label and its mirror compose alike"
+        );
+    }
+    rustc_differential(&lowered, &members);
+    // The gate is armed: a product that keeps the operands in the order
+    // given, a mirror that is not the complement, a degree byte that is
+    // never six, and quarters left in place are each detected.
+    for (member, from, to) in [
+        (
+            "composeG2",
+            "(prim append (lower left right) (upper left right) : Bytes)",
+            "(prim append left right : Bytes)",
+        ),
+        (
+            "composeF4",
+            "(prim subtract 15 (Json::hexValue",
+            "(prim subtract 14 (Json::hexValue",
+        ),
+        ("composeE6", "9 0 : Nat) =? 8)", "9 0 : Nat) =? 9)"),
+        (
+            "composeE7",
+            "(prim append a2 (prim append b3 (prim append c3 d2 : Bytes) : Bytes) : Bytes)",
+            "(prim append a0 (prim append b0 (prim append c0 d0 : Bytes) : Bytes) : Bytes)",
+        ),
+    ] {
+        let defective = planted("Compose", from, to);
+        let checked = support::checked_project(&defective);
+        let low = lower_in(&checked, &defective, COMPOSE, member);
+        let runs = corpus(member, COMPOSE_RUNS);
+        let disagreements = evaluate(&low, &runs);
+        assert!(
+            !disagreements.is_empty(),
+            "KA-04: a planted defect `{to}` in `{member}` is detected by the differential"
+        );
+        eprintln!(
+            "KA-04: plant in {member}: {} of {} runs disagree, the first {}",
             disagreements.len(),
             runs.len(),
             disagreements[0]
