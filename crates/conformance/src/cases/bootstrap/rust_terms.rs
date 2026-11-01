@@ -674,8 +674,8 @@ const PLANTS: [Plant; 10] = [
     },
     Plant {
         label: "the types of an error constructor are swapped",
-        site: "(ctor RustValidate::Con.ConErr (RustLower::vty known (first parts)) (RustLower::vty known (second parts)))",
-        replacement: "(ctor RustValidate::Con.ConErr (RustLower::vty known (second parts)) (RustLower::vty known (first parts)))",
+        site: "(ctor RustValidate::Con.ConErr (RustLower::vty known (CalculusCheck::tyFirst ty)) (RustLower::vty known (CalculusCheck::tySecond ty)))",
+        replacement: "(ctor RustValidate::Con.ConErr (RustLower::vty known (CalculusCheck::tySecond ty)) (RustLower::vty known (CalculusCheck::tyFirst ty)))",
     },
     Plant {
         label: "the head and the tail of a list are swapped",

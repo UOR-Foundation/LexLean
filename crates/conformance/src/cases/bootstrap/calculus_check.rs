@@ -2273,11 +2273,13 @@ pub(super) fn mutants(
 ///
 /// `siteTrees` is the typing root `BS-07` composes with the lowering: it is
 /// the module's `walk`, so its eligibility and its certified package are
-/// checked here, and its differential is the first leg of `BS-07`.
-const ROOTS: [(&str, &[&str]); 3] = [
+/// checked here, and its differential is the first leg of `BS-07`. `useTrees`
+/// is held the same way, and its differential is the first leg of `BS-11`.
+const ROOTS: [(&str, &[&str]); 4] = [
     ("checkProgram", &["allocation", "overflow", "recursion"]),
     ("checkArguments", &["allocation", "overflow", "recursion"]),
     ("siteTrees", &["allocation", "overflow", "recursion"]),
+    ("useTrees", &["allocation", "overflow", "recursion"]),
 ];
 
 /// Seeded mutants of the committed programs, and the other corpora, per root,
@@ -2559,7 +2561,7 @@ pub(super) fn case() {
             .iter()
             .map(|(root, _)| format!("{MODULE}.{root}"))
             .collect::<Vec<_>>(),
-        "the two roots are the module's production roots, in order"
+        "the roots are the module's production roots, in order"
     );
     for (row, (root, effects)) in reported.iter().zip(ROOTS) {
         let declared: Vec<&str> = row["declared_effects"]
