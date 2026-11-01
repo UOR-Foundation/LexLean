@@ -123,7 +123,7 @@ Stage 2 recompiles the compiler. `crates/lexlean/src` is 5.8 MB of Rust. The one
 
 ## Faster first
 
-1. `lex`: the only component here that can break the budget, and any lexer ported from it inherits the shape. It needs an issue of its own.
+1. `lex`: the only component here that can break the budget, and any lexer ported from it inherits the shape. Issue 373 tracks the fix.
 2. `parse_audit_output`: harmless at today's declaration counts, about 1 s per run. It reaches minutes only near 3 MB of output.
 3. `join_with`: no present cost, but it should be fixed before a port joins long lists.
 
