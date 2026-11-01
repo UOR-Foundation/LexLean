@@ -313,7 +313,12 @@ fn nat_val_u64(n: u64) -> Value {
     }
 }
 
-pub(super) fn reject_run(tally: &mut Tally, path: &str, atoms: &[Atom], forbidden: &[String]) -> Run {
+pub(super) fn reject_run(
+    tally: &mut Tally,
+    path: &str,
+    atoms: &[Atom],
+    forbidden: &[String],
+) -> Run {
     let value = match lexlean::source::scan::reject_forbidden_atoms(path, atoms, forbidden) {
         Ok(()) => {
             tally.note("reject accepted");

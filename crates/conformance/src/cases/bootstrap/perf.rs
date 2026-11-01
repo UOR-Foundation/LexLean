@@ -8,7 +8,7 @@
 //! measures, and judges only that the package and the oracle agree on every
 //! run it times. `bootstrap/PERFORMANCE.md` records what it printed.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
 use std::time::Instant;
 
@@ -19,8 +19,8 @@ use lexlean::calculus::{check, Value};
 use serde_json::{json, Value as Json};
 use sha2::{Digest as _, Sha256};
 
-use super::{calculus_check, runtime_validate, rust_print, rust_validate, scan};
 use super::{audit_run, hex, lex_run, scaling_input, text, token_audit_run, Run, Seeded};
+use super::{calculus_check, runtime_validate, rust_print, rust_validate, scan};
 use crate::production_export as harness;
 use crate::rust_build::{cargo_in, workspace, Built};
 use crate::rust_harness::{self, Calls};
@@ -135,7 +135,30 @@ fn outcome(value: &Value) -> Json {
     serde_json::to_value(value).expect("a value is JSON")
 }
 
-/// The longest shipped preservation module, the lexer's committed input.
+/// What a root of the buffer returns when its bytes fit the capacity.
+fn written(joined: &[u8]) -> Json {
+    outcome(&Value::Ok {
+        value: Box::new(bytes_value(joined)),
+    })
+}
+
+/// The messages the digests are timed on, seeded so that they are the same on
+/// every host.
+fn messages() -> Vec<Vec<u8>> {
+    let mut seeded = Seeded(0x5A25_6E5D_0000_0277);
+    [64, 1_024, 16_384, 262_144, 1_048_576, 4_194_304]
+        .into_iter()
+        .map(|length| {
+            (0..length)
+                .map(|_| u8::try_from(seeded.below(256)).expect("a byte"))
+                .collect()
+        })
+        .collect()
+}
+
+/// The longest target module, the Lean text the audit reads token by token
+/// in production; the library's other modules are notation, which the lexer
+/// refuses within its first few kilobytes.
 fn longest_module() -> (String, String, Vec<String>) {
     use lexlean::production::preserve;
     let library = preserve::library().expect("the shipped registry");
@@ -147,20 +170,52 @@ fn longest_module() -> (String, String, Vec<String>) {
     for module in &library.modules {
         imports.push(format!("{}.{module}", preserve::LIBRARY_PREFIX));
     }
-    let (name, text) = library
-        .modules
+    let (name, text) = preserve::TARGET_MODULES
         .iter()
-        .map(String::as_str)
-        .chain(preserve::TARGET_MODULES)
         .map(|module| {
             (
-                module.to_owned(),
-                preserve::module_text(module).expect("module text").to_owned(),
+                (*module).to_owned(),
+                preserve::module_text(module)
+                    .expect("module text")
+                    .to_owned(),
             )
         })
         .max_by_key(|(_, text)| text.len())
-        .expect("a shipped module");
+        .expect("a target module");
+    // The module's own imports, so that the audit walks the whole text rather
+    // than refusing the first of them.
+    imports.extend(
+        text.lines()
+            .filter_map(|line| line.strip_prefix("public import "))
+            .map(str::to_owned),
+    );
     (name, text, imports)
+}
+
+/// The environment variable naming how many of a subject's largest inputs to
+/// leave out, when a harness holding them does not compile in the memory there
+/// is: its literals, not the package, are what rustc cannot hold.
+pub const DROP_ENV: &str = "LEXLEAN_PERF_DROP";
+
+/// The subjects whose committed corpus is whole programs or crates, rendered
+/// as literals, of which one input per doubling of size is timed.
+const WHOLE: [&str; 4] = [
+    "check_program",
+    "validate_crate",
+    "correspond_crate",
+    "print_crate",
+];
+
+/// The largest of `samples` in each doubling of size.
+fn octaves(samples: Vec<Sample>) -> Vec<Sample> {
+    let mut kept: BTreeMap<u32, Sample> = BTreeMap::new();
+    for item in samples {
+        let octave = item.size.max(1).ilog2();
+        if kept.get(&octave).is_none_or(|held| held.size < item.size) {
+            kept.insert(octave, item);
+        }
+    }
+    kept.into_values().collect()
 }
 
 #[allow(clippy::too_many_lines)]
@@ -180,7 +235,19 @@ fn subjects(selected: &dyn Fn(&str) -> bool) -> Vec<Subject> {
                 package,
                 oracle,
                 unit,
-                samples: build(),
+                samples: {
+                    let mut samples = build();
+                    if WHOLE.contains(&package) {
+                        samples = octaves(samples);
+                    }
+                    samples.sort_by_key(|item| item.size);
+                    let left_out: usize = std::env::var(DROP_ENV)
+                        .ok()
+                        .and_then(|count| count.parse().ok())
+                        .unwrap_or(0);
+                    samples.truncate(samples.len().saturating_sub(left_out));
+                    samples
+                },
             });
         }
     };
@@ -245,12 +312,13 @@ fn subjects(selected: &dyn Fn(&str) -> bool) -> Vec<Subject> {
             eprintln!("perf: lex ladder on {name} ({} bytes)", module.len());
             ladder(module.len())
                 .into_iter()
-                .map(|size| {
+                .filter_map(|size| {
                     let input = lines_prefix(&module, size).to_owned();
+                    lexlean::production::preserve::lex(&input).ok()?;
                     let run = lex_run(&input);
-                    sample(input.len(), run, move || {
+                    Some(sample(input.len(), run, move || {
                         std::hint::black_box(lexlean::production::preserve::lex(&input)).ok();
-                    })
+                    }))
                 })
                 .collect()
         },
@@ -266,16 +334,17 @@ fn subjects(selected: &dyn Fn(&str) -> bool) -> Vec<Subject> {
             let set: BTreeSet<String> = imports.iter().cloned().collect();
             ladder(module.len())
                 .into_iter()
-                .map(|size| {
+                .filter_map(|size| {
                     let input = lines_prefix(&module, size).to_owned();
+                    lexlean::production::preserve::lex(&input).ok()?;
                     let run = token_audit_run(&input, &imports);
                     let set = set.clone();
-                    sample(input.len(), run, move || {
+                    Some(sample(input.len(), run, move || {
                         std::hint::black_box(lexlean::production::preserve::audit_tokens(
                             &input, &set,
                         ))
                         .ok();
-                    })
+                    }))
                 })
                 .collect()
         },
@@ -506,112 +575,268 @@ fn subjects(selected: &dyn Fn(&str) -> bool) -> Vec<Subject> {
                 .collect()
         },
     );
-    add("SL-02", "stdlib", "sha256_hex", "sha2::Sha256 and hex", "bytes", &|| {
-        let mut seeded = Seeded(0x5A25_6E5D_0000_0277);
-        [64, 1_024, 16_384, 262_144, 1_048_576, 4_194_304]
-            .into_iter()
-            .map(|length| {
-                let message: Vec<u8> = (0..length)
-                    .map(|_| u8::try_from(seeded.below(256)).expect("a byte"))
-                    .collect();
-                let digest = hex(&Sha256::digest(&message));
-                let run = (
-                    vec![bytes_value(&message)],
-                    outcome(&bytes_value(digest.as_bytes())),
-                );
-                sample(length, run, move || {
-                    std::hint::black_box(hex(&Sha256::digest(&message)));
+    add(
+        "SL-02",
+        "stdlib",
+        "sha256",
+        "sha2::Sha256",
+        "bytes",
+        &|| {
+            messages()
+                .into_iter()
+                .map(|message| {
+                    let run = (
+                        vec![bytes_value(&message)],
+                        outcome(&Value::Adt {
+                            constructor: 0,
+                            fields: Sha256::digest(&message)
+                                .chunks(4)
+                                .map(|word| Value::U32 {
+                                    value: u32::from_be_bytes(word.try_into().expect("four bytes"))
+                                        .to_string(),
+                                })
+                                .collect(),
+                        }),
+                    );
+                    sample(message.len(), run, move || {
+                        std::hint::black_box(Sha256::digest(&message));
+                    })
                 })
-            })
-            .collect()
-    });
-    let sizes = [1_024, 16_384, 262_144];
+                .collect()
+        },
+    );
+    add(
+        "SL-02",
+        "stdlib",
+        "sha256_hex",
+        "sha2::Sha256 and hex",
+        "bytes",
+        &|| {
+            messages()
+                .into_iter()
+                .map(|message| {
+                    let digest = hex(&Sha256::digest(&message));
+                    let run = (
+                        vec![bytes_value(&message)],
+                        outcome(&bytes_value(digest.as_bytes())),
+                    );
+                    sample(message.len(), run, move || {
+                        std::hint::black_box(hex(&Sha256::digest(&message)));
+                    })
+                })
+                .collect()
+        },
+    );
+    let sizes = [1_024, 4_096, 16_384, 65_536, 262_144];
     let subject = |length: usize| -> Vec<u8> {
         (0..length)
             .map(|index| b"abcdefghijklmnop"[index % 16])
             .collect()
     };
-    add("SL-01", "stdlib", "starts_with", "<[u8]>::starts_with", "bytes", &|| {
-        sizes
-            .into_iter()
-            .map(|length| {
-                let whole = subject(length);
-                let prefix = whole[..length / 2].to_vec();
-                let run = (
-                    vec![bytes_value(&whole), bytes_value(&prefix)],
-                    outcome(&Value::Bool {
-                        value: whole.starts_with(&prefix),
-                    }),
-                );
-                sample(length, run, move || {
-                    std::hint::black_box(whole.starts_with(&prefix));
+    // The buffer's roots with a capacity that just fits, to the size of the
+    // largest committed Rust library and past it.
+    add(
+        "SL-05",
+        "stdlib",
+        "write_each",
+        "Vec::push",
+        "bytes",
+        &|| {
+            sizes
+                .into_iter()
+                .map(|length| {
+                    let data = subject(length);
+                    let run = (vec![nat_value(length), bytes_value(&data)], written(&data));
+                    sample(length, run, move || {
+                        let mut out = Vec::new();
+                        for byte in &data {
+                            out.push(*byte);
+                        }
+                        std::hint::black_box(out);
+                    })
                 })
-            })
-            .collect()
-    });
-    add("SL-01", "stdlib", "ends_with", "<[u8]>::ends_with", "bytes", &|| {
-        sizes
-            .into_iter()
-            .map(|length| {
-                let whole = subject(length);
-                let suffix = whole[length / 2..].to_vec();
-                let run = (
-                    vec![bytes_value(&whole), bytes_value(&suffix)],
-                    outcome(&Value::Bool {
-                        value: whole.ends_with(&suffix),
-                    }),
-                );
-                sample(length, run, move || {
-                    std::hint::black_box(whole.ends_with(&suffix));
-                })
-            })
-            .collect()
-    });
-    add("SL-01", "stdlib", "trim", "<[u8]>::trim_ascii", "bytes", &|| {
-        sizes
-            .into_iter()
-            .map(|length| {
-                let mut padded = vec![b' '; length / 4];
-                padded.extend(subject(length / 2));
-                padded.extend(vec![b'\t'; length / 4]);
-                let run = (
-                    vec![bytes_value(&padded)],
-                    outcome(&bytes_value(padded.trim_ascii())),
-                );
-                sample(length, run, move || {
-                    std::hint::black_box(padded.trim_ascii());
-                })
-            })
-            .collect()
-    });
-    add("SL-01", "stdlib", "split_on", "<[u8]>::split", "bytes", &|| {
-        sizes
-            .into_iter()
-            .map(|length| {
-                let mut whole = subject(length);
-                for index in (15..length).step_by(16) {
-                    whole[index] = b',';
-                }
-                let run = (
-                    vec![
-                        bytes_value(&whole),
-                        Value::U8 {
-                            value: b','.to_string(),
-                        },
-                    ],
-                    outcome(&byte_list(whole.split(|byte| *byte == b','))),
-                );
-                sample(length, run, move || {
-                    std::hint::black_box(
-                        whole
-                            .split(|byte| *byte == b',')
-                            .map(<[u8]>::to_vec)
-                            .collect::<Vec<_>>(),
+                .collect()
+        },
+    );
+    add(
+        "SL-05",
+        "stdlib",
+        "write_all",
+        "Vec::extend_from_slice",
+        "bytes",
+        &|| {
+            sizes
+                .into_iter()
+                .map(|length| {
+                    let data = subject(length);
+                    let pieces: Vec<Vec<u8>> = data.chunks(64).map(<[u8]>::to_vec).collect();
+                    let run = (
+                        vec![nat_value(length), byte_list(pieces.iter())],
+                        written(&data),
                     );
+                    sample(length, run, move || {
+                        let mut out = Vec::new();
+                        for piece in &pieces {
+                            out.extend_from_slice(piece);
+                        }
+                        std::hint::black_box(out);
+                    })
                 })
-            })
-            .collect()
-    });
+                .collect()
+        },
+    );
+    add(
+        "SL-05",
+        "stdlib",
+        "write_numbers",
+        "write! into a Vec",
+        "bytes",
+        &|| {
+            [256_u64, 1_024, 4_096, 16_384]
+                .into_iter()
+                .map(|count| {
+                    let numbers: Vec<u64> = (0..count)
+                        .map(|index| index.wrapping_mul(0x9E37_79B9_7F4A_7C15))
+                        .collect();
+                    let joined: Vec<u8> = numbers
+                        .iter()
+                        .flat_map(|number| format!("{number},").into_bytes())
+                        .collect();
+                    let run = (
+                        vec![
+                            nat_value(joined.len()),
+                            Value::List {
+                                items: numbers
+                                    .iter()
+                                    .map(|number| Value::Nat {
+                                        value: number.to_string(),
+                                    })
+                                    .collect(),
+                            },
+                        ],
+                        written(&joined),
+                    );
+                    sample(joined.len(), run, move || {
+                        let mut out = Vec::new();
+                        for number in &numbers {
+                            std::io::Write::write_fmt(&mut out, format_args!("{number},"))
+                                .expect("a write to a vector");
+                        }
+                        std::hint::black_box(out);
+                    })
+                })
+                .collect()
+        },
+    );
+    add(
+        "SL-01",
+        "stdlib",
+        "starts_with",
+        "<[u8]>::starts_with",
+        "bytes",
+        &|| {
+            sizes
+                .into_iter()
+                .map(|length| {
+                    let whole = subject(length);
+                    let prefix = whole[..length / 2].to_vec();
+                    let run = (
+                        vec![bytes_value(&whole), bytes_value(&prefix)],
+                        outcome(&Value::Bool {
+                            value: whole.starts_with(&prefix),
+                        }),
+                    );
+                    sample(length, run, move || {
+                        std::hint::black_box(whole.starts_with(&prefix));
+                    })
+                })
+                .collect()
+        },
+    );
+    add(
+        "SL-01",
+        "stdlib",
+        "ends_with",
+        "<[u8]>::ends_with",
+        "bytes",
+        &|| {
+            sizes
+                .into_iter()
+                .map(|length| {
+                    let whole = subject(length);
+                    let suffix = whole[length / 2..].to_vec();
+                    let run = (
+                        vec![bytes_value(&whole), bytes_value(&suffix)],
+                        outcome(&Value::Bool {
+                            value: whole.ends_with(&suffix),
+                        }),
+                    );
+                    sample(length, run, move || {
+                        std::hint::black_box(whole.ends_with(&suffix));
+                    })
+                })
+                .collect()
+        },
+    );
+    add(
+        "SL-01",
+        "stdlib",
+        "trim",
+        "<[u8]>::trim_ascii",
+        "bytes",
+        &|| {
+            sizes
+                .into_iter()
+                .map(|length| {
+                    let mut padded = vec![b' '; length / 4];
+                    padded.extend(subject(length / 2));
+                    padded.extend(vec![b'\t'; length / 4]);
+                    let run = (
+                        vec![bytes_value(&padded)],
+                        outcome(&bytes_value(padded.trim_ascii())),
+                    );
+                    sample(length, run, move || {
+                        std::hint::black_box(padded.trim_ascii());
+                    })
+                })
+                .collect()
+        },
+    );
+    add(
+        "SL-01",
+        "stdlib",
+        "split_on",
+        "<[u8]>::split",
+        "bytes",
+        &|| {
+            sizes
+                .into_iter()
+                .map(|length| {
+                    let mut whole = subject(length);
+                    for index in (15..length).step_by(16) {
+                        whole[index] = b',';
+                    }
+                    let run = (
+                        vec![
+                            bytes_value(&whole),
+                            Value::U8 {
+                                value: b','.to_string(),
+                            },
+                        ],
+                        outcome(&byte_list(whole.split(|byte| *byte == b','))),
+                    );
+                    sample(length, run, move || {
+                        std::hint::black_box(
+                            whole
+                                .split(|byte| *byte == b',')
+                                .map(<[u8]>::to_vec)
+                                .collect::<Vec<_>>(),
+                        );
+                    })
+                })
+                .collect()
+        },
+    );
     add("SL-01", "stdlib", "lines", "str::lines", "bytes", &|| {
         sizes
             .into_iter()
@@ -631,21 +856,29 @@ fn subjects(selected: &dyn Fn(&str) -> bool) -> Vec<Subject> {
             })
             .collect()
     });
-    add("SL-01", "stdlib", "join_with", "<[Vec<u8>]>::join", "bytes", &|| {
-        sizes
-            .into_iter()
-            .map(|length| {
-                let pieces: Vec<Vec<u8>> = subject(length).chunks(16).map(<[u8]>::to_vec).collect();
-                let run = (
-                    vec![byte_list(pieces.iter()), bytes_value(b", ")],
-                    outcome(&bytes_value(&pieces.join(&b", "[..]))),
-                );
-                sample(length, run, move || {
-                    std::hint::black_box(pieces.join(&b", "[..]));
+    add(
+        "SL-01",
+        "stdlib",
+        "join_with",
+        "<[Vec<u8>]>::join",
+        "bytes",
+        &|| {
+            sizes
+                .into_iter()
+                .map(|length| {
+                    let pieces: Vec<Vec<u8>> =
+                        subject(length).chunks(16).map(<[u8]>::to_vec).collect();
+                    let run = (
+                        vec![byte_list(pieces.iter()), bytes_value(b", ")],
+                        outcome(&bytes_value(&pieces.join(&b", "[..]))),
+                    );
+                    sample(length, run, move || {
+                        std::hint::black_box(pieces.join(&b", "[..]));
+                    })
                 })
-            })
-            .collect()
-    });
+                .collect()
+        },
+    );
     add("SL-01", "stdlib", "find", "str::find", "bytes", &|| {
         sizes
             .into_iter()
@@ -655,7 +888,10 @@ fn subjects(selected: &dyn Fn(&str) -> bool) -> Vec<Subject> {
                 let needle = "ab".to_owned();
                 let found = haystack.find(&needle);
                 let run = (
-                    vec![bytes_value(haystack.as_bytes()), bytes_value(needle.as_bytes())],
+                    vec![
+                        bytes_value(haystack.as_bytes()),
+                        bytes_value(needle.as_bytes()),
+                    ],
                     outcome(&match found {
                         Some(at) => Value::Some {
                             value: Box::new(nat_value(at)),
@@ -741,13 +977,12 @@ fn signature(library: &str, arity: usize) -> (Vec<String>, Option<String>) {
         (Vec::new(), inner.strip_prefix(')').expect("no parameters"))
     } else {
         let mut starts: Vec<usize> = (0..arity)
-            .map(|position| {
-                inner
-                    .find(&format!("p{position}: "))
-                    .expect("a parameter")
-            })
+            .map(|position| inner.find(&format!("p{position}: ")).expect("a parameter"))
             .collect();
-        let close = inner.rfind(") ->").or_else(|| inner.rfind(") {")).expect("the close");
+        let close = inner
+            .rfind(") ->")
+            .or_else(|| inner.rfind(") {"))
+            .expect("the close");
         starts.push(close + 2);
         let parameters = starts
             .windows(2)
@@ -802,7 +1037,8 @@ fn outline(source: &str, dir: &std::path::Path) -> String {
             let name = format!("blob{blobs}.bin");
             blobs += 1;
             std::fs::write(dir.join(&name), octets).expect("a blob");
-            let _ = write!(out, "Bytes::lit(include_bytes!(\"{name}\"))");
+            // The source's own `)` follows and closes `lit`.
+            let _ = write!(out, "Bytes::lit(include_bytes!(\"{name}\")");
         } else {
             out.push_str(OPEN);
             out.push_str(elements);
@@ -814,43 +1050,17 @@ fn outline(source: &str, dir: &std::path::Path) -> String {
     out
 }
 
-/// The environment variable naming a lock file the host's heavy jobs share:
-/// when it is set, the build and each component's back-to-back timings hold
-/// it, so that no other heavy job runs while a component is timed.
-pub const LOCK_ENV: &str = "LEXLEAN_PERF_LOCK";
-
-/// The memory the host must have available, once the lock is held, before
-/// anything is built or timed: a host that swaps times nothing.
-const AVAILABLE: u64 = 6 << 30;
-
-/// The bytes the host reports available (`/proc/meminfo`), where it does.
-fn available() -> Option<u64> {
-    let info = std::fs::read_to_string("/proc/meminfo").ok()?;
-    let line = info.lines().find(|line| line.starts_with("MemAvailable:"))?;
-    let kib: u64 = line.split_whitespace().nth(1)?.parse().ok()?;
-    Some(kib << 10)
-}
-
-/// The host's shared lock, held until the value is dropped, when
-/// [`LOCK_ENV`] names one; once it is held, waits for [`AVAILABLE`].
-fn exclusive() -> Option<std::fs::File> {
-    let path = std::env::var(LOCK_ENV).ok()?;
-    let file = std::fs::OpenOptions::new()
-        .create(true)
-        .truncate(false)
-        .write(true)
-        .open(&path)
-        .unwrap_or_else(|error| panic!("{path}: {error}"));
-    file.lock().unwrap_or_else(|error| panic!("{path}: {error}"));
-    while available().is_some_and(|bytes| bytes < AVAILABLE) {
-        std::thread::sleep(std::time::Duration::from_secs(15));
-    }
-    Some(file)
-}
-
-/// The host's available memory in GiB, else `-`, recorded with the load.
+/// The host's available memory in GiB (`/proc/meminfo`), else `-`, recorded
+/// with the load.
 fn memory() -> String {
-    available().map_or_else(|| "-".to_owned(), |bytes| format!("{}", bytes >> 30))
+    let available = || -> Option<u64> {
+        let info = std::fs::read_to_string("/proc/meminfo").ok()?;
+        let line = info
+            .lines()
+            .find(|line| line.starts_with("MemAvailable:"))?;
+        line.split_whitespace().nth(1)?.parse().ok()
+    };
+    available().map_or_else(|| "-".to_owned(), |kib: u64| format!("{}", kib >> 20))
 }
 
 /// The machine's one-minute load average where the host reports one
@@ -886,13 +1096,21 @@ fn exponent(points: &[(u64, u128)]) -> Option<f64> {
     (den > 0.0).then(|| num / den)
 }
 
-/// The upper half of `samples` by size: where a fixed cost no longer hides
-/// the growth.
+/// The points within six doublings of the largest size, where a fixed cost no
+/// longer hides the growth; all of them when those are too few to fit.
 fn upper(points: &[(u64, u128)]) -> Vec<(u64, u128)> {
-    let mut sorted = points.to_vec();
-    sorted.sort_unstable();
-    let half = sorted.len() / 2;
-    sorted.split_off(half)
+    let largest = points.iter().map(|point| point.0).max().unwrap_or(0);
+    let near: Vec<(u64, u128)> = points
+        .iter()
+        .copied()
+        .filter(|point| point.0.saturating_mul(64) >= largest)
+        .collect();
+    let distinct: BTreeSet<u64> = near.iter().map(|point| point.0).collect();
+    if distinct.len() < 3 {
+        points.to_vec()
+    } else {
+        near
+    }
 }
 
 /// Measure every subject `selected` admits and write the record into
@@ -969,7 +1187,10 @@ pub fn measure(heap: &dyn Heap, selected: &dyn Fn(&str) -> bool) -> String {
     }
     workspace(dir.as_std_path(), &crates);
     for (built, source) in crates.iter().zip(&harnesses) {
-        let src = dir.join("h").join(format!("run_{}", built.name)).join("src");
+        let src = dir
+            .join("h")
+            .join(format!("run_{}", built.name))
+            .join("src");
         let outlined = outline(source, src.as_std_path());
         std::fs::write(src.join("main.rs"), outlined).expect("the harness");
     }
@@ -986,12 +1207,10 @@ pub fn measure(heap: &dyn Heap, selected: &dyn Fn(&str) -> bool) -> String {
     }
     std::fs::write(dir.join("Cargo.toml"), manifest).expect("the workspace");
     let started = Instant::now();
-    let held = exclusive();
     let build = cargo_in(
         dir.as_std_path(),
-        &["build", "-j", "4", "--release", "--offline", "--workspace", "--quiet"],
+        &["build", "--release", "--offline", "--workspace", "--quiet"],
     );
-    drop(held);
     assert!(
         build.status.success(),
         "the packages do not build:\n{}",
@@ -1005,7 +1224,6 @@ pub fn measure(heap: &dyn Heap, selected: &dyn Fn(&str) -> bool) -> String {
     for (subject, built) in subjects.iter().zip(&crates) {
         // The oracle, in this process, one input at a time, then at once the
         // package on the same inputs; the load is read before each side.
-        let held = exclusive();
         let free = memory();
         let oracle_load = load();
         let oracles: Vec<(u128, usize, usize)> = subject
@@ -1015,9 +1233,11 @@ pub fn measure(heap: &dyn Heap, selected: &dyn Fn(&str) -> bool) -> String {
             .collect();
         let oracles = &oracles;
         let certified_load = load();
-        let binary = dir
-            .join("target/release")
-            .join(format!("run_{}{}", built.name, std::env::consts::EXE_SUFFIX));
+        let binary = dir.join("target/release").join(format!(
+            "run_{}{}",
+            built.name,
+            std::env::consts::EXE_SUFFIX
+        ));
         let started = Instant::now();
         let ran = std::process::Command::new(binary.as_std_path())
             .env(rust_harness::HARNESS_STACK_ENV, STACK.to_string())
@@ -1030,7 +1250,6 @@ pub fn measure(heap: &dyn Heap, selected: &dyn Fn(&str) -> bool) -> String {
             String::from_utf8_lossy(&ran.stderr)
         );
         let after_load = load();
-        drop(held);
         eprintln!(
             "perf: {} ran in {:?} (load {oracle_load} / {certified_load} / {after_load}, {free} GiB available)",
             subject.package,
@@ -1055,8 +1274,18 @@ pub fn measure(heap: &dyn Heap, selected: &dyn Fn(&str) -> bool) -> String {
                 )
             })
             .collect();
-        assert_eq!(outcomes.len(), subject.samples.len(), "{}: one outcome per input", subject.package);
-        assert_eq!(certified.len(), subject.samples.len(), "{}: one timing per input", subject.package);
+        assert_eq!(
+            outcomes.len(),
+            subject.samples.len(),
+            "{}: one outcome per input",
+            subject.package
+        );
+        assert_eq!(
+            certified.len(),
+            subject.samples.len(),
+            "{}: one timing per input",
+            subject.package
+        );
         for (index, (printed, item)) in outcomes.iter().zip(&subject.samples).enumerate() {
             assert_eq!(
                 printed, &item.expected,
@@ -1085,6 +1314,15 @@ pub fn measure(heap: &dyn Heap, selected: &dyn Fn(&str) -> bool) -> String {
             .max_by_key(|(index, item)| (item.size, certified[*index].0))
             .map(|(index, _)| index)
             .expect("an input");
+        // What the largest input returned: a run the oracle refuses early
+        // times the refusal, and this is how that is seen.
+        let head: String = subject.samples[largest]
+            .expected
+            .to_string()
+            .chars()
+            .take(120)
+            .collect();
+        eprintln!("perf: {} returns at its largest: {head}", subject.package);
         let points_c: Vec<(u64, u128)> = subject
             .samples
             .iter()
