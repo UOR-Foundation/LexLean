@@ -54,14 +54,18 @@ structure{
   name: Scaffold,
   type_parameters: [],
   parameters: [],
-  fields: [{name: edition, type: String}, {name: publish, type: Bool}]
+  fields: [
+    {name: edition, type: String},
+    {name: publish, type: Bool},
+    {name: library, type: String}
+  ]
 }
 
 definition{
   name: scaffold,
   parameters: [],
   result: Scaffold,
-  body: (record Scaffold {edition := "2021", publish := false})
+  body: (record Scaffold {edition := "2021", publish := false, library := "src/lib.rs"})
 }
 
 definition{

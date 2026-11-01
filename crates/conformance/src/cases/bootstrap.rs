@@ -1511,6 +1511,14 @@ const EVALUATOR_STACK: usize = 1 << 30;
 ///
 /// Panics when the case's assertion fails.
 pub fn run(id: &str) {
+    // The scanner, checker and validator cases each peak at 5 to 10 GiB, so
+    // together they exceed a 16 GiB host; they run one at a time.
+    static HEAVY: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    let _heavy = matches!(id, "BS-03" | "BS-04" | "BS-05").then(|| {
+        HEAVY
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    });
     let id = id.to_owned();
     if let Err(failure) = std::thread::Builder::new()
         .stack_size(EVALUATOR_STACK)

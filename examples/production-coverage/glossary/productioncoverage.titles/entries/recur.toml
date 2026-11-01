@@ -1,0 +1,16 @@
+spec = "lexlean/entry/1"
+id = "recur"
+category = "label-word"
+surface_arity = 0
+frame = "atom"
+
+[denotation]
+kind = "defined"
+value = "(const lexlean.std.nat::nat)"
+
+[[form]]
+id = "recur"
+channel = "text"
+surface = "Recursive definitions"
+canonical_source = true
+features = ["sentence-case", "singular"]
