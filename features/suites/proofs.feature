@@ -165,3 +165,10 @@ Feature: proofs
     When it is rendered and verified, copies name an unregistered law, drop an argument, pass an argument of the wrong type, drop the premise, name a later theorem as the premise, a language-1.1 module uses the form, and a copy applies the pair law to a swapped statement
     Then the generated Lean applies the registered theorem with explicit type arguments, arguments, and premises, and verifies
     And each malformed copy and the language-1.1 use fail with LLT4001 and the swapped statement fails verification with LLV7002
+
+  @PF-24 @build
+  Scenario: The runtime module LexLeanRuntime.Laws states three bounds of the runtime as registered laws a language-1.2 law proof cites: split_exact_fits (split_exact of a string whose UTF-8 byte length is at most n, on a separator that is not empty, under a maximum above n, is some, since a split has at most its byte length plus one pieces), utf8_decode_length (a string utf8_decode reads from bytes of length at most n has a UTF-8 byte length of at most n), and checked_add_fits (UInt32 checked_add of a value at most n and b is some when n plus b is below 2^32); each row pins its exact axioms, the request guards of the fold-laws example prove their too-many-lines, line-overflow, and response too-large branches unreachable by citing them, a guard that claims one more than its law gives fails verification with LLV7002, and a law the registry does not name is refused with LLT4001.
+    Given the committed fold-laws example, whose Guards module mirrors the three request guards of prism-code and proves each branch unreachable by law
+    When the runtime's laws module and registry are read, the example is rendered and verified, a copy cites a law the registry does not name, and a copy claims one more than each law gives
+    Then the three laws are declarations of the laws module with their axioms pinned, the generated Lean applies each registered theorem, and the example verifies
+    And the unregistered law fails with LLT4001 and each overclaiming guard fails verification with LLV7002

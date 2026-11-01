@@ -1,4 +1,4 @@
-//! The `proofs` suite: PF-01..PF-23.
+//! The `proofs` suite: PF-01..PF-24.
 //!
 //! Positive forms are asserted against the shared Lean-verified proof
 //! corpus (`support::verified_corpus`): every case first asserts the
@@ -10,6 +10,50 @@ use crate::support::{self, P};
 
 /// The full generated Lean name prefix of the corpus module.
 const M: &str = "LexLeanExample.Main";
+
+/// The runtime bounds of §17.12 (*Runtime bounds*) and the axioms each row
+/// of `LexLeanRuntime.Laws` pins: the split and the decoder observe the
+/// axioms their runtime definitions pin, checked addition only Lean's two.
+const RUNTIME_BOUNDS: &[(&str, &[&str])] = &[
+    (
+        "LexLeanLaws.splitOnAux_length_le",
+        &["Classical.choice", "Quot.sound", "propext"],
+    ),
+    (
+        "LexLeanLaws.splitOn_length_le",
+        &["Classical.choice", "Quot.sound", "propext"],
+    ),
+    ("LexLeanLaws.length_utf8Encode", &[]),
+    (
+        "LexLeanLaws.splitExact_fits",
+        &["Classical.choice", "Quot.sound", "propext"],
+    ),
+    (
+        "LexLeanLaws.utf8Decode_length",
+        &["Classical.choice", "Quot.sound", "propext"],
+    ),
+    ("LexLeanLaws.checkedAdd_fits", &["Quot.sound", "propext"]),
+];
+
+/// A row of `LexLeanRuntime.Laws` that belongs to the runtime bounds: one of
+/// [`RUNTIME_BOUNDS`], or a row Lean realized while proving them (an equation
+/// lemma of the split, the position step, or the decoder, a matcher, or a
+/// private proof term of one of them).
+fn is_runtime_bound_row(name: &str) -> bool {
+    [
+        "splitOnAux",
+        "splitOn_length_le",
+        "length_utf8Encode",
+        "splitExact",
+        "utf8Decode_length",
+        "checkedAdd_fits",
+        "String.Pos.Raw.next.",
+        "String.fromUTF8.",
+        "String.isEmpty.",
+    ]
+    .iter()
+    .any(|part| name.contains(part))
+}
 
 /// A one-theorem module with the given statement and proof body.
 fn theorem_module(statement: &str, proof: &str) -> String {
@@ -1007,8 +1051,13 @@ pub(crate) fn run(id: &str) {
                 );
             }
             // Laws an application or the rewrite set relies on carry no
-            // axiom beyond the three Lean's standard library uses.
+            // axiom beyond the three Lean's standard library uses. The runtime
+            // bounds (PF-24) state facts of the split and the decoder, whose
+            // runtime definitions pin Classical.choice, and are held there.
             for (name, axioms) in &laws.declarations {
+                if is_runtime_bound_row(name) {
+                    continue;
+                }
                 assert!(
                     axioms
                         .iter()
@@ -1190,6 +1239,93 @@ pub(crate) fn run(id: &str) {
                 assert_eq!(
                     refused_theorems(&wrong, file, &error),
                     ["statistics_one_pass"],
+                    "{error}"
+                );
+            }
+        }
+        // §16, §17.12: the runtime bounds a law proof cites (#263).
+        "PF-24" => {
+            use lexlean::backend::runtime;
+            let modules = runtime::modules().expect("the shipped runtime");
+            let laws = modules
+                .iter()
+                .find(|module| module.name == runtime::LAWS)
+                .expect("the laws module is a runtime module");
+            for (name, pinned) in RUNTIME_BOUNDS {
+                let axioms = laws
+                    .declarations
+                    .iter()
+                    .find(|(declared, _)| declared == name)
+                    .map(|(_, axioms)| axioms.clone())
+                    .unwrap_or_else(|| panic!("`{name}` is a declaration of the laws module"));
+                assert_eq!(axioms, *pinned, "`{name}` pins its exact axioms");
+            }
+            let registry = std::fs::read_to_string(
+                support::repo_root()
+                    .join("language/runtime-1.2/laws.toml")
+                    .as_std_path(),
+            )
+            .expect("the law registry");
+            for (law, lean) in [
+                ("split_exact_fits", "LexLeanLaws.splitExact_fits"),
+                ("utf8_decode_length", "LexLeanLaws.utf8Decode_length"),
+                ("checked_add_fits", "LexLeanLaws.checkedAdd_fits"),
+            ] {
+                assert!(
+                    registry.contains(&format!("name = \"{law}\"\nlean = \"{lean}\"")),
+                    "`{law}` is registered as `{lean}`"
+                );
+            }
+            let project = P::copy_example("fold-laws");
+            project.check_ok();
+            let build = support::rendered(&project);
+            let guards = support::lean_text(&build, "Guards");
+            for application in [
+                "  exact @LexLeanLaws.splitExact_fits (text) (\"\\n\") ((4097 : UInt32)) (4096) newline_separates lines_fit\n",
+                "  exact @LexLeanLaws.checkedAdd_fits (line) ((1 : UInt32)) ((4097 : UInt32)) counter_fits\n",
+                "  exact @LexLeanLaws.utf8Decode_length (request) (text) (4096)\n",
+                "  exact @LexLeanLaws.utf8Decode_length (request) (text) (16384)\n",
+            ] {
+                assert!(guards.contains(application), "{application}\n{guards}");
+            }
+            let file = "src/Guards.lex.tex";
+            fold_laws_rejected(
+                file,
+                "    name: split_exact_fits,",
+                "    name: split_exact_bound,",
+                "`split_exact_bound` is not a registered law",
+            );
+            let _ = support::verify_ok_backed("PF-24", &project);
+            if support::lean_backed("PF-24") {
+                // One more than each law gives: the byte bound of the split
+                // guard, the line bound of the counter, and the response bound.
+                let wrong = fold_laws_with(
+                    file,
+                    &[
+                        (
+                            "  statement: (((prim length (prim utf8_encode text : Bytes) : Nat) <= 4096) -> ((match (prim split_exact",
+                            "  statement: (((prim length (prim utf8_encode text : Bytes) : Nat) <= 4097) -> ((match (prim split_exact",
+                        ),
+                        (
+                            "  statement: ((line <= (4097 : UInt32)) ->",
+                            "  statement: ((line <= (4098 : UInt32)) ->",
+                        ),
+                        (
+                            "(((prim length request : Nat) <= 16384) -> ((prim length (prim utf8_encode text : Bytes) : Nat) <= 16384))),",
+                            "(((prim length request : Nat) <= 16384) -> ((prim length (prim utf8_encode text : Bytes) : Nat) <= 16383))),",
+                        ),
+                    ],
+                );
+                wrong.check_ok();
+                let _guard = support::env_shared();
+                let error = wrong.verify_fails_with("LLV7002");
+                assert_eq!(
+                    refused_theorems(&wrong, file, &error),
+                    [
+                        "line_overflow_unreachable",
+                        "response_too_large_unreachable",
+                        "too_many_lines_unreachable"
+                    ],
                     "{error}"
                 );
             }

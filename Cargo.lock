@@ -59,6 +59,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "arrayref"
+version = "0.3.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "76a2e8124351fda1ef8aaaa3bbd7ebbcb486bbcd4225aca0aa0d84bb2db8fecb"
+
+[[package]]
+name = "arrayvec"
+version = "0.7.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3fb67a6e08acf24fdeccbac2cb6ac4305825bd1f117462e0e6f2f193345ad56"
+
+[[package]]
 name = "autocfg"
 version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -86,6 +98,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b588b76d00fde79687d7646a9b5bdf3cc0f655e0bbd080335a95d7e96f3587da"
 
 [[package]]
+name = "blake3"
+version = "1.5.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8ee0c1824c4dea5b5f81736aff91bae041d2c07ee1192bec91054e10e3e601e"
+dependencies = [
+ "arrayref",
+ "arrayvec",
+ "cc",
+ "cfg-if",
+ "constant_time_eq",
+]
+
+[[package]]
 name = "block-buffer"
 version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -99,6 +124,16 @@ name = "camino"
 version = "1.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bb1307f12aa967b5a58416e87b3653360e0fd614a016b6e970db08fecbb1b80d"
+
+[[package]]
+name = "cc"
+version = "1.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "86e055fa6e3e40ad6187ba25b6855eeb635d5271f8e0f0e1e9a5826b8d75bea0"
+dependencies = [
+ "find-msvc-tools",
+ "shlex",
+]
 
 [[package]]
 name = "cfg-if"
@@ -151,6 +186,12 @@ name = "colorchoice"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d07550c9036bf2ae0c684c4297d503f838287c83c53686d05370d0e139ae570"
+
+[[package]]
+name = "constant_time_eq"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7c74b8349d32d297c9134b8c88677813a227df8f779daa29bfc29c183fe3dca6"
 
 [[package]]
 name = "cpufeatures"
@@ -221,6 +262,12 @@ dependencies = [
  "cfg-if",
  "libc",
 ]
+
+[[package]]
+name = "find-msvc-tools"
+version = "0.1.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c66915cc5391097de7a2b0b972e8505aa33c0df401fd3a6811dbdb32881ba48"
 
 [[package]]
 name = "flate2"
@@ -316,8 +363,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
 
 [[package]]
+name = "keccak"
+version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cb26cec98cce3a3d96cbb7bced3c4b16e3d13f27ec56dbd62cbc8f39cfb9d653"
+dependencies = [
+ "cpufeatures",
+]
+
+[[package]]
 name = "lexlean"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "camino",
  "clap",
@@ -340,6 +396,12 @@ name = "libc"
 version = "0.2.189"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2"
+
+[[package]]
+name = "libm"
+version = "0.2.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b6d2cec3eae94f9f509c767b45932f1ada8350c4bdb85af2fcab4a3c14807981"
 
 [[package]]
 name = "linux-raw-sys"
@@ -494,7 +556,7 @@ checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
 
 [[package]]
 name = "repo-conformance"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "camino",
  "lexlean",
@@ -505,12 +567,13 @@ dependencies = [
  "sha2",
  "tempfile",
  "toml",
+ "uor-addr",
  "walkdir",
 ]
 
 [[package]]
 name = "repo-model"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "lexlean",
  "serde",
@@ -545,6 +608,12 @@ dependencies = [
  "tempfile",
  "wait-timeout",
 ]
+
+[[package]]
+name = "ryu"
+version = "1.0.23"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9774ba4a74de5f7b1c1451ed6cd5285a32eddb5cccb8cc655a4e50009e06477f"
 
 [[package]]
 name = "same-file"
@@ -623,6 +692,22 @@ dependencies = [
  "cpufeatures",
  "digest",
 ]
+
+[[package]]
+name = "sha3"
+version = "0.10.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77fd7028345d415a4034cf8777cd4f8ab1851274233b45f84e3d955502d93874"
+dependencies = [
+ "digest",
+ "keccak",
+]
+
+[[package]]
+name = "shlex"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8fadd59c855ef2080decdef8ff161eb6661b86933c9d82e5ba29dc602a55aba"
 
 [[package]]
 name = "signal-hook"
@@ -785,6 +870,96 @@ dependencies = [
 ]
 
 [[package]]
+name = "uor-addr"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2b6e2d88d6ef066384c4eccbadc6dca625657493096b0776081dc106cd552eb6"
+dependencies = [
+ "ryu",
+ "uor-foundation",
+ "uor-foundation-sdk",
+ "uor-prism",
+]
+
+[[package]]
+name = "uor-foundation"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0179d3c29eb68e52ed03f9b48136159d4d4d26bd6b8008da3a9864b43ed0492f"
+dependencies = [
+ "libm",
+]
+
+[[package]]
+name = "uor-foundation-sdk"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2c9ab22f2053e30eb0b748543182e236326a02c576aa46f1956ad4a3e4396490"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
+]
+
+[[package]]
+name = "uor-prism"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6d31f122d1466f5a48780fec22cdbef89dbd345e2b9aab8d8ebe89b5502fbb56"
+dependencies = [
+ "uor-foundation",
+ "uor-foundation-sdk",
+ "uor-prism-crypto",
+ "uor-prism-fhe",
+ "uor-prism-numerics",
+ "uor-prism-tensor",
+]
+
+[[package]]
+name = "uor-prism-crypto"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b363e64319dab5e809cd2524c6f9ff97150cc01b56e6c197feb574482c682542"
+dependencies = [
+ "blake3",
+ "sha2",
+ "sha3",
+ "uor-foundation",
+ "uor-foundation-sdk",
+]
+
+[[package]]
+name = "uor-prism-fhe"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "80bc3e193c5ca7a505d6db4937e30562d276ce6a90e9b0bb181815de64cd8ef2"
+dependencies = [
+ "uor-foundation",
+ "uor-foundation-sdk",
+]
+
+[[package]]
+name = "uor-prism-numerics"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "112180275b7f1b94f202f8894441bb7635fce583be291b91fc1be174435bdfa6"
+dependencies = [
+ "uor-foundation",
+ "uor-foundation-sdk",
+]
+
+[[package]]
+name = "uor-prism-tensor"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b69a4f7b49a8acc21823ca567fb962124d3d6b5b2891e20f5308ac1602211601"
+dependencies = [
+ "uor-foundation",
+ "uor-foundation-sdk",
+ "uor-prism-numerics",
+]
+
+[[package]]
 name = "utf8parse"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -938,7 +1113,7 @@ checksum = "1ebf944e87a7c253233ad6766e082e3cd714b5d03812acc24c318f549614536e"
 
 [[package]]
 name = "xtask"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "camino",
  "flate2",

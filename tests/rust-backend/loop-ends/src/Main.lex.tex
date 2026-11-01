@@ -1,0 +1,25 @@
+\begin{lexlean}{Main}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{name: bump, parameters: [n : Nat], result: Nat, body: (n + 1), executable: true}
+
+definition{
+  name: countdown,
+  parameters: [n : Nat, acc : Nat],
+  result: Nat,
+  body: (match n | Nat.zero => (bump acc) | Nat.succ below => (countdown below acc)),
+  executable: true,
+  recursive_argument: n
+}
+
+definition{
+  name: run,
+  parameters: [n : Nat],
+  result: Nat,
+  body: (countdown n 0),
+  executable: true,
+  production: {effects: [overflow], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

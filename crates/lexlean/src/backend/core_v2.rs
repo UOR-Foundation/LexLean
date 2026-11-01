@@ -58,8 +58,13 @@
 //! as it did when the elaborator made the module. The cache is private to its
 //! Lean module, which the decoder therefore imports in full.
 
-/// The imports the decoder of core module 2 adds after `import Lean`.
-pub const LEAN_CORE_V2_IMPORTS: &str = "import all Lean.Meta.Constructions.SparseCasesOn\n";
+/// The imports the decoder of core module 2 adds after `import Lean`: the
+/// module of the elaborator's cache above, and `Init.Data.String.Legacy`,
+/// whose bodies of `String.splitOn` and its loop Lean does not expose, so that
+/// the runtime bound of `split_exact` (`LexLeanLaws.splitExact_fits`, SPEC.md
+/// §17.12) can unfold the split the runtime applies.
+pub const LEAN_CORE_V2_IMPORTS: &str =
+    "import all Lean.Meta.Constructions.SparseCasesOn\nimport all Init.Data.String.Legacy\n";
 
 /// The decoder's entry of a remade sparse `casesOn` in the elaborator's
 /// cache, which [`legacy_decoder`] leaves out.

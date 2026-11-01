@@ -158,6 +158,22 @@ fn example_dirs(root: &Path) -> Result<Vec<PathBuf>, Fail> {
         return Err("§17.22: the standard library project is missing".into());
     }
     dirs.push(stdlib);
+    // The library's two source packages (§17.22) are projects of their own
+    // under the same gates.
+    for package in ["std-models", "std-reasoning"] {
+        let directory = root.join(package);
+        if !directory.join("lexlean.toml").exists() {
+            return Err(format!("§17.22: the `{package}` project is missing").into());
+        }
+        dirs.push(directory);
+    }
+    // The κ-addressing package (§17.22, `KA-01`) is a project of the
+    // workspace beside the standard library, under the same gates.
+    let kappa = root.join("kappa");
+    if !kappa.join("lexlean.toml").exists() {
+        return Err("§17.22: the `kappa` project is missing".into());
+    }
+    dirs.push(kappa);
     // The bootstrap project (§17.23) holds the compiler's own components as
     // language-1.2 source under the same gates.
     let bootstrap = root.join("bootstrap");
@@ -740,6 +756,12 @@ fn published_build(
 /// §28.3: the published build tree of every example equals its committed
 /// oracle byte for byte; golden outputs change only through `--write`.
 fn check_golden(root: &Path, write: bool) -> Result<(), Fail> {
+    let transcript = repo_conformance::cases::check_runtime_transcript(root, write)?;
+    if write {
+        println!("check-golden: wrote the runtime transcript ({transcript} labels)");
+    } else {
+        println!("check-golden: the runtime transcript ({transcript} labels) equals the printed runtime's (R10)");
+    }
     for dir in example_dirs(root)? {
         let name = dir
             .file_name()

@@ -356,7 +356,7 @@ fn edit_notation(project: &P, relative: &str, from: &str, to: &str) {
 pub fn run(id: &str) {
     match id {
         // §17.13: a bound discharges `overflow`; linking fixes its statement,
-        // eligibility its coverage, and certificate A (SP-29) its proof.
+        // eligibility its coverage, and certificate A (SP-31) its proof.
         "PD-09" => {
             const BOUNDS: &str = "src/Bounds.lex.tex";
             const ROOT: &str = "Coverage.Bounds.maxOfThree";

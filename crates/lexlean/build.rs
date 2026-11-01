@@ -65,7 +65,7 @@ fn main() {
     let out_dir = PathBuf::from(env::var("OUT_DIR").expect("cargo sets this"));
     fs::write(out_dir.join("embedded.rs"), out).expect("write embedded.rs");
 
-    // The standard library's SHA-256 package (SPEC.md §17.22, `SL-05`): the
+    // The standard library's SHA-256 package (SPEC.md §17.22, `SL-06`): the
     // committed production export, linked and not copied, wrapped as one
     // module. The file's bytes follow the opening brace unchanged, so its
     // inner `forbid(unsafe_code)` stays the module's first item.

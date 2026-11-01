@@ -1,0 +1,698 @@
+\begin{lexlean}{RuntimeSupport}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{TargetSyntax}
+\importmodule{RuntimeSyntax}
+\importmodule{TargetSemantics}
+\importmodule{RuntimeSemantics}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: supportCrate,
+  parameters: [],
+  result: RuntimeSyntax::RtCrate,
+  body: (record RuntimeSyntax::RtCrate {profile := (ctor RuntimeSyntax::RtProfile.core), items := (cons (ctor RuntimeSyntax::RtItem.useItem (cons "core" (cons "cmp" (cons "Ordering" (nil String)))) (ctor Option.none [String])) (cons (ctor RuntimeSyntax::RtItem.useItem (cons "core" (cons "sync" (cons "atomic" (cons "AtomicU64" (nil String))))) (ctor Option.none [String])) (cons (ctor RuntimeSyntax::RtItem.useItem (cons "core" (cons "sync" (cons "atomic" (cons "Ordering" (nil String))))) (ctor Option.some [String] "Memory")) (cons (ctor RuntimeSyntax::RtItem.unitStruct "Overflow" (cons "Clone" (cons "Copy" (cons "PartialEq" (cons "Eq" (cons "Debug" (nil String))))))) (cons (ctor RuntimeSyntax::RtItem.alias "R" (cons "T" (nil String)) (ctor RuntimeSyntax::RtType.named "Result" (cons (ctor RuntimeSyntax::RtType.param 0) (cons (ctor RuntimeSyntax::RtType.named "Overflow" (nil RuntimeSyntax::RtType)) (nil RuntimeSyntax::RtType))))) (cons (ctor RuntimeSyntax::RtItem.staticItem "WORK" (ctor RuntimeSyntax::RtType.named "AtomicU64" (nil RuntimeSyntax::RtType)) (ctor RuntimeSyntax::RtExpr.call (cons "AtomicU64" (cons "new" (nil String))) (cons (ctor RuntimeSyntax::RtExpr.lit (ctor RuntimeSyntax::RtLit.nat 0)) (nil RuntimeSyntax::RtExpr)))) (cons (ctor RuntimeSyntax::RtItem.fnItem (record RuntimeSyntax::RtFn {signature := (record RuntimeSyntax::RtSig {name := "tick", receiver := false, exclusive := false, parameters := (cons (record RuntimeSyntax::RtParam {name := "units", mutable := false, type := (ctor RuntimeSyntax::RtType.nat)}) (nil RuntimeSyntax::RtParam)), result := (ctor RuntimeSyntax::RtType.unit)}), generics := (nil RuntimeSyntax::RtGeneric), public := true, body := (ctor RuntimeSyntax::RtBlock.mk (cons (ctor RuntimeSyntax::RtExpr.method (ctor RuntimeSyntax::RtExpr.var "WORK") "fetch_add" (cons (ctor RuntimeSyntax::RtExpr.var "units") (cons (ctor RuntimeSyntax::RtExpr.path (cons "Memory" (cons "Relaxed" (nil String)))) (nil RuntimeSyntax::RtExpr)))) (nil RuntimeSyntax::RtExpr)) (ctor RuntimeSyntax::RtExpr.lit (ctor RuntimeSyntax::RtLit.unit)))})) (cons (ctor RuntimeSyntax::RtItem.fnItem (record RuntimeSyntax::RtFn {signature := (record RuntimeSyntax::RtSig {name := "work", receiver := false, exclusive := false, parameters := (nil RuntimeSyntax::RtParam), result := (ctor RuntimeSyntax::RtType.nat)}), generics := (nil RuntimeSyntax::RtGeneric), public := true, body := (ctor RuntimeSyntax::RtBlock.mk (nil RuntimeSyntax::RtExpr) (ctor RuntimeSyntax::RtExpr.method (ctor RuntimeSyntax::RtExpr.var "WORK") "load" (cons (ctor RuntimeSyntax::RtExpr.path (cons "Memory" (cons "Relaxed" (nil String)))) (nil RuntimeSyntax::RtExpr))))})) (cons (ctor RuntimeSyntax::RtItem.traitItem "Same" (cons (record RuntimeSyntax::RtSig {name := "same", receiver := true, exclusive := false, parameters := (cons (record RuntimeSyntax::RtParam {name := "other", mutable := false, type := (ctor RuntimeSyntax::RtType.ref (ctor RuntimeSyntax::RtType.selfType))}) (nil RuntimeSyntax::RtParam)), result := (ctor RuntimeSyntax::RtType.bool)}) (nil RuntimeSyntax::RtSig))) (cons (ctor RuntimeSyntax::RtItem.traitItem "Key" (cons (record RuntimeSyntax::RtSig {name := "key", receiver := true, exclusive := false, parameters := (cons (record RuntimeSyntax::RtParam {name := "other", mutable := false, type := (ctor RuntimeSyntax::RtType.ref (ctor RuntimeSyntax::RtType.selfType))}) (nil RuntimeSyntax::RtParam)), result := (ctor RuntimeSyntax::RtType.ordering)}) (nil RuntimeSyntax::RtSig))) (cons (ctor RuntimeSyntax::RtItem.implItem (nil RuntimeSyntax::RtGeneric) (ctor Option.some [String] "Same") (ctor RuntimeSyntax::RtType.bool) (cons (record RuntimeSyntax::RtFn {signature := (record RuntimeSyntax::RtSig {name := "same", receiver := true, exclusive := false, parameters := (cons (record RuntimeSyntax::RtParam {name := "other", mutable := false, type := (ctor RuntimeSyntax::RtType.ref (ctor RuntimeSyntax::RtType.selfType))}) (nil RuntimeSyntax::RtParam)), result := (ctor RuntimeSyntax::RtType.bool)}), generics := (nil RuntimeSyntax::RtGeneric), public := false, body := (ctor RuntimeSyntax::RtBlock.mk (nil RuntimeSyntax::RtExpr) (ctor RuntimeSyntax::RtExpr.equals (ctor RuntimeSyntax::RtExpr.var "self") (ctor RuntimeSyntax::RtExpr.var "other")))}) (nil RuntimeSyntax::RtFn))) (cons (ctor RuntimeSyntax::RtItem.implItem (nil RuntimeSyntax::RtGeneric) (ctor Option.some [String] "Key") (ctor RuntimeSyntax::RtType.bool) (cons (record RuntimeSyntax::RtFn {signature := (record RuntimeSyntax::RtSig {name := "key", receiver := true, exclusive := false, parameters := (cons (record RuntimeSyntax::RtParam {name := "other", mutable := false, type := (ctor RuntimeSyntax::RtType.ref (ctor RuntimeSyntax::RtType.selfType))}) (nil RuntimeSyntax::RtParam)), result := (ctor RuntimeSyntax::RtType.ordering)}), generics := (nil RuntimeSyntax::RtGeneric), public := false, body := (ctor RuntimeSyntax::RtBlock.mk (nil RuntimeSyntax::RtExpr) (ctor RuntimeSyntax::RtExpr.method (ctor RuntimeSyntax::RtExpr.var "self") "cmp" (cons (ctor RuntimeSyntax::RtExpr.var "other") (nil RuntimeSyntax::RtExpr))))}) (nil RuntimeSyntax::RtFn))) (cons (ctor RuntimeSyntax::RtItem.implItem (nil RuntimeSyntax::RtGeneric) (ctor Option.some [String] "Same") (ctor RuntimeSyntax::RtType.fixed (ctor TargetSyntax::IntKind.u8)) (cons (record RuntimeSyntax::RtFn {signature := (record RuntimeSyntax::RtSig {name := "same", receiver := true, exclusive := false, parameters := (cons (record RuntimeSyntax::RtParam {name := "other", mutable := false, type := (ctor RuntimeSyntax::RtType.ref (ctor RuntimeSyntax::RtType.selfType))}) (nil RuntimeSyntax::RtParam)), result := (ctor RuntimeSyntax::RtType.bool)}), generics := (nil RuntimeSyntax::RtGeneric), public := false, body := (ctor RuntimeSyntax::RtBlock.mk (nil RuntimeSyntax::RtExpr) (ctor RuntimeSyntax::RtExpr.equals (ctor RuntimeSyntax::RtExpr.var "self") (ctor RuntimeSyntax::RtExpr.var "other")))}) (nil RuntimeSyntax::RtFn))) (cons (ctor RuntimeSyntax::RtItem.implItem (nil RuntimeSyntax::RtGeneric) (ctor Option.some [String] "Key") (ctor RuntimeSyntax::RtType.fixed (ctor TargetSyntax::IntKind.u8)) (cons (record RuntimeSyntax::RtFn {signature := (record RuntimeSyntax::RtSig {name := "key", receiver := true, exclusive := false, parameters := (cons (record RuntimeSyntax::RtParam {name := "other", mutable := false, type := (ctor RuntimeSyntax::RtType.ref (ctor RuntimeSyntax::RtType.selfType))}) (nil RuntimeSyntax::RtParam)), result := (ctor RuntimeSyntax::RtType.ordering)}), generics := (nil RuntimeSyntax::RtGeneric), public := false, body := (ctor RuntimeSyntax::RtBlock.mk (nil RuntimeSyntax::RtExpr) (ctor RuntimeSyntax::RtExpr.method (ctor RuntimeSyntax::RtExpr.var "self") "cmp" (cons (ctor RuntimeSyntax::RtExpr.var "other") (nil RuntimeSyntax::RtExpr))))}) (nil RuntimeSyntax::RtFn))) (cons (ctor RuntimeSyntax::RtItem.implItem (nil RuntimeSyntax::RtGeneric) (ctor Option.some [String] "Same") (ctor RuntimeSyntax::RtType.fixed (ctor TargetSyntax::IntKind.u16)) (cons (record RuntimeSyntax::RtFn {signature := (record RuntimeSyntax::RtSig {name := "same", receiver := true, exclusive := false, parameters := (cons (record RuntimeSyntax::RtParam {name := "other", mutable := false, type := (ctor RuntimeSyntax::RtType.ref (ctor RuntimeSyntax::RtType.selfType))}) (nil RuntimeSyntax::RtParam)), result := (ctor RuntimeSyntax::RtType.bool)}), generics := (nil RuntimeSyntax::RtGeneric), public := false, body := (ctor RuntimeSyntax::RtBlock.mk (nil RuntimeSyntax::RtExpr) (ctor RuntimeSyntax::RtExpr.equals (ctor RuntimeSyntax::RtExpr.var "self") (ctor RuntimeSyntax::RtExpr.var "other")))}) (nil RuntimeSyntax::RtFn))) (cons (ctor RuntimeSyntax::RtItem.implItem (nil RuntimeSyntax::RtGeneric) (ctor Option.some [String] "Key") (ctor RuntimeSyntax::RtType.fixed (ctor TargetSyntax::IntKind.u16)) (cons (record RuntimeSyntax::RtFn {signature := (record RuntimeSyntax::RtSig {name := "key", receiver := true, exclusive := false, parameters := (cons (record RuntimeSyntax::RtParam {name := "other", mutable := false, type := (ctor RuntimeSyntax::RtType.ref (ctor RuntimeSyntax::RtType.selfType))}) (nil RuntimeSyntax::RtParam)), result := (ctor RuntimeSyntax::RtType.ordering)}), generics := (nil RuntimeSyntax::RtGeneric), public := false, body := (ctor RuntimeSyntax::RtBlock.mk (nil RuntimeSyntax::RtExpr) (ctor RuntimeSyntax::RtExpr.method (ctor RuntimeSyntax::RtExpr.var "self") "cmp" (cons (ctor RuntimeSyntax::RtExpr.var "other") (nil RuntimeSyntax::RtExpr))))}) (nil RuntimeSyntax::RtFn))) (cons (ctor RuntimeSyntax::RtItem.implItem (nil RuntimeSyntax::RtGeneric) (ctor Option.some [String] "Same") (ctor RuntimeSyntax::RtType.fixed (ctor TargetSyntax::IntKind.u32)) (cons (record RuntimeSyntax::RtFn {signature := (record RuntimeSyntax::RtSig {name := "same", receiver := true, exclusive := false, parameters := (cons (record RuntimeSyntax::RtParam {name := "other", mutable := false, type := (ctor RuntimeSyntax::RtType.ref (ctor RuntimeSyntax::RtType.selfType))}) (nil RuntimeSyntax::RtParam)), result := (ctor RuntimeSyntax::RtType.bool)}), generics := (nil RuntimeSyntax::RtGeneric), public := false, body := (ctor RuntimeSyntax::RtBlock.mk (nil RuntimeSyntax::RtExpr) (ctor RuntimeSyntax::RtExpr.equals (ctor RuntimeSyntax::RtExpr.var "self") (ctor RuntimeSyntax::RtExpr.var "other")))}) (nil RuntimeSyntax::RtFn))) (cons (ctor RuntimeSyntax::RtItem.implItem (nil RuntimeSyntax::RtGeneric) (ctor Option.some [String] "Key") (ctor RuntimeSyntax::RtType.fixed (ctor TargetSyntax::IntKind.u32)) (cons (record RuntimeSyntax::RtFn {signature := (record RuntimeSyntax::RtSig {name := "key", receiver := true, exclusive := false, parameters := (cons (record RuntimeSyntax::RtParam {name := "other", mutable := false, type := (ctor RuntimeSyntax::RtType.ref (ctor RuntimeSyntax::RtType.selfType))}) (nil RuntimeSyntax::RtParam)), result := (ctor RuntimeSyntax::RtType.ordering)}), generics := (nil RuntimeSyntax::RtGeneric), public := false, body := (ctor RuntimeSyntax::RtBlock.mk (nil RuntimeSyntax::RtExpr) (ctor RuntimeSyntax::RtExpr.method (ctor RuntimeSyntax::RtExpr.var "self") "cmp" (cons (ctor RuntimeSyntax::RtExpr.var "other") (nil RuntimeSyntax::RtExpr))))}) (nil RuntimeSyntax::RtFn))) (cons (ctor RuntimeSyntax::RtItem.implItem (nil RuntimeSyntax::RtGeneric) (ctor Option.some [String] "Same") (ctor RuntimeSyntax::RtType.fixed (ctor TargetSyntax::IntKind.u64)) (cons (record RuntimeSyntax::RtFn {signature := (record RuntimeSyntax::RtSig {name := "same", receiver := true, exclusive := false, parameters := (cons (record RuntimeSyntax::RtParam {name := "other", mutable := false, type := (ctor RuntimeSyntax::RtType.ref (ctor RuntimeSyntax::RtType.selfType))}) (nil RuntimeSyntax::RtParam)), result := (ctor RuntimeSyntax::RtType.bool)}), generics := (nil RuntimeSyntax::RtGeneric), public := false, body := (ctor RuntimeSyntax::RtBlock.mk (nil RuntimeSyntax::RtExpr) (ctor RuntimeSyntax::RtExpr.equals (ctor RuntimeSyntax::RtExpr.var "self") (ctor RuntimeSyntax::RtExpr.var "other")))}) (nil RuntimeSyntax::RtFn))) (cons (ctor RuntimeSyntax::RtItem.implItem (nil RuntimeSyntax::RtGeneric) (ctor Option.some [String] "Key") (ctor RuntimeSyntax::RtType.fixed (ctor TargetSyntax::IntKind.u64)) (cons (record RuntimeSyntax::RtFn {signature := (record RuntimeSyntax::RtSig {name := "key", receiver := true, exclusive := false, parameters := (cons (record RuntimeSyntax::RtParam {name := "other", mutable := false, type := (ctor RuntimeSyntax::RtType.ref (ctor RuntimeSyntax::RtType.selfType))}) (nil RuntimeSyntax::RtParam)), result := (ctor RuntimeSyntax::RtType.ordering)}), generics := (nil RuntimeSyntax::RtGeneric), public := false, body := (ctor RuntimeSyntax::RtBlock.mk (nil RuntimeSyntax::RtExpr) (ctor RuntimeSyntax::RtExpr.method (ctor RuntimeSyntax::RtExpr.var "self") "cmp" (cons (ctor RuntimeSyntax::RtExpr.var "other") (nil RuntimeSyntax::RtExpr))))}) (nil RuntimeSyntax::RtFn))) (cons (ctor RuntimeSyntax::RtItem.implItem (nil RuntimeSyntax::RtGeneric) (ctor Option.some [String] "Same") (ctor RuntimeSyntax::RtType.fixed (ctor TargetSyntax::IntKind.i8)) (cons (record RuntimeSyntax::RtFn {signature := (record RuntimeSyntax::RtSig {name := "same", receiver := true, exclusive := false, parameters := (cons (record RuntimeSyntax::RtParam {name := "other", mutable := false, type := (ctor RuntimeSyntax::RtType.ref (ctor RuntimeSyntax::RtType.selfType))}) (nil RuntimeSyntax::RtParam)), result := (ctor RuntimeSyntax::RtType.bool)}), generics := (nil RuntimeSyntax::RtGeneric), public := false, body := (ctor RuntimeSyntax::RtBlock.mk (nil RuntimeSyntax::RtExpr) (ctor RuntimeSyntax::RtExpr.equals (ctor RuntimeSyntax::RtExpr.var "self") (ctor RuntimeSyntax::RtExpr.var "other")))}) (nil RuntimeSyntax::RtFn))) (cons (ctor RuntimeSyntax::RtItem.implItem (nil RuntimeSyntax::RtGeneric) (ctor Option.some [String] "Key") (ctor RuntimeSyntax::RtType.fixed (ctor TargetSyntax::IntKind.i8)) (cons (record RuntimeSyntax::RtFn {signature := (record RuntimeSyntax::RtSig {name := "key", receiver := true, exclusive := false, parameters := (cons (record RuntimeSyntax::RtParam {name := "other", mutable := false, type := (ctor RuntimeSyntax::RtType.ref (ctor RuntimeSyntax::RtType.selfType))}) (nil RuntimeSyntax::RtParam)), result := (ctor RuntimeSyntax::RtType.ordering)}), generics := (nil RuntimeSyntax::RtGeneric), public := false, body := (ctor RuntimeSyntax::RtBlock.mk (nil RuntimeSyntax::RtExpr) (ctor RuntimeSyntax::RtExpr.method (ctor RuntimeSyntax::RtExpr.var "self") "cmp" (cons (ctor RuntimeSyntax::RtExpr.var "other") (nil RuntimeSyntax::RtExpr))))}) (nil RuntimeSyntax::RtFn))) (cons (ctor RuntimeSyntax::RtItem.implItem (nil RuntimeSyntax::RtGeneric) (ctor Option.some [String] "Same") (ctor RuntimeSyntax::RtType.fixed (ctor TargetSyntax::IntKind.i16)) (cons (record RuntimeSyntax::RtFn {signature := (record RuntimeSyntax::RtSig {name := "same", receiver := true, exclusive := false, parameters := (cons (record RuntimeSyntax::RtParam {name := "other", mutable := false, type := (ctor RuntimeSyntax::RtType.ref (ctor RuntimeSyntax::RtType.selfType))}) (nil RuntimeSyntax::RtParam)), result := (ctor RuntimeSyntax::RtType.bool)}), generics := (nil RuntimeSyntax::RtGeneric), public := false, body := (ctor RuntimeSyntax::RtBlock.mk (nil RuntimeSyntax::RtExpr) (ctor RuntimeSyntax::RtExpr.equals (ctor RuntimeSyntax::RtExpr.var "self") (ctor RuntimeSyntax::RtExpr.var "other")))}) (nil RuntimeSyntax::RtFn))) (cons (ctor RuntimeSyntax::RtItem.implItem (nil RuntimeSyntax::RtGeneric) (ctor Option.some [String] "Key") (ctor RuntimeSyntax::RtType.fixed (ctor TargetSyntax::IntKind.i16)) (cons (record RuntimeSyntax::RtFn {signature := (record RuntimeSyntax::RtSig {name := "key", receiver := true, exclusive := false, parameters := (cons (record RuntimeSyntax::RtParam {name := "other", mutable := false, type := (ctor RuntimeSyntax::RtType.ref (ctor RuntimeSyntax::RtType.selfType))}) (nil RuntimeSyntax::RtParam)), result := (ctor RuntimeSyntax::RtType.ordering)}), generics := (nil RuntimeSyntax::RtGeneric), public := false, body := (ctor RuntimeSyntax::RtBlock.mk (nil RuntimeSyntax::RtExpr) (ctor RuntimeSyntax::RtExpr.method (ctor RuntimeSyntax::RtExpr.var "self") "cmp" (cons (ctor RuntimeSyntax::RtExpr.var "other") (nil RuntimeSyntax::RtExpr))))}) (nil RuntimeSyntax::RtFn))) (cons (ctor RuntimeSyntax::RtItem.implItem (nil RuntimeSyntax::RtGeneric) (ctor Option.some [String] "Same") (ctor RuntimeSyntax::RtType.fixed (ctor TargetSyntax::IntKind.i32)) (cons (record RuntimeSyntax::RtFn {signature := (record RuntimeSyntax::RtSig {name := "same", receiver := true, exclusive := false, parameters := (cons (record RuntimeSyntax::RtParam {name := "other", mutable := false, type := (ctor RuntimeSyntax::RtType.ref (ctor RuntimeSyntax::RtType.selfType))}) (nil RuntimeSyntax::RtParam)), result := (ctor RuntimeSyntax::RtType.bool)}), generics := (nil RuntimeSyntax::RtGeneric), public := false, body := (ctor RuntimeSyntax::RtBlock.mk (nil RuntimeSyntax::RtExpr) (ctor RuntimeSyntax::RtExpr.equals (ctor RuntimeSyntax::RtExpr.var "self") (ctor RuntimeSyntax::RtExpr.var "other")))}) (nil RuntimeSyntax::RtFn))) (cons (ctor RuntimeSyntax::RtItem.implItem (nil RuntimeSyntax::RtGeneric) (ctor Option.some [String] "Key") (ctor RuntimeSyntax::RtType.fixed (ctor TargetSyntax::IntKind.i32)) (cons (record RuntimeSyntax::RtFn {signature := (record RuntimeSyntax::RtSig {name := "key", receiver := true, exclusive := false, parameters := (cons (record RuntimeSyntax::RtParam {name := "other", mutable := false, type := (ctor RuntimeSyntax::RtType.ref (ctor RuntimeSyntax::RtType.selfType))}) (nil RuntimeSyntax::RtParam)), result := (ctor RuntimeSyntax::RtType.ordering)}), generics := (nil RuntimeSyntax::RtGeneric), public := false, body := (ctor RuntimeSyntax::RtBlock.mk (nil RuntimeSyntax::RtExpr) (ctor RuntimeSyntax::RtExpr.method (ctor RuntimeSyntax::RtExpr.var "self") "cmp" (cons (ctor RuntimeSyntax::RtExpr.var "other") (nil RuntimeSyntax::RtExpr))))}) (nil RuntimeSyntax::RtFn))) (cons (ctor RuntimeSyntax::RtItem.implItem (nil RuntimeSyntax::RtGeneric) (ctor Option.some [String] "Same") (ctor RuntimeSyntax::RtType.fixed (ctor TargetSyntax::IntKind.i64)) (cons (record RuntimeSyntax::RtFn {signature := (record RuntimeSyntax::RtSig {name := "same", receiver := true, exclusive := false, parameters := (cons (record RuntimeSyntax::RtParam {name := "other", mutable := false, type := (ctor RuntimeSyntax::RtType.ref (ctor RuntimeSyntax::RtType.selfType))}) (nil RuntimeSyntax::RtParam)), result := (ctor RuntimeSyntax::RtType.bool)}), generics := (nil RuntimeSyntax::RtGeneric), public := false, body := (ctor RuntimeSyntax::RtBlock.mk (nil RuntimeSyntax::RtExpr) (ctor RuntimeSyntax::RtExpr.equals (ctor RuntimeSyntax::RtExpr.var "self") (ctor RuntimeSyntax::RtExpr.var "other")))}) (nil RuntimeSyntax::RtFn))) (cons (ctor RuntimeSyntax::RtItem.implItem (nil RuntimeSyntax::RtGeneric) (ctor Option.some [String] "Key") (ctor RuntimeSyntax::RtType.fixed (ctor TargetSyntax::IntKind.i64)) (cons (record RuntimeSyntax::RtFn {signature := (record RuntimeSyntax::RtSig {name := "key", receiver := true, exclusive := false, parameters := (cons (record RuntimeSyntax::RtParam {name := "other", mutable := false, type := (ctor RuntimeSyntax::RtType.ref (ctor RuntimeSyntax::RtType.selfType))}) (nil RuntimeSyntax::RtParam)), result := (ctor RuntimeSyntax::RtType.ordering)}), generics := (nil RuntimeSyntax::RtGeneric), public := false, body := (ctor RuntimeSyntax::RtBlock.mk (nil RuntimeSyntax::RtExpr) (ctor RuntimeSyntax::RtExpr.method (ctor RuntimeSyntax::RtExpr.var "self") "cmp" (cons (ctor RuntimeSyntax::RtExpr.var "other") (nil RuntimeSyntax::RtExpr))))}) (nil RuntimeSyntax::RtFn))) (cons (ctor RuntimeSyntax::RtItem.implItem (nil RuntimeSyntax::RtGeneric) (ctor Option.some [String] "Same") (ctor RuntimeSyntax::RtType.ordering) (cons (record RuntimeSyntax::RtFn {signature := (record RuntimeSyntax::RtSig {name := "same", receiver := true, exclusive := false, parameters := (cons (record RuntimeSyntax::RtParam {name := "other", mutable := false, type := (ctor RuntimeSyntax::RtType.ref (ctor RuntimeSyntax::RtType.selfType))}) (nil RuntimeSyntax::RtParam)), result := (ctor RuntimeSyntax::RtType.bool)}), generics := (nil RuntimeSyntax::RtGeneric), public := false, body := (ctor RuntimeSyntax::RtBlock.mk (nil RuntimeSyntax::RtExpr) (ctor RuntimeSyntax::RtExpr.equals (ctor RuntimeSyntax::RtExpr.var "self") (ctor RuntimeSyntax::RtExpr.var "other")))}) (nil RuntimeSyntax::RtFn))) (cons (ctor RuntimeSyntax::RtItem.implItem (cons (record RuntimeSyntax::RtGeneric {name := "A", bounds := (cons "Key" (nil String))}) (cons (record RuntimeSyntax::RtGeneric {name := "B", bounds := (cons "Key" (nil String))}) (nil RuntimeSyntax::RtGeneric))) (ctor Option.some [String] "Key") (ctor RuntimeSyntax::RtType.pair (ctor RuntimeSyntax::RtType.param 0) (ctor RuntimeSyntax::RtType.param 1)) (cons (record RuntimeSyntax::RtFn {signature := (record RuntimeSyntax::RtSig {name := "key", receiver := true, exclusive := false, parameters := (cons (record RuntimeSyntax::RtParam {name := "other", mutable := false, type := (ctor RuntimeSyntax::RtType.ref (ctor RuntimeSyntax::RtType.selfType))}) (nil RuntimeSyntax::RtParam)), result := (ctor RuntimeSyntax::RtType.ordering)}), generics := (nil RuntimeSyntax::RtGeneric), public := false, body := (ctor RuntimeSyntax::RtBlock.mk (nil RuntimeSyntax::RtExpr) (ctor RuntimeSyntax::RtExpr.matchOn (ctor RuntimeSyntax::RtExpr.method (ctor RuntimeSyntax::RtExpr.field (ctor RuntimeSyntax::RtExpr.var "self") 0) "key" (cons (ctor RuntimeSyntax::RtExpr.borrow (ctor RuntimeSyntax::RtExpr.field (ctor RuntimeSyntax::RtExpr.var "other") 0)) (nil RuntimeSyntax::RtExpr))) (cons (ctor RuntimeSyntax::RtArm.mk (ctor RuntimeSyntax::RtPat.path (cons "Ordering" (cons "Equal" (nil String)))) (ctor RuntimeSyntax::RtExpr.method (ctor RuntimeSyntax::RtExpr.field (ctor RuntimeSyntax::RtExpr.var "self") 1) "key" (cons (ctor RuntimeSyntax::RtExpr.borrow (ctor RuntimeSyntax::RtExpr.field (ctor RuntimeSyntax::RtExpr.var "other") 1)) (nil RuntimeSyntax::RtExpr)))) (cons (ctor RuntimeSyntax::RtArm.mk (ctor RuntimeSyntax::RtPat.bind "decided") (ctor RuntimeSyntax::RtExpr.var "decided")) (nil RuntimeSyntax::RtArm)))))}) (nil RuntimeSyntax::RtFn))) (cons (ctor RuntimeSyntax::RtItem.fnItem (record RuntimeSyntax::RtFn {signature := (record RuntimeSyntax::RtSig {name := "equal", receiver := false, exclusive := false, parameters := (cons (record RuntimeSyntax::RtParam {name := "a", mutable := false, type := (ctor RuntimeSyntax::RtType.param 0)}) (cons (record RuntimeSyntax::RtParam {name := "b", mutable := false, type := (ctor RuntimeSyntax::RtType.param 0)}) (nil RuntimeSyntax::RtParam))), result := (ctor RuntimeSyntax::RtType.bool)}), generics := (cons (record RuntimeSyntax::RtGeneric {name := "T", bounds := (cons "Same" (nil String))}) (nil RuntimeSyntax::RtGeneric)), public := true, body := (ctor RuntimeSyntax::RtBlock.mk (nil RuntimeSyntax::RtExpr) (ctor RuntimeSyntax::RtExpr.method (ctor RuntimeSyntax::RtExpr.var "a") "same" (cons (ctor RuntimeSyntax::RtExpr.borrow (ctor RuntimeSyntax::RtExpr.var "b")) (nil RuntimeSyntax::RtExpr))))})) (cons (ctor RuntimeSyntax::RtItem.fnItem (record RuntimeSyntax::RtFn {signature := (record RuntimeSyntax::RtSig {name := "compare", receiver := false, exclusive := false, parameters := (cons (record RuntimeSyntax::RtParam {name := "a", mutable := false, type := (ctor RuntimeSyntax::RtType.param 0)}) (cons (record RuntimeSyntax::RtParam {name := "b", mutable := false, type := (ctor RuntimeSyntax::RtType.param 0)}) (nil RuntimeSyntax::RtParam))), result := (ctor RuntimeSyntax::RtType.ordering)}), generics := (cons (record RuntimeSyntax::RtGeneric {name := "T", bounds := (cons "Key" (nil String))}) (nil RuntimeSyntax::RtGeneric)), public := true, body := (ctor RuntimeSyntax::RtBlock.mk (nil RuntimeSyntax::RtExpr) (ctor RuntimeSyntax::RtExpr.method (ctor RuntimeSyntax::RtExpr.var "a") "key" (cons (ctor RuntimeSyntax::RtExpr.borrow (ctor RuntimeSyntax::RtExpr.var "b")) (nil RuntimeSyntax::RtExpr))))})) (nil RuntimeSyntax::RtItem)))))))))))))))))))))))))))))))))})
+}
+
+theorem{
+  name: equal_bool,
+  parameters: [x : Bool, y : Bool],
+  statement: ((RuntimeSemantics::rtRun 24 (supportCrate) "equal" (cons (ctor TargetSyntax::Value.bool x) (cons (ctor TargetSyntax::Value.bool y) (nil TargetSyntax::Value)))) = (RuntimeSemantics::fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.equal) (cons (ctor TargetSyntax::Value.bool x) (cons (ctor TargetSyntax::Value.bool y) (nil TargetSyntax::Value)))))),
+  proof: term_cases{
+    definitions: [
+      RuntimeSemantics::aliasTag,
+      RuntimeSemantics::bindParams,
+      RuntimeSemantics::findFree,
+      RuntimeSemantics::findIn,
+      RuntimeSemantics::findMethod,
+      RuntimeSemantics::fromPrimitive,
+      RuntimeSemantics::kindIndex,
+      RuntimeSemantics::lookupVar,
+      RuntimeSemantics::matchesTy,
+      RuntimeSemantics::orderOfPath,
+      RuntimeSemantics::pairParts,
+      RuntimeSemantics::rtApply,
+      RuntimeSemantics::rtEval,
+      RuntimeSemantics::rtEvalArms,
+      RuntimeSemantics::rtEvalBlock,
+      RuntimeSemantics::rtEvalList,
+      RuntimeSemantics::rtRun,
+      RuntimeSemantics::tagOf,
+      supportCrate
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.equal) (cons (ctor TargetSyntax::Value.bool x) (cons (ctor TargetSyntax::Value.bool y) (nil TargetSyntax::Value))))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: equal_nat,
+  parameters: [x : Nat, y : Nat],
+  statement: ((RuntimeSemantics::rtRun 24 (supportCrate) "equal" (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (nil TargetSyntax::Value)))) = (RuntimeSemantics::fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.equal) (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (nil TargetSyntax::Value)))))),
+  proof: term_cases{
+    definitions: [
+      RuntimeSemantics::aliasTag,
+      RuntimeSemantics::bindParams,
+      RuntimeSemantics::findFree,
+      RuntimeSemantics::findIn,
+      RuntimeSemantics::findMethod,
+      RuntimeSemantics::fromPrimitive,
+      RuntimeSemantics::kindIndex,
+      RuntimeSemantics::lookupVar,
+      RuntimeSemantics::matchesTy,
+      RuntimeSemantics::orderOfPath,
+      RuntimeSemantics::pairParts,
+      RuntimeSemantics::rtApply,
+      RuntimeSemantics::rtEval,
+      RuntimeSemantics::rtEvalArms,
+      RuntimeSemantics::rtEvalBlock,
+      RuntimeSemantics::rtEvalList,
+      RuntimeSemantics::rtRun,
+      RuntimeSemantics::tagOf,
+      supportCrate
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.equal) (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (nil TargetSyntax::Value))))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: equal_ordering,
+  parameters: [x : TargetSyntax::Order, y : TargetSyntax::Order],
+  statement: ((RuntimeSemantics::rtRun 24 (supportCrate) "equal" (cons (ctor TargetSyntax::Value.ordering x) (cons (ctor TargetSyntax::Value.ordering y) (nil TargetSyntax::Value)))) = (RuntimeSemantics::fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.equal) (cons (ctor TargetSyntax::Value.ordering x) (cons (ctor TargetSyntax::Value.ordering y) (nil TargetSyntax::Value)))))),
+  proof: term_cases{
+    definitions: [
+      RuntimeSemantics::aliasTag,
+      RuntimeSemantics::bindParams,
+      RuntimeSemantics::findFree,
+      RuntimeSemantics::findIn,
+      RuntimeSemantics::findMethod,
+      RuntimeSemantics::fromPrimitive,
+      RuntimeSemantics::kindIndex,
+      RuntimeSemantics::lookupVar,
+      RuntimeSemantics::matchesTy,
+      RuntimeSemantics::orderOfPath,
+      RuntimeSemantics::pairParts,
+      RuntimeSemantics::rtApply,
+      RuntimeSemantics::rtEval,
+      RuntimeSemantics::rtEvalArms,
+      RuntimeSemantics::rtEvalBlock,
+      RuntimeSemantics::rtEvalList,
+      RuntimeSemantics::rtRun,
+      RuntimeSemantics::tagOf,
+      supportCrate
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.equal) (cons (ctor TargetSyntax::Value.ordering x) (cons (ctor TargetSyntax::Value.ordering y) (nil TargetSyntax::Value))))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: equal_u8,
+  parameters: [x : UInt8, y : UInt8],
+  statement: ((RuntimeSemantics::rtRun 24 (supportCrate) "equal" (cons (ctor TargetSyntax::Value.u8 x) (cons (ctor TargetSyntax::Value.u8 y) (nil TargetSyntax::Value)))) = (RuntimeSemantics::fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.equal) (cons (ctor TargetSyntax::Value.u8 x) (cons (ctor TargetSyntax::Value.u8 y) (nil TargetSyntax::Value)))))),
+  proof: term_cases{
+    definitions: [
+      RuntimeSemantics::aliasTag,
+      RuntimeSemantics::bindParams,
+      RuntimeSemantics::findFree,
+      RuntimeSemantics::findIn,
+      RuntimeSemantics::findMethod,
+      RuntimeSemantics::fromPrimitive,
+      RuntimeSemantics::kindIndex,
+      RuntimeSemantics::lookupVar,
+      RuntimeSemantics::matchesTy,
+      RuntimeSemantics::orderOfPath,
+      RuntimeSemantics::pairParts,
+      RuntimeSemantics::rtApply,
+      RuntimeSemantics::rtEval,
+      RuntimeSemantics::rtEvalArms,
+      RuntimeSemantics::rtEvalBlock,
+      RuntimeSemantics::rtEvalList,
+      RuntimeSemantics::rtRun,
+      RuntimeSemantics::tagOf,
+      supportCrate
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.equal) (cons (ctor TargetSyntax::Value.u8 x) (cons (ctor TargetSyntax::Value.u8 y) (nil TargetSyntax::Value))))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: equal_u16,
+  parameters: [x : UInt16, y : UInt16],
+  statement: ((RuntimeSemantics::rtRun 24 (supportCrate) "equal" (cons (ctor TargetSyntax::Value.u16 x) (cons (ctor TargetSyntax::Value.u16 y) (nil TargetSyntax::Value)))) = (RuntimeSemantics::fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.equal) (cons (ctor TargetSyntax::Value.u16 x) (cons (ctor TargetSyntax::Value.u16 y) (nil TargetSyntax::Value)))))),
+  proof: term_cases{
+    definitions: [
+      RuntimeSemantics::aliasTag,
+      RuntimeSemantics::bindParams,
+      RuntimeSemantics::findFree,
+      RuntimeSemantics::findIn,
+      RuntimeSemantics::findMethod,
+      RuntimeSemantics::fromPrimitive,
+      RuntimeSemantics::kindIndex,
+      RuntimeSemantics::lookupVar,
+      RuntimeSemantics::matchesTy,
+      RuntimeSemantics::orderOfPath,
+      RuntimeSemantics::pairParts,
+      RuntimeSemantics::rtApply,
+      RuntimeSemantics::rtEval,
+      RuntimeSemantics::rtEvalArms,
+      RuntimeSemantics::rtEvalBlock,
+      RuntimeSemantics::rtEvalList,
+      RuntimeSemantics::rtRun,
+      RuntimeSemantics::tagOf,
+      supportCrate
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.equal) (cons (ctor TargetSyntax::Value.u16 x) (cons (ctor TargetSyntax::Value.u16 y) (nil TargetSyntax::Value))))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: equal_u32,
+  parameters: [x : UInt32, y : UInt32],
+  statement: ((RuntimeSemantics::rtRun 24 (supportCrate) "equal" (cons (ctor TargetSyntax::Value.u32 x) (cons (ctor TargetSyntax::Value.u32 y) (nil TargetSyntax::Value)))) = (RuntimeSemantics::fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.equal) (cons (ctor TargetSyntax::Value.u32 x) (cons (ctor TargetSyntax::Value.u32 y) (nil TargetSyntax::Value)))))),
+  proof: term_cases{
+    definitions: [
+      RuntimeSemantics::aliasTag,
+      RuntimeSemantics::bindParams,
+      RuntimeSemantics::findFree,
+      RuntimeSemantics::findIn,
+      RuntimeSemantics::findMethod,
+      RuntimeSemantics::fromPrimitive,
+      RuntimeSemantics::kindIndex,
+      RuntimeSemantics::lookupVar,
+      RuntimeSemantics::matchesTy,
+      RuntimeSemantics::orderOfPath,
+      RuntimeSemantics::pairParts,
+      RuntimeSemantics::rtApply,
+      RuntimeSemantics::rtEval,
+      RuntimeSemantics::rtEvalArms,
+      RuntimeSemantics::rtEvalBlock,
+      RuntimeSemantics::rtEvalList,
+      RuntimeSemantics::rtRun,
+      RuntimeSemantics::tagOf,
+      supportCrate
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.equal) (cons (ctor TargetSyntax::Value.u32 x) (cons (ctor TargetSyntax::Value.u32 y) (nil TargetSyntax::Value))))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: equal_u64,
+  parameters: [x : UInt64, y : UInt64],
+  statement: ((RuntimeSemantics::rtRun 24 (supportCrate) "equal" (cons (ctor TargetSyntax::Value.u64 x) (cons (ctor TargetSyntax::Value.u64 y) (nil TargetSyntax::Value)))) = (RuntimeSemantics::fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.equal) (cons (ctor TargetSyntax::Value.u64 x) (cons (ctor TargetSyntax::Value.u64 y) (nil TargetSyntax::Value)))))),
+  proof: term_cases{
+    definitions: [
+      RuntimeSemantics::aliasTag,
+      RuntimeSemantics::bindParams,
+      RuntimeSemantics::findFree,
+      RuntimeSemantics::findIn,
+      RuntimeSemantics::findMethod,
+      RuntimeSemantics::fromPrimitive,
+      RuntimeSemantics::kindIndex,
+      RuntimeSemantics::lookupVar,
+      RuntimeSemantics::matchesTy,
+      RuntimeSemantics::orderOfPath,
+      RuntimeSemantics::pairParts,
+      RuntimeSemantics::rtApply,
+      RuntimeSemantics::rtEval,
+      RuntimeSemantics::rtEvalArms,
+      RuntimeSemantics::rtEvalBlock,
+      RuntimeSemantics::rtEvalList,
+      RuntimeSemantics::rtRun,
+      RuntimeSemantics::tagOf,
+      supportCrate
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.equal) (cons (ctor TargetSyntax::Value.u64 x) (cons (ctor TargetSyntax::Value.u64 y) (nil TargetSyntax::Value))))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: equal_i8,
+  parameters: [x : Int8, y : Int8],
+  statement: ((RuntimeSemantics::rtRun 24 (supportCrate) "equal" (cons (ctor TargetSyntax::Value.i8 x) (cons (ctor TargetSyntax::Value.i8 y) (nil TargetSyntax::Value)))) = (RuntimeSemantics::fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.equal) (cons (ctor TargetSyntax::Value.i8 x) (cons (ctor TargetSyntax::Value.i8 y) (nil TargetSyntax::Value)))))),
+  proof: term_cases{
+    definitions: [
+      RuntimeSemantics::aliasTag,
+      RuntimeSemantics::bindParams,
+      RuntimeSemantics::findFree,
+      RuntimeSemantics::findIn,
+      RuntimeSemantics::findMethod,
+      RuntimeSemantics::fromPrimitive,
+      RuntimeSemantics::kindIndex,
+      RuntimeSemantics::lookupVar,
+      RuntimeSemantics::matchesTy,
+      RuntimeSemantics::orderOfPath,
+      RuntimeSemantics::pairParts,
+      RuntimeSemantics::rtApply,
+      RuntimeSemantics::rtEval,
+      RuntimeSemantics::rtEvalArms,
+      RuntimeSemantics::rtEvalBlock,
+      RuntimeSemantics::rtEvalList,
+      RuntimeSemantics::rtRun,
+      RuntimeSemantics::tagOf,
+      supportCrate
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.equal) (cons (ctor TargetSyntax::Value.i8 x) (cons (ctor TargetSyntax::Value.i8 y) (nil TargetSyntax::Value))))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: equal_i16,
+  parameters: [x : Int16, y : Int16],
+  statement: ((RuntimeSemantics::rtRun 24 (supportCrate) "equal" (cons (ctor TargetSyntax::Value.i16 x) (cons (ctor TargetSyntax::Value.i16 y) (nil TargetSyntax::Value)))) = (RuntimeSemantics::fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.equal) (cons (ctor TargetSyntax::Value.i16 x) (cons (ctor TargetSyntax::Value.i16 y) (nil TargetSyntax::Value)))))),
+  proof: term_cases{
+    definitions: [
+      RuntimeSemantics::aliasTag,
+      RuntimeSemantics::bindParams,
+      RuntimeSemantics::findFree,
+      RuntimeSemantics::findIn,
+      RuntimeSemantics::findMethod,
+      RuntimeSemantics::fromPrimitive,
+      RuntimeSemantics::kindIndex,
+      RuntimeSemantics::lookupVar,
+      RuntimeSemantics::matchesTy,
+      RuntimeSemantics::orderOfPath,
+      RuntimeSemantics::pairParts,
+      RuntimeSemantics::rtApply,
+      RuntimeSemantics::rtEval,
+      RuntimeSemantics::rtEvalArms,
+      RuntimeSemantics::rtEvalBlock,
+      RuntimeSemantics::rtEvalList,
+      RuntimeSemantics::rtRun,
+      RuntimeSemantics::tagOf,
+      supportCrate
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.equal) (cons (ctor TargetSyntax::Value.i16 x) (cons (ctor TargetSyntax::Value.i16 y) (nil TargetSyntax::Value))))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: equal_i32,
+  parameters: [x : Int32, y : Int32],
+  statement: ((RuntimeSemantics::rtRun 24 (supportCrate) "equal" (cons (ctor TargetSyntax::Value.i32 x) (cons (ctor TargetSyntax::Value.i32 y) (nil TargetSyntax::Value)))) = (RuntimeSemantics::fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.equal) (cons (ctor TargetSyntax::Value.i32 x) (cons (ctor TargetSyntax::Value.i32 y) (nil TargetSyntax::Value)))))),
+  proof: term_cases{
+    definitions: [
+      RuntimeSemantics::aliasTag,
+      RuntimeSemantics::bindParams,
+      RuntimeSemantics::findFree,
+      RuntimeSemantics::findIn,
+      RuntimeSemantics::findMethod,
+      RuntimeSemantics::fromPrimitive,
+      RuntimeSemantics::kindIndex,
+      RuntimeSemantics::lookupVar,
+      RuntimeSemantics::matchesTy,
+      RuntimeSemantics::orderOfPath,
+      RuntimeSemantics::pairParts,
+      RuntimeSemantics::rtApply,
+      RuntimeSemantics::rtEval,
+      RuntimeSemantics::rtEvalArms,
+      RuntimeSemantics::rtEvalBlock,
+      RuntimeSemantics::rtEvalList,
+      RuntimeSemantics::rtRun,
+      RuntimeSemantics::tagOf,
+      supportCrate
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.equal) (cons (ctor TargetSyntax::Value.i32 x) (cons (ctor TargetSyntax::Value.i32 y) (nil TargetSyntax::Value))))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: equal_i64,
+  parameters: [x : Int64, y : Int64],
+  statement: ((RuntimeSemantics::rtRun 24 (supportCrate) "equal" (cons (ctor TargetSyntax::Value.i64 x) (cons (ctor TargetSyntax::Value.i64 y) (nil TargetSyntax::Value)))) = (RuntimeSemantics::fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.equal) (cons (ctor TargetSyntax::Value.i64 x) (cons (ctor TargetSyntax::Value.i64 y) (nil TargetSyntax::Value)))))),
+  proof: term_cases{
+    definitions: [
+      RuntimeSemantics::aliasTag,
+      RuntimeSemantics::bindParams,
+      RuntimeSemantics::findFree,
+      RuntimeSemantics::findIn,
+      RuntimeSemantics::findMethod,
+      RuntimeSemantics::fromPrimitive,
+      RuntimeSemantics::kindIndex,
+      RuntimeSemantics::lookupVar,
+      RuntimeSemantics::matchesTy,
+      RuntimeSemantics::orderOfPath,
+      RuntimeSemantics::pairParts,
+      RuntimeSemantics::rtApply,
+      RuntimeSemantics::rtEval,
+      RuntimeSemantics::rtEvalArms,
+      RuntimeSemantics::rtEvalBlock,
+      RuntimeSemantics::rtEvalList,
+      RuntimeSemantics::rtRun,
+      RuntimeSemantics::tagOf,
+      supportCrate
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.equal) (cons (ctor TargetSyntax::Value.i64 x) (cons (ctor TargetSyntax::Value.i64 y) (nil TargetSyntax::Value))))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: compare_bool,
+  parameters: [x : Bool, y : Bool],
+  statement: ((RuntimeSemantics::rtRun 24 (supportCrate) "compare" (cons (ctor TargetSyntax::Value.bool x) (cons (ctor TargetSyntax::Value.bool y) (nil TargetSyntax::Value)))) = (RuntimeSemantics::fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons (ctor TargetSyntax::Value.bool x) (cons (ctor TargetSyntax::Value.bool y) (nil TargetSyntax::Value)))))),
+  proof: term_cases{
+    definitions: [
+      RuntimeSemantics::aliasTag,
+      RuntimeSemantics::bindParams,
+      RuntimeSemantics::findFree,
+      RuntimeSemantics::findIn,
+      RuntimeSemantics::findMethod,
+      RuntimeSemantics::fromPrimitive,
+      RuntimeSemantics::kindIndex,
+      RuntimeSemantics::lookupVar,
+      RuntimeSemantics::matchesTy,
+      RuntimeSemantics::orderOfPath,
+      RuntimeSemantics::pairParts,
+      RuntimeSemantics::rtApply,
+      RuntimeSemantics::rtEval,
+      RuntimeSemantics::rtEvalArms,
+      RuntimeSemantics::rtEvalBlock,
+      RuntimeSemantics::rtEvalList,
+      RuntimeSemantics::rtRun,
+      RuntimeSemantics::tagOf,
+      supportCrate
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons (ctor TargetSyntax::Value.bool x) (cons (ctor TargetSyntax::Value.bool y) (nil TargetSyntax::Value))))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: compare_nat,
+  parameters: [x : Nat, y : Nat],
+  statement: ((RuntimeSemantics::rtRun 24 (supportCrate) "compare" (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (nil TargetSyntax::Value)))) = (RuntimeSemantics::fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (nil TargetSyntax::Value)))))),
+  proof: term_cases{
+    definitions: [
+      RuntimeSemantics::aliasTag,
+      RuntimeSemantics::bindParams,
+      RuntimeSemantics::findFree,
+      RuntimeSemantics::findIn,
+      RuntimeSemantics::findMethod,
+      RuntimeSemantics::fromPrimitive,
+      RuntimeSemantics::kindIndex,
+      RuntimeSemantics::lookupVar,
+      RuntimeSemantics::matchesTy,
+      RuntimeSemantics::orderOfPath,
+      RuntimeSemantics::pairParts,
+      RuntimeSemantics::rtApply,
+      RuntimeSemantics::rtEval,
+      RuntimeSemantics::rtEvalArms,
+      RuntimeSemantics::rtEvalBlock,
+      RuntimeSemantics::rtEvalList,
+      RuntimeSemantics::rtRun,
+      RuntimeSemantics::tagOf,
+      supportCrate
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons (ctor TargetSyntax::Value.nat x) (cons (ctor TargetSyntax::Value.nat y) (nil TargetSyntax::Value))))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: compare_int,
+  parameters: [x : Int, y : Int],
+  statement: ((RuntimeSemantics::rtRun 24 (supportCrate) "compare" (cons (ctor TargetSyntax::Value.int x) (cons (ctor TargetSyntax::Value.int y) (nil TargetSyntax::Value)))) = (RuntimeSemantics::fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons (ctor TargetSyntax::Value.int x) (cons (ctor TargetSyntax::Value.int y) (nil TargetSyntax::Value)))))),
+  proof: term_cases{
+    definitions: [
+      RuntimeSemantics::aliasTag,
+      RuntimeSemantics::bindParams,
+      RuntimeSemantics::findFree,
+      RuntimeSemantics::findIn,
+      RuntimeSemantics::findMethod,
+      RuntimeSemantics::fromPrimitive,
+      RuntimeSemantics::kindIndex,
+      RuntimeSemantics::lookupVar,
+      RuntimeSemantics::matchesTy,
+      RuntimeSemantics::orderOfPath,
+      RuntimeSemantics::pairParts,
+      RuntimeSemantics::rtApply,
+      RuntimeSemantics::rtEval,
+      RuntimeSemantics::rtEvalArms,
+      RuntimeSemantics::rtEvalBlock,
+      RuntimeSemantics::rtEvalList,
+      RuntimeSemantics::rtRun,
+      RuntimeSemantics::tagOf,
+      supportCrate
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons (ctor TargetSyntax::Value.int x) (cons (ctor TargetSyntax::Value.int y) (nil TargetSyntax::Value))))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: compare_u8,
+  parameters: [x : UInt8, y : UInt8],
+  statement: ((RuntimeSemantics::rtRun 24 (supportCrate) "compare" (cons (ctor TargetSyntax::Value.u8 x) (cons (ctor TargetSyntax::Value.u8 y) (nil TargetSyntax::Value)))) = (RuntimeSemantics::fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons (ctor TargetSyntax::Value.u8 x) (cons (ctor TargetSyntax::Value.u8 y) (nil TargetSyntax::Value)))))),
+  proof: term_cases{
+    definitions: [
+      RuntimeSemantics::aliasTag,
+      RuntimeSemantics::bindParams,
+      RuntimeSemantics::findFree,
+      RuntimeSemantics::findIn,
+      RuntimeSemantics::findMethod,
+      RuntimeSemantics::fromPrimitive,
+      RuntimeSemantics::kindIndex,
+      RuntimeSemantics::lookupVar,
+      RuntimeSemantics::matchesTy,
+      RuntimeSemantics::orderOfPath,
+      RuntimeSemantics::pairParts,
+      RuntimeSemantics::rtApply,
+      RuntimeSemantics::rtEval,
+      RuntimeSemantics::rtEvalArms,
+      RuntimeSemantics::rtEvalBlock,
+      RuntimeSemantics::rtEvalList,
+      RuntimeSemantics::rtRun,
+      RuntimeSemantics::tagOf,
+      supportCrate
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons (ctor TargetSyntax::Value.u8 x) (cons (ctor TargetSyntax::Value.u8 y) (nil TargetSyntax::Value))))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: compare_u16,
+  parameters: [x : UInt16, y : UInt16],
+  statement: ((RuntimeSemantics::rtRun 24 (supportCrate) "compare" (cons (ctor TargetSyntax::Value.u16 x) (cons (ctor TargetSyntax::Value.u16 y) (nil TargetSyntax::Value)))) = (RuntimeSemantics::fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons (ctor TargetSyntax::Value.u16 x) (cons (ctor TargetSyntax::Value.u16 y) (nil TargetSyntax::Value)))))),
+  proof: term_cases{
+    definitions: [
+      RuntimeSemantics::aliasTag,
+      RuntimeSemantics::bindParams,
+      RuntimeSemantics::findFree,
+      RuntimeSemantics::findIn,
+      RuntimeSemantics::findMethod,
+      RuntimeSemantics::fromPrimitive,
+      RuntimeSemantics::kindIndex,
+      RuntimeSemantics::lookupVar,
+      RuntimeSemantics::matchesTy,
+      RuntimeSemantics::orderOfPath,
+      RuntimeSemantics::pairParts,
+      RuntimeSemantics::rtApply,
+      RuntimeSemantics::rtEval,
+      RuntimeSemantics::rtEvalArms,
+      RuntimeSemantics::rtEvalBlock,
+      RuntimeSemantics::rtEvalList,
+      RuntimeSemantics::rtRun,
+      RuntimeSemantics::tagOf,
+      supportCrate
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons (ctor TargetSyntax::Value.u16 x) (cons (ctor TargetSyntax::Value.u16 y) (nil TargetSyntax::Value))))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: compare_u32,
+  parameters: [x : UInt32, y : UInt32],
+  statement: ((RuntimeSemantics::rtRun 24 (supportCrate) "compare" (cons (ctor TargetSyntax::Value.u32 x) (cons (ctor TargetSyntax::Value.u32 y) (nil TargetSyntax::Value)))) = (RuntimeSemantics::fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons (ctor TargetSyntax::Value.u32 x) (cons (ctor TargetSyntax::Value.u32 y) (nil TargetSyntax::Value)))))),
+  proof: term_cases{
+    definitions: [
+      RuntimeSemantics::aliasTag,
+      RuntimeSemantics::bindParams,
+      RuntimeSemantics::findFree,
+      RuntimeSemantics::findIn,
+      RuntimeSemantics::findMethod,
+      RuntimeSemantics::fromPrimitive,
+      RuntimeSemantics::kindIndex,
+      RuntimeSemantics::lookupVar,
+      RuntimeSemantics::matchesTy,
+      RuntimeSemantics::orderOfPath,
+      RuntimeSemantics::pairParts,
+      RuntimeSemantics::rtApply,
+      RuntimeSemantics::rtEval,
+      RuntimeSemantics::rtEvalArms,
+      RuntimeSemantics::rtEvalBlock,
+      RuntimeSemantics::rtEvalList,
+      RuntimeSemantics::rtRun,
+      RuntimeSemantics::tagOf,
+      supportCrate
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons (ctor TargetSyntax::Value.u32 x) (cons (ctor TargetSyntax::Value.u32 y) (nil TargetSyntax::Value))))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: compare_u64,
+  parameters: [x : UInt64, y : UInt64],
+  statement: ((RuntimeSemantics::rtRun 24 (supportCrate) "compare" (cons (ctor TargetSyntax::Value.u64 x) (cons (ctor TargetSyntax::Value.u64 y) (nil TargetSyntax::Value)))) = (RuntimeSemantics::fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons (ctor TargetSyntax::Value.u64 x) (cons (ctor TargetSyntax::Value.u64 y) (nil TargetSyntax::Value)))))),
+  proof: term_cases{
+    definitions: [
+      RuntimeSemantics::aliasTag,
+      RuntimeSemantics::bindParams,
+      RuntimeSemantics::findFree,
+      RuntimeSemantics::findIn,
+      RuntimeSemantics::findMethod,
+      RuntimeSemantics::fromPrimitive,
+      RuntimeSemantics::kindIndex,
+      RuntimeSemantics::lookupVar,
+      RuntimeSemantics::matchesTy,
+      RuntimeSemantics::orderOfPath,
+      RuntimeSemantics::pairParts,
+      RuntimeSemantics::rtApply,
+      RuntimeSemantics::rtEval,
+      RuntimeSemantics::rtEvalArms,
+      RuntimeSemantics::rtEvalBlock,
+      RuntimeSemantics::rtEvalList,
+      RuntimeSemantics::rtRun,
+      RuntimeSemantics::tagOf,
+      supportCrate
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons (ctor TargetSyntax::Value.u64 x) (cons (ctor TargetSyntax::Value.u64 y) (nil TargetSyntax::Value))))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: compare_i8,
+  parameters: [x : Int8, y : Int8],
+  statement: ((RuntimeSemantics::rtRun 24 (supportCrate) "compare" (cons (ctor TargetSyntax::Value.i8 x) (cons (ctor TargetSyntax::Value.i8 y) (nil TargetSyntax::Value)))) = (RuntimeSemantics::fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons (ctor TargetSyntax::Value.i8 x) (cons (ctor TargetSyntax::Value.i8 y) (nil TargetSyntax::Value)))))),
+  proof: term_cases{
+    definitions: [
+      RuntimeSemantics::aliasTag,
+      RuntimeSemantics::bindParams,
+      RuntimeSemantics::findFree,
+      RuntimeSemantics::findIn,
+      RuntimeSemantics::findMethod,
+      RuntimeSemantics::fromPrimitive,
+      RuntimeSemantics::kindIndex,
+      RuntimeSemantics::lookupVar,
+      RuntimeSemantics::matchesTy,
+      RuntimeSemantics::orderOfPath,
+      RuntimeSemantics::pairParts,
+      RuntimeSemantics::rtApply,
+      RuntimeSemantics::rtEval,
+      RuntimeSemantics::rtEvalArms,
+      RuntimeSemantics::rtEvalBlock,
+      RuntimeSemantics::rtEvalList,
+      RuntimeSemantics::rtRun,
+      RuntimeSemantics::tagOf,
+      supportCrate
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons (ctor TargetSyntax::Value.i8 x) (cons (ctor TargetSyntax::Value.i8 y) (nil TargetSyntax::Value))))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: compare_i16,
+  parameters: [x : Int16, y : Int16],
+  statement: ((RuntimeSemantics::rtRun 24 (supportCrate) "compare" (cons (ctor TargetSyntax::Value.i16 x) (cons (ctor TargetSyntax::Value.i16 y) (nil TargetSyntax::Value)))) = (RuntimeSemantics::fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons (ctor TargetSyntax::Value.i16 x) (cons (ctor TargetSyntax::Value.i16 y) (nil TargetSyntax::Value)))))),
+  proof: term_cases{
+    definitions: [
+      RuntimeSemantics::aliasTag,
+      RuntimeSemantics::bindParams,
+      RuntimeSemantics::findFree,
+      RuntimeSemantics::findIn,
+      RuntimeSemantics::findMethod,
+      RuntimeSemantics::fromPrimitive,
+      RuntimeSemantics::kindIndex,
+      RuntimeSemantics::lookupVar,
+      RuntimeSemantics::matchesTy,
+      RuntimeSemantics::orderOfPath,
+      RuntimeSemantics::pairParts,
+      RuntimeSemantics::rtApply,
+      RuntimeSemantics::rtEval,
+      RuntimeSemantics::rtEvalArms,
+      RuntimeSemantics::rtEvalBlock,
+      RuntimeSemantics::rtEvalList,
+      RuntimeSemantics::rtRun,
+      RuntimeSemantics::tagOf,
+      supportCrate
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons (ctor TargetSyntax::Value.i16 x) (cons (ctor TargetSyntax::Value.i16 y) (nil TargetSyntax::Value))))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: compare_i32,
+  parameters: [x : Int32, y : Int32],
+  statement: ((RuntimeSemantics::rtRun 24 (supportCrate) "compare" (cons (ctor TargetSyntax::Value.i32 x) (cons (ctor TargetSyntax::Value.i32 y) (nil TargetSyntax::Value)))) = (RuntimeSemantics::fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons (ctor TargetSyntax::Value.i32 x) (cons (ctor TargetSyntax::Value.i32 y) (nil TargetSyntax::Value)))))),
+  proof: term_cases{
+    definitions: [
+      RuntimeSemantics::aliasTag,
+      RuntimeSemantics::bindParams,
+      RuntimeSemantics::findFree,
+      RuntimeSemantics::findIn,
+      RuntimeSemantics::findMethod,
+      RuntimeSemantics::fromPrimitive,
+      RuntimeSemantics::kindIndex,
+      RuntimeSemantics::lookupVar,
+      RuntimeSemantics::matchesTy,
+      RuntimeSemantics::orderOfPath,
+      RuntimeSemantics::pairParts,
+      RuntimeSemantics::rtApply,
+      RuntimeSemantics::rtEval,
+      RuntimeSemantics::rtEvalArms,
+      RuntimeSemantics::rtEvalBlock,
+      RuntimeSemantics::rtEvalList,
+      RuntimeSemantics::rtRun,
+      RuntimeSemantics::tagOf,
+      supportCrate
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons (ctor TargetSyntax::Value.i32 x) (cons (ctor TargetSyntax::Value.i32 y) (nil TargetSyntax::Value))))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+
+theorem{
+  name: compare_i64,
+  parameters: [x : Int64, y : Int64],
+  statement: ((RuntimeSemantics::rtRun 24 (supportCrate) "compare" (cons (ctor TargetSyntax::Value.i64 x) (cons (ctor TargetSyntax::Value.i64 y) (nil TargetSyntax::Value)))) = (RuntimeSemantics::fromPrimitive (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons (ctor TargetSyntax::Value.i64 x) (cons (ctor TargetSyntax::Value.i64 y) (nil TargetSyntax::Value)))))),
+  proof: term_cases{
+    definitions: [
+      RuntimeSemantics::aliasTag,
+      RuntimeSemantics::bindParams,
+      RuntimeSemantics::findFree,
+      RuntimeSemantics::findIn,
+      RuntimeSemantics::findMethod,
+      RuntimeSemantics::fromPrimitive,
+      RuntimeSemantics::kindIndex,
+      RuntimeSemantics::lookupVar,
+      RuntimeSemantics::matchesTy,
+      RuntimeSemantics::orderOfPath,
+      RuntimeSemantics::pairParts,
+      RuntimeSemantics::rtApply,
+      RuntimeSemantics::rtEval,
+      RuntimeSemantics::rtEvalArms,
+      RuntimeSemantics::rtEvalBlock,
+      RuntimeSemantics::rtEvalList,
+      RuntimeSemantics::rtRun,
+      RuntimeSemantics::tagOf,
+      supportCrate
+    ],
+    scrutinee: (TargetSemantics::primitive (ctor TargetSyntax::Prim.compare) (cons (ctor TargetSyntax::Value.i64 x) (cons (ctor TargetSyntax::Value.i64 y) (nil TargetSyntax::Value))))
+  },
+  axioms: [Classical.choice, Quot.sound, propext]
+}
+\end{semanticmodule}
+\end{lexlean}

@@ -12,11 +12,63 @@ completion release, the first release satisfying the complete specification:
 before it is a §30 release: `cargo xtask release-check` reads the complete
 §30.3 artifact set and §30.4 completion criterion and refuses, naming every
 criterion that does not hold. That refusal is the accurate answer at these
-versions. Only `v0.1.0` has been tagged: the sections for `0.1.1`, `0.2.0`,
+versions. `v0.1.0` and `v0.4.0` are tagged; the sections for `0.1.1`, `0.2.0`,
 and `0.3.0` record what the workspace carried at those versions without a tag,
 and Unreleased holds what has landed since.
 
 ## Unreleased
+
+- κ-addressing in LexLean (#127, `KA-01`..`KA-03`; decision D7 of #110): the `kappa` project, a member of
+  the workspace beside `stdlib`, outside `language/` and `schemas/` (no compiler-semantics ID moves). Its module
+  `Label` writes the sha256 axis of the κ-label and the data handle of decision D3 (`kind@label`); its module
+  `Json` writes the JSON canonical form of uor-addr (RFC 8785 with NFC over ASCII, Latin-1 and the combining
+  marks that compose with Latin-1 letters; anything else, a non-integer number and a repeated member name are
+  refused). uor-addr 0.2.0 is the oracle of the cases (a dependency of `repo-conformance`, never of a shipped
+  crate). The GGUF and ONNX forms, the other hash axes and composition are outside the package.
+- Language 1.2 applies the bitwise primitives and shifts to unbounded `Nat` (#317, `SM-38`):
+  `bit_and`, `bit_or` and `bit_xor` over two `Nat` operands and `shift_left` and `shift_right` over a
+  `Nat` operand and a `Nat` amount, each with result `Nat` and no `Option`, lowered to `Nat.land`,
+  `Nat.lor`, `Nat.xor`, `Nat.shiftLeft` and `Nat.shiftRight`. `LexLeanRuntime.Laws` gains the bit laws
+  `nat_bit_and`, `nat_bit_or`, `nat_bit_xor`, `nat_bit_shift_left`, `nat_bit_shift_right`,
+  `nat_or_xor_and`, `nat_witt_step` and `nat_bit_ext`, registered in `laws.toml` beside the runtime
+  bounds of `PF-24`. A production root over a `Nat` form is refused (`LLT4005`). This moves the
+  language-1.2 compiler-semantics ID. The same change moves the `SM-35` text that #299 edited in
+  `SPEC.md` and `model/ids.toml` into the chapter and register modules of `spec/`, where it belongs
+  (`NS-03`).
+- Forward merge of `release/v0.4` at `a1b925dc6` (the `v0.4.0` tag commit
+  `e0b74b81e` and the first post-tag landing) into this line: the heap half's
+  H5 (#298) and H6 (#304) of #91 stage 4 and the release-workflow fixes (#320,
+  #321, #323). The rows `RB-21` (the runtime text is never held) and `SP-30`
+  (every runtime item has its refinement statement) join the register, and
+  `RB-16`, `RB-17`, `RB-19`, `RB-20`, `SP-29`, `BS-05`, `BS-06`, and `BS-09`
+  take their `0.4.0` statements; the specification text of the `release/v0.4`
+  side is ported into the chapter modules of `spec/` (`cargo xtask spec port`
+  and `insert-after`, `NS-07`), since SPEC.md and the register are projections
+  on this line. The bootstrap validator `LexLeanBoot.RustValidate` carries both
+  sides again: the loop-end crates of #279 (37) with the machine families of
+  H6 (44), 473 runs of `validateCrate` (216 refused) and 336 of
+  `correspondCrate` (103 refused). Locks, records, goldens, the production
+  exports, the fixtures, the verification records, and the compiler-semantics
+  IDs are regenerated at the landing. The register is 474 IDs. The gate found
+  one race in the suite: the `RP-14` and `RP-18` decision cases run their
+  scripts on the process's `PATH` while the `SE` cases swap it for a wrapper,
+  so both now hold the environment's reader lock for the decisions (the
+  `RP-14` failure of #298's arm job was the same race).
+
+- Forward merge of `release/v0.4` (`93fbe7df9`, the `0.4.0` line) into this
+  line: every row of the `0.4.0` register below joins the register of this line,
+  and the two sides' hand-written sources are the union of both. Two identifiers
+  collided, and the `release/v0.4` row keeps its number in each case: the
+  loop-end row of #279 is `RB-22` (it was `RB-21` on this line before the
+  merge), and the three SHA-256 rows of #126 stage 2 are `SL-06`, `SL-07`, and
+  `SL-08` (they were `SL-05` to `SL-07`); `SL-03`, `SL-04`, and `SL-05` are the
+  `0.4.0` rows. The bootstrap validator `LexLeanBoot.RustValidate` and the Rust
+  oracle carry both the loop-end tail check of #279 and the machine callee and
+  the overflow value of #91 stage 4. `NS-07` plants a marker no sentence of the
+  specification carries, since the merged text has the word "tampered" of its
+  own (`LLR3007`, `EX-09`). Locks, records, goldens, the production
+  exports, and the compiler-semantics IDs are regenerated at the landing. The
+  register is 472 IDs.
 
 - Release identity (`RP-17`, `CL-18` amended, #113). SPEC.md §2.3 names the
   completion release: `0.5.0` when it satisfies the §30.4 criterion, `1.0.0`
@@ -68,14 +120,40 @@ and Unreleased holds what has landed since.
   marker is `LLP2003` and no module; every committed source classifies as
   before. Register 444.
 
-- The bound of a production root (`PD-09`, `SP-29`, #116): `production:
+- Runtime bounds (`PF-24`, #263): `LexLeanRuntime.Laws` states three bounds of
+  the runtime, registered as laws a language-1.2 `law` proof cites:
+  `split_exact_fits` (a split on a separator that is not empty has at most the
+  UTF-8 byte length plus one pieces, so a maximum above a bound on that length
+  admits it), `utf8_decode_length` (a decoded string's UTF-8 byte length is
+  bounded by the length of its bytes), and `checked_add_fits` (`UInt32`
+  `checked_add` of a value at most `n` and `b` is `some` when `n + b < 2^32`).
+  Each is kernel-checked with its axioms pinned. The decoder of core module 2
+  imports `Init.Data.String.Legacy` in full, so the split can be unfolded. The
+  fold-laws example's `Guards` module mirrors prism-code's too-many-lines,
+  line-overflow, and response too-large guards and proves each branch
+  unreachable by law. The language-1.2 compiler-semantics ID moves; locks,
+  goldens, calculus, production export, fixtures, and verification records are
+  regenerated by the writers. Register 448.
+
+- `RB-22` (#279): a fallible function rendered as a loop that is its value
+  returns the operand of each `Err` that ends the loop, so a call of another
+  fallible function there is in tail position and returns the callee's result
+  without `?`. `rust::validate` refused that call, so the module of #279 had no
+  `rust-std` rendering; it now checks those operands as the function's tail,
+  and `LexLeanBoot.RustValidate` mirrors it (`BS-05`: 37 loop crates, 17
+  plants). A loop of a fallible function that ends with a branch whose tails
+  are not fallible values, which the old end check let through, is refused.
+  The renderer digest and the language-1.2 compiler-semantics ID move.
+  Register 449.
+
+- The bound of a production root (`PD-09`, `SP-31`, #116): `production:
   {…, bound: T}` names a prior theorem whose statement linking generates, that
   under `x < 2^64` for each natural parameter every addition and
   multiplication of naturals of the root's own body is below 2^64, in
   evaluation order; eligibility discharges `overflow` with it, the report
   records it, a bound that does not cover an operation is `LLT4017`, and
   certificate A proves `bounded` and `root_value` from the theorem. The
-  rendering of a bounded root is unchanged (`RB-20` is registered and open).
+  rendering of a bounded root is unchanged (`RB-23` is registered and open).
   The semantic-module schema gains the member, which moves the language-1.2
   compiler-semantics ID.
 
@@ -142,15 +220,15 @@ and Unreleased holds what has landed since.
   row count from the projection instead of a literal. Count 430 becomes 434.
   No language, schema or compiler-semantics identity moves, and `model/errors.toml`
   is byte-identical.
-- The compiler running the package reproduces it (SPEC.md §17.22, `SL-07`,
-  #126 stage 2; no change to the compiler). `conformance_sl_07` holds the
+- The compiler running the package reproduces it (SPEC.md §17.22, `SL-08`,
+  #126 stage 2; no change to the compiler). `conformance_sl_08` holds the
   digests every committed production export records to the oracle, holds
   `lib.rs` of the two SHA-256 packages free of the digests that describe them,
   and, under the pinned Lean, rebuilds the standard library with the compiler
   and requires the committed packages and, for `sha256`, the file the compiler
   links. The register holds 433 IDs.
-- Every identity is the one `sha2` gave (SPEC.md §21, `SL-06`, #126 stage 2;
-  no change to the compiler). `conformance_sl_06` digests every tracked file
+- Every identity is the one `sha2` gave (SPEC.md §21, `SL-07`, #126 stage 2;
+  no change to the compiler). `conformance_sl_07` digests every tracked file
   of the repository with the compiler and with the oracle, holds the
   compiler-semantics IDs of the three languages to the values the committed
   example locks pin, runs the independent recomputations of the recipes, and
@@ -158,7 +236,7 @@ and Unreleased holds what has landed since.
   the compiler project, and the bootstrap project; three planted defects are
   detected on every run. The register holds 432 IDs.
 - The compiler's digest is the standard library's `Sha256` package (SPEC.md
-  §17.22, §21.1, §5.1, `SL-05`, #126 stage 2; no new diagnostic code, no
+  §17.22, §21.1, §5.1, `SL-06`, #126 stage 2; no new diagnostic code, no
   identity moves). `Sha256Digest::of`, `FramedHasher`, and `tree_digest`
   compute through the committed production export of `LexLeanStd.Sha256`,
   linked by `crates/lexlean/sha256_package.rs` (a link `audit-shipped`
@@ -167,7 +245,7 @@ and Unreleased holds what has landed since.
   `repo-conformance` keep it as the stage-0 oracle, which falsifies and never
   establishes. `[profile.dev.package.lexlean]` is `opt-level = 1`, because
   the package hashes 0.7 MB/s unoptimized and about 68 MB/s at that level.
-  `conformance_sl_05` holds the compiler's own API to the FIPS 180-4 and NIST
+  `conformance_sl_06` holds the compiler's own API to the FIPS 180-4 and NIST
   CAVP vectors, every length to 300 bytes and around each power of two to
   4 MiB, and a seeded corpus, and detects five planted defects. The framing
   recipes of §21.1 remain Rust (#92). The digests it states are `some-true`
@@ -176,6 +254,160 @@ and Unreleased holds what has landed since.
   vendored and recomputed by `validate-model`). Language 1.0, 1.1, and 1.2 identities,
   locks, goldens, and verification records are byte-identical.
 
+## Unreleased
+
+- The #34 closure pass (documentation and evidence; no register row, language
+  datum, schema, or compiler source moves). Sixteen examples carry a `README.md`
+  that names the register rows whose gates run on them, what
+  `cargo xtask verify-examples` establishes, and what is not claimed
+  (`nat-add-zero` has none: `SE-07` holds the literal example's root to a closed
+  file set). Four README capability sentences and one SPEC prose paragraph each
+  are bound to what their certificates establish: the GNAF universe is the
+  request's declared grammar (§17.15), certificate E is end to end on the
+  declared Rust machine (§17.17), the neural realizations are exact integer
+  kernels (`MD-04`), and the reasoning GNAF requests are over the clinical rule
+  base's plans (`RS-13`); SPEC.md §4.2 states that its non-goals bound language
+  1.0 only.
+- Four negative fixtures under `tests/negative/` for the public language-class
+  refusals that had only an inline plant, #252 (`EX-07`'s prescribed table goes
+  from 298 to 302 classes): `production-package-name-keyword` (`LLB6005`),
+  `gnaf-request-malformed` (`LLB6006`), `gnaf-certificate-malformed`
+  (`LLB6007`), and `text-window-zero-capacity` (`LLT4016`). The inline plants
+  stay.
+- The seven examples whose modules carried the literal example's title,
+  #251 (`collections`, `higher-order`, `language-1.2`, `production`,
+  `production-coverage`, `recursion`, `recursive-data`), are retitled with a
+  per-example title glossary (`glossary/<package>.titles`, one label word per
+  module), as `fold-laws` does.
+
+- CI cost (SPEC.md §9.4, `RP-14`): a ready pull request whose base branch is
+  neither `main` nor `release/*` runs the `rest` leg only, as a draft does,
+  and says why in its step summary. Stacked pull requests (a feature branch
+  into another feature branch) ran the whole gate, about 500 runner-minutes,
+  on every push though they cannot land on a line; the pull request that
+  carries the stack into `main` or a release line runs the whole gate on the
+  tree that lands. `ci.yml` passes `BASE` to the plan, and `RP-14` plants a
+  ready pull request into a feature branch, into a release line, and into
+  `main`, and a draft into a feature branch. A base the event does not name
+  is the whole gate. The register is unchanged: the statement of `RP-14` is
+  extended.
+
+## 0.4.0
+
+Release `0.4.0` is cut at the downstream boundary (#92, 2026-10-25): what the
+downstream projects need, language 1.2 and the 1.1→1.2 migration (#257), with
+everything else that had landed on `release/v0.4` at `201519a1b`, and the
+release-workflow fixes and the one self-hosting landing (#298, H5) that reached
+the line while the tag waited on them. The register is 457 IDs; the language-1.2
+compiler-semantics ID is
+`1427f8b629013648a480454d67202788f2303f5396f1d7c70a7c350ddab6f694`, language
+1.1's `cac35ee3f026aa21a6c8cbc61f3af3c760da0b94555876a4540cc235f461bfdb`, and
+language 1.0's `07859acb5a756221018b7f65e7f725d99b00a694670eecc7cd264832ba1333fb`.
+Of the compiler's own pipeline as language-1.2 source (#92), this release ships
+exactly the stages the register carries: `BS-01` to `BS-06` and `BS-09`. Of the
+Rust runtime as source (#91), it ships the heap half through H5: `RB-15` to
+`RB-17`, `RB-19` to `RB-21`, `SP-21` to `SP-23`, and `SP-25` to `SP-29`. The Rust
+lowering as source (`BS-07`, `BS-08`, `BS-10` to `BS-14`), the number functions of
+the std runtime as machine calls with their refinement theorems (H6), and the H7
+audit are written and land in `0.4.1` on the same line, each with its identity
+regeneration; the remaining self-hosting steps are `0.5.0` material. Also in
+`0.4.1`, not here: the seven example retitles (#251) and the four negative
+fixtures for `LLB6005`, `LLB6006`, `LLB6007`, and `LLT4016` (#252), so at this tag
+those four refusals are evidenced by inline conformance cases only, and the
+negative-fixture bullet of #34 is not met for them. The language-model rows are
+`LM-01` to `LM-09` and `LM-13`. Nothing below claims more than the certificates
+of this tree show.
+
+- The release workflow's evidence is the gate run of the tagged commit (SPEC.md
+  §9.4, §30.3; `RP-18`). `release.yml` no longer runs `just vv` on one runner:
+  rehearsals 3 and 4 showed the `bdd` recipe alone takes over four hours there
+  and the job hits the six-hour limit before Atlas. `.github/release-gate.sh`
+  finds the `ci.yml` run that was the whole gate on the commit's tree (the
+  commit, or the second parent of a merge that lands its tree unchanged, as
+  `ci-plan.sh` reads a push), requires every job of it to have passed with the
+  Atlas join, every host, and every leg present, and writes `vv-evidence.txt`
+  with the run, its jobs, and the legs' retained transcripts. `conformance_rp_18`
+  requires the gate job to run the script and no recipe, and runs the script
+  against planted runs: a run with a failed job, a draft run, and no run are
+  refused, and a run on the tree-equal parent is accepted. The first tag run
+  (40321415513, on `aa6593e02`) then failed at `release-check`: the §30.3
+  criterion reads the line `just vv` prints when the whole gate passes, and
+  the legs' transcripts never say it. The script now ends the file with that
+  line as the summary of the run, the criterion is one function
+  (`repo_model::release::ci_evidence`) with its own test, and `RP-18` holds
+  the script's output to it, so the publish job, which no rehearsal runs,
+  cannot refuse what the rehearsals accepted.
+- `lexlean migrate --to 1.2 [--check]`, #257 (SPEC.md §17.12, §23.4,
+  `CL-24`): the one command that migrates a language-1.1 data-form project to
+  language 1.2. It rewrites every module to the authoring notation through
+  `lexlean::sdk::to_notation`, moves the builtin glossary references of the
+  sources and the imports of every path lexicon package to `1.2.0`, rewrites the
+  `language` row, and regenerates the lock as `lexlean/lock/2`, after proving
+  the result in a scratch copy; a refusal (`LLC0103`, `LLP2003`, or the check's
+  own diagnostic) writes nothing. The `1.1` to `1.2` recipe of §17.12 (change
+  the tag and the glossary versions, relock) is replaced: it produced a project
+  that language 1.2 refuses with `LLP2003` since #149. The negative fixture
+  `migrate-module-without-notation` holds a module that is not a language-1.1
+  module (a top-level member the schema forbids), which the notation cannot
+  spell. A file that changes between the proof and the replacement refuses the
+  migration (`LLV7010`), and a replacement that fails restores every file
+  already replaced and reports every restore that failed. A refusal creates no
+  build root, and a data form that is not canonical JSON (which language 1.1
+  `check` refuses with `LLT4001`) is refused with `LLP2003` and not
+  canonicalized.
+  `Engine` keeps its seven entry points; the function is
+  `lexlean::api::migrate::migrate`. The register is 453 IDs. The notation
+  reader no longer takes a keyword followed by `{` inside a parenthesised term
+  for the keyword's own form: a `match` (or `not`, `first`, `second`, `cons`,
+  `nil`, ...) that a readable form cannot carry, such as one holding a variable
+  named `first`, is printed generically (SPEC.md §17.21.1) and now reads back.
+- The `lexlean` crate that goes to crates.io is the crate the release attaches (`RP-18`, #260). `.github/workflows/crate.yml`, which `release.yml` calls on every run, packages the crate twice to the same bytes, runs `cargo publish --dry-run`, checks the archive for what crates.io needs (description, license, repository, the readme it names, at most 10 MiB), and compares its SHA-256 with `release/lexlean.crate` and the line `checksums.txt` lists for it; the tag's `publish` job repeats the comparison against the dry-run package and uploads to crates.io only when a `CARGO_REGISTRY_TOKEN` secret or trusted publishing (the repository variable `CRATES_IO_TRUSTED_PUBLISHING`) authorises it, and otherwise creates the release and says the crate was not uploaded, where before the first run failed after the tag was pushed because no `lexlean` crate and no trusted publisher existed. Dispatched on a `release/vX.Y` line, `crate.yml` does the same for the pre-release `X.Y.0-dev.N`, `N` being the commit's number of first-parent commits, and uploads it under the same authority. The decisions are in `.github/crate-publication.sh`, which the case runs against planted archives, checksums, refs and environments. SPEC.md §30.3 states the rule. Register 449.
+
+- `term_cases` decides constructor disjointness and injectivity (#280, SPEC.md
+  §17.10, `SM-35`). Its fixed `simp only` set adds `reduceCtorEq`, `false_implies`,
+  `imp_self`, `and_true`, `true_and`, the injectivity lemmas of `Option`, `Result`
+  (`Except`), and `List`, and the injectivity lemma of every constructor with a
+  field of the module's inductive types, so "if the check returns `bad p`, the
+  report names `p`" is proved and a false case is still rejected. No
+  compiler-semantics identity moves.
+- The Rust runtime as source, #91 stage 4 (SPEC.md §17.16, §17.17, `SP-21`,
+  `RB-15`, `SP-23`, `SM-35`, `SM-36`, `RB-16`, `SP-22`, `RB-17`, `SP-25`, `RB-19`, `BS-09`, `SP-26`, `SP-27`, `SP-28`, `SP-29`, `RB-20`, `SP-30`).
+  The declared Rust machine grows by the primitives the runtime is written in
+  (the bit operations, the natural and integer comparisons and remainders, the
+  checked natural and integer arithmetic that is `Some` or `None` on overflow)
+  and the Rust AST by the machine callee and the overflow value. Language 1.2
+  gains `term_cases` and `cases` on a Boolean as proof forms. The core
+  runtime's 110 numeric functions are the definitions of the module
+  `RustRuntime` (`coreCrate`), decoded and printed in place of the handwritten
+  text and held to it by a differential and to `RustSemantics` by a
+  `refines_<path>` theorem each; its support items (`use`, `Overflow`, the
+  work counter, the traits `Same` and `Key` and their impls, `equal`,
+  `compare`) are the definitions of `RuntimeSupport`, a crate of the second
+  closed module `RuntimeSyntax`, checked by a validator of 24 named rules, with
+  the meaning of `equal` and `compare` stated by `RuntimeSemantics` and proved
+  against the calculus primitives for the core profile's scalars and pairs of
+  two scalars (nested keys are validated, not proved: #249). The handwritten
+  base text is gone. The
+  compiler-semantics ID moves; records bound to it regenerate once, at the
+  landing. `RB-19` adds the constructs of the heap runtime (45 validator rules, twenty-one new): every name the printer writes is an identifier and not a keyword, a derive is in a closed table of five, a character literal is one scalar value, the head of a condition holds no struct literal outside parentheses, and a `let`, cast or type argument names no generic parameter; each site is planted, and a comparison whose left operand ends in a cast is printed with parentheses. `BS-09` holds the runtime validator's Lean twin (`RuntimeValidate`, a bootstrap root) to the Rust oracle. The twin carries the identifier, derive, character-literal, struct-head and type-scope rules of `RB-19` (45 rules), and the bootstrap project's `max_file_bytes` is 6 MiB because its certificate passed 4 MiB. The committed corpus `BS-05` and `BS-06` hold to the oracle grows by the `validate_runtime` package (256 manifests, 173 programs, 232 crates; 470 and 333 validator runs, 627 printer runs), and `validate_runtime` has its stack bound in `tests/stack-bounds.json`. `SP-26` kernel-checks the laws of the memory a runtime buffer lives in (`RustMemory`). `SP-27` kernel-checks the abstraction theorems of the list representation (`RustLists`). `SP-28` states the meaning of the buffer, share, and replace primitives over that model (`RustPrims`). `SP-29` and `RB-20` carry the list, byte, and text functions of the `rust-std` runtime, `append_list`, `length_list`, `index_list`, `slice_list`, `append_bytes`, `length_bytes`, `length_string`, `index_bytes`, `slice_bytes`, `utf8_encode`, `utf8_decode`, `compare_bytes`, `split_exact` and `join`, as source: the module `RustStd` defines each as one machine call (`Machine.listAppend` to `stringJoin`, families 26 to 39, whose meaning `RustSemantics` states as the calculus primitive of the runtime item of the same function), `refines_<function>` is kernel-checked against the run of the runtime item, the std text is the handwritten base with the generated functions in place of their oracle functions, and a differential with counted work holds them to the oracle. The shipped crate gains `Type::Param`, the fourteen machine families, and the decoder of the std module; the bootstrap project's `max_file_bytes` is 6 MiB; the library audit reads the std text as generated. `RB-20` also prints the types, impls, and helpers of the std runtime (`Str`, `Bytes`, `Node`, `Repr`, `List`, `chars`, and the `Same` and `Key` impls) from a second module, `RuntimeStd`, decoded, checked by the validator of `RuntimeSyntax` with the support items, and printed in place of the handwritten text. The runtime validator (`RB-19`) learns the associated function of a declared type, which the Lean twin (`BS-09`, now 709 crates) follows, the printer writes `x = x + e` as `x += e` (the package's lint gate refuses the first), and the library table lists the paths the printed text uses (`Rc::from`, `mem::replace`, `str::from_utf8`, and `pop`). With the number text (`canonical_decimal`, `parse_int`, the eight `format_`/`parse_` pairs) in `RuntimeStd`, no handwritten runtime text remains: the oracle at `tests/rust-runtime-oracle/` is replaced by a golden transcript (`tests/rust-runtime-golden/transcript.txt`, a 64-bit digest of the results and counted work of the calls under each label, recorded from the handwritten runtime at the last pass of the differential), and `RB-21` refuses any string literal of the `lexlean` sources that holds the head of a runtime item. The number functions are kernel-checked too: `RustStd` defines `parse_int`, `format_int`, and the eight `format_`/`parse_` pairs as one machine call each (`formatDecimal`, `parseDecimal`, `parseDecimalInt`, `formatDecimalInt`, families 40 to 43, whose meaning is the calculus primitive `formatDecimal` or `parseDecimal` at the width or at the integers) with a `refines_` theorem each; the decimal text of an integer, which the generated code called as `format_i64` with no statement of its own, is `format_int`, held to `format_i64`'s recorded digest. `SP-30` holds every runtime item to exactly one refinement statement at its profile, on the function the generated code calls for it (the trait functions `equal` and `compare` to the theorems of `SP-25`). The crate header, the `pub mod` wrapper, and the definitions it holds are `RuntimeSyntax` nodes (`defined`, `moduleItem`, `innerAttribute`) printed by `rt.rs`; `library` is a field of `Scaffold`; the two compound templates and the Cargo keys are declared printer grammar (SPEC.md §17.16); `RB-21` exempts only the format argument and extends its heads to `use`, `static`, `const`, `type`, and `mod`; `RB-10` reads every file that prints Rust; and a `RuntimeStd` that names `Rc::make_mut`, `RefCell`, or `Cell` is refused by the closed table. The register is 458 IDs.
+- Two source packages of the standard library and the application that uses
+  them, #32 (SPEC.md §17.22, §10.5, `SL-03`, `SL-04`, `EX-09`). `std-models`
+  (`LexLeanStdModels.Scores`) holds the score combinators `best`, `margin`, and
+  `decideOr` over `List Int` and the contract `Gating`, realization `Gate`,
+  evidence `GateEvidence`, and model `GateModel` generic over a type parameter;
+  `std-reasoning` (`LexLeanStdReasoning.Worklist`) holds the generic logic
+  `Countdown`, its rules `Tick` and `Burn`, the verifier `Drained`, and the
+  terminating work-list reasoner `Drain`. Both are workspace members that an
+  importer pins, hold their laws as kernel-checked theorems, and claim no
+  differential: language 1.2 is generic over types and not over predicates or
+  stages, so neither offers a composite that takes the importer's models
+  (SPEC.md §17.22 says so). `examples/helpdesk` imports them and `stdlib`: its
+  roots `classify` (the model alone), `plan` (the reasoner alone), and
+  `dispatch : Bytes -> Bytes` (both) are exported through the production
+  consumer, the packages committed under `tests/production-export/helpdesk/`.
+  The workspace file lists the three new members. No language data or schema
+  moves, so no language-1.2 record other than the new projects' own is
+  regenerated. The register is 436 IDs.
 - The audit of certificate A checks a mutual group of implementation records
   (`f._unsafe_rec`) by the union of the sets it prints for the group, against a
   pin that is the group's union (SPEC.md §17.17, `LLV7013` names the group).
@@ -466,6 +698,18 @@ and Unreleased holds what has landed since.
   ones. The register is 430 IDs. A finding about the certificate generator,
   #222, is worked around by building the correspondence table in a definition
   of its own.
+- The Rust printer as language-1.2 source and the standard library's output
+  buffer (SPEC.md §17.23, §17.22, §17.16, `BS-06` and `SL-05`, #92; no new
+  diagnostic code, no change to the language-1.2 identity). `LexLeanStd.Buffer`
+  writes in order into a buffer of a given capacity, with the capacity
+  exceeded a refusal of `finish`; it is chunked over today's primitives
+  because a chain of `append` is quadratic (the work counter quadruples as n
+  doubles). `bootstrap/src/RustPrint.lex.tex` over `RustAst.lex.tex` declares
+  `printCrate` and `printExpr` as production roots for `rust-std`. `BS-06`
+  runs 2,559 vectors under the pinned `rustc` on every host, and on the
+  normative host the evaluator on 541 + 1,955 of them and 400 + 399 seeded
+  mutants, 2,984 more under `rustc`, twelve planted defects, and the certified
+  packages against the committed ones. The register is 447 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or

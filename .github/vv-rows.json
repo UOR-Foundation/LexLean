@@ -27,6 +27,24 @@
     "hints": ""
   },
   {
+    "part": "bdd-bootstrap-print",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-print",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-runtime",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-runtime",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
     "part": "bdd-bootstrap-validate",
     "recipes": "bdd",
     "examples_part": "",
@@ -58,6 +76,42 @@
     "recipes": "bdd",
     "examples_part": "",
     "bdd_part": "preservation-lists",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-preservation-prims",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "preservation-prims",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-preservation-std",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "preservation-std",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-preservation-runtime",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "preservation-runtime",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-preservation-support",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "preservation-support",
     "width": "",
     "memory_kib": "",
     "hints": ""

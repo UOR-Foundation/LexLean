@@ -1845,6 +1845,16 @@ impl<'a> Walk<'a> {
                         "a widening conversion is realized only through its elaboration".to_owned(),
                     );
                 }
+                if operation.nat_bitwise(&substituted) {
+                    self.violation(
+                        site,
+                        primitive_key(*operation),
+                        format!(
+                            "primitive `{}` on `Nat` has no bounded-width production realization",
+                            primitive_key(*operation)
+                        ),
+                    );
+                }
                 self.ty(result, site);
                 self.terms(arguments, site);
             }

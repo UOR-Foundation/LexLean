@@ -164,6 +164,85 @@ impl SemanticPrimitive {
         matches!(self, Self::ToInt | Self::ToNat)
     }
 
+    /// Whether the operation is a bitwise primitive or shift read over
+    /// unbounded `Nat` (language 1.2, #317): `bit_and`, `bit_or`, `bit_xor`,
+    /// `shift_left` and `shift_right` with result `Nat`. A fixed-width form
+    /// of the same operation is not one, so the predicate takes the result.
+    #[must_use]
+    pub fn nat_bitwise(self, result: &SemanticType) -> bool {
+        matches!(
+            self,
+            Self::BitAnd | Self::BitOr | Self::BitXor | Self::ShiftLeft | Self::ShiftRight
+        ) && *result == SemanticType::Nat
+    }
+
+    /// The Lean function an unbounded-`Nat` bitwise primitive lowers to, so
+    /// that `rfl` and `decide` evaluate it inside a verified module.
+    #[must_use]
+    pub fn nat_bitwise_function(self, result: &SemanticType) -> Option<&'static str> {
+        if !self.nat_bitwise(result) {
+            return None;
+        }
+        match self {
+            Self::BitAnd => Some("Nat.land"),
+            Self::BitOr => Some("Nat.lor"),
+            Self::BitXor => Some("Nat.xor"),
+            Self::ShiftLeft => Some("Nat.shiftLeft"),
+            Self::ShiftRight => Some("Nat.shiftRight"),
+            Self::MapFold
+            | Self::SetFold
+            | Self::ListFold
+            | Self::Iterate
+            | Self::IterateUntil
+            | Self::Subtract
+            | Self::Multiply
+            | Self::Quotient
+            | Self::Remainder
+            | Self::Negate
+            | Self::CheckedConvert
+            | Self::CheckedAdd
+            | Self::CheckedSubtract
+            | Self::CheckedMultiply
+            | Self::CheckedNegate
+            | Self::CheckedQuotient
+            | Self::BitNot
+            | Self::Append
+            | Self::Length
+            | Self::Index
+            | Self::Slice
+            | Self::Utf8Encode
+            | Self::Utf8Decode
+            | Self::CompareBytes
+            | Self::Equal
+            | Self::SplitExact
+            | Self::Join
+            | Self::ParseDecimal
+            | Self::FormatDecimal
+            | Self::MapInsert
+            | Self::MapRemove
+            | Self::MapLookup
+            | Self::MapContains
+            | Self::MapSize
+            | Self::MapKeys
+            | Self::MapValues
+            | Self::MapEntries
+            | Self::SetInsert
+            | Self::SetRemove
+            | Self::SetContains
+            | Self::SetSize
+            | Self::SetElements
+            | Self::SetUnion
+            | Self::SetIntersection
+            | Self::SetDifference
+            | Self::GraphSuccessors
+            | Self::GraphReachable
+            | Self::GraphTopological
+            | Self::LessThan
+            | Self::ToInt
+            | Self::ToNat => None,
+        }
+    }
+
     /// The construct a language-1.1 module is refused for when it applies
     /// the operation.
     const fn language_1_2_construct(self) -> &'static str {
@@ -710,6 +789,17 @@ pub enum SemanticProof {
     Cases {
         scrutinee: String,
         branches: Vec<SemanticProofBranch>,
+    },
+    /// Language 1.2: a split on the value of a document term. It names a term
+    /// of an inductive type of the document and a nonempty set of prior
+    /// document definitions, and lowers to a split of the goal on every
+    /// constructor of the term's type, with the hypothesis that equates the
+    /// term to the constructor, then `simp only` over the definitions, that
+    /// hypothesis, and the fixed conditional and constructor rules, with
+    /// closed propositions decided (§17.10, `SM-35`).
+    TermCases {
+        scrutinee: SemanticTerm,
+        definitions: Vec<MemberRef>,
     },
     Induction {
         scrutinee: String,
@@ -2281,6 +2371,7 @@ fn proof_node_count(proof: &SemanticProof) -> u64 {
         SemanticProof::Apply { arguments, .. } | SemanticProof::Law { arguments, .. } => {
             arguments.iter().map(term_node_count).sum()
         }
+        SemanticProof::TermCases { scrutinee, .. } => term_node_count(scrutinee),
     }
 }
 
@@ -2481,6 +2572,9 @@ fn language_1_2_construct(term: &SemanticTerm) -> Option<&'static str> {
         SemanticTerm::Primitive { operation, .. } if operation.language_1_2() => {
             Some(operation.language_1_2_construct())
         }
+        SemanticTerm::Primitive {
+            operation, result, ..
+        } if operation.nat_bitwise(result) => Some("bitwise primitive on Nat"),
         SemanticTerm::Call { type_arguments, .. } if !type_arguments.is_empty() => {
             Some("call type arguments")
         }
@@ -3047,6 +3141,7 @@ fn proof_terms(proof: &SemanticProof, visit: &mut impl FnMut(&SemanticTerm)) {
                 visit_terms(argument, visit);
             }
         }
+        SemanticProof::TermCases { scrutinee, .. } => visit_terms(scrutinee, visit),
     }
 }
 
@@ -3073,6 +3168,7 @@ fn proof_terms_mut(proof: &mut SemanticProof, visit: &mut impl FnMut(&mut Semant
                 visit_terms_mut(argument, visit);
             }
         }
+        SemanticProof::TermCases { scrutinee, .. } => visit_terms_mut(scrutinee, visit),
     }
 }
 
@@ -3201,6 +3297,7 @@ fn proof_binders(proof: &SemanticProof, visit: &mut impl FnMut(&str)) {
         | SemanticProof::Congruence
         | SemanticProof::BooleanReflection { .. }
         | SemanticProof::LinearArithmetic { .. }
+        | SemanticProof::TermCases { .. }
         | SemanticProof::Law { .. }
         | SemanticProof::Apply { .. } => {}
         SemanticProof::Constructor { branches } => {
@@ -3487,6 +3584,7 @@ fn proof_type_arguments(proof: &SemanticProof, visit: &mut impl FnMut(&SemanticT
         | SemanticProof::LinearArithmetic { .. }
         | SemanticProof::Decide
         | SemanticProof::Simplify { .. }
+        | SemanticProof::TermCases { .. }
         | SemanticProof::Congruence
         | SemanticProof::BooleanReflection { .. } => {}
         SemanticProof::Constructor { branches } => {
@@ -7245,9 +7343,9 @@ fn infer_primitive(
             })
         }
         P::BitAnd | P::BitOr | P::BitXor => {
-            if !fixed_integer(&first) {
+            if first != SemanticType::Nat && !fixed_integer(&first) {
                 return Err(format!(
-                    "primitive {operation:?} requires fixed-width operands"
+                    "primitive {operation:?} requires Nat or fixed-width operands"
                 ));
             }
             require_observed(arguments, &[first.clone(), first.clone()], operation)?;
@@ -7261,15 +7359,23 @@ fn infer_primitive(
             exact_result(first)
         }
         P::ShiftLeft | P::ShiftRight => {
-            if !fixed_integer(&first) {
-                return Err(format!(
-                    "primitive {operation:?} requires a fixed-width operand"
-                ));
+            if first == SemanticType::Nat {
+                require_observed(
+                    arguments,
+                    &[SemanticType::Nat, SemanticType::Nat],
+                    operation,
+                )?;
+                exact_result(SemanticType::Nat)
+            } else if fixed_integer(&first) {
+                require_observed(arguments, &[first.clone(), SemanticType::UInt32], operation)?;
+                exact_result(SemanticType::Option {
+                    value: Box::new(first),
+                })
+            } else {
+                Err(format!(
+                    "primitive {operation:?} requires a Nat or fixed-width operand"
+                ))
             }
-            require_observed(arguments, &[first.clone(), SemanticType::UInt32], operation)?;
-            exact_result(SemanticType::Option {
-                value: Box::new(first),
-            })
         }
         P::Append => {
             if !matches!(first, SemanticType::List { .. } | SemanticType::Bytes) {
@@ -8297,6 +8403,10 @@ fn check_proof(
             }
             Ok(())
         }
+        SemanticProof::TermCases {
+            scrutinee,
+            definitions,
+        } => check_term_cases(scrutinee, definitions, locals, env),
         SemanticProof::BooleanReflection { reflection } => {
             check_boolean_reflection(reflection, locals, env)
         }
@@ -8487,6 +8597,55 @@ fn check_proof(
             check_elimination_proof(scrutinee, branches, true, locals, env)
         }
     }
+}
+
+/// The hypothesis name `term_cases` introduces (§17.10, `SM-35`).
+const TERM_CASES_HYPOTHESIS: &str = "llCase";
+
+fn check_term_cases(
+    scrutinee: &SemanticTerm,
+    definitions: &[MemberRef],
+    locals: &BTreeMap<String, SemanticType>,
+    env: &Environment<'_>,
+) -> Result<(), String> {
+    require_language_1_2(env, "term_cases proof")?;
+    if locals.contains_key(TERM_CASES_HYPOTHESIS) {
+        return Err(format!(
+            "term_cases reserves internal binder `{TERM_CASES_HYPOTHESIS}`"
+        ));
+    }
+    if definitions.is_empty() {
+        return Err("term_cases requires at least one named definition".to_owned());
+    }
+    if definitions
+        .windows(2)
+        .any(|pair| member_key(&pair[0]) >= member_key(&pair[1]))
+    {
+        return Err("term_cases definitions are not sorted and unique".to_owned());
+    }
+    for definition in definitions {
+        check_member(definition, env)?;
+        if function_info(definition, env).is_none() {
+            return Err(format!(
+                "term_cases unfolds `{}`, which is not a prior document definition",
+                member_key(definition)
+            ));
+        }
+    }
+    let local_names = locals.keys().cloned().collect();
+    check_term(scrutinee, &local_names, env, None, &BTreeSet::new())?;
+    let Some(SemanticType::Named { member, .. }) = infer_term(scrutinee, locals, env)? else {
+        return Err("term_cases splits a term that is not of a document inductive type".to_owned());
+    };
+    let inductive = type_info(&member, env)
+        .is_some_and(|info| !info.class && info.fields.is_empty() && !info.constructors.is_empty());
+    if !inductive {
+        return Err(format!(
+            "term_cases splits a term of `{}`, which is not an inductive type of the document",
+            member_key(&member)
+        ));
+    }
+    Ok(())
 }
 
 fn check_reflection_definition(
@@ -8684,6 +8843,21 @@ fn elimination_binder_types(
             ),
             ("zero".to_owned(), Vec::new()),
         ]),
+        // Language 1.2: a Boolean local splits into its two constructors.
+        // `Bool` is no inductive of the document, so `induction` has no
+        // recursor of its own to name here.
+        SemanticType::Bool => {
+            require_language_1_2(env, "cases on a Boolean local")?;
+            if induction {
+                return Err(format!(
+                    "induction on the Boolean `{scrutinee}` has no hypothesis to bind; use cases"
+                ));
+            }
+            BTreeMap::from([
+                ("false".to_owned(), Vec::new()),
+                ("true".to_owned(), Vec::new()),
+            ])
+        }
         SemanticType::Named { member, arguments } => {
             let info = type_info(member, env).ok_or_else(|| {
                 format!("proof scrutinee `{scrutinee}` has an unavailable inductive type")
@@ -9882,10 +10056,12 @@ mod tests {
         accepts(P::CheckedConvert, &[T::Int], option(T::UInt64));
         for operation in [P::BitAnd, P::BitOr, P::BitXor] {
             accepts(operation, &[T::UInt64, T::UInt64], T::UInt64);
+            accepts(operation, &[T::Nat, T::Nat], T::Nat);
         }
         accepts(P::BitNot, &[T::UInt64], T::UInt64);
         for operation in [P::ShiftLeft, P::ShiftRight] {
             accepts(operation, &[T::UInt64, T::UInt32], option(T::UInt64));
+            accepts(operation, &[T::Nat, T::Nat], T::Nat);
         }
         accepts(P::Append, &[T::Bytes, T::Bytes], T::Bytes);
         accepts(P::Length, &[T::String], T::Nat);

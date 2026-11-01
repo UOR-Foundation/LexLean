@@ -57,6 +57,22 @@
       "version": "1.0.0"
     },
     {
+      "name": "print_crate",
+      "root": "LexLeanBoot.RustPrint.printCrate",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "print_expr",
+      "root": "LexLeanBoot.RustPrint.printExpr",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "reject_atoms",
       "root": "LexLeanBoot.PrimitiveScan.rejectAtoms",
       "targets": [
@@ -75,6 +91,14 @@
     {
       "name": "validate_crate",
       "root": "LexLeanBoot.RustValidate.validateCrate",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "validate_runtime",
+      "root": "LexLeanBoot.RuntimeValidate.validateRuntime",
       "targets": [
         "rust-std"
       ],

@@ -1,0 +1,63 @@
+\begin{lexlean}{Reply}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{helpdesk.titles@1.0.0}
+\importmodule{LexLeanStdReasoning.Worklist}
+\importmodule{Router}
+\title{Reply planning}
+\begin{semanticmodule}
+definition{
+  name: workFor,
+  parameters: [topic : Router::Topic],
+  result: Nat,
+  body: (match topic
+    | Router::Topic.outage => 3
+    | Router::Topic.billing => 2
+    | Router::Topic.access => 1),
+  executable: true
+}
+
+definition{
+  name: stepsFor,
+  parameters: [topic : Router::Topic],
+  result: Nat,
+  body: (match (LexLeanStdReasoning.Worklist::Drain [Router::Topic] (topic, (workFor topic)))
+    | Result.ok explained => (prim length (second explained) : Nat)
+    | Result.error failure => 0),
+  executable: true
+}
+
+definition{
+  name: topicName,
+  parameters: [topic : Router::Topic],
+  result: Bytes,
+  body: (match topic
+    | Router::Topic.outage => 0x6f7574616765
+    | Router::Topic.billing => 0x62696c6c696e67
+    | Router::Topic.access => 0x616363657373),
+  executable: true
+}
+
+definition{
+  name: digit,
+  parameters: [count : Nat],
+  result: Bytes,
+  body: (if (count =? 0) then 0x30 else (if (count =? 1) then 0x31 else (if (count =? 2) then 0x32 else (if (count =? 3) then 0x33 else 0x2b)))),
+  executable: true
+}
+
+definition{
+  name: message,
+  parameters: [topic : Router::Topic],
+  result: Bytes,
+  body: (prim append (topicName topic) (prim append 0x3a (digit (stepsFor topic)) : Bytes) : Bytes),
+  executable: true
+}
+
+theorem{
+  name: outage_takes_two_steps,
+  parameters: [],
+  statement: ((stepsFor (ctor Router::Topic.outage)) = 2),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}

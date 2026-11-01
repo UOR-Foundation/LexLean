@@ -1,4 +1,4 @@
-//! The `cli-api` suite: CL-01..CL-22.
+//! The `cli-api` suite: CL-01..CL-24.
 
 use std::panic::{catch_unwind, AssertUnwindSafe};
 
@@ -1275,6 +1275,7 @@ pub(crate) fn run(id: &str) {
             assert_eq!(row.exit, 3, "LLV7018 exits 3");
         }
         "CL-23" => super::production_export::cli(),
+        "CL-24" => super::migration::cli(),
         other => panic!("no cli-api case is wired for {other}"),
     }
 }

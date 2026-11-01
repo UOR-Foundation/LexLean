@@ -1,0 +1,150 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{leaderStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(state : (Prod (Nat) ((Prod (Nat) (Int))))) (score : Int)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (Nat) ((Prod (Nat) (Int))))}.\par
+\noindent Definition: \texttt{(if (Nat.beq ((state).1) (0)) then (1, (0, score)) else (if (LexLeanCollections.lessThan (((state).2).2) (score) : Bool) then (((state).1 + 1), ((state).1, score)) else (((state).1 + 1), (state).2)))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{best}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(scores : List (Int))}.\par
+\noindent Closure 1: binds \texttt{(state, score)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(((LexLeanCollections.listFold ((fun (state : (Prod (Nat) ((Prod (Nat) (Int))))) (score : Int) => leaderStep (state) (score))) ((0, (0, (0 : Int)))) (scores) : (Prod (Nat) ((Prod (Nat) (Int)))))).2).1}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{runnerStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(state : (Prod (Nat) ((Prod (Int) (Int))))) (score : Int)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (Nat) ((Prod (Int) (Int))))}.\par
+\noindent Definition: \texttt{(if (Nat.beq ((state).1) (0)) then (1, (score, (0 : Int))) else (if (Nat.beq ((state).1) (1)) then (if (LexLeanCollections.lessThan (((state).2).1) (score) : Bool) then (2, (score, ((state).2).1)) else (2, (((state).2).1, score))) else (if (LexLeanCollections.lessThan (((state).2).1) (score) : Bool) then (((state).1 + 1), (score, ((state).2).1)) else (((state).1 + 1), (((state).2).1, (if (LexLeanCollections.lessThan (((state).2).2) (score) : Bool) then score else ((state).2).2))))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{leaders}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(scores : List (Int))}.\par
+\noindent Closure 1: binds \texttt{(state, score)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (Int) (Int))}.\par
+\noindent Definition: \texttt{((LexLeanCollections.listFold ((fun (state : (Prod (Nat) ((Prod (Int) (Int))))) (score : Int) => runnerStep (state) (score))) ((0, ((0 : Int), (0 : Int)))) (scores) : (Prod (Nat) ((Prod (Int) (Int)))))).2}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{margin}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(scores : List (Int))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Int}.\par
+\noindent Definition: \texttt{(if (Nat.blt ((LexLeanRuntime.length (scores) : Nat)) (2)) then (0 : Int) else (LexLeanRuntime.subtract ((leaders (scores)).1) ((leaders (scores)).2) : Int))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{decideOr}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(threshold : Int) (scores : List (Int))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Nat)}.\par
+\noindent Definition: \texttt{(if (Nat.blt ((LexLeanRuntime.length (scores) : Nat)) (2)) then Option.none else (if (LexLeanCollections.lessThan (margin (scores)) (threshold) : Bool) then Option.none else Option.some (best (scores))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{best\_first\_maximal}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(best (((3 : Int) :: ((9 : Int) :: ((9 : Int) :: ((4 : Int) :: ([] : List (Int))))))) = 1)}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{margin\_example}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(margin (((3 : Int) :: ((9 : Int) :: ((4 : Int) :: ([] : List (Int)))))) = (5 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{margin\_tie}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(margin (((5 : Int) :: ((5 : Int) :: ([] : List (Int))))) = (0 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{decide\_or\_commits}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(decideOr ((2 : Int)) (((3 : Int) :: ((9 : Int) :: ((4 : Int) :: ([] : List (Int)))))) = Option.some (1))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{decide\_or\_tie\_abstains}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(decideOr ((1 : Int)) (((5 : Int) :: ((5 : Int) :: ([] : List (Int))))) = Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{decide\_or\_single\_abstains}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(decideOr ((0 : Int)) (((7 : Int) :: ([] : List (Int)))) = Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{decide\_or\_empty\_abstains}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(decideOr ((0 : Int)) (([] : List (Int))) = Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{Candidate}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Type parameters: \texttt{(T)}.\par
+\noindent Constructor \texttt{confident}: \texttt{(T)}.\par
+\noindent Constructor \texttt{unsure}: \texttt{(T)}.\par
+\subsection*{\texttt{isConfident}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type parameters: \texttt{(T)}.\par
+\noindent Parameters: \texttt{(candidate : Candidate (T))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match candidate with | Candidate.confident \_ => true | Candidate.unsure \_ => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{verdictOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type parameters: \texttt{(T)}.\par
+\noindent Parameters: \texttt{(candidate : Candidate (T))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (T)}.\par
+\noindent Definition: \texttt{(match candidate with | Candidate.confident value => Option.some (value) | Candidate.unsure \_ => Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{isCommitted}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type parameters: \texttt{(T)}.\par
+\noindent Parameters: \texttt{(verdict : Option (T))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match verdict with | Option.some \_ => true | Option.none => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{Faithful}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type parameters: \texttt{(T)}.\par
+\noindent Parameters: \texttt{(candidate : Candidate (T)) (verdict : Option (T))}.\par
+\noindent Type: \texttt{Prop}.\par
+\noindent Definition: \texttt{(isCommitted (T) (verdict) = isConfident (T) (candidate))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{Gate}}
+\noindent Kind: \texttt{realization}.\par
+\noindent Type parameters: \texttt{(T)}.\par
+\noindent Interface: \texttt{input candidate : Candidate (T), output Option (T)}.\par
+\noindent Deterministic denotation: \texttt{verdictOf (T) (candidate)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{Gate (candidate : Candidate (T)) : Option (T) := verdictOf (T) (candidate)}.\par
+\subsection*{\texttt{gate\_faithful}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Type parameters: \texttt{(T)}.\par
+\noindent Parameters: \texttt{(candidate : Candidate (T))}.\par
+\noindent Statement: \texttt{Faithful (T) (candidate) (Gate (T) (candidate))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{Gating}}
+\noindent Kind: \texttt{contract}.\par
+\noindent Type parameters: \texttt{(T)}.\par
+\noindent Interface: \texttt{input candidate : Candidate (T), output verdict : Option (T)}.\par
+\noindent Postcondition: \texttt{Faithful}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{GateEvidence}}
+\noindent Kind: \texttt{evidence}.\par
+\noindent Type parameters: \texttt{(T)}.\par
+\noindent About: \texttt{realization Gate (T) against contract Gating (T)}.\par
+\noindent Claim: \texttt{satisfies the postcondition under the contract's premises, discharged by gate\_faithful}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\noindent Obligation (evidence GateEvidence claim satisfies\_contract): \texttt{forall (candidate : Candidate (T)), Faithful (T) (candidate) (Gate (T) (candidate)); stated exactly by gate\_faithful}.\par
+\noindent Restated in Lean against the fixed model semantics as: \texttt{GateEvidence.gate\_faithful}.\par
+\subsection*{\texttt{GateModel}}
+\noindent Kind: \texttt{model}.\par
+\noindent Type parameters: \texttt{(T)}.\par
+\noindent Binds: \texttt{contract Gating (T) to realization Gate (T)}.\par
+\noindent Evidence: \texttt{GateEvidence (T)}.\par
+\noindent Runtime checks in executable code: \texttt{none}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\noindent Elaborates to: \texttt{GateModel (\_\_input : Candidate (T)) : Option (T) := Gate (T) (\_\_input)}.\par
+\end{document}

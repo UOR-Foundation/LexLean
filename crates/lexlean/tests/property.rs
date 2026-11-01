@@ -451,6 +451,35 @@ fn copy_example(example: &std::path::Path, temp: &std::path::Path) {
     }
 }
 
+/// The repository-relative directories of the source packages an example
+/// declares, and of those they declare in turn (SPEC.md §10.5), read from the
+/// manifests rather than listed.
+fn package_directories(root: &std::path::Path, example: &std::path::Path) -> Vec<String> {
+    let read = |directory: &std::path::Path| {
+        let bytes = std::fs::read(directory.join("lexlean.toml")).expect("manifest");
+        lexlean::config::parse_project("lexlean.toml", &bytes).expect("the manifest parses")
+    };
+    let mut found: Vec<String> = Vec::new();
+    let mut pending: Vec<String> = read(example)
+        .source_packages
+        .iter()
+        .map(|package| package.path.clone())
+        .collect();
+    while let Some(path) = pending.pop() {
+        if found.contains(&path) {
+            continue;
+        }
+        pending.extend(
+            read(&root.join(&path))
+                .source_packages
+                .iter()
+                .map(|package| package.path.clone()),
+        );
+        found.push(path);
+    }
+    found
+}
+
 /// Every `.lex.tex` module of an example, relative to the example root,
 /// with its committed source.
 fn example_modules(example: &std::path::Path) -> BTreeMap<String, String> {
@@ -508,12 +537,35 @@ fn formatter_is_idempotent_on_every_example() {
         assert!(!modules.is_empty(), "{}: modules", example.display());
         for (label, variant) in variants {
             let temp = tempfile::tempdir().expect("tempdir");
-            copy_example(example, temp.path());
+            // An example that imports source packages (SPEC.md §10.5) is
+            // staged at its repository-relative path beside the workspace
+            // file and the packages, so they resolve as they do in the
+            // checkout; any other example is staged alone.
+            let imports_packages = std::fs::read_to_string(example.join("lexlean.toml"))
+                .expect("manifest")
+                .contains("[[source_package]]");
+            let staged = if imports_packages {
+                std::fs::copy(
+                    root.join("lexlean-workspace.toml"),
+                    temp.path().join("lexlean-workspace.toml"),
+                )
+                .expect("workspace file");
+                for package in package_directories(&root, example) {
+                    std::fs::create_dir_all(temp.path().join(&package)).expect("mkdir");
+                    copy_example(&root.join(&package), &temp.path().join(&package));
+                }
+                temp.path()
+                    .join(example.strip_prefix(&root).expect("under the root"))
+            } else {
+                temp.path().to_path_buf()
+            };
+            std::fs::create_dir_all(&staged).expect("mkdir");
+            copy_example(example, &staged);
             for (relative, source) in &modules {
-                std::fs::write(temp.path().join(relative), variant(source)).expect("write");
+                std::fs::write(staged.join(relative), variant(source)).expect("write");
             }
             let config =
-                camino::Utf8PathBuf::from_path_buf(temp.path().join("lexlean.toml")).expect("utf8");
+                camino::Utf8PathBuf::from_path_buf(staged.join("lexlean.toml")).expect("utf8");
             let engine = lexlean::Engine::load(&config).expect("loads");
             let format = |engine: &lexlean::Engine| {
                 engine
@@ -531,7 +583,7 @@ fn formatter_is_idempotent_on_every_example() {
                 .map(|relative| {
                     (
                         relative.clone(),
-                        std::fs::read_to_string(temp.path().join(relative)).expect("read"),
+                        std::fs::read_to_string(staged.join(relative)).expect("read"),
                     )
                 })
                 .collect();
@@ -541,7 +593,7 @@ fn formatter_is_idempotent_on_every_example() {
                 .map(|relative| {
                     (
                         relative.clone(),
-                        std::fs::read_to_string(temp.path().join(relative)).expect("read"),
+                        std::fs::read_to_string(staged.join(relative)).expect("read"),
                     )
                 })
                 .collect();

@@ -1,0 +1,61 @@
+\begin{lexlean}{Main}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{helpdesk.titles@1.0.0}
+\importmodule{LexLeanStd.Text}
+\importmodule{LexLeanStdModels.Scores}
+\importmodule{Reply}
+\importmodule{Router}
+\title{Helpdesk dispatch}
+\begin{semanticmodule}
+definition{name: threshold, parameters: [], result: Int, body: (2 : Int), executable: true}
+
+definition{
+  name: committed,
+  parameters: [seen : (Option Nat)],
+  result: Bool,
+  body: (match seen | Option.some index => true | Option.none => false),
+  executable: true
+}
+
+definition{
+  name: classify,
+  parameters: [request : Bytes],
+  result: Nat,
+  body: (match (checked Router::ScoringModel (LexLeanStd.Text::trim request) with [precondition])
+    | Result.ok scores => (match (LexLeanStdModels.Scores::decideOr (threshold) scores)
+      | Option.some index => index
+      | Option.none => 8)
+    | Result.error violation => 9),
+  axioms: [propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: plan,
+  parameters: [code : Nat],
+  result: Nat,
+  body: (Reply::stepsFor (Router::topicAt code)),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: dispatch,
+  parameters: [request : Bytes],
+  result: Bytes,
+  body: (match (checked Router::ScoringModel (LexLeanStd.Text::trim request) with [precondition])
+    | Result.ok scores => (let topic : Router::Topic := (Router::topicAt (LexLeanStdModels.Scores::best scores)); (match (LexLeanStdModels.Scores::GateModel [Router::Topic] (if (committed (LexLeanStdModels.Scores::decideOr (threshold) scores)) then (ctor LexLeanStdModels.Scores::Candidate.confident [Router::Topic] topic) else (ctor LexLeanStdModels.Scores::Candidate.unsure [Router::Topic] topic)))
+      | Option.some answered => (Reply::message answered)
+      | Option.none => 0x68756d616e))
+    | Result.error violation => 0x72656675736564),
+  axioms: [propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+theorem{name: plan_outage, parameters: [], statement: ((plan 0) = 2), proof: reflexivity{}}
+
+theorem{name: plan_access, parameters: [], statement: ((plan 2) = 1), proof: reflexivity{}}
+\end{semanticmodule}
+\end{lexlean}

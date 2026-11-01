@@ -1,0 +1,1499 @@
+\begin{lexlean}{RustLists}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{RustMemory}
+\importmodule{TargetSyntax}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: Store,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: SEmpty, fields: []}, {name: SCons, fields: [RustMemory::Buf, Store]}]
+}
+
+inductive{
+  name: Terminal,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: TNil, fields: []}, {name: TRun, fields: [Nat, Nat]}]
+}
+
+structure{
+  name: Handle,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: spine, type: (List TargetSyntax::Value)}, {name: base, type: Terminal}]
+}
+
+structure{
+  name: Taken,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: head, type: TargetSyntax::Value}, {name: rest, type: Handle}]
+}
+
+structure{
+  name: World,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: store, type: Store}, {name: handle, type: Handle}]
+}
+
+inductive{
+  name: Landing,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: Landed, fields: [World]}, {name: Full, fields: []}]
+}
+
+definition{
+  name: absRun,
+  parameters: [cells : RustMemory::Cells, length : Nat, onto : (List TargetSyntax::Value)],
+  result: (List TargetSyntax::Value),
+  body: (match length
+    | Nat.zero => onto
+    | Nat.succ less => (match cells
+      | RustMemory::Cells.CNil => onto
+      | RustMemory::Cells.CCons head tail => (absRun tail less (cons head onto)))),
+  recursive_argument: length
+}
+
+definition{
+  name: unconsAbs,
+  parameters: [
+    found : (Option TargetSyntax::Value),
+    rest : (List TargetSyntax::Value),
+    otherwise : (List TargetSyntax::Value)
+  ],
+  result: (List TargetSyntax::Value),
+  body: (match found | Option.none => otherwise | Option.some head => (cons head rest))
+}
+
+definition{
+  name: flagPick,
+  parameters: [
+    flag : RustMemory::Flag,
+    whenYes : (List TargetSyntax::Value),
+    whenNo : (List TargetSyntax::Value)
+  ],
+  result: (List TargetSyntax::Value),
+  body: (match flag | RustMemory::Flag.yes => whenYes | RustMemory::Flag.no => whenNo)
+}
+
+definition{
+  name: flipFlag,
+  parameters: [flag : RustMemory::Flag],
+  result: RustMemory::Flag,
+  body: (match flag
+    | RustMemory::Flag.yes => (ctor RustMemory::Flag.no)
+    | RustMemory::Flag.no => (ctor RustMemory::Flag.yes))
+}
+
+theorem{
+  name: push_run_abs,
+  parameters: [
+    cells : RustMemory::Cells,
+    item : TargetSyntax::Value,
+    length : Nat,
+    onto : (List TargetSyntax::Value)
+  ],
+  statement: ((flagPick (RustMemory::lessThan length (RustMemory::size cells)) (absRun (RustMemory::put cells length item) (length + 1) onto) (absRun cells (length + 1) onto)) = (flagPick (RustMemory::lessThan length (RustMemory::size cells)) (cons item (absRun cells length onto)) (absRun cells (length + 1) onto))),
+  proof: induction{
+    branches: [
+      {
+        proof: simplify{definitions: [absRun, flagPick, RustMemory::lessThan, RustMemory::size]},
+        binders: [],
+        constructor: CNil
+      },
+      {
+        proof: cases{
+          branches: [
+            {
+              proof: simplify{
+                definitions: [
+                  absRun,
+                  flagPick,
+                  RustMemory::lessThan,
+                  RustMemory::put,
+                  RustMemory::size
+                ]
+              },
+              binders: [],
+              constructor: zero
+            },
+            {
+              proof: simplify{
+                definitions: [
+                  absRun,
+                  hypothesis,
+                  RustMemory::lessThan,
+                  RustMemory::put,
+                  RustMemory::size
+                ]
+              },
+              binders: [lower],
+              constructor: succ
+            }
+          ],
+          scrutinee: length
+        },
+        binders: [head, tail, hypothesis],
+        constructor: CCons
+      }
+    ],
+    generalizing: [length, onto],
+    scrutinee: cells
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: run_uncons_abs,
+  parameters: [cells : RustMemory::Cells, length : Nat, onto : (List TargetSyntax::Value)],
+  statement: ((absRun cells (length + 1) onto) = (unconsAbs (RustMemory::get cells length) (absRun cells length onto) (absRun cells length onto))),
+  proof: induction{
+    branches: [
+      {
+        proof: cases{
+          branches: [
+            {
+              proof: simplify{definitions: [absRun, unconsAbs, RustMemory::get]},
+              binders: [],
+              constructor: CNil
+            },
+            {
+              proof: simplify{definitions: [absRun, unconsAbs, RustMemory::get]},
+              binders: [head, tail],
+              constructor: CCons
+            }
+          ],
+          scrutinee: cells
+        },
+        binders: [],
+        constructor: zero
+      },
+      {
+        proof: cases{
+          branches: [
+            {
+              proof: simplify{definitions: [absRun, unconsAbs, RustMemory::get]},
+              binders: [],
+              constructor: CNil
+            },
+            {
+              proof: simplify{definitions: [absRun, hypothesis, unconsAbs, RustMemory::get]},
+              binders: [head, tail],
+              constructor: CCons
+            }
+          ],
+          scrutinee: cells
+        },
+        binders: [less, hypothesis],
+        constructor: succ
+      }
+    ],
+    generalizing: [cells, onto],
+    scrutinee: length
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: run_last_abs,
+  parameters: [cells : RustMemory::Cells, onto : (List TargetSyntax::Value)],
+  statement: ((absRun cells 1 onto) = (unconsAbs (RustMemory::get cells 0) onto onto)),
+  proof: cases{
+    branches: [
+      {
+        proof: simplify{definitions: [absRun, unconsAbs, RustMemory::get]},
+        binders: [],
+        constructor: CNil
+      },
+      {
+        proof: simplify{definitions: [absRun, unconsAbs, RustMemory::get]},
+        binders: [head, tail],
+        constructor: CCons
+      }
+    ],
+    scrutinee: cells
+  },
+  axioms: [propext]
+}
+
+definition{
+  name: growBuf,
+  parameters: [buf : RustMemory::Buf, extra : Nat, fill : TargetSyntax::Value],
+  result: RustMemory::Buf,
+  body: (record RustMemory::Buf {slots := (RustMemory::append (project buf slots) (RustMemory::blank extra fill)), len := (project buf len)})
+}
+
+theorem{
+  name: append_run_abs,
+  parameters: [
+    front : RustMemory::Cells,
+    back : RustMemory::Cells,
+    filler : RustMemory::Cells,
+    onto : (List TargetSyntax::Value)
+  ],
+  statement: ((absRun (RustMemory::append (RustMemory::append front back) filler) (RustMemory::size front) onto) = (absRun (RustMemory::append front back) (RustMemory::size front) onto)),
+  proof: induction{
+    branches: [
+      {
+        proof: simplify{definitions: [absRun, RustMemory::append, RustMemory::size]},
+        binders: [],
+        constructor: CNil
+      },
+      {
+        proof: simplify{definitions: [absRun, hypothesis, RustMemory::append, RustMemory::size]},
+        binders: [head, tail, hypothesis],
+        constructor: CCons
+      }
+    ],
+    generalizing: [onto],
+    scrutinee: front
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: grow_run_abs,
+  parameters: [
+    front : RustMemory::Cells,
+    back : RustMemory::Cells,
+    used : Nat,
+    extra : Nat,
+    fill : TargetSyntax::Value,
+    onto : (List TargetSyntax::Value)
+  ],
+  statement: ((absRun (project (growBuf (record RustMemory::Buf {slots := (RustMemory::append front back), len := used}) extra fill) slots) (RustMemory::size front) onto) = (absRun (RustMemory::append front back) (RustMemory::size front) onto)),
+  proof: apply{
+    arguments: [front, back, (RustMemory::blank extra fill), onto],
+    theorem: append_run_abs
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: room_after_growth,
+  parameters: [cells : RustMemory::Cells, extra : Nat, fill : TargetSyntax::Value],
+  statement: ((RustMemory::lessThan (RustMemory::size cells) (RustMemory::size (RustMemory::append cells (RustMemory::blank (extra + 1) fill)))) = (ctor RustMemory::Flag.yes)),
+  proof: induction{
+    branches: [
+      {
+        proof: simplify{
+          definitions: [
+            RustMemory::append,
+            RustMemory::blank,
+            RustMemory::lessThan,
+            RustMemory::size
+          ]
+        },
+        binders: [],
+        constructor: CNil
+      },
+      {
+        proof: simplify{
+          definitions: [hypothesis, RustMemory::append, RustMemory::lessThan, RustMemory::size]
+        },
+        binders: [head, tail, hypothesis],
+        constructor: CCons
+      }
+    ],
+    scrutinee: cells
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: grown_has_room,
+  parameters: [cells : RustMemory::Cells, extra : Nat, fill : TargetSyntax::Value],
+  statement: ((RustMemory::lessThan (project (record RustMemory::Buf {slots := cells, len := (RustMemory::size cells)}) len) (RustMemory::size (project (growBuf (record RustMemory::Buf {slots := cells, len := (RustMemory::size cells)}) (extra + 1) fill) slots))) = (ctor RustMemory::Flag.yes)),
+  proof: apply{arguments: [cells, extra, fill], theorem: room_after_growth},
+  axioms: [propext]
+}
+
+theorem{
+  name: min_keeps_run,
+  parameters: [length : Nat, gap : Nat],
+  statement: ((RustMemory::minNat length (RustMemory::plus length gap)) = length),
+  proof: induction{
+    branches: [
+      {proof: simplify{definitions: [RustMemory::minNat]}, binders: [], constructor: zero},
+      {
+        proof: simplify{definitions: [hypothesis, RustMemory::minNat, RustMemory::plus]},
+        binders: [less, hypothesis],
+        constructor: succ
+      }
+    ],
+    scrutinee: length
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: truncate_keeps_run,
+  parameters: [cells : RustMemory::Cells, length : Nat, gap : Nat],
+  statement: ((project (RustMemory::bufTruncate (record RustMemory::Buf {slots := cells, len := (RustMemory::plus length gap)}) length) len) = length),
+  proof: simplify{definitions: [min_keeps_run, RustMemory::bufTruncate]},
+  axioms: [propext]
+}
+
+definition{
+  name: runWalk,
+  parameters: [store : Store, address : Nat, length : Nat, onto : (List TargetSyntax::Value)],
+  result: (List TargetSyntax::Value),
+  body: (match store
+    | Store.SEmpty => (absRun (ctor RustMemory::Cells.CNil) length onto)
+    | Store.SCons b rest => (match address
+      | Nat.zero => (absRun (project b slots) length onto)
+      | Nat.succ lower => (runWalk rest lower length onto))),
+  recursive_argument: store
+}
+
+definition{
+  name: headAt,
+  parameters: [store : Store, address : Nat, slot : Nat],
+  result: (Option TargetSyntax::Value),
+  body: (match store
+    | Store.SEmpty => (ctor Option.none [TargetSyntax::Value])
+    | Store.SCons b rest => (match address
+      | Nat.zero => (RustMemory::get (project b slots) slot)
+      | Nat.succ lower => (headAt rest lower slot))),
+  recursive_argument: store
+}
+
+definition{
+  name: bufAt,
+  parameters: [store : Store, address : Nat],
+  result: RustMemory::Buf,
+  body: (match store
+    | Store.SEmpty => (record RustMemory::Buf {slots := (ctor RustMemory::Cells.CNil), len := 0})
+    | Store.SCons b rest => (match address | Nat.zero => b | Nat.succ lower => (bufAt rest lower))),
+  recursive_argument: store
+}
+
+definition{
+  name: keepOr,
+  parameters: [result : (Option RustMemory::Buf), old : RustMemory::Buf],
+  result: RustMemory::Buf,
+  body: (match result | Option.none => old | Option.some got => got)
+}
+
+definition{
+  name: consIn,
+  parameters: [store : Store, address : Nat, length : Nat, item : TargetSyntax::Value],
+  result: Store,
+  body: (match store
+    | Store.SEmpty => (ctor Store.SEmpty)
+    | Store.SCons b rest => (match address
+      | Nat.zero => (ctor Store.SCons (keepOr (RustMemory::bufPush (RustMemory::bufTruncate b length) item) b) rest)
+      | Nat.succ lower => (ctor Store.SCons b (consIn rest lower length item)))),
+  recursive_argument: store
+}
+
+definition{
+  name: isFull,
+  parameters: [buf : RustMemory::Buf, length : Nat, item : TargetSyntax::Value],
+  result: RustMemory::Flag,
+  body: (match (RustMemory::bufPush (RustMemory::bufTruncate buf length) item)
+    | Option.none => (ctor RustMemory::Flag.yes)
+    | Option.some got => (ctor RustMemory::Flag.no))
+}
+
+definition{
+  name: storeLen,
+  parameters: [store : Store],
+  result: Nat,
+  body: (match store | Store.SEmpty => 0 | Store.SCons b rest => ((storeLen rest) + 1)),
+  recursive_argument: store
+}
+
+definition{
+  name: storeSnoc,
+  parameters: [store : Store, buf : RustMemory::Buf],
+  result: Store,
+  body: (match store
+    | Store.SEmpty => (ctor Store.SCons buf (ctor Store.SEmpty))
+    | Store.SCons b rest => (ctor Store.SCons b (storeSnoc rest buf))),
+  recursive_argument: store
+}
+
+definition{
+  name: allocBuf,
+  parameters: [item : TargetSyntax::Value],
+  result: RustMemory::Buf,
+  body: (record RustMemory::Buf {slots := (ctor RustMemory::Cells.CCons item (RustMemory::blank 15 item)), len := 1})
+}
+
+theorem{
+  name: alloc_capacity,
+  parameters: [item : TargetSyntax::Value],
+  statement: ((RustMemory::size (project (allocBuf item) slots)) = 16),
+  proof: reflexivity{},
+  axioms: []
+}
+
+theorem{
+  name: alloc_length,
+  parameters: [item : TargetSyntax::Value],
+  statement: ((project (allocBuf item) len) = 1),
+  proof: reflexivity{},
+  axioms: []
+}
+
+theorem{
+  name: walk_cons,
+  parameters: [
+    store : Store,
+    address : Nat,
+    length : Nat,
+    item : TargetSyntax::Value,
+    onto : (List TargetSyntax::Value)
+  ],
+  statement: ((runWalk (consIn store address length item) address ((RustMemory::minNat length (project (bufAt store address) len)) + 1) onto) = (flagPick (RustMemory::lessThan (RustMemory::minNat length (project (bufAt store address) len)) (RustMemory::size (project (bufAt store address) slots))) (absRun (RustMemory::put (project (bufAt store address) slots) (RustMemory::minNat length (project (bufAt store address) len)) item) ((RustMemory::minNat length (project (bufAt store address) len)) + 1) onto) (absRun (project (bufAt store address) slots) ((RustMemory::minNat length (project (bufAt store address) len)) + 1) onto))),
+  proof: induction{
+    branches: [
+      {
+        proof: cases{
+          branches: [
+            {
+              proof: simplify{
+                definitions: [
+                  absRun,
+                  bufAt,
+                  consIn,
+                  flagPick,
+                  runWalk,
+                  RustMemory::lessThan,
+                  RustMemory::minNat,
+                  RustMemory::size
+                ]
+              },
+              binders: [],
+              constructor: zero
+            },
+            {
+              proof: simplify{
+                definitions: [
+                  absRun,
+                  bufAt,
+                  consIn,
+                  flagPick,
+                  runWalk,
+                  RustMemory::lessThan,
+                  RustMemory::minNat,
+                  RustMemory::size
+                ]
+              },
+              binders: [lower],
+              constructor: succ
+            }
+          ],
+          scrutinee: length
+        },
+        binders: [],
+        constructor: SEmpty
+      },
+      {
+        proof: cases{
+          branches: [
+            {
+              proof: term_cases{
+                definitions: [
+                  RustMemory::bufPush,
+                  RustMemory::bufTruncate,
+                  bufAt,
+                  consIn,
+                  flagPick,
+                  keepOr,
+                  runWalk
+                ],
+                scrutinee: (RustMemory::lessThan (RustMemory::minNat length (project b len)) (RustMemory::size (project b slots)))
+              },
+              binders: [],
+              constructor: zero
+            },
+            {
+              proof: simplify{definitions: [bufAt, consIn, hypothesis, runWalk]},
+              binders: [lower],
+              constructor: succ
+            }
+          ],
+          scrutinee: address
+        },
+        binders: [b, rest, hypothesis],
+        constructor: SCons
+      }
+    ],
+    generalizing: [address],
+    scrutinee: store
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: put_run_abs,
+  parameters: [
+    front : RustMemory::Cells,
+    old : TargetSyntax::Value,
+    back : RustMemory::Cells,
+    item : TargetSyntax::Value,
+    onto : (List TargetSyntax::Value)
+  ],
+  statement: ((absRun (RustMemory::put (RustMemory::append front (ctor RustMemory::Cells.CCons old back)) (RustMemory::size front) item) ((RustMemory::size front) + 1) onto) = (cons item (absRun (RustMemory::append front (ctor RustMemory::Cells.CCons old back)) (RustMemory::size front) onto))),
+  proof: induction{
+    branches: [
+      {
+        proof: simplify{
+          definitions: [absRun, RustMemory::append, RustMemory::put, RustMemory::size]
+        },
+        binders: [],
+        constructor: CNil
+      },
+      {
+        proof: simplify{
+          definitions: [absRun, hypothesis, RustMemory::append, RustMemory::put, RustMemory::size]
+        },
+        binders: [head, tail, hypothesis],
+        constructor: CCons
+      }
+    ],
+    generalizing: [onto],
+    scrutinee: front
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: cons_frame,
+  parameters: [
+    store : Store,
+    address : Nat,
+    length : Nat,
+    item : TargetSyntax::Value,
+    other : Nat,
+    shown : Nat,
+    onto : (List TargetSyntax::Value)
+  ],
+  statement: ((runWalk (consIn store address length item) other shown onto) = (flagPick (RustMemory::sameNat address other) (absRun (project (bufAt (consIn store address length item) address) slots) shown onto) (runWalk store other shown onto))),
+  proof: induction{
+    branches: [
+      {
+        proof: term_cases{
+          definitions: [bufAt, consIn, flagPick, runWalk],
+          scrutinee: (RustMemory::sameNat address other)
+        },
+        binders: [],
+        constructor: SEmpty
+      },
+      {
+        proof: cases{
+          branches: [
+            {
+              proof: cases{
+                branches: [
+                  {
+                    proof: simplify{
+                      definitions: [bufAt, consIn, flagPick, runWalk, RustMemory::sameNat]
+                    },
+                    binders: [],
+                    constructor: zero
+                  },
+                  {
+                    proof: simplify{definitions: [consIn, flagPick, runWalk, RustMemory::sameNat]},
+                    binders: [lowerOther],
+                    constructor: succ
+                  }
+                ],
+                scrutinee: other
+              },
+              binders: [],
+              constructor: zero
+            },
+            {
+              proof: cases{
+                branches: [
+                  {
+                    proof: simplify{definitions: [consIn, flagPick, runWalk, RustMemory::sameNat]},
+                    binders: [],
+                    constructor: zero
+                  },
+                  {
+                    proof: simplify{
+                      definitions: [bufAt, consIn, hypothesis, runWalk, RustMemory::sameNat]
+                    },
+                    binders: [lowerOther],
+                    constructor: succ
+                  }
+                ],
+                scrutinee: other
+              },
+              binders: [lower],
+              constructor: succ
+            }
+          ],
+          scrutinee: address
+        },
+        binders: [b, rest, hypothesis],
+        constructor: SCons
+      }
+    ],
+    generalizing: [address, other],
+    scrutinee: store
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: full_is_capacity,
+  parameters: [buf : RustMemory::Buf, length : Nat, item : TargetSyntax::Value],
+  statement: ((isFull buf length item) = (flipFlag (RustMemory::lessThan (RustMemory::minNat length (project buf len)) (RustMemory::size (project buf slots))))),
+  proof: term_cases{
+    definitions: [RustMemory::bufPush, RustMemory::bufTruncate, flipFlag, isFull],
+    scrutinee: (RustMemory::lessThan (RustMemory::minNat length (project buf len)) (RustMemory::size (project buf slots)))
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: walk_alloc,
+  parameters: [store : Store, item : TargetSyntax::Value],
+  statement: ((runWalk (storeSnoc store (allocBuf item)) (storeLen store) 1 (nil TargetSyntax::Value)) = (cons item (nil TargetSyntax::Value))),
+  proof: induction{
+    branches: [
+      {
+        proof: simplify{
+          definitions: [absRun, allocBuf, runWalk, storeLen, storeSnoc, RustMemory::blank]
+        },
+        binders: [],
+        constructor: SEmpty
+      },
+      {
+        proof: simplify{definitions: [hypothesis, runWalk, storeLen, storeSnoc]},
+        binders: [b, rest, hypothesis],
+        constructor: SCons
+      }
+    ],
+    scrutinee: store
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: alloc_frame,
+  parameters: [
+    store : Store,
+    buf : RustMemory::Buf,
+    other : Nat,
+    shown : Nat,
+    onto : (List TargetSyntax::Value)
+  ],
+  statement: ((runWalk (storeSnoc store buf) other shown onto) = (flagPick (RustMemory::lessThan other (storeLen store)) (runWalk store other shown onto) (absRun (project (bufAt (storeSnoc store buf) other) slots) shown onto))),
+  proof: induction{
+    branches: [
+      {
+        proof: cases{
+          branches: [
+            {
+              proof: simplify{
+                definitions: [bufAt, flagPick, runWalk, storeLen, storeSnoc, RustMemory::lessThan]
+              },
+              binders: [],
+              constructor: zero
+            },
+            {
+              proof: simplify{
+                definitions: [bufAt, flagPick, runWalk, storeLen, storeSnoc, RustMemory::lessThan]
+              },
+              binders: [lowerOther],
+              constructor: succ
+            }
+          ],
+          scrutinee: other
+        },
+        binders: [],
+        constructor: SEmpty
+      },
+      {
+        proof: cases{
+          branches: [
+            {
+              proof: simplify{
+                definitions: [flagPick, runWalk, storeLen, storeSnoc, RustMemory::lessThan]
+              },
+              binders: [],
+              constructor: zero
+            },
+            {
+              proof: simplify{
+                definitions: [bufAt, hypothesis, runWalk, storeLen, storeSnoc, RustMemory::lessThan]
+              },
+              binders: [lowerOther],
+              constructor: succ
+            }
+          ],
+          scrutinee: other
+        },
+        binders: [b, rest, hypothesis],
+        constructor: SCons
+      }
+    ],
+    generalizing: [other],
+    scrutinee: store
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: walk_uncons,
+  parameters: [store : Store, address : Nat, slot : Nat, onto : (List TargetSyntax::Value)],
+  statement: ((runWalk store address (slot + 1) onto) = (unconsAbs (headAt store address slot) (runWalk store address slot onto) (runWalk store address slot onto))),
+  proof: induction{
+    branches: [
+      {
+        proof: cases{
+          branches: [
+            {
+              proof: simplify{definitions: [absRun, headAt, runWalk, unconsAbs]},
+              binders: [],
+              constructor: zero
+            },
+            {
+              proof: simplify{definitions: [absRun, headAt, runWalk, unconsAbs]},
+              binders: [less],
+              constructor: succ
+            }
+          ],
+          scrutinee: slot
+        },
+        binders: [],
+        constructor: SEmpty
+      },
+      {
+        proof: cases{
+          branches: [
+            {
+              proof: apply{arguments: [(project b slots), slot, onto], theorem: run_uncons_abs},
+              binders: [],
+              constructor: zero
+            },
+            {
+              proof: simplify{definitions: [headAt, hypothesis, runWalk]},
+              binders: [lower],
+              constructor: succ
+            }
+          ],
+          scrutinee: address
+        },
+        binders: [b, rest, hypothesis],
+        constructor: SCons
+      }
+    ],
+    generalizing: [address],
+    scrutinee: store
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: walk_uncons_last,
+  parameters: [store : Store, address : Nat, onto : (List TargetSyntax::Value)],
+  statement: ((runWalk store address 1 onto) = (unconsAbs (headAt store address 0) onto onto)),
+  proof: induction{
+    branches: [
+      {
+        proof: simplify{definitions: [absRun, headAt, runWalk, unconsAbs]},
+        binders: [],
+        constructor: SEmpty
+      },
+      {
+        proof: cases{
+          branches: [
+            {
+              proof: apply{arguments: [(project b slots), onto], theorem: run_last_abs},
+              binders: [],
+              constructor: zero
+            },
+            {
+              proof: simplify{definitions: [headAt, hypothesis, runWalk]},
+              binders: [lower],
+              constructor: succ
+            }
+          ],
+          scrutinee: address
+        },
+        binders: [b, rest, hypothesis],
+        constructor: SCons
+      }
+    ],
+    generalizing: [address],
+    scrutinee: store
+  },
+  axioms: [propext]
+}
+
+definition{
+  name: listAppend,
+  parameters: [front : (List TargetSyntax::Value), back : (List TargetSyntax::Value)],
+  result: (List TargetSyntax::Value),
+  body: (match front
+    | List.nil => back
+    | List.cons head tail => (cons head (listAppend tail back))),
+  recursive_argument: front
+}
+
+definition{
+  name: absTerm,
+  parameters: [store : Store, base : Terminal],
+  result: (List TargetSyntax::Value),
+  body: (match base
+    | Terminal.TNil => (nil TargetSyntax::Value)
+    | Terminal.TRun address more => (runWalk store address (more + 1) (nil TargetSyntax::Value)))
+}
+
+definition{
+  name: absHandle,
+  parameters: [store : Store, handle : Handle],
+  result: (List TargetSyntax::Value),
+  body: (listAppend (project handle spine) (absTerm store (project handle base)))
+}
+
+definition{
+  name: holds,
+  parameters: [address : Nat, handle : Handle],
+  result: RustMemory::Flag,
+  body: (match (project handle base)
+    | Terminal.TNil => (ctor RustMemory::Flag.no)
+    | Terminal.TRun there more => (RustMemory::sameNat address there))
+}
+
+definition{
+  name: notAlone,
+  parameters: [held : RustMemory::Flag, otherwise : RustMemory::Flag],
+  result: RustMemory::Flag,
+  body: (match held
+    | RustMemory::Flag.yes => (ctor RustMemory::Flag.no)
+    | RustMemory::Flag.no => otherwise)
+}
+
+definition{
+  name: aloneOn,
+  parameters: [address : Nat, others : (List Handle)],
+  result: RustMemory::Flag,
+  body: (match others
+    | List.nil => (ctor RustMemory::Flag.yes)
+    | List.cons lead rest => (notAlone (holds address lead) (aloneOn address rest))),
+  recursive_argument: others
+}
+
+definition{
+  name: inPlace,
+  parameters: [store : Store, address : Nat, length : Nat, item : TargetSyntax::Value],
+  result: Landing,
+  body: (match (isFull (bufAt store address) length item)
+    | RustMemory::Flag.yes => (ctor Landing.Full)
+    | RustMemory::Flag.no => (ctor Landing.Landed (record World {store := (consIn store address length item), handle := (record Handle {spine := (nil TargetSyntax::Value), base := (ctor Terminal.TRun address (project (RustMemory::bufTruncate (bufAt store address) length) len))})})))
+}
+
+definition{
+  name: sharedCons,
+  parameters: [store : Store, address : Nat, more : Nat, item : TargetSyntax::Value],
+  result: Landing,
+  body: (ctor Landing.Landed (record World {store := store, handle := (record Handle {spine := (cons item (nil TargetSyntax::Value)), base := (ctor Terminal.TRun address more)})}))
+}
+
+definition{
+  name: consWorld,
+  parameters: [store : Store, others : (List Handle), item : TargetSyntax::Value, handle : Handle],
+  result: Landing,
+  body: (match (project handle spine)
+    | List.nil => (match (project handle base)
+      | Terminal.TNil => (ctor Landing.Landed (record World {store := (storeSnoc store (allocBuf item)), handle := (record Handle {spine := (nil TargetSyntax::Value), base := (ctor Terminal.TRun (storeLen store) 0)})}))
+      | Terminal.TRun address more => (match (aloneOn address others)
+        | RustMemory::Flag.yes => (inPlace store address (more + 1) item)
+        | RustMemory::Flag.no => (sharedCons store address more item)))
+    | List.cons front rest => (ctor Landing.Landed (record World {store := store, handle := (record Handle {spine := (cons item (cons front rest)), base := (project handle base)})})))
+}
+
+definition{
+  name: view,
+  parameters: [landing : Landing, before : (List TargetSyntax::Value)],
+  result: (List TargetSyntax::Value),
+  body: (match landing
+    | Landing.Full => before
+    | Landing.Landed won => (absHandle (project won store) (project won handle)))
+}
+
+definition{
+  name: storeOf,
+  parameters: [landing : Landing, before : Store],
+  result: Store,
+  body: (match landing | Landing.Full => before | Landing.Landed won => (project won store))
+}
+
+definition{
+  name: unconsHandle,
+  parameters: [store : Store, handle : Handle],
+  result: (Option Taken),
+  body: (match (project handle spine)
+    | List.nil => (match (project handle base)
+      | Terminal.TNil => (ctor Option.none [Taken])
+      | Terminal.TRun address more => (match (headAt store address more)
+        | Option.none => (ctor Option.none [Taken])
+        | Option.some found => (ctor Option.some [Taken] (record Taken {head := found, rest := (record Handle {spine := (nil TargetSyntax::Value), base := (match more
+          | Nat.zero => (ctor Terminal.TNil)
+          | Nat.succ less => (ctor Terminal.TRun address less))})}))))
+    | List.cons front rest => (ctor Option.some [Taken] (record Taken {head := front, rest := (record Handle {spine := rest, base := (project handle base)})})))
+}
+
+definition{
+  name: takenFrom,
+  parameters: [found : (Option TargetSyntax::Value), rest : Handle],
+  result: (Option Taken),
+  body: (match found
+    | Option.none => (ctor Option.none [Taken])
+    | Option.some got => (ctor Option.some [Taken] (record Taken {head := got, rest := rest})))
+}
+
+theorem{
+  name: cons_cell_view,
+  parameters: [
+    store : Store,
+    others : (List Handle),
+    item : TargetSyntax::Value,
+    front : TargetSyntax::Value,
+    rest : (List TargetSyntax::Value),
+    base : Terminal
+  ],
+  statement: ((view (consWorld store others item (record Handle {spine := (cons front rest), base := base})) (absHandle store (record Handle {spine := (cons front rest), base := base}))) = (cons item (absHandle store (record Handle {spine := (cons front rest), base := base})))),
+  proof: simplify{definitions: [absHandle, absTerm, consWorld, listAppend, view]},
+  axioms: [propext]
+}
+
+theorem{
+  name: cons_cell_store,
+  parameters: [
+    store : Store,
+    others : (List Handle),
+    item : TargetSyntax::Value,
+    front : TargetSyntax::Value,
+    rest : (List TargetSyntax::Value),
+    base : Terminal
+  ],
+  statement: ((storeOf (consWorld store others item (record Handle {spine := (cons front rest), base := base})) store) = store),
+  proof: simplify{definitions: [consWorld, storeOf]},
+  axioms: [propext]
+}
+
+theorem{
+  name: cons_alloc_view,
+  parameters: [store : Store, others : (List Handle), item : TargetSyntax::Value],
+  statement: ((view (consWorld store others item (record Handle {spine := (nil TargetSyntax::Value), base := (ctor Terminal.TNil)})) (absHandle store (record Handle {spine := (nil TargetSyntax::Value), base := (ctor Terminal.TNil)}))) = (cons item (absHandle store (record Handle {spine := (nil TargetSyntax::Value), base := (ctor Terminal.TNil)})))),
+  proof: apply{arguments: [store, item], theorem: walk_alloc},
+  axioms: [propext]
+}
+
+theorem{
+  name: cons_alloc_store,
+  parameters: [store : Store, others : (List Handle), item : TargetSyntax::Value],
+  statement: ((storeOf (consWorld store others item (record Handle {spine := (nil TargetSyntax::Value), base := (ctor Terminal.TNil)})) store) = (storeSnoc store (allocBuf item))),
+  proof: simplify{definitions: [consWorld, storeOf]},
+  axioms: [propext]
+}
+
+theorem{
+  name: cons_view,
+  parameters: [
+    store : Store,
+    others : (List Handle),
+    item : TargetSyntax::Value,
+    address : Nat,
+    more : Nat
+  ],
+  statement: ((view (consWorld store others item (record Handle {spine := (nil TargetSyntax::Value), base := (ctor Terminal.TRun address more)})) (absHandle store (record Handle {spine := (nil TargetSyntax::Value), base := (ctor Terminal.TRun address more)}))) = (flagPick (aloneOn address others) (view (inPlace store address (more + 1) item) (absHandle store (record Handle {spine := (nil TargetSyntax::Value), base := (ctor Terminal.TRun address more)}))) (cons item (absHandle store (record Handle {spine := (nil TargetSyntax::Value), base := (ctor Terminal.TRun address more)}))))),
+  proof: term_cases{
+    definitions: [absHandle, consWorld, flagPick, listAppend, sharedCons, view],
+    scrutinee: (aloneOn address others)
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: cons_shared_view,
+  parameters: [store : Store, address : Nat, more : Nat, item : TargetSyntax::Value],
+  statement: ((view (sharedCons store address more item) (absHandle store (record Handle {spine := (nil TargetSyntax::Value), base := (ctor Terminal.TRun address more)}))) = (cons item (absHandle store (record Handle {spine := (nil TargetSyntax::Value), base := (ctor Terminal.TRun address more)})))),
+  proof: simplify{definitions: [absHandle, absTerm, listAppend, sharedCons, view]},
+  axioms: [propext]
+}
+
+theorem{
+  name: cons_shared_store,
+  parameters: [store : Store, address : Nat, more : Nat, item : TargetSyntax::Value],
+  statement: ((storeOf (sharedCons store address more item) store) = store),
+  proof: simplify{definitions: [sharedCons, storeOf]},
+  axioms: [propext]
+}
+
+theorem{
+  name: inplace_view,
+  parameters: [
+    store : Store,
+    address : Nat,
+    length : Nat,
+    item : TargetSyntax::Value,
+    before : (List TargetSyntax::Value)
+  ],
+  statement: ((view (inPlace store address length item) before) = (flagPick (isFull (bufAt store address) length item) before (runWalk (consIn store address length item) address ((project (RustMemory::bufTruncate (bufAt store address) length) len) + 1) (nil TargetSyntax::Value)))),
+  proof: term_cases{
+    definitions: [absHandle, absTerm, flagPick, inPlace, listAppend, view],
+    scrutinee: (isFull (bufAt store address) length item)
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: inplace_frame,
+  parameters: [
+    store : Store,
+    address : Nat,
+    length : Nat,
+    item : TargetSyntax::Value,
+    other : Nat,
+    more : Nat
+  ],
+  statement: ((absHandle (consIn store address length item) (record Handle {spine := (nil TargetSyntax::Value), base := (ctor Terminal.TRun other more)})) = (flagPick (holds address (record Handle {spine := (nil TargetSyntax::Value), base := (ctor Terminal.TRun other more)})) (absRun (project (bufAt (consIn store address length item) address) slots) (more + 1) (nil TargetSyntax::Value)) (absHandle store (record Handle {spine := (nil TargetSyntax::Value), base := (ctor Terminal.TRun other more)})))),
+  proof: apply{
+    arguments: [store, address, length, item, other, (more + 1), (nil TargetSyntax::Value)],
+    theorem: cons_frame
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: cons_in_place,
+  parameters: [
+    rest : Store,
+    lead : TargetSyntax::Value,
+    front : RustMemory::Cells,
+    old : TargetSyntax::Value,
+    back : RustMemory::Cells,
+    gap : Nat,
+    item : TargetSyntax::Value
+  ],
+  statement: ((view (consWorld (ctor Store.SCons (record RustMemory::Buf {slots := (ctor RustMemory::Cells.CCons lead (RustMemory::append front (ctor RustMemory::Cells.CCons old back))), len := (RustMemory::plus ((RustMemory::size front) + 1) gap)}) rest) (nil Handle) item (record Handle {spine := (nil TargetSyntax::Value), base := (ctor Terminal.TRun 0 (RustMemory::size front))})) (absHandle (ctor Store.SCons (record RustMemory::Buf {slots := (ctor RustMemory::Cells.CCons lead (RustMemory::append front (ctor RustMemory::Cells.CCons old back))), len := (RustMemory::plus ((RustMemory::size front) + 1) gap)}) rest) (record Handle {spine := (nil TargetSyntax::Value), base := (ctor Terminal.TRun 0 (RustMemory::size front))}))) = (cons item (absHandle (ctor Store.SCons (record RustMemory::Buf {slots := (ctor RustMemory::Cells.CCons lead (RustMemory::append front (ctor RustMemory::Cells.CCons old back))), len := (RustMemory::plus ((RustMemory::size front) + 1) gap)}) rest) (record Handle {spine := (nil TargetSyntax::Value), base := (ctor Terminal.TRun 0 (RustMemory::size front))})))),
+  proof: simplify{
+    definitions: [
+      absHandle,
+      absRun,
+      absTerm,
+      aloneOn,
+      bufAt,
+      consIn,
+      consWorld,
+      inPlace,
+      isFull,
+      keepOr,
+      listAppend,
+      min_keeps_run,
+      put_run_abs,
+      runWalk,
+      view,
+      RustMemory::bufPush,
+      RustMemory::bufTruncate,
+      RustMemory::lessThan,
+      RustMemory::put,
+      RustMemory::room_before_slot,
+      RustMemory::size
+    ]
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: uncons_cell_abs,
+  parameters: [
+    store : Store,
+    front : TargetSyntax::Value,
+    rest : (List TargetSyntax::Value),
+    base : Terminal
+  ],
+  statement: ((absHandle store (record Handle {spine := (cons front rest), base := base})) = (cons front (absHandle store (record Handle {spine := rest, base := base})))),
+  proof: simplify{definitions: [absHandle, listAppend]},
+  axioms: [propext]
+}
+
+theorem{
+  name: uncons_cell_taken,
+  parameters: [
+    store : Store,
+    front : TargetSyntax::Value,
+    rest : (List TargetSyntax::Value),
+    base : Terminal
+  ],
+  statement: ((unconsHandle store (record Handle {spine := (cons front rest), base := base})) = (ctor Option.some [Taken] (record Taken {head := front, rest := (record Handle {spine := rest, base := base})}))),
+  proof: simplify{definitions: [unconsHandle]},
+  axioms: [propext]
+}
+
+theorem{
+  name: uncons_run_abs,
+  parameters: [store : Store, address : Nat, less : Nat],
+  statement: ((absHandle store (record Handle {spine := (nil TargetSyntax::Value), base := (ctor Terminal.TRun address (less + 1))})) = (unconsAbs (headAt store address (less + 1)) (absHandle store (record Handle {spine := (nil TargetSyntax::Value), base := (ctor Terminal.TRun address less)})) (absHandle store (record Handle {spine := (nil TargetSyntax::Value), base := (ctor Terminal.TRun address less)})))),
+  proof: apply{
+    arguments: [store, address, (less + 1), (nil TargetSyntax::Value)],
+    theorem: walk_uncons
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: uncons_run_taken,
+  parameters: [store : Store, address : Nat, less : Nat],
+  statement: ((unconsHandle store (record Handle {spine := (nil TargetSyntax::Value), base := (ctor Terminal.TRun address (less + 1))})) = (takenFrom (headAt store address (less + 1)) (record Handle {spine := (nil TargetSyntax::Value), base := (ctor Terminal.TRun address less)}))),
+  proof: reflexivity{},
+  axioms: []
+}
+
+theorem{
+  name: uncons_last_abs,
+  parameters: [store : Store, address : Nat],
+  statement: ((absHandle store (record Handle {spine := (nil TargetSyntax::Value), base := (ctor Terminal.TRun address 0)})) = (unconsAbs (headAt store address 0) (nil TargetSyntax::Value) (nil TargetSyntax::Value))),
+  proof: apply{arguments: [store, address, (nil TargetSyntax::Value)], theorem: walk_uncons_last},
+  axioms: [propext]
+}
+
+theorem{
+  name: uncons_last_taken,
+  parameters: [store : Store, address : Nat],
+  statement: ((unconsHandle store (record Handle {spine := (nil TargetSyntax::Value), base := (ctor Terminal.TRun address 0)})) = (takenFrom (headAt store address 0) (record Handle {spine := (nil TargetSyntax::Value), base := (ctor Terminal.TNil)}))),
+  proof: reflexivity{},
+  axioms: []
+}
+
+theorem{
+  name: same_with_itself,
+  parameters: [address : Nat],
+  statement: ((RustMemory::sameNat address address) = (ctor RustMemory::Flag.yes)),
+  proof: induction{
+    branches: [
+      {proof: simplify{definitions: [RustMemory::sameNat]}, binders: [], constructor: zero},
+      {
+        proof: simplify{definitions: [hypothesis, RustMemory::sameNat]},
+        binders: [less, hypothesis],
+        constructor: succ
+      }
+    ],
+    scrutinee: address
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: holder_on_own_buffer,
+  parameters: [address : Nat, spine : (List TargetSyntax::Value), more : Nat],
+  statement: ((holds address (record Handle {spine := spine, base := (ctor Terminal.TRun address more)})) = (ctor RustMemory::Flag.yes)),
+  proof: apply{arguments: [address], theorem: same_with_itself},
+  axioms: [propext]
+}
+
+theorem{
+  name: holder_without_run,
+  parameters: [address : Nat, spine : (List TargetSyntax::Value)],
+  statement: ((holds address (record Handle {spine := spine, base := (ctor Terminal.TNil)})) = (ctor RustMemory::Flag.no)),
+  proof: simplify{definitions: [holds]},
+  axioms: [propext]
+}
+
+theorem{
+  name: own_blocks,
+  parameters: [address : Nat, otherwise : RustMemory::Flag],
+  statement: ((notAlone (RustMemory::sameNat address address) otherwise) = (ctor RustMemory::Flag.no)),
+  proof: induction{
+    branches: [
+      {
+        proof: simplify{definitions: [notAlone, RustMemory::sameNat]},
+        binders: [],
+        constructor: zero
+      },
+      {
+        proof: simplify{definitions: [hypothesis, RustMemory::sameNat]},
+        binders: [less, hypothesis],
+        constructor: succ
+      }
+    ],
+    scrutinee: address
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: others_allow_above,
+  parameters: [address : Nat, gap : Nat, otherwise : RustMemory::Flag],
+  statement: ((notAlone (RustMemory::sameNat address ((RustMemory::plus address gap) + 1)) otherwise) = otherwise),
+  proof: induction{
+    branches: [
+      {
+        proof: simplify{definitions: [notAlone, RustMemory::sameNat]},
+        binders: [],
+        constructor: zero
+      },
+      {
+        proof: simplify{definitions: [hypothesis, RustMemory::plus, RustMemory::sameNat]},
+        binders: [less, hypothesis],
+        constructor: succ
+      }
+    ],
+    generalizing: [gap],
+    scrutinee: address
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: others_allow_below,
+  parameters: [address : Nat, gap : Nat, otherwise : RustMemory::Flag],
+  statement: ((notAlone (RustMemory::sameNat ((RustMemory::plus address gap) + 1) address) otherwise) = otherwise),
+  proof: induction{
+    branches: [
+      {
+        proof: simplify{definitions: [notAlone, RustMemory::sameNat]},
+        binders: [],
+        constructor: zero
+      },
+      {
+        proof: simplify{definitions: [hypothesis, RustMemory::plus, RustMemory::sameNat]},
+        binders: [less, hypothesis],
+        constructor: succ
+      }
+    ],
+    generalizing: [gap],
+    scrutinee: address
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: holder_blocks,
+  parameters: [address : Nat, spine : (List TargetSyntax::Value), more : Nat, rest : (List Handle)],
+  statement: ((aloneOn address (cons (record Handle {spine := spine, base := (ctor Terminal.TRun address more)}) rest)) = (ctor RustMemory::Flag.no)),
+  proof: apply{arguments: [address, (aloneOn address rest)], theorem: own_blocks},
+  axioms: [propext]
+}
+
+theorem{
+  name: holder_elsewhere_above,
+  parameters: [
+    address : Nat,
+    gap : Nat,
+    spine : (List TargetSyntax::Value),
+    more : Nat,
+    rest : (List Handle)
+  ],
+  statement: ((aloneOn address (cons (record Handle {spine := spine, base := (ctor Terminal.TRun ((RustMemory::plus address gap) + 1) more)}) rest)) = (aloneOn address rest)),
+  proof: apply{arguments: [address, gap, (aloneOn address rest)], theorem: others_allow_above},
+  axioms: [propext]
+}
+
+theorem{
+  name: holder_elsewhere_below,
+  parameters: [
+    address : Nat,
+    gap : Nat,
+    spine : (List TargetSyntax::Value),
+    more : Nat,
+    rest : (List Handle)
+  ],
+  statement: ((aloneOn ((RustMemory::plus address gap) + 1) (cons (record Handle {spine := spine, base := (ctor Terminal.TRun address more)}) rest)) = (aloneOn ((RustMemory::plus address gap) + 1) rest)),
+  proof: apply{
+    arguments: [address, gap, (aloneOn ((RustMemory::plus address gap) + 1) rest)],
+    theorem: others_allow_below
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: cons_held_store,
+  parameters: [
+    store : Store,
+    address : Nat,
+    spine : (List TargetSyntax::Value),
+    more : Nat,
+    held : Nat,
+    rest : (List Handle),
+    item : TargetSyntax::Value
+  ],
+  statement: ((storeOf (consWorld store (cons (record Handle {spine := spine, base := (ctor Terminal.TRun address held)}) rest) item (record Handle {spine := (nil TargetSyntax::Value), base := (ctor Terminal.TRun address more)})) store) = store),
+  proof: simplify{definitions: [consWorld, holder_blocks, sharedCons, storeOf]},
+  axioms: [propext]
+}
+
+theorem{
+  name: apart_above,
+  parameters: [address : Nat, gap : Nat],
+  statement: ((RustMemory::sameNat address ((RustMemory::plus address gap) + 1)) = (ctor RustMemory::Flag.no)),
+  proof: induction{
+    branches: [
+      {proof: simplify{definitions: [RustMemory::sameNat]}, binders: [], constructor: zero},
+      {
+        proof: simplify{definitions: [hypothesis, RustMemory::plus, RustMemory::sameNat]},
+        binders: [less, hypothesis],
+        constructor: succ
+      }
+    ],
+    generalizing: [gap],
+    scrutinee: address
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: apart_below,
+  parameters: [address : Nat, gap : Nat],
+  statement: ((RustMemory::sameNat ((RustMemory::plus address gap) + 1) address) = (ctor RustMemory::Flag.no)),
+  proof: induction{
+    branches: [
+      {proof: simplify{definitions: [RustMemory::sameNat]}, binders: [], constructor: zero},
+      {
+        proof: simplify{definitions: [hypothesis, RustMemory::plus, RustMemory::sameNat]},
+        binders: [less, hypothesis],
+        constructor: succ
+      }
+    ],
+    generalizing: [gap],
+    scrutinee: address
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: holds_apart_above,
+  parameters: [address : Nat, gap : Nat, spine : (List TargetSyntax::Value), more : Nat],
+  statement: ((holds address (record Handle {spine := spine, base := (ctor Terminal.TRun ((RustMemory::plus address gap) + 1) more)})) = (ctor RustMemory::Flag.no)),
+  proof: simplify{definitions: [apart_above, holds]},
+  axioms: [propext]
+}
+
+theorem{
+  name: holds_apart_below,
+  parameters: [address : Nat, gap : Nat, spine : (List TargetSyntax::Value), more : Nat],
+  statement: ((holds ((RustMemory::plus address gap) + 1) (record Handle {spine := spine, base := (ctor Terminal.TRun address more)})) = (ctor RustMemory::Flag.no)),
+  proof: simplify{definitions: [apart_below, holds]},
+  axioms: [propext]
+}
+
+inductive{
+  name: Out,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: done, fields: []}, {name: stopped, fields: []}, {name: spent, fields: []}]
+}
+
+definition{
+  name: lengthOf,
+  parameters: [cells : (List RustMemory::Flag)],
+  result: Nat,
+  body: (match cells | List.nil => 0 | List.cons lead rest => ((lengthOf rest) + 1)),
+  recursive_argument: cells
+}
+
+definition{
+  name: unshared,
+  parameters: [count : Nat],
+  result: (List RustMemory::Flag),
+  body: (match count
+    | Nat.zero => (nil RustMemory::Flag)
+    | Nat.succ less => (cons (ctor RustMemory::Flag.yes) (unshared less))),
+  recursive_argument: count
+}
+
+definition{
+  name: releaseLoop,
+  parameters: [fuel : Nat, cells : (List RustMemory::Flag)],
+  result: Out,
+  body: (match cells
+    | List.nil => (ctor Out.done)
+    | List.cons lead rest => (match fuel
+      | Nat.zero => (ctor Out.spent)
+      | Nat.succ less => (match lead
+        | RustMemory::Flag.yes => (releaseLoop less rest)
+        | RustMemory::Flag.no => (ctor Out.stopped)))),
+  recursive_argument: cells
+}
+
+definition{
+  name: ends,
+  parameters: [out : Out],
+  result: RustMemory::Flag,
+  body: (match out
+    | Out.done => (ctor RustMemory::Flag.yes)
+    | Out.stopped => (ctor RustMemory::Flag.yes)
+    | Out.spent => (ctor RustMemory::Flag.no))
+}
+
+theorem{
+  name: release_ends,
+  parameters: [cells : (List RustMemory::Flag)],
+  statement: ((ends (releaseLoop (lengthOf cells) cells)) = (ctor RustMemory::Flag.yes)),
+  proof: induction{
+    branches: [
+      {proof: simplify{definitions: [ends, lengthOf, releaseLoop]}, binders: [], constructor: nil},
+      {
+        proof: cases{
+          branches: [
+            {
+              proof: simplify{definitions: [hypothesis, lengthOf, releaseLoop]},
+              binders: [],
+              constructor: yes
+            },
+            {
+              proof: simplify{definitions: [ends, lengthOf, releaseLoop]},
+              binders: [],
+              constructor: no
+            }
+          ],
+          scrutinee: lead
+        },
+        binders: [lead, rest, hypothesis],
+        constructor: cons
+      }
+    ],
+    scrutinee: cells
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: release_one_short,
+  parameters: [count : Nat],
+  statement: ((releaseLoop count (cons (ctor RustMemory::Flag.yes) (unshared count))) = (ctor Out.spent)),
+  proof: induction{
+    branches: [
+      {proof: simplify{definitions: [releaseLoop]}, binders: [], constructor: zero},
+      {
+        proof: simplify{definitions: [hypothesis, releaseLoop, unshared]},
+        binders: [less, hypothesis],
+        constructor: succ
+      }
+    ],
+    scrutinee: count
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: release_needs_fuel,
+  parameters: [count : Nat],
+  statement: ((releaseLoop count (unshared (count + 1))) = (ctor Out.spent)),
+  proof: apply{arguments: [count], theorem: release_one_short},
+  axioms: [propext]
+}
+
+theorem{
+  name: release_one_cell,
+  parameters: [fuel : Nat, rest : (List RustMemory::Flag)],
+  statement: ((releaseLoop (fuel + 1) (cons (ctor RustMemory::Flag.yes) rest)) = (releaseLoop fuel rest)),
+  proof: simplify{definitions: [releaseLoop]},
+  axioms: [propext]
+}
+\end{semanticmodule}
+\end{lexlean}

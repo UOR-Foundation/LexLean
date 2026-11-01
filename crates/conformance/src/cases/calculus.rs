@@ -1464,24 +1464,26 @@ pub fn run(id: &str) {
             // Planted discrepancies: a wrapping addition and a Euclidean
             // quotient each change an observable outcome; an append that
             // copies its right operand per element keeps the value and
-            // breaks the work bound.
+            // breaks the work bound. The append plant sits in the runtime's
+            // `List::append`, because `append_list` itself is one machine
+            // call since the std functions became source (#293).
             let plants = [
                 (
                     "natOverflowAdd_rust_core",
-                    "a.checked_add(b).ok_or(Overflow)",
-                    "Ok(a.wrapping_add(b))",
+                    "u64::checked_add(p0, p1)",
+                    "Some(u64::wrapping_add(p0, p1))",
                     false,
                 ),
                 (
                     "intArithmetic_rust_std",
-                    "a.checked_div(b).ok_or(Overflow)",
-                    "a.checked_div_euclid(b).ok_or(Overflow)",
+                    "else { a.checked_div(b) }",
+                    "else { a.checked_div_euclid(b) }",
                     false,
                 ),
                 (
                     "listAppendLong_rust_std",
-                    "pub fn append_list<T: Clone>(a: List<T>, b: List<T>) -> List<T> { List::onto(a.items(), b) }",
-                    "pub fn append_list<T: Clone>(a: List<T>, b: List<T>) -> List<T> { let mut out = b; for item in a.items().into_iter().rev() { tick(1); out = List::cons(item, List::onto(out.items(), List::nil())); } out }",
+                    "pub fn append(a: List<T>, b: List<T>) -> List<T> { List::onto(a.items(), b) }",
+                    "pub fn append(a: List<T>, b: List<T>) -> List<T> { let mut out = b; for item in a.items().into_iter().rev() { tick(1); out = List::cons(item, List::onto(out.items(), List::nil())); } out }",
                     true,
                 ),
             ];

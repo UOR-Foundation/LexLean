@@ -1,0 +1,32 @@
+\begin{lexlean}{Looped}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: climb,
+  parameters: [k : Nat, acc : Nat],
+  result: Nat,
+  body: (match k | Nat.zero => acc | Nat.succ below => (climb below (acc + 1))),
+  executable: true,
+  recursive_argument: k
+}
+
+definition{
+  name: countdown,
+  parameters: [n : Nat, acc : Nat],
+  result: Nat,
+  body: (match n | Nat.zero => (climb 3 acc) | Nat.succ below => (countdown below acc)),
+  executable: true,
+  recursive_argument: n
+}
+
+definition{
+  name: run,
+  parameters: [n : Nat, a : Nat],
+  result: Nat,
+  body: (countdown n a),
+  executable: true,
+  production: {effects: [overflow], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

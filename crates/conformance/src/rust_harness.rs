@@ -28,6 +28,10 @@ pub const HARNESS_STACK: usize = 64 << 20;
 /// shown to abort (`PD-08`); no case relies on it for its own verdict.
 pub const HARNESS_STACK_ENV: &str = "LEXLEAN_HARNESS_STACK";
 
+/// The source, in bytes, after which the runs of a function continue in a
+/// new function of the harness.
+const PIECE_BYTES: usize = 64 << 10;
+
 fn index(number: u64) -> Result<usize, String> {
     usize::try_from(number).map_err(|error| error.to_string())
 }
@@ -315,11 +319,17 @@ pub fn render_calls(
         }
         out.push_str("} }\n");
     }
-    // Each function's runs are their own Rust function, so no frame holds
+    // Each function's runs are their own Rust functions, so no frame holds
     // the argument lists of more than one, and they run on a thread with a
     // fixed 64 MiB stack: an unoptimized frame holding one long list literal
     // still overflows a 1 MiB main-thread stack (the Windows default), and
-    // the platform's default must not decide whether a harness runs.
+    // the platform's default must not decide whether a harness runs. The
+    // runs of one function are cut into consecutive pieces of about
+    // `PIECE_BYTES` of source, each its own function called in order, because
+    // rustc's memory grows with the largest function body it compiles: one
+    // array literal of every run of `BS-04` is a 9 MiB body that took 10 GiB
+    // and more, and the pieces take under 2 GiB. The runs, their order and
+    // what each prints are the same.
     let mut groups = Vec::new();
     for (group, call) in calls.iter().enumerate() {
         let function = program
@@ -365,13 +375,25 @@ pub fn render_calls(
                 passed.join(", ")
             )
         };
-        let _ = write!(
-            out,
-            "\n#[inline(never)]\nfn harness_group{group}() {{\n    for {} in [{}] {{\n{run}    }}\n}}\n",
-            tuple(&names),
-            rows.join(", ")
-        );
-        groups.push(format!("    harness_group{group}();\n"));
+        let mut pieces: Vec<Vec<&str>> = vec![Vec::new()];
+        let mut size = 0;
+        for row in &rows {
+            if size >= PIECE_BYTES {
+                pieces.push(Vec::new());
+                size = 0;
+            }
+            size += row.len();
+            pieces.last_mut().expect("a piece").push(row);
+        }
+        for (piece, rows) in pieces.iter().enumerate() {
+            let _ = write!(
+                out,
+                "\n#[inline(never)]\nfn harness_group{group}_{piece}() {{\n    for {} in [{}] {{\n{run}    }}\n}}\n",
+                tuple(&names),
+                rows.join(", ")
+            );
+            groups.push(format!("    harness_group{group}_{piece}();\n"));
+        }
     }
     out.push_str("\nfn harness_runs() {\n");
     out.push_str(&groups.concat());

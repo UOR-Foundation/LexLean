@@ -1,5 +1,5 @@
 //! The compiler's digest is the standard library's `Sha256` package
-//! (SPEC.md §17.22, `SL-05`, #126 stage 2), held through the compiler's own
+//! (SPEC.md §17.22, `SL-06`, #126 stage 2), held through the compiler's own
 //! `Sha256Digest::of`, `FramedHasher`, and `tree_digest` to the authorities
 //! that establish a SHA-256 digest (the FIPS 180-4 examples and the NIST CAVP
 //! vectors) and to the `sha2` crate, which may falsify and never establishes
@@ -274,14 +274,14 @@ fn main() {
         .collect()
 }
 
-/// Run the case for `SL-05`.
+/// Run the case for `SL-06`.
 ///
 /// # Panics
 ///
 /// Panics when the case's assertion fails.
 #[allow(clippy::too_many_lines)]
 pub(super) fn run(id: &str) {
-    assert_eq!(id, "SL-05");
+    assert_eq!(id, "SL-06");
     let root = support::repo_root();
 
     // R6: the shipped crate's boundary is explicit, it has no second

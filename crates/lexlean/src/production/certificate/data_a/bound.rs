@@ -1,4 +1,4 @@
-//! Certificate A of a root with a bound (SPEC.md §17.13, §17.17, `SP-29`).
+//! Certificate A of a root with a bound (SPEC.md §17.13, §17.17, `SP-31`).
 //!
 //! The source names the bound `B`, a theorem of the root's module whose
 //! statement linking fixed (`ir::semantic::bound`): under `x < 2^64` for each

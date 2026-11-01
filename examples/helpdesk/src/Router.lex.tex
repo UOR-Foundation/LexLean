@@ -1,0 +1,141 @@
+\begin{lexlean}{Router}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{helpdesk.titles@1.0.0}
+\importmodule{LexLeanStd.Text}
+\title{Request routing}
+\begin{semanticmodule}
+inductive{
+  name: Topic,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: outage, fields: []},
+    {name: billing, fields: []},
+    {name: access, fields: []}
+  ]
+}
+
+definition{
+  name: mentions,
+  parameters: [request : Bytes, needle : Bytes],
+  result: Bool,
+  body: (match (LexLeanStd.Text::find request needle)
+    | Option.some position => true
+    | Option.none => false),
+  executable: true
+}
+
+definition{
+  name: signal,
+  parameters: [seen : Bool],
+  result: Int,
+  body: (if seen then (1 : Int) else (0 : Int)),
+  executable: true
+}
+
+definition{
+  name: features,
+  parameters: [request : Bytes],
+  result: (List Int),
+  body: (cons (signal ((mentions request 0x646f776e) || (mentions request 0x6f7574616765))) (cons (signal ((mentions request 0x696e766f696365) || (mentions request 0x726566756e64))) (cons (signal ((mentions request 0x70617373776f7264) || (mentions request 0x6c6f67696e))) (nil Int)))),
+  executable: true
+}
+
+definition{
+  name: Readable,
+  parameters: [request : Bytes],
+  result: Prop,
+  body: (0 < (prim length request : Nat))
+}
+
+definition{
+  name: readableCheck,
+  parameters: [request : Bytes],
+  result: Bool,
+  body: (0 <? (prim length request : Nat)),
+  executable: true
+}
+
+theorem{
+  name: readable_check_sound,
+  parameters: [request : Bytes],
+  statement: (((readableCheck request) = true) -> (Readable request)),
+  proof: linear_arithmetic{definitions: [Readable, readableCheck]},
+  axioms: [propext]
+}
+
+theorem{
+  name: readable_check_complete,
+  parameters: [request : Bytes],
+  statement: ((Readable request) -> ((readableCheck request) = true)),
+  proof: linear_arithmetic{definitions: [Readable, readableCheck]},
+  axioms: [propext]
+}
+
+artifact{
+  name: topicWeights,
+  type: (List (List Int)),
+  length: 18,
+  role: parameters,
+  schema: int_tensor{element: int16, shape: [3, 3]},
+  sha256: dcad521bee95f3e0032ce4dcca4fa2fd6d21125c14f00898eb4336a466604617
+}
+
+artifact{
+  name: topicBias,
+  type: (List Int),
+  length: 6,
+  role: parameters,
+  schema: int_tensor{element: int16, shape: [3]},
+  sha256: b0f66adc83641586656866813fd9dd0b8ebb63796075661ba45d1aa8089e1d44
+}
+
+contract{
+  name: ScoringContract,
+  axioms: [propext],
+  input: {name: request, type: Bytes},
+  output: {name: scores, type: (List Int)},
+  precondition: Readable,
+  validators: [
+    {
+      complete: readable_check_complete,
+      predicate: precondition,
+      sound: readable_check_sound,
+      validator: readableCheck
+    }
+  ]
+}
+
+theorem{
+  name: routing_width,
+  parameters: [request : Bytes],
+  statement: ((prim length (features request) : Nat) = 3),
+  proof: reflexivity{}
+}
+
+realization{
+  name: TopicScore,
+  descriptor: neural{
+    architecture: integer_feedforward,
+    decoder: function{body: values, binder: values},
+    encoder: (features request),
+    layers: [dense{bias: topicBias, inputs: 3, outputs: 3, weights: topicWeights}],
+    width: 3,
+    width_evidence: routing_width
+  },
+  executable: true,
+  input: {name: request, type: Bytes},
+  output: (List Int)
+}
+
+definition{
+  name: topicAt,
+  parameters: [index : Nat],
+  result: Topic,
+  body: (if (index =? 0) then (ctor Topic.outage) else (if (index =? 1) then (ctor Topic.billing) else (ctor Topic.access))),
+  executable: true
+}
+
+model{name: ScoringModel, contract: {member: ScoringContract}, realization: {member: TopicScore}}
+\end{semanticmodule}
+\end{lexlean}

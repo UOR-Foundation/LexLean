@@ -20,6 +20,8 @@ use crate::rust_harness::{self, Calls};
 use crate::rust_packages;
 use crate::support::{self, P};
 
+mod runtime_validate;
+mod rust_print;
 mod rust_validate;
 mod scan;
 
@@ -1509,6 +1511,13 @@ const EVALUATOR_STACK: usize = 1 << 30;
 ///
 /// Panics when the case's assertion fails.
 pub fn run(id: &str) {
+    // Each component's case peaks at several GiB (the scanner, checker and
+    // validator at 5 to 10), so together they exceed a 16 GiB host; the
+    // cases run one at a time.
+    static HEAVY: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    let _heavy = HEAVY
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     let id = id.to_owned();
     if let Err(failure) = std::thread::Builder::new()
         .stack_size(EVALUATOR_STACK)
@@ -2423,6 +2432,9 @@ fn case(id: &str) {
         // §17.23, §17.14: the target calculus's checker.
         "BS-04" => calculus_check::case(),
         "BS-05" => rust_validate::case(),
+        "BS-06" => rust_print::case(),
+        // §17.23, §17.16: the runtime syntax validator.
+        "BS-09" => runtime_validate::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }

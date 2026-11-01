@@ -1,0 +1,1 @@
+[{"causes":[],"code":"LLT4001","help":[],"labels":[],"message":"phase link: term_cases unfolds `absent`, which is not a prior document definition","notes":[],"primary":{"byte_end":953,"byte_start":113,"column_end":1,"column_start":1,"line_end":41,"line_start":5,"path":"src/Main.lex.tex"},"severity":"error","spec":"lexlean/diagnostic/1"}]

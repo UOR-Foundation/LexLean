@@ -882,7 +882,10 @@ fn chapter_editing() {
         .iter()
         .position(|l| l.starts_with("| `RP-01` | `repository` | "))
         .expect("the RP-01 row of the derived table");
-    merged[row].push_str(" tampered");
+    // A marker no sentence of the specification carries: the text has
+    // "tampered" of its own (`LLR3007`, `EX-09`), so a plain word would be
+    // found whether or not the hunk was ported.
+    merged[row].push_str(" tampered-derived-row");
     let merged = merged.join("\n") + "\n";
     let outcome = port(root, &merged).expect("port");
     assert!(
@@ -897,7 +900,7 @@ fn chapter_editing() {
         "the prose hunk is ported"
     );
     assert!(
-        !after.spec.contains(" tampered"),
+        !after.spec.contains(" tampered-derived-row"),
         "the derived hunk is regenerated, not ported"
     );
 

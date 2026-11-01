@@ -58,3 +58,11 @@ Feature: examples
     When each is loaded as a project
     Then it has lexlean.toml, lexlean.lock and an expected/build directory and the engine loads it
     And at least one example directory is discovered
+
+  @EX-09 @build
+  Scenario: The `helpdesk` example is a text application written entirely from language-1.2 source and the three source packages `std`, `std-models`, and `std-reasoning` that its lock pins: its production roots `classify`, `plan`, and `dispatch : Bytes -> Bytes` use the model alone, the reasoner alone, and both together, `dispatch` trimming the request with `LexLeanStd.Text`, scoring it with an integer feed-forward model whose weights are content-addressed artifacts and which is applied through its required precondition check, abstaining with `decideOr`, committing through the generic `GateModel` of `std-models`, and planning the reply with the `Drain` reasoner of `std-reasoning`; the example holds no handwritten Lean or Rust, verifies under the pinned Lean, its roots export through `lexlean production build` with the packages committed under `tests/production-export/helpdesk/`, and a changed byte or version of a package is `LLC0105`, an import of a module of an undeclared package `LLR3009`, a tampered artifact `LLR3007`, and a model applied without its required check `LLT4008`.
+    Given the committed `helpdesk` example with the `stdlib`, `std-models`, and `std-reasoning` projects of the workspace
+    When the example is checked, built, verified under the pinned Lean, and exported through the production consumer, a package byte and version, an undeclared package import, an artifact byte, and the required check of the model are each planted, and the model and the reasoner are each used alone
+    Then its lock pins the three packages, it holds no file of Lean or Rust source, and its roots `classify`, `plan`, and `dispatch` agree with the evaluator and with their rendered packages
+    And every exported package is byte-identical to its committed package
+    And each plant is refused with exactly its prescribed diagnostic code before any backend output

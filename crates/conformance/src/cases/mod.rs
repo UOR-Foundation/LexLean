@@ -19,11 +19,14 @@ mod extraction;
 pub use extraction::{compare_with_oracle, counter_independence, ne_04_lean_half, oracle_records};
 mod gnaf;
 mod grammar;
+mod helpdesk;
+mod kappa_addressing;
 mod language_models;
 mod latex_pdf;
 mod lean_backend;
 mod lexical_closure;
 mod lexicon;
+mod migration;
 mod models;
 mod normative_source;
 mod operational;
@@ -37,12 +40,30 @@ mod proofs;
 mod reasoning;
 mod repository;
 mod runtime;
+mod runtime_semantics;
 mod rust_backend;
+mod rust_heap_syntax;
+mod rust_items;
+mod rust_lists;
+mod rust_loop_ends;
 mod rust_loops;
+mod rust_machine;
+mod rust_memory;
+mod rust_prims;
+mod rust_refinement;
+mod rust_runtime;
+pub use rust_runtime::{
+    check_golden as check_runtime_transcript, golden_text, parse_golden, GOLDEN_FILE,
+};
+mod rust_runtime_text;
 mod rust_scaffold;
+mod rust_std;
+mod rust_support;
 mod security;
 mod semantic_ir;
+mod std_packages;
 mod stdlib;
+mod stdlib_buffer;
 mod stdlib_digest;
 mod stdlib_fixed_point;
 mod stdlib_identity;
@@ -129,6 +150,7 @@ pub fn run(id: &str) {
         "TL" => tooling::run(id),
         "AU" => authoring::run(id),
         "SL" => stdlib::run(id),
+        "KA" => kappa_addressing::run(id),
         "BS" => bootstrap::run(id),
         "PK" => packages::run(id),
         "NS" => normative_source::run(id),

@@ -24,10 +24,20 @@ pub const STDLIB: &str = "stdlib";
 /// The bootstrap project (§17.23), exported as the examples are.
 pub const BOOTSTRAP: &str = "bootstrap";
 
+/// The helpdesk application (`EX-09`), whose project imports three source
+/// packages and so is exported from a copy of its workspace.
+pub const HELPDESK: &str = "helpdesk";
+
 /// Every project the consumer exports: the examples, the standard library,
-/// and the bootstrap project, whose packages `check-production-export`
-/// compares.
-pub const EXPORTED: [&str; 4] = ["production", "production-coverage", STDLIB, BOOTSTRAP];
+/// the bootstrap project, and the helpdesk application, whose packages
+/// `check-production-export` compares.
+pub const EXPORTED: [&str; 5] = [
+    "production",
+    "production-coverage",
+    STDLIB,
+    BOOTSTRAP,
+    HELPDESK,
+];
 
 /// The root the GNAF evidence is built for, and where it is written.
 pub const GNAF_ROOT: &str = "Production.Main.sumAll";
@@ -238,6 +248,10 @@ pub fn export(example: &str) -> Result<Exported, String> {
     let project = match example {
         STDLIB => P::stdlib(),
         BOOTSTRAP => P::bootstrap(),
+        HELPDESK => P::workspace_project(
+            "examples/helpdesk",
+            &["examples/helpdesk", "std-models", "std-reasoning", "stdlib"],
+        ),
         _ => P::copy_example(example),
     };
     let gnaf = (example == "production").then(|| gnaf_evidence(&project));
@@ -298,11 +312,13 @@ pub fn exported(example: &str) -> &'static Exported {
     static COVERAGE: OnceLock<Exported> = OnceLock::new();
     static STANDARD: OnceLock<Exported> = OnceLock::new();
     static BOOT: OnceLock<Exported> = OnceLock::new();
+    static DESK: OnceLock<Exported> = OnceLock::new();
     let cell = match example {
         "production" => &PRODUCTION,
         "production-coverage" => &COVERAGE,
         STDLIB => &STANDARD,
         BOOTSTRAP => &BOOT,
+        HELPDESK => &DESK,
         other => panic!("`{other}` is not an exported example"),
     };
     cell.get_or_init(|| export(example).unwrap_or_else(|reason| panic!("{reason}")))

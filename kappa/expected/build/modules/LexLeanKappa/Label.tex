@@ -1,0 +1,92 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{Handle}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{kind}: \texttt{ByteArray}.\par
+\noindent Field \texttt{label}: \texttt{ByteArray}.\par
+\subsection*{\texttt{text}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(literal : String)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.utf8Encode (literal) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{byteNat}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match (LexLeanRuntime.index (subject) (position) : Option (UInt8)) with | Option.some byte => (toNat (byte) : Nat) | Option.none => 256)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{kappaLabel}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(canonical : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.append (text ("sha256:")) (LexLeanStd.Sha256.sha256Hex (canonical)) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{lowerHexAt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(let n : Nat := byteNat (subject) (position); (if (Nat.blt (47) (n)) then (if (Nat.blt (n) (58)) then true else (if (Nat.blt (96) (n)) then (Nat.blt (n) (103)) else false)) else false))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{lowerHexRun}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (<U+00AB>from<U+00BB> : Nat)}.\par
+\noindent Closure 1: binds \texttt{(position)}, captures \texttt{(subject)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{((LexLeanCollections.iterateUntil ((fun (position : Nat) => (if lowerHexAt (subject) (position) then Option.some ((position + 1)) else Option.none))) ((LexLeanRuntime.length (subject) : Nat)) (<U+00AB>from<U+00BB>) : (Prod (Nat) (Bool)))).1}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{isLabel}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(candidate : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(if (Nat.beq ((LexLeanRuntime.length (candidate) : Nat)) (71)) then (if LexLeanStd.Text.startsWith (candidate) (text ("sha256:")) then (Nat.beq (lowerHexRun (candidate) (7)) (71)) else false) else false)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{kindByteAt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(let n : Nat := byteNat (subject) (position); (if (Nat.blt (96) (n)) then (Nat.blt (n) (123)) else (if (Nat.blt (47) (n)) then (Nat.blt (n) (58)) else (Nat.beq (n) (45)))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{kindRun}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(position)}, captures \texttt{(subject)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{((LexLeanCollections.iterateUntil ((fun (position : Nat) => (if kindByteAt (subject) (position) then Option.some ((position + 1)) else Option.none))) ((LexLeanRuntime.length (subject) : Nat)) (0) : (Prod (Nat) (Bool)))).1}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{isKind}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(if (Nat.blt (0) ((LexLeanRuntime.length (kind) : Nat))) then (Nat.beq (kindRun (kind)) ((LexLeanRuntime.length (kind) : Nat))) else false)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{handleOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : ByteArray) (canonical : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Handle)}.\par
+\noindent Definition: \texttt{(if isKind (kind) then Option.some ((\{ kind := kind, label := kappaLabel (canonical) \} : Handle)) else Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{handleWire}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : ByteArray) (canonical : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{Option (ByteArray)}.\par
+\noindent Definition: \texttt{(match handleOf (kind) (canonical) with | Option.some handle => Option.some ((LexLeanRuntime.append ((handle).kind) ((LexLeanRuntime.append (text ("@")) ((handle).label) : ByteArray)) : ByteArray)) | Option.none => Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\end{document}
