@@ -17883,13 +17883,14 @@ on the machine that produced this record:
 | --- | --- | --- |
 | `x86_64-unknown-linux-gnu`, `avx2` | `_mm256_maddubs_epi16`, `_mm256_madd_epi16`, `_mm256_adds_epi16` | executed in process on an AVX2 x86-64 host: 975 cases, the model and the instruction agree on all |
 | `wasm32-unknown-unknown`, `simd128` | `i16x8_extmul_low_i8x16`, `i32x4_dot_i16x8`, `i16x8_add_sat` | executed as a WebAssembly module under Node.js 22.23.4: 975 cases, agree on all |
-| `aarch64-unknown-linux-gnu`, `neon` | `vmull_s8`, `vpaddlq_s16`, `vqaddq_s16` | built for the target by the pinned `rustc` (it compiles under `#[target_feature(enable = "neon")]`), **not executed**: the host is x86-64 and has no emulator |
+| `aarch64-unknown-linux-gnu`, `neon` | `vmull_s8`, `vpaddlq_s16`, `vqaddq_s16` | executed in process on an aarch64 host (the aarch64 Linux and macOS legs, compiled for the host); on the x86-64 normative host built for the target by the pinned `rustc` (it compiles under `#[target_feature(enable = "neon")]`) and **not executed**, as there is no emulator; reported as not built where the target's standard library is not installed |
 
-The NEON semantics is therefore held by the kernel-checked theorems of the
+On the x86-64 normative host the NEON semantics is therefore held by the kernel-checked theorems of the
 module (`mull_widens`, `mull_takes_eight`, `paddl_widens`, `qadd_saturates`)
 and by the two other targets' agreement on the same helper functions
 (`products`, `pairSums`, `saturatingAdd`), and not by a run of `vmull_s8`,
-`vpaddlq_s16` or `vqaddq_s16`. The case executes NEON on an aarch64 host; on a
+`vpaddlq_s16` or `vqaddq_s16`; the aarch64 Linux and macOS legs execute NEON
+natively, which closes that gap in the full gate. On a
 Linux x86-64 host it requires AVX2 and Node.js and fails without them, so
 the two executed targets never pass vacuously (§8.3). `ci.yml` adds the two
 non-host targets with `rustup target add`. `thumbv7em-none-eabihf` with `dsp`

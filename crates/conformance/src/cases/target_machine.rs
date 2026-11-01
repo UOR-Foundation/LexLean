@@ -453,6 +453,25 @@ enum Ran {
     Executed(Vec<Vec<i32>>),
     /// The harness was built for the target by the pinned rustc and not run.
     BuiltOnly,
+    /// The standard library of the target is not installed here, so the
+    /// harness was neither built nor run.
+    NotBuilt,
+}
+
+/// Whether the pinned toolchain has the standard library of `triple`,
+/// looked up from the repository root so that `rustup` selects the pinned
+/// toolchain.
+fn std_installed(triple: &str) -> bool {
+    let output = Command::new("rustc")
+        .current_dir(support::repo_root().as_std_path())
+        .args(["--print", "sysroot"])
+        .output()
+        .expect("rustc runs");
+    let sysroot = String::from_utf8(output.stdout).expect("utf8");
+    Path::new(sysroot.trim())
+        .join("lib/rustlib")
+        .join(triple)
+        .is_dir()
 }
 
 /// Run `rustc` from the repository root, so that `rustup` selects the
@@ -494,11 +513,18 @@ fn run_target(directory: &Path, target: usize, cases: &[Case]) -> Ran {
     let source = source.to_str().expect("a path");
     let output = directory.join(format!("harness_{target}"));
     let output = output.to_str().expect("a path");
-    let args = |extra: &[&'static str]| -> Vec<String> {
-        let mut args: Vec<String> = ["--edition=2021", "-C", "opt-level=1", "--target", triple]
+    // A target the host executes natively is compiled for the host (no
+    // `--target`, so it needs no extra standard library and runs on every
+    // operating system of that architecture); any other target is compiled
+    // with `--target`.
+    let args = |extra: &[&'static str], cross: bool| -> Vec<String> {
+        let mut args: Vec<String> = ["--edition=2021", "-C", "opt-level=1"]
             .into_iter()
             .map(str::to_owned)
             .collect();
+        if cross {
+            args.extend(["--target".to_owned(), triple.to_owned()]);
+        }
         args.extend(extra.iter().map(|argument| (*argument).to_owned()));
         args
     };
@@ -509,7 +535,7 @@ fn run_target(directory: &Path, target: usize, cases: &[Case]) -> Ran {
     };
     match target {
         0 if cfg!(target_arch = "x86_64") && host_has_avx2() => {
-            compile(args(&[]), output);
+            compile(args(&[], false), output);
             let ran = Command::new(output).output().expect("the harness runs");
             assert!(
                 ran.status.success(),
@@ -522,7 +548,7 @@ fn run_target(directory: &Path, target: usize, cases: &[Case]) -> Ran {
             ))
         }
         1 if cfg!(target_arch = "aarch64") => {
-            compile(args(&[]), output);
+            compile(args(&[], false), output);
             let ran = Command::new(output).output().expect("the harness runs");
             assert!(
                 ran.status.success(),
@@ -534,10 +560,10 @@ fn run_target(directory: &Path, target: usize, cases: &[Case]) -> Ran {
                 cases.len(),
             ))
         }
-        2 if node_available() => {
+        2 if node_available() && std_installed(triple) => {
             let module = directory.join("harness_2.wasm");
             let module = module.to_str().expect("a path");
-            compile(args(&["--crate-type=cdylib"]), module);
+            compile(args(&["--crate-type=cdylib"], true), module);
             let driver = directory.join("driver.cjs");
             std::fs::write(&driver, NODE_DRIVER).expect("the driver");
             let ran = Command::new("node")
@@ -558,9 +584,16 @@ fn run_target(directory: &Path, target: usize, cases: &[Case]) -> Ran {
         _ => {
             // The host cannot execute this target: build the harness for it,
             // so that the intrinsics at least compile under the attribute.
+            // The architecture of the host builds natively; any other target
+            // is built only where its standard library is installed.
+            let native = (target == 0 && cfg!(target_arch = "x86_64"))
+                || (target == 1 && cfg!(target_arch = "aarch64"));
+            if !native && !std_installed(triple) {
+                return Ran::NotBuilt;
+            }
             let library = directory.join(format!("libharness_{target}.rlib"));
             compile(
-                args(&["--crate-type=lib", "--cfg", "lib_build"]),
+                args(&["--crate-type=lib", "--cfg", "lib_build"], !native),
                 library.to_str().expect("a path"),
             );
             Ran::BuiltOnly
@@ -730,6 +763,17 @@ pub(super) fn run(id: &str) {
                     description.triple,
                     description.feature,
                     target_cases.len()
+                );
+            }
+            Ran::NotBuilt => {
+                assert!(
+                    !support::normative_host(),
+                    "{}: the normative host builds or runs every target",
+                    description.triple
+                );
+                eprintln!(
+                    "GN-09: {} (+{}): not built on this host",
+                    description.triple, description.feature
                 );
             }
             Ran::BuiltOnly => {

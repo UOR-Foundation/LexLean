@@ -7911,11 +7911,13 @@ The differential is against the instruction, not against a second model
 (C9). The pinned rustc compiles each instruction under `#[target_feature]` in
 safe Rust, and the lanes it computes are compared with the evaluator's on a
 seeded corpus that fixes every lane at each edge of its range. A host runs
-what it can execute: AVX2 in process on an x86-64 host that has it,
-WebAssembly SIMD128 as a module under Node.js, and NEON on an aarch64 host.
-The harness of a target the host cannot execute is built for it and the case
-reports that it was not executed; on the normative host AVX2 and SIMD128 are
-always executed. The worst-case objective as a GNAF `Objective` and the
+what it can execute: AVX2 in process on an x86-64 host that has it, NEON in
+process on an aarch64 host (Linux or macOS, compiled for the host without
+`--target`), and WebAssembly SIMD128 as a module under Node.js. A target the
+host cannot execute is built for its triple when the pinned toolchain has its
+standard library and is otherwise reported as not built; on the normative host
+every target is executed or built, and AVX2 and SIMD128 are always executed.
+The worst-case objective as a GNAF `Objective` and the
 rendering of `#[target_feature]` into exported packages belong to the
 realization grammar of #120, which these contracts price.
 

@@ -25,8 +25,9 @@ and Unreleased holds what has landed since.
   `rust-std`, and a cost per instruction as a step vector of operations `c` and bytes read `b`, whose
   worst case over a declared domain of lane counts is bounded by `c` (#107, D2). The case holds each
   root to the instruction itself, compiled by the pinned rustc under `#[target_feature]`: AVX2 in process,
-  SIMD128 as a WebAssembly module under Node.js, NEON built for its target and executed only on an
-  aarch64 host. `ci.yml` adds the two non-host targets with `rustup target add`. No language or schema
+  SIMD128 as a WebAssembly module under Node.js, NEON executed in process on aarch64 hosts (Linux and macOS legs, compiled for the host); a target the
+  host cannot execute is built where the pinned toolchain has its standard library and otherwise
+  reported as not built. `ci.yml` adds the two non-host targets with `rustup target add`. No language or schema
   data changes, so no compiler-semantics ID moves. The worst-case objective of a GNAF request and the
   `#[target_feature]` attribute on exported packages belong to #120.
 - κ-addressing in LexLean (#127, `KA-01`..`KA-03`; decision D7 of #110): the `kappa` project, a member of
