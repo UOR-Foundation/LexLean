@@ -4161,18 +4161,24 @@ declares no production root is never analysed for production, so theorems,
 propositions, and non-executable definitions remain ordinary formal content
 and coexist with executable roots in the same module.
 
-**Registry.** The registry fixes three closed sets:
+**Registry.** The registry fixes four closed sets:
 
 - *targets*, each a machine profile with `allocation` (whether heap
   allocation exists) and the bit widths of the natural-number and
   mathematical-integer representations. Language 1.2 registers `rust-core`
   (no allocation, 64-bit widths) and `rust-std` (allocation, 64-bit widths);
 - *effects*: `allocation` (heap storage whose exhaustion stops the
-  realization with an explicit failure), `overflow` (a `Nat` or `Int` value
-  outside the target width stops the realization with an explicit failure,
-  never wrapping or truncating), and `recursion` (a stack depth bounded only
-  by the input; exhausting the stack aborts the process, and no failure is
-  stated for it);
+  realization with an explicit failure), `files` (the host's file system, read
+  and changed through the requests of `LexLeanStd.Host`, §17.22), `overflow` (a
+  `Nat` or `Int` value outside the target width stops the realization with an
+  explicit failure, never wrapping or truncating), `process` (child processes,
+  started, waited for, and stopped through those requests), and `recursion` (a
+  stack depth bounded only by the input; exhausting the stack aborts the
+  process, and no failure is stated for it). `files` and `process` are kinds
+  of authority, not confinements: `files` reaches every path, and a child has
+  the authority of the process that started it, whatever else the root admits;
+- *requests*: one row per constructor of `LexLeanStd.Host::Request`, naming the
+  effect a closure that builds it realizes (`exit` names none);
 - *constructs*: one row per semantic construct kind (`type.<kind>`,
   `term.<kind>`, `primitive.<operation>`, `declaration.<kind>`, the
   refinements `declaration.inductive.recursive` and
@@ -4260,7 +4266,12 @@ that reaches it:
    effects are `allocation` when the closure requires allocation on a target
    that provides it, `overflow` for every construct whose registry row names
    the representation of its result, and `recursion` for every recursive
-   definition and every construct whose registry row implies it.
+   definition and every construct whose registry row implies it, and each
+   effect its row names for every request the closure builds (`PD-10`). No
+   event carries a request and nothing else makes one, so a closure can return
+   only the requests it builds, and a walk of its constructors is sound without
+   a flow analysis. Rule 4 refuses a request on a target without allocation by
+   the type it builds, whose fields are heap storage.
 
 Two realization obligations follow from these rules and bind every later
 production stage. A `Nat` or `Int` value crossing a root boundary is
@@ -7757,6 +7768,18 @@ holds no file of Lean or Rust source, its export is committed under
 of a package is `LLC0105`, a module of a package the example does not declare
 `LLR3009`, and a tampered artifact `LLR3007`.
 
+**The host's types.** The module `Host` of the standard library holds types and no
+definition, so it has no member and no differential: `Failure` (a closed `FailureKind` and the
+host's message as bytes), `Entry` (a closed `EntryKind`, a size, and the identity of the file where
+the host has one), `Child`, `Waited`, `Start`, `Request`, and `Event`. Text a closure sends to the
+host is `String`, so an ill-formed path does not exist; text the host sends is `Bytes`. The
+constructors of `Request` are the closed set of the registry's request rows (§17.13, `PD-10`), and
+each stands for one call of Rust's standard library: `read`, `write`, `list`, `stat`, `createDir`,
+`removeFile`, `removeTree`, `rename`, `canonical`, and `lock` realize `files`; `spawn`, `wait`, and
+`stop` realize `process`; `exit` realizes neither. There is no request for a blocking run of a
+child, because the order, the width, the memory budget, the timeout, and the output cap of §22.11
+and §25.5 are semantic, and a closure computes them from these.
+
 ### 17.23 The bootstrap project
 
 The bootstrap project, `bootstrap/` beside `compiler/` and `stdlib/`, holds the
@@ -10843,6 +10866,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `PD-06` | `production` | Every production root's eligibility report is a deterministic, schema-valid build artifact recording its runtime closure, realized types, erased dependencies, constructs, and per-target effects with their sources. | §17.13, §21.5 |
 | `PD-07` | `production` | The eligibility analysis classifies every semantic construct by an explicit exhaustive match, and the exhaustiveness audit rejects a planted wildcard arm, rest pattern, implicit-default binding form, or unnamed IR variant. | §17.13, §27.10 |
 | `PD-08` | `production` | Every root that a conformance harness runs on a corpus and that admits `recursion` has a measured stack bound in `tests/stack-bounds.json`, whose rows are exactly the recursive packages of the committed `bootstrap` and `stdlib` exports, and the stack of the harness thread (`rust_harness::HARNESS_STACK`) and of the evaluator thread is at least the largest recorded bound times the stated headroom of 4, so that a harness stack below that bound is refused and a harness binary run on a quarter of its bound aborts instead of finishing; the bounds are measurements of the cases' own inputs on one host, evidence and not a guarantee for another host or input. | §17.13, §17.23 |
+| `PD-10` | `production` | The registry holds the effects `files` and `process` and one row per constructor of `LexLeanStd.Host::Request` naming the effect it realizes, so a production root whose closure builds a request admits that request's effect, and a root that does not, or that is declared for a target without allocation, fails with `LLT4005`. | §17.13, §17.22 |
 | `NE-01` | `extraction` | Verifying a project with production roots extracts every root through Lean's compiler front end into one canonical compiler input whose bytes and ID are schema-valid, recorded in the attestation, and identical from distinct project directories, and a project without a production root publishes none. | §22.10, §26.3 |
 | `NE-02` | `extraction` | Each root's extracted closure is exactly its computational dependencies, equals its production-eligibility closure, carries its runtime members and monomorphization instances, names every constant its code uses, marks recursion from the use graph, and records proof-only dependencies as erased and never as runtime members. | §22.10, §26.3 |
 | `NE-03` | `extraction` | An unknown root, an opaque, axiomatic, unsafe, partial, or noncomputable dependency, an external implementation, an unresolved external, an unsupported compiler form, a kind that differs from the declared kind, and a malformed, noisy, or foreign extraction record fail closed with LLV7011, while a core definition its module exports as an axiom is admitted as that definition exactly when it is computable and Lean's compiler holds its code, and a borrowed type annotation canonicalizes to the type it annotates. | §22.10, §26.3 |
@@ -11029,7 +11053,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-09` | `language-models` | No prompt is code: no member of the closed language maps `string` or `bytes` to a function, a term, or source — every operation of the primitive registry that takes a `string` or `bytes` operand is classified by the audit with a data result, the registry's schema enumeration and the production registry's primitive rows equal one another and equal that classified set, and the text declarations of `lexlean/semantic-module/2` state no `string`-typed member, so a prompt reaches a model only as the tokens `encodeText` makes of it; a planted operation or text member of that shape is caught by the audit with its name. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 458.
+**Total required capability IDs:** 459.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

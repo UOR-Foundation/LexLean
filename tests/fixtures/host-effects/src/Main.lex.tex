@@ -1,0 +1,84 @@
+\begin{lexlean}{Main}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.Host}
+\importmodule{Reader}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: reads,
+  parameters: [state : (Option Nat), event : LexLeanStd.Host::Event],
+  result: (Nat * LexLeanStd.Host::Request),
+  body: (0, (Reader::reader "source")),
+  executable: true,
+  production: {effects: [allocation, files], targets: [rust-std]}
+}
+
+definition{
+  name: fileRequests,
+  parameters: [],
+  result: (List LexLeanStd.Host::Request),
+  body: (cons (ctor LexLeanStd.Host::Request.read "a") (cons (ctor LexLeanStd.Host::Request.write "a" 0x) (cons (ctor LexLeanStd.Host::Request.list "a") (cons (ctor LexLeanStd.Host::Request.stat "a") (cons (ctor LexLeanStd.Host::Request.createDir "a") (cons (ctor LexLeanStd.Host::Request.removeFile "a") (cons (ctor LexLeanStd.Host::Request.removeTree "a") (cons (ctor LexLeanStd.Host::Request.rename "a" "b") (cons (ctor LexLeanStd.Host::Request.canonical "a") (cons (ctor LexLeanStd.Host::Request.lock "a") (nil LexLeanStd.Host::Request))))))))))),
+  executable: true,
+  production: {effects: [allocation, files], targets: [rust-std]}
+}
+
+definition{
+  name: child,
+  parameters: [],
+  result: LexLeanStd.Host::Child,
+  body: record{
+    type: LexLeanStd.Host::Child,
+    fields: [
+      {field: program, value: "a"},
+      {field: arguments, value: (nil String)},
+      {field: directory, value: "."},
+      {field: environment, value: (nil (String * String))},
+      {field: output, value: "out"},
+      {field: errors, value: "err"}
+    ]
+  },
+  executable: true
+}
+
+definition{
+  name: processRequests,
+  parameters: [],
+  result: (List LexLeanStd.Host::Request),
+  body: (cons (ctor LexLeanStd.Host::Request.spawn child) (cons (ctor LexLeanStd.Host::Request.wait (nil Nat) 1) (cons (ctor LexLeanStd.Host::Request.stop 0) (nil LexLeanStd.Host::Request)))),
+  executable: true,
+  production: {effects: [allocation, process], targets: [rust-std]}
+}
+
+definition{
+  name: ends,
+  parameters: [state : (Option Nat), event : LexLeanStd.Host::Event],
+  result: (Nat * LexLeanStd.Host::Request),
+  body: (0, (ctor LexLeanStd.Host::Request.exit (0 : UInt8) 0x 0x)),
+  executable: true,
+  production: {effects: [allocation], targets: [rust-std]}
+}
+
+definition{
+  name: inspects,
+  parameters: [request : LexLeanStd.Host::Request],
+  result: Bool,
+  body: (match request
+    | LexLeanStd.Host::Request.read ignored1 => true
+    | LexLeanStd.Host::Request.write ignored2 ignored3 => true
+    | LexLeanStd.Host::Request.list ignored4 => true
+    | LexLeanStd.Host::Request.stat ignored5 => true
+    | LexLeanStd.Host::Request.createDir ignored6 => true
+    | LexLeanStd.Host::Request.removeFile ignored7 => true
+    | LexLeanStd.Host::Request.removeTree ignored8 => true
+    | LexLeanStd.Host::Request.rename ignored9 ignored10 => true
+    | LexLeanStd.Host::Request.canonical ignored11 => true
+    | LexLeanStd.Host::Request.lock ignored12 => true
+    | LexLeanStd.Host::Request.spawn ignored13 => false
+    | LexLeanStd.Host::Request.wait ignored14 ignored15 => false
+    | LexLeanStd.Host::Request.stop ignored16 => false
+    | LexLeanStd.Host::Request.exit ignored17 ignored18 ignored19 => false),
+  executable: true,
+  production: {effects: [allocation], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

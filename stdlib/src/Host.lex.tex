@@ -1,0 +1,125 @@
+\begin{lexlean}{Host}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: FailureKind,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: notFound, fields: []},
+    {name: alreadyExists, fields: []},
+    {name: denied, fields: []},
+    {name: other, fields: []}
+  ]
+}
+
+structure{
+  name: Failure,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: kind, type: FailureKind},
+    {name: message, type: Bytes}
+  ]
+}
+
+inductive{
+  name: EntryKind,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: file, fields: []},
+    {name: directory, fields: []},
+    {name: symlink, fields: []},
+    {name: other, fields: []}
+  ]
+}
+
+structure{
+  name: Entry,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: kind, type: EntryKind},
+    {name: size, type: Nat},
+    {name: identity, type: (Option (Nat * Nat))}
+  ]
+}
+
+structure{
+  name: Child,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: program, type: String},
+    {name: arguments, type: (List String)},
+    {name: directory, type: String},
+    {name: environment, type: (List (String * String))},
+    {name: output, type: String},
+    {name: errors, type: String}
+  ]
+}
+
+structure{
+  name: Waited,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: finished, type: (List (Nat * (Option Int32)))},
+    {name: clock, type: Nat}
+  ]
+}
+
+structure{
+  name: Start,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: arguments, type: (List Bytes)},
+    {name: directory, type: (Result Bytes Failure)},
+    {name: executable, type: (Result Bytes Failure)},
+    {name: environment, type: (List (Bytes * Bytes))},
+    {name: terminal, type: Bool}
+  ]
+}
+
+inductive{
+  name: Request,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: read, fields: [String]},
+    {name: write, fields: [String, Bytes]},
+    {name: list, fields: [String]},
+    {name: stat, fields: [String]},
+    {name: createDir, fields: [String]},
+    {name: removeFile, fields: [String]},
+    {name: removeTree, fields: [String]},
+    {name: rename, fields: [String, String]},
+    {name: canonical, fields: [String]},
+    {name: lock, fields: [String]},
+    {name: spawn, fields: [Child]},
+    {name: wait, fields: [(List Nat), Nat]},
+    {name: stop, fields: [Nat]},
+    {name: exit, fields: [UInt8, Bytes, Bytes]}
+  ]
+}
+
+inductive{
+  name: Event,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: start, fields: [Start]},
+    {name: read, fields: [(Result Bytes Failure)]},
+    {name: finished, fields: [(Result Unit Failure)]},
+    {name: listed, fields: [(Result (List Bytes) Failure)]},
+    {name: stat, fields: [(Result Entry Failure)]},
+    {name: canonical, fields: [(Result Bytes Failure)]},
+    {name: spawned, fields: [(Result (Nat * Nat) Failure)]},
+    {name: waited, fields: [(Result Waited Failure)]}
+  ]
+}
+\end{semanticmodule}
+\end{lexlean}

@@ -1,4 +1,4 @@
-//! The `production` suite: PD-01..PD-07, language-1.2 production
+//! The `production` suite: PD-01..PD-10, language-1.2 production
 //! eligibility (SPEC.md §17.13).
 
 use std::collections::BTreeSet;
@@ -10,6 +10,233 @@ use lexlean::production::eligibility::{
 use lexlean::production::registry;
 
 const MAIN: &str = "src/Main.lex.tex";
+
+/// The effect each request realizes, stated here apart from the registry, so a
+/// row that names the wrong effect is refused.
+const HOST_REQUESTS: [(&str, Option<&str>); 14] = [
+    ("canonical", Some("files")),
+    ("createDir", Some("files")),
+    ("exit", None),
+    ("list", Some("files")),
+    ("lock", Some("files")),
+    ("read", Some("files")),
+    ("removeFile", Some("files")),
+    ("removeTree", Some("files")),
+    ("rename", Some("files")),
+    ("spawn", Some("process")),
+    ("stat", Some("files")),
+    ("stop", Some("process")),
+    ("wait", Some("process")),
+    ("write", Some("files")),
+];
+
+/// The fixture of `PD-10` beside the standard library, in a workspace of the
+/// two, locked.
+fn host_project() -> P {
+    const FIXTURE: &str = "tests/fixtures/host-effects";
+    let project = P::workspace_project(FIXTURE, &[FIXTURE, "stdlib"]);
+    std::fs::write(
+        project
+            .workspace_dir()
+            .join("lexlean-workspace.toml")
+            .as_std_path(),
+        format!("spec = \"lexlean/workspace/1\"\nmembers = [\"stdlib\", \"{FIXTURE}\"]\n"),
+    )
+    .expect("the workspace file");
+    project.relock();
+    project
+}
+
+/// The effects `root` of the fixture realizes on `rust-std`, each with the
+/// constructs that are its sources.
+fn host_effects_of(project: &P, root: &str) -> Vec<(String, Vec<String>)> {
+    let checked = support::checked_project(project);
+    let report = checked.modules["Main"]
+        .production
+        .as_ref()
+        .expect("Main declares production roots");
+    let row = report
+        .roots
+        .iter()
+        .find(|row| row.root == format!("HostEffects.Main.{root}"))
+        .unwrap_or_else(|| panic!("root {root} is reported"));
+    let target = row
+        .targets
+        .iter()
+        .find(|target| target.target == "rust-std")
+        .expect("rust-std is reported");
+    target
+        .effects
+        .iter()
+        .map(|effect| {
+            let mut constructs: Vec<String> = effect
+                .sources
+                .iter()
+                .map(|(construct, _)| construct.clone())
+                .collect();
+            constructs.dedup();
+            (effect.effect.clone(), constructs)
+        })
+        .collect()
+}
+
+/// `PD-10`: the registry's request rows, and rule 5 of §17.13 applied to them.
+fn host_effects() {
+    let registry = registry().expect("the registry parses");
+    let rows: Vec<(&str, Option<&str>)> = registry
+        .requests
+        .iter()
+        .map(|(id, effect)| (id.as_str(), effect.as_deref()))
+        .collect();
+    assert_eq!(rows, HOST_REQUESTS, "the effect of each request");
+    assert!(registry.effects.contains_key("files") && registry.effects.contains_key("process"));
+
+    // The rows are the constructors of `Request`, as the module writes them.
+    let module = std::fs::read_to_string(
+        support::repo_root()
+            .join("stdlib/src/Host.lex.tex")
+            .as_std_path(),
+    )
+    .expect("the standard library's Host module");
+    let (_, request) = module
+        .split_once("name: Request,")
+        .expect("the module declares Request");
+    let (request, _) = request.split_once("]\n}").expect("Request ends");
+    let mut constructors: Vec<&str> = request
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix("{name: "))
+        .filter_map(|line| line.split(',').next())
+        .collect();
+    constructors.sort_unstable();
+    let ids: Vec<&str> = registry.requests.keys().map(String::as_str).collect();
+    assert_eq!(constructors, ids, "one row per constructor of Request");
+
+    let project = host_project();
+    let (allocation, read) = ("allocation", "request.read");
+    assert_eq!(
+        host_effects_of(&project, "reads")
+            .iter()
+            .map(|(effect, _)| effect.as_str())
+            .collect::<Vec<_>>(),
+        [allocation, "files"],
+        "a closure realizes `files` through a call in another module"
+    );
+    assert!(
+        host_effects_of(&project, "reads")
+            .iter()
+            .any(|(effect, sources)| effect == "files" && sources.iter().any(|s| s == read)),
+        "the effect names the request that is its source"
+    );
+    let sources_of = |root: &str, effect: &str| -> Vec<String> {
+        host_effects_of(&project, root)
+            .into_iter()
+            .find(|(name, _)| name == effect)
+            .map_or_else(Vec::new, |(_, sources)| sources)
+    };
+    let expected = |wanted: &str| -> Vec<String> {
+        HOST_REQUESTS
+            .iter()
+            .filter(|(_, effect)| *effect == Some(wanted))
+            .map(|(id, _)| format!("request.{id}"))
+            .collect()
+    };
+    assert_eq!(sources_of("fileRequests", "files"), expected("files"));
+    assert_eq!(
+        sources_of("processRequests", "process"),
+        expected("process")
+    );
+    // `exit` realizes nothing, and reading a request is not building one.
+    for root in ["ends", "inspects"] {
+        let effects = host_effects_of(&project, root);
+        assert!(
+            effects.iter().all(|(effect, _)| effect == allocation),
+            "{root}: {effects:?}"
+        );
+    }
+
+    // A closure that builds a request and does not admit its effect is refused,
+    // at any distance from the root.
+    let root_of = |body: &str, from: &str, to: &str| {
+        (
+            format!("{body},\n  executable: true,\n  production: {{effects: [{from}], targets: [rust-std]}}"),
+            format!("{body},\n  executable: true,\n  production: {{effects: [{to}], targets: [rust-std]}}"),
+        )
+    };
+    for (body, from, to, root, effect, source) in [
+        (
+            "body: (0, (Reader::reader \"source\"))",
+            "allocation, files",
+            "allocation",
+            "reads",
+            "files",
+            "request.read",
+        ),
+        (
+            "body: (cons (ctor LexLeanStd.Host::Request.spawn child) (cons (ctor LexLeanStd.Host::Request.wait (nil Nat) 1) (cons (ctor LexLeanStd.Host::Request.stop 0) (nil LexLeanStd.Host::Request))))",
+            "allocation, process",
+            "allocation, files",
+            "processRequests",
+            "process",
+            "request.",
+        ),
+    ] {
+        let mutated = host_project();
+        let (before, after) = root_of(body, from, to);
+        mutated.edit(MAIN, &before, &after);
+        mutated.relock();
+        let text = mutated.check_fails_with("LLT4005").to_string();
+        assert!(
+            text.contains(&format!("`HostEffects.Main.{root}` is not eligible"))
+                && text.contains(&format!("realizes effect `{effect}`"))
+                && text.contains(source),
+            "{text}"
+        );
+        mutated.assert_no_backend_output_with("LLT4005");
+    }
+
+    // A target without allocation refuses a request by the type it builds,
+    // even a request that names no effect.
+    let core = host_project();
+    let (before, after) = root_of(
+        "body: (0, (ctor LexLeanStd.Host::Request.exit (0 : UInt8) 0x 0x))",
+        "allocation",
+        "allocation",
+    );
+    assert_eq!(before, after);
+    core.edit(
+        MAIN,
+        &before,
+        &before.replace("targets: [rust-std]", "targets: [rust-core, rust-std]"),
+    );
+    core.relock();
+    let text = core.check_fails_with("LLT4005").to_string();
+    assert!(
+        text.contains("`HostEffects.Main.ends` is not eligible for target `rust-core`")
+            && text.contains("requires heap allocation"),
+        "{text}"
+    );
+
+    // A type of the same name in another module is not the host's: it realizes
+    // nothing, and no driver will ever take it for a request.
+    let elsewhere = host_project();
+    elsewhere.write(
+        "src/Reader.lex.tex",
+        "\\begin{lexlean}{Reader}\n\\useglossary{lexlean.std.nat@1.2.0}\n\\title{Natural number addition}\n\\begin{semanticmodule}\ninductive{\n  name: Request,\n  type_parameters: [],\n  parameters: [],\n  constructors: [\n    {name: read, fields: [String]}\n  ]\n}\n\ndefinition{\n  name: reader,\n  parameters: [path : String],\n  result: Request,\n  body: (ctor Request.read path),\n  executable: true\n}\n\\end{semanticmodule}\n\\end{lexlean}\n",
+    );
+    elsewhere.edit(
+        MAIN,
+        "name: reads,\n  parameters: [state : (Option Nat), event : LexLeanStd.Host::Event],\n  result: (Nat * LexLeanStd.Host::Request),\n  body: (0, (Reader::reader \"source\")),\n  executable: true,\n  production: {effects: [allocation, files], targets: [rust-std]}",
+        "name: reads,\n  parameters: [state : (Option Nat), event : LexLeanStd.Host::Event],\n  result: (Nat * Reader::Request),\n  body: (0, (Reader::reader \"source\")),\n  executable: true,\n  production: {effects: [allocation], targets: [rust-std]}",
+    );
+    elsewhere.relock();
+    assert_eq!(
+        host_effects_of(&elsewhere, "reads")
+            .iter()
+            .map(|(effect, _)| effect.as_str())
+            .collect::<Vec<_>>(),
+        [allocation]
+    );
+}
 
 /// The eligibility report of the committed production example's `Main`.
 fn main_report(project: &P) -> serde_json::Value {
@@ -344,6 +571,8 @@ pub fn run(id: &str) {
     match id {
         // §17.13, §17.23: the stacks the harnesses give a recursive root.
         "PD-08" => super::bootstrap::stack_bounds(),
+        // §17.13, §17.22: a request's effect is declared and checked.
+        "PD-10" => host_effects(),
         "PD-01" => {
             let registry = registry().expect("the embedded production registry parses");
             // Every key the analysis can produce has exactly one row, and
