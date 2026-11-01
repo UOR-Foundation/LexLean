@@ -11426,3 +11426,44 @@ script's output to that function, so the file the gate job writes is the file
 | the committed tree | `cargo test -p repo-conformance --test conformance conformance_rp_18 -- --exact` | ok |
 | the script no longer writes the gate line | same | `the evidence satisfies the release criterion` failed: `Err(["release/vv-evidence.txt does not record the gate passing"])` |
 | the criterion accepts the legs' lines | `cargo test -p repo-model the_ci_evidence_criterion` | `left: Ok(())` against the refusal |
+
+## The five `Numeral` packages move the counts of `BS-05` and `BS-06` (`SL-09`, #276)
+
+The five roots of `LexLeanStd.Numeral` (`SL-09`) add five committed packages,
+and both cases assert their corpus, so both failed on the counts when the member
+was merged with `release/v0.4` at `ccbf03843`. `BS-05` rose by 5 crates and by 3
+evaluator runs; `BS-06` rose by 10 vectors of `printCrate` and by 12 evaluator
+runs, which is more than the vectors added. Each number was explained before it
+was moved: a throwaway edit, reverted, ran `BS-06`'s corpus code over the member's
+tree and over `compiler/rust`, `compiler/fixtures` and `tests/production-export`
+of `ccbf03843`, hashing each crate.
+
+| Count | `ccbf03843` | member |
+| --- | --- | --- |
+| distinct lowered crates | 232 | 237 |
+| crates of at most 400 expressions | 201 | 204 |
+| `printCrate` vectors | 627 | 637 |
+| committed distinct crates | 464 | 474 |
+| committed distinct crates in the evaluator's limit | 404 | 414 |
+| runs with a tight capacity | 34 | 34 |
+| runs with a tight capacity in the evaluator's limit | 29 | 31 |
+| `printCrate` vectors in the evaluator's limit | 562 | 574 |
+
+The crates that differ are the five new ones, of 105, 105, 256, 485 and 499
+expressions, so three fall under `BS-05`'s cap of 400: that is its +3, on the
+same rule runs. All ten new committed vectors are in the evaluator's limit, which
+is ten of `BS-06`'s +12. The other two come from the tight runs, which sample
+every seventh crate: the new crates move the sample, which loses crates of 549 and
+1,343 expressions and gains one of 105 (new) and one of 178. The number of tight
+runs stays 34, and two more of them are in the limit.
+
+On the merged member, regenerated, on one WSL host with 4 build jobs:
+
+| Case | Command | Observed |
+| --- | --- | --- |
+| `BS-05` | `cargo test -p repo-conformance --test conformance -- conformance_bs_05 --exact --nocapture` | ok, 1,528 s: 813 rustc runs, the evaluator on the vectors and the seeded mutants, 4,000 seeded rustc runs, every plant detected |
+| `BS-06` | `cargo test -p repo-conformance --test conformance -- conformance_bs_06 --exact --nocapture` | ok, 1,409 s: 2,741 rustc runs, the evaluator on 574 + 2,104 vectors and 400 + 399 mutants, 2,984 seeded rustc runs |
+| `SL-01`, `SL-02`, `SL-05`, `SL-09`, `PX-01`, `PD-08`, `PK-05`, `GN-01` | `cargo test -p repo-conformance --test conformance -- <each> --test-threads=1` | 8 passed, 1,580 s |
+
+The figures of the `BS-06` record above are that record's own run and stay as
+measured.
