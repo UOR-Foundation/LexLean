@@ -3,7 +3,10 @@
 # repository alone, before any job that costs a runner starts.
 #
 #   pull request, draft       the `rest` leg only: a development signal
-#   pull request, ready       the whole gate
+#   pull request, ready, base the `rest` leg only, the same signal: only a pull
+#   not main or release/*     request into a line can land on it
+#   pull request, ready, base the whole gate
+#   main or release/*
 #   workflow_dispatch         the whole gate
 #   push to main or to a      the whole gate, unless the push is a merge whose
 #   release line (§9.4)
@@ -16,9 +19,13 @@
 # merge of a head that already contains main lands that head's tree
 # unchanged, and each of those runs started the whole gate (about 500
 # runner-minutes on a pool of 20 shared jobs) for a tree whose verdict was
-# known or was not going to be read.
+# known or was not going to be read. A pull request stacked on another feature
+# branch is the same waste: it cannot land on a line, and the pull request that
+# carries the stack into `main` or a release line runs the whole gate on the
+# tree that lands.
 #
-# Inputs, all from the environment: EVENT, DRAFT, REPO. The jobs read `full`
+# Inputs, all from the environment: EVENT, DRAFT, BASE (the base branch of a
+# pull request), REPO. The jobs read `full`
 # and `rows` from GITHUB_OUTPUT. `LEXLEAN_CI_ROWS` and `LEXLEAN_CI_WORKFLOW`
 # name the legs file and the workflow when a test runs the script elsewhere.
 set -euo pipefail
@@ -27,6 +34,7 @@ rows_file=${LEXLEAN_CI_ROWS:-.github/vv-rows.json}
 workflow=${LEXLEAN_CI_WORKFLOW:-.github/workflows/ci.yml}
 event=${EVENT:?EVENT names the workflow event}
 draft=${DRAFT:-}
+base=${BASE:-}
 repo=${REPO:?REPO names owner/name}
 out=${GITHUB_OUTPUT:-/dev/stdout}
 summary=${GITHUB_STEP_SUMMARY:-/dev/null}
@@ -75,7 +83,16 @@ case "$event" in
       emit false "$(jq -c '[.[] | select(.part == "rest")]' "$rows_file")"
       printf '%s\n' 'Draft pull request: the `rest` leg only. This run is not the gate; marking the pull request ready runs the whole gate.' >> "$summary"
     else
-      whole_gate 'Pull request ready for review: the whole gate.'
+      case "$base" in
+        # An unknown base is not known to be stacked: the whole gate.
+        main | release/* | '')
+          whole_gate 'Pull request ready for review: the whole gate.'
+          ;;
+        *)
+          emit false "$(jq -c '[.[] | select(.part == "rest")]' "$rows_file")"
+          printf 'Pull request into `%s`, which is neither `main` nor a release line: the `rest` leg only. A stacked pull request cannot land on a line; the pull request into `main` or a release line runs the whole gate.\n' "$base" >> "$summary"
+          ;;
+      esac
     fi
     ;;
   push)

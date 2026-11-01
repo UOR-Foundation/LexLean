@@ -114,7 +114,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "Complex Lean objects that LexLean 1.0 cannot define MAY be imported as closed external glossary entries. Their guarantees belong to their upstream repositories. LexLean verifies only that the generated declarations elaborate and check in the pinned environment and that their observed axiom dependencies satisfy their explicit policies." (nil String))
+      (cons "The list above is the language-1.0 boundary and is frozen with it (§30.2). Languages 1.1 and 1.2 extend the closed language through semantic modules (§17), for example with document-defined inductive types, recursive definitions, and instances, which the list marks unsupported for 1.0; what each of them admits is fixed by §17 and its language data, not by this list." (nil String))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -124,6 +124,20 @@ definition{
 
 definition{
   name: i0010,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Complex Lean objects that LexLean 1.0 cannot define MAY be imported as closed external glossary entries. Their guarantees belong to their upstream repositories. LexLean verifies only that the generated declarations elaborate and check in the pinned environment and that their observed axiom dependencies satisfy their explicit policies." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0011,
   parameters: [],
   result: DocRows::Item,
   body: constructor{

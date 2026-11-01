@@ -333,6 +333,7 @@
 'LexLeanStd.Target.maddubs_exact' depends on axioms: [propext]
 'LexLeanStd.Target.maddubs_saturates_high' depends on axioms: [propext]
 'LexLeanStd.Target.maddubs_saturates_low' depends on axioms: [propext]
+'LexLeanStd.Target.mull_takes_eight' does not depend on any axioms
 'LexLeanStd.Target.mull_widens' does not depend on any axioms
 'LexLeanStd.Target.neonMullS8' does not depend on any axioms
 'LexLeanStd.Target.neonPaddlqS16' depends on axioms: [propext]

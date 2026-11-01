@@ -96,6 +96,9 @@ public theorem adds_saturates : (avx2AddsEpi16 (((32767 : Int) :: ((LexLeanRunti
 public theorem mull_widens : (neonMullS8 (((LexLeanRuntime.negate ((128 : Int)) : Int) :: ((127 : Int) :: ([] : List (Int))))) (((LexLeanRuntime.negate ((128 : Int)) : Int) :: ((127 : Int) :: ([] : List (Int))))) = ((16384 : Int) :: ((16129 : Int) :: ([] : List (Int))))) := by
   decide
 
+public theorem mull_takes_eight : (neonMullS8 (((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ([] : List (Int))))))))))) (((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ([] : List (Int))))))))))) = ((15 : Int) :: ((15 : Int) :: ((15 : Int) :: ((15 : Int) :: ((15 : Int) :: ((15 : Int) :: ((15 : Int) :: ((15 : Int) :: ([] : List (Int))))))))))) := by
+  decide
+
 public theorem paddl_widens : (neonPaddlqS16 (((32767 : Int) :: ((32767 : Int) :: ((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ([] : List (Int))))))) = ((65534 : Int) :: ((LexLeanRuntime.negate ((65536 : Int)) : Int) :: ([] : List (Int))))) := by
   decide
 

@@ -201,7 +201,10 @@ inductive{
       name: recordStruct,
       fields: [String, (List String), (List String), (List String), (List RtType)]
     },
-    {name: enumItem, fields: [String, (List String), (List String), (List RtVariant)]}
+    {name: enumItem, fields: [String, (List String), (List String), (List RtVariant)]},
+    {name: defined, fields: [String]},
+    {name: moduleItem, fields: [String, (List RtItem)]},
+    {name: innerAttribute, fields: [String, (List String)]}
   ]
 }
 

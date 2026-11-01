@@ -2494,7 +2494,8 @@ pub fn run(id: &str) {
         "SP-07" => {
             // The compiler project is configured as the production example,
             // under its own name (§17.14): the same toolchain, lexicon
-            // source, and limits.
+            // source, and limits. The example's titles glossary names its
+            // own modules, so the compiler does not take it.
             let production = |file: &str| {
                 std::fs::read_to_string(
                     repo_root()
@@ -2511,6 +2512,10 @@ pub fn run(id: &str) {
             assert_eq!(
                 compiler("lexlean.toml"),
                 production("lexlean.toml")
+                    .replace(
+                        "[[lexicon_source]]\npackage = \"production.titles\"\nkind = \"path\"\npath = \"glossary/production.titles\"\n\n",
+                        ""
+                    )
                     .replace("name = \"production\"", "name = \"compiler\"")
                     .replace(
                         "module_prefix = \"Production\"",
