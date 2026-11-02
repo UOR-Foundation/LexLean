@@ -26,17 +26,7 @@ definition{
   name: child,
   parameters: [program : String],
   result: LexLeanStd.Host::Child,
-  body: record{
-    type: LexLeanStd.Host::Child,
-    fields: [
-      {field: program, value: program},
-      {field: arguments, value: (nil String)},
-      {field: directory, value: "."},
-      {field: environment, value: (nil (String * String))},
-      {field: output, value: "out"},
-      {field: errors, value: "err"}
-    ]
-  },
+  body: (record LexLeanStd.Host::Child {program := program, arguments := (nil String), directory := ".", environment := (nil (String * String)), output := "out", errors := "err"}),
   executable: true
 }
 
