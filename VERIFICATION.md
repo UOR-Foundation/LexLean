@@ -12182,6 +12182,101 @@ On the merged member, regenerated, on one WSL host with 4 build jobs:
 The figures of the `BS-06` record above are that record's own run and stay as
 measured.
 
+## The five `Order` packages move the counts of `BS-05` to `BS-08` and `BS-11` to `BS-15` (`SL-10`, #276)
+
+The five roots of `LexLeanStd.Order` (`SL-10`) add five committed packages, and
+these cases assert their corpus, so they failed on the counts when the member was
+merged with #371 at `32d317126` and `ef961c75a`. `BS-05` and `BS-06` were measured
+as for `Numeral` above: a throwaway edit, reverted, ran `BS-06`'s corpus code over
+the member's tree and over `32d317126`, hashing each crate. The other rows are the
+numbers their own count asserts reported in CI run 41420697512 on `88270df7e`, whose
+tree differs from this one by these counts and the verification records.
+
+| Count | `32d317126` | member |
+| --- | --- | --- |
+| committed manifests and packages | 277 | 282 |
+| distinct programs | 194 | 199 |
+| distinct lowered crates | 253 | 258 |
+| crates of at most 400 expressions | 205 | 208 |
+| `printCrate` vectors | 672 | 682 |
+| committed distinct crates | 506 | 516 |
+| committed distinct crates in the evaluator's limit | 416 | 422 |
+| runs with a tight capacity | 37 | 37 |
+| runs with a tight capacity in the evaluator's limit | 30 | 32 |
+| `printCrate` vectors in the evaluator's limit | 575 | 583 |
+| `printExpr` vectors | 2,110 | 2,145 |
+
+| Row | `ef961c75a` | member |
+| --- | --- | --- |
+| `BS-05` runs of `validateCrate`, `correspondCrate` | 491, 354 | 494, 359 |
+| `BS-05` runs under the evaluator | 443, 306 | 444, 309 |
+| `BS-05` refusals among the runs of `validateCrate`, rule runs of it | 213, 132 | 211, 129 |
+| `BS-05` refused among the seeded mutants | 271, 244 | 291, 252 |
+| `BS-06` seeded `printExpr` mutants, seeded rustc runs | 399, 2,984 | 394, 2,989 |
+| `BS-07` vectors, within the bound | 328, 278 | 333, 281 |
+| `BS-08` crates, within the bound | 387, 339 | 392, 342 |
+| `BS-11` vectors, within the bound, mutants | 157, 156, 296 | 157, 156, 281 |
+| `BS-12` vectors, within the bound, mutants | 76, 75, 184 | 76, 75, 149 |
+| `BS-13` vectors, within the bound, mutants | 97, 49, 125 | 102, 52, 108 |
+| `BS-14` vectors, within the bound, mutants | 332, 282, 547 | 337, 285, 580 |
+| `BS-15` manifests, accepted, render mutants, runs under rustc | 296, 277, 277, 3,169 | 301, 282, 282, 3,184 |
+
+The crates that differ are the five new ones, of 65, 129, 367, 451 and 477
+expressions, so three fall under the cap of 400: that is `BS-05`'s +3 and, on both
+profiles, the +6 of the committed crates in `BS-06`'s limit. `BS-06`'s other +2 come
+from the tight runs, which sample every seventh crate: the new crates move the
+sample, which loses crates of 549 and 1,343 expressions and gains ones of 178 and 499.
+The number of tight runs stays 37, and two more of them are in the limit. The
+mutants of `BS-11` to `BS-14` are drawn from the committed programs, so the new
+programs change the draws, and some of the kept counts fall; which mutants changed
+was not traced. Why the vectors of `BS-11` and `BS-12` do not move was not traced
+either.
+
+The first run on those counts, CI run 41434996123 on `4c546a065`, stopped `BS-05` in
+its own corpus: `the rule corpus gave up before it reached 3 runs of:
+["heap-list-match"]`. That refusal was reached only by draws. A throwaway edit,
+reverted, drew 400,000 mutants from each of three seeds over the 153 crates of at most
+80 expressions, without stopping at the target:
+
+| Seed | list match, hits | slowest other refusal, third hit at draw |
+| --- | --- | --- |
+| `0x05A1_1CE0_BE55_0005` (the corpus's) | 0 | 36,530 (`heap-empty-list`) |
+| `0x1111_2222_3333_0005` | 0 | 17,148 (`heap-list-cell`) |
+| `0x7777_8888_9999_0005` | 1 | 26,541 (`negated-zero`) |
+
+So three hits within the limit of 400,000 was luck on the earlier pools, and Order's
+crate of 65 expressions, the one new base, moved the draws. A higher limit would leave
+it to fail on a later package, so `list_match_crates` holds it by hand whatever the
+draws: `Uncons` of a parameter of type `Nat` under `rust-core`, which the probe shows
+the oracle refuses with this refusal. The corpus now draws for the other 47 refusals,
+so the rule runs fall by 3 and the hand-built crates rise by 1, which is the -2 on
+`validateCrate`'s runs and refusals. None of the other 47 is at this risk: on all three
+seeds each has its third hit within 36,530 of the 400,000 draws. This measures `BS-05`'s
+refusals only.
+
+The numbers of `BS-05` are that probe's, which stops before the first leg; `BS-06`'s
+are its assert's in that CI run. CI run 41443972605 on `e0fa5c6e2` then passed both
+cases on them, and every other job but `examples`, which wanted the verify records.
+
+Those records moved three counts again, though they touch nothing but
+`stdlib/expected/verify`. `calculus_check::committed` reads every
+`/preserve/program/R*.json`, and `mutants` picks its bases from those programs, so a
+records commit that adds, removes or changes one moves the draws of the rows on that
+corpus. This one added `R17` to `R21` and changed `R8` to `R16`. CI run 41470121986 on
+`42263665e` gave:
+
+| Count | Before the records | With them |
+| --- | --- | --- |
+| `BS-11` mutants | 286 | 281 |
+| `BS-12` mutants | 151 | 149 |
+| `BS-14` mutants | 593 | 580 |
+
+`BS-13` draws from the same corpus and passed with its count unmoved; `BS-07` tops its
+draws up to a fixed count. `BS-05`, `BS-06`, `BS-08` and `BS-15` read only manifests
+and fixtures. The three failing cases assert the count before their plants, so that
+run did not reach the plants on the new draws. A package that adds records should
+set these counts with its records in the tree, on the same commit.
+
 ## A definition recurses on the argument its source declares (`SP-31`, #314)
 
 ### The defect

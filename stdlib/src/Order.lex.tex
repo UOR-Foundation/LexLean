@@ -1,0 +1,198 @@
+\begin{lexlean}{Order}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: lessBytes,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bool,
+  body: (prim equal (prim compare_bytes left right : Ordering) (prim compare_bytes 0x 0x01 : Ordering) : Bool),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: reverseList,
+  type_parameters: [Item],
+  parameters: [items : (List 'Item)],
+  result: (List 'Item),
+  body: (prim list_fold (fun (reversed : (List 'Item)) (item : 'Item) => (cons item reversed)) (nil 'Item) items : (List 'Item)),
+  executable: true
+}
+
+definition{
+  name: mergeStep,
+  type_parameters: [Value],
+  parameters: [
+    state : ((List (Bytes * 'Value)) * ((List (Bytes * 'Value)) * (List (Bytes * 'Value))))
+  ],
+  result: (Option ((List (Bytes * 'Value)) * ((List (Bytes * 'Value)) * (List (Bytes * 'Value))))),
+  body: (let left : (List (Bytes * 'Value)) := (first state); (let right : (List (Bytes * 'Value)) := (first (second state)); (let merged : (List (Bytes * 'Value)) := (second (second state)); (match left
+    | List.nil => (match right
+      | List.nil => (ctor Option.none [((List (Bytes * 'Value)) * ((List (Bytes * 'Value)) * (List (Bytes * 'Value))))])
+      | List.cons rightHead rightTail => (ctor Option.some [((List (Bytes * 'Value)) * ((List (Bytes * 'Value)) * (List (Bytes * 'Value))))] ((nil (Bytes * 'Value)), (rightTail, (cons rightHead merged)))))
+    | List.cons leftHead leftTail => (match right
+      | List.nil => (ctor Option.some [((List (Bytes * 'Value)) * ((List (Bytes * 'Value)) * (List (Bytes * 'Value))))] (leftTail, ((nil (Bytes * 'Value)), (cons leftHead merged))))
+      | List.cons rightHead rightTail => (if (lessBytes (first rightHead) (first leftHead)) then (ctor Option.some [((List (Bytes * 'Value)) * ((List (Bytes * 'Value)) * (List (Bytes * 'Value))))] (left, (rightTail, (cons rightHead merged)))) else (ctor Option.some [((List (Bytes * 'Value)) * ((List (Bytes * 'Value)) * (List (Bytes * 'Value))))] (leftTail, (right, (cons leftHead merged)))))))))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: mergeEntries,
+  type_parameters: [Value],
+  parameters: [left : (List (Bytes * 'Value)), right : (List (Bytes * 'Value))],
+  result: (List (Bytes * 'Value)),
+  body: (let fuel : Nat := (((prim length left : Nat) + (prim length right : Nat)) + 1); (reverseList [(Bytes * 'Value)] (second (second (first (prim iterate_until (fun (state : ((List (Bytes * 'Value)) * ((List (Bytes * 'Value)) * (List (Bytes * 'Value))))) => (mergeStep ['Value] state)) fuel (left, (right, (nil (Bytes * 'Value)))) : (((List (Bytes * 'Value)) * ((List (Bytes * 'Value)) * (List (Bytes * 'Value)))) * Bool))))))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: passStep,
+  type_parameters: [Value],
+  parameters: [state : ((List (List (Bytes * 'Value))) * (List (List (Bytes * 'Value))))],
+  result: (Option ((List (List (Bytes * 'Value))) * (List (List (Bytes * 'Value))))),
+  body: (let runs : (List (List (Bytes * 'Value))) := (first state); (let merged : (List (List (Bytes * 'Value))) := (second state); (match runs
+    | List.nil => (ctor Option.none [((List (List (Bytes * 'Value))) * (List (List (Bytes * 'Value))))])
+    | List.cons run rest => (match rest
+      | List.nil => (ctor Option.some [((List (List (Bytes * 'Value))) * (List (List (Bytes * 'Value))))] ((nil (List (Bytes * 'Value))), (cons run merged)))
+      | List.cons next others => (ctor Option.some [((List (List (Bytes * 'Value))) * (List (List (Bytes * 'Value))))] (others, (cons (mergeEntries ['Value] run next) merged))))))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: mergePass,
+  type_parameters: [Value],
+  parameters: [runs : (List (List (Bytes * 'Value)))],
+  result: (List (List (Bytes * 'Value))),
+  body: (reverseList [(List (Bytes * 'Value))] (second (first (prim iterate_until (fun (state : ((List (List (Bytes * 'Value))) * (List (List (Bytes * 'Value))))) => (passStep ['Value] state)) ((prim length runs : Nat) + 1) (runs, (nil (List (Bytes * 'Value)))) : (((List (List (Bytes * 'Value))) * (List (List (Bytes * 'Value)))) * Bool))))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: sortStep,
+  type_parameters: [Value],
+  parameters: [runs : (List (List (Bytes * 'Value)))],
+  result: (Option (List (List (Bytes * 'Value)))),
+  body: (if ((prim length runs : Nat) <=? 1) then (ctor Option.none [(List (List (Bytes * 'Value)))]) else (ctor Option.some [(List (List (Bytes * 'Value)))] (mergePass ['Value] runs))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: sortByKey,
+  type_parameters: [Value],
+  parameters: [entries : (List (Bytes * 'Value))],
+  result: (List (Bytes * 'Value)),
+  body: (let runs : (List (List (Bytes * 'Value))) := (reverseList [(List (Bytes * 'Value))] (prim list_fold (fun (singles : (List (List (Bytes * 'Value)))) (entry : (Bytes * 'Value)) => (cons (cons entry (nil (Bytes * 'Value))) singles)) (nil (List (Bytes * 'Value))) entries : (List (List (Bytes * 'Value))))); (match (first (prim iterate_until (fun (state : (List (List (Bytes * 'Value)))) => (sortStep ['Value] state)) ((prim length entries : Nat) + 1) runs : ((List (List (Bytes * 'Value))) * Bool)))
+    | List.nil => (nil (Bytes * 'Value))
+    | List.cons sorted rest => sorted)),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: keysOf,
+  type_parameters: [Value],
+  parameters: [entries : (List (Bytes * 'Value))],
+  result: (List Bytes),
+  body: (reverseList [Bytes] (prim list_fold (fun (keys : (List Bytes)) (entry : (Bytes * 'Value)) => (cons (first entry) keys)) (nil Bytes) entries : (List Bytes))),
+  executable: true
+}
+
+definition{
+  name: withUnit,
+  parameters: [items : (List Bytes)],
+  result: (List (Bytes * Unit)),
+  body: (reverseList [(Bytes * Unit)] (prim list_fold (fun (entries : (List (Bytes * Unit))) (item : Bytes) => (cons (item, ()) entries)) (nil (Bytes * Unit)) items : (List (Bytes * Unit)))),
+  executable: true
+}
+
+definition{
+  name: dedupStep,
+  parameters: [kept : (List Bytes), item : Bytes],
+  result: (List Bytes),
+  body: (match kept
+    | List.nil => (cons item kept)
+    | List.cons last rest => (if (prim equal last item : Bool) then kept else (cons item kept))),
+  executable: true
+}
+
+definition{
+  name: sortBytes,
+  parameters: [items : (List Bytes)],
+  result: (List Bytes),
+  body: (keysOf [Unit] (sortByKey [Unit] (withUnit items))),
+  axioms: [propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: sortEntries,
+  parameters: [entries : (List (Bytes * Bytes))],
+  result: (List (Bytes * Bytes)),
+  body: (sortByKey [Bytes] entries),
+  axioms: [propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: sortedSet,
+  parameters: [items : (List Bytes)],
+  result: (List Bytes),
+  body: (reverseList [Bytes] (prim list_fold (fun (kept : (List Bytes)) (item : Bytes) => (dedupStep kept item)) (nil Bytes) (sortBytes items) : (List Bytes))),
+  axioms: [propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: insertStep,
+  parameters: [key : Bytes, state : (Bool * (List Bytes)), item : Bytes],
+  result: (Bool * (List Bytes)),
+  body: (match (first state)
+    | Bool.true => (true, (cons item (second state)))
+    | Bool.false => (if (prim equal key item : Bool) then (true, (cons item (second state))) else (if (lessBytes key item) then (true, (cons item (cons key (second state)))) else (false, (cons item (second state)))))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: insertSorted,
+  parameters: [items : (List Bytes), key : Bytes],
+  result: (List Bytes),
+  body: (let done : (Bool * (List Bytes)) := (prim list_fold (fun [key] (state : (Bool * (List Bytes))) (item : Bytes) => (insertStep key state item)) (false, (nil Bytes)) items : (Bool * (List Bytes))); (match (first done)
+    | Bool.true => (reverseList [Bytes] (second done))
+    | Bool.false => (reverseList [Bytes] (cons key (second done))))),
+  axioms: [propext],
+  executable: true,
+  production: {effects: [allocation], targets: [rust-std]}
+}
+
+definition{
+  name: ascendStep,
+  parameters: [state : (Bool * (Option Bytes)), item : Bytes],
+  result: (Bool * (Option Bytes)),
+  body: (match (second state)
+    | Option.none => ((first state), (ctor Option.some [Bytes] item))
+    | Option.some previous => (((first state) && (lessBytes previous item)), (ctor Option.some [Bytes] item))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: isAscending,
+  parameters: [items : (List Bytes)],
+  result: Bool,
+  body: (first (prim list_fold (fun (state : (Bool * (Option Bytes))) (item : Bytes) => (ascendStep state item)) (true, (ctor Option.none [Bytes])) items : (Bool * (Option Bytes)))),
+  axioms: [propext],
+  executable: true,
+  production: {effects: [allocation], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}
