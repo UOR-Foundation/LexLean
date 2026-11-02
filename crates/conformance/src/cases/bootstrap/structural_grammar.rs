@@ -178,10 +178,12 @@ fn enc_class(class: AtomClass) -> Value {
 }
 
 fn enc_items(items: &[ProofItemAst]) -> Value {
-    items.iter().rev().fold(
-        adt("Proof", "ProofNil", Vec::new()),
-        |chain, item| adt("Proof", "ProofCons", vec![enc_item(item), chain]),
-    )
+    items
+        .iter()
+        .rev()
+        .fold(adt("Proof", "ProofNil", Vec::new()), |chain, item| {
+            adt("Proof", "ProofCons", vec![enc_item(item), chain])
+        })
 }
 
 fn enc_env(env: &ProofEnvAst) -> Value {
@@ -195,7 +197,13 @@ fn enc_env(env: &ProofEnvAst) -> Value {
 fn enc_labeled(rows: &[(u64, ProofEnvAst)]) -> Value {
     rows.iter().rev().fold(
         adt("Proof", "ProofNil", Vec::new()),
-        |chain, (label, env)| adt("Proof", "LabeledCons", vec![number(*label), enc_env(env), chain]),
+        |chain, (label, env)| {
+            adt(
+                "Proof",
+                "LabeledCons",
+                vec![number(*label), enc_env(env), chain],
+            )
+        },
     )
 }
 
@@ -496,7 +504,10 @@ fn declared(env: &str, tail: &str) -> String {
 }
 
 fn proved(body: &str) -> String {
-    declared("theorem", &format!("{{t}}\\noaxioms S.\\begin{{proof}}{body}\\end{{proof}}"))
+    declared(
+        "theorem",
+        &format!("{{t}}\\noaxioms S.\\begin{{proof}}{body}\\end{{proof}}"),
+    )
 }
 
 fn form(env: &str, body: &str) -> String {
@@ -547,15 +558,30 @@ fn named() -> Vec<Vector> {
     add("begin at the end of the file", "\\begin".to_owned());
     add("begin without a brace", "\\begin x".to_owned());
     add("an open name", "\\begin{lexlean".to_owned());
-    add("another first environment", "\\begin{x}{M}\\title{T}\\end{lexlean}".to_owned());
+    add(
+        "another first environment",
+        "\\begin{x}{M}\\title{T}\\end{lexlean}".to_owned(),
+    );
     add("two refusals: the first stands", "\\begin{x}{N}".to_owned());
     add("no name", "\\begin{lexlean}".to_owned());
-    add("another name", "\\begin{lexlean}{N}\\title{T}\\end{lexlean}".to_owned());
-    add("a name with white space", "\\begin{lexlean}{ M }\\title{T}\\end{lexlean}".to_owned());
-    add("a name of two atoms", "\\begin{lexlean}{M.N}\\title{T}\\end{lexlean}".to_owned());
+    add(
+        "another name",
+        "\\begin{lexlean}{N}\\title{T}\\end{lexlean}".to_owned(),
+    );
+    add(
+        "a name with white space",
+        "\\begin{lexlean}{ M }\\title{T}\\end{lexlean}".to_owned(),
+    );
+    add(
+        "a name of two atoms",
+        "\\begin{lexlean}{M.N}\\title{T}\\end{lexlean}".to_owned(),
+    );
     add("minimal", wrapped(""));
     add("no title", "\\begin{lexlean}{M}\\end{lexlean}".to_owned());
-    add("two titles", "\\begin{lexlean}{M}\\title{T}\\title{U}\\end{lexlean}".to_owned());
+    add(
+        "two titles",
+        "\\begin{lexlean}{M}\\title{T}\\title{U}\\end{lexlean}".to_owned(),
+    );
     add(
         "uses and imports",
         "\\begin{lexlean}{M}\n\\useglossary{a b@1.0.0}\n\\useglossary{c}\n\\importmodule{D.E}\n\\importmodule{F}\n\\title{A title}\n\\end{lexlean}".to_owned(),
@@ -565,27 +591,72 @@ fn named() -> Vec<Vector> {
         "\\begin{lexlean}{M}\\importmodule{F}\\useglossary{c}\\title{T}\\end{lexlean}".to_owned(),
     );
     add("an open title", "\\begin{lexlean}{M}\\title{T".to_owned());
-    add("a title of nested braces", "\\begin{lexlean}{M}\\title{a{b}c}\\end{lexlean}".to_owned());
-    add("nested braces in a use", "\\begin{lexlean}{M}\\useglossary{a{b}c}\\title{T}\\end{lexlean}".to_owned());
-    add("white space in a use", "\\begin{lexlean}{M}\\useglossary{a  b\nc}\\title{T}\\end{lexlean}".to_owned());
+    add(
+        "a title of nested braces",
+        "\\begin{lexlean}{M}\\title{a{b}c}\\end{lexlean}".to_owned(),
+    );
+    add(
+        "nested braces in a use",
+        "\\begin{lexlean}{M}\\useglossary{a{b}c}\\title{T}\\end{lexlean}".to_owned(),
+    );
+    add(
+        "white space in a use",
+        "\\begin{lexlean}{M}\\useglossary{a  b\nc}\\title{T}\\end{lexlean}".to_owned(),
+    );
     add("text after the end", format!("{}x", wrapped("")));
-    add("white space around the module", format!("\n \n{}\n \n", wrapped("")));
+    add(
+        "white space around the module",
+        format!("\n \n{}\n \n", wrapped("")),
+    );
 
     // Blocks.
     add("text among the blocks", wrapped("x"));
-    add("a block left open", "\\begin{lexlean}{M}\\title{T}".to_owned());
+    add(
+        "a block left open",
+        "\\begin{lexlean}{M}\\title{T}".to_owned(),
+    );
     add("another end", wrapped("\\end{section}"));
     add("an unknown block", wrapped("\\begin{foo}\\end{foo}"));
-    add("a section", wrapped("\\begin{section}{s}\\heading{A heading}\\end{section}"));
-    add("a section with parameters", wrapped("\\begin{section}{s}\\heading{H}\\parameters{p q}\\end{section}"));
-    add("a section with an upper-case id", wrapped("\\begin{section}{Abc}\\heading{H}\\end{section}"));
-    add("a section with an id of a digit", wrapped("\\begin{section}{1}\\heading{H}\\end{section}"));
-    add("a section with an empty id", wrapped("\\begin{section}{}\\heading{H}\\end{section}"));
-    add("a section with a hyphen", wrapped("\\begin{section}{a-b1}\\heading{H}\\end{section}"));
-    add("a section with an underscore", wrapped("\\begin{section}{a_b}\\heading{H}\\end{section}"));
-    add("a section without a heading", wrapped("\\begin{section}{s}\\end{section}"));
-    add("a section left open", "\\begin{lexlean}{M}\\title{T}\\begin{section}{s}\\heading{H}".to_owned());
-    add("a section ended as another", wrapped("\\begin{section}{s}\\heading{H}\\end{lexlean}"));
+    add(
+        "a section",
+        wrapped("\\begin{section}{s}\\heading{A heading}\\end{section}"),
+    );
+    add(
+        "a section with parameters",
+        wrapped("\\begin{section}{s}\\heading{H}\\parameters{p q}\\end{section}"),
+    );
+    add(
+        "a section with an upper-case id",
+        wrapped("\\begin{section}{Abc}\\heading{H}\\end{section}"),
+    );
+    add(
+        "a section with an id of a digit",
+        wrapped("\\begin{section}{1}\\heading{H}\\end{section}"),
+    );
+    add(
+        "a section with an empty id",
+        wrapped("\\begin{section}{}\\heading{H}\\end{section}"),
+    );
+    add(
+        "a section with a hyphen",
+        wrapped("\\begin{section}{a-b1}\\heading{H}\\end{section}"),
+    );
+    add(
+        "a section with an underscore",
+        wrapped("\\begin{section}{a_b}\\heading{H}\\end{section}"),
+    );
+    add(
+        "a section without a heading",
+        wrapped("\\begin{section}{s}\\end{section}"),
+    );
+    add(
+        "a section left open",
+        "\\begin{lexlean}{M}\\title{T}\\begin{section}{s}\\heading{H}".to_owned(),
+    );
+    add(
+        "a section ended as another",
+        wrapped("\\begin{section}{s}\\heading{H}\\end{lexlean}"),
+    );
     add("sections and a theorem among them", wrapped(
         "\\begin{section}{a}\\heading{H}\\begin{termdefinition}{d}{e}\\noaxioms S.\\end{termdefinition}\\begin{section}{b}\\heading{I}\\end{section}\\end{section}\\begin{lemma}{l}\\noaxioms P.\\begin{proof}Q.\\end{proof}\\end{lemma}",
     ));
@@ -593,79 +664,268 @@ fn named() -> Vec<Vector> {
 
     // Declarations.
     for env in ["typedefinition", "termdefinition", "predicatedefinition"] {
-        add(&format!("a {env}"), declared(env, "{d}{a b}\\noaxioms The sentence."));
-        add(&format!("a {env} with a proof"), declared(env, "{d}{e}\\noaxioms S.\\begin{proof}P.\\end{proof}"));
+        add(
+            &format!("a {env}"),
+            declared(env, "{d}{a b}\\noaxioms The sentence."),
+        );
+        add(
+            &format!("a {env} with a proof"),
+            declared(env, "{d}{e}\\noaxioms S.\\begin{proof}P.\\end{proof}"),
+        );
     }
     for env in ["theorem", "lemma", "corollary"] {
-        add(&format!("a {env}"), declared(env, "{t}\\noaxioms S.\\begin{proof}P.\\end{proof}"));
-        add(&format!("a {env} without a proof"), declared(env, "{t}\\noaxioms S."));
+        add(
+            &format!("a {env}"),
+            declared(env, "{t}\\noaxioms S.\\begin{proof}P.\\end{proof}"),
+        );
+        add(
+            &format!("a {env} without a proof"),
+            declared(env, "{t}\\noaxioms S."),
+        );
     }
-    add("a definition with a bad id", declared("termdefinition", "{D}{e}\\noaxioms S."));
-    add("a definition without an entry", declared("termdefinition", "{d}\\noaxioms S."));
+    add(
+        "a definition with a bad id",
+        declared("termdefinition", "{D}{e}\\noaxioms S."),
+    );
+    add(
+        "a definition without an entry",
+        declared("termdefinition", "{d}\\noaxioms S."),
+    );
     add("no policy", declared("termdefinition", "{d}{e} S."));
-    add("an allow policy", declared("termdefinition", "{d}{e}\\allowaxioms{b;a;propext}S."));
-    add("an exact policy", declared("theorem", "{t}\\exactaxioms{Quot.sound;Classical.choice}S.\\begin{proof}P.\\end{proof}"));
-    add("a policy without a brace", declared("termdefinition", "{d}{e}\\allowaxioms S."));
-    add("an empty name list", declared("termdefinition", "{d}{e}\\allowaxioms{}S."));
-    add("an empty name among names", declared("termdefinition", "{d}{e}\\allowaxioms{a;;b}S."));
-    add("a trailing separator", declared("termdefinition", "{d}{e}\\allowaxioms{a;}S."));
-    add("a name of a digit first", declared("termdefinition", "{d}{e}\\allowaxioms{1a}S."));
-    add("a name with a trailing dot", declared("termdefinition", "{d}{e}\\allowaxioms{a.}S."));
-    add("a name with a leading dot", declared("termdefinition", "{d}{e}\\allowaxioms{.a}S."));
-    add("a name with an empty segment", declared("termdefinition", "{d}{e}\\allowaxioms{a..b}S."));
-    add("a name of underscores and digits", declared("termdefinition", "{d}{e}\\exactaxioms{_a1.b_2}S."));
-    add("a name with a hyphen", declared("termdefinition", "{d}{e}\\exactaxioms{a-b}S."));
-    add("a name beyond ASCII", declared("termdefinition", "{d}{e}\\exactaxioms{\u{e9}}S."));
-    add("a duplicate name", declared("termdefinition", "{d}{e}\\allowaxioms{a;b;a}S."));
-    add("names that sort by byte", declared("termdefinition", "{d}{e}\\allowaxioms{b;B;a.b;a;_}S."));
-    add("a refused name after a duplicate", declared("termdefinition", "{d}{e}\\allowaxioms{a;a;1}S."));
+    add(
+        "an allow policy",
+        declared("termdefinition", "{d}{e}\\allowaxioms{b;a;propext}S."),
+    );
+    add(
+        "an exact policy",
+        declared(
+            "theorem",
+            "{t}\\exactaxioms{Quot.sound;Classical.choice}S.\\begin{proof}P.\\end{proof}",
+        ),
+    );
+    add(
+        "a policy without a brace",
+        declared("termdefinition", "{d}{e}\\allowaxioms S."),
+    );
+    add(
+        "an empty name list",
+        declared("termdefinition", "{d}{e}\\allowaxioms{}S."),
+    );
+    add(
+        "an empty name among names",
+        declared("termdefinition", "{d}{e}\\allowaxioms{a;;b}S."),
+    );
+    add(
+        "a trailing separator",
+        declared("termdefinition", "{d}{e}\\allowaxioms{a;}S."),
+    );
+    add(
+        "a name of a digit first",
+        declared("termdefinition", "{d}{e}\\allowaxioms{1a}S."),
+    );
+    add(
+        "a name with a trailing dot",
+        declared("termdefinition", "{d}{e}\\allowaxioms{a.}S."),
+    );
+    add(
+        "a name with a leading dot",
+        declared("termdefinition", "{d}{e}\\allowaxioms{.a}S."),
+    );
+    add(
+        "a name with an empty segment",
+        declared("termdefinition", "{d}{e}\\allowaxioms{a..b}S."),
+    );
+    add(
+        "a name of underscores and digits",
+        declared("termdefinition", "{d}{e}\\exactaxioms{_a1.b_2}S."),
+    );
+    add(
+        "a name with a hyphen",
+        declared("termdefinition", "{d}{e}\\exactaxioms{a-b}S."),
+    );
+    add(
+        "a name beyond ASCII",
+        declared("termdefinition", "{d}{e}\\exactaxioms{\u{e9}}S."),
+    );
+    add(
+        "a duplicate name",
+        declared("termdefinition", "{d}{e}\\allowaxioms{a;b;a}S."),
+    );
+    add(
+        "names that sort by byte",
+        declared("termdefinition", "{d}{e}\\allowaxioms{b;B;a.b;a;_}S."),
+    );
+    add(
+        "a refused name after a duplicate",
+        declared("termdefinition", "{d}{e}\\allowaxioms{a;a;1}S."),
+    );
 
     // Sentences.
-    add("a sentence to the end of the file", "\\begin{lexlean}{M}\\title{T}\\begin{termdefinition}{d}{e}\\noaxioms S".to_owned());
-    add("a sentence stopped by an end", declared("termdefinition", "{d}{e}\\noaxioms S"));
-    add("a sentence stopped by a begin", wrapped("\\begin{termdefinition}{d}{e}\\noaxioms S\\begin{lemma}\\end{termdefinition}"));
-    add("a period inside braces", declared("termdefinition", "{d}{e}\\noaxioms {a.b} c."));
-    add("a period inside an inline island", declared("termdefinition", "{d}{e}\\noaxioms \\(a.b\\) c."));
-    add("a period inside a display island", declared("termdefinition", "{d}{e}\\noaxioms \\[a.b\\] c."));
-    add("a display island that the other closer does not close", declared("termdefinition", "{d}{e}\\noaxioms \\[a\\)b.\\] c."));
-    add("an inline island that the other closer does not close", declared("termdefinition", "{d}{e}\\noaxioms \\(a\\]b.\\) c."));
-    add("a closing brace at depth zero", declared("termdefinition", "{d}{e}\\noaxioms } a."));
-    add("a begin inside braces", declared("termdefinition", "{d}{e}\\noaxioms {\\begin} a."));
-    add("an end inside an island", declared("termdefinition", "{d}{e}\\noaxioms \\(\\end\\) a."));
-    add("a brace inside an island", declared("termdefinition", "{d}{e}\\noaxioms \\({\\) a."));
-    add("an island opener inside an island", declared("termdefinition", "{d}{e}\\noaxioms \\(\\[\\) a."));
-    add("a period word", declared("termdefinition", "{d}{e}\\noaxioms a.b."));
-    add("the end of the declaration after a sentence", declared("termdefinition", "{d}{e}\\noaxioms a. b."));
+    add(
+        "a sentence to the end of the file",
+        "\\begin{lexlean}{M}\\title{T}\\begin{termdefinition}{d}{e}\\noaxioms S".to_owned(),
+    );
+    add(
+        "a sentence stopped by an end",
+        declared("termdefinition", "{d}{e}\\noaxioms S"),
+    );
+    add(
+        "a sentence stopped by a begin",
+        wrapped("\\begin{termdefinition}{d}{e}\\noaxioms S\\begin{lemma}\\end{termdefinition}"),
+    );
+    add(
+        "a period inside braces",
+        declared("termdefinition", "{d}{e}\\noaxioms {a.b} c."),
+    );
+    add(
+        "a period inside an inline island",
+        declared("termdefinition", "{d}{e}\\noaxioms \\(a.b\\) c."),
+    );
+    add(
+        "a period inside a display island",
+        declared("termdefinition", "{d}{e}\\noaxioms \\[a.b\\] c."),
+    );
+    add(
+        "a display island that the other closer does not close",
+        declared("termdefinition", "{d}{e}\\noaxioms \\[a\\)b.\\] c."),
+    );
+    add(
+        "an inline island that the other closer does not close",
+        declared("termdefinition", "{d}{e}\\noaxioms \\(a\\]b.\\) c."),
+    );
+    add(
+        "a closing brace at depth zero",
+        declared("termdefinition", "{d}{e}\\noaxioms } a."),
+    );
+    add(
+        "a begin inside braces",
+        declared("termdefinition", "{d}{e}\\noaxioms {\\begin} a."),
+    );
+    add(
+        "an end inside an island",
+        declared("termdefinition", "{d}{e}\\noaxioms \\(\\end\\) a."),
+    );
+    add(
+        "a brace inside an island",
+        declared("termdefinition", "{d}{e}\\noaxioms \\({\\) a."),
+    );
+    add(
+        "an island opener inside an island",
+        declared("termdefinition", "{d}{e}\\noaxioms \\(\\[\\) a."),
+    );
+    add(
+        "a period word",
+        declared("termdefinition", "{d}{e}\\noaxioms a.b."),
+    );
+    add(
+        "the end of the declaration after a sentence",
+        declared("termdefinition", "{d}{e}\\noaxioms a. b."),
+    );
 
     // Proofs (§16).
     add("an empty proof", proved(""));
-    add("sentences", proved("Assume \\(x\\). Close the goal by reflexivity."));
-    add("a proof left open", "\\begin{lexlean}{M}\\title{T}\\begin{theorem}{t}\\noaxioms S.\\begin{proof}".to_owned());
-    add("a proof ended as another", wrapped("\\begin{theorem}{t}\\noaxioms S.\\begin{proof}\\end{have}\\end{theorem}"));
-    add("a proof's theorem ended as another", wrapped("\\begin{theorem}{t}\\noaxioms S.\\begin{proof}\\end{proof}\\end{lemma}"));
-    add("an unknown proof environment", proved("\\begin{foo}\\end{foo}"));
-    add("a have", proved("\\begin{have}{h}P \\(x\\).\\begin{proof}Q.\\end{proof}\\end{have}R."));
-    add("a have without a proof", proved("\\begin{have}{h}P.\\end{have}"));
-    add("a have with another environment", proved("\\begin{have}{h}P.\\begin{foo}\\end{foo}\\end{have}"));
-    add("a have ended as another", proved("\\begin{have}{h}P.\\begin{proof}Q.\\end{proof}\\end{apply}"));
-    add("a rewrite forward", proved("\\begin{rewrite}{goal}\\forward{\\(a\\)}\\end{rewrite}"));
-    add("a rewrite backward", proved("\\begin{rewrite}{ h }\\backward{\\(a\\)}\\end{rewrite}"));
-    add("a rewrite of both", proved("\\begin{rewrite}{goal}\\backward{a}\\forward{b c}\\backward{d}\\end{rewrite}"));
-    add("a rewrite without a rule", proved("\\begin{rewrite}{goal}\\end{rewrite}"));
-    add("a rewrite ended as another without a rule", proved("\\begin{rewrite}{goal}\\end{simplify}"));
-    add("a rewrite with a foreign control", proved("\\begin{rewrite}{goal}\\rule{a}\\end{rewrite}"));
-    add("a simplify", proved("\\begin{simplify}{goal}\\rule{a}\\rule{b}\\end{simplify}"));
-    add("a simplify without a rule", proved("\\begin{simplify}{goal}\\end{simplify}"));
+    add(
+        "sentences",
+        proved("Assume \\(x\\). Close the goal by reflexivity."),
+    );
+    add(
+        "a proof left open",
+        "\\begin{lexlean}{M}\\title{T}\\begin{theorem}{t}\\noaxioms S.\\begin{proof}".to_owned(),
+    );
+    add(
+        "a proof ended as another",
+        wrapped("\\begin{theorem}{t}\\noaxioms S.\\begin{proof}\\end{have}\\end{theorem}"),
+    );
+    add(
+        "a proof's theorem ended as another",
+        wrapped("\\begin{theorem}{t}\\noaxioms S.\\begin{proof}\\end{proof}\\end{lemma}"),
+    );
+    add(
+        "an unknown proof environment",
+        proved("\\begin{foo}\\end{foo}"),
+    );
+    add(
+        "a have",
+        proved("\\begin{have}{h}P \\(x\\).\\begin{proof}Q.\\end{proof}\\end{have}R."),
+    );
+    add(
+        "a have without a proof",
+        proved("\\begin{have}{h}P.\\end{have}"),
+    );
+    add(
+        "a have with another environment",
+        proved("\\begin{have}{h}P.\\begin{foo}\\end{foo}\\end{have}"),
+    );
+    add(
+        "a have ended as another",
+        proved("\\begin{have}{h}P.\\begin{proof}Q.\\end{proof}\\end{apply}"),
+    );
+    add(
+        "a rewrite forward",
+        proved("\\begin{rewrite}{goal}\\forward{\\(a\\)}\\end{rewrite}"),
+    );
+    add(
+        "a rewrite backward",
+        proved("\\begin{rewrite}{ h }\\backward{\\(a\\)}\\end{rewrite}"),
+    );
+    add(
+        "a rewrite of both",
+        proved("\\begin{rewrite}{goal}\\backward{a}\\forward{b c}\\backward{d}\\end{rewrite}"),
+    );
+    add(
+        "a rewrite without a rule",
+        proved("\\begin{rewrite}{goal}\\end{rewrite}"),
+    );
+    add(
+        "a rewrite ended as another without a rule",
+        proved("\\begin{rewrite}{goal}\\end{simplify}"),
+    );
+    add(
+        "a rewrite with a foreign control",
+        proved("\\begin{rewrite}{goal}\\rule{a}\\end{rewrite}"),
+    );
+    add(
+        "a simplify",
+        proved("\\begin{simplify}{goal}\\rule{a}\\rule{b}\\end{simplify}"),
+    );
+    add(
+        "a simplify without a rule",
+        proved("\\begin{simplify}{goal}\\end{simplify}"),
+    );
     add("an apply", proved("\\begin{apply}{\\(f\\)}\\begin{premise}{1}P.\\end{premise}\\begin{premise}{2}Q.\\end{premise}\\end{apply}"));
-    add("an apply without premises", proved("\\begin{apply}{f}\\end{apply}"));
-    add("an apply ended as another", proved("\\begin{apply}{f}\\end{proof}"));
-    add("a premise ended as another", proved("\\begin{apply}{f}\\begin{premise}{1}P.\\end{branch}\\end{apply}"));
-    add("a spaced begin of a premise", proved("\\begin{apply}{f}\\begin {premise}{1}P.\\end{premise}\\end{apply}"));
-    add("a spaced name of a premise", proved("\\begin{apply}{f}\\begin{ premise}{1}P.\\end{premise}\\end{apply}"));
-    add("a branch in an apply", proved("\\begin{apply}{f}\\begin{branch}{1}P.\\end{branch}\\end{apply}"));
+    add(
+        "an apply without premises",
+        proved("\\begin{apply}{f}\\end{apply}"),
+    );
+    add(
+        "an apply ended as another",
+        proved("\\begin{apply}{f}\\end{proof}"),
+    );
+    add(
+        "a premise ended as another",
+        proved("\\begin{apply}{f}\\begin{premise}{1}P.\\end{branch}\\end{apply}"),
+    );
+    add(
+        "a spaced begin of a premise",
+        proved("\\begin{apply}{f}\\begin {premise}{1}P.\\end{premise}\\end{apply}"),
+    );
+    add(
+        "a spaced name of a premise",
+        proved("\\begin{apply}{f}\\begin{ premise}{1}P.\\end{premise}\\end{apply}"),
+    );
+    add(
+        "a branch in an apply",
+        proved("\\begin{apply}{f}\\begin{branch}{1}P.\\end{branch}\\end{apply}"),
+    );
     add("a constructor", proved("\\begin{constructor}\\begin{branch}{1}P.\\end{branch}\\begin{branch}{2}Q.\\end{branch}\\end{constructor}"));
-    add("a constructor without branches", proved("\\begin{constructor}\\end{constructor}"));
-    add("a premise in a constructor", proved("\\begin{constructor}\\begin{premise}{1}P.\\end{premise}\\end{constructor}"));
+    add(
+        "a constructor without branches",
+        proved("\\begin{constructor}\\end{constructor}"),
+    );
+    add(
+        "a premise in a constructor",
+        proved("\\begin{constructor}\\begin{premise}{1}P.\\end{premise}\\end{constructor}"),
+    );
     for (label, spelled) in [
         ("zero", "0"),
         ("padded", "007"),
@@ -687,19 +947,57 @@ fn named() -> Vec<Vector> {
     ] {
         add(&format!("a premise labeled {label}"), proved(&format!("\\begin{{apply}}{{f}}\\begin{{premise}}{{{spelled}}}P.\\end{{premise}}\\end{{apply}}")));
     }
-    add("a branch labeled by a word", proved("\\begin{constructor}\\begin{branch}{x}P.\\end{branch}\\end{constructor}"));
+    add(
+        "a branch labeled by a word",
+        proved("\\begin{constructor}\\begin{branch}{x}P.\\end{branch}\\end{constructor}"),
+    );
     add("cases", proved("\\begin{cases}{\\(n\\)}\\begin{case}{p::zero}\\bind{}P.\\end{case}\\begin{case}{p::succ}\\bind{m;h}Q.\\end{case}\\end{cases}"));
-    add("induction", proved("\\begin{induction}{n}\\begin{case}{p::zero}\\bind{}P.\\end{case}\\end{induction}"));
-    add("cases without a case", proved("\\begin{cases}{n}\\end{cases}"));
-    add("induction ended as cases", proved("\\begin{induction}{n}\\end{cases}"));
-    add("a case without a bind", proved("\\begin{cases}{n}\\begin{case}{p::zero}P.\\end{case}\\end{cases}"));
-    add("a bind of separators", proved("\\begin{cases}{n}\\begin{case}{c}\\bind{;}P.\\end{case}\\end{cases}"));
-    add("a bind with white space", proved("\\begin{cases}{n}\\begin{case}{c d}\\bind{a b; c}P.\\end{case}\\end{cases}"));
-    add("a calculation", proved("\\begin{calculate}\\start{a}\\step{p::eq}{b}{c}\\step{q r}{d e}{f}\\end{calculate}"));
-    add("a calculation without a start", proved("\\begin{calculate}\\step{p}{b}{c}\\end{calculate}"));
-    add("a calculation without a step", proved("\\begin{calculate}\\start{a}\\end{calculate}"));
-    add("a step short of an argument", proved("\\begin{calculate}\\start{a}\\step{p}{b}\\end{calculate}"));
-    add("a calculation ended as another", proved("\\begin{calculate}\\start{a}\\step{p}{b}{c}\\end{proof}"));
+    add(
+        "induction",
+        proved("\\begin{induction}{n}\\begin{case}{p::zero}\\bind{}P.\\end{case}\\end{induction}"),
+    );
+    add(
+        "cases without a case",
+        proved("\\begin{cases}{n}\\end{cases}"),
+    );
+    add(
+        "induction ended as cases",
+        proved("\\begin{induction}{n}\\end{cases}"),
+    );
+    add(
+        "a case without a bind",
+        proved("\\begin{cases}{n}\\begin{case}{p::zero}P.\\end{case}\\end{cases}"),
+    );
+    add(
+        "a bind of separators",
+        proved("\\begin{cases}{n}\\begin{case}{c}\\bind{;}P.\\end{case}\\end{cases}"),
+    );
+    add(
+        "a bind with white space",
+        proved("\\begin{cases}{n}\\begin{case}{c d}\\bind{a b; c}P.\\end{case}\\end{cases}"),
+    );
+    add(
+        "a calculation",
+        proved(
+            "\\begin{calculate}\\start{a}\\step{p::eq}{b}{c}\\step{q r}{d e}{f}\\end{calculate}",
+        ),
+    );
+    add(
+        "a calculation without a start",
+        proved("\\begin{calculate}\\step{p}{b}{c}\\end{calculate}"),
+    );
+    add(
+        "a calculation without a step",
+        proved("\\begin{calculate}\\start{a}\\end{calculate}"),
+    );
+    add(
+        "a step short of an argument",
+        proved("\\begin{calculate}\\start{a}\\step{p}{b}\\end{calculate}"),
+    );
+    add(
+        "a calculation ended as another",
+        proved("\\begin{calculate}\\start{a}\\step{p}{b}{c}\\end{proof}"),
+    );
     add("nested haves", nested_haves(3));
     add(
         "every proof form in one proof",
@@ -712,31 +1010,101 @@ fn named() -> Vec<Vector> {
         ("semanticmodule", "semanticdata", "semantic"),
         ("toolingmodule", "toolingdata", "tooling"),
     ] {
-        add(&format!("{label} data"), form(env, &format!("\\{control}{{{{\"a b\": \"c  d\", \"e\": [1, {{\"f\": 2}}]}}}}")));
-        add(&format!("{label} empty data"), form(env, &format!("\\{control}{{}}")));
-        add(&format!("{label} spaced data"), form(env, &format!(" \n\\{control} \n{{ x }}")));
-        add(&format!("{label} notation"), form(env, "\n  definition{name: a, body: \"b  c\"}\n"));
+        add(
+            &format!("{label} data"),
+            form(
+                env,
+                &format!("\\{control}{{{{\"a b\": \"c  d\", \"e\": [1, {{\"f\": 2}}]}}}}"),
+            ),
+        );
+        add(
+            &format!("{label} empty data"),
+            form(env, &format!("\\{control}{{}}")),
+        );
+        add(
+            &format!("{label} spaced data"),
+            form(env, &format!(" \n\\{control} \n{{ x }}")),
+        );
+        add(
+            &format!("{label} notation"),
+            form(env, "\n  definition{name: a, body: \"b  c\"}\n"),
+        );
         add(&format!("{label} empty notation"), form(env, ""));
-        add(&format!("{label} left open"), format!("\\begin{{lexlean}}{{M}}\\title{{T}}\\begin{{{env}}}x"));
-        add(&format!("{label} data left open"), format!("\\begin{{lexlean}}{{M}}\\title{{T}}\\begin{{{env}}}\\{control}{{\"a"));
-        add(&format!("{label} ended as another"), wrapped(&format!("\\begin{{{env}}}x\\end{{foo}}")));
-        add(&format!("{label} without its module end"), format!("\\begin{{lexlean}}{{M}}\\title{{T}}\\begin{{{env}}}x\\end{{{env}}}"));
-        add(&format!("{label} with text after"), format!("{}y", form(env, "x")));
+        add(
+            &format!("{label} left open"),
+            format!("\\begin{{lexlean}}{{M}}\\title{{T}}\\begin{{{env}}}x"),
+        );
+        add(
+            &format!("{label} data left open"),
+            format!("\\begin{{lexlean}}{{M}}\\title{{T}}\\begin{{{env}}}\\{control}{{\"a"),
+        );
+        add(
+            &format!("{label} ended as another"),
+            wrapped(&format!("\\begin{{{env}}}x\\end{{foo}}")),
+        );
+        add(
+            &format!("{label} without its module end"),
+            format!("\\begin{{lexlean}}{{M}}\\title{{T}}\\begin{{{env}}}x\\end{{{env}}}"),
+        );
+        add(
+            &format!("{label} with text after"),
+            format!("{}y", form(env, "x")),
+        );
     }
-    add("a brace inside a string", form("coremodule", "\\coredata{\"}\" {\"a\": \"{\"}}"));
-    add("an escaped quote in a string", form("coremodule", "\\coredata{\"a\\\" }  b\"}"));
-    add("an escaped backslash in a string", form("coremodule", "\\coredata{\"a\\\\\"   }"));
-    add("white space outside a string", form("coremodule", "\\coredata{ a  \"b  c\"  d }"));
-    add("a line feed in a string", form("semanticmodule", "\\semanticdata{\"a\nb\"}"));
-    add("a scalar in a string", form("toolingmodule", "\\toolingdata{\"\u{2115}  \u{65e5}\"}"));
-    add("another form's data", form("coremodule", "\\semanticdata{x}"));
-    add("a spaced begin of a form", wrapped("\\begin {coremodule}x\\end{coremodule}"));
-    add("a spaced name of a form", wrapped("\\begin{ coremodule}x\\end{coremodule}"));
-    add("a word after a form's name", wrapped("\\begin{coremodule}\\end {coremodule}"));
-    add("notation with a control", form("semanticmodule", "a \\begin{x} \\(y\\) b"));
-    add("a form and blocks", wrapped("\\begin{coremodule}x\\end{coremodule}\\begin{section}{s}\\heading{H}\\end{section}"));
-    add("two forms", wrapped("\\begin{coremodule}x\\end{coremodule}\\begin{toolingmodule}y\\end{toolingmodule}"));
-    drop(add);
+    add(
+        "a brace inside a string",
+        form("coremodule", "\\coredata{\"}\" {\"a\": \"{\"}}"),
+    );
+    add(
+        "an escaped quote in a string",
+        form("coremodule", "\\coredata{\"a\\\" }  b\"}"),
+    );
+    add(
+        "an escaped backslash in a string",
+        form("coremodule", "\\coredata{\"a\\\\\"   }"),
+    );
+    add(
+        "white space outside a string",
+        form("coremodule", "\\coredata{ a  \"b  c\"  d }"),
+    );
+    add(
+        "a line feed in a string",
+        form("semanticmodule", "\\semanticdata{\"a\nb\"}"),
+    );
+    add(
+        "a scalar in a string",
+        form("toolingmodule", "\\toolingdata{\"\u{2115}  \u{65e5}\"}"),
+    );
+    add(
+        "another form's data",
+        form("coremodule", "\\semanticdata{x}"),
+    );
+    add(
+        "a spaced begin of a form",
+        wrapped("\\begin {coremodule}x\\end{coremodule}"),
+    );
+    add(
+        "a spaced name of a form",
+        wrapped("\\begin{ coremodule}x\\end{coremodule}"),
+    );
+    add(
+        "a word after a form's name",
+        wrapped("\\begin{coremodule}\\end {coremodule}"),
+    );
+    add(
+        "notation with a control",
+        form("semanticmodule", "a \\begin{x} \\(y\\) b"),
+    );
+    add(
+        "a form and blocks",
+        wrapped(
+            "\\begin{coremodule}x\\end{coremodule}\\begin{section}{s}\\heading{H}\\end{section}",
+        ),
+    );
+    add(
+        "two forms",
+        wrapped("\\begin{coremodule}x\\end{coremodule}\\begin{toolingmodule}y\\end{toolingmodule}"),
+    );
 
     // The limit, at each side of each nesting and at the extremes.
     let limits: &[(&str, String, u64)] = &[
@@ -751,11 +1119,27 @@ fn named() -> Vec<Vector> {
         ("a nested proof under a limit of two", nested_haves(1), 2),
         ("three nested under a limit of three", nested_haves(3), 3),
         ("three nested under a limit of four", nested_haves(3), 4),
-        ("a premise under a limit of one", proved("\\begin{apply}{f}\\begin{premise}{1}P.\\end{premise}\\end{apply}"), 1),
-        ("a branch under a limit of one", proved("\\begin{constructor}\\begin{branch}{1}P.\\end{branch}\\end{constructor}"), 1),
-        ("a case under a limit of one", proved("\\begin{cases}{n}\\begin{case}{c}\\bind{}P.\\end{case}\\end{cases}"), 1),
+        (
+            "a premise under a limit of one",
+            proved("\\begin{apply}{f}\\begin{premise}{1}P.\\end{premise}\\end{apply}"),
+            1,
+        ),
+        (
+            "a branch under a limit of one",
+            proved("\\begin{constructor}\\begin{branch}{1}P.\\end{branch}\\end{constructor}"),
+            1,
+        ),
+        (
+            "a case under a limit of one",
+            proved("\\begin{cases}{n}\\begin{case}{c}\\bind{}P.\\end{case}\\end{cases}"),
+            1,
+        ),
         ("a section under the largest limit", sectioned(1), u64::MAX),
-        ("a proof under a limit named in its message", nested_haves(1), 1_000_000_007),
+        (
+            "a proof under a limit named in its message",
+            nested_haves(1),
+            1_000_000_007,
+        ),
     ];
     for (label, source, depth) in limits {
         out.push(Vector {
@@ -1376,7 +1760,15 @@ pub(super) fn case() {
     eligibility_of(&project, "StructuralGrammar", MODULE, &ROOTS);
     assert_eq!(
         sorts().keys().map(String::as_str).collect::<Vec<_>>(),
-        ["Block", "DeclKind", "Mode", "Origin", "PolicyKind", "Proof", "ProofFrame"],
+        [
+            "Block",
+            "DeclKind",
+            "Mode",
+            "Origin",
+            "PolicyKind",
+            "Proof",
+            "ProofFrame"
+        ],
         "the sorts of the module"
     );
 
