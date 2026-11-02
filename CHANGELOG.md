@@ -17,12 +17,12 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
-- `SP-32`, certificate B of a match arm that returns a boxed field (#310). `fold`
+- `SP-33`, certificate B of a match arm that returns a boxed field (#310). `fold`
   of the Rust lowering and `returnedLet` of `RustBodies` fold a returned clone,
   which is the arm the library's `mCons` states (`LLV7015`). `lower.rs` is a file
   of the renderer, so `rust_renderer` and the language-1.2 identity move.
 
-- `SP-31`, certificate A of a recursive function with a matched parameter before
+- `SP-32`, certificate A of a recursive function with a matched parameter before
   its recursive argument (#314). The Lean backend states the declared argument
   with `termination_by structural` when a definition is executable and matches
   such a parameter, where Lean's own search took that parameter and left the

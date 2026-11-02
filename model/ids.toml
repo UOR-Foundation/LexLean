@@ -2138,13 +2138,13 @@ level = "build"
 suite = "preservation"
 statement = "Every runtime item the generated code calls has its refinement statement: each item of the compiler's table of runtime items, every fixed width included, is stated by exactly one theorem `refines_<function>` of the language-1.2 module `RustRuntime` of the compiler project if the item is of the core profile, or of the module `RustStd` if it is of `rust-std`, whose statement runs, in that module's crate, the function the generated code calls for the item and equates it with the run of the item itself at the item's profile, or is `equal` or `compare`, whose meaning `SP-25` states per type; the items are listed from the compiler's table and the statements from the modules' theorems, neither from the other, and a runtime item with no refinement statement, a statement of another item than the one its function is called for, a statement at the other profile, an item the generated code calls another function for than the one its statement runs, and a trait item without the theorems of `SP-25` are each refused naming the item."
 [[id]]
-id = "SP-31"
+id = "SP-32"
 level = "build"
 suite = "preservation"
 statement = "A structurally recursive executable definition recurses in its generated Lean on the argument its source declares: where a parameter written before `recursive_argument` is matched in the body, which is the one case in which Lean's own search could take that parameter instead, the definition states the argument with `termination_by structural`, so that the kernel accepts certificate A of a production root that reaches it; an executable definition with no such parameter, and a definition that is not executable, generate the bytes they generated before."
 
 [[id]]
-id = "SP-32"
+id = "SP-33"
 level = "build"
 suite = "preservation"
 statement = "A match arm whose whole body is a binder of a boxed field renders as the read of the box, with no binding, in a function that cannot overflow: `fold` of the Rust lowering of SPEC.md §17.16 and `returnedLet` of `RustBodies` fold a returned clone as they fold a returned move or copy, which is the arm that `foldB` of certificate B's `mCons` states, so that the kernel accepts certificate B of a production root whose closure has such an arm."

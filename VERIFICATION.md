@@ -11506,8 +11506,8 @@ the first panic message, trimmed.
 | `PD-02` | `production/eligibility.rs`: `analyse_module` no longer returns `Ok(None)` for a module without roots | `a module with formal content and no root is never analysed` |
 | `PD-03` | `production/eligibility.rs`: termination evidence is no longer inserted into `erased` | `termination evidence is erased, never realized` (`left: []`, `right: ["Production.Kernel.countdown_decreases"]`) |
 | `PD-06` | `production/eligibility.rs`: every `EffectRow` is built with no sources | `array shorter than minItems 1` at `/roots/1/targets/0/effects/0/sources` of `production-eligibility.schema.json` |
-| `SP-31` | `backend/semantic.rs`: the clause is written only for a mutual group | `` `paramsOf` matches a parameter before its argument and states the argument ``, the generated definition with no clause; the issue's project on that binary: `LLV7013` in `__rel_1` |
-| `SP-32` | `calculus/rust/lower.rs`: `fold` does not read `Expr::Clone` | `the arm reads the box and binds nothing`, the arm being `Let { pat: Bind(Local(2)), value: Unbox(Boxed(2)) }` then `Move(Local(2))`; the issue's project on that binary: `LLV7015` at `Corr.mCons` in `fun1` |
+| `SP-32` | `backend/semantic.rs`: the clause is written only for a mutual group | `` `paramsOf` matches a parameter before its argument and states the argument ``, the generated definition with no clause; the issue's project on that binary: `LLV7013` in `__rel_1` |
+| `SP-33` | `calculus/rust/lower.rs`: `fold` does not read `Expr::Clone` | `the arm reads the box and binds nothing`, the arm being `Let { pat: Bind(Local(2)), value: Unbox(Boxed(2)) }` then `Move(Local(2))`; the issue's project on that binary: `LLV7015` at `Corr.mCons` in `fun1` |
 | `TC-01` | `calculus/mod.rs`: `canonical` binds parameters but keeps their spelling | `assertion left == right failed: adt-evaluation` (alpha variant bytes differ) |
 | `TC-02` | `calculus/check.rs`: the match exhaustiveness test made `false &&` | `an invalid program loads: expected `the match is not exhaustive: Adt { constructor: 2 } is not covered`` |
 | `MD-01` | `ir/semantic.rs`: the language-1.1 gate `first_language_1_2_construct` made `&& false` | `tests/negative/model-under-1.1: expected "`contract declaration` is a language-1.2 construct"` |
@@ -12277,7 +12277,7 @@ and fixtures. The three failing cases assert the count before their plants, so t
 run did not reach the plants on the new draws. A package that adds records should
 set these counts with its records in the tree, on the same commit.
 
-## A definition recurses on the argument its source declares (`SP-31`, #314)
+## A definition recurses on the argument its source declares (`SP-32`, #314)
 
 ### The defect
 
@@ -12309,8 +12309,8 @@ written against.
 
 | Run | Observed |
 | --- | --- |
-| `conformance_sp_31`, fixed source | ok, 253 s |
-| `conformance_sp_31`, clause written only for a mutual group | fails at the text check before Lean runs, with the generated definition in the message |
+| `conformance_sp_32`, fixed source | ok, 253 s |
+| `conformance_sp_32`, clause written only for a mutual group | fails at the text check before Lean runs, with the generated definition in the message |
 | the issue's project, on a binary with that plant | `LLV7013` in `__rel_1`, exit 1, 123 s |
 | the issue's project, fixed source | exit 0, 145 s |
 
@@ -12319,7 +12319,7 @@ so no committed generated Lean changes. `lean_backend` still moves, because I10
 and §30.1 do not let generated artifacts or a failure diagnostic change under
 one identity.
 
-## An arm that returns a boxed field is the read of the box (`SP-32`, #310)
+## An arm that returns a boxed field is the read of the box (`SP-33`, #310)
 
 ### The defect
 
@@ -12347,8 +12347,8 @@ language-1.2 identity move.
 
 | Run | Observed |
 | --- | --- |
-| `conformance_sp_32`, fixed source | ok, 196 s |
-| `conformance_sp_32`, `fold` without `Expr::Clone` | fails without Lean: the arm is the load, then `Move(Local(2))` |
+| `conformance_sp_33`, fixed source | ok, 196 s |
+| `conformance_sp_33`, `fold` without `Expr::Clone` | fails without Lean: the arm is the load, then `Move(Local(2))` |
 | the issue's project, on a binary with that plant | `LLV7015` at `Corr.mCons` in `fun1`, exit 1, 127 s |
 | the issue's project, fixed source | exit 0, 137 s |
 | the fixture with an overflowing arm, fixed source | exit 0, 141 s; `Ok` wraps the arm's value, so that arm is not folded |

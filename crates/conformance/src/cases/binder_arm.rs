@@ -1,5 +1,5 @@
 //! A match arm whose whole body is a binder of a boxed field (SPEC.md §17.16,
-//! §17.17): `SP-32`, #310.
+//! §17.17): `SP-33`, #310.
 //!
 //! The arm loads the field and returns the load, which `fold` folds to the
 //! read of the box. Certificate B's `mCons` states an arm through `foldB`, so
@@ -68,13 +68,13 @@ fn rendered_arm() -> Block {
     arm
 }
 
-/// `SP-32`.
+/// `SP-33`.
 ///
 /// # Panics
 ///
 /// When the rendering or the fixture's export disagrees with the row.
 pub fn run(id: &str) {
-    assert_eq!(id, "SP-32");
+    assert_eq!(id, "SP-33");
     let arm = rendered_arm();
     assert!(
         arm.lets.is_empty() && matches!(arm.tail, Rust::Unbox(Ident::Boxed(_), _)),

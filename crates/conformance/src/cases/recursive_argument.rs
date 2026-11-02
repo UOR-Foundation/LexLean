@@ -1,5 +1,5 @@
 //! A definition recurses in its generated Lean on the argument its source
-//! declares (SPEC.md §17.12, §17.17): `SP-31`, #314.
+//! declares (SPEC.md §17.12, §17.17): `SP-32`, #314.
 //!
 //! Certificate A reduces a structural definition on the declared argument, so
 //! it holds only if Lean recursed on that argument. `paramsOf` of the fixture
@@ -29,13 +29,13 @@ fn definition<'a>(lean: &'a str, name: &str) -> &'a str {
     &rest[..end]
 }
 
-/// `SP-31`.
+/// `SP-32`.
 ///
 /// # Panics
 ///
 /// When the fixture's Lean or its export disagrees with the row.
 pub fn run(id: &str) {
-    assert_eq!(id, "SP-31");
+    assert_eq!(id, "SP-32");
     let project = P::copy_tests_project("fixtures/recursive-argument");
     project.relock();
     let lean = support::lean_text(&support::rendered(&project), "Main");

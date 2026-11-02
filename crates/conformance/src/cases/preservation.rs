@@ -4817,9 +4817,9 @@ pub fn run(id: &str) {
         // §17.16, §17.17: every runtime item has its refinement statement.
         "SP-30" => super::rust_items::run(id),
         // §17.12, §17.17: a definition recurses on its declared argument.
-        "SP-31" => super::recursive_argument::run(id),
+        "SP-32" => super::recursive_argument::run(id),
         // §17.16, §17.17: an arm that returns a boxed field.
-        "SP-32" => super::binder_arm::run(id),
+        "SP-33" => super::binder_arm::run(id),
         "SP-23" => {
             let syntax = support::module_json(
                 &std::fs::read_to_string(

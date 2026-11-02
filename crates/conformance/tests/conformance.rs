@@ -1781,13 +1781,13 @@ fn conformance_sp_30() {
 }
 
 #[test]
-fn conformance_sp_31() {
-    repo_conformance::cases::run("SP-31");
+fn conformance_sp_32() {
+    repo_conformance::cases::run("SP-32");
 }
 
 #[test]
-fn conformance_sp_32() {
-    repo_conformance::cases::run("SP-32");
+fn conformance_sp_33() {
+    repo_conformance::cases::run("SP-33");
 }
 
 #[test]
