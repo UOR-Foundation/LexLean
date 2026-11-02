@@ -1,0 +1,314 @@
+\begin{lexlean}{RustAssemble}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{CalculusCheck}
+\importmodule{RustAst}
+\importmodule{RustBodies}
+\importmodule{RustLoops}
+\importmodule{RustLower}
+\importmodule{RustTerms}
+\importmodule{RustValidate}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: kindText,
+  parameters: [ty : CalculusCheck::Ty],
+  result: Bytes,
+  body: (match ty
+    | CalculusCheck::Ty.TUnit => (prim utf8_encode "type:unit" : Bytes)
+    | CalculusCheck::Ty.TBool => (prim utf8_encode "type:bool" : Bytes)
+    | CalculusCheck::Ty.TNat => (prim utf8_encode "type:nat" : Bytes)
+    | CalculusCheck::Ty.TInt => (prim utf8_encode "type:int" : Bytes)
+    | CalculusCheck::Ty.TFixed w => (prim utf8_encode "type:fixed" : Bytes)
+    | CalculusCheck::Ty.TString => (prim utf8_encode "type:string" : Bytes)
+    | CalculusCheck::Ty.TBytes => (prim utf8_encode "type:bytes" : Bytes)
+    | CalculusCheck::Ty.TOrdering => (prim utf8_encode "type:ordering" : Bytes)
+    | CalculusCheck::Ty.TOption v => (prim utf8_encode "type:option" : Bytes)
+    | CalculusCheck::Ty.TResult a b => (prim utf8_encode "type:result" : Bytes)
+    | CalculusCheck::Ty.TList e => (prim utf8_encode "type:list" : Bytes)
+    | CalculusCheck::Ty.TPair l r => (prim utf8_encode "type:pair" : Bytes)
+    | CalculusCheck::Ty.TAdt i => (prim utf8_encode "type:adt" : Bytes)
+    | CalculusCheck::Ty.TFn p r => (prim utf8_encode "type:fn" : Bytes)
+    | CalculusCheck::Ty.TNil => (prim utf8_encode "type:nil" : Bytes)
+    | CalculusCheck::Ty.TCons u1x0 u1x1 => (prim utf8_encode "type:nil" : Bytes)),
+  executable: true
+}
+
+definition{
+  name: typeOrigin,
+  parameters: [ty : CalculusCheck::Ty],
+  result: RustValidate::Origin,
+  body: (record RustValidate::Origin {element := (kindText ty), width := (ctor Option.none [RustValidate::IntKind])}),
+  executable: true
+}
+
+definition{
+  name: functionAt,
+  parameters: [seed : Nat],
+  result: RustValidate::Origin,
+  body: (record RustValidate::Origin {element := (prim utf8_encode "function" : Bytes), width := (ctor Option.none [RustValidate::IntKind])}),
+  executable: true
+}
+
+definition{
+  name: firstEmpty,
+  parameters: [types : CalculusCheck::Ty, inhabited : CalculusCheck::Ty, index : Nat],
+  result: (Option Nat),
+  body: (match types
+    | CalculusCheck::Ty.TUnit => (ctor Option.none [Nat])
+    | CalculusCheck::Ty.TBool => (ctor Option.none [Nat])
+    | CalculusCheck::Ty.TNat => (ctor Option.none [Nat])
+    | CalculusCheck::Ty.TInt => (ctor Option.none [Nat])
+    | CalculusCheck::Ty.TFixed u2x0 => (ctor Option.none [Nat])
+    | CalculusCheck::Ty.TString => (ctor Option.none [Nat])
+    | CalculusCheck::Ty.TBytes => (ctor Option.none [Nat])
+    | CalculusCheck::Ty.TOrdering => (ctor Option.none [Nat])
+    | CalculusCheck::Ty.TOption u2x0 => (ctor Option.none [Nat])
+    | CalculusCheck::Ty.TResult u2x0 u2x1 => (ctor Option.none [Nat])
+    | CalculusCheck::Ty.TList u2x0 => (ctor Option.none [Nat])
+    | CalculusCheck::Ty.TPair u2x0 u2x1 => (ctor Option.none [Nat])
+    | CalculusCheck::Ty.TAdt u2x0 => (ctor Option.none [Nat])
+    | CalculusCheck::Ty.TFn u2x0 u2x1 => (ctor Option.none [Nat])
+    | CalculusCheck::Ty.TNil => (ctor Option.none [Nat])
+    | CalculusCheck::Ty.TCons head tail => (if (RustLower::visible head inhabited) then (firstEmpty tail inhabited (index + 1)) else (ctor Option.some [Nat] index))),
+  executable: true,
+  recursive_argument: types
+}
+
+definition{
+  name: binderPat,
+  parameters: [type : CalculusCheck::Ty, body : CalculusCheck::Expr, name : Nat],
+  result: RustAst::Pat,
+  body: (if ((not (CalculusCheck::tyEq type (ctor CalculusCheck::Ty.TUnit))) && (RustBodies::mentions body name)) then (ctor RustAst::Pat.PBind (ctor RustValidate::Id.IdLocal name)) else (RustBodies::wildPat 0)),
+  executable: true
+}
+
+definition{
+  name: paramsOf,
+  parameters: [
+    types : CalculusCheck::Ty,
+    names : (List Nat),
+    body : CalculusCheck::Expr,
+    known : CalculusCheck::Ty,
+    position : Nat,
+    empty : Nat
+  ],
+  result: RustAst::Par,
+  body: (match types
+    | CalculusCheck::Ty.TUnit => (ctor RustAst::Par.ParNil)
+    | CalculusCheck::Ty.TBool => (ctor RustAst::Par.ParNil)
+    | CalculusCheck::Ty.TNat => (ctor RustAst::Par.ParNil)
+    | CalculusCheck::Ty.TInt => (ctor RustAst::Par.ParNil)
+    | CalculusCheck::Ty.TFixed u3x0 => (ctor RustAst::Par.ParNil)
+    | CalculusCheck::Ty.TString => (ctor RustAst::Par.ParNil)
+    | CalculusCheck::Ty.TBytes => (ctor RustAst::Par.ParNil)
+    | CalculusCheck::Ty.TOrdering => (ctor RustAst::Par.ParNil)
+    | CalculusCheck::Ty.TOption u3x0 => (ctor RustAst::Par.ParNil)
+    | CalculusCheck::Ty.TResult u3x0 u3x1 => (ctor RustAst::Par.ParNil)
+    | CalculusCheck::Ty.TList u3x0 => (ctor RustAst::Par.ParNil)
+    | CalculusCheck::Ty.TPair u3x0 u3x1 => (ctor RustAst::Par.ParNil)
+    | CalculusCheck::Ty.TAdt u3x0 => (ctor RustAst::Par.ParNil)
+    | CalculusCheck::Ty.TFn u3x0 u3x1 => (ctor RustAst::Par.ParNil)
+    | CalculusCheck::Ty.TNil => (ctor RustAst::Par.ParNil)
+    | CalculusCheck::Ty.TCons head tail => (match names
+      | List.nil => (ctor RustAst::Par.ParNil)
+      | List.cons name rest => (ctor RustAst::Par.ParCons (if (empty =? 0) then (binderPat head body name) else (if ((position + 1) =? empty) then (ctor RustAst::Pat.PBind (ctor RustValidate::Id.IdLocal name)) else (RustBodies::wildPat 0))) (RustLower::vty known head) (paramsOf tail rest body known (position + 1) empty)))),
+  executable: true,
+  recursive_argument: types
+}
+
+definition{
+  name: emptyBody,
+  parameters: [name : Nat, ty : CalculusCheck::Ty],
+  result: RustAst::Expr,
+  body: (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.EMatch (ctor RustAst::Expr.ERead (ctor RustValidate::ReadKind.RkMove) (ctor RustValidate::Id.IdLocal name) (typeOrigin ty)) (ctor RustAst::Expr.ENil) (typeOrigin ty))),
+  executable: true
+}
+
+definition{
+  name: nameAt,
+  parameters: [names : (List Nat), index : Nat],
+  result: Nat,
+  body: (match (CalculusCheck::listAt [Nat] names index)
+    | Option.some name => name
+    | Option.none => 0),
+  executable: true
+}
+
+definition{
+  name: typeAt,
+  parameters: [types : CalculusCheck::Ty, index : Nat],
+  result: CalculusCheck::Ty,
+  body: (match (RustTerms::chainGet types index)
+    | Option.some found => found
+    | Option.none => (ctor CalculusCheck::Ty.TNil)),
+  executable: true
+}
+
+definition{
+  name: shell,
+  parameters: [
+    names : (List Nat),
+    types : CalculusCheck::Ty,
+    result : CalculusCheck::Ty,
+    failing : Bool,
+    body : CalculusCheck::Expr,
+    known : CalculusCheck::Ty,
+    inhabited : CalculusCheck::Ty,
+    position : Nat
+  ],
+  result: RustAst::Def,
+  body: (let resultTy : RustValidate::Ty := (if failing then (ctor RustValidate::Ty.TyUnary (ctor RustValidate::UnaryKind.UkFallible) (RustLower::vty known result)) else (RustLower::vty known result)); (match (firstEmpty types inhabited 0)
+    | Option.some empty => (ctor RustAst::Def.DFunction (ctor RustValidate::Id.IdFunction position) (paramsOf types names body known 0 (empty + 1)) resultTy (emptyBody (nameAt names empty) (typeAt types empty)) (functionAt 0))
+    | Option.none => (ctor RustAst::Def.DFunction (ctor RustValidate::Id.IdFunction position) (paramsOf types names body known 0 0) resultTy (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) (functionAt 0)))),
+  executable: true
+}
+
+definition{
+  name: shellsFrom,
+  parameters: [
+    bodies : CalculusCheck::Expr,
+    names : (List (List Nat)),
+    types : CalculusCheck::Ty,
+    results : CalculusCheck::Ty,
+    fallible : (List Bool),
+    known : CalculusCheck::Ty,
+    inhabited : CalculusCheck::Ty,
+    position : Nat
+  ],
+  result: RustAst::Def,
+  body: (match bodies
+    | CalculusCheck::Expr.EValue u4x0 u4x1 => (ctor RustAst::Def.DNil)
+    | CalculusCheck::Expr.EVar u4x0 => (ctor RustAst::Def.DNil)
+    | CalculusCheck::Expr.ELet u4x0 u4x1 u4x2 u4x3 => (ctor RustAst::Def.DNil)
+    | CalculusCheck::Expr.ECond u4x0 u4x1 u4x2 => (ctor RustAst::Def.DNil)
+    | CalculusCheck::Expr.EMatch u4x0 u4x1 u4x2 => (ctor RustAst::Def.DNil)
+    | CalculusCheck::Expr.EBuild u4x0 u4x1 u4x2 => (ctor RustAst::Def.DNil)
+    | CalculusCheck::Expr.ECall u4x0 u4x1 => (ctor RustAst::Def.DNil)
+    | CalculusCheck::Expr.EClosure u4x0 u4x1 => (ctor RustAst::Def.DNil)
+    | CalculusCheck::Expr.EApply u4x0 u4x1 => (ctor RustAst::Def.DNil)
+    | CalculusCheck::Expr.EPrim u4x0 u4x1 => (ctor RustAst::Def.DNil)
+    | CalculusCheck::Expr.EFirst u4x0 => (ctor RustAst::Def.DNil)
+    | CalculusCheck::Expr.ESecond u4x0 => (ctor RustAst::Def.DNil)
+    | CalculusCheck::Expr.EField u4x0 u4x1 => (ctor RustAst::Def.DNil)
+    | CalculusCheck::Expr.ENil => (ctor RustAst::Def.DNil)
+    | CalculusCheck::Expr.ECons body rest => (match names
+      | List.nil => (ctor RustAst::Def.DNil)
+      | List.cons these restNames => (match types
+        | CalculusCheck::Ty.TCons own restTypes => (match results
+          | CalculusCheck::Ty.TCons result restResults => (ctor RustAst::Def.DCons (shell these own result (RustLower::flagAt fallible position) body known inhabited position) (shellsFrom rest restNames restTypes restResults fallible known inhabited (position + 1)))
+          | CalculusCheck::Ty.TNil => (ctor RustAst::Def.DNil)
+          | CalculusCheck::Ty.TUnit => (ctor RustAst::Def.DNil)
+          | CalculusCheck::Ty.TBool => (ctor RustAst::Def.DNil)
+          | CalculusCheck::Ty.TNat => (ctor RustAst::Def.DNil)
+          | CalculusCheck::Ty.TInt => (ctor RustAst::Def.DNil)
+          | CalculusCheck::Ty.TFixed u1 => (ctor RustAst::Def.DNil)
+          | CalculusCheck::Ty.TString => (ctor RustAst::Def.DNil)
+          | CalculusCheck::Ty.TBytes => (ctor RustAst::Def.DNil)
+          | CalculusCheck::Ty.TOrdering => (ctor RustAst::Def.DNil)
+          | CalculusCheck::Ty.TOption u2 => (ctor RustAst::Def.DNil)
+          | CalculusCheck::Ty.TResult u3 u4 => (ctor RustAst::Def.DNil)
+          | CalculusCheck::Ty.TList u5 => (ctor RustAst::Def.DNil)
+          | CalculusCheck::Ty.TPair u6 u7 => (ctor RustAst::Def.DNil)
+          | CalculusCheck::Ty.TAdt u8 => (ctor RustAst::Def.DNil)
+          | CalculusCheck::Ty.TFn u9 u10 => (ctor RustAst::Def.DNil))
+        | CalculusCheck::Ty.TNil => (ctor RustAst::Def.DNil)
+        | CalculusCheck::Ty.TUnit => (ctor RustAst::Def.DNil)
+        | CalculusCheck::Ty.TBool => (ctor RustAst::Def.DNil)
+        | CalculusCheck::Ty.TNat => (ctor RustAst::Def.DNil)
+        | CalculusCheck::Ty.TInt => (ctor RustAst::Def.DNil)
+        | CalculusCheck::Ty.TFixed u11 => (ctor RustAst::Def.DNil)
+        | CalculusCheck::Ty.TString => (ctor RustAst::Def.DNil)
+        | CalculusCheck::Ty.TBytes => (ctor RustAst::Def.DNil)
+        | CalculusCheck::Ty.TOrdering => (ctor RustAst::Def.DNil)
+        | CalculusCheck::Ty.TOption u12 => (ctor RustAst::Def.DNil)
+        | CalculusCheck::Ty.TResult u13 u14 => (ctor RustAst::Def.DNil)
+        | CalculusCheck::Ty.TList u15 => (ctor RustAst::Def.DNil)
+        | CalculusCheck::Ty.TPair u16 u17 => (ctor RustAst::Def.DNil)
+        | CalculusCheck::Ty.TAdt u18 => (ctor RustAst::Def.DNil)
+        | CalculusCheck::Ty.TFn u19 u20 => (ctor RustAst::Def.DNil)))
+    | CalculusCheck::Expr.EArm u4x0 u4x1 u4x2 => (ctor RustAst::Def.DNil)),
+  executable: true,
+  recursive_argument: bodies
+}
+
+definition{
+  name: functionShells,
+  parameters: [
+    spec : Bytes,
+    adts : CalculusCheck::Ty,
+    names : (List (List Nat)),
+    types : CalculusCheck::Ty,
+    results : CalculusCheck::Ty,
+    bodies : CalculusCheck::Expr,
+    fallible : (List Bool),
+    frame : RustBodies::Frame
+  ],
+  result: RustAst::Def,
+  body: (let program : CalculusCheck::Program := (record CalculusCheck::Program {spec := spec, adts := adts, parameters := names, types := types, results := results, bodies := bodies}); (let known : CalculusCheck::Ty := (project frame known); (let owners : CalculusCheck::Ty := (RustLower::tyAppend (RustLower::adtOwners (CalculusCheck::tyChainLength adts)) known); (let inhabited : CalculusCheck::Ty := (RustLower::inhabitation program known (RustLower::revClos (project frame ordered) (ctor RustLower::Clos.ClNil)) (project frame edges) owners); (shellsFrom bodies names types results fallible known inhabited 0))))),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: appendDefs,
+  parameters: [subject : RustAst::Def, tail : RustAst::Def],
+  result: RustAst::Def,
+  body: (match subject
+    | RustAst::Def.DEnum u1 u2 u3 => tail
+    | RustAst::Def.DApply u4 u5 u6 u7 u8 u9 => tail
+    | RustAst::Def.DFunction u10 u11 u12 u13 u14 => tail
+    | RustAst::Def.DNil => tail
+    | RustAst::Def.DCons head rest => (ctor RustAst::Def.DCons head (appendDefs rest tail))),
+  executable: true,
+  recursive_argument: subject
+}
+
+definition{
+  name: placeLoop,
+  parameters: [item : RustAst::Def, out : RustLoops::LoopOut],
+  result: RustAst::Def,
+  body: (match item
+    | RustAst::Def.DEnum u1 u2 u3 => item
+    | RustAst::Def.DApply u4 u5 u6 u7 u8 u9 => item
+    | RustAst::Def.DFunction name params result body at => (ctor RustAst::Def.DFunction name (project out params) result (project out body) at)
+    | RustAst::Def.DNil => item
+    | RustAst::Def.DCons u15 u16 => item),
+  executable: true
+}
+
+definition{
+  name: placeAll,
+  parameters: [
+    shells : RustAst::Def,
+    outs : (List RustLoops::LoopOut),
+    dead : (List Bool),
+    position : Nat
+  ],
+  result: RustAst::Def,
+  body: (match shells
+    | RustAst::Def.DEnum u1 u2 u3 => (ctor RustAst::Def.DNil)
+    | RustAst::Def.DApply u4 u5 u6 u7 u8 u9 => (ctor RustAst::Def.DNil)
+    | RustAst::Def.DFunction u10 u11 u12 u13 u14 => (ctor RustAst::Def.DNil)
+    | RustAst::Def.DNil => (ctor RustAst::Def.DNil)
+    | RustAst::Def.DCons item rest => (if (RustLower::flagAt dead position) then (ctor RustAst::Def.DCons item (placeAll rest outs dead (position + 1))) else (match outs
+      | List.nil => (ctor RustAst::Def.DCons item (placeAll rest outs dead (position + 1)))
+      | List.cons out more => (ctor RustAst::Def.DCons (placeLoop item out) (placeAll rest more dead (position + 1)))))),
+  executable: true,
+  recursive_argument: shells
+}
+
+definition{
+  name: assembleItems,
+  parameters: [
+    types : RustAst::Def,
+    shells : RustAst::Def,
+    outs : (List RustLoops::LoopOut),
+    dead : (List Bool)
+  ],
+  result: RustAst::Def,
+  body: (appendDefs types (placeAll shells outs dead 0)),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

@@ -1,0 +1,63 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{overflowAt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(seed : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanBoot.RustValidate.Origin}.\par
+\noindent Definition: \texttt{(\{ element := (LexLeanRuntime.utf8Encode ("overflow") : ByteArray), width := Option.none \} : LexLeanBoot.RustValidate.Origin)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{succeeded}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : LexLeanBoot.RustAst.Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanBoot.RustAst.Expr}.\par
+\noindent Definition: \texttt{LexLeanBoot.RustAst.Expr.EWrap (LexLeanBoot.RustValidate.WrapKind.WkSucceed) (value) (overflowAt (0))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{unitBound}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : LexLeanBoot.RustAst.Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanBoot.RustAst.Expr}.\par
+\noindent Definition: \texttt{LexLeanBoot.RustAst.Expr.EBlockE (LexLeanBoot.RustAst.Expr.EBlock (LexLeanBoot.RustAst.Expr.ELet (LexLeanBoot.RustAst.Pat.PLeaf (LexLeanBoot.RustAst.PatLeaf.PlUnit)) (false) (LexLeanBoot.RustBodies.unitTy (0)) (value) (overflowAt (0)) (LexLeanBoot.RustAst.Expr.ENil)) (succeeded (LexLeanBoot.RustAst.Expr.ELit (LexLeanBoot.RustAst.Lit.LitUnit) (overflowAt (0)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{otherwise}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(whole : LexLeanBoot.RustAst.Expr) (unit : Bool) (mode : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanBoot.RustAst.Expr}.\par
+\noindent Definition: \texttt{(if (Nat.beq (mode) (0)) then (if unit then unitBound (whole) else succeeded (whole)) else whole)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{succeedExpr}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : LexLeanBoot.RustAst.Expr) (whole : LexLeanBoot.RustAst.Expr) (unit : Bool) (mode : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanBoot.RustAst.Expr}.\par
+\noindent Definition: \texttt{(match subject with | LexLeanBoot.RustAst.Expr.ELit \_ \_ => (if ((Nat.beq (mode) (0)) \&\& LexLeanBoot.RustBodies.unitLit (whole)) then succeeded (whole) else otherwise (whole) (unit) (mode)) | LexLeanBoot.RustAst.Expr.ERead \_ \_ \_ => otherwise (whole) (unit) (mode) | LexLeanBoot.RustAst.Expr.EWrap \_ \_ \_ => otherwise (whole) (unit) (mode) | LexLeanBoot.RustAst.Expr.ECall callee args propagate <U+00AB>at<U+00BB> => (if ((Nat.beq (mode) (0)) \&\& propagate) then LexLeanBoot.RustAst.Expr.ECall (callee) (args) (false) (<U+00AB>at<U+00BB>) else otherwise (whole) (unit) (mode)) | LexLeanBoot.RustAst.Expr.EApply holder args propagate <U+00AB>at<U+00BB> => (if ((Nat.beq (mode) (0)) \&\& propagate) then LexLeanBoot.RustAst.Expr.EApply (holder) (args) (false) (<U+00AB>at<U+00BB>) else otherwise (whole) (unit) (mode)) | LexLeanBoot.RustAst.Expr.EConstruct \_ \_ \_ => otherwise (whole) (unit) (mode) | LexLeanBoot.RustAst.Expr.EPair \_ \_ \_ => otherwise (whole) (unit) (mode) | LexLeanBoot.RustAst.Expr.EIf c t e <U+00AB>at<U+00BB> => (if (Nat.beq (mode) (0)) then LexLeanBoot.RustAst.Expr.EIf (c) (succeedExpr (t) (t) (unit) (1)) (succeedExpr (e) (e) (unit) (1)) (<U+00AB>at<U+00BB>) else whole) | LexLeanBoot.RustAst.Expr.EMatch s arms <U+00AB>at<U+00BB> => (if (Nat.beq (mode) (0)) then LexLeanBoot.RustAst.Expr.EMatch (s) (succeedExpr (arms) (arms) (unit) (2)) (<U+00AB>at<U+00BB>) else whole) | LexLeanBoot.RustAst.Expr.EBlockE \_ => otherwise (whole) (unit) (mode) | LexLeanBoot.RustAst.Expr.EProbe \_ \_ \_ => otherwise (whole) (unit) (mode) | LexLeanBoot.RustAst.Expr.EBlock lets tail => (if (Nat.beq (mode) (1)) then LexLeanBoot.RustBodies.setTail (LexLeanBoot.RustAst.Expr.EBlock (lets) (tail)) (succeedExpr (tail) (tail) (unit) (0)) else otherwise (whole) (unit) (mode)) | LexLeanBoot.RustAst.Expr.ENil => otherwise (whole) (unit) (mode) | LexLeanBoot.RustAst.Expr.ECons \_ \_ => otherwise (whole) (unit) (mode) | LexLeanBoot.RustAst.Expr.ELet \_ \_ \_ \_ \_ \_ => otherwise (whole) (unit) (mode) | LexLeanBoot.RustAst.Expr.EArm pats block rest => (if (Nat.beq (mode) (2)) then LexLeanBoot.RustAst.Expr.EArm (pats) (succeedExpr (block) (block) (unit) (1)) (succeedExpr (rest) (rest) (unit) (2)) else otherwise (whole) (unit) (mode)) | LexLeanBoot.RustAst.Expr.ELoop \_ \_ => otherwise (whole) (unit) (mode))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{unitResult}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(results : LexLeanBoot.CalculusCheck.Ty) (index : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match LexLeanBoot.RustTerms.chainGet (results) (index) with | Option.some result => LexLeanBoot.CalculusCheck.tyEq (result) (LexLeanBoot.CalculusCheck.Ty.TUnit) | Option.none => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{succeedChain}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(results : LexLeanBoot.CalculusCheck.Ty) (fallible : List (Bool)) (subject : LexLeanBoot.RustAst.Expr) (index : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanBoot.RustAst.Expr}.\par
+\noindent Definition: \texttt{(match subject with | LexLeanBoot.RustAst.Expr.ELit \_ \_ => LexLeanBoot.RustAst.Expr.ENil | LexLeanBoot.RustAst.Expr.ERead \_ \_ \_ => LexLeanBoot.RustAst.Expr.ENil | LexLeanBoot.RustAst.Expr.EWrap \_ \_ \_ => LexLeanBoot.RustAst.Expr.ENil | LexLeanBoot.RustAst.Expr.ECall \_ \_ \_ \_ => LexLeanBoot.RustAst.Expr.ENil | LexLeanBoot.RustAst.Expr.EApply \_ \_ \_ \_ => LexLeanBoot.RustAst.Expr.ENil | LexLeanBoot.RustAst.Expr.EConstruct \_ \_ \_ => LexLeanBoot.RustAst.Expr.ENil | LexLeanBoot.RustAst.Expr.EPair \_ \_ \_ => LexLeanBoot.RustAst.Expr.ENil | LexLeanBoot.RustAst.Expr.EIf \_ \_ \_ \_ => LexLeanBoot.RustAst.Expr.ENil | LexLeanBoot.RustAst.Expr.EMatch \_ \_ \_ => LexLeanBoot.RustAst.Expr.ENil | LexLeanBoot.RustAst.Expr.EBlockE \_ => LexLeanBoot.RustAst.Expr.ENil | LexLeanBoot.RustAst.Expr.EProbe \_ \_ \_ => LexLeanBoot.RustAst.Expr.ENil | LexLeanBoot.RustAst.Expr.EBlock \_ \_ => LexLeanBoot.RustAst.Expr.ENil | LexLeanBoot.RustAst.Expr.ENil => LexLeanBoot.RustAst.Expr.ENil | LexLeanBoot.RustAst.Expr.ECons head tail => LexLeanBoot.RustAst.Expr.ECons ((if (LexLeanBoot.RustLower.flagAt (fallible) (index) \&\& (!LexLeanBoot.RustBodies.isNilE (head))) then succeedExpr (head) (head) (unitResult (results) (index)) (1) else head)) (succeedChain (results) (fallible) (tail) ((index + 1))) | LexLeanBoot.RustAst.Expr.ELet \_ \_ \_ \_ \_ \_ => LexLeanBoot.RustAst.Expr.ENil | LexLeanBoot.RustAst.Expr.EArm \_ \_ \_ => LexLeanBoot.RustAst.Expr.ENil | LexLeanBoot.RustAst.Expr.ELoop \_ \_ => LexLeanBoot.RustAst.Expr.ENil)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{succeedBodies}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(results : LexLeanBoot.CalculusCheck.Ty) (fallible : List (Bool)) (bodies : LexLeanBoot.RustAst.Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{LexLeanBoot.RustAst.Expr}.\par
+\noindent Definition: \texttt{succeedChain (results) (fallible) (bodies) (0)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\end{document}

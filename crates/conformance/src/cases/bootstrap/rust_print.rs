@@ -110,7 +110,7 @@ fn enc_args(args: &[Expr]) -> Value {
 }
 
 /// A block (11): lets as a chain of `ELet`, then the tail.
-fn enc_block(block: &Block) -> Value {
+pub(super) fn enc_block(block: &Block) -> Value {
     let lets = block
         .lets
         .iter()
@@ -242,7 +242,7 @@ pub(super) fn enc_expr(expr: &Expr) -> Value {
 }
 
 /// `Par`: nil, cons (pattern, type, the rest).
-fn enc_params(parameters: &[(Pat, ast::Type)]) -> Value {
+pub(super) fn enc_params(parameters: &[(Pat, ast::Type)]) -> Value {
     parameters
         .iter()
         .rev()
@@ -252,7 +252,7 @@ fn enc_params(parameters: &[(Pat, ast::Type)]) -> Value {
 }
 
 /// `Def`: enum, apply, function, nil, cons.
-fn enc_item_def(item: &ItemDef) -> Value {
+pub(super) fn enc_item_def(item: &ItemDef) -> Value {
     match item {
         ItemDef::Enum { name, variants, at } => {
             adt(0, vec![enc_type(name), enc_row(variants), enc_origin(at)])
@@ -297,14 +297,20 @@ fn enc_item_def(item: &ItemDef) -> Value {
 /// `Crate`, a structure: whether the profile is `rust-core`, and the items
 /// as a `Def` chain.
 pub(super) fn enc_crate(krate: &Crate) -> Value {
-    let items = krate
-        .items
-        .iter()
-        .rev()
-        .fold(adt(3, Vec::new()), |tail, item| {
-            adt(4, vec![enc_item_def(item), tail])
-        });
-    adt(0, vec![boolean(krate.profile == Profile::Core), items])
+    adt(
+        0,
+        vec![
+            boolean(krate.profile == Profile::Core),
+            enc_items(&krate.items),
+        ],
+    )
+}
+
+/// The items as a `Def` chain.
+pub(super) fn enc_items(items: &[ItemDef]) -> Value {
+    items.iter().rev().fold(adt(3, Vec::new()), |tail, item| {
+        adt(4, vec![enc_item_def(item), tail])
+    })
 }
 
 // ------------------------------------------------------------------ oracle
@@ -1183,17 +1189,17 @@ const ROOTS: [(&str, &[&str]); 2] = [
 // The counts SPEC.md §17.23, the register statement of BS-06, its scenario,
 // and VERIFICATION.md state, over the tree with the packages of the two roots
 // committed: the case fails when the tree no longer gives them.
-const COMMITTED_MANIFESTS: usize = 261;
+const COMMITTED_MANIFESTS: usize = 277;
 const COMMITTED_FIXTURES: usize = 122;
-const COMMITTED_PROGRAMS: usize = 178;
-const COMMITTED_CRATES: usize = 237;
-const COMMITTED_PACKAGES: usize = 261;
-const VECTORS_CRATE: usize = 637;
-const COMMITTED_DISTINCT: usize = 474;
-const REFUSED_CRATE: usize = 61;
-const VECTORS_EXPR: usize = 2_104;
+const COMMITTED_PROGRAMS: usize = 194;
+const COMMITTED_CRATES: usize = 253;
+const COMMITTED_PACKAGES: usize = 277;
+const VECTORS_CRATE: usize = 672;
+const COMMITTED_DISTINCT: usize = 506;
+const REFUSED_CRATE: usize = 64;
+const VECTORS_EXPR: usize = 2_110;
 const HAND_EXPR: usize = 1_532;
-const EVALUATOR_CRATE: usize = 574;
+const EVALUATOR_CRATE: usize = 575;
 const SEEDED_CRATE: usize = 400;
 const SEEDED_EXPR: usize = 399;
 const RUSTC_SEEDED_RUNS: usize = 2_984;

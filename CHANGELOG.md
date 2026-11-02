@@ -475,10 +475,110 @@ of this tree show.
   because a chain of `append` is quadratic (the work counter quadruples as n
   doubles). `bootstrap/src/RustPrint.lex.tex` over `RustAst.lex.tex` declares
   `printCrate` and `printExpr` as production roots for `rust-std`. `BS-06`
-  runs 2,559 vectors under the pinned `rustc` on every host, and on the
-  normative host the evaluator on 541 + 1,955 of them and 400 + 399 seeded
+  runs 2,566 vectors under the pinned `rustc` on every host, and on the
+  normative host the evaluator on 545 + 1,955 of them and 400 + 399 seeded
   mutants, 2,984 more under `rustc`, twelve planted defects, and the certified
-  packages against the committed ones. The register is 447 IDs.
+  packages against the committed ones. The register is 445 IDs.
+- The failure typing of the Rust lowering as language-1.2 source, first slice of
+  the lowering (SPEC.md §17.23, §17.16, `BS-07`, #92; no new diagnostic code,
+  no change to the language-1.2 identity). `calculus::rust::fallible_functions`
+  is three production roots for `rust-std` composed by the host: `siteTrees`
+  of `CalculusCheck` (the type of each scrutinee and applied target, computed
+  by the module's own `walk` and `inferTy`), and `deadFunctions` and
+  `fallibleFunctions` of `RustLower`, which read that tree and never call
+  `walk`. One root holding the analysis measured a certificate part of
+  4,465,840 bytes against `max_file_bytes` of 4,194,304; the three measure
+  3,144,673, 1,250,877, and 1,003,841 (three quarters of the limit is
+  3,145,728). `BS-07` runs 927 vectors under the pinned `rustc` on every host,
+  and on the normative host the evaluator on 272 of them and 150 seeded
+  mutants, 4,500 more runs under `rustc`, thirteen planted defects, and the
+  certified packages against the committed ones. The oracle exposes
+  `calculus::sites::trees`; the dead functions are read from the crate
+  `rust::lower` renders (an empty match on the uninhabited parameter). The register
+  is 446 IDs.
+- The types of the Rust lowering as language-1.2 source, second slice of the
+  lowering (SPEC.md §17.23, §17.16, `BS-07`, #92; no new diagnostic code, no
+  change to the language-1.2 identity). `lowerTypes` of `RustLower` returns the
+  enum of each ADT and of each function type and the dispatch of each function
+  type as a `RustAst.Def` chain, given the typing tree and the dead and failing
+  functions of the first slice, and numbers the function types as the oracle
+  does. Its largest certificate part is 1,535,849 bytes (the budget is
+  3,145,728; the typing root is unchanged). `BS-07` runs 1,292 vectors under
+  `rustc` on every host and 6,000 seeded runs, the evaluator on 273 vectors
+  and 150 mutants per root, twenty planted defects. The register is 446 IDs.
+- The last-use moves of the Rust lowering as language-1.2 source, first pass of
+  the function bodies (SPEC.md §17.23, §17.16, `BS-08`, #92; no new diagnostic
+  code, no change to the language-1.2 identity). `applyMoves` of `RustMoves`
+  rewrites the function bodies of a `RustAst` crate as
+  `calculus::rust::moves::apply` does, held to the public oracle to the byte
+  on 382 crates and on seeded mutants of the smaller ones. Its certificate
+  part is 565,927 bytes, 13.5% of `max_file_bytes`. The register is 447 IDs.
+- The literal values of the Rust lowering as language-1.2 source, first pass of
+  the lowering of terms (SPEC.md §17.23, §17.16, `BS-10`, #92; no new diagnostic
+  code, no change to the language-1.2 identity). `lowerValueAt` of `RustTerms`
+  lowers the literal that is the body of a function of a program as
+  `Lowering::value` does, held to the tail of that function in the crate
+  `rust::lower` returns, to the byte, on 358 explicit runs and seeded ones; no
+  file of the renderer changes. Its certificate part is 2,004,962 bytes, 47.8% of
+  `max_file_bytes`. The bootstrap project's roots together passed the default
+  `max_total_source_bytes` at this root (67,815,299 bytes), so the project
+  configures 134217728 (SPEC.md §17.23). The register is
+  456 IDs.
+- The terms of a function body of the Rust lowering as language-1.2 source,
+  second pass of the lowering of terms (SPEC.md §17.23, §17.16, `BS-11`, #92;
+  no new diagnostic code, no change to the language-1.2 identity). `useTrees`
+  of `CalculusCheck` and `lowerFrame`, `lowerBodies`, and `foldBodies` of
+  `RustBodies` lower the function bodies of a program and fold them as
+  `Lowering::expr` and `fold` do, held to the Function items of `rust::lower`
+  by composition with `applyMoves`, to the byte, on 156 vectors and 320 seeded
+  mutants; no file of the renderer changes. The largest certificate part is
+  5,328,431 bytes (`lowerBodies`), 84.7% of `max_file_bytes`. The bootstrap
+  project configures `max_child_output_bytes = 33554432`, the Lean extraction
+  of `RustBodies` writing more than 16,777,216 bytes. Certificate B refuses a
+  match arm that returns a binder of the matched type (#310). The register is
+  458 IDs.
+- The value a function that can overflow returns, as language-1.2 source, third
+  pass of the lowering of terms (SPEC.md §17.23, §17.16, `BS-12`, #92; no new
+  diagnostic code, no change to the language-1.2 identity). `succeedBodies` of
+  `RustSucceed` pushes `Ok` into every tail of the bodies of the functions that
+  can overflow as `succeed` does, held to the Function items of `rust::lower`
+  by composition with the roots of `BS-11` and `applyMoves`, to the byte, on 76
+  vectors and 179 seeded mutants; no file of the renderer changes. Its
+  certificate part is 648,077 bytes, 10.3% of `max_file_bytes`. The register is
+  459 IDs.
+- A function whose self calls are all tail calls, rendered as a loop, as
+  language-1.2 source (SPEC.md §17.23, §17.16, `BS-13`, #92; no new diagnostic
+  code, no change to the language-1.2 identity). `loopFunction` of `RustLoops`
+  ports `tail::looped`, held to the Function items of `rust::lower` by
+  composition with the roots of `BS-11` and `BS-12` and `applyMoves`, function
+  by function with the counter of the fresh names, to the byte, on 92 vectors
+  and 79 seeded mutants; `lowerBodies` takes that counter and returns the one
+  after its bodies. No file of the renderer changes. The certificate part of
+  `loopFunction` is 744,534 bytes, 11.8% of `max_file_bytes`. The register is
+  460 IDs.
+- The crate around the bodies of the Rust lowering as language-1.2 source, last
+  pass of the lowering of terms (SPEC.md §17.23, §17.16, `BS-14`, #92; no new
+  diagnostic code, no change to the language-1.2 identity). `functionShells`
+  and `assembleItems` of `RustAssemble` make the parameters, the result type,
+  and the body of a function with an uninhabited parameter, and put the items
+  of the types, those shells, and what the loop pass returned into one chain,
+  held to the whole chain of items of `rust::lower`'s crate (the types' too) by
+  composition with the earlier roots and `applyMoves`, to the byte, on 326
+  vectors and 564 seeded mutants; what the Rust host still does is thread the
+  counter of the fresh names, and three hosts that do more are planted. The
+  largest certificate part is 1,195,444 bytes (`functionShells`). The register
+  is 461 IDs.
+- The package renderer as language-1.2 source, first slice of the package
+  (SPEC.md §17.23, §17.16, `BS-15`, #272; no new diagnostic code, no change to
+  the language-1.2 identity). `checkManifest` and `renderPackage` of
+  `RustPackage` make the checks `package::lower` runs on a manifest's own
+  fields before it reads the program, with the same refusals, and write the
+  `Cargo.toml` and the `provenance.json` of `package::package`, held to the
+  oracle to the byte on the 296 committed manifests, 182 rule manifests, and
+  2,000 seeded mutants, and on the 277 accepted manifests, 137 hand-built
+  inputs of the escaper and the scaffold, and 277 seeded mutants; twenty-one
+  planted defects are each detected. No file of the renderer changes. The
+  register is 467 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or
