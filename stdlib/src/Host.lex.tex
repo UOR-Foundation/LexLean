@@ -18,10 +18,7 @@ structure{
   name: Failure,
   type_parameters: [],
   parameters: [],
-  fields: [
-    {name: kind, type: FailureKind},
-    {name: message, type: Bytes}
-  ]
+  fields: [{name: kind, type: FailureKind}, {name: message, type: Bytes}]
 }
 
 inductive{
@@ -65,10 +62,7 @@ structure{
   name: Waited,
   type_parameters: [],
   parameters: [],
-  fields: [
-    {name: finished, type: (List (Nat * (Option Int32)))},
-    {name: clock, type: Nat}
-  ]
+  fields: [{name: finished, type: (List (Nat * (Option Int32)))}, {name: clock, type: Nat}]
 }
 
 structure{
