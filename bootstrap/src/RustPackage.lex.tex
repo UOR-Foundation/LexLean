@@ -1,0 +1,481 @@
+\begin{lexlean}{RustPackage}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.Buffer}
+\importmodule{LexLeanStd.Sha256}
+\importmodule{LexLeanStd.Text}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: Level,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: LvAllow, fields: []},
+    {name: LvWarn, fields: []},
+    {name: LvDeny, fields: []},
+    {name: LvForbid, fields: []}
+  ]
+}
+
+structure{
+  name: Gate,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: lint, type: Bytes},
+    {name: level, type: Level},
+    {name: negative, type: Bool},
+    {name: priority, type: Nat}
+  ]
+}
+
+structure{
+  name: Scaffold,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: edition, type: Bytes},
+    {name: publish, type: Bool},
+    {name: library, type: Bytes},
+    {name: rustc, type: (List Gate)},
+    {name: clippy, type: (List Gate)},
+    {name: allowed, type: (List Bytes)}
+  ]
+}
+
+structure{
+  name: Export,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: name, type: Bytes}, {name: function, type: Nat}]
+}
+
+definition{
+  name: text,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: cat,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bytes,
+  body: (prim append left right : Bytes),
+  executable: true
+}
+
+definition{
+  name: ticked,
+  parameters: [subject : Bytes],
+  result: Bytes,
+  body: (cat (text "`") (cat subject (text "`"))),
+  executable: true
+}
+
+definition{
+  name: same,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bool,
+  body: (prim equal (prim compare_bytes left right : Ordering) (prim compare_bytes 0x 0x : Ordering) : Bool),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: before,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bool,
+  body: (prim equal (prim compare_bytes left right : Ordering) (prim compare_bytes 0x 0x01 : Ordering) : Bool),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: member,
+  parameters: [items : (List Bytes), item : Bytes],
+  result: Bool,
+  body: (prim list_fold (fun [item] (found : Bool) (each : Bytes) => (let here : Bool := (same each item); (found || here))) false items : Bool),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: within,
+  parameters: [byte : UInt8, low : Nat, high : Nat],
+  result: Bool,
+  body: (let n : Nat := (prim to_nat byte : Nat); (if (low <=? n) then (n <=? high) else false)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: inClass,
+  parameters: [class : Nat, byte : UInt8],
+  result: Bool,
+  body: (let digit : Bool := (within byte 48 57); (if (class =? 0) then digit else (let hexLetter : Bool := (within byte 97 102); (if (class =? 1) then (digit || hexLetter) else (let lower : Bool := (within byte 97 122); (let under : Bool := (prim equal byte (95 : UInt8) : Bool); (let snakeTail : Bool := (lower || under); (digit || snakeTail)))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: classStep,
+  parameters: [subject : Bytes, class : Nat, position : Nat],
+  result: (Option Nat),
+  body: (match (LexLeanStd.Text::byteAt subject position)
+    | Option.some byte => (if (inClass class byte) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat]))
+    | Option.none => (ctor Option.none [Nat])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: allIn,
+  parameters: [subject : Bytes, class : Nat],
+  result: Bool,
+  body: ((first (prim iterate_until (fun [class, subject] (position : Nat) => (classStep subject class position)) (prim length subject : Nat) 0 : (Nat * Bool))) =? (prim length subject : Nat)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: snake,
+  parameters: [name : Bytes],
+  result: Bool,
+  body: (let lead : Bool := (match (LexLeanStd.Text::byteAt name 0)
+    | Option.some byte => (within byte 97 122)
+    | Option.none => false); (if lead then (if (allIn name 2) then (match (LexLeanStd.Text::find name (text "__"))
+    | Option.some at => false
+    | Option.none => (if (LexLeanStd.Text::endsWith name (text "_")) then false else ((prim length name : Nat) <=? 64))) else false) else false)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: keywords,
+  parameters: [seed : Nat],
+  result: (List Bytes),
+  body: (LexLeanStd.Text::splitOn (text "as async await break const continue crate dyn else enum extern false fn for if impl in let loop match mod move mut pub ref return self Self static struct super trait true try type unsafe use where while abstract become box do final macro override priv typeof unsized virtual yield union macro_rules gen raw safe") (32 : UInt8)),
+  executable: true
+}
+
+definition{
+  name: reservedCrates,
+  parameters: [seed : Nat],
+  result: (List Bytes),
+  body: (LexLeanStd.Text::splitOn (text "std core alloc proc_macro test harness") (32 : UInt8)),
+  executable: true
+}
+
+definition{
+  name: fitsWord,
+  parameters: [digits : Bytes],
+  result: Bool,
+  body: (if ((prim length digits : Nat) <? 20) then true else (if ((prim length digits : Nat) =? 20) then (not (before (text "18446744073709551615") digits)) else false)),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: canonicalPart,
+  parameters: [part : Bytes],
+  result: Bool,
+  body: (match (LexLeanStd.Text::byteAt part 0)
+    | Option.none => false
+    | Option.some lead => (if (allIn part 0) then (if ((prim equal lead (48 : UInt8) : Bool) && (1 <? (prim length part : Nat))) then false else (fitsWord part)) else false)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: versionOk,
+  parameters: [version : Bytes],
+  result: Bool,
+  body: (let parts : (List Bytes) := (LexLeanStd.Text::splitOn version (46 : UInt8)); (let counted : (Nat * Bool) := (prim list_fold (fun (state : (Nat * Bool)) (part : Bytes) => (let good : Bool := (canonicalPart part); (((first state) + 1), ((second state) && good)))) (0, true) parts : (Nat * Bool)); (if ((first counted) =? 3) then (second counted) else false))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: identity,
+  parameters: [source : Bytes],
+  result: Bool,
+  body: (if ((prim length source : Nat) =? 64) then (allIn source 1) else false),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: identities,
+  parameters: [sources : (List Bytes)],
+  result: Bool,
+  body: (prim list_fold (fun (good : Bool) (source : Bytes) => (let this : Bool := (identity source); (good && this))) true sources : Bool),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: ascendStep,
+  parameters: [state : ((Option Bytes) * Bool), item : Bytes],
+  result: ((Option Bytes) * Bool),
+  body: (match (first state)
+    | Option.none => ((ctor Option.some [Bytes] item), (second state))
+    | Option.some previous => (let rising : Bool := (before previous item); ((ctor Option.some [Bytes] item), ((second state) && rising)))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: ascending,
+  parameters: [items : (List Bytes)],
+  result: Bool,
+  body: (second (prim list_fold (fun (state : ((Option Bytes) * Bool)) (item : Bytes) => (ascendStep state item)) ((ctor Option.none [Bytes]), true) items : ((Option Bytes) * Bool))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: unknownStep,
+  parameters: [registered : (List Bytes), found : (Option Bytes), effect : Bytes],
+  result: (Option Bytes),
+  body: (match found
+    | Option.some held => found
+    | Option.none => (if (member registered effect) then found else (ctor Option.some [Bytes] effect))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: firstUnknown,
+  parameters: [effects : (List Bytes), registered : (List Bytes)],
+  result: (Option Bytes),
+  body: (prim list_fold (fun [registered] (found : (Option Bytes)) (effect : Bytes) => (unknownStep registered found effect)) (ctor Option.none [Bytes]) effects : (Option Bytes)),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: refuse,
+  parameters: [message : Bytes],
+  result: (Result Bool Bytes),
+  body: (ctor Result.error [Bool, Bytes] message),
+  executable: true
+}
+
+definition{
+  name: checkEffects,
+  parameters: [core : Bool, effects : (List Bytes), registered : (List Bytes)],
+  result: (Result Bool Bytes),
+  body: (match (firstUnknown effects registered)
+    | Option.some unknown => (refuse (cat (ticked unknown) (text " is not a registered effect")))
+    | Option.none => (if (ascending effects) then (if (core && (member effects (text "allocation"))) then (refuse (text "hidden allocation: a rust-core package states the effect `allocation`")) else (ctor Result.ok [Bool, Bytes] (not core))) else (refuse (text "effects are strictly ascending")))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: checkManifest,
+  parameters: [
+    spec : Bytes,
+    name : Bytes,
+    version : Bytes,
+    profile : Bytes,
+    sources : (List Bytes),
+    effects : (List Bytes),
+    registered : (List Bytes)
+  ],
+  result: (Result Bool Bytes),
+  body: (if (same spec (text "lexlean/rust-package/1")) then (let available : Bool := (if (snake name) then (if (member (keywords 0) name) then false else (not (member (reservedCrates 0) name))) else false); (if available then (if (versionOk version) then (let std : Bool := (same profile (text "rust-std")); (let core : Bool := (same profile (text "rust-core")); (if (std || core) then (if (identities sources) then (if (ascending sources) then (checkEffects core effects registered) else (refuse (text "sources are strictly ascending"))) else (refuse (text "every source is a lowercase SHA-256 hex identity"))) else (refuse (cat (ticked profile) (text " is not a Rust profile")))))) else (refuse (cat (ticked version) (text " is not a version of three canonical decimals each at most 18446744073709551615")))) else (refuse (cat (text "identifier collision: ") (cat (ticked name) (text " is not an available crate name")))))) else (refuse (cat (text "package manifest has spec ") (cat (ticked spec) (text ", expected `lexlean/rust-package/1`"))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: put,
+  parameters: [out : LexLeanStd.Buffer::Buffer, literal : String],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (LexLeanStd.Buffer::writeBytes out (prim utf8_encode literal : Bytes)),
+  executable: true
+}
+
+definition{
+  name: levelText,
+  parameters: [level : Level],
+  result: String,
+  body: (match level
+    | Level.LvAllow => "allow"
+    | Level.LvWarn => "warn"
+    | Level.LvDeny => "deny"
+    | Level.LvForbid => "forbid"),
+  executable: true
+}
+
+definition{
+  name: putGate,
+  parameters: [out : LexLeanStd.Buffer::Buffer, gate : Gate],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (let named : LexLeanStd.Buffer::Buffer := (LexLeanStd.Buffer::writeBytes out (project gate lint)); (if ((project gate priority) =? 0) then (put (put (put named " = \"") (levelText (project gate level))) "\"\n") else (put (LexLeanStd.Buffer::writeDecimal (if (project gate negative) then (put (put (put named " = { level = \"") (levelText (project gate level))) "\", priority = -") else (put (put (put named " = { level = \"") (levelText (project gate level))) "\", priority = ")) (project gate priority)) " }\n"))),
+  executable: true
+}
+
+definition{
+  name: putAllowed,
+  parameters: [out : LexLeanStd.Buffer::Buffer, lint : Bytes],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (put (LexLeanStd.Buffer::writeBytes out lint) " = \"allow\"\n"),
+  executable: true
+}
+
+definition{
+  name: cargoToml,
+  parameters: [capacity : Nat, scaffold : Scaffold, name : Bytes, version : Bytes],
+  result: (Result Bytes Bytes),
+  body: (let head : LexLeanStd.Buffer::Buffer := (put (LexLeanStd.Buffer::writeBytes (put (if (project scaffold publish) then (put (LexLeanStd.Buffer::writeBytes (put (LexLeanStd.Buffer::writeBytes (put (LexLeanStd.Buffer::writeBytes (put (LexLeanStd.Buffer::new capacity) "[package]\nname = \"") name) "\"\nversion = \"") version) "\"\nedition = \"") (project scaffold edition)) "\"\npublish = true") else (put (LexLeanStd.Buffer::writeBytes (put (LexLeanStd.Buffer::writeBytes (put (LexLeanStd.Buffer::writeBytes (put (LexLeanStd.Buffer::new capacity) "[package]\nname = \"") name) "\"\nversion = \"") version) "\"\nedition = \"") (project scaffold edition)) "\"\npublish = false")) "\n\n[lib]\npath = \"") (project scaffold library)) "\"\n\n[lints.rust]\n"); (let rust : LexLeanStd.Buffer::Buffer := (prim list_fold (fun (out : LexLeanStd.Buffer::Buffer) (gate : Gate) => (putGate out gate)) head (project scaffold rustc) : LexLeanStd.Buffer::Buffer); (let clippy : LexLeanStd.Buffer::Buffer := (prim list_fold (fun (out : LexLeanStd.Buffer::Buffer) (gate : Gate) => (putGate out gate)) (put rust "\n[lints.clippy]\n") (project scaffold clippy) : LexLeanStd.Buffer::Buffer); (LexLeanStd.Buffer::finish (prim list_fold (fun (out : LexLeanStd.Buffer::Buffer) (lint : Bytes) => (putAllowed out lint)) clippy (project scaffold allowed) : LexLeanStd.Buffer::Buffer))))),
+  executable: true
+}
+
+definition{
+  name: hexPair,
+  parameters: [value : Nat],
+  result: Bytes,
+  body: (cat (LexLeanStd.Text::sliceOr (text "0123456789abcdef") (prim quotient value 16 0 : Nat) 1) (LexLeanStd.Text::sliceOr (text "0123456789abcdef") (prim remainder value 16 0 : Nat) 1)),
+  executable: true
+}
+
+definition{
+  name: escaped,
+  parameters: [byte : UInt8],
+  result: Bytes,
+  body: (let n : Nat := (prim to_nat byte : Nat); (if (n =? 34) then (text "\\\"") else (if (n =? 92) then (text "\\\\") else (if (n =? 8) then (text "\\b") else (if (n =? 12) then (text "\\f") else (if (n =? 10) then (text "\\n") else (if (n =? 13) then (text "\\r") else (if (n =? 9) then (text "\\t") else (if (n <? 32) then (cat (text "\\u00") (hexPair n)) else (LexLeanStd.Text::sliceOr 0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff n 1)))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: escapeStep,
+  parameters: [subject : Bytes, state : (Nat * LexLeanStd.Buffer::Buffer)],
+  result: (Option (Nat * LexLeanStd.Buffer::Buffer)),
+  body: (match (LexLeanStd.Text::byteAt subject (first state))
+    | Option.some byte => (ctor Option.some [(Nat * LexLeanStd.Buffer::Buffer)] (((first state) + 1), (LexLeanStd.Buffer::writeBytes (second state) (escaped byte))))
+    | Option.none => (ctor Option.none [(Nat * LexLeanStd.Buffer::Buffer)])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: putString,
+  parameters: [out : LexLeanStd.Buffer::Buffer, subject : Bytes],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (put (second (first (prim iterate_until (fun [subject] (state : (Nat * LexLeanStd.Buffer::Buffer)) => (escapeStep subject state)) (prim length subject : Nat) (0, (put out "\"")) : ((Nat * LexLeanStd.Buffer::Buffer) * Bool)))) "\""),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: stringStep,
+  parameters: [state : (Bool * LexLeanStd.Buffer::Buffer), item : Bytes],
+  result: (Bool * LexLeanStd.Buffer::Buffer),
+  body: (false, (putString (if (first state) then (second state) else (put (second state) ",")) item)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: putStrings,
+  parameters: [out : LexLeanStd.Buffer::Buffer, items : (List Bytes)],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (put (second (prim list_fold (fun (state : (Bool * LexLeanStd.Buffer::Buffer)) (item : Bytes) => (stringStep state item)) (true, (put out "[")) items : (Bool * LexLeanStd.Buffer::Buffer))) "]"),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: exportStep,
+  parameters: [state : (Bool * LexLeanStd.Buffer::Buffer), export : Export],
+  result: (Bool * LexLeanStd.Buffer::Buffer),
+  body: (false, (put (putString (put (LexLeanStd.Buffer::writeDecimal (put (if (first state) then (second state) else (put (second state) ",")) "{\"function\":") (project export function)) ",\"name\":") (project export name)) "}")),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: putExports,
+  parameters: [out : LexLeanStd.Buffer::Buffer, exports : (List Export)],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (put (second (prim list_fold (fun (state : (Bool * LexLeanStd.Buffer::Buffer)) (export : Export) => (exportStep state export)) (true, (put out "[")) exports : (Bool * LexLeanStd.Buffer::Buffer))) "]"),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: putEntry,
+  parameters: [out : LexLeanStd.Buffer::Buffer, key : Bytes, digest : Bytes],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (putString (put (putString out key) ":") digest),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: putFiles,
+  parameters: [out : LexLeanStd.Buffer::Buffer, path : Bytes, cargo : Bytes, library : Bytes],
+  result: LexLeanStd.Buffer::Buffer,
+  body: (let opened : LexLeanStd.Buffer::Buffer := (put out ",\"files\":{"); (put (if (same path (text "Cargo.toml")) then (putEntry opened path (LexLeanStd.Sha256::sha256Hex library)) else (if (before path (text "Cargo.toml")) then (putEntry (put (putEntry opened path (LexLeanStd.Sha256::sha256Hex library)) ",") (text "Cargo.toml") (LexLeanStd.Sha256::sha256Hex cargo)) else (putEntry (put (putEntry opened (text "Cargo.toml") (LexLeanStd.Sha256::sha256Hex cargo)) ",") path (LexLeanStd.Sha256::sha256Hex library)))) "}")),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: provenance,
+  parameters: [
+    capacity : Nat,
+    name : Bytes,
+    version : Bytes,
+    std : Bool,
+    program : Bytes,
+    semantics : Bytes,
+    runtime : Bytes,
+    sources : (List Bytes),
+    effects : (List Bytes),
+    exports : (List Export),
+    path : Bytes,
+    cargo : Bytes,
+    library : Bytes
+  ],
+  result: (Result Bytes Bytes),
+  body: (let opened : LexLeanStd.Buffer::Buffer := (putExports (put (putStrings (put (putString (put (LexLeanStd.Buffer::new capacity) "{\"compiler_semantics\":") semantics) ",\"effects\":") effects) ",\"exports\":") exports); (let files : LexLeanStd.Buffer::Buffer := (putFiles opened path cargo library); (let named : LexLeanStd.Buffer::Buffer := (putString (put (putString (put files ",\"name\":") name) ",\"profile\":") (if std then (text "rust-std") else (text "rust-core"))); (LexLeanStd.Buffer::finish (put (putString (put (putStrings (put (putString (put (putString (put named ",\"program\":") program) ",\"runtime\":") (LexLeanStd.Sha256::sha256Hex runtime)) ",\"sources\":") sources) ",\"spec\":\"lexlean/rust-provenance/1\",\"version\":") version) "}\n"))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: renderPackage,
+  parameters: [
+    capacity : Nat,
+    scaffold : Scaffold,
+    name : Bytes,
+    version : Bytes,
+    std : Bool,
+    program : Bytes,
+    semantics : Bytes,
+    core : Bytes,
+    stdRuntime : Bytes,
+    sources : (List Bytes),
+    effects : (List Bytes),
+    exports : (List Export),
+    library : Bytes
+  ],
+  result: (Result (Bytes * Bytes) Bytes),
+  body: (match (cargoToml capacity scaffold name version)
+    | Result.error refusal => (ctor Result.error [(Bytes * Bytes), Bytes] refusal)
+    | Result.ok cargo => (match (provenance capacity name version std program semantics (if std then (cat core stdRuntime) else core) sources effects exports (project scaffold library) cargo library)
+      | Result.error refusal => (ctor Result.error [(Bytes * Bytes), Bytes] refusal)
+      | Result.ok written => (ctor Result.ok [(Bytes * Bytes), Bytes] (cargo, written)))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}
