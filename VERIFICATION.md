@@ -12179,3 +12179,55 @@ On the merged member, regenerated, on one WSL host with 4 build jobs:
 
 The figures of the `BS-06` record above are that record's own run and stay as
 measured.
+
+## The five `Order` packages move the counts of `BS-05` to `BS-08` and `BS-11` to `BS-15` (`SL-10`, #276)
+
+The five roots of `LexLeanStd.Order` (`SL-10`) add five committed packages, and
+these cases assert their corpus, so they failed on the counts when the member was
+merged with #371 at `32d317126` and `ef961c75a`. `BS-05` and `BS-06` were measured
+as for `Numeral` above: a throwaway edit, reverted, ran `BS-06`'s corpus code over
+the member's tree and over `32d317126`, hashing each crate. The other rows are the
+numbers their own count asserts reported in CI run 41420697512 on `88270df7e`, whose
+tree differs from this one by these counts and the verification records.
+
+| Count | `32d317126` | member |
+| --- | --- | --- |
+| committed manifests and packages | 277 | 282 |
+| distinct programs | 194 | 199 |
+| distinct lowered crates | 253 | 258 |
+| crates of at most 400 expressions | 205 | 208 |
+| `printCrate` vectors | 672 | 682 |
+| committed distinct crates | 506 | 516 |
+| committed distinct crates in the evaluator's limit | 416 | 422 |
+| runs with a tight capacity | 37 | 37 |
+| runs with a tight capacity in the evaluator's limit | 30 | 32 |
+| `printCrate` vectors in the evaluator's limit | 575 | 583 |
+| `printExpr` vectors | 2,110 | 2,145 |
+
+| Row | `ef961c75a` | member |
+| --- | --- | --- |
+| `BS-05` runs of `validateCrate`, `correspondCrate` | 491, 354 | 496, 359 |
+| `BS-05` runs under the evaluator | 443, 306 | 446, 309 |
+| `BS-07` vectors, within the bound | 328, 278 | 333, 281 |
+| `BS-08` crates, within the bound | 387, 339 | 392, 342 |
+| `BS-11` vectors, within the bound, mutants | 157, 156, 296 | 157, 156, 286 |
+| `BS-12` vectors, within the bound, mutants | 76, 75, 184 | 76, 75, 151 |
+| `BS-13` vectors, within the bound, mutants | 97, 49, 125 | 102, 52, 108 |
+| `BS-14` vectors, within the bound, mutants | 332, 282, 547 | 337, 285, 593 |
+| `BS-15` manifests, accepted, render mutants, runs under rustc | 296, 277, 277, 3,169 | 301, 282, 282, 3,184 |
+
+The crates that differ are the five new ones, of 65, 129, 367, 451 and 477
+expressions, so three fall under the cap of 400: that is `BS-05`'s +3 and, on both
+profiles, the +6 of the committed crates in `BS-06`'s limit. `BS-06`'s other +2 come
+from the tight runs, which sample every seventh crate: the new crates move the
+sample, which loses crates of 549 and 1,343 expressions and gains ones of 178 and 499.
+The number of tight runs stays 37, and two more of them are in the limit. The
+mutants of `BS-11` to `BS-14` are drawn from the committed programs, so the new
+programs change the draws, and some of the kept counts fall; which mutants changed
+was not traced. Why the vectors of `BS-11` and `BS-12` do not move was not traced
+either. `BS-05`'s seeded refusals, 271 and 244, are asserted after the seeded runs,
+which no run on this tree has reached yet, so they stand unconfirmed.
+
+Nothing here ran locally on this commit: C: was below the floor of the local jobs.
+The counts above are the assert's numbers; the plants and the rest of each case have
+not run on them.

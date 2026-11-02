@@ -2963,22 +2963,22 @@ const RULES_EACH: usize = 3;
 // The counts the specification states, over the committed tree: SPEC.md
 // §17.23, the register statement of BS-05, its scenario, and VERIFICATION.md
 // restate them, and the case fails when the tree no longer gives them.
-const COMMITTED_MANIFESTS: usize = 277;
+const COMMITTED_MANIFESTS: usize = 282;
 const COMMITTED_FIXTURES: usize = 122;
-const COMMITTED_PROGRAMS: usize = 194;
-const COMMITTED_CRATES: usize = 253;
+const COMMITTED_PROGRAMS: usize = 199;
+const COMMITTED_CRATES: usize = 258;
 const RULE_VALIDATE_RUNS: usize = 132;
 const RULE_CORRESPOND_RUNS: usize = 12;
 const BRANCH_CRATES: usize = 17;
 const LOOP_CRATES: usize = 34;
 const MACHINE_CRATES: usize = 44 + 3 + 1 + 2 + 2 + 3;
-const VECTORS_VALIDATE: usize = 491;
+const VECTORS_VALIDATE: usize = 496;
 const REFUSED_VALIDATE: usize = 213;
-const VECTORS_CORRESPOND: usize = 354;
+const VECTORS_CORRESPOND: usize = 359;
 const REFUSED_CORRESPOND: usize = 100;
-const EVALUATOR_CRATES: usize = 205;
-const EVALUATOR_VALIDATE: usize = 443;
-const EVALUATOR_CORRESPOND: usize = 306;
+const EVALUATOR_CRATES: usize = 208;
+const EVALUATOR_VALIDATE: usize = 446;
+const EVALUATOR_CORRESPOND: usize = 309;
 const SEEDED_REFUSED_VALIDATE: usize = 271;
 const SEEDED_REFUSED_CORRESPOND: usize = 244;
 
