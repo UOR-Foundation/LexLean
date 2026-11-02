@@ -302,6 +302,24 @@
 'LexLeanStd.Numeral.parseDecimal' depends on axioms: [propext, Quot.sound]
 'LexLeanStd.Numeral.parseHex' depends on axioms: [propext, Quot.sound]
 'LexLeanStd.Numeral.pick' does not depend on any axioms
+'LexLeanStd.Order.ascendStep' depends on axioms: [propext]
+'LexLeanStd.Order.dedupStep' does not depend on any axioms
+'LexLeanStd.Order.insertSorted' depends on axioms: [propext]
+'LexLeanStd.Order.insertStep' depends on axioms: [propext]
+'LexLeanStd.Order.isAscending' depends on axioms: [propext]
+'LexLeanStd.Order.keysOf' does not depend on any axioms
+'LexLeanStd.Order.lessBytes' depends on axioms: [propext]
+'LexLeanStd.Order.mergeEntries' depends on axioms: [propext]
+'LexLeanStd.Order.mergePass' depends on axioms: [propext]
+'LexLeanStd.Order.mergeStep' depends on axioms: [propext]
+'LexLeanStd.Order.passStep' depends on axioms: [propext]
+'LexLeanStd.Order.reverseList' does not depend on any axioms
+'LexLeanStd.Order.sortByKey' depends on axioms: [propext]
+'LexLeanStd.Order.sortBytes' depends on axioms: [propext]
+'LexLeanStd.Order.sortEntries' depends on axioms: [propext]
+'LexLeanStd.Order.sortStep' depends on axioms: [propext]
+'LexLeanStd.Order.sortedSet' depends on axioms: [propext]
+'LexLeanStd.Order.withUnit' does not depend on any axioms
 'LexLeanStd.Sha256.Digest' does not depend on any axioms
 'LexLeanStd.Sha256.Schedule' does not depend on any axioms
 'LexLeanStd.Sha256.Working' does not depend on any axioms
