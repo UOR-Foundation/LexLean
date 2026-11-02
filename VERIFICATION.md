@@ -12213,10 +12213,10 @@ tree differs from this one by these counts and the verification records.
 | `BS-06` seeded `printExpr` mutants, seeded rustc runs | 399, 2,984 | 394, 2,989 |
 | `BS-07` vectors, within the bound | 328, 278 | 333, 281 |
 | `BS-08` crates, within the bound | 387, 339 | 392, 342 |
-| `BS-11` vectors, within the bound, mutants | 157, 156, 296 | 157, 156, 286 |
-| `BS-12` vectors, within the bound, mutants | 76, 75, 184 | 76, 75, 151 |
+| `BS-11` vectors, within the bound, mutants | 157, 156, 296 | 157, 156, 281 |
+| `BS-12` vectors, within the bound, mutants | 76, 75, 184 | 76, 75, 149 |
 | `BS-13` vectors, within the bound, mutants | 97, 49, 125 | 102, 52, 108 |
-| `BS-14` vectors, within the bound, mutants | 332, 282, 547 | 337, 285, 593 |
+| `BS-14` vectors, within the bound, mutants | 332, 282, 547 | 337, 285, 580 |
 | `BS-15` manifests, accepted, render mutants, runs under rustc | 296, 277, 277, 3,169 | 301, 282, 282, 3,184 |
 
 The crates that differ are the five new ones, of 65, 129, 367, 451 and 477
@@ -12253,5 +12253,24 @@ seeds each has its third hit within 36,530 of the 400,000 draws. This measures `
 refusals only.
 
 The numbers of `BS-05` are that probe's, which stops before the first leg; `BS-06`'s
-are its assert's in that CI run. Neither case has run past them on this tree here, so
-the plants and the rest of each case are CI's to show.
+are its assert's in that CI run. CI run 41443972605 on `e0fa5c6e2` then passed both
+cases on them, and every other job but `examples`, which wanted the verify records.
+
+Those records moved three counts again, though they touch nothing but
+`stdlib/expected/verify`. `calculus_check::committed` reads every
+`/preserve/program/R*.json`, and `mutants` picks its bases from those programs, so a
+records commit that adds, removes or changes one moves the draws of the rows on that
+corpus. This one added `R17` to `R21` and changed `R8` to `R16`. CI run 41470121986 on
+`42263665e` gave:
+
+| Count | Before the records | With them |
+| --- | --- | --- |
+| `BS-11` mutants | 286 | 281 |
+| `BS-12` mutants | 151 | 149 |
+| `BS-14` mutants | 593 | 580 |
+
+`BS-13` draws from the same corpus and passed with its count unmoved; `BS-07` tops its
+draws up to a fixed count. `BS-05`, `BS-06`, `BS-08` and `BS-15` read only manifests
+and fixtures. The three failing cases assert the count before their plants, so that
+run did not reach the plants on the new draws. A package that adds records should
+set these counts with its records in the tree, on the same commit.

@@ -67,7 +67,7 @@ const ROOTS: [&str; 2] = ["functionShells", "assembleItems"];
 const EVALUATOR_NODES: usize = 300;
 const VECTORS: usize = 337;
 const VECTORS_WITHIN: usize = 285;
-const EVALUATOR_MUTANTS: usize = 593;
+const EVALUATOR_MUTANTS: usize = 580;
 
 /// What a host that did more than thread the counter would get wrong: the
 /// case runs the composition with each of these and requires the comparison
