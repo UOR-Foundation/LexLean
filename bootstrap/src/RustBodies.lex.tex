@@ -824,7 +824,7 @@ definition{
       | RustAst::Expr.ELit u23x0 u23x1 => false
       | RustAst::Expr.ERead kind read at => (match kind
         | RustValidate::ReadKind.RkMove => (idEq bound read)
-        | RustValidate::ReadKind.RkClone => false
+        | RustValidate::ReadKind.RkClone => (idEq bound read)
         | RustValidate::ReadKind.RkCopy => (idEq bound read)
         | RustValidate::ReadKind.RkDeref => false
         | RustValidate::ReadKind.RkUnbox => false)

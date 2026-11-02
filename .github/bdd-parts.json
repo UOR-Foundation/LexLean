@@ -242,7 +242,8 @@
     ],
     "preservation-std": [
       "SP-29",
-      "SP-31"
+      "SP-31",
+      "SP-32"
     ]
   }
 }

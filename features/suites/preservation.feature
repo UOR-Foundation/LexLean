@@ -213,3 +213,10 @@ Feature: preservation
     When the fixture's generated Lean is read and its production root is exported
     Then `paramsOf` states its argument, its two controls state none, and the kernel accepts every certificate of the root
     And a backend that stops stating the argument is refused by the kernel with `LLV7013`
+
+  @SP-32 @build
+  Scenario: A match arm whose whole body is a binder of a boxed field renders as the read of the box, with no binding, in a function that cannot overflow: `fold` of the Rust lowering of SPEC.md §17.16 and `returnedLet` of `RustBodies` fold a returned clone as they fold a returned move or copy, which is the arm that `foldB` of certificate B's `mCons` states, so that the kernel accepts certificate B of a production root whose closure has such an arm.
+    Given a hand-built program whose arm returns a boxed field, and the `binder-arm` fixture, whose arms return either field in a function that cannot overflow and in one that can
+    When the program is rendered and the fixture's production root is exported
+    Then the arm reads the box and binds nothing, and the kernel accepts every certificate of the root
+    And a lowering that does not fold a returned clone is refused by the kernel with `LLV7015`

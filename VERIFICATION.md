@@ -11507,6 +11507,7 @@ the first panic message, trimmed.
 | `PD-03` | `production/eligibility.rs`: termination evidence is no longer inserted into `erased` | `termination evidence is erased, never realized` (`left: []`, `right: ["Production.Kernel.countdown_decreases"]`) |
 | `PD-06` | `production/eligibility.rs`: every `EffectRow` is built with no sources | `array shorter than minItems 1` at `/roots/1/targets/0/effects/0/sources` of `production-eligibility.schema.json` |
 | `SP-31` | `backend/semantic.rs`: the clause is written only for a mutual group | `` `paramsOf` matches a parameter before its argument and states the argument ``, the generated definition with no clause; the issue's project on that binary: `LLV7013` in `__rel_1` |
+| `SP-32` | `calculus/rust/lower.rs`: `fold` does not read `Expr::Clone` | `the arm reads the box and binds nothing`, the arm being `Let { pat: Bind(Local(2)), value: Unbox(Boxed(2)) }` then `Move(Local(2))`; the issue's project on that binary: `LLV7015` at `Corr.mCons` in `fun1` |
 | `TC-01` | `calculus/mod.rs`: `canonical` binds parameters but keeps their spelling | `assertion left == right failed: adt-evaluation` (alpha variant bytes differ) |
 | `TC-02` | `calculus/check.rs`: the match exhaustiveness test made `false &&` | `an invalid program loads: expected `the match is not exhaustive: Adt { constructor: 2 } is not covered`` |
 | `MD-01` | `ir/semantic.rs`: the language-1.1 gate `first_language_1_2_construct` made `&& false` | `tests/negative/model-under-1.1: expected "`contract declaration` is a language-1.2 construct"` |
@@ -12222,3 +12223,37 @@ A scan of every `.lex.tex` source found no executable definition with this shape
 so no committed generated Lean changes. `lean_backend` still moves, because I10
 and §30.1 do not let generated artifacts or a failure diagnostic change under
 one identity.
+
+## An arm that returns a boxed field is the read of the box (`SP-32`, #310)
+
+### The defect
+
+Certificate B of a production root was refused (`LLV7015`, at `Corr.mCons`) for a
+match arm whose whole body is a binder of a boxed field. The certificate could
+not have been accepted. `fold` of the lowering folds a block that returns the
+binding it just made, but it read only `Move` and `Copy`, and it runs before the
+last-use moves. So `let x = (*b).clone(); x.clone()` was not folded, and the
+moves then made it `let x = (*b).clone(); x`. `Corr.mCons` states an arm through
+`foldB`, which folds that block to `(*b).clone()`, so the arm the crate wrote and
+the arm the rule states differ. The certificate builder cannot state the unfolded
+arm: `foldN` takes one step per binding, and `directPat` holds the load first, so
+the fold always fires.
+
+### The fix
+
+`fold` reads a returned clone as it reads a returned move or a copy, and
+`returnedLet` of `RustBodies` does the same so that `BS-11`, `BS-13` and `BS-14`
+stay equal to the renderer. The fold path of `m_arm` in certificate B, which
+restates the load the fold removed, already states this arm. The library does not
+change. `lower.rs` is a file of the renderer, so `rust_renderer` and the
+language-1.2 identity move.
+
+### The check can fail
+
+| Run | Observed |
+| --- | --- |
+| `conformance_sp_32`, fixed source | ok, 196 s |
+| `conformance_sp_32`, `fold` without `Expr::Clone` | fails without Lean: the arm is the load, then `Move(Local(2))` |
+| the issue's project, on a binary with that plant | `LLV7015` at `Corr.mCons` in `fun1`, exit 1, 127 s |
+| the issue's project, fixed source | exit 0, 137 s |
+| the fixture with an overflowing arm, fixed source | exit 0, 141 s; `Ok` wraps the arm's value, so that arm is not folded |

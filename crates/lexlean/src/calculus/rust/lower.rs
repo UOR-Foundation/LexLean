@@ -206,7 +206,9 @@ fn set_tail(block: &mut Block, expr: Expr) {
 /// Fold every block that binds a value and then returns exactly that binding
 /// into the value itself: Rust's lint gate refuses the binding, and the two
 /// evaluate the same. Names are unique in their function, so a block the
-/// value is joins the enclosing one without changing any name's meaning.
+/// value is joins the enclosing one without changing any name's meaning. A
+/// clone is a return too: this pass runs before the last-use moves, which
+/// would make it the move that certificate B's `foldB` folds (#310).
 fn fold(block: &mut Block) {
     for binding in &mut block.lets {
         fold_expr(&mut binding.value);
@@ -215,7 +217,7 @@ fn fold(block: &mut Block) {
     loop {
         let returned = match (&block.tail, block.lets.last()) {
             (
-                Expr::Move(read, _) | Expr::Copy(read, _),
+                Expr::Move(read, _) | Expr::Copy(read, _) | Expr::Clone(read, _),
                 Some(Let {
                     pat: Pat::Bind(bound),
                     ty: None,

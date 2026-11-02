@@ -7,6 +7,7 @@
 mod artifacts;
 mod authoring;
 mod authoring_core;
+mod binder_arm;
 mod bootstrap;
 /// The performance of the certified components against their oracles (#277).
 pub use bootstrap::perf as bootstrap_perf;
