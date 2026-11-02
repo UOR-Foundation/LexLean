@@ -1,0 +1,214 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{Later}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{whole}: \texttt{Nat}.\par
+\noindent Field \texttt{parts}: \texttt{List ((Prod (Nat) (Nat)))}.\par
+\subsection*{\texttt{idKey}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(ident : LexLeanBoot.RustValidate.Id)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (Nat) (Nat))}.\par
+\noindent Definition: \texttt{(match ident with | LexLeanBoot.RustValidate.Id.IdLocal n => (0, n) | LexLeanBoot.RustValidate.Id.IdHolder n => (1, n) | LexLeanBoot.RustValidate.Id.IdOperand n => (2, n) | LexLeanBoot.RustValidate.Id.IdCallee n => (3, n) | LexLeanBoot.RustValidate.Id.IdBoxed n => (4, n) | LexLeanBoot.RustValidate.Id.IdPart n => (5, n) | LexLeanBoot.RustValidate.Id.IdCapture n => (6, n) | LexLeanBoot.RustValidate.Id.IdParam n => (7, n) | LexLeanBoot.RustValidate.Id.IdFunction n => (8, n) | LexLeanBoot.RustValidate.Id.IdExport \_ => (9, 0))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{idEq}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : LexLeanBoot.RustValidate.Id) (right : LexLeanBoot.RustValidate.Id)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(let one : (Prod (Nat) (Nat)) := idKey (left); (let two : (Prod (Nat) (Nat)) := idKey (right); ((Nat.beq ((one).1) ((two).1)) \&\& (Nat.beq ((one).2) ((two).2)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{natMax}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : Nat) (right : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(if (Nat.blt (left) (right)) then right else left)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{partCount}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(parts : List ((Prod (Nat) (Nat)))) (part : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match parts with | List.nil => 0 | List.cons head tail => (if (Nat.beq ((head).1) (part)) then (head).2 else partCount (tail) (part)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{partSet}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(parts : List ((Prod (Nat) (Nat)))) (part : Nat) (count : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List ((Prod (Nat) (Nat)))}.\par
+\noindent Definition: \texttt{(match parts with | List.nil => ((part, count) :: ([] : List ((Prod (Nat) (Nat))))) | List.cons head tail => (if (Nat.beq ((head).1) (part)) then ((part, count) :: tail) else (head :: partSet (tail) (part) (count))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{mergeParts}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : List ((Prod (Nat) (Nat)))) (right : List ((Prod (Nat) (Nat))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List ((Prod (Nat) (Nat)))}.\par
+\noindent Definition: \texttt{(match right with | List.nil => left | List.cons head tail => mergeParts (partSet (left) ((head).1) (natMax ((head).2) (partCount (left) ((head).1)))) (tail))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{atMostOne}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(parts : List ((Prod (Nat) (Nat))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match parts with | List.nil => true | List.cons head tail => (if (Nat.blt ((head).2) (2)) then atMostOne (tail) else false))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{liveFind}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(live : List ((Prod (LexLeanBoot.RustValidate.Id) (Later)))) (ident : LexLeanBoot.RustValidate.Id)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Later)}.\par
+\noindent Definition: \texttt{(match live with | List.nil => Option.none | List.cons head tail => (if idEq ((head).1) (ident) then Option.some ((head).2) else liveFind (tail) (ident)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{liveSet}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(live : List ((Prod (LexLeanBoot.RustValidate.Id) (Later)))) (ident : LexLeanBoot.RustValidate.Id) (later : Later)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List ((Prod (LexLeanBoot.RustValidate.Id) (Later)))}.\par
+\noindent Definition: \texttt{(match live with | List.nil => ((ident, later) :: ([] : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))))) | List.cons head tail => (if idEq ((head).1) (ident) then ((ident, later) :: tail) else (head :: liveSet (tail) (ident) (later))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{liveRemove}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(live : List ((Prod (LexLeanBoot.RustValidate.Id) (Later)))) (ident : LexLeanBoot.RustValidate.Id)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List ((Prod (LexLeanBoot.RustValidate.Id) (Later)))}.\par
+\noindent Definition: \texttt{(match live with | List.nil => ([] : List ((Prod (LexLeanBoot.RustValidate.Id) (Later)))) | List.cons head tail => (if idEq ((head).1) (ident) then tail else (head :: liveRemove (tail) (ident))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{entryOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(live : List ((Prod (LexLeanBoot.RustValidate.Id) (Later)))) (ident : LexLeanBoot.RustValidate.Id)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Later}.\par
+\noindent Definition: \texttt{(match liveFind (live) (ident) with | Option.some found => found | Option.none => (\{ whole := 0, parts := ([] : List ((Prod (Nat) (Nat)))) \} : Later))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{mergeLive}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : List ((Prod (LexLeanBoot.RustValidate.Id) (Later)))) (right : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List ((Prod (LexLeanBoot.RustValidate.Id) (Later)))}.\par
+\noindent Definition: \texttt{(match right with | List.nil => left | List.cons head tail => (let current : Later := entryOf (left) ((head).1); mergeLive (liveSet (left) ((head).1) ((\{ whole := natMax ((current).whole) (((head).2).whole), parts := mergeParts ((current).parts) (((head).2).parts) \} : Later))) (tail)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{readWhole}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(live : List ((Prod (LexLeanBoot.RustValidate.Id) (Later)))) (ident : LexLeanBoot.RustValidate.Id)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List ((Prod (LexLeanBoot.RustValidate.Id) (Later)))}.\par
+\noindent Definition: \texttt{(let current : Later := entryOf (live) (ident); liveSet (live) (ident) ((\{ whole := ((current).whole + 1), parts := (current).parts \} : Later)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{readPart}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(live : List ((Prod (LexLeanBoot.RustValidate.Id) (Later)))) (ident : LexLeanBoot.RustValidate.Id) (part : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List ((Prod (LexLeanBoot.RustValidate.Id) (Later)))}.\par
+\noindent Definition: \texttt{(let current : Later := entryOf (live) (ident); liveSet (live) (ident) ((\{ whole := (current).whole, parts := partSet ((current).parts) (part) ((partCount ((current).parts) (part) + 1)) \} : Later)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{mayMove}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(live : List ((Prod (LexLeanBoot.RustValidate.Id) (Later)))) (ident : LexLeanBoot.RustValidate.Id)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match liveFind (live) (ident) with | Option.some found => ((Nat.beq ((found).whole) (0)) \&\& (Nat.beq ((LexLeanRuntime.length ((found).parts) : Nat)) (0))) | Option.none => true)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{mayMovePart}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(live : List ((Prod (LexLeanBoot.RustValidate.Id) (Later)))) (ident : LexLeanBoot.RustValidate.Id) (part : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match liveFind (live) (ident) with | Option.some found => ((Nat.beq ((found).whole) (0)) \&\& ((Nat.beq (partCount ((found).parts) (part)) (0)) \&\& atMostOne ((found).parts))) | Option.none => true)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{unbind}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(pattern : LexLeanBoot.RustAst.Pat) (live : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List ((Prod (LexLeanBoot.RustValidate.Id) (Later)))}.\par
+\noindent Definition: \texttt{(match pattern with | LexLeanBoot.RustAst.Pat.PLeaf \_ => live | LexLeanBoot.RustAst.Pat.PBind ident => liveRemove (live) (ident) | LexLeanBoot.RustAst.Pat.PTuple parts => unbind (parts) (live) | LexLeanBoot.RustAst.Pat.PWrap \_ inner => unbind (inner) (live) | LexLeanBoot.RustAst.Pat.PAdt \_ \_ parts => unbind (parts) (live) | LexLeanBoot.RustAst.Pat.PNil => live | LexLeanBoot.RustAst.Pat.PCons head tail => (let one : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))) := unbind (head) (live); unbind (tail) (one)) | LexLeanBoot.RustAst.Pat.POrdering \_ => live)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{isWild}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(pattern : LexLeanBoot.RustAst.Pat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match pattern with | LexLeanBoot.RustAst.Pat.PLeaf leaf => (match leaf with | LexLeanBoot.RustAst.PatLeaf.PlWild => true | LexLeanBoot.RustAst.PatLeaf.PlUnit => false | LexLeanBoot.RustAst.PatLeaf.PlNone => false) | LexLeanBoot.RustAst.Pat.PBind \_ => false | LexLeanBoot.RustAst.Pat.PTuple \_ => false | LexLeanBoot.RustAst.Pat.PWrap \_ \_ => false | LexLeanBoot.RustAst.Pat.PAdt \_ \_ \_ => false | LexLeanBoot.RustAst.Pat.PNil => false | LexLeanBoot.RustAst.Pat.PCons \_ \_ => false | LexLeanBoot.RustAst.Pat.POrdering \_ => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{boundCount}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(parts : LexLeanBoot.RustAst.Pat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match parts with | LexLeanBoot.RustAst.Pat.PLeaf \_ => 0 | LexLeanBoot.RustAst.Pat.PBind \_ => 0 | LexLeanBoot.RustAst.Pat.PTuple \_ => 0 | LexLeanBoot.RustAst.Pat.PWrap \_ \_ => 0 | LexLeanBoot.RustAst.Pat.PAdt \_ \_ \_ => 0 | LexLeanBoot.RustAst.Pat.PNil => 0 | LexLeanBoot.RustAst.Pat.PCons head tail => (if isWild (head) then boundCount (tail) else (1 + boundCount (tail))) | LexLeanBoot.RustAst.Pat.POrdering \_ => 0)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{partsLength}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(parts : LexLeanBoot.RustAst.Pat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match parts with | LexLeanBoot.RustAst.Pat.PLeaf \_ => 0 | LexLeanBoot.RustAst.Pat.PBind \_ => 0 | LexLeanBoot.RustAst.Pat.PTuple \_ => 0 | LexLeanBoot.RustAst.Pat.PWrap \_ \_ => 0 | LexLeanBoot.RustAst.Pat.PAdt \_ \_ \_ => 0 | LexLeanBoot.RustAst.Pat.PNil => 0 | LexLeanBoot.RustAst.Pat.PCons \_ tail => (1 + partsLength (tail)) | LexLeanBoot.RustAst.Pat.POrdering \_ => 0)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{firstBound}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(parts : LexLeanBoot.RustAst.Pat) (<U+00AB>at<U+00BB> : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match parts with | LexLeanBoot.RustAst.Pat.PLeaf \_ => <U+00AB>at<U+00BB> | LexLeanBoot.RustAst.Pat.PBind \_ => <U+00AB>at<U+00BB> | LexLeanBoot.RustAst.Pat.PTuple \_ => <U+00AB>at<U+00BB> | LexLeanBoot.RustAst.Pat.PWrap \_ \_ => <U+00AB>at<U+00BB> | LexLeanBoot.RustAst.Pat.PAdt \_ \_ \_ => <U+00AB>at<U+00BB> | LexLeanBoot.RustAst.Pat.PNil => <U+00AB>at<U+00BB> | LexLeanBoot.RustAst.Pat.PCons head tail => (if isWild (head) then firstBound (tail) ((<U+00AB>at<U+00BB> + 1)) else <U+00AB>at<U+00BB>) | LexLeanBoot.RustAst.Pat.POrdering \_ => <U+00AB>at<U+00BB>)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{cloneRead}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : LexLeanBoot.RustAst.Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option ((Prod (LexLeanBoot.RustValidate.Id) (LexLeanBoot.RustValidate.Origin)))}.\par
+\noindent Definition: \texttt{(match value with | LexLeanBoot.RustAst.Expr.ELit \_ \_ => Option.none | LexLeanBoot.RustAst.Expr.ERead kind ident o => (match kind with | LexLeanBoot.RustValidate.ReadKind.RkClone => Option.some ((ident, o)) | LexLeanBoot.RustValidate.ReadKind.RkMove => Option.none | LexLeanBoot.RustValidate.ReadKind.RkCopy => Option.none | LexLeanBoot.RustValidate.ReadKind.RkDeref => Option.none | LexLeanBoot.RustValidate.ReadKind.RkUnbox => Option.none) | LexLeanBoot.RustAst.Expr.EWrap \_ \_ \_ => Option.none | LexLeanBoot.RustAst.Expr.ECall \_ \_ \_ \_ => Option.none | LexLeanBoot.RustAst.Expr.EApply \_ \_ \_ \_ => Option.none | LexLeanBoot.RustAst.Expr.EConstruct \_ \_ \_ => Option.none | LexLeanBoot.RustAst.Expr.EPair \_ \_ \_ => Option.none | LexLeanBoot.RustAst.Expr.EIf \_ \_ \_ \_ => Option.none | LexLeanBoot.RustAst.Expr.EMatch \_ \_ \_ => Option.none | LexLeanBoot.RustAst.Expr.EBlockE \_ => Option.none | LexLeanBoot.RustAst.Expr.EProbe \_ \_ \_ => Option.none | LexLeanBoot.RustAst.Expr.EBlock \_ \_ => Option.none | LexLeanBoot.RustAst.Expr.ENil => Option.none | LexLeanBoot.RustAst.Expr.ECons \_ \_ => Option.none | LexLeanBoot.RustAst.Expr.ELet \_ \_ \_ \_ \_ \_ => Option.none | LexLeanBoot.RustAst.Expr.EArm \_ \_ \_ => Option.none | LexLeanBoot.RustAst.Expr.ELoop \_ \_ => Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{projectionOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(pattern : LexLeanBoot.RustAst.Pat) (value : LexLeanBoot.RustAst.Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option ((Prod (Nat) ((Prod (LexLeanBoot.RustValidate.Id) (LexLeanBoot.RustValidate.Origin)))))}.\par
+\noindent Definition: \texttt{(match pattern with | LexLeanBoot.RustAst.Pat.PLeaf \_ => Option.none | LexLeanBoot.RustAst.Pat.PBind \_ => Option.none | LexLeanBoot.RustAst.Pat.PTuple parts => (match cloneRead (value) with | Option.some found => (if ((Nat.beq (boundCount (parts)) (1)) \&\& (Nat.blt (1) (partsLength (parts)))) then Option.some ((firstBound (parts) (0), found)) else Option.none) | Option.none => Option.none) | LexLeanBoot.RustAst.Pat.PWrap \_ \_ => Option.none | LexLeanBoot.RustAst.Pat.PAdt \_ \_ \_ => Option.none | LexLeanBoot.RustAst.Pat.PNil => Option.none | LexLeanBoot.RustAst.Pat.PCons \_ \_ => Option.none | LexLeanBoot.RustAst.Pat.POrdering \_ => Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{isNilExpr}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(e : LexLeanBoot.RustAst.Expr)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match e with | LexLeanBoot.RustAst.Expr.ELit \_ \_ => false | LexLeanBoot.RustAst.Expr.ERead \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EWrap \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.ECall \_ \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EApply \_ \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EConstruct \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EPair \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EIf \_ \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EMatch \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EBlockE \_ => false | LexLeanBoot.RustAst.Expr.EProbe \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EBlock \_ \_ => false | LexLeanBoot.RustAst.Expr.ENil => true | LexLeanBoot.RustAst.Expr.ECons \_ \_ => false | LexLeanBoot.RustAst.Expr.ELet \_ \_ \_ \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.EArm \_ \_ \_ => false | LexLeanBoot.RustAst.Expr.ELoop \_ \_ => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{isCloneKind}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : LexLeanBoot.RustValidate.ReadKind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match kind with | LexLeanBoot.RustValidate.ReadKind.RkClone => true | LexLeanBoot.RustValidate.ReadKind.RkMove => false | LexLeanBoot.RustValidate.ReadKind.RkCopy => false | LexLeanBoot.RustValidate.ReadKind.RkDeref => false | LexLeanBoot.RustValidate.ReadKind.RkUnbox => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{readsE}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(e : LexLeanBoot.RustAst.Expr) (live : List ((Prod (LexLeanBoot.RustValidate.Id) (Later)))) (mode : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List ((Prod (LexLeanBoot.RustValidate.Id) (Later)))}.\par
+\noindent Definition: \texttt{(match e with | LexLeanBoot.RustAst.Expr.ELit \_ \_ => live | LexLeanBoot.RustAst.Expr.ERead \_ ident \_ => readWhole (live) (ident) | LexLeanBoot.RustAst.Expr.EWrap \_ inner \_ => readsE (inner) (live) (0) | LexLeanBoot.RustAst.Expr.ECall \_ args \_ \_ => readsE (args) (live) (0) | LexLeanBoot.RustAst.Expr.EApply holder args \_ \_ => (let held : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))) := readWhole (live) (holder); readsE (args) (held) (0)) | LexLeanBoot.RustAst.Expr.EConstruct \_ args \_ => readsE (args) (live) (0) | LexLeanBoot.RustAst.Expr.EPair left right \_ => (let after : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))) := readsE (right) (live) (0); readsE (left) (after) (0)) | LexLeanBoot.RustAst.Expr.EIf condition thenBranch elseBranch \_ => (let one : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))) := readsE (thenBranch) (live) (0); (let two : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))) := readsE (elseBranch) (live) (0); readsE (condition) (mergeLive (one) (two)) (0))) | LexLeanBoot.RustAst.Expr.EMatch scrutinee arms \_ => (let through : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))) := (if isNilExpr (arms) then live else readsE (arms) (live) (1)); readsE (scrutinee) (through) (0)) | LexLeanBoot.RustAst.Expr.EBlockE inner => readsE (inner) (live) (0) | LexLeanBoot.RustAst.Expr.EProbe \_ ident \_ => readWhole (live) (ident) | LexLeanBoot.RustAst.Expr.EBlock lets tail => (let after : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))) := readsE (tail) (live) (0); readsE (lets) (after) (0)) | LexLeanBoot.RustAst.Expr.ENil => (if (Nat.beq (mode) (1)) then ([] : List ((Prod (LexLeanBoot.RustValidate.Id) (Later)))) else live) | LexLeanBoot.RustAst.Expr.ECons head tail => (let after : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))) := readsE (tail) (live) (0); readsE (head) (after) (0)) | LexLeanBoot.RustAst.Expr.ELet pat \_ \_ value \_ rest => (let inner : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))) := readsE (rest) (live) (0); (let bound : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))) := unbind (pat) (inner); (match projectionOf (pat) (value) with | Option.some found => readPart (bound) (((found).2).1) ((found).1) | Option.none => readsE (value) (bound) (0)))) | LexLeanBoot.RustAst.Expr.EArm pat body rest => (let seen : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))) := readsE (body) (live) (0); (let later : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))) := readsE (rest) (live) (1); mergeLive (unbind (pat) (seen)) (later))) | LexLeanBoot.RustAst.Expr.ELoop state body => (let bare : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))) := readsE (body) (([] : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))))) (0); (let reads : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))) := liveRemove (bare) (state); (let inside : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))) := liveRemove (mergeLive (live) (reads)) (state); (let ran : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))) := readsE (body) (inside) (0); readWhole (ran) (state))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{moveE}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(e : LexLeanBoot.RustAst.Expr) (live : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanBoot.RustAst.Expr}.\par
+\noindent Definition: \texttt{(match e with | LexLeanBoot.RustAst.Expr.ELit lit o => LexLeanBoot.RustAst.Expr.ELit (lit) (o) | LexLeanBoot.RustAst.Expr.ERead kind ident o => (if isCloneKind (kind) then (if mayMove (live) (ident) then LexLeanBoot.RustAst.Expr.ERead (LexLeanBoot.RustValidate.ReadKind.RkMove) (ident) (o) else LexLeanBoot.RustAst.Expr.ERead (kind) (ident) (o)) else LexLeanBoot.RustAst.Expr.ERead (kind) (ident) (o)) | LexLeanBoot.RustAst.Expr.EWrap kind inner o => LexLeanBoot.RustAst.Expr.EWrap (kind) (moveE (inner) (live)) (o) | LexLeanBoot.RustAst.Expr.ECall callee args propagate o => LexLeanBoot.RustAst.Expr.ECall (callee) (moveE (args) (live)) (propagate) (o) | LexLeanBoot.RustAst.Expr.EApply holder args propagate o => (let held : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))) := readWhole (live) (holder); LexLeanBoot.RustAst.Expr.EApply (holder) (moveE (args) (held)) (propagate) (o)) | LexLeanBoot.RustAst.Expr.EConstruct con args o => LexLeanBoot.RustAst.Expr.EConstruct (con) (moveE (args) (live)) (o) | LexLeanBoot.RustAst.Expr.EPair left right o => (let after : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))) := readsE (right) (live) (0); LexLeanBoot.RustAst.Expr.EPair (moveE (left) (after)) (moveE (right) (live)) (o)) | LexLeanBoot.RustAst.Expr.EIf condition thenBranch elseBranch o => (let one : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))) := readsE (thenBranch) (live) (0); (let two : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))) := readsE (elseBranch) (live) (0); LexLeanBoot.RustAst.Expr.EIf (moveE (condition) (mergeLive (one) (two))) (moveE (thenBranch) (live)) (moveE (elseBranch) (live)) (o))) | LexLeanBoot.RustAst.Expr.EMatch scrutinee arms o => (let through : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))) := (if isNilExpr (arms) then live else readsE (arms) (live) (1)); LexLeanBoot.RustAst.Expr.EMatch (moveE (scrutinee) (through)) (moveE (arms) (live)) (o)) | LexLeanBoot.RustAst.Expr.EBlockE inner => LexLeanBoot.RustAst.Expr.EBlockE (moveE (inner) (live)) | LexLeanBoot.RustAst.Expr.EProbe kind ident o => LexLeanBoot.RustAst.Expr.EProbe (kind) (ident) (o) | LexLeanBoot.RustAst.Expr.EBlock lets tail => (let after : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))) := readsE (tail) (live) (0); LexLeanBoot.RustAst.Expr.EBlock (moveE (lets) (after)) (moveE (tail) (live))) | LexLeanBoot.RustAst.Expr.ENil => LexLeanBoot.RustAst.Expr.ENil | LexLeanBoot.RustAst.Expr.ECons head tail => (let after : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))) := readsE (tail) (live) (0); LexLeanBoot.RustAst.Expr.ECons (moveE (head) (after)) (moveE (tail) (live))) | LexLeanBoot.RustAst.Expr.ELet pat mutable ty value o rest => (let inner : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))) := readsE (rest) (live) (0); (let bound : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))) := unbind (pat) (inner); LexLeanBoot.RustAst.Expr.ELet (pat) (mutable) (ty) ((match projectionOf (pat) (value) with | Option.some found => (if mayMovePart (bound) (((found).2).1) ((found).1) then LexLeanBoot.RustAst.Expr.ERead (LexLeanBoot.RustValidate.ReadKind.RkMove) (((found).2).1) (((found).2).2) else value) | Option.none => moveE (value) (bound))) (o) (moveE (rest) (live)))) | LexLeanBoot.RustAst.Expr.EArm pat body rest => LexLeanBoot.RustAst.Expr.EArm (pat) (moveE (body) (live)) (moveE (rest) (live)) | LexLeanBoot.RustAst.Expr.ELoop state body => (let bare : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))) := readsE (body) (([] : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))))) (0); (let reads : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))) := liveRemove (bare) (state); (let inside : List ((Prod (LexLeanBoot.RustValidate.Id) (Later))) := liveRemove (mergeLive (live) (reads)) (state); LexLeanBoot.RustAst.Expr.ELoop (state) (moveE (body) (inside))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{moveItems}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : LexLeanBoot.RustAst.Def)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanBoot.RustAst.Def}.\par
+\noindent Definition: \texttt{(match items with | LexLeanBoot.RustAst.Def.DEnum ty row o => LexLeanBoot.RustAst.Def.DEnum (ty) (row) (o) | LexLeanBoot.RustAst.Def.DApply number parameters result fallible dispatch o => LexLeanBoot.RustAst.Def.DApply (number) (parameters) (result) (fallible) (dispatch) (o) | LexLeanBoot.RustAst.Def.DFunction name parameters result body o => LexLeanBoot.RustAst.Def.DFunction (name) (parameters) (result) (moveE (body) (([] : List ((Prod (LexLeanBoot.RustValidate.Id) (Later)))))) (o) | LexLeanBoot.RustAst.Def.DNil => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.RustAst.Def.DCons item rest => LexLeanBoot.RustAst.Def.DCons (moveItems (item)) (moveItems (rest)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{applyMoves}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : LexLeanBoot.RustAst.Def)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{LexLeanBoot.RustAst.Def}.\par
+\noindent Definition: \texttt{moveItems (items)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\end{document}

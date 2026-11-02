@@ -75,6 +75,7 @@
 'LexLeanBoot.CalculusCheck.adtShapes' does not depend on any axioms
 'LexLeanBoot.CalculusCheck.allDigits' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.CalculusCheck.allHex' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.CalculusCheck.armFields' does not depend on any axioms
 'LexLeanBoot.CalculusCheck.bindAll' does not depend on any axioms
 'LexLeanBoot.CalculusCheck.boolDebug' does not depend on any axioms
 'LexLeanBoot.CalculusCheck.byteIs' does not depend on any axioms
@@ -117,6 +118,7 @@
 'LexLeanBoot.CalculusCheck.hexNibble' does not depend on any axioms
 'LexLeanBoot.CalculusCheck.hexStep' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.CalculusCheck.inapplicable' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.inferTy' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.CalculusCheck.isNilTy' does not depend on any axioms
 'LexLeanBoot.CalculusCheck.isNilValue' does not depend on any axioms
 'LexLeanBoot.CalculusCheck.kindDebug' does not depend on any axioms
@@ -145,6 +147,11 @@
 'LexLeanBoot.CalculusCheck.shapeTag' does not depend on any axioms
 'LexLeanBoot.CalculusCheck.shapesOf' does not depend on any axioms
 'LexLeanBoot.CalculusCheck.significant' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.siteNode' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.siteOne' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.siteOwn' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.siteTree' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.CalculusCheck.siteTrees' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.CalculusCheck.startsWithByte' does not depend on any axioms
 'LexLeanBoot.CalculusCheck.strDebug' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.CalculusCheck.text' does not depend on any axioms
@@ -164,6 +171,8 @@
 'LexLeanBoot.CalculusCheck.undeclaredAdt' does not depend on any axioms
 'LexLeanBoot.CalculusCheck.undeclaredFunction' does not depend on any axioms
 'LexLeanBoot.CalculusCheck.unicodeEscape' does not depend on any axioms
+'LexLeanBoot.CalculusCheck.useTree' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.CalculusCheck.useTrees' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.CalculusCheck.valDebug' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.CalculusCheck.valueChainLength' does not depend on any axioms
 'LexLeanBoot.CalculusCheck.valueOk' depends on axioms: [propext, Quot.sound]
@@ -373,6 +382,22 @@
 'LexLeanBoot.RuntimeValidate.variantTypes' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.withBound' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.wrapperArity' does not depend on any axioms
+'LexLeanBoot.RustAssemble.appendDefs' does not depend on any axioms
+'LexLeanBoot.RustAssemble.assembleItems' does not depend on any axioms
+'LexLeanBoot.RustAssemble.binderPat' does not depend on any axioms
+'LexLeanBoot.RustAssemble.emptyBody' does not depend on any axioms
+'LexLeanBoot.RustAssemble.firstEmpty' does not depend on any axioms
+'LexLeanBoot.RustAssemble.functionAt' does not depend on any axioms
+'LexLeanBoot.RustAssemble.functionShells' does not depend on any axioms
+'LexLeanBoot.RustAssemble.kindText' does not depend on any axioms
+'LexLeanBoot.RustAssemble.nameAt' does not depend on any axioms
+'LexLeanBoot.RustAssemble.paramsOf' does not depend on any axioms
+'LexLeanBoot.RustAssemble.placeAll' does not depend on any axioms
+'LexLeanBoot.RustAssemble.placeLoop' does not depend on any axioms
+'LexLeanBoot.RustAssemble.shell' does not depend on any axioms
+'LexLeanBoot.RustAssemble.shellsFrom' does not depend on any axioms
+'LexLeanBoot.RustAssemble.typeAt' does not depend on any axioms
+'LexLeanBoot.RustAssemble.typeOrigin' does not depend on any axioms
 'LexLeanBoot.RustAst.Callee' does not depend on any axioms
 'LexLeanBoot.RustAst.Crate' does not depend on any axioms
 'LexLeanBoot.RustAst.Def' does not depend on any axioms
@@ -382,6 +407,322 @@
 'LexLeanBoot.RustAst.Par' does not depend on any axioms
 'LexLeanBoot.RustAst.Pat' does not depend on any axioms
 'LexLeanBoot.RustAst.PatLeaf' does not depend on any axioms
+'LexLeanBoot.RustBodies.Cn' does not depend on any axioms
+'LexLeanBoot.RustBodies.Ctx' does not depend on any axioms
+'LexLeanBoot.RustBodies.Flat' does not depend on any axioms
+'LexLeanBoot.RustBodies.Frame' does not depend on any axioms
+'LexLeanBoot.RustBodies.Loads' does not depend on any axioms
+'LexLeanBoot.RustBodies.Lowered' does not depend on any axioms
+'LexLeanBoot.RustBodies.adtArms' does not depend on any axioms
+'LexLeanBoot.RustBodies.adtCount' does not depend on any axioms
+'LexLeanBoot.RustBodies.adtMatch' does not depend on any axioms
+'LexLeanBoot.RustBodies.adtTypesOf' does not depend on any axioms
+'LexLeanBoot.RustBodies.after' does not depend on any axioms
+'LexLeanBoot.RustBodies.allRebuild' does not depend on any axioms
+'LexLeanBoot.RustBodies.allVisible' does not depend on any axioms
+'LexLeanBoot.RustBodies.anyComputedUnit' does not depend on any axioms
+'LexLeanBoot.RustBodies.appendLets' does not depend on any axioms
+'LexLeanBoot.RustBodies.argAt' does not depend on any axioms
+'LexLeanBoot.RustBodies.armEntry' does not depend on any axioms
+'LexLeanBoot.RustBodies.armFieldTys' does not depend on any axioms
+'LexLeanBoot.RustBodies.armPatterns' does not depend on any axioms
+'LexLeanBoot.RustBodies.armShapeCode' does not depend on any axioms
+'LexLeanBoot.RustBodies.assembleArms' does not depend on any axioms
+'LexLeanBoot.RustBodies.bindOperands' does not depend on any axioms
+'LexLeanBoot.RustBodies.binderPat' does not depend on any axioms
+'LexLeanBoot.RustBodies.blobsEq' does not depend on any axioms
+'LexLeanBoot.RustBodies.blockLets' does not depend on any axioms
+'LexLeanBoot.RustBodies.blockOf' does not depend on any axioms
+'LexLeanBoot.RustBodies.blockOn' does not depend on any axioms
+'LexLeanBoot.RustBodies.blockTail' does not depend on any axioms
+'LexLeanBoot.RustBodies.boolArms' does not depend on any axioms
+'LexLeanBoot.RustBodies.boolCode' does not depend on any axioms
+'LexLeanBoot.RustBodies.buildCon' does not depend on any axioms
+'LexLeanBoot.RustBodies.buildFrom' does not depend on any axioms
+'LexLeanBoot.RustBodies.buildOperands' does not depend on any axioms
+'LexLeanBoot.RustBodies.calleeResult' does not depend on any axioms
+'LexLeanBoot.RustBodies.calleeTypes' does not depend on any axioms
+'LexLeanBoot.RustBodies.choose' does not depend on any axioms
+'LexLeanBoot.RustBodies.conCode' does not depend on any axioms
+'LexLeanBoot.RustBodies.consHead' does not depend on any axioms
+'LexLeanBoot.RustBodies.consTail' does not depend on any axioms
+'LexLeanBoot.RustBodies.constructArgs' does not depend on any axioms
+'LexLeanBoot.RustBodies.constructCode' does not depend on any axioms
+'LexLeanBoot.RustBodies.constructIsAdt' does not depend on any axioms
+'LexLeanBoot.RustBodies.done' does not depend on any axioms
+'LexLeanBoot.RustBodies.driveBodies' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustBodies.emptyBlock' does not depend on any axioms
+'LexLeanBoot.RustBodies.emptyFlat' does not depend on any axioms
+'LexLeanBoot.RustBodies.fieldPatterns' does not depend on any axioms
+'LexLeanBoot.RustBodies.flatCallee' does not depend on any axioms
+'LexLeanBoot.RustBodies.flatCon' does not depend on any axioms
+'LexLeanBoot.RustBodies.flatE' does not depend on any axioms
+'LexLeanBoot.RustBodies.flatId' does not depend on any axioms
+'LexLeanBoot.RustBodies.flatLit' does not depend on any axioms
+'LexLeanBoot.RustBodies.flatPat' does not depend on any axioms
+'LexLeanBoot.RustBodies.flatTy' does not depend on any axioms
+'LexLeanBoot.RustBodies.fnParts' does not depend on any axioms
+'LexLeanBoot.RustBodies.foldBodies' does not depend on any axioms
+'LexLeanBoot.RustBodies.foldExpr' does not depend on any axioms
+'LexLeanBoot.RustBodies.headPick' does not depend on any axioms
+'LexLeanBoot.RustBodies.headType' does not depend on any axioms
+'LexLeanBoot.RustBodies.holdCondition' does not depend on any axioms
+'LexLeanBoot.RustBodies.idEq' does not depend on any axioms
+'LexLeanBoot.RustBodies.idNum' does not depend on any axioms
+'LexLeanBoot.RustBodies.idTag' does not depend on any axioms
+'LexLeanBoot.RustBodies.intCode' does not depend on any axioms
+'LexLeanBoot.RustBodies.isArmItem' does not depend on any axioms
+'LexLeanBoot.RustBodies.isConsTy' does not depend on any axioms
+'LexLeanBoot.RustBodies.isMoveOf' does not depend on any axioms
+'LexLeanBoot.RustBodies.isNilE' does not depend on any axioms
+'LexLeanBoot.RustBodies.isPlainRead' does not depend on any axioms
+'LexLeanBoot.RustBodies.isWildPat' does not depend on any axioms
+'LexLeanBoot.RustBodies.itemBlock' does not depend on any axioms
+'LexLeanBoot.RustBodies.itemHead' does not depend on any axioms
+'LexLeanBoot.RustBodies.itemPats' does not depend on any axioms
+'LexLeanBoot.RustBodies.itemTail' does not depend on any axioms
+'LexLeanBoot.RustBodies.keepE' does not depend on any axioms
+'LexLeanBoot.RustBodies.keepP' does not depend on any axioms
+'LexLeanBoot.RustBodies.kindIntOf' does not depend on any axioms
+'LexLeanBoot.RustBodies.leafCode' does not depend on any axioms
+'LexLeanBoot.RustBodies.leafPatCode' does not depend on any axioms
+'LexLeanBoot.RustBodies.listArms' does not depend on any axioms
+'LexLeanBoot.RustBodies.literalCode' does not depend on any axioms
+'LexLeanBoot.RustBodies.loadFields' does not depend on any axioms
+'LexLeanBoot.RustBodies.lookupBound' does not depend on any axioms
+'LexLeanBoot.RustBodies.lowerBodies' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustBodies.lowerExpr' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustBodies.lowerFrame' does not depend on any axioms
+'LexLeanBoot.RustBodies.mentions' does not depend on any axioms
+'LexLeanBoot.RustBodies.mkLet' does not depend on any axioms
+'LexLeanBoot.RustBodies.movedHolder' does not depend on any axioms
+'LexLeanBoot.RustBodies.natArms' does not depend on any axioms
+'LexLeanBoot.RustBodies.negate' does not depend on any axioms
+'LexLeanBoot.RustBodies.negateOn' does not depend on any axioms
+'LexLeanBoot.RustBodies.oneArg' does not depend on any axioms
+'LexLeanBoot.RustBodies.operandsOf' does not depend on any axioms
+'LexLeanBoot.RustBodies.optionArms' does not depend on any axioms
+'LexLeanBoot.RustBodies.ordCode' does not depend on any axioms
+'LexLeanBoot.RustBodies.ordEq' does not depend on any axioms
+'LexLeanBoot.RustBodies.orderingArms' does not depend on any axioms
+'LexLeanBoot.RustBodies.orderingLit' does not depend on any axioms
+'LexLeanBoot.RustBodies.pairArms' does not depend on any axioms
+'LexLeanBoot.RustBodies.patAt' does not depend on any axioms
+'LexLeanBoot.RustBodies.patChain' does not depend on any axioms
+'LexLeanBoot.RustBodies.patWrapCode' does not depend on any axioms
+'LexLeanBoot.RustBodies.plainLet' does not depend on any axioms
+'LexLeanBoot.RustBodies.popFold' does not depend on any axioms
+'LexLeanBoot.RustBodies.primAt' does not depend on any axioms
+'LexLeanBoot.RustBodies.primFamily' does not depend on any axioms
+'LexLeanBoot.RustBodies.primKind' does not depend on any axioms
+'LexLeanBoot.RustBodies.primLets' does not depend on any axioms
+'LexLeanBoot.RustBodies.primWidth' does not depend on any axioms
+'LexLeanBoot.RustBodies.probeCode2' does not depend on any axioms
+'LexLeanBoot.RustBodies.push' does not depend on any axioms
+'LexLeanBoot.RustBodies.pushBlob' does not depend on any axioms
+'LexLeanBoot.RustBodies.readClass' does not depend on any axioms
+'LexLeanBoot.RustBodies.rebuilds' does not depend on any axioms
+'LexLeanBoot.RustBodies.rebuildsTail' does not depend on any axioms
+'LexLeanBoot.RustBodies.rebuilt' does not depend on any axioms
+'LexLeanBoot.RustBodies.resultArms' does not depend on any axioms
+'LexLeanBoot.RustBodies.returnedLet' does not depend on any axioms
+'LexLeanBoot.RustBodies.rtFallible' does not depend on any axioms
+'LexLeanBoot.RustBodies.sameAll' does not depend on any axioms
+'LexLeanBoot.RustBodies.sameCode' does not depend on any axioms
+'LexLeanBoot.RustBodies.sameField' does not depend on any axioms
+'LexLeanBoot.RustBodies.scopeType' does not depend on any axioms
+'LexLeanBoot.RustBodies.setTail' does not depend on any axioms
+'LexLeanBoot.RustBodies.setTailOn' does not depend on any axioms
+'LexLeanBoot.RustBodies.shapeAt' does not depend on any axioms
+'LexLeanBoot.RustBodies.shapeCode' does not depend on any axioms
+'LexLeanBoot.RustBodies.shapeKind' does not depend on any axioms
+'LexLeanBoot.RustBodies.shapeLit' does not depend on any axioms
+'LexLeanBoot.RustBodies.storeEach' does not depend on any axioms
+'LexLeanBoot.RustBodies.termAt' does not depend on any axioms
+'LexLeanBoot.RustBodies.termKind' does not depend on any axioms
+'LexLeanBoot.RustBodies.thenHoldsIf' does not depend on any axioms
+'LexLeanBoot.RustBodies.tokensEq' does not depend on any axioms
+'LexLeanBoot.RustBodies.unaryCode' does not depend on any axioms
+'LexLeanBoot.RustBodies.unitLit' does not depend on any axioms
+'LexLeanBoot.RustBodies.unitTy' does not depend on any axioms
+'LexLeanBoot.RustBodies.widthCode' does not depend on any axioms
+'LexLeanBoot.RustBodies.wildPat' does not depend on any axioms
+'LexLeanBoot.RustBodies.wrapCode' does not depend on any axioms
+'LexLeanBoot.RustLoops.LoopOut' does not depend on any axioms
+'LexLeanBoot.RustLoops.Parts' does not depend on any axioms
+'LexLeanBoot.RustLoops.Retarget' does not depend on any axioms
+'LexLeanBoot.RustLoops.Tails' does not depend on any axioms
+'LexLeanBoot.RustLoops.appendCalls' does not depend on any axioms
+'LexLeanBoot.RustLoops.callAt' does not depend on any axioms
+'LexLeanBoot.RustLoops.isChanged' does not depend on any axioms
+'LexLeanBoot.RustLoops.loopFunction' does not depend on any axioms
+'LexLeanBoot.RustLoops.nextHere' does not depend on any axioms
+'LexLeanBoot.RustLoops.nextState' does not depend on any axioms
+'LexLeanBoot.RustLoops.occurs' does not depend on any axioms
+'LexLeanBoot.RustLoops.parts' does not depend on any axioms
+'LexLeanBoot.RustLoops.partsCons' does not depend on any axioms
+'LexLeanBoot.RustLoops.passes' does not depend on any axioms
+'LexLeanBoot.RustLoops.passesAll' does not depend on any axioms
+'LexLeanBoot.RustLoops.retarget' does not depend on any axioms
+'LexLeanBoot.RustLoops.tails' does not depend on any axioms
+'LexLeanBoot.RustLower.Clos' does not depend on any axioms
+'LexLeanBoot.RustLower.Collect' does not depend on any axioms
+'LexLeanBoot.RustLower.Edges' does not depend on any axioms
+'LexLeanBoot.RustLower.Facts' does not depend on any axioms
+'LexLeanBoot.RustLower.Liveness' does not depend on any axioms
+'LexLeanBoot.RustLower.Reach' does not depend on any axioms
+'LexLeanBoot.RustLower.adtDefs' does not depend on any axioms
+'LexLeanBoot.RustLower.adtOwners' does not depend on any axioms
+'LexLeanBoot.RustLower.adtRows' does not depend on any axioms
+'LexLeanBoot.RustLower.allEdges' does not depend on any axioms
+'LexLeanBoot.RustLower.anyHeld' does not depend on any axioms
+'LexLeanBoot.RustLower.anyInvisible' does not depend on any axioms
+'LexLeanBoot.RustLower.appliesFail' does not depend on any axioms
+'LexLeanBoot.RustLower.applyFails' does not depend on any axioms
+'LexLeanBoot.RustLower.boolsEq' does not depend on any axioms
+'LexLeanBoot.RustLower.callsFail' does not depend on any axioms
+'LexLeanBoot.RustLower.capList' does not depend on any axioms
+'LexLeanBoot.RustLower.capOf' does not depend on any axioms
+'LexLeanBoot.RustLower.closAdd' does not depend on any axioms
+'LexLeanBoot.RustLower.closHas' does not depend on any axioms
+'LexLeanBoot.RustLower.closVariants' does not depend on any axioms
+'LexLeanBoot.RustLower.closeEdges' does not depend on any axioms
+'LexLeanBoot.RustLower.closeStep' does not depend on any axioms
+'LexLeanBoot.RustLower.closureOf' does not depend on any axioms
+'LexLeanBoot.RustLower.closuresFail' does not depend on any axioms
+'LexLeanBoot.RustLower.collectFunctions' does not depend on any axioms
+'LexLeanBoot.RustLower.collectTerm' does not depend on any axioms
+'LexLeanBoot.RustLower.compose' does not depend on any axioms
+'LexLeanBoot.RustLower.composeFrom' does not depend on any axioms
+'LexLeanBoot.RustLower.copyTy' does not depend on any axioms
+'LexLeanBoot.RustLower.cyclic' does not depend on any axioms
+'LexLeanBoot.RustLower.deadFlags' does not depend on any axioms
+'LexLeanBoot.RustLower.deadFunctions' does not depend on any axioms
+'LexLeanBoot.RustLower.dispatchFor' does not depend on any axioms
+'LexLeanBoot.RustLower.edgeAdd' does not depend on any axioms
+'LexLeanBoot.RustLower.edgeCount' does not depend on any axioms
+'LexLeanBoot.RustLower.edgeHas' does not depend on any axioms
+'LexLeanBoot.RustLower.edgesOfFields' does not depend on any axioms
+'LexLeanBoot.RustLower.edgesOfVariants' does not depend on any axioms
+'LexLeanBoot.RustLower.edgesToHeld' does not depend on any axioms
+'LexLeanBoot.RustLower.failNext' does not depend on any axioms
+'LexLeanBoot.RustLower.failStep' does not depend on any axioms
+'LexLeanBoot.RustLower.fallibleFunctions' does not depend on any axioms
+'LexLeanBoot.RustLower.falses' does not depend on any axioms
+'LexLeanBoot.RustLower.fieldChain' does not depend on any axioms
+'LexLeanBoot.RustLower.fieldTy' does not depend on any axioms
+'LexLeanBoot.RustLower.fieldsOk' does not depend on any axioms
+'LexLeanBoot.RustLower.flagAt' does not depend on any axioms
+'LexLeanBoot.RustLower.fnDefs' does not depend on any axioms
+'LexLeanBoot.RustLower.fnOrigin' does not depend on any axioms
+'LexLeanBoot.RustLower.fnPosition' does not depend on any axioms
+'LexLeanBoot.RustLower.inPlace' does not depend on any axioms
+'LexLeanBoot.RustLower.inhabitRound' does not depend on any axioms
+'LexLeanBoot.RustLower.inhabitStep' does not depend on any axioms
+'LexLeanBoot.RustLower.inhabitation' does not depend on any axioms
+'LexLeanBoot.RustLower.kidA' does not depend on any axioms
+'LexLeanBoot.RustLower.kidB' does not depend on any axioms
+'LexLeanBoot.RustLower.kidC' does not depend on any axioms
+'LexLeanBoot.RustLower.kindOf' does not depend on any axioms
+'LexLeanBoot.RustLower.livenessStep' does not depend on any axioms
+'LexLeanBoot.RustLower.lowerTypes' does not depend on any axioms
+'LexLeanBoot.RustLower.natMember' does not depend on any axioms
+'LexLeanBoot.RustLower.primFails' does not depend on any axioms
+'LexLeanBoot.RustLower.reachFunctions' does not depend on any axioms
+'LexLeanBoot.RustLower.reachTerm' does not depend on any axioms
+'LexLeanBoot.RustLower.register' does not depend on any axioms
+'LexLeanBoot.RustLower.registerAdts' does not depend on any axioms
+'LexLeanBoot.RustLower.registerChain' does not depend on any axioms
+'LexLeanBoot.RustLower.registerCtors' does not depend on any axioms
+'LexLeanBoot.RustLower.registerSignature' does not depend on any axioms
+'LexLeanBoot.RustLower.revClos' does not depend on any axioms
+'LexLeanBoot.RustLower.rowsFor' does not depend on any axioms
+'LexLeanBoot.RustLower.siteOwn' does not depend on any axioms
+'LexLeanBoot.RustLower.someVariantOk' does not depend on any axioms
+'LexLeanBoot.RustLower.tyAddNew' does not depend on any axioms
+'LexLeanBoot.RustLower.tyAppend' does not depend on any axioms
+'LexLeanBoot.RustLower.tyDrop' does not depend on any axioms
+'LexLeanBoot.RustLower.tyMember' does not depend on any axioms
+'LexLeanBoot.RustLower.tyTake' does not depend on any axioms
+'LexLeanBoot.RustLower.variantsOf' does not depend on any axioms
+'LexLeanBoot.RustLower.visible' does not depend on any axioms
+'LexLeanBoot.RustLower.vty' does not depend on any axioms
+'LexLeanBoot.RustMoves.Later' does not depend on any axioms
+'LexLeanBoot.RustMoves.applyMoves' does not depend on any axioms
+'LexLeanBoot.RustMoves.atMostOne' does not depend on any axioms
+'LexLeanBoot.RustMoves.boundCount' does not depend on any axioms
+'LexLeanBoot.RustMoves.cloneRead' does not depend on any axioms
+'LexLeanBoot.RustMoves.entryOf' does not depend on any axioms
+'LexLeanBoot.RustMoves.firstBound' does not depend on any axioms
+'LexLeanBoot.RustMoves.idEq' does not depend on any axioms
+'LexLeanBoot.RustMoves.idKey' does not depend on any axioms
+'LexLeanBoot.RustMoves.isCloneKind' does not depend on any axioms
+'LexLeanBoot.RustMoves.isNilExpr' does not depend on any axioms
+'LexLeanBoot.RustMoves.isWild' does not depend on any axioms
+'LexLeanBoot.RustMoves.liveFind' does not depend on any axioms
+'LexLeanBoot.RustMoves.liveRemove' does not depend on any axioms
+'LexLeanBoot.RustMoves.liveSet' does not depend on any axioms
+'LexLeanBoot.RustMoves.mayMove' does not depend on any axioms
+'LexLeanBoot.RustMoves.mayMovePart' does not depend on any axioms
+'LexLeanBoot.RustMoves.mergeLive' does not depend on any axioms
+'LexLeanBoot.RustMoves.mergeParts' does not depend on any axioms
+'LexLeanBoot.RustMoves.moveE' does not depend on any axioms
+'LexLeanBoot.RustMoves.moveItems' does not depend on any axioms
+'LexLeanBoot.RustMoves.natMax' does not depend on any axioms
+'LexLeanBoot.RustMoves.partCount' does not depend on any axioms
+'LexLeanBoot.RustMoves.partSet' does not depend on any axioms
+'LexLeanBoot.RustMoves.partsLength' does not depend on any axioms
+'LexLeanBoot.RustMoves.projectionOf' does not depend on any axioms
+'LexLeanBoot.RustMoves.readPart' does not depend on any axioms
+'LexLeanBoot.RustMoves.readWhole' does not depend on any axioms
+'LexLeanBoot.RustMoves.readsE' does not depend on any axioms
+'LexLeanBoot.RustMoves.unbind' does not depend on any axioms
+'LexLeanBoot.RustPackage.Export' does not depend on any axioms
+'LexLeanBoot.RustPackage.Gate' does not depend on any axioms
+'LexLeanBoot.RustPackage.Level' does not depend on any axioms
+'LexLeanBoot.RustPackage.Scaffold' does not depend on any axioms
+'LexLeanBoot.RustPackage.allIn' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPackage.ascendStep' depends on axioms: [propext]
+'LexLeanBoot.RustPackage.ascending' depends on axioms: [propext]
+'LexLeanBoot.RustPackage.before' depends on axioms: [propext]
+'LexLeanBoot.RustPackage.canonicalPart' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPackage.cargoToml' does not depend on any axioms
+'LexLeanBoot.RustPackage.cat' does not depend on any axioms
+'LexLeanBoot.RustPackage.checkEffects' depends on axioms: [propext]
+'LexLeanBoot.RustPackage.checkManifest' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPackage.classStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPackage.escapeStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPackage.escaped' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPackage.exportStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPackage.firstUnknown' depends on axioms: [propext]
+'LexLeanBoot.RustPackage.fitsWord' depends on axioms: [propext]
+'LexLeanBoot.RustPackage.hexPair' does not depend on any axioms
+'LexLeanBoot.RustPackage.identities' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPackage.identity' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPackage.inClass' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPackage.keywords' does not depend on any axioms
+'LexLeanBoot.RustPackage.levelText' does not depend on any axioms
+'LexLeanBoot.RustPackage.member' depends on axioms: [propext]
+'LexLeanBoot.RustPackage.provenance' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPackage.put' does not depend on any axioms
+'LexLeanBoot.RustPackage.putAllowed' does not depend on any axioms
+'LexLeanBoot.RustPackage.putEntry' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPackage.putExports' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPackage.putFiles' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPackage.putGate' does not depend on any axioms
+'LexLeanBoot.RustPackage.putString' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPackage.putStrings' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPackage.refuse' does not depend on any axioms
+'LexLeanBoot.RustPackage.renderPackage' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPackage.reservedCrates' does not depend on any axioms
+'LexLeanBoot.RustPackage.same' depends on axioms: [propext]
+'LexLeanBoot.RustPackage.snake' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPackage.stringStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPackage.text' does not depend on any axioms
+'LexLeanBoot.RustPackage.ticked' does not depend on any axioms
+'LexLeanBoot.RustPackage.unknownStep' depends on axioms: [propext]
+'LexLeanBoot.RustPackage.versionOk' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustPackage.within' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.RustPrint.argSep' does not depend on any axioms
 'LexLeanBoot.RustPrint.byteHex' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.RustPrint.bytesStep' depends on axioms: [propext, Quot.sound]
@@ -454,6 +795,39 @@
 'LexLeanBoot.RustPrint.unaryClose' does not depend on any axioms
 'LexLeanBoot.RustPrint.unaryOpen' does not depend on any axioms
 'LexLeanBoot.RustPrint.unitLit' does not depend on any axioms
+'LexLeanBoot.RustSucceed.otherwise' does not depend on any axioms
+'LexLeanBoot.RustSucceed.overflowAt' does not depend on any axioms
+'LexLeanBoot.RustSucceed.succeedBodies' does not depend on any axioms
+'LexLeanBoot.RustSucceed.succeedChain' does not depend on any axioms
+'LexLeanBoot.RustSucceed.succeedExpr' does not depend on any axioms
+'LexLeanBoot.RustSucceed.succeeded' does not depend on any axioms
+'LexLeanBoot.RustSucceed.unitBound' does not depend on any axioms
+'LexLeanBoot.RustSucceed.unitResult' does not depend on any axioms
+'LexLeanBoot.RustTerms.adtFields' does not depend on any axioms
+'LexLeanBoot.RustTerms.adtIndex' does not depend on any axioms
+'LexLeanBoot.RustTerms.bad' does not depend on any axioms
+'LexLeanBoot.RustTerms.bodyAt' does not depend on any axioms
+'LexLeanBoot.RustTerms.chainGet' does not depend on any axioms
+'LexLeanBoot.RustTerms.digitStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustTerms.digitValue' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustTerms.digitsFrom' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustTerms.failed' does not depend on any axioms
+'LexLeanBoot.RustTerms.fixedLit' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustTerms.fixedLiteral' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustTerms.fixedWidth' does not depend on any axioms
+'LexLeanBoot.RustTerms.hexOctets' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustTerms.hexPair' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustTerms.hexStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustTerms.hexTable' does not depend on any axioms
+'LexLeanBoot.RustTerms.hexValue' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustTerms.intLit' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustTerms.lowerValue' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustTerms.lowerValueAt' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustTerms.natLit' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustTerms.signedMagnitude' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RustTerms.valueAt' does not depend on any axioms
+'LexLeanBoot.RustTerms.valueOf' does not depend on any axioms
+'LexLeanBoot.RustTerms.widthOf' does not depend on any axioms
 'LexLeanBoot.RustValidate.BinaryKind' does not depend on any axioms
 'LexLeanBoot.RustValidate.Callee' does not depend on any axioms
 'LexLeanBoot.RustValidate.Cap' does not depend on any axioms
@@ -1010,6 +1384,39 @@
 'LexLeanStd.Buffer.writeEach' depends on axioms: [propext, Quot.sound]
 'LexLeanStd.Buffer.writeNumbers' does not depend on any axioms
 'LexLeanStd.Buffer.zeroStep' does not depend on any axioms
+'LexLeanStd.Sha256.Digest' does not depend on any axioms
+'LexLeanStd.Sha256.Schedule' does not depend on any axioms
+'LexLeanStd.Sha256.Working' does not depend on any axioms
+'LexLeanStd.Sha256.add' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Sha256.advance' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Sha256.bigSigma0' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Sha256.bigSigma1' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Sha256.byteAt' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Sha256.choose' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Sha256.compress' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Sha256.fips_empty' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Sha256.fips_one_block' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Sha256.fips_two_blocks' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Sha256.hexDigest' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Sha256.hexDigit' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Sha256.hexWord' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Sha256.initial' does not depend on any axioms
+'LexLeanStd.Sha256.load' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Sha256.majority' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Sha256.narrow' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Sha256.rotateRight' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Sha256.round' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Sha256.roundConstant' does not depend on any axioms
+'LexLeanStd.Sha256.scheduleWord' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Sha256.sha256' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Sha256.sha256Hex' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Sha256.shiftLeft' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Sha256.shiftRight' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Sha256.smallSigma0' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Sha256.smallSigma1' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Sha256.widen' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Sha256.wordAt' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Sha256.wordOfNat' depends on axioms: [propext, Quot.sound]
 'LexLeanStd.Text.byteAt' does not depend on any axioms
 'LexLeanStd.Text.chomp' does not depend on any axioms
 'LexLeanStd.Text.endsWith' does not depend on any axioms
