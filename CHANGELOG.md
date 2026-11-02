@@ -67,6 +67,18 @@ workspace carried at those versions without a tag.
   move, and the `stdlib` records and production export are regenerated. The
   five new packages move the counts `BS-05` and `BS-06` assert. The register is
   459 IDs.
+- Sorting and order in the standard library, the second member the
+  self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-10`). The module
+  `LexLeanStd.Order` holds the byte order of `Ord for [u8]` and one bottom-up
+  merge sort generic over an entry's value, with the production roots
+  `sortBytes`, `sortEntries` (stable on the key), `sortedSet`,
+  `insertSorted`, and `isAscending` for `rust-std`, held to `slice::sort`,
+  `slice::sort_by`, `BTreeSet`, and `windows(2)`. `stdlib/lexlean.toml` gains
+  the entrypoint, so the locks of `stdlib` and its consumers move, and the
+  `stdlib` records and production export are regenerated. The five new packages
+  move the counts `BS-05` to `BS-08` and `BS-11` to `BS-15` assert, and `BS-05`
+  now holds the list match under `rust-core` with a crate by hand, since the
+  mutants reach it too rarely to rely on. The register is 468 IDs.
 
 ## 0.4.0
 
