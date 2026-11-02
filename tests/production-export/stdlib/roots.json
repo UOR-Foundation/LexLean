@@ -135,6 +135,46 @@
         "rust-std"
       ],
       "version": "1.0.0"
+    },
+    {
+      "name": "sort_bytes",
+      "root": "LexLeanStd.Order.sortBytes",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "sort_entries",
+      "root": "LexLeanStd.Order.sortEntries",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "sorted_set",
+      "root": "LexLeanStd.Order.sortedSet",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "insert_sorted",
+      "root": "LexLeanStd.Order.insertSorted",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "is_ascending",
+      "root": "LexLeanStd.Order.isAscending",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
     }
   ]
 }
