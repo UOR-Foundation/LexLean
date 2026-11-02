@@ -22,7 +22,15 @@ use crate::rust_packages;
 use crate::support::{self, P};
 
 mod runtime_validate;
+mod rust_assemble;
+mod rust_bodies;
+mod rust_loops;
+mod rust_lower;
+mod rust_moves;
+mod rust_package;
 mod rust_print;
+mod rust_succeed;
+mod rust_terms;
 mod rust_validate;
 mod scan;
 
@@ -980,6 +988,13 @@ fn evaluate(lowered: &Lowered, corpus: &[Run], limit: usize) -> Vec<String> {
         }
     }
     out
+}
+
+/// What the lowered root returns for `arguments`, as the oracle's values are
+/// written.
+fn evaluate_once(lowered: &Lowered, arguments: &[Value]) -> Json {
+    let outcome = interp::run(&lowered.program, FUEL, lowered.entry(), arguments);
+    rust::observable(&outcome).unwrap_or_else(|| panic!("the root returns no value: {outcome:?}"))
 }
 
 fn snake(root: &str) -> String {
@@ -2427,8 +2442,16 @@ fn case(id: &str) {
         "BS-04" => calculus_check::case(),
         "BS-05" => rust_validate::case(),
         "BS-06" => rust_print::case(),
+        "BS-07" => rust_lower::case(),
+        "BS-08" => rust_moves::case(),
         // §17.23, §17.16: the runtime syntax validator.
         "BS-09" => runtime_validate::case(),
+        "BS-10" => rust_terms::case(),
+        "BS-11" => rust_bodies::case(),
+        "BS-12" => rust_succeed::case(),
+        "BS-13" => rust_loops::case(),
+        "BS-14" => rust_assemble::case(),
+        "BS-15" => rust_package::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }

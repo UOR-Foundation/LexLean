@@ -27,6 +27,12 @@
     ]
   },
   "rows": {
+    "bootstrap/apply_moves": {
+      "debug": 8912896
+    },
+    "bootstrap/assemble_items": {
+      "debug": 3211264
+    },
     "bootstrap/check_arguments": {
       "debug": 4915200
     },
@@ -36,8 +42,35 @@
     "bootstrap/correspond_crate": {
       "debug": 4915200
     },
+    "bootstrap/dead_functions": {
+      "debug": 5701632
+    },
     "bootstrap/evaluator": {
       "debug": 21037056
+    },
+    "bootstrap/fallible_functions": {
+      "debug": 5701632
+    },
+    "bootstrap/fold_bodies": {
+      "debug": 1572864
+    },
+    "bootstrap/function_shells": {
+      "debug": 3080192
+    },
+    "bootstrap/loop_function": {
+      "debug": 2818048
+    },
+    "bootstrap/lower_bodies": {
+      "debug": 5701632
+    },
+    "bootstrap/lower_frame": {
+      "debug": 2031616
+    },
+    "bootstrap/lower_types": {
+      "debug": 5701632
+    },
+    "bootstrap/lower_value_at": {
+      "debug": 4390912
     },
     "bootstrap/parse_audit_output": {
       "debug": 6291456
@@ -47,6 +80,15 @@
     },
     "bootstrap/print_expr": {
       "debug": 4259840
+    },
+    "bootstrap/site_trees": {
+      "debug": 6029312
+    },
+    "bootstrap/succeed_bodies": {
+      "debug": 1507328
+    },
+    "bootstrap/use_trees": {
+      "debug": 1572864
     },
     "bootstrap/validate_crate": {
       "debug": 5046272
