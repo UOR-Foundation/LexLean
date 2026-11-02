@@ -50,10 +50,7 @@ inductive{
   name: Pars,
   type_parameters: [],
   parameters: [],
-  constructors: [
-    {name: PrNil, fields: []},
-    {name: PrCons, fields: [Bytes, Ty, Pars]}
-  ]
+  constructors: [{name: PrNil, fields: []}, {name: PrCons, fields: [Bytes, Ty, Pars]}]
 }
 
 inductive{
@@ -109,10 +106,7 @@ inductive{
   name: InvokeArg,
   type_parameters: [],
   parameters: [],
-  constructors: [
-    {name: IaIdent, fields: [Bytes]},
-    {name: IaType, fields: [Sig]}
-  ]
+  constructors: [{name: IaIdent, fields: [Bytes]}, {name: IaType, fields: [Sig]}]
 }
 
 structure{
@@ -133,7 +127,11 @@ structure{
   name: Constructor,
   type_parameters: [],
   parameters: [],
-  fields: [{name: name, type: Bytes}, {name: members, type: Pars}, {name: requires, type: (Option Requires)}]
+  fields: [
+    {name: name, type: Bytes},
+    {name: members, type: Pars},
+    {name: requires, type: (Option Requires)}
+  ]
 }
 
 structure{
@@ -155,16 +153,10 @@ inductive{
   type_parameters: [],
   parameters: [],
   constructors: [
-    {
-      name: DType,
-      fields: [Bytes, (List TypeParam), (List Constructor), Bool, (Option Ty), Pin]
-    },
+    {name: DType, fields: [Bytes, (List TypeParam), (List Constructor), Bool, (Option Ty), Pin]},
     {name: DCall, fields: [Bytes, Sig, Bytes, Pin]},
     {name: DPlumbing, fields: [(List Bytes)]},
-    {
-      name: DFunction,
-      fields: [Bytes, Bool, Bool, (Option Bytes), (List Bytes), Pars, Ty, Term]
-    },
+    {name: DFunction, fields: [Bytes, Bool, Bool, (Option Bytes), (List Bytes), Pars, Ty, Term]},
     {name: DCommand, fields: [Bytes, (List Atom), Bytes]},
     {name: DInvoke, fields: [Bytes, (List InvokeArg)]},
     {name: DEvaluate, fields: [Bytes, Term]}

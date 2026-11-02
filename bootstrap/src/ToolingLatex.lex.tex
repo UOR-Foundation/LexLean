@@ -256,7 +256,12 @@ definition{
 
 definition{
   name: emitLine,
-  parameters: [out : LexLeanStd.Buffer::Buffer, built : LexLeanStd.Buffer::Buffer, shouldTrim : Bool, flat : Bool],
+  parameters: [
+    out : LexLeanStd.Buffer::Buffer,
+    built : LexLeanStd.Buffer::Buffer,
+    shouldTrim : Bool,
+    flat : Bool
+  ],
   result: LexLeanStd.Buffer::Buffer,
   body: (match (LexLeanStd.Buffer::finish built)
     | Result.ok raw => (writeLine out raw shouldTrim flat)
@@ -317,7 +322,11 @@ definition{
 
 definition{
   name: mkCtx,
-  parameters: [reserved : (List Bytes), typings : (List ToolingAst::Typing), declarations : (List ToolingAst::Decl)],
+  parameters: [
+    reserved : (List Bytes),
+    typings : (List ToolingAst::Typing),
+    declarations : (List ToolingAst::Decl)
+  ],
   result: Ctx,
   body: record{
     type: Ctx,
@@ -418,7 +427,13 @@ definition{
 
 definition{
   name: putTy,
-  parameters: [out : LexLeanStd.Buffer::Buffer, reserved : (List Bytes), ty : ToolingAst::Ty, mode : Nat, lead : Bool],
+  parameters: [
+    out : LexLeanStd.Buffer::Buffer,
+    reserved : (List Bytes),
+    ty : ToolingAst::Ty,
+    mode : Nat,
+    lead : Bool
+  ],
   result: LexLeanStd.Buffer::Buffer,
   body: (match ty
     | ToolingAst::Ty.TyConst head args => (if (tyEmpty args) then (putName out reserved head) else (putS (putTy (putS (putName (putS out "(") reserved head) " ") reserved args 1 true) ")"))
@@ -501,7 +516,13 @@ definition{
 
 definition{
   name: putPars,
-  parameters: [out : LexLeanStd.Buffer::Buffer, reserved : (List Bytes), pars : ToolingAst::Pars, pre : Bool, lead : Bool],
+  parameters: [
+    out : LexLeanStd.Buffer::Buffer,
+    reserved : (List Bytes),
+    pars : ToolingAst::Pars,
+    pre : Bool,
+    lead : Bool
+  ],
   result: LexLeanStd.Buffer::Buffer,
   body: (match pars
     | ToolingAst::Pars.PrNil => out
@@ -512,7 +533,12 @@ definition{
 
 definition{
   name: putFields,
-  parameters: [out : LexLeanStd.Buffer::Buffer, reserved : (List Bytes), pars : ToolingAst::Pars, lead : Bool],
+  parameters: [
+    out : LexLeanStd.Buffer::Buffer,
+    reserved : (List Bytes),
+    pars : ToolingAst::Pars,
+    lead : Bool
+  ],
   result: LexLeanStd.Buffer::Buffer,
   body: (match pars
     | ToolingAst::Pars.PrNil => out
@@ -523,7 +549,12 @@ definition{
 
 definition{
   name: putNamed,
-  parameters: [out : LexLeanStd.Buffer::Buffer, reserved : (List Bytes), names : (List Bytes), targs : ToolingAst::Ty],
+  parameters: [
+    out : LexLeanStd.Buffer::Buffer,
+    reserved : (List Bytes),
+    names : (List Bytes),
+    targs : ToolingAst::Ty
+  ],
   result: LexLeanStd.Buffer::Buffer,
   body: (match names
     | List.nil => out
@@ -544,7 +575,13 @@ definition{
 
 definition{
   name: putTerm,
-  parameters: [out : LexLeanStd.Buffer::Buffer, ctx : Ctx, term : ToolingAst::Term, mode : Nat, lead : Bool],
+  parameters: [
+    out : LexLeanStd.Buffer::Buffer,
+    ctx : Ctx,
+    term : ToolingAst::Term,
+    mode : Nat,
+    lead : Bool
+  ],
   result: LexLeanStd.Buffer::Buffer,
   body: (match term
     | ToolingAst::Term.TmVar title => (putName out (project ctx reserved) title)
@@ -599,7 +636,11 @@ definition{
 
 definition{
   name: invokeStep,
-  parameters: [ctx : Ctx, state : ((List ToolingAst::InvokeArg) * LexLeanStd.Buffer::Buffer), atom : ToolingAst::Atom],
+  parameters: [
+    ctx : Ctx,
+    state : ((List ToolingAst::InvokeArg) * LexLeanStd.Buffer::Buffer),
+    atom : ToolingAst::Atom
+  ],
   result: ((List ToolingAst::InvokeArg) * LexLeanStd.Buffer::Buffer),
   body: (match atom
     | ToolingAst::Atom.AtToken text => ((first state), (putB (second state) text))
@@ -688,7 +729,11 @@ definition{
 
 definition{
   name: putCtor,
-  parameters: [out : LexLeanStd.Buffer::Buffer, reserved : (List Bytes), item : ToolingAst::Constructor],
+  parameters: [
+    out : LexLeanStd.Buffer::Buffer,
+    reserved : (List Bytes),
+    item : ToolingAst::Constructor
+  ],
   result: LexLeanStd.Buffer::Buffer,
   body: (match (project item requires)
     | Option.some need => (putS (putB (putS (putB (putS (putFields (putS (putB out (project item name)) " ") reserved (project item members) true) " [only at ") (project need parameter)) " = ") (project need target)) "]")
@@ -698,7 +743,11 @@ definition{
 
 definition{
   name: putCtors,
-  parameters: [out : LexLeanStd.Buffer::Buffer, reserved : (List Bytes), list : (List ToolingAst::Constructor)],
+  parameters: [
+    out : LexLeanStd.Buffer::Buffer,
+    reserved : (List Bytes),
+    list : (List ToolingAst::Constructor)
+  ],
   result: LexLeanStd.Buffer::Buffer,
   body: (prim list_fold (fun [reserved] (written : LexLeanStd.Buffer::Buffer) (item : ToolingAst::Constructor) => (plainLine written (putCtor (putS (lineBuffer written) "Constructor: ") reserved item))) out list : LexLeanStd.Buffer::Buffer),
   axioms: [Quot.sound, propext],
@@ -707,11 +756,19 @@ definition{
 
 definition{
   name: typeLines,
-  parameters: [out : LexLeanStd.Buffer::Buffer, ctx : Ctx, params : (List ToolingAst::TypeParam), ctors : (List ToolingAst::Constructor), isOpaque : Bool, alias : (Option ToolingAst::Ty), pin : ToolingAst::Pin],
+  parameters: [
+    out : LexLeanStd.Buffer::Buffer,
+    ctx : Ctx,
+    params : (List ToolingAst::TypeParam),
+    ctors : (List ToolingAst::Constructor),
+    isOpaque : Bool,
+    alias : (Option ToolingAst::Ty),
+    pin : ToolingAst::Pin
+  ],
   result: LexLeanStd.Buffer::Buffer,
   body: (let reserved : (List Bytes) := (project ctx reserved); (let o1 : LexLeanStd.Buffer::Buffer := (sourceLine out pin); (let o2 : LexLeanStd.Buffer::Buffer := (if isOpaque then (plainLine o1 (putS (lineBuffer o1) "Constructors are not pinned (opaque)")) else o1); (let o3 : LexLeanStd.Buffer::Buffer := (match alias
-      | Option.some ty => (plainLine o2 (putTy (putS (lineBuffer o2) "Abbreviation of: ") reserved ty 0 true))
-      | Option.none => o2); (let o4 : LexLeanStd.Buffer::Buffer := (if (0 <? (prim length params : Nat)) then (plainLine o3 (putKinds (putS (lineBuffer o3) "Parameters: ") params)) else o3); (putCtors o4 reserved ctors)))))),
+    | Option.some ty => (plainLine o2 (putTy (putS (lineBuffer o2) "Abbreviation of: ") reserved ty 0 true))
+    | Option.none => o2); (let o4 : LexLeanStd.Buffer::Buffer := (if (0 <? (prim length params : Nat)) then (plainLine o3 (putKinds (putS (lineBuffer o3) "Parameters: ") params)) else o3); (putCtors o4 reserved ctors)))))),
   axioms: [Quot.sound, propext],
   executable: true
 }
@@ -727,7 +784,12 @@ definition{
 
 definition{
   name: visibilityLine,
-  parameters: [out : LexLeanStd.Buffer::Buffer, isPublic : Bool, isPartial : Bool, label : (Option Bytes)],
+  parameters: [
+    out : LexLeanStd.Buffer::Buffer,
+    isPublic : Bool,
+    isPartial : Bool,
+    label : (Option Bytes)
+  ],
   result: LexLeanStd.Buffer::Buffer,
   body: (let base : LexLeanStd.Buffer::Buffer := (putS (putS (putS (putS (lineBuffer out) "Visibility: ") (if isPublic then "public" else "private")) "; recursion: ") (if isPartial then "partial" else "total")); (plainLine out (match label
     | Option.some group => (putB (putS base "; mutual group ") group)
@@ -738,7 +800,12 @@ definition{
 
 definition{
   name: leanLine,
-  parameters: [out : LexLeanStd.Buffer::Buffer, ctx : Ctx, declaration : ToolingAst::Decl, flat : Bool],
+  parameters: [
+    out : LexLeanStd.Buffer::Buffer,
+    ctx : Ctx,
+    declaration : ToolingAst::Decl,
+    flat : Bool
+  ],
   result: LexLeanStd.Buffer::Buffer,
   body: (emitLine out (leanDecl (lineBuffer out) ctx declaration) true flat),
   axioms: [Quot.sound, propext],
@@ -747,7 +814,13 @@ definition{
 
 definition{
   name: callLines,
-  parameters: [out : LexLeanStd.Buffer::Buffer, ctx : Ctx, sig : ToolingAst::Sig, role : Bytes, pin : ToolingAst::Pin],
+  parameters: [
+    out : LexLeanStd.Buffer::Buffer,
+    ctx : Ctx,
+    sig : ToolingAst::Sig,
+    role : Bytes,
+    pin : ToolingAst::Pin
+  ],
   result: LexLeanStd.Buffer::Buffer,
   body: (sourceLine (plainLine (plainLine out (putSig (putS (lineBuffer out) "Signature: ") ctx sig true)) (putB (putS (lineBuffer out) "Role: ") role)) pin),
   axioms: [Quot.sound, propext],
@@ -772,13 +845,17 @@ definition{
 
 definition{
   name: renderToolingLatex,
-  parameters: [capacity : Nat, reserved : (List Bytes), typings : (List ToolingAst::Typing), declarations : (List ToolingAst::Decl)],
+  parameters: [
+    capacity : Nat,
+    reserved : (List Bytes),
+    typings : (List ToolingAst::Typing),
+    declarations : (List ToolingAst::Decl)
+  ],
   result: (Result Bytes Bytes),
   body: (let ctx : Ctx := (mkCtx reserved typings declarations); (LexLeanStd.Buffer::finish (putS (prim list_fold (fun [ctx] (written : LexLeanStd.Buffer::Buffer) (declaration : ToolingAst::Decl) => (putDecl written ctx declaration)) (putS (LexLeanStd.Buffer::new capacity) "\\documentclass[11pt]{article}\n\\usepackage[T1]{fontenc}\n\\usepackage{amsmath,amssymb}\n\\begin{document}\n\\section*{Tooling declarations}\n") declarations : LexLeanStd.Buffer::Buffer) "\\end{document}\n"))),
   axioms: [Quot.sound, propext],
   executable: true,
   production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
 }
-
 \end{semanticmodule}
 \end{lexlean}
