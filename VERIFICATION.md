@@ -10374,9 +10374,9 @@ private to the renderer, whose files the compiler-semantics digest frames, so
 it is not exposed. The bodies the roots return are put in place of the bodies of
 the Function items and given to `applyMoves` of `BS-08`, and the items come out
 to the byte. The programs are those in which `rust::lower` succeeds, no function
-can overflow, and none loops: the vectors are the programs of four rules of the
+can overflow, and none loops: the vectors are the programs of five rules of the
 row (a typed let that is returned, a computed unit operand, the load of a boxed
-field in an arm, an inner conditional), those of `BS-07` and `BS-04`, and the
+field in an arm, an inner conditional, a closure that captures), those of `BS-07` and `BS-04`, and the
 committed ones that qualify, 156 in all with the packages of this row among the
 committed ones (155 without, within the 300 nodes the evaluator is given), and
 323 seeded mutants drawn 3,000 times from the smaller committed programs. On
@@ -10419,17 +10419,32 @@ the vectors, then the mutants:
 
 - **a variable of a copy type is cloned**, vector 3.
 - **a binding with a stated type is folded into the value it returns**, vector 3.
-- **a conditional on true and false is not the condition**, vector 88.
-- **a conditional on false and true is not the negated condition**, vector 88.
+- **a conditional on true and false is not the condition**, vector 89.
+- **a conditional on false and true is not the negated condition**, vector 89.
 - **a computed unit operand is not bound first**, vector 4.
-- **a match whose arms rebuild what they matched is kept**, vector 119.
-- **the predecessor of a successor arm is not bound**, vector 119.
+- **a match whose arms rebuild what they matched is kept**, vector 120.
+- **the predecessor of a successor arm is not bound**, vector 120.
 - **a boxed field of an arm is not loaded**, vector 5.
-- **a closure's function type keeps the captured parameters**, vector 339.
-- **a conversion's operand is not widened**, vector 61.
-- **two branches of one code are never the same code**, vector 88.
+- **a closure's function type keeps the captured parameters**, vector 7.
+- **a conversion's operand is not widened**, vector 62.
+- **two branches of one code are never the same code**, vector 89.
 - **the condition of an inner conditional is not held**, vector 6.
-- **a literal condition is not bound first**, vector 119.
+- **a literal condition is not bound first**, vector 120.
+
+The closure's plant was once caught only by a seeded mutant, at vector 339. No
+vector held a closure that captures: the rule of `BS-07` that has one adds, so
+this row's filter drops it. The packages of `Numeral` (`SL-09`) enter the pool
+the mutants are drawn from and move every draw, and the plant went undetected
+(`BS-11`, CI run 41378953050, at `32d317126`). Measured on that tree: none of the
+156 vectors and none of the 296 mutants hold a capturing closure, and with those
+five programs taken out of the pool 1 of 314 mutants does (a simulation of the pool
+before them, not the earlier tree, which gave 323). The fifth rule above is that
+closure in a program where nothing can overflow, and catches the plant at vector
+7 whatever the draws; it costs one vector here and one in `BS-14`. No other plant
+of this row's list needs a mutant. With it, 157 vectors, 468 runs under rustc
+agree with the evaluator, and all thirteen plants are detected; the local run then
+stopped for memory (5,929 MB available, under the floor set for it) before the
+comparison with the committed packages, which this change does not touch.
 
 Findings. (1) The Lean extraction of `RustBodies` writes more than the default
 `max_child_output_bytes` (16,777,216 bytes), so the bootstrap project
@@ -10675,8 +10690,8 @@ vectors, 205 crates, 443 and 306 runs under the evaluator; `BS-06` 672 vectors o
 `printCrate` (506 committed distinct, 64 refused), 2,110 of `printExpr`, 575 of the
 evaluator's crates; `BS-07` 328 vectors, 278 within the bound; `BS-08` 387 crates,
 339 within the bound; and, the seeded mutants being drawn from the committed
-programs, `BS-11` 296 mutants, `BS-12` 184, `BS-13` 97 vectors, 49 within the bound,
-and 125 mutants, and `BS-14` 331 vectors, 281 within the bound, and 547 mutants. On
+programs, `BS-11` 157 vectors, 156 within the bound, and 296 mutants, `BS-12` 184, `BS-13` 97 vectors, 49 within the bound,
+and 125 mutants, and `BS-14` 332 vectors, 282 within the bound, and 547 mutants. On
 that tree each of those rows was run as far as its count checks and `BS-09` and
 `BS-10` past theirs, which did not move; the whole runs are the gate's. The bootstrap
 export with the two roots passes `lexlean verify`; its first attempt was
