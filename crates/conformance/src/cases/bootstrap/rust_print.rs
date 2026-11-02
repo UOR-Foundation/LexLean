@@ -1201,8 +1201,8 @@ const VECTORS_EXPR: usize = 2_145;
 const HAND_EXPR: usize = 1_532;
 const EVALUATOR_CRATE: usize = 583;
 const SEEDED_CRATE: usize = 400;
-const SEEDED_EXPR: usize = 399;
-const RUSTC_SEEDED_RUNS: usize = 2_984;
+const SEEDED_EXPR: usize = 394;
+const RUSTC_SEEDED_RUNS: usize = 2_989;
 
 /// The crates the evaluator is given in full: those of at most this many
 /// expressions.

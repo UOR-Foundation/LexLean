@@ -12206,8 +12206,11 @@ tree differs from this one by these counts and the verification records.
 
 | Row | `ef961c75a` | member |
 | --- | --- | --- |
-| `BS-05` runs of `validateCrate`, `correspondCrate` | 491, 354 | 496, 359 |
-| `BS-05` runs under the evaluator | 443, 306 | 446, 309 |
+| `BS-05` runs of `validateCrate`, `correspondCrate` | 491, 354 | 494, 359 |
+| `BS-05` runs under the evaluator | 443, 306 | 444, 309 |
+| `BS-05` refusals among the runs of `validateCrate`, rule runs of it | 213, 132 | 211, 129 |
+| `BS-05` refused among the seeded mutants | 271, 244 | 291, 252 |
+| `BS-06` seeded `printExpr` mutants, seeded rustc runs | 399, 2,984 | 394, 2,989 |
 | `BS-07` vectors, within the bound | 328, 278 | 333, 281 |
 | `BS-08` crates, within the bound | 387, 339 | 392, 342 |
 | `BS-11` vectors, within the bound, mutants | 157, 156, 296 | 157, 156, 286 |
@@ -12225,9 +12228,30 @@ The number of tight runs stays 37, and two more of them are in the limit. The
 mutants of `BS-11` to `BS-14` are drawn from the committed programs, so the new
 programs change the draws, and some of the kept counts fall; which mutants changed
 was not traced. Why the vectors of `BS-11` and `BS-12` do not move was not traced
-either. `BS-05`'s seeded refusals, 271 and 244, are asserted after the seeded runs,
-which no run on this tree has reached yet, so they stand unconfirmed.
+either.
 
-Nothing here ran locally on this commit: C: was below the floor of the local jobs.
-The counts above are the assert's numbers; the plants and the rest of each case have
-not run on them.
+The first run on those counts, CI run 41434996123 on `4c546a065`, stopped `BS-05` in
+its own corpus: `the rule corpus gave up before it reached 3 runs of:
+["heap-list-match"]`. That refusal was reached only by draws. A throwaway edit,
+reverted, drew 400,000 mutants from each of three seeds over the 153 crates of at most
+80 expressions, without stopping at the target:
+
+| Seed | list match, hits | slowest other refusal, third hit at draw |
+| --- | --- | --- |
+| `0x05A1_1CE0_BE55_0005` (the corpus's) | 0 | 36,530 (`heap-empty-list`) |
+| `0x1111_2222_3333_0005` | 0 | 17,148 (`heap-list-cell`) |
+| `0x7777_8888_9999_0005` | 1 | 26,541 (`negated-zero`) |
+
+So three hits within the limit of 400,000 was luck on the earlier pools, and Order's
+crate of 65 expressions, the one new base, moved the draws. A higher limit would leave
+it to fail on a later package, so `list_match_crates` holds it by hand whatever the
+draws: `Uncons` of a parameter of type `Nat` under `rust-core`, which the probe shows
+the oracle refuses with this refusal. The corpus now draws for the other 47 refusals,
+so the rule runs fall by 3 and the hand-built crates rise by 1, which is the -2 on
+`validateCrate`'s runs and refusals. None of the other 47 is at this risk: on all three
+seeds each has its third hit within 36,530 of the 400,000 draws. This measures `BS-05`'s
+refusals only.
+
+The numbers of `BS-05` are that probe's, which stops before the first leg; `BS-06`'s
+are its assert's in that CI run. Neither case has run past them on this tree here, so
+the plants and the rest of each case are CI's to show.

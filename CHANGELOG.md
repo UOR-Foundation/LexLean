@@ -76,8 +76,9 @@ workspace carried at those versions without a tag.
   `slice::sort_by`, `BTreeSet`, and `windows(2)`. `stdlib/lexlean.toml` gains
   the entrypoint, so the locks of `stdlib` and its consumers move, and the
   `stdlib` records and production export are regenerated. The five new packages
-  move the counts `BS-05` to `BS-08` and `BS-11` to `BS-15` assert. The register
-  is 468 IDs.
+  move the counts `BS-05` to `BS-08` and `BS-11` to `BS-15` assert, and `BS-05`
+  now holds the list match under `rust-core` with a crate by hand, since the
+  mutants reach it too rarely to rely on. The register is 468 IDs.
 
 ## 0.4.0
 
