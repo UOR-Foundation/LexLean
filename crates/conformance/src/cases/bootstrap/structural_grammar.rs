@@ -43,12 +43,16 @@ const DEPTH: u64 = 1_024;
 /// longer one gives it, half from each end: the two ends of a data-form module
 /// are a module the oracle accepts, whose notation runs to its `\end`.
 const EVALUATOR_ATOMS: (usize, usize) = (1_500, 128);
-/// The same for rustc, whose harness writes each atom out as a literal.
-const RUSTC_ATOMS: (usize, usize) = (600, 64);
-/// Seeded edits of the vectors and the small committed modules, those the
-/// evaluator reads and those of them rustc reads.
+/// The same for rustc, which runs the parser in a fraction of the evaluator's
+/// time, so it reads whole modules the evaluator gets only the ends of.
+const RUSTC_ATOMS: (usize, usize) = (4_096, 128);
+/// The named vectors, the ones the oracle refuses, and the planted defects, so
+/// that a vector or a plant dropped in an edit fails here.
+const VECTORS: usize = 267;
+const REFUSED: usize = 146;
+const PLANT_COUNT: usize = 44;
+/// Seeded edits of the vectors and the small committed modules.
 const MUTANTS: usize = 2_000;
-const RUSTC_MUTANTS: usize = 500;
 /// The largest committed module an edit starts from, in bytes.
 const MUTANT_BASE: usize = 1_024;
 
@@ -1395,6 +1399,11 @@ pub(super) fn case() {
         );
     }
     let refused = messages.len();
+    assert_eq!(
+        (vectors.len(), refused, PLANTS.len()),
+        (VECTORS, REFUSED, PLANT_COUNT),
+        "the named vectors, those refused, and the planted defects"
+    );
     let sources = super::scan::sources();
     let evaluator_modules = committed(&sources, EVALUATOR_ATOMS);
     let rustc_modules = committed(&sources, RUSTC_ATOMS);
@@ -1442,7 +1451,7 @@ pub(super) fn case() {
 
     let mut compiled = runs;
     compiled.extend(rustc_modules);
-    compiled.extend(seeded.into_iter().take(RUSTC_MUTANTS));
+    compiled.extend(seeded);
     let total = rustc_differential(
         "BS-21",
         &[(ROOTS[0].0, &root, compiled.as_slice())],
