@@ -149,6 +149,31 @@ fn proof_uses(proof: &SemanticProof, local: &str) -> bool {
     }
 }
 
+/// Whether a parameter before the recursive argument is matched in `body`.
+/// With no stated argument, Lean recurses on the first parameter every
+/// recursive call decreases, and a call can decrease only a parameter the body
+/// matches, so this is when Lean's choice can differ from the checked argument.
+fn matches_earlier_parameter(
+    parameters: &[SemanticParameter],
+    recursive_argument: &str,
+    body: &SemanticTerm,
+) -> bool {
+    let earlier: BTreeSet<&str> = parameters
+        .iter()
+        .map(|parameter| parameter.name.as_str())
+        .take_while(|name| *name != recursive_argument)
+        .collect();
+    let mut found = false;
+    crate::ir::semantic::visit_terms(body, &mut |term| {
+        if let SemanticTerm::Match { scrutinee, .. } = term {
+            if let SemanticTerm::Var { name } = scrutinee.as_ref() {
+                found |= earlier.contains(name.as_str());
+            }
+        }
+    });
+    found
+}
+
 pub(crate) fn term_uses(term: &SemanticTerm, local: &str) -> bool {
     let pair = |left: &SemanticTerm, right: &SemanticTerm| {
         term_uses(left, local) || term_uses(right, local)
@@ -2120,6 +2145,7 @@ pub fn render_lean(
                     recursive_argument,
                     mutual,
                     termination,
+                    executable,
                     ..
                 } => {
                     let type_binders = render.scoped_type_parameters(type_parameters, declaration);
@@ -2163,9 +2189,15 @@ pub fn render_lean(
                             )
                         })?;
                         text.push_str(&equations);
-                        if mutual.is_some() {
+                        if mutual.is_some()
+                            || (*executable
+                                && matches_earlier_parameter(parameters, recursive_argument, body))
+                        {
                             // §17.12: a mutual group is structurally recursive by
-                            // construction; Lean must confirm exactly that.
+                            // construction; Lean must confirm exactly that. So
+                            // must an executable definition Lean could recurse
+                            // otherwise, since its certificate A reduces the
+                            // definition on the checked argument.
                             // Only the decreasing parameter is used after `=>`;
                             // naming the others would trip Lean's unused-variable
                             // linter, which fails verification.
@@ -2184,9 +2216,9 @@ pub fn render_lean(
                                 "termination_by structural {binders} => {}\n",
                                 identifier(recursive_argument)
                             ));
-                            if group_of(index + 1) != group_of(index) {
-                                text.push_str("end\n");
-                            }
+                        }
+                        if mutual.is_some() && group_of(index + 1) != group_of(index) {
+                            text.push_str("end\n");
                         }
                     } else {
                         let name = identifier(name);

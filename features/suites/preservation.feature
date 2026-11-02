@@ -206,3 +206,10 @@ Feature: preservation
     When each theorem `refines_<function>` of RustRuntime and RustStd is read for the function it runs and the runtime item it states
     Then every runtime item is stated by exactly one theorem, at its profile, on the function the generated code calls for it, or is a trait item with the theorems of SP-25
     And a theorem left out, a statement of another item, a statement at the other profile, an item called as another function, and a trait item without its theorems are each refused naming the item
+
+  @SP-31 @build
+  Scenario: A structurally recursive executable definition recurses in its generated Lean on the argument its source declares: where a parameter written before `recursive_argument` is matched in the body, which is the one case in which Lean's own search could take that parameter instead, the definition states the argument with `termination_by structural`, so that the kernel accepts certificate A of a production root that reaches it; an executable definition with no such parameter, and a definition that is not executable, generate the bytes they generated before.
+    Given the `recursive-argument` fixture, whose `paramsOf` matches a list written before its declared recursive argument
+    When the fixture's generated Lean is read and its production root is exported
+    Then `paramsOf` states its argument, its two controls state none, and the kernel accepts every certificate of the root
+    And a backend that stops stating the argument is refused by the kernel with `LLV7013`

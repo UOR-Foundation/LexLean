@@ -17,6 +17,12 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- `SP-31`, certificate A of a recursive function with a matched parameter before
+  its recursive argument (#314). The Lean backend states the declared argument
+  with `termination_by structural` when a definition is executable and matches
+  such a parameter, where Lean's own search took that parameter and left the
+  definition stuck on it (`LLV7013`). `lean_backend` of language 1.2 moves.
+
 - The #34 closure pass (documentation and evidence; no register row, language
   datum, schema, or compiler source moves). Sixteen examples carry a `README.md`
   that names the register rows whose gates run on them, what

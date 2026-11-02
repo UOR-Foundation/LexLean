@@ -37,6 +37,7 @@ mod production;
 mod production_export;
 mod proofs;
 mod reasoning;
+mod recursive_argument;
 mod repository;
 mod runtime;
 mod runtime_semantics;

@@ -11506,6 +11506,7 @@ the first panic message, trimmed.
 | `PD-02` | `production/eligibility.rs`: `analyse_module` no longer returns `Ok(None)` for a module without roots | `a module with formal content and no root is never analysed` |
 | `PD-03` | `production/eligibility.rs`: termination evidence is no longer inserted into `erased` | `termination evidence is erased, never realized` (`left: []`, `right: ["Production.Kernel.countdown_decreases"]`) |
 | `PD-06` | `production/eligibility.rs`: every `EffectRow` is built with no sources | `array shorter than minItems 1` at `/roots/1/targets/0/effects/0/sources` of `production-eligibility.schema.json` |
+| `SP-31` | `backend/semantic.rs`: the clause is written only for a mutual group | `` `paramsOf` matches a parameter before its argument and states the argument ``, the generated definition with no clause; the issue's project on that binary: `LLV7013` in `__rel_1` |
 | `TC-01` | `calculus/mod.rs`: `canonical` binds parameters but keeps their spelling | `assertion left == right failed: adt-evaluation` (alpha variant bytes differ) |
 | `TC-02` | `calculus/check.rs`: the match exhaustiveness test made `false &&` | `an invalid program loads: expected `the match is not exhaustive: Adt { constructor: 2 } is not covered`` |
 | `MD-01` | `ir/semantic.rs`: the language-1.1 gate `first_language_1_2_construct` made `&& false` | `tests/negative/model-under-1.1: expected "`contract declaration` is a language-1.2 construct"` |
@@ -12179,3 +12180,45 @@ On the merged member, regenerated, on one WSL host with 4 build jobs:
 
 The figures of the `BS-06` record above are that record's own run and stay as
 measured.
+
+## A definition recurses on the argument its source declares (`SP-31`, #314)
+
+### The defect
+
+Certificate A of a production root was refused (`LLV7013`, in `__rel_N`) for a
+recursive function whose declared argument is not its first parameter, when a
+parameter before it is matched in the recursive arm. The certificate was right
+and the generated Lean was not what it assumed. The backend stated the argument
+only for a mutual group, so Lean searched: it takes the first parameter every
+recursive call decreases, and `paramsOf rest tail ...` decreases `names`. The
+definition was then `List.brecOn` on `names`, `f names Ty.TUnit ...` was stuck on
+the free `names`, and the minor premise at `TUnit` did not typecheck. A small
+Lean file shows it: with no clause, `#print` gives `List.brecOn` and
+`recArgPos` is 0, and `example : f n Ty.a b = 0 := rfl` fails; with
+`termination_by structural _ t _ => t` it gives `Ty.brecOn` and the `rfl`
+passes. The issue's variants with the argument first and with an arm that does
+not match the list leave Lean no other parameter to take. Its `Nat` variant does
+not show its source, so it was not checked against this.
+
+### The fix
+
+The backend states the argument when a definition is executable and a parameter
+before the argument is the scrutinee of a match in its body. A call can decrease
+only a parameter the body matches, so nothing else can make Lean choose
+differently. A definition that is not executable has no certificate, and the
+seven such definitions in `compiler/` keep the recursion their proofs were
+written against.
+
+### The check can fail
+
+| Run | Observed |
+| --- | --- |
+| `conformance_sp_31`, fixed source | ok, 253 s |
+| `conformance_sp_31`, clause written only for a mutual group | fails at the text check before Lean runs, with the generated definition in the message |
+| the issue's project, on a binary with that plant | `LLV7013` in `__rel_1`, exit 1, 123 s |
+| the issue's project, fixed source | exit 0, 145 s |
+
+A scan of every `.lex.tex` source found no executable definition with this shape,
+so no committed generated Lean changes. `lean_backend` still moves, because I10
+and §30.1 do not let generated artifacts or a failure diagnostic change under
+one identity.

@@ -1781,6 +1781,11 @@ fn conformance_sp_30() {
 }
 
 #[test]
+fn conformance_sp_31() {
+    repo_conformance::cases::run("SP-31");
+}
+
+#[test]
 fn conformance_md_01() {
     repo_conformance::cases::run("MD-01");
 }
