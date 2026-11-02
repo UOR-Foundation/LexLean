@@ -366,7 +366,9 @@ fn hand_built(base: &Request) -> Vec<Request> {
     for carrier in [
         Carrier::InternalPlans,
         Carrier::OptimizerOutput,
-        Carrier::Discovered { members: vec![0, 1] },
+        Carrier::Discovered {
+            members: vec![0, 1],
+        },
         Carrier::Cached,
     ] {
         out.push(with(&|r| r.carrier = carrier.clone()));
@@ -578,7 +580,9 @@ fn mutant(base: &Request, seeded: &mut Seeded) -> Request {
                 } = &mut request.carrier
                 {
                     if seeded.chance(50) {
-                        let next = thresholds.last().map_or(1, |last| last + 1 + seeded.next() % 4);
+                        let next = thresholds
+                            .last()
+                            .map_or(1, |last| last + 1 + seeded.next() % 4);
                         thresholds.push(next);
                     } else if !plans.is_empty() {
                         let copy = plans[seeded.below(plans.len())].clone();
