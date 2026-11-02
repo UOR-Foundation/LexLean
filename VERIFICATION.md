@@ -2247,7 +2247,7 @@ The stack bound is now taken after every outcome of the differential is compared
 
 `GnafValidate` (`bootstrap/src/GnafValidate.lex.tex`, 33 `definition` blocks, 4 `structure` blocks, and 10 `inductive` blocks, in the compiler's canonical form: `lexlean fmt --check --all` finds the 9 modules of `bootstrap/` canonical) is the first part of the GNAF requests and certification of #275: `validateRequest` is `gnaf::validate` (`crates/lexlean/src/gnaf.rs`) over the projection of a request that validation reads. The axiom audit of the pinned Lean observes no axiom in any of the 33 definitions, and each declares `axioms: []` (a first draft declared `[Quot.sound, propext]` on all of them, which `verify` refused: `LLV7005`, observed `[]`). The one production root is eligible for `rust-std` with exactly the effects `allocation` and `overflow`; the rejection is written through `LexLeanStd.Buffer`.
 
-Command and host: `cargo test -p repo-conformance --test conformance -- conformance_bs_16 --nocapture`, the 4-core 15 GB Linux x86-64 container with the pinned rustc and Lean (CI part `bdd-bootstrap-gnaf`, `LEXLEAN_BDD_PART=bootstrap-gnaf`). Measured on this branch before the export package was committed: the corpus is 3,862 requests (60 committed under `compiler/gnaf/`, 802 hand-built, 3,000 seeded mutants), 3,522 refused, by each of the 21 rejections and 43 pairs of a rule and an action kind; the evaluator agrees with the oracle on all 3,862 vectors (the requests of at most 4,000 nodes of data), the rustc differential of the rendered package builds 3 harness binaries and agrees on all 3,862 runs.
+Command and host: `cargo test -p repo-conformance --test conformance -- conformance_bs_16 --nocapture`, the 4-core 15 GB Linux x86-64 container with the pinned rustc and Lean (CI part `bdd-bootstrap-gnaf`, `LEXLEAN_BDD_PART=bootstrap-gnaf`). Measured on this branch merged with #371 at `32d317126`, with the package `validate_request` committed: the corpus is 3,862 requests (60 committed under `compiler/gnaf/`, 802 hand-built, 3,000 seeded mutants), 3,522 refused, by each of the 21 rejections and 43 pairs of a rule and an action kind; the evaluator agrees with the oracle on all 3,862 vectors (the requests of at most 4,000 nodes of data), the rustc differential of the rendered package builds 3 harness binaries and agrees on all 3,862 runs (built in 7.0 s, run in 0.2 s); the twelve planted defects are each detected; the exported package is byte-identical to the committed one and realizes the program; the case passes in 1,537 s, of which the regeneration of the export (`check-production-export --write`, 50 minutes on a quiet machine) is not part. The case asserts the eligibility and the effects of the root, not the size of its certificate; the largest part of the certificate of `validateRequest` is not measured in this change.
 
 Planted defects, each detected by the differential at the first vector named: `empty domain accepted` (vector 27), `constant charge of zero accepted` (55), `free preparation accepted under the complete boundary` (29), `prepared artifact matched against steps` (16), `duplicate counted at one occurrence` (0), `fallback not performed` (0), `domain capacity compared with at-least` (74), `universe size without the square` (1,032), `alias refused as unsupported` (39), `scalar and vector claim checks swapped` (1), `rust programs scope admitted` (40), `operand size checked before capacity` (92). A first form of the tenth plant (the two outcomes of the `ClGlobalOptimal` arm exchanged by renaming a pattern) was not a program: `LLT4001`, `duplicate match branch Objective.ObScalar`; it exchanges the outcomes instead.
 
@@ -10384,9 +10384,9 @@ private to the renderer, whose files the compiler-semantics digest frames, so
 it is not exposed. The bodies the roots return are put in place of the bodies of
 the Function items and given to `applyMoves` of `BS-08`, and the items come out
 to the byte. The programs are those in which `rust::lower` succeeds, no function
-can overflow, and none loops: the vectors are the programs of four rules of the
+can overflow, and none loops: the vectors are the programs of five rules of the
 row (a typed let that is returned, a computed unit operand, the load of a boxed
-field in an arm, an inner conditional), those of `BS-07` and `BS-04`, and the
+field in an arm, an inner conditional, a closure that captures), those of `BS-07` and `BS-04`, and the
 committed ones that qualify, 156 in all with the packages of this row among the
 committed ones (155 without, within the 300 nodes the evaluator is given), and
 323 seeded mutants drawn 3,000 times from the smaller committed programs. On
@@ -10429,17 +10429,32 @@ the vectors, then the mutants:
 
 - **a variable of a copy type is cloned**, vector 3.
 - **a binding with a stated type is folded into the value it returns**, vector 3.
-- **a conditional on true and false is not the condition**, vector 88.
-- **a conditional on false and true is not the negated condition**, vector 88.
+- **a conditional on true and false is not the condition**, vector 89.
+- **a conditional on false and true is not the negated condition**, vector 89.
 - **a computed unit operand is not bound first**, vector 4.
-- **a match whose arms rebuild what they matched is kept**, vector 119.
-- **the predecessor of a successor arm is not bound**, vector 119.
+- **a match whose arms rebuild what they matched is kept**, vector 120.
+- **the predecessor of a successor arm is not bound**, vector 120.
 - **a boxed field of an arm is not loaded**, vector 5.
-- **a closure's function type keeps the captured parameters**, vector 339.
-- **a conversion's operand is not widened**, vector 61.
-- **two branches of one code are never the same code**, vector 88.
+- **a closure's function type keeps the captured parameters**, vector 7.
+- **a conversion's operand is not widened**, vector 62.
+- **two branches of one code are never the same code**, vector 89.
 - **the condition of an inner conditional is not held**, vector 6.
-- **a literal condition is not bound first**, vector 119.
+- **a literal condition is not bound first**, vector 120.
+
+The closure's plant was once caught only by a seeded mutant, at vector 339. No
+vector held a closure that captures: the rule of `BS-07` that has one adds, so
+this row's filter drops it. The packages of `Numeral` (`SL-09`) enter the pool
+the mutants are drawn from and move every draw, and the plant went undetected
+(`BS-11`, CI run 41378953050, at `32d317126`). Measured on that tree: none of the
+156 vectors and none of the 296 mutants hold a capturing closure, and with those
+five programs taken out of the pool 1 of 314 mutants does (a simulation of the pool
+before them, not the earlier tree, which gave 323). The fifth rule above is that
+closure in a program where nothing can overflow, and catches the plant at vector
+7 whatever the draws; it costs one vector here and one in `BS-14`. No other plant
+of this row's list needs a mutant. With it, 157 vectors, 468 runs under rustc
+agree with the evaluator, and all thirteen plants are detected; the local run then
+stopped for memory (5,929 MB available, under the floor set for it) before the
+comparison with the committed packages, which this change does not touch.
 
 Findings. (1) The Lean extraction of `RustBodies` writes more than the default
 `max_child_output_bytes` (16,777,216 bytes), so the bootstrap project
@@ -10685,13 +10700,30 @@ vectors, 205 crates, 443 and 306 runs under the evaluator; `BS-06` 672 vectors o
 `printCrate` (506 committed distinct, 64 refused), 2,110 of `printExpr`, 575 of the
 evaluator's crates; `BS-07` 328 vectors, 278 within the bound; `BS-08` 387 crates,
 339 within the bound; and, the seeded mutants being drawn from the committed
-programs, `BS-11` 296 mutants, `BS-12` 184, `BS-13` 97 vectors, 49 within the bound,
-and 125 mutants, and `BS-14` 331 vectors, 281 within the bound, and 547 mutants. On
+programs, `BS-11` 157 vectors, 156 within the bound, and 296 mutants, `BS-12` 184, `BS-13` 97 vectors, 49 within the bound,
+and 125 mutants, and `BS-14` 332 vectors, 282 within the bound, and 547 mutants. On
 that tree each of those rows was run as far as its count checks and `BS-09` and
 `BS-10` past theirs, which did not move; the whole runs are the gate's. The bootstrap
 export with the two roots passes `lexlean verify`; its first attempt was
 refused (`LLV7005`) for nine definitions whose comparison of byte strings
 observes `propext` and declared no axioms, which now declare it.
+
+With the package `validate_request` of `BS-16` committed, the committed manifests are 278
+and the counts the rows assert move with it, each measured by the first count
+assertion of the row that fails on the count it replaces: `BS-15` has 297 committed manifests
+(278 accepted), 182 rule manifests, 2,000 seeded mutants of the fields, 137 hand-built inputs
+and 278 seeded mutants of the render, 3,172 runs under rustc, and 241 renders under the
+evaluator as before; 278 manifests and packages, 195 programs, 254 crates; `BS-05` 492 and 355
+vectors (205 crates, 443 and 306 runs under the evaluator as before); `BS-06` 674 vectors of
+`printCrate` (508 committed distinct, 64 refused), 2,110 of `printExpr`, 576 of the
+evaluator's crates; `BS-07` 329 vectors, 278 within the bound; `BS-08` 388 crates, 339 within
+the bound; `BS-13` 98 vectors, 49 within the bound, and 125 mutants; `BS-14` 333 vectors
+(with the vector that #371 adds), 282 within the bound, and 547 mutants. `BS-05` passes on the tree before the merge of #371's fix
+(`ef961c75a`), in 2,566 s on the normative host; `BS-06` stopped at its count
+assertions on the 3,000 MB floor of the machine's disk, and the other rows' counts above
+are the ones the continuous integration measured. The records and packages of the
+bootstrap export are regenerated on the relocked project, which takes 50 minutes
+(`check-production-export --write`).
 
 Each of twenty-one plants is made on a copy of `bootstrap/src/RustPackage.lex.tex`
 on every run and is caught by the oracle; the run is the index among the runs

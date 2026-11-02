@@ -56,8 +56,8 @@ const EVALUATOR_NODES: usize = 300;
 const BASE_NODES: usize = 150;
 /// The mutants drawn, of which the checker and the filters keep some.
 const MUTANT_DRAWS: usize = 3_000;
-const VECTORS: usize = 156;
-const VECTORS_WITHIN: usize = 155;
+const VECTORS: usize = 157;
+const VECTORS_WITHIN: usize = 156;
 const EVALUATOR_MUTANTS: usize = 296;
 
 /// A program with what the roots are given and the oracle's items.
@@ -194,8 +194,10 @@ pub(super) fn arm(shape: Shape, binders: Vec<u64>, body: Expr) -> Arm {
 
 /// The programs of the rules the corpora of the earlier rows do not reach: a
 /// binding with a stated type that is returned, an operand of unit type that
-/// a call computes, a field an arm loads from a box, and a conditional whose
-/// then-branch is another that has no else.
+/// a call computes, a field an arm loads from a box, a conditional whose
+/// then-branch is another that has no else, and a closure that captures in a
+/// program where nothing can overflow (that of `BS-07` adds, so this row's
+/// filter drops it, and no committed program that qualifies has one).
 fn rules() -> Vec<Program> {
     let list = |constructor| Shape::Adt { constructor };
     let tail = Expr::Match {
@@ -274,6 +276,40 @@ fn rules() -> Vec<Program> {
                             else_branch: Box::new(unit()),
                         }),
                         else_branch: Box::new(unit()),
+                    },
+                ),
+            ],
+        ),
+        program_of(
+            Vec::new(),
+            vec![
+                function(vec![(0, Ty::Nat), (1, Ty::Bool)], Ty::Nat, var(0)),
+                function(
+                    vec![(
+                        0,
+                        Ty::Fn {
+                            parameters: vec![Ty::Bool],
+                            result: Box::new(Ty::Nat),
+                        },
+                    )],
+                    Ty::Nat,
+                    Expr::Apply {
+                        target: Box::new(var(0)),
+                        operands: vec![Expr::Value {
+                            ty: Ty::Bool,
+                            value: Value::Bool { value: true },
+                        }],
+                    },
+                ),
+                function(
+                    Vec::new(),
+                    Ty::Nat,
+                    Expr::Call {
+                        function: 1,
+                        operands: vec![Expr::Closure {
+                            function: 0,
+                            captures: vec![natural("1")],
+                        }],
                     },
                 ),
             ],
