@@ -10744,6 +10744,49 @@ ended at the start of the rustc stage with the host's 16 GB virtual machine
 reset, and the run with the bound passed that stage in 67 s. A library beyond the evaluator's bound now reaches rustc as
 its first 4,096 bytes, held to the recipe, as the shaped inputs do.
 
+### the structural grammar is source and agrees with the oracle (BS-21)
+
+`BS-21` holds `LexLeanBoot.StructuralGrammar.parseModule`
+(`bootstrap/src/StructuralGrammar.lex.tex`, 1,394 lines, 68,716 bytes) to
+`grammar::structural::parse_module`, on the whole module with its coverage rows
+and on a refusal's code, message, and span. The root reads the atoms the oracle's
+scanner returns, and admits `allocation` and `overflow`: it keeps an explicit
+stack under `iterate_until`, so it owes no row in `tests/stack-bounds.json`.
+
+Command: `cargo test -p repo-conformance --test conformance -- conformance_bs_21
+--nocapture`, on the normative host, on `1f470cda7`, 1,755 seconds, 975 committed
+modules in the tree.
+
+| Leg | Runs | Agreed |
+| --- | --- | --- |
+| named vectors under the evaluator | 267, 146 refused | all |
+| committed modules under the evaluator, whole to 1,500 atoms, else 128 atoms of both ends | 975, 917 accepted | all |
+| seeded edits under the evaluator | 2,000, 377 accepted | all |
+| all of the vectors, the edits, and the committed modules under rustc, whole to 4,096 atoms, else 128 of both ends | 3,242, in 144 harness binaries | all |
+
+The vectors reach every refusal of `parse_module`, which the case asserts by a
+part of each of the 30 messages. The two ends of a data-form module are the
+corpus's point: a prefix of one is a single refusal, while its two ends are a
+module the oracle accepts, whose notation runs to its `\end`.
+
+Each of the 44 planted defects names the vector that catches it and is run on that
+vector alone, and all 44 are detected. `BS-05` and `BS-11` each lost a plant when
+their corpus grew, because a plant caught by some run of a corpus is only as good
+as that corpus; here a seeded corpus can change without costing a plant its
+witness. `sorts` reads the constructors from the module's text, so a constructor
+moved in the module fails the encoders.
+
+Before the module was an entrypoint the case failed with `StructuralGrammar and
+PrimitiveScan are linked modules of the project`, on `6283ac8f3`.
+
+The largest certificate part is 2,879,430 bytes, 91.5% of the row's 3,145,728,
+measured by `lexlean production build` on a copy of the project whose entrypoints
+are `PrimitiveScan` and `StructuralGrammar`, and `lexlean verify` passes on that
+copy, so the declared axioms are exact. The case's own leg cannot run until the
+landing regeneration produces the `bootstrap/parse_module` package:
+`conformance_bs_21` stops at the stack-bound step with `bootstrap/parse_module is
+no package of the committed exports`, after every differential above has agreed.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the

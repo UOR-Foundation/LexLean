@@ -1,0 +1,1394 @@
+\begin{lexlean}{StructuralGrammar}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.Buffer}
+\importmodule{LexLeanStd.Numeral}
+\importmodule{LexLeanStd.Text}
+\importmodule{PrimitiveScan}
+\title{Natural number addition}
+\begin{semanticmodule}
+structure{
+  name: Arg,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: start, type: Nat}, {name: stop, type: Nat}, {name: text, type: Bytes}]
+}
+
+structure{
+  name: Sentence,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: start, type: Nat}, {name: period, type: Nat}]
+}
+
+inductive{
+  name: PolicyKind,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: PolicyNone, fields: []},
+    {name: PolicyAllow, fields: []},
+    {name: PolicyExact, fields: []}
+  ]
+}
+
+structure{
+  name: Policy,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: kind, type: PolicyKind},
+    {name: names, type: (List Bytes)},
+    {name: control, type: Nat},
+    {name: namesArg, type: (Option Arg)}
+  ]
+}
+
+inductive{
+  name: Origin,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: Structural, fields: [Bytes, Bytes]}, {name: Metadata, fields: [Bytes]}]
+}
+
+structure{
+  name: Row,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: path, type: Bytes},
+    {name: byteStart, type: Nat},
+    {name: byteEnd, type: Nat},
+    {name: atomClass, type: PrimitiveScan::AtomClass},
+    {name: binding, type: Origin}
+  ]
+}
+
+structure{
+  name: CalcStep,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: relation, type: Arg}, {name: term, type: Arg}, {name: proof, type: Arg}]
+}
+
+inductive{
+  name: Proof,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: ProofNil, fields: []},
+    {name: ProofCons, fields: [Proof, Proof]},
+    {name: ProofEnv, fields: [Proof, Nat]},
+    {name: ProofSentence, fields: [Sentence]},
+    {name: ProofHave, fields: [Arg, Sentence, Proof, Nat]},
+    {name: ProofRewrite, fields: [Arg, (List (Bool * Arg)), Nat]},
+    {name: ProofSimplify, fields: [Arg, (List Arg), Nat]},
+    {name: ProofApply, fields: [Arg, Proof, Nat]},
+    {name: ProofConstructor, fields: [Proof, Nat]},
+    {name: ProofCases, fields: [Bool, Arg, Proof, Nat]},
+    {name: ProofCalculate, fields: [Arg, (List CalcStep), Nat]},
+    {name: LabeledCons, fields: [Nat, Proof, Proof]},
+    {name: CaseCons, fields: [Arg, (List Bytes), Arg, Proof, Proof]}
+  ]
+}
+
+inductive{
+  name: DeclKind,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: TypeDefinition, fields: []},
+    {name: TermDefinition, fields: []},
+    {name: PredicateDefinition, fields: []},
+    {name: Theorem, fields: []},
+    {name: Lemma, fields: []},
+    {name: Corollary, fields: []}
+  ]
+}
+
+structure{
+  name: Decl,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: kind, type: DeclKind},
+    {name: component, type: Arg},
+    {name: entry, type: (Option Arg)},
+    {name: policy, type: Policy},
+    {name: sentence, type: Sentence},
+    {name: proof, type: (Option Proof)},
+    {name: opening, type: Nat},
+    {name: stop, type: Nat}
+  ]
+}
+
+inductive{
+  name: Block,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: BlockNil, fields: []},
+    {name: BlockCons, fields: [Block, Block]},
+    {name: BlockSection, fields: [Arg, Nat, Nat, (Option (Nat * Nat)), Block, Nat]},
+    {name: BlockDecl, fields: [Decl]}
+  ]
+}
+
+structure{
+  name: DataForm,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: data, type: Arg}, {name: surface, type: Bool}, {name: opening, type: Nat}]
+}
+
+structure{
+  name: ModuleAst,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: rows, type: (List Row)},
+    {name: name, type: Bytes},
+    {name: nameArg, type: Arg},
+    {name: uses, type: (List Arg)},
+    {name: imports, type: (List Arg)},
+    {name: titleStart, type: Nat},
+    {name: titleStop, type: Nat},
+    {name: blocks, type: Block},
+    {name: core, type: (Option DataForm)},
+    {name: semantic, type: (Option DataForm)},
+    {name: tooling, type: (Option DataForm)}
+  ]
+}
+
+structure{
+  name: Ctx,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: path, type: Bytes},
+    {name: atoms, type: (List PrimitiveScan::Atom)},
+    {name: count, type: Nat},
+    {name: maxDepth, type: Nat}
+  ]
+}
+
+structure{
+  name: Ps,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: pos, type: Nat},
+    {name: rows, type: (List Row)},
+    {name: error, type: (Option PrimitiveScan::Rejection)}
+  ]
+}
+
+structure{
+  name: ArgAt,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: arg, type: Arg}, {name: ps, type: Ps}]
+}
+
+structure{
+  name: EnvAt,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: opening, type: Nat}, {name: name, type: Bytes}, {name: ps, type: Ps}]
+}
+
+structure{
+  name: SentenceAt,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: sentence, type: Sentence}, {name: ps, type: Ps}]
+}
+
+structure{
+  name: PolicyAt,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: policy, type: Policy}, {name: ps, type: Ps}]
+}
+
+structure{
+  name: ItemAt,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: item, type: Proof}, {name: ps, type: Ps}]
+}
+
+structure{
+  name: Quoting,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: index, type: Nat}, {name: inString, type: Bool}, {name: escaped, type: Bool}]
+}
+
+structure{
+  name: ArgScan,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: pos, type: Nat},
+    {name: depth, type: Nat},
+    {name: pieces, type: (List Bytes)},
+    {name: inString, type: Bool},
+    {name: escaped, type: Bool},
+    {name: closing, type: (Option PrimitiveScan::Atom)}
+  ]
+}
+
+structure{
+  name: SentenceScan,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: pos, type: Nat},
+    {name: depth, type: Nat},
+    {name: island, type: Nat},
+    {name: status, type: Nat}
+  ]
+}
+
+structure{
+  name: LabelScan,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: index, type: Nat}, {name: value, type: Nat}, {name: valid, type: Bool}]
+}
+
+structure{
+  name: BlocksCtx,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: terminator, type: Bytes},
+    {name: depth, type: Nat},
+    {name: acc, type: (List Block)}
+  ]
+}
+
+structure{
+  name: ProofCtx,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: opening, type: Nat},
+    {name: envName, type: Bytes},
+    {name: depth, type: Nat},
+    {name: items, type: (List Proof)}
+  ]
+}
+
+structure{
+  name: SectionFrame,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: outer, type: BlocksCtx},
+    {name: component, type: Arg},
+    {name: headingStart, type: Nat},
+    {name: headingStop, type: Nat},
+    {name: params, type: (Option (Nat * Nat))},
+    {name: opening, type: Nat}
+  ]
+}
+
+structure{
+  name: DeclFrame,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: outer, type: BlocksCtx},
+    {name: env, type: Bytes},
+    {name: kind, type: DeclKind},
+    {name: component, type: Arg},
+    {name: entry, type: (Option Arg)},
+    {name: policy, type: Policy},
+    {name: sentence, type: Sentence},
+    {name: opening, type: Nat}
+  ]
+}
+
+structure{
+  name: CaseRow,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: entry, type: Arg},
+    {name: binds, type: (List Bytes)},
+    {name: bindArg, type: Arg},
+    {name: proof, type: Proof}
+  ]
+}
+
+structure{
+  name: LabeledHeader,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: outer, type: ProofCtx},
+    {name: word, type: Bytes},
+    {name: envName, type: Bytes},
+    {name: function, type: (Option Arg)},
+    {name: acc, type: (List (Nat * Proof))},
+    {name: opening, type: Nat}
+  ]
+}
+
+structure{
+  name: CasesHeader,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: outer, type: ProofCtx},
+    {name: induction, type: Bool},
+    {name: envName, type: Bytes},
+    {name: scrutinee, type: Arg},
+    {name: acc, type: (List CaseRow)},
+    {name: opening, type: Nat}
+  ]
+}
+
+inductive{
+  name: ProofFrame,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: FrameHave, fields: [ProofCtx, Arg, Sentence, Nat]},
+    {name: FrameLabeled, fields: [LabeledHeader, Nat]},
+    {name: FrameCase, fields: [CasesHeader, Arg, (List Bytes), Arg]}
+  ]
+}
+
+inductive{
+  name: Mode,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: InBlocks, fields: [BlocksCtx]},
+    {name: InProof, fields: [ProofCtx, DeclFrame, (List ProofFrame)]},
+    {name: Finished, fields: [Block]}
+  ]
+}
+
+structure{
+  name: Machine,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: ps, type: Ps},
+    {name: sections, type: (List SectionFrame)},
+    {name: mode, type: Mode}
+  ]
+}
+
+definition{
+  name: lit,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: cat,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bytes,
+  body: (prim append left right : Bytes),
+  executable: true
+}
+
+definition{
+  name: same,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bool,
+  body: (prim equal left right : Bool),
+  executable: true
+}
+
+definition{
+  name: ticked,
+  parameters: [name : Bytes],
+  result: Bytes,
+  body: (cat (cat (lit "`") name) (lit "`")),
+  executable: true
+}
+
+definition{
+  name: atomAt,
+  parameters: [ctx : Ctx, position : Nat],
+  result: (Option PrimitiveScan::Atom),
+  body: (prim index (project ctx atoms) position : (Option PrimitiveScan::Atom)),
+  executable: true
+}
+
+definition{
+  name: isAtom,
+  parameters: [atom : PrimitiveScan::Atom, code : Nat, spelled : Bytes],
+  result: Bool,
+  body: (if ((PrimitiveScan::classCode atom) =? code) then (same (project atom text) spelled) else false),
+  executable: true
+}
+
+definition{
+  name: atomIs,
+  parameters: [ctx : Ctx, position : Nat, code : Nat, spelled : Bytes],
+  result: Bool,
+  body: (match (atomAt ctx position)
+    | Option.some atom => (isAtom atom code spelled)
+    | Option.none => false),
+  executable: true
+}
+
+definition{
+  name: skipStep,
+  parameters: [ctx : Ctx, position : Nat],
+  result: (Option Nat),
+  body: (match (atomAt ctx position)
+    | Option.some atom => (if ((PrimitiveScan::classCode atom) =? 6) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat]))
+    | Option.none => (ctor Option.none [Nat])),
+  executable: true
+}
+
+definition{
+  name: skipWs,
+  parameters: [ctx : Ctx, start : Nat],
+  result: Nat,
+  body: (first (prim iterate_until (fun [ctx] (position : Nat) => (skipStep ctx position)) (project ctx count) start : (Nat * Bool))),
+  executable: true
+}
+
+definition{
+  name: moved,
+  parameters: [ps : Ps, position : Nat],
+  result: Ps,
+  body: (record Ps {pos := position, rows := (project ps rows), error := (project ps error)}),
+  executable: true
+}
+
+definition{
+  name: wholeFile,
+  parameters: [path : Bytes],
+  result: PrimitiveScan::Place,
+  body: (record PrimitiveScan::Place {path := path, byteStart := 0, byteEnd := 0, lineStart := 1, columnStart := 1, lineEnd := 1, columnEnd := 1}),
+  executable: true
+}
+
+definition{
+  name: placeHere,
+  parameters: [ctx : Ctx, position : Nat],
+  result: PrimitiveScan::Place,
+  body: (let last : Nat := (prim subtract (project ctx count) 1 : Nat); (match (atomAt ctx (if (position <? last) then position else last))
+    | Option.some atom => (PrimitiveScan::placeOfAtom (project ctx path) atom)
+    | Option.none => (wholeFile (project ctx path)))),
+  executable: true
+}
+
+definition{
+  name: fail,
+  parameters: [ctx : Ctx, ps : Ps, code : Bytes, message : Bytes],
+  result: Ps,
+  body: (match (project ps error)
+    | Option.some earlier => ps
+    | Option.none => (let position : Nat := (skipWs ctx (project ps pos)); (record Ps {pos := position, rows := (project ps rows), error := (ctor Option.some [PrimitiveScan::Rejection] (record PrimitiveScan::Rejection {code := code, message := message, place := (ctor Option.some [PrimitiveScan::Place] (placeHere ctx position)), help := (ctor Option.none [Bytes])}))}))),
+  executable: true
+}
+
+definition{
+  name: refuse,
+  parameters: [ctx : Ctx, ps : Ps, message : Bytes],
+  result: Ps,
+  body: (fail ctx ps (lit "LLP2003") message),
+  executable: true
+}
+
+definition{
+  name: structural,
+  parameters: [entry : Bytes],
+  result: Origin,
+  body: (ctor Origin.Structural (lit "lexlean.core") entry),
+  executable: true
+}
+
+definition{
+  name: metadata,
+  parameters: [owner : Bytes],
+  result: Origin,
+  body: (ctor Origin.Metadata (cat (lit "lexlean.core::") owner)),
+  executable: true
+}
+
+definition{
+  name: rowOf,
+  parameters: [ctx : Ctx, atom : PrimitiveScan::Atom, binding : Origin],
+  result: Row,
+  body: (record Row {path := (project ctx path), byteStart := (project atom byteStart), byteEnd := (project atom byteEnd), atomClass := (project atom kind), binding := binding}),
+  executable: true
+}
+
+definition{
+  name: cover,
+  parameters: [ctx : Ctx, ps : Ps, atom : PrimitiveScan::Atom, binding : Origin],
+  result: Ps,
+  body: (record Ps {pos := (project ps pos), rows := (cons (rowOf ctx atom binding) (project ps rows)), error := (project ps error)}),
+  executable: true
+}
+
+definition{
+  name: foundText,
+  parameters: [expected : Bytes, found : Bytes],
+  result: Bytes,
+  body: (cat (cat (cat (lit "expected ") (ticked expected)) (lit ", found ")) (ticked found)),
+  executable: true
+}
+
+definition{
+  name: foundEnd,
+  parameters: [expected : Bytes],
+  result: Bytes,
+  body: (cat (cat (lit "expected ") (ticked expected)) (lit ", found end of file")),
+  executable: true
+}
+
+definition{
+  name: expectAtom,
+  parameters: [ctx : Ctx, ps : Ps, code : Nat, spelled : Bytes, entry : Bytes],
+  result: Ps,
+  body: (let position : Nat := (skipWs ctx (project ps pos)); (match (atomAt ctx position)
+    | Option.some atom => (if (isAtom atom code spelled) then (cover ctx (moved ps (position + 1)) atom (structural entry)) else (refuse ctx (moved ps position) (foundText spelled (project atom text))))
+    | Option.none => (refuse ctx (moved ps position) (foundEnd spelled)))),
+  executable: true
+}
+
+definition{
+  name: expectControl,
+  parameters: [ctx : Ctx, ps : Ps, name : Bytes],
+  result: Ps,
+  body: (expectAtom ctx ps 0 name (LexLeanStd.Text::sliceOr name 1 (prim subtract (prim length name : Nat) 1 : Nat))),
+  executable: true
+}
+
+definition{
+  name: quoteStep,
+  parameters: [subject : Bytes, state : Quoting],
+  result: (Option Quoting),
+  body: (match (LexLeanStd.Text::byteAt subject (project state index))
+    | Option.some byte => (let next : Nat := ((project state index) + 1); (let inside : Bool := (project state inString); (if (project state escaped) then (ctor Option.some [Quoting] (record Quoting {index := next, inString := inside, escaped := false})) else (if (if inside then (prim equal byte (92 : UInt8) : Bool) else false) then (ctor Option.some [Quoting] (record Quoting {index := next, inString := inside, escaped := true})) else (if (prim equal byte (34 : UInt8) : Bool) then (ctor Option.some [Quoting] (record Quoting {index := next, inString := (not inside), escaped := false})) else (ctor Option.some [Quoting] (record Quoting {index := next, inString := inside, escaped := false})))))))
+    | Option.none => (ctor Option.none [Quoting])),
+  executable: true
+}
+
+definition{
+  name: quoteRun,
+  parameters: [subject : Bytes, inside : Bool, escaped : Bool],
+  result: Quoting,
+  body: (first (prim iterate_until (fun [subject] (state : Quoting) => (quoteStep subject state)) (prim length subject : Nat) (record Quoting {index := 0, inString := inside, escaped := escaped}) : (Quoting * Bool))),
+  executable: true
+}
+
+definition{
+  name: argNext,
+  parameters: [
+    keep : Bool,
+    scan : ArgScan,
+    atom : PrimitiveScan::Atom,
+    depth : Nat,
+    pieces : (List Bytes)
+  ],
+  result: (Option ArgScan),
+  body: (let quoting : Quoting := (if keep then (quoteRun (project atom text) (project scan inString) (project scan escaped)) else (record Quoting {index := 0, inString := (project scan inString), escaped := (project scan escaped)})); (ctor Option.some [ArgScan] (record ArgScan {pos := ((project scan pos) + 1), depth := depth, pieces := pieces, inString := (project quoting inString), escaped := (project quoting escaped), closing := (ctor Option.none [PrimitiveScan::Atom])}))),
+  executable: true
+}
+
+definition{
+  name: argStep,
+  parameters: [ctx : Ctx, keep : Bool, scan : ArgScan],
+  result: (Option ArgScan),
+  body: (match (project scan closing)
+    | Option.some closed => (ctor Option.none [ArgScan])
+    | Option.none => (match (atomAt ctx (project scan pos))
+      | Option.none => (ctor Option.none [ArgScan])
+      | Option.some atom => (let quoted : Bool := (project scan inString); (let depth : Nat := (project scan depth); (let pieces : (List Bytes) := (project scan pieces); (if (if quoted then false else (isAtom atom 3 (lit "{"))) then (argNext keep scan atom (depth + 1) (cons (lit "{") pieces)) else (if (if quoted then false else (isAtom atom 3 (lit "}"))) then (if (depth =? 0) then (ctor Option.some [ArgScan] (record ArgScan {pos := (project scan pos), depth := depth, pieces := pieces, inString := quoted, escaped := (project scan escaped), closing := (ctor Option.some [PrimitiveScan::Atom] atom)})) else (argNext keep scan atom (prim subtract depth 1 : Nat) (cons (lit "}") pieces))) else (if (if quoted then false else ((PrimitiveScan::classCode atom) =? 6)) then (argNext keep scan atom depth pieces) else (argNext keep scan atom depth (cons (project atom text) pieces)))))))))),
+  executable: true
+}
+
+definition{
+  name: joined,
+  parameters: [pieces : (List Bytes)],
+  result: Bytes,
+  body: (LexLeanStd.Buffer::joinAll (LexLeanStd.Text::reverse pieces)),
+  executable: true
+}
+
+definition{
+  name: braceWith,
+  parameters: [ctx : Ctx, ps : Ps, keep : Bool],
+  result: ArgAt,
+  body: (let opened : Ps := (expectAtom ctx ps 3 (lit "{") (lit "brace-open")); (let start : Nat := (project opened pos); (let scan : ArgScan := (first (prim iterate_until (fun [ctx, keep] (state : ArgScan) => (argStep ctx keep state)) ((project ctx count) + 1) (record ArgScan {pos := start, depth := 0, pieces := (nil Bytes), inString := false, escaped := false, closing := (ctor Option.none [PrimitiveScan::Atom])}) : (ArgScan * Bool))); (let stop : Nat := (project scan pos); (match (project scan closing)
+    | Option.some atom => (record ArgAt {arg := (record Arg {start := start, stop := stop, text := (joined (project scan pieces))}), ps := (cover ctx (moved opened (stop + 1)) atom (structural (lit "brace-close")))})
+    | Option.none => (record ArgAt {arg := (record Arg {start := start, stop := stop, text := 0x}), ps := (refuse ctx (moved opened stop) (lit "unclosed `{` argument"))})))))),
+  executable: true
+}
+
+definition{
+  name: brace,
+  parameters: [ctx : Ctx, ps : Ps],
+  result: ArgAt,
+  body: (braceWith ctx ps false),
+  executable: true
+}
+
+definition{
+  name: verbatimStep,
+  parameters: [ctx : Ctx, state : (Nat * (List Bytes))],
+  result: (Option (Nat * (List Bytes))),
+  body: (match (atomAt ctx (first state))
+    | Option.some atom => (if (isAtom atom 0 (lit "\\end")) then (ctor Option.none [(Nat * (List Bytes))]) else (ctor Option.some [(Nat * (List Bytes))] (((first state) + 1), (cons (project atom text) (second state)))))
+    | Option.none => (ctor Option.none [(Nat * (List Bytes))])),
+  executable: true
+}
+
+definition{
+  name: verbatimBody,
+  parameters: [ctx : Ctx, ps : Ps],
+  result: ArgAt,
+  body: (let start : Nat := (project ps pos); (let final : (Nat * (List Bytes)) := (first (prim iterate_until (fun [ctx] (state : (Nat * (List Bytes))) => (verbatimStep ctx state)) ((project ctx count) + 1) (start, (nil Bytes)) : ((Nat * (List Bytes)) * Bool))); (let stop : Nat := (first final); (record ArgAt {arg := (record Arg {start := start, stop := stop, text := (joined (second final))}), ps := (match (atomAt ctx stop)
+    | Option.some atom => (moved ps stop)
+    | Option.none => (refuse ctx (moved ps stop) (lit "unclosed environment")))})))),
+  executable: true
+}
+
+definition{
+  name: coverStep,
+  parameters: [ctx : Ctx, binding : Origin, stop : Nat, state : (Nat * (List Row))],
+  result: (Option (Nat * (List Row))),
+  body: (if ((first state) <? stop) then (match (atomAt ctx (first state))
+    | Option.some atom => (if ((PrimitiveScan::classCode atom) =? 6) then (ctor Option.some [(Nat * (List Row))] (((first state) + 1), (second state))) else (ctor Option.some [(Nat * (List Row))] (((first state) + 1), (cons (rowOf ctx atom binding) (second state)))))
+    | Option.none => (ctor Option.none [(Nat * (List Row))])) else (ctor Option.none [(Nat * (List Row))])),
+  executable: true
+}
+
+definition{
+  name: coverRange,
+  parameters: [ctx : Ctx, ps : Ps, range : Arg, binding : Origin],
+  result: Ps,
+  body: (let stop : Nat := (project range stop); (record Ps {pos := (project ps pos), rows := (second (first (prim iterate_until (fun [binding, ctx, stop] (state : (Nat * (List Row))) => (coverStep ctx binding stop state)) (prim subtract stop (project range start) : Nat) ((project range start), (project ps rows)) : ((Nat * (List Row)) * Bool)))), error := (project ps error)})),
+  executable: true
+}
+
+definition{
+  name: coverMetadata,
+  parameters: [ctx : Ctx, ps : Ps, range : Arg, owner : Bytes],
+  result: Ps,
+  body: (coverRange ctx ps range (metadata owner)),
+  executable: true
+}
+
+definition{
+  name: coverPayload,
+  parameters: [ctx : Ctx, ps : Ps, range : Arg, owner : Bytes],
+  result: Ps,
+  body: (match (atomAt ctx (project range start))
+    | Option.none => ps
+    | Option.some head => (let last : PrimitiveScan::Atom := (match (atomAt ctx (prim subtract (project range stop) 1 : Nat))
+      | Option.some found => found
+      | Option.none => head); (record Ps {pos := (project ps pos), rows := (cons (record Row {path := (project ctx path), byteStart := (project head byteStart), byteEnd := (project last byteEnd), atomClass := (project head kind), binding := (metadata owner)}) (project ps rows)), error := (project ps error)}))),
+  executable: true
+}
+
+definition{
+  name: envOrigin,
+  parameters: [name : Bytes],
+  result: Origin,
+  body: (structural (cat (lit "env.") name)),
+  executable: true
+}
+
+definition{
+  name: beginEnv,
+  parameters: [ctx : Ctx, ps : Ps],
+  result: EnvAt,
+  body: (let began : Ps := (expectControl ctx ps (lit "\\begin")); (let name : ArgAt := (brace ctx began); (record EnvAt {opening := (prim subtract (project began pos) 1 : Nat), name := (project (project name arg) text), ps := (coverRange ctx (project name ps) (project name arg) (envOrigin (project (project name arg) text)))}))),
+  executable: true
+}
+
+definition{
+  name: expectEnd,
+  parameters: [ctx : Ctx, ps : Ps, name : Bytes],
+  result: Ps,
+  body: (let ended : Ps := (expectControl ctx ps (lit "\\end")); (let closing : ArgAt := (brace ctx ended); (if (same (project (project closing arg) text) name) then (coverRange ctx (project closing ps) (project closing arg) (envOrigin name)) else (refuse ctx (project closing ps) (cat (cat (cat (cat (lit "expected `\\end{") name) (lit "}`, found `\\end{")) (project (project closing arg) text)) (lit "}`")))))),
+  executable: true
+}
+
+definition{
+  name: atControl,
+  parameters: [ctx : Ctx, position : Nat, name : Bytes],
+  result: Bool,
+  body: (atomIs ctx (skipWs ctx position) 0 name),
+  executable: true
+}
+
+definition{
+  name: atBeginOf,
+  parameters: [ctx : Ctx, position : Nat, name : Bytes],
+  result: Bool,
+  body: (if (atControl ctx position (lit "\\begin")) then (let open : Nat := (skipWs ctx ((skipWs ctx position) + 1)); (if (atomIs ctx open 3 (lit "{")) then (match (atomAt ctx (open + 1))
+    | Option.some word => (if (same (project word text) name) then (atomIs ctx (open + 2) 3 (lit "}")) else false)
+    | Option.none => false) else false)) else false),
+  executable: true
+}
+
+definition{
+  name: sentenceMove,
+  parameters: [scan : SentenceScan, depth : Nat, island : Nat],
+  result: (Option SentenceScan),
+  body: (ctor Option.some [SentenceScan] (record SentenceScan {pos := ((project scan pos) + 1), depth := depth, island := island, status := 0})),
+  executable: true
+}
+
+definition{
+  name: sentenceStop,
+  parameters: [scan : SentenceScan, status : Nat],
+  result: (Option SentenceScan),
+  body: (ctor Option.some [SentenceScan] (record SentenceScan {pos := (project scan pos), depth := (project scan depth), island := (project scan island), status := status})),
+  executable: true
+}
+
+definition{
+  name: sentenceControl,
+  parameters: [scan : SentenceScan, spelled : Bytes],
+  result: (Option SentenceScan),
+  body: (let depth : Nat := (project scan depth); (let island : Nat := (project scan island); (if (island =? 0) then (if (same spelled (lit "\\(")) then (sentenceMove scan depth 1) else (if (same spelled (lit "\\[")) then (sentenceMove scan depth 2) else (if (if (depth =? 0) then (if (same spelled (lit "\\begin")) then true else (same spelled (lit "\\end"))) else false) then (sentenceStop scan 2) else (sentenceMove scan depth 0)))) else (if (if (island =? 1) then (same spelled (lit "\\)")) else (same spelled (lit "\\]"))) then (sentenceMove scan depth 0) else (sentenceMove scan depth island))))),
+  executable: true
+}
+
+definition{
+  name: sentenceStep,
+  parameters: [ctx : Ctx, scan : SentenceScan],
+  result: (Option SentenceScan),
+  body: (if ((project scan status) =? 0) then (match (atomAt ctx (project scan pos))
+    | Option.none => (sentenceStop scan 2)
+    | Option.some atom => (let code : Nat := (PrimitiveScan::classCode atom); (let depth : Nat := (project scan depth); (let island : Nat := (project scan island); (if (code =? 0) then (sentenceControl scan (project atom text)) else (if (code =? 3) then (if (island =? 0) then (if (same (project atom text) (lit "{")) then (sentenceMove scan (depth + 1) island) else (if (same (project atom text) (lit "}")) then (sentenceMove scan (prim subtract depth 1 : Nat) island) else (sentenceMove scan depth island))) else (sentenceMove scan depth island)) else (if (if (code =? 4) then (if (island =? 0) then (if (depth =? 0) then (same (project atom text) (lit ".")) else false) else false) else false) then (sentenceStop scan 1) else (sentenceMove scan depth island)))))))) else (ctor Option.none [SentenceScan])),
+  executable: true
+}
+
+definition{
+  name: sentence,
+  parameters: [ctx : Ctx, ps : Ps],
+  result: SentenceAt,
+  body: (let start : Nat := (skipWs ctx (project ps pos)); (let scan : SentenceScan := (first (prim iterate_until (fun [ctx] (state : SentenceScan) => (sentenceStep ctx state)) ((project ctx count) + 1) (record SentenceScan {pos := start, depth := 0, island := 0, status := 0}) : (SentenceScan * Bool))); (let stop : Nat := (project scan pos); (if ((project scan status) =? 1) then (record SentenceAt {sentence := (record Sentence {start := start, period := stop}), ps := (moved ps (stop + 1))}) else (record SentenceAt {sentence := (record Sentence {start := start, period := stop}), ps := (fail ctx (moved ps stop) (lit "LLP2001") (lit "a sentence must end with a period"))}))))),
+  executable: true
+}
+
+definition{
+  name: componentByte,
+  parameters: [byte : UInt8],
+  result: Bool,
+  body: (if (PrimitiveScan::inRange byte (97 : UInt8) (122 : UInt8)) then true else (if (PrimitiveScan::isAsciiDigit byte) then true else (prim equal byte (45 : UInt8) : Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: componentStep,
+  parameters: [text : Bytes, position : Nat],
+  result: (Option Nat),
+  body: (match (LexLeanStd.Text::byteAt text position)
+    | Option.some byte => (if (componentByte byte) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat]))
+    | Option.none => (ctor Option.none [Nat])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isComponentId,
+  parameters: [text : Bytes],
+  result: Bool,
+  body: (match (LexLeanStd.Text::byteAt text 0)
+    | Option.some head => (if (PrimitiveScan::inRange head (97 : UInt8) (122 : UInt8)) then ((first (prim iterate_until (fun [text] (position : Nat) => (componentStep text position)) (prim length text : Nat) 1 : (Nat * Bool))) =? (prim length text : Nat)) else false)
+    | Option.none => false),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: leanStep,
+  parameters: [text : Bytes, state : (Nat * Bool)],
+  result: (Option (Nat * Bool)),
+  body: (match (LexLeanStd.Text::byteAt text (first state))
+    | Option.some byte => (let next : Nat := ((first state) + 1); (let startish : Bool := (if (PrimitiveScan::isAsciiAlpha byte) then true else (prim equal byte (95 : UInt8) : Bool)); (if (second state) then (if startish then (ctor Option.some [(Nat * Bool)] (next, false)) else (ctor Option.none [(Nat * Bool)])) else (if (prim equal byte (46 : UInt8) : Bool) then (ctor Option.some [(Nat * Bool)] (next, true)) else (if (if startish then true else (PrimitiveScan::isAsciiDigit byte)) then (ctor Option.some [(Nat * Bool)] (next, false)) else (ctor Option.none [(Nat * Bool)]))))))
+    | Option.none => (ctor Option.none [(Nat * Bool)])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isLeanName,
+  parameters: [text : Bytes],
+  result: Bool,
+  body: (let final : (Nat * Bool) := (first (prim iterate_until (fun [text] (state : (Nat * Bool)) => (leanStep text state)) (prim length text : Nat) (0, true) : ((Nat * Bool) * Bool))); (if ((first final) =? (prim length text : Nat)) then (not (second final)) else false)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: before,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bool,
+  body: (prim equal (prim compare_bytes left right : Ordering) (prim compare_bytes 0x 0x01 : Ordering) : Bool),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: insertStep,
+  parameters: [state : ((List Bytes) * (Option Bytes)), item : Bytes],
+  result: ((List Bytes) * (Option Bytes)),
+  body: (match (second state)
+    | Option.some pending => (if (before pending item) then ((cons item (cons pending (first state))), (ctor Option.none [Bytes])) else ((cons item (first state)), (ctor Option.some [Bytes] pending)))
+    | Option.none => ((cons item (first state)), (ctor Option.none [Bytes]))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: insertName,
+  parameters: [sorted : (List Bytes), name : Bytes],
+  result: (List Bytes),
+  body: (let folded : ((List Bytes) * (Option Bytes)) := (prim list_fold (fun (state : ((List Bytes) * (Option Bytes))) (item : Bytes) => (insertStep state item)) ((nil Bytes), (ctor Option.some [Bytes] name)) sorted : ((List Bytes) * (Option Bytes))); (LexLeanStd.Text::reverse (match (second folded)
+    | Option.some pending => (cons pending (first folded))
+    | Option.none => (first folded)))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: nameStep,
+  parameters: [state : ((List Bytes) * (Option Bytes)), piece : Bytes],
+  result: ((List Bytes) * (Option Bytes)),
+  body: (match (second state)
+    | Option.some stopped => state
+    | Option.none => (if ((prim length piece : Nat) =? 0) then ((first state), (ctor Option.some [Bytes] (lit "empty entry in an axiom name list"))) else (if (isLeanName piece) then (if (PrimitiveScan::bytesInList piece (first state)) then ((first state), (ctor Option.some [Bytes] (cat (lit "duplicate axiom name ") (ticked piece)))) else ((cons piece (first state)), (ctor Option.none [Bytes]))) else ((first state), (ctor Option.some [Bytes] (cat (ticked piece) (lit " is not a conservative ASCII Lean name"))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: policyNamed,
+  parameters: [ctx : Ctx, ps : Ps, kind : PolicyKind, controlName : Bytes, owner : Bytes],
+  result: PolicyAt,
+  body: (let controlled : Ps := (expectControl ctx ps controlName); (let control : Nat := (prim subtract (project controlled pos) 1 : Nat); (let listed : ArgAt := (brace ctx controlled); (let covered : Ps := (coverMetadata ctx (project listed ps) (project listed arg) owner); (let folded : ((List Bytes) * (Option Bytes)) := (prim list_fold (fun (state : ((List Bytes) * (Option Bytes))) (piece : Bytes) => (nameStep state piece)) ((nil Bytes), (ctor Option.none [Bytes])) (LexLeanStd.Text::splitOn (project (project listed arg) text) (59 : UInt8)) : ((List Bytes) * (Option Bytes))); (record PolicyAt {policy := (record Policy {kind := kind, names := (prim list_fold (fun (sorted : (List Bytes)) (name : Bytes) => (insertName sorted name)) (nil Bytes) (first folded) : (List Bytes)), control := control, namesArg := (ctor Option.some [Arg] (project listed arg))}), ps := (match (second folded)
+    | Option.some message => (refuse ctx covered message)
+    | Option.none => covered)})))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: policyOf,
+  parameters: [ctx : Ctx, ps : Ps],
+  result: PolicyAt,
+  body: (let position : Nat := (project ps pos); (if (atControl ctx position (lit "\\noaxioms")) then (let controlled : Ps := (expectControl ctx ps (lit "\\noaxioms")); (record PolicyAt {policy := (record Policy {kind := (ctor PolicyKind.PolicyNone), names := (nil Bytes), control := (prim subtract (project controlled pos) 1 : Nat), namesArg := (ctor Option.none [Arg])}), ps := controlled})) else (if (atControl ctx position (lit "\\allowaxioms")) then (policyNamed ctx ps (ctor PolicyKind.PolicyAllow) (lit "\\allowaxioms") (lit "allowaxioms")) else (if (atControl ctx position (lit "\\exactaxioms")) then (policyNamed ctx ps (ctor PolicyKind.PolicyExact) (lit "\\exactaxioms") (lit "exactaxioms")) else (record PolicyAt {policy := (record Policy {kind := (ctor PolicyKind.PolicyNone), names := (nil Bytes), control := 0, namesArg := (ctor Option.none [Arg])}), ps := (refuse ctx ps (lit "every definition and theorem-like declaration requires exactly one axiom policy"))}))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: labelStep,
+  parameters: [subject : Bytes, scan : LabelScan],
+  result: (Option LabelScan),
+  body: (if (project scan valid) then (match (LexLeanStd.Text::byteAt subject (project scan index))
+    | Option.some byte => (let next : Nat := ((project scan index) + 1); (if (PrimitiveScan::isAsciiDigit byte) then (let digit : Nat := (LexLeanStd.Numeral::decimalValue byte); (if ((project scan value) <=? (prim quotient (prim subtract 18446744073709551615 digit : Nat) 10 0 : Nat)) then (ctor Option.some [LabelScan] (record LabelScan {index := next, value := ((prim multiply (project scan value) 10 : Nat) + digit), valid := true})) else (ctor Option.some [LabelScan] (record LabelScan {index := next, value := 0, valid := false})))) else (ctor Option.some [LabelScan] (record LabelScan {index := next, value := 0, valid := false}))))
+    | Option.none => (ctor Option.none [LabelScan])) else (ctor Option.none [LabelScan])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: parseLabel,
+  parameters: [text : Bytes],
+  result: (Option Nat),
+  body: (let start : Nat := (if (PrimitiveScan::byteIs text 0 (43 : UInt8)) then 1 else 0); (if (start <? (prim length text : Nat)) then (let final : LabelScan := (first (prim iterate_until (fun [text] (state : LabelScan) => (labelStep text state)) (prim length text : Nat) (record LabelScan {index := start, value := 0, valid := true}) : (LabelScan * Bool))); (if (project final valid) then (ctor Option.some [Nat] (project final value)) else (ctor Option.none [Nat]))) else (ctor Option.none [Nat]))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: chainItems,
+  parameters: [items : (List Proof)],
+  result: Proof,
+  body: (prim list_fold (fun (chain : Proof) (item : Proof) => (ctor Proof.ProofCons item chain)) (ctor Proof.ProofNil) items : Proof),
+  executable: true
+}
+
+definition{
+  name: chainLabeled,
+  parameters: [items : (List (Nat * Proof))],
+  result: Proof,
+  body: (prim list_fold (fun (chain : Proof) (item : (Nat * Proof)) => (ctor Proof.LabeledCons (first item) (second item) chain)) (ctor Proof.ProofNil) items : Proof),
+  executable: true
+}
+
+definition{
+  name: chainCases,
+  parameters: [items : (List CaseRow)],
+  result: Proof,
+  body: (prim list_fold (fun (chain : Proof) (item : CaseRow) => (ctor Proof.CaseCons (project item entry) (project item binds) (project item bindArg) (project item proof) chain)) (ctor Proof.ProofNil) items : Proof),
+  executable: true
+}
+
+definition{
+  name: chainBlocks,
+  parameters: [items : (List Block)],
+  result: Block,
+  body: (prim list_fold (fun (chain : Block) (item : Block) => (ctor Block.BlockCons item chain)) (ctor Block.BlockNil) items : Block),
+  executable: true
+}
+
+definition{
+  name: pushItem,
+  parameters: [current : ProofCtx, item : Proof],
+  result: ProofCtx,
+  body: (record ProofCtx {opening := (project current opening), envName := (project current envName), depth := (project current depth), items := (cons item (project current items))}),
+  executable: true
+}
+
+definition{
+  name: pushBlock,
+  parameters: [current : BlocksCtx, item : Block],
+  result: BlocksCtx,
+  body: (record BlocksCtx {terminator := (project current terminator), depth := (project current depth), acc := (cons item (project current acc))}),
+  executable: true
+}
+
+definition{
+  name: rewriteStep,
+  parameters: [ctx : Ctx, state : (Ps * (List (Bool * Arg)))],
+  result: (Option (Ps * (List (Bool * Arg)))),
+  body: (let ps : Ps := (first state); (match (project ps error)
+    | Option.some stopped => (ctor Option.none [(Ps * (List (Bool * Arg)))])
+    | Option.none => (if (atControl ctx (project ps pos) (lit "\\forward")) then (let rule : ArgAt := (brace ctx (expectControl ctx ps (lit "\\forward"))); (ctor Option.some [(Ps * (List (Bool * Arg)))] ((project rule ps), (cons (false, (project rule arg)) (second state))))) else (if (atControl ctx (project ps pos) (lit "\\backward")) then (let rule : ArgAt := (brace ctx (expectControl ctx ps (lit "\\backward"))); (ctor Option.some [(Ps * (List (Bool * Arg)))] ((project rule ps), (cons (true, (project rule arg)) (second state))))) else (ctor Option.none [(Ps * (List (Bool * Arg)))]))))),
+  executable: true
+}
+
+definition{
+  name: rewriteItem,
+  parameters: [ctx : Ctx, ps : Ps, opening : Nat],
+  result: ItemAt,
+  body: (let target : ArgAt := (brace ctx ps); (let covered : Ps := (coverMetadata ctx (project target ps) (project target arg) (lit "env.rewrite")); (let final : (Ps * (List (Bool * Arg))) := (first (prim iterate_until (fun [ctx] (state : (Ps * (List (Bool * Arg)))) => (rewriteStep ctx state)) ((project ctx count) + 1) (covered, (nil (Bool * Arg))) : ((Ps * (List (Bool * Arg))) * Bool))); (let ended : Ps := (expectEnd ctx (first final) (lit "rewrite")); (record ItemAt {item := (ctor Proof.ProofRewrite (project target arg) (PrimitiveScan::reversed [(Bool * Arg)] (second final)) opening), ps := (if ((prim length (second final) : Nat) =? 0) then (fail ctx ended (lit "LLF5003") (lit "a rewrite requires at least one rule")) else ended)}))))),
+  executable: true
+}
+
+definition{
+  name: simplifyStep,
+  parameters: [ctx : Ctx, state : (Ps * (List Arg))],
+  result: (Option (Ps * (List Arg))),
+  body: (let ps : Ps := (first state); (match (project ps error)
+    | Option.some stopped => (ctor Option.none [(Ps * (List Arg))])
+    | Option.none => (if (atControl ctx (project ps pos) (lit "\\rule")) then (let rule : ArgAt := (brace ctx (expectControl ctx ps (lit "\\rule"))); (ctor Option.some [(Ps * (List Arg))] ((project rule ps), (cons (project rule arg) (second state))))) else (ctor Option.none [(Ps * (List Arg))])))),
+  executable: true
+}
+
+definition{
+  name: simplifyItem,
+  parameters: [ctx : Ctx, ps : Ps, opening : Nat],
+  result: ItemAt,
+  body: (let target : ArgAt := (brace ctx ps); (let covered : Ps := (coverMetadata ctx (project target ps) (project target arg) (lit "env.simplify")); (let final : (Ps * (List Arg)) := (first (prim iterate_until (fun [ctx] (state : (Ps * (List Arg))) => (simplifyStep ctx state)) ((project ctx count) + 1) (covered, (nil Arg)) : ((Ps * (List Arg)) * Bool))); (let ended : Ps := (expectEnd ctx (first final) (lit "simplify")); (record ItemAt {item := (ctor Proof.ProofSimplify (project target arg) (PrimitiveScan::reversed [Arg] (second final)) opening), ps := (if ((prim length (second final) : Nat) =? 0) then (fail ctx ended (lit "LLF5003") (lit "a simplify requires at least one rule")) else ended)}))))),
+  executable: true
+}
+
+definition{
+  name: calcStep,
+  parameters: [ctx : Ctx, state : (Ps * (List CalcStep))],
+  result: (Option (Ps * (List CalcStep))),
+  body: (let ps : Ps := (first state); (match (project ps error)
+    | Option.some stopped => (ctor Option.none [(Ps * (List CalcStep))])
+    | Option.none => (if (atControl ctx (project ps pos) (lit "\\step")) then (let relation : ArgAt := (brace ctx (expectControl ctx ps (lit "\\step"))); (let term : ArgAt := (brace ctx (coverMetadata ctx (project relation ps) (project relation arg) (lit "step"))); (let proof : ArgAt := (brace ctx (project term ps)); (ctor Option.some [(Ps * (List CalcStep))] ((project proof ps), (cons (record CalcStep {relation := (project relation arg), term := (project term arg), proof := (project proof arg)}) (second state))))))) else (ctor Option.none [(Ps * (List CalcStep))])))),
+  executable: true
+}
+
+definition{
+  name: calculateItem,
+  parameters: [ctx : Ctx, ps : Ps, opening : Nat],
+  result: ItemAt,
+  body: (let start : ArgAt := (brace ctx (expectControl ctx ps (lit "\\start"))); (let final : (Ps * (List CalcStep)) := (first (prim iterate_until (fun [ctx] (state : (Ps * (List CalcStep))) => (calcStep ctx state)) ((project ctx count) + 1) ((project start ps), (nil CalcStep)) : ((Ps * (List CalcStep)) * Bool))); (let ended : Ps := (expectEnd ctx (first final) (lit "calculate")); (record ItemAt {item := (ctor Proof.ProofCalculate (project start arg) (PrimitiveScan::reversed [CalcStep] (second final)) opening), ps := (if ((prim length (second final) : Nat) =? 0) then (fail ctx ended (lit "LLF5003") (lit "a calculation requires at least one step")) else ended)})))),
+  executable: true
+}
+
+definition{
+  name: nestingMessage,
+  parameters: [ctx : Ctx, phase : Bytes, depth : Nat],
+  result: Bytes,
+  body: (cat (cat (cat (cat (cat (lit "max_scope_depth exceeded in phase parse (") phase) (lit "): configured ")) (PrimitiveScan::decimal (project ctx maxDepth))) (lit ", nesting depth ")) (PrimitiveScan::decimal depth)),
+  executable: true
+}
+
+definition{
+  name: enterProof,
+  parameters: [
+    ctx : Ctx,
+    ps : Ps,
+    sections : (List SectionFrame),
+    opening : Nat,
+    envName : Bytes,
+    depth : Nat,
+    declaration : DeclFrame,
+    frames : (List ProofFrame)
+  ],
+  result: Machine,
+  body: (record Machine {ps := (if ((project ctx maxDepth) <? depth) then (fail ctx ps (lit "LLS8002") (nestingMessage ctx (lit "proof environment nesting") depth)) else ps), sections := sections, mode := (ctor Mode.InProof (record ProofCtx {opening := opening, envName := envName, depth := depth, items := (nil Proof)}) declaration frames)}),
+  executable: true
+}
+
+definition{
+  name: finishDecl,
+  parameters: [
+    ctx : Ctx,
+    ps : Ps,
+    sections : (List SectionFrame),
+    frame : DeclFrame,
+    proof : (Option Proof)
+  ],
+  result: Machine,
+  body: (let ended : Ps := (expectEnd ctx ps (project frame env)); (record Machine {ps := ended, sections := sections, mode := (ctor Mode.InBlocks (pushBlock (project frame outer) (ctor Block.BlockDecl (record Decl {kind := (project frame kind), component := (project frame component), entry := (project frame entry), policy := (project frame policy), sentence := (project frame sentence), proof := proof, opening := (project frame opening), stop := (project ended pos)}))))})),
+  executable: true
+}
+
+definition{
+  name: labeledNext,
+  parameters: [
+    ctx : Ctx,
+    ps : Ps,
+    sections : (List SectionFrame),
+    declaration : DeclFrame,
+    frames : (List ProofFrame),
+    header : LabeledHeader
+  ],
+  result: Machine,
+  body: (let word : Bytes := (project header word); (if (atBeginOf ctx (project ps pos) word) then (let began : EnvAt := (beginEnv ctx ps); (let label : ArgAt := (brace ctx (project began ps)); (let covered : Ps := (coverMetadata ctx (project label ps) (project label arg) (cat (lit "env.") word)); (match (parseLabel (project (project label arg) text))
+    | Option.some number => (enterProof ctx covered sections (project began opening) word ((project (project header outer) depth) + 1) declaration (cons (ctor ProofFrame.FrameLabeled header number) frames))
+    | Option.none => (record Machine {ps := (refuse ctx covered (cat (ticked (project (project label arg) text)) (lit " is not a decimal label"))), sections := sections, mode := (ctor Mode.InProof (project header outer) declaration frames)}))))) else (let ended : Ps := (expectEnd ctx ps (project header envName)); (let chain : Proof := (chainLabeled (project header acc)); (record Machine {ps := ended, sections := sections, mode := (ctor Mode.InProof (pushItem (project header outer) (match (project header function)
+    | Option.some applied => (ctor Proof.ProofApply applied chain (project header opening))
+    | Option.none => (ctor Proof.ProofConstructor chain (project header opening)))) declaration frames)}))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: casesNext,
+  parameters: [
+    ctx : Ctx,
+    ps : Ps,
+    sections : (List SectionFrame),
+    declaration : DeclFrame,
+    frames : (List ProofFrame),
+    header : CasesHeader
+  ],
+  result: Machine,
+  body: (if (atBeginOf ctx (project ps pos) (lit "case")) then (let began : EnvAt := (beginEnv ctx ps); (let entry : ArgAt := (brace ctx (project began ps)); (let bind : ArgAt := (brace ctx (expectControl ctx (coverMetadata ctx (project entry ps) (project entry arg) (lit "env.case")) (lit "\\bind"))); (let covered : Ps := (coverMetadata ctx (project bind ps) (project bind arg) (lit "bind")); (let spelled : Bytes := (project (project bind arg) text); (enterProof ctx covered sections (project began opening) (lit "case") ((project (project header outer) depth) + 1) declaration (cons (ctor ProofFrame.FrameCase header (project entry arg) (if ((prim length spelled : Nat) =? 0) then (nil Bytes) else (LexLeanStd.Text::splitOn spelled (59 : UInt8))) (project bind arg)) frames))))))) else (let ended : Ps := (expectEnd ctx ps (project header envName)); (record Machine {ps := ended, sections := sections, mode := (ctor Mode.InProof (pushItem (project header outer) (ctor Proof.ProofCases (project header induction) (project header scrutinee) (chainCases (project header acc)) (project header opening))) declaration frames)}))),
+  executable: true
+}
+
+definition{
+  name: returnProof,
+  parameters: [
+    ctx : Ctx,
+    ps : Ps,
+    sections : (List SectionFrame),
+    declaration : DeclFrame,
+    frames : (List ProofFrame),
+    env : Proof
+  ],
+  result: Machine,
+  body: (match frames
+    | List.nil => (finishDecl ctx ps sections declaration (ctor Option.some [Proof] env))
+    | List.cons frame rest => (match frame
+      | ProofFrame.FrameHave outer name proposition opening => (let ended : Ps := (expectEnd ctx ps (lit "have")); (record Machine {ps := ended, sections := sections, mode := (ctor Mode.InProof (pushItem outer (ctor Proof.ProofHave name proposition env opening)) declaration rest)}))
+      | ProofFrame.FrameLabeled header number => (labeledNext ctx ps sections declaration rest (record LabeledHeader {outer := (project header outer), word := (project header word), envName := (project header envName), function := (project header function), acc := (cons (number, env) (project header acc)), opening := (project header opening)}))
+      | ProofFrame.FrameCase header entry binds bindArg => (casesNext ctx ps sections declaration rest (record CasesHeader {outer := (project header outer), induction := (project header induction), envName := (project header envName), scrutinee := (project header scrutinee), acc := (cons (record CaseRow {entry := entry, binds := binds, bindArg := bindArg, proof := env}) (project header acc)), opening := (project header opening)})))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: leafItem,
+  parameters: [
+    ps : Ps,
+    sections : (List SectionFrame),
+    current : ProofCtx,
+    declaration : DeclFrame,
+    frames : (List ProofFrame),
+    leaf : ItemAt
+  ],
+  result: Machine,
+  body: (record Machine {ps := (project leaf ps), sections := sections, mode := (ctor Mode.InProof (pushItem current (project leaf item)) declaration frames)}),
+  executable: true
+}
+
+definition{
+  name: haveItem,
+  parameters: [
+    ctx : Ctx,
+    ps : Ps,
+    sections : (List SectionFrame),
+    current : ProofCtx,
+    declaration : DeclFrame,
+    frames : (List ProofFrame),
+    opening : Nat
+  ],
+  result: Machine,
+  body: (let hypothesis : ArgAt := (brace ctx ps); (let proposition : SentenceAt := (sentence ctx (coverMetadata ctx (project hypothesis ps) (project hypothesis arg) (lit "env.have"))); (let began : EnvAt := (beginEnv ctx (project proposition ps)); (if (same (project began name) (lit "proof")) then (enterProof ctx (project began ps) sections (project began opening) (lit "proof") ((project current depth) + 1) declaration (cons (ctor ProofFrame.FrameHave current (project hypothesis arg) (project proposition sentence) opening) frames)) else (record Machine {ps := (refuse ctx (project began ps) (lit "a have establishes its proposition with a nested proof")), sections := sections, mode := (ctor Mode.InProof current declaration frames)}))))),
+  executable: true
+}
+
+definition{
+  name: proofEnvItem,
+  parameters: [
+    ctx : Ctx,
+    ps : Ps,
+    sections : (List SectionFrame),
+    current : ProofCtx,
+    declaration : DeclFrame,
+    frames : (List ProofFrame)
+  ],
+  result: Machine,
+  body: (let began : EnvAt := (beginEnv ctx ps); (let name : Bytes := (project began name); (let opening : Nat := (project began opening); (let after : Ps := (project began ps); (if (same name (lit "have")) then (haveItem ctx after sections current declaration frames opening) else (if (same name (lit "rewrite")) then (leafItem after sections current declaration frames (rewriteItem ctx after opening)) else (if (same name (lit "simplify")) then (leafItem after sections current declaration frames (simplifyItem ctx after opening)) else (if (same name (lit "apply")) then (let function : ArgAt := (brace ctx after); (labeledNext ctx (project function ps) sections declaration frames (record LabeledHeader {outer := current, word := (lit "premise"), envName := (lit "apply"), function := (ctor Option.some [Arg] (project function arg)), acc := (nil (Nat * Proof)), opening := opening}))) else (if (same name (lit "constructor")) then (labeledNext ctx after sections declaration frames (record LabeledHeader {outer := current, word := (lit "branch"), envName := (lit "constructor"), function := (ctor Option.none [Arg]), acc := (nil (Nat * Proof)), opening := opening})) else (if (if (same name (lit "cases")) then true else (same name (lit "induction"))) then (let scrutinee : ArgAt := (brace ctx after); (casesNext ctx (project scrutinee ps) sections declaration frames (record CasesHeader {outer := current, induction := (same name (lit "induction")), envName := name, scrutinee := (project scrutinee arg), acc := (nil CaseRow), opening := opening}))) else (if (same name (lit "calculate")) then (leafItem after sections current declaration frames (calculateItem ctx after opening)) else (record Machine {ps := (fail ctx after (lit "LLL1004") (cat (ticked name) (lit " is not a proof environment"))), sections := sections, mode := (ctor Mode.InProof current declaration frames)})))))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: proofStep,
+  parameters: [
+    ctx : Ctx,
+    ps : Ps,
+    sections : (List SectionFrame),
+    current : ProofCtx,
+    declaration : DeclFrame,
+    frames : (List ProofFrame)
+  ],
+  result: Machine,
+  body: (let position : Nat := (skipWs ctx (project ps pos)); (match (atomAt ctx position)
+    | Option.none => (record Machine {ps := (refuse ctx (moved ps position) (cat (cat (lit "unclosed ") (ticked (project current envName))) (lit " environment"))), sections := sections, mode := (ctor Mode.InProof current declaration frames)})
+    | Option.some atom => (if (isAtom atom 0 (lit "\\end")) then (let ended : Ps := (expectEnd ctx ps (project current envName)); (returnProof ctx ended sections declaration frames (ctor Proof.ProofEnv (chainItems (project current items)) (project current opening)))) else (if (isAtom atom 0 (lit "\\begin")) then (proofEnvItem ctx ps sections current declaration frames) else (let said : SentenceAt := (sentence ctx ps); (record Machine {ps := (project said ps), sections := sections, mode := (ctor Mode.InProof (pushItem current (ctor Proof.ProofSentence (project said sentence))) declaration frames)})))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: declKindOf,
+  parameters: [name : Bytes],
+  result: (Option DeclKind),
+  body: (if (same name (lit "typedefinition")) then (ctor Option.some [DeclKind] (ctor DeclKind.TypeDefinition)) else (if (same name (lit "termdefinition")) then (ctor Option.some [DeclKind] (ctor DeclKind.TermDefinition)) else (if (same name (lit "predicatedefinition")) then (ctor Option.some [DeclKind] (ctor DeclKind.PredicateDefinition)) else (if (same name (lit "theorem")) then (ctor Option.some [DeclKind] (ctor DeclKind.Theorem)) else (if (same name (lit "lemma")) then (ctor Option.some [DeclKind] (ctor DeclKind.Lemma)) else (if (same name (lit "corollary")) then (ctor Option.some [DeclKind] (ctor DeclKind.Corollary)) else (ctor Option.none [DeclKind]))))))),
+  executable: true
+}
+
+definition{
+  name: isTheoremLike,
+  parameters: [kind : DeclKind],
+  result: Bool,
+  body: (match kind
+    | DeclKind.TypeDefinition => false
+    | DeclKind.TermDefinition => false
+    | DeclKind.PredicateDefinition => false
+    | DeclKind.Theorem => true
+    | DeclKind.Lemma => true
+    | DeclKind.Corollary => true),
+  executable: true
+}
+
+definition{
+  name: componentArg,
+  parameters: [ctx : Ctx, ps : Ps, owner : Bytes],
+  result: ArgAt,
+  body: (let component : ArgAt := (brace ctx ps); (let text : Bytes := (project (project component arg) text); (record ArgAt {arg := (project component arg), ps := (if (isComponentId text) then (coverMetadata ctx (project component ps) (project component arg) owner) else (refuse ctx (project component ps) (cat (ticked text) (lit " is not a component ID"))))}))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: openDeclaration,
+  parameters: [
+    ctx : Ctx,
+    ps : Ps,
+    sections : (List SectionFrame),
+    outer : BlocksCtx,
+    opening : Nat,
+    env : Bytes,
+    kind : DeclKind
+  ],
+  result: Machine,
+  body: (let owner : Bytes := (cat (lit "env.") env); (let component : ArgAt := (componentArg ctx ps owner); (let theorem : Bool := (isTheoremLike kind); (let entry : (Option ArgAt) := (if theorem then (ctor Option.none [ArgAt]) else (let named : ArgAt := (brace ctx (project component ps)); (ctor Option.some [ArgAt] (record ArgAt {arg := (project named arg), ps := (coverMetadata ctx (project named ps) (project named arg) owner)})))); (let policy : PolicyAt := (policyOf ctx (match entry
+    | Option.some named => (project named ps)
+    | Option.none => (project component ps))); (let said : SentenceAt := (sentence ctx (project policy ps)); (let after : Ps := (project said ps); (let frame : DeclFrame := (record DeclFrame {outer := outer, env := env, kind := kind, component := (project component arg), entry := (match entry
+    | Option.some named => (ctor Option.some [Arg] (project named arg))
+    | Option.none => (ctor Option.none [Arg])), policy := (project policy policy), sentence := (project said sentence), opening := opening}); (let holds : Bool := (atBeginOf ctx (project after pos) (lit "proof")); (if theorem then (if holds then (let began : EnvAt := (beginEnv ctx after); (enterProof ctx (project began ps) sections (project began opening) (lit "proof") 1 frame (nil ProofFrame))) else (record Machine {ps := (fail ctx after (lit "LLF5005") (lit "a theorem-like declaration without a proof is not valid")), sections := sections, mode := (ctor Mode.InBlocks outer)})) else (if holds then (record Machine {ps := (refuse ctx after (lit "no definitional component accepts a proof environment")), sections := sections, mode := (ctor Mode.InBlocks outer)}) else (finishDecl ctx after sections frame (ctor Option.none [Proof]))))))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: openSection,
+  parameters: [
+    ctx : Ctx,
+    ps : Ps,
+    sections : (List SectionFrame),
+    current : BlocksCtx,
+    opening : Nat
+  ],
+  result: Machine,
+  body: (let nested : Nat := ((project current depth) + 1); (if ((project ctx maxDepth) <? nested) then (record Machine {ps := (fail ctx ps (lit "LLS8002") (nestingMessage ctx (lit "section nesting") nested)), sections := sections, mode := (ctor Mode.InBlocks current)}) else (let component : ArgAt := (componentArg ctx ps (lit "env.section")); (let heading : ArgAt := (brace ctx (expectControl ctx (project component ps) (lit "\\heading"))); (let params : (Option ArgAt) := (if (atControl ctx (project (project heading ps) pos) (lit "\\parameters")) then (ctor Option.some [ArgAt] (brace ctx (expectControl ctx (project heading ps) (lit "\\parameters")))) else (ctor Option.none [ArgAt])); (let after : Ps := (match params
+    | Option.some given => (project given ps)
+    | Option.none => (project heading ps)); (record Machine {ps := after, sections := (cons (record SectionFrame {outer := current, component := (project component arg), headingStart := (project (project heading arg) start), headingStop := (project (project heading arg) stop), params := (match params
+    | Option.some given => (ctor Option.some [(Nat * Nat)] ((project (project given arg) start), (project (project given arg) stop)))
+    | Option.none => (ctor Option.none [(Nat * Nat)])), opening := opening}) sections), mode := (ctor Mode.InBlocks (record BlocksCtx {terminator := (lit "section"), depth := nested, acc := (nil Block)}))}))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: closeBlocks,
+  parameters: [ctx : Ctx, ps : Ps, sections : (List SectionFrame), current : BlocksCtx],
+  result: Machine,
+  body: (let ended : Ps := (expectEnd ctx ps (project current terminator)); (let chain : Block := (chainBlocks (project current acc)); (match sections
+    | List.nil => (record Machine {ps := ended, sections := sections, mode := (ctor Mode.Finished chain)})
+    | List.cons top rest => (record Machine {ps := ended, sections := rest, mode := (ctor Mode.InBlocks (pushBlock (project top outer) (ctor Block.BlockSection (project top component) (project top headingStart) (project top headingStop) (project top params) chain (project top opening))))})))),
+  executable: true
+}
+
+definition{
+  name: blocksStep,
+  parameters: [ctx : Ctx, ps : Ps, sections : (List SectionFrame), current : BlocksCtx],
+  result: Machine,
+  body: (let position : Nat := (skipWs ctx (project ps pos)); (let term : Bytes := (project current terminator); (match (atomAt ctx position)
+    | Option.none => (record Machine {ps := (refuse ctx (moved ps position) (cat (cat (lit "unclosed ") (ticked term)) (lit " environment"))), sections := sections, mode := (ctor Mode.InBlocks current)})
+    | Option.some atom => (if (isAtom atom 0 (lit "\\end")) then (closeBlocks ctx ps sections current) else (if (isAtom atom 0 (lit "\\begin")) then (let began : EnvAt := (beginEnv ctx ps); (let name : Bytes := (project began name); (if (same name (lit "section")) then (openSection ctx (project began ps) sections current (project began opening)) else (match (declKindOf name)
+      | Option.some kind => (openDeclaration ctx (project began ps) sections current (project began opening) name kind)
+      | Option.none => (record Machine {ps := (fail ctx (project began ps) (lit "LLL1004") (cat (ticked name) (lit " is not a block environment"))), sections := sections, mode := (ctor Mode.InBlocks current)}))))) else (record Machine {ps := (refuse ctx (moved ps position) (cat (cat (cat (cat (lit "expected a block or `\\end{") term) (lit "}`, found `")) (project atom text)) (lit "`"))), sections := sections, mode := (ctor Mode.InBlocks current)})))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: machineStep,
+  parameters: [ctx : Ctx, machine : Machine],
+  result: (Option Machine),
+  body: (let ps : Ps := (project machine ps); (match (project ps error)
+    | Option.some stopped => (ctor Option.none [Machine])
+    | Option.none => (match (project machine mode)
+      | Mode.InBlocks current => (ctor Option.some [Machine] (blocksStep ctx ps (project machine sections) current))
+      | Mode.InProof current declaration frames => (ctor Option.some [Machine] (proofStep ctx ps (project machine sections) current declaration frames))
+      | Mode.Finished chain => (ctor Option.none [Machine])))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: argList,
+  parameters: [ctx : Ctx, control : Bytes, owner : Bytes, state : (Ps * (List Arg))],
+  result: (Option (Ps * (List Arg))),
+  body: (let ps : Ps := (first state); (match (project ps error)
+    | Option.some stopped => (ctor Option.none [(Ps * (List Arg))])
+    | Option.none => (if (atControl ctx (project ps pos) control) then (let given : ArgAt := (brace ctx (expectControl ctx ps control)); (ctor Option.some [(Ps * (List Arg))] ((coverMetadata ctx (project given ps) (project given arg) owner), (cons (project given arg) (second state))))) else (ctor Option.none [(Ps * (List Arg))])))),
+  executable: true
+}
+
+definition{
+  name: headerRows,
+  parameters: [ctx : Ctx, ps : Ps, control : Bytes, owner : Bytes],
+  result: (Ps * (List Arg)),
+  body: (first (prim iterate_until (fun [control, ctx, owner] (state : (Ps * (List Arg))) => (argList ctx control owner state)) ((project ctx count) + 1) (ps, (nil Arg)) : ((Ps * (List Arg)) * Bool))),
+  executable: true
+}
+
+definition{
+  name: dataForm,
+  parameters: [
+    ctx : Ctx,
+    ps : Ps,
+    envName : Bytes,
+    control : Bytes,
+    dataOwner : Bytes,
+    sourceOwner : Bytes
+  ],
+  result: (DataForm * Ps),
+  body: (let began : EnvAt := (beginEnv ctx ps); (let after : Ps := (project began ps); (let surface : Bool := (not (atControl ctx (project after pos) control)); (let data : ArgAt := (if surface then (verbatimBody ctx (moved after (skipWs ctx (project after pos)))) else (braceWith ctx (expectControl ctx after control) true)); (let covered : Ps := (coverPayload ctx (project data ps) (project data arg) (if surface then sourceOwner else dataOwner)); (let ended : Ps := (expectEnd ctx (expectEnd ctx covered envName) (lit "lexlean")); ((record DataForm {data := (project data arg), surface := surface, opening := (project began opening)}), ended))))))),
+  executable: true
+}
+
+definition{
+  name: blocksOf,
+  parameters: [ctx : Ctx, ps : Ps],
+  result: (Block * Ps),
+  body: (let final : Machine := (first (prim iterate_until (fun [ctx] (machine : Machine) => (machineStep ctx machine)) ((project ctx count) + 1) (record Machine {ps := ps, sections := (nil SectionFrame), mode := (ctor Mode.InBlocks (record BlocksCtx {terminator := (lit "lexlean"), depth := 0, acc := (nil Block)}))}) : (Machine * Bool))); (match (project final mode)
+    | Mode.Finished chain => (chain, (project final ps))
+    | Mode.InBlocks current => ((ctor Block.BlockNil), (project final ps))
+    | Mode.InProof current declaration frames => ((ctor Block.BlockNil), (project final ps)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: noForm,
+  parameters: [seed : Nat],
+  result: (Option DataForm),
+  body: (ctor Option.none [DataForm]),
+  executable: true
+}
+
+definition{
+  name: finishModule,
+  parameters: [
+    ctx : Ctx,
+    ps : Ps,
+    nameArg : Arg,
+    uses : (List Arg),
+    imports : (List Arg),
+    title : Arg,
+    blocks : Block,
+    core : (Option DataForm),
+    semantic : (Option DataForm),
+    tooling : (Option DataForm)
+  ],
+  result: (Result ModuleAst PrimitiveScan::Rejection),
+  body: (let position : Nat := (skipWs ctx (project ps pos)); (let last : Ps := (match (atomAt ctx position)
+    | Option.some atom => (refuse ctx (moved ps position) (cat (cat (lit "unexpected ") (ticked (project atom text))) (lit " after \\end{lexlean}")))
+    | Option.none => ps); (match (project last error)
+    | Option.some rejection => (ctor Result.error [ModuleAst, PrimitiveScan::Rejection] rejection)
+    | Option.none => (ctor Result.ok [ModuleAst, PrimitiveScan::Rejection] (record ModuleAst {rows := (PrimitiveScan::reversed [Row] (project last rows)), name := (project nameArg text), nameArg := nameArg, uses := uses, imports := imports, titleStart := (project title start), titleStop := (project title stop), blocks := blocks, core := core, semantic := semantic, tooling := tooling}))))),
+  executable: true
+}
+
+definition{
+  name: parseBody,
+  parameters: [
+    ctx : Ctx,
+    ps : Ps,
+    nameArg : Arg,
+    uses : (List Arg),
+    imports : (List Arg),
+    title : Arg
+  ],
+  result: (Result ModuleAst PrimitiveScan::Rejection),
+  body: (let position : Nat := (project ps pos); (if (atBeginOf ctx position (lit "coremodule")) then (let form : (DataForm * Ps) := (dataForm ctx ps (lit "coremodule") (lit "\\coredata") (lit "coredata") (lit "coresource")); (finishModule ctx (second form) nameArg uses imports title (ctor Block.BlockNil) (ctor Option.some [DataForm] (first form)) (noForm 0) (noForm 0))) else (if (atBeginOf ctx position (lit "semanticmodule")) then (let form : (DataForm * Ps) := (dataForm ctx ps (lit "semanticmodule") (lit "\\semanticdata") (lit "semanticdata") (lit "semanticsource")); (finishModule ctx (second form) nameArg uses imports title (ctor Block.BlockNil) (noForm 0) (ctor Option.some [DataForm] (first form)) (noForm 0))) else (if (atBeginOf ctx position (lit "toolingmodule")) then (let form : (DataForm * Ps) := (dataForm ctx ps (lit "toolingmodule") (lit "\\toolingdata") (lit "toolingdata") (lit "toolingsource")); (finishModule ctx (second form) nameArg uses imports title (ctor Block.BlockNil) (noForm 0) (noForm 0) (ctor Option.some [DataForm] (first form)))) else (let parsed : (Block * Ps) := (blocksOf ctx ps); (finishModule ctx (second parsed) nameArg uses imports title (first parsed) (noForm 0) (noForm 0) (noForm 0))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: parseModule,
+  parameters: [
+    path : Bytes,
+    atoms : (List PrimitiveScan::Atom),
+    expectedName : Bytes,
+    maxScopeDepth : Nat
+  ],
+  result: (Result ModuleAst PrimitiveScan::Rejection),
+  body: (let ctx : Ctx := (record Ctx {path := path, atoms := atoms, count := (prim length atoms : Nat), maxDepth := maxScopeDepth}); (let began : EnvAt := (beginEnv ctx (record Ps {pos := 0, rows := (nil Row), error := (ctor Option.none [PrimitiveScan::Rejection])})); (let headed : Ps := (if (same (project began name) (lit "lexlean")) then (project began ps) else (refuse ctx (project began ps) (lit "a module begins with \\begin{lexlean}{module-name}"))); (let nameArg : ArgAt := (brace ctx headed); (let spelled : Bytes := (project (project nameArg arg) text); (let covered : Ps := (coverMetadata ctx (project nameArg ps) (project nameArg arg) (lit "env.lexlean")); (let named : Ps := (if (same spelled expectedName) then covered else (refuse ctx covered (cat (cat (cat (lit "the declared module ") (ticked spelled)) (lit " does not match the source path module ")) (ticked expectedName)))); (let uses : (Ps * (List Arg)) := (headerRows ctx named (lit "\\useglossary") (lit "useglossary")); (let imports : (Ps * (List Arg)) := (headerRows ctx (first uses) (lit "\\importmodule") (lit "importmodule")); (let ordered : Ps := (if (atControl ctx (project (first imports) pos) (lit "\\useglossary")) then (refuse ctx (first imports) (lit "glossary imports occur before module imports in the header")) else (first imports)); (let title : ArgAt := (brace ctx (expectControl ctx ordered (lit "\\title"))); (let single : Ps := (if (atControl ctx (project (project title ps) pos) (lit "\\title")) then (refuse ctx (project title ps) (lit "each module has exactly one title")) else (project title ps)); (parseBody ctx single (project nameArg arg) (PrimitiveScan::reversed [Arg] (second uses)) (PrimitiveScan::reversed [Arg] (second imports)) (project title arg)))))))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

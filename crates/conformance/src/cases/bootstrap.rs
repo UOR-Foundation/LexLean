@@ -33,6 +33,7 @@ mod rust_succeed;
 mod rust_terms;
 mod rust_validate;
 mod scan;
+mod structural_grammar;
 
 /// The module the first component lives in.
 const MODULE: &str = "LexLeanBoot.AxiomOutput";
@@ -2452,6 +2453,7 @@ fn case(id: &str) {
         "BS-13" => rust_loops::case(),
         "BS-14" => rust_assemble::case(),
         "BS-15" => rust_package::case(),
+        "BS-21" => structural_grammar::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }

@@ -591,6 +591,14 @@ of this tree show.
   inputs of the escaper and the scaffold, and 277 seeded mutants; twenty-one
   planted defects are each detected. No file of the renderer changes. The
   register is 467 IDs.
+- The structural grammar as language-1.2 source, first slice of the front end
+  (SPEC.md §17.23, §15.1, §15.2, `BS-21`, #269; no new diagnostic code, no change
+  to the language-1.2 identity). `parseModule` of `StructuralGrammar` reads the
+  atoms of `scanSource` and returns what `grammar::structural::parse_module`
+  returns, with its coverage rows, or the same refusal, to the byte on 267
+  hand-built vectors, the committed modules, and 2,000 seeded edits; 44 planted
+  defects are each detected by a vector of their own. It admits no `recursion`.
+  The largest certificate part is 2,879,430 bytes. The register is 469 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or
