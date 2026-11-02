@@ -10664,9 +10664,21 @@ part is 592,009 bytes for `checkManifest` and 1,554,610 bytes for
 ones and realize the programs the differential ran. The final tree is that
 branch merged with `release/v0.4` at `ccbf03843`, which brings #361 and #256,
 with the lock, the packages `check_manifest` and `render_package`, the
-records, and the recount of the earlier rows regenerated on it. There the case
-was run as far as its count check, which gives the same counts, and the whole
-run is the gate's. The bootstrap
+records, and the recount of the earlier rows regenerated on it, and that merged
+with `release/v0.4` at `45ce11d76`, which brings the five packages of `Numeral`
+(`SL-09`). There the inputs are 296 committed manifests (277 accepted), 182 rule
+manifests, and 2,000 seeded mutants of the fields, and the 277 accepted manifests,
+137 hand-built inputs, and 277 seeded mutants of the render, 3,169 runs under
+rustc, with 241 renders under the evaluator as before. The other rows' counts move
+with it: 277 manifests and packages, 194 programs, 253 crates; `BS-05` 491 and 354
+vectors, 205 crates, 443 and 306 runs under the evaluator; `BS-06` 672 vectors of
+`printCrate` (506 committed distinct, 64 refused), 2,110 of `printExpr`, 575 of the
+evaluator's crates; `BS-07` 328 vectors, 278 within the bound; `BS-08` 387 crates,
+339 within the bound; and, the seeded mutants being drawn from the committed
+programs, `BS-11` 296 mutants, `BS-12` 184, `BS-13` 97 vectors, 49 within the bound,
+and 125 mutants, and `BS-14` 331 vectors, 281 within the bound, and 547 mutants. On
+that tree each of those rows was run as far as its count checks and `BS-09` and
+`BS-10` past theirs, which did not move; the whole runs are the gate's. The bootstrap
 export with the two roots passes `lexlean verify`; its first attempt was
 refused (`LLV7005`) for nine definitions whose comparison of byte strings
 observes `propext` and declared no axioms, which now declare it.
@@ -11112,6 +11124,8 @@ equality above is the same fact read from the export.
 - **the tail of a list is typed as its element**: run 29, `primitive Length does not apply to [Nat]` where the oracle accepts.
 - **DEL (U+007F) is not escaped in a spelled string**: run 30, the program spells `\u{7f}` as the raw control character, the oracle as `\\u{7f}`.
 - **the argument count of an entry is not checked** (`checkArguments`): run 103, `ok ()` where the oracle says `function 0 takes 2 argument(s), received 1`.
+
+On the tree with `useTrees` among its roots (#272, on `1a2b5eff3`) the case's own differential put all of a root's vectors into one harness file, and rustc reached 13.2 GB resident and was killed with the machine; the cause is read from where the log stopped, not reproduced apart. The case now calls the differential of `BS-05`, which spreads the runs over harness binaries at 60,000 nodes each, with the same runs, oracle, and stack bounds: at `038abb084` 211 committed programs (95,979 nodes) and 1,792 + 303 vectors make 14 binaries, the largest rustc holds 2,641,952 KB (sampled every 2 s), and the 2,095 runs agree.
 
 Removed: the source was not changed (the plants are made on copies).
 

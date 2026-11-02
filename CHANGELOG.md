@@ -574,11 +574,11 @@ of this tree show.
   `RustPackage` make the checks `package::lower` runs on a manifest's own
   fields before it reads the program, with the same refusals, and write the
   `Cargo.toml` and the `provenance.json` of `package::package`, held to the
-  oracle to the byte on the 291 committed manifests, 182 rule manifests, and
-  2,000 seeded mutants, and on the 272 accepted manifests, 137 hand-built
-  inputs of the escaper and the scaffold, and 272 seeded mutants; twenty-one
+  oracle to the byte on the 296 committed manifests, 182 rule manifests, and
+  2,000 seeded mutants, and on the 277 accepted manifests, 137 hand-built
+  inputs of the escaper and the scaffold, and 277 seeded mutants; twenty-one
   planted defects are each detected. No file of the renderer changes. The
-  register is 462 IDs.
+  register is 467 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or
