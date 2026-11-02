@@ -11491,6 +11491,9 @@ the first panic message, trimmed.
 | `PD-02` | `production/eligibility.rs`: `analyse_module` no longer returns `Ok(None)` for a module without roots | `a module with formal content and no root is never analysed` |
 | `PD-03` | `production/eligibility.rs`: termination evidence is no longer inserted into `erased` | `termination evidence is erased, never realized` (`left: []`, `right: ["Production.Kernel.countdown_decreases"]`) |
 | `PD-06` | `production/eligibility.rs`: every `EffectRow` is built with no sources | `array shorter than minItems 1` at `/roots/1/targets/0/effects/0/sources` of `production-eligibility.schema.json` |
+| `PD-10` | `language/production-1.2.toml`: the row of `spawn` names `files` where it named `process` | `the effect of each request` (`left` holds `("spawn", Some("files"))`, `right` holds `("spawn", Some("process"))`) |
+| `PD-10` | `production/eligibility.rs`: a constructor of `Request` is not recorded as a request | `a closure realizes `files` through a call in another module` (`left: ["allocation"]`, `right: ["allocation", "files"]`) |
+| `PD-10` | `language/production-1.2.toml`: the row of `stop` is removed | `the effect of each request` (`left` has no `stop`) |
 | `TC-01` | `calculus/mod.rs`: `canonical` binds parameters but keeps their spelling | `assertion left == right failed: adt-evaluation` (alpha variant bytes differ) |
 | `TC-02` | `calculus/check.rs`: the match exhaustiveness test made `false &&` | `an invalid program loads: expected `the match is not exhaustive: Adt { constructor: 2 } is not covered`` |
 | `MD-01` | `ir/semantic.rs`: the language-1.1 gate `first_language_1_2_construct` made `&& false` | `tests/negative/model-under-1.1: expected "`contract declaration` is a language-1.2 construct"` |
