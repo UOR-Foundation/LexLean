@@ -39,14 +39,18 @@ const CERTIFICATE_BUDGET: u64 = 3_145_728;
 /// The limit every vector that does not name its own runs under: the
 /// `max_scope_depth` of the committed projects.
 const DEPTH: u64 = 1_024;
-/// The atoms of a committed module the evaluator reads whole; a longer module
-/// gives it this prefix, which ends in a refusal the oracle states too.
-const EVALUATOR_ATOMS: usize = 1_500;
-/// The atoms of a committed module rustc reads whole, or that prefix: the
-/// harness writes each atom out as a literal.
-const RUSTC_ATOMS: usize = 600;
-/// Seeded edits of the vectors and the small committed modules.
+/// The atoms of a committed module the evaluator reads whole, and the atoms a
+/// longer one gives it, half from each end: the two ends of a data-form module
+/// are a module the oracle accepts, whose notation runs to its `\end`.
+const EVALUATOR_ATOMS: (usize, usize) = (1_500, 128);
+/// The same for rustc, whose harness writes each atom out as a literal.
+const RUSTC_ATOMS: (usize, usize) = (600, 64);
+/// Seeded edits of the vectors and the small committed modules, those the
+/// evaluator reads and those of them rustc reads.
 const MUTANTS: usize = 2_000;
+const RUSTC_MUTANTS: usize = 500;
+/// The largest committed module an edit starts from, in bytes.
+const MUTANT_BASE: usize = 1_024;
 
 // ---------------------------------------------------------------- the sorts
 
@@ -850,14 +854,16 @@ fn scanned(path: &str, source: &str) -> Option<Vec<Atom>> {
     lexlean::source::scan::scan(path, source, u64::MAX).ok()
 }
 
-/// The runs of the committed modules under the root, each whole up to
-/// `atoms` atoms or that prefix of it, one run a module.
-fn committed(sources: &[(String, String)], atoms: usize) -> Vec<Run> {
+/// The runs of the committed modules, one a module: each whole up to the first
+/// bound, or the atoms of both its ends up to the second.
+fn committed(sources: &[(String, String)], (whole, ends): (usize, usize)) -> Vec<Run> {
     sources
         .iter()
         .filter_map(|(path, source)| {
             let mut all = scanned(path, source)?;
-            all.truncate(atoms);
+            if all.len() > whole {
+                all.drain(ends / 2..all.len() - ends / 2);
+            }
             Some(run_on(path, &all, &declared_name(source), DEPTH).0)
         })
         .collect()
@@ -944,7 +950,7 @@ fn edited(seeded: &mut Seeded, source: &str) -> Option<String> {
 }
 
 /// The seeded corpus, `count` edits of the texts of the vectors and of the
-/// committed modules of at most 4,096 bytes.
+/// smallest committed modules.
 fn mutants(count: usize, vectors: &[Vector], sources: &[(String, String)]) -> Vec<Run> {
     let mut seeded = Seeded(0x0B55_0021);
     let bases: Vec<&str> = vectors
@@ -953,7 +959,7 @@ fn mutants(count: usize, vectors: &[Vector], sources: &[(String, String)]) -> Ve
         .chain(
             sources
                 .iter()
-                .filter(|(_, source)| source.len() <= 4_096)
+                .filter(|(_, source)| source.len() <= MUTANT_BASE)
                 .map(|(_, source)| source.as_str()),
         )
         .collect();
@@ -1436,7 +1442,7 @@ pub(super) fn case() {
 
     let mut compiled = runs;
     compiled.extend(rustc_modules);
-    compiled.extend(seeded);
+    compiled.extend(seeded.into_iter().take(RUSTC_MUTANTS));
     let total = rustc_differential(
         "BS-21",
         &[(ROOTS[0].0, &root, compiled.as_slice())],
