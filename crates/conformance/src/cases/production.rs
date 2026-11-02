@@ -687,7 +687,10 @@ pub fn run(id: &str) {
                 .values()
                 .all(|target| target.natural_bits == 64 && target.integer_bits == 64));
             let effects: Vec<&str> = registry.effects.keys().map(String::as_str).collect();
-            assert_eq!(effects, ["allocation", "overflow", "recursion"]);
+            assert_eq!(
+                effects,
+                ["allocation", "files", "overflow", "process", "recursion"]
+            );
             // Every column of every row, in registry order.
             let observed: Vec<(String, &str, bool, Vec<String>, bool)> = registry
                 .order
@@ -731,7 +734,7 @@ pub fn run(id: &str) {
                 );
                 assert_eq!(
                     strings(&production["effects"]["items"]["enum"]),
-                    ["allocation", "overflow", "recursion"]
+                    ["allocation", "files", "overflow", "process", "recursion"]
                 );
             }
         }
