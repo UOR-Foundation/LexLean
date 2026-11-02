@@ -8453,6 +8453,26 @@ compiler-semantics identity, and the program's identity are the host's inputs
 prints. The program's identity, the checks of the program, the export wrappers,
 and the composition with the lowering are the next slices of the package.
 
+The front end after the primitive scanner begins with the fixed structural
+grammar (§15.1, §15.2) (`BS-21`, the first slice of issue 269), the module
+`StructuralGrammar` with one production root for `rust-std`:
+
+| Root | Takes | Returns | Oracle |
+| --- | --- | --- | --- |
+| `LexLeanBoot.StructuralGrammar.parseModule` | the path, the atoms `scanSource` returns, the name the path gives the module, and `max_scope_depth` | the module with its coverage rows, or the refusal's code, message, and span | `grammar::structural::parse_module` |
+
+The root imports `PrimitiveScan`, whose `Atom` and `Rejection` it reads and
+returns, so the host composes the two without a conversion. It admits no
+`recursion`: where the oracle descends, it keeps an explicit stack of frames
+under `iterate_until`, one step of which consumes at least one atom, and
+`max_scope_depth` bounds that stack as it bounds the oracle's. Its first refusal
+stands in its state, so a definition reads its parts in order and what follows
+a refusal has no effect. A recursive part of the module is a chain inside its
+own type (`Proof`, `Block`), as in `BS-04`; a step keeps ordinary lists and folds
+one into the chain when it pops a frame, so no definition recurses over a chain.
+What the module means (its notation, its IR, its islands and proof sentences)
+reads the lexicon's closure or the data forms and belongs to the later slices.
+
 The bootstrap project's production export is the first project whose roots
 together approach `max_total_source_bytes` (§10.2): the limit counts the
 programs, the crates, and the certificates of every production root of the
