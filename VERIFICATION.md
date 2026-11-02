@@ -11125,9 +11125,9 @@ equality above is the same fact read from the export.
 - **DEL (U+007F) is not escaped in a spelled string**: run 30, the program spells `\u{7f}` as the raw control character, the oracle as `\\u{7f}`.
 - **the argument count of an entry is not checked** (`checkArguments`): run 103, `ok ()` where the oracle says `function 0 takes 2 argument(s), received 1`.
 
-On the tree with `useTrees` among its roots (#272, on `1a2b5eff3`) the case's own differential put all of a root's vectors into one harness file, and rustc reached 13.2 GB resident and was killed with the machine; the cause is read from where the log stopped, not reproduced apart. The case now calls the differential of `BS-05`, which spreads the runs over harness binaries at 60,000 nodes each, with the same runs, oracle, and stack bounds: at `038abb084` 211 committed programs (95,979 nodes) and 1,792 + 303 vectors make 14 binaries, the largest rustc holds 2,641,952 KB (sampled every 2 s), and the 2,095 runs agree.
-
 Removed: the source was not changed (the plants are made on copies).
+
+On the tree with `useTrees` among its roots (#272, on `1a2b5eff3`) the case's own differential put all of a root's vectors into one harness file, and rustc reached 13.2 GB resident and was killed with the machine; the cause is read from where the log stopped, not reproduced apart. The case now calls the differential of `BS-05`, which spreads the runs over harness binaries at 60,000 nodes each, with the same runs, oracle, and stack bounds: at `038abb084` 211 committed programs (95,979 nodes) and 1,792 + 303 vectors make 14 binaries, the largest rustc holds 2,641,952 KB (sampled every 2 s), and the 2,095 runs agree. The whole run on the final tree is the gate's.
 
 Authoring found four shapes certificate A and certificate B do not accept, each reduced on a scratch project before being avoided in the source (reported as issue 208): a structure or inductive holding a list of a recursive type as a root parameter, a `cons` of a recursive type's value in a definition, a mutual group or nested group whose rows the 64-declaration commands separate, and (certificate B) a match on a recursive type one of whose arms returns a bare binder of that type, which the module returns through an `Option`.
 
