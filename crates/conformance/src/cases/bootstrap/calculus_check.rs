@@ -18,15 +18,10 @@ use serde_json::{json, Value as Json};
 
 use std::collections::BTreeMap;
 
-use lexlean::calculus::rust::package::Passing;
-use lexlean::calculus::rust::Profile;
 use lexlean::production::lower::Lowered;
 
-use super::{list, snake, text, Run, Seeded};
+use super::{list, text, Run, Seeded};
 use crate::production_export as harness;
-use crate::rust_build::{cargo_in, workspace, Built};
-use crate::rust_harness::{self, Calls};
-use crate::rust_packages;
 use crate::support;
 
 /// `kindIndex` of the module: the declaration order of `IntKind`.
@@ -43,13 +38,13 @@ fn kind_index(kind: IntKind) -> u64 {
     }
 }
 
-fn nat(number: u64) -> Value {
+pub(super) fn nat(number: u64) -> Value {
     Value::Nat {
         value: number.to_string(),
     }
 }
 
-fn adt(constructor: u64, fields: Vec<Value>) -> Value {
+pub(super) fn adt(constructor: u64, fields: Vec<Value>) -> Value {
     Value::Adt {
         constructor,
         fields,
@@ -72,7 +67,7 @@ fn chain(nil: u64, cons: u64, items: Vec<Value>) -> Value {
         })
 }
 
-fn ty_chain(items: Vec<Value>) -> Value {
+pub(super) fn ty_chain(items: Vec<Value>) -> Value {
     chain(14, 15, items)
 }
 
@@ -82,7 +77,7 @@ fn enc_tys(tys: &[Ty]) -> Value {
 
 /// `Ty`: unit, bool, nat, int, fixed, string, bytes, ordering, option,
 /// result, list, pair, adt, fn, nil, cons.
-fn enc_ty(ty: &Ty) -> Value {
+pub(super) fn enc_ty(ty: &Ty) -> Value {
     match ty {
         Ty::Unit => adt(0, Vec::new()),
         Ty::Bool => adt(1, Vec::new()),
@@ -303,7 +298,7 @@ fn enc_expr(expr: &Expr) -> Value {
 /// as parallel lists, the lists of recursive types as chains. Certificate A
 /// cannot take a structure holding a list of a recursive type, so the module
 /// rebuilds its `Program` inside the root from these.
-fn program_arguments(program: &Program) -> Vec<Value> {
+pub(super) fn program_arguments(program: &Program) -> Vec<Value> {
     vec![
         text(&program.spec),
         ty_chain(
@@ -808,7 +803,7 @@ pub(super) fn program_size(program: &Program) -> usize {
 
 // ---------------------------------------------------------------- corpora
 
-fn program_of(adts: Vec<Vec<Vec<Ty>>>, functions: Vec<Function>) -> Program {
+pub(super) fn program_of(adts: Vec<Vec<Vec<Ty>>>, functions: Vec<Function>) -> Program {
     Program {
         spec: PROGRAM_SPEC.to_owned(),
         adts: adts
@@ -819,14 +814,14 @@ fn program_of(adts: Vec<Vec<Vec<Ty>>>, functions: Vec<Function>) -> Program {
     }
 }
 
-fn unit_expr() -> Expr {
+pub(super) fn unit_expr() -> Expr {
     Expr::Value {
         ty: Ty::Unit,
         value: Value::Unit,
     }
 }
 
-fn constant(ty: Ty, body: Expr) -> Function {
+pub(super) fn constant(ty: Ty, body: Expr) -> Function {
     Function {
         parameters: Vec::new(),
         types: Vec::new(),
@@ -837,7 +832,7 @@ fn constant(ty: Ty, body: Expr) -> Function {
 
 /// The two declarations the type and shape corpora refer to: a type with two
 /// constructors, and a type with one.
-fn declared() -> Vec<Vec<Vec<Ty>>> {
+pub(super) fn declared() -> Vec<Vec<Vec<Ty>>> {
     vec![
         vec![vec![Ty::Nat, Ty::Bool], Vec::new()],
         vec![vec![Ty::Nat]],
@@ -945,7 +940,7 @@ fn hexes() -> Vec<String> {
 }
 
 /// A literal of every constructor, with strings drawn from the corpora.
-fn sample_values(seeded: &mut Seeded) -> Vec<Value> {
+pub(super) fn sample_values(seeded: &mut Seeded) -> Vec<Value> {
     let spellings = spellings();
     let strings = strings();
     let hexes = hexes();
@@ -1060,7 +1055,7 @@ fn sample_values(seeded: &mut Seeded) -> Vec<Value> {
     out
 }
 
-fn sample_tys() -> Vec<Ty> {
+pub(super) fn sample_tys() -> Vec<Ty> {
     let mut out = vec![
         Ty::Unit,
         Ty::Bool,
@@ -1125,7 +1120,7 @@ fn literal_program(ty: &Ty, value: &Value) -> Program {
 /// The literal programs: every sample value against every sample type with a
 /// stride, so each constructor meets each type, and every decimal spelling
 /// against each integer type.
-fn literal_corpus(seeded: &mut Seeded, count: usize) -> Vec<Program> {
+pub(super) fn literal_corpus(seeded: &mut Seeded, count: usize) -> Vec<Program> {
     let values = sample_values(seeded);
     let tys = sample_tys();
     let mut out = Vec::new();
@@ -1385,7 +1380,7 @@ fn signature(operation: &Prim, pool: &[Ty], seeded: &mut Seeded) -> Vec<Ty> {
 
 /// Every primitive at its own signature, at shifted signatures, and at
 /// operand types drawn from the pool.
-fn prim_corpus(seeded: &mut Seeded, rounds: usize) -> Vec<Program> {
+pub(super) fn prim_corpus(seeded: &mut Seeded, rounds: usize) -> Vec<Program> {
     let pool = prim_pool();
     let mut out = Vec::new();
     for operation in all_prims() {
@@ -1437,7 +1432,7 @@ fn all_shapes() -> Vec<Shape> {
 
 /// Each shape built and matched at each type: its fields, its operand count,
 /// its binders, and the coverage of a match with that one arm.
-fn shape_corpus(seeded: &mut Seeded) -> Vec<Program> {
+pub(super) fn shape_corpus(seeded: &mut Seeded) -> Vec<Program> {
     let tys = sample_tys();
     let mut out = Vec::new();
     for shape in all_shapes() {
@@ -1834,7 +1829,7 @@ fn mutate(program: &Program, seeded: &mut Seeded, values: &[Value], pool: &[Ty])
 /// committed fixture `adt-evaluation` and to constant programs, each with the
 /// text the oracle's reason must contain. A program that no longer reads is
 /// not a vector of a checker.
-fn refusals() -> Vec<(Program, &'static str)> {
+pub(super) fn refusals() -> Vec<(Program, &'static str)> {
     let root = support::repo_root();
     let base: Json = serde_json::from_slice(
         &std::fs::read(
@@ -2126,125 +2121,15 @@ fn outside_claim(verdict: &Json) -> bool {
     false
 }
 
-/// The rendered `rust-std` packages of the roots, compiled by the pinned
-/// rustc, run on `runs` of each root: one outcome per run, each equal to the
-/// oracle's. Returns the number of runs.
-fn rustc_differential(roots: &[(&str, &Lowered, &[Run])], label: &str) -> usize {
-    let started = std::time::Instant::now();
-    let dir = tempfile::Builder::new()
-        .prefix("lexlean-bootstrap-calculus-")
-        .tempdir()
-        .expect("tempdir");
-    let mut crates = Vec::new();
-    let mut expected: BTreeMap<String, Vec<Json>> = BTreeMap::new();
-    for (root, low, runs) in roots {
-        let manifest = rust_packages::manifest(
-            &format!("boot_{}", snake(root)),
-            &low.program,
-            low.entry(),
-            Profile::Std,
-        );
-        let package = target::package(&manifest.to_file_bytes().expect("canonical manifest"))
-            .unwrap_or_else(|failure| panic!("{root}: {failure:?}"));
-        let arguments: Vec<Vec<Value>> = runs
-            .iter()
-            .map(|(arguments, _)| arguments.clone())
-            .collect();
-        let arity = low.program.functions[usize::try_from(low.entry()).expect("entry")]
-            .types
-            .len();
-        let passing = vec![Passing::Own; arity];
-        let harness_source = rust_harness::render_calls(
-            &low.program,
-            Profile::Std,
-            &manifest.name,
-            &[Calls {
-                entry: low.entry(),
-                function: "run",
-                passing: &passing,
-                arguments: &arguments,
-            }],
-        )
-        .expect("the differential harness");
-        expected.insert(
-            manifest.name.clone(),
-            runs.iter().map(|(_, expected)| expected.clone()).collect(),
-        );
-        crates.push(Built {
-            name: manifest.name,
-            files: package.files,
-            harness: harness_source,
-        });
-    }
-    workspace(dir.path(), &crates);
-    let build = cargo_in(
-        dir.path(),
-        &["build", "--offline", "--workspace", "--quiet"],
-    );
-    assert!(
-        build.status.success(),
-        "a root's package does not build:\n{}",
-        String::from_utf8_lossy(&build.stderr)
-    );
-    eprintln!(
-        "BS-04: {label}: rustc built the packages ({:?})",
-        started.elapsed()
-    );
-    let mut total = 0;
-    for (name, outcomes) in &expected {
-        let binary = dir
-            .path()
-            .join("target/debug")
-            .join(format!("run_{name}{}", std::env::consts::EXE_SUFFIX));
-        let ran = std::process::Command::new(&binary)
-            .output()
-            .expect("the differential runs");
-        assert!(
-            ran.status.success(),
-            "{name}: {}",
-            String::from_utf8_lossy(&ran.stderr)
-        );
-        // PD-08: both roots recurse with the depth of the program, so the
-        // harness that ran them records (measuring) or demands (otherwise)
-        // their stack bound; the row keeps the largest need of the corpora.
-        crate::stack_bounds::observe(&crate::stack_bounds::subject("bootstrap", name), &binary);
-        let stdout = String::from_utf8(ran.stdout).expect("utf8");
-        let printed: Vec<Json> = stdout
-            .lines()
-            .filter(|line| !line.starts_with("work "))
-            .map(|line| {
-                serde_json::from_str(line).unwrap_or_else(|error| panic!("{name}: {error}: {line}"))
-            })
-            .collect();
-        assert_eq!(printed.len(), outcomes.len(), "{name}: one outcome per run");
-        let disagreements: Vec<String> = printed
-            .iter()
-            .zip(outcomes)
-            .enumerate()
-            .filter(|(_, (printed, expected))| printed != expected)
-            .map(|(run, (printed, expected))| format!("run {run}: {printed} != {expected}"))
-            .collect();
-        assert!(
-            disagreements.is_empty(),
-            "{name}: the rendering and the Rust oracle disagree on {} of {} runs: {:?}",
-            disagreements.len(),
-            outcomes.len(),
-            &disagreements[..disagreements.len().min(3)]
-        );
-        eprintln!(
-            "BS-04: {label}: {name}: {} rustc runs agree with the oracle ({:?})",
-            outcomes.len(),
-            started.elapsed()
-        );
-        total += outcomes.len();
-    }
-    total
-}
-
 const MODULE: &str = "LexLeanBoot.CalculusCheck";
 
 /// Mutants of the smaller committed programs: the mutation corpus.
-fn mutants(sources: &[Source], seeded: &mut Seeded, count: usize, limit: usize) -> Vec<Program> {
+pub(super) fn mutants(
+    sources: &[Source],
+    seeded: &mut Seeded,
+    count: usize,
+    limit: usize,
+) -> Vec<Program> {
     let values = sample_values(seeded);
     let pool = sample_tys();
     let small: Vec<&Source> = sources
@@ -2265,9 +2150,16 @@ fn mutants(sources: &[Source], seeded: &mut Seeded, count: usize, limit: usize) 
 
 /// The roots in the order the module declares them, each with the effects
 /// its declaration admits, which are exactly the effects its closure realizes.
-const ROOTS: [(&str, &[&str]); 2] = [
+///
+/// `siteTrees` is the typing root `BS-07` composes with the lowering: it is
+/// the module's `walk`, so its eligibility and its certified package are
+/// checked here, and its differential is the first leg of `BS-07`. `useTrees`
+/// is held the same way, and its differential is the first leg of `BS-11`.
+const ROOTS: [(&str, &[&str]); 4] = [
     ("checkProgram", &["allocation", "overflow", "recursion"]),
     ("checkArguments", &["allocation", "overflow", "recursion"]),
+    ("siteTrees", &["allocation", "overflow", "recursion"]),
+    ("useTrees", &["allocation", "overflow", "recursion"]),
 ];
 
 /// Seeded mutants of the committed programs, and the other corpora, per root,
@@ -2369,7 +2261,7 @@ const PLANTS: [super::Plant; 12] = [
 /// remove is exercised by name whatever the seeds draw: a repeated binder, a
 /// field of a type with several constructors, the count of a shift, the tail
 /// of a cons, and a string with a control character in a message.
-fn targeted() -> Vec<Program> {
+pub(super) fn targeted() -> Vec<Program> {
     let var = |name: u64| Expr::Var { name };
     let function = |types: Vec<Ty>, result: Ty, body: Expr| Function {
         parameters: (0..types.len() as u64).collect(),
@@ -2549,7 +2441,7 @@ pub(super) fn case() {
             .iter()
             .map(|(root, _)| format!("{MODULE}.{root}"))
             .collect::<Vec<_>>(),
-        "the two roots are the module's production roots, in order"
+        "the roots are the module's production roots, in order"
     );
     for (row, (root, effects)) in reported.iter().zip(ROOTS) {
         let declared: Vec<&str> = row["declared_effects"]
@@ -2626,7 +2518,8 @@ pub(super) fn case() {
     );
     // On every host: the rendered rust-std packages of both roots, compiled
     // by that host's pinned rustc, agree with the oracle on the vectors.
-    rustc_differential(
+    super::rust_validate::rustc_differential(
+        "BS-04",
         &[
             ("checkProgram", &lowered["checkProgram"], &vector_programs),
             (
@@ -2698,13 +2591,15 @@ pub(super) fn case() {
     );
     let mut total = 0;
     for (at, programs) in large_programs.chunks(RUSTC_CHUNK).enumerate() {
-        total += rustc_differential(
+        total += super::rust_validate::rustc_differential(
+            "BS-04",
             &[("checkProgram", &lowered["checkProgram"], programs)],
             &format!("seeded program chunk {at}"),
         );
     }
     for (at, arguments) in large_arguments.chunks(RUSTC_ARGUMENT_CHUNK).enumerate() {
-        total += rustc_differential(
+        total += super::rust_validate::rustc_differential(
+            "BS-04",
             &[("checkArguments", &lowered["checkArguments"], arguments)],
             &format!("seeded argument chunk {at}"),
         );
