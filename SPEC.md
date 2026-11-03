@@ -9272,6 +9272,20 @@ For each generated module, sorted by full module name, LexLean invokes the pinne
 
 A zero exit is required. Normalized output is recorded.
 
+Only generated project modules and certificates A, B, and E compile with
+`debug.skipKernelTC=true`; runtime, support, interface-probe, extraction,
+and audit modules retain the in-process kernel check. Compilation and
+successful same-run replay bind the requested module's main, server, and
+private olean parts, with omitted companions distinct from present empty
+files. Before cleanup or publication, one guard joins local and imported
+process records with the certificate tail and freshly captured staged
+tuples. Every eligible module requires exactly one successful flagged
+compilation and matching successful replay; a missing record, substituted
+part, or changed staged tuple refuses publication. Shards transport the
+existing typed process records and artifacts; they do not publish verified
+acceptance themselves. Prefix replays can also check descendant modules,
+so this does not promise globally exactly-once declaration replay.
+
 This replay checks the newly loaded environment through Lean's kernel and is intended to detect environment manipulation. It is explicitly not described as an independent verifier.
 
 ### 22.5 Axiom output

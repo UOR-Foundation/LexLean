@@ -1435,14 +1435,22 @@ fn replay_binding_guard_plants(mut compile: lexlean::verify::child::ChildRecord)
     let certificates = [module.clone()].into_iter().collect();
     check_replay_bindings(
         &[compile.clone(), replay.clone()],
-        &BTreeMap::new(),
+        &staged,
         &certificates,
     )
-    .expect("certificate tail retains its binding after its scratch files are removed");
+    .expect("certificate tail binds staged artifacts before scratch cleanup");
+    check_replay_bindings(&[compile.clone(), replay.clone()], &BTreeMap::new(), &certificates)
+        .expect_err("a certificate without its staged tuple refuses publication");
     let refuse = |records: &[lexlean::verify::child::ChildRecord], published: &BTreeMap<_, _>| {
         let error = check(records, published).expect_err("a binding hole refuses publication");
         assert_eq!(error.code.as_str(), "LLI9001");
     };
+    refuse(&[], &staged);
+    let mut unflagged = compile.clone();
+    unflagged.argv.retain(|arg| arg != "-D" && arg != "debug.skipKernelTC=true");
+    refuse(&[unflagged, replay.clone()], &staged);
+    check_replay_bindings(&[], &BTreeMap::new(), &certificates)
+        .expect_err("dropping the complete certificate tail refuses publication");
     refuse(std::slice::from_ref(&compile), &staged);
     refuse(&[compile.clone(), replay.clone(), replay.clone()], &staged);
     refuse(&[compile.clone(), compile.clone(), replay.clone()], &staged);

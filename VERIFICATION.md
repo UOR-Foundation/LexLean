@@ -12517,3 +12517,23 @@ plants. These are focused correctness results, not performance savings.
 Skip flags remain disabled, and the final publication-guard call site
 remains an integration obligation. No full gate, identity regeneration,
 product artifact writer, or full VR-28 acceptance is claimed.
+
+The next unpublished source phase wires the flag only at the generated
+project-module compilation and certificate A/B/E compilation call sites.
+The preservation environment uses the same compile helper with the flag
+explicitly false; its audit also keeps the flag false. Runtime, text-law,
+probe, extraction, and project axiom-audit call sites are unchanged.
+Certificate oleans now survive until the final scratch-cleanup stage.
+After local and imported records and the certificate tail are assembled,
+one publication guard freshly captures every project's and certificate's
+staged main/server/private tuple and requires its matching compile/replay
+binding. Expected-name coverage refuses a wholly omitted compilation or
+certificate tail; the existing diagnostic paths still classify failed
+project and certificate replays before that guard.
+
+Additional source plants extend the existing VR-28 case and shard round-trip
+unit: missing compilation, missing certificate staged tuples, dropped whole
+certificate tail, removed flag, shard replay-record substitution/removal,
+and a companion replaced after import. These edits have not been compiled
+or executed while the Host writer owns the shared phase lock. No measurement,
+full acceptance, publication, or regenerated product identity is claimed.

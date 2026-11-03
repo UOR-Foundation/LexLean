@@ -1666,6 +1666,7 @@ pub fn run_part(
                         argv: vec![
                             "env".to_owned(),
                             "lean".to_owned(),
+                            "-Ddebug.skipKernelTC=true".to_owned(),
                             "-R".to_owned(),
                             src_root.to_string(),
                             "-o".to_owned(),
@@ -2356,6 +2357,7 @@ pub fn run_part(
     // and certified; the certificates compile beside the shipped library and
     // calculus modules, are replayed, and their axioms audited exactly.
     let mut preservation_row: Option<Json> = None;
+    let mut certificate_artifacts = BTreeMap::new();
     if !production_reports.is_empty() {
         use crate::production::preserve;
         // Lean's first error, from its severity on: the location before it
@@ -2465,7 +2467,7 @@ pub fn run_part(
                 file.text.as_bytes(),
             )?;
         }
-        let compile = |file: &preserve::StagedFile, output: bool| {
+        let compile = |file: &preserve::StagedFile, output: bool, skip_kernel: bool| {
             let source = preserve_src.join(&file.path);
             let mut argv = vec![
                 "env".to_owned(),
@@ -2473,6 +2475,9 @@ pub fn run_part(
                 "-R".to_owned(),
                 preserve_src.to_string(),
             ];
+            if skip_kernel {
+                argv.push("-Ddebug.skipKernelTC=true".to_owned());
+            }
             if output {
                 let olean = preserve_oleans.join(file.path.replace(".lean", ".olean"));
                 if let Some(parent) = olean.parent() {
@@ -2511,7 +2516,7 @@ pub fn run_part(
             {
                 continue;
             }
-            let record = compile(file, true).map_err(fail)?;
+            let record = compile(file, true, false).map_err(fail)?;
             if record.exit_code != 0
                 || !record.stdout.trim().is_empty()
                 || !record.stderr.trim().is_empty()
@@ -2543,7 +2548,7 @@ pub fn run_part(
             tail_records.push(record);
         }
         for file in &stage.certificates {
-            let mut record = compile(file, true).map_err(fail)?;
+            let mut record = compile(file, true, true).map_err(fail)?;
             if record.exit_code != 0
                 || !record.stdout.trim().is_empty()
                 || !record.stderr.trim().is_empty()
@@ -2557,6 +2562,7 @@ pub fn run_part(
                 )));
             }
             let compiled_olean = preserve_oleans.join(file.path.replace(".lean", ".olean"));
+            certificate_artifacts.insert(file.module.clone(), compiled_olean.clone());
             record.olean = Some(leanchecker::capture_olean_parts(&compiled_olean).map_err(fail)?);
             write_staged(
                 staging.path(),
@@ -2593,7 +2599,7 @@ pub fn run_part(
             )?;
             tail_records.push(replay);
         }
-        let audit_record = compile(&stage.audit, false).map_err(fail)?;
+        let audit_record = compile(&stage.audit, false, false).map_err(fail)?;
         let audit_output = format!("{}{}", audit_record.stdout, audit_record.stderr);
         if audit_record.exit_code != 0 {
             if let Some(exhausted) = resource_death(
@@ -2667,7 +2673,6 @@ pub fn run_part(
             ("sha256", Json::Str(Sha256Digest::of(&bytes).to_hex())),
         ]));
         let _ = std::fs::remove_dir_all(preserve_src.as_std_path());
-        let _ = std::fs::remove_dir_all(preserve_oleans.as_std_path());
     }
 
     stages.enter("pdf");
@@ -2833,6 +2838,22 @@ pub fn run_part(
             "a part of the run recorded `{stray}`, which no module of the project owns"
         ))));
     }
+    // One publication guard, after all local/imported records and the
+    // certificate tail have joined, while every staged artifact still exists.
+    let mut staged_artifacts = BTreeMap::new();
+    for module in &build.modules {
+        let main = olean_root.join(format!("{}.olean", module.lean_module.replace('.', "/")));
+        staged_artifacts.insert(module.lean_module.clone(), leanchecker::capture_olean_parts(&main).map_err(fail)?);
+    }
+    for (module, main) in &certificate_artifacts {
+        staged_artifacts.insert(module.clone(), leanchecker::capture_olean_parts(main).map_err(fail)?);
+    }
+    leanchecker::check_replay_bindings(
+        &process_records,
+        &staged_artifacts,
+        &certificate_artifacts.keys().cloned().collect(),
+    ).map_err(fail)?;
+
     // Stage 14: no unexpected absolute paths in successful output (§22.7),
     // over every process record.
     for record in &process_records {

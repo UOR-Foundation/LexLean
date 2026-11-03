@@ -78,13 +78,13 @@ pub fn replay_module(
 /// The existing toolchain and partition gates establish executable identities
 /// and judge stage output. This guard checks the association of those records:
 /// module identity, successful replay, complete olean parts, and the staged
-/// project artifacts. Certificates retain their bindings after scratch cleanup.
+/// project and certificate artifacts before scratch cleanup.
 ///
 /// # Errors
 /// A missing, failed, duplicate, malformed, or substituted binding (LLI9001).
 pub fn check_replay_bindings(
     records: &[ChildRecord],
-    staged_projects: &std::collections::BTreeMap<String, crate::verify::child::OLeanParts>,
+    staged_artifacts: &std::collections::BTreeMap<String, crate::verify::child::OLeanParts>,
     certificates: &std::collections::BTreeSet<String>,
 ) -> Result<(), Diagnostic> {
     let hole = |message| {
@@ -105,7 +105,7 @@ pub fn check_replay_bindings(
             .as_deref()
             .ok_or_else(|| hole("a flagged compilation has no module".to_owned()))?;
         if compile.tool != "lean"
-            || (!staged_projects.contains_key(module) && !certificates.contains(module))
+            || (!staged_artifacts.contains_key(module) && !certificates.contains(module))
         {
             return Err(hole(format!(
                 "`{module}` is not an eligible project or certificate compilation"
@@ -147,13 +147,23 @@ pub fn check_replay_bindings(
                 "`{module}` replay input differs from its compiled olean parts"
             )));
         }
-        if let Some(staged) = staged_projects.get(module) {
+        if let Some(staged) = staged_artifacts.get(module) {
             staged.validate().map_err(hole)?;
             if produced != staged {
                 return Err(hole(format!(
                     "`{module}` staged artifacts differ from its compiled and replayed olean parts"
                 )));
             }
+        }
+    }
+    for certificate in certificates {
+        if !staged_artifacts.contains_key(certificate) {
+            return Err(hole(format!("`{certificate}` has no staged certificate artifacts")));
+        }
+    }
+    for expected in staged_artifacts.keys().chain(certificates) {
+        if !compiled.contains(expected.as_str()) {
+            return Err(hole(format!("`{expected}` has no flagged compilation record")));
         }
     }
     Ok(())
