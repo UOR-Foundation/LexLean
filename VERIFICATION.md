@@ -18302,12 +18302,14 @@ script's output to that function, so the file the gate job writes is the file
 | the script no longer writes the gate line | same | `the evidence satisfies the release criterion` failed: `Err(["release/vv-evidence.txt does not record the gate passing"])` |
 | the criterion accepts the legs' lines | `cargo test -p repo-model the_ci_evidence_criterion` | `left: Ok(())` against the refusal |
 
-## κ-addressing in LexLean (`KA-01`..`KA-04`, #127)
+## κ-addressing in LexLean (`KA-01`..`KA-06`, #127)
 
 The `kappa` project (decision D7 of #110) writes the sha256 axis of uor-addr's
 κ-label, the data handle of decision D3 (`kind@label`), uor-addr's JSON
-canonical form, and the five categorical compositions of uor-addr on the sha256
-axis (`KA-04`). uor-addr 0.2.0 is the oracle of the cases: a dependency of
+canonical form, the five categorical compositions of uor-addr on the sha256
+axis (`KA-04`), the other four hash axes of uor-addr, blake3, sha3-256,
+keccak256 and sha512 (`KA-05`), and the five compositions on all five axes
+(`KA-06`). uor-addr 0.2.0 is the oracle of the cases: a dependency of
 `repo-conformance` that can falsify the package and never establishes it, and
 a disagreement fails the case and is not resolved by adopting the oracle's
 output. `conformance_ka_01` holds the project, its roots, and the identities
@@ -18315,8 +18317,9 @@ it does not move; `conformance_ka_02` holds the label, the handle and the
 twelve committed JSON fixtures under the evaluator and under the pinned
 rustc; `conformance_ka_03` holds `canonicalJson` to `uor_addr::json::canonicalize`
 on a seeded corpus under both. What the package does not do is stated in the
-rows: the GGUF and ONNX forms and the blake3, sha3-256, keccak256 and sha512
-axes are not written (slice 2 added the compositions on the sha256 axis), so the acceptance sentence of #127 (every committed fixture yields the
+rows: the GGUF and ONNX forms are not written (slice 2 added the compositions
+on the sha256 axis, slice 3 the four other hash axes and the compositions on
+them), so the acceptance sentence of #127 (every committed fixture yields the
 same label) holds for the twelve JSON fixtures and, for the five GGUF and
 ONNX `.kappa-label` files, only for the label form (`isLabel`).
 
@@ -18336,10 +18339,28 @@ conformance_ka_0 -- --nocapture --test-threads=1`); no committed file was edited
 | members kept in reverse key order (`lessKey (first item) key`) | `KA-03` | 3 of 120 runs disagree, the first `{"b":1,"a":2}` against `{"a":2,"b":1}` |
 | `\n` written raw, not as `\n` escaped (`b =? 10` to `0x0a`) | `KA-03` | 1 of 120 runs disagree, a document with a newline in a key |
 | the combining mark dropped from a composition (`byteOf base` for the composite) | `KA-03` | 6 of 120 runs disagree, the first `{"name": "cafe` plus U+0301 against `café` |
-| `composeG2` keeps the operands in the order given (`left right` for `lower`, `upper`) | `KA-04` | 88 of 290 runs disagree, the first `sha256:083b…` with `sha256:0000…` giving `sha256:96a7…` against the oracle's `sha256:0a89…` |
-| `composeF4` complements with 14 for 15 | `KA-04` | 34 of 101 runs disagree, the first `sha256:f843…` giving `sha256:c8f0…` against `sha256:b4ee…` |
-| `composeE6` tags the degree-6 class with the remainder nine for eight | `KA-04` | 11 of 101 runs disagree, the first `sha256:083b…` (first byte 8) giving `sha256:9477…` against `sha256:41ee…` |
-| `composeE7` leaves the quarters in place (`a0 b0 c0 d0` for `a2 b3 c3 d2`) | `KA-04` | 81 of 101 runs disagree, the first `sha256:083b…` giving `sha256:85fe…` against `sha256:d7a6…` |
+| `composeG2` keeps the operands in the order given (`left right` for `lower`, `upper`) | `KA-04` | 88 of 302 runs disagree, the first `sha256:083b…` with `sha256:0000…` giving `sha256:96a7…` against the oracle's `sha256:0a89…` |
+| `composeF4` complements with 14 for 15 | `KA-04` | 34 of 107 runs disagree, the first `sha256:f843…` giving `sha256:c8f0…` against `sha256:b4ee…` |
+| `composeE6` tags the degree-6 class with the remainder nine for eight | `KA-04` | 11 of 107 runs disagree, the first `sha256:083b…` (first byte 8) giving `sha256:9477…` against `sha256:41ee…` |
+| `composeE7` leaves the quarters in place (`a0 b0 c0 d0` for `a2 b3 c3 d2`) | `KA-04` | 81 of 107 runs disagree, the first `sha256:083b…` giving `sha256:85fe…` against `sha256:d7a6…` |
+| `Sha512` `bigSigma0` rotates by 27 for 28 | `KA-05` | 55 of 281 runs of `labelOn` disagree, the first `sha512` of `{"foo":"bar"}` |
+| `Sha512` closes a block one byte early (`size + 143` for `size + 144`) | `KA-05` | 2 of 281 runs disagree, the documents whose canonical form is 112 and 240 bytes long (the lengths at which the length field just fits) |
+| `sha3Hex` pads with the Keccak byte `01` for `06` | `KA-05` | 55 of 281 runs disagree, the first `sha3-256` of `{"foo":"bar"}` |
+| `Keccak` closes a block without its final bit (`0` for `128`) | `KA-05` | 110 of 281 runs disagree, the first `sha3-256` of `{"foo":"bar"}` |
+| `Keccak` counts the blocks of `size + 1` bytes (`(size + 1) / 136 + 1` for `size / 136 + 1`) | `KA-05` | 4 of 281 runs disagree, the documents of 135 and 271 bytes (where the suffix and the closing bit share a byte) on `sha3-256` and `keccak256` |
+| the `keccak256` axis hashes with `sha3Hex` | `KA-05` | 21 of 275 runs of `jsonLabelOn` disagree, the first `keccak256` of `{"foo": "bar"}` |
+| the `sha512` width is 127 digits | `KA-05` | 24 of 963 runs of `isLabelOn` disagree, the first a `sha512` label |
+| `Blake3` `g` rotates by 8 for 16 | `KA-05` | 55 of 281 runs of `labelOn` disagree, the first `blake3` of `{"foo":"bar"}` |
+| `Blake3` permutes the message with `m3` for `m2` at the first word | `KA-05` | 48 of 281 runs disagree, the first `blake3` of `{"foo":"bar"}` |
+| `Blake3` parent takes no root flag | `KA-05` | 9 of 281 runs disagree, the nine documents of more than one chunk |
+| `Blake3` counts chunks of `size + 1024` bytes (`(size + 1024) / 1024` for `(size + 1023) / 1024`) | `KA-05` | 4 of 281 runs disagree, the documents of 1024, 2048, 3072, and 4096 bytes |
+| `Blake3` merges at an odd chunk count (`=? 1` for `=? 0`) | `KA-05` | 6 of 281 runs disagree, documents of two chunks or more |
+| `Blake3` starts no chunk at its first block (`2` for `3`) | `KA-05` | 25 of 281 runs disagree, the first `blake3` of `{"foo":"bar"}` |
+| `composeG2On` keeps the operands in the order given | `KA-06` | 270 of 1006 runs disagree, the first the `sha256` pair `sha256:083b…`, `sha256:0000…` |
+| `composeF4On` complements with 14 for 15 | `KA-06` | 70 of 371 runs disagree, the first `sha256:f843…` |
+| `composeE6On` tags the degree-6 class with the remainder nine for eight | `KA-06` | 50 of 371 runs disagree, the first `sha256:083b…` |
+| `composeE7On` takes quarters of 16 digits for a quarter of the width | `KA-06` | 54 of 371 runs disagree, the first a `sha512` label (the 64-digit axes are unchanged) |
+| `composeE6On` reads the degree at offset 7 for the length of the axis prefix | `KA-06` | 20 of 371 runs disagree, the first a `sha3-256` label (the prefixes of `sha256`, `blake3` and `sha512` are 7 bytes) |
 
 The corpus of `KA-03` holds 78 refusals and 42 accepted documents of 120
 (malformed texts and the proper prefixes and extensions of documents, which
@@ -18350,10 +18371,12 @@ kept by uor-addr 0.2.0 (`uor-addr` `main` refuses it, `953fb68`); the corpus
 states that as a design divergence and does not count it a disagreement.
 
 Under the pinned Lean 4.32.1 `lexlean verify` accepts the project (attestation
-a68f7f83a5178bbb1d08ed3bbe6a694e3aed4d775936b1a0fb7ca39f47b343f3, verified
-digest 6d0363f70dc73ab44e16d8bf2ff39acfa11510565780c0bb2fd225f18a5af1f5),
+27b4f2bc44306fcc048601a8fcd19711ba68ddc0b2b53d4ee43eaf101b222944, verified
+digest 092ad1e87bea8c663091f108b4b937022a228e9addcba584c3d31382d75fd44a),
 with exact axiom policies (`[propext]` or `[Quot.sound, propext]`, or none, for
-each definition). `kappa/expected/` holds the 29 build oracles and 164
+each definition; a definition that only reads a record's fields has none, and
+one that touches a fixed-width integer has both, as in the standard library's
+SHA-256). `kappa/expected/` holds the 55 build oracles and 272
 normalized verification records, written by `check-golden --write` and
 `verify-examples --write` restricted to the new project; no other example's
 record changed. The definitions carry no theorem: a `reflexivity` theorem on
@@ -18361,8 +18384,32 @@ record changed. The definitions carry no theorem: a `reflexivity` theorem on
 the right-hand literal), as the probe of #110 found for the `compare_bytes`
 family, so the label is held by the differential and not by a proof.
 
-`KA-04` holds each composition to `uor_addr::composition::compose_*` on 290
-(`composeG2`, operands in both orders and paired with themselves) or 101
+The four hash axes of `KA-05` are held to the `address_*` functions of uor-addr
+0.2.0, which hash the canonical form of a JSON document: the corpus of
+`labelOn` is the twelve fixtures, a document for each of 39 canonical lengths
+(from 4 bytes to 5000, around the 128-byte block of SHA-512, the 136-byte rate
+of Keccak, the 64-byte block of BLAKE3 and its 1024-byte chunk, up to five
+chunks) and four seeded documents, 281 runs over the five axes (sha256 is
+dispatched too) and six names that are no axis, which the package refuses. The first
+run of the case found the four new axes in agreement with the oracle; the plants
+are what show the differential could have said otherwise, each reaching the
+function or flag it names. The oracle is the only reference the hashes were held
+to: no FIPS 180-4, FIPS 202 or BLAKE3 test vector was run against `Sha512`,
+`Keccak` or `Blake3` themselves (the standard library's `Sha256` is, `SL-01`).
+`KA-06` holds the compositions to `compose_*` (and `_blake3`, `_sha3_256`,
+`_keccak256`, `_sha512`) on each axis, 1006 runs for `composeG2On` and 371 for
+each of the others under the evaluator and 12 seeded operands per axis under
+rustc, the laws of the product and the mirror read on every axis.
+
+The `Axis` roots dispatch on the axis by name and so carry the closure of every
+hash, and with eighteen production roots the certificates the verifier generates
+for the project together pass the default `max_total_source_bytes` of 64 MiB
+(`LLS8002`, at `LexLeanKappa.Json.jsonLabel`); the project's own configuration raises it to 1 GiB, a semantic
+input of the project and no language data. On the 4-core host of this
+record the project verifies in 17 minutes (1026 s of `verify-examples`).
+
+`KA-04` holds each composition to `uor_addr::composition::compose_*` on 302
+(`composeG2`, operands in both orders and paired with themselves) or 107
 seeded operand labels each, the corpus holding the extremes, the degree-6
 class of E6, a digest and its mirror, quarters in each of the 24 orders, and
 the labels the package refuses (another axis, the case of the prefix, a digest

@@ -3,7 +3,7 @@ name = "kappa"
 language = "1.2"
 module_prefix = "LexLeanKappa"
 source_roots = ["src"]
-entrypoints = ["src/Compose.lex.tex", "src/Json.lex.tex", "src/Label.lex.tex"]
+entrypoints = ["src/Axis.lex.tex", "src/Blake3.lex.tex", "src/Compose.lex.tex", "src/Json.lex.tex", "src/Keccak.lex.tex", "src/Label.lex.tex", "src/Sha512.lex.tex", "src/Word.lex.tex"]
 build_root = ".lexlean"
 lockfile = "lexlean.lock"
 lean_workspace = "."
@@ -21,7 +21,7 @@ path = "stdlib"
 
 [limits]
 max_file_bytes = 4194304
-max_total_source_bytes = 67108864
+max_total_source_bytes = 1073741824
 max_primitive_atoms = 2000000
 max_token_lattice_edges = 4000000
 max_parse_states = 4000000

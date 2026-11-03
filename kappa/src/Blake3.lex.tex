@@ -1,0 +1,312 @@
+\begin{lexlean}{Blake3}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.Sha256}
+\title{Natural number addition}
+\begin{semanticmodule}
+structure{
+  name: Cv,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: c0, type: UInt32},
+    {name: c1, type: UInt32},
+    {name: c2, type: UInt32},
+    {name: c3, type: UInt32},
+    {name: c4, type: UInt32},
+    {name: c5, type: UInt32},
+    {name: c6, type: UInt32},
+    {name: c7, type: UInt32}
+  ]
+}
+
+structure{
+  name: Block,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: m0, type: UInt32},
+    {name: m1, type: UInt32},
+    {name: m2, type: UInt32},
+    {name: m3, type: UInt32},
+    {name: m4, type: UInt32},
+    {name: m5, type: UInt32},
+    {name: m6, type: UInt32},
+    {name: m7, type: UInt32},
+    {name: m8, type: UInt32},
+    {name: m9, type: UInt32},
+    {name: m10, type: UInt32},
+    {name: m11, type: UInt32},
+    {name: m12, type: UInt32},
+    {name: m13, type: UInt32},
+    {name: m14, type: UInt32},
+    {name: m15, type: UInt32}
+  ]
+}
+
+structure{
+  name: State,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: v0, type: UInt32},
+    {name: v1, type: UInt32},
+    {name: v2, type: UInt32},
+    {name: v3, type: UInt32},
+    {name: v4, type: UInt32},
+    {name: v5, type: UInt32},
+    {name: v6, type: UInt32},
+    {name: v7, type: UInt32},
+    {name: v8, type: UInt32},
+    {name: v9, type: UInt32},
+    {name: v10, type: UInt32},
+    {name: v11, type: UInt32},
+    {name: v12, type: UInt32},
+    {name: v13, type: UInt32},
+    {name: v14, type: UInt32},
+    {name: v15, type: UInt32}
+  ]
+}
+
+structure{
+  name: Quad,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: a, type: UInt32},
+    {name: b, type: UInt32},
+    {name: c, type: UInt32},
+    {name: d, type: UInt32}
+  ]
+}
+
+structure{
+  name: Merge,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: cv, type: Cv}, {name: total, type: Nat}, {name: stack, type: (List Cv)}]
+}
+
+definition{
+  name: g,
+  parameters: [a : UInt32, b : UInt32, c : UInt32, d : UInt32, x : UInt32, y : UInt32],
+  result: Quad,
+  body: (let a1 : UInt32 := (LexLeanStd.Sha256::add (LexLeanStd.Sha256::add a b) x); (let d1 : UInt32 := (LexLeanStd.Sha256::rotateRight (prim bit_xor d a1 : UInt32) (16 : UInt32) (16 : UInt32)); (let c1 : UInt32 := (LexLeanStd.Sha256::add c d1); (let b1 : UInt32 := (LexLeanStd.Sha256::rotateRight (prim bit_xor b c1 : UInt32) (12 : UInt32) (20 : UInt32)); (let a2 : UInt32 := (LexLeanStd.Sha256::add (LexLeanStd.Sha256::add a1 b1) y); (let d2 : UInt32 := (LexLeanStd.Sha256::rotateRight (prim bit_xor d1 a2 : UInt32) (8 : UInt32) (24 : UInt32)); (let c2 : UInt32 := (LexLeanStd.Sha256::add c1 d2); (let b2 : UInt32 := (LexLeanStd.Sha256::rotateRight (prim bit_xor b1 c2 : UInt32) (7 : UInt32) (25 : UInt32)); (record Quad {a := a2, b := b2, c := c2, d := d2}))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: columns,
+  parameters: [v : State, m : Block],
+  result: State,
+  body: (let q0 : Quad := (g (project v v0) (project v v4) (project v v8) (project v v12) (project m m0) (project m m1)); (let q1 : Quad := (g (project v v1) (project v v5) (project v v9) (project v v13) (project m m2) (project m m3)); (let q2 : Quad := (g (project v v2) (project v v6) (project v v10) (project v v14) (project m m4) (project m m5)); (let q3 : Quad := (g (project v v3) (project v v7) (project v v11) (project v v15) (project m m6) (project m m7)); (record State {v0 := (project q0 a), v1 := (project q1 a), v2 := (project q2 a), v3 := (project q3 a), v4 := (project q0 b), v5 := (project q1 b), v6 := (project q2 b), v7 := (project q3 b), v8 := (project q0 c), v9 := (project q1 c), v10 := (project q2 c), v11 := (project q3 c), v12 := (project q0 d), v13 := (project q1 d), v14 := (project q2 d), v15 := (project q3 d)}))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: diagonals,
+  parameters: [v : State, m : Block],
+  result: State,
+  body: (let q0 : Quad := (g (project v v0) (project v v5) (project v v10) (project v v15) (project m m8) (project m m9)); (let q1 : Quad := (g (project v v1) (project v v6) (project v v11) (project v v12) (project m m10) (project m m11)); (let q2 : Quad := (g (project v v2) (project v v7) (project v v8) (project v v13) (project m m12) (project m m13)); (let q3 : Quad := (g (project v v3) (project v v4) (project v v9) (project v v14) (project m m14) (project m m15)); (record State {v0 := (project q0 a), v1 := (project q1 a), v2 := (project q2 a), v3 := (project q3 a), v4 := (project q3 b), v5 := (project q0 b), v6 := (project q1 b), v7 := (project q2 b), v8 := (project q2 c), v9 := (project q3 c), v10 := (project q0 c), v11 := (project q1 c), v12 := (project q1 d), v13 := (project q2 d), v14 := (project q3 d), v15 := (project q0 d)}))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: permute,
+  parameters: [m : Block],
+  result: Block,
+  body: (record Block {m0 := (project m m2), m1 := (project m m6), m2 := (project m m3), m3 := (project m m10), m4 := (project m m7), m5 := (project m m0), m6 := (project m m4), m7 := (project m m13), m8 := (project m m1), m9 := (project m m11), m10 := (project m m12), m11 := (project m m5), m12 := (project m m9), m13 := (project m m14), m14 := (project m m15), m15 := (project m m8)}),
+  executable: true
+}
+
+definition{
+  name: roundStep,
+  parameters: [state : (State * Block)],
+  result: (State * Block),
+  body: ((diagonals (columns (first state) (second state)) (second state)), (permute (second state))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: compress,
+  parameters: [cv : Cv, block : Block, counter : Nat, length : UInt32, flags : UInt32],
+  result: Cv,
+  body: (let final : State := (first (prim iterate (fun (state : (State * Block)) => (roundStep state)) 7 ((record State {v0 := (project cv c0), v1 := (project cv c1), v2 := (project cv c2), v3 := (project cv c3), v4 := (project cv c4), v5 := (project cv c5), v6 := (project cv c6), v7 := (project cv c7), v8 := (1779033703 : UInt32), v9 := (3144134277 : UInt32), v10 := (1013904242 : UInt32), v11 := (2773480762 : UInt32), v12 := (LexLeanStd.Sha256::wordOfNat (prim remainder counter 4294967296 0 : Nat)), v13 := (LexLeanStd.Sha256::wordOfNat (prim quotient counter 4294967296 0 : Nat)), v14 := length, v15 := flags}), block) : (State * Block))); (record Cv {c0 := (prim bit_xor (project final v0) (project final v8) : UInt32), c1 := (prim bit_xor (project final v1) (project final v9) : UInt32), c2 := (prim bit_xor (project final v2) (project final v10) : UInt32), c3 := (prim bit_xor (project final v3) (project final v11) : UInt32), c4 := (prim bit_xor (project final v4) (project final v12) : UInt32), c5 := (prim bit_xor (project final v5) (project final v13) : UInt32), c6 := (prim bit_xor (project final v6) (project final v14) : UInt32), c7 := (prim bit_xor (project final v7) (project final v15) : UInt32)})),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: initial,
+  parameters: [],
+  result: Cv,
+  body: (record Cv {c0 := (1779033703 : UInt32), c1 := (3144134277 : UInt32), c2 := (1013904242 : UInt32), c3 := (2773480762 : UInt32), c4 := (1359893119 : UInt32), c5 := (2600822924 : UInt32), c6 := (528734635 : UInt32), c7 := (1541459225 : UInt32)}),
+  executable: true
+}
+
+definition{
+  name: byteAt,
+  parameters: [message : Bytes, position : Nat],
+  result: UInt32,
+  body: (match (prim index message position : (Option UInt8))
+    | Option.some byte => (match (prim checked_convert byte : (Option UInt32))
+      | Option.some wide => wide
+      | Option.none => (0 : UInt32))
+    | Option.none => (0 : UInt32)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: wordAt,
+  parameters: [message : Bytes, position : Nat],
+  result: UInt32,
+  body: (prim bit_or (byteAt message position) (prim bit_or (LexLeanStd.Sha256::shiftLeft (byteAt message (position + 1)) (8 : UInt32)) (prim bit_or (LexLeanStd.Sha256::shiftLeft (byteAt message (position + 2)) (16 : UInt32)) (LexLeanStd.Sha256::shiftLeft (byteAt message (position + 3)) (24 : UInt32)) : UInt32) : UInt32) : UInt32),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: load,
+  parameters: [message : Bytes, offset : Nat],
+  result: Block,
+  body: (record Block {m0 := (wordAt message (offset + 0)), m1 := (wordAt message (offset + 4)), m2 := (wordAt message (offset + 8)), m3 := (wordAt message (offset + 12)), m4 := (wordAt message (offset + 16)), m5 := (wordAt message (offset + 20)), m6 := (wordAt message (offset + 24)), m7 := (wordAt message (offset + 28)), m8 := (wordAt message (offset + 32)), m9 := (wordAt message (offset + 36)), m10 := (wordAt message (offset + 40)), m11 := (wordAt message (offset + 44)), m12 := (wordAt message (offset + 48)), m13 := (wordAt message (offset + 52)), m14 := (wordAt message (offset + 56)), m15 := (wordAt message (offset + 60))}),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: prefix,
+  parameters: [message : Bytes, start : Nat, index : Nat, count : Nat],
+  result: Cv,
+  body: (second (prim iterate (fun [index, message, start] (state : (Nat * Cv)) => (((first state) + 1), (compress (second state) (load message (start + (prim multiply 64 (first state) : Nat))) index (64 : UInt32) (if ((first state) =? 0) then (1 : UInt32) else (0 : UInt32))))) count (0, (initial)) : (Nat * Cv))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: available,
+  parameters: [size : Nat, start : Nat],
+  result: Nat,
+  body: (if (1024 <? (prim subtract size start : Nat)) then 1024 else (prim subtract size start : Nat)),
+  executable: true
+}
+
+definition{
+  name: blocks,
+  parameters: [bytes : Nat],
+  result: Nat,
+  body: (if (bytes =? 0) then 1 else (prim quotient (bytes + 63) 64 0 : Nat)),
+  executable: true
+}
+
+definition{
+  name: chunk,
+  parameters: [message : Bytes, size : Nat, index : Nat, root : Bool],
+  result: Cv,
+  body: (let start : Nat := (prim multiply 1024 index : Nat); (let rest : Nat := (available size start); (let count : Nat := (blocks rest); (let last : Nat := (prim subtract count 1 : Nat); (compress (prefix message start index last) (load message (start + (prim multiply 64 last : Nat))) index (LexLeanStd.Sha256::wordOfNat (prim subtract rest (prim multiply 64 last : Nat) : Nat)) (prim bit_or (if (last =? 0) then (3 : UInt32) else (2 : UInt32)) (if root then (8 : UInt32) else (0 : UInt32)) : UInt32)))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: parentBlock,
+  parameters: [left : Cv, right : Cv],
+  result: Block,
+  body: (record Block {m0 := (project left c0), m1 := (project left c1), m2 := (project left c2), m3 := (project left c3), m4 := (project left c4), m5 := (project left c5), m6 := (project left c6), m7 := (project left c7), m8 := (project right c0), m9 := (project right c1), m10 := (project right c2), m11 := (project right c3), m12 := (project right c4), m13 := (project right c5), m14 := (project right c6), m15 := (project right c7)}),
+  executable: true
+}
+
+definition{
+  name: parent,
+  parameters: [left : Cv, right : Cv, root : Bool],
+  result: Cv,
+  body: (compress (initial) (parentBlock left right) 0 (64 : UInt32) (prim bit_or (4 : UInt32) (if root then (8 : UInt32) else (0 : UInt32)) : UInt32)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: mergeStep,
+  parameters: [state : Merge],
+  result: Merge,
+  body: (if ((prim remainder (project state total) 2 0 : Nat) =? 0) then (match (project state stack)
+    | List.nil => state
+    | List.cons top rest => (record Merge {cv := (parent top (project state cv) false), total := (prim quotient (project state total) 2 0 : Nat), stack := rest})) else state),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: push,
+  parameters: [state : (Nat * (List Cv)), chunkCv : Cv],
+  result: (Nat * (List Cv)),
+  body: (let merged : Merge := (prim iterate (fun (pair : Merge) => (mergeStep pair)) 40 (record Merge {cv := chunkCv, total := ((first state) + 1), stack := (second state)}) : Merge); (((first state) + 1), (cons (project merged cv) (project merged stack)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: fullChunks,
+  parameters: [message : Bytes, size : Nat, count : Nat],
+  result: (Nat * (List Cv)),
+  body: (prim iterate (fun [message, size] (state : (Nat * (List Cv))) => (push state (chunk message size (first state) false))) count (0, (nil Cv)) : (Nat * (List Cv))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: foldStep,
+  parameters: [state : ((List Cv) * Cv)],
+  result: ((List Cv) * Cv),
+  body: (match (first state)
+    | List.nil => state
+    | List.cons top rest => (rest, (parent top (second state) (match rest
+      | List.nil => true
+      | List.cons next more => false)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: nibble,
+  parameters: [value : UInt32, shift : UInt32],
+  result: Bytes,
+  body: (LexLeanStd.Sha256::hexDigit (LexLeanStd.Sha256::shiftRight value shift)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: hexLittle,
+  parameters: [value : UInt32],
+  result: Bytes,
+  body: (prim append (prim append (nibble value (4 : UInt32)) (nibble value (0 : UInt32)) : Bytes) (prim append (prim append (nibble value (12 : UInt32)) (nibble value (8 : UInt32)) : Bytes) (prim append (prim append (nibble value (20 : UInt32)) (nibble value (16 : UInt32)) : Bytes) (prim append (nibble value (28 : UInt32)) (nibble value (24 : UInt32)) : Bytes) : Bytes) : Bytes) : Bytes),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: treeRoot,
+  parameters: [message : Bytes],
+  result: Cv,
+  body: (let size : Nat := (prim length message : Nat); (let count : Nat := (if (size =? 0) then 1 else (prim quotient (size + 1023) 1024 0 : Nat)); (let last : Nat := (prim subtract count 1 : Nat); (match (second (fullChunks message size last))
+    | List.nil => (chunk message size last true)
+    | List.cons top rest => (second (prim iterate (fun (state : ((List Cv) * Cv)) => (foldStep state)) 64 ((cons top rest), (chunk message size last false)) : ((List Cv) * Cv))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: blake3Hex,
+  parameters: [message : Bytes],
+  result: Bytes,
+  body: (let digest : Cv := (treeRoot message); (prim append (hexLittle (project digest c0)) (prim append (hexLittle (project digest c1)) (prim append (hexLittle (project digest c2)) (prim append (hexLittle (project digest c3)) (prim append (hexLittle (project digest c4)) (prim append (hexLittle (project digest c5)) (prim append (hexLittle (project digest c6)) (hexLittle (project digest c7)) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}
