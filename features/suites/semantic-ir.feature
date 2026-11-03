@@ -132,8 +132,7 @@ Feature: semantic-ir
     When LexLean builds and verifies it on the pinned toolchain
     Then the generated runtime and module elaborate and replay
     And each computational definition reports exactly its source-declared axiom policy
-    And joined strings reduce in kernel proofs with empty, singleton, Unicode, and nested inputs, and an altered expected join is rejected
-    And nested records and large bounded slices retain exact arbitrary bytes during elaboration and replay, and an altered expected slice is rejected
+    And nested byte records, bounded slices and empty, singleton, Unicode and nested joins reduce exactly, with altered expectations rejected
     And byte literals use closed explicit octets with deterministic literal-local sharing while canonical document numbers and every byte remain unchanged
 
   @SM-20 @build
