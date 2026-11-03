@@ -12274,3 +12274,29 @@ draws up to a fixed count. `BS-05`, `BS-06`, `BS-08` and `BS-15` read only manif
 and fixtures. The three failing cases assert the count before their plants, so that
 run did not reach the plants on the new draws. A package that adds records should
 set these counts with its records in the tree, on the same commit.
+
+
+## Readable semantic notation obeys its nesting bound (AU-03, #374)
+
+The recursive readable term and type readers enforce the same depth-256 bound
+as the generic notation reader. `conformance_au_03` constructs 50,000-level
+`cons` terms and `List` types, both with and without their closing parentheses.
+The public check API and the CLI in human and JSON modes must refuse each with
+`LLP2001` at a position in `src/Main.lex.tex`, before decoding semantic JSON.
+These are temporary negative projects inside the existing AU-03 case.
+
+`cargo test -p lexlean --lib readable_nesting_has_an_explicit_bound` also checks
+the exact readable boundary: 255 unary terms or `List` types, and 254 `cons`
+terms ending in `(nil Nat)`, read successfully; one more nesting is refused.
+The leaf type of `nil` consumes the additional level.
+
+The test failed on the old reader because an over-bound term was accepted.
+Removing only the readable term guard then failed on the 256-level unary term;
+removing only the type guard failed on the over-bound `cons` term's leaf type.
+Both plants returned a failing test (exit 101), without a stack abort, and were
+restored. The fixed boundary test and `conformance_au_03` passed on Linux with
+Rust 1.97.1. No Lean process is involved in these checks.
+
+The fix changes no embedded normative identity input: `build.rs` embeds
+`language/`, `schemas/`, and the axiom-parser and canonical-JSON goldens, none
+of which changes here. No language identity or verification oracle is rewritten.
