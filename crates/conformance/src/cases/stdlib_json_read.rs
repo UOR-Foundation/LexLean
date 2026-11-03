@@ -345,7 +345,7 @@ struct Plant {
 /// One defect for each rule of the canonical form the module holds. Each
 /// leaves every other rule intact, so that only the vector of its own catches
 /// it.
-const PLANTS: [Plant; 12] = [
+const PLANTS: [Plant; 13] = [
     Plant {
         label: "keys out of order are read",
         member: "readJson",
@@ -360,6 +360,14 @@ const PLANTS: [Plant; 12] = [
         site: "((0 <? magnitude) && (magnitude <=? 9223372036854775808))",
         replacement: "(magnitude <=? 9223372036854775808)",
         text: "-0",
+        accepted: false,
+    },
+    Plant {
+        label: "a number of twenty digits reaches the decimal reader",
+        member: "readJson",
+        site: "(19 <? (prim subtract stop start : Nat))",
+        replacement: "false",
+        text: "18446744073709551616",
         accepted: false,
     },
     Plant {
@@ -608,6 +616,7 @@ pub fn run(id: &str) {
         "a member's package does not build:\n{}",
         String::from_utf8_lossy(&build.stderr)
     );
+    let mut binaries = Vec::new();
     for (name, outcomes) in &expected {
         let binary = dir
             .path()
@@ -621,7 +630,7 @@ pub fn run(id: &str) {
             "{name}: {}",
             String::from_utf8_lossy(&ran.stderr)
         );
-        crate::stack_bounds::observe(&crate::stack_bounds::subject("stdlib", name), &binary);
+        binaries.push((name.clone(), binary));
         let stdout = String::from_utf8(ran.stdout).expect("utf8");
         let printed: Vec<Observed> = stdout
             .lines()
@@ -697,6 +706,11 @@ pub fn run(id: &str) {
         missed.is_empty(),
         "planted defects the fixed vectors do not detect: {missed:?}"
     );
+    // The measured stack bound of every package comes last, so that a bound not yet
+    // committed hides none of the results above.
+    for (name, binary) in &binaries {
+        crate::stack_bounds::observe(&crate::stack_bounds::subject("stdlib", name), binary);
+    }
     // Under the pinned Lean, the production export certifies every member;
     // its packages are the committed ones and realize the programs the
     // differential ran.
