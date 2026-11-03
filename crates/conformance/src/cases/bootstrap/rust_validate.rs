@@ -1583,7 +1583,6 @@ const REACHABLE: &[&str] = &[
     "type-fn-undeclared",
     "heap-string-literal",
     "heap-byte-literal",
-    "heap-list-match",
     "heap-boxed-read",
     "heap-box",
     "heap-runtime",
@@ -1624,11 +1623,17 @@ const REACHABLE: &[&str] = &[
     "width",
 ];
 
-/// The refusals only the hand-built crates reach: the committed crates hold no
+/// The refusals the hand-built crates hold: the committed crates hold no
 /// machine call and no overflow value, so their mutants do not either (the
 /// rule vectors are drawn until [`REACHABLE`] is, and these are counted
-/// beside them).
-const HAND_BUILT: &[&str] = &["machine-arity", "overflow-stray", "no-row"];
+/// beside them). A list match under `rust-core` is one too: the mutants reach
+/// it only on some draws, so a pool that grows can lose it.
+const HAND_BUILT: &[&str] = &[
+    "machine-arity",
+    "overflow-stray",
+    "no-row",
+    "heap-list-match",
+];
 
 fn classify(message: &str) -> &'static str {
     let has = |needle: &str| message.contains(needle);
@@ -1882,6 +1887,21 @@ fn rule_vectors(bases: &[&Rendered], each: usize) -> (Vec<Run>, Vec<Run>) {
         "the rule corpus gave up before it reached {each} runs of: {missing:?}"
     );
     (validated, corresponded)
+}
+
+/// A crate by hand for the list match under `rust-core`, on a parameter of a
+/// type that is not on the heap, so that no heap type is refused before it.
+fn list_match_crates() -> Vec<Crate> {
+    vec![Crate {
+        profile: lexlean::calculus::rust::Profile::Core,
+        items: vec![ItemDef::Function {
+            name: Ident::Function(0),
+            parameters: vec![(Pat::Bind(Ident::Param(0)), Type::Nat)],
+            result: Type::Unit,
+            body: Block::of(Expr::Uncons(Ident::Param(0))),
+            at: Origin::of("function"),
+        }],
+    }]
 }
 
 /// Crates by hand for the merge of moved sets at a branch: a name moved on
@@ -2536,7 +2556,7 @@ fn merged(parts: &[&[Run]]) -> Vec<Run> {
     parts.iter().flat_map(|part| part.iter().cloned()).collect()
 }
 
-/// The nodes of a value: what a literal of it costs rustc.
+/// The semantic nodes of a value, used by the performance measurements.
 pub(super) fn value_nodes(value: &Value) -> usize {
     1 + match value {
         Value::Adt { fields, .. } => fields.iter().map(value_nodes).sum(),
@@ -2547,10 +2567,42 @@ pub(super) fn value_nodes(value: &Value) -> usize {
     }
 }
 
-/// The nodes of the arguments one harness binary may hold. A crate is data
-/// of thousands of nodes, which rustc compiles as one literal each, so the
-/// runs are spread over several harness binaries of one compiled package.
+/// The Rust literal work of a value. Bytes expand to one array element per
+/// octet, although they are one semantic node; counting only semantic nodes
+/// puts megabytes of byte literals into one function and exhausts rustc's
+/// MIR/drop-scope processing on Windows (BS-15).
+fn harness_literal_weight(value: &Value) -> usize {
+    1 + match value {
+        Value::Bytes { hex } => hex.len() / 2,
+        Value::Adt { fields, .. } => fields.iter().map(harness_literal_weight).sum(),
+        Value::List { items } => items.iter().map(harness_literal_weight).sum(),
+        Value::Pair { left, right } => harness_literal_weight(left) + harness_literal_weight(right),
+        Value::Some { value } | Value::Ok { value } | Value::Error { value } => {
+            harness_literal_weight(value)
+        }
+        _ => 0,
+    }
+}
+
+/// The literal work of the arguments one harness binary may hold. A single
+/// run beyond the budget stays intact, so partitioning never drops or changes
+/// an input; all other chunks fit the bound.
 pub(super) const HARNESS_NODES: usize = 60_000;
+
+fn harness_chunks(runs: &[Run], budget: usize) -> Vec<Vec<&Run>> {
+    let mut chunks: Vec<Vec<&Run>> = Vec::new();
+    let mut weight = 0;
+    for run in runs {
+        let next: usize = run.0.iter().map(harness_literal_weight).sum();
+        if chunks.is_empty() || weight + next > budget {
+            chunks.push(Vec::new());
+            weight = 0;
+        }
+        weight += next;
+        chunks.last_mut().expect("a chunk").push(run);
+    }
+    chunks
+}
 
 /// One outcome line, whatever its depth: a program's typing tree nests with
 /// the length of its chains, past the reader's default limit of 128 levels,
@@ -2600,17 +2652,7 @@ pub(super) fn rustc_differential(
             .types
             .len();
         let passing = vec![Passing::Own; arity];
-        let mut chunks: Vec<Vec<&Run>> = Vec::new();
-        let mut weight = 0;
-        for run in *runs {
-            let nodes: usize = run.0.iter().map(value_nodes).sum();
-            if chunks.is_empty() || weight + nodes > HARNESS_NODES {
-                chunks.push(Vec::new());
-                weight = 0;
-            }
-            weight += nodes;
-            chunks.last_mut().expect("a chunk").push(run);
-        }
+        let chunks = harness_chunks(runs, HARNESS_NODES);
         for (number, chunk) in chunks.iter().enumerate() {
             let arguments: Vec<Vec<Value>> = chunk.iter().map(|run| run.0.clone()).collect();
             let source = rust_harness::render_calls(
@@ -2963,24 +3005,25 @@ const RULES_EACH: usize = 3;
 // The counts the specification states, over the committed tree: SPEC.md
 // §17.23, the register statement of BS-05, its scenario, and VERIFICATION.md
 // restate them, and the case fails when the tree no longer gives them.
-const COMMITTED_MANIFESTS: usize = 277;
+const COMMITTED_MANIFESTS: usize = 283;
 const COMMITTED_FIXTURES: usize = 122;
-const COMMITTED_PROGRAMS: usize = 194;
-const COMMITTED_CRATES: usize = 253;
-const RULE_VALIDATE_RUNS: usize = 132;
+const COMMITTED_PROGRAMS: usize = 200;
+const COMMITTED_CRATES: usize = 259;
+const RULE_VALIDATE_RUNS: usize = 129;
 const RULE_CORRESPOND_RUNS: usize = 12;
 const BRANCH_CRATES: usize = 17;
 const LOOP_CRATES: usize = 34;
+const LIST_MATCH_CRATES: usize = 1;
 const MACHINE_CRATES: usize = 44 + 3 + 1 + 2 + 2 + 3;
-const VECTORS_VALIDATE: usize = 491;
-const REFUSED_VALIDATE: usize = 213;
-const VECTORS_CORRESPOND: usize = 354;
+const VECTORS_VALIDATE: usize = 495;
+const REFUSED_VALIDATE: usize = 211;
+const VECTORS_CORRESPOND: usize = 360;
 const REFUSED_CORRESPOND: usize = 100;
-const EVALUATOR_CRATES: usize = 205;
-const EVALUATOR_VALIDATE: usize = 443;
-const EVALUATOR_CORRESPOND: usize = 306;
-const SEEDED_REFUSED_VALIDATE: usize = 271;
-const SEEDED_REFUSED_CORRESPOND: usize = 244;
+const EVALUATOR_CRATES: usize = 208;
+const EVALUATOR_VALIDATE: usize = 444;
+const EVALUATOR_CORRESPOND: usize = 309;
+const SEEDED_REFUSED_VALIDATE: usize = 291;
+const SEEDED_REFUSED_CORRESPOND: usize = 252;
 
 pub(super) fn case() {
     let started = std::time::Instant::now();
@@ -3014,6 +3057,7 @@ pub(super) fn case() {
         .into_iter()
         .chain(loop_crates())
         .chain(machine_crates())
+        .chain(list_match_crates())
         .collect();
     assert_eq!(
         (rule_validate.len(), rule_correspond.len()),
@@ -3024,9 +3068,15 @@ pub(super) fn case() {
         (
             branch_crates().len(),
             loop_crates().len(),
-            machine_crates().len()
+            machine_crates().len(),
+            list_match_crates().len()
         ),
-        (BRANCH_CRATES, LOOP_CRATES, MACHINE_CRATES),
+        (
+            BRANCH_CRATES,
+            LOOP_CRATES,
+            MACHINE_CRATES,
+            LIST_MATCH_CRATES
+        ),
         "the hand-built crates"
     );
     rule_validate.extend(by_hand.iter().map(validate_run));
@@ -3273,4 +3323,38 @@ pub(super) fn case() {
     }
     assert_eq!(realized, ROOTS.len(), "one certified package per root");
     eprintln!("BS-05: passed in {:?}", started.elapsed());
+}
+
+#[cfg(test)]
+mod harness_budget_tests {
+    use super::*;
+
+    #[test]
+    fn byte_payloads_bound_chunks_without_changing_the_corpus() {
+        let payload = Value::Bytes {
+            hex: "ab".repeat(16_384),
+        };
+        let nested = Value::Some {
+            value: Box::new(payload.clone()),
+        };
+        assert_eq!(value_nodes(&nested), 2, "semantic counts stay unchanged");
+        assert_eq!(harness_literal_weight(&nested), 16_386);
+        let runs: Vec<Run> = (0..8)
+            .map(|index| (vec![nested.clone()], serde_json::json!({"index": index})))
+            .collect();
+        let chunks = harness_chunks(&runs, HARNESS_NODES);
+        assert_eq!(chunks.iter().map(Vec::len).collect::<Vec<_>>(), [3, 3, 2]);
+        assert_eq!(
+            chunks.into_iter().flatten().collect::<Vec<_>>(),
+            runs.iter().collect::<Vec<_>>(),
+            "every input and expected outcome stays in order"
+        );
+        assert!(harness_chunks(&[], HARNESS_NODES).is_empty());
+        let oversized = harness_chunks(&runs[..1], 1);
+        assert_eq!(
+            oversized,
+            vec![vec![&runs[0]]],
+            "an oversized run is kept whole"
+        );
+    }
 }

@@ -81,6 +81,9 @@
     "bootstrap/print_expr": {
       "debug": 4259840
     },
+    "bootstrap/render_tooling_latex": {
+      "debug": 3342336
+    },
     "bootstrap/site_trees": {
       "debug": 6029312
     },
