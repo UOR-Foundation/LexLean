@@ -1,5 +1,14 @@
 [
   {
+    "part": "honesty",
+    "recipes": "fmt-check model spec-links bdd",
+    "examples_part": "",
+    "bdd_part": "honesty",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
     "part": "examples",
     "recipes": "examples",
     "examples_part": "without:uor-atlas",
@@ -10,7 +19,7 @@
   },
   {
     "part": "rest",
-    "recipes": "fmt-check model spec-links lint test features bdd inventory golden repro deny",
+    "recipes": "lint test features bdd inventory golden repro deny",
     "examples_part": "",
     "bdd_part": "rest",
     "width": "",

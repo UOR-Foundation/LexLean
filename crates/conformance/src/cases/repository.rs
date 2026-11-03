@@ -169,11 +169,13 @@ fn plan_decisions() {
     // the Atlas join, and every host. The shards do not matter to the plan:
     // the join needs them all.
     let mut green: Vec<String> = vec!["plan\tsuccess".to_owned()];
-    green.extend(
-        parts
-            .iter()
-            .map(|part| format!("just vv ({part})\tsuccess")),
-    );
+    green.extend(parts.iter().map(|part| {
+        if part == "honesty" {
+            "honesty\tsuccess".to_owned()
+        } else {
+            format!("just vv ({part})\tsuccess")
+        }
+    }));
     green.push("atlas (prefix)\tsuccess".to_owned());
     green.push("atlas (join)\tsuccess".to_owned());
     green.extend(hosts.iter().map(|host| format!("{host}\tsuccess")));
@@ -320,6 +322,19 @@ fn plan_decisions() {
         };
         let planned: Vec<serde_json::Value> =
             serde_json::from_str(&value("rows")).expect("rows are JSON");
+        let honesty: Vec<serde_json::Value> =
+            serde_json::from_str(&value("honesty")).expect("honesty is JSON");
+        let fanout: Vec<serde_json::Value> =
+            serde_json::from_str(&value("fanout")).expect("fanout is JSON");
+        assert!(honesty.iter().all(|row| row["part"] == "honesty"));
+        assert!(fanout.iter().all(|row| row["part"] != "honesty"));
+        let mut combined = honesty;
+        combined.extend(fanout);
+        assert_eq!(
+            combined, planned,
+            "honesty and fanout partition the planned rows"
+        );
+
         (
             value("full"),
             planned
@@ -329,9 +344,12 @@ fn plan_decisions() {
         )
     };
     let whole = ("true".to_owned(), parts.clone());
-    let draft = ("false".to_owned(), vec!["rest".to_owned()]);
+    let draft = (
+        "false".to_owned(),
+        vec!["honesty".to_owned(), "rest".to_owned()],
+    );
     let nothing = ("false".to_owned(), Vec::<String>::new());
-    // A draft pull request is the `rest` leg, and so is a ready one stacked on
+    // A draft pull request runs honesty then `rest`, as does a ready one stacked on
     // a feature branch, which cannot land on a line; a ready one into `main`
     // or a release line, a request, and a push are the whole gate when no run
     // is known. A base the event does not name is not known to be stacked.
@@ -392,6 +410,21 @@ fn plan_decisions() {
         decide("push", "", "main", &merge_equal, "4242", &green, false),
         nothing
     );
+    // A complete jobs listing can exceed a pipe buffer. Matching the join
+    // and required rows must consume it without a producer SIGPIPE.
+    let mut large = green.clone();
+    large.extend((0..2500).map(|index| format!("additional successful job {index}\tsuccess")));
+    assert_eq!(
+        decide("push", "", "main", &merge_equal, "4242", &large, false),
+        nothing,
+        "a large successful parent gate still avoids repeating the gate"
+    );
+    large.push("a late failed parent job\tfailure".to_owned());
+    assert_eq!(
+        decide("push", "", "main", &merge_equal, "4242", &large, false),
+        whole,
+        "a late failure never establishes successful parent evidence"
+    );
     // Every way the evidence can fall short runs the whole gate: no run, a
     // run that skipped or failed a job, a run without the Atlas join, one
     // host or one leg missing, the gate unreadable, and a merge that changed
@@ -418,6 +451,21 @@ fn plan_decisions() {
         ("no Atlas join", without("atlas (join)")),
         ("no host", without(&hosts[0])),
         ("no leg", without("just vv (rest)")),
+        ("no honesty", without("honesty")),
+        (
+            "failed honesty",
+            green
+                .iter()
+                .map(|job| job.replace("honesty\tsuccess", "honesty\tfailure"))
+                .collect(),
+        ),
+        (
+            "skipped honesty",
+            green
+                .iter()
+                .map(|job| job.replace("honesty\tsuccess", "honesty\tskipped"))
+                .collect(),
+        ),
         (
             "a draft run",
             vec![
@@ -1342,6 +1390,38 @@ pub(crate) fn run(id: &str) {
             };
             crate::inventory::compare_parts(&owned, &parts(&first, &remainder), &plants)
                 .expect("parts that partition bdd are accepted");
+            let target_plan = crate::bdd_parts::Plan::parse(
+                r#"{"remainder":"rest","parts":{},"targets":{"honesty":["bdd"]}}"#,
+            )
+            .expect("complete-target ownership");
+            let target_parts = |honesty: crate::inventory::Parsed,
+                                rest: crate::inventory::Parsed| {
+                vec![("honesty".to_owned(), honesty), ("rest".to_owned(), rest)]
+            };
+            crate::inventory::compare_parts(
+                &owned,
+                &target_parts(list(&[bdd_target]), list(&[conformance])),
+                &target_plan,
+            )
+            .expect("the complete target moves to honesty");
+            assert!(
+                crate::inventory::compare_parts(
+                    &owned,
+                    &target_parts(list(&[bdd_target]), owned.clone()),
+                    &target_plan
+                )
+                .is_err(),
+                "the remainder cannot repeat honesty tests"
+            );
+            assert!(
+                crate::inventory::compare_parts(
+                    &owned,
+                    &target_parts(Default::default(), owned.clone()),
+                    &target_plan
+                )
+                .is_err(),
+                "moving tests back to rest cannot silently empty honesty"
+            );
             let twice = crate::inventory::compare_parts(&owned, &parts(&first, &owned), &plants)
                 .expect_err("a test two parts run");
             assert!(twice.contains("parts `first` and `rest`"), "{twice}");
@@ -1361,7 +1441,9 @@ pub(crate) fn run(id: &str) {
                     && task.contains("std::env::var(PART_VARIABLE)")
                     && task.contains("plan.harness_filters(part)")
                     && task.contains("plan.harness_filters(&name)")
-                    && task.contains("inventory::compare_parts("),
+                    && task.contains("inventory::compare_parts(")
+                    && task.contains("plan.cargo_targets(part,")
+                    && task.contains("plan.cargo_targets(&name,"),
                 "the bdd task and the inventory select a part through the plan's filters"
             );
 
@@ -1381,10 +1463,12 @@ pub(crate) fn run(id: &str) {
                     "SPEC.md names `{recipe_command}`"
                 );
             }
-            // The honesty workflow keeps its own signal, and the host matrix
+            // The initial honesty job keeps its own signal, and the host matrix
             // (not part of vv) keeps the whole workspace on every host.
-            assert!(root_file(".github/workflows/honesty.yml")
-                .contains("cargo test --locked -p repo-conformance --test bdd"));
+            assert!(root_file(".github/workflows/ci.yml").contains("  honesty:\n"));
+            assert!(!support::repo_root()
+                .join(".github/workflows/honesty.yml")
+                .exists());
             assert!(root_file(".github/workflows/ci.yml")
                 .contains("cargo test --locked --workspace --all-features"));
         }
@@ -1437,7 +1521,11 @@ pub(crate) fn run(id: &str) {
                 );
                 // The plan decides what the run is and runs no recipe: it has
                 // ten minutes, not the six hours of the proof jobs.
-                let limit = if key == "plan" { 10 } else { 360 };
+                let limit = match key.as_str() {
+                    "plan" => 10,
+                    "honesty" => 30,
+                    _ => 360,
+                };
                 assert!(
                     body.contains(&format!("\n    timeout-minutes: {limit}\n")),
                     "§9.4: the job `{key}` has its limit of {limit} minutes"
@@ -1527,6 +1615,16 @@ pub(crate) fn run(id: &str) {
                     "§9.4: a leg names exactly its part, recipes, and profile: {row}"
                 );
             }
+            let initial: Vec<_> = rows
+                .iter()
+                .filter(|row| field(row, "part").as_deref() == Some("honesty"))
+                .collect();
+            assert_eq!(initial.len(), 1, "one initial honesty row");
+            assert_eq!(
+                field(initial[0], "recipes").as_deref(),
+                Some("fmt-check model spec-links bdd")
+            );
+            assert_eq!(field(initial[0], "bdd_part").as_deref(), Some("honesty"));
             assert_eq!(
                 rows.iter()
                     .filter(|row| field(row, "part").as_deref() == Some("rest"))
@@ -1676,7 +1774,7 @@ pub(crate) fn run(id: &str) {
                     "just --timestamp --timestamp-format '%s%.3f' ${{ matrix.recipes }} 2>&1 | tee ci-evidence/vv.txt"
                 )
                 .count(),
-                1,
+                2,
                 "every leg runs its recipes through the one gate command"
             );
             assert!(
@@ -1891,7 +1989,7 @@ pub(crate) fn run(id: &str) {
             // §9.4: a release line is held to the same gate as `main`, so the
             // push trigger of every workflow names both; a workflow that named
             // `main` alone would leave a release line's pushes unverified.
-            for workflow in ["ci.yml", "honesty.yml", "reproducibility.yml"] {
+            for workflow in ["ci.yml", "reproducibility.yml"] {
                 let text = root_file(&format!(".github/workflows/{workflow}"));
                 assert!(
                     text.contains("  push: { branches: [main, \"release/**\"] }\n"),
@@ -1920,12 +2018,14 @@ pub(crate) fn run(id: &str) {
             let mut step_conditions = 0;
             let mut full_conditions = 0;
             let mut rows_conditions = 0;
+            let mut honesty_conditions = 0;
             for (index, line) in ci.lines().enumerate() {
                 if line.trim_start().starts_with("if:") {
                     match line {
                         "        if: ${{ !cancelled() }}" => step_conditions += 1,
                         "    if: ${{ needs.plan.outputs.full == 'true' }}" => full_conditions += 1,
-                        "    if: ${{ needs.plan.outputs.rows != '[]' }}" => rows_conditions += 1,
+                        "    if: ${{ needs.plan.outputs.fanout != '[]' }}" => rows_conditions += 1,
+                        "    if: ${{ needs.plan.outputs.honesty != '[]' }}" => honesty_conditions += 1,
                         other => panic!(
                             "ci.yml:{}: a condition other than a step's `!cancelled()` or a job's condition on the plan: {other}",
                             index + 1
@@ -1935,7 +2035,7 @@ pub(crate) fn run(id: &str) {
             }
             assert_eq!(
                 step_conditions,
-                2 + 2 * atlas_jobs.len(),
+                4 + 2 * atlas_jobs.len(),
                 "the summary step and the evidence upload of every gate job carry it"
             );
             assert_eq!(
@@ -1944,15 +2044,31 @@ pub(crate) fn run(id: &str) {
                 "every Atlas job and the host matrix, and no other job, wait for the plan to name the whole gate"
             );
             assert_eq!(rows_conditions, 1, "the legs run when the plan names a leg");
+            assert_eq!(honesty_conditions, 1, "honesty runs when the plan names it");
+            honesty_dependencies(&ci).expect("expensive roots require successful same-run honesty");
+            for root in ["vv", "atlas-prefix", "host-matrix"] {
+                let original = format!("  {root}:\n");
+                let pos = ci.find(&original).expect("the root");
+                let end = ci[pos + original.len()..]
+                    .find("\n  #")
+                    .map_or(ci.len(), |next| pos + original.len() + next);
+                let mut planted = ci.clone();
+                let body = ci[pos..end].replace("needs: [plan, honesty]", "needs: [plan]");
+                planted.replace_range(pos..end, &body);
+                assert!(
+                    honesty_dependencies(&planted).is_err(),
+                    "{root} cannot bypass honesty"
+                );
+            }
             assert!(
-                job("host-matrix").contains("    needs: [plan]\n")
+                job("host-matrix").contains("    needs: [plan, honesty]\n")
                     && job("host-matrix")
                         .contains("    if: ${{ needs.plan.outputs.full == 'true' }}\n"),
                 "§8.3: the hosts are checked when the plan says the run is the whole gate"
             );
             assert!(
-                vv.contains("    needs: [plan]\n")
-                    && vv.contains("        include: ${{ fromJSON(needs.plan.outputs.rows) }}\n"),
+                vv.contains("    needs: [plan, honesty]\n")
+                    && vv.contains("        include: ${{ fromJSON(needs.plan.outputs.fanout) }}\n"),
                 "§9.4: the legs of vv are the rows the plan names"
             );
             // The plan: one job, no recipe, ten minutes, reading the event and
@@ -2022,7 +2138,14 @@ pub(crate) fn run(id: &str) {
                 "the host matrix runs the workspace's tests once, and reports every failing test of the host, not the first binary's"
             );
             // The honesty and reproducibility workflows stay separate.
-            assert!(root_file(".github/workflows/honesty.yml").contains("just model spec-links"));
+            let honesty = job("honesty");
+            assert!(
+                honesty.contains("LEXLEAN_BDD_PART: ${{ matrix.bdd_part }}")
+                    && honesty.contains("fromJSON(needs.plan.outputs.honesty)")
+                    && honesty.contains("just --timestamp")
+                    && !honesty.contains("elan"),
+                "the initial part needs no Lean"
+            );
             assert!(root_file(".github/workflows/reproducibility.yml").contains("run: just repro"));
         }
         // R8: a `match` that names several variants of a closed enum names
@@ -2854,6 +2977,24 @@ fn rp_18() {
     release_gate_decisions();
 }
 
+/// Claim drift must finish successfully before a costly root can start.
+fn honesty_dependencies(ci: &str) -> Result<(), String> {
+    let initial = workflow_job(ci, "honesty")?;
+    if !initial.contains("name: honesty\n")
+        || !initial.contains("needs: [plan]\n")
+        || !initial.contains("if: ${{ needs.plan.outputs.honesty != '[]' }}")
+    {
+        return Err("RP-14: honesty must follow the plan".to_owned());
+    }
+    for root in ["vv", "atlas-prefix", "host-matrix"] {
+        let body = workflow_job(ci, root)?;
+        if !body.contains("needs: [plan, honesty]\n") || body.contains("always()") {
+            return Err(format!("RP-14: {root} must wait for successful honesty"));
+        }
+    }
+    Ok(())
+}
+
 /// What `.github/release-gate.sh` accepts as the release's evidence (§9.4,
 /// §30.3): the script runs in a scratch repository with a stand-in for `gh`
 /// that answers with planted runs and jobs, so that the run it names is shown
@@ -2890,7 +3031,11 @@ fn release_gate_decisions() {
     let mut green: Vec<String> = vec![stamp("plan", "success")];
     green.extend(rows.iter().map(|row| {
         stamp(
-            &format!("just vv ({})", row["part"].as_str().expect("a part")),
+            &if row["part"] == "honesty" {
+                "honesty".to_owned()
+            } else {
+                format!("just vv ({})", row["part"].as_str().expect("a part"))
+            },
             "success",
         )
     }));
@@ -2908,6 +3053,19 @@ fn release_gate_decisions() {
                 1,
             )
         })
+        .collect();
+    let without_honesty: Vec<String> = green
+        .iter()
+        .filter(|job| !job.starts_with("honesty"))
+        .cloned()
+        .collect();
+    let failed_honesty: Vec<String> = green
+        .iter()
+        .map(|job| job.replace("honesty\tsuccess", "honesty\tfailure"))
+        .collect();
+    let skipped_honesty: Vec<String> = green
+        .iter()
+        .map(|job| job.replace("honesty\tsuccess", "honesty\tskipped"))
         .collect();
     let no_join: Vec<String> = green
         .iter()
@@ -3105,6 +3263,21 @@ fn release_gate_decisions() {
     // No run, a run with a failed job, a run without the join, a draft run.
     for (why, runs, jobs) in [
         ("no run", vec![], &green),
+        (
+            "missing honesty",
+            vec![(head.as_str(), run_line("21"))],
+            &without_honesty,
+        ),
+        (
+            "failed honesty",
+            vec![(head.as_str(), run_line("22"))],
+            &failed_honesty,
+        ),
+        (
+            "skipped honesty",
+            vec![(head.as_str(), run_line("23"))],
+            &skipped_honesty,
+        ),
         (
             "a failed job",
             vec![(head.as_str(), run_line("14"))],
