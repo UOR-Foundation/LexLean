@@ -11472,3 +11472,33 @@ Each defect below was planted in the committed tree, one at a time, with the rea
 | `IMPORTED_STATUS` is `proved by LexLean` | `conformance_vr_26` | failed at `import_axioms.rs:277`, the constant is not the one §5.3 states |
 
 The two plants were run once each. The case also found two things without a plant: the first version of the parser refused the `native_decide` axiom as printed by `lean` (`LLV7004: _private.AxHost.0.AxHost.viaNative._native.native_decide.ax_1_1 is not a Lean name`), which is why the audit of imports reads the `_private.<Module>.0` spelling and the hygiene mark, with unit tests; and a policy that names only `Lean.ofReduceBool` is `LLV7025`, not `LLV7024`, because `Lean.trustCompiler` is left unnamed, which the case now asserts.
+
+## VR-27 also exercises numeral capture inside an ordinary defined value (#362)
+
+The existing probe-binders fixture now has a defined glossary predicate
+`iszero`: its lambda binds `a : Nat` and its body applies `Eq` to that local
+and the numeral zero. An ordinary theorem states `iszero(0)` and closes by
+reflexivity. VR-27 checks the generated module before its host gate, retains
+all existing focused-probe assertions, and verifies the ordinary document on
+the normative host. The shared renamer itself is unchanged.
+
+With the historical printer before callee-binder renaming (the immutable CLI
+built from `cd0c6b7a9`), this fixture emits
+`(fun (x0 : Nat) => Eq x0 (0 : x0)) 0` and pinned Lean refuses verification
+with `LLV7002`, `type expected`. The CLI built from this PR head with the
+regression emits `(fun (x0 : Nat) => Eq x0 0) 0` instead: the numeral is left
+to type inference, and pinned Lean 4.32.1 verifies the document. Its two
+theorems, `add_zero` and `is_zero`, both have observed axiom sets `[]`.
+The final canonical fixture passed a fresh direct CLI lock/build/verify and
+`fmt --check` (one module canonical).
+
+Ordinary verification's probe contains `Nat` and `Nat.add`, not the otherwise
+unused `HXor.hXor` and `UInt32.xor_self` signatures. The existing focused
+probe is retained because it checks those distinct signatures; replacing it
+with the ordinary verification result would lose its coverage.
+
+The CLI build and lexlean/repo-conformance all-target/all-feature Clippy with
+warnings denied pass, as do Rust formatting and diff whitespace checks.
+These are direct CLI results; the full VR-27 harness and complete acceptance
+gate were not run here. No schema, compiler identity input, backend algorithm,
+cache integration or imported-closure replay changed.

@@ -1,0 +1,20 @@
+spec = "lexlean/entry/1"
+id = "iszero"
+category = "function"
+signature = "(pi ((explicit a (const lexlean.std.nat::nat))) (sort prop))"
+surface_arity = 1
+frame = "call"
+
+[denotation]
+kind = "defined"
+value = "(lam ((explicit a (const lexlean.std.nat::nat))) (app (const lexlean.core::eq) (local a) (nat 0)))"
+
+[[form]]
+id = "iszero"
+channel = "math"
+surface = "iszero"
+canonical_source = true
+features = []
+
+[render]
+math = "(seq (operator-name iszero) (paren (slot 0)))"

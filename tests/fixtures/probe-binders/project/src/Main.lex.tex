@@ -1,10 +1,19 @@
 \begin{lexlean}{Main}
 \useglossary{lexlean.std.nat@1.0.0}
+\useglossary{test.probe@1.0.0}
 \title{Natural number addition}
 
 \begin{theorem}{add-zero}
 \noaxioms
 For every natural number \(n\), \(n + 0 = n\).
+\begin{proof}
+Close the goal by reflexivity.
+\end{proof}
+\end{theorem}
+
+\begin{theorem}{is-zero}
+\noaxioms
+\(iszero(0)\).
 \begin{proof}
 Close the goal by reflexivity.
 \end{proof}
