@@ -1,0 +1,58 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{named}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(axis : ByteArray) (name : String)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.equal (axis) (LexLeanKappa.Label.text (name)) : Bool)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{width}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(axis : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(if named (axis) ("sha256") then 64 else (if named (axis) ("sha3-256") then 64 else (if named (axis) ("keccak256") then 64 else (if named (axis) ("sha512") then 128 else (if named (axis) ("blake3") then 64 else 0)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{digestHex}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(axis : ByteArray) (message : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (ByteArray)}.\par
+\noindent Definition: \texttt{(if named (axis) ("sha256") then Option.some (LexLeanStd.Sha256.sha256Hex (message)) else (if named (axis) ("sha3-256") then Option.some (LexLeanKappa.Keccak.sha3Hex (message)) else (if named (axis) ("keccak256") then Option.some (LexLeanKappa.Keccak.keccakHex (message)) else (if named (axis) ("sha512") then Option.some (LexLeanKappa.Sha512.sha512Hex (message)) else (if named (axis) ("blake3") then Option.some (LexLeanKappa.Blake3.blake3Hex (message)) else Option.none)))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{prefixOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(axis : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.append (axis) (LexLeanKappa.Label.text (":")) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{labelOn}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(axis : ByteArray) (canonical : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{Option (ByteArray)}.\par
+\noindent Definition: \texttt{(match digestHex (axis) (canonical) with | Option.some digest => Option.some ((LexLeanRuntime.append (prefixOf (axis)) (digest) : ByteArray)) | Option.none => Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{isLabelOn}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(axis : ByteArray) (candidate : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(if (Nat.blt (0) (width (axis))) then (if (Nat.beq ((LexLeanRuntime.length (candidate) : Nat)) (((LexLeanRuntime.length (prefixOf (axis)) : Nat) + width (axis)))) then (if LexLeanStd.Text.startsWith (candidate) (prefixOf (axis)) then (Nat.beq (LexLeanKappa.Label.lowerHexRun (candidate) ((LexLeanRuntime.length (prefixOf (axis)) : Nat))) ((LexLeanRuntime.length (candidate) : Nat))) else false) else false) else false)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{jsonLabelOn}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(axis : ByteArray) (input : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{Option (ByteArray)}.\par
+\noindent Definition: \texttt{(match LexLeanKappa.Json.canonicalResult (input) with | Except.ok canonical => labelOn (axis) (canonical) | Except.error \_ => Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\end{document}

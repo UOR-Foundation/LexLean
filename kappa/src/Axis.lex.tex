@@ -1,0 +1,79 @@
+\begin{lexlean}{Axis}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.Sha256}
+\importmodule{LexLeanStd.Text}
+\importmodule{Label}
+\importmodule{Json}
+\importmodule{Sha512}
+\importmodule{Keccak}
+\importmodule{Blake3}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: named,
+  parameters: [axis : Bytes, name : String],
+  result: Bool,
+  body: (prim equal axis (Label::text name) : Bool),
+  executable: true
+}
+
+definition{
+  name: width,
+  parameters: [axis : Bytes],
+  result: Nat,
+  body: (if (named axis "sha256") then 64 else (if (named axis "sha3-256") then 64 else (if (named axis "keccak256") then 64 else (if (named axis "sha512") then 128 else (if (named axis "blake3") then 64 else 0))))),
+  executable: true
+}
+
+definition{
+  name: digestHex,
+  parameters: [axis : Bytes, message : Bytes],
+  result: (Option Bytes),
+  body: (if (named axis "sha256") then (ctor Option.some [Bytes] (LexLeanStd.Sha256::sha256Hex message)) else (if (named axis "sha3-256") then (ctor Option.some [Bytes] (Keccak::sha3Hex message)) else (if (named axis "keccak256") then (ctor Option.some [Bytes] (Keccak::keccakHex message)) else (if (named axis "sha512") then (ctor Option.some [Bytes] (Sha512::sha512Hex message)) else (if (named axis "blake3") then (ctor Option.some [Bytes] (Blake3::blake3Hex message)) else (ctor Option.none [Bytes])))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: prefixOf,
+  parameters: [axis : Bytes],
+  result: Bytes,
+  body: (prim append axis (Label::text ":") : Bytes),
+  executable: true
+}
+
+definition{
+  name: labelOn,
+  parameters: [axis : Bytes, canonical : Bytes],
+  result: (Option Bytes),
+  body: (match (digestHex axis canonical)
+    | Option.some digest => (ctor Option.some [Bytes] (prim append (prefixOf axis) digest : Bytes))
+    | Option.none => (ctor Option.none [Bytes])),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: isLabelOn,
+  parameters: [axis : Bytes, candidate : Bytes],
+  result: Bool,
+  body: (if (0 <? (width axis)) then (if ((prim length candidate : Nat) =? ((prim length (prefixOf axis) : Nat) + (width axis))) then (if (LexLeanStd.Text::startsWith candidate (prefixOf axis)) then ((Label::lowerHexRun candidate (prim length (prefixOf axis) : Nat)) =? (prim length candidate : Nat)) else false) else false) else false),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: jsonLabelOn,
+  parameters: [axis : Bytes, input : Bytes],
+  result: (Option Bytes),
+  body: (match (Json::canonicalResult input)
+    | Result.ok canonical => (labelOn axis canonical)
+    | Result.error message => (ctor Option.none [Bytes])),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}
