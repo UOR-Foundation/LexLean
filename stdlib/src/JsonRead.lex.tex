@@ -32,6 +32,7 @@ definition{
   body: (match (prim index text position : (Option UInt8))
     | Option.some byte => (prim to_nat byte : Nat)
     | Option.none => 256),
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -40,6 +41,7 @@ definition{
   parameters: [text : Bytes, position : Nat],
   result: (Option Nat),
   body: (let value : Nat := (byteOf text position); (if ((47 <? value) && (value <? 58)) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat]))),
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -48,6 +50,7 @@ definition{
   parameters: [text : Bytes, start : Nat],
   result: Nat,
   body: (first (prim iterate_until (fun [text] (position : Nat) => (digitStep text position)) ((prim length text : Nat) + 1) start : (Nat * Bool))),
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
