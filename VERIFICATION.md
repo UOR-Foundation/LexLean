@@ -12661,3 +12661,21 @@ size and leaf-count theorems. The Lean-backed DF-19 conformance harness and
 its four refusal plants were not rerun in this phase: its host helper expects
 `HOME/.elan`, absent on this environment. Neither home nor the helper was
 changed. No full acceptance gate or inventory run is claimed here.
+
+### DF-19's complete Lean-backed case after toolchain registration
+
+After the existing pinned toolchain was registered through official elan in
+this user's standard elan home, the previously unrun exact
+`cargo test --offline --locked -p repo-conformance --test conformance
+conformance_df_19 -- --exact --nocapture` passes on prepared integration
+`4eb5d9b296a1612273cfa341ecc4ac194f886a42`: one passed, zero failed or
+ignored, in 3.56 seconds (compilation 57.55 seconds).
+
+This Linux x86-64 run enters the unchanged `lean_backed` helper's real-Lean
+branch: the standard-home Lean, Lake and leanchecker paths resolve to the
+existing pinned installation under `/workspace/.setup/elan`. The case verifies
+the committed nested-family fixture, checks its rendered mutual structural
+recursion, and executes all four existing `LLT4001` refusal plants and their
+no-backend-output assertions. No helper, gate, home value or source assertion
+was changed. This completes that focused case; no full acceptance run is
+claimed by this record.
