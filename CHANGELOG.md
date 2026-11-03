@@ -17,6 +17,17 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- Canonical JSON reading in the standard library, the fourth member the
+  self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-12`). The module
+  `LexLeanStd.JsonRead` holds the production roots `readJson` and
+  `readJsonFile` for `rust-std`, which read the canonical JSON of §21.7 back
+  into the `Json` value of `LexLeanStd.Json` and refuse any text the writer
+  would not write: whitespace, `null`, a number past `i64` or not in its
+  shortest form, keys out of order or repeated, an escape the writer does not
+  emit, and a byte after the value. They are held to `Json::parse` with the
+  text required to be what `to_canonical_string` writes of it. `stdlib/lexlean.toml`
+  gains the entrypoint, so the locks of `stdlib` and its consumers move. The
+  register is 472 IDs.
 - Maps and sets in the standard library, the fifth member the self-hosted
   compiler needs, #276 (SPEC.md §17.22, `SL-14`). The module `LexLeanStd.Map`
   holds ten production roots for `rust-std` over strictly ascending lists of
