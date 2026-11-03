@@ -17,6 +17,13 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The Intel macOS host-gate cost correction for #235 keeps SP-02's complete
+  certificate scaling families and TC-03's seeded argument/fuel sweep on the
+  normative Linux host, with fixed certificate vectors and committed fixture
+  assertions on every supported host. TC-03 and TC-05 render and parse their
+  shared fixture modules once for declaration membership checks. No
+  acceptance recipe, normative assertion, or kernel replay is removed.
+
 - The #34 closure pass (documentation and evidence; no register row, language
   datum, schema, or compiler source moves). Sixteen examples carry a `README.md`
   that names the register rows whose gates run on them, what
