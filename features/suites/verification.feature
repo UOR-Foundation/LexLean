@@ -26,11 +26,12 @@ Feature: verification
     And no argv contains `update`, `build` or `fetch`
 
   @VR-04 @build
-  Scenario: Every used external interface is elaborated in the unique reserved probe module.
+  Scenario: Every used external interface is elaborated in the unique reserved probe module, which emits only its closed escaped effective-search-path report.
     Given the verified nat-add-zero example and its semantic ID
     When the reserved probe and audit module names are derived from that semantic ID
     Then the probe/ directory contains exactly one .lean file named after the reserved probe module
     And the probe module name differs from the audit module name
+    And successful probe output is solely the closed escaped effective-search-path report
 
   @VR-05 @build
   Scenario: Generated modules compile in topological order and produce one required olean each.

@@ -474,6 +474,37 @@ pub fn run(
     limits: &Limits,
     normalizer: &Normalizer,
 ) -> Result<ChildRecord, Diagnostic> {
+    run_with_stdout(spec, limits, normalizer, |raw, _| {
+        Ok((normalizer.normalize(raw), ()))
+    })
+    .map(|(record, ())| record)
+}
+
+/// Run the existing interface probe and decode its sole search-path packet.
+/// Failed elaboration retains its ordinary output for signature diagnostics.
+///
+/// # Errors
+/// The same child limits/errors as `run`, or unexpected successful output.
+pub fn run_probe(
+    spec: &ChildSpec<'_>,
+    limits: &Limits,
+    normalizer: &Normalizer,
+) -> Result<(ChildRecord, Option<Vec<Utf8PathBuf>>), Diagnostic> {
+    run_with_stdout(spec, limits, normalizer, |raw, exit| {
+        if exit != 0 {
+            return Ok((normalizer.normalize(raw), None));
+        }
+        crate::verify::leanchecker::decode_search_path(raw, normalizer)
+            .map(|(text, paths)| (text, Some(paths)))
+    })
+}
+
+fn run_with_stdout<T>(
+    spec: &ChildSpec<'_>,
+    limits: &Limits,
+    normalizer: &Normalizer,
+    decode: impl FnOnce(&[u8], i32) -> Result<(String, T), Diagnostic>,
+) -> Result<(ChildRecord, T), Diagnostic> {
     let existing_path = std::env::var_os("PATH").unwrap_or_default();
     let mut command = Command::new(spec.program.as_std_path());
     command
@@ -650,20 +681,24 @@ pub fn run(
             ),
         ));
     }
-    Ok(ChildRecord {
-        tool: spec.tool.to_owned(),
-        module: spec.module.clone(),
-        argv: spec
-            .argv
-            .iter()
-            .map(|argument| normalizer.normalize_arg(argument))
-            .collect(),
-        exit_code: status.code().unwrap_or(-1),
-        stdout: normalizer.normalize(&stdout_bytes),
-        stderr: normalizer.normalize(&stderr_bytes),
-        executable_sha256: spec.executable_sha256,
-        olean: None,
-    })
+    let (stdout, decoded) = decode(&stdout_bytes, status.code().unwrap_or(-1))?;
+    Ok((
+        ChildRecord {
+            tool: spec.tool.to_owned(),
+            module: spec.module.clone(),
+            argv: spec
+                .argv
+                .iter()
+                .map(|argument| normalizer.normalize_arg(argument))
+                .collect(),
+            exit_code: status.code().unwrap_or(-1),
+            stdout,
+            stderr: normalizer.normalize(&stderr_bytes),
+            executable_sha256: spec.executable_sha256,
+            olean: None,
+        },
+        decoded,
+    ))
 }
 
 #[cfg(test)]

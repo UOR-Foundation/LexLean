@@ -9223,7 +9223,7 @@ A failed command removes its staging tree and leaves no verified artifact.
 3. deterministic build rendering;
 4. Lean/Lake/leanchecker toolchain preflight;
 5. Lake-workspace lock preflight;
-6. external-interface probe generation and elaboration;
+6. external-interface probe generation and elaboration, including its closed escaped effective-search-path report;
 7. generated-module elaboration and `.olean` production;
 8. separate-process `leanchecker` replay for every generated module;
 9. process-sized axiom-audit module-family generation and execution;
@@ -9335,6 +9335,17 @@ Before process output is hashed:
    - user home → `$HOME`;
 4. trailing spaces are removed;
 5. blank final lines collapse to one final LF.
+
+The interface probe emits exactly one closed JSON search-path packet. Its
+raw escaped strings are decoded before normalization. Known absolute prefixes
+are normalized as above; remaining absolute roots receive packet-local tokens
+`$LEAN_SEARCH_ROOT_<n>` in first-occurrence order, reusing the token for equal
+roots and preserving entry order and relative roots. Tokens do not collide
+with literal relative entries. The complete normalized packet is re-encoded
+and retained as stdout, whose digest is recorded normally. Only that fixed
+packet uses path-root-aware validation; all other output retains the ordinary
+absolute-path and unexpected-output checks. Raw roots remain operational
+lookup state, not published host paths.
 
 Unexpected absolute paths remaining in successful normalized output fail attestation construction.
 
@@ -11181,7 +11192,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `VR-01` | `verification` | Verification runs every specified stage in order and exposes no stage-suppression option. | §22.1 |
 | `VR-02` | `verification` | Lean, Lake, and leanchecker versions and executable hashes are checked and recorded before use. | §22.2 |
 | `VR-03` | `verification` | Lean execution uses the pinned Lake environment and never updates or fetches workspace dependencies. | §22.2 |
-| `VR-04` | `verification` | Every used external interface is elaborated in the unique reserved probe module. | §18.8, §22.1 |
+| `VR-04` | `verification` | Every used external interface is elaborated in the unique reserved probe module, which emits only its closed escaped effective-search-path report. | §18.8, §22.1 |
 | `VR-05` | `verification` | Generated modules compile in topological order and produce one required olean each. | §22.3 |
 | `VR-06` | `verification` | Verification neither requests nor includes ilean artifacts. | §22.3 |
 | `VR-07` | `verification` | A Lean warning, unknown informational message, overflow, or missing output fails verification. | §20.2, §22.3 |

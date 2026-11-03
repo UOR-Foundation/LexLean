@@ -12464,3 +12464,56 @@ query emits unescaped `NAME=VALUE` lines, while current path rules do not
 forbid newlines. Duplicate-row rejection alone therefore does not establish
 unambiguous decoding for every accepted path; that design point requires
 review before capture and skip flags are connected.
+
+The next source-only integration replaces that ambiguous proposed query
+with the existing always-run external-interface probe. Its closed,
+parameter-free command reports `Lean.searchPathRef` as compact escaped JSON.
+The bounded runner decodes the raw packet before normalization and retains
+its complete normalized form in the process record. Known prefixes use the
+existing replacements; other absolute roots receive packet-local ordinal
+aliases, preserving order and equality without colliding with relative
+entries. The fixed packet's final audit validates whole decoded roots;
+other stdout and every stderr retain their existing checks.
+
+The preservation olean directory is created empty before this probe and
+shares its supplied search-path context with project and certificate
+compilation/replay. Actual resolution follows the observed first package
+root even when that root lacks the requested full file. Compilation records
+capture the main/server/private tuple; replay captures the selected tuple,
+compares it with staged output, and checks that it remains unchanged after
+success. This source delta includes pure regression cases for escaped and
+newline-containing roots, relative roots containing ` /segment`, aliases,
+noise and shape refusal, missing-file shadowing, and companion changes.
+Focused validation subsequently ran under the shared phase lock with two
+Cargo jobs and incremental compilation disabled. The four new path/binding
+units, probe-only source-audit unit, three existing partition units, and
+correct-root exact VR-28 passed. Independent review exposed two refusal
+gaps, both corrected: source-literal exactness now belongs to a fixed
+catalogue independent of the live renderer constant, and the packet uses a
+tiny closed typed decoder that rejects duplicate decoded keys, including
+escaped key spellings. The appended-action mutation witness and literal plus
+escaped duplicate-key refusal tests passed. Focused lexlean/repo-conformance
+Clippy passed with warnings denied; final formatting and diff checks passed.
+
+The first conformance invocation linked a shared `repo-model` artifact whose
+compiled root belonged to another worktree; its result was discarded. A
+package-only offline clean and rebuild established this worktree's root
+before authoritative conformance runs. Those runs first stopped at the
+expected stale example lock. Only `examples/nat-add-zero/lexlean.lock` was
+then temporarily refreshed with the freshly built official CLI:
+`lexlean --project examples/nat-add-zero/lexlean.toml lock`. Original bytes
+were saved outside the checkout and restored after each phase. The saved
+and restored SHA-256 was
+`f7ca13c5a1597c9059e3aded8e5d8609c6f4cb3cf8feb53856a55b5621e7c2e2`;
+the final temporary refresh was
+`a0ec39419c4b76922e33f454a7f81989aced1f4ca1baf31be68220f240772cb8`.
+No helper constructor, expectations, or product pins were changed.
+
+Actual pinned Lean first rejected the report's untyped `p.toString`
+lambda. The final closed command uses `ps.map System.FilePath.toString`.
+With that ordinary type fix, unchanged exact VR-04 passed in 4.05 seconds
+and VR-07 passed in 4.42 seconds, including its existing warning/noise
+plants. These are focused correctness results, not performance savings.
+Skip flags remain disabled, and the final publication-guard call site
+remains an integration obligation. No full gate, identity regeneration,
+product artifact writer, or full VR-28 acceptance is claimed.

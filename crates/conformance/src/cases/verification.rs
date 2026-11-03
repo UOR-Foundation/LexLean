@@ -207,7 +207,11 @@ pub(crate) fn run(id: &str) {
                 "the probe elaborates: {}{}",
                 record.stdout, record.stderr
             );
-            assert!(record.stdout.trim().is_empty() && record.stderr.trim().is_empty());
+            let packet: serde_json::Value = serde_json::from_str(&record.stdout)
+                .expect("the probe emits its closed search-path packet");
+            assert_eq!(packet.as_object().expect("packet object").len(), 1);
+            assert!(packet["lexlean_search_path"].is_array());
+            assert!(record.stderr.trim().is_empty());
             assert_eq!(probe.lines.len(), 3, "one example line per probed entry");
 
             // A mismatching interface fails and the failing Lean line is

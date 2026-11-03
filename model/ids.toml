@@ -1217,7 +1217,7 @@ statement = "Lean execution uses the pinned Lake environment and never updates o
 id = "VR-04"
 level = "build"
 suite = "verification"
-statement = "Every used external interface is elaborated in the unique reserved probe module."
+statement = "Every used external interface is elaborated in the unique reserved probe module, which emits only its closed escaped effective-search-path report."
 
 [[id]]
 id = "VR-05"
