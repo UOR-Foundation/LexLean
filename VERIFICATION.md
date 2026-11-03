@@ -2243,6 +2243,16 @@ At landing regeneration: `tests/production-export/bootstrap/roots.json` adds `va
 
 The stack bound is now taken after every outcome of the differential is compared, so a package without a recorded bound cannot hide a disagreement. The plants of `RB-17` and `RB-19` are functions (`text_plants`, `ast_plants`, `probe_plants`) that both cases and this one use.
 
+### the GNAF request validation is source and agrees with the oracle (BS-16)
+
+`GnafValidate` (`bootstrap/src/GnafValidate.lex.tex`, 33 `definition` blocks, 4 `structure` blocks, and 10 `inductive` blocks, in the compiler's canonical form: `lexlean fmt --check --all` finds the 9 modules of `bootstrap/` canonical) is the first part of the GNAF requests and certification of #275: `validateRequest` is `gnaf::validate` (`crates/lexlean/src/gnaf.rs`) over the projection of a request that validation reads. The axiom audit of the pinned Lean observes no axiom in any of the 33 definitions, and each declares `axioms: []` (a first draft declared `[Quot.sound, propext]` on all of them, which `verify` refused: `LLV7005`, observed `[]`). The one production root is eligible for `rust-std` with exactly the effects `allocation` and `overflow`; the rejection is written through `LexLeanStd.Buffer`.
+
+Command and host: `cargo test -p repo-conformance --test conformance -- conformance_bs_16 --nocapture`, the 4-core 15 GB Linux x86-64 container with the pinned rustc and Lean (CI part `bdd-bootstrap-gnaf`, `LEXLEAN_BDD_PART=bootstrap-gnaf`). Measured on this branch merged with #371 at `32d317126`, with the package `validate_request` committed: the corpus is 3,862 requests (60 committed under `compiler/gnaf/`, 802 hand-built, 3,000 seeded mutants), 3,522 refused, by each of the 21 rejections and 43 pairs of a rule and an action kind; the evaluator agrees with the oracle on all 3,862 vectors (the requests of at most 4,000 nodes of data), the rustc differential of the rendered package builds 3 harness binaries and agrees on all 3,862 runs (built in 7.0 s, run in 0.2 s); the twelve planted defects are each detected; the exported package is byte-identical to the committed one and realizes the program; the case passes in 1,537 s, of which the regeneration of the export (`check-production-export --write`, 50 minutes on a quiet machine) is not part. The case asserts the eligibility and the effects of the root, not the size of its certificate; the largest part of the certificate of `validateRequest` is not measured in this change.
+
+Planted defects, each detected by the differential at the first vector named: `empty domain accepted` (vector 27), `constant charge of zero accepted` (55), `free preparation accepted under the complete boundary` (29), `prepared artifact matched against steps` (16), `duplicate counted at one occurrence` (0), `fallback not performed` (0), `domain capacity compared with at-least` (74), `universe size without the square` (1,032), `alias refused as unsupported` (39), `scalar and vector claim checks swapped` (1), `rust programs scope admitted` (40), `operand size checked before capacity` (92). A first form of the tenth plant (the two outcomes of the `ClGlobalOptimal` arm exchanged by renaming a pattern) was not a program: `LLT4001`, `duplicate match branch Objective.ObScalar`; it exchanges the outcomes instead.
+
+The production export is the committed one: `tests/production-export/bootstrap/roots.json` adds `validate_request`, `bootstrap/lexlean.lock` is relocked, and the packages, the `bootstrap/expected` records and the counts `BS-05` and `BS-06` assert are regenerated in this change, as for the other roots of `bootstrap/`.
+
 ### the memory of a buffer has its laws kernel-checked (SP-26)
 
 `RustMemory` (`compiler/src/RustMemory.lex.tex`, 16 KB, generated and written in the compiler's canonical form; two inductives `Flag` and `Cells`, two structures `Buf` and `Window`, and sixteen definitions) holds seventeen theorems: `size_put`, `get_put_same`, `get_put_below`, `get_put_above`, `size_blank`, `get_blank`, `no_room_at_capacity`, `room_before_slot`, `push_lands_in_slot`, `below_truncated`, `plus_assoc`, `push_at_capacity`, `put_in_slot`, `push_with_room`, `get_truncated`, `window_of_window`, and `window_count` (the count of `subWindow` is `minNat keep (minusNat count skip)`, by `simplify` over `subWindow`). Every statement is total, because the proof language has no hypothesis to assume (a prior theorem can be a rewrite rule, but a premise cannot): a fact about an index below a length is stated for a sum with a gap, or as the result of a guard (`guardGet`, `lessThan`, `both`). `push_at_capacity` states `none` and `push_with_room` states `some` of the buffer with the item in its slot and the length one more. `put` beyond the slots (`CNil`) is a no-op in the model and is not the runtime's behaviour, which refuses out-of-bounds access. Each proof is an induction (generalizing the indices it moves) with a `cases` on the index it consumes and a `simplify` over the definitions it unfolds, `below_truncated` using `term_cases` on `(lessThan at (less + 1))` with `[both, lessThan, minNat]`, `push_at_capacity` and `push_with_room` unfolding `bufPush` and simplifying with the prior theorems `no_room_at_capacity`, and `put_in_slot` and `room_before_slot` as rules, `get_truncated` unfolding `bufGet`/`bufTruncate`, and `window_of_window` applying `plus_assoc`; the lists of definitions were pruned to those the pinned Lean uses, because an unused argument is a verification error. Every definition observes no axiom and every theorem exactly `[propext]`.
@@ -10697,6 +10707,40 @@ that tree each of those rows was run as far as its count checks and `BS-09` and
 export with the two roots passes `lexlean verify`; its first attempt was
 refused (`LLV7005`) for nine definitions whose comparison of byte strings
 observes `propext` and declared no axioms, which now declare it.
+
+With the package `validate_request` of `BS-16` committed, the committed manifests are 278
+and the counts the rows assert move with it, each measured by the first count
+assertion of the row that fails on the count it replaces: `BS-15` has 297 committed manifests
+(278 accepted), 182 rule manifests, 2,000 seeded mutants of the fields, 137 hand-built inputs
+and 278 seeded mutants of the render, 3,172 runs under rustc, and 241 renders under the
+evaluator as before; 278 manifests and packages, 195 programs, 254 crates; `BS-05` 492 and 355
+vectors (205 crates, 443 and 306 runs under the evaluator as before); `BS-06` 674 vectors of
+`printCrate` (508 committed distinct, 64 refused), 2,110 of `printExpr`, 576 of the
+evaluator's crates; `BS-07` 329 vectors, 278 within the bound; `BS-08` 388 crates, 339 within
+the bound; `BS-13` 98 vectors, 49 within the bound, and 125 mutants; `BS-14` 333 vectors
+(with the vector that #371 adds), 282 within the bound, and 547 mutants. `BS-05` passes on the tree before the merge of #371's fix
+(`ef961c75a`), in 2,566 s on the normative host; `BS-06` stopped at its count
+assertions on the 3,000 MB floor of the machine's disk, and the other rows' counts above
+are the ones the continuous integration measured. The records and packages of the
+bootstrap export are regenerated on the relocked project, which takes 50 minutes
+(`check-production-export --write`).
+
+This branch is merged with #364 at `aea1333c8`, which contains `release/v0.4` at `477a508d5`
+and adds `BS-20`, the tooling modules and the five roots of `Order`. The committed manifests
+are 284: the relock, the export, the `bootstrap/expected/verify` records and the
+`bootstrap/expected/build` records are regenerated on that tree by `cargo xtask check-production-export --write`,
+`cargo xtask verify-examples --write` with `LEXLEAN_EXAMPLES_PART=without:uor-atlas` (the records of the other
+examples were rewritten identically; `uor-atlas` was not run locally) and `cargo xtask check-golden --write`, after which
+`cargo xtask check-golden` finds every published artifact equal to its oracle (R10). Measured on that tree
+by the first count assertion each row fails on the count it replaces: `BS-05` and `BS-06` 284 committed manifests,
+122 fixtures, 201 distinct programs and 260 distinct crates (and 284 packages for `BS-06`); `BS-07` 335 vectors;
+`BS-08` 394 crates. `BS-09`, `BS-10` and `BS-11` pass on that tree with the counts they had (the seeded mutants
+of `BS-11` are unchanged by the regenerated records). Derived from the manifest count and not run locally:
+`BS-15` 303 manifests, 284 accepted and 284 seeded mutants of the render. Not measured locally, and so the
+values of the merged tree before this change remain until the continuous integration names them: the later
+assertions of `BS-05`, `BS-06`, `BS-07` and `BS-08` (vectors, refused, runs under the evaluator and
+the printed counts of `SPEC.md` §17.23 that follow from them), and the counts of `BS-12`, `BS-13`, `BS-14`, `BS-15`
+beyond the three above, `BS-16` and `BS-20`.
 
 Each of twenty-one plants is made on a copy of `bootstrap/src/RustPackage.lex.tex`
 on every run and is caught by the oracle; the run is the index among the runs
