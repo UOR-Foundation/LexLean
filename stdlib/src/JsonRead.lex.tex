@@ -66,9 +66,9 @@ definition{
   name: readInteger,
   parameters: [text : Bytes, position : Nat],
   result: (Option (Nat * Json::Json)),
-  body: (let negative : Bool := ((byteOf text position) =? 45); (let start : Nat := (if negative then (position + 1) else position); (let stop : Nat := (digitsEnd text start); (match (Numeral::parseDecimal (Text::sliceOr text start (prim subtract stop start : Nat)))
+  body: (let negative : Bool := ((byteOf text position) =? 45); (let start : Nat := (if negative then (position + 1) else position); (let stop : Nat := (digitsEnd text start); (if (19 <? (prim subtract stop start : Nat)) then (ctor Option.none [(Nat * Json::Json)]) else (match (Numeral::parseDecimal (Text::sliceOr text start (prim subtract stop start : Nat)))
     | Option.some magnitude => (if (inRange negative magnitude) then (ctor Option.some [(Nat * Json::Json)] (stop, (ctor Json::Json.JInt negative magnitude))) else (ctor Option.none [(Nat * Json::Json)]))
-    | Option.none => (ctor Option.none [(Nat * Json::Json)]))))),
+    | Option.none => (ctor Option.none [(Nat * Json::Json)])))))),
   axioms: [Quot.sound, propext],
   executable: true
 }
