@@ -10817,6 +10817,34 @@ run on the module. What it owes is its first run, to pin the counts of its
 corpora, and the landing regeneration, which produces the `bootstrap/lex_text`
 and `bootstrap/quote_text` packages.
 
+### the layout algebra of the notation is source (BS-23)
+
+`BS-23` holds the production root `LexLeanBoot.SurfaceDoc.renderDoc`
+(`bootstrap/src/SurfaceDoc.lex.tex`) to `surface::doc::render`: the layout of a
+document of text, concatenation, indentation, lines, soft breaks, and groups at a
+width. The root admits no `recursion`. A concatenation is a chain of `DSeq`
+cells, so that the two stacks of the oracle (the stack of items and the work
+stack of the width test) are lists popped a node at a time, and the host passes
+the number of nodes, which bounds each loop. The case has the shape of `BS-21`
+and `BS-22`: hand-built documents that reach each node, each branch of the width
+test (the text of a scalar beyond ASCII at the exact width, a flat line, a soft
+break, the rest of the stack, a break line that ends the scan, a column past the
+width) and indents of 255 to 700; the documents the printer builds from the
+committed JSON files, at three widths; and seeded documents. Each planted defect
+names the one vector that catches it, and the case asserts that the site of each
+plant occurs once. The row's statement carries no counts.
+
+Measured with the compiler binary of the `BS-21` tree, on a copy of the project
+whose only entrypoint is `SurfaceDoc`: `lexlean check` and `lexlean build` pass,
+and the eligibility report gives the root `rust-std` with exactly `allocation`
+and `overflow`. The register agrees with the §31 table on 471 IDs, by the same
+parse `validate-spec-links` makes.
+
+The case has not run. It has not been compiled either, and `lexlean verify` has
+not been run on the module. It owes its first run, to pin the counts of its
+corpora, and the landing regeneration, which produces the `bootstrap/render_doc`
+package.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the
