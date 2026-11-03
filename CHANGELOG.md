@@ -610,6 +610,12 @@ of this tree show.
   diagnostic code, no change to the language-1.2 identity). `renderDoc` of
   `SurfaceDoc` returns what `surface::doc::render` returns for a document at a
   width; it admits no `recursion`. The register is 471 IDs.
+- The generic notation as language-1.2 source, fourth slice of the front end
+  (SPEC.md §17.23, §17.21, `BS-24`, #269; no new diagnostic code, no change to
+  the language-1.2 identity). `parseGeneric` and `printGeneric` of
+  `SurfaceGeneric` return what `surface::generic::parse` and `print` return, over
+  the standard library's `Json`; the reader admits no `recursion` and the printer
+  admits it. The register is 476 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or
