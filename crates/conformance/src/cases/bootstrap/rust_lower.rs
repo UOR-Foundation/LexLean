@@ -596,7 +596,7 @@ fn types_leg(legs: &Legs) -> &Run {
 /// of them and of the committed programs, as the statement of the register row
 /// and SPEC.md §17.23 count them.
 const RULE_PROGRAMS: usize = 22;
-const VECTORS: usize = 333;
+const VECTORS: usize = 334;
 const VECTORS_WITHIN: usize = 281;
 const LITERALS: usize = 200;
 const PRIM_ROUNDS: usize = 3;
