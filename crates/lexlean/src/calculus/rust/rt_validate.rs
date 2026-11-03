@@ -708,7 +708,7 @@ fn flatten(items: &[Item]) -> Result<Vec<(Option<&str>, &Item)>, String> {
             Item::Fn(function) => twins
                 .entry(&function.sig.name)
                 .or_default()
-                .push((condition, function.sig.params.len())),
+                .push((condition.as_str(), function.sig.params.len())),
             _ => {
                 return rule(
                     "cfg-item",
