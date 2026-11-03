@@ -12274,3 +12274,34 @@ draws up to a fixed count. `BS-05`, `BS-06`, `BS-08` and `BS-15` read only manif
 and fixtures. The three failing cases assert the count before their plants, so that
 run did not reach the plants on the new draws. A package that adds records should
 set these counts with its records in the tree, on the same commit.
+
+## Semantic JSON nesting diagnostic names the list workaround (`SM-12`, #375)
+
+The 128-level semantic JSON reader limit is unchanged. Before the diagnostic
+change, `cargo test --offline --locked -p repo-conformance --test conformance
+conformance_sm_12 -- --exact --nocapture` failed on the new assertion with:
+
+```text
+phase link: invalid semantic-module JSON: recursion limit exceeded at line 1 column 6925
+```
+
+The committed fixtures under `tests/semantic-json-depth/` exercise a 122-cell
+list that checks, a 123-cell list that fails, the same failure in a subsequent
+declaration, and a 200-cell list split into two definitions joined by
+`prim append` that checks. The failure is checked through the project API,
+human and JSON CLI output, and the semantic JSON reader directly. Malformed,
+noncanonical, duplicate-member and out-of-schema data (including an extra
+member on a tagged unit variant) remain refused without list-depth advice.
+The source span still covers the module body; generated JSON coordinates are
+not presented as a nested term's source position.
+
+After the change, the same command passes (1.83 s on this host). Removing
+the append recommendation from the diagnostic, leaving the bound and
+smaller-definitions advice intact, makes that command
+fail on its `prim append` assertion (1.32 s). The planted edit was restored.
+The diagnostic change does not run Lean or establish a new verification claim;
+#375 already records verification of two 100-cell lists joined by append.
+
+The nesting diagnostic retains the existing `recursion limit exceeded` category,
+which the `SP-02` 130-level let-chain refusal also asserts. Only its generated
+JSON coordinates are replaced by the bound and workaround advice.

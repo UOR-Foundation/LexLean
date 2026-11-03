@@ -5412,8 +5412,12 @@ independent (1500, 3000, 7000, and 14000 trivial functions take 56, 101, 223,
 and 435 MB), before any limit of this section or of `max_ir_nodes` is reached;
 a chain of calls is the case above. And a semantic module is JSON read with the
 reader's recursion limit of 128 levels: a term nested deeper than that (a chain
-of 130 nested `let`s) is `LLT4001`, `invalid semantic-module JSON: recursion
-limit exceeded`, whatever `max_scope_depth` says; a chain of 100 is read.
+of 130 nested `let`s) is `LLT4001` for excessive JSON nesting, whatever
+`max_scope_depth` says; a chain of 100 is read.
+The `LLT4001` nesting diagnostic names the unchanged 128-level bound and
+recommends splitting long lists into smaller definitions joined by `prim append`.
+It locates the semantic-module body, not the nested term; it does not report
+coordinates in generated JSON as positions in the authored source.
 
 **Proof.** The proof follows the source term construct by construct through
 the library's compatibility lemmas. A recursive definition's relation is
@@ -11028,7 +11032,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SM-09` | `semantic-ir` | Linked IR has stable schema-tagged canonical JSON with alpha-safe binder serialization. | §17.9 |
 | `SM-10` | `semantic-ir` | Source ID and semantic ID use exactly the specified framed hash inputs. | §21.3, §21.4 |
 | `SM-11` | `semantic-ir` | Linked project result sets contain every selected module and imported module exactly once in stable order. | §17.5, §23.3 |
-| `SM-12` | `semantic-ir` | No semantic IR node can contain opaque prose, raw backend text, or an unknown extension. | §6 I4, §17 |
+| `SM-12` | `semantic-ir` | No semantic IR node can contain opaque prose, raw backend text, or an unknown extension. Semantic modules retain the 128-level JSON nesting limit and an over-deep list is refused with LLT4001 naming smaller definitions joined by prim append as the remedy. | §6 I4, §17 |
 | `SM-13` | `semantic-ir` | Inherited section parameters are represented explicitly and emitted only on declarations that use them. | §17.5, §18.3 |
 | `SM-14` | `semantic-ir` | A numeral without a unique expected type is rejected rather than defaulted. | §15.5 |
 | `SM-15` | `semantic-ir` | A native core module is closed typed DAG data shared by both backends, carries explicit declaration policies, and accepts no backend source text. | §17.10 |

@@ -575,7 +575,7 @@ statement = "Linked project result sets contain every selected module and import
 id = "SM-12"
 level = "build"
 suite = "semantic-ir"
-statement = "No semantic IR node can contain opaque prose, raw backend text, or an unknown extension."
+statement = "No semantic IR node can contain opaque prose, raw backend text, or an unknown extension. Semantic modules retain the 128-level JSON nesting limit and an over-deep list is refused with LLT4001 naming smaller definitions joined by prim append as the remedy."
 
 [[id]]
 id = "SM-13"
