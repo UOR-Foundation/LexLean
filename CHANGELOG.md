@@ -42,6 +42,16 @@ and Unreleased holds what has landed since.
   `composeE8`), each a production root held to `uor_addr::composition::compose_*` by a seeded differential of
   the evaluator and rustc realizations; an operand that is not a sha256 label is refused. The GGUF and ONNX
   forms and the blake3, sha3-256, keccak256 and sha512 axes remain outside the package.
+- The hash axes of uor-addr in LexLean (#127, `KA-05`, `KA-06`): the `kappa` project gains `Sha512`, `Keccak`
+  (the SHA-3 permutation, which SHA3-256 and Keccak-256 share), `Blake3` (with its chunk tree), and the
+  64-bit word operations they need in `Word`, and the module `Axis` whose production roots `labelOn`,
+  `isLabelOn`, and `jsonLabelOn` take the axis (`sha256`, `blake3`, `sha3-256`, `keccak256`, `sha512`) first.
+  The five compositions are written once over the axis (`composeG2On`, `composeF4On`, `composeE6On`,
+  `composeE7On`, `composeE8On`), and `composeG2` and its four siblings are these on `sha256`. Each root is held
+  to the corresponding function of uor-addr 0.2.0 (`address_*`, `compose_*_*`) by a seeded differential of the
+  evaluator and rustc realizations, with planted defects. The project raises `max_total_source_bytes` to
+  1 GiB in its own configuration. The GGUF and ONNX forms remain outside the package. No language or schema
+  data changes, so no compiler-semantics ID moves.
 - Language 1.2 applies the bitwise primitives and shifts to unbounded `Nat` (#317, `SM-38`):
   `bit_and`, `bit_or` and `bit_xor` over two `Nat` operands and `shift_left` and `shift_right` over a
   `Nat` operand and a `Nat` amount, each with result `Nat` and no `Option`, lowered to `Nat.land`,

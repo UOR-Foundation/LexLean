@@ -1,0 +1,206 @@
+\begin{lexlean}{Sha512}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{Word}
+\title{Natural number addition}
+\begin{semanticmodule}
+structure{
+  name: Digest,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: h0, type: UInt64},
+    {name: h1, type: UInt64},
+    {name: h2, type: UInt64},
+    {name: h3, type: UInt64},
+    {name: h4, type: UInt64},
+    {name: h5, type: UInt64},
+    {name: h6, type: UInt64},
+    {name: h7, type: UInt64}
+  ]
+}
+
+structure{
+  name: Schedule,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: w0, type: UInt64},
+    {name: w1, type: UInt64},
+    {name: w2, type: UInt64},
+    {name: w3, type: UInt64},
+    {name: w4, type: UInt64},
+    {name: w5, type: UInt64},
+    {name: w6, type: UInt64},
+    {name: w7, type: UInt64},
+    {name: w8, type: UInt64},
+    {name: w9, type: UInt64},
+    {name: w10, type: UInt64},
+    {name: w11, type: UInt64},
+    {name: w12, type: UInt64},
+    {name: w13, type: UInt64},
+    {name: w14, type: UInt64},
+    {name: w15, type: UInt64}
+  ]
+}
+
+structure{
+  name: Working,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: a, type: UInt64},
+    {name: b, type: UInt64},
+    {name: c, type: UInt64},
+    {name: d, type: UInt64},
+    {name: e, type: UInt64},
+    {name: f, type: UInt64},
+    {name: g, type: UInt64},
+    {name: h, type: UInt64},
+    {name: window, type: Schedule},
+    {name: index, type: Nat}
+  ]
+}
+
+definition{
+  name: choose,
+  parameters: [e : UInt64, f : UInt64, g : UInt64],
+  result: UInt64,
+  body: (prim bit_xor (prim bit_and e f : UInt64) (prim bit_and (prim bit_not e : UInt64) g : UInt64) : UInt64),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: majority,
+  parameters: [a : UInt64, b : UInt64, c : UInt64],
+  result: UInt64,
+  body: (prim bit_xor (prim bit_xor (prim bit_and a b : UInt64) (prim bit_and a c : UInt64) : UInt64) (prim bit_and b c : UInt64) : UInt64),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: bigSigma0,
+  parameters: [value : UInt64],
+  result: UInt64,
+  body: (prim bit_xor (prim bit_xor (Word::rotateRight value (28 : UInt32) (36 : UInt32)) (Word::rotateRight value (34 : UInt32) (30 : UInt32)) : UInt64) (Word::rotateRight value (39 : UInt32) (25 : UInt32)) : UInt64),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: bigSigma1,
+  parameters: [value : UInt64],
+  result: UInt64,
+  body: (prim bit_xor (prim bit_xor (Word::rotateRight value (14 : UInt32) (50 : UInt32)) (Word::rotateRight value (18 : UInt32) (46 : UInt32)) : UInt64) (Word::rotateRight value (41 : UInt32) (23 : UInt32)) : UInt64),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: smallSigma0,
+  parameters: [value : UInt64],
+  result: UInt64,
+  body: (prim bit_xor (prim bit_xor (Word::rotateRight value (1 : UInt32) (63 : UInt32)) (Word::rotateRight value (8 : UInt32) (56 : UInt32)) : UInt64) (Word::shiftRight value (7 : UInt32)) : UInt64),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: smallSigma1,
+  parameters: [value : UInt64],
+  result: UInt64,
+  body: (prim bit_xor (prim bit_xor (Word::rotateRight value (19 : UInt32) (45 : UInt32)) (Word::rotateRight value (61 : UInt32) (3 : UInt32)) : UInt64) (Word::shiftRight value (6 : UInt32)) : UInt64),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: advance,
+  parameters: [window : Schedule],
+  result: Schedule,
+  body: (record Schedule {w0 := (project window w1), w1 := (project window w2), w2 := (project window w3), w3 := (project window w4), w4 := (project window w5), w5 := (project window w6), w6 := (project window w7), w7 := (project window w8), w8 := (project window w9), w9 := (project window w10), w10 := (project window w11), w11 := (project window w12), w12 := (project window w13), w13 := (project window w14), w14 := (project window w15), w15 := (Word::add (smallSigma1 (project window w14)) (Word::add (project window w9) (Word::add (smallSigma0 (project window w1)) (project window w0))))}),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: roundConstant,
+  parameters: [position : Nat],
+  result: UInt64,
+  body: (if (position <? 40) then (if (position <? 20) then (if (position <? 10) then (if (position <? 5) then (if (position <? 2) then (if (position <? 1) then (4794697086780616226 : UInt64) else (8158064640168781261 : UInt64)) else (if (position <? 3) then (13096744586834688815 : UInt64) else (if (position <? 4) then (16840607885511220156 : UInt64) else (4131703408338449720 : UInt64)))) else (if (position <? 7) then (if (position <? 6) then (6480981068601479193 : UInt64) else (10538285296894168987 : UInt64)) else (if (position <? 8) then (12329834152419229976 : UInt64) else (if (position <? 9) then (15566598209576043074 : UInt64) else (1334009975649890238 : UInt64))))) else (if (position <? 15) then (if (position <? 12) then (if (position <? 11) then (2608012711638119052 : UInt64) else (6128411473006802146 : UInt64)) else (if (position <? 13) then (8268148722764581231 : UInt64) else (if (position <? 14) then (9286055187155687089 : UInt64) else (11230858885718282805 : UInt64)))) else (if (position <? 17) then (if (position <? 16) then (13951009754708518548 : UInt64) else (16472876342353939154 : UInt64)) else (if (position <? 18) then (17275323862435702243 : UInt64) else (if (position <? 19) then (1135362057144423861 : UInt64) else (2597628984639134821 : UInt64)))))) else (if (position <? 30) then (if (position <? 25) then (if (position <? 22) then (if (position <? 21) then (3308224258029322869 : UInt64) else (5365058923640841347 : UInt64)) else (if (position <? 23) then (6679025012923562964 : UInt64) else (if (position <? 24) then (8573033837759648693 : UInt64) else (10970295158949994411 : UInt64)))) else (if (position <? 27) then (if (position <? 26) then (12119686244451234320 : UInt64) else (12683024718118986047 : UInt64)) else (if (position <? 28) then (13788192230050041572 : UInt64) else (if (position <? 29) then (14330467153632333762 : UInt64) else (15395433587784984357 : UInt64))))) else (if (position <? 35) then (if (position <? 32) then (if (position <? 31) then (489312712824947311 : UInt64) else (1452737877330783856 : UInt64)) else (if (position <? 33) then (2861767655752347644 : UInt64) else (if (position <? 34) then (3322285676063803686 : UInt64) else (5560940570517711597 : UInt64)))) else (if (position <? 37) then (if (position <? 36) then (5996557281743188959 : UInt64) else (7280758554555802590 : UInt64)) else (if (position <? 38) then (8532644243296465576 : UInt64) else (if (position <? 39) then (9350256976987008742 : UInt64) else (10552545826968843579 : UInt64))))))) else (if (position <? 60) then (if (position <? 50) then (if (position <? 45) then (if (position <? 42) then (if (position <? 41) then (11727347734174303076 : UInt64) else (12113106623233404929 : UInt64)) else (if (position <? 43) then (14000437183269869457 : UInt64) else (if (position <? 44) then (14369950271660146224 : UInt64) else (15101387698204529176 : UInt64)))) else (if (position <? 47) then (if (position <? 46) then (15463397548674623760 : UInt64) else (17586052441742319658 : UInt64)) else (if (position <? 48) then (1182934255886127544 : UInt64) else (if (position <? 49) then (1847814050463011016 : UInt64) else (2177327727835720531 : UInt64))))) else (if (position <? 55) then (if (position <? 52) then (if (position <? 51) then (2830643537854262169 : UInt64) else (3796741975233480872 : UInt64)) else (if (position <? 53) then (4115178125766777443 : UInt64) else (if (position <? 54) then (5681478168544905931 : UInt64) else (6601373596472566643 : UInt64)))) else (if (position <? 57) then (if (position <? 56) then (7507060721942968483 : UInt64) else (8399075790359081724 : UInt64)) else (if (position <? 58) then (8693463985226723168 : UInt64) else (if (position <? 59) then (9568029438360202098 : UInt64) else (10144078919501101548 : UInt64)))))) else (if (position <? 70) then (if (position <? 65) then (if (position <? 62) then (if (position <? 61) then (10430055236837252648 : UInt64) else (11840083180663258601 : UInt64)) else (if (position <? 63) then (13761210420658862357 : UInt64) else (if (position <? 64) then (14299343276471374635 : UInt64) else (14566680578165727644 : UInt64)))) else (if (position <? 67) then (if (position <? 66) then (15097957966210449927 : UInt64) else (16922976911328602910 : UInt64)) else (if (position <? 68) then (17689382322260857208 : UInt64) else (if (position <? 69) then (500013540394364858 : UInt64) else (748580250866718886 : UInt64))))) else (if (position <? 75) then (if (position <? 72) then (if (position <? 71) then (1242879168328830382 : UInt64) else (1977374033974150939 : UInt64)) else (if (position <? 73) then (2944078676154940804 : UInt64) else (if (position <? 74) then (3659926193048069267 : UInt64) else (4368137639120453308 : UInt64)))) else (if (position <? 77) then (if (position <? 76) then (4836135668995329356 : UInt64) else (5532061633213252278 : UInt64)) else (if (position <? 78) then (6448918945643986474 : UInt64) else (if (position <? 79) then (6902733635092675308 : UInt64) else (7801388544844847127 : UInt64)))))))),
+  executable: true
+}
+
+definition{
+  name: round,
+  parameters: [state : Working],
+  result: Working,
+  body: (let constant : UInt64 := (roundConstant (project state index)); (let t1 : UInt64 := (Word::add (project state h) (Word::add (bigSigma1 (project state e)) (Word::add (choose (project state e) (project state f) (project state g)) (Word::add constant (project (project state window) w0))))); (let t2 : UInt64 := (Word::add (bigSigma0 (project state a)) (majority (project state a) (project state b) (project state c))); (record Working {a := (Word::add t1 t2), b := (project state a), c := (project state b), d := (project state c), e := (Word::add (project state d) t1), f := (project state e), g := (project state f), h := (project state g), window := (advance (project state window)), index := ((project state index) + 1)})))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: initial,
+  parameters: [],
+  result: Digest,
+  body: (record Digest {h0 := (7640891576956012808 : UInt64), h1 := (13503953896175478587 : UInt64), h2 := (4354685564936845355 : UInt64), h3 := (11912009170470909681 : UInt64), h4 := (5840696475078001361 : UInt64), h5 := (11170449401992604703 : UInt64), h6 := (2270897969802886507 : UInt64), h7 := (6620516959819538809 : UInt64)}),
+  executable: true
+}
+
+definition{
+  name: compress,
+  parameters: [hash : Digest, block : Schedule],
+  result: Digest,
+  body: (let final : Working := (prim iterate (fun (state : Working) => (round state)) 80 (record Working {a := (project hash h0), b := (project hash h1), c := (project hash h2), d := (project hash h3), e := (project hash h4), f := (project hash h5), g := (project hash h6), h := (project hash h7), window := block, index := 0}) : Working); (record Digest {h0 := (Word::add (project hash h0) (project final a)), h1 := (Word::add (project hash h1) (project final b)), h2 := (Word::add (project hash h2) (project final c)), h3 := (Word::add (project hash h3) (project final d)), h4 := (Word::add (project hash h4) (project final e)), h5 := (Word::add (project hash h5) (project final f)), h6 := (Word::add (project hash h6) (project final g)), h7 := (Word::add (project hash h7) (project final h))})),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: byteAt,
+  parameters: [message : Bytes, size : Nat, position : Nat],
+  result: UInt64,
+  body: (if (position <? size) then (Word::byteWord message position) else (if (position =? size) then (128 : UInt64) else (0 : UInt64))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: scheduleWord,
+  parameters: [message : Bytes, size : Nat, total : Nat, position : Nat],
+  result: UInt64,
+  body: (if ((position + 16) =? total) then (0 : UInt64) else (if ((position + 8) =? total) then (Word::ofNat (prim multiply size 8 : Nat)) else (Word::fromBytes (byteAt message size (position + 0)) (byteAt message size (position + 1)) (byteAt message size (position + 2)) (byteAt message size (position + 3)) (byteAt message size (position + 4)) (byteAt message size (position + 5)) (byteAt message size (position + 6)) (byteAt message size (position + 7))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: load,
+  parameters: [message : Bytes, size : Nat, total : Nat, offset : Nat],
+  result: Schedule,
+  body: (record Schedule {w0 := (scheduleWord message size total (offset + 0)), w1 := (scheduleWord message size total (offset + 8)), w2 := (scheduleWord message size total (offset + 16)), w3 := (scheduleWord message size total (offset + 24)), w4 := (scheduleWord message size total (offset + 32)), w5 := (scheduleWord message size total (offset + 40)), w6 := (scheduleWord message size total (offset + 48)), w7 := (scheduleWord message size total (offset + 56)), w8 := (scheduleWord message size total (offset + 64)), w9 := (scheduleWord message size total (offset + 72)), w10 := (scheduleWord message size total (offset + 80)), w11 := (scheduleWord message size total (offset + 88)), w12 := (scheduleWord message size total (offset + 96)), w13 := (scheduleWord message size total (offset + 104)), w14 := (scheduleWord message size total (offset + 112)), w15 := (scheduleWord message size total (offset + 120))}),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: sha512,
+  parameters: [message : Bytes],
+  result: Digest,
+  body: (let size : Nat := (prim length message : Nat); (let total : Nat := (prim multiply (prim quotient (size + 144) 128 0 : Nat) 128 : Nat); (second (prim iterate (fun [message, size, total] (state : (Nat * Digest)) => (((first state) + 128), (compress (second state) (load message size total (first state))))) (prim quotient total 128 0 : Nat) (0, (initial)) : (Nat * Digest))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: sha512Hex,
+  parameters: [message : Bytes],
+  result: Bytes,
+  body: (let digest : Digest := (sha512 message); (prim append (Word::hexBig (project digest h0)) (prim append (Word::hexBig (project digest h1)) (prim append (Word::hexBig (project digest h2)) (prim append (Word::hexBig (project digest h3)) (prim append (Word::hexBig (project digest h4)) (prim append (Word::hexBig (project digest h5)) (prim append (Word::hexBig (project digest h6)) (Word::hexBig (project digest h7)) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes) : Bytes)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

@@ -1,0 +1,31 @@
+module
+import LexLeanKappa.Blake3
+#print axioms LexLeanKappa.Blake3.Block
+#print axioms LexLeanKappa.Blake3.Cv
+#print axioms LexLeanKappa.Blake3.Merge
+#print axioms LexLeanKappa.Blake3.Quad
+#print axioms LexLeanKappa.Blake3.State
+#print axioms LexLeanKappa.Blake3.available
+#print axioms LexLeanKappa.Blake3.blake3Hex
+#print axioms LexLeanKappa.Blake3.blocks
+#print axioms LexLeanKappa.Blake3.byteAt
+#print axioms LexLeanKappa.Blake3.chunk
+#print axioms LexLeanKappa.Blake3.columns
+#print axioms LexLeanKappa.Blake3.compress
+#print axioms LexLeanKappa.Blake3.diagonals
+#print axioms LexLeanKappa.Blake3.foldStep
+#print axioms LexLeanKappa.Blake3.fullChunks
+#print axioms LexLeanKappa.Blake3.g
+#print axioms LexLeanKappa.Blake3.hexLittle
+#print axioms LexLeanKappa.Blake3.initial
+#print axioms LexLeanKappa.Blake3.load
+#print axioms LexLeanKappa.Blake3.mergeStep
+#print axioms LexLeanKappa.Blake3.nibble
+#print axioms LexLeanKappa.Blake3.parent
+#print axioms LexLeanKappa.Blake3.parentBlock
+#print axioms LexLeanKappa.Blake3.permute
+#print axioms LexLeanKappa.Blake3.«prefix»
+#print axioms LexLeanKappa.Blake3.push
+#print axioms LexLeanKappa.Blake3.roundStep
+#print axioms LexLeanKappa.Blake3.treeRoot
+#print axioms LexLeanKappa.Blake3.wordAt

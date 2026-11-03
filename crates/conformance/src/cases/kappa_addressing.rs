@@ -5,11 +5,10 @@
 //! case and is a defect of the package, of the pipeline, or of the oracle, and
 //! nothing here adopts the oracle's output.
 //!
-//! What is held, and what is not: the package writes the sha256 axis of the
-//! κ-label, the JSON realization, and the five categorical compositions on
-//! the sha256 axis. The GGUF and ONNX realizations of uor-addr and its four
-//! other hash axes are not written; `KA-02`, `KA-03` and `KA-04` say so in
-//! their statements by naming only what they hold.
+//! The package writes the JSON realization, all five hash axes, and the five
+//! categorical compositions on each axis (`KA-02`..`KA-06`). The GGUF and ONNX
+//! realizations remain outside the package; their committed fixtures are
+//! checked only for label form by `KA-02`.
 
 use std::collections::BTreeMap;
 
@@ -31,21 +30,40 @@ const MEMBERS: [&str; 2] = ["kappa", "stdlib"];
 const LABEL: &str = "LexLeanKappa.Label";
 const JSON: &str = "LexLeanKappa.Json";
 const COMPOSE: &str = "LexLeanKappa.Compose";
+const AXIS: &str = "LexLeanKappa.Axis";
 
 /// The roots in the order their modules declare them, each with the effects
 /// its declaration admits, which are exactly the effects its closure
 /// realizes.
-const ROOTS: [(&str, &str, &[&str]); 10] = [
+const ROOTS: [(&str, &str, &[&str]); 18] = [
     (LABEL, "kappaLabel", &["allocation", "overflow"]),
     (LABEL, "isLabel", &["allocation", "overflow"]),
     (LABEL, "handleWire", &["allocation", "overflow"]),
     (JSON, "canonicalJson", &["allocation", "overflow"]),
     (JSON, "jsonLabel", &["allocation", "overflow"]),
+    (AXIS, "labelOn", &["allocation", "overflow"]),
+    (AXIS, "isLabelOn", &["allocation", "overflow"]),
+    (AXIS, "jsonLabelOn", &["allocation", "overflow"]),
+    (COMPOSE, "composeG2On", &["allocation", "overflow"]),
+    (COMPOSE, "composeF4On", &["allocation", "overflow"]),
+    (COMPOSE, "composeE6On", &["allocation", "overflow"]),
+    (COMPOSE, "composeE7On", &["allocation", "overflow"]),
+    (COMPOSE, "composeE8On", &["allocation", "overflow"]),
     (COMPOSE, "composeG2", &["allocation", "overflow"]),
     (COMPOSE, "composeF4", &["allocation", "overflow"]),
     (COMPOSE, "composeE6", &["allocation", "overflow"]),
     (COMPOSE, "composeE7", &["allocation", "overflow"]),
     (COMPOSE, "composeE8", &["allocation", "overflow"]),
+];
+
+/// The σ-axes the package writes, with the width of their raw digests in
+/// bytes: the five of uor-addr.
+const AXES: [(&str, usize); 5] = [
+    ("sha256", 32),
+    ("blake3", 32),
+    ("sha3-256", 32),
+    ("keccak256", 32),
+    ("sha512", 64),
 ];
 
 /// Seeded documents under the evaluator.
@@ -186,6 +204,30 @@ fn oracle_label(raw: &[u8]) -> Option<String> {
     uor_addr::json::address(raw)
         .ok()
         .map(|outcome| outcome.address.as_str().to_owned())
+}
+
+/// What the oracle says of a document on a σ-axis: its κ-label there, or
+/// `None` for a refusal.
+fn oracle_address(axis: &str, raw: &[u8]) -> Option<String> {
+    use uor_addr::json as j;
+    match axis {
+        "sha256" => j::address(raw)
+            .ok()
+            .map(|outcome| outcome.address.as_str().to_owned()),
+        "blake3" => j::address_blake3(raw)
+            .ok()
+            .map(|outcome| outcome.address.as_str().to_owned()),
+        "sha3-256" => j::address_sha3_256(raw)
+            .ok()
+            .map(|outcome| outcome.address.as_str().to_owned()),
+        "keccak256" => j::address_keccak256(raw)
+            .ok()
+            .map(|outcome| outcome.address.as_str().to_owned()),
+        "sha512" => j::address_sha512(raw)
+            .ok()
+            .map(|outcome| outcome.address.as_str().to_owned()),
+        other => panic!("`{other}` is not an axis the oracle is held to"),
+    }
 }
 
 /// A generated document: its text, and whether it uses something the
@@ -360,21 +402,32 @@ impl Seeded {
     }
 }
 
+/// The width in bytes of the raw digest of an axis.
+fn digest_bytes(axis: &str) -> usize {
+    AXES.iter()
+        .find(|(name, _)| *name == axis)
+        .map(|(_, width)| *width)
+        .unwrap_or_else(|| panic!("`{axis}` is not an axis of the package"))
+}
+
 /// The corpus of canonical JSON runs: the fixtures, edge cases, malformed
 /// documents, and seeded documents up to `runs`.
-fn json_corpus(runs: usize, seed: u64, label: bool) -> Vec<Run> {
+fn json_corpus(runs: usize, seed: u64, label: Option<&str>) -> Vec<Run> {
     let mut seeded = Seeded(seed);
     let mut out = Vec::new();
     let expect = |out: &mut Vec<Run>, raw: &[u8], outside: bool| {
         let canonical = oracle_canonical(raw).filter(|_| !outside);
-        let expected = if label {
-            canonical.map(|_| {
-                let label = oracle_label(raw).expect("a label").into_bytes();
-                assert_eq!(label.len(), 71, "a label has 71 bytes");
+        let expected = match label {
+            Some(axis) => canonical.map(|_| {
+                let label = oracle_address(axis, raw).expect("a label").into_bytes();
+                assert_eq!(
+                    label.len(),
+                    axis.len() + 1 + 2 * digest_bytes(axis),
+                    "a label is its axis, a colon, and the digits"
+                );
                 label
-            })
-        } else {
-            canonical
+            }),
+            None => canonical,
         };
         record(out, vec![bytes(raw)], &option_bytes(expected.as_deref()));
     };
@@ -532,39 +585,93 @@ fn handle_corpus() -> Vec<Run> {
     out
 }
 
-/// The oracle's composition of the operands: the label it mints, or `None`
-/// for any error (an operand of another axis, a malformed one, or one of the
-/// wrong width).
-fn oracle_compose(member: &str, operands: &[Vec<u8>]) -> Option<String> {
+/// The oracle's composition of the operands on an axis: the label it mints,
+/// or `None` for any error (an operand of another axis, a malformed one, or
+/// one of the wrong width). `member` is the composition's name without the
+/// axis suffix: `composeG2`, `composeF4`, `composeE6`, `composeE7`, `composeE8`.
+fn oracle_compose(axis: &str, member: &str, operands: &[Vec<u8>]) -> Option<String> {
     use uor_addr::composition as c;
     use uor_addr::KappaLabel;
-    let operand = |index: usize| KappaLabel::<71>::from_bytes(&operands[index]).ok();
-    let outcome = match member {
-        "composeG2" => c::compose_g2_product(&operand(0)?, &operand(1)?),
-        "composeF4" => c::compose_f4_quotient(&operand(0)?),
-        "composeE6" => c::compose_e6_filtration(&operand(0)?),
-        "composeE7" => c::compose_e7_augmentation(&operand(0)?),
-        "composeE8" => c::compose_e8_embedding(&operand(0)?),
-        other => panic!("`{other}` is not a composition"),
-    };
-    outcome
-        .ok()
-        .map(|outcome| outcome.address.as_str().to_owned())
+    macro_rules! on {
+        ($width:literal, $g2:path, $f4:path, $e6:path, $e7:path, $e8:path) => {{
+            let operand = |index: usize| KappaLabel::<$width>::from_bytes(&operands[index]).ok();
+            let outcome = match member {
+                "composeG2" => $g2(&operand(0)?, &operand(1)?),
+                "composeF4" => $f4(&operand(0)?),
+                "composeE6" => $e6(&operand(0)?),
+                "composeE7" => $e7(&operand(0)?),
+                "composeE8" => $e8(&operand(0)?),
+                other => panic!("`{other}` is not a composition"),
+            };
+            outcome
+                .ok()
+                .map(|outcome| outcome.address.as_str().to_owned())
+        }};
+    }
+    match axis {
+        "sha256" => on!(
+            71,
+            c::compose_g2_product,
+            c::compose_f4_quotient,
+            c::compose_e6_filtration,
+            c::compose_e7_augmentation,
+            c::compose_e8_embedding
+        ),
+        "blake3" => on!(
+            71,
+            c::compose_g2_product_blake3,
+            c::compose_f4_quotient_blake3,
+            c::compose_e6_filtration_blake3,
+            c::compose_e7_augmentation_blake3,
+            c::compose_e8_embedding_blake3
+        ),
+        "sha3-256" => on!(
+            73,
+            c::compose_g2_product_sha3_256,
+            c::compose_f4_quotient_sha3_256,
+            c::compose_e6_filtration_sha3_256,
+            c::compose_e7_augmentation_sha3_256,
+            c::compose_e8_embedding_sha3_256
+        ),
+        "keccak256" => on!(
+            74,
+            c::compose_g2_product_keccak256,
+            c::compose_f4_quotient_keccak256,
+            c::compose_e6_filtration_keccak256,
+            c::compose_e7_augmentation_keccak256,
+            c::compose_e8_embedding_keccak256
+        ),
+        "sha512" => on!(
+            135,
+            c::compose_g2_product_sha512,
+            c::compose_f4_quotient_sha512,
+            c::compose_e6_filtration_sha512,
+            c::compose_e7_augmentation_sha512,
+            c::compose_e8_embedding_sha512
+        ),
+        other => panic!("`{other}` is not an axis the oracle is held to"),
+    }
 }
 
-/// Operand labels of the sha256 axis: the extremes, digests whose first byte
-/// modulo nine is eight (the degree-6 class of E6), a digest and its mirror,
-/// digests whose quarters are in every order, and seeded digests.
-fn valid_operands(seeded: &mut Seeded, random: usize) -> Vec<Vec<u8>> {
-    let mut digests: Vec<Vec<u8>> = vec![vec![0; 32], vec![0xff; 32], (1..=32).collect()];
+/// Operand labels of an axis: the extremes, digests whose first byte modulo
+/// nine is eight (the degree-6 class of E6), a digest and its mirror, digests
+/// whose quarters are in every order, and seeded digests.
+fn valid_operands(axis: &str, seeded: &mut Seeded, random: usize) -> Vec<Vec<u8>> {
+    let width = digest_bytes(axis);
+    let mut digests: Vec<Vec<u8>> = vec![
+        vec![0; width],
+        vec![0xff; width],
+        (1..=width).map(|byte| byte as u8).collect(),
+    ];
     for first in [0x08, 0x11, 0x1a, 0xf8, 0xfb, 0x00, 0x07, 0x09] {
-        let mut digest: Vec<u8> = (0..32).map(|_| seeded.below(256) as u8).collect();
+        let mut digest: Vec<u8> = (0..width).map(|_| seeded.below(256) as u8).collect();
         digest[0] = first;
         digests.push(digest);
     }
     // Quarters in every one of the 24 orders of four distinct blocks.
+    let quarter = width / 4;
     let quarters: Vec<Vec<u8>> = (0..4u8)
-        .map(|quarter| vec![0x10 * (quarter + 1) + 3; 8])
+        .map(|index| vec![0x10 * (index + 1) + 3; quarter])
         .collect();
     for a in 0..4usize {
         for b in (0..4usize).filter(|b| *b != a) {
@@ -580,9 +687,17 @@ fn valid_operands(seeded: &mut Seeded, random: usize) -> Vec<Vec<u8>> {
         }
     }
     // Equal leading quarters, so that the order is decided late.
-    digests.push([[7u8; 8].as_slice(), &[7; 8], &[3; 8], &[9; 8]].concat());
+    digests.push(
+        [
+            vec![7u8; quarter],
+            vec![7; quarter],
+            vec![3; quarter],
+            vec![9; quarter],
+        ]
+        .concat(),
+    );
     for _ in 0..random {
-        digests.push((0..32).map(|_| seeded.below(256) as u8).collect());
+        digests.push((0..width).map(|_| seeded.below(256) as u8).collect());
     }
     let mirrors: Vec<Vec<u8>> = digests
         .iter()
@@ -592,53 +707,64 @@ fn valid_operands(seeded: &mut Seeded, random: usize) -> Vec<Vec<u8>> {
     digests.extend(mirrors);
     digests
         .iter()
-        .map(|digest| format!("sha256:{}", hex(digest)).into_bytes())
+        .map(|digest| format!("{axis}:{}", hex(digest)).into_bytes())
         .collect()
 }
 
-/// Operands the package refuses: another axis, the case of the prefix, a
-/// digest of the wrong width, upper case, and characters that are not digits.
-fn invalid_operands(valid: &[u8]) -> Vec<Vec<u8>> {
+/// Operands the package refuses on an axis: another axis, the case of the
+/// prefix, a digest of the wrong width, upper case, and characters that are
+/// not digits.
+fn invalid_operands(axis: &str, valid: &[u8]) -> Vec<Vec<u8>> {
     let text = String::from_utf8(valid.to_vec()).expect("a label");
-    let digits = &text[7..];
+    let digits = &text[axis.len() + 1..];
     let mut out: Vec<Vec<u8>> = vec![
-        format!("blake3:{digits}").into_bytes(),
-        format!("sha3-256:{digits}00").into_bytes(),
-        format!("SHA256:{digits}").into_bytes(),
-        format!("sha256:{}", &digits[1..]).into_bytes(),
-        format!("sha256:{digits}0").into_bytes(),
-        format!("sha256:{}", digits.to_uppercase()).into_bytes(),
-        format!("sha256:g{}", &digits[1..]).into_bytes(),
-        format!("sha256;{digits}").into_bytes(),
-        format!("sha256:{digits}\n").into_bytes(),
-        format!("sha512:{digits}{digits}").into_bytes(),
+        format!("{}:{digits}", axis.to_uppercase()).into_bytes(),
+        format!("{axis}:{}", &digits[1..]).into_bytes(),
+        format!("{axis}:{digits}0").into_bytes(),
+        format!("{axis}:{}", digits.to_uppercase()).into_bytes(),
+        format!("{axis}:g{}", &digits[1..]).into_bytes(),
+        format!("{axis};{digits}").into_bytes(),
+        format!("{axis}:{digits}\n").into_bytes(),
+        format!("{axis}:{}", &digits[..digits.len() / 2]).into_bytes(),
         Vec::new(),
-        b"sha256:".to_vec(),
+        format!("{axis}:").into_bytes(),
     ];
+    // The same digits under each other axis.
+    for (other, _) in AXES.iter().filter(|(other, _)| *other != axis) {
+        out.push(format!("{other}:{digits}").into_bytes());
+    }
+    // A label of another axis whose width is this axis's own.
+    for (other, _) in AXES.iter().filter(|(other, _)| *other != axis) {
+        let fill = "0".repeat(2 * digest_bytes(axis) + axis.len() - other.len());
+        out.push(format!("{other}:{fill}").into_bytes());
+    }
     // A label with a non-ASCII byte in a digit position.
     let mut high = valid.to_vec();
-    high[10] = 0xe9;
+    high[axis.len() + 4] = 0xe9;
     out.push(high);
     out
 }
 
-/// The runs of one composition: valid operands (the pairs in both orders for
-/// the product) and the refused ones, with the oracle's label.
-fn compose_corpus(member: &str, runs: usize) -> Vec<Run> {
+/// The runs of one composition on an axis: valid operands (the pairs in both
+/// orders for the product) and the refused ones, with the oracle's label.
+/// `named` puts the axis first among the arguments, as the roots over an axis
+/// take it.
+fn compose_corpus(member: &str, axis: &str, named: bool, runs: usize) -> Vec<Run> {
     let mut seeded = Seeded(0x6b61_0004_0000_0001);
-    let valid = valid_operands(&mut seeded, runs);
+    let valid = valid_operands(axis, &mut seeded, runs);
     let mut out = Vec::new();
     let mut run = |operands: Vec<Vec<u8>>| {
         let expected = option_bytes(
-            oracle_compose(member, &operands)
+            oracle_compose(axis, member, &operands)
                 .as_deref()
                 .map(str::as_bytes),
         );
-        record(
-            &mut out,
-            operands.iter().map(|operand| bytes(operand)).collect(),
-            &expected,
-        );
+        let mut arguments: Vec<Value> = Vec::new();
+        if named {
+            arguments.push(bytes(axis.as_bytes()));
+        }
+        arguments.extend(operands.iter().map(|operand| bytes(operand)));
+        record(&mut out, arguments, &expected);
     };
     if member == "composeG2" {
         for (index, left) in valid.iter().enumerate() {
@@ -647,7 +773,7 @@ fn compose_corpus(member: &str, runs: usize) -> Vec<Run> {
             run(vec![right.clone(), left.clone()]);
             run(vec![left.clone(), left.clone()]);
         }
-        for bad in invalid_operands(&valid[3]) {
+        for bad in invalid_operands(axis, &valid[3]) {
             run(vec![bad.clone(), valid[3].clone()]);
             run(vec![valid[3].clone(), bad]);
         }
@@ -655,8 +781,159 @@ fn compose_corpus(member: &str, runs: usize) -> Vec<Run> {
         for operand in &valid {
             run(vec![operand.clone()]);
         }
-        for bad in invalid_operands(&valid[3]) {
+        for bad in invalid_operands(axis, &valid[3]) {
             run(vec![bad]);
+        }
+    }
+    out
+}
+
+/// The runs of a composition over an axis, for each axis of the package: the
+/// axis named first, then the operands. A name that is no axis of the package
+/// has no composition, so the oracle is not asked: the root gives no output.
+fn compose_on_corpus(member: &str, runs: usize) -> Vec<Run> {
+    let base = member
+        .strip_suffix("On")
+        .expect("a composition over an axis");
+    let mut out = Vec::new();
+    for (axis, _) in AXES {
+        out.extend(compose_corpus(base, axis, true, runs));
+    }
+    let valid = valid_operands("sha512", &mut Seeded(0x6b61_0006_0000_0001), 0);
+    let operands = if base == "composeG2" { 2 } else { 1 };
+    for name in ["", "md5", "sha384", "SHA512", "sha512:", "blake2b"] {
+        let mut arguments = vec![bytes(name.as_bytes())];
+        arguments.extend((0..operands).map(|_| bytes(&valid[3])));
+        record(&mut out, arguments, &Value::None);
+    }
+    out
+}
+
+/// The canonical bytes of the JSON documents the hash runs hash: the
+/// fixtures, documents whose canonical form has a length around the block of
+/// SHA-512 and the rate of Keccak, and seeded documents. Each is paired with
+/// the raw text the oracle addresses.
+fn hash_subjects(runs: usize) -> Vec<(Vec<u8>, Vec<u8>)> {
+    let mut seeded = Seeded(0x6b61_0005_0000_0001);
+    let mut out: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
+    for (_, raw, _) in FIXTURES {
+        out.push((
+            oracle_canonical(raw.as_bytes()).expect("a fixture"),
+            raw.as_bytes().to_vec(),
+        ));
+    }
+    // A string in an array: four bytes of structure and as many letters as
+    // bring the canonical form to the length asked.
+    for length in [
+        4, 5, 55, 56, 63, 64, 65, 110, 111, 112, 113, 127, 128, 129, 134, 135, 136, 137, 239, 240,
+        241, 255, 256, 257, 271, 272, 273, 1000, 1023, 1024, 1025, 2047, 2048, 2049, 3071, 3072,
+        3073, 4096, 5000,
+    ] {
+        let letters: String = (0..length - 4)
+            .map(|_| char::from(b'a' + u8::try_from(seeded.below(26)).expect("a letter")))
+            .collect();
+        let raw = format!("[\"{letters}\"]").into_bytes();
+        let canonical = oracle_canonical(&raw).expect("a document");
+        assert_eq!(
+            canonical.len(),
+            length,
+            "the canonical form has the length asked"
+        );
+        out.push((canonical, raw));
+    }
+    while out.len() < runs {
+        let document = seeded.document();
+        if document.outside {
+            continue;
+        }
+        let raw = document.text.into_bytes();
+        let canonical = oracle_canonical(&raw).expect("a document");
+        out.push((canonical, raw));
+    }
+    out
+}
+
+/// The runs of `labelOn`: the canonical forms of `hash_subjects` on each axis
+/// of the package, and the names that are no axis of the package.
+fn label_on_corpus(runs: usize) -> Vec<Run> {
+    let mut out = Vec::new();
+    for (axis, _) in AXES {
+        for (canonical, raw) in hash_subjects(runs) {
+            let label = oracle_address(axis, &raw).expect("the oracle labels a document");
+            record(
+                &mut out,
+                vec![bytes(axis.as_bytes()), bytes(&canonical)],
+                &option_bytes(Some(label.as_bytes())),
+            );
+        }
+    }
+    for name in ["", "md5", "sha384", "SHA512", "sha512:", "blake2b"] {
+        record(
+            &mut out,
+            vec![bytes(name.as_bytes()), bytes(b"[]")],
+            &Value::None,
+        );
+    }
+    out
+}
+
+/// The runs of `isLabelOn`: the oracle's addresses of the fixtures on each
+/// axis, and strings that are one byte from a label or a label of another
+/// axis.
+fn is_label_on_corpus() -> Vec<Run> {
+    let mut out = Vec::new();
+    let boolean = |value: bool| Value::Bool { value };
+    for (axis, _) in AXES {
+        for (_, raw, _) in FIXTURES {
+            let label = oracle_address(axis, raw.as_bytes()).expect("a label");
+            let mut ask = |candidate: &[u8], expected: bool| {
+                record(
+                    &mut out,
+                    vec![bytes(axis.as_bytes()), bytes(candidate)],
+                    &boolean(expected),
+                );
+            };
+            ask(label.as_bytes(), true);
+            let digits = &label[axis.len() + 1..];
+            ask(&label.as_bytes()[..label.len() - 1], false);
+            ask(format!("{label}0").as_bytes(), false);
+            ask(format!("{axis};{digits}").as_bytes(), false);
+            ask(format!("{axis}{digits}").as_bytes(), false);
+            ask(format!("{axis}:g{}", &digits[1..]).as_bytes(), false);
+            ask(
+                format!("{}:{digits}", axis.to_uppercase()).as_bytes(),
+                false,
+            );
+            ask(
+                format!("{axis}:{}", digits.to_uppercase()).as_bytes(),
+                digits.to_uppercase() == digits,
+            );
+            for (other, _) in AXES.iter().filter(|(other, _)| *other != axis) {
+                ask(format!("{other}:{digits}").as_bytes(), false);
+                let foreign = oracle_address(other, raw.as_bytes()).expect("a label");
+                ask(foreign.as_bytes(), false);
+            }
+        }
+    }
+    for name in ["", "md5", "blake2b"] {
+        let label = oracle_address("sha256", b"[]").expect("a label");
+        record(
+            &mut out,
+            vec![bytes(name.as_bytes()), bytes(label.as_bytes())],
+            &boolean(false),
+        );
+    }
+    out
+}
+
+/// The runs of `jsonLabelOn`: documents on each axis of the package.
+fn json_label_on_corpus(runs: usize) -> Vec<Run> {
+    let mut out = Vec::new();
+    for (axis, _) in AXES {
+        for (arguments, expected) in json_corpus(runs, 0x4b41_0005, Some(axis)) {
+            let mut named = vec![bytes(axis.as_bytes())];
+            named.extend(arguments);
+            out.push((named, expected));
         }
     }
     out
@@ -668,10 +945,16 @@ fn corpus(member: &str, runs: usize) -> Vec<Run> {
         "kappaLabel" => label_corpus(),
         "isLabel" => is_label_corpus(),
         "handleWire" => handle_corpus(),
-        "canonicalJson" => json_corpus(runs, 0x4b41_0003, false),
-        "jsonLabel" => json_corpus(runs, 0x4b41_0002, true),
+        "canonicalJson" => json_corpus(runs, 0x4b41_0003, None),
+        "jsonLabel" => json_corpus(runs, 0x4b41_0002, Some("sha256")),
         "composeG2" | "composeF4" | "composeE6" | "composeE7" | "composeE8" => {
-            compose_corpus(member, runs)
+            compose_corpus(member, "sha256", false, runs)
+        }
+        "labelOn" => label_on_corpus(runs),
+        "isLabelOn" => is_label_on_corpus(),
+        "jsonLabelOn" => json_label_on_corpus(runs),
+        "composeG2On" | "composeF4On" | "composeE6On" | "composeE7On" | "composeE8On" => {
+            compose_on_corpus(member, runs)
         }
         other => panic!("`{other}` is not a root of the package"),
     }
@@ -692,10 +975,11 @@ fn evaluate(lowered: &Lowered, corpus: &[Run]) -> Vec<String> {
         .collect()
 }
 
-fn lowered_roots(project: &P) -> BTreeMap<&'static str, Lowered> {
+fn lowered_roots(project: &P, members: &[&str]) -> BTreeMap<&'static str, Lowered> {
     let checked = support::checked_project(project);
     ROOTS
         .iter()
+        .filter(|(_, member, _)| members.contains(member))
         .map(|(module, member, _)| (*member, lower_in(&checked, project, module, member)))
         .collect()
 }
@@ -733,7 +1017,7 @@ fn rustc_differential(lowered: &BTreeMap<&'static str, Lowered>, members: &[&str
         );
         let package = target::package(&manifest.to_file_bytes().expect("canonical manifest"))
             .unwrap_or_else(|failure| panic!("{member}: {failure:?}"));
-        let runs = corpus(member, RUSTC_RUNS);
+        let runs = corpus(member, rustc_runs(member));
         let arguments: Vec<Vec<Value>> = runs
             .iter()
             .map(|(arguments, _)| arguments.clone())
@@ -850,6 +1134,8 @@ pub fn run(id: &str) {
         "KA-02" => labels(id),
         "KA-03" => canonical_json(),
         "KA-04" => composition(),
+        "KA-05" => hash_axes(),
+        "KA-06" => axis_composition(),
         other => panic!("no kappa-addressing case is wired for {other}"),
     }
 }
@@ -885,7 +1171,7 @@ fn package(id: &str) {
     project.check_ok();
     let built = project.build_ok();
     let build_id = built.build_id.expect("built");
-    for module in ["Label", "Json", "Compose"] {
+    for module in ["Label", "Json", "Axis", "Compose"] {
         let report: Json = serde_json::from_slice(
             &std::fs::read(
                 project
@@ -993,7 +1279,10 @@ fn package(id: &str) {
 fn labels(id: &str) {
     let project = P::workspace_project("kappa", &MEMBERS);
     project.check_ok();
-    let lowered = lowered_roots(&project);
+    let lowered = lowered_roots(
+        &project,
+        &["kappaLabel", "isLabel", "handleWire", "jsonLabel"],
+    );
     // The twelve fixtures: the committed address, the oracle's, and the
     // package's, as the evaluator computes it.
     let json = &lowered["jsonLabel"];
@@ -1071,7 +1360,7 @@ fn labels(id: &str) {
 fn canonical_json() {
     let project = P::workspace_project("kappa", &MEMBERS);
     project.check_ok();
-    let lowered = lowered_roots(&project);
+    let lowered = lowered_roots(&project, &["canonicalJson"]);
     let runs = corpus("canonicalJson", EVALUATOR_RUNS);
     let refusal = serde_json::to_value(Value::None).expect("a value is JSON");
     assert!(
@@ -1142,7 +1431,16 @@ fn observe(low: &Lowered, operands: &[&[u8]]) -> Json {
 fn composition() {
     let project = P::workspace_project("kappa", &MEMBERS);
     project.check_ok();
-    let lowered = lowered_roots(&project);
+    let lowered = lowered_roots(
+        &project,
+        &[
+            "composeG2",
+            "composeF4",
+            "composeE6",
+            "composeE7",
+            "composeE8",
+        ],
+    );
     let members = [
         "composeG2",
         "composeF4",
@@ -1169,7 +1467,7 @@ fn composition() {
     }
     // The laws, read from the evaluator: the product is commutative and a
     // label and its mirror compose alike, as the oracle's own tests state.
-    let operands = valid_operands(&mut Seeded(0x6b61_0004_0000_0001), COMPOSE_RUNS);
+    let operands = valid_operands("sha256", &mut Seeded(0x6b61_0004_0000_0001), COMPOSE_RUNS);
     for (index, left) in operands.iter().enumerate().take(24) {
         let right = &operands[(index * 5 + 1) % operands.len()];
         assert_eq!(
@@ -1234,4 +1532,275 @@ fn composition() {
             disagreements[0]
         );
     }
+}
+
+/// The documents hashed per axis under the evaluator and under rustc.
+const HASH_EVALUATOR_RUNS: usize = 55;
+const HASH_RUSTC_RUNS: usize = 70;
+/// Seeded operands of each composition on an axis under rustc.
+const COMPOSE_RUSTC_RUNS: usize = 12;
+/// Seeded operands of each composition on an axis under the evaluator.
+const COMPOSE_EVALUATOR_RUNS: usize = 6;
+
+/// The number of seeded runs of a root under rustc.
+fn rustc_runs(member: &str) -> usize {
+    match member {
+        "labelOn" | "jsonLabelOn" => HASH_RUSTC_RUNS,
+        "composeG2On" | "composeF4On" | "composeE6On" | "composeE7On" | "composeE8On" => {
+            COMPOSE_RUSTC_RUNS
+        }
+        _ => RUSTC_RUNS,
+    }
+}
+
+/// A plant: the module, the text, its replacement, and the root whose
+/// differential must see it.
+type Plant = (&'static str, &'static str, &'static str, &'static str);
+
+/// Run each plant on the corpus of its root and require a disagreement.
+fn detect_plants(id: &str, plants: &[Plant], runs: impl Fn(&str) -> Vec<Run>) {
+    for (module, from, to, member) in plants {
+        let defective = planted(module, from, to);
+        let checked = support::checked_project(&defective);
+        let owner = ROOTS
+            .iter()
+            .find(|(_, name, _)| name == member)
+            .map(|(owner, _, _)| *owner)
+            .expect("a root of the package");
+        let low = lower_in(&checked, &defective, owner, member);
+        let corpus = runs(member);
+        let disagreements = evaluate(&low, &corpus);
+        assert!(
+            !disagreements.is_empty(),
+            "{id}: a planted defect `{to}` in {module} is detected by the differential on `{member}`"
+        );
+        eprintln!(
+            "{id}: plant `{to}` in {module}: {} of {} runs of {member} disagree, the first {}",
+            disagreements.len(),
+            corpus.len(),
+            disagreements[0]
+        );
+    }
+}
+
+/// `KA-05`: the hash axes beside sha256.
+fn hash_axes() {
+    let project = P::workspace_project("kappa", &MEMBERS);
+    project.check_ok();
+    let members = ["labelOn", "isLabelOn", "jsonLabelOn"];
+    let lowered = lowered_roots(&project, &members);
+    let refusal = serde_json::to_value(Value::None).expect("a value is JSON");
+    for member in members {
+        let runs = corpus(member, HASH_EVALUATOR_RUNS);
+        if member != "isLabelOn" {
+            assert!(
+                runs.iter().any(|(_, expected)| *expected == refusal)
+                    && runs.iter().any(|(_, expected)| *expected != refusal),
+                "KA-05: {member}: the corpus holds both labels and refusals"
+            );
+        }
+        let disagreements = evaluate(&lowered[member], &runs);
+        assert!(
+            disagreements.is_empty(),
+            "KA-05: {member}: the evaluator and uor-addr disagree on {} of {} runs: {:?}",
+            disagreements.len(),
+            runs.len(),
+            &disagreements[..disagreements.len().min(5)]
+        );
+    }
+    rustc_differential(&lowered, &members);
+    // The gate is armed: a rotation of SHA-512 off by one, a padding that
+    // closes a block one byte early, the SHA-3 suffix on the Keccak axis, a
+    // Keccak without its closing bit, a rate that forgets the byte shared by
+    // the suffix and the closing bit, an axis that hashes with another's
+    // function, a width of SHA-512 digits one short, and in BLAKE3 a changed
+    // rotation, message permutation, root flag, chunk count, tree merge, and
+    // chunk start flag are each detected.
+    detect_plants(
+        "KA-05",
+        &[
+            (
+                "Sha512",
+                "(Word::rotateRight value (28 : UInt32) (36 : UInt32))",
+                "(Word::rotateRight value (27 : UInt32) (37 : UInt32))",
+                "labelOn",
+            ),
+            (
+                "Sha512",
+                "(prim quotient (size + 144) 128 0 : Nat)",
+                "(prim quotient (size + 143) 128 0 : Nat)",
+                "labelOn",
+            ),
+            (
+                "Keccak",
+                "(squeezeHex message (6 : UInt64))",
+                "(squeezeHex message (1 : UInt64))",
+                "labelOn",
+            ),
+            (
+                "Keccak",
+                "(prim bit_or body (128 : UInt64) : UInt64)",
+                "(prim bit_or body (0 : UInt64) : UInt64)",
+                "labelOn",
+            ),
+            (
+                "Keccak",
+                "((prim quotient size 136 0 : Nat) + 1)",
+                "((prim quotient (size + 1) 136 0 : Nat) + 1)",
+                "labelOn",
+            ),
+            (
+                "Axis",
+                "(Keccak::keccakHex message)",
+                "(Keccak::sha3Hex message)",
+                "jsonLabelOn",
+            ),
+            (
+                "Axis",
+                "(if (named axis \"sha512\") then 128 else (if",
+                "(if (named axis \"sha512\") then 127 else (if",
+                "isLabelOn",
+            ),
+            (
+                "Blake3",
+                "(LexLeanStd.Sha256::rotateRight (prim bit_xor d a1 : UInt32) (16 : UInt32) (16 : UInt32))",
+                "(LexLeanStd.Sha256::rotateRight (prim bit_xor d a1 : UInt32) (8 : UInt32) (24 : UInt32))",
+                "labelOn",
+            ),
+            (
+                "Blake3",
+                "m0 := (project m m2)",
+                "m0 := (project m m3)",
+                "labelOn",
+            ),
+            (
+                "Blake3",
+                "(prim bit_or (4 : UInt32) (if root then (8 : UInt32) else (0 : UInt32)) : UInt32)",
+                "(prim bit_or (4 : UInt32) (if root then (0 : UInt32) else (0 : UInt32)) : UInt32)",
+                "labelOn",
+            ),
+            (
+                "Blake3",
+                "(prim quotient (size + 1023) 1024 0 : Nat)",
+                "(prim quotient (size + 1024) 1024 0 : Nat)",
+                "labelOn",
+            ),
+            (
+                "Blake3",
+                "(prim remainder (project state total) 2 0 : Nat) =? 0)",
+                "(prim remainder (project state total) 2 0 : Nat) =? 1)",
+                "labelOn",
+            ),
+            (
+                "Blake3",
+                "(if (last =? 0) then (3 : UInt32) else (2 : UInt32))",
+                "(if (last =? 0) then (2 : UInt32) else (2 : UInt32))",
+                "labelOn",
+            ),
+        ],
+        |member| corpus(member, HASH_EVALUATOR_RUNS),
+    );
+}
+
+/// `KA-06`: the five compositions on the axes beside sha256.
+fn axis_composition() {
+    let project = P::workspace_project("kappa", &MEMBERS);
+    project.check_ok();
+    let members = [
+        "composeG2On",
+        "composeF4On",
+        "composeE6On",
+        "composeE7On",
+        "composeE8On",
+    ];
+    let lowered = lowered_roots(&project, &members);
+    let refusal = serde_json::to_value(Value::None).expect("a value is JSON");
+    for member in members {
+        let runs = corpus(member, COMPOSE_EVALUATOR_RUNS);
+        assert!(
+            runs.iter().any(|(_, expected)| *expected == refusal)
+                && runs.iter().any(|(_, expected)| *expected != refusal),
+            "KA-06: {member}: the corpus holds both labels and refusals"
+        );
+        let disagreements = evaluate(&lowered[member], &runs);
+        assert!(
+            disagreements.is_empty(),
+            "KA-06: {member}: the evaluator and uor-addr disagree on {} of {} runs: {:?}",
+            disagreements.len(),
+            runs.len(),
+            &disagreements[..disagreements.len().min(5)]
+        );
+    }
+    // The laws, read from the evaluator on every axis: the product is
+    // commutative and a label and its mirror compose alike.
+    for (axis, _) in AXES {
+        let operands = valid_operands(axis, &mut Seeded(0x6b61_0006_0000_0002), 4);
+        for (index, left) in operands.iter().enumerate().take(12) {
+            let right = &operands[(index * 5 + 1) % operands.len()];
+            assert_eq!(
+                observe(&lowered["composeG2On"], &[axis.as_bytes(), left, right]),
+                observe(&lowered["composeG2On"], &[axis.as_bytes(), right, left]),
+                "KA-06: the product on {axis} is commutative"
+            );
+        }
+        for operand in operands.iter().take(8) {
+            let mirror: Vec<u8> = format!(
+                "{axis}:{}",
+                String::from_utf8_lossy(&operand[axis.len() + 1..])
+                    .chars()
+                    .map(|digit| {
+                        let value = digit.to_digit(16).expect("a hexadecimal digit");
+                        char::from_digit(15 - value, 16).expect("a digit")
+                    })
+                    .collect::<String>()
+            )
+            .into_bytes();
+            assert_eq!(
+                observe(&lowered["composeF4On"], &[axis.as_bytes(), operand]),
+                observe(&lowered["composeF4On"], &[axis.as_bytes(), &mirror]),
+                "KA-06: a label and its mirror compose alike on {axis}"
+            );
+        }
+    }
+    rustc_differential(&lowered, &members);
+    // The gate is armed: a product that keeps the operands in the order
+    // given, a mirror that is not the complement, a degree byte that is never
+    // six, quarters of a fixed sixteen digits, and a degree read at the
+    // offset of the sha256 prefix are each detected.
+    detect_plants(
+        "KA-06",
+        &[
+            (
+                "Compose",
+                "(prim append (lower left right) (upper left right) : Bytes)",
+                "(prim append left right : Bytes)",
+                "composeG2On",
+            ),
+            (
+                "Compose",
+                "(prim subtract 15 (Json::hexValue",
+                "(prim subtract 14 (Json::hexValue",
+                "composeF4On",
+            ),
+            (
+                "Compose",
+                "9 0 : Nat) =? 8)",
+                "9 0 : Nat) =? 9)",
+                "composeE6On",
+            ),
+            (
+                "Compose",
+                "(prim quotient (Axis::width axis) 4 0 : Nat)",
+                "16",
+                "composeE7On",
+            ),
+            (
+                "Compose",
+                "(degreeTag operand (prim length (Axis::prefixOf axis) : Nat))",
+                "(degreeTag operand 7)",
+                "composeE6On",
+            ),
+        ],
+        |member| corpus(member, COMPOSE_EVALUATOR_RUNS),
+    );
 }

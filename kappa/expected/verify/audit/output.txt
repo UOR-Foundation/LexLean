@@ -1,10 +1,51 @@
+'LexLeanKappa.Axis.digestHex' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Axis.isLabelOn' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Axis.jsonLabelOn' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Axis.labelOn' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Axis.named' does not depend on any axioms
+'LexLeanKappa.Axis.prefixOf' does not depend on any axioms
+'LexLeanKappa.Axis.width' does not depend on any axioms
+'LexLeanKappa.Blake3.Block' does not depend on any axioms
+'LexLeanKappa.Blake3.Cv' does not depend on any axioms
+'LexLeanKappa.Blake3.Merge' does not depend on any axioms
+'LexLeanKappa.Blake3.Quad' does not depend on any axioms
+'LexLeanKappa.Blake3.State' does not depend on any axioms
+'LexLeanKappa.Blake3.available' does not depend on any axioms
+'LexLeanKappa.Blake3.blake3Hex' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Blake3.blocks' does not depend on any axioms
+'LexLeanKappa.Blake3.byteAt' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Blake3.chunk' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Blake3.columns' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Blake3.compress' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Blake3.diagonals' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Blake3.foldStep' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Blake3.fullChunks' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Blake3.g' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Blake3.hexLittle' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Blake3.initial' does not depend on any axioms
+'LexLeanKappa.Blake3.load' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Blake3.mergeStep' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Blake3.nibble' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Blake3.parent' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Blake3.parentBlock' does not depend on any axioms
+'LexLeanKappa.Blake3.permute' does not depend on any axioms
+'LexLeanKappa.Blake3.prefix' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Blake3.push' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Blake3.roundStep' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Blake3.treeRoot' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Blake3.wordAt' depends on axioms: [propext, Quot.sound]
 'LexLeanKappa.Compose.composeE6' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Compose.composeE6On' depends on axioms: [propext, Quot.sound]
 'LexLeanKappa.Compose.composeE7' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Compose.composeE7On' depends on axioms: [propext, Quot.sound]
 'LexLeanKappa.Compose.composeE8' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Compose.composeE8On' depends on axioms: [propext, Quot.sound]
 'LexLeanKappa.Compose.composeF4' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Compose.composeF4On' depends on axioms: [propext, Quot.sound]
 'LexLeanKappa.Compose.composeG2' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Compose.composeG2On' depends on axioms: [propext, Quot.sound]
 'LexLeanKappa.Compose.degreeTag' depends on axioms: [propext, Quot.sound]
-'LexLeanKappa.Compose.digestOf' does not depend on any axioms
+'LexLeanKappa.Compose.digestOn' does not depend on any axioms
 'LexLeanKappa.Compose.hexChar' does not depend on any axioms
 'LexLeanKappa.Compose.lower' depends on axioms: [propext]
 'LexLeanKappa.Compose.mirror' depends on axioms: [propext, Quot.sound]
@@ -55,6 +96,22 @@
 'LexLeanKappa.Json.utf8Scalar' depends on axioms: [propext, Quot.sound]
 'LexLeanKappa.Json.valueAt' depends on axioms: [propext, Quot.sound]
 'LexLeanKappa.Json.withTop' does not depend on any axioms
+'LexLeanKappa.Keccak.Lanes' does not depend on any axioms
+'LexLeanKappa.Keccak.absorb' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Keccak.chi' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Keccak.iota' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Keccak.keccakHex' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Keccak.laneAt' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Keccak.paddedByte' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Keccak.permute' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Keccak.permuteRound' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Keccak.rhoPi' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Keccak.roundConstant' does not depend on any axioms
+'LexLeanKappa.Keccak.sha3Hex' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Keccak.sponge' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Keccak.squeezeHex' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Keccak.theta' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Keccak.zero' does not depend on any axioms
 'LexLeanKappa.Label.Handle' does not depend on any axioms
 'LexLeanKappa.Label.byteNat' depends on axioms: [propext, Quot.sound]
 'LexLeanKappa.Label.handleOf' depends on axioms: [propext, Quot.sound]
@@ -67,6 +124,38 @@
 'LexLeanKappa.Label.lowerHexAt' depends on axioms: [propext, Quot.sound]
 'LexLeanKappa.Label.lowerHexRun' depends on axioms: [propext, Quot.sound]
 'LexLeanKappa.Label.text' does not depend on any axioms
+'LexLeanKappa.Sha512.Digest' does not depend on any axioms
+'LexLeanKappa.Sha512.Schedule' does not depend on any axioms
+'LexLeanKappa.Sha512.Working' does not depend on any axioms
+'LexLeanKappa.Sha512.advance' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Sha512.bigSigma0' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Sha512.bigSigma1' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Sha512.byteAt' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Sha512.choose' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Sha512.compress' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Sha512.initial' does not depend on any axioms
+'LexLeanKappa.Sha512.load' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Sha512.majority' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Sha512.round' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Sha512.roundConstant' does not depend on any axioms
+'LexLeanKappa.Sha512.scheduleWord' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Sha512.sha512' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Sha512.sha512Hex' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Sha512.smallSigma0' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Sha512.smallSigma1' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Word.add' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Word.byteWord' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Word.fromBytes' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Word.fromBytesLittle' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Word.hexBig' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Word.hexLittle' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Word.nibble' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Word.ofNat' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Word.rotateLeft' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Word.rotateRight' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Word.shiftLeft' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Word.shiftRight' depends on axioms: [propext, Quot.sound]
+'LexLeanKappa.Word.sum' depends on axioms: [propext, Quot.sound]
 'LexLeanCollections.Key' does not depend on any axioms
 'LexLeanCollections.Key.casesOn' does not depend on any axioms
 'LexLeanCollections.Key.compare' does not depend on any axioms

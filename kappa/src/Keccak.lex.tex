@@ -1,0 +1,179 @@
+\begin{lexlean}{Keccak}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{Word}
+\title{Natural number addition}
+\begin{semanticmodule}
+structure{
+  name: Lanes,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: s0, type: UInt64},
+    {name: s1, type: UInt64},
+    {name: s2, type: UInt64},
+    {name: s3, type: UInt64},
+    {name: s4, type: UInt64},
+    {name: s5, type: UInt64},
+    {name: s6, type: UInt64},
+    {name: s7, type: UInt64},
+    {name: s8, type: UInt64},
+    {name: s9, type: UInt64},
+    {name: s10, type: UInt64},
+    {name: s11, type: UInt64},
+    {name: s12, type: UInt64},
+    {name: s13, type: UInt64},
+    {name: s14, type: UInt64},
+    {name: s15, type: UInt64},
+    {name: s16, type: UInt64},
+    {name: s17, type: UInt64},
+    {name: s18, type: UInt64},
+    {name: s19, type: UInt64},
+    {name: s20, type: UInt64},
+    {name: s21, type: UInt64},
+    {name: s22, type: UInt64},
+    {name: s23, type: UInt64},
+    {name: s24, type: UInt64}
+  ]
+}
+
+definition{
+  name: theta,
+  parameters: [lanes : Lanes],
+  result: Lanes,
+  body: (let c0 : UInt64 := (prim bit_xor (prim bit_xor (prim bit_xor (prim bit_xor (project lanes s0) (project lanes s5) : UInt64) (project lanes s10) : UInt64) (project lanes s15) : UInt64) (project lanes s20) : UInt64); (let c1 : UInt64 := (prim bit_xor (prim bit_xor (prim bit_xor (prim bit_xor (project lanes s1) (project lanes s6) : UInt64) (project lanes s11) : UInt64) (project lanes s16) : UInt64) (project lanes s21) : UInt64); (let c2 : UInt64 := (prim bit_xor (prim bit_xor (prim bit_xor (prim bit_xor (project lanes s2) (project lanes s7) : UInt64) (project lanes s12) : UInt64) (project lanes s17) : UInt64) (project lanes s22) : UInt64); (let c3 : UInt64 := (prim bit_xor (prim bit_xor (prim bit_xor (prim bit_xor (project lanes s3) (project lanes s8) : UInt64) (project lanes s13) : UInt64) (project lanes s18) : UInt64) (project lanes s23) : UInt64); (let c4 : UInt64 := (prim bit_xor (prim bit_xor (prim bit_xor (prim bit_xor (project lanes s4) (project lanes s9) : UInt64) (project lanes s14) : UInt64) (project lanes s19) : UInt64) (project lanes s24) : UInt64); (let d0 : UInt64 := (prim bit_xor c4 (Word::rotateLeft c1 (1 : UInt32) (63 : UInt32)) : UInt64); (let d1 : UInt64 := (prim bit_xor c0 (Word::rotateLeft c2 (1 : UInt32) (63 : UInt32)) : UInt64); (let d2 : UInt64 := (prim bit_xor c1 (Word::rotateLeft c3 (1 : UInt32) (63 : UInt32)) : UInt64); (let d3 : UInt64 := (prim bit_xor c2 (Word::rotateLeft c4 (1 : UInt32) (63 : UInt32)) : UInt64); (let d4 : UInt64 := (prim bit_xor c3 (Word::rotateLeft c0 (1 : UInt32) (63 : UInt32)) : UInt64); (record Lanes {s0 := (prim bit_xor (project lanes s0) d0 : UInt64), s1 := (prim bit_xor (project lanes s1) d1 : UInt64), s2 := (prim bit_xor (project lanes s2) d2 : UInt64), s3 := (prim bit_xor (project lanes s3) d3 : UInt64), s4 := (prim bit_xor (project lanes s4) d4 : UInt64), s5 := (prim bit_xor (project lanes s5) d0 : UInt64), s6 := (prim bit_xor (project lanes s6) d1 : UInt64), s7 := (prim bit_xor (project lanes s7) d2 : UInt64), s8 := (prim bit_xor (project lanes s8) d3 : UInt64), s9 := (prim bit_xor (project lanes s9) d4 : UInt64), s10 := (prim bit_xor (project lanes s10) d0 : UInt64), s11 := (prim bit_xor (project lanes s11) d1 : UInt64), s12 := (prim bit_xor (project lanes s12) d2 : UInt64), s13 := (prim bit_xor (project lanes s13) d3 : UInt64), s14 := (prim bit_xor (project lanes s14) d4 : UInt64), s15 := (prim bit_xor (project lanes s15) d0 : UInt64), s16 := (prim bit_xor (project lanes s16) d1 : UInt64), s17 := (prim bit_xor (project lanes s17) d2 : UInt64), s18 := (prim bit_xor (project lanes s18) d3 : UInt64), s19 := (prim bit_xor (project lanes s19) d4 : UInt64), s20 := (prim bit_xor (project lanes s20) d0 : UInt64), s21 := (prim bit_xor (project lanes s21) d1 : UInt64), s22 := (prim bit_xor (project lanes s22) d2 : UInt64), s23 := (prim bit_xor (project lanes s23) d3 : UInt64), s24 := (prim bit_xor (project lanes s24) d4 : UInt64)}))))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: rhoPi,
+  parameters: [lanes : Lanes],
+  result: Lanes,
+  body: (record Lanes {s0 := (project lanes s0), s1 := (Word::rotateLeft (project lanes s6) (44 : UInt32) (20 : UInt32)), s2 := (Word::rotateLeft (project lanes s12) (43 : UInt32) (21 : UInt32)), s3 := (Word::rotateLeft (project lanes s18) (21 : UInt32) (43 : UInt32)), s4 := (Word::rotateLeft (project lanes s24) (14 : UInt32) (50 : UInt32)), s5 := (Word::rotateLeft (project lanes s3) (28 : UInt32) (36 : UInt32)), s6 := (Word::rotateLeft (project lanes s9) (20 : UInt32) (44 : UInt32)), s7 := (Word::rotateLeft (project lanes s10) (3 : UInt32) (61 : UInt32)), s8 := (Word::rotateLeft (project lanes s16) (45 : UInt32) (19 : UInt32)), s9 := (Word::rotateLeft (project lanes s22) (61 : UInt32) (3 : UInt32)), s10 := (Word::rotateLeft (project lanes s1) (1 : UInt32) (63 : UInt32)), s11 := (Word::rotateLeft (project lanes s7) (6 : UInt32) (58 : UInt32)), s12 := (Word::rotateLeft (project lanes s13) (25 : UInt32) (39 : UInt32)), s13 := (Word::rotateLeft (project lanes s19) (8 : UInt32) (56 : UInt32)), s14 := (Word::rotateLeft (project lanes s20) (18 : UInt32) (46 : UInt32)), s15 := (Word::rotateLeft (project lanes s4) (27 : UInt32) (37 : UInt32)), s16 := (Word::rotateLeft (project lanes s5) (36 : UInt32) (28 : UInt32)), s17 := (Word::rotateLeft (project lanes s11) (10 : UInt32) (54 : UInt32)), s18 := (Word::rotateLeft (project lanes s17) (15 : UInt32) (49 : UInt32)), s19 := (Word::rotateLeft (project lanes s23) (56 : UInt32) (8 : UInt32)), s20 := (Word::rotateLeft (project lanes s2) (62 : UInt32) (2 : UInt32)), s21 := (Word::rotateLeft (project lanes s8) (55 : UInt32) (9 : UInt32)), s22 := (Word::rotateLeft (project lanes s14) (39 : UInt32) (25 : UInt32)), s23 := (Word::rotateLeft (project lanes s15) (41 : UInt32) (23 : UInt32)), s24 := (Word::rotateLeft (project lanes s21) (2 : UInt32) (62 : UInt32))}),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: chi,
+  parameters: [lanes : Lanes],
+  result: Lanes,
+  body: (record Lanes {s0 := (prim bit_xor (project lanes s0) (prim bit_and (prim bit_not (project lanes s1) : UInt64) (project lanes s2) : UInt64) : UInt64), s1 := (prim bit_xor (project lanes s1) (prim bit_and (prim bit_not (project lanes s2) : UInt64) (project lanes s3) : UInt64) : UInt64), s2 := (prim bit_xor (project lanes s2) (prim bit_and (prim bit_not (project lanes s3) : UInt64) (project lanes s4) : UInt64) : UInt64), s3 := (prim bit_xor (project lanes s3) (prim bit_and (prim bit_not (project lanes s4) : UInt64) (project lanes s0) : UInt64) : UInt64), s4 := (prim bit_xor (project lanes s4) (prim bit_and (prim bit_not (project lanes s0) : UInt64) (project lanes s1) : UInt64) : UInt64), s5 := (prim bit_xor (project lanes s5) (prim bit_and (prim bit_not (project lanes s6) : UInt64) (project lanes s7) : UInt64) : UInt64), s6 := (prim bit_xor (project lanes s6) (prim bit_and (prim bit_not (project lanes s7) : UInt64) (project lanes s8) : UInt64) : UInt64), s7 := (prim bit_xor (project lanes s7) (prim bit_and (prim bit_not (project lanes s8) : UInt64) (project lanes s9) : UInt64) : UInt64), s8 := (prim bit_xor (project lanes s8) (prim bit_and (prim bit_not (project lanes s9) : UInt64) (project lanes s5) : UInt64) : UInt64), s9 := (prim bit_xor (project lanes s9) (prim bit_and (prim bit_not (project lanes s5) : UInt64) (project lanes s6) : UInt64) : UInt64), s10 := (prim bit_xor (project lanes s10) (prim bit_and (prim bit_not (project lanes s11) : UInt64) (project lanes s12) : UInt64) : UInt64), s11 := (prim bit_xor (project lanes s11) (prim bit_and (prim bit_not (project lanes s12) : UInt64) (project lanes s13) : UInt64) : UInt64), s12 := (prim bit_xor (project lanes s12) (prim bit_and (prim bit_not (project lanes s13) : UInt64) (project lanes s14) : UInt64) : UInt64), s13 := (prim bit_xor (project lanes s13) (prim bit_and (prim bit_not (project lanes s14) : UInt64) (project lanes s10) : UInt64) : UInt64), s14 := (prim bit_xor (project lanes s14) (prim bit_and (prim bit_not (project lanes s10) : UInt64) (project lanes s11) : UInt64) : UInt64), s15 := (prim bit_xor (project lanes s15) (prim bit_and (prim bit_not (project lanes s16) : UInt64) (project lanes s17) : UInt64) : UInt64), s16 := (prim bit_xor (project lanes s16) (prim bit_and (prim bit_not (project lanes s17) : UInt64) (project lanes s18) : UInt64) : UInt64), s17 := (prim bit_xor (project lanes s17) (prim bit_and (prim bit_not (project lanes s18) : UInt64) (project lanes s19) : UInt64) : UInt64), s18 := (prim bit_xor (project lanes s18) (prim bit_and (prim bit_not (project lanes s19) : UInt64) (project lanes s15) : UInt64) : UInt64), s19 := (prim bit_xor (project lanes s19) (prim bit_and (prim bit_not (project lanes s15) : UInt64) (project lanes s16) : UInt64) : UInt64), s20 := (prim bit_xor (project lanes s20) (prim bit_and (prim bit_not (project lanes s21) : UInt64) (project lanes s22) : UInt64) : UInt64), s21 := (prim bit_xor (project lanes s21) (prim bit_and (prim bit_not (project lanes s22) : UInt64) (project lanes s23) : UInt64) : UInt64), s22 := (prim bit_xor (project lanes s22) (prim bit_and (prim bit_not (project lanes s23) : UInt64) (project lanes s24) : UInt64) : UInt64), s23 := (prim bit_xor (project lanes s23) (prim bit_and (prim bit_not (project lanes s24) : UInt64) (project lanes s20) : UInt64) : UInt64), s24 := (prim bit_xor (project lanes s24) (prim bit_and (prim bit_not (project lanes s20) : UInt64) (project lanes s21) : UInt64) : UInt64)}),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: roundConstant,
+  parameters: [number : Nat],
+  result: UInt64,
+  body: (if (number <? 12) then (if (number <? 6) then (if (number <? 3) then (if (number <? 1) then (1 : UInt64) else (if (number <? 2) then (32898 : UInt64) else (9223372036854808714 : UInt64))) else (if (number <? 4) then (9223372039002292224 : UInt64) else (if (number <? 5) then (32907 : UInt64) else (2147483649 : UInt64)))) else (if (number <? 9) then (if (number <? 7) then (9223372039002292353 : UInt64) else (if (number <? 8) then (9223372036854808585 : UInt64) else (138 : UInt64))) else (if (number <? 10) then (136 : UInt64) else (if (number <? 11) then (2147516425 : UInt64) else (2147483658 : UInt64))))) else (if (number <? 18) then (if (number <? 15) then (if (number <? 13) then (2147516555 : UInt64) else (if (number <? 14) then (9223372036854775947 : UInt64) else (9223372036854808713 : UInt64))) else (if (number <? 16) then (9223372036854808579 : UInt64) else (if (number <? 17) then (9223372036854808578 : UInt64) else (9223372036854775936 : UInt64)))) else (if (number <? 21) then (if (number <? 19) then (32778 : UInt64) else (if (number <? 20) then (9223372039002259466 : UInt64) else (9223372039002292353 : UInt64))) else (if (number <? 22) then (9223372036854808704 : UInt64) else (if (number <? 23) then (2147483649 : UInt64) else (9223372039002292232 : UInt64)))))),
+  executable: true
+}
+
+definition{
+  name: iota,
+  parameters: [lanes : Lanes, number : Nat],
+  result: Lanes,
+  body: (let constant : UInt64 := (roundConstant number); (record Lanes {s0 := (prim bit_xor (project lanes s0) constant : UInt64), s1 := (project lanes s1), s2 := (project lanes s2), s3 := (project lanes s3), s4 := (project lanes s4), s5 := (project lanes s5), s6 := (project lanes s6), s7 := (project lanes s7), s8 := (project lanes s8), s9 := (project lanes s9), s10 := (project lanes s10), s11 := (project lanes s11), s12 := (project lanes s12), s13 := (project lanes s13), s14 := (project lanes s14), s15 := (project lanes s15), s16 := (project lanes s16), s17 := (project lanes s17), s18 := (project lanes s18), s19 := (project lanes s19), s20 := (project lanes s20), s21 := (project lanes s21), s22 := (project lanes s22), s23 := (project lanes s23), s24 := (project lanes s24)})),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: permuteRound,
+  parameters: [state : (Nat * Lanes)],
+  result: (Nat * Lanes),
+  body: (((first state) + 1), (iota (chi (rhoPi (theta (second state)))) (first state))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: permute,
+  parameters: [lanes : Lanes],
+  result: Lanes,
+  body: (second (prim iterate (fun (state : (Nat * Lanes)) => (permuteRound state)) 24 (0, lanes) : (Nat * Lanes))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: zero,
+  parameters: [],
+  result: Lanes,
+  body: (record Lanes {s0 := (0 : UInt64), s1 := (0 : UInt64), s2 := (0 : UInt64), s3 := (0 : UInt64), s4 := (0 : UInt64), s5 := (0 : UInt64), s6 := (0 : UInt64), s7 := (0 : UInt64), s8 := (0 : UInt64), s9 := (0 : UInt64), s10 := (0 : UInt64), s11 := (0 : UInt64), s12 := (0 : UInt64), s13 := (0 : UInt64), s14 := (0 : UInt64), s15 := (0 : UInt64), s16 := (0 : UInt64), s17 := (0 : UInt64), s18 := (0 : UInt64), s19 := (0 : UInt64), s20 := (0 : UInt64), s21 := (0 : UInt64), s22 := (0 : UInt64), s23 := (0 : UInt64), s24 := (0 : UInt64)}),
+  executable: true
+}
+
+definition{
+  name: paddedByte,
+  parameters: [message : Bytes, size : Nat, total : Nat, suffix : UInt64, position : Nat],
+  result: UInt64,
+  body: (let body : UInt64 := (if (position <? size) then (Word::byteWord message position) else (if (position =? size) then suffix else (0 : UInt64))); (if ((position + 1) =? total) then (prim bit_or body (128 : UInt64) : UInt64) else body)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: laneAt,
+  parameters: [message : Bytes, size : Nat, total : Nat, suffix : UInt64, position : Nat],
+  result: UInt64,
+  body: (Word::fromBytesLittle (paddedByte message size total suffix (position + 0)) (paddedByte message size total suffix (position + 1)) (paddedByte message size total suffix (position + 2)) (paddedByte message size total suffix (position + 3)) (paddedByte message size total suffix (position + 4)) (paddedByte message size total suffix (position + 5)) (paddedByte message size total suffix (position + 6)) (paddedByte message size total suffix (position + 7))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: absorb,
+  parameters: [
+    message : Bytes,
+    size : Nat,
+    total : Nat,
+    suffix : UInt64,
+    lanes : Lanes,
+    offset : Nat
+  ],
+  result: Lanes,
+  body: (permute (record Lanes {s0 := (prim bit_xor (project lanes s0) (laneAt message size total suffix (offset + 0)) : UInt64), s1 := (prim bit_xor (project lanes s1) (laneAt message size total suffix (offset + 8)) : UInt64), s2 := (prim bit_xor (project lanes s2) (laneAt message size total suffix (offset + 16)) : UInt64), s3 := (prim bit_xor (project lanes s3) (laneAt message size total suffix (offset + 24)) : UInt64), s4 := (prim bit_xor (project lanes s4) (laneAt message size total suffix (offset + 32)) : UInt64), s5 := (prim bit_xor (project lanes s5) (laneAt message size total suffix (offset + 40)) : UInt64), s6 := (prim bit_xor (project lanes s6) (laneAt message size total suffix (offset + 48)) : UInt64), s7 := (prim bit_xor (project lanes s7) (laneAt message size total suffix (offset + 56)) : UInt64), s8 := (prim bit_xor (project lanes s8) (laneAt message size total suffix (offset + 64)) : UInt64), s9 := (prim bit_xor (project lanes s9) (laneAt message size total suffix (offset + 72)) : UInt64), s10 := (prim bit_xor (project lanes s10) (laneAt message size total suffix (offset + 80)) : UInt64), s11 := (prim bit_xor (project lanes s11) (laneAt message size total suffix (offset + 88)) : UInt64), s12 := (prim bit_xor (project lanes s12) (laneAt message size total suffix (offset + 96)) : UInt64), s13 := (prim bit_xor (project lanes s13) (laneAt message size total suffix (offset + 104)) : UInt64), s14 := (prim bit_xor (project lanes s14) (laneAt message size total suffix (offset + 112)) : UInt64), s15 := (prim bit_xor (project lanes s15) (laneAt message size total suffix (offset + 120)) : UInt64), s16 := (prim bit_xor (project lanes s16) (laneAt message size total suffix (offset + 128)) : UInt64), s17 := (project lanes s17), s18 := (project lanes s18), s19 := (project lanes s19), s20 := (project lanes s20), s21 := (project lanes s21), s22 := (project lanes s22), s23 := (project lanes s23), s24 := (project lanes s24)})),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: sponge,
+  parameters: [message : Bytes, suffix : UInt64],
+  result: Lanes,
+  body: (let size : Nat := (prim length message : Nat); (let total : Nat := (prim multiply ((prim quotient size 136 0 : Nat) + 1) 136 : Nat); (second (prim iterate (fun [message, size, suffix, total] (state : (Nat * Lanes)) => (((first state) + 136), (absorb message size total suffix (second state) (first state)))) (prim quotient total 136 0 : Nat) (0, (zero)) : (Nat * Lanes))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: squeezeHex,
+  parameters: [message : Bytes, suffix : UInt64],
+  result: Bytes,
+  body: (let lanes : Lanes := (sponge message suffix); (prim append (Word::hexLittle (project lanes s0)) (prim append (Word::hexLittle (project lanes s1)) (prim append (Word::hexLittle (project lanes s2)) (Word::hexLittle (project lanes s3)) : Bytes) : Bytes) : Bytes)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: sha3Hex,
+  parameters: [message : Bytes],
+  result: Bytes,
+  body: (squeezeHex message (6 : UInt64)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: keccakHex,
+  parameters: [message : Bytes],
+  result: Bytes,
+  body: (squeezeHex message (1 : UInt64)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}
