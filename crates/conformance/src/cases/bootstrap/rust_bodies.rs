@@ -45,8 +45,7 @@ const MOVES: &str = "LexLeanBoot.RustMoves";
 
 /// The most a part of a certificate of these roots may be, as the row states:
 /// 87.5% of `max_file_bytes`, above the 75% of the rule of #92 because the term
-/// lowering is one recursion family. The source hands a binder of the matched
-/// type through `keepE` and `keepP` until certificate B accepts it (#310).
+/// lowering is one recursion family.
 const CERTIFICATE_BUDGET: u64 = 5_505_024;
 
 const LITERALS: usize = 200;

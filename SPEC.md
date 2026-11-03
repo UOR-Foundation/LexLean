@@ -8360,11 +8360,6 @@ on 281 seeded mutants, the rendered packages under the pinned rustc on the
 vectors, thirteen planted defects in the source, and the production export
 (§24.7).
 
-Certificate B (the `rust-std` rendering) of a function is refused by the Lean
-kernel when an arm of a match returns, as its whole body, a binder of the
-matched recursive type (issue 310); `RustBodies` hands such a binder through the
-identity functions `keepE` and `keepP` until that is fixed.
-
 The eleventh component continues the lowering of terms (§17.16) with the value
 a function that can overflow returns, `succeed` (`BS-12`, the sixth slice of the
 lowering, step 4 of issue 92), the module `RustSucceed` with one production
