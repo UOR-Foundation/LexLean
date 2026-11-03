@@ -10880,6 +10880,38 @@ not been run on the module. It owes its first run, to pin the counts of its
 corpora, and the landing regeneration, which produces the `bootstrap/render_doc`
 package.
 
+### the generic notation is source and agrees with the oracle (BS-24)
+
+`BS-24` holds the two production roots of `LexLeanBoot.SurfaceGeneric`
+(`bootstrap/src/SurfaceGeneric.lex.tex`), `parseGeneric` and `printGeneric`, to
+`surface::generic::parse` and `surface::generic::print`, over the standard
+library's `Json` (`SL-11`, `SL-12`). It composes the lexer of `BS-22` and the
+layout algebra of `BS-23`. `parseGeneric` reads the tokens with an explicit stack
+of frames and admits no `recursion`; `printGeneric` walks the value by structural
+recursion over the three cases of `Json` and admits `recursion`. The case has the
+shape of its predecessors: hand-built texts that reach each error of the reader
+and the limit on nesting at 256 and 257, hand-built values of every kind and
+every key the printer orders, the committed JSON files printed and their printed
+texts read back, and seeded values and seeded edits. Each planted defect names the
+one vector that catches it, and the case asserts that the site of each plant
+occurs once. The row's statement carries no counts.
+
+Measured with the compiler binary of the `BS-21` tree, on a copy of the project
+whose only entrypoint is `SurfaceGeneric`: `lexlean check` and `lexlean build`
+pass, and the eligibility report gives `parseGeneric` exactly `allocation` and
+`overflow` and `printGeneric` exactly `allocation`, `overflow`, and `recursion`.
+On the project the lock is current and every module checks. The register agrees
+with the §31 table on 476 IDs, by the same parse `validate-spec-links` makes.
+
+The case has not run. It has not been compiled either, and `lexlean verify` has
+not been run on the module. `printGeneric` admits `recursion`, so
+`bootstrap/print_generic` owes a measured row in `tests/stack-bounds.json`
+(`PD-08`), which the case reads before it passes; the measurement is one of the
+heavy jobs the case owes, with its first run, to pin the counts of its corpora,
+and the landing regeneration, which produces the `bootstrap/parse_generic` and
+`bootstrap/print_generic` packages. The branch is stacked on `BS-22`, `BS-23`, and
+the standard library members `SL-11`, `SL-12`, and `SL-14`, and lands after them.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the
