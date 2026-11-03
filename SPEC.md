@@ -9099,6 +9099,12 @@ production/<full-module-path>.eligibility.json
 The `production/` report exists only for a language-1.2 module that declares a
 production root (§17.13). Paths in manifests use `/` regardless of host OS.
 
+The language-1.2 runtime imported by generated modules is not included in
+this build layout. A Lake consumer supplies runtime sources generated from a
+compiler checkout with the same language-1.2 compiler-semantics ID; see
+[Use generated Lean from Lake](docs/LEAN-CONSUMER.md) for the current workflow
+and its distinction from the verification evidence of §22.
+
 ### 21.6 Build manifest
 
 `manifest.json` has:
