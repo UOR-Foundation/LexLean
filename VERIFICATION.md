@@ -12352,3 +12352,26 @@ decoder from the JSON of a tooling module to `ToolingAst` that does not use
 serde is not written (the case builds its inputs with `serde_json` in the test
 only). The reserved-token list is an argument of the root; whether it should be
 an inline table is the maintainer's call.
+
+## A byte payload consumes the bootstrap harness's literal budget (#364)
+
+The Windows host job of run 41543498033, on merge `9cbc4cd4e`, passed
+`BS-20` but failed `BS-15` while rustc compiled the test binary
+`run_boot_render_package_std_0`: `memory allocation of 4294967296 bytes
+failed`, with the backtrace in MIR drop-scope sorting. The generated library
+had compiled. `rust_build::cargo_in` already sets `RUST_MIN_STACK` to 64 MiB.
+
+The harness partition counted semantic value nodes: a `Bytes` payload cost
+one node, whereas its Rust literal has one array element per octet. The
+partition now counts that literal work recursively, retaining every input and
+expected outcome in order. Semantic node counts, used by the performance
+measurements, are unchanged. One input beyond the budget stays whole.
+
+`byte_payloads_bound_chunks_without_changing_the_corpus` checks eight nested
+16 KiB payloads partition into groups of three, three and two under the
+60,000-element budget, with the complete ordered corpus preserved; it also
+checks empty input and a single oversized input. Restoring semantic-node
+weighting makes its partition assertion fail. This is a harness correction,
+not a change to the generated packages or a resolution of #164's consumer
+compiler-nesting question. A Windows rerun is required to establish whether
+this bounded partition removes the observed compiler failure.
