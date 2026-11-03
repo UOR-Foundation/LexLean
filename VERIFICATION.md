@@ -10725,6 +10725,23 @@ are the ones the continuous integration measured. The records and packages of th
 bootstrap export are regenerated on the relocked project, which takes 50 minutes
 (`check-production-export --write`).
 
+This branch is merged with #364 at `aea1333c8`, which contains `release/v0.4` at `477a508d5`
+and adds `BS-20`, the tooling modules and the five roots of `Order`. The committed manifests
+are 284: the relock, the export, the `bootstrap/expected/verify` records and the
+`bootstrap/expected/build` records are regenerated on that tree by `cargo xtask check-production-export --write`,
+`cargo xtask verify-examples --write` with `LEXLEAN_EXAMPLES_PART=without:uor-atlas` (the records of the other
+examples were rewritten identically; `uor-atlas` was not run locally) and `cargo xtask check-golden --write`, after which
+`cargo xtask check-golden` finds every published artifact equal to its oracle (R10). Measured on that tree
+by the first count assertion each row fails on the count it replaces: `BS-05` and `BS-06` 284 committed manifests,
+122 fixtures, 201 distinct programs and 260 distinct crates (and 284 packages for `BS-06`); `BS-07` 335 vectors;
+`BS-08` 394 crates. `BS-09`, `BS-10` and `BS-11` pass on that tree with the counts they had (the seeded mutants
+of `BS-11` are unchanged by the regenerated records). Derived from the manifest count and not run locally:
+`BS-15` 303 manifests, 284 accepted and 284 seeded mutants of the render. Not measured locally, and so the
+values of the merged tree before this change remain until the continuous integration names them: the later
+assertions of `BS-05`, `BS-06`, `BS-07` and `BS-08` (vectors, refused, runs under the evaluator and
+the printed counts of `SPEC.md` §17.23 that follow from them), and the counts of `BS-12`, `BS-13`, `BS-14`, `BS-15`
+beyond the three above, `BS-16` and `BS-20`.
+
 Each of twenty-one plants is made on a copy of `bootstrap/src/RustPackage.lex.tex`
 on every run and is caught by the oracle; the run is the index among the runs
 of the root (the committed manifests, then the rules, then the mutants for

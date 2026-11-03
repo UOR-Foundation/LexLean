@@ -626,7 +626,7 @@ of this tree show.
   `BS-15` assert move by one manifest. What remains of #275: the answer, the
   universe, and the certification (`BS-17` to `BS-19`), the premise facts after the
   evaluator, `calculus::interp`, `realization`, and `Program::id`. The register is
-  468 IDs.
+  470 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or

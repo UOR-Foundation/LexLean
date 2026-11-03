@@ -1189,11 +1189,11 @@ const ROOTS: [(&str, &[&str]); 2] = [
 // The counts SPEC.md Ã‚Â§17.23, the register statement of BS-06, its scenario,
 // and VERIFICATION.md state, over the tree with the packages of the two roots
 // committed: the case fails when the tree no longer gives them.
-const COMMITTED_MANIFESTS: usize = 283;
+const COMMITTED_MANIFESTS: usize = 284;
 const COMMITTED_FIXTURES: usize = 122;
-const COMMITTED_PROGRAMS: usize = 200;
-const COMMITTED_CRATES: usize = 259;
-const COMMITTED_PACKAGES: usize = 283;
+const COMMITTED_PROGRAMS: usize = 201;
+const COMMITTED_CRATES: usize = 260;
+const COMMITTED_PACKAGES: usize = 284;
 const VECTORS_CRATE: usize = 684;
 const COMMITTED_DISTINCT: usize = 518;
 const REFUSED_CRATE: usize = 64;
