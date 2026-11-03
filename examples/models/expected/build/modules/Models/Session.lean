@@ -46,7 +46,7 @@ public theorem SessionContract.precondition_sound : LexLeanModels.Sound2 ((Model
 @[expose] public def SessionStep (window : Models.Session.Window) (cost : Nat) : (Prod (Models.Session.Window) (Nat)) := (let total : Nat := ((window).used + cost); (({ used := (LexLeanRuntime.subtract (total) ((LexLeanRuntime.subtract (total) (64) : Nat)) : Nat), items := ((window).items + 1) } : Models.Session.Window), (LexLeanRuntime.subtract (total) (64) : Nat)))
 
 public theorem session_initial : Bounded (SessionStep.initial) := by
-  decide
+  decide +kernel
 
 public theorem session_preserves (window : Window) (cost : Nat) : (Bounded (window) -> (Affordable (window) (cost) -> Bounded ((SessionStep (window) (cost)).1))) := by
   intros

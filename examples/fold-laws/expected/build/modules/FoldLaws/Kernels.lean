@@ -121,6 +121,6 @@ public theorem byte_equality (x : UInt8) (y : UInt8) : (((LexLeanRuntime.equal (
   all_goals omega
 
 public theorem requantize_closed : (requantize ((100 : Int)) = (0 : Int)) := by
-  decide
+  decide +kernel
 
 end FoldLaws.Kernels

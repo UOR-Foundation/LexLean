@@ -18419,3 +18419,55 @@ oracle's composed label is the SHA-256 of the canonical form the package
 writes, which the first run of the case established; the package computes the
 smallest of the 24 quarter orders of E7 as the quarters sorted, and the corpus
 holds every order to the oracle's enumeration of them.
+
+### Host interface consumer can fail
+
+`conformance_sl_09` first failed with `LLR3005`: `Consumer` imported `Host`,
+which was not a project module. After adding `stdlib/src/Host.lex.tex`, the
+consumer initially constructed fourteen requests and fourteen events and
+matches both types exhaustively. The same test changes the spawn environment
+from `List (String * String)` to `String` and requires checking to fail. The
+unmodified consumer and the planted refusal passed in 1.79 seconds. This
+establishes the typed interface only; it is no evidence of host execution,
+effect enforcement, or driver preservation.
+
+The v0.5 interface was then aligned byte-for-byte with `Host.lex.tex` from
+PR #389 at `afe1a002f218f0eba9ee3f309793d135c45e5e7d`, replacing the older
+consumer mirror. The independent consumer now constructs all fourteen
+requests, eight events, five records and both kind enums. It checks the
+fallible startup paths, optional file identity, child launch record, timed
+multi-child wait and byte exit output. The same environment-field mutation
+is rejected; `conformance_sl_09` passed in 3.99 seconds. This forward-port
+does not include #389's effect-eligibility implementation.
+
+### bounded byte slice normalization can fail
+
+The `conformance_sm_19` consumer slices bytes `[85, 2047)` from a 2048-byte
+input and verifies the exact result, an empty slice at the end, and refused
+slices beyond the end. Before the change to the language-1.2 core source,
+its five-second child budget refused the generated `LexLeanExample.Main`:
+
+```text
+LLS8002: child_timeout_ms exceeded by `lean` in phase LexLeanExample.Main: configured 5000, observed 5000 ms
+```
+
+The bounded slice now takes and drops the underlying byte list and rebuilds
+the byte array, with the same bounds check. This avoids reducing the array
+copy loop in the kernel. The core notation was edited and canonically
+renumbered with `lexlean fmt`; no handwritten Lean runtime was introduced.
+The same named case passes with real elaboration, kernel replay and its
+empty axiom policy. Its changed expected byte is refused with `LLV7002`.
+
+The new `SM-19` join regression first failed with `LLV7002` on every empty,
+singleton, Unicode and nested join: Lean's `String.intercalate` body is opaque
+outside its defining module. The language-1.2 LexLean runtime now expresses
+that operation as a list case and left fold over `String.append`, retaining
+its exact `[propext]` computational policy. The complete named case passed
+in 109.16 seconds with elaboration and kernel replay; removing an expected
+separator is rejected with `LLV7002`.
+
+The closed-decision and large-slice regressions use the fixture's normal
+verification timeout. Their former five-second override also timed out while
+compiling the unchanged Portable prerequisite on CI (5004 ms), before the
+operation under test. These cases establish correctness and mutation
+rejection, not a five-second performance guarantee.

@@ -2693,6 +2693,12 @@ suite = "stdlib"
 statement = "The compiler running the standard library's `Sha256` package reproduces that package: the digest of every file that the `provenance.json` of every committed production export names equals the digest `sha2` gives its bytes; `lib.rs` of the two SHA-256 packages holds none of the digests their provenance records; and, under the pinned Lean, rebuilding the standard library with the compiler yields packages byte-identical to the committed ones and a `lib.rs` for `sha256` that is the file the compiler links, so that regenerating the export a second time changes nothing; a bit changed in a recorded digest, a digest written into `lib.rs`, and a link that is not the rebuilt `lib.rs` are each detected."
 
 [[id]]
+id = "SL-09"
+level = "build"
+suite = "stdlib"
+statement = "The standard library's Host module declares the command request and event types as language-1.2 data; a consumer constructs all fourteen requests and eight events, and changing the spawn environment from a list of name/value pairs to text makes that consumer fail type checking. This claim establishes the interface only, with no host execution or effect authority."
+
+[[id]]
 id = "KA-01"
 level = "build"
 suite = "kappa-addressing"

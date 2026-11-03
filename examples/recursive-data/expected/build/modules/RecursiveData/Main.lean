@@ -18,7 +18,7 @@ namespace RecursiveData.Main
 @[expose] public def sampleTree : RecursiveData.Types.Tree (Nat) := RecursiveData.Types.Tree.node (RecursiveData.Types.Tree.node (RecursiveData.Types.Tree.leaf) (1) (RecursiveData.Types.Tree.leaf)) (2) (RecursiveData.Types.Tree.leaf)
 
 public theorem sample_tree_size : (treeSize (sampleTree) = 2) := by
-  decide
+  decide +kernel
 
 public theorem mirror_involutive (tree : RecursiveData.Types.Tree (Nat)) : (mirror (mirror (tree)) = tree) := by
   induction tree with

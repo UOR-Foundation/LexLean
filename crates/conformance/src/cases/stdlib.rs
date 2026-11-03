@@ -677,6 +677,40 @@ pub fn run(id: &str) {
         "SL-07" => super::stdlib_identity::run(id),
         // §17.22: the compiler running the package reproduces it (#126 stage 2).
         "SL-08" => super::stdlib_fixed_point::run(id),
+        "SL-09" => {
+            let project = P::stdlib();
+            let consumer = std::fs::read_to_string(
+                support::repo_root().join("tests/host-interface/Consumer.lex.tex"),
+            )
+            .expect("typed consumer");
+            project.write("src/Consumer.lex.tex", &consumer);
+            let manifest = project.read("lexlean.toml");
+            let lines: Vec<_> = manifest
+                .lines()
+                .map(|line| {
+                    if line.starts_with("entrypoints =") {
+                        "entrypoints = [\"src/Consumer.lex.tex\"]"
+                    } else {
+                        line
+                    }
+                })
+                .collect();
+            project.write("lexlean.toml", &(lines.join("\n") + "\n"));
+            project.relock();
+            project.check_ok();
+            let original = project.read_raw("src/Host.lex.tex");
+            let planted = original.replacen(
+                "{name: environment, type: (List (String * String))}",
+                "{name: environment, type: String}",
+                1,
+            );
+            assert_ne!(
+                original, planted,
+                "the mutation must change the spawn environment type"
+            );
+            project.write_raw("src/Host.lex.tex", &planted);
+            project.check_err();
+        }
         other => panic!("no stdlib case is wired for {other}"),
     }
 }
