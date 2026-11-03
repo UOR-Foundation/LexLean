@@ -453,6 +453,18 @@ fn plan_decisions() {
         ("no leg", without("just vv (rest)")),
         ("no honesty", without("honesty")),
         (
+            "suffixed honesty",
+            green
+                .iter()
+                .map(|job| {
+                    job.replace(
+                        "honesty\tsuccess",
+                        "honesty (honesty, fmt-check model spec-links bdd, honesty)\tsuccess",
+                    )
+                })
+                .collect(),
+        ),
+        (
             "failed honesty",
             green
                 .iter()
@@ -2046,6 +2058,11 @@ pub(crate) fn run(id: &str) {
             assert_eq!(rows_conditions, 1, "the legs run when the plan names a leg");
             assert_eq!(honesty_conditions, 1, "honesty runs when the plan names it");
             honesty_dependencies(&ci).expect("expensive roots require successful same-run honesty");
+            assert!(
+                honesty_dependencies(&ci.replacen("name: ${{ matrix.part }}", "name: honesty", 1))
+                    .is_err(),
+                "a static matrix name acquires a suffix instead of the exact honesty context"
+            );
             for root in ["vv", "atlas-prefix", "host-matrix"] {
                 let original = format!("  {root}:\n");
                 let pos = ci.find(&original).expect("the root");
@@ -2980,11 +2997,13 @@ fn rp_18() {
 /// Claim drift must finish successfully before a costly root can start.
 fn honesty_dependencies(ci: &str) -> Result<(), String> {
     let initial = workflow_job(ci, "honesty")?;
-    if !initial.contains("name: honesty\n")
+    if !initial.contains("name: ${{ matrix.part }}\n")
         || !initial.contains("needs: [plan]\n")
         || !initial.contains("if: ${{ needs.plan.outputs.honesty != '[]' }}")
     {
-        return Err("RP-14: honesty must follow the plan".to_owned());
+        return Err(
+            "RP-14: honesty must expose its matrix-resolved context and follow the plan".to_owned(),
+        );
     }
     for root in ["vv", "atlas-prefix", "host-matrix"] {
         let body = workflow_job(ci, root)?;
@@ -3066,6 +3085,15 @@ fn release_gate_decisions() {
     let skipped_honesty: Vec<String> = green
         .iter()
         .map(|job| job.replace("honesty\tsuccess", "honesty\tskipped"))
+        .collect();
+    let suffixed_honesty: Vec<String> = green
+        .iter()
+        .map(|job| {
+            job.replace(
+                "honesty\tsuccess",
+                "honesty (honesty, fmt-check model spec-links bdd, honesty)\tsuccess",
+            )
+        })
         .collect();
     let no_join: Vec<String> = green
         .iter()
@@ -3263,6 +3291,11 @@ fn release_gate_decisions() {
     // No run, a run with a failed job, a run without the join, a draft run.
     for (why, runs, jobs) in [
         ("no run", vec![], &green),
+        (
+            "suffixed honesty",
+            vec![(head.as_str(), run_line("24"))],
+            &suffixed_honesty,
+        ),
         (
             "missing honesty",
             vec![(head.as_str(), run_line("21"))],

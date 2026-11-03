@@ -12532,3 +12532,24 @@ that digest successfully; no language identity or verification oracle was
 regenerated. This is focused evidence, not the complete final-head CI gate;
 that gate remains required after the dependency lands. No post-change CI
 runtime or aggregate savings is claimed.
+
+
+### Hosted honesty matrix naming correction (#411)
+
+Draft run 41639924023 at head `1a5f87ac9` passed its initial checks, but
+GitHub named job 125930780532
+`honesty (honesty, fmt-check model spec-links bdd, honesty)`. A static job
+name inside the matrix acquired GitHub's matrix suffix. The source check
+had accepted `name: honesty`; that check did not establish the hosted
+context name. Both evidence consumers correctly refused the suffixed name
+because they require exactly `honesty`.
+
+The job now uses `name: ${{ matrix.part }}`, the same matrix-based naming
+mechanism as the existing fan-out rows, with the initial row's part equal to
+`honesty`. RP-14 requires that expression and rejects the previous static
+name. With the strengthened assertion and the old declaration, exact RP-14
+failed (exit 101); with the expression it passes. RP-14 and RP-18 additionally
+plant the observed suffixed name and refuse it in parent-reuse and release
+evidence. Neither evidence predicate was broadened. The corrected hosted
+name must still be checked after publication; local source and mocked-job
+checks alone do not establish GitHub's emitted context.

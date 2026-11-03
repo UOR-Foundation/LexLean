@@ -130,7 +130,7 @@ jobs:
   # The existing model/spec-link recipes and complete BDD meta target own
   # this row. Claim drift fails before expensive proof and supported-host jobs.
   honesty:
-    name: honesty
+    name: ${{ matrix.part }}
     needs: [plan]
     if: ${{ needs.plan.outputs.honesty != '[]' }}
     strategy:
