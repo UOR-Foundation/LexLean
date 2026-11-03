@@ -46,6 +46,7 @@ pub(crate) fn run(id: &str) {
         return;
     }
     match id {
+        "VR-28" => binding_record_round_trip(),
         // §22.1: every stage runs; no suppression option exists.
         "VR-01" => {
             let fixture = support::verified();
@@ -1323,4 +1324,41 @@ fn run_platform_independent(id: &str) {
             // meaningful without the toolchain; the host gate reported that.
         }
     }
+}
+
+/// The platform-independent record half of VR-28.
+fn binding_record_round_trip() {
+    use lexlean::artifact::canonical_json::Json;
+    use lexlean::artifact::content_id::Sha256Digest;
+    use lexlean::verify::child::ChildRecord;
+
+    let digest = |bytes: &[u8]| Json::Str(Sha256Digest::of(bytes).to_hex());
+    let json = Json::object(vec![
+        ("tool", Json::Str("lean".to_owned())),
+        ("module", Json::Str("Demo.M".to_owned())),
+        (
+            "argv",
+            Json::Arr(vec![
+                Json::Str("env".to_owned()),
+                Json::Str("lean".to_owned()),
+            ]),
+        ),
+        ("exit_code", Json::Int(0)),
+        ("stdout", Json::Str(String::new())),
+        ("stderr", Json::Str(String::new())),
+        ("stdout_sha256", digest(b"")),
+        ("stderr_sha256", digest(b"")),
+        ("executable_sha256", digest(b"lean")),
+        (
+            "olean",
+            Json::object(vec![("main", digest(b"compiled main"))]),
+        ),
+    ]);
+    let record =
+        ChildRecord::from_json(&json).expect("a complete olean binding is a process record");
+    assert_eq!(
+        record.to_json().to_file_bytes(),
+        json.to_file_bytes(),
+        "the binding survives the same shard record serialization"
+    );
 }

@@ -1334,6 +1334,12 @@ suite = "verification"
 statement = "A project verified as the parts of one run, each shard running the processes its plan names with the oleans of the shards it needs and the join reading every shard's records, publishes a verified directory byte-identical to the whole verification's with the same attestation identity, and a shard whose plan leaves a module without its imports, a join missing a record, or a join reading a record of an executable other than its own, is refused."
 
 [[id]]
+id = "VR-28"
+level = "build"
+suite = "verification"
+statement = "Generated project modules and certificates A, B, and E omit the in-process kernel check only when a successful pinned same-run replay binds the same module and complete olean parts; one publication guard covers local and imported records, the certificate tail, and staged project artifacts, while runtime, support, probe, extraction, and audit modules retain their in-process checks."
+
+[[id]]
 id = "CL-01"
 level = "build"
 suite = "cli-api"
