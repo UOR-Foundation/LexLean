@@ -11502,3 +11502,30 @@ warnings denied pass, as do Rust formatting and diff whitespace checks.
 These are direct CLI results; the full VR-27 harness and complete acceptance
 gate were not run here. No schema, compiler identity input, backend algorithm,
 cache integration or imported-closure replay changed.
+
+## Closed Lean-library and import schemas with accurate status (#362)
+
+The project-v2 and lock-v2 schemas now describe the existing `lean_library`
+writers; both attestation schemas describe the existing `imports` rows.
+Closed objects and every prior required field/property are preserved. A
+project's library member requires language 1.2 even when its array is empty,
+matching the existing configuration refusal. Imported rows now say `loaded
+from the pinned environment`; the writer, VR-26 register/scenario, normative
+text and current documentation use that wording. Historical notes and output
+records retain their original context.
+
+Seven focused `verify::imports::tests::` unit tests pass, including the actual
+row writer's binding to both closed schemas and the exact status. The installed
+Draft202012Validator checks all four schemas, accepts the existing demo project
+and lock representations and omission, and refuses 48 focused invalid shapes
+(missing/extra fields, library pins/digests, language scope and import status).
+Import-row fixtures check representation only, not an attestation's identity.
+The official `validate-model --write` regenerated CONFORMANCE.md; ERRORS.md is
+unchanged. A subsequent correct-root frozen model audit passes (477 IDs, 104
+codes), including canonical schema serialization. Rust formatting and diff
+whitespace checks pass.
+
+The shared attestation schema changes all three language identities. No pins,
+expected artifacts or identity records were rewritten, and no verification or
+full gate was run against the resulting known identity drift. Coordinated
+integration, official artifact writers and final acceptance remain required.

@@ -192,8 +192,8 @@ Feature: verification
     And the same imports are accepted when a policy of the document names the axioms, and the attestation records each import's observed set
 
   @VR-26 @build
-  Scenario: The status of an imported declaration in the attestation is `replayed in the pinned environment`, and no output about an import says `proved`, `verified` or `kernel-checked`, words that §5.3 reserves for the generated declarations of the document and that §4.2 forbids for an imported library.
+  Scenario: The status of an imported declaration in the attestation is `loaded from the pinned environment`, and no output about an import says `proved`, `verified` or `kernel-checked`, words that §5.3 reserves for the generated declarations of the document and that §4.2 forbids for an imported library.
     Given the attestation of the accepted import-axioms project
     When the status of each imported declaration is read
-    Then it is exactly replayed in the pinned environment
+    Then it is exactly loaded from the pinned environment
     And no output about an import says proved, verified or kernel-checked

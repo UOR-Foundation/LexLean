@@ -15,7 +15,7 @@ use crate::support::{self, P};
 const PROJECT: &str = "fixtures/import-axioms/project";
 
 /// The status of an imported declaration (SPEC.md §5.3).
-const IMPORTED_STATUS: &str = "replayed in the pinned environment";
+const IMPORTED_STATUS: &str = "loaded from the pinned environment";
 
 /// One planted entry: its id, surface, the code that refuses it, the Lean
 /// declaration it denotes, and a word its refusal must carry.
@@ -281,7 +281,7 @@ pub(super) fn status() {
     }
     let project = prepared();
     let attestation = accepted(&project);
-    // The project is verified; its imports are replayed in the pinned
+    // The project is verified; its imports are loaded from the pinned
     // environment.
     assert_eq!(attestation["status"], "verified");
     let imports = attestation["imports"].as_array().expect("imports");

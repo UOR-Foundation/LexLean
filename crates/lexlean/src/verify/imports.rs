@@ -21,7 +21,7 @@ use crate::link::CheckedProject;
 /// comes from the locked workspace, which the pinned toolchain loads; LexLean
 /// did not prove it, so the words `proved`, `verified` and `kernel-checked`
 /// are never used for it (§4.2).
-pub const IMPORTED_STATUS: &str = "replayed in the pinned environment";
+pub const IMPORTED_STATUS: &str = "loaded from the pinned environment";
 
 /// Module roots whose declarations are not imports: the libraries the pinned
 /// toolchain ships (trusted as the toolchain itself, §5.1 items 2 and 3), and
@@ -296,7 +296,47 @@ mod tests {
     }
 
     #[test]
+    fn import_rows_match_the_closed_attestation_schemas() {
+        let emitted: serde_json::Value = serde_json::from_str(
+            &rows(&[import("AxHost.lemma", &["propext"])]).to_canonical_string(),
+        )
+        .expect("import rows serialize");
+        let row = emitted[0].as_object().expect("one import row");
+        let actual: BTreeSet<_> = row.keys().map(String::as_str).collect();
+        for schema in [
+            include_str!("../../../../schemas/attestation.schema.json"),
+            include_str!("../../../../schemas/attestation-v2.schema.json"),
+        ] {
+            let schema: serde_json::Value = serde_json::from_str(schema).expect("schema JSON");
+            assert_eq!(schema["additionalProperties"], false);
+            let imports = &schema["properties"]["imports"];
+            assert_eq!(imports["type"], "array");
+            let item = &imports["items"];
+            assert_eq!(item["additionalProperties"], false);
+            let properties: BTreeSet<_> = item["properties"]
+                .as_object()
+                .expect("import fields")
+                .keys()
+                .map(String::as_str)
+                .collect();
+            let required: BTreeSet<_> = item["required"]
+                .as_array()
+                .expect("required fields")
+                .iter()
+                .map(|name| name.as_str().expect("field name"))
+                .collect();
+            assert_eq!(
+                actual, properties,
+                "every emitted field has a schema contract"
+            );
+            assert_eq!(actual, required, "every emitted field is required");
+            assert_eq!(row["status"], item["properties"]["status"]["const"]);
+        }
+    }
+
+    #[test]
     fn the_status_never_claims_a_proof() {
+        assert_eq!(IMPORTED_STATUS, "loaded from the pinned environment");
         for word in ["proved", "verified", "kernel-checked"] {
             assert!(!IMPORTED_STATUS.contains(word));
         }

@@ -1,5 +1,7 @@
 # Mathlib import: axiom audit and status wording (notes for #341)
 
+> Current source preparation for #362 now includes the closed project/lock and attestation schema contracts and uses `loaded from the pinned environment` for imports. The implementation notes below preserve the earlier branch state and measurements; their held-schema and status decisions are historical. Pins and generated artifacts have not been regenerated; the shared attestation schema changes all three language identities, so coordinated integration and official writers remain required.
+
 Issue #339, tracking issue #333. Branch `feat/mathlib-axioms`, local commit only, from `feat/mathlib-import-integration` (`9d2af0fc7`). Register rows `VR-25` and `VR-26`; diagnostics `LLV7023`, `LLV7024`, `LLV7025`; SPEC.md §5.3, §5.4, §18.8, §22.6, §22.9 and §26.3 amended.
 
 ## What exists

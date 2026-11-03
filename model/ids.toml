@@ -1373,7 +1373,7 @@ statement = "A used external entry whose Lean module is outside the pinned toolc
 id = "VR-26"
 level = "build"
 suite = "verification"
-statement = "The status of an imported declaration in the attestation is `replayed in the pinned environment`, and no output about an import says `proved`, `verified` or `kernel-checked`, words that §5.3 reserves for the generated declarations of the document and that §4.2 forbids for an imported library."
+statement = "The status of an imported declaration in the attestation is `loaded from the pinned environment`, and no output about an import says `proved`, `verified` or `kernel-checked`, words that §5.3 reserves for the generated declarations of the document and that §4.2 forbids for an imported library."
 
 [[id]]
 id = "CL-01"

@@ -1,5 +1,7 @@
 # Mathlib import: notes for #334 (pin, config, lock, fetch)
 
+> Current source preparation for #362 now includes the closed project/lock and attestation schema contracts and uses `loaded from the pinned environment` for imports. The implementation notes below preserve the earlier branch state and measurements; their held-schema and status decisions are historical. Pins and generated artifacts have not been regenerated; the shared attestation schema changes all three language identities, so coordinated integration and official writers remain required.
+
 Working notes for the design document (#341). Not normative; SPEC.md is.
 
 ## The pin
