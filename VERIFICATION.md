@@ -10787,6 +10787,36 @@ landing regeneration produces the `bootstrap/parse_module` package:
 `conformance_bs_21` stops at the stack-bound step with `bootstrap/parse_module is
 no package of the committed exports`, after every differential above has agreed.
 
+### the lexer of the authoring notation is source (BS-22)
+
+`BS-22` holds the two production roots of `LexLeanBoot.SurfaceLex`
+(`bootstrap/src/SurfaceLex.lex.tex`), `lexText` and `quoteText`, to
+`surface::lex::lex` and `surface::lex::quote`, on the tokens with their byte
+ranges and on the offset and message of the first lexical error. Neither root
+admits `recursion`: a scan is a loop under `iterate_until`, and a string is a
+loop over its pieces, joined once by `Buffer.joinAll` so that reading one costs
+its length. `AxiomOutput.whiteLength` is the list of white space, which `BS-01`
+holds to `char::is_whitespace`.
+
+The case has the shape of `BS-21`: hand-built vectors that reach each of the
+five lexical errors, windows of the committed sources, and seeded edits, under
+the evaluator on the normative host and under the pinned rustc on every host;
+each planted defect names the one vector that catches it, and the case asserts
+that the site of each plant occurs once. The row's statement carries no counts.
+
+Measured with the compiler binary of the `BS-21` tree, on a copy of the project
+whose only entrypoint is `SurfaceLex`: `lexlean check` and `lexlean build` pass,
+and the eligibility report gives both roots `rust-std` with exactly
+`allocation` and `overflow`. On the project: the lock is current, all 18 modules
+are canonical, and 22 modules check. The register agrees with the §31 table on
+470 IDs, by the same parse `validate-spec-links` makes.
+
+The case has not run. It has not been compiled either, and `lexlean verify`,
+which holds the axioms each definition declares to the pinned Lean, has not been
+run on the module. What it owes is its first run, to pin the counts of its
+corpora, and the landing regeneration, which produces the `bootstrap/lex_text`
+and `bootstrap/quote_text` packages.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the
