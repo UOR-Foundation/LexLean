@@ -19,6 +19,7 @@ use super::package::{Errors, Export, Passing};
 use super::{rt, rt_decode, rt_validate};
 
 /// What a type of `LexLeanStd.Host` holds, field by field.
+#[derive(Clone)]
 enum Want {
     Unit,
     Bool,
@@ -210,7 +211,7 @@ impl Walk<'_> {
                 self.ty(left, a, owner, constructor)?;
                 return self.ty(right, b, owner, constructor);
             }
-            (Want::Host(name), Ty::Adt { index }) => return self.host(name, *index),
+            (Want::Host(name), Ty::Adt { index }) => return self.host(*name, *index),
             _ => false,
         };
         if same {
@@ -316,7 +317,7 @@ fn import(command: &Command, krate: &str, name: &str) -> Result<rt::Item, String
         .hosts
         .get(*host)
         .ok_or_else(|| format!("the command has no `Host::{host}`"))?;
-    Ok(own(format!("Adt{index}"), Some(alias)))
+    Ok(own(format!("Adt{index}"), Some(*alias)))
 }
 
 /// The crates of the driver module a package uses, by the effects its root
