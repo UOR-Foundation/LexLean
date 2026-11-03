@@ -22,3 +22,5 @@ and the refusal it returns, and `Buffer` and `Numeral` from the standard library
 
 `src/SurfaceLex.lex.tex` imports `AxiomOutput`, whose `whiteLength` holds the list of
 white space the oracle's `char::is_whitespace` has, and the standard library's `Buffer` and `Text`.
+
+`src/SurfaceDoc.lex.tex` imports only the standard library's `Buffer` and `Text`.

@@ -201,6 +201,14 @@
       "version": "1.0.0"
     },
     {
+      "name": "render_doc",
+      "root": "LexLeanBoot.SurfaceDoc.renderDoc",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "render_package",
       "root": "LexLeanBoot.RustPackage.renderPackage",
       "targets": [
