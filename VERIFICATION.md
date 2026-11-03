@@ -12338,6 +12338,52 @@ and fixtures. The three failing cases assert the count before their plants, so t
 run did not reach the plants on the new draws. A package that adds records should
 set these counts with its records in the tree, on the same commit.
 
+## Policy failures are collected before publication (`VR-11`, #377)
+
+A language-1.2 module with two `join` definitions missing `propext` and a
+`utf8_decode` definition understating its exact policy previously reported
+only the first `LLV7005`, at `lexlean.toml:1:1`. Stage 11 now collects the
+six policy-check sites and returns the existing canonically sorted failure
+before extraction or publication. Missing audit records and process/internal
+failures remain immediate. Semantic declaration anchors reuse the renderer's
+notation/data source-range readers while the normalized sources are present.
+
+`VR-11` reuses its existing register row and adds this three-declaration
+fixture, checking the actual JSON command, source slices and absence
+of verified output. The regression deliberately performs one verification;
+the generic diagnostic formatter and limiter are unchanged.
+
+On Linux x86-64 with Lean 4.32.1 from the configured `ELAN_HOME`, direct CLI
+runs reported all three diagnostics at `src/Main.lex.tex` lines 5, 13 and 21,
+in both output formats (human run: 6.85 s). A one-off configuration with
+`max_diagnostics = 1` retained the first violation and reported `LLS8002`,
+configured 1, observed 3 (7.48 s); keeping only the third declaration gave
+one `LLV7005` at its source declaration (7.17 s). None published an
+attestation. The pre-fix CLI output contained only the first diagnostic.
+
+The focused renderer/runtime compiler-semantics fingerprint tests pass (two
+tests), and `conformance_rp_10` passes its embedded/disk identity and lock
+checks (6.33 s). All-target/all-feature checks and Clippy with warnings denied
+pass for `lexlean` and `repo-conformance`. This changes no embedded normative
+file or fingerprinted renderer
+source, so no compiler-semantics pin or artifact regeneration is needed.
+The full Lean-backed `VR-11` case was not run here: its host helper requires
+the toolchain under `HOME/.elan`, whereas this environment installs it under
+`/workspace/.setup/elan`; the direct CLI evidence above uses that installation
+without changing the host helper or home directory.
+
+The first PR #403 honesty run (41605700268, job 125814846351) caught
+an eight-step `VR-11` scenario; the Gherkin subset permits at most six.
+The same failure reproduced locally. Consolidating the related subset-policy
+outcomes and the multi-diagnostic outcome into six steps retains every stated
+expectation and leaves the gate unchanged. All five tests of
+`cargo test --locked -p repo-conformance --test bdd` then pass, including
+its planted-defect falsifiability test. CI run 41605700263 also passed the
+complete `bdd-verification` leg on the original implementation, including
+`VR-11`. That run's separate `bdd-compiler` leg failed with a stack overflow
+in `conformance_tc_03`; this scenario correction does not establish a full
+gate pass.
+
 ### Host-matrix cost and coverage (#235)
 
 The successful Intel macOS job 125390659100 of run 41478333299 at
@@ -12369,6 +12415,124 @@ this environment installs Lean under `ELAN_HOME` while the conformance
 helper requires `$HOME/.elan`. That is a blocked Lean-backed test, not a
 pass or an Intel timing measurement. The full normative cases and actual
 non-normative host paths remain for CI; neither helper nor home was changed.
+
+
+## Readable semantic notation obeys its nesting bound (AU-03, #374)
+
+The recursive readable term and type readers enforce the same depth-256 bound
+as the generic notation reader. `conformance_au_03` constructs 50,000-level
+`cons` terms and `List` types, both with and without their closing parentheses.
+The public check API and the CLI in human and JSON modes must refuse each with
+`LLP2001` at a position in `src/Main.lex.tex`, before decoding semantic JSON.
+These are temporary negative projects inside the existing AU-03 case.
+
+`cargo test -p lexlean --lib readable_nesting_has_an_explicit_bound` also checks
+the exact readable boundary: 255 unary terms or `List` types, and 254 `cons`
+terms ending in `(nil Nat)`, read successfully; one more nesting is refused.
+The leaf type of `nil` consumes the additional level.
+
+The test failed on the old reader because an over-bound term was accepted.
+Removing only the readable term guard then failed on the 256-level unary term;
+removing only the type guard failed on the over-bound `cons` term's leaf type.
+Both plants returned a failing test (exit 101), without a stack abort, and were
+restored. The fixed boundary test and `conformance_au_03` passed on Linux with
+Rust 1.97.1. No Lean process is involved in these checks.
+
+The fix changes no embedded normative identity input: `build.rs` embeds
+`language/`, `schemas/`, and the axiom-parser and canonical-JSON goldens, none
+of which changes here. No language identity or verification oracle is rewritten.
+
+## Semantic JSON nesting diagnostic names the list workaround (`SM-12`, #375)
+
+The 128-level semantic JSON reader limit is unchanged. Before the diagnostic
+change, `cargo test --offline --locked -p repo-conformance --test conformance
+conformance_sm_12 -- --exact --nocapture` failed on the new assertion with:
+
+```text
+phase link: invalid semantic-module JSON: recursion limit exceeded at line 1 column 6925
+```
+
+The committed fixtures under `tests/semantic-json-depth/` exercise a 122-cell
+list that checks, a 123-cell list that fails, the same failure in a subsequent
+declaration, and a 200-cell list split into two definitions joined by
+`prim append` that checks. The failure is checked through the project API,
+human and JSON CLI output, and the semantic JSON reader directly. Malformed,
+noncanonical, duplicate-member and out-of-schema data (including an extra
+member on a tagged unit variant) remain refused without list-depth advice.
+The source span still covers the module body; generated JSON coordinates are
+not presented as a nested term's source position.
+
+After the change, the same command passes (1.83 s on this host). Removing
+the append recommendation from the diagnostic, leaving the bound and
+smaller-definitions advice intact, makes that command
+fail on its `prim append` assertion (1.32 s). The planted edit was restored.
+The diagnostic change does not run Lean or establish a new verification claim;
+#375 already records verification of two 100-cell lists joined by append.
+
+The nesting diagnostic retains the existing `recursion limit exceeded` category,
+which the `SP-02` 130-level let-chain refusal also asserts. Only its generated
+JSON coordinates are replaced by the bound and workaround advice.
+
+## Release evidence consumes the whole jobs listing (RP-18, #408)
+
+The release gate piped the jobs listing into quiet `grep` with `pipefail`
+set. A match can close the pipe before `printf` finishes, so a complete
+passing listing can be refused because its producer receives SIGPIPE.
+The Atlas-join and required-leg checks now consume all input and discard
+matching output. Their patterns, the all-success check, host count, tree
+comparison, and required-leg set are unchanged.
+
+`release_gate_decisions` now appends 1,500 successful jobs to the complete
+fixture and requires acceptance, then appends a failed job after every
+required row and requires refusal with no evidence file. Before the script
+fix, the new large-list assertion failed with `left: 1`, `right: 0` and
+`release-gate: no run of ci.yml was the whole gate and passed every job`.
+With the fix, that assertion and every existing decision pass. These
+red/green checks ran the unchanged function extracted into a standalone
+Rust executable linked to the workspace's existing dependency artifacts;
+no Cargo rebuild or full acceptance run is claimed by this record.
+Shell syntax, Rust formatting, and diff whitespace checks pass.
+
+This independently reproduced listing-size defect is not established as
+the cause of PR #403's CI RP-18 failure on its ordinary fixture. That
+ordinary case also passed locally before this correction.
+
+The first full PR gate (run 41621446939, job 125870930417) exposed that the
+two deliberately refused 123-cell sources were outside the corpus's `negative/`
+classification. A focused local `conformance_au_08` reproduced the refusal at
+`authoring.rs:1276` in 138.28 s. Those two unchanged sources now live in
+`tests/semantic-json-depth/negative/`, and `SM-12` reads their new paths. The
+122-cell and split-list sources retain their positive placement. `AU-08`'s
+reader, corpus walk, round trips and anti-vacuity assertions are unchanged;
+its existing negative classification still attempts to read every source and
+applies every round-trip assertion whenever reading succeeds. `SM-12` retains
+every project, API, CLI and direct-reader refusal assertion.
+
+After the placement correction, the same focused `conformance_au_08` command
+passes in 723.03 s and `conformance_sm_12` passes in 1.91 s. Formatting and
+`git diff --check` pass. No identity input or generated record changed.
+
+## Policy source anchors reuse the rendered declaration mappings (#377)
+
+Stage 11 now takes language-1.2 semantic declaration ranges from the existing
+Lean artifact mappings whose node kind is `semantic-declaration`. The renderer
+emits one such piece per source declaration in declaration order, including
+its separating newline; source-map folding orders the pieces by artifact and
+generated byte range. Filtering to Lean avoids the corresponding LaTeX rows.
+The legacy `semantic-module/1` renderer has only a whole-module node, so its
+existing source lookup remains intact. No source-map or backend bytes change.
+
+The direct three-policy CLI fixture was verified once with pinned Lean
+4.32.1 after this refactor. It returned three `LLV7005` diagnostics and no
+artifacts. Its entire diagnostics array equals the earlier direct CLI result:
+`first` maps to source bytes 113..251 (line 5), `second` to 253..392 (line 13),
+and `third` to 394..564 (line 21), all at column 1. Each slice contains its own
+named declaration. The CLI build and lexlean all-target/all-feature Clippy
+with warnings denied pass, as do formatting and diff whitespace checks.
+
+This removes a redundant parse; it does not establish or resolve the cause of
+PR #403's earlier TC-03 CI stack overflow. No full acceptance run is claimed
+by this local check.
 
 ## The canonical LaTeX of a tooling module is language-1.2 source (`BS-20`, #270)
 

@@ -8956,8 +8956,15 @@ impl SemanticModule {
         imported_modules: &BTreeMap<String, &Self>,
         artifacts: &model::ArtifactStore,
     ) -> Result<Self, SemanticFailure> {
-        let module: Self = serde_json::from_str(text)
-            .map_err(|error| format!("invalid semantic-module JSON: {error}"))?;
+        let module: Self = serde_json::from_str(text).map_err(|error| {
+            // The notation has already become JSON, so serde's coordinates
+            // cannot locate the offending term in the authored source.
+            if error.to_string().starts_with("recursion limit exceeded") {
+                "invalid semantic-module JSON: recursion limit exceeded (128-level semantic JSON bound); split long lists into smaller definitions joined by `prim append`".to_owned()
+            } else {
+                format!("invalid semantic-module JSON: {error}")
+            }
+        })?;
         let canonical =
             crate::artifact::canonical_json::Json::parse(text.as_bytes())?.to_canonical_string();
         if canonical != text {

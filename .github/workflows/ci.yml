@@ -829,10 +829,10 @@ jobs:
     # 41478333299), 124.5 of them in the conformance binary. #235 moves SP-02's
     # complete stress families and TC-03's seeded fuel sweep to the normative
     # host, keeping fixed vectors here, and reads the shared declaration
-    # inventory once in TC-03 and TC-05. The post-change Intel measurement is
-    # recorded with the PR's full-gate results before closing #235. This limit
-    # stays until that evidence supports lowering it: a timeout is a bound on
-    # a hung job, not a performance result.
+    # inventory once in TC-03 and TC-05. At 30612d265 on 2026-11-03 the
+    # post-change leg took 117m01s (run 41592896657), 100m21s in conformance.
+    # The 240-minute bound is about twice that observed runtime; no timeout
+    # reduction.
     timeout-minutes: 240
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

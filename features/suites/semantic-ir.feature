@@ -78,10 +78,12 @@ Feature: semantic-ir
     And the `All` selection returns the same complete sorted set
 
   @SM-12 @build
-  Scenario: No semantic IR node can contain opaque prose, raw backend text, or an unknown extension.
+  Scenario: No semantic IR node can contain opaque prose, raw backend text, or an unknown extension. Semantic modules retain the 128-level JSON nesting limit and an over-deep list is refused with LLT4001 naming smaller definitions joined by prim append as the remedy.
     Given the example project checked through the internal pipeline
     When the linked IR is serialized to canonical JSON
     Then the JSON contains none of `natural number`, `For every`, `reflexivity`, or `Close the goal`
+    And a 122-element list checks while a 123-element list, including in a subsequent declaration, fails with LLT4001 naming the 128-level JSON bound and smaller definitions joined by prim append
+    And two 100-element definitions joined by prim append check, and malformed, noncanonical, duplicate-member and out-of-schema data remain refused
 
   @SM-13 @build
   Scenario: Inherited section parameters are represented explicitly and emitted only on declarations that use them.

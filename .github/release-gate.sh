@@ -45,10 +45,11 @@ whole_gate_passed() {
   local jobs=$1 part
   [ -n "$jobs" ] || return 1
   printf '%s\n' "$jobs" | awk -F'\t' '$2 != "success" { bad = 1 } END { exit bad }' || return 1
-  printf '%s\n' "$jobs" | grep -qxP 'atlas \(join\)\tsuccess\t.*' || return 1
+  # Quiet grep can close the pipe early and make printf fail under pipefail.
+  printf '%s\n' "$jobs" | grep -xP 'atlas \(join\)\tsuccess\t.*' >/dev/null || return 1
   [ "$(printf '%s\n' "$jobs" | grep -c '^build and non-Lean tests (')" -eq "$hosts" ] || return 1
   for part in $parts; do
-    printf '%s\n' "$jobs" | grep -qP "^just vv \(\Q$part\E\)\tsuccess\t" || return 1
+    printf '%s\n' "$jobs" | grep -P "^just vv \(\Q$part\E\)\tsuccess\t" >/dev/null || return 1
   done
 }
 
