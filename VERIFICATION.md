@@ -21,6 +21,8 @@ How this repository's claims are checked, which recipe enforces which rule, and 
 | `repro` | `cargo xtask check-reproducibility` | AR-13, §28.4: two clean `build`s in distinct absolute directories publish byte-identical trees with no absolute path inside |
 | `deny` | `cargo deny --all-features check` | advisories, bans, licenses, sources |
 
+In CI, the initial `honesty` row owns `fmt-check model spec-links` and the complete `bdd` meta-gate target. The remaining rows, supported hosts and Atlas prefix require its success. The BDD remainder owns the library, doctests and unassigned integration targets; Cargo metadata discovers target names and the inventory lists the same target selectors and filters as execution. The separate honesty workflow is subsumed by this same-run job; local `just vv` retains its complete suite.
+
 Outside `vv`:
 
 - `just fixtures` (`cargo xtask check-fixtures`) runs every §28.2 fixture under `tests/fixtures/` and `tests/negative/` through the CLI entry point and compares exit code, canonical command result, diagnostics, artifact list, and platform-independent hashes with `expected/`. `just fixtures-write` is the only rewrite path.
@@ -12470,6 +12472,87 @@ with warnings denied pass, as do formatting and diff whitespace checks.
 This removes a redundant parse; it does not establish or resolve the cause of
 PR #403's earlier TC-03 CI stack overflow. No full acceptance run is claimed
 by this local check.
+
+
+## Existing honesty checks precede expensive CI fan-out (#411)
+
+The original #403 honesty run 41605700268, job 125814846351, started on
+2026-11-03 at 08:46:05 UTC and failed at 08:48:58 with `VR-11: 8 steps`.
+Its five BDD meta tests took 1.09 seconds; `model spec-links` had passed.
+In CI run 41605700263, `rest` repeated the failure at 09:01:20. The Intel
+host job 125815138918 started at 10:05:57, repeated it at 10:19:42, and
+continued under `--no-fail-fast` until cancellation at 10:26:14. Atlas prefix
+125815138772 independently ran 08:46:37–09:11:17 successfully. These are
+observed job-log timestamps, not a sum of runner savings. The later run
+41619096018 is separate evidence and does not establish this failure.
+
+The initial row now runs the existing format, model and specification-link
+recipes and the existing complete BDD meta target, with the check name
+`honesty`. Those recipes move out of `rest`; the meta target moves out of
+the BDD remainder. All remaining matrix rows, the supported hosts and Atlas
+prefix depend on this job, and the standalone honesty workflow is subsumed.
+The five meta tests and their assertions are unchanged. In particular, the
+six-step assertion remains in the existing BDD target: running model checks
+alone would have missed the observed eight-step defect.
+
+The parts plan owns complete integration-test targets rather than a copy of
+their test names. The remainder discovers unassigned targets through Cargo
+metadata, retains library and binary tests, and invokes doctests separately
+because Cargo forbids combining `--doc` with other target selectors. Both
+commands run even if one fails; any failure fails the part. A newly added
+test follows its target, and an unassigned target follows the remainder.
+Local `just vv` still runs the complete suite. Supported-host workspace
+coverage is unchanged, including the meta tests on each host.
+
+Focused local evidence on Linux x86-64 with the pinned Rust toolchain:
+
+| Check or plant | Observed |
+| --- | --- |
+| Actual harness inventory, `cargo xtask check-test-inventory` | 810 workspace tests = 296 ordinary + 514 BDD, disjoint with none lost; 23 parts partition all 514 BDD tests, honesty owns 5 and rest 324 |
+| Existing BDD target through `LEXLEAN_BDD_PART=honesty cargo xtask bdd` | 5 passed |
+| Restored complete initial row, `LEXLEAN_BDD_PART=honesty just fmt-check model spec-links bdd` | Passed: formatting, model audits (468 IDs / 86 codes), specification links (468 rows), and all 5 meta tests |
+| VR-11's sixth step split into three, making eight steps; the initial `fmt-check model spec-links bdd` row | Refused by the unchanged `the_suites_are_inside_the_gherkin_subset`: `VR-11: 8 steps; a scenario states one behavior`; 4 passed, 1 failed; plant restored |
+| RP-13 complete-target ownership plants | A repeated target test and meta tests silently reassigned to rest are each refused |
+| RP-14 and RP-18 required-row plants | Missing, failed and skipped honesty each refuse whole-gate evidence in parent reuse and release validation |
+| RP-14 long parent listing, 2,500 extra successful jobs | Before correcting the quiet join match, failed: plan returned `full=true` instead of reusing the passed parent; after consuming the complete listing, passed; a late failed job still refuses reuse |
+| RP-18 large listing | Existing large-success acceptance and late-failure refusal retained and passed |
+
+The 41 conformance library tests, exact RP-13/RP-14/RP-18 cases, and
+workspace/all-target/all-feature Clippy with warnings denied also passed.
+
+The parent-reuse correction is separate from #408's release-gate correction:
+its join match also stopped reading before the producer finished under
+`pipefail`. No production failure is attributed to that path. Both scripts
+still require the Atlas join, every supported host, every required row and
+every successful conclusion, and preserve same-tree matching.
+
+No compiler identity input changed: the embedded digest reads `language/`,
+`schemas/`, and the axiom-parser and canonical-JSON goldens. RP-10 recomputed
+that digest successfully; no language identity or verification oracle was
+regenerated. This is focused evidence, not the complete final-head CI gate;
+that gate remains required after the dependency lands. No post-change CI
+runtime or aggregate savings is claimed.
+
+
+### Hosted honesty matrix naming correction (#411)
+
+Draft run 41639924023 at head `1a5f87ac9` passed its initial checks, but
+GitHub named job 125930780532
+`honesty (honesty, fmt-check model spec-links bdd, honesty)`. A static job
+name inside the matrix acquired GitHub's matrix suffix. The source check
+had accepted `name: honesty`; that check did not establish the hosted
+context name. Both evidence consumers correctly refused the suffixed name
+because they require exactly `honesty`.
+
+The job now uses `name: ${{ matrix.part }}`, the same matrix-based naming
+mechanism as the existing fan-out rows, with the initial row's part equal to
+`honesty`. RP-14 requires that expression and rejects the previous static
+name. With the strengthened assertion and the old declaration, exact RP-14
+failed (exit 101); with the expression it passes. RP-14 and RP-18 additionally
+plant the observed suffixed name and refuse it in parent-reuse and release
+evidence. Neither evidence predicate was broadened. The corrected hosted
+name must still be checked after publication; local source and mocked-job
+checks alone do not establish GitHub's emitted context.
 
 ## The canonical LaTeX of a tooling module is language-1.2 source (`BS-20`, #270)
 

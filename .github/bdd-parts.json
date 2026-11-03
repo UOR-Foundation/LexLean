@@ -246,5 +246,8 @@
     "preservation-std": [
       "SP-29"
     ]
+  },
+  "targets": {
+    "honesty": ["bdd"]
   }
 }
