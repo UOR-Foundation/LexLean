@@ -12308,3 +12308,15 @@ The full Lean-backed `VR-11` case was not run here: its host helper requires
 the toolchain under `HOME/.elan`, whereas this environment installs it under
 `/workspace/.setup/elan`; the direct CLI evidence above uses that installation
 without changing the host helper or home directory.
+
+The first PR #403 honesty run (41605700268, job 125814846351) caught
+an eight-step `VR-11` scenario; the Gherkin subset permits at most six.
+The same failure reproduced locally. Consolidating the related subset-policy
+outcomes and the multi-diagnostic outcome into six steps retains every stated
+expectation and leaves the gate unchanged. All five tests of
+`cargo test --locked -p repo-conformance --test bdd` then pass, including
+its planted-defect falsifiability test. CI run 41605700263 also passed the
+complete `bdd-verification` leg on the original implementation, including
+`VR-11`. That run's separate `bdd-compiler` leg failed with a stack overflow
+in `conformance_tc_03`; this scenario correction does not establish a full
+gate pass.
