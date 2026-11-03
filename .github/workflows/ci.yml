@@ -9,7 +9,7 @@
 # `honesty`, format/model/spec-links and the BDD meta target first, then
 # `rest`, the remaining recipes in order, with the `bdd` rows below.
 # Together they run every recipe of `vv` exactly once, so the gate is the same
-# and the wall time is the longest leg rather than the sum.
+# and its wall time includes honesty followed by the downstream critical path.
 #
 # `bdd`, the conformance suite, was most of the `rest` leg's time, and it runs
 # as the parts of `.github/bdd-parts.json` (§9.4): each `bdd-<part>` row runs
