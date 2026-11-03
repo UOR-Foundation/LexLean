@@ -5,11 +5,10 @@
 //! case and is a defect of the package, of the pipeline, or of the oracle, and
 //! nothing here adopts the oracle's output.
 //!
-//! What is held, and what is not: the package writes the sha256 axis of the
-//! κ-label, the JSON realization, and the five categorical compositions on
-//! the sha256 axis. The GGUF and ONNX realizations of uor-addr and its four
-//! other hash axes are not written; `KA-02`, `KA-03` and `KA-04` say so in
-//! their statements by naming only what they hold.
+//! The package writes the JSON realization, all five hash axes, and the five
+//! categorical compositions on each axis (`KA-02`..`KA-06`). The GGUF and ONNX
+//! realizations remain outside the package; their committed fixtures are
+//! checked only for label form by `KA-02`.
 
 use std::collections::BTreeMap;
 
