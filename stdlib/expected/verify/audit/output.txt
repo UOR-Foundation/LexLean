@@ -314,6 +314,49 @@
 'LexLeanStd.Sha256.widen' depends on axioms: [propext, Quot.sound]
 'LexLeanStd.Sha256.wordAt' depends on axioms: [propext, Quot.sound]
 'LexLeanStd.Sha256.wordOfNat' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Target.Cost' does not depend on any axioms
+'LexLeanStd.Target.Op' does not depend on any axioms
+'LexLeanStd.Target.add_sat_saturates' depends on axioms: [propext]
+'LexLeanStd.Target.adds_saturates' depends on axioms: [propext]
+'LexLeanStd.Target.allBounded' does not depend on any axioms
+'LexLeanStd.Target.avx2AddsEpi16' depends on axioms: [propext]
+'LexLeanStd.Target.avx2MaddEpi16' depends on axioms: [propext]
+'LexLeanStd.Target.avx2MaddubsEpi16' depends on axioms: [propext]
+'LexLeanStd.Target.blockLanes' does not depend on any axioms
+'LexLeanStd.Target.bounded' does not depend on any axioms
+'LexLeanStd.Target.dot_wraps' depends on axioms: [propext]
+'LexLeanStd.Target.extmul_takes_low_eight' does not depend on any axioms
+'LexLeanStd.Target.finishPair' depends on axioms: [propext]
+'LexLeanStd.Target.heavier' does not depend on any axioms
+'LexLeanStd.Target.madd_exact' depends on axioms: [propext]
+'LexLeanStd.Target.madd_wraps' depends on axioms: [propext]
+'LexLeanStd.Target.maddubs_exact' depends on axioms: [propext]
+'LexLeanStd.Target.maddubs_saturates_high' depends on axioms: [propext]
+'LexLeanStd.Target.maddubs_saturates_low' depends on axioms: [propext]
+'LexLeanStd.Target.mull_takes_eight' does not depend on any axioms
+'LexLeanStd.Target.mull_widens' does not depend on any axioms
+'LexLeanStd.Target.neonMullS8' does not depend on any axioms
+'LexLeanStd.Target.neonPaddlqS16' depends on axioms: [propext]
+'LexLeanStd.Target.neonQaddqS16' depends on axioms: [propext]
+'LexLeanStd.Target.paddl_widens' depends on axioms: [propext]
+'LexLeanStd.Target.pairSums' depends on axioms: [propext]
+'LexLeanStd.Target.plus' does not depend on any axioms
+'LexLeanStd.Target.price' does not depend on any axioms
+'LexLeanStd.Target.price_bytes' does not depend on any axioms
+'LexLeanStd.Target.price_empty' does not depend on any axioms
+'LexLeanStd.Target.price_reads_whole_instructions' does not depend on any axioms
+'LexLeanStd.Target.products' does not depend on any axioms
+'LexLeanStd.Target.qadd_saturates' depends on axioms: [propext]
+'LexLeanStd.Target.readBytes' does not depend on any axioms
+'LexLeanStd.Target.saturate16' depends on axioms: [propext]
+'LexLeanStd.Target.saturatingAdd' depends on axioms: [propext]
+'LexLeanStd.Target.wasmAddSatI16x8' depends on axioms: [propext]
+'LexLeanStd.Target.wasmDotI16x8' depends on axioms: [propext]
+'LexLeanStd.Target.wasmExtmulLowI8x16' does not depend on any axioms
+'LexLeanStd.Target.worstCase' does not depend on any axioms
+'LexLeanStd.Target.worst_case_bounded_by_operations' does not depend on any axioms
+'LexLeanStd.Target.worst_case_is_largest' does not depend on any axioms
+'LexLeanStd.Target.wrap32' depends on axioms: [propext]
 'LexLeanStd.Text.byteAt' does not depend on any axioms
 'LexLeanStd.Text.chomp' does not depend on any axioms
 'LexLeanStd.Text.endsWith' does not depend on any axioms

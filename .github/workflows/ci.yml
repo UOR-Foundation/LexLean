@@ -168,6 +168,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install the pinned Rust toolchain
         run: bash .github/retry.sh rustup toolchain install
+      # `GN-09` runs each modeled SIMD instruction by the pinned rustc: AVX2 in
+      # process, SIMD128 as a WebAssembly module under the runner's Node.js, and
+      # NEON built for its target (an x86-64 runner cannot execute it).
+      - name: Add the SIMD targets of the pinned Rust
+        run: bash .github/retry.sh rustup target add aarch64-unknown-linux-gnu wasm32-unknown-unknown
       - uses: taiki-e/install-action@b6b84cf49ebfe0176417bdce007c624f0db37f20 # v2.86.2
         with:
           tool: just,cargo-deny

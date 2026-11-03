@@ -68,6 +68,7 @@ mod stdlib_digest;
 mod stdlib_fixed_point;
 mod stdlib_identity;
 mod stdlib_sha256;
+mod target_machine;
 mod tooling;
 mod typed_diagnostics;
 mod verification;
