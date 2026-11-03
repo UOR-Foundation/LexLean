@@ -12634,3 +12634,30 @@ weighting makes its partition assertion fail. This is a harness correction,
 not a change to the generated packages or a resolution of #164's consumer
 compiler-nesting question. A Windows rerun is required to establish whether
 this bounded partition removes the observed compiler failure.
+
+## DF-19 preparation against the current release line (#284)
+
+Local integration `7bf1ce27b0561482ee9e6ca4d3e8745ae2dc42f7` combines the
+accepted argument-aware DF-19 head `9d0896b18` with release `0a01df682` and
+the reviewed maintenance integration `215a9d591`. Source conflicts were
+absent; the register and its count sites are 470. The official model writer
+produced no document delta. Formatting, model audits (470 IDs, 86 codes),
+specification links, all five BDD meta-tests, and all three family-order unit
+tests pass on this integration.
+
+The exact-tree CLI was copied before any writer ran; its SHA-256 is
+`88b47a00bde41bd291af5e23781e82bc460fc721057dbbd20f41dfb42cb094d5`.
+Its official `lock` command changes only `tests/nested-family/lexlean.lock`'s
+compiler-semantics pin from the historical `30c5829b` identity to the current
+release identity `aac30cb0`. No embedded identity input or renderer source
+changes, and no global identity or oracle regeneration was performed.
+
+That frozen CLI's direct `check`, `build`, and `verify` commands on
+`tests/nested-family` pass with pinned Lean 4.32.1 from the configured
+`ELAN_HOME`. Verification accepts one module and publishes attestation
+`ac3f24866cca9e7477eeccc610f6b7c8637d383e1104c38d2b7e43e906a2743b`.
+This is direct CLI evidence for the committed fixture, including its sample
+size and leaf-count theorems. The Lean-backed DF-19 conformance harness and
+its four refusal plants were not rerun in this phase: its host helper expects
+`HOME/.elan`, absent on this environment. Neither home nor the helper was
+changed. No full acceptance gate or inventory run is claimed here.
