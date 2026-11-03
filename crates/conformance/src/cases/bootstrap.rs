@@ -34,6 +34,7 @@ mod rust_terms;
 mod rust_validate;
 mod scan;
 mod structural_grammar;
+mod surface_doc;
 mod surface_lex;
 
 /// The module the first component lives in.
@@ -2456,6 +2457,7 @@ fn case(id: &str) {
         "BS-15" => rust_package::case(),
         "BS-21" => structural_grammar::case(),
         "BS-22" => surface_lex::case(),
+        "BS-23" => surface_doc::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }

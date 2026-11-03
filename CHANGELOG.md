@@ -605,6 +605,11 @@ of this tree show.
   `SurfaceLex` return what `surface::lex::lex` and `surface::lex::quote` return,
   the tokens with their byte ranges or the first lexical error, and a quoted
   text; they admit no `recursion`. The register is 470 IDs.
+- The layout algebra of the authoring notation as language-1.2 source, third
+  slice of the front end (SPEC.md §17.23, §17.21, `BS-23`, #269; no new
+  diagnostic code, no change to the language-1.2 identity). `renderDoc` of
+  `SurfaceDoc` returns what `surface::doc::render` returns for a document at a
+  width; it admits no `recursion`. The register is 471 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or
