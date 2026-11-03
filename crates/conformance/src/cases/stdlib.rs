@@ -678,7 +678,7 @@ pub fn run(id: &str) {
         // §17.22: canonical JSON writing (#276).
         "SL-11" => super::stdlib_json::run(id),
         // §17.22: canonical JSON reading (#276).
-        "SL-12" => super::stdlib_json_read::run(id),
+        "SL-13" => super::stdlib_json_read::run(id),
         // §17.22: maps and sets (#276).
         "SL-14" => super::stdlib_map::run(id),
         other => panic!("no stdlib case is wired for {other}"),

@@ -12442,3 +12442,21 @@ weighting makes its partition assertion fail. This is a harness correction,
 not a change to the generated packages or a resolution of #164's consumer
 compiler-nesting question. A Windows rerun is required to establish whether
 this bounded partition removes the observed compiler failure.
+
+
+## JsonRead uses its reserved SL-13 claim (#415, #422)
+
+The canonical JSON reader's claim is renamed from SL-12 to SL-13, preserving
+Host's separate SL-12 reservation. The register, normative SPEC row and prose,
+scenario tag, named conformance test, dispatch, case assertions and labels,
+README and CHANGELOG now use SL-13 together. No reader implementation, corpus,
+plant or axiom policy changed; the greater-than-nineteen-digit refusal and its
+new plant remain exactly as at contributor head e7adf7c6a.
+
+This is source-only namespace preparation on that exact head. Static comparison
+checks the register/SPEC/scenario/test correspondence and the unchanged source
+blobs; no Cargo, Lean or official writer ran. CONFORMANCE.md is intentionally
+left as the existing generated projection until the admitted official model
+writer runs. Complete source integration, generated projections, coordinated
+artifact regeneration and final-head acceptance remain required. This does not
+close #276 or establish final acceptance for #422.

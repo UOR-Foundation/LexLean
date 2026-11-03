@@ -1,4 +1,4 @@
-//! Canonical JSON reading in the standard library (SPEC.md §17.22, `SL-12`,
+//! Canonical JSON reading in the standard library (SPEC.md §17.22, `SL-13`,
 //! #276): the `LexLeanStd.JsonRead` module against the compiler's own reader
 //! (stage 0), `artifact::canonical_json::Json::parse`, under the calculus
 //! evaluator and under the pinned rustc.
@@ -484,14 +484,14 @@ fn snake(member: &str) -> String {
     out
 }
 
-/// Run the case for `SL-12`.
+/// Run the case for `SL-13`.
 ///
 /// # Panics
 ///
 /// Panics when the case's assertion fails.
 #[allow(clippy::too_many_lines)]
 pub fn run(id: &str) {
-    assert_eq!(id, "SL-12", "the case of {MODULE}");
+    assert_eq!(id, "SL-13", "the case of {MODULE}");
     let project = P::stdlib();
     project.check_ok();
     let built = project.build_ok();
@@ -697,7 +697,7 @@ pub fn run(id: &str) {
             missed.push(plant.label);
         } else {
             eprintln!(
-                "SL-12: plant detected: {}: {seen} != {expected}",
+                "SL-13: plant detected: {}: {seen} != {expected}",
                 plant.label
             );
         }

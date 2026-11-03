@@ -18,7 +18,7 @@ workspace carried at those versions without a tag.
 ## Unreleased
 
 - Canonical JSON reading in the standard library, the fourth member the
-  self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-12`). The module
+  self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-13`). The module
   `LexLeanStd.JsonRead` holds the production roots `readJson` and
   `readJsonFile` for `rust-std`, which read the canonical JSON of §21.7 back
   into the `Json` value of `LexLeanStd.Json` and refuse any text the writer
