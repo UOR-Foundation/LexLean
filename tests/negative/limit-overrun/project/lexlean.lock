@@ -1,8 +1,8 @@
 spec = "lexlean/lock/1"
 language = "1.0"
-compiler_semantics = "89507c618ac1972f7d277fad9a536ec82c0cae58560108a63bab2e8aacbe487c"
-project_config_sha256 = "9e22696523a71d98eea340b5843ff862890ecf04635ed51cb1df63fce84f0865"
-lean_toolchain = "leanprover/lean4:v4.32.1"
+compiler_semantics = "df4317a1f709fb78c3638296147240017f75dc28abeb11adcc09ca2e5fd4100c"
+project_config_sha256 = "4fcc460a59a3e8f602aaa96c624bcf11aa326b233c31db48538c2cda52a94bec"
+lean_toolchain = "leanprover/lean4:v4.33.1"
 
 [[workspace_file]]
 path = "lake-manifest.json"
@@ -14,7 +14,7 @@ sha256 = "db88f1cb05d4d4f5b8658d31c7eade34c4e6fb16fbb56f450c0160abc6ec42cb"
 
 [[workspace_file]]
 path = "lean-toolchain"
-sha256 = "8e3538e0ab5f81a3ee04927d8838c8c674e0e112838b4b3ce87ec218143276af"
+sha256 = "3aac669c7a910ec2389f4e4f921b605adf6ebf2d1e0c9b9cd0be4d33f3f5db71"
 
 [[package]]
 id = "lexlean.core"

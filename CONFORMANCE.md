@@ -127,7 +127,7 @@ the error registry does not sanction (R5, `ERRORS.md`).
 | `CF-11` | `build` | Check, build, format, and verify resolve only locked locally available dependencies. |
 | `CF-12` | `build` | Network package acquisition occurs only through lock --allow-network and only for an exact configured commit. |
 | `CF-13` | `build` | The Lake workspace contains exactly one supported Lake configuration and the recorded workspace files match. |
-| `CF-14` | `build` | Language 1.0 accepts only leanprover/lean4:v4.32.1 for verification. |
+| `CF-14` | `build` | Language 1.0 accepts only leanprover/lean4:v4.33.1 for verification. |
 | `CF-15` | `build` | Duplicate logical modules and case-folded path or module collisions are rejected. |
 | `CF-16` | `build` | Language 1.1 has a parallel exact builtin closure and rejects a language-1.0 lock or package without altering language-1.0 identities. |
 | `CF-17` | `build` | Language 1.2 declaration support accepts language 1.2 and rejects unsupported or malformed language versions. |
@@ -602,7 +602,7 @@ the error registry does not sanction (R5, `ERRORS.md`).
 | `SM-16` | `build` | The language-1.1 semantic snapshot contains every closed declaration, term, recursion, match, instance, proof variant, and exact theorem axiom policy without paths or backend text. |
 | `SM-17` | `build` | Language 1.1 has distinct mathematical Int, fixed-width signed and unsigned integer, UTF-8 string, byte-sequence, Option, and Result semantic types with canonical literals. |
 | `SM-18` | `build` | Portable arithmetic, conversion, bitwise, bounded-shift, collection, UTF-8, byte-order, split/join, and decimal operations form one closed typed primitive vocabulary. |
-| `SM-19` | `build` | Portable semantic operations generate deterministic Lean 4.32.1 definitions that elaborate and replay with exact declared computational axiom policies. |
+| `SM-19` | `build` | Portable semantic operations generate deterministic Lean 4.33.1 definitions that elaborate and replay with exact declared computational axiom policies. |
 | `SM-20` | `build` | Noncanonical, out-of-range, invalid-byte, ill-typed, and unbounded fixed-width values fail before either backend runs. |
 | `SM-21` | `build` | Structural recursion admits byte/list values and closed Option and Result inductives while preserving termination and exhaustiveness checks. |
 | `SM-22` | `build` | The public owned snapshot DTO and schemas cover every portable type, literal, primitive, and explicit definition axiom policy without backend text. |
@@ -685,11 +685,11 @@ Never re-derived, vendored, or gated on.
 
 | Authority | Citation | Evidence here |
 | --- | --- | --- |
-| `LEAN-REL-4-32-1` | https://github.com/leanprover/lean4/releases/tag/v4.32.1 | `CF-14`, `VR-02`, `VR-05` |
-| `LAKE-4-32-1` | https://github.com/leanprover/lean4/tree/v4.32.1/src/lake | `VR-03`, `VR-17` |
-| `LEANCHECKER-4-32-1` | https://github.com/leanprover/lean4/tree/v4.32.1 | `VR-08` |
-| `PRINT-AXIOMS-4-32-1` | https://github.com/leanprover/lean4/tree/v4.32.1 (the #print axioms command); observed output fixtures under tests/golden/axiom-parser/ | `VR-09`, `VR-10` |
-| `LEAN-LCNF-4-32-1` | https://github.com/leanprover/lean4/tree/f054605aea4b840552cca2e725580bffd1e1b704/src/Lean/Compiler/LCNF | `NE-01`, `NE-02`, `NE-04` |
+| `LEAN-REL-4-33-1` | https://github.com/leanprover/lean4/releases/tag/v4.33.1 | `CF-14`, `VR-02`, `VR-05` |
+| `LAKE-4-33-1` | https://github.com/leanprover/lean4/tree/v4.33.1/src/lake | `VR-03`, `VR-17` |
+| `LEANCHECKER-4-33-1` | https://github.com/leanprover/lean4/tree/v4.33.1 | `VR-08` |
+| `PRINT-AXIOMS-4-33-1` | https://github.com/leanprover/lean4/tree/v4.33.1 (the #print axioms command); observed output fixtures under tests/golden/axiom-parser/ | `VR-09`, `VR-10` |
+| `LEAN-LCNF-4-33-1` | https://github.com/leanprover/lean4/tree/819816b2e0a3bf405af45ae5c7af2491d8f5bee6/src/Lean/Compiler/LCNF | `NE-01`, `NE-02`, `NE-04` |
 | `UOR-GNAF-1-DRAFT-2` | https://github.com/afflom/wasm-gemm-gnaf/blob/917306fd2b5a397ab02c5d38918fb8620fcc5ae0/authority/UOR-GNAF-v1-draft.2.md; the issuer publishes no upstream copy, so the citation is the downstream repository that vendors the draft and pins its SHA-256 in its authority manifest | `GN-02`, `GN-03`, `GN-04`, `GN-05`, `GN-06`, `GN-07`, `GN-08` |
 | `RUSTC-1-97-1` | https://github.com/rust-lang/rust/releases/tag/1.97.1 | `TC-07` |
 | `NIST-FIPS-180-4` | https://doi.org/10.6028/NIST.FIPS.180-4 | `SL-02`, `SL-06` |
@@ -702,12 +702,12 @@ Never re-derived, vendored, or gated on.
 
 | ID | Level | Claim |
 | --- | --- | --- |
-| `AUTH-LEAN-REL-4-32-1` | `some-true` | Lean 4.32.1 is the release tagged leanprover/lean4:v4.32.1, built from source commit f054605aea4b840552cca2e725580bffd1e1b704. |
-| `AUTH-LAKE-4-32-1` | `some-true` | Lake as distributed with Lean 4.32.1 resolves a pinned workspace environment through lake env without network access when every locked dependency is locally available. |
-| `AUTH-LEANCHECKER-4-32-1` | `some-true` | The leanchecker executable distributed with Lean 4.32.1 replays a compiled module's environment through the Lean kernel in a separate process and is not an independent proof checker. |
-| `AUTH-LEAN-LCNF-4-32-1` | `some-true` | Lean 4.32.1 translates a code-generating definition to base-phase LCNF with Lean.Compiler.LCNF.toDecl, the compiler's own input to its later passes, so every constant the compiled definition can depend on at run time is named by that translation or by a definition it names. |
+| `AUTH-LEAN-REL-4-33-1` | `some-true` | Lean 4.33.1 is the release tagged leanprover/lean4:v4.33.1, built from source commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6. |
+| `AUTH-LAKE-4-33-1` | `some-true` | Lake as distributed with Lean 4.33.1 resolves a pinned workspace environment through lake env without network access when every locked dependency is locally available. |
+| `AUTH-LEANCHECKER-4-33-1` | `some-true` | The leanchecker executable distributed with Lean 4.33.1 replays a compiled module's environment through the Lean kernel in a separate process and is not an independent proof checker. |
+| `AUTH-LEAN-LCNF-4-33-1` | `some-true` | Lean 4.33.1 translates a code-generating definition to base-phase LCNF with Lean.Compiler.LCNF.toDecl, the compiler's own input to its later passes, so every constant the compiled definition can depend on at run time is named by that translation or by a definition it names. |
 | `AUTH-RUSTC-1-97-1` | `some-true` | rustc 1.97.1 compiles a safe Rust 2021 crate with the semantics The Rust Reference states for that release: the checked integer methods return None exactly on overflow, the wrapping shifts mask their amount, integer division truncates toward zero, and a #![no_std] crate that declares no extern crate links neither alloc nor std. |
-| `AUTH-PRINT-AXIOMS-4-32-1` | `some-true` | Lean 4.32.1 reports the transitive axiom dependencies of a declaration through #print axioms in exactly the output forms recorded by the committed axiom-parser fixtures. |
+| `AUTH-PRINT-AXIOMS-4-33-1` | `some-true` | Lean 4.33.1 reports the transitive axiom dependencies of a declaration through #print axioms in exactly the output forms recorded by the committed axiom-parser fixtures. |
 | `AUTH-UOR-GNAF-1-DRAFT-2` | `some-true` | UOR-GNAF normative draft uor-gnaf/1-draft.2 requires an optimality claim's machine contract, accounting model, complete-system universe and its optimizer-independent completeness evidence, objective order, and claim class to be fixed before optimization, and treats UOR-NAF as informative only. |
 | `AUTH-NIST-FIPS-180-4` | `some-true` | SHA-256 is the function FIPS 180-4 specifies in its section 6.2, defined for messages of fewer than 2^64 bits. |
 | `AUTH-NIST-SHA256-EXAMPLES` | `some-true` | NIST's SHA-256 examples give ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad as the digest of abc and 248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1 as the digest of the 448-bit message abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq. |
