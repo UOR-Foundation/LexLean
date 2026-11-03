@@ -694,6 +694,7 @@ pub fn run(id: &str) {
         "a member's package does not build:\n{}",
         String::from_utf8_lossy(&build.stderr)
     );
+    let mut binaries = Vec::new();
     for (name, outcomes) in &expected {
         let binary = dir
             .path()
@@ -707,7 +708,7 @@ pub fn run(id: &str) {
             "{name}: {}",
             String::from_utf8_lossy(&ran.stderr)
         );
-        crate::stack_bounds::observe(&crate::stack_bounds::subject("stdlib", name), &binary);
+        binaries.push((name.clone(), binary));
         let stdout = String::from_utf8(ran.stdout).expect("utf8");
         let printed: Vec<Json> = stdout
             .lines()
@@ -773,6 +774,11 @@ pub fn run(id: &str) {
         missed.is_empty(),
         "planted defects the fixed vectors do not detect: {missed:?}"
     );
+    // The measured stack bound of every package comes last, so that a bound not yet
+    // committed hides none of the results above.
+    for (name, binary) in &binaries {
+        crate::stack_bounds::observe(&crate::stack_bounds::subject("stdlib", name), binary);
+    }
     // Under the pinned Lean, the production export certifies every member;
     // its packages are the committed ones and realize the programs the
     // differential ran.
