@@ -1983,14 +1983,14 @@ mod tests {
                         "lean",
                         Json::object(vec![(
                             "version_output",
-                            Json::Str("Lean (version 4.32.1, release)".to_owned()),
+                            Json::Str("Lean (version 4.33.1, release)".to_owned()),
                         )]),
                     ),
                     (
                         "lake",
                         Json::object(vec![(
                             "version_output",
-                            Json::Str("Lake version 5.0.0 (Lean version 4.32.1)".to_owned()),
+                            Json::Str("Lake version 5.0.0 (Lean version 4.33.1)".to_owned()),
                         )]),
                     ),
                 ]),
@@ -2119,21 +2119,21 @@ mod tests {
     fn attestation_facts_refuses_foreign_or_colliding_lean_versions() {
         for (tool, banner) in [
             ("lean", ""),
-            ("lean", "unrecognized banner 4.32.1"),
-            ("lean", "Lean (version 4.32.10, release)"),
-            ("lean", "Lean (version 4.32.1-rc1, release)"),
-            ("lean", "Lean (version 4.31.0, built with 4.32.1)"),
-            ("lean", "Lean (version 4.32.1, release"),
-            ("lean", "Lean (version 4.32.1, release)\nextra output"),
+            ("lean", "unrecognized banner 4.33.1"),
+            ("lean", "Lean (version 4.33.10, release)"),
+            ("lean", "Lean (version 4.33.1-rc1, release)"),
+            ("lean", "Lean (version 4.31.0, built with 4.33.1)"),
+            ("lean", "Lean (version 4.33.1, release"),
+            ("lean", "Lean (version 4.33.1, release)\nextra output"),
             ("lake", ""),
-            ("lake", "unrecognized banner 4.32.1"),
-            ("lake", "Lake version 5.0.0 (Lean version 4.32.10)"),
-            ("lake", "Lake version 5.0.0 (Lean version 4.32.1-rc1)"),
-            ("lake", "Lake version 4.32.1 (Lean version 4.31.0)"),
-            ("lake", "Lake version 5.0.0 (Lean version 4.32.1"),
+            ("lake", "unrecognized banner 4.33.1"),
+            ("lake", "Lake version 5.0.0 (Lean version 4.33.10)"),
+            ("lake", "Lake version 5.0.0 (Lean version 4.33.1-rc1)"),
+            ("lake", "Lake version 4.33.1 (Lean version 4.31.0)"),
+            ("lake", "Lake version 5.0.0 (Lean version 4.33.1"),
             (
                 "lake",
-                "Lake version 5.0.0 (Lean version 4.32.1)\nextra output",
+                "Lake version 5.0.0 (Lean version 4.33.1)\nextra output",
             ),
         ] {
             let bytes = edited_attestation(
@@ -2158,7 +2158,7 @@ mod tests {
             serde_json::json!({"lean": {"githash": crate::LEAN_GITHASH}}),
             serde_json::json!({"lean": {"version": 1, "githash": crate::LEAN_GITHASH}}),
             serde_json::json!({"lean": {"version": crate::LEAN_VERSION, "githash": 1}}),
-            serde_json::json!({"lean": {"version": "4.32.10", "githash": crate::LEAN_GITHASH}}),
+            serde_json::json!({"lean": {"version": "4.33.10", "githash": crate::LEAN_GITHASH}}),
             serde_json::json!({"lean": {"version": crate::LEAN_VERSION, "githash": "0".repeat(40)}}),
         ] {
             let bytes = serde_json::to_vec(&value).expect("JSON");

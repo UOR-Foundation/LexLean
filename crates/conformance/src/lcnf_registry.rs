@@ -32,7 +32,7 @@ pub const EXPORT_PATH: &str = "tests/lcnf/export.lean";
 pub const PROJECT_DIR: &str = "language/lcnf-1.2/tooling";
 
 /// The authority row of `model/authorities.toml` the module cites.
-pub const AUTHORITY: &str = "LEAN-LCNF-4-32-1";
+pub const AUTHORITY: &str = "LEAN-LCNF-4-33-1";
 
 /// The module name of the committed tooling project.
 pub const MODULE: &str = "Extract";
@@ -310,7 +310,7 @@ pub fn registry_bytes(rows: &[Json], plumbing: &[String]) -> Vec<u8> {
 /// The configuration of the committed project.
 #[must_use]
 pub fn config() -> String {
-    "spec = \"lexlean/project/1\"\nname = \"lcnf-tooling\"\nlanguage = \"1.2\"\nmodule_prefix = \"LcnfTooling\"\nsource_roots = [\"src\"]\nentrypoints = [\"src/Extract.lex.tex\"]\nbuild_root = \".lexlean\"\nlockfile = \"lexlean.lock\"\nlean_workspace = \".\"\nlean_toolchain = \"leanprover/lean4:v4.32.1\"\n\n[[lexicon_source]]\npackage = \"lexlean.std.nat\"\nkind = \"builtin\"\n\n[limits]\nmax_file_bytes = 16777216\nmax_total_source_bytes = 67108864\nmax_primitive_atoms = 2000000\nmax_token_lattice_edges = 4000000\nmax_parse_states = 4000000\nmax_ir_nodes = 2000000\nmax_scope_depth = 1024\nmax_import_depth = 128\nmax_diagnostics = 256\nmax_child_output_bytes = 16777216\nchild_timeout_ms = 300000\n".to_owned()
+    "spec = \"lexlean/project/1\"\nname = \"lcnf-tooling\"\nlanguage = \"1.2\"\nmodule_prefix = \"LcnfTooling\"\nsource_roots = [\"src\"]\nentrypoints = [\"src/Extract.lex.tex\"]\nbuild_root = \".lexlean\"\nlockfile = \"lexlean.lock\"\nlean_workspace = \".\"\nlean_toolchain = \"leanprover/lean4:v4.33.1\"\n\n[[lexicon_source]]\npackage = \"lexlean.std.nat\"\nkind = \"builtin\"\n\n[limits]\nmax_file_bytes = 16777216\nmax_total_source_bytes = 67108864\nmax_primitive_atoms = 2000000\nmax_token_lattice_edges = 4000000\nmax_parse_states = 4000000\nmax_ir_nodes = 2000000\nmax_scope_depth = 1024\nmax_import_depth = 128\nmax_diagnostics = 256\nmax_child_output_bytes = 16777216\nchild_timeout_ms = 300000\n".to_owned()
 }
 
 /// The Lake workspace a project names, which the compiler requires of every
@@ -321,7 +321,7 @@ const WORKSPACE: [(&str, &str); 3] = [
         "lake-manifest.json",
         "{\"version\": \"1.2.0\",\n \"packagesDir\": \".lake/packages\",\n \"packages\": [],\n \"name\": \"lcnf_tooling\",\n \"lakeDir\": \".lake\",\n \"fixedToolchain\": false}\n",
     ),
-    ("lean-toolchain", "leanprover/lean4:v4.32.1\n"),
+    ("lean-toolchain", "leanprover/lean4:v4.33.1\n"),
 ];
 
 /// The generated files of the committed project, by repository path.

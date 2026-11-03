@@ -62,7 +62,7 @@ Expanded, in the order they are most often broken:
 
 4. **A claim about a dependency belongs to that dependency.** Lean's
    guarantees are authority rows in `model/authorities.toml`, not LexLean
-   claims. Citing Lean 4.32.1 is not proving it; `leanchecker` is a
+   claims. Citing Lean 4.33.1 is not proving it; `leanchecker` is a
    same-kernel replay, never described as an independent checker (§22.4).
 
 ## Adding a capability

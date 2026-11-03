@@ -170,7 +170,7 @@ pub struct Authorities {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct AuthorityRow {
-    /// Stable identifier, e.g. `LEAN-REL-4-32-1`.
+    /// Stable identifier, e.g. `LEAN-REL-4-33-1`.
     pub id: String,
     /// Human-readable name.
     pub name: String,

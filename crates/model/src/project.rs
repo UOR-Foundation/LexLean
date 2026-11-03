@@ -323,7 +323,7 @@ impl Module {
 
 /// The name of the definition that holds the row `key`: the words of the key
 /// joined in camel case (`RP-01` is `rp01`, `LLB6001` is `llb6001`,
-/// `AUTH-LEAN-REL-4-32-1` is `authLeanRel4321`).
+/// `AUTH-LEAN-REL-4-33-1` is `authLeanRel4331`).
 fn definition_name(key: &str) -> String {
     let mut name = String::new();
     for (position, word) in key

@@ -4,7 +4,7 @@ Feature: verification
 
   @VR-01 @build
   Scenario: Verification runs every specified stage in order and exposes no stage-suppression option.
-    Given the committed nat-add-zero example project verified against the pinned Lean 4.32.1 toolchain
+    Given the committed nat-add-zero example project verified against the pinned Lean 4.33.1 toolchain
     When the published verified directory is inspected
     Then it holds probe/process.json, at least one audit/*.process.json, audit/output.txt, build-manifest.json and attestation.json
     And process/lean/ and process/leanchecker/ each hold at least one process record
@@ -14,7 +14,7 @@ Feature: verification
   Scenario: Lean, Lake, and leanchecker versions and executable hashes are checked and recorded before use.
     Given the attestation of the verified nat-add-zero example
     When the toolchain records for lean, lake and leanchecker are read
-    Then each carries a 64-hex executable_sha256 and lean and lake record a version_output containing 4.32.1
+    Then each carries a 64-hex executable_sha256 and lean and lake record a version_output containing 4.33.1
     And with ELAN_HOME pointing at a fake toolchain whose lean prints version 4.31.0
     Then lexlean verify fails preflight with LLV7001 before any module is compiled
 
@@ -107,14 +107,14 @@ Feature: verification
   @VR-15 @build
   Scenario: Any failed verification stage removes staging and produces no verified artifact or verified status.
     Given the example project with `\(n + 0 = n\)` changed to `\(n + 0 = 0\)` while keeping the reflexivity proof
-    When lexlean verify runs against the pinned Lean 4.32.1 toolchain and fails
+    When lexlean verify runs against the pinned Lean 4.33.1 toolchain and fails
     Then .lexlean/verified is absent or empty with no staging leftovers
     And for each of probe, module, replay, audit and policy failures the staging directory is removed and no verified artifact or verified status is produced
 
   @VR-16 @build
   Scenario: Axioms flowing from imported theorems remain subject to the generated declaration's policy.
     Given the em fixture whose theorem is proved by the imported `Classical.em` under \allowaxioms{Classical.choice}
-    When lexlean verify runs the axiom audit against the pinned Lean 4.32.1 toolchain
+    When lexlean verify runs the axiom audit against the pinned Lean 4.33.1 toolchain
     Then it fails with LLV7005
     And the rendered diagnostic reports the excess axioms propext and Quot.sound that flow from the imported theorem
 

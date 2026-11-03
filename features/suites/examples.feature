@@ -4,7 +4,7 @@ Feature: examples
 
   @EX-01 @build
   Scenario: The committed nat-add-zero example formats, locks, checks, builds, and verifies with an empty axiom set.
-    Given the committed nat-add-zero example project verified against the pinned Lean 4.32.1 toolchain
+    Given the committed nat-add-zero example project verified against the pinned Lean 4.33.1 toolchain
     When lexlean fmt --check, lexlean lock --check and lexlean check run on it
     Then all three succeed with the committed lock current
     And the attestation declarations row for LexLeanExample.Main.add_zero records an empty observed axiom set
@@ -12,7 +12,7 @@ Feature: examples
   @EX-02 @build
   Scenario: Changing the example proposition while retaining the old proof causes remapped Lean verification failure.
     Given the example project with `\(n + 0 = n\)` changed to `\(n + 0 = 0\)` while keeping the reflexivity proof
-    When lexlean verify runs against the pinned Lean 4.32.1 toolchain
+    When lexlean verify runs against the pinned Lean 4.33.1 toolchain
     Then it fails with LLV7002 remapped from the Lean elaboration error
     And .lexlean/verified is absent or empty
 
@@ -33,7 +33,7 @@ Feature: examples
   @EX-05 @build
   Scenario: An axiom-dependent fixture fails an insufficient declaration policy and records the observed excess.
     Given the em fixture proved by `Classical.em` under \allowaxioms{Classical.choice}
-    When lexlean verify runs against the pinned Lean 4.32.1 toolchain
+    When lexlean verify runs against the pinned Lean 4.33.1 toolchain
     Then it fails with LLV7005
     And the rendered diagnostic records the observed excess propext or Quot.sound
 

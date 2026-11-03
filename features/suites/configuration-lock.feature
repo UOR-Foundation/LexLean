@@ -98,7 +98,7 @@ Feature: configuration-lock
     And the twin Lake configuration fails with LLC0101 or LLV7007
 
   @CF-14 @build
-  Scenario: Language 1.0 accepts only leanprover/lean4:v4.32.1 for verification.
+  Scenario: Language 1.0 accepts only leanprover/lean4:v4.33.1 for verification.
     Given one example copy with `lean_toolchain = "leanprover/lean4:v4.31.0"` in lexlean.toml and another whose lean-toolchain file reads leanprover/lean4:v4.31.0
     When Engine::load runs on the first and lock --check runs on the second
     Then the foreign toolchain string fails configuration with LLC0101

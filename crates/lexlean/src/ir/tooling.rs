@@ -52,7 +52,7 @@ impl ToolingFailure {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ToolAuthority {
-    /// The authority row, `LEAN-LCNF-4-32-1`.
+    /// The authority row, `LEAN-LCNF-4-33-1`.
     pub id: String,
     /// The Lean version.
     pub lean_version: String,

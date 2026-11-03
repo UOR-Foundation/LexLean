@@ -132,7 +132,7 @@ fn write_staged(root: &std::path::Path, relative: &str, bytes: &[u8]) -> Result<
 }
 
 /// One parsed Lean message location: `path:line:col: severity: message`
-/// with its indented continuation lines. Lean 4.32.1 prints
+/// with its indented continuation lines. Lean 4.33.1 prints
 /// `path:line:col[-line:col]: severity[(name)]: message`
 /// (`Lean.mkErrorStringWithPos`): the end position appears only under
 /// `printMessageEndPos`, and named errors carry their error name in
