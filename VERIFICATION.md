@@ -18471,3 +18471,52 @@ verification timeout. Their former five-second override also timed out while
 compiling the unchanged Portable prerequisite on CI (5004 ms), before the
 operation under test. These cases establish correctness and mutation
 rejection, not a five-second performance guarantee.
+
+
+### PR #396 exact-head fixture and README evidence
+
+CI run `41702745654` on `84e38cb0230a1e0f52302f0d144ce10f2d5279c5`
+failed `conformance_ex_07` in production job `126151210575` on six
+`tests/negative/*/expected/command.json` files. The observed and committed
+JSON differ only in generated identities:
+
+| Fixture | Diagnostic | Committed identity or fragment | Observed identity or fragment |
+| --- | --- | --- | --- |
+| certificate-b-rejected | LLV7015 | fd7200c5e1004a64d9376653bca13538 | 4d1ff72de03b61f9cc75487781341a7c |
+| certificate-e-rejected | LLV7016 | fd7200c5e1004a64d9376653bca13538 | 4d1ff72de03b61f9cc75487781341a7c |
+| certificate-rejected | LLV7013 | fd7200c5e1004a64d9376653bca13538 | 4d1ff72de03b61f9cc75487781341a7c |
+| certificate-heartbeat-rejected | LLV7013 | 033f7c29c9ed4ff40703871375c8b84d | 2cfa96011d16069dc2d3bf86b08fe27a |
+| certificate-resource-exhausted | LLS8002 | 033f7c29c9ed4ff40703871375c8b84d | 2cfa96011d16069dc2d3bf86b08fe27a |
+| production-expectation-stale | LLC0204 | e8d05dd0be3a390ea5b6f8d3a5f92091bada1aeb6b66f9c07a4e0401fcbbbdab | dbb63e64005053e3d5be5f785f7317960e518ae3dce457390b51c004825f942a |
+
+Parsing the twelve log JSON objects and normalizing those identities makes
+each expected/observed pair equal, including diagnostic text, exit codes,
+artifacts and all other fields. ARM Linux, Windows and Apple ARM jobs each
+report only the last mismatch under their platform-independent assertions.
+These observations identify stale expectations; they do not record a writer
+run or a passing fixture gate. The official fixture writer remains required.
+No expected output was edited in this source-only follow-up for #396/#409.
+
+`just fixtures-write` invokes `cargo xtask check-fixtures --write`. This is
+the smallest supported writer invocation: `check_fixtures` discovers every
+`case.toml` under `tests/fixtures` and `tests/negative`, with no per-fixture
+selector, and calls `repo_conformance::fixtures::write` for each. The writer
+executes the CLI entry point and checks each case's prescribed exit before
+writing observed expected files. Use the pinned toolchain and an executable
+built from the admitted compiler inputs. Its repository root comes from
+`repo_model::repo_root` at compile time; copying a frozen executable to a new
+checkout does not retarget it by changing the working directory. The owning
+writer phase must record that source/root correspondence, executable hashes,
+fixture input preservation, actual writer result and reviewed output delta.
+Coordinate that phase after the active Host writer releases its shared lock.
+No Cargo command, build, writer or acceptance run was performed for this
+source-only correction.
+
+The same run's rest job `126151210865` fails `conformance_rp_11` because
+README's `SL-01` through `SL-08` range stops before the register's last
+`SL-12` row. RP-11 requires ranges to cover the whole registered prefix and
+also enforces registered references, unique claims and complete coverage.
+README now enumerates exactly `SL-01` through `SL-08` and `SL-12`; this line
+has no `SL-09`, `SL-10` or `SL-11` rows. The gate and capability description
+are unchanged. This textual correction has not been run through RP-11 or
+the full acceptance gate.
