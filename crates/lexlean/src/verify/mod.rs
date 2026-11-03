@@ -1138,8 +1138,24 @@ pub fn run_part(
             }
         }
         if let Some(semantic) = &document.semantic {
-            let normalized = &checked.modules[&module.module].normalized;
-            let ranges =
+            // The v2 renderer emits one Lean mapping per semantic declaration,
+            // ordered by generated offset. Reuse those checked source ranges
+            // instead of parsing the same normalized notation again.
+            let ranges: Vec<_> = if semantic.spec == "lexlean/semantic-module/2" {
+                module
+                    .map
+                    .mappings
+                    .iter()
+                    .filter(|mapping| {
+                        module.map.artifacts[mapping.artifact].kind
+                            == crate::artifact::source_map::ArtifactKind::Lean
+                            && module.map.nodes[mapping.node].kind == "semantic-declaration"
+                    })
+                    .filter_map(|mapping| mapping.src_range)
+                    .collect()
+            } else {
+                // Legacy v1 maps only the whole module, so keep its source lookup.
+                let normalized = &checked.modules[&module.module].normalized;
                 crate::backend::semantic::notation_declaration_spans(normalized, "semanticmodule")
                     .or_else(|| {
                         crate::backend::semantic::declaration_spans_in(
@@ -1147,7 +1163,8 @@ pub fn run_part(
                             "\\semanticdata{",
                         )
                     })
-                    .unwrap_or_default();
+                    .unwrap_or_default()
+            };
             for (declaration, range) in semantic.declarations.iter().zip(ranges) {
                 declaration_spans.insert(
                     format!("{}.{}", module.lean_module, declaration.name()),

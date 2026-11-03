@@ -825,8 +825,14 @@ jobs:
     # gates before 2026-10-20 took 74, 92, and 100 minutes on this leg; on
     # 2026-10-20 the 430 conformance tests passed in 99 minutes and the leg
     # was cancelled at the 120-minute limit it then had, during the last test
-    # binaries. Twice the slowest observed time leaves the limit a bound on a
-    # hung job, not a race with the runner's speed.
+    # binaries. At afe1a002 on 2026-11-02 the leg took 144 minutes (run
+    # 41478333299), 124.5 of them in the conformance binary. #235 moves SP-02's
+    # complete stress families and TC-03's seeded fuel sweep to the normative
+    # host, keeping fixed vectors here, and reads the shared declaration
+    # inventory once in TC-03 and TC-05. At 30612d265 on 2026-11-03 the
+    # post-change leg took 117m01s (run 41592896657), 100m21s in conformance.
+    # The 240-minute bound is about twice that observed runtime; no timeout
+    # reduction.
     timeout-minutes: 240
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

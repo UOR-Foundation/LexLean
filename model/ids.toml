@@ -575,7 +575,7 @@ statement = "Linked project result sets contain every selected module and import
 id = "SM-12"
 level = "build"
 suite = "semantic-ir"
-statement = "No semantic IR node can contain opaque prose, raw backend text, or an unknown extension."
+statement = "No semantic IR node can contain opaque prose, raw backend text, or an unknown extension. Semantic modules retain the 128-level JSON nesting limit and an over-deep list is refused with LLT4001 naming smaller definitions joined by prim append as the remedy."
 
 [[id]]
 id = "SM-13"
@@ -1703,7 +1703,7 @@ statement = "Every malformed target program or violated static rule fails closed
 id = "TC-03"
 level = "build"
 suite = "calculus"
-statement = "The calculus denotation is a kernel-checked LexLean definition that charges every evaluator operation, Lean's kernel reduces every kernel-reducible fixture to its expected outcome with its exact step count, no fixture program is stuck on its stated arguments or on seeded random well-typed arguments at any sampled fuel, and a wrong expected outcome is rejected by Lean."
+statement = "The calculus denotation is a kernel-checked LexLean definition that charges every evaluator operation, Lean's kernel reduces every kernel-reducible fixture to its expected outcome with its exact step count, no fixture program is stuck on its stated arguments or, on the normative Linux x86-64 host, on seeded random well-typed arguments at any sampled fuel, and a wrong expected outcome is rejected by Lean."
 
 [[id]]
 id = "TC-04"
@@ -1973,7 +1973,7 @@ statement = "Every production root of the committed examples lowers to a valid r
 id = "SP-02"
 level = "build"
 suite = "preservation"
-statement = "Every production root of examples/production, examples/production-coverage, examples/models, and examples/reasoning has a certificate whose root theorem, that the lowered program converges on the encoded arguments to the encoded source value or to overflow exactly where the width predicate fails, compiles under the pinned Lean, replays through leanchecker, and depends on exactly Classical.choice, Quot.sound, and propext; a certificate generated against a program with a planted branch, arithmetic, constructor, recursion, or literal mutation is rejected, and each such rejection lies in the declaration of the function mutated; and a root whose lowered program or certificates would exceed max_ir_nodes or max_file_bytes is refused with LLS8002 before the toolchain is touched: early, by a lower bound on each certificate from what the program states, the greatest of which is compared with the limit and none of which is above its certificate on the corpora, on families of programs that grow one dimension at a time, and on programs that grow several at once, so that a program whose certificates fit, a match on 240 constructors, a string of 450 000 characters, or both a wide match and a long string, is not refused by it (and a mixed shape that fits at its full scale of 256 is checked to fit and not edge-checked), and by a floor on certificate B from the entries its field reads print, which the lowering refuses before the Rust crate is built; during certificate B's derivation at 12 bytes a kernel node; and for every certificate by weighing the finished module in the authoring notation it is recorded in against max_file_bytes before any file is staged; the programs, crates, and certificates of all the roots of a project count together toward max_total_source_bytes, which a chain of roots calling one another passes before memory is exhausted; and a match on 180 constructors verifies through the whole pipeline."
+statement = "Every production root of examples/production, examples/production-coverage, examples/models, and examples/reasoning has a certificate whose root theorem, that the lowered program converges on the encoded arguments to the encoded source value or to overflow exactly where the width predicate fails, compiles under the pinned Lean, replays through leanchecker, and depends on exactly Classical.choice, Quot.sound, and propext; a certificate generated against a program with a planted branch, arithmetic, constructor, recursion, or literal mutation is rejected, and each such rejection lies in the declaration of the function mutated; and a root whose lowered program or certificates would exceed max_ir_nodes or max_file_bytes is refused with LLS8002 before the toolchain is touched: early, by a lower bound on each certificate from what the program states, the greatest of which is compared with the limit and none of which is above its certificate on the corpora, on families of programs that grow one dimension at a time, and on programs that grow several at once, so that a program whose certificates fit, a match on 240 constructors, a string of 450 000 characters, or both a wide match and a long string, is not refused by it (and a mixed shape that fits at its full scale of 256 is checked to fit and not edge-checked), and by a floor on certificate B from the entries its field reads print, which the lowering refuses before the Rust crate is built; during certificate B's derivation at 12 bytes a kernel node; and for every certificate by weighing the finished module in the authoring notation it is recorded in against max_file_bytes before any file is staged; the programs, crates, and certificates of all the roots of a project count together toward max_total_source_bytes, which a chain of roots calling one another passes before memory is exhausted; and a match on 180 constructors verifies through the whole pipeline; every supported host checks the certificate bounds on the committed corpora and fixed small vectors, and the complete scaling and seeded stress families run on the normative Linux x86-64 host."
 
 [[id]]
 id = "SP-03"
@@ -2507,7 +2507,7 @@ statement = "A language-1.2 semantic module written in the authoring notation bu
 id = "AU-03"
 level = "build"
 suite = "authoring"
-statement = "Malformed notation fails closed and never panics: an unclosed delimiter, a keyword used as a name, a literal that is not canonical, an unknown kind, and every single-token deletion, duplication, and replacement of a committed module fail with a registered code at a position in the notation or link to a module that decodes, and a numeral with a redundant leading zero is LLL1003 outside a string and is not one inside it."
+statement = "Malformed notation fails closed and never panics: an unclosed delimiter, a keyword used as a name, a literal that is not canonical, an unknown kind, a readable term or type nested beyond the notation bound, and every single-token deletion, duplication, and replacement of a committed module fail with a registered code at a position in the notation or link to a module that decodes, and a numeral with a redundant leading zero is LLL1003 outside a string and is not one inside it."
 
 [[id]]
 id = "AU-04"
