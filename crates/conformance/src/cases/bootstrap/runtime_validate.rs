@@ -411,6 +411,9 @@ fn enc_item(item: &Item) -> Value {
             vec![text(name), list(members.iter().map(enc_item).collect())],
         ),
         Item::InnerAttr(name, args) => i("IAttr", vec![text(name), texts(args)]),
+        // The Lean twin has no `cfg` item: only the driver module has one, and
+        // the twin is not run on it.
+        Item::Cfg(..) => panic!("the Lean twin of the validator has no cfg item"),
         Item::Enum(name, generics, derives, variants) => i(
             "IEnum",
             vec![
