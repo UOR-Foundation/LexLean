@@ -12275,6 +12275,38 @@ and fixtures. The three failing cases assert the count before their plants, so t
 run did not reach the plants on the new draws. A package that adds records should
 set these counts with its records in the tree, on the same commit.
 
+### Host-matrix cost and coverage (#235)
+
+The successful Intel macOS job 125390659100 of run 41478333299 at
+`afe1a002` ran from 2026-11-02 16:09:07 to 18:33:00 UTC (144 minutes).
+Its 468 conformance tests took 7,470.84 seconds. The last three cases were
+SP-02 (about 42 minutes), TC-03 (about 21 minutes) and TC-05 (about 18
+minutes), inferred from their 60-second notices and completion timestamps.
+
+SP-02 now runs its complete scaling grid, mixed-shape searches and seeded
+stress families only on the normative Linux x86-64 host. Every host retains
+the committed-corpus certificate bounds, negative limits and fixed let-chain
+and wide-match vectors. TC-03 keeps its committed fixture and generated
+module assertions on every host; its seeded argument/fuel sweep, with the
+same seed, fuel schedule and greater-than-10,000-run assertion, runs on the
+normative host. Each non-normative case reports the split. TC-03 and TC-05 render and parse their two shared fixture modules once,
+then check declaration membership through a set, retaining every assertion.
+
+The full normative coverage is unchanged. No cache, cross-run evidence,
+additional macOS shard, or acceptance recipe is introduced. The post-change
+Intel runtime must be measured from the PR's full gate before #235 is
+considered closed; no speedup is inferred from this host or from a timeout.
+
+Focused local validation on Linux x86-64: `validate-model` (468 IDs and 86
+codes), `validate-spec-links`, the five BDD meta-gate tests, formatting, and
+workspace/all-target/all-feature Clippy with warnings denied pass. The
+isolated `conformance_tc_05` reached its Lean-host check after all template
+and declaration-membership assertions in 4.53 seconds, then failed because
+this environment installs Lean under `ELAN_HOME` while the conformance
+helper requires `$HOME/.elan`. That is a blocked Lean-backed test, not a
+pass or an Intel timing measurement. The full normative cases and actual
+non-normative host paths remain for CI; neither helper nor home was changed.
+
 ## The canonical LaTeX of a tooling module is language-1.2 source (`BS-20`, #270)
 
 `bootstrap/src/ToolingAst.lex.tex` holds the closed schema of the tooling module
