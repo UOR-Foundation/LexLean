@@ -18422,7 +18422,7 @@ holds every order to the oracle's enumeration of them.
 
 ### Host interface consumer can fail
 
-`conformance_sl_09` first failed with `LLR3005`: `Consumer` imported `Host`,
+`conformance_sl_12` first failed with `LLR3005`: `Consumer` imported `Host`,
 which was not a project module. After adding `stdlib/src/Host.lex.tex`, the
 consumer initially constructed fourteen requests and fourteen events and
 matches both types exhaustively. The same test changes the spawn environment
@@ -18437,7 +18437,7 @@ consumer mirror. The independent consumer now constructs all fourteen
 requests, eight events, five records and both kind enums. It checks the
 fallible startup paths, optional file identity, child launch record, timed
 multi-child wait and byte exit output. The same environment-field mutation
-is rejected; `conformance_sl_09` passed in 3.99 seconds. This forward-port
+is rejected; `conformance_sl_12` passed in 3.99 seconds. This forward-port
 does not include #389's effect-eligibility implementation.
 
 ### bounded byte slice normalization can fail

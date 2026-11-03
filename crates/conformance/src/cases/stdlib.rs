@@ -677,7 +677,7 @@ pub fn run(id: &str) {
         "SL-07" => super::stdlib_identity::run(id),
         // §17.22: the compiler running the package reproduces it (#126 stage 2).
         "SL-08" => super::stdlib_fixed_point::run(id),
-        "SL-09" => {
+        "SL-12" => {
             let project = P::stdlib();
             let consumer = std::fs::read_to_string(
                 support::repo_root().join("tests/host-interface/Consumer.lex.tex"),
