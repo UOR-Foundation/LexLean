@@ -267,3 +267,12 @@ Feature: semantic-ir
     Then the generated Lean names Nat.land, Nat.lor, Nat.xor, Nat.shiftLeft and Nat.shiftRight and no fixed-width runtime helper
     And the definitions and the theorems verify with exactly the axioms their policies state, and the false equation is rejected by Lean
     And each planted project is refused naming the misuse
+
+  @SM-39 @build
+  Scenario: Language-1.2 decimal formatting verifies with no axioms at fixed widths and exactly propext at Int, while decimal parsing preserves canonical spelling and range refusals.
+    Given a language-1.2 notation project with fixed-width formatters and callers with no axioms member, an Int formatter and caller with exactly propext, and decimal parsers with their existing exact policy
+    When the project is built and verified, its per-declaration observations are read, and authored closed decision proofs check numeric boundaries and parsing inputs
+    Then every formatter and caller observes exactly its stated policy and every boundary formats to its canonical decimal string
+    And canonical parses succeed while noncanonical spelling and out-of-range values are refused
+    And an Int formatter with an empty policy is refused with LLV7005
+    And a mutated authored boundary proof is rejected with LLV7002

@@ -18419,3 +18419,44 @@ oracle's composed label is the SHA-256 of the canonical form the package
 writes, which the first run of the case established; the package computes the
 smallest of the 24 quarter orders of E7 as the quarters sorted, and the corpus
 holds every order to the oracle's enumeration of them.
+
+## SM-39 R3 source preparation (#434, formatting slice of #381)
+
+This is source preparation, not an observed failing test or an implemented
+runtime change. Scoped issue #434 reserves SM-39 for language-1.2 decimal
+formatting isolation; #381 remains open for its other design requests. The
+source row in `spec/src/IdsSM.lex.tex`, normative Chapter17 paragraph, exact
+scenario, named `conformance_sm_39` case, and native notation fixture precede
+implementation. The fixture declares all eight fixed-width formatters and
+transitive callers with no axioms member, Int formatting with exact `propext`,
+and parsers with their existing exact three-axiom policy. Authored closed
+proofs state numeric boundary strings and canonicality/range parsing controls.
+
+Source review corrected three defects in the preparation: observations now
+come from the actual verification attestation's per-declaration records rather
+than parsing an aggregated runtime audit against a partial list; output checks
+are authored proofs in the same verified project rather than a second copied
+Lean module whose imports would be unresolved; and a mutated authored boundary
+proposition must be rejected with `LLV7002`, rather than merely printing a false
+Boolean. An Int empty-policy mutation must be refused with `LLV7005`.
+
+Execution depends on the coordinated integration of #396's closed-decision
+`decide +kernel` source (reviewed head
+`84e38cb0230a1e0f52302f0d144ce10f2d5279c5`). The base renders ordinary `decide`,
+whose string-primitive unfolding limitation is recorded in §17.17. Once that
+source base and the Host validation lock are available, the R3 witness must
+be an actual fixed-width `LLV7005` on the unchanged Decimal-coupled runtime.
+An unrelated generation failure or unsupported proof does not count. Only
+then may implementation change the native Portable, Fixed and RustLemmas
+graphs and production certificate constructor, preserving shared parsing
+instance nodes and frozen language-1.0/1.1 bytes.
+
+Measured here: the existing pinned Rust 1.97.1 `rustfmt` formatted and checked
+only the three authored Rust files, with module traversal disabled; static
+checks confirmed identical row/scenario statements, 27 fixture definitions,
+18 authored theorems, the unique boundary mutation marker, and whitespace.
+No Cargo command, compilation, conformance test, Lean verification, model or
+projection writer, runtime regeneration, identity update, full gate or CI ran.
+Generated model/SPEC projections deliberately remain untouched. The source
+requires the coordinated #396/#405/#433 integration and official writer/gate
+sequence; no additional identity wave or passing verification is claimed.
