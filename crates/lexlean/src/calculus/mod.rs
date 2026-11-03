@@ -19,6 +19,7 @@ pub mod library;
 pub mod realization;
 pub mod rust;
 pub mod rust_library;
+pub mod sites;
 pub mod term;
 
 use std::collections::BTreeMap;

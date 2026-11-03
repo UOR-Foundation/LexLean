@@ -86,6 +86,11 @@ fn conformance_rp_16() {
 }
 
 #[test]
+fn conformance_rp_18() {
+    repo_conformance::cases::run("RP-18");
+}
+
+#[test]
 fn conformance_cf_01() {
     repo_conformance::cases::run("CF-01");
 }
@@ -1226,6 +1231,11 @@ fn conformance_cl_23() {
 }
 
 #[test]
+fn conformance_cl_24() {
+    repo_conformance::cases::run("CL-24");
+}
+
+#[test]
 fn conformance_se_01() {
     repo_conformance::cases::run("SE-01");
 }
@@ -1521,6 +1531,21 @@ fn conformance_rb_17() {
 }
 
 #[test]
+fn conformance_rb_19() {
+    repo_conformance::cases::run("RB-19");
+}
+
+#[test]
+fn conformance_rb_20() {
+    repo_conformance::cases::run("RB-20");
+}
+
+#[test]
+fn conformance_rb_21() {
+    repo_conformance::cases::run("RB-21");
+}
+
+#[test]
 fn conformance_gn_01() {
     repo_conformance::cases::run("GN-01");
 }
@@ -1733,6 +1758,31 @@ fn conformance_sp_22() {
 #[test]
 fn conformance_sp_25() {
     repo_conformance::cases::run("SP-25");
+}
+
+#[test]
+fn conformance_sp_26() {
+    repo_conformance::cases::run("SP-26");
+}
+
+#[test]
+fn conformance_sp_27() {
+    repo_conformance::cases::run("SP-27");
+}
+
+#[test]
+fn conformance_sp_28() {
+    repo_conformance::cases::run("SP-28");
+}
+
+#[test]
+fn conformance_sp_29() {
+    repo_conformance::cases::run("SP-29");
+}
+
+#[test]
+fn conformance_sp_30() {
+    repo_conformance::cases::run("SP-30");
 }
 
 #[test]
@@ -2136,6 +2186,21 @@ fn conformance_sl_04() {
 }
 
 #[test]
+fn conformance_sl_05() {
+    repo_conformance::cases::run("SL-05");
+}
+
+#[test]
+fn conformance_sl_09() {
+    repo_conformance::cases::run("SL-09");
+}
+
+#[test]
+fn conformance_sl_10() {
+    repo_conformance::cases::run("SL-10");
+}
+
+#[test]
 fn conformance_bs_01() {
     repo_conformance::cases::run("BS-01");
 }
@@ -2158,6 +2223,61 @@ fn conformance_bs_04() {
 #[test]
 fn conformance_bs_05() {
     repo_conformance::cases::run("BS-05");
+}
+
+#[test]
+fn conformance_bs_06() {
+    repo_conformance::cases::run("BS-06");
+}
+
+#[test]
+fn conformance_bs_07() {
+    repo_conformance::cases::run("BS-07");
+}
+
+#[test]
+fn conformance_bs_08() {
+    repo_conformance::cases::run("BS-08");
+}
+
+#[test]
+fn conformance_bs_09() {
+    repo_conformance::cases::run("BS-09");
+}
+
+#[test]
+fn conformance_bs_10() {
+    repo_conformance::cases::run("BS-10");
+}
+
+#[test]
+fn conformance_bs_11() {
+    repo_conformance::cases::run("BS-11");
+}
+
+#[test]
+fn conformance_bs_12() {
+    repo_conformance::cases::run("BS-12");
+}
+
+#[test]
+fn conformance_bs_13() {
+    repo_conformance::cases::run("BS-13");
+}
+
+#[test]
+fn conformance_bs_14() {
+    repo_conformance::cases::run("BS-14");
+}
+
+#[test]
+fn conformance_bs_15() {
+    repo_conformance::cases::run("BS-15");
+}
+
+#[test]
+fn conformance_bs_20() {
+    repo_conformance::cases::run("BS-20");
 }
 
 #[test]

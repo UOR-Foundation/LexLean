@@ -37,12 +37,16 @@
 # A pull request that is a draft runs the `rest` leg and nothing else, because
 # a head pushed again before it is final should cost one job and not the whole
 # gate; it is a development signal and the pull request is not mergeable on it.
-# Marking it ready, which the `pull_request` types below include, a push to a
-# ready pull request, a request, and a push to `main` run every job. One push
+# So does a ready pull request whose base is neither `main` nor `release/*`: a
+# stacked pull request cannot land on a line, and the pull request that carries
+# the stack into one runs the whole gate. Marking a draft ready, which the
+# `pull_request` types below include, a push to a ready pull request into
+# `main` or a release line, a request, and a push to `main` run every job. One push
 # to `main` runs none: a merge whose tree is the tree of its second parent, a
 # pull request head that already contained `main`, when the whole gate passed
 # on that head as a pull request run; the tree is the one that run verified,
-# and the plan records the run. `release.yml` runs `just vv` whole regardless.
+# and the plan records the run. `release.yml` runs no recipe: its evidence is
+# the run of this workflow that verified the tagged commit's tree (§30.3).
 #
 # The gate runs on the standard GitHub-hosted runner (SPEC.md §9.4); no larger
 # runner is part of it. The `examples` leg and every Atlas shard verify at the
@@ -89,8 +93,9 @@ env:
 
 jobs:
   # What this run is (SPEC.md §9.4), decided from the event before any job that
-  # costs a runner starts: a draft pull request runs the `rest` leg and nothing
-  # else; a ready pull request, a request, and a push to `main` run the whole
+  # costs a runner starts: a draft pull request, or a ready one whose base is
+  # neither `main` nor `release/*`, runs the `rest` leg and nothing else; a ready
+  # pull request into one of those, a request, and a push to `main` run the whole
   # gate, except a push that merges a head whose tree it equals and whose whole
   # gate passed (it runs nothing and names the run). `.github/ci-plan.sh` is the
   # decision, and RP-14 runs it against planted events.
@@ -115,6 +120,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           EVENT: ${{ github.event_name }}
           DRAFT: ${{ github.event.pull_request.draft }}
+          BASE: ${{ github.event.pull_request.base.ref }}
           REPO: ${{ github.repository }}
         run: .github/ci-plan.sh
 
@@ -819,8 +825,14 @@ jobs:
     # gates before 2026-10-20 took 74, 92, and 100 minutes on this leg; on
     # 2026-10-20 the 430 conformance tests passed in 99 minutes and the leg
     # was cancelled at the 120-minute limit it then had, during the last test
-    # binaries. Twice the slowest observed time leaves the limit a bound on a
-    # hung job, not a race with the runner's speed.
+    # binaries. At afe1a002 on 2026-11-02 the leg took 144 minutes (run
+    # 41478333299), 124.5 of them in the conformance binary. #235 moves SP-02's
+    # complete stress families and TC-03's seeded fuel sweep to the normative
+    # host, keeping fixed vectors here, and reads the shared declaration
+    # inventory once in TC-03 and TC-05. The post-change Intel measurement is
+    # recorded with the PR's full-gate results before closing #235. This limit
+    # stays until that evidence supports lowering it: a timeout is a bound on
+    # a hung job, not a performance result.
     timeout-minutes: 240
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

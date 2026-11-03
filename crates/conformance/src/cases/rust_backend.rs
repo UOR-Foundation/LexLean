@@ -1510,8 +1510,14 @@ pub fn run(id: &str) {
         "RB-16" => super::rust_runtime::run(id),
         // §17.16: the core runtime's support items are the definitions of `RuntimeSupport`.
         "RB-17" => super::rust_support::run(id),
+        // §17.16: the constructs of the heap runtime.
+        "RB-19" => super::rust_heap_syntax::run(id),
+        // §17.17: the std runtime is the base and the definitions of `RustStd`.
+        "RB-20" => super::rust_std::run(id),
+        // §17.17: the runtime text is printed from the modules, never held.
+        "RB-21" => super::rust_runtime_text::run(id),
         "RB-09" => {
-            use lexlean::calculus::rust::runtime::{core, STD};
+            use lexlean::calculus::rust::runtime::{core, std};
             use lexlean::calculus::rust_library::{
                 audit, audit_runtime, Kind, Primitive, Role, LIBRARY, PRIMITIVES,
             };
@@ -1524,7 +1530,11 @@ pub fn run(id: &str) {
                 primitives > 0 && LIBRARY.len() > primitives && PRIMITIVES.len() > 1,
                 "an empty table refuses nothing"
             );
-            let runtime = format!("{}{STD}", core().expect("the core runtime"));
+            let runtime = format!(
+                "{}{}",
+                core().expect("the core runtime"),
+                std().expect("the std runtime")
+            );
             let refused = |text: &str,
                            library: &[(Kind, &str, Role)],
                            primitives: &[Primitive],

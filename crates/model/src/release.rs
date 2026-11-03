@@ -283,6 +283,31 @@ fn sha256_hex(bytes: &[u8]) -> String {
     h.iter().map(|word| format!("{word:08x}")).collect()
 }
 
+/// The CI-evidence criterion of §30.3 over the text of `release/vv-evidence.txt`:
+/// it records the gate passing, in the line `just vv` prints at its end, and
+/// names a commit. `.github/release-gate.sh` writes the file from the gate run
+/// of the tagged commit, and the test that runs the script against planted
+/// runs holds its output to this reading, so the release job cannot refuse
+/// evidence the rehearsals accepted.
+///
+/// # Errors
+///
+/// Every way the text falls short, each a detail the release report names.
+pub fn ci_evidence(text: &str) -> Result<(), Vec<String>> {
+    let mut details = Vec::new();
+    if !text.contains("vv: the acceptance gate passed") {
+        details.push("release/vv-evidence.txt does not record the gate passing".to_owned());
+    }
+    if !text.split_whitespace().any(|token| is_hex(token, 40)) {
+        details.push("release/vv-evidence.txt names no commit".to_owned());
+    }
+    if details.is_empty() {
+        Ok(())
+    } else {
+        Err(details)
+    }
+}
+
 /// Check the complete release criterion. Returns every unmet criterion;
 /// an empty error list never escapes (that would be `Ok`).
 ///
@@ -450,17 +475,8 @@ pub fn check(root: &Path, hidden_tests: &BTreeSet<String>) -> Result<(), Vec<Str
     // CI evidence: the gate passed on a named commit.
     match read("release/vv-evidence.txt") {
         Ok(text) => {
-            if !text.contains("vv: the acceptance gate passed") {
-                fail(
-                    "ci-evidence",
-                    "release/vv-evidence.txt does not record the gate passing".to_owned(),
-                );
-            }
-            if !text.split_whitespace().any(|token| is_hex(token, 40)) {
-                fail(
-                    "ci-evidence",
-                    "release/vv-evidence.txt names no commit".to_owned(),
-                );
+            for detail in ci_evidence(&text).err().into_iter().flatten() {
+                fail("ci-evidence", detail);
             }
         }
         Err(error) => fail("ci-evidence", format!("release/vv-evidence.txt: {error}")),
@@ -563,6 +579,28 @@ pub fn check(root: &Path, hidden_tests: &BTreeSet<String>) -> Result<(), Vec<Str
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_ci_evidence_criterion_reads_the_gate_line_and_a_commit() {
+        let commit = "aa6593e026d92f4696fe970715c81528ad2c37da";
+        let good =
+            format!("commit {commit}\ngate: every job passed\nvv: the acceptance gate passed\n");
+        assert_eq!(ci_evidence(&good), Ok(()));
+        // The legs' lines are not the gate's: a file of transcripts that
+        // never says the whole gate passed is refused, as the tag's run was.
+        let legs = format!("commit {commit}\n[1.0] vv part: every recipe passed\n");
+        assert_eq!(
+            ci_evidence(&legs),
+            Err(vec![
+                "release/vv-evidence.txt does not record the gate passing".to_owned()
+            ])
+        );
+        let unnamed = "vv: the acceptance gate passed\n";
+        assert_eq!(
+            ci_evidence(unnamed),
+            Err(vec!["release/vv-evidence.txt names no commit".to_owned()])
+        );
+    }
 
     #[test]
     fn the_local_sha256_agrees_with_the_test_vectors() {

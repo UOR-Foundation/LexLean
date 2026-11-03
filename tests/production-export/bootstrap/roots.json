@@ -1,6 +1,22 @@
 {
   "roots": [
     {
+      "name": "apply_moves",
+      "root": "LexLeanBoot.RustMoves.applyMoves",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "assemble_items",
+      "root": "LexLeanBoot.RustAssemble.assembleItems",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "audit_tokens",
       "root": "LexLeanBoot.TokenAudit.auditTokens",
       "targets": [
@@ -11,6 +27,14 @@
     {
       "name": "check_arguments",
       "root": "LexLeanBoot.CalculusCheck.checkArguments",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "check_manifest",
+      "root": "LexLeanBoot.RustPackage.checkManifest",
       "targets": [
         "rust-std"
       ],
@@ -33,6 +57,38 @@
       "version": "1.0.0"
     },
     {
+      "name": "dead_functions",
+      "root": "LexLeanBoot.RustLower.deadFunctions",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "fallible_functions",
+      "root": "LexLeanBoot.RustLower.fallibleFunctions",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "fold_bodies",
+      "root": "LexLeanBoot.RustBodies.foldBodies",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "function_shells",
+      "root": "LexLeanBoot.RustAssemble.functionShells",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "is_closed_lean_name",
       "root": "LexLeanBoot.AxiomOutput.isClosedLeanName",
       "targets": [
@@ -49,8 +105,64 @@
       "version": "1.0.0"
     },
     {
+      "name": "loop_function",
+      "root": "LexLeanBoot.RustLoops.loopFunction",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "lower_bodies",
+      "root": "LexLeanBoot.RustBodies.lowerBodies",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "lower_frame",
+      "root": "LexLeanBoot.RustBodies.lowerFrame",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "lower_types",
+      "root": "LexLeanBoot.RustLower.lowerTypes",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "lower_value_at",
+      "root": "LexLeanBoot.RustTerms.lowerValueAt",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "parse_audit_output",
       "root": "LexLeanBoot.AxiomOutput.parseAuditOutput",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "print_crate",
+      "root": "LexLeanBoot.RustPrint.printCrate",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "print_expr",
+      "root": "LexLeanBoot.RustPrint.printExpr",
       "targets": [
         "rust-std"
       ],
@@ -65,6 +177,22 @@
       "version": "1.0.0"
     },
     {
+      "name": "render_package",
+      "root": "LexLeanBoot.RustPackage.renderPackage",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "render_tooling_latex",
+      "root": "LexLeanBoot.ToolingLatex.renderToolingLatex",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "scan_source",
       "root": "LexLeanBoot.PrimitiveScan.scanSource",
       "targets": [
@@ -73,8 +201,40 @@
       "version": "1.0.0"
     },
     {
+      "name": "site_trees",
+      "root": "LexLeanBoot.CalculusCheck.siteTrees",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "succeed_bodies",
+      "root": "LexLeanBoot.RustSucceed.succeedBodies",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "use_trees",
+      "root": "LexLeanBoot.CalculusCheck.useTrees",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "validate_crate",
       "root": "LexLeanBoot.RustValidate.validateCrate",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "validate_runtime",
+      "root": "LexLeanBoot.RuntimeValidate.validateRuntime",
       "targets": [
         "rust-std"
       ],

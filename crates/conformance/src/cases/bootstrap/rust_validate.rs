@@ -25,24 +25,24 @@ use crate::support;
 use lexlean::calculus::rust::package::Passing;
 use lexlean::calculus::{self as target};
 
-fn nat(number: u64) -> Value {
+pub(super) fn nat(number: u64) -> Value {
     Value::Nat {
         value: number.to_string(),
     }
 }
 
-fn adt(constructor: u64, fields: Vec<Value>) -> Value {
+pub(super) fn adt(constructor: u64, fields: Vec<Value>) -> Value {
     Value::Adt {
         constructor,
         fields,
     }
 }
 
-fn boolean(value: bool) -> Value {
+pub(super) fn boolean(value: bool) -> Value {
     Value::Bool { value }
 }
 
-fn kind_index(kind: IntKind) -> u64 {
+pub(super) fn kind_index(kind: IntKind) -> u64 {
     match kind {
         IntKind::U8 => 0,
         IntKind::U16 => 1,
@@ -55,13 +55,13 @@ fn kind_index(kind: IntKind) -> u64 {
     }
 }
 
-fn enc_kind(kind: IntKind) -> Value {
+pub(super) fn enc_kind(kind: IntKind) -> Value {
     adt(kind_index(kind), Vec::new())
 }
 
 /// A list as a chain of its sort's own `Nil` and `Cons` constructors: the
 /// module authors no list of a recursive sort (`#208`).
-fn chain(nil: u64, cons: u64, items: Vec<Value>) -> Value {
+pub(super) fn chain(nil: u64, cons: u64, items: Vec<Value>) -> Value {
     items
         .into_iter()
         .rev()
@@ -72,7 +72,7 @@ fn chain(nil: u64, cons: u64, items: Vec<Value>) -> Value {
 
 /// `Id`: local, holder, operand, callee, boxed, part, capture, param,
 /// function, export.
-fn enc_ident(ident: &Ident) -> Value {
+pub(super) fn enc_ident(ident: &Ident) -> Value {
     match ident {
         Ident::Local(n) => adt(0, vec![nat(*n)]),
         Ident::Holder(n) => adt(1, vec![nat(*n)]),
@@ -88,21 +88,21 @@ fn enc_ident(ident: &Ident) -> Value {
 }
 
 /// `Origin`, a structure: the element and the width.
-fn enc_origin(origin: &Origin) -> Value {
+pub(super) fn enc_origin(origin: &Origin) -> Value {
     adt(
         0,
         vec![text(&origin.element), option(origin.width.map(enc_kind))],
     )
 }
 
-fn enc_types(types: &[Type]) -> Value {
+pub(super) fn enc_types(types: &[Type]) -> Value {
     chain(5, 6, types.iter().map(enc_type).collect())
 }
 
 /// `Ty`: a leaf (unit, bool, nat, int, ordering, str, bytes, overflow, i128), fixed, a unary
 /// (option, list, rc, fallible, ref), a binary (result, pair), a name (adt,
 /// fn), then the chain's nil and cons.
-fn enc_type(ty: &Type) -> Value {
+pub(super) fn enc_type(ty: &Type) -> Value {
     let leaf = |kind: u64| adt(0, vec![adt(kind, Vec::new())]);
     let unary = |kind: u64, inner: &Type| adt(2, vec![adt(kind, Vec::new()), enc_type(inner)]);
     let binary = |kind: u64, left: &Type, right: &Type| {
@@ -132,6 +132,7 @@ fn enc_type(ty: &Type) -> Value {
         Type::Pair(left, right) => binary(1, left, right),
         Type::Adt(n) => named(0, *n),
         Type::Fn(n) => named(1, *n),
+        Type::Param(n) => named(2, *n),
     }
 }
 
@@ -152,7 +153,7 @@ fn enc_lit(literal: &Lit) -> Value {
 }
 
 /// `Con`: none, some, ok, err, adt, closure, cons, nil.
-fn enc_ctor(ctor: &Ctor) -> Value {
+pub(super) fn enc_ctor(ctor: &Ctor) -> Value {
     match ctor {
         Ctor::None(ty) => adt(0, vec![enc_type(ty)]),
         Ctor::Some => adt(1, Vec::new()),
@@ -197,7 +198,7 @@ fn enc_pat(pat: &Pat) -> Value {
 
 /// `Rt`, a structure: the variant of `runtime::Item` in its declaration
 /// order, and the width of a fixed-width one.
-fn enc_item(item: Item) -> Value {
+pub(super) fn enc_item(item: Item) -> Value {
     let family =
         |index: u64, kind: Option<IntKind>| adt(0, vec![nat(index), option(kind.map(enc_kind))]);
     match item {
@@ -264,7 +265,7 @@ fn enc_callee(callee: &Callee) -> Value {
 }
 
 /// `Cap`: copy, clone, unbox, unit.
-fn enc_capture(read: CaptureRead) -> Value {
+pub(super) fn enc_capture(read: CaptureRead) -> Value {
     adt(
         match read {
             CaptureRead::Copy => 0,
@@ -416,7 +417,7 @@ fn enc_expr(expr: &Expr) -> Value {
 }
 
 /// `Row`: nil, cons (the variant number, its field types as a `Ty` chain).
-fn enc_row(variants: &[(u64, Vec<Type>)]) -> Value {
+pub(super) fn enc_row(variants: &[(u64, Vec<Type>)]) -> Value {
     variants
         .iter()
         .rev()
@@ -426,7 +427,7 @@ fn enc_row(variants: &[(u64, Vec<Type>)]) -> Value {
 }
 
 /// `Dis`: nil, cons (function, captures, the function's failure, the rest).
-fn enc_dispatch(arms: &[Dispatch]) -> Value {
+pub(super) fn enc_dispatch(arms: &[Dispatch]) -> Value {
     arms.iter().rev().fold(adt(0, Vec::new()), |rest, arm| {
         adt(
             1,
@@ -523,7 +524,7 @@ use serde_json::Value as Json;
 
 /// What the oracle makes of a crate, as the root returns it: `ok ()` or the
 /// reason's text.
-fn verdict(outcome: Result<(), String>) -> Json {
+pub(super) fn verdict(outcome: Result<(), String>) -> Json {
     serde_json::to_value(match outcome {
         Ok(()) => Value::Ok {
             value: Box::new(Value::Unit),
@@ -536,12 +537,12 @@ fn verdict(outcome: Result<(), String>) -> Json {
 }
 
 /// A run of `validateCrate`.
-fn validate_run(krate: &Crate) -> Run {
+pub(super) fn validate_run(krate: &Crate) -> Run {
     (vec![enc_crate(krate)], verdict(validate::validate(krate)))
 }
 
 /// A run of `correspondCrate`: the crate and the elements the program uses.
-fn correspond_run(krate: &Crate, elements: &BTreeSet<String>) -> Run {
+pub(super) fn correspond_run(krate: &Crate, elements: &BTreeSet<String>) -> Run {
     (
         vec![
             enc_crate(krate),
@@ -554,11 +555,11 @@ fn correspond_run(krate: &Crate, elements: &BTreeSet<String>) -> Run {
 // ----------------------------------------------------------------- vectors
 
 /// A committed target program and where it was read from.
-struct Source {
-    program: Program,
+pub(super) struct Source {
+    pub(super) program: Program,
 }
 
-fn walk(dir: &std::path::Path, found: &mut Vec<std::path::PathBuf>) {
+pub(super) fn walk(dir: &std::path::Path, found: &mut Vec<std::path::PathBuf>) {
     let Ok(entries) = std::fs::read_dir(dir) else {
         return;
     };
@@ -583,7 +584,7 @@ fn walk(dir: &std::path::Path, found: &mut Vec<std::path::PathBuf>) {
 /// Every committed target program the Rust renderer is shown: the program of
 /// each package manifest under `compiler/rust` and `tests/production-export`
 /// and each fixture of `compiler/fixtures`, deduplicated by canonical bytes.
-fn committed() -> (Vec<Source>, usize, usize, usize) {
+pub(super) fn committed() -> (Vec<Source>, usize, usize, usize) {
     let root = support::repo_root();
     let root = root.as_std_path();
     let mut files = Vec::new();
@@ -635,12 +636,12 @@ fn committed() -> (Vec<Source>, usize, usize, usize) {
 
 /// A crate the oracle lowers from a committed program, with the elements the
 /// program uses, and the program it came from.
-struct Rendered {
-    krate: Crate,
-    elements: BTreeSet<String>,
+pub(super) struct Rendered {
+    pub(super) krate: Crate,
+    pub(super) elements: BTreeSet<String>,
 }
 
-fn rendered(sources: &[Source]) -> Vec<Rendered> {
+pub(super) fn rendered(sources: &[Source]) -> Vec<Rendered> {
     let mut out = Vec::new();
     let mut seen = BTreeSet::new();
     for source in sources {
@@ -908,7 +909,7 @@ fn edit_at(krate: &mut Crate, class: Class, index: usize, edit: &mut dyn FnMut(N
 
 /// What a mutation draws on: the identifiers, expressions, and numbers of the
 /// crate it mutates, and the elements of the correspondence table.
-struct Pool {
+pub(super) struct Pool {
     idents: Vec<Ident>,
     exprs: Vec<Expr>,
     types: Vec<Type>,
@@ -916,7 +917,7 @@ struct Pool {
     elements: Vec<String>,
 }
 
-fn pool_of(krate: &Crate) -> Pool {
+pub(super) fn pool_of(krate: &Crate) -> Pool {
     let mut copy = krate.clone();
     let mut idents = Vec::new();
     let mut exprs = Vec::new();
@@ -1553,7 +1554,7 @@ fn mutate_once(krate: &mut Crate, seeded: &mut Seeded, pool: &Pool) -> bool {
 }
 
 /// A mutant of `krate`: one to three mutations.
-fn mutant(krate: &Crate, seeded: &mut Seeded, pool: &Pool) -> Crate {
+pub(super) fn mutant(krate: &Crate, seeded: &mut Seeded, pool: &Pool) -> Crate {
     let mut out = krate.clone();
     let rounds = 1 + usize::from(seeded.chance(30)) + usize::from(seeded.chance(10));
     for _ in 0..rounds {
@@ -1582,7 +1583,6 @@ const REACHABLE: &[&str] = &[
     "type-fn-undeclared",
     "heap-string-literal",
     "heap-byte-literal",
-    "heap-list-match",
     "heap-boxed-read",
     "heap-box",
     "heap-runtime",
@@ -1623,11 +1623,17 @@ const REACHABLE: &[&str] = &[
     "width",
 ];
 
-/// The refusals only the hand-built crates reach: the committed crates hold no
+/// The refusals the hand-built crates hold: the committed crates hold no
 /// machine call and no overflow value, so their mutants do not either (the
 /// rule vectors are drawn until [`REACHABLE`] is, and these are counted
-/// beside them).
-const HAND_BUILT: &[&str] = &["machine-arity", "overflow-stray", "no-row"];
+/// beside them). A list match under `rust-core` is one too: the mutants reach
+/// it only on some draws, so a pool that grows can lose it.
+const HAND_BUILT: &[&str] = &[
+    "machine-arity",
+    "overflow-stray",
+    "no-row",
+    "heap-list-match",
+];
 
 fn classify(message: &str) -> &'static str {
     let has = |needle: &str| message.contains(needle);
@@ -1778,13 +1784,13 @@ fn uncovered(counts: &BTreeMap<&'static str, usize>) -> Vec<&'static str> {
 // ----------------------------------------------------------------- corpora
 
 /// The expression count of a crate: its size for the evaluator's budget.
-fn weight(krate: &Crate) -> usize {
+pub(super) fn weight(krate: &Crate) -> usize {
     let mut copy = krate.clone();
     sites(&mut copy, Class::Expr)
 }
 
 /// The crates with at most `limit` expressions: the evaluator's share.
-fn small(all: &[Rendered], limit: usize) -> Vec<&Rendered> {
+pub(super) fn small(all: &[Rendered], limit: usize) -> Vec<&Rendered> {
     all.iter()
         .filter(|rendered| weight(&rendered.krate) <= limit)
         .collect()
@@ -1883,10 +1889,25 @@ fn rule_vectors(bases: &[&Rendered], each: usize) -> (Vec<Run>, Vec<Run>) {
     (validated, corresponded)
 }
 
+/// A crate by hand for the list match under `rust-core`, on a parameter of a
+/// type that is not on the heap, so that no heap type is refused before it.
+fn list_match_crates() -> Vec<Crate> {
+    vec![Crate {
+        profile: lexlean::calculus::rust::Profile::Core,
+        items: vec![ItemDef::Function {
+            name: Ident::Function(0),
+            parameters: vec![(Pat::Bind(Ident::Param(0)), Type::Nat)],
+            result: Type::Unit,
+            body: Block::of(Expr::Uncons(Ident::Param(0))),
+            at: Origin::of("function"),
+        }],
+    }]
+}
+
 /// Crates by hand for the merge of moved sets at a branch: a name moved on
 /// one arm of a match, or one branch of an `if`, and used after it. The
 /// mutants reach this rarely, so these make it a vector.
-fn branch_crates() -> Vec<Crate> {
+pub(super) fn branch_crates() -> Vec<Crate> {
     let at = || Origin::of("expr:match");
     let local = |n: u64| Ident::Local(n);
     let unit = || Expr::Lit(Lit::Unit, Origin::of("value:unit"));
@@ -2009,7 +2030,7 @@ fn branch_crates() -> Vec<Crate> {
 /// have, the overflow value outside an `Err` (refused) and in one (accepted).
 /// No lowering emits any of them, so correspondence refuses each of the calls
 /// as a construct with no row.
-fn machine_crates() -> Vec<Crate> {
+pub(super) fn machine_crates() -> Vec<Crate> {
     let at = Origin::of;
     let function = |body: Expr| Crate {
         profile: lexlean::calculus::rust::Profile::Core,
@@ -2088,7 +2109,7 @@ fn machine_crates() -> Vec<Crate> {
     crates
 }
 
-fn elements_of(krate: &Crate) -> BTreeSet<String> {
+pub(super) fn elements_of(krate: &Crate) -> BTreeSet<String> {
     let (instances, types) = validate::instances(krate);
     let mut out: BTreeSet<String> = instances
         .iter()
@@ -2113,7 +2134,7 @@ fn elements_of(krate: &Crate) -> BTreeSet<String> {
 // The crates are listed in the order the rules are described, each one pushed beside
 // the reason it is there.
 #[allow(clippy::too_many_lines, clippy::vec_init_then_push)]
-fn loop_crates() -> Vec<Crate> {
+pub(super) fn loop_crates() -> Vec<Crate> {
     let at = Origin::of;
     let local = Ident::Local;
     let read = |ident: Ident| Expr::Move(ident, at("read"));
@@ -2535,8 +2556,8 @@ fn merged(parts: &[&[Run]]) -> Vec<Run> {
     parts.iter().flat_map(|part| part.iter().cloned()).collect()
 }
 
-/// The nodes of a value: what a literal of it costs rustc.
-fn value_nodes(value: &Value) -> usize {
+/// The semantic nodes of a value, used by the performance measurements.
+pub(super) fn value_nodes(value: &Value) -> usize {
     1 + match value {
         Value::Adt { fields, .. } => fields.iter().map(value_nodes).sum(),
         Value::List { items } => items.iter().map(value_nodes).sum(),
@@ -2546,18 +2567,66 @@ fn value_nodes(value: &Value) -> usize {
     }
 }
 
-/// The nodes of the arguments one harness binary may hold. A crate is data
-/// of thousands of nodes, which rustc compiles as one literal each, so the
-/// runs are spread over several harness binaries of one compiled package.
-const HARNESS_NODES: usize = 60_000;
+/// The Rust literal work of a value. Bytes expand to one array element per
+/// octet, although they are one semantic node; counting only semantic nodes
+/// puts megabytes of byte literals into one function and exhausts rustc's
+/// MIR/drop-scope processing on Windows (BS-15).
+fn harness_literal_weight(value: &Value) -> usize {
+    1 + match value {
+        Value::Bytes { hex } => hex.len() / 2,
+        Value::Adt { fields, .. } => fields.iter().map(harness_literal_weight).sum(),
+        Value::List { items } => items.iter().map(harness_literal_weight).sum(),
+        Value::Pair { left, right } => harness_literal_weight(left) + harness_literal_weight(right),
+        Value::Some { value } | Value::Ok { value } | Value::Error { value } => {
+            harness_literal_weight(value)
+        }
+        _ => 0,
+    }
+}
+
+/// The literal work of the arguments one harness binary may hold. A single
+/// run beyond the budget stays intact, so partitioning never drops or changes
+/// an input; all other chunks fit the bound.
+pub(super) const HARNESS_NODES: usize = 60_000;
+
+fn harness_chunks(runs: &[Run], budget: usize) -> Vec<Vec<&Run>> {
+    let mut chunks: Vec<Vec<&Run>> = Vec::new();
+    let mut weight = 0;
+    for run in runs {
+        let next: usize = run.0.iter().map(harness_literal_weight).sum();
+        if chunks.is_empty() || weight + next > budget {
+            chunks.push(Vec::new());
+            weight = 0;
+        }
+        weight += next;
+        chunks.last_mut().expect("a chunk").push(run);
+    }
+    chunks
+}
+
+/// One outcome line, whatever its depth: a program's typing tree nests with
+/// the length of its chains, past the reader's default limit of 128 levels,
+/// and the reader's recursion is the host stack's, as everywhere a value of a
+/// recursive type is read.
+fn parse_deep(line: &str) -> Result<Json, serde_json::Error> {
+    let mut reader = serde_json::Deserializer::from_str(line);
+    reader.disable_recursion_limit();
+    let value = serde::Deserialize::deserialize(&mut reader)?;
+    reader.end()?;
+    Ok(value)
+}
 
 /// The rendered `rust-std` packages of the roots, compiled by the pinned
 /// rustc, run on `runs` of each root: one outcome per run, each equal to the
 /// oracle's. Returns the number of runs.
-fn rustc_differential(roots: &[(&str, &Lowered, &[Run])], label: &str) -> usize {
+pub(super) fn rustc_differential(
+    id: &str,
+    roots: &[(&str, &Lowered, &[Run])],
+    label: &str,
+) -> usize {
     let started = std::time::Instant::now();
     let dir = tempfile::Builder::new()
-        .prefix("lexlean-bootstrap-validate-")
+        .prefix(&format!("lexlean-bootstrap-{}-", id.to_ascii_lowercase()))
         .tempdir()
         .expect("tempdir");
     let mut members = Vec::new();
@@ -2583,17 +2652,7 @@ fn rustc_differential(roots: &[(&str, &Lowered, &[Run])], label: &str) -> usize 
             .types
             .len();
         let passing = vec![Passing::Own; arity];
-        let mut chunks: Vec<Vec<&Run>> = Vec::new();
-        let mut weight = 0;
-        for run in *runs {
-            let nodes: usize = run.0.iter().map(value_nodes).sum();
-            if chunks.is_empty() || weight + nodes > HARNESS_NODES {
-                chunks.push(Vec::new());
-                weight = 0;
-            }
-            weight += nodes;
-            chunks.last_mut().expect("a chunk").push(run);
-        }
+        let chunks = harness_chunks(runs, HARNESS_NODES);
         for (number, chunk) in chunks.iter().enumerate() {
             let arguments: Vec<Vec<Value>> = chunk.iter().map(|run| run.0.clone()).collect();
             let source = rust_harness::render_calls(
@@ -2652,11 +2711,12 @@ fn rustc_differential(roots: &[(&str, &Lowered, &[Run])], label: &str) -> usize 
         String::from_utf8_lossy(&build.stderr)
     );
     eprintln!(
-        "BS-05: {label}: rustc built the packages and {} harness binaries ({:?})",
+        "{id}: {label}: rustc built the packages and {} harness binaries ({:?})",
         expected.len(),
         started.elapsed()
     );
     let mut total = 0;
+    let mut bounds: Vec<(String, std::path::PathBuf)> = Vec::new();
     for (binary, package, outcomes) in &expected {
         let path = dir
             .path()
@@ -2670,17 +2730,13 @@ fn rustc_differential(roots: &[(&str, &Lowered, &[Run])], label: &str) -> usize 
             "{binary}: {}",
             String::from_utf8_lossy(&ran.stderr)
         );
-        // PD-08: both roots recurse with the depth of the crate, so the
-        // harness that ran them records (measuring) or demands (otherwise)
-        // their stack bound; the row keeps the largest need of the corpora.
-        crate::stack_bounds::observe(&crate::stack_bounds::subject("bootstrap", package), &path);
+        bounds.push((package.clone(), path.clone()));
         let stdout = String::from_utf8(ran.stdout).expect("utf8");
         let printed: Vec<Json> = stdout
             .lines()
             .filter(|line| !line.starts_with("work "))
             .map(|line| {
-                serde_json::from_str(line)
-                    .unwrap_or_else(|error| panic!("{binary}: {error}: {line}"))
+                parse_deep(line).unwrap_or_else(|error| panic!("{binary}: {error}: {line}"))
             })
             .collect();
         assert_eq!(
@@ -2705,9 +2761,17 @@ fn rustc_differential(roots: &[(&str, &Lowered, &[Run])], label: &str) -> usize 
         total += outcomes.len();
     }
     eprintln!(
-        "BS-05: {label}: {total} rustc runs agree with the oracle ({:?})",
+        "{id}: {label}: {total} rustc runs agree with the oracle ({:?})",
         started.elapsed()
     );
+    // PD-08: the roots recurse with the depth of the crate, so the harness
+    // that ran them records (measuring) or demands (otherwise) their stack
+    // bound; the row keeps the largest need of the corpora. The bounds are
+    // taken after every outcome is compared, so a package without a recorded
+    // bound never hides a disagreement.
+    for (package, path) in &bounds {
+        crate::stack_bounds::observe(&crate::stack_bounds::subject("bootstrap", package), path);
+    }
     total
 }
 
@@ -2867,13 +2931,24 @@ const PLANTS: [super::Plant; 20] = [
 
 /// The roots' eligibility reports and declared effects.
 fn eligibility(project: &support::P) {
+    eligibility_of(project, "RustValidate", MODULE, &ROOTS);
+}
+
+/// The eligibility reports and declared effects of the production roots of
+/// one module of the bootstrap project, in order.
+pub(super) fn eligibility_of(
+    project: &support::P,
+    file: &str,
+    module: &str,
+    roots: &[(&str, &[&str])],
+) {
     let built = project.build_ok();
     let build_id = built.build_id.expect("built");
     let report: Json = serde_json::from_slice(
         &std::fs::read(
             project
                 .build_dir(&build_id)
-                .join("production/LexLeanBoot/RustValidate.eligibility.json")
+                .join(format!("production/LexLeanBoot/{file}.eligibility.json"))
                 .as_std_path(),
         )
         .expect("the eligibility report"),
@@ -2885,20 +2960,20 @@ fn eligibility(project: &support::P) {
             .iter()
             .map(|row| row["root"].as_str().expect("root").to_owned())
             .collect::<Vec<_>>(),
-        ROOTS
+        roots
             .iter()
-            .map(|(root, _)| format!("{MODULE}.{root}"))
+            .map(|(root, _)| format!("{module}.{root}"))
             .collect::<Vec<_>>(),
-        "the two roots are the module's production roots, in order"
+        "the roots are the module's production roots, in order"
     );
-    for (row, (root, effects)) in reported.iter().zip(ROOTS) {
+    for (row, (root, effects)) in reported.iter().zip(roots) {
         let declared: Vec<&str> = row["declared_effects"]
             .as_array()
             .expect("declared effects")
             .iter()
             .map(|effect| effect.as_str().expect("an effect"))
             .collect();
-        assert_eq!(declared, effects, "{root}: the declared effects");
+        assert_eq!(declared, *effects, "{root}: the declared effects");
         let targets = row["targets"].as_array().expect("targets");
         assert_eq!(targets.len(), 1, "{root}: one target");
         let target = &targets[0];
@@ -2911,7 +2986,7 @@ fn eligibility(project: &support::P) {
             .map(|effect| effect["effect"].as_str().expect("an effect"))
             .collect();
         assert_eq!(
-            realized, effects,
+            realized, *effects,
             "{root}: the declaration admits exactly the realized effects"
         );
     }
@@ -2930,24 +3005,25 @@ const RULES_EACH: usize = 3;
 // The counts the specification states, over the committed tree: SPEC.md
 // §17.23, the register statement of BS-05, its scenario, and VERIFICATION.md
 // restate them, and the case fails when the tree no longer gives them.
-const COMMITTED_MANIFESTS: usize = 250;
+const COMMITTED_MANIFESTS: usize = 283;
 const COMMITTED_FIXTURES: usize = 122;
-const COMMITTED_PROGRAMS: usize = 167;
-const COMMITTED_CRATES: usize = 226;
-const RULE_VALIDATE_RUNS: usize = 132;
+const COMMITTED_PROGRAMS: usize = 200;
+const COMMITTED_CRATES: usize = 259;
+const RULE_VALIDATE_RUNS: usize = 129;
 const RULE_CORRESPOND_RUNS: usize = 12;
 const BRANCH_CRATES: usize = 17;
 const LOOP_CRATES: usize = 34;
-const MACHINE_CRATES: usize = 26 + 3 + 1 + 2 + 2 + 3;
-const VECTORS_VALIDATE: usize = 446;
-const REFUSED_VALIDATE: usize = 195;
-const VECTORS_CORRESPOND: usize = 309;
-const REFUSED_CORRESPOND: usize = 82;
-const EVALUATOR_CRATES: usize = 200;
-const EVALUATOR_VALIDATE: usize = 420;
-const EVALUATOR_CORRESPOND: usize = 283;
-const SEEDED_REFUSED_VALIDATE: usize = 271;
-const SEEDED_REFUSED_CORRESPOND: usize = 244;
+const LIST_MATCH_CRATES: usize = 1;
+const MACHINE_CRATES: usize = 44 + 3 + 1 + 2 + 2 + 3;
+const VECTORS_VALIDATE: usize = 495;
+const REFUSED_VALIDATE: usize = 211;
+const VECTORS_CORRESPOND: usize = 360;
+const REFUSED_CORRESPOND: usize = 100;
+const EVALUATOR_CRATES: usize = 208;
+const EVALUATOR_VALIDATE: usize = 444;
+const EVALUATOR_CORRESPOND: usize = 309;
+const SEEDED_REFUSED_VALIDATE: usize = 291;
+const SEEDED_REFUSED_CORRESPOND: usize = 252;
 
 pub(super) fn case() {
     let started = std::time::Instant::now();
@@ -2981,6 +3057,7 @@ pub(super) fn case() {
         .into_iter()
         .chain(loop_crates())
         .chain(machine_crates())
+        .chain(list_match_crates())
         .collect();
     assert_eq!(
         (rule_validate.len(), rule_correspond.len()),
@@ -2991,9 +3068,15 @@ pub(super) fn case() {
         (
             branch_crates().len(),
             loop_crates().len(),
-            machine_crates().len()
+            machine_crates().len(),
+            list_match_crates().len()
         ),
-        (BRANCH_CRATES, LOOP_CRATES, MACHINE_CRATES),
+        (
+            BRANCH_CRATES,
+            LOOP_CRATES,
+            MACHINE_CRATES,
+            LIST_MATCH_CRATES
+        ),
         "the hand-built crates"
     );
     rule_validate.extend(by_hand.iter().map(validate_run));
@@ -3042,31 +3125,8 @@ pub(super) fn case() {
         ),
         "the vectors of validateCrate and correspondCrate, and the refused among them"
     );
-    eprintln!(
-        "BS-05: the vectors are the counted ones ({:?})",
-        started.elapsed()
-    );
-    let checked = support::checked_project(&project);
-    let validate_root = super::lower(&checked, &project, MODULE, "validateCrate");
-    let correspond_root = super::lower(&checked, &project, MODULE, "correspondCrate");
-    // On every host: the rendered rust-std packages of both roots, compiled
-    // by that host's pinned rustc, agree with the oracle on the vectors.
-    rustc_differential(
-        &[
-            ("validateCrate", &validate_root, &vectors_validate),
-            ("correspondCrate", &correspond_root, &vectors_correspond),
-        ],
-        "vectors",
-    );
-    if !support::normative_host() {
-        eprintln!(
-            "BS-05: platform-bound host: the evaluator, the seeded corpora, and the planted defects run on the normative host ({:?})",
-            started.elapsed()
-        );
-        return;
-    }
-    // On the normative host: the evaluator agrees on the vectors within its
-    // cap and on the seeded mutants; the larger corpus runs under rustc.
+    // The corpora of the normative host are made here, so that every count
+    // the row states is asserted before the first leg runs.
     let within: Vec<usize> = all
         .iter()
         .enumerate()
@@ -3083,18 +3143,6 @@ pub(super) fn case() {
         .map(|index| accepted_correspond[*index].clone())
         .chain(rule_correspond.iter().cloned())
         .collect();
-    for (root, low, runs) in [
-        ("validateCrate", &validate_root, &evaluator_validate),
-        ("correspondCrate", &correspond_root, &evaluator_correspond),
-    ]
-    .into_iter()
-    {
-        let disagreements = super::evaluate(low, runs, 5);
-        assert!(
-            disagreements.is_empty(),
-            "{root}: the evaluator and the Rust validator disagree on the vectors: {disagreements:?}"
-        );
-    }
     assert_eq!(
         (
             within.len(),
@@ -3104,24 +3152,8 @@ pub(super) fn case() {
         (EVALUATOR_CRATES, EVALUATOR_VALIDATE, EVALUATOR_CORRESPOND),
         "the crates of at most {EVALUATOR_CAP} expressions and the vectors the evaluator is given"
     );
-    eprintln!(
-        "BS-05: the evaluator agrees on the vectors ({:?})",
-        started.elapsed()
-    );
     let mut seeded = Seeded(0x0B55_0005);
     let (seeded_validate, seeded_correspond) = mutants(&bases, &mut seeded, EVALUATOR_MUTANTS);
-    for (root, low, runs) in [
-        ("validateCrate", &validate_root, &seeded_validate),
-        ("correspondCrate", &correspond_root, &seeded_correspond),
-    ]
-    .into_iter()
-    {
-        let disagreements = super::evaluate(low, runs, 5);
-        assert!(
-            disagreements.is_empty(),
-            "{root}: the evaluator and the Rust validator disagree on the seeded mutants: {disagreements:?}"
-        );
-    }
     assert_eq!(
         (
             seeded_validate.len(),
@@ -3138,12 +3170,67 @@ pub(super) fn case() {
         "the seeded mutants the evaluator is given, and the refused among them"
     );
     eprintln!(
+        "BS-05: the vectors are the counted ones ({:?})",
+        started.elapsed()
+    );
+    let checked = support::checked_project(&project);
+    let validate_root = super::lower(&checked, &project, MODULE, "validateCrate");
+    let correspond_root = super::lower(&checked, &project, MODULE, "correspondCrate");
+    // On every host: the rendered rust-std packages of both roots, compiled
+    // by that host's pinned rustc, agree with the oracle on the vectors.
+    rustc_differential(
+        "BS-05",
+        &[
+            ("validateCrate", &validate_root, &vectors_validate),
+            ("correspondCrate", &correspond_root, &vectors_correspond),
+        ],
+        "vectors",
+    );
+    if !support::normative_host() {
+        eprintln!(
+            "BS-05: platform-bound host: the evaluator, the seeded corpora, and the planted defects run on the normative host ({:?})",
+            started.elapsed()
+        );
+        return;
+    }
+    // On the normative host: the evaluator agrees on the vectors within its
+    // cap and on the seeded mutants; the larger corpus runs under rustc.
+    for (root, low, runs) in [
+        ("validateCrate", &validate_root, &evaluator_validate),
+        ("correspondCrate", &correspond_root, &evaluator_correspond),
+    ]
+    .into_iter()
+    {
+        let disagreements = super::evaluate(low, runs, 5);
+        assert!(
+            disagreements.is_empty(),
+            "{root}: the evaluator and the Rust validator disagree on the vectors: {disagreements:?}"
+        );
+    }
+    eprintln!(
+        "BS-05: the evaluator agrees on the vectors ({:?})",
+        started.elapsed()
+    );
+    for (root, low, runs) in [
+        ("validateCrate", &validate_root, &seeded_validate),
+        ("correspondCrate", &correspond_root, &seeded_correspond),
+    ]
+    .into_iter()
+    {
+        let disagreements = super::evaluate(low, runs, 5);
+        assert!(
+            disagreements.is_empty(),
+            "{root}: the evaluator and the Rust validator disagree on the seeded mutants: {disagreements:?}"
+        );
+    }
+    eprintln!(
         "BS-05: the evaluator agrees on the seeded mutants ({:?})",
         started.elapsed()
     );
     let mut large = Seeded(0x0B55_0055);
     let (large_validate, large_correspond) = mutants(&bases, &mut large, RUSTC_MUTANTS);
     rustc_differential(
+        "BS-05",
         &[
             ("validateCrate", &validate_root, &large_validate),
             ("correspondCrate", &correspond_root, &large_correspond),
@@ -3236,4 +3323,38 @@ pub(super) fn case() {
     }
     assert_eq!(realized, ROOTS.len(), "one certified package per root");
     eprintln!("BS-05: passed in {:?}", started.elapsed());
+}
+
+#[cfg(test)]
+mod harness_budget_tests {
+    use super::*;
+
+    #[test]
+    fn byte_payloads_bound_chunks_without_changing_the_corpus() {
+        let payload = Value::Bytes {
+            hex: "ab".repeat(16_384),
+        };
+        let nested = Value::Some {
+            value: Box::new(payload.clone()),
+        };
+        assert_eq!(value_nodes(&nested), 2, "semantic counts stay unchanged");
+        assert_eq!(harness_literal_weight(&nested), 16_386);
+        let runs: Vec<Run> = (0..8)
+            .map(|index| (vec![nested.clone()], serde_json::json!({"index": index})))
+            .collect();
+        let chunks = harness_chunks(&runs, HARNESS_NODES);
+        assert_eq!(chunks.iter().map(Vec::len).collect::<Vec<_>>(), [3, 3, 2]);
+        assert_eq!(
+            chunks.into_iter().flatten().collect::<Vec<_>>(),
+            runs.iter().collect::<Vec<_>>(),
+            "every input and expected outcome stays in order"
+        );
+        assert!(harness_chunks(&[], HARNESS_NODES).is_empty());
+        let oversized = harness_chunks(&runs[..1], 1);
+        assert_eq!(
+            oversized,
+            vec![vec![&runs[0]]],
+            "an oversized run is kept whole"
+        );
+    }
 }

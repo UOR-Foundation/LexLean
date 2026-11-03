@@ -261,6 +261,65 @@
 'LexLeanRuntime.subtract' does not depend on any axioms
 'LexLeanRuntime.utf8Decode' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanRuntime.utf8Encode' does not depend on any axioms
+'LexLeanStd.Buffer.Buffer' does not depend on any axioms
+'LexLeanStd.Buffer.byteStep' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Buffer.decimal' does not depend on any axioms
+'LexLeanStd.Buffer.digit' does not depend on any axioms
+'LexLeanStd.Buffer.exceeded' does not depend on any axioms
+'LexLeanStd.Buffer.finish' does not depend on any axioms
+'LexLeanStd.Buffer.joinAll' does not depend on any axioms
+'LexLeanStd.Buffer.length' does not depend on any axioms
+'LexLeanStd.Buffer.new' does not depend on any axioms
+'LexLeanStd.Buffer.pairStep' does not depend on any axioms
+'LexLeanStd.Buffer.pairUp' does not depend on any axioms
+'LexLeanStd.Buffer.refuse' does not depend on any axioms
+'LexLeanStd.Buffer.seal' does not depend on any axioms
+'LexLeanStd.Buffer.writeAll' does not depend on any axioms
+'LexLeanStd.Buffer.writeByte' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Buffer.writeBytes' does not depend on any axioms
+'LexLeanStd.Buffer.writeDecimal' does not depend on any axioms
+'LexLeanStd.Buffer.writeEach' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Buffer.writeNumbers' does not depend on any axioms
+'LexLeanStd.Buffer.zeroStep' does not depend on any axioms
+'LexLeanStd.Numeral.accumulate' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.byteValues' does not depend on any axioms
+'LexLeanStd.Numeral.canonicalDecimal' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.decimal' does not depend on any axioms
+'LexLeanStd.Numeral.decimalDigits' does not depend on any axioms
+'LexLeanStd.Numeral.decimalEnd' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.decimalValue' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.digitStep' does not depend on any axioms
+'LexLeanStd.Numeral.digits' does not depend on any axioms
+'LexLeanStd.Numeral.hex' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.hexByte' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.hexDigits' does not depend on any axioms
+'LexLeanStd.Numeral.hexNat' does not depend on any axioms
+'LexLeanStd.Numeral.hexStep' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.hexValue' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.isDecimal' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.isHex' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.pairStep' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.parseDecimal' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.parseHex' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.pick' does not depend on any axioms
+'LexLeanStd.Order.ascendStep' depends on axioms: [propext]
+'LexLeanStd.Order.dedupStep' does not depend on any axioms
+'LexLeanStd.Order.insertSorted' depends on axioms: [propext]
+'LexLeanStd.Order.insertStep' depends on axioms: [propext]
+'LexLeanStd.Order.isAscending' depends on axioms: [propext]
+'LexLeanStd.Order.keysOf' does not depend on any axioms
+'LexLeanStd.Order.lessBytes' depends on axioms: [propext]
+'LexLeanStd.Order.mergeEntries' depends on axioms: [propext]
+'LexLeanStd.Order.mergePass' depends on axioms: [propext]
+'LexLeanStd.Order.mergeStep' depends on axioms: [propext]
+'LexLeanStd.Order.passStep' depends on axioms: [propext]
+'LexLeanStd.Order.reverseList' does not depend on any axioms
+'LexLeanStd.Order.sortByKey' depends on axioms: [propext]
+'LexLeanStd.Order.sortBytes' depends on axioms: [propext]
+'LexLeanStd.Order.sortEntries' depends on axioms: [propext]
+'LexLeanStd.Order.sortStep' depends on axioms: [propext]
+'LexLeanStd.Order.sortedSet' depends on axioms: [propext]
+'LexLeanStd.Order.withUnit' does not depend on any axioms
 'LexLeanStd.Sha256.Digest' does not depend on any axioms
 'LexLeanStd.Sha256.Schedule' does not depend on any axioms
 'LexLeanStd.Sha256.Working' does not depend on any axioms

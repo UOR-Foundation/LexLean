@@ -125,7 +125,8 @@ impl Checker<'_> {
             | Type::Str
             | Type::Bytes
             | Type::Adt(..)
-            | Type::Fn(..) => Ok(()),
+            | Type::Fn(..)
+            | Type::Param(..) => Ok(()),
         }
     }
 
@@ -932,6 +933,7 @@ impl Found {
             Type::Fixed(_) => "fixed",
             Type::Overflow => "overflow",
             Type::I128 => "i128",
+            Type::Param(_) => "param",
             Type::Ordering => "ordering",
             Type::Str => "string",
             Type::Bytes => "bytes",
@@ -967,7 +969,8 @@ impl Found {
             | Type::Str
             | Type::Bytes
             | Type::Adt(..)
-            | Type::Fn(..) => {}
+            | Type::Fn(..)
+            | Type::Param(..) => {}
         }
     }
 

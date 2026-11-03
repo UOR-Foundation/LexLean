@@ -429,6 +429,7 @@ impl<'a> Reader<'a> {
                 take(0)?;
                 Type::I128
             }
+            "param" => Type::Param(self.nat(&take(1)?[0], "a type parameter number")?),
             other => return fail(format!("`RustType.{other}` is not a type")),
         })
     }
@@ -829,6 +830,38 @@ pub fn decode(source: &str) -> Result<Source, String> {
         }
         Ok(Source { core })
     })
+}
+
+/// The path of the std module in the embedded tree.
+pub const STD_MODULE_PATH: &str = "language/rust-runtime-1.2/RustStd.lex.tex";
+
+/// The std crate a `RustStd` module defines.
+///
+/// # Errors
+///
+/// The first rule the module breaks: it is not a semantic module, it defines
+/// a name twice or one with parameters, it does not define `stdCrate` as a std
+/// crate, or a term is not a constructor of `RustSyntax` with its arity.
+pub fn decode_std(source: &str) -> Result<Crate, String> {
+    with_reader(STD_MODULE_PATH, source, |reader| {
+        let Some(std) = reader.definitions.get("stdCrate") else {
+            return fail("does not define `stdCrate`");
+        };
+        let krate = reader.krate(std)?;
+        if krate.profile != Profile::Std {
+            return fail("`stdCrate` is not a std crate");
+        }
+        Ok(krate)
+    })
+}
+
+/// The text of the embedded std module.
+///
+/// # Errors
+///
+/// The module is not in the embedded tree, or is not UTF-8.
+pub fn embedded_std() -> Result<&'static str, String> {
+    embedded_file(STD_MODULE_PATH)
 }
 
 /// Read the data module `source` held at `path` with `read`, every refusal

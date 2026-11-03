@@ -27,10 +27,109 @@
     "hints": ""
   },
   {
+    "part": "bdd-bootstrap-print",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-print",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-runtime",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-runtime",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-tooling-latex",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-tooling-latex",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
     "part": "bdd-bootstrap-validate",
     "recipes": "bdd",
     "examples_part": "",
     "bdd_part": "bootstrap-validate",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-lower",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-lower",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-moves",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-moves",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-bodies",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-bodies",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-succeed",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-succeed",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-loops",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-loops",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-assemble",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-assemble",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-package",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-package",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-terms",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-terms",
     "width": "",
     "memory_kib": "",
     "hints": ""
@@ -58,6 +157,24 @@
     "recipes": "bdd",
     "examples_part": "",
     "bdd_part": "preservation-lists",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-preservation-prims",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "preservation-prims",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-preservation-std",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "preservation-std",
     "width": "",
     "memory_kib": "",
     "hints": ""

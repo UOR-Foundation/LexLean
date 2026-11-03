@@ -1,6 +1,30 @@
 {
   "roots": [
     {
+      "name": "write_numbers",
+      "root": "LexLeanStd.Buffer.writeNumbers",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "write_each",
+      "root": "LexLeanStd.Buffer.writeEach",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "write_all",
+      "root": "LexLeanStd.Buffer.writeAll",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "starts_with",
       "root": "LexLeanStd.Text.startsWith",
       "targets": [
@@ -67,6 +91,86 @@
     {
       "name": "sha256_hex",
       "root": "LexLeanStd.Sha256.sha256Hex",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "decimal",
+      "root": "LexLeanStd.Numeral.decimal",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "hex_nat",
+      "root": "LexLeanStd.Numeral.hexNat",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "parse_decimal",
+      "root": "LexLeanStd.Numeral.parseDecimal",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "hex",
+      "root": "LexLeanStd.Numeral.hex",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "parse_hex",
+      "root": "LexLeanStd.Numeral.parseHex",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "sort_bytes",
+      "root": "LexLeanStd.Order.sortBytes",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "sort_entries",
+      "root": "LexLeanStd.Order.sortEntries",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "sorted_set",
+      "root": "LexLeanStd.Order.sortedSet",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "insert_sorted",
+      "root": "LexLeanStd.Order.insertSorted",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "is_ascending",
+      "root": "LexLeanStd.Order.isAscending",
       "targets": [
         "rust-std"
       ],

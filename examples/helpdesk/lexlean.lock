@@ -1,6 +1,6 @@
 spec = "lexlean/lock/2"
 language = "1.2"
-compiler_semantics = "30c5829bdd3f072456985b81111b40c8d20bfeaaa66c908df679c034ec32e032"
+compiler_semantics = "aac30cb0bda069a55aca6ce2417be48726fd578218b3e8fbaf31634694695b64"
 project_config_sha256 = "30e9380b31a91b74c3c02f5882a9070290c6a5c41e1dd3bf56d9c617396343e7"
 lean_toolchain = "leanprover/lean4:v4.32.1"
 
@@ -62,8 +62,8 @@ version = "1.0.0"
 kind = "path"
 source = "stdlib"
 module_prefix = "LexLeanStd"
-tree_sha256 = "c0be8a51cb95c7a1110ddc47a48b522c4c55a3522b240362e6daf9857401972a"
-manifest_sha256 = "ca32f854ea2cbe5218a34bf0ace83f90838499ef4dce5e413fe4d6d8d45ab50d"
+tree_sha256 = "236baa7f0e4710943583fd9b460f0ad76d9266f53cd64b2eb7ff0a3d4db47ebf"
+manifest_sha256 = "a464ac6f1d22ccbab84861d0732a94d3a79627dc122fb2f857ac08f1cb9f1b4b"
 imports = []
 
 [[source_package]]
