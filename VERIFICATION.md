@@ -12206,3 +12206,231 @@ On the merged member, regenerated, on one WSL host with 4 build jobs:
 
 The figures of the `BS-06` record above are that record's own run and stay as
 measured.
+
+## The five `Order` packages move the counts of `BS-05` to `BS-08` and `BS-11` to `BS-15` (`SL-10`, #276)
+
+The five roots of `LexLeanStd.Order` (`SL-10`) add five committed packages, and
+these cases assert their corpus, so they failed on the counts when the member was
+merged with #371 at `32d317126` and `ef961c75a`. `BS-05` and `BS-06` were measured
+as for `Numeral` above: a throwaway edit, reverted, ran `BS-06`'s corpus code over
+the member's tree and over `32d317126`, hashing each crate. The other rows are the
+numbers their own count asserts reported in CI run 41420697512 on `88270df7e`, whose
+tree differs from this one by these counts and the verification records.
+
+| Count | `32d317126` | member |
+| --- | --- | --- |
+| committed manifests and packages | 277 | 282 |
+| distinct programs | 194 | 199 |
+| distinct lowered crates | 253 | 258 |
+| crates of at most 400 expressions | 205 | 208 |
+| `printCrate` vectors | 672 | 682 |
+| committed distinct crates | 506 | 516 |
+| committed distinct crates in the evaluator's limit | 416 | 422 |
+| runs with a tight capacity | 37 | 37 |
+| runs with a tight capacity in the evaluator's limit | 30 | 32 |
+| `printCrate` vectors in the evaluator's limit | 575 | 583 |
+| `printExpr` vectors | 2,110 | 2,145 |
+
+| Row | `ef961c75a` | member |
+| --- | --- | --- |
+| `BS-05` runs of `validateCrate`, `correspondCrate` | 491, 354 | 494, 359 |
+| `BS-05` runs under the evaluator | 443, 306 | 444, 309 |
+| `BS-05` refusals among the runs of `validateCrate`, rule runs of it | 213, 132 | 211, 129 |
+| `BS-05` refused among the seeded mutants | 271, 244 | 291, 252 |
+| `BS-06` seeded `printExpr` mutants, seeded rustc runs | 399, 2,984 | 394, 2,989 |
+| `BS-07` vectors, within the bound | 328, 278 | 333, 281 |
+| `BS-08` crates, within the bound | 387, 339 | 392, 342 |
+| `BS-11` vectors, within the bound, mutants | 157, 156, 296 | 157, 156, 281 |
+| `BS-12` vectors, within the bound, mutants | 76, 75, 184 | 76, 75, 149 |
+| `BS-13` vectors, within the bound, mutants | 97, 49, 125 | 102, 52, 108 |
+| `BS-14` vectors, within the bound, mutants | 332, 282, 547 | 337, 285, 580 |
+| `BS-15` manifests, accepted, render mutants, runs under rustc | 296, 277, 277, 3,169 | 301, 282, 282, 3,184 |
+
+The crates that differ are the five new ones, of 65, 129, 367, 451 and 477
+expressions, so three fall under the cap of 400: that is `BS-05`'s +3 and, on both
+profiles, the +6 of the committed crates in `BS-06`'s limit. `BS-06`'s other +2 come
+from the tight runs, which sample every seventh crate: the new crates move the
+sample, which loses crates of 549 and 1,343 expressions and gains ones of 178 and 499.
+The number of tight runs stays 37, and two more of them are in the limit. The
+mutants of `BS-11` to `BS-14` are drawn from the committed programs, so the new
+programs change the draws, and some of the kept counts fall; which mutants changed
+was not traced. Why the vectors of `BS-11` and `BS-12` do not move was not traced
+either.
+
+The first run on those counts, CI run 41434996123 on `4c546a065`, stopped `BS-05` in
+its own corpus: `the rule corpus gave up before it reached 3 runs of:
+["heap-list-match"]`. That refusal was reached only by draws. A throwaway edit,
+reverted, drew 400,000 mutants from each of three seeds over the 153 crates of at most
+80 expressions, without stopping at the target:
+
+| Seed | list match, hits | slowest other refusal, third hit at draw |
+| --- | --- | --- |
+| `0x05A1_1CE0_BE55_0005` (the corpus's) | 0 | 36,530 (`heap-empty-list`) |
+| `0x1111_2222_3333_0005` | 0 | 17,148 (`heap-list-cell`) |
+| `0x7777_8888_9999_0005` | 1 | 26,541 (`negated-zero`) |
+
+So three hits within the limit of 400,000 was luck on the earlier pools, and Order's
+crate of 65 expressions, the one new base, moved the draws. A higher limit would leave
+it to fail on a later package, so `list_match_crates` holds it by hand whatever the
+draws: `Uncons` of a parameter of type `Nat` under `rust-core`, which the probe shows
+the oracle refuses with this refusal. The corpus now draws for the other 47 refusals,
+so the rule runs fall by 3 and the hand-built crates rise by 1, which is the -2 on
+`validateCrate`'s runs and refusals. None of the other 47 is at this risk: on all three
+seeds each has its third hit within 36,530 of the 400,000 draws. This measures `BS-05`'s
+refusals only.
+
+The numbers of `BS-05` are that probe's, which stops before the first leg; `BS-06`'s
+are its assert's in that CI run. CI run 41443972605 on `e0fa5c6e2` then passed both
+cases on them, and every other job but `examples`, which wanted the verify records.
+
+Those records moved three counts again, though they touch nothing but
+`stdlib/expected/verify`. `calculus_check::committed` reads every
+`/preserve/program/R*.json`, and `mutants` picks its bases from those programs, so a
+records commit that adds, removes or changes one moves the draws of the rows on that
+corpus. This one added `R17` to `R21` and changed `R8` to `R16`. CI run 41470121986 on
+`42263665e` gave:
+
+| Count | Before the records | With them |
+| --- | --- | --- |
+| `BS-11` mutants | 286 | 281 |
+| `BS-12` mutants | 151 | 149 |
+| `BS-14` mutants | 593 | 580 |
+
+`BS-13` draws from the same corpus and passed with its count unmoved; `BS-07` tops its
+draws up to a fixed count. `BS-05`, `BS-06`, `BS-08` and `BS-15` read only manifests
+and fixtures. The three failing cases assert the count before their plants, so that
+run did not reach the plants on the new draws. A package that adds records should
+set these counts with its records in the tree, on the same commit.
+
+### Host-matrix cost and coverage (#235)
+
+The successful Intel macOS job 125390659100 of run 41478333299 at
+`afe1a002` ran from 2026-11-02 16:09:07 to 18:33:00 UTC (144 minutes).
+Its 468 conformance tests took 7,470.84 seconds. The last three cases were
+SP-02 (about 42 minutes), TC-03 (about 21 minutes) and TC-05 (about 18
+minutes), inferred from their 60-second notices and completion timestamps.
+
+SP-02 now runs its complete scaling grid, mixed-shape searches and seeded
+stress families only on the normative Linux x86-64 host. Every host retains
+the committed-corpus certificate bounds, negative limits and fixed let-chain
+and wide-match vectors. TC-03 keeps its committed fixture and generated
+module assertions on every host; its seeded argument/fuel sweep, with the
+same seed, fuel schedule and greater-than-10,000-run assertion, runs on the
+normative host. Each non-normative case reports the split. TC-03 and TC-05 render and parse their two shared fixture modules once,
+then check declaration membership through a set, retaining every assertion.
+
+The full normative coverage is unchanged. No cache, cross-run evidence,
+additional macOS shard, or acceptance recipe is introduced. The post-change
+Intel runtime must be measured from the PR's full gate before #235 is
+considered closed; no speedup is inferred from this host or from a timeout.
+
+Focused local validation on Linux x86-64: `validate-model` (468 IDs and 86
+codes), `validate-spec-links`, the five BDD meta-gate tests, formatting, and
+workspace/all-target/all-feature Clippy with warnings denied pass. The
+isolated `conformance_tc_05` reached its Lean-host check after all template
+and declaration-membership assertions in 4.53 seconds, then failed because
+this environment installs Lean under `ELAN_HOME` while the conformance
+helper requires `$HOME/.elan`. That is a blocked Lean-backed test, not a
+pass or an Intel timing measurement. The full normative cases and actual
+non-normative host paths remain for CI; neither helper nor home was changed.
+
+## The canonical LaTeX of a tooling module is language-1.2 source (`BS-20`, #270)
+
+`bootstrap/src/ToolingAst.lex.tex` holds the closed schema of the tooling module
+as data, and `bootstrap/src/ToolingLatex.lex.tex` the production root
+`renderToolingLatex` (68 definitions, generated from the oracle's rules and not
+written by hand), held to `backend::tooling::latex_text`, the text
+`render_latex` emits (the function was split so that the case and the backend
+share one text). The case is `conformance_bs_20`
+(`crates/conformance/src/cases/bootstrap/tooling_latex.rs`); its first commit
+was the failing test (R3), `no bootstrap case is wired for BS-20`.
+
+What ran, on the normative host (Ubuntu under WSL, Rust 1.97.1, Lean 4.32.1):
+
+| Step | Observed |
+| --- | --- |
+| the two modules check and are kernel-verified | `lexlean check` (12 modules) and `lexlean verify` (4 modules) passed |
+| the root is eligible for `rust-std` with `allocation`, `overflow`, `recursion` | passed |
+| the oracle's text is the committed LaTeX of the three tooling modules | passed |
+| the 264 vectors (3 committed modules, 85 targeted, 88 refused by the oracle) | the rustc leg agrees on all 264, and so does the evaluator |
+| 180 evaluator mutant runs (seed `0x0B55_0020`) | agree |
+| 600 rustc mutant runs (seed `0x0B55_0021`) | agree |
+| the 17 planted defects | each detected, at the vector given below |
+| the committed package is the exported one | passed; `check-production-export --write` regenerated all 14 packages in about 45 minutes, and the root's stack row is 3,342,336 bytes (debug) |
+
+The case takes about 78 minutes in all on this host (the legs 58 minutes, the
+plants and the export comparison the rest).
+
+The planted defects and the first vector (by position) that detects each:
+
+| Plant | Vector |
+| --- | --- |
+| a backslash is escaped as a bare command | 36 |
+| a brace is not escaped | 0 |
+| a tilde loses its empty group | 45 |
+| a caret loses its empty group | 48 |
+| an ampersand is not escaped | 51 |
+| the hexadecimal of a non-ASCII scalar is in lower case | 0 |
+| the hexadecimal of a scalar has three digits at least | 0 |
+| a character is quoted as a bare quote | 96 |
+| an application of a registered call is not explicit | 135 |
+| an implicit binder is bracketed as an explicit one | 0 |
+| an instance binder is bracketed as an explicit one | 0 |
+| a named type argument has no space before its value | 0 |
+| the body of a function is indented by one space | 0 |
+| a function line keeps the newlines of its body | 0 |
+| a public function is not marked public | 0 |
+| the visibility line swaps public and private | 0 |
+| a trimmed line loses one byte of its trailing white space | 153 |
+
+Three plants escaped the first full run and were fixed in the corpus, not in the
+module. A tilde, a caret and an ampersand reached no vector because no token
+carried them (tokens with `~`, `a^b`, `&` were added). A plant that removed the
+newline after a function body is an equivalent mutant (the oracle's `trim_end`
+removes it either way) and was replaced by one that keeps the newlines of a
+function line. The trim plant needed a line that ends in white space of two or
+three bytes; a name cannot (the checker requires a Lean identifier), so the
+vectors end a command in a token such as `x` followed by U+00A0, U+2003, U+0085 or
+U+3000, which the invocation of the command then ends with. The explicit
+application needed a signature that applies a constant to arguments; the vectors
+wrap a constant of a signature in an application of itself, and the checker
+accepts 20 of the modules that result.
+
+*The compiler's rejection found while writing the module.* The first full
+verification of the project failed certificate A (`LLV7013`,
+`__rel_81`, `application type mismatch`) on a recursive definition whose
+top-level `match` has an arm with binders it does not use and a body that is a
+bare parameter (`| TyConst d0 d1 => out`). The same shape with a constant body
+(`false`, `0`) is accepted, and `explicitApp` and `sigLength` rely on it. The
+module avoids the shape (`putNamed` recurses on the list of names and takes the
+type chain apart in `consSplit`); the rejection is not minimised and not filed.
+
+*What remains of #270.* The Lean backend and the verification driver are
+separate rows. The tooling module reaches this root as already-decoded data; a
+decoder from the JSON of a tooling module to `ToolingAst` that does not use
+serde is not written (the case builds its inputs with `serde_json` in the test
+only). The reserved-token list is an argument of the root; whether it should be
+an inline table is the maintainer's call.
+
+## A byte payload consumes the bootstrap harness's literal budget (#364)
+
+The Windows host job of run 41543498033, on merge `9cbc4cd4e`, passed
+`BS-20` but failed `BS-15` while rustc compiled the test binary
+`run_boot_render_package_std_0`: `memory allocation of 4294967296 bytes
+failed`, with the backtrace in MIR drop-scope sorting. The generated library
+had compiled. `rust_build::cargo_in` already sets `RUST_MIN_STACK` to 64 MiB.
+
+The harness partition counted semantic value nodes: a `Bytes` payload cost
+one node, whereas its Rust literal has one array element per octet. The
+partition now counts that literal work recursively, retaining every input and
+expected outcome in order. Semantic node counts, used by the performance
+measurements, are unchanged. One input beyond the budget stays whole.
+
+`byte_payloads_bound_chunks_without_changing_the_corpus` checks eight nested
+16 KiB payloads partition into groups of three, three and two under the
+60,000-element budget, with the complete ordered corpus preserved; it also
+checks empty input and a single oversized input. Restoring semantic-node
+weighting makes its partition assertion fail. This is a harness correction,
+not a change to the generated packages or a resolution of #164's consumer
+compiler-nesting question. A Windows rerun is required to establish whether
+this bounded partition removes the observed compiler failure.

@@ -37,6 +37,9 @@
     "bootstrap-terms": [
       "BS-10"
     ],
+    "bootstrap-tooling-latex": [
+      "BS-20"
+    ],
     "bootstrap-validate": [
       "BS-05"
     ],

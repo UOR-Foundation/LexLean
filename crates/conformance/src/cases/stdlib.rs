@@ -673,6 +673,8 @@ pub fn run(id: &str) {
         "SL-03" | "SL-04" => super::std_packages::run(id),
         // §17.22: hexadecimal and decimal (#276).
         "SL-09" => super::stdlib_numeral::run(id),
+        // §17.22: sorting and order (#276).
+        "SL-10" => super::stdlib_order::run(id),
         other => panic!("no stdlib case is wired for {other}"),
     }
 }
