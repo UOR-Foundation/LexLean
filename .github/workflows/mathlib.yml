@@ -15,8 +15,41 @@
 name: mathlib
 
 on:
-  push: { branches: [main, "release/**"] }
+  # Build inputs include the compiler's four embedded-data trees and error
+  # registry. Documentation outside these input paths skips the library fetch.
+  push:
+    branches: [main, "release/**"]
+    paths:
+      - 'demos/**'
+      - 'crates/**'
+      - 'xtask/**'
+      - 'language/**'
+      - 'schemas/**'
+      - 'tests/golden/axiom-parser/**'
+      - 'tests/golden/canonical-json/**'
+      - 'model/errors.toml'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'rust-toolchain.toml'
+      - 'lean-toolchain'
+      - '.cargo/**'
+      - '.github/workflows/mathlib.yml'
   pull_request:
+    paths:
+      - 'demos/**'
+      - 'crates/**'
+      - 'xtask/**'
+      - 'language/**'
+      - 'schemas/**'
+      - 'tests/golden/axiom-parser/**'
+      - 'tests/golden/canonical-json/**'
+      - 'model/errors.toml'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'rust-toolchain.toml'
+      - 'lean-toolchain'
+      - '.cargo/**'
+      - '.github/workflows/mathlib.yml'
   workflow_dispatch:
 
 permissions:

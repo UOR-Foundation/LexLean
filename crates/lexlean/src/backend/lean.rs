@@ -2538,7 +2538,11 @@ impl AuxiliaryModule {
                     text.push_str(ty);
                     text.push_str(") = (type_of% @");
                     text.push_str(constant);
-                    text.push_str(") := rfl");
+                    text.push(')');
+                    // Reuse the auxiliary assignment token; this closed
+                    // command always finishes with the reflexivity constant.
+                    text.push_str(" := ");
+                    text.push_str("rfl");
                 }
                 AuxiliaryCommand::PrintAxioms(declaration) => {
                     text.push_str("#print axioms ");
@@ -2760,6 +2764,23 @@ pub fn audit_modules(
 mod audit_module_tests {
     use super::audit_modules;
     use crate::verify::source_audit::audit;
+
+    #[test]
+    fn the_signature_example_keeps_its_exact_equality() {
+        let module = super::AuxiliaryModule {
+            imports: vec!["Init".to_owned()],
+            commands: vec![
+                super::AuxiliaryCommand::NoAutoImplicit,
+                super::AuxiliaryCommand::SignatureExample {
+                    ty: "Nat → Nat".to_owned(),
+                    constant: "Nat.succ".to_owned(),
+                },
+            ],
+        };
+        let (text, lines) = module.render();
+        assert_eq!(text, "module\nimport Init\nset_option autoImplicit false\nexample : (Nat → Nat) = (type_of% @Nat.succ) := rfl\n");
+        assert_eq!(lines, [3, 4]);
+    }
 
     /// A declaration spelled like a word the audit of generated Lean forbids
     /// is quoted in its module, so the audit module that prints its axioms

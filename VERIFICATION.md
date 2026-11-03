@@ -11529,3 +11529,30 @@ The shared attestation schema changes all three language identities. No pins,
 expected artifacts or identity records were rewritten, and no verification or
 full gate was run against the resulting known identity drift. Coordinated
 integration, official artifact writers and final acceptance remain required.
+
+## Remaining Mathlib source-readiness findings (#362)
+
+The xtask package description now names `verify-demos` and `emit-wrappers`,
+both existing dispatched commands, and README's example range ends at EX-10.
+RP-05 exposed the second description omission after the first was corrected;
+its assertion was preserved.
+
+The typed `SignatureExample` command now uses the auxiliary renderer's existing
+assignment token between its closing parenthesis and fixed `rfl` constant.
+Its exact rendered equality and command line numbers pass a focused unit test.
+The SP-17 scanner and allow-list are unchanged: the original source reports
+`) := rfl`, the normalized source reports no templates, and SP-17 still detects
+its existing planted templates. SP-17, RP-05, RP-11 and EX-10 all pass after
+explicitly checking that both embedded repository roots point to this checkout.
+
+Only the separate Mathlib workflow gains push/PR path filters. They include
+the compiler/runner sources, four embedded-data trees, error registry, demo
+files, manifests, toolchain pins, Cargo configuration and the workflow itself.
+Validation covers 21 relevant/irrelevant paths, including documentation inside
+the conservative demo/crate paths. Branches, unconditional dispatch and the
+complete job text are unchanged; the normative CI workflow is unchanged.
+
+All-target/all-feature lexlean/repo-conformance Clippy with warnings denied,
+Rust formatting and whitespace checks pass. No library fetch, Lean verification,
+identity writer or full gate ran. The prior schema identity changes still need
+the coordinated integration and artifact regeneration; this is source evidence.
