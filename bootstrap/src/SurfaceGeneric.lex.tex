@@ -1,0 +1,677 @@
+\begin{lexlean}{SurfaceGeneric}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.Json}
+\importmodule{LexLeanStd.Numeral}
+\importmodule{LexLeanStd.Order}
+\importmodule{LexLeanStd.Text}
+\importmodule{SurfaceDoc}
+\importmodule{SurfaceLex}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: Frame,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: FrameArr, fields: [(List LexLeanStd.Json::Json)]},
+    {name: FrameObj, fields: [Bytes, Nat, (List (Bytes * LexLeanStd.Json::Json))]}
+  ]
+}
+
+structure{
+  name: Rd,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: pos, type: Nat},
+    {name: depth, type: Nat},
+    {name: mode, type: Nat},
+    {name: stack, type: (List Frame)},
+    {name: value, type: LexLeanStd.Json::Json},
+    {name: error, type: (Option SurfaceLex::Failure)}
+  ]
+}
+
+definition{
+  name: lit,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: cat,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bytes,
+  body: (prim append left right : Bytes),
+  executable: true
+}
+
+definition{
+  name: failed,
+  parameters: [offset : Nat, message : Bytes],
+  result: SurfaceLex::Failure,
+  body: (record SurfaceLex::Failure {offset := offset, message := message}),
+  executable: true
+}
+
+definition{
+  name: byteNo,
+  parameters: [text : Bytes, pos : Nat],
+  result: Nat,
+  body: (match (LexLeanStd.Text::byteAt text pos)
+    | Option.some byte => (prim to_nat byte : Nat)
+    | Option.none => 256),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: digitStep,
+  parameters: [text : Bytes, pos : Nat],
+  result: (Option Nat),
+  body: (let value : Nat := (byteNo text pos); (if (47 <? value) then (if (value <? 58) then (ctor Option.some [Nat] (pos + 1)) else (ctor Option.none [Nat])) else (ctor Option.none [Nat]))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: digitsEnd,
+  parameters: [text : Bytes, start : Nat],
+  result: Nat,
+  body: (first (prim iterate_until (fun [text] (pos : Nat) => (digitStep text pos)) ((prim length text : Nat) + 1) start : (Nat * Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: zeroStep,
+  parameters: [text : Bytes, pos : Nat],
+  result: (Option Nat),
+  body: (if ((byteNo text pos) =? 48) then (ctor Option.some [Nat] (pos + 1)) else (ctor Option.none [Nat])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: zerosEnd,
+  parameters: [text : Bytes, start : Nat],
+  result: Nat,
+  body: (first (prim iterate_until (fun [text] (pos : Nat) => (zeroStep text pos)) ((prim length text : Nat) + 1) start : (Nat * Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isInteger,
+  parameters: [text : Bytes],
+  result: Bool,
+  body: (let start : Nat := (if ((byteNo text 0) =? 45) then 1 else 0); (if (start <? (prim length text : Nat)) then ((digitsEnd text start) =? (prim length text : Nat)) else false)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: inI64,
+  parameters: [negative : Bool, magnitude : Nat],
+  result: Bool,
+  body: (if negative then (if (0 <? magnitude) then (magnitude <=? 9223372036854775808) else false) else (magnitude <=? 9223372036854775807)),
+  executable: true
+}
+
+definition{
+  name: intOf,
+  parameters: [text : Bytes],
+  result: (Option LexLeanStd.Json::Json),
+  body: (let negative : Bool := ((byteNo text 0) =? 45); (let start : Nat := (if negative then 1 else 0); (let first_digit : Nat := (zerosEnd text start); (let digits : Bytes := (LexLeanStd.Text::sliceOr text first_digit (prim subtract (prim length text : Nat) first_digit : Nat)); (if ((prim length digits : Nat) =? 0) then (ctor Option.some [LexLeanStd.Json::Json] (ctor LexLeanStd.Json::Json.JInt false 0)) else (if (19 <? (prim length digits : Nat)) then (ctor Option.none [LexLeanStd.Json::Json]) else (match (LexLeanStd.Numeral::parseDecimal digits)
+    | Option.some magnitude => (if (inI64 negative magnitude) then (ctor Option.some [LexLeanStd.Json::Json] (ctor LexLeanStd.Json::Json.JInt negative magnitude)) else (ctor Option.none [LexLeanStd.Json::Json]))
+    | Option.none => (ctor Option.none [LexLeanStd.Json::Json])))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: bareStart,
+  parameters: [value : Nat],
+  result: Bool,
+  body: (if (if (64 <? value) then (value <? 91) else false) then true else (if (if (96 <? value) then (value <? 123) else false) then true else (value =? 95))),
+  executable: true
+}
+
+definition{
+  name: bareByte,
+  parameters: [value : Nat],
+  result: Bool,
+  body: (if (bareStart value) then true else (if (if (47 <? value) then (value <? 58) else false) then true else (if (value =? 46) then true else (if (value =? 39) then true else (if (value =? 47) then true else (value =? 45)))))),
+  executable: true
+}
+
+definition{
+  name: bareStep,
+  parameters: [text : Bytes, pos : Nat],
+  result: (Option Nat),
+  body: (if (bareByte (byteNo text pos)) then (ctor Option.some [Nat] (pos + 1)) else (ctor Option.none [Nat])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: bareEnd,
+  parameters: [text : Bytes, start : Nat],
+  result: Nat,
+  body: (first (prim iterate_until (fun [text] (pos : Nat) => (bareStep text pos)) ((prim length text : Nat) + 1) start : (Nat * Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isKeyword,
+  parameters: [text : Bytes],
+  result: Bool,
+  body: (if (prim equal text 0x74727565 : Bool) then true else (prim equal text 0x66616c7365 : Bool)),
+  executable: true
+}
+
+definition{
+  name: isBare,
+  parameters: [text : Bytes],
+  result: Bool,
+  body: (if ((prim length text : Nat) =? 0) then false else (if (bareStart (byteNo text 0)) then (if ((bareEnd text 1) =? (prim length text : Nat)) then (not (isKeyword text)) else false) else false)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: tokenCode,
+  parameters: [tok : SurfaceLex::Token],
+  result: Nat,
+  body: (match tok
+    | SurfaceLex::Token.LBrace => 0
+    | SurfaceLex::Token.RBrace => 1
+    | SurfaceLex::Token.LBrack => 2
+    | SurfaceLex::Token.RBrack => 3
+    | SurfaceLex::Token.LParen => 4
+    | SurfaceLex::Token.RParen => 5
+    | SurfaceLex::Token.Comma => 6
+    | SurfaceLex::Token.Colon => 7
+    | SurfaceLex::Token.ColonEq => 8
+    | SurfaceLex::Token.Scope => 9
+    | SurfaceLex::Token.Semi => 10
+    | SurfaceLex::Token.StrToken payload => 11
+    | SurfaceLex::Token.WordToken payload => 12),
+  executable: true
+}
+
+definition{
+  name: tokenText,
+  parameters: [tok : SurfaceLex::Token],
+  result: Bytes,
+  body: (match tok
+    | SurfaceLex::Token.LBrace => 0x
+    | SurfaceLex::Token.RBrace => 0x
+    | SurfaceLex::Token.LBrack => 0x
+    | SurfaceLex::Token.RBrack => 0x
+    | SurfaceLex::Token.LParen => 0x
+    | SurfaceLex::Token.RParen => 0x
+    | SurfaceLex::Token.Comma => 0x
+    | SurfaceLex::Token.Colon => 0x
+    | SurfaceLex::Token.ColonEq => 0x
+    | SurfaceLex::Token.Scope => 0x
+    | SurfaceLex::Token.Semi => 0x
+    | SurfaceLex::Token.StrToken payload => payload
+    | SurfaceLex::Token.WordToken payload => payload),
+  executable: true
+}
+
+definition{
+  name: describe,
+  parameters: [tok : SurfaceLex::Token],
+  result: Bytes,
+  body: (match tok
+    | SurfaceLex::Token.LBrace => (lit "`{`")
+    | SurfaceLex::Token.RBrace => (lit "`}`")
+    | SurfaceLex::Token.LBrack => (lit "`[`")
+    | SurfaceLex::Token.RBrack => (lit "`]`")
+    | SurfaceLex::Token.LParen => (lit "`(`")
+    | SurfaceLex::Token.RParen => (lit "`)`")
+    | SurfaceLex::Token.Comma => (lit "`,`")
+    | SurfaceLex::Token.Colon => (lit "`:`")
+    | SurfaceLex::Token.ColonEq => (lit "`:=`")
+    | SurfaceLex::Token.Scope => (lit "`::`")
+    | SurfaceLex::Token.Semi => (lit "`;`")
+    | SurfaceLex::Token.StrToken payload => (cat (lit "the string ") (SurfaceLex::quoteText payload))
+    | SurfaceLex::Token.WordToken payload => (cat (cat (lit "`") payload) (lit "`"))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: tokenAt,
+  parameters: [toks : (List SurfaceLex::Spanned), pos : Nat],
+  result: (Option SurfaceLex::Spanned),
+  body: (prim index toks pos : (Option SurfaceLex::Spanned)),
+  executable: true
+}
+
+definition{
+  name: codeAt,
+  parameters: [toks : (List SurfaceLex::Spanned), pos : Nat],
+  result: Nat,
+  body: (match (tokenAt toks pos)
+    | Option.some found => (tokenCode (project found token))
+    | Option.none => 99),
+  executable: true
+}
+
+definition{
+  name: textAt,
+  parameters: [toks : (List SurfaceLex::Spanned), pos : Nat],
+  result: Bytes,
+  body: (match (tokenAt toks pos)
+    | Option.some found => (tokenText (project found token))
+    | Option.none => 0x),
+  executable: true
+}
+
+definition{
+  name: offsetAt,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, pos : Nat],
+  result: Nat,
+  body: (match (tokenAt toks pos)
+    | Option.some found => (project found start)
+    | Option.none => size),
+  executable: true
+}
+
+definition{
+  name: describeAt,
+  parameters: [toks : (List SurfaceLex::Spanned), pos : Nat],
+  result: Bytes,
+  body: (match (tokenAt toks pos)
+    | Option.some found => (describe (project found token))
+    | Option.none => (lit "the end of the text")),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: itemChain,
+  parameters: [items : (List LexLeanStd.Json::Json)],
+  result: LexLeanStd.Json::Json,
+  body: (prim list_fold (fun (chain : LexLeanStd.Json::Json) (item : LexLeanStd.Json::Json) => (ctor LexLeanStd.Json::Json.JItem item chain)) (ctor LexLeanStd.Json::Json.JNil) items : LexLeanStd.Json::Json),
+  executable: true
+}
+
+definition{
+  name: memberChain,
+  parameters: [sorted : (List (Bytes * LexLeanStd.Json::Json))],
+  result: LexLeanStd.Json::Json,
+  body: (prim list_fold (fun (chain : LexLeanStd.Json::Json) (entry : (Bytes * LexLeanStd.Json::Json)) => (ctor LexLeanStd.Json::Json.JMember (first entry) (second entry) chain)) (ctor LexLeanStd.Json::Json.JNil) (LexLeanStd.Order::reverseList [(Bytes * LexLeanStd.Json::Json)] sorted) : LexLeanStd.Json::Json),
+  executable: true
+}
+
+definition{
+  name: hasKey,
+  parameters: [members : (List (Bytes * LexLeanStd.Json::Json)), key : Bytes],
+  result: Bool,
+  body: (prim list_fold (fun [key] (found : Bool) (entry : (Bytes * LexLeanStd.Json::Json)) => (if found then true else (prim equal (first entry) key : Bool))) false members : Bool),
+  executable: true
+}
+
+definition{
+  name: refuse,
+  parameters: [st : Rd, offset : Nat, message : Bytes],
+  result: Rd,
+  body: (record Rd {pos := (project st pos), depth := (project st depth), mode := 9, stack := (project st stack), value := (project st value), error := (ctor Option.some [SurfaceLex::Failure] (failed offset message))}),
+  executable: true
+}
+
+definition{
+  name: closeTop,
+  parameters: [st : Rd],
+  result: Rd,
+  body: (match (project st stack)
+    | List.nil => (refuse st 0 (lit "nothing to close"))
+    | List.cons top rest => (match top
+      | Frame.FrameArr items => (record Rd {pos := ((project st pos) + 1), depth := (prim subtract (project st depth) 1 : Nat), mode := 3, stack := rest, value := (ctor LexLeanStd.Json::Json.JArr (itemChain items)), error := (ctor Option.none [SurfaceLex::Failure])})
+      | Frame.FrameObj pending offset members => (record Rd {pos := ((project st pos) + 1), depth := (prim subtract (project st depth) 1 : Nat), mode := 3, stack := rest, value := (ctor LexLeanStd.Json::Json.JObj (memberChain (LexLeanStd.Order::sortByKey [LexLeanStd.Json::Json] members))), error := (ctor Option.none [SurfaceLex::Failure])}))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: atComma,
+  parameters: [
+    toks : (List SurfaceLex::Spanned),
+    st : Rd,
+    stack : (List Frame),
+    head : Nat,
+    tail : Nat
+  ],
+  result: Rd,
+  body: (if ((codeAt toks (project st pos)) =? 6) then (record Rd {pos := ((project st pos) + 1), depth := (project st depth), mode := head, stack := stack, value := (ctor LexLeanStd.Json::Json.JNil), error := (ctor Option.none [SurfaceLex::Failure])}) else (record Rd {pos := (project st pos), depth := (project st depth), mode := tail, stack := stack, value := (ctor LexLeanStd.Json::Json.JNil), error := (ctor Option.none [SurfaceLex::Failure])})),
+  executable: true
+}
+
+definition{
+  name: completeValue,
+  parameters: [toks : (List SurfaceLex::Spanned), st : Rd],
+  result: Rd,
+  body: (match (project st stack)
+    | List.nil => (record Rd {pos := (project st pos), depth := (project st depth), mode := 9, stack := (nil Frame), value := (project st value), error := (ctor Option.none [SurfaceLex::Failure])})
+    | List.cons top rest => (match top
+      | Frame.FrameArr items => (atComma toks st (cons (ctor Frame.FrameArr (cons (project st value) items)) rest) 1 4)
+      | Frame.FrameObj key offset members => (if (hasKey members key) then (refuse st offset (cat (cat (lit "the member `") key) (lit "` is written twice"))) else (atComma toks st (cons (ctor Frame.FrameObj 0x 0 (cons (key, (project st value)) members)) rest) 2 5)))),
+  executable: true
+}
+
+definition{
+  name: valueDone,
+  parameters: [st : Rd, pos : Nat, value : LexLeanStd.Json::Json],
+  result: Rd,
+  body: (record Rd {pos := pos, depth := (project st depth), mode := 3, stack := (project st stack), value := value, error := (ctor Option.none [SurfaceLex::Failure])}),
+  executable: true
+}
+
+definition{
+  name: valuePush,
+  parameters: [st : Rd, pos : Nat, frame : Frame, mode : Nat],
+  result: Rd,
+  body: (record Rd {pos := pos, depth := ((project st depth) + 1), mode := mode, stack := (cons frame (project st stack)), value := (ctor LexLeanStd.Json::Json.JNil), error := (ctor Option.none [SurfaceLex::Failure])}),
+  executable: true
+}
+
+definition{
+  name: wordValue,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Rd, start : Nat],
+  result: Rd,
+  body: (let pos : Nat := (project st pos); (let word : Bytes := (textAt toks pos); (if (prim equal word 0x74727565 : Bool) then (valueDone st (pos + 1) (ctor LexLeanStd.Json::Json.JBool true)) else (if (prim equal word 0x66616c7365 : Bool) then (valueDone st (pos + 1) (ctor LexLeanStd.Json::Json.JBool false)) else (if (isInteger word) then (match (intOf word)
+    | Option.some number => (valueDone st (pos + 1) number)
+    | Option.none => (refuse st start (cat (cat (lit "`") word) (lit "` does not fit a 64-bit integer")))) else (if (isBare word) then (if ((codeAt toks (pos + 1)) =? 0) then (valuePush st (pos + 2) (ctor Frame.FrameObj 0x 0 (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr word)) (nil (Bytes * LexLeanStd.Json::Json)))) 2) else (valueDone st (pos + 1) (ctor LexLeanStd.Json::Json.JStr word))) else (refuse st start (cat (cat (lit "`") word) (lit "` is not a name; quote it to write a string"))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: valueStart,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Rd],
+  result: Rd,
+  body: (let pos : Nat := (project st pos); (if (256 <? (project st depth)) then (refuse st (offsetAt toks size pos) (lit "nested more deeply than the notation reads")) else (let code : Nat := (codeAt toks pos); (if (code =? 99) then (refuse st size (lit "expected a value, found the end of the text")) else (if (code =? 11) then (valueDone st (pos + 1) (ctor LexLeanStd.Json::Json.JStr (textAt toks pos))) else (if (code =? 2) then (valuePush st (pos + 1) (ctor Frame.FrameArr (nil LexLeanStd.Json::Json)) 1) else (if (code =? 0) then (valuePush st (pos + 1) (ctor Frame.FrameObj 0x 0 (nil (Bytes * LexLeanStd.Json::Json))) 2) else (if (code =? 12) then (wordValue toks size st (offsetAt toks size pos)) else (refuse st (offsetAt toks size pos) (cat (lit "expected a value, found ") (describeAt toks pos))))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: keyAt,
+  parameters: [
+    toks : (List SurfaceLex::Spanned),
+    size : Nat,
+    st : Rd,
+    members : (List (Bytes * LexLeanStd.Json::Json)),
+    stack : (List Frame)
+  ],
+  result: Rd,
+  body: (let pos : Nat := (project st pos); (let code : Nat := (codeAt toks pos); (let word : Bytes := (textAt toks pos); (if (if (code =? 11) then true else (if (code =? 12) then (isBare word) else false)) then (if ((codeAt toks (pos + 1)) =? 7) then (record Rd {pos := (pos + 2), depth := (project st depth), mode := 0, stack := (cons (ctor Frame.FrameObj word (offsetAt toks size pos) members) stack), value := (ctor LexLeanStd.Json::Json.JNil), error := (ctor Option.none [SurfaceLex::Failure])}) else (refuse st (offsetAt toks size (pos + 1)) (lit "expected `:` after a member name"))) else (refuse st (offsetAt toks size pos) (lit "expected a member name")))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: objectHead,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Rd],
+  result: Rd,
+  body: (match (project st stack)
+    | List.nil => (refuse st 0 (lit "no object is open"))
+    | List.cons top rest => (match top
+      | Frame.FrameArr items => (refuse st 0 (lit "no object is open"))
+      | Frame.FrameObj pending offset members => (if ((codeAt toks (project st pos)) =? 1) then (closeTop st) else (keyAt toks size st members rest)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: arrayHead,
+  parameters: [toks : (List SurfaceLex::Spanned), st : Rd],
+  result: Rd,
+  body: (if ((codeAt toks (project st pos)) =? 3) then (closeTop st) else (record Rd {pos := (project st pos), depth := (project st depth), mode := 0, stack := (project st stack), value := (ctor LexLeanStd.Json::Json.JNil), error := (ctor Option.none [SurfaceLex::Failure])})),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: closing,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Rd, code : Nat, message : Bytes],
+  result: Rd,
+  body: (if ((codeAt toks (project st pos)) =? code) then (closeTop st) else (refuse st (offsetAt toks size (project st pos)) message)),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: rdMode,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Rd],
+  result: Rd,
+  body: (let mode : Nat := (project st mode); (if (mode =? 0) then (valueStart toks size st) else (if (mode =? 1) then (arrayHead toks st) else (if (mode =? 2) then (objectHead toks size st) else (if (mode =? 3) then (completeValue toks st) else (if (mode =? 4) then (closing toks size st 3 (lit "expected `,` or `]`")) else (closing toks size st 1 (lit "expected `,` or `}`")))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: rdStep,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Rd],
+  result: (Option Rd),
+  body: (match (project st error)
+    | Option.some stopped => (ctor Option.none [Rd])
+    | Option.none => (if ((project st mode) =? 9) then (ctor Option.none [Rd]) else (ctor Option.some [Rd] (rdMode toks size st)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: readFrom,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, pos : Nat, depth : Nat],
+  result: Rd,
+  body: (first (prim iterate_until (fun [size, toks] (st : Rd) => (rdStep toks size st)) ((prim multiply (prim length toks : Nat) 4 : Nat) + 8) (record Rd {pos := pos, depth := depth, mode := 0, stack := (nil Frame), value := (ctor LexLeanStd.Json::Json.JNil), error := (ctor Option.none [SurfaceLex::Failure])}) : (Rd * Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: parseTokens,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat],
+  result: (Result LexLeanStd.Json::Json SurfaceLex::Failure),
+  body: (let final : Rd := (readFrom toks size 0 0); (match (project final error)
+    | Option.some failure => (ctor Result.error [LexLeanStd.Json::Json, SurfaceLex::Failure] failure)
+    | Option.none => (if ((project final mode) =? 9) then (if ((project final pos) <? (prim length toks : Nat)) then (ctor Result.error [LexLeanStd.Json::Json, SurfaceLex::Failure] (failed (offsetAt toks size (project final pos)) (lit "unexpected text after the value"))) else (ctor Result.ok [LexLeanStd.Json::Json, SurfaceLex::Failure] (project final value))) else (ctor Result.error [LexLeanStd.Json::Json, SurfaceLex::Failure] (failed size (lit "the reader ran out of steps")))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: parseGeneric,
+  parameters: [text : Bytes],
+  result: (Result LexLeanStd.Json::Json SurfaceLex::Failure),
+  body: (match (SurfaceLex::lexText text)
+    | Result.ok toks => (parseTokens toks (prim length text : Nat))
+    | Result.error failure => (ctor Result.error [LexLeanStd.Json::Json, SurfaceLex::Failure] failure)),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: spell,
+  parameters: [text : Bytes],
+  result: Bytes,
+  body: (if (isBare text) then text else (SurfaceLex::quoteText text)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: rank,
+  parameters: [key : Bytes],
+  result: Nat,
+  body: (if (prim equal key 0x6e616d65 : Bool) then 0 else (if (prim equal key 0x747970655f706172616d6574657273 : Bool) then 1 else (if (prim equal key 0x706172616d6574657273 : Bool) then 2 else (if (prim equal key 0x74797065 : Bool) then 3 else (if (prim equal key 0x726573756c74 : Bool) then 4 else (if (prim equal key 0x73746174656d656e74 : Bool) then 5 else (if (prim equal key 0x6669656c6473 : Bool) then 6 else (if (prim equal key 0x636f6e7374727563746f7273 : Bool) then 7 else (if (prim equal key 0x617267756d656e7473 : Bool) then 8 else (if (prim equal key 0x626f6479 : Bool) then 9 else (if (prim equal key 0x70726f6f66 : Bool) then 10 else (if (prim equal key 0x61786f696d73 : Bool) then 11 else 12)))))))))))),
+  executable: true
+}
+
+definition{
+  name: rankKey,
+  parameters: [key : Bytes],
+  result: Bytes,
+  body: (cat (SurfaceLex::byteOf (rank key)) key),
+  executable: true
+}
+
+definition{
+  name: fieldDoc,
+  parameters: [key : Bytes, shown : SurfaceDoc::Doc],
+  result: SurfaceDoc::Doc,
+  body: (ctor SurfaceDoc::Doc.DSeq (ctor SurfaceDoc::Doc.DText (cat (spell key) (lit ": "))) (ctor SurfaceDoc::Doc.DSeq shown (ctor SurfaceDoc::Doc.DNil))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: joinStep,
+  parameters: [state : (Bool * SurfaceDoc::Doc), item : SurfaceDoc::Doc],
+  result: (Bool * SurfaceDoc::Doc),
+  body: (if (first state) then (false, (ctor SurfaceDoc::Doc.DSeq item (ctor SurfaceDoc::Doc.DNil))) else (false, (ctor SurfaceDoc::Doc.DSeq item (ctor SurfaceDoc::Doc.DSeq (ctor SurfaceDoc::Doc.DText (lit ",")) (ctor SurfaceDoc::Doc.DSeq (ctor SurfaceDoc::Doc.DLine) (second state)))))),
+  executable: true
+}
+
+definition{
+  name: delimitedRev,
+  parameters: [open : Bytes, close : Bytes, itemsRev : (List SurfaceDoc::Doc)],
+  result: SurfaceDoc::Doc,
+  body: (match itemsRev
+    | List.nil => (ctor SurfaceDoc::Doc.DText (cat open close))
+    | List.cons last more => (let joined : (Bool * SurfaceDoc::Doc) := (prim list_fold (fun (state : (Bool * SurfaceDoc::Doc)) (item : SurfaceDoc::Doc) => (joinStep state item)) (true, (ctor SurfaceDoc::Doc.DNil)) itemsRev : (Bool * SurfaceDoc::Doc)); (ctor SurfaceDoc::Doc.DGroup (ctor SurfaceDoc::Doc.DSeq (ctor SurfaceDoc::Doc.DText open) (ctor SurfaceDoc::Doc.DSeq (ctor SurfaceDoc::Doc.DNest 2 (ctor SurfaceDoc::Doc.DSeq (ctor SurfaceDoc::Doc.DSoft) (ctor SurfaceDoc::Doc.DSeq (second joined) (ctor SurfaceDoc::Doc.DNil)))) (ctor SurfaceDoc::Doc.DSeq (ctor SurfaceDoc::Doc.DSoft) (ctor SurfaceDoc::Doc.DSeq (ctor SurfaceDoc::Doc.DText close) (ctor SurfaceDoc::Doc.DNil)))))))),
+  executable: true
+}
+
+definition{
+  name: kindTag,
+  parameters: [members : LexLeanStd.Json::Json],
+  result: (Option Bytes),
+  body: (match members
+    | LexLeanStd.Json::Json.JBool flag => (ctor Option.none [Bytes])
+    | LexLeanStd.Json::Json.JInt negative magnitude => (ctor Option.none [Bytes])
+    | LexLeanStd.Json::Json.JStr text => (ctor Option.none [Bytes])
+    | LexLeanStd.Json::Json.JArr inner => (ctor Option.none [Bytes])
+    | LexLeanStd.Json::Json.JObj inner => (ctor Option.none [Bytes])
+    | LexLeanStd.Json::Json.JNil => (ctor Option.none [Bytes])
+    | LexLeanStd.Json::Json.JItem element rest => (ctor Option.none [Bytes])
+    | LexLeanStd.Json::Json.JMember key inner rest => (if (prim equal key 0x6b696e64 : Bool) then (match inner
+      | LexLeanStd.Json::Json.JStr tag => (if (isBare tag) then (ctor Option.some [Bytes] tag) else (ctor Option.none [Bytes]))
+      | LexLeanStd.Json::Json.JBool flag => (ctor Option.none [Bytes])
+      | LexLeanStd.Json::Json.JInt negative magnitude => (ctor Option.none [Bytes])
+      | LexLeanStd.Json::Json.JArr items => (ctor Option.none [Bytes])
+      | LexLeanStd.Json::Json.JObj fields => (ctor Option.none [Bytes])
+      | LexLeanStd.Json::Json.JNil => (ctor Option.none [Bytes])
+      | LexLeanStd.Json::Json.JItem element tail => (ctor Option.none [Bytes])
+      | LexLeanStd.Json::Json.JMember name value tail => (ctor Option.none [Bytes])) else (kindTag rest))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: members
+}
+
+definition{
+  name: objectDoc,
+  parameters: [tag : (Option Bytes), pairs : (List (Bytes * SurfaceDoc::Doc))],
+  result: SurfaceDoc::Doc,
+  body: (let entries : (List (Bytes * SurfaceDoc::Doc)) := (prim list_fold (fun [tag] (kept : (List (Bytes * SurfaceDoc::Doc))) (pair : (Bytes * SurfaceDoc::Doc)) => (match tag
+    | Option.some name => (if (prim equal (first pair) 0x6b696e64 : Bool) then kept else (cons ((rankKey (first pair)), (fieldDoc (first pair) (second pair))) kept))
+    | Option.none => (cons ((rankKey (first pair)), (fieldDoc (first pair) (second pair))) kept))) (nil (Bytes * SurfaceDoc::Doc)) pairs : (List (Bytes * SurfaceDoc::Doc))); (delimitedRev (match tag
+    | Option.some name => (cat name (lit "{"))
+    | Option.none => (lit "{")) (lit "}") (prim list_fold (fun (docs : (List SurfaceDoc::Doc)) (entry : (Bytes * SurfaceDoc::Doc)) => (cons (second entry) docs)) (nil SurfaceDoc::Doc) (LexLeanStd.Order::sortByKey [SurfaceDoc::Doc] entries) : (List SurfaceDoc::Doc)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: docValue,
+  parameters: [value : LexLeanStd.Json::Json],
+  result: SurfaceDoc::Doc,
+  body: (match value
+    | LexLeanStd.Json::Json.JBool flag => (ctor SurfaceDoc::Doc.DText (if flag then 0x74727565 else 0x66616c7365))
+    | LexLeanStd.Json::Json.JInt negative magnitude => (ctor SurfaceDoc::Doc.DText (LexLeanStd.Json::integerText negative magnitude))
+    | LexLeanStd.Json::Json.JStr text => (ctor SurfaceDoc::Doc.DText (spell text))
+    | LexLeanStd.Json::Json.JArr items => (delimitedRev (lit "[") (lit "]") (LexLeanStd.Order::reverseList [SurfaceDoc::Doc] (docItems items)))
+    | LexLeanStd.Json::Json.JObj members => (objectDoc (kindTag members) (docMembers members))
+    | LexLeanStd.Json::Json.JNil => (ctor SurfaceDoc::Doc.DNil)
+    | LexLeanStd.Json::Json.JItem element rest => (ctor SurfaceDoc::Doc.DNil)
+    | LexLeanStd.Json::Json.JMember key inner rest => (ctor SurfaceDoc::Doc.DNil)),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  mutual: Show,
+  recursive_argument: value
+}
+
+definition{
+  name: docItems,
+  parameters: [items : LexLeanStd.Json::Json],
+  result: (List SurfaceDoc::Doc),
+  body: (match items
+    | LexLeanStd.Json::Json.JBool flag => (nil SurfaceDoc::Doc)
+    | LexLeanStd.Json::Json.JInt negative magnitude => (nil SurfaceDoc::Doc)
+    | LexLeanStd.Json::Json.JStr text => (nil SurfaceDoc::Doc)
+    | LexLeanStd.Json::Json.JArr inner => (nil SurfaceDoc::Doc)
+    | LexLeanStd.Json::Json.JObj inner => (nil SurfaceDoc::Doc)
+    | LexLeanStd.Json::Json.JNil => (nil SurfaceDoc::Doc)
+    | LexLeanStd.Json::Json.JItem element rest => (cons (docValue element) (docItems rest))
+    | LexLeanStd.Json::Json.JMember key inner rest => (nil SurfaceDoc::Doc)),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  mutual: Show,
+  recursive_argument: items
+}
+
+definition{
+  name: docMembers,
+  parameters: [members : LexLeanStd.Json::Json],
+  result: (List (Bytes * SurfaceDoc::Doc)),
+  body: (match members
+    | LexLeanStd.Json::Json.JBool flag => (nil (Bytes * SurfaceDoc::Doc))
+    | LexLeanStd.Json::Json.JInt negative magnitude => (nil (Bytes * SurfaceDoc::Doc))
+    | LexLeanStd.Json::Json.JStr text => (nil (Bytes * SurfaceDoc::Doc))
+    | LexLeanStd.Json::Json.JArr inner => (nil (Bytes * SurfaceDoc::Doc))
+    | LexLeanStd.Json::Json.JObj inner => (nil (Bytes * SurfaceDoc::Doc))
+    | LexLeanStd.Json::Json.JNil => (nil (Bytes * SurfaceDoc::Doc))
+    | LexLeanStd.Json::Json.JItem element rest => (nil (Bytes * SurfaceDoc::Doc))
+    | LexLeanStd.Json::Json.JMember key inner rest => (cons (key, (docValue inner)) (docMembers rest))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  mutual: Show,
+  recursive_argument: members
+}
+
+definition{
+  name: docNodes,
+  parameters: [node : SurfaceDoc::Doc],
+  result: Nat,
+  body: (match node
+    | SurfaceDoc::Doc.DNil => 1
+    | SurfaceDoc::Doc.DText piece => 1
+    | SurfaceDoc::Doc.DSeq head tail => (let left : Nat := (docNodes head); (let right : Nat := (docNodes tail); ((1 + left) + right)))
+    | SurfaceDoc::Doc.DNest amount inner => (let inside : Nat := (docNodes inner); (1 + inside))
+    | SurfaceDoc::Doc.DLine => 1
+    | SurfaceDoc::Doc.DSoft => 1
+    | SurfaceDoc::Doc.DGroup inner => (let inside : Nat := (docNodes inner); (1 + inside))),
+  executable: true,
+  recursive_argument: node
+}
+
+definition{
+  name: printGeneric,
+  parameters: [value : LexLeanStd.Json::Json],
+  result: Bytes,
+  body: (let node : SurfaceDoc::Doc := (docValue value); (SurfaceDoc::renderDoc node 100 (docNodes node))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}
