@@ -12,8 +12,8 @@ use std::path::Path;
 use std::time::{Duration, Instant};
 
 use lexlean::calculus::rust::package::{Errors, Export, Passing};
-use lexlean::calculus::rust::rt_validate::Host;
 use lexlean::calculus::rust::rt::Item;
+use lexlean::calculus::rust::rt_validate::Host;
 use lexlean::calculus::rust::{host, rt_decode, rt_validate};
 use lexlean::calculus::{Program, Ty};
 
@@ -81,7 +81,11 @@ fn read(path: &str) -> String {
 /// validator, with the effects that make its names admitted.
 fn module() {
     let text = read(MODULE);
-    assert_eq!(text, read(SHIPPED), "the shipped copy is the module byte for byte");
+    assert_eq!(
+        text,
+        read(SHIPPED),
+        "the shipped copy is the module byte for byte"
+    );
     let embedded = rt_decode::embedded_host().expect("the embedded module");
     assert_eq!(embedded, text, "the embedded copy is the shipped one");
     for name in CRATES {
@@ -105,7 +109,10 @@ fn module() {
                 let error = verdict.expect_err(name);
                 assert!(error.contains("hidden-effect"), "{name}: {error}");
             }
-            _ => assert!(verdict.is_ok(), "{name} names nothing of the host: {verdict:?}"),
+            _ => assert!(
+                verdict.is_ok(),
+                "{name} names nothing of the host: {verdict:?}"
+            ),
         }
     }
     // A crate with one effect admitted refuses the other's names.
@@ -244,11 +251,17 @@ fn rendered(program: &Program, effects: &[&str]) -> String {
 fn effects(program: &Program) {
     let full = rendered(program, &["allocation", "files", "overflow", "process"]);
     for name in HOST_NAMES {
-        assert!(full.contains(name), "a root with both effects names `{name}`");
+        assert!(
+            full.contains(name),
+            "a root with both effects names `{name}`"
+        );
     }
     let bare = rendered(program, &["allocation", "overflow"]);
     for name in HOST_NAMES {
-        assert!(!bare.contains(name), "a root with neither effect names `{name}`");
+        assert!(
+            !bare.contains(name),
+            "a root with neither effect names `{name}`"
+        );
     }
     assert!(bare.contains("refuse"), "the groups it lacks refuse");
     let files_only = rendered(program, &["allocation", "files", "overflow"]);
@@ -257,7 +270,11 @@ fn effects(program: &Program) {
 
 /// Run `binary` in `directory` and wait at most `limit`: its status, standard
 /// output, and standard error, or `None` for a run that did not end.
-fn execute(binary: &Path, directory: &Path, limit: Duration) -> Option<(Option<i32>, Vec<u8>, Vec<u8>)> {
+fn execute(
+    binary: &Path,
+    directory: &Path,
+    limit: Duration,
+) -> Option<(Option<i32>, Vec<u8>, Vec<u8>)> {
     let out = directory.join("stdout.bin");
     let err = directory.join("stderr.bin");
     let work = directory.join("run");
@@ -285,7 +302,9 @@ fn execute(binary: &Path, directory: &Path, limit: Duration) -> Option<(Option<i
 }
 
 /// Build the package `files` under cargo and run it, as the `run` function does.
-fn build_and_run(files: &BTreeMap<String, Vec<u8>>) -> Result<Option<(Option<i32>, Vec<u8>, Vec<u8>)>, String> {
+fn build_and_run(
+    files: &BTreeMap<String, Vec<u8>>,
+) -> Result<Option<(Option<i32>, Vec<u8>, Vec<u8>)>, String> {
     let directory = tempfile::tempdir().expect("a directory");
     let package = directory.path().join("package");
     // The driver is the binary of the package itself, so the files are
@@ -316,12 +335,9 @@ fn fixture(project: &P) {
             targets: vec!["rust-std".to_owned()],
         }],
     };
-    let (output, _) = crate::production_consumer::export(
-        &project.root.join("lexlean.toml"),
-        &application,
-        &[],
-    )
-    .expect("the command root certifies and exports");
+    let (output, _) =
+        crate::production_consumer::export(&project.root.join("lexlean.toml"), &application, &[])
+            .expect("the command root certifies and exports");
     let tree = crate::production_export::tree(&project.root.join(&output.bundle));
     let main = tree
         .keys()
@@ -358,9 +374,15 @@ fn fixture(project: &P) {
     // Each plant changes it, or stops the driver from building.
     let text = String::from_utf8(files["src/main.rs"].clone()).expect("utf-8");
     for (name, from, to) in PLANTS {
-        assert!(text.contains(from), "{name}: the printed driver has {from:?}");
+        assert!(
+            text.contains(from),
+            "{name}: the printed driver has {from:?}"
+        );
         let mut planted = files.clone();
-        planted.insert("src/main.rs".to_owned(), text.replacen(from, to, 1).into_bytes());
+        planted.insert(
+            "src/main.rs".to_owned(),
+            text.replacen(from, to, 1).into_bytes(),
+        );
         let result = build_and_run(&planted);
         assert!(
             result.as_ref().map_or(true, |ran| *ran != vector),
@@ -376,7 +398,10 @@ pub fn run(id: &str) {
     let project = {
         let project = P::workspace_project(FIXTURE, &[FIXTURE, "stdlib"]);
         std::fs::write(
-            project.workspace_dir().join("lexlean-workspace.toml").as_std_path(),
+            project
+                .workspace_dir()
+                .join("lexlean-workspace.toml")
+                .as_std_path(),
             format!("spec = \"lexlean/workspace/1\"\nmembers = [\"stdlib\", \"{FIXTURE}\"]\n"),
         )
         .expect("the workspace file");
