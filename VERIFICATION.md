@@ -12407,3 +12407,60 @@ weighting makes its partition assertion fail. This is a harness correction,
 not a change to the generated packages or a resolution of #164's consumer
 compiler-nesting question. A Windows rerun is required to establish whether
 this bounded partition removes the observed compiler failure.
+
+## Single-kernel replay binding source preparation (VR-28, #391)
+
+This bounded phase prepares the record and association guard on
+`0a01df682426cc54b63363e2eec7195cd8a8f318`. The register row, matching
+scenario and named case were committed first in `4140e8883`. Exact
+`conformance_vr_28` then failed with exit 101 because the existing process
+parser refused `olean` as an unknown field.
+
+`ChildRecord` now carries an optional typed binding: a required main
+`.olean` SHA-256 and optional `.olean.server` and `.olean.private` digests.
+Omission means absence under the existing canonical JSON rules; an empty
+file has a present SHA-256 and differs from absence. A private part without
+its server part is refused. Both strict process schemas admit the same
+closed object. The existing shard record serializer/parser transports it;
+there is no additional receipt file, digest recipe, or audit framework.
+
+Focused evidence under the shared validation lock, with two Cargo jobs and
+incremental compilation disabled:
+
+| Check | Observed |
+| --- | --- |
+| Exact `conformance_vr_28`, existing parser | Refused the new binding, exit 101 |
+| Exact `conformance_vr_28`, binding and pure guard | Passed; malformed/unknown fields, invalid digests, orphan private parts, missing/failed/duplicate replay, different module/argv, substituted main/server/private bytes, absent versus present empty companions, staged mismatches, and the certificate tail are exercised |
+| Existing partition unit tests | 3 passed; the round-trip now preserves all three part digests through the existing export/import transport |
+| Clippy for lexlean and repo-conformance, all targets/features, warnings denied | Passed |
+
+This validates the platform-independent record and pure association check.
+The helper is separate from existing toolchain/output gates and does not
+replace them. No skip flag, compilation/replay capture, or publication
+call site was changed in this phase; no full VR-28 acceptance is claimed.
+The real false-declaration replay, actual-input capture, shard substitution,
+width invariance, gateway/Atlas measurements, and complete gate evidence
+remain integration requirements. No model, identity or artifact writer ran.
+Both schema changes affect every language identity partition, so the
+committed identities and generated artifacts require one coordinated writer
+wave on the reviewed integration head.
+
+The pinned Lean sources establish two input details that call-site work
+must preserve. `LeanChecker.lean`'s `replayFromImports` loads the exported
+part, the server part when present, and then the private part when present;
+`Lean.Environment.readModuleDataParts` reads these distinct files. A main-only
+digest would not bind the checked declarations. Its CLI also enumerates a
+target module prefix: accepted names such as `A` and `A.B` can make a replay
+process check descendants too. Removing the in-process pass does not imply
+globally exactly-once declaration replay, and this work does not replace or
+modify the pinned checker.
+
+Actual resolution also depends on Lake's augmented search path and Lean's
+first package-root rule, rather than the first existing full module path.
+A proposed narrow preflight query uses bare `lake env`, through the existing
+bounded runner, and decodes only raw `LEAN_PATH` before normalization. No
+full environment dump belongs in tool output or canonical evidence. The
+query emits unescaped `NAME=VALUE` lines, while current path rules do not
+forbid newlines. Duplicate-row rejection alone therefore does not establish
+unambiguous decoding for every accepted path; that design point requires
+review before capture and skip flags are connected.

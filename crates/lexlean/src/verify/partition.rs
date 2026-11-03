@@ -514,6 +514,7 @@ mod tests {
         let olean = staging.path().join("oleans/X/M.olean");
         std::fs::create_dir_all(olean.parent().expect("parent")).expect("mkdir");
         std::fs::write(&olean, b"olean").expect("write");
+        std::fs::write(staging.path().join("oleans/X/M.olean.server"), b"server").expect("write");
         std::fs::write(staging.path().join("oleans/X/M.olean.private"), b"private").expect("write");
         std::fs::write(staging.path().join("oleans/X/N.olean"), b"imported").expect("write");
         let record = ChildRecord {
@@ -524,9 +525,15 @@ mod tests {
             stdout: "\n".to_owned(),
             stderr: String::new(),
             executable_sha256: crate::artifact::content_id::Sha256Digest::of(b"lean"),
+            olean: Some(crate::verify::child::OLeanParts {
+                main: crate::artifact::content_id::Sha256Digest::of(b"olean"),
+                server: Some(crate::artifact::content_id::Sha256Digest::of(b"server")),
+                private: Some(crate::artifact::content_id::Sha256Digest::of(b"private")),
+            }),
         };
         let audit_record = ChildRecord {
             module: Some("LexLeanAudit.X.M".to_owned()),
+            olean: None,
             ..record.clone()
         };
         for (relative, written) in [
@@ -562,6 +569,10 @@ mod tests {
         assert!(olean_root.join("X/M.olean.private").as_std_path().is_file());
         assert_eq!(imported.lean.len(), 1);
         assert!(imported.lean.contains_key("X.M"));
+        assert_eq!(
+            imported.lean["X.M"].olean, record.olean,
+            "the existing part transport preserves all olean bindings"
+        );
         assert!(imported.leanchecker.is_empty());
         assert!(imported.audit.contains_key("LexLeanAudit.X.M"));
         // The records name the join's `lean`; a join whose `lean` is another

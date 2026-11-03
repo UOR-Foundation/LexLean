@@ -1361,4 +1361,146 @@ fn binding_record_round_trip() {
         json.to_file_bytes(),
         "the binding survives the same shard record serialization"
     );
+    let Json::Obj(mut legacy_fields) = json.clone() else {
+        unreachable!()
+    };
+    legacy_fields.remove("olean");
+    let legacy = Json::Obj(legacy_fields);
+    assert_eq!(
+        ChildRecord::from_json(&legacy)
+            .expect("unbound process records remain readable")
+            .to_json(),
+        legacy
+    );
+    let changed = |binding: Json| {
+        let Json::Obj(mut fields) = json.clone() else {
+            unreachable!()
+        };
+        fields.insert("olean".to_owned(), binding);
+        Json::Obj(fields)
+    };
+    for malformed in [
+        Json::Arr(Vec::new()),
+        Json::object(Vec::new()),
+        Json::object(vec![("main", Json::Str("0".repeat(63)))]),
+        Json::object(vec![("main", digest(b"main")), ("server", Json::Int(0))]),
+        Json::object(vec![
+            ("main", digest(b"main")),
+            ("private", digest(b"orphan")),
+        ]),
+        Json::object(vec![("main", digest(b"main")), ("extra", digest(b"extra"))]),
+    ] {
+        assert!(
+            ChildRecord::from_json(&changed(malformed)).is_err(),
+            "a malformed binding is refused"
+        );
+    }
+    replay_binding_guard_plants(record);
+}
+
+fn replay_binding_guard_plants(mut compile: lexlean::verify::child::ChildRecord) {
+    use lexlean::artifact::content_id::Sha256Digest;
+    use lexlean::verify::child::OLeanParts;
+    use lexlean::verify::leanchecker::check_replay_bindings;
+    use std::collections::{BTreeMap, BTreeSet};
+
+    let module = "Demo.M".to_owned();
+    let parts = OLeanParts {
+        main: Sha256Digest::of(b"main"),
+        server: Some(Sha256Digest::of(b"server")),
+        private: Some(Sha256Digest::of(b"private")),
+    };
+    compile
+        .argv
+        .extend(["-D".to_owned(), "debug.skipKernelTC=true".to_owned()]);
+    compile.olean = Some(parts.clone());
+    let mut replay = compile.clone();
+    replay.tool = "leanchecker".to_owned();
+    replay.executable_sha256 = Sha256Digest::of(b"leanchecker");
+    replay.argv = vec![
+        "env".to_owned(),
+        "$TOOLCHAIN/bin/leanchecker".to_owned(),
+        module.clone(),
+    ];
+    let staged: BTreeMap<_, _> = [(module.clone(), parts.clone())].into_iter().collect();
+    let no_certificates = BTreeSet::new();
+    let check = |records: &[lexlean::verify::child::ChildRecord], published: &BTreeMap<_, _>| {
+        check_replay_bindings(records, published, &no_certificates)
+    };
+    check(&[compile.clone(), replay.clone()], &staged).expect("same module and complete bytes");
+    let certificates = [module.clone()].into_iter().collect();
+    check_replay_bindings(
+        &[compile.clone(), replay.clone()],
+        &BTreeMap::new(),
+        &certificates,
+    )
+    .expect("certificate tail retains its binding after its scratch files are removed");
+    let refuse = |records: &[lexlean::verify::child::ChildRecord], published: &BTreeMap<_, _>| {
+        let error = check(records, published).expect_err("a binding hole refuses publication");
+        assert_eq!(error.code.as_str(), "LLI9001");
+    };
+    refuse(std::slice::from_ref(&compile), &staged);
+    refuse(&[compile.clone(), replay.clone(), replay.clone()], &staged);
+    refuse(&[compile.clone(), compile.clone(), replay.clone()], &staged);
+    for part in 0..3 {
+        let mut substituted = replay.clone();
+        let binding = substituted.olean.as_mut().expect("bound");
+        match part {
+            0 => binding.main = Sha256Digest::of(b"another main"),
+            1 => binding.server = Some(Sha256Digest::of(b"another server")),
+            2 => binding.private = Some(Sha256Digest::of(b"another private")),
+            _ => unreachable!(),
+        }
+        refuse(&[compile.clone(), substituted], &staged);
+    }
+    for missing in [true, false] {
+        let mut c = compile.clone();
+        let mut r = replay.clone();
+        if missing {
+            c.olean = None;
+        } else {
+            r.olean = None;
+        }
+        refuse(&[c, r], &staged);
+    }
+    let mut failed = replay.clone();
+    failed.exit_code = 1;
+    refuse(&[compile.clone(), failed], &staged);
+    let mut wrong_argument = replay.clone();
+    wrong_argument.argv[2] = "Demo.Other".to_owned();
+    refuse(&[compile.clone(), wrong_argument], &staged);
+    let mut wrong_tool = replay.clone();
+    wrong_tool.tool = "lean".to_owned();
+    refuse(&[compile.clone(), wrong_tool], &staged);
+    let mut another_name = replay.clone();
+    another_name.module = Some("Demo.Other".to_owned());
+    refuse(&[compile.clone(), another_name], &staged);
+    refuse(&[compile.clone(), replay.clone()], &BTreeMap::new());
+    let mut changed_staged = staged.clone();
+    changed_staged.get_mut(&module).expect("staged").private = None;
+    refuse(&[compile.clone(), replay.clone()], &changed_staged);
+    let mut omitted = compile.clone();
+    let mut omitted_replay = replay.clone();
+    omitted.olean.as_mut().expect("bound").private = None;
+    omitted_replay.olean.as_mut().expect("bound").private = None;
+    refuse(&[omitted, omitted_replay], &staged);
+    let absent = OLeanParts {
+        main: parts.main,
+        server: None,
+        private: None,
+    };
+    let empty_server = OLeanParts {
+        server: Some(Sha256Digest::of(b"")),
+        ..absent.clone()
+    };
+    assert_ne!(empty_server, absent, "empty bytes are present, not absent");
+    let mut no_server_compile = compile.clone();
+    let mut no_server_replay = replay.clone();
+    no_server_compile.olean = Some(absent.clone());
+    no_server_replay.olean = Some(absent);
+    let empty_staged = [(module, empty_server)].into_iter().collect();
+    refuse(&[no_server_compile, no_server_replay], &empty_staged);
+    let mut orphan = compile.clone();
+    orphan.olean.as_mut().expect("bound").server = None;
+    refuse(&[orphan, replay], &staged);
 }

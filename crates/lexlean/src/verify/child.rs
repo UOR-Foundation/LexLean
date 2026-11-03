@@ -174,6 +174,61 @@ pub fn first_unexpected_absolute_path(text: &str) -> Option<(usize, String)> {
     None
 }
 
+/// The exact module data parts compiled or consumed by a replay (VR-28).
+/// An absent companion differs from a present file, including an empty one.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OLeanParts {
+    /// SHA-256 of the exported `.olean` bytes.
+    pub main: Sha256Digest,
+    /// SHA-256 of `.olean.server`, when present.
+    pub server: Option<Sha256Digest>,
+    /// SHA-256 of `.olean.private`, when present after the server part.
+    pub private: Option<Sha256Digest>,
+}
+
+impl OLeanParts {
+    pub(crate) fn validate(&self) -> Result<(), String> {
+        if self.private.is_some() && self.server.is_none() {
+            return Err("a private olean part requires its server part".to_owned());
+        }
+        Ok(())
+    }
+
+    fn to_json(&self) -> Json {
+        let mut fields = vec![("main", Json::Str(self.main.to_hex()))];
+        for (name, digest) in [("server", self.server), ("private", self.private)] {
+            if let Some(digest) = digest {
+                fields.push((name, Json::Str(digest.to_hex())));
+            }
+        }
+        Json::object(fields)
+    }
+
+    fn from_json(json: &Json) -> Result<Self, String> {
+        let Json::Obj(fields) = json else {
+            return Err("`olean` is an object".to_owned());
+        };
+        if let Some(unknown) = fields
+            .keys()
+            .find(|key| !matches!(key.as_str(), "main" | "server" | "private"))
+        {
+            return Err(format!("`{unknown}` is not a field of an olean binding"));
+        }
+        let digest = |key: &str| match fields.get(key) {
+            None => Ok(None),
+            Some(Json::Str(text)) => Sha256Digest::from_hex(text).map(Some),
+            Some(_) => Err(format!("olean `{key}` is a SHA-256 string")),
+        };
+        let parts = Self {
+            main: digest("main")?.ok_or_else(|| "olean `main` is required".to_owned())?,
+            server: digest("server")?,
+            private: digest("private")?,
+        };
+        parts.validate()?;
+        Ok(parts)
+    }
+}
+
 /// One recorded child process (§22.3).
 #[derive(Debug, Clone)]
 pub struct ChildRecord {
@@ -191,6 +246,8 @@ pub struct ChildRecord {
     pub stderr: String,
     /// SHA-256 of the executable.
     pub executable_sha256: Sha256Digest,
+    /// The module bytes produced or replayed, when this process carries a binding.
+    pub olean: Option<OLeanParts>,
 }
 
 impl ChildRecord {
@@ -221,6 +278,9 @@ impl ChildRecord {
         ];
         if let Some(module) = &self.module {
             fields.push(("module", Json::Str(module.clone())));
+        }
+        if let Some(parts) = &self.olean {
+            fields.push(("olean", parts.to_json()));
         }
         Json::object(fields)
     }
@@ -281,6 +341,7 @@ impl ChildRecord {
             "stdout_sha256",
             "stderr_sha256",
             "module",
+            "olean",
         ]
         .into_iter()
         .collect();
@@ -295,6 +356,7 @@ impl ChildRecord {
             stdout,
             stderr,
             executable_sha256: Sha256Digest::from_hex(&text("executable_sha256")?)?,
+            olean: fields.get("olean").map(OLeanParts::from_json).transpose()?,
         })
     }
 }
@@ -600,6 +662,7 @@ pub fn run(
         stdout: normalizer.normalize(&stdout_bytes),
         stderr: normalizer.normalize(&stderr_bytes),
         executable_sha256: spec.executable_sha256,
+        olean: None,
     })
 }
 

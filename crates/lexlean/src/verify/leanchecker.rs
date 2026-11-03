@@ -72,3 +72,89 @@ pub fn replay_module(
     }
     Ok(record)
 }
+
+/// Require a byte-bound replay for every compilation without its kernel pass.
+///
+/// The existing toolchain and partition gates establish executable identities
+/// and judge stage output. This guard checks the association of those records:
+/// module identity, successful replay, complete olean parts, and the staged
+/// project artifacts. Certificates retain their bindings after scratch cleanup.
+///
+/// # Errors
+/// A missing, failed, duplicate, malformed, or substituted binding (LLI9001).
+pub fn check_replay_bindings(
+    records: &[ChildRecord],
+    staged_projects: &std::collections::BTreeMap<String, crate::verify::child::OLeanParts>,
+    certificates: &std::collections::BTreeSet<String>,
+) -> Result<(), Diagnostic> {
+    let hole = |message| {
+        Diagnostic::new(
+            code!("LLI9001"),
+            format!("phase verify: kernel replay binding: {message}"),
+        )
+    };
+    let skipped = |record: &ChildRecord| {
+        record.argv.iter().any(|argument| {
+            argument == "debug.skipKernelTC=true" || argument == "-Ddebug.skipKernelTC=true"
+        })
+    };
+    let mut compiled = std::collections::BTreeSet::new();
+    for compile in records.iter().filter(|record| skipped(record)) {
+        let module = compile
+            .module
+            .as_deref()
+            .ok_or_else(|| hole("a flagged compilation has no module".to_owned()))?;
+        if compile.tool != "lean"
+            || (!staged_projects.contains_key(module) && !certificates.contains(module))
+        {
+            return Err(hole(format!(
+                "`{module}` is not an eligible project or certificate compilation"
+            )));
+        }
+        if !compiled.insert(module) || compile.exit_code != 0 {
+            return Err(hole(format!(
+                "`{module}` has a duplicate or unsuccessful flagged compilation"
+            )));
+        }
+        let produced = compile
+            .olean
+            .as_ref()
+            .ok_or_else(|| hole(format!("`{module}` has no compile output binding")))?;
+        produced.validate().map_err(hole)?;
+        let mut matching = records.iter().filter(|record| {
+            record.tool == "leanchecker" && record.module.as_deref() == Some(module)
+        });
+        let replay = matching
+            .next()
+            .ok_or_else(|| hole(format!("`{module}` has no replay record")))?;
+        if matching.next().is_some() || replay.exit_code != 0 {
+            return Err(hole(format!(
+                "`{module}` has a duplicate or unsuccessful replay"
+            )));
+        }
+        if replay.argv.len() != 3 || replay.argv[0] != "env" || replay.argv[2] != module {
+            return Err(hole(format!(
+                "`{module}` replay argv does not name that module"
+            )));
+        }
+        let consumed = replay
+            .olean
+            .as_ref()
+            .ok_or_else(|| hole(format!("`{module}` has no replay input binding")))?;
+        consumed.validate().map_err(hole)?;
+        if produced != consumed {
+            return Err(hole(format!(
+                "`{module}` replay input differs from its compiled olean parts"
+            )));
+        }
+        if let Some(staged) = staged_projects.get(module) {
+            staged.validate().map_err(hole)?;
+            if produced != staged {
+                return Err(hole(format!(
+                    "`{module}` staged artifacts differ from its compiled and replayed olean parts"
+                )));
+            }
+        }
+    }
+    Ok(())
+}
