@@ -1,0 +1,300 @@
+\begin{lexlean}{JsonRead}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{Json}
+\importmodule{Numeral}
+\importmodule{Order}
+\importmodule{Text}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: Frame,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: FrameArr, fields: [Json::Json]},
+    {name: FrameObj, fields: [Bytes, Json::Json]}
+  ]
+}
+
+inductive{
+  name: Reading,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: Read, fields: [Nat, Nat, (List Frame), Json::Json]}
+  ]
+}
+
+definition{
+  name: byteOf,
+  parameters: [text : Bytes, position : Nat],
+  result: Nat,
+  body: (match (prim index text position : (Option UInt8))
+    | Option.some byte => (prim to_nat byte : Nat)
+    | Option.none => 256),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: digitStep,
+  parameters: [text : Bytes, position : Nat],
+  result: (Option Nat),
+  body: (let value : Nat := (byteOf text position); (if ((47 <? value) && (value <? 58)) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat]))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: digitsEnd,
+  parameters: [text : Bytes, start : Nat],
+  result: Nat,
+  body: (first (prim iterate_until (fun [text] (position : Nat) => (digitStep text position)) ((prim length text : Nat) + 1) start : (Nat * Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: inRange,
+  parameters: [negative : Bool, magnitude : Nat],
+  result: Bool,
+  body: (if negative then ((0 <? magnitude) && (magnitude <=? 9223372036854775808)) else (magnitude <=? 9223372036854775807)),
+  executable: true
+}
+
+definition{
+  name: readInteger,
+  parameters: [text : Bytes, position : Nat],
+  result: (Option (Nat * Json::Json)),
+  body: (let negative : Bool := ((byteOf text position) =? 45); (let start : Nat := (if negative then (position + 1) else position); (let stop : Nat := (digitsEnd text start); (match (Numeral::parseDecimal (Text::sliceOr text start (prim subtract stop start : Nat)))
+    | Option.some magnitude => (if (inRange negative magnitude) then (ctor Option.some [(Nat * Json::Json)] (stop, (ctor Json::Json.JInt negative magnitude))) else (ctor Option.none [(Nat * Json::Json)]))
+    | Option.none => (ctor Option.none [(Nat * Json::Json)]))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: simpleEscape,
+  parameters: [letter : Nat],
+  result: Bytes,
+  body: (if (letter =? 34) then 0x22 else (if (letter =? 92) then 0x5c else (if (letter =? 98) then 0x08 else (if (letter =? 102) then 0x0c else (if (letter =? 110) then 0x0a else (if (letter =? 114) then 0x0d else (if (letter =? 116) then 0x09 else 0x))))))),
+  executable: true
+}
+
+definition{
+  name: shortForm,
+  parameters: [value : Nat],
+  result: Bool,
+  body: ((value =? 8) || ((value =? 9) || ((value =? 10) || ((value =? 12) || (value =? 13))))),
+  executable: true
+}
+
+definition{
+  name: controlEscape,
+  parameters: [text : Bytes, position : Nat],
+  result: Bytes,
+  body: (if (prim equal (Text::sliceOr text (position + 2) 2) 0x3030 : Bool) then (match (Numeral::parseHex (Text::sliceOr text (position + 4) 2))
+    | Option.some decoded => (let value : Nat := (byteOf decoded 0); (if (value <? 32) then (if (shortForm value) then 0x else decoded) else 0x))
+    | Option.none => 0x) else 0x),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: escapeStep,
+  parameters: [text : Bytes, position : Nat, out : Bytes],
+  result: (Option (Nat * (Bytes * Nat))),
+  body: (let letter : Nat := (byteOf text (position + 1)); (let piece : Bytes := (if (letter =? 117) then (controlEscape text position) else (simpleEscape letter)); (if (prim equal piece 0x : Bool) then (ctor Option.some [(Nat * (Bytes * Nat))] (position, (out, 2))) else (ctor Option.some [(Nat * (Bytes * Nat))] ((if (letter =? 117) then (position + 6) else (position + 2)), ((prim append out piece : Bytes), 0)))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: stringStep,
+  parameters: [text : Bytes, state : (Nat * (Bytes * Nat))],
+  result: (Option (Nat * (Bytes * Nat))),
+  body: (let position : Nat := (first state); (let out : Bytes := (first (second state)); (if ((second (second state)) =? 0) then (let byte : Nat := (byteOf text position); (if (byte =? 34) then (ctor Option.some [(Nat * (Bytes * Nat))] ((position + 1), (out, 1))) else (if (byte =? 92) then (escapeStep text position out) else (if ((byte <? 32) || (byte =? 256)) then (ctor Option.some [(Nat * (Bytes * Nat))] (position, (out, 2))) else (ctor Option.some [(Nat * (Bytes * Nat))] ((position + 1), ((prim append out (Text::sliceOr text position 1) : Bytes), 0))))))) else (ctor Option.none [(Nat * (Bytes * Nat))])))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: scanString,
+  parameters: [text : Bytes, start : Nat],
+  result: (Option (Nat * Bytes)),
+  body: (let done : ((Nat * (Bytes * Nat)) * Bool) := (prim iterate_until (fun [text] (state : (Nat * (Bytes * Nat))) => (stringStep text state)) ((prim length text : Nat) + 1) (start, (0x, 0)) : ((Nat * (Bytes * Nat)) * Bool)); (if ((second (second (first done))) =? 1) then (ctor Option.some [(Nat * Bytes)] ((first (first done)), (first (second (first done))))) else (ctor Option.none [(Nat * Bytes)]))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: reverseStep,
+  parameters: [state : (Json::Json * Json::Json)],
+  result: (Option (Json::Json * Json::Json)),
+  body: (match (first state)
+    | Json::Json.JBool flag => (ctor Option.none [(Json::Json * Json::Json)])
+    | Json::Json.JInt negative magnitude => (ctor Option.none [(Json::Json * Json::Json)])
+    | Json::Json.JStr text => (ctor Option.none [(Json::Json * Json::Json)])
+    | Json::Json.JArr inner => (ctor Option.none [(Json::Json * Json::Json)])
+    | Json::Json.JObj inner => (ctor Option.none [(Json::Json * Json::Json)])
+    | Json::Json.JNil => (ctor Option.none [(Json::Json * Json::Json)])
+    | Json::Json.JItem element rest => (ctor Option.some [(Json::Json * Json::Json)] (rest, (ctor Json::Json.JItem element (second state))))
+    | Json::Json.JMember key inner rest => (ctor Option.some [(Json::Json * Json::Json)] (rest, (ctor Json::Json.JMember key inner (second state))))),
+  executable: true
+}
+
+definition{
+  name: reverseSpine,
+  parameters: [spine : Json::Json, fuel : Nat],
+  result: Json::Json,
+  body: (second (first (prim iterate_until (fun (state : (Json::Json * Json::Json)) => (reverseStep state)) fuel (spine, (ctor Json::Json.JNil)) : ((Json::Json * Json::Json) * Bool)))),
+  executable: true
+}
+
+definition{
+  name: keyAdmitted,
+  parameters: [members : Json::Json, key : Bytes],
+  result: Bool,
+  body: (match members
+    | Json::Json.JBool flag => true
+    | Json::Json.JInt negative magnitude => true
+    | Json::Json.JStr text => true
+    | Json::Json.JArr inner => true
+    | Json::Json.JObj inner => true
+    | Json::Json.JNil => true
+    | Json::Json.JItem element rest => true
+    | Json::Json.JMember last inner rest => (Order::lessBytes last key)),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: broken,
+  parameters: [position : Nat],
+  result: Reading,
+  body: (ctor Reading.Read position 9 (nil Frame) (ctor Json::Json.JNil)),
+  executable: true
+}
+
+definition{
+  name: complete,
+  parameters: [position : Nat, stack : (List Frame), value : Json::Json],
+  result: Reading,
+  body: (match stack
+    | List.nil => (ctor Reading.Read position 7 (nil Frame) value)
+    | List.cons top below => (match top
+      | Frame.FrameArr acc => (ctor Reading.Read position 5 (cons (ctor Frame.FrameArr (ctor Json::Json.JItem value acc)) below) (ctor Json::Json.JNil))
+      | Frame.FrameObj key acc => (ctor Reading.Read position 5 (cons (ctor Frame.FrameObj 0x (ctor Json::Json.JMember key value acc)) below) (ctor Json::Json.JNil)))),
+  executable: true
+}
+
+definition{
+  name: close,
+  parameters: [text : Bytes, position : Nat, stack : (List Frame)],
+  result: Reading,
+  body: (match stack
+    | List.nil => (broken position)
+    | List.cons top below => (match top
+      | Frame.FrameArr acc => (complete (position + 1) below (ctor Json::Json.JArr (reverseSpine acc ((prim length text : Nat) + 1))))
+      | Frame.FrameObj key acc => (complete (position + 1) below (ctor Json::Json.JObj (reverseSpine acc ((prim length text : Nat) + 1)))))),
+  executable: true
+}
+
+definition{
+  name: valueAt,
+  parameters: [text : Bytes, position : Nat, mode : Nat, stack : (List Frame), byte : Nat],
+  result: Reading,
+  body: (if (byte =? 34) then (match (scanString text (position + 1))
+      | Option.some scanned => (complete (first scanned) stack (ctor Json::Json.JStr (second scanned)))
+      | Option.none => (broken position))
+    else (if (byte =? 116) then (if (prim equal (Text::sliceOr text position 4) 0x74727565 : Bool) then (complete (position + 4) stack (ctor Json::Json.JBool true)) else (broken position))
+    else (if (byte =? 102) then (if (prim equal (Text::sliceOr text position 5) 0x66616c7365 : Bool) then (complete (position + 5) stack (ctor Json::Json.JBool false)) else (broken position))
+    else (if (byte =? 91) then (ctor Reading.Read (position + 1) 1 (cons (ctor Frame.FrameArr (ctor Json::Json.JNil)) stack) (ctor Json::Json.JNil))
+    else (if (byte =? 123) then (ctor Reading.Read (position + 1) 3 (cons (ctor Frame.FrameObj 0x (ctor Json::Json.JNil)) stack) (ctor Json::Json.JNil))
+    else (if ((byte =? 93) && (mode =? 1)) then (close text position stack)
+    else (if ((byte =? 45) || ((47 <? byte) && (byte <? 58))) then (match (readInteger text position)
+      | Option.some read => (complete (first read) stack (second read))
+      | Option.none => (broken position))
+    else (broken position)))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: keyAt,
+  parameters: [text : Bytes, position : Nat, mode : Nat, stack : (List Frame), byte : Nat],
+  result: Reading,
+  body: (if (byte =? 34) then (match (scanString text (position + 1))
+      | Option.some scanned => (match stack
+        | List.nil => (broken position)
+        | List.cons top below => (match top
+          | Frame.FrameArr acc => (broken position)
+          | Frame.FrameObj pending acc => (if (keyAdmitted acc (second scanned)) then (ctor Reading.Read (first scanned) 4 (cons (ctor Frame.FrameObj (second scanned) acc) below) (ctor Json::Json.JNil)) else (broken position))))
+      | Option.none => (broken position))
+    else (if ((byte =? 125) && (mode =? 3)) then (close text position stack) else (broken position))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: afterAt,
+  parameters: [text : Bytes, position : Nat, stack : (List Frame), byte : Nat],
+  result: Reading,
+  body: (match stack
+    | List.nil => (broken position)
+    | List.cons top below => (match top
+      | Frame.FrameArr acc => (if (byte =? 44) then (ctor Reading.Read (position + 1) 0 stack (ctor Json::Json.JNil)) else (if (byte =? 93) then (close text position stack) else (broken position)))
+      | Frame.FrameObj key acc => (if (byte =? 44) then (ctor Reading.Read (position + 1) 2 stack (ctor Json::Json.JNil)) else (if (byte =? 125) then (close text position stack) else (broken position))))),
+  executable: true
+}
+
+definition{
+  name: advance,
+  parameters: [text : Bytes, position : Nat, mode : Nat, stack : (List Frame), done : Json::Json],
+  result: Reading,
+  body: (let byte : Nat := (byteOf text position); (if (mode =? 7) then (ctor Reading.Read position (if (byte =? 256) then 8 else 9) stack done) else (if (byte =? 256) then (broken position) else (if ((mode =? 0) || (mode =? 1)) then (valueAt text position mode stack byte) else (if ((mode =? 2) || (mode =? 3)) then (keyAt text position mode stack byte) else (if (mode =? 4) then (if (byte =? 58) then (ctor Reading.Read (position + 1) 0 stack done) else (broken position)) else (afterAt text position stack byte))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: readStep,
+  parameters: [text : Bytes, state : Reading],
+  result: (Option Reading),
+  body: (match state
+    | Reading.Read position mode stack done => (if (8 <=? mode) then (ctor Option.none [Reading]) else (ctor Option.some [Reading] (advance text position mode stack done)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: readValue,
+  parameters: [text : Bytes],
+  result: (Option Json::Json),
+  body: (match (first (prim iterate_until (fun [text] (state : Reading) => (readStep text state)) ((prim length text : Nat) + 3) (ctor Reading.Read 0 0 (nil Frame) (ctor Json::Json.JNil)) : (Reading * Bool)))
+    | Reading.Read position mode stack done => (if (mode =? 8) then (ctor Option.some [Json::Json] done) else (ctor Option.none [Json::Json]))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: readJson,
+  parameters: [text : Bytes],
+  result: (Option Json::Json),
+  body: (readValue text),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: readJsonFile,
+  parameters: [text : Bytes],
+  result: (Option Json::Json),
+  body: (let size : Nat := (prim length text : Nat); (if ((byteOf text (prim subtract size 1 : Nat)) =? 10) then (readValue (Text::sliceOr text 0 (prim subtract size 1 : Nat))) else (ctor Option.none [Json::Json]))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}
