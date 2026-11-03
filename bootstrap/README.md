@@ -19,3 +19,6 @@ library's `Buffer` (`stdlib/src/Buffer.lex.tex`), which it writes through.
 
 `src/StructuralGrammar.lex.tex` imports `PrimitiveScan` for the atoms it reads
 and the refusal it returns, and `Buffer` and `Numeral` from the standard library.
+
+`src/SurfaceLex.lex.tex` imports `AxiomOutput`, whose `whiteLength` holds the list of
+white space the oracle's `char::is_whitespace` has, and the standard library's `Buffer` and `Text`.

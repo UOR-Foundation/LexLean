@@ -1,0 +1,425 @@
+\begin{lexlean}{SurfaceLex}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{AxiomOutput}
+\importmodule{LexLeanStd.Buffer}
+\importmodule{LexLeanStd.Text}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: Token,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: LBrace, fields: []},
+    {name: RBrace, fields: []},
+    {name: LBrack, fields: []},
+    {name: RBrack, fields: []},
+    {name: LParen, fields: []},
+    {name: RParen, fields: []},
+    {name: Comma, fields: []},
+    {name: Colon, fields: []},
+    {name: ColonEq, fields: []},
+    {name: Scope, fields: []},
+    {name: Semi, fields: []},
+    {name: StrToken, fields: [Bytes]},
+    {name: WordToken, fields: [Bytes]}
+  ]
+}
+
+structure{
+  name: Spanned,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: token, type: Token}, {name: start, type: Nat}, {name: stop, type: Nat}]
+}
+
+structure{
+  name: Failure,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: offset, type: Nat}, {name: message, type: Bytes}]
+}
+
+structure{
+  name: Lx,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: pos, type: Nat},
+    {name: tokens, type: (List Spanned)},
+    {name: error, type: (Option Failure)}
+  ]
+}
+
+structure{
+  name: Scanned,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: pos, type: Nat},
+    {name: pieces, type: (List Bytes)},
+    {name: finished, type: Bool},
+    {name: error, type: (Option Failure)}
+  ]
+}
+
+structure{
+  name: Quoting,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: pos, type: Nat}, {name: pieces, type: (List Bytes)}]
+}
+
+definition{
+  name: lit,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: cat,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bytes,
+  body: (prim append left right : Bytes),
+  executable: true
+}
+
+definition{
+  name: byteOf,
+  parameters: [n : Nat],
+  result: Bytes,
+  body: (LexLeanStd.Text::sliceOr 0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff n 1),
+  executable: true
+}
+
+definition{
+  name: hexChar,
+  parameters: [n : Nat],
+  result: Bytes,
+  body: (LexLeanStd.Text::sliceOr 0x30313233343536373839616263646566 (prim remainder n 16 0 : Nat) 1),
+  executable: true
+}
+
+definition{
+  name: hexAbove,
+  parameters: [code : Nat, place : Nat],
+  result: Bytes,
+  body: (hexChar (prim quotient code place 0 : Nat)),
+  executable: true
+}
+
+definition{
+  name: hex4,
+  parameters: [code : Nat],
+  result: Bytes,
+  body: (cat (cat (hexAbove code 4096) (hexAbove code 256)) (cat (hexAbove code 16) (hexChar code))),
+  executable: true
+}
+
+definition{
+  name: hex2,
+  parameters: [code : Nat],
+  result: Bytes,
+  body: (cat (hexAbove code 16) (hexChar code)),
+  executable: true
+}
+
+definition{
+  name: joined,
+  parameters: [pieces : (List Bytes)],
+  result: Bytes,
+  body: (LexLeanStd.Buffer::joinAll (LexLeanStd.Text::reverse pieces)),
+  executable: true
+}
+
+definition{
+  name: reverseSpans,
+  parameters: [items : (List Spanned)],
+  result: (List Spanned),
+  body: (prim list_fold (fun (turned : (List Spanned)) (item : Spanned) => (cons item turned)) (nil Spanned) items : (List Spanned)),
+  executable: true
+}
+
+definition{
+  name: byteIs,
+  parameters: [subject : Bytes, position : Nat, value : UInt8],
+  result: Bool,
+  body: (match (LexLeanStd.Text::byteAt subject position)
+    | Option.some byte => (prim equal byte value : Bool)
+    | Option.none => false),
+  executable: true
+}
+
+definition{
+  name: byteNum,
+  parameters: [subject : Bytes, position : Nat],
+  result: Nat,
+  body: (match (LexLeanStd.Text::byteAt subject position)
+    | Option.some byte => (prim to_nat byte : Nat)
+    | Option.none => 0),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: hexOf,
+  parameters: [byte : UInt8],
+  result: (Option Nat),
+  body: (let value : Nat := (prim to_nat byte : Nat); (if (value <? 48) then (ctor Option.none [Nat]) else (if (value <=? 57) then (ctor Option.some [Nat] (prim subtract value 48 : Nat)) else (if (value <? 65) then (ctor Option.none [Nat]) else (if (value <=? 70) then (ctor Option.some [Nat] (prim subtract value 55 : Nat)) else (if (value <? 97) then (ctor Option.none [Nat]) else (if (value <=? 102) then (ctor Option.some [Nat] (prim subtract value 87 : Nat)) else (ctor Option.none [Nat])))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: hexAt,
+  parameters: [subject : Bytes, position : Nat],
+  result: (Option Nat),
+  body: (match (LexLeanStd.Text::byteAt subject position)
+    | Option.some byte => (hexOf byte)
+    | Option.none => (ctor Option.none [Nat])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: fourHex,
+  parameters: [subject : Bytes, position : Nat],
+  result: (Option Nat),
+  body: (match (hexAt subject position)
+    | Option.some a => (match (hexAt subject (position + 1))
+      | Option.some b => (match (hexAt subject (position + 2))
+        | Option.some c => (match (hexAt subject (position + 3))
+          | Option.some d => (ctor Option.some [Nat] ((prim multiply ((prim multiply ((prim multiply a 16 : Nat) + b) 16 : Nat) + c) 16 : Nat) + d))
+          | Option.none => (ctor Option.none [Nat]))
+        | Option.none => (ctor Option.none [Nat]))
+      | Option.none => (ctor Option.none [Nat]))
+    | Option.none => (ctor Option.none [Nat])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: utf8Of,
+  parameters: [code : Nat],
+  result: Bytes,
+  body: (if (code <? 128) then (byteOf code) else (if (code <? 2048) then (cat (byteOf (192 + (prim quotient code 64 0 : Nat))) (byteOf (128 + (prim remainder code 64 0 : Nat)))) else (cat (byteOf (224 + (prim quotient code 4096 0 : Nat))) (cat (byteOf (128 + (prim remainder (prim quotient code 64 0 : Nat) 64 0 : Nat))) (byteOf (128 + (prim remainder code 64 0 : Nat))))))),
+  executable: true
+}
+
+definition{
+  name: widthAt,
+  parameters: [subject : Bytes, position : Nat],
+  result: Nat,
+  body: (let lead : Nat := (byteNum subject position); (if (lead <? 128) then 1 else (if (lead <? 224) then 2 else (if (lead <? 240) then 3 else 4)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: failed,
+  parameters: [offset : Nat, message : Bytes],
+  result: Failure,
+  body: (record Failure {offset := offset, message := message}),
+  executable: true
+}
+
+definition{
+  name: isDelimiterByte,
+  parameters: [subject : Bytes, position : Nat],
+  result: Bool,
+  body: (if (byteIs subject position (123 : UInt8)) then true else (if (byteIs subject position (125 : UInt8)) then true else (if (byteIs subject position (91 : UInt8)) then true else (if (byteIs subject position (93 : UInt8)) then true else (if (byteIs subject position (40 : UInt8)) then true else (if (byteIs subject position (41 : UInt8)) then true else (if (byteIs subject position (44 : UInt8)) then true else (if (byteIs subject position (58 : UInt8)) then true else (if (byteIs subject position (59 : UInt8)) then true else (byteIs subject position (34 : UInt8))))))))))),
+  executable: true
+}
+
+definition{
+  name: isDelimiter,
+  parameters: [subject : Bytes, position : Nat],
+  result: Bool,
+  body: (if (0 <? (AxiomOutput::whiteLength subject position)) then true else (isDelimiterByte subject position)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: wordStep,
+  parameters: [subject : Bytes, n : Nat, position : Nat],
+  result: (Option Nat),
+  body: (if (position <? n) then (if (isDelimiter subject position) then (ctor Option.none [Nat]) else (ctor Option.some [Nat] (position + 1))) else (ctor Option.none [Nat])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: wordEnd,
+  parameters: [subject : Bytes, n : Nat, start : Nat],
+  result: Nat,
+  body: (first (prim iterate_until (fun [n, subject] (position : Nat) => (wordStep subject n position)) (prim subtract n start : Nat) start : (Nat * Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: rawStep,
+  parameters: [subject : Bytes, n : Nat, position : Nat],
+  result: (Option Nat),
+  body: (if (position <? n) then (let value : Nat := (byteNum subject position); (if (value <? 32) then (ctor Option.none [Nat]) else (if (value =? 34) then (ctor Option.none [Nat]) else (if (value =? 92) then (ctor Option.none [Nat]) else (ctor Option.some [Nat] (position + 1)))))) else (ctor Option.none [Nat])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: rawEnd,
+  parameters: [subject : Bytes, n : Nat, start : Nat],
+  result: Nat,
+  body: (first (prim iterate_until (fun [n, subject] (position : Nat) => (rawStep subject n position)) (prim subtract n start : Nat) start : (Nat * Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: taken,
+  parameters: [state : Scanned, stop : Nat, piece : Bytes],
+  result: Scanned,
+  body: (record Scanned {pos := stop, pieces := (cons piece (project state pieces)), finished := false, error := (ctor Option.none [Failure])}),
+  executable: true
+}
+
+definition{
+  name: halted,
+  parameters: [state : Scanned, offset : Nat, message : Bytes],
+  result: Scanned,
+  body: (record Scanned {pos := (project state pos), pieces := (project state pieces), finished := false, error := (ctor Option.some [Failure] (failed offset message))}),
+  executable: true
+}
+
+definition{
+  name: unicodeEscape,
+  parameters: [subject : Bytes, state : Scanned],
+  result: Scanned,
+  body: (let position : Nat := (project state pos); (match (fourHex subject (position + 2))
+    | Option.some code => (if (55296 <=? code) then (if (code <=? 57343) then (halted state position (cat (cat (lit "`\\u") (hex4 code)) (lit "` is not a Unicode scalar value"))) else (taken state (position + 6) (utf8Of code))) else (taken state (position + 6) (utf8Of code)))
+    | Option.none => (halted state position (lit "a `\\u` escape takes four hexadecimal digits")))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: escapeAt,
+  parameters: [subject : Bytes, n : Nat, state : Scanned],
+  result: Scanned,
+  body: (let position : Nat := (project state pos); (match (LexLeanStd.Text::byteAt subject (position + 1))
+    | Option.none => (record Scanned {pos := n, pieces := (project state pieces), finished := false, error := (ctor Option.none [Failure])})
+    | Option.some escape => (if (prim equal escape (34 : UInt8) : Bool) then (taken state (position + 2) (lit "\"")) else (if (prim equal escape (92 : UInt8) : Bool) then (taken state (position + 2) (lit "\\")) else (if (prim equal escape (47 : UInt8) : Bool) then (taken state (position + 2) (lit "/")) else (if (prim equal escape (98 : UInt8) : Bool) then (taken state (position + 2) (byteOf 8)) else (if (prim equal escape (102 : UInt8) : Bool) then (taken state (position + 2) (byteOf 12)) else (if (prim equal escape (110 : UInt8) : Bool) then (taken state (position + 2) (byteOf 10)) else (if (prim equal escape (114 : UInt8) : Bool) then (taken state (position + 2) (byteOf 13)) else (if (prim equal escape (116 : UInt8) : Bool) then (taken state (position + 2) (byteOf 9)) else (if (prim equal escape (117 : UInt8) : Bool) then (unicodeEscape subject state) else (halted state position (cat (cat (lit "`\\") (LexLeanStd.Text::sliceOr subject (position + 1) (widthAt subject (position + 1)))) (lit "` is not an escape")))))))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: scanStep,
+  parameters: [subject : Bytes, n : Nat, state : Scanned],
+  result: (Option Scanned),
+  body: (match (project state error)
+    | Option.some stopped => (ctor Option.none [Scanned])
+    | Option.none => (if (project state finished) then (ctor Option.none [Scanned]) else (let position : Nat := (project state pos); (if (position <? n) then (if (byteIs subject position (34 : UInt8)) then (ctor Option.some [Scanned] (record Scanned {pos := (position + 1), pieces := (project state pieces), finished := true, error := (ctor Option.none [Failure])})) else (if (byteIs subject position (92 : UInt8)) then (ctor Option.some [Scanned] (escapeAt subject n state)) else (if ((byteNum subject position) <? 32) then (ctor Option.some [Scanned] (halted state position (lit "a control character must be escaped in a string"))) else (let stop : Nat := (rawEnd subject n position); (ctor Option.some [Scanned] (taken state stop (LexLeanStd.Text::sliceOr subject position (prim subtract stop position : Nat)))))))) else (ctor Option.none [Scanned]))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: readString,
+  parameters: [subject : Bytes, n : Nat, start : Nat],
+  result: Scanned,
+  body: (first (prim iterate_until (fun [n, subject] (state : Scanned) => (scanStep subject n state)) ((prim subtract n start : Nat) + 1) (record Scanned {pos := (start + 1), pieces := (nil Bytes), finished := false, error := (ctor Option.none [Failure])}) : (Scanned * Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: pushed,
+  parameters: [state : Lx, token : Token, stop : Nat],
+  result: (Option Lx),
+  body: (ctor Option.some [Lx] (record Lx {pos := stop, tokens := (cons (record Spanned {token := token, start := (project state pos), stop := stop}) (project state tokens)), error := (ctor Option.none [Failure])})),
+  executable: true
+}
+
+definition{
+  name: quoted,
+  parameters: [subject : Bytes, n : Nat, state : Lx],
+  result: (Option Lx),
+  body: (let start : Nat := (project state pos); (let scanned : Scanned := (readString subject n start); (match (project scanned error)
+    | Option.some failure => (ctor Option.some [Lx] (record Lx {pos := start, tokens := (project state tokens), error := (ctor Option.some [Failure] failure)}))
+    | Option.none => (if (project scanned finished) then (pushed state (ctor Token.StrToken (joined (project scanned pieces))) (project scanned pos)) else (ctor Option.some [Lx] (record Lx {pos := start, tokens := (project state tokens), error := (ctor Option.some [Failure] (failed start (lit "unterminated string")))})))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: colonAt,
+  parameters: [subject : Bytes, state : Lx],
+  result: (Option Lx),
+  body: (let position : Nat := (project state pos); (if (byteIs subject (position + 1) (61 : UInt8)) then (pushed state (ctor Token.ColonEq) (position + 2)) else (if (byteIs subject (position + 1) (58 : UInt8)) then (pushed state (ctor Token.Scope) (position + 2)) else (pushed state (ctor Token.Colon) (position + 1))))),
+  executable: true
+}
+
+definition{
+  name: wordAt,
+  parameters: [subject : Bytes, n : Nat, state : Lx],
+  result: (Option Lx),
+  body: (let position : Nat := (project state pos); (let stop : Nat := (wordEnd subject n position); (pushed state (ctor Token.WordToken (LexLeanStd.Text::sliceOr subject position (prim subtract stop position : Nat))) stop))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: lexStep,
+  parameters: [subject : Bytes, n : Nat, state : Lx],
+  result: (Option Lx),
+  body: (match (project state error)
+    | Option.some stopped => (ctor Option.none [Lx])
+    | Option.none => (let position : Nat := (project state pos); (if (position <? n) then (let white : Nat := (AxiomOutput::whiteLength subject position); (if (0 <? white) then (ctor Option.some [Lx] (record Lx {pos := (position + white), tokens := (project state tokens), error := (ctor Option.none [Failure])})) else (if (byteIs subject position (123 : UInt8)) then (pushed state (ctor Token.LBrace) (position + 1)) else (if (byteIs subject position (125 : UInt8)) then (pushed state (ctor Token.RBrace) (position + 1)) else (if (byteIs subject position (91 : UInt8)) then (pushed state (ctor Token.LBrack) (position + 1)) else (if (byteIs subject position (93 : UInt8)) then (pushed state (ctor Token.RBrack) (position + 1)) else (if (byteIs subject position (40 : UInt8)) then (pushed state (ctor Token.LParen) (position + 1)) else (if (byteIs subject position (41 : UInt8)) then (pushed state (ctor Token.RParen) (position + 1)) else (if (byteIs subject position (44 : UInt8)) then (pushed state (ctor Token.Comma) (position + 1)) else (if (byteIs subject position (59 : UInt8)) then (pushed state (ctor Token.Semi) (position + 1)) else (if (byteIs subject position (58 : UInt8)) then (colonAt subject state) else (if (byteIs subject position (34 : UInt8)) then (quoted subject n state) else (wordAt subject n state))))))))))))) else (ctor Option.none [Lx])))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: lexText,
+  parameters: [text : Bytes],
+  result: (Result (List Spanned) Failure),
+  body: (let n : Nat := (prim length text : Nat); (let final : Lx := (first (prim iterate_until (fun [n, text] (state : Lx) => (lexStep text n state)) (n + 1) (record Lx {pos := 0, tokens := (nil Spanned), error := (ctor Option.none [Failure])}) : (Lx * Bool))); (match (project final error)
+    | Option.some failure => (ctor Result.error [(List Spanned), Failure] failure)
+    | Option.none => (ctor Result.ok [(List Spanned), Failure] (reverseSpans (project final tokens)))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: escapePiece,
+  parameters: [value : Nat],
+  result: Bytes,
+  body: (if (value =? 34) then (lit "\\\"") else (if (value =? 92) then (lit "\\\\") else (if (value =? 8) then (lit "\\b") else (if (value =? 12) then (lit "\\f") else (if (value =? 10) then (lit "\\n") else (if (value =? 13) then (lit "\\r") else (if (value =? 9) then (lit "\\t") else (cat (lit "\\u00") (hex2 value))))))))),
+  executable: true
+}
+
+definition{
+  name: quoteStep,
+  parameters: [subject : Bytes, n : Nat, state : Quoting],
+  result: (Option Quoting),
+  body: (let position : Nat := (project state pos); (if (position <? n) then (let value : Nat := (byteNum subject position); (if (if (value <? 32) then true else (if (value =? 34) then true else (value =? 92))) then (ctor Option.some [Quoting] (record Quoting {pos := (position + 1), pieces := (cons (escapePiece value) (project state pieces))})) else (let stop : Nat := (rawEnd subject n position); (ctor Option.some [Quoting] (record Quoting {pos := stop, pieces := (cons (LexLeanStd.Text::sliceOr subject position (prim subtract stop position : Nat)) (project state pieces))}))))) else (ctor Option.none [Quoting]))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: quoteText,
+  parameters: [text : Bytes],
+  result: Bytes,
+  body: (let n : Nat := (prim length text : Nat); (let final : Quoting := (first (prim iterate_until (fun [n, text] (state : Quoting) => (quoteStep text n state)) (n + 1) (record Quoting {pos := 0, pieces := (nil Bytes)}) : (Quoting * Bool))); (cat (cat (lit "\"") (joined (project final pieces))) (lit "\"")))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

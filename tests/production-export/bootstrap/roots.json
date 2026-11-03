@@ -105,6 +105,14 @@
       "version": "1.0.0"
     },
     {
+      "name": "lex_text",
+      "root": "LexLeanBoot.SurfaceLex.lexText",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "loop_function",
       "root": "LexLeanBoot.RustLoops.loopFunction",
       "targets": [
@@ -171,6 +179,14 @@
     {
       "name": "print_expr",
       "root": "LexLeanBoot.RustPrint.printExpr",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "quote_text",
+      "root": "LexLeanBoot.SurfaceLex.quoteText",
       "targets": [
         "rust-std"
       ],
