@@ -5284,6 +5284,13 @@ A derivation of certificate B is built without recursion in the number of a
 match's arms, so a limit that allows thousands of arms cannot overflow the
 stack (`conformance_sp_08` derives 9000 on a 2 MiB stack).
 
+The package manifest and target program replay readers accept the same lowered
+program depth: 512 arrays and objects in the program, and one additional object
+for the manifest wrapping it. They check that bound before recursively reading
+JSON on the module reader stack, without the JSON reader's smaller default
+limit, and still reject duplicate keys, malformed input and trailing values.
+The manifest writer canonicalizes without that smaller reader limit too.
+
 The lowered program is bounded in depth too, by a limit of the implementation
 and not a rule of the language. The program is written as canonical JSON and
 read back (`Program::to_file_bytes`) by code that recurses with its nesting, so
@@ -11331,7 +11338,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `PX-04` | `production-export` | A production request pinning a source ID, semantic ID, or lock digest that a later edit of a source module or of the lock no longer matches fails with LLC0204 before any Lean process runs and publishes nothing, and a lock made stale by an edit of the project configuration fails with LLC0102. | §24.7 |
 | `PX-05` | `production-export` | Every committed production-refusal fixture of tests/negative fails through production::build with its committed diagnostic code before any Lean process runs and publishes no production directory. | §24.7 |
 | `PX-06` | `production-export` | GNAF evidence whose certificate has another identity than the request pins, earns a refused verdict, or is for a request whose reference program is not the root's lowered program fails with LLV7101, a malformed request or certificate fails with LLB6006 or LLB6007, each before any Lean process runs, a request carrying a certification, optimality, preservation, certificate, Lean, program, or crate field fails with LLC0201, and evidence that binds the root is recorded with the identity, universe, and verdict the host checker recomputes. | §24.7 |
-| `PX-07` | `production-export` | verify_artifact accepts an untouched bundle with status bindings-verified and names the four stages it does not re-run, and rejects with LLV7102 a bundle in which one byte of a package, crate, program, certificate, attestation, compiler input, or preservation record, one binding or certification field of the result with its identity recomputed, or one added or removed file differs, and with LLS8001 a bundle holding a symlink. | §24.7 |
+| `PX-07` | `production-export` | verify_artifact accepts an untouched bundle, including an exported list of 65 elements whose program nests beyond 128 JSON levels, with status bindings-verified and names the four stages it does not re-run, and rejects with LLV7102 a bundle in which one byte of a package, crate, program, certificate, attestation, compiler input, or preservation record, one binding or certification field of the result with its identity recomputed, or one added or removed file differs, and with LLS8001 a bundle holding a symlink. | §24.7 |
 | `PX-08` | `production-export` | Exporting one request from two copies of a project in distinct absolute directories and from distinct working directories yields byte-identical bundles under one result ID, and the result holds no absolute path, environment value, or time. | §24.7 |
 | `PX-09` | `production-export` | Evidence paths that are absolute, contain .., or pass through a symlink leaving the project fail with LLS8001 before any Lean process runs, and a symlinked production area under the build root is refused with LLS8001 rather than followed. | §24.7 |
 | `PX-10` | `production-export` | After setup, production::build takes no network option and starts no network or git operation: with a git sentinel first on PATH and an unreachable proxy in the environment it exports the project and the sentinel never runs, and a project whose lock needs an unacquired Git package fails closed with a registered code without acquiring it. | §24.7 |

@@ -12274,3 +12274,41 @@ draws up to a fixed count. `BS-05`, `BS-06`, `BS-08` and `BS-15` read only manif
 and fixtures. The three failing cases assert the count before their plants, so that
 run did not reach the plants on the new draws. A package that adds records should
 set these counts with its records in the tree, on the same commit.
+
+## Generated manifests and replay share the lowered-program depth (PX-07, #378)
+
+`generated_deep_program_and_manifest_read_back` constructs statically valid
+65- and 100-element list programs and requires both the program and its package
+manifest to serialize and read back equal. Before the fix it failed on the
+65-element program with `target program is malformed: recursion limit exceeded`.
+Restoring only the manifest writer's bounded `Json::parse` fails the same test
+with `package manifest is not canonical JSON: recursion limit exceeded at line
+1 column 10808`; that plant was restored.
+
+`deep_program_reader_boundaries_and_malformed_input` accepts a program at exactly
+512 JSON object/array levels and its manifest at 513 (the manifest adds one
+object), on the ordinary test thread for writing and on the existing module
+reader stack for reading. One more level is refused before recursive decoding.
+Malformed and trailing input, duplicate `spec` fields both literally and with an
+equivalent escaped spelling, and 50,000 unclosed arrays are refused. Both tests
+passed on Linux with Rust 1.97.1. The separate
+`deep_list_regression_project_checks_and_lowers` test also checks and lowers the
+actual 65-element LexLean source used by PX-07, confirms its lowered JSON nests
+past 128 levels, and reads it back equal; it passed without Lean.
+
+PX-07 additionally exports that temporary project and replays its bundle through
+`verify_artifact`. That Lean-backed half has not been run locally: the repository
+helper looks for Lean under `$HOME/.elan`, while this environment's pinned
+installation is under `ELAN_HOME`. Its final integration gate remains required.
+
+This fix is not yet release-ready. `package.rs` is one of the nine files framed
+by `calculus::rust::renderer_digest`, so its reader/writer changes and regressions
+require updating `rust_renderer` in `language/semantics-1.2.toml` and the normal
+identity-dependent regeneration. The existing
+`the_compiler_semantics_records_the_renderer` test correctly fails on this tree:
+the committed pin is `9c432ba86622c477155e1515a95fa962caebc4c5a3d4ed68a4e4b9a4a08c0aa3`,
+and the changed renderer digest is
+`743b9697131fb39817aeee95871e9ed485b48f4dbd6947ee4cf0c67a48885786`.
+The draft must be integrated with the scheduled release/v0.4 identity wave,
+regenerated, and pass the complete final gate before landing; this record does
+not claim that wave or the full gate has passed.
