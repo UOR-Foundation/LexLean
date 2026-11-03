@@ -12306,3 +12306,104 @@ this environment installs Lean under `ELAN_HOME` while the conformance
 helper requires `$HOME/.elan`. That is a blocked Lean-backed test, not a
 pass or an Intel timing measurement. The full normative cases and actual
 non-normative host paths remain for CI; neither helper nor home was changed.
+
+## The canonical LaTeX of a tooling module is language-1.2 source (`BS-20`, #270)
+
+`bootstrap/src/ToolingAst.lex.tex` holds the closed schema of the tooling module
+as data, and `bootstrap/src/ToolingLatex.lex.tex` the production root
+`renderToolingLatex` (68 definitions, generated from the oracle's rules and not
+written by hand), held to `backend::tooling::latex_text`, the text
+`render_latex` emits (the function was split so that the case and the backend
+share one text). The case is `conformance_bs_20`
+(`crates/conformance/src/cases/bootstrap/tooling_latex.rs`); its first commit
+was the failing test (R3), `no bootstrap case is wired for BS-20`.
+
+What ran, on the normative host (Ubuntu under WSL, Rust 1.97.1, Lean 4.32.1):
+
+| Step | Observed |
+| --- | --- |
+| the two modules check and are kernel-verified | `lexlean check` (12 modules) and `lexlean verify` (4 modules) passed |
+| the root is eligible for `rust-std` with `allocation`, `overflow`, `recursion` | passed |
+| the oracle's text is the committed LaTeX of the three tooling modules | passed |
+| the 264 vectors (3 committed modules, 85 targeted, 88 refused by the oracle) | the rustc leg agrees on all 264, and so does the evaluator |
+| 180 evaluator mutant runs (seed `0x0B55_0020`) | agree |
+| 600 rustc mutant runs (seed `0x0B55_0021`) | agree |
+| the 17 planted defects | each detected, at the vector given below |
+| the committed package is the exported one | passed; `check-production-export --write` regenerated all 14 packages in about 45 minutes, and the root's stack row is 3,342,336 bytes (debug) |
+
+The case takes about 78 minutes in all on this host (the legs 58 minutes, the
+plants and the export comparison the rest).
+
+The planted defects and the first vector (by position) that detects each:
+
+| Plant | Vector |
+| --- | --- |
+| a backslash is escaped as a bare command | 36 |
+| a brace is not escaped | 0 |
+| a tilde loses its empty group | 45 |
+| a caret loses its empty group | 48 |
+| an ampersand is not escaped | 51 |
+| the hexadecimal of a non-ASCII scalar is in lower case | 0 |
+| the hexadecimal of a scalar has three digits at least | 0 |
+| a character is quoted as a bare quote | 96 |
+| an application of a registered call is not explicit | 135 |
+| an implicit binder is bracketed as an explicit one | 0 |
+| an instance binder is bracketed as an explicit one | 0 |
+| a named type argument has no space before its value | 0 |
+| the body of a function is indented by one space | 0 |
+| a function line keeps the newlines of its body | 0 |
+| a public function is not marked public | 0 |
+| the visibility line swaps public and private | 0 |
+| a trimmed line loses one byte of its trailing white space | 153 |
+
+Three plants escaped the first full run and were fixed in the corpus, not in the
+module. A tilde, a caret and an ampersand reached no vector because no token
+carried them (tokens with `~`, `a^b`, `&` were added). A plant that removed the
+newline after a function body is an equivalent mutant (the oracle's `trim_end`
+removes it either way) and was replaced by one that keeps the newlines of a
+function line. The trim plant needed a line that ends in white space of two or
+three bytes; a name cannot (the checker requires a Lean identifier), so the
+vectors end a command in a token such as `x` followed by U+00A0, U+2003, U+0085 or
+U+3000, which the invocation of the command then ends with. The explicit
+application needed a signature that applies a constant to arguments; the vectors
+wrap a constant of a signature in an application of itself, and the checker
+accepts 20 of the modules that result.
+
+*The compiler's rejection found while writing the module.* The first full
+verification of the project failed certificate A (`LLV7013`,
+`__rel_81`, `application type mismatch`) on a recursive definition whose
+top-level `match` has an arm with binders it does not use and a body that is a
+bare parameter (`| TyConst d0 d1 => out`). The same shape with a constant body
+(`false`, `0`) is accepted, and `explicitApp` and `sigLength` rely on it. The
+module avoids the shape (`putNamed` recurses on the list of names and takes the
+type chain apart in `consSplit`); the rejection is not minimised and not filed.
+
+*What remains of #270.* The Lean backend and the verification driver are
+separate rows. The tooling module reaches this root as already-decoded data; a
+decoder from the JSON of a tooling module to `ToolingAst` that does not use
+serde is not written (the case builds its inputs with `serde_json` in the test
+only). The reserved-token list is an argument of the root; whether it should be
+an inline table is the maintainer's call.
+
+## A byte payload consumes the bootstrap harness's literal budget (#364)
+
+The Windows host job of run 41543498033, on merge `9cbc4cd4e`, passed
+`BS-20` but failed `BS-15` while rustc compiled the test binary
+`run_boot_render_package_std_0`: `memory allocation of 4294967296 bytes
+failed`, with the backtrace in MIR drop-scope sorting. The generated library
+had compiled. `rust_build::cargo_in` already sets `RUST_MIN_STACK` to 64 MiB.
+
+The harness partition counted semantic value nodes: a `Bytes` payload cost
+one node, whereas its Rust literal has one array element per octet. The
+partition now counts that literal work recursively, retaining every input and
+expected outcome in order. Semantic node counts, used by the performance
+measurements, are unchanged. One input beyond the budget stays whole.
+
+`byte_payloads_bound_chunks_without_changing_the_corpus` checks eight nested
+16 KiB payloads partition into groups of three, three and two under the
+60,000-element budget, with the complete ordered corpus preserved; it also
+checks empty input and a single oversized input. Restoring semantic-node
+weighting makes its partition assertion fail. This is a harness correction,
+not a change to the generated packages or a resolution of #164's consumer
+compiler-nesting question. A Windows rerun is required to establish whether
+this bounded partition removes the observed compiler failure.
