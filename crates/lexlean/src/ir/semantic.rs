@@ -706,7 +706,11 @@ pub enum SemanticProof {
         /// goal, in order. They are introduced and added to the `simp only`
         /// set before the definitions, so a prior theorem whose rewrite holds
         /// under a condition rewrites where a named hypothesis discharges it.
-        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        #[serde(
+            default,
+            skip_serializing_if = "Vec::is_empty",
+            deserialize_with = "simplify_hypotheses"
+        )]
         hypotheses: Vec<String>,
     },
     Constructor {
@@ -770,6 +774,21 @@ pub struct SemanticTermination {
 pub struct SemanticProduction {
     pub targets: Vec<String>,
     pub effects: Vec<String>,
+}
+
+// An omitted member keeps the legacy empty default; a supplied member obeys
+// the schema's nonempty-array contract before defaults can erase its presence.
+fn simplify_hypotheses<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let hypotheses = Vec::<String>::deserialize(deserializer)?;
+    if hypotheses.is_empty() {
+        return Err(serde::de::Error::custom(
+            "simplify hypotheses must be nonempty when present",
+        ));
+    }
+    Ok(hypotheses)
 }
 
 /// Language 1.2 (§17.12, models): the closed role an artifact plays. The
@@ -9785,6 +9804,79 @@ mod tests {
         format!(
             r#"{{"declarations":[{{"axioms":{axioms},"kind":"theorem","name":"zero_refl","parameters":[],"proof":{{"kind":"reflexivity"}},"statement":{{"kind":"eq","left":{{"kind":"nat","value":"0"}},"right":{{"kind":"nat","value":"0"}}}}}}],"spec":"lexlean/semantic-module/1"}}"#
         )
+    }
+
+    #[test]
+    fn simplify_hypotheses_source_contract() {
+        use super::SemanticProof;
+        use crate::surface::semantic::{parse_at, Position};
+
+        let omitted = parse_at("simplify{definitions: [Nat.beq_eq]}", Position::Proof)
+            .expect("existing authoring form");
+        let omitted = omitted.to_canonical_string();
+        let decoded: SemanticProof = serde_json::from_str(&omitted).expect("omitted hypotheses");
+        assert!(
+            matches!(decoded, SemanticProof::Simplify { hypotheses, .. } if hypotheses.is_empty())
+        );
+        let named = parse_at(
+            "simplify{definitions: [Nat.beq_eq], hypotheses: [h]}",
+            Position::Proof,
+        )
+        .expect("named authoring form");
+        let decoded: SemanticProof =
+            serde_json::from_str(&named.to_canonical_string()).expect("nonempty hypotheses");
+        assert!(
+            matches!(decoded, SemanticProof::Simplify { hypotheses, .. } if hypotheses == ["h"])
+        );
+
+        let module = EMPTY_POLICY.replace(r#"{"kind":"reflexivity"}"#, &omitted);
+        SemanticModule::parse(
+            &module,
+            "1.1",
+            "Test",
+            &[],
+            &BTreeMap::new(),
+            &super::model::ArtifactStore::new(u64::MAX, u64::MAX),
+        )
+        .expect("omitted hypotheses retain the existing semantic-module/1 form");
+        let mut v2: serde_json::Value = serde_json::from_str(&module).expect("module JSON");
+        v2["spec"] = serde_json::json!("lexlean/semantic-module/2");
+        let equality = v2["declarations"][0]["statement"].clone();
+        v2["declarations"][0]["statement"] = serde_json::json!({
+            "kind": "implies", "premise": equality, "conclusion": equality,
+        });
+        for hypotheses in [
+            None,
+            Some(serde_json::json!(["h"])),
+            Some(serde_json::json!([])),
+        ] {
+            let proof = v2["declarations"][0]["proof"]
+                .as_object_mut()
+                .expect("proof");
+            proof.remove("hypotheses");
+            if let Some(names) = &hypotheses {
+                proof.insert("hypotheses".to_owned(), names.clone());
+            }
+            let parsed = SemanticModule::parse(
+                &serde_json::to_string(&v2).expect("canonical JSON"),
+                "1.2",
+                "Test",
+                &[],
+                &BTreeMap::new(),
+                &super::model::ArtifactStore::new(u64::MAX, u64::MAX),
+            );
+            if hypotheses == Some(serde_json::json!([])) {
+                let error = parsed.expect_err("explicit v2 hypotheses must be nonempty");
+                assert!(
+                    error
+                        .reason
+                        .contains("simplify hypotheses must be nonempty when present"),
+                    "{error}"
+                );
+            } else {
+                parsed.expect("v2 omitted and nonempty hypotheses retain their semantics");
+            }
+        }
     }
 
     #[test]

@@ -1321,6 +1321,20 @@ pub(crate) fn run(id: &str) {
                     "simplify names 2 hypothesis(es), but its goal has 1 leading premise(s)",
                 ),
                 (
+                    "a repeated hypothesis",
+                    vec![
+                        ("hypotheses: [lead]},", "hypotheses: [lead, lead]},"),
+                        ("statement: (((leadE1ToEC b1) = true) -> (((scanThree b1 b2 b3) = 0) <-> (((inRange 128 b2 191) = true) /\\ ((inRange 128 b3 191) = true)))),",
+                         "statement: ((0 = 0) -> ((0 = 0) -> (0 = 0))),"),
+                    ],
+                    "simplify hypothesis `lead` is already in scope or repeated",
+                ),
+                (
+                    "a declaration as the hypothesis",
+                    vec![("hypotheses: [lead]},", "hypotheses: [lead_e1_ec_step]},")],
+                    "is spelled like the declaration `lead_e1_ec_step`",
+                ),
+                (
                     "a parameter as the hypothesis",
                     vec![("hypotheses: [lead]},", "hypotheses: [b2]},")],
                     "simplify hypothesis `b2` is already in scope or repeated",

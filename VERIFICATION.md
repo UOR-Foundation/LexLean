@@ -17060,3 +17060,34 @@ than an open goal. The axioms are what Lean observed, not chosen: the step
 lemma's `linear_arithmetic` over the Boolean conditional observes no
 `Classical.choice`, and the zero test's does.
 
+
+## PF-25 preserves the nonempty supplied-hypotheses contract (#291, #303)
+
+The optional `simplify.hypotheses` field has a nonempty-array contract in both
+v2 schemas. Serde previously erased the distinction between omission and an
+explicit empty array, and the closed-member check permits omitted defaults.
+The field's deserializer now refuses an explicitly supplied empty array;
+`default` still supplies the omitted empty value, which serialization omits.
+No schema, language identity input, proof lowering or generated record changes.
+
+The focused `ir::semantic::tests::simplify_hypotheses_source_contract` test
+failed before the correction because `SemanticModule::parse` accepted the
+explicit empty array. It passes after the correction. The final case reads
+omitted and named authoring forms with the existing notation parser, retains
+the legacy v1 omitted-field parse, and parses a v2 leading-premise theorem
+under language 1.2 with omitted, nonempty and explicitly empty hypotheses:
+only the explicitly empty member is refused.
+
+PF-25 also gains the two refusal copies requested in its earlier review:
+a repeated hypothesis under a two-premise goal (so it reaches the duplicate
+check rather than the premise-count check), and a hypothesis spelled like a
+declaration. Direct CLI `lock`/`check` runs of the existing lead-byte fixture
+accept its original and omitted-hypotheses copies and reject the repeated,
+declaration-name and explicit-empty copies with `LLT4001` and their expected
+messages. These checks do not invoke Lean or claim to verify the proofs.
+
+The focused test, CLI build, lexlean/repo-conformance all-target/all-feature
+Clippy with warnings denied, formatting and diff whitespace checks pass.
+The full PF-25 conformance case, coordinated identity regeneration, merge of
+the current v0.5 line and complete acceptance gate remain the existing PR's
+integration work; this local source correction does not close #291.
