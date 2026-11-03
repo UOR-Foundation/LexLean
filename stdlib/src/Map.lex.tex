@@ -1,0 +1,187 @@
+\begin{lexlean}{Map}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{Order}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: reverseEntries,
+  parameters: [entries : (List (Bytes * Bytes))],
+  result: (List (Bytes * Bytes)),
+  body: (prim list_fold (fun (reversed : (List (Bytes * Bytes))) (entry : (Bytes * Bytes)) => (cons entry reversed)) (nil (Bytes * Bytes)) entries : (List (Bytes * Bytes))),
+  executable: true
+}
+
+definition{
+  name: reverseKeys,
+  parameters: [items : (List Bytes)],
+  result: (List Bytes),
+  body: (prim list_fold (fun (reversed : (List Bytes)) (item : Bytes) => (cons item reversed)) (nil Bytes) items : (List Bytes)),
+  executable: true
+}
+
+definition{
+  name: lastWins,
+  parameters: [kept : (List (Bytes * Bytes)), entry : (Bytes * Bytes)],
+  result: (List (Bytes * Bytes)),
+  body: (match kept
+    | List.nil => (cons entry kept)
+    | List.cons head rest => (if (prim equal (first head) (first entry) : Bool) then (cons entry rest) else (cons entry kept))),
+  executable: true
+}
+
+definition{
+  name: mapFromEntries,
+  parameters: [entries : (List (Bytes * Bytes))],
+  result: (List (Bytes * Bytes)),
+  body: (reverseEntries (prim list_fold (fun (kept : (List (Bytes * Bytes))) (entry : (Bytes * Bytes)) => (lastWins kept entry)) (nil (Bytes * Bytes)) (Order::sortEntries entries) : (List (Bytes * Bytes)))),
+  axioms: [propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: insertEntryStep,
+  parameters: [fresh : (Bytes * Bytes), state : (Bool * (List (Bytes * Bytes))), entry : (Bytes * Bytes)],
+  result: (Bool * (List (Bytes * Bytes))),
+  body: (match (first state)
+    | Bool.true => (true, (cons entry (second state)))
+    | Bool.false => (if (prim equal (first fresh) (first entry) : Bool) then (true, (cons fresh (second state))) else (if (Order::lessBytes (first fresh) (first entry)) then (true, (cons entry (cons fresh (second state)))) else (false, (cons entry (second state)))))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: mapInsert,
+  parameters: [entries : (List (Bytes * Bytes)), key : Bytes, value : Bytes],
+  result: (List (Bytes * Bytes)),
+  body: (let fresh : (Bytes * Bytes) := (key, value); (let done : (Bool * (List (Bytes * Bytes))) := (prim list_fold (fun [fresh] (state : (Bool * (List (Bytes * Bytes)))) (entry : (Bytes * Bytes)) => (insertEntryStep fresh state entry)) (false, (nil (Bytes * Bytes))) entries : (Bool * (List (Bytes * Bytes)))); (match (first done)
+    | Bool.true => (reverseEntries (second done))
+    | Bool.false => (reverseEntries (cons fresh (second done)))))),
+  axioms: [propext],
+  executable: true,
+  production: {effects: [allocation], targets: [rust-std]}
+}
+
+definition{
+  name: getStep,
+  parameters: [key : Bytes, found : (Option Bytes), entry : (Bytes * Bytes)],
+  result: (Option Bytes),
+  body: (if (prim equal key (first entry) : Bool) then (ctor Option.some [Bytes] (second entry)) else found),
+  executable: true
+}
+
+definition{
+  name: mapGet,
+  parameters: [entries : (List (Bytes * Bytes)), key : Bytes],
+  result: (Option Bytes),
+  body: (prim list_fold (fun [key] (found : (Option Bytes)) (entry : (Bytes * Bytes)) => (getStep key found entry)) (ctor Option.none [Bytes]) entries : (Option Bytes)),
+  executable: true,
+  production: {effects: [allocation], targets: [rust-std]}
+}
+
+definition{
+  name: removeEntryStep,
+  parameters: [key : Bytes, kept : (List (Bytes * Bytes)), entry : (Bytes * Bytes)],
+  result: (List (Bytes * Bytes)),
+  body: (if (prim equal key (first entry) : Bool) then kept else (cons entry kept)),
+  executable: true
+}
+
+definition{
+  name: mapRemove,
+  parameters: [entries : (List (Bytes * Bytes)), key : Bytes],
+  result: (List (Bytes * Bytes)),
+  body: (reverseEntries (prim list_fold (fun [key] (kept : (List (Bytes * Bytes))) (entry : (Bytes * Bytes)) => (removeEntryStep key kept entry)) (nil (Bytes * Bytes)) entries : (List (Bytes * Bytes)))),
+  executable: true,
+  production: {effects: [allocation], targets: [rust-std]}
+}
+
+definition{
+  name: mapExtend,
+  parameters: [entries : (List (Bytes * Bytes)), other : (List (Bytes * Bytes))],
+  result: (List (Bytes * Bytes)),
+  body: (prim list_fold (fun (merged : (List (Bytes * Bytes))) (entry : (Bytes * Bytes)) => (mapInsert merged (first entry) (second entry))) entries other : (List (Bytes * Bytes))),
+  axioms: [propext],
+  executable: true,
+  production: {effects: [allocation], targets: [rust-std]}
+}
+
+definition{
+  name: containsStep,
+  parameters: [key : Bytes, found : Bool, item : Bytes],
+  result: Bool,
+  body: (if found then true else (prim equal key item : Bool)),
+  executable: true
+}
+
+definition{
+  name: setContains,
+  parameters: [items : (List Bytes), key : Bytes],
+  result: Bool,
+  body: (prim list_fold (fun [key] (found : Bool) (item : Bytes) => (containsStep key found item)) false items : Bool),
+  executable: true,
+  production: {effects: [allocation], targets: [rust-std]}
+}
+
+definition{
+  name: dropStep,
+  parameters: [key : Bytes, kept : (List Bytes), item : Bytes],
+  result: (List Bytes),
+  body: (if (prim equal key item : Bool) then kept else (cons item kept)),
+  executable: true
+}
+
+definition{
+  name: setRemove,
+  parameters: [items : (List Bytes), key : Bytes],
+  result: (List Bytes),
+  body: (reverseKeys (prim list_fold (fun [key] (kept : (List Bytes)) (item : Bytes) => (dropStep key kept item)) (nil Bytes) items : (List Bytes))),
+  executable: true,
+  production: {effects: [allocation], targets: [rust-std]}
+}
+
+definition{
+  name: setUnion,
+  parameters: [left : (List Bytes), right : (List Bytes)],
+  result: (List Bytes),
+  body: (prim list_fold (fun (merged : (List Bytes)) (item : Bytes) => (Order::insertSorted merged item)) left right : (List Bytes)),
+  axioms: [propext],
+  executable: true,
+  production: {effects: [allocation], targets: [rust-std]}
+}
+
+definition{
+  name: keepIfIn,
+  parameters: [other : (List Bytes), kept : (List Bytes), item : Bytes],
+  result: (List Bytes),
+  body: (if (setContains other item) then (cons item kept) else kept),
+  executable: true
+}
+
+definition{
+  name: setIntersection,
+  parameters: [left : (List Bytes), right : (List Bytes)],
+  result: (List Bytes),
+  body: (reverseKeys (prim list_fold (fun [right] (kept : (List Bytes)) (item : Bytes) => (keepIfIn right kept item)) (nil Bytes) left : (List Bytes))),
+  executable: true,
+  production: {effects: [allocation], targets: [rust-std]}
+}
+
+definition{
+  name: keepIfOut,
+  parameters: [other : (List Bytes), kept : (List Bytes), item : Bytes],
+  result: (List Bytes),
+  body: (if (setContains other item) then kept else (cons item kept)),
+  executable: true
+}
+
+definition{
+  name: setDifference,
+  parameters: [left : (List Bytes), right : (List Bytes)],
+  result: (List Bytes),
+  body: (reverseKeys (prim list_fold (fun [right] (kept : (List Bytes)) (item : Bytes) => (keepIfOut right kept item)) (nil Bytes) left : (List Bytes))),
+  executable: true,
+  production: {effects: [allocation], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}
